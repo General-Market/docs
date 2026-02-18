@@ -20,7 +20,7 @@ interface BacktestSectionProps {
 
 export function BacktestSection({ expanded, onToggle, onDeployIndex }: BacktestSectionProps) {
   const [filters, setFilters] = useState<SimFilterState>({
-    category_id: '',
+    category_id: 'layer-1',
     top_n: 10,
     weighting: 'equal',
     rebalance_days: 30,

@@ -30,6 +30,8 @@ pub struct AppState {
     pub deployment: serde_json::Value,
     pub morpho_deployment: serde_json::Value,
     pub logos_dir: std::path::PathBuf,
+    /// Global simulation data cache — loaded once at startup, eliminates per-sim DB reads.
+    pub sim_cache: Arc<simulation::SimDataCache>,
 }
 
 /// In-memory TTL cache for hot endpoints.
@@ -2904,6 +2906,20 @@ struct SimCategoryInfo {
     market_cap: Option<f64>,
 }
 
+/// Categories that produce meaningless index results (stablecoins, wrappers, bridged).
+const CATEGORY_BLACKLIST: &[&str] = &[
+    "stablecoins",
+    "usd-stablecoin",
+    "fiat-backed-stablecoin",
+    "bridged-stablecoins",
+    "bridged-dai",
+    "bridged-usdc",
+    "wrapped-tokens",
+    "bridged-tokens",
+    "bridged-wbtc",
+    "wormhole-assets",
+];
+
 async fn sim_categories(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
@@ -2911,9 +2927,11 @@ async fn sim_categories(
         .await
         .map_err(|e| db_error(e))?;
 
-    let result: Vec<SimCategoryInfo> = rows.into_iter().map(|(id, name, coin_count, market_cap)| {
-        SimCategoryInfo { id, name, coin_count: coin_count as usize, market_cap }
-    }).collect();
+    let result: Vec<SimCategoryInfo> = rows.into_iter()
+        .filter(|(id, _, _, _)| !CATEGORY_BLACKLIST.contains(&id.as_str()))
+        .map(|(id, name, coin_count, market_cap)| {
+            SimCategoryInfo { id, name, coin_count: coin_count as usize, market_cap }
+        }).collect();
 
     Ok(Json(serde_json::json!({ "categories": result })))
 }
@@ -2996,7 +3014,7 @@ async fn sim_run(
     }
 
     // Run simulation
-    let result = simulation::run_simulation(&state.pool, &config_for_cache, None)
+    let result = simulation::run_simulation(&state.pool, &config_for_cache, None, &state.sim_cache)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse {
             error: format!("Simulation failed: {e}"),
@@ -3098,13 +3116,14 @@ async fn sim_run_stream(
     };
 
     let pool = state.pool.clone();
+    let sim_cache = state.sim_cache.clone();
     let (sse_tx, sse_rx) = tokio::sync::mpsc::channel::<Result<Event, std::convert::Infallible>>(64);
     let (progress_tx, mut progress_rx) = tokio::sync::mpsc::channel::<simulation::SimProgress>(64);
 
     // Spawn simulation task
     let sse_tx_clone = sse_tx.clone();
     tokio::spawn(async move {
-        let result = simulation::run_simulation(&pool, &config, Some(progress_tx)).await;
+        let result = simulation::run_simulation(&pool, &config, Some(progress_tx), &sim_cache).await;
         match result {
             Ok(r) => {
                 let result_json = serde_json::json!({
@@ -3278,6 +3297,7 @@ async fn sim_sweep_stream(
 
     let total_variants = variants.len();
     let pool = state.pool.clone();
+    let sim_cache = state.sim_cache.clone();
     let (sse_tx, sse_rx) = tokio::sync::mpsc::channel::<Result<Event, std::convert::Infallible>>(64);
 
     tokio::spawn(async move {
@@ -3356,7 +3376,7 @@ async fn sim_sweep_stream(
                 }
             });
 
-            let result = simulation::run_simulation(&pool, config, Some(progress_tx)).await;
+            let result = simulation::run_simulation(&pool, config, Some(progress_tx), &sim_cache).await;
             let _ = progress_handle.await;
 
             match result {

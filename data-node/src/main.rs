@@ -55,6 +55,21 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     db::run_migrations(&pool).await?;
     info!("Database connected and migrated");
 
+    // Load global simulation data cache FIRST (before collectors steal pool connections).
+    // This loads all Bitget-eligible coin prices into memory for instant simulations.
+    let sim_cache = simulation::SimDataCache::load(&pool).await
+        .unwrap_or_else(|e| {
+            tracing::warn!(error = %e, "Failed to load sim data cache, simulations will fail");
+            std::sync::Arc::new(simulation::SimDataCache {
+                all_dates: vec![],
+                category_coins: std::collections::HashMap::new(),
+                coin_symbol_map: std::collections::HashMap::new(),
+                bitget_lookup: std::collections::HashMap::new(),
+                prices: std::collections::HashMap::new(),
+                mcap_rankings: std::collections::HashMap::new(),
+            })
+        });
+
     // Load symbol map for verify-nav
     let symbol_map = api::load_symbol_map(&args.symbol_map)?;
 
@@ -227,6 +242,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         deployment,
         morpho_deployment,
         logos_dir,
+        sim_cache,
     });
 
     let app = api::router(app_state);

@@ -5,7 +5,7 @@ use tracing::info;
 
 pub async fn create_pool(database_url: &str) -> Result<PgPool, sqlx::Error> {
     PgPoolOptions::new()
-        .max_connections(10)
+        .max_connections(30)
         .connect(database_url)
         .await
 }
@@ -33,6 +33,12 @@ pub async fn run_migrations(pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::raw_sql(m010).execute(pool).await?;
     let m011 = include_str!("../migrations/011_add_price_history_index.sql");
     sqlx::raw_sql(m011).execute(pool).await?;
+    let m012 = include_str!("../migrations/012_add_covering_index.sql");
+    sqlx::raw_sql(m012).execute(pool).await?;
+    let m013 = include_str!("../migrations/013_add_sim_fk_indexes.sql");
+    sqlx::raw_sql(m013).execute(pool).await?;
+    let m014 = include_str!("../migrations/014_add_symbol_lookup_index.sql");
+    sqlx::raw_sql(m014).execute(pool).await?;
     info!("Database migrations applied");
     Ok(())
 }
@@ -1193,6 +1199,59 @@ pub async fn cg_query_category_coin_ids(pool: &PgPool, category_id: &str) -> Res
     .await
 }
 
+/// Load ALL category→coin_id mappings in one query (for global sim cache).
+pub async fn cg_query_all_category_coins(pool: &PgPool) -> Result<Vec<(String, String)>, sqlx::Error> {
+    sqlx::query_as::<_, (String, String)>(
+        "SELECT category_id, coin_id FROM coingecko_category_coins"
+    )
+    .fetch_all(pool)
+    .await
+}
+
+/// Load coin_id→symbol mappings for coins matching Bitget symbols (case-insensitive).
+/// Returns one coin_id per symbol (the one with highest market cap = the "real" coin).
+/// Uses idx_cg_mcap_symbol_upper index for fast lookup.
+pub async fn cg_query_coin_symbols_for_bitget(pool: &PgPool, symbols: &[String]) -> Result<Vec<(String, String)>, sqlx::Error> {
+    if symbols.is_empty() {
+        return Ok(vec![]);
+    }
+    let upper_syms: Vec<String> = symbols.iter().map(|s| s.to_uppercase()).collect();
+    let sym_refs: Vec<&str> = upper_syms.iter().map(|s| s.as_str()).collect();
+    // For each Bitget symbol, find the coin_id with the highest market_cap_usd.
+    // This ensures "btc" → "bitcoin" (not "batcat" or "bobby-the-cat").
+    sqlx::query_as::<_, (String, String)>(
+        "SELECT DISTINCT ON (UPPER(symbol)) coin_id, symbol
+         FROM coingecko_market_caps
+         WHERE UPPER(symbol) = ANY($1::text[])
+           AND symbol IS NOT NULL
+           AND market_cap_usd IS NOT NULL
+         ORDER BY UPPER(symbol), market_cap_usd DESC"
+    )
+    .bind(&sym_refs)
+    .fetch_all(pool)
+    .await
+}
+
+/// Load ALL price/mcap data for a set of coin_ids (no date filter — full history).
+pub async fn cg_query_all_prices_for_coins(
+    pool: &PgPool,
+    coin_ids: &[String],
+) -> Result<Vec<(String, chrono::NaiveDate, f64, Option<f64>)>, sqlx::Error> {
+    if coin_ids.is_empty() {
+        return Ok(vec![]);
+    }
+    let cids: Vec<&str> = coin_ids.iter().map(|s| s.as_str()).collect();
+    sqlx::query_as::<_, (String, chrono::NaiveDate, f64, Option<f64>)>(
+        "SELECT coin_id, snapshot_date, price_usd, market_cap_usd
+         FROM coingecko_market_caps
+         WHERE coin_id = ANY($1)
+           AND price_usd IS NOT NULL"
+    )
+    .bind(&cids)
+    .fetch_all(pool)
+    .await
+}
+
 /// Get all category IDs a coin belongs to.
 pub async fn cg_query_coin_categories(pool: &PgPool, coin_id: &str) -> Result<Vec<String>, sqlx::Error> {
     sqlx::query_scalar::<_, String>(
@@ -1274,10 +1333,49 @@ pub async fn cg_query_price_history(
     Ok(rows)
 }
 
+/// Bulk-load price + market cap data for all category coins over a date range.
+/// Returns (coin_id, snapshot_date, price_usd, market_cap_usd) — used to preload
+/// everything into memory so the simulation loop does zero per-day DB queries.
+pub async fn cg_query_bulk_market_data(
+    pool: &PgPool,
+    coin_ids: &[String],
+    from_date: chrono::NaiveDate,
+    to_date: chrono::NaiveDate,
+) -> Result<Vec<(String, chrono::NaiveDate, f64, Option<f64>)>, sqlx::Error> {
+    if coin_ids.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let cids: Vec<&str> = coin_ids.iter().map(|s| s.as_str()).collect();
+    let rows = sqlx::query_as::<_, (String, chrono::NaiveDate, f64, Option<f64>)>(
+        "SELECT coin_id, snapshot_date, price_usd, market_cap_usd
+         FROM coingecko_market_caps
+         WHERE coin_id = ANY($1)
+           AND snapshot_date >= $2
+           AND snapshot_date <= $3
+           AND price_usd IS NOT NULL"
+    )
+    .bind(&cids)
+    .bind(from_date)
+    .bind(to_date)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows)
+}
+
 /// Get all unique snapshot dates.
 pub async fn cg_query_snapshot_dates(pool: &PgPool) -> Result<Vec<chrono::NaiveDate>, sqlx::Error> {
+    // Recursive CTE skip-scan: ~4700 index lookups instead of scanning 10M rows.
+    // Each iteration jumps to the next distinct date via a MIN + WHERE > current.
     let rows = sqlx::query_scalar::<_, chrono::NaiveDate>(
-        "SELECT DISTINCT snapshot_date FROM coingecko_market_caps ORDER BY snapshot_date ASC"
+        "WITH RECURSIVE dates AS (
+             SELECT MIN(snapshot_date) AS d FROM coingecko_market_caps
+             UNION ALL
+             SELECT (SELECT MIN(snapshot_date) FROM coingecko_market_caps WHERE snapshot_date > dates.d)
+             FROM dates WHERE d IS NOT NULL
+         )
+         SELECT d FROM dates WHERE d IS NOT NULL ORDER BY d"
     )
     .fetch_all(pool)
     .await?;

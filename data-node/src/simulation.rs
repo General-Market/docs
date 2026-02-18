@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 use chrono::NaiveDate;
 use serde::Serialize;
@@ -7,6 +8,124 @@ use tokio::sync::mpsc;
 use tracing::info;
 
 use crate::db;
+
+// ---- Global simulation data cache (loaded once at startup) ----
+
+/// All market data preloaded into memory at startup.
+/// Shared across all simulation requests via Arc.
+pub struct SimDataCache {
+    /// All unique snapshot dates, sorted ascending.
+    pub all_dates: Vec<NaiveDate>,
+    /// category_id → set of coin_ids
+    pub category_coins: HashMap<String, Vec<String>>,
+    /// coin_id → uppercase CG symbol
+    pub coin_symbol_map: HashMap<String, String>,
+    /// Bitget listings: uppercase symbol → listing row
+    pub bitget_lookup: HashMap<String, db::BitgetListingRow>,
+    /// coin_id → { date → price_usd } for O(1) daily price lookups
+    pub prices: HashMap<String, HashMap<NaiveDate, f64>>,
+    /// date → Vec<CoinSnapshot> sorted by mcap DESC
+    pub mcap_rankings: HashMap<NaiveDate, Vec<CoinSnapshot>>,
+}
+
+impl SimDataCache {
+    /// Load all simulation data from the database. Called once at startup.
+    /// Approach: Bitget-first — only load data for coins ever listed on Bitget.
+    pub async fn load(pool: &PgPool) -> Result<Arc<Self>, SimError> {
+        let t0 = std::time::Instant::now();
+
+        // 1. Load Bitget listings FIRST — this is the universe of tradeable coins.
+        //    Includes delisted coins (needed for historical simulation).
+        let all_listings = db::bitget_query_listings(pool, None).await?;
+        let bitget_lookup = build_bitget_lookup(&all_listings);
+        // Collect unique Bitget base_coin symbols (uppercase)
+        let bitget_symbols: Vec<String> = bitget_lookup.keys().cloned().collect();
+        let t1 = t0.elapsed().as_millis();
+
+        // 2. Map Bitget symbols → CoinGecko coin_ids (fast LATERAL query for ~700 symbols)
+        let sym_rows = db::cg_query_coin_symbols_for_bitget(pool, &bitget_symbols).await?;
+        let coin_symbol_map: HashMap<String, String> = sym_rows
+            .into_iter()
+            .map(|(coin_id, sym)| (coin_id, sym.to_uppercase()))
+            .collect();
+        let eligible_coin_ids: Vec<String> = coin_symbol_map.keys().cloned().collect();
+        let t2 = t0.elapsed().as_millis();
+
+        // 3. Load all snapshot dates (recursive CTE skip-scan)
+        let all_dates = db::cg_query_snapshot_dates(pool).await?;
+        let t3 = t0.elapsed().as_millis();
+
+        // 4. Load all category→coin mappings
+        let cat_coins_raw = db::cg_query_all_category_coins(pool).await?;
+        let mut category_coins: HashMap<String, Vec<String>> = HashMap::new();
+        for (cat_id, coin_id) in &cat_coins_raw {
+            category_coins.entry(cat_id.clone()).or_default().push(coin_id.clone());
+        }
+        let t4 = t0.elapsed().as_millis();
+
+        // 5. Bulk-load prices+mcap for Bitget-eligible coins only (~700 coins, ~1M rows)
+        let bulk_rows = db::cg_query_all_prices_for_coins(pool, &eligible_coin_ids).await?;
+        let t5 = t0.elapsed().as_millis();
+
+        // 6. Build in-memory price + mcap caches
+        let mut prices: HashMap<String, HashMap<NaiveDate, f64>> = HashMap::new();
+        let mut mcap_rankings: HashMap<NaiveDate, Vec<CoinSnapshot>> = HashMap::new();
+
+        for (coin_id, date, price, mcap_opt) in &bulk_rows {
+            prices.entry(coin_id.clone()).or_default().insert(*date, *price);
+            mcap_rankings.entry(*date).or_default().push(CoinSnapshot {
+                coin_id: coin_id.clone(),
+                price: *price,
+                mcap: mcap_opt.unwrap_or(0.0),
+            });
+        }
+
+        // Sort mcap rankings per date
+        for rankings in mcap_rankings.values_mut() {
+            rankings.sort_by(|a, b| b.mcap.partial_cmp(&a.mcap).unwrap_or(std::cmp::Ordering::Equal));
+        }
+
+        let total_ms = t0.elapsed().as_millis();
+
+        info!(
+            t1_bitget_ms = t1,
+            t2_symbols_ms = t2 - t1,
+            t3_dates_ms = t3 - t2,
+            t4_cats_ms = t4 - t3,
+            t5_bulk_ms = t5 - t4,
+            eligible_coins = eligible_coin_ids.len(),
+            bitget_symbols = bitget_symbols.len(),
+            bulk_rows = bulk_rows.len(),
+            categories = category_coins.len(),
+            total_ms,
+            "SimDataCache loaded (Bitget-first)"
+        );
+
+        Ok(Arc::new(Self {
+            all_dates,
+            category_coins,
+            coin_symbol_map,
+            bitget_lookup,
+            prices,
+            mcap_rankings,
+        }))
+    }
+
+    /// Build price history for momentum/vol strategies from the cached prices.
+    pub fn build_price_history(&self, coin_ids: &[String]) -> HashMap<String, Vec<(NaiveDate, f64)>> {
+        let mut history = HashMap::new();
+        for coin_id in coin_ids {
+            if let Some(date_map) = self.prices.get(coin_id) {
+                let mut series: Vec<(NaiveDate, f64)> = date_map.iter()
+                    .map(|(d, p)| (*d, *p))
+                    .collect();
+                series.sort_by_key(|(d, _)| *d);
+                history.insert(coin_id.clone(), series);
+            }
+        }
+        history
+    }
+}
 
 // ---- Types ----
 
@@ -160,20 +279,27 @@ struct Holding {
     last_price: f64,
 }
 
-// ---- Price history helpers ----
+// ---- In-memory preloaded data ----
 
-/// Structure flat DB rows into per-coin sorted price series.
-pub fn build_price_history_map(rows: &[(String, NaiveDate, f64)]) -> HashMap<String, Vec<(NaiveDate, f64)>> {
-    let mut map: HashMap<String, Vec<(NaiveDate, f64)>> = HashMap::new();
-    for (coin_id, date, price) in rows {
-        map.entry(coin_id.clone()).or_default().push((*date, *price));
-    }
-    // Sort each coin's series by date
-    for series in map.values_mut() {
-        series.sort_by_key(|(d, _)| *d);
-    }
-    map
+/// Lightweight coin snapshot for in-memory market cap ranking.
+#[derive(Debug, Clone)]
+pub struct CoinSnapshot {
+    pub coin_id: String,
+    pub price: f64,
+    pub mcap: f64,
 }
+
+/// References into SimDataCache + computed price_history for this run.
+struct PreloadedData<'a> {
+    /// coin_id → { date → price_usd } for O(1) daily price lookups
+    prices: &'a HashMap<String, HashMap<NaiveDate, f64>>,
+    /// date → Vec<CoinSnapshot> sorted by mcap DESC — for rebalance ranking
+    mcap_rankings: &'a HashMap<NaiveDate, Vec<CoinSnapshot>>,
+    /// For momentum/vol strategies: coin_id → sorted [(date, price)]
+    price_history: Option<HashMap<String, Vec<(NaiveDate, f64)>>>,
+}
+
+// ---- Price history helpers ----
 
 /// Compute trailing return from price series over lookback_days ending at the given date.
 fn compute_trailing_return(prices: &[(NaiveDate, f64)], date: NaiveDate, lookback_days: i32) -> Option<f64> {
@@ -278,34 +404,58 @@ pub async fn run_simulation(
     pool: &PgPool,
     config: &SimConfig,
     progress_tx: Option<mpsc::Sender<SimProgress>>,
+    cache: &SimDataCache,
 ) -> Result<SimResult, SimError> {
     let start_time = std::time::Instant::now();
 
-    // 1. Load all snapshot dates
-    let all_dates = db::cg_query_snapshot_dates(pool).await?;
-    if all_dates.is_empty() {
+    if cache.all_dates.is_empty() {
         return Err(SimError::NoData("no CoinGecko snapshot dates found".into()));
     }
 
-    // 2. Load category coin_ids
-    let category_coin_ids = db::cg_query_category_coin_ids(pool, &config.category_id).await?;
+    // Look up category coins from global cache
+    let category_coin_ids = cache.category_coins.get(&config.category_id)
+        .ok_or_else(|| SimError::NoData(format!("no coins in category {}", config.category_id)))?;
+
     if category_coin_ids.is_empty() {
         return Err(SimError::NoData(format!("no coins in category {}", config.category_id)));
     }
 
-    // 3. Load all Bitget listings (USDT pairs only) → build lookup
-    let all_listings = db::bitget_query_listings(pool, None).await?;
-    let bitget_lookup = build_bitget_lookup(&all_listings);
+    // Filter to Bitget-eligible coins (using global cache)
+    let eligible_coin_ids: Vec<String> = category_coin_ids.iter().filter(|cid| {
+        if let Some(sym) = cache.coin_symbol_map.get(*cid) {
+            cache.bitget_lookup.contains_key(sym.as_str())
+        } else {
+            false
+        }
+    }).cloned().collect();
 
-    // 4. Load coin_id → symbol mapping from CG market caps
-    let coin_symbol_map = load_coin_symbol_map(pool, &category_coin_ids).await?;
+    if eligible_coin_ids.is_empty() {
+        return Err(SimError::NoData(format!(
+            "no Bitget-listed coins in category {}", config.category_id
+        )));
+    }
 
-    // 5. Find start date: earliest date with >= top_n Bitget-listed coins with CG price data
+    // Build price_history for momentum/vol strategies from cached data
+    let price_history: Option<HashMap<String, Vec<(NaiveDate, f64)>>> =
+        if config.weighting.needs_history() {
+            Some(cache.build_price_history(&eligible_coin_ids))
+        } else {
+            None
+        };
+
+    // Wrap cache refs into PreloadedData for the sim loop
+    let preloaded = PreloadedData {
+        prices: &cache.prices,
+        mcap_rankings: &cache.mcap_rankings,
+        price_history,
+    };
+
+    // Find start date: earliest date with >= top_n Bitget-listed coins
     let mut start_idx = None;
-    for (i, date) in all_dates.iter().enumerate() {
-        let eligible = count_eligible_coins(
-            pool, &config.category_id, *date, &coin_symbol_map, &bitget_lookup,
-        ).await?;
+    for (i, date) in cache.all_dates.iter().enumerate() {
+        let eligible = count_eligible_coins_mem(
+            &cache.mcap_rankings, *date, &cache.coin_symbol_map, &cache.bitget_lookup,
+        );
         if eligible >= config.top_n as usize {
             start_idx = Some(i);
             break;
@@ -317,7 +467,7 @@ pub async fn run_simulation(
         required: config.top_n,
     })?;
 
-    let sim_dates = &all_dates[start_idx..];
+    let sim_dates = &cache.all_dates[start_idx..];
     let total_dates = sim_dates.len();
 
     info!(
@@ -325,24 +475,13 @@ pub async fn run_simulation(
         top_n = config.top_n,
         weighting = %config.weighting.as_str(),
         rebalance_days = config.rebalance_days,
+        eligible_coins = eligible_coin_ids.len(),
         start_date = %sim_dates[0],
         total_dates,
-        "Starting simulation"
+        "Starting simulation (from global cache)"
     );
 
-    // 5b. Preload price history if weighting needs it
-    let preloaded_history: Option<HashMap<String, Vec<(NaiveDate, f64)>>> =
-        if config.weighting.needs_history() {
-            let lookback = config.weighting.lookback_days().unwrap_or(365);
-            let from_date = sim_dates[0] - chrono::Duration::days(lookback as i64 + 30); // extra margin
-            let to_date = *sim_dates.last().unwrap();
-            let rows = db::cg_query_price_history(pool, &category_coin_ids, from_date, to_date).await?;
-            Some(build_price_history_map(&rows))
-        } else {
-            None
-        };
-
-    // 6. Day-by-day simulation
+    // 7. Day-by-day simulation — ZERO DB queries in this loop
     let mut holdings: Vec<Holding> = Vec::new();
     let mut nav_series: Vec<db::SimNavPoint> = Vec::new();
     let mut all_holdings: Vec<db::SimHoldingRow> = Vec::new();
@@ -356,9 +495,9 @@ pub async fn run_simulation(
     let mut last_target_weights: HashMap<String, f64> = HashMap::new();
 
     for (i, date) in sim_dates.iter().enumerate() {
-        // Send progress every ~50 dates
+        // Send progress every ~100 dates (cheaper since loop is fast now)
         if let Some(ref tx) = progress_tx {
-            if i % 50 == 0 || i == total_dates - 1 {
+            if i % 100 == 0 || i == total_dates - 1 {
                 let _ = tx.send(SimProgress {
                     current_date: date.to_string(),
                     total_dates,
@@ -369,12 +508,12 @@ pub async fn run_simulation(
             }
         }
 
-        // Load prices for held coins today
-        let today_prices = load_prices_for_date(pool, &holdings, *date).await?;
+        // Get prices for held coins today — in-memory O(n) lookup
+        let today_prices = get_prices_mem(&preloaded.prices, &holdings, *date);
 
         // Check delistings
         let (new_holdings, delist_trades, delist_proceeds) = check_delistings(
-            &holdings, &today_prices, &bitget_lookup, *date, config,
+            &holdings, &today_prices, &cache.bitget_lookup, *date, config,
         );
         if !delist_trades.is_empty() {
             total_delistings += delist_trades.len() as i32;
@@ -397,10 +536,10 @@ pub async fn run_simulation(
         };
 
         if should_rebalance {
-            let rebalance_result = perform_rebalance(
-                pool, config, *date, &holdings, &today_prices, &bitget_lookup,
-                &coin_symbol_map, portfolio_value, preloaded_history.as_ref(),
-            ).await?;
+            let rebalance_result = perform_rebalance_mem(
+                config, *date, &holdings, &cache.bitget_lookup,
+                &cache.coin_symbol_map, portfolio_value, &preloaded,
+            );
 
             if rebalance_result.new_holdings.is_empty() && !holdings.is_empty() {
                 // Dual momentum: go to cash — sell everything
@@ -437,7 +576,6 @@ pub async fn run_simulation(
                 // Store target weights for threshold drift detection
                 last_target_weights.clear();
                 for h in &rebalance_result.new_holdings {
-                    // Compute weight from value proportion
                     let price = today_prices.get(&h.coin_id).copied().unwrap_or(h.last_price);
                     let value = h.quantity * price;
                     last_target_weights.insert(h.coin_id.clone(), value / rebalance_result.post_fee_value.max(0.001));
@@ -450,42 +588,31 @@ pub async fn run_simulation(
             }
         }
 
-        // Compute NAV
-        if holdings.is_empty() {
-            // Cash mode (dual momentum) — NAV stays at portfolio_value
-            let nav = portfolio_value;
-            if nav > peak_nav {
-                peak_nav = nav;
-            }
-            let drawdown = if peak_nav > 0.0 { (nav - peak_nav) / peak_nav * 100.0 } else { 0.0 };
-            nav_series.push(db::SimNavPoint {
-                nav_date: *date,
-                nav,
-                drawdown_pct: drawdown,
-            });
+        // Compute NAV — uses today_prices already in memory (NO duplicate DB query!)
+        let nav = if holdings.is_empty() {
+            portfolio_value // Cash mode (dual momentum)
         } else {
-            let nav = compute_nav(&holdings, &load_prices_for_date(pool, &holdings, *date).await?);
-            if nav > 0.0 {
-                portfolio_value = nav;
-            }
+            let n = compute_nav(&holdings, &today_prices);
+            if n > 0.0 { portfolio_value = n; }
+            n
+        };
 
-            if nav > peak_nav {
-                peak_nav = nav;
-            }
-            let drawdown = if peak_nav > 0.0 { (nav - peak_nav) / peak_nav * 100.0 } else { 0.0 };
-
-            nav_series.push(db::SimNavPoint {
-                nav_date: *date,
-                nav,
-                drawdown_pct: drawdown,
-            });
+        if nav > peak_nav {
+            peak_nav = nav;
         }
+        let drawdown = if peak_nav > 0.0 { (nav - peak_nav) / peak_nav * 100.0 } else { 0.0 };
+        nav_series.push(db::SimNavPoint {
+            nav_date: *date,
+            nav,
+            drawdown_pct: drawdown,
+        });
     }
 
-    // 7. Compute stats
+    // 8. Compute stats
     let stats = compute_stats(&nav_series, &all_trades, total_fees_usd, total_rebalances, total_delistings);
 
-    // 8. Store results
+    // 9. Store results — insert run synchronously (need run_id), then write
+    //    nav/holdings/trades in background so the response returns immediately.
     let duration_ms = start_time.elapsed().as_millis() as i32;
     let run_insert = db::SimRunInsert {
         category_id: config.category_id.clone(),
@@ -508,17 +635,32 @@ pub async fn run_simulation(
     };
 
     let run_id = db::sim_insert_run(pool, &run_insert).await?;
-    db::sim_batch_insert_nav(pool, run_id, &nav_series).await?;
-    db::sim_batch_insert_holdings(pool, run_id, &all_holdings).await?;
-    db::sim_batch_insert_trades(pool, run_id, &all_trades).await?;
+
+    // Background DB writes — sim_insert_run already holds the run_id,
+    // and FK indexes on child tables prevent cascade deadlocks.
+    let bg_pool = pool.clone();
+    let bg_nav = nav_series.clone();
+    let bg_holdings = all_holdings;
+    let bg_trades = all_trades;
+    tokio::spawn(async move {
+        if let Err(e) = db::sim_batch_insert_nav(&bg_pool, run_id, &bg_nav).await {
+            tracing::error!(run_id, error = %e, "bg: nav insert failed");
+        }
+        if let Err(e) = db::sim_batch_insert_holdings(&bg_pool, run_id, &bg_holdings).await {
+            tracing::error!(run_id, error = %e, "bg: holdings insert failed");
+        }
+        if let Err(e) = db::sim_batch_insert_trades(&bg_pool, run_id, &bg_trades).await {
+            tracing::error!(run_id, error = %e, "bg: trades insert failed");
+        }
+    });
 
     info!(
         run_id,
         total_return = format!("{:.2}%", stats.total_return_pct),
         max_drawdown = format!("{:.2}%", stats.max_drawdown_pct),
         sharpe = format!("{:.3}", stats.sharpe_ratio),
-        duration_ms,
-        "Simulation complete"
+        sim_ms = duration_ms,
+        "Simulation complete (writes in background)"
     );
 
     Ok(SimResult {
@@ -544,34 +686,6 @@ fn build_bitget_lookup(listings: &[db::BitgetListingRow]) -> HashMap<String, db:
     map
 }
 
-async fn load_coin_symbol_map(
-    pool: &PgPool,
-    coin_ids: &[String],
-) -> Result<HashMap<String, String>, SimError> {
-    // coin_id → CG symbol (uppercase)
-    let mut map = HashMap::new();
-    // Batch query: get latest symbol for each coin_id
-    for chunk in coin_ids.chunks(500) {
-        let cids: Vec<&str> = chunk.iter().map(|s| s.as_str()).collect();
-        let rows = sqlx::query_as::<_, (String, Option<String>)>(
-            "SELECT DISTINCT ON (coin_id) coin_id, symbol
-             FROM coingecko_market_caps
-             WHERE coin_id = ANY($1)
-             ORDER BY coin_id, snapshot_date DESC"
-        )
-        .bind(&cids)
-        .fetch_all(pool)
-        .await?;
-
-        for (coin_id, symbol) in rows {
-            if let Some(sym) = symbol {
-                map.insert(coin_id, sym.to_uppercase());
-            }
-        }
-    }
-    Ok(map)
-}
-
 fn is_listed_on_bitget(
     cg_symbol: &str,
     bitget_lookup: &HashMap<String, db::BitgetListingRow>,
@@ -594,53 +708,41 @@ fn is_listed_on_bitget(
     }
 }
 
-async fn count_eligible_coins(
-    pool: &PgPool,
-    category_id: &str,
+/// Count eligible coins at a date using preloaded in-memory data (no DB query).
+fn count_eligible_coins_mem(
+    mcap_rankings: &HashMap<NaiveDate, Vec<CoinSnapshot>>,
     date: NaiveDate,
     coin_symbol_map: &HashMap<String, String>,
     bitget_lookup: &HashMap<String, db::BitgetListingRow>,
-) -> Result<usize, SimError> {
-    let coins = db::cg_query_category_market_caps_at(pool, category_id, date, 500).await?;
-    let count = coins.iter().filter(|c| {
+) -> usize {
+    let coins = match mcap_rankings.get(&date) {
+        Some(c) => c,
+        None => return 0,
+    };
+    coins.iter().filter(|c| {
         if let Some(sym) = coin_symbol_map.get(&c.coin_id) {
-            c.price_usd.is_some() && c.price_usd.unwrap_or(0.0) > 0.0
-                && is_listed_on_bitget(sym, bitget_lookup, date)
+            c.price > 0.0 && is_listed_on_bitget(sym, bitget_lookup, date)
         } else {
             false
         }
-    }).count();
-    Ok(count)
+    }).count()
 }
 
-async fn load_prices_for_date(
-    pool: &PgPool,
+/// Get prices for held coins at a date from in-memory cache (no DB query).
+fn get_prices_mem(
+    price_cache: &HashMap<String, HashMap<NaiveDate, f64>>,
     holdings: &[Holding],
     date: NaiveDate,
-) -> Result<HashMap<String, f64>, SimError> {
-    if holdings.is_empty() {
-        return Ok(HashMap::new());
-    }
-
-    let coin_ids: Vec<&str> = holdings.iter().map(|h| h.coin_id.as_str()).collect();
-    let rows = sqlx::query_as::<_, (String, Option<f64>)>(
-        "SELECT coin_id, price_usd FROM coingecko_market_caps
-         WHERE coin_id = ANY($1) AND snapshot_date = $2"
-    )
-    .bind(&coin_ids)
-    .bind(date)
-    .fetch_all(pool)
-    .await?;
-
+) -> HashMap<String, f64> {
     let mut map = HashMap::new();
-    for (coin_id, price) in rows {
-        if let Some(p) = price {
-            if p > 0.0 {
-                map.insert(coin_id, p);
+    for h in holdings {
+        if let Some(date_map) = price_cache.get(&h.coin_id) {
+            if let Some(&price) = date_map.get(&date) {
+                map.insert(h.coin_id.clone(), price);
             }
         }
     }
-    Ok(map)
+    map
 }
 
 fn compute_nav(holdings: &[Holding], prices: &HashMap<String, f64>) -> f64 {
@@ -673,7 +775,7 @@ fn check_delistings(
                     // Coin delisted — sell at CG price
                     let price = prices.get(&h.coin_id).copied().unwrap_or(h.last_price);
                     let gross = h.quantity * price;
-                    let fee_rate = config.base_fee_pct / 100.0 + 0.001 * config.spread_multiplier; // base + 10bps spread fallback
+                    let fee_rate = config.base_fee_pct / 100.0 + 0.001 * config.spread_multiplier;
                     let fee = gross * fee_rate;
                     proceeds += gross - fee;
 
@@ -724,62 +826,65 @@ struct RebalanceResult {
     post_fee_value: f64,
 }
 
-async fn perform_rebalance(
-    pool: &PgPool,
+/// Perform rebalance using preloaded in-memory data (no DB query).
+fn perform_rebalance_mem(
     config: &SimConfig,
     date: NaiveDate,
     old_holdings: &[Holding],
-    _old_prices: &HashMap<String, f64>,
     bitget_lookup: &HashMap<String, db::BitgetListingRow>,
     coin_symbol_map: &HashMap<String, String>,
     portfolio_value: f64,
-    preloaded_history: Option<&HashMap<String, Vec<(NaiveDate, f64)>>>,
-) -> Result<RebalanceResult, SimError> {
-    // Get top N coins by market cap in this category, listed on Bitget
-    let all_coins = db::cg_query_category_market_caps_at(
-        pool, &config.category_id, date, 500,
-    ).await?;
+    preloaded: &PreloadedData,
+) -> RebalanceResult {
+    // Get market-cap-ranked coins at this date from preloaded cache
+    let all_coins = match preloaded.mcap_rankings.get(&date) {
+        Some(c) => c,
+        None => return RebalanceResult {
+            new_holdings: Vec::new(),
+            trades: Vec::new(),
+            holdings_snapshot: Vec::new(),
+            post_fee_value: portfolio_value,
+        },
+    };
 
-    // Filter to Bitget-listed coins with valid prices
-    let eligible: Vec<&db::CgMarketCapRow> = all_coins.iter().filter(|c| {
+    // Filter to Bitget-listed coins with valid prices, take top N
+    let eligible: Vec<&CoinSnapshot> = all_coins.iter().filter(|c| {
         if let Some(sym) = coin_symbol_map.get(&c.coin_id) {
-            c.price_usd.is_some() && c.price_usd.unwrap_or(0.0) > 0.0
-                && is_listed_on_bitget(sym, bitget_lookup, date)
+            c.price > 0.0 && is_listed_on_bitget(sym, bitget_lookup, date)
         } else {
             false
         }
     }).collect();
 
-    let top_n = eligible.iter().take(config.top_n as usize).cloned().collect::<Vec<_>>();
+    let top_n: Vec<&CoinSnapshot> = eligible.into_iter().take(config.top_n as usize).collect();
 
     if top_n.is_empty() {
-        return Ok(RebalanceResult {
+        return RebalanceResult {
             new_holdings: Vec::new(),
             trades: Vec::new(),
             holdings_snapshot: Vec::new(),
             post_fee_value: portfolio_value,
-        });
+        };
     }
 
     // Compute weights
-    let weights = compute_weights(&top_n, &config.weighting, date, preloaded_history);
+    let weights = compute_weights_snap(&top_n, &config.weighting, date, preloaded.price_history.as_ref());
 
     // If all weights are zero (dual momentum cash mode), return empty
     let weight_sum: f64 = weights.iter().sum();
     if weight_sum <= 0.0 {
-        return Ok(RebalanceResult {
+        return RebalanceResult {
             new_holdings: Vec::new(),
             trades: Vec::new(),
             holdings_snapshot: Vec::new(),
             post_fee_value: portfolio_value,
-        });
+        };
     }
 
     // Compute target quantities: qty[i] = (weight[i] * portfolio_value) / price[i]
     let mut new_holdings = Vec::new();
     let mut holdings_snapshot = Vec::new();
     let mut trades = Vec::new();
-    let mut _total_trade_value = 0.0_f64;
 
     // Build old holdings map for delta computation
     let old_map: HashMap<String, &Holding> = old_holdings.iter()
@@ -787,35 +892,33 @@ async fn perform_rebalance(
         .collect();
 
     for (coin, weight) in top_n.iter().zip(weights.iter()) {
-        let price = coin.price_usd.unwrap_or(0.0);
-        if price <= 0.0 || *weight <= 0.0 {
+        if coin.price <= 0.0 || *weight <= 0.0 {
             continue;
         }
 
         let target_value = weight * portfolio_value;
-        let target_qty = target_value / price;
+        let target_qty = target_value / coin.price;
 
         let symbol = coin_symbol_map.get(&coin.coin_id)
             .cloned()
-            .unwrap_or_else(|| coin.symbol.clone().unwrap_or_default().to_uppercase());
+            .unwrap_or_default();
 
         // Compute trade delta
         let old_qty = old_map.get(&coin.coin_id).map(|h| h.quantity).unwrap_or(0.0);
         let delta_qty = target_qty - old_qty;
 
-        if delta_qty.abs() * price > 0.01 { // Skip dust trades
+        if delta_qty.abs() * coin.price > 0.01 { // Skip dust trades
             let side = if delta_qty > 0.0 { "buy" } else { "sell" };
-            let trade_value = delta_qty.abs() * price;
-            let fee_rate = config.base_fee_pct / 100.0 + 0.001 * config.spread_multiplier; // base + 10bps fallback spread
+            let trade_value = delta_qty.abs() * coin.price;
+            let fee_rate = config.base_fee_pct / 100.0 + 0.001 * config.spread_multiplier;
             let fee_usd = trade_value * fee_rate;
-            _total_trade_value += trade_value;
 
             trades.push(db::SimTradeRow {
                 trade_date: date,
                 coin_id: coin.coin_id.clone(),
                 side: side.into(),
                 quantity: delta_qty.abs(),
-                price_usd: price,
+                price_usd: coin.price,
                 fee_pct: fee_rate * 100.0,
                 fee_usd,
                 reason: Some("rebalance".into()),
@@ -826,7 +929,7 @@ async fn perform_rebalance(
             coin_id: coin.coin_id.clone(),
             symbol: symbol.clone(),
             quantity: target_qty,
-            last_price: price,
+            last_price: coin.price,
         });
 
         holdings_snapshot.push(db::SimHoldingRow {
@@ -835,7 +938,7 @@ async fn perform_rebalance(
             symbol,
             weight: *weight,
             quantity: target_qty,
-            price_usd: price,
+            price_usd: coin.price,
         });
     }
 
@@ -874,16 +977,17 @@ async fn perform_rebalance(
         }
     }
 
-    Ok(RebalanceResult {
+    RebalanceResult {
         new_holdings,
         trades,
         holdings_snapshot,
         post_fee_value,
-    })
+    }
 }
 
-fn compute_weights(
-    coins: &[&db::CgMarketCapRow],
+/// Compute weights using CoinSnapshot (in-memory version).
+fn compute_weights_snap(
+    coins: &[&CoinSnapshot],
     weighting: &Weighting,
     date: NaiveDate,
     price_history: Option<&HashMap<String, Vec<(NaiveDate, f64)>>>,
@@ -899,7 +1003,7 @@ fn compute_weights(
         }
         Weighting::Mcap => {
             let mcaps: Vec<f64> = coins.iter()
-                .map(|c| c.market_cap_usd.unwrap_or(0.0).max(0.0))
+                .map(|c| c.mcap.max(0.0))
                 .collect();
             let total_mcap: f64 = mcaps.iter().sum();
 
@@ -935,14 +1039,13 @@ fn compute_weights(
                 }
             }
 
-            // Normalize to ensure sum = 1.0
             normalize_weights(&mut weights);
             weights
         }
         Weighting::Momentum { lookback_days } => {
             let history = match price_history {
                 Some(h) => h,
-                None => return vec![1.0 / n as f64; n], // fallback to equal
+                None => return vec![1.0 / n as f64; n],
             };
 
             let mut raw_returns: Vec<f64> = coins.iter().map(|c| {
@@ -972,7 +1075,7 @@ fn compute_weights(
                 let vol = history.get(&c.coin_id)
                     .and_then(|prices| compute_annualized_volatility(prices, date, *lookback_days))
                     .unwrap_or(1.0)
-                    .max(0.001); // floor at 0.001
+                    .max(0.001);
                 1.0 / vol
             }).collect();
 
