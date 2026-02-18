@@ -67,6 +67,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
                 bitget_lookup: std::collections::HashMap::new(),
                 prices: std::collections::HashMap::new(),
                 mcap_rankings: std::collections::HashMap::new(),
+                categories: vec![],
             })
         });
 

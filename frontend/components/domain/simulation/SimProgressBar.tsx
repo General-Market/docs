@@ -40,6 +40,7 @@ export function SimProgressBar(props: SimProgressBarProps) {
 
   // Sweep mode
   const { progress, completedCount, totalVariants } = props
+  const safeTotalVariants = totalVariants || 1 // avoid division by zero
 
   return (
     <div className="mb-4">
@@ -47,17 +48,24 @@ export function SimProgressBar(props: SimProgressBarProps) {
         <span>
           {progress
             ? `Running ${progress.variant} (${progress.variant_index + 1}/${totalVariants}) — ${progress.current_date}`
-            : `Completed ${completedCount}/${totalVariants}`
+            : totalVariants === 0
+              ? 'Starting sweep...'
+              : `Completed ${completedCount}/${totalVariants}`
           }
         </span>
         <span>
-          {progress ? `${progress.pct.toFixed(1)}%` : `${Math.round((completedCount / totalVariants) * 100)}%`}
+          {progress
+            ? `${progress.pct.toFixed(1)}%`
+            : totalVariants === 0
+              ? ''
+              : `${Math.round((completedCount / safeTotalVariants) * 100)}%`
+          }
         </span>
       </div>
       <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-2">
         <div
           className="h-full bg-accent rounded-full transition-all duration-300 ease-out"
-          style={{ width: `${progress ? ((completedCount + progress.pct / 100) / totalVariants) * 100 : (completedCount / totalVariants) * 100}%` }}
+          style={{ width: `${totalVariants === 0 ? 0 : progress ? ((completedCount + progress.pct / 100) / safeTotalVariants) * 100 : (completedCount / safeTotalVariants) * 100}%` }}
         />
       </div>
       {/* Variant pills */}

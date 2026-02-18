@@ -14,12 +14,17 @@ const REBALANCE_OPTIONS = [
 const WEIGHTING_OPTIONS = [
   { value: 'equal', label: 'Equal', title: 'Equal weight across all holdings' },
   { value: 'mcap', label: 'MCap', title: 'Weight by market capitalization' },
+  { value: 'mcap_cap10', label: 'Cap 10%', title: 'MCap-weighted, max 10% per holding' },
+  { value: 'mcap_cap25', label: 'Cap 25%', title: 'MCap-weighted, max 25% per holding' },
+  { value: 'sqrt_mcap', label: 'SqrtMCap', title: 'Square root of MCap: dampened concentration' },
   { value: 'momentum_90', label: 'Mom 90d', title: 'Momentum: weight by 90-day trailing return' },
   { value: 'momentum_180', label: 'Mom 180d', title: 'Momentum: weight by 180-day trailing return' },
-  { value: 'momentum_365', label: 'Mom 1y', title: 'Momentum: weight by 365-day trailing return' },
-  { value: 'invvol_60', label: 'InvVol 60d', title: 'Inverse Volatility: less volatile = higher weight (60d)' },
-  { value: 'invvol_90', label: 'InvVol 90d', title: 'Inverse Volatility: less volatile = higher weight (90d)' },
-  { value: 'dual_mom_180', label: 'Dual Mom', title: 'Dual Momentum: go to cash when market is down (180d)' },
+  { value: 'invvol_60', label: 'InvVol', title: 'Inverse Volatility: less volatile = higher weight (60d)' },
+  { value: 'dual_mom_180', label: 'DualMom', title: 'Dual Momentum: go to cash when market is down (180d)' },
+  { value: 'risk_parity_60', label: 'RiskPar', title: 'Risk Parity: equal risk contribution per asset (60d)' },
+  { value: 'min_var_60', label: 'MinVar', title: 'Minimum Variance: minimize portfolio volatility (60d)' },
+  { value: 'multi_factor_90', label: 'MultiFac', title: 'Multi-Factor: momentum + low vol + MCap composite (90d)' },
+  { value: 'low_vol_60', label: 'LowVol', title: 'Low Volatility: keep only the least volatile half, equal weight (60d)' },
 ]
 const THRESHOLD_OPTIONS = [
   { value: null as number | null, label: 'Periodic' },
@@ -28,7 +33,7 @@ const THRESHOLD_OPTIONS = [
   { value: 10 as number | null, label: '10%' },
   { value: 15 as number | null, label: '15%' },
 ]
-const SWEEP_OPTIONS = ['none', 'top_n', 'weighting', 'rebalance', 'threshold', 'category'] as const
+const SWEEP_OPTIONS = ['none', 'top_n', 'weighting', 'rebalance', 'category'] as const
 
 export interface SimFilterState {
   category_id: string
@@ -158,12 +163,12 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           ) : (
             /* Single select for non-category sweep */
             <select
-              className="w-full bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs font-mono text-white appearance-none"
+              className="w-full bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs font-mono text-white cursor-pointer"
               value={filters.category_id}
               onChange={e => update({ category_id: e.target.value })}
               disabled={catsLoading}
             >
-              <option value="">Select category...</option>
+              <option value="">{catsLoading ? 'Loading categories...' : 'Select category...'}</option>
               {categories.map(c => (
                 <option key={c.id} value={c.id}>
                   {c.name} ({c.coin_count} coins)
@@ -221,46 +226,43 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
         </div>
         <div>
           <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Rebalance</label>
-          <div className="flex">
+          <div className="flex items-center">
+            {/* Periodic intervals */}
             {REBALANCE_OPTIONS.map(r => (
               <button
                 key={r.value}
-                className={`px-2 py-1 text-xs font-mono border border-white/10 first:rounded-l last:rounded-r -ml-px first:ml-0 transition-colors ${
+                title={`Rebalance every ${r.label}`}
+                className={`px-2 py-1 text-xs font-mono border border-white/10 first:rounded-l -ml-px first:ml-0 transition-colors ${
                   sweepDim === 'rebalance'
                     ? 'bg-accent/20 text-accent border-accent/30'
-                    : filters.rebalance_days === r.value
+                    : filters.threshold_pct == null && filters.rebalance_days === r.value
                       ? 'bg-white/20 text-white'
-                      : filters.threshold_pct != null
-                        ? 'bg-white/5 text-white/20'
-                        : 'bg-white/5 text-white/50 hover:bg-white/10'
+                      : 'bg-white/5 text-white/50 hover:bg-white/10'
                 }`}
-                onClick={() => { if (sweepDim !== 'rebalance') update({ rebalance_days: r.value }) }}
+                onClick={() => { if (sweepDim !== 'rebalance') update({ rebalance_days: r.value, threshold_pct: null }) }}
                 disabled={sweepDim === 'rebalance'}
               >
                 {r.label}
               </button>
             ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Row 2.5: Rebalance Trigger (Threshold) */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <div>
-          <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Rebalance Trigger</label>
-          <div className="flex">
-            {THRESHOLD_OPTIONS.map((t, i) => (
+            {/* Divider */}
+            <span className="px-1.5 text-white/20 text-[10px] font-mono select-none">|</span>
+            {/* Drift-based bands */}
+            {THRESHOLD_OPTIONS.filter(t => t.value != null).map((t, i) => (
               <button
                 key={t.label}
-                className={`px-2 py-1 text-xs font-mono border border-white/10 first:rounded-l last:rounded-r -ml-px first:ml-0 transition-colors ${
-                  sweepDim === 'threshold'
+                title={`Rebalance when any holding drifts ${t.label} from target`}
+                className={`px-2 py-1 text-xs font-mono border border-white/10 -ml-px transition-colors ${
+                  i === THRESHOLD_OPTIONS.filter(x => x.value != null).length - 1 ? 'rounded-r' : ''
+                } ${
+                  sweepDim === 'rebalance'
                     ? 'bg-accent/20 text-accent border-accent/30'
                     : filters.threshold_pct === t.value
                       ? 'bg-white/20 text-white'
                       : 'bg-white/5 text-white/50 hover:bg-white/10'
                 }`}
-                onClick={() => { if (sweepDim !== 'threshold') update({ threshold_pct: t.value }) }}
-                disabled={sweepDim === 'threshold'}
+                onClick={() => { if (sweepDim !== 'rebalance') update({ threshold_pct: t.value }) }}
+                disabled={sweepDim === 'rebalance'}
               >
                 {t.label}
               </button>
@@ -313,7 +315,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                 }`}
                 onClick={() => update({ sweep: s })}
               >
-                {s === 'none' ? 'None' : s === 'top_n' ? 'Top N' : s === 'weighting' ? 'Weight' : s === 'rebalance' ? 'Rebal.' : s === 'threshold' ? 'Thresh.' : 'Category'}
+                {s === 'none' ? 'None' : s === 'top_n' ? 'Top N' : s === 'weighting' ? 'Weight' : s === 'rebalance' ? 'Rebalance' : 'Category'}
               </button>
             ))}
           </div>

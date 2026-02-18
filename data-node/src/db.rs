@@ -1208,6 +1208,7 @@ pub async fn cg_query_all_category_coins(pool: &PgPool) -> Result<Vec<(String, S
     .await
 }
 
+
 /// Load coin_id→symbol mappings for coins matching Bitget symbols (case-insensitive).
 /// Returns one coin_id per symbol (the one with highest market cap = the "real" coin).
 /// Uses idx_cg_mcap_symbol_upper index for fast lookup.

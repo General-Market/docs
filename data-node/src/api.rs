@@ -2922,18 +2922,12 @@ const CATEGORY_BLACKLIST: &[&str] = &[
 
 async fn sim_categories(
     State(state): State<Arc<AppState>>,
-) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
-    let rows = db::sim_query_eligible_categories(&state.pool, 5)
-        .await
-        .map_err(|e| db_error(e))?;
-
-    let result: Vec<SimCategoryInfo> = rows.into_iter()
-        .filter(|(id, _, _, _)| !CATEGORY_BLACKLIST.contains(&id.as_str()))
-        .map(|(id, name, coin_count, market_cap)| {
-            SimCategoryInfo { id, name, coin_count: coin_count as usize, market_cap }
-        }).collect();
-
-    Ok(Json(serde_json::json!({ "categories": result })))
+) -> Json<serde_json::Value> {
+    // Serve from in-memory cache — instant response, no DB hit.
+    let result: Vec<&simulation::CachedCategoryInfo> = state.sim_cache.categories.iter()
+        .filter(|c| !CATEGORY_BLACKLIST.contains(&c.id.as_str()))
+        .collect();
+    Json(serde_json::json!({ "categories": result }))
 }
 
 #[derive(Deserialize)]
@@ -3214,12 +3208,17 @@ async fn sim_sweep_stream(
             let all_weightings = vec![
                 simulation::Weighting::Equal,
                 simulation::Weighting::Mcap,
+                simulation::Weighting::CappedMcap { cap_pct: 10.0 },
+                simulation::Weighting::CappedMcap { cap_pct: 25.0 },
+                simulation::Weighting::SqrtMcap,
                 simulation::Weighting::Momentum { lookback_days: 90 },
                 simulation::Weighting::Momentum { lookback_days: 180 },
-                simulation::Weighting::Momentum { lookback_days: 365 },
                 simulation::Weighting::InverseVolatility { lookback_days: 60 },
-                simulation::Weighting::InverseVolatility { lookback_days: 90 },
                 simulation::Weighting::DualMomentum { lookback_days: 180 },
+                simulation::Weighting::RiskParity { lookback_days: 60 },
+                simulation::Weighting::MinVariance { lookback_days: 60 },
+                simulation::Weighting::MultiFactor { lookback_days: 90 },
+                simulation::Weighting::LowVolatility { lookback_days: 60 },
             ];
             all_weightings.into_iter().map(|w| {
                 simulation::SimConfig {
@@ -3234,23 +3233,38 @@ async fn sim_sweep_stream(
             }).collect()
         }
         "rebalance" => {
-            vec![14, 30, 60, 90, 180].into_iter().map(|d| {
+            let weighting = simulation::Weighting::from_str(&params.weighting)
+                .unwrap_or(simulation::Weighting::Equal);
+            // Periodic intervals (threshold=None)
+            let mut configs: Vec<simulation::SimConfig> = vec![14, 30, 60, 90, 180].into_iter().map(|d| {
                 simulation::SimConfig {
                     category_id: params.category_id.clone(),
                     top_n: params.top_n,
-                    weighting: simulation::Weighting::from_str(&params.weighting)
-                        .unwrap_or(simulation::Weighting::Equal),
+                    weighting: weighting.clone(),
                     rebalance_days: d,
                     base_fee_pct: params.base_fee_pct,
                     spread_multiplier: params.spread_multiplier,
-                    threshold_rebalance_pct: params.threshold_pct,
+                    threshold_rebalance_pct: None,
                 }
-            }).collect()
+            }).collect();
+            // Drift-based bands (rebalance_days=365 safety fallback)
+            for &pct in &[3.0, 5.0, 10.0, 15.0] {
+                configs.push(simulation::SimConfig {
+                    category_id: params.category_id.clone(),
+                    top_n: params.top_n,
+                    weighting: weighting.clone(),
+                    rebalance_days: 365,
+                    base_fee_pct: params.base_fee_pct,
+                    spread_multiplier: params.spread_multiplier,
+                    threshold_rebalance_pct: Some(pct),
+                });
+            }
+            configs
         }
+        // Keep "threshold" as alias — only drift bands (legacy)
         "threshold" => {
             let weighting = simulation::Weighting::from_str(&params.weighting)
                 .unwrap_or(simulation::Weighting::Equal);
-            // periodic (None) + 4 threshold bands
             let thresholds: Vec<Option<f64>> = vec![None, Some(3.0), Some(5.0), Some(10.0), Some(15.0)];
             thresholds.into_iter().map(|t| {
                 simulation::SimConfig {
@@ -3307,11 +3321,16 @@ async fn sim_sweep_stream(
             let variant_label = match params.sweep.as_str() {
                 "top_n" => format!("top_n={}", config.top_n),
                 "weighting" => format!("weighting={}", config.weighting.as_str()),
-                "rebalance" => format!("rebalance={}d", config.rebalance_days),
+                "rebalance" => {
+                    match config.threshold_rebalance_pct {
+                        None => format!("periodic {}d", config.rebalance_days),
+                        Some(t) => format!("drift {}%", t as i32),
+                    }
+                }
                 "threshold" => {
                     match config.threshold_rebalance_pct {
-                        None => format!("threshold=periodic_{}d", config.rebalance_days),
-                        Some(t) => format!("threshold={}%_band", t as i32),
+                        None => format!("periodic {}d", config.rebalance_days),
+                        Some(t) => format!("drift {}%", t as i32),
                     }
                 }
                 "category" => config.category_id.clone(),

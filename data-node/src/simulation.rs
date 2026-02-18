@@ -13,6 +13,15 @@ use crate::db;
 
 /// All market data preloaded into memory at startup.
 /// Shared across all simulation requests via Arc.
+/// Precomputed category info for instant /sim/categories responses.
+#[derive(Clone, Serialize)]
+pub struct CachedCategoryInfo {
+    pub id: String,
+    pub name: String,
+    pub coin_count: usize,
+    pub market_cap: Option<f64>,
+}
+
 pub struct SimDataCache {
     /// All unique snapshot dates, sorted ascending.
     pub all_dates: Vec<NaiveDate>,
@@ -26,6 +35,8 @@ pub struct SimDataCache {
     pub prices: HashMap<String, HashMap<NaiveDate, f64>>,
     /// date → Vec<CoinSnapshot> sorted by mcap DESC
     pub mcap_rankings: HashMap<NaiveDate, Vec<CoinSnapshot>>,
+    /// Precomputed category list with eligible coin counts (sorted by mcap).
+    pub categories: Vec<CachedCategoryInfo>,
 }
 
 impl SimDataCache {
@@ -55,12 +66,13 @@ impl SimDataCache {
         let all_dates = db::cg_query_snapshot_dates(pool).await?;
         let t3 = t0.elapsed().as_millis();
 
-        // 4. Load all category→coin mappings
+        // 4. Load all category→coin mappings + category metadata
         let cat_coins_raw = db::cg_query_all_category_coins(pool).await?;
         let mut category_coins: HashMap<String, Vec<String>> = HashMap::new();
         for (cat_id, coin_id) in &cat_coins_raw {
             category_coins.entry(cat_id.clone()).or_default().push(coin_id.clone());
         }
+        let cat_meta = db::cg_query_all_categories(pool).await?;
         let t4 = t0.elapsed().as_millis();
 
         // 5. Bulk-load prices+mcap for Bitget-eligible coins only (~700 coins, ~1M rows)
@@ -85,6 +97,22 @@ impl SimDataCache {
             rankings.sort_by(|a, b| b.mcap.partial_cmp(&a.mcap).unwrap_or(std::cmp::Ordering::Equal));
         }
 
+        // 7. Precompute category info with eligible coin counts
+        //    A coin is "eligible" if it's in the cache (has prices + Bitget listing).
+        let eligible_set: HashSet<&String> = coin_symbol_map.keys().collect();
+        let categories: Vec<CachedCategoryInfo> = cat_meta.into_iter()
+            .filter_map(|row| {
+                let eligible_count = category_coins.get(&row.id)
+                    .map(|coins| coins.iter().filter(|c| eligible_set.contains(c)).count())
+                    .unwrap_or(0);
+                if eligible_count >= 5 {
+                    Some(CachedCategoryInfo { id: row.id, name: row.name, coin_count: eligible_count, market_cap: row.market_cap })
+                } else {
+                    None
+                }
+            })
+            .collect();
+
         let total_ms = t0.elapsed().as_millis();
 
         info!(
@@ -96,7 +124,7 @@ impl SimDataCache {
             eligible_coins = eligible_coin_ids.len(),
             bitget_symbols = bitget_symbols.len(),
             bulk_rows = bulk_rows.len(),
-            categories = category_coins.len(),
+            cached_categories = categories.len(),
             total_ms,
             "SimDataCache loaded (Bitget-first)"
         );
@@ -108,6 +136,7 @@ impl SimDataCache {
             bitget_lookup,
             prices,
             mcap_rankings,
+            categories,
         }))
     }
 
@@ -146,9 +175,15 @@ pub struct SimConfig {
 pub enum Weighting {
     Equal,
     Mcap,
+    CappedMcap { cap_pct: f64 },
+    SqrtMcap,
     Momentum { lookback_days: i32 },
     InverseVolatility { lookback_days: i32 },
     DualMomentum { lookback_days: i32 },
+    RiskParity { lookback_days: i32 },
+    MinVariance { lookback_days: i32 },
+    MultiFactor { lookback_days: i32 },
+    LowVolatility { lookback_days: i32 },
 }
 
 impl Weighting {
@@ -156,9 +191,15 @@ impl Weighting {
         match self {
             Weighting::Equal => "equal".to_string(),
             Weighting::Mcap => "mcap".to_string(),
+            Weighting::CappedMcap { cap_pct } => format!("mcap_cap{}", *cap_pct as i32),
+            Weighting::SqrtMcap => "sqrt_mcap".to_string(),
             Weighting::Momentum { lookback_days } => format!("momentum_{}", lookback_days),
             Weighting::InverseVolatility { lookback_days } => format!("invvol_{}", lookback_days),
             Weighting::DualMomentum { lookback_days } => format!("dual_mom_{}", lookback_days),
+            Weighting::RiskParity { lookback_days } => format!("risk_parity_{}", lookback_days),
+            Weighting::MinVariance { lookback_days } => format!("min_var_{}", lookback_days),
+            Weighting::MultiFactor { lookback_days } => format!("multi_factor_{}", lookback_days),
+            Weighting::LowVolatility { lookback_days } => format!("low_vol_{}", lookback_days),
         }
     }
 
@@ -167,14 +208,24 @@ impl Weighting {
         match s_lower.as_str() {
             "equal" => Some(Weighting::Equal),
             "mcap" => Some(Weighting::Mcap),
+            "sqrt_mcap" => Some(Weighting::SqrtMcap),
             _ => {
-                // Parse parameterized variants: momentum_90, invvol_60, dual_mom_180
-                if let Some(rest) = s_lower.strip_prefix("momentum_") {
+                if let Some(rest) = s_lower.strip_prefix("mcap_cap") {
+                    rest.parse::<f64>().ok().map(|c| Weighting::CappedMcap { cap_pct: c })
+                } else if let Some(rest) = s_lower.strip_prefix("momentum_") {
                     rest.parse::<i32>().ok().map(|d| Weighting::Momentum { lookback_days: d })
                 } else if let Some(rest) = s_lower.strip_prefix("invvol_") {
                     rest.parse::<i32>().ok().map(|d| Weighting::InverseVolatility { lookback_days: d })
                 } else if let Some(rest) = s_lower.strip_prefix("dual_mom_") {
                     rest.parse::<i32>().ok().map(|d| Weighting::DualMomentum { lookback_days: d })
+                } else if let Some(rest) = s_lower.strip_prefix("risk_parity_") {
+                    rest.parse::<i32>().ok().map(|d| Weighting::RiskParity { lookback_days: d })
+                } else if let Some(rest) = s_lower.strip_prefix("min_var_") {
+                    rest.parse::<i32>().ok().map(|d| Weighting::MinVariance { lookback_days: d })
+                } else if let Some(rest) = s_lower.strip_prefix("multi_factor_") {
+                    rest.parse::<i32>().ok().map(|d| Weighting::MultiFactor { lookback_days: d })
+                } else if let Some(rest) = s_lower.strip_prefix("low_vol_") {
+                    rest.parse::<i32>().ok().map(|d| Weighting::LowVolatility { lookback_days: d })
                 } else {
                     None
                 }
@@ -183,14 +234,23 @@ impl Weighting {
     }
 
     pub fn needs_history(&self) -> bool {
-        matches!(self, Weighting::Momentum { .. } | Weighting::InverseVolatility { .. } | Weighting::DualMomentum { .. })
+        matches!(self,
+            Weighting::Momentum { .. } | Weighting::InverseVolatility { .. } |
+            Weighting::DualMomentum { .. } | Weighting::RiskParity { .. } |
+            Weighting::MinVariance { .. } | Weighting::MultiFactor { .. } |
+            Weighting::LowVolatility { .. }
+        )
     }
 
     pub fn lookback_days(&self) -> Option<i32> {
         match self {
-            Weighting::Momentum { lookback_days } => Some(*lookback_days),
-            Weighting::InverseVolatility { lookback_days } => Some(*lookback_days),
-            Weighting::DualMomentum { lookback_days } => Some(*lookback_days),
+            Weighting::Momentum { lookback_days }
+            | Weighting::InverseVolatility { lookback_days }
+            | Weighting::DualMomentum { lookback_days }
+            | Weighting::RiskParity { lookback_days }
+            | Weighting::MinVariance { lookback_days }
+            | Weighting::MultiFactor { lookback_days }
+            | Weighting::LowVolatility { lookback_days } => Some(*lookback_days),
             _ => None,
         }
     }
@@ -344,6 +404,74 @@ fn compute_annualized_volatility(prices: &[(NaiveDate, f64)], date: NaiveDate, l
     Some(std_dev * (365.0_f64).sqrt())
 }
 
+/// Extract daily log returns for a coin from price history within lookback window.
+fn daily_log_returns(prices: &[(NaiveDate, f64)], date: NaiveDate, lookback_days: i32) -> Vec<f64> {
+    let cutoff = date - chrono::Duration::days(lookback_days as i64);
+    let relevant: Vec<f64> = prices.iter()
+        .filter(|(d, _)| *d >= cutoff && *d <= date)
+        .map(|(_, p)| *p)
+        .collect();
+    relevant.windows(2)
+        .filter(|w| w[0] > 0.0 && w[1] > 0.0)
+        .map(|w| (w[1] / w[0]).ln())
+        .collect()
+}
+
+/// Compute NxN covariance matrix from daily log returns of N assets.
+/// Returns None if insufficient data.
+fn compute_covariance_matrix(
+    coins: &[&CoinSnapshot],
+    price_history: &HashMap<String, Vec<(NaiveDate, f64)>>,
+    date: NaiveDate,
+    lookback_days: i32,
+) -> Option<Vec<Vec<f64>>> {
+    let n = coins.len();
+    // Gather returns for each asset
+    let all_returns: Vec<Vec<f64>> = coins.iter()
+        .map(|c| {
+            price_history.get(&c.coin_id)
+                .map(|p| daily_log_returns(p, date, lookback_days))
+                .unwrap_or_default()
+        })
+        .collect();
+
+    // Need at least 10 observations for meaningful covariance
+    let min_len = all_returns.iter().map(|r| r.len()).min().unwrap_or(0);
+    if min_len < 10 {
+        return None;
+    }
+
+    // Trim all to same length (min_len, from the end = most recent)
+    let trimmed: Vec<&[f64]> = all_returns.iter()
+        .map(|r| &r[r.len() - min_len..])
+        .collect();
+
+    // Compute means
+    let means: Vec<f64> = trimmed.iter()
+        .map(|r| r.iter().sum::<f64>() / min_len as f64)
+        .collect();
+
+    // Compute covariance matrix
+    let mut cov = vec![vec![0.0; n]; n];
+    for i in 0..n {
+        for j in i..n {
+            let c: f64 = (0..min_len)
+                .map(|t| (trimmed[i][t] - means[i]) * (trimmed[j][t] - means[j]))
+                .sum::<f64>() / min_len as f64;
+            cov[i][j] = c;
+            cov[j][i] = c;
+        }
+    }
+    Some(cov)
+}
+
+/// Matrix-vector multiply: result[i] = sum_j(cov[i][j] * w[j])
+fn mat_vec_mul(cov: &[Vec<f64>], w: &[f64]) -> Vec<f64> {
+    cov.iter()
+        .map(|row| row.iter().zip(w).map(|(c, wi)| c * wi).sum())
+        .collect()
+}
+
 /// Normalize weights so they sum to 1.0.
 fn normalize_weights(weights: &mut [f64]) {
     let sum: f64 = weights.iter().sum();
@@ -487,7 +615,7 @@ pub async fn run_simulation(
     let mut all_holdings: Vec<db::SimHoldingRow> = Vec::new();
     let mut all_trades: Vec<db::SimTradeRow> = Vec::new();
     let mut peak_nav = 1.0_f64;
-    let mut days_since_rebalance = i32::MAX; // Force rebalance on first day
+    let mut days_since_rebalance = i32::MAX - 1; // Force rebalance on first day (leave room for +1)
     let mut total_fees_usd = 0.0_f64;
     let mut total_delistings = 0_i32;
     let mut total_rebalances = 0_i32;
@@ -543,6 +671,7 @@ pub async fn run_simulation(
 
             if rebalance_result.new_holdings.is_empty() && !holdings.is_empty() {
                 // Dual momentum: go to cash — sell everything
+                let mut cash_proceeds = 0.0_f64;
                 for h in &holdings {
                     let price = today_prices.get(&h.coin_id).copied().unwrap_or(h.last_price);
                     let trade_value = h.quantity * price;
@@ -550,6 +679,7 @@ pub async fn run_simulation(
                         let fee_rate = config.base_fee_pct / 100.0 + 0.001 * config.spread_multiplier;
                         let fee_usd = trade_value * fee_rate;
                         total_fees_usd += fee_usd;
+                        cash_proceeds += trade_value - fee_usd;
                         all_trades.push(db::SimTradeRow {
                             trade_date: *date,
                             coin_id: h.coin_id.clone(),
@@ -562,6 +692,7 @@ pub async fn run_simulation(
                         });
                     }
                 }
+                portfolio_value = cash_proceeds; // NAV = cash after fees
                 holdings = Vec::new();
                 last_target_weights.clear();
                 days_since_rebalance = 0;
@@ -1111,6 +1242,204 @@ fn compute_weights_snap(
             }
 
             normalize_weights(&mut weights);
+            weights
+        }
+
+        // ---- New strategies ----
+
+        Weighting::CappedMcap { cap_pct } => {
+            let mcaps: Vec<f64> = coins.iter().map(|c| c.mcap.max(0.0)).collect();
+            let total: f64 = mcaps.iter().sum();
+            if total <= 0.0 { return vec![1.0 / n as f64; n]; }
+
+            let mut weights: Vec<f64> = mcaps.iter().map(|m| m / total).collect();
+            let cap = cap_pct / 100.0;
+
+            // Iteratively cap and redistribute (converges in ~10 iterations)
+            for _ in 0..20 {
+                let mut excess = 0.0_f64;
+                for w in weights.iter_mut() {
+                    if *w > cap {
+                        excess += *w - cap;
+                        *w = cap;
+                    }
+                }
+                if excess < 1e-10 { break; }
+                let uncapped_sum: f64 = weights.iter().filter(|w| **w < cap - 1e-10).sum();
+                if uncapped_sum <= 0.0 { break; }
+                for w in weights.iter_mut() {
+                    if *w < cap - 1e-10 {
+                        *w += excess * (*w / uncapped_sum);
+                    }
+                }
+            }
+            normalize_weights(&mut weights);
+            weights
+        }
+
+        Weighting::SqrtMcap => {
+            let mut weights: Vec<f64> = coins.iter()
+                .map(|c| c.mcap.max(0.0).sqrt())
+                .collect();
+            let sum: f64 = weights.iter().sum();
+            if sum <= 0.0 { return vec![1.0 / n as f64; n]; }
+            normalize_weights(&mut weights);
+            weights
+        }
+
+        Weighting::RiskParity { lookback_days } => {
+            let history = match price_history {
+                Some(h) => h,
+                None => return vec![1.0 / n as f64; n],
+            };
+
+            let cov = match compute_covariance_matrix(coins, history, date, *lookback_days) {
+                Some(c) => c,
+                None => return vec![1.0 / n as f64; n], // fallback to equal
+            };
+
+            // Iterative risk parity: target equal risk contribution per asset.
+            // Start with inverse-vol weights, then iterate.
+            let mut weights: Vec<f64> = (0..n).map(|i| {
+                let var = cov[i][i].max(1e-12);
+                1.0 / var.sqrt()
+            }).collect();
+            normalize_weights(&mut weights);
+
+            for _ in 0..50 {
+                let sigma_w = mat_vec_mul(&cov, &weights);
+                let port_vol_sq: f64 = weights.iter().zip(sigma_w.iter())
+                    .map(|(w, sw)| w * sw).sum();
+                if port_vol_sq <= 0.0 { break; }
+
+                // Risk contribution: rc_i = w_i * (Σw)_i
+                let rc: Vec<f64> = weights.iter().zip(sigma_w.iter())
+                    .map(|(w, sw)| w * sw).collect();
+
+                // Adjust: new_w_i ∝ 1/rc_i (equalize risk contributions)
+                let mut new_weights: Vec<f64> = rc.iter()
+                    .map(|r| if *r > 1e-15 { 1.0 / r } else { 1e12 })
+                    .collect();
+                normalize_weights(&mut new_weights);
+
+                // Damped update for stability
+                for i in 0..n {
+                    weights[i] = 0.5 * weights[i] + 0.5 * new_weights[i];
+                }
+                normalize_weights(&mut weights);
+            }
+            weights
+        }
+
+        Weighting::MinVariance { lookback_days } => {
+            let history = match price_history {
+                Some(h) => h,
+                None => return vec![1.0 / n as f64; n],
+            };
+
+            let cov = match compute_covariance_matrix(coins, history, date, *lookback_days) {
+                Some(c) => c,
+                None => return vec![1.0 / n as f64; n],
+            };
+
+            // Iterative min-variance: w_new_i ∝ 1/(Σw)_i, project to simplex.
+            let mut weights = vec![1.0 / n as f64; n];
+
+            for _ in 0..100 {
+                let sigma_w = mat_vec_mul(&cov, &weights);
+                let mut new_weights: Vec<f64> = sigma_w.iter()
+                    .map(|sw| if *sw > 1e-15 { 1.0 / sw } else { 1e12 })
+                    .collect();
+                // Clamp negatives to 0 (long-only constraint)
+                for w in new_weights.iter_mut() {
+                    if *w < 0.0 { *w = 0.0; }
+                }
+                normalize_weights(&mut new_weights);
+
+                // Damped update
+                for i in 0..n {
+                    weights[i] = 0.7 * weights[i] + 0.3 * new_weights[i];
+                }
+                normalize_weights(&mut weights);
+            }
+            weights
+        }
+
+        Weighting::MultiFactor { lookback_days } => {
+            let history = match price_history {
+                Some(h) => h,
+                None => return vec![1.0 / n as f64; n],
+            };
+
+            // Factor 1: Momentum rank (higher return = better rank = higher score)
+            let returns: Vec<f64> = coins.iter().map(|c| {
+                history.get(&c.coin_id)
+                    .and_then(|p| compute_trailing_return(p, date, *lookback_days))
+                    .unwrap_or(0.0)
+            }).collect();
+            let mut mom_ranked: Vec<(usize, f64)> = returns.iter().enumerate()
+                .map(|(i, r)| (i, *r)).collect();
+            mom_ranked.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+            let mut mom_scores = vec![0.0; n];
+            for (rank, (idx, _)) in mom_ranked.iter().enumerate() {
+                mom_scores[*idx] = (n - rank) as f64; // n=best, 1=worst
+            }
+
+            // Factor 2: Low volatility rank (lower vol = better rank = higher score)
+            let vols: Vec<f64> = coins.iter().map(|c| {
+                history.get(&c.coin_id)
+                    .and_then(|p| compute_annualized_volatility(p, date, *lookback_days))
+                    .unwrap_or(2.0) // high default penalizes missing data
+            }).collect();
+            let mut vol_ranked: Vec<(usize, f64)> = vols.iter().enumerate()
+                .map(|(i, v)| (i, *v)).collect();
+            vol_ranked.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
+            let mut vol_scores = vec![0.0; n];
+            for (rank, (idx, _)) in vol_ranked.iter().enumerate() {
+                vol_scores[*idx] = (n - rank) as f64;
+            }
+
+            // Factor 3: Market cap rank (higher mcap = better rank = higher score)
+            let mut mcap_ranked: Vec<(usize, f64)> = coins.iter().enumerate()
+                .map(|(i, c)| (i, c.mcap)).collect();
+            mcap_ranked.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+            let mut mcap_scores = vec![0.0; n];
+            for (rank, (idx, _)) in mcap_ranked.iter().enumerate() {
+                mcap_scores[*idx] = (n - rank) as f64;
+            }
+
+            // Composite: equal-weight the three factors
+            let mut weights: Vec<f64> = (0..n).map(|i| {
+                (mom_scores[i] + vol_scores[i] + mcap_scores[i]).max(0.01)
+            }).collect();
+            normalize_weights(&mut weights);
+            weights
+        }
+
+        Weighting::LowVolatility { lookback_days } => {
+            let history = match price_history {
+                Some(h) => h,
+                None => return vec![1.0 / n as f64; n],
+            };
+
+            // Compute vol for each asset, keep only the least volatile half
+            let mut vol_idx: Vec<(usize, f64)> = coins.iter().enumerate().map(|(i, c)| {
+                let vol = history.get(&c.coin_id)
+                    .and_then(|p| compute_annualized_volatility(p, date, *lookback_days))
+                    .unwrap_or(f64::MAX);
+                (i, vol)
+            }).collect();
+
+            vol_idx.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
+
+            // Keep bottom half (least volatile), equal-weight among those
+            let keep_count = (n / 2).max(1);
+            let mut weights = vec![0.0; n];
+            for (rank, (idx, _)) in vol_idx.iter().enumerate() {
+                if rank < keep_count {
+                    weights[*idx] = 1.0 / keep_count as f64;
+                }
+            }
             weights
         }
     }
