@@ -16,6 +16,11 @@
 - [DECISION] Moved Lending + Support buttons to Create ITP section header (right side) — avoids separate top action bar, keeps buttons contextually near the section they relate to
 - [DECISION] Removed duplicate Support button from submit area — Support is now in section header, no need for two instances
 - [DECISION] Renamed "USDC Vault" to "Lending" — user preference for terminology
+- [DECISION] Moved wallet connect button from Header to ItpListing header — merged address+disconnect into single toggle button, placed left of Create ITP
+- [DECISION] Created WalletActionButton wrapper (`components/ui/WalletActionButton.tsx`) — when wallet not connected, shows "Connect Wallet" on hover and triggers connection on click
+- [DECISION] Applied WalletActionButton to all transaction buttons: Buy, Sell, Rebalance, Borrow, Create ITP Request — consistent connect-wallet UX across all actions
+- [DECISION] Support button added to every section header (ItpListing, Portfolio, System Status) — Discord link for contextual help
+- [DECISION] Reinitialized corrupted git repo — baseline commit for rollback capability
 
 ## Session: 20260218-0400-ncnh
 

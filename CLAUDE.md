@@ -1,3 +1,7 @@
+## Git
+
+Commit after each completed task/feature to enable rollback. Use descriptive commit messages.
+
 ## Parallelism
 
 Max 3 agents running at the same time.

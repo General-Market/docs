@@ -6,6 +6,7 @@ import { parseUnits, formatUnits, decodeEventLog } from 'viem'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { ERC20_ABI } from '@/lib/contracts/index-protocol-abi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { useUserState } from '@/hooks/useUserState'
 import { useItpCostBasis } from '@/hooks/useItpCostBasis'
 import { useItpNav } from '@/hooks/useItpNav'
@@ -368,13 +369,13 @@ export function SellItpModal({ itpId, onClose }: SellItpModalProps) {
                     </div>
                   )}
 
-                  <button
+                  <WalletActionButton
                     onClick={handleSell}
                     disabled={!amount || parsedAmount === 0n || insufficientShares || isPending || isConfirming}
                     className="w-full py-4 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 disabled:bg-white/20 disabled:text-white/50 disabled:cursor-not-allowed transition-colors"
                   >
                     {isPending ? 'Waiting for wallet...' : isConfirming ? (step === 'approving' ? 'Approving...' : 'Submitting...') : needsApproval ? 'Approve & Sell' : 'Sell Shares'}
-                  </button>
+                  </WalletActionButton>
 
                   {(isPending || isConfirming) && (
                     <button

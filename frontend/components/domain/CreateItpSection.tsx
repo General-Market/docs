@@ -6,6 +6,7 @@ import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { useNonceCheck } from '@/hooks/useNonceCheck'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getCoinGeckoUrl } from '@/lib/coingecko'
 
 const DATA_NODE_URL = process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200'
@@ -33,10 +34,9 @@ interface AssetWeight {
 interface CreateItpSectionProps {
   expanded: boolean
   onToggle: () => void
-  onLendingClick?: () => void
 }
 
-export function CreateItpSection({ expanded, onToggle, onLendingClick }: CreateItpSectionProps) {
+export function CreateItpSection({ expanded, onToggle }: CreateItpSectionProps) {
   const { address, isConnected } = useAccount()
   const [name, setName] = useState('')
   const [symbol, setSymbol] = useState('')
@@ -206,36 +206,16 @@ export function CreateItpSection({ expanded, onToggle, onLendingClick }: CreateI
 
   return (
     <div id="create-itp" className="bg-terminal-dark/50 border border-white/10 rounded-lg">
-      <div className="p-4 flex justify-between items-center">
-        <button
-          onClick={onToggle}
-          className="flex-1 flex justify-between items-center text-left"
-        >
-          <div>
-            <h2 className="text-xl font-bold text-white">Create ITP</h2>
-            <p className="text-sm text-white/50">Create an Index Tracking Product with custom weights</p>
-          </div>
-          <span className="text-accent text-2xl">{expanded ? '−' : '+'}</span>
-        </button>
-        <div className="flex gap-2 ml-4">
-          {onLendingClick && (
-            <button
-              onClick={onLendingClick}
-              className="px-3 py-1.5 bg-accent text-terminal font-bold rounded-lg hover:bg-accent/90 transition-colors text-sm"
-            >
-              Lending
-            </button>
-          )}
-          <a
-            href="https://discord.gg/xsfgzwR6"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-3 py-1.5 bg-accent text-terminal font-bold rounded-lg hover:bg-accent/90 transition-colors text-sm"
-          >
-            Support
-          </a>
+      <button
+        onClick={onToggle}
+        className="w-full p-4 flex justify-between items-center text-left"
+      >
+        <div>
+          <h2 className="text-xl font-bold text-white">Create ITP</h2>
+          <p className="text-sm text-white/50">Create an Index Tracking Product with custom weights</p>
         </div>
-      </div>
+        <span className="text-accent text-2xl">{expanded ? '−' : '+'}</span>
+      </button>
 
       {expanded && (
         <div className="p-4 pt-0 border-t border-white/10">
@@ -350,13 +330,13 @@ export function CreateItpSection({ expanded, onToggle, onLendingClick }: CreateI
                 </div>
               )}
 
-              <button
+              <WalletActionButton
                 onClick={handleSubmit}
                 disabled={!name || !symbol || selectedAssets.length === 0 || !isValidWeights || isPending || isConfirming || isFetchingPrices || hasNonceGap}
                 className="w-full py-3 bg-accent text-terminal font-bold rounded-lg hover:bg-accent/90 disabled:bg-white/20 disabled:text-white/50 disabled:cursor-not-allowed transition-colors"
               >
                 {isFetchingPrices ? 'Fetching prices...' : isPending ? 'Waiting for wallet...' : isConfirming ? 'Confirming...' : 'Create ITP Request'}
-              </button>
+              </WalletActionButton>
 
               {(isPending || isConfirming) && (
                 <button

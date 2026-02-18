@@ -160,16 +160,26 @@ export function PortfolioSection({ expanded, onToggle }: PortfolioSectionProps) 
 
   return (
     <div id="portfolio" className="bg-terminal-dark/50 border border-white/10 rounded-lg">
-      <button
-        onClick={onToggle}
-        className="w-full p-4 flex justify-between items-center text-left"
-      >
-        <div>
-          <h2 className="text-xl font-bold text-white">Portfolio</h2>
-          <p className="text-sm text-white/50">{subtitle}</p>
-        </div>
-        <span className="text-accent text-2xl">{expanded ? '−' : '+'}</span>
-      </button>
+      <div className="p-4 flex justify-between items-center">
+        <button
+          onClick={onToggle}
+          className="flex-1 flex justify-between items-center text-left"
+        >
+          <div>
+            <h2 className="text-xl font-bold text-white">Portfolio</h2>
+            <p className="text-sm text-white/50">{subtitle}</p>
+          </div>
+          <span className="text-accent text-2xl">{expanded ? '−' : '+'}</span>
+        </button>
+        <a
+          href="https://discord.gg/xsfgzwR6"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ml-3 px-3 py-1.5 bg-accent text-terminal font-bold rounded text-sm hover:bg-accent/90 transition-colors"
+        >
+          Support
+        </a>
+      </div>
 
       {expanded && (
         <div className="p-4 pt-0 border-t border-white/10">

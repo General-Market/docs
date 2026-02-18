@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useAccount, useReadContract, usePublicClient } from 'wagmi'
+import { useState, useEffect, useCallback } from 'react'
+import { useAccount, useConnect, useDisconnect, useReadContract, usePublicClient, useWaitForTransactionReceipt } from 'wagmi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { BRIDGE_PROXY_ABI, BRIDGED_ITP_FACTORY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { toHex, formatUnits } from 'viem'
@@ -13,7 +13,12 @@ import { RebalanceModal } from './RebalanceModal'
 import { CostBasisCard } from './CostBasisCard'
 import { useItpNav } from '@/hooks/useItpNav'
 import { useUserItpShares } from '@/hooks/useUserItpShares'
+import { useDeployerProfile } from '@/hooks/useDeployerProfile'
+import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { hasLendingMarket } from '@/lib/contracts/morpho-markets-registry'
+import { WalletActionButton } from '@/components/ui/WalletActionButton'
+import { truncateAddress } from '@/lib/utils/address'
+import { indexL3 } from '@/lib/wagmi'
 
 // ERC20 ABI for balance queries
 const ERC20_ABI = [
@@ -107,12 +112,32 @@ function bytes32ToString(b32: string): string {
 
 interface ItpListingProps {
   onCreateClick?: () => void
+  onLendingClick?: () => void
 }
 
 const ITEMS_PER_PAGE = 2
 
-export function ItpListing({ onCreateClick }: ItpListingProps) {
+export function ItpListing({ onCreateClick, onLendingClick }: ItpListingProps) {
+  const { address, isConnected } = useAccount()
+  const { connect, connectors, isPending: isConnectPending } = useConnect()
+  const { disconnect } = useDisconnect()
   const publicClient = usePublicClient()
+
+  const injectedConnector = connectors.find(c => c.id === 'injected')
+
+  const handleWalletClick = async () => {
+    if (isConnected) {
+      disconnect()
+    } else if (injectedConnector) {
+      const chainIdHex = `0x${indexL3.id.toString(16)}`
+      const provider = (window as any).ethereum
+      if (provider) {
+        try { await provider.request({ method: 'wallet_addEthereumChain', params: [{ chainId: chainIdHex, chainName: indexL3.name, nativeCurrency: indexL3.nativeCurrency, rpcUrls: [indexL3.rpcUrls.default.http[0]] }] }) } catch {}
+        try { await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: chainIdHex }] }) } catch {}
+      }
+      connect({ connector: injectedConnector, chainId: indexL3.id })
+    }
+  }
   const [itps, setItps] = useState<ItpInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -282,14 +307,39 @@ export function ItpListing({ onCreateClick }: ItpListingProps) {
               {nextNonce !== undefined && Number(nextNonce) > 0 ? ` · ${Number(nextNonce)} via Bridge` : ''}
             </p>
           </div>
-          {onCreateClick && (
+          <div className="flex items-center gap-2">
             <button
-              onClick={onCreateClick}
-              className="px-4 py-2 bg-accent text-terminal font-bold rounded hover:bg-accent/90 transition-colors"
+              onClick={handleWalletClick}
+              disabled={isConnectPending}
+              className="px-3 py-2 bg-black border border-white/30 text-white font-mono text-sm rounded hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
             >
-              + Create ITP
+              {isConnected && address ? truncateAddress(address) : isConnectPending ? 'Connecting...' : 'Connect Wallet'}
             </button>
-          )}
+            {onCreateClick && (
+              <button
+                onClick={onCreateClick}
+                className="px-4 py-2 bg-accent text-terminal font-bold rounded hover:bg-accent/90 transition-colors"
+              >
+                + Create ITP
+              </button>
+            )}
+            {onLendingClick && (
+              <button
+                onClick={onLendingClick}
+                className="px-3 py-2 bg-accent text-terminal font-bold rounded text-sm hover:bg-accent/90 transition-colors"
+              >
+                Lending
+              </button>
+            )}
+            <a
+              href="https://discord.gg/xsfgzwR6"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-2 bg-accent text-terminal font-bold rounded text-sm hover:bg-accent/90 transition-colors"
+            >
+              Support
+            </a>
+          </div>
         </div>
 
         {error && (
@@ -393,6 +443,42 @@ function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardPr
   const [holders, setHolders] = useState<TokenHolder[]>([])
   const [loadingHolders, setLoadingHolders] = useState(false)
   const [holderError, setHolderError] = useState(false)
+  const [showEditProfile, setShowEditProfile] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [editUrl, setEditUrl] = useState('')
+
+  const { profile, refetch: refetchProfile } = useDeployerProfile(itp.admin as `0x${string}`)
+  const { writeContractAsync, data: txHash, isPending: isWriting } = useChainWriteContract()
+  const { isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({ hash: txHash })
+
+  // Refetch profile after tx confirms
+  useEffect(() => {
+    if (isTxConfirmed) {
+      refetchProfile()
+      setShowEditProfile(false)
+    }
+  }, [isTxConfirmed, refetchProfile])
+
+  const isDeployer = address && address.toLowerCase() === itp.admin.toLowerCase()
+
+  const handleEditProfile = useCallback(() => {
+    setEditName(profile?.displayName ?? '')
+    setEditUrl(profile?.websiteUrl ?? '')
+    setShowEditProfile(true)
+  }, [profile])
+
+  const handleSaveProfile = useCallback(async () => {
+    try {
+      await writeContractAsync({
+        address: INDEX_PROTOCOL.bridgeProxy,
+        abi: BRIDGE_PROXY_ABI,
+        functionName: 'setDeployerProfile',
+        args: [editName, editUrl],
+      })
+    } catch {
+      // User rejected or tx failed
+    }
+  }, [writeContractAsync, editName, editUrl])
 
   const { navPerShare, totalAssetCount, pricedAssetCount, isLoading: isNavLoading } = useItpNav(itp.itpId)
   const { shares: userShares } = useUserItpShares(
@@ -554,7 +640,72 @@ function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardPr
 
       <div className="text-sm text-white/50 mb-4 space-y-1">
         {itp.nonce !== undefined && <p>Request #{itp.nonce}</p>}
-        <p className="truncate">Creator: {shortenAddress(itp.admin)}</p>
+        {profile ? (
+          <div>
+            <p className="text-white/70 font-medium">
+              {profile.displayName}
+              {profile.websiteUrl && (
+                <>
+                  {' '}
+                  <a
+                    href={profile.websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent hover:text-accent/80 text-xs"
+                  >
+                    {profile.websiteUrl.replace(/^https?:\/\//, '')}
+                  </a>
+                </>
+              )}
+            </p>
+            <p className="text-xs text-white/30 truncate">{shortenAddress(itp.admin)}</p>
+          </div>
+        ) : (
+          <p className="truncate">Creator: {shortenAddress(itp.admin)}</p>
+        )}
+        {isDeployer && !showEditProfile && (
+          <button
+            onClick={handleEditProfile}
+            className="text-xs text-accent hover:text-accent/80 underline"
+          >
+            Edit Profile
+          </button>
+        )}
+        {showEditProfile && (
+          <div className="bg-black/30 rounded p-3 space-y-2 mt-1">
+            <input
+              type="text"
+              value={editName}
+              onChange={e => setEditName(e.target.value)}
+              maxLength={32}
+              placeholder="Display Name (max 32)"
+              className="w-full bg-black/50 border border-white/20 rounded px-2 py-1 text-xs text-white placeholder-white/30 focus:border-accent outline-none"
+            />
+            <input
+              type="text"
+              value={editUrl}
+              onChange={e => setEditUrl(e.target.value)}
+              maxLength={128}
+              placeholder="Website URL (max 128)"
+              className="w-full bg-black/50 border border-white/20 rounded px-2 py-1 text-xs text-white placeholder-white/30 focus:border-accent outline-none"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveProfile}
+                disabled={isWriting}
+                className="px-3 py-1 bg-accent text-terminal text-xs font-bold rounded hover:bg-accent/90 disabled:opacity-50 transition-colors"
+              >
+                {isWriting ? 'Saving...' : 'Save'}
+              </button>
+              <button
+                onClick={() => setShowEditProfile(false)}
+                className="px-3 py-1 border border-white/20 text-white/70 text-xs rounded hover:border-white/40 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
         <p>{timeAgo}</p>
       </div>
 
@@ -656,37 +807,37 @@ function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardPr
 
       {itp.itpId && isActive && (
         <div className="mt-3 flex gap-2">
-          <button
+          <WalletActionButton
             onClick={onBuy}
             className="flex-1 py-2 bg-accent text-terminal font-bold rounded text-sm text-center hover:bg-accent/90 transition-colors"
           >
             Buy
-          </button>
-          <button
+          </WalletActionButton>
+          <WalletActionButton
             onClick={onSell}
             className="flex-1 py-2 border border-white/20 text-white font-bold rounded text-sm text-center hover:border-white/40 transition-colors"
           >
             Sell
-          </button>
+          </WalletActionButton>
           <button
             onClick={onChart}
             className="flex-1 py-2 border border-white/20 text-white/70 font-bold rounded text-sm text-center hover:border-accent hover:text-accent transition-colors"
           >
             Chart
           </button>
-          <button
+          <WalletActionButton
             onClick={onRebalance}
             className="flex-1 py-2 border border-white/20 text-white/70 font-bold rounded text-sm text-center hover:border-accent hover:text-accent transition-colors"
           >
             Rebalance
-          </button>
+          </WalletActionButton>
           {effectiveArbAddress && hasLendingMarket(effectiveArbAddress) && (
-            <button
+            <WalletActionButton
               onClick={() => onLend(effectiveArbAddress)}
               className="flex-1 py-2 border border-accent/50 text-accent font-bold rounded text-sm text-center hover:border-accent hover:bg-accent/10 transition-colors"
             >
               Borrow
-            </button>
+            </WalletActionButton>
           )}
         </div>
       )}

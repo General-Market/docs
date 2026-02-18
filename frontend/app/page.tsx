@@ -33,7 +33,7 @@ export default function Home() {
 
           {/* ITP Listing Section */}
           <div className="mb-6">
-            <ItpListing onCreateClick={() => toggle('create')} />
+            <ItpListing onCreateClick={() => toggle('create')} onLendingClick={() => setShowVault(true)} />
           </div>
 
           {/* Portfolio Section (includes Orders tab) */}
@@ -49,7 +49,6 @@ export default function Home() {
             <CreateItpSection
               expanded={expandedSection === 'create'}
               onToggle={() => toggle('create')}
-              onLendingClick={() => setShowVault(true)}
             />
           </div>
 

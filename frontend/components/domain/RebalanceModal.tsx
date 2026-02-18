@@ -7,6 +7,7 @@ import { INDEX_ABI, BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { activeChainId } from '@/lib/wagmi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getCoinGeckoUrl } from '@/lib/coingecko'
 
 const DATA_NODE_URL = process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200'
@@ -536,7 +537,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
 
               {/* Submit button */}
               <div className="flex gap-3 mt-4">
-                <button
+                <WalletActionButton
                   onClick={handleRebalance}
                   disabled={!isValid || isWorking || status === 'success'}
                   className="flex-1 py-3 bg-accent text-terminal font-bold rounded text-sm hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -546,7 +547,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
                     : status === 'executing' ? 'Executing on L3...'
                     : status === 'success' ? 'Rebalanced!'
                     : 'Rebalance'}
-                </button>
+                </WalletActionButton>
                 <a
                   href="https://discord.gg/xsfgzwR6"
                   target="_blank"

@@ -7,6 +7,7 @@ import { OrderStatusTracker } from '@/components/domain/OrderStatusTracker'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { ARB_CUSTODY_ABI, ERC20_ABI, INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { useUserState } from '@/hooks/useUserState'
 import { useNonceCheck } from '@/hooks/useNonceCheck'
 import { useItpNav } from '@/hooks/useItpNav'
@@ -500,13 +501,13 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
                 </div>
               )}
 
-              <button
+              <WalletActionButton
                 onClick={needsApproval ? handleApprove : handleBuy}
                 disabled={!amount || parsedAmount === 0n || isProcessing || parsedAmount > (usdcBalance ?? 0n) || hasNonceGap}
                 className="w-full py-4 bg-accent text-terminal font-bold rounded-lg hover:bg-accent/90 disabled:bg-white/20 disabled:text-white/50 disabled:cursor-not-allowed transition-colors"
               >
                 {buttonText}
-              </button>
+              </WalletActionButton>
 
               {isProcessing && (
                 <button

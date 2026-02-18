@@ -7,6 +7,7 @@ import { useMorphoActions } from '@/hooks/useMorphoActions'
 import { useLendingQuote } from '@/hooks/useLendingQuote'
 import { useBundlerExec } from '@/hooks/useBundlerExec'
 import { calculateHealthFactor } from '@/lib/types/morpho'
+import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
 
 interface BorrowUsdcProps {
@@ -230,7 +231,7 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
              'Execute Bundle'}
           </button>
         ) : (
-          <button
+          <WalletActionButton
             onClick={handleBorrow}
             disabled={!amount || parsedAmount === 0n || isProcessing || !canBorrow}
             className={`w-full py-3 font-bold rounded-lg transition-colors ${
@@ -240,7 +241,7 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
             }`}
           >
             {buttonText}
-          </button>
+          </WalletActionButton>
         )}
 
         {/* Quote mode toggle */}
