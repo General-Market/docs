@@ -1,0 +1,18 @@
+{
+  "chainId": 111222333,
+  "rpc": "https://index.rpc.zeeve.net",
+  "Governance": "0x0161634f8E827c305bF251c201F4956898Bb47B3",
+  "IssuerRegistry": "0xae3DcC43AC2E735C43b2a2bCd9C25FcA00441785",
+  "AssetPairRegistry": "0x9705f5D06C229FAb0A284aBB12aA521eF7E8E070",
+  "Index": "0xeD31026718e15Ffcff000831dD568a351354ADC2",
+  "BridgeProxy": "0xfBaBC11c9F238556880589b092fb199AF273849B",
+  "BridgeProxyImpl": "0x5E63235b094d1d2F52f45915caC166Aa7614e52F",
+  "BridgedItpFactory": "0xf6aF8ae82FE5158f5008CAD1C0A70e69062cc0dc",
+  "MockBitgetVault": "0xf4cb5a411C07a8A346998Ed71e5A45f83E0A4Dfe",
+  "Issuers": {
+    "1": "0xC0D3C9E530ca6d71469bB678E6592274154D9caD",
+    "2": "0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4",
+    "3": "0xC0D3C8DFd3445fd2e4dfED9D11b5B7032B3BD1ac"
+  },
+  "deployedAt": "2026-02-02T00:00:00Z"
+}

@@ -1,0 +1,42 @@
+[package]
+name = "ap"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "ap"
+path = "src/main.rs"
+
+[dependencies]
+common = { path = "../common" }
+tokio.workspace = true
+tokio-util = { version = "0.7", features = ["rt"] }
+async-trait.workspace = true
+clap.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+futures.workspace = true
+ethers.workspace = true
+hex = "0.4"
+dashmap = "5"
+
+# Alloy primitives (for source_failure module)
+alloy-primitives = "0.8"
+
+# Bitget API client dependencies (Story 5.1)
+reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
+hmac = "0.12"
+sha2 = "0.10"
+base64 = "0.21"
+rust_decimal = { version = "1.33", features = ["serde"] }
+
+[dev-dependencies]
+tempfile = "3"
+wiremock = "0.5"
+tokio-test = "0.4"

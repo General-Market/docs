@@ -1,0 +1,80 @@
+{
+  "name": "agiarena-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "resolutions": {
+    "@solana/codecs-core": "2.1.1",
+    "@solana/codecs-numbers": "2.1.1",
+    "@solana/codecs-strings": "2.1.1",
+    "@solana/codecs-data-structures": "2.1.1",
+    "@solana/codecs": "2.1.1",
+    "@solana/addresses": "2.1.1",
+    "@solana/keys": "2.1.1"
+  },
+  "overrides": {
+    "@solana/web3.js": {
+      "@solana/codecs-core": "2.1.1",
+      "@solana/codecs-numbers": "2.1.1",
+      "@solana/codecs-strings": "2.1.1",
+      "@solana/codecs-data-structures": "2.1.1",
+      "@solana/codecs": "2.1.1",
+      "@solana/addresses": "2.1.1",
+      "@solana/keys": "2.1.1"
+    }
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "test:live": "bun test app/__tests__/data-integrity.test.ts app/__tests__/page-load-validation.test.ts",
+    "test:live:prod": "BACKEND_URL=https://api.agiarena.com bun test app/__tests__/",
+    "test:live:local": "BACKEND_URL=http://localhost:3001 bun test app/__tests__/",
+    "e2e": "npx playwright test --config=e2e/playwright.config.ts",
+    "e2e:headed": "npx playwright test --config=e2e/playwright.config.ts --headed",
+    "e2e:debug": "npx playwright test --config=e2e/playwright.config.ts --debug",
+    "e2e:ui": "npx playwright test --config=e2e/playwright.config.ts --ui"
+  },
+  "dependencies": {
+    "@next/swc-darwin-arm64": "^16.1.6",
+    "@solana/web3.js": "^1.98.4",
+    "@tanstack/react-query": "^5",
+    "@vercel/og": "^0.8.6",
+    "@walletconnect/ethereum-provider": "^2.23.4",
+    "bs58": "^6.0.0",
+    "destr": "^2.0.5",
+    "elliptic": "^6.6.1",
+    "framer-motion": "^12.29.0",
+    "lightweight-charts": "^5.1.0",
+    "lit": "^3.3.2",
+    "merge-options": "^3.0.4",
+    "next": "^15",
+    "pino": "^10.3.0",
+    "pngjs": "^7.0.0",
+    "porto": "^0.2.37",
+    "qrcode.react": "^4.0.0",
+    "react": "^19",
+    "react-dom": "^19",
+    "react-window": "^2.2.5",
+    "recharts": "^2",
+    "socket.io-client": "^4.8.3",
+    "valtio": "^2.3.0",
+    "viem": "^2.45.0",
+    "wagmi": "^3.4.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/react-window": "^2.0.0",
+    "autoprefixer": "^10",
+    "eslint": "^9",
+    "eslint-config-next": "^15",
+    "postcss": "^8",
+    "tailwindcss": "3",
+    "typescript": "^5"
+  }
+}

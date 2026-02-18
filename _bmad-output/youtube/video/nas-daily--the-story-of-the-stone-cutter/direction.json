@@ -1,0 +1,2113 @@
+{
+  "meta": {
+    "title": "The Trader's Stonecutter",
+    "reference": "nas-daily--the-story-of-the-stone-cutter",
+    "targetDuration": 88.8,
+    "fps": 25,
+    "resolution": "1080x1920",
+    "format": "9:16 vertical",
+    "voiceTrack": "voice.wav",
+    "voiceTiming": "voice-timing.json",
+    "musicSource": "stems/",
+    "tempo": 120,
+    "key": "G"
+  },
+  "typography": {
+    "font": "Montserrat Bold",
+    "whiteText": "#f4f1e9",
+    "yellowKeyword": "#eccb56",
+    "position": "center-lower-third",
+    "sizePercent": 5.5,
+    "shadow": "black drop shadow, reduced opacity"
+  },
+  "shots": [
+    {
+      "id": 1,
+      "scriptLine": "In Miami, there was a guy flipping used cars.",
+      "startSec": 0.0,
+      "endSec": 3.21,
+      "durationSeconds": 3.21,
+      "durationFrames": 80,
+      "background": "Miami used car lot at golden hour. Sun-bleached sedans, a young hustler in a polo shirt waxing a car hood. Palm trees, chain-link fence, price stickers on windshields. Warm desaturated browns.",
+      "chibiEmotion": "content",
+      "chibiAnimation": "wiping-sweat",
+      "chibiEntrance": "slide-in-left",
+      "captionMode": "quiet",
+      "wordHighlights": [
+        {
+          "word": "Miami",
+          "color": "#eccb56"
+        },
+        {
+          "word": "flipping",
+          "color": "#eccb56"
+        },
+        {
+          "word": "cars",
+          "color": "#eccb56"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 1,
+          "type": "ambient_bed",
+          "file": "city-hum.mp3"
+        },
+        {
+          "frame": 35,
+          "type": "tom/body_hit",
+          "file": "impact-low.mp3"
+        }
+      ],
+      "transitionIn": "hard_cut",
+      "vfx": [],
+      "musicState": "playing",
+      "callouts": [],
+      "cameraMotion": "slow_zoom_in",
+      "colorPalette": {
+        "dominant": "#462a1c",
+        "accent": "#a86e43",
+        "highlight": "#e3e1dc"
+      },
+      "durationMs": 3210,
+      "subtitle": [
+        {
+          "word": "Me,",
+          "start": 0.0,
+          "end": 0.56
+        },
+        {
+          "word": "there",
+          "start": 0.78,
+          "end": 0.94
+        },
+        {
+          "word": "was",
+          "start": 0.94,
+          "end": 1.12
+        },
+        {
+          "word": "a",
+          "start": 1.12,
+          "end": 1.36
+        },
+        {
+          "word": "guy",
+          "start": 1.36,
+          "end": 1.58
+        },
+        {
+          "word": "flipping",
+          "start": 1.58,
+          "end": 2.06
+        },
+        {
+          "word": "used",
+          "start": 2.06,
+          "end": 2.46
+        },
+        {
+          "word": "cars.",
+          "start": 2.46,
+          "end": 3.1
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "scriptLine": "One day, he saw a forex trader.",
+      "startSec": 3.46,
+      "endSec": 6.88,
+      "durationSeconds": 3.42,
+      "durationFrames": 86,
+      "background": "Sleek trading desk with multiple monitors showing forex charts (EUR/USD, GBP/JPY). Green and red candlesticks. A confident trader in a tailored suit leans back. Glass office, city skyline through windows.",
+      "chibiEmotion": "impressed",
+      "chibiAnimation": "eyes-wide",
+      "chibiEntrance": "pop-in",
+      "captionMode": "quiet",
+      "wordHighlights": [
+        {
+          "word": "forex",
+          "color": "#eccb56"
+        },
+        {
+          "word": "trader",
+          "color": "#eccb56"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 10,
+          "type": "dark_texture",
+          "file": "synth-swell.mp3"
+        }
+      ],
+      "transitionIn": "hard_cut",
+      "vfx": [],
+      "musicState": "playing",
+      "callouts": [],
+      "cameraMotion": "static_zoom_in",
+      "colorPalette": {
+        "dominant": "#f7f3b6",
+        "accent": "#402219",
+        "highlight": "#e2ab69"
+      },
+      "durationMs": 3420,
+      "subtitle": [
+        {
+          "word": "One",
+          "start": 4.18,
+          "end": 4.32
+        },
+        {
+          "word": "day,",
+          "start": 4.32,
+          "end": 4.68
+        },
+        {
+          "word": "he",
+          "start": 4.96,
+          "end": 5.04
+        },
+        {
+          "word": "saw",
+          "start": 5.04,
+          "end": 5.44
+        },
+        {
+          "word": "a",
+          "start": 5.44,
+          "end": 5.88
+        },
+        {
+          "word": "forex",
+          "start": 5.88,
+          "end": 6.36
+        },
+        {
+          "word": "trader.",
+          "start": 6.36,
+          "end": 6.9
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "scriptLine": "Forex traders make more than me.",
+      "startSec": 7.13,
+      "endSec": 8.945,
+      "durationSeconds": 1.815,
+      "durationFrames": 45,
+      "background": "Split screen: left side shows modest used car lot earnings ($2K), right side shows forex P&L screen with $50K daily profit. Green numbers glowing.",
+      "chibiEmotion": "envious",
+      "chibiAnimation": "jaw-drop",
+      "chibiEntrance": "none",
+      "captionMode": "quiet",
+      "wordHighlights": [
+        {
+          "word": "Forex",
+          "color": "#eccb56"
+        },
+        {
+          "word": "more",
+          "color": "#eccb56"
+        }
+      ],
+      "sfx": [],
+      "transitionIn": "hard_cut",
+      "vfx": [],
+      "musicState": "playing",
+      "callouts": [],
+      "cameraMotion": "static",
+      "colorPalette": {
+        "dominant": "#0c102a",
+        "accent": "#dcd9ce",
+        "highlight": "#a96e3f"
+      },
+      "durationMs": 1815,
+      "subtitle": [
+        {
+          "word": "Forex",
+          "start": 7.26,
+          "end": 7.86
+        },
+        {
+          "word": "trader",
+          "start": 7.86,
+          "end": 8.08
+        },
+        {
+          "word": "make",
+          "start": 8.08,
+          "end": 8.38
+        },
+        {
+          "word": "more",
+          "start": 8.38,
+          "end": 8.66
+        },
+        {
+          "word": "than",
+          "start": 8.66,
+          "end": 8.84
+        },
+        {
+          "word": "me.",
+          "start": 8.84,
+          "end": 9.12
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "scriptLine": "I want to trade forex.",
+      "startSec": 8.945,
+      "endSec": 10.689,
+      "durationSeconds": 1.744,
+      "durationFrames": 44,
+      "background": "Close-up of character's determined face, forex charts reflected in his eyes. Dramatic low-angle lighting.",
+      "chibiEmotion": "determined",
+      "chibiAnimation": "fist-pump",
+      "chibiEntrance": "none",
+      "captionMode": "shout",
+      "wordHighlights": [
+        {
+          "word": "trade",
+          "color": "#eccb56"
+        },
+        {
+          "word": "forex",
+          "color": "#eccb56"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 1,
+          "type": "tom/body_hit",
+          "file": "impact-mid.mp3"
+        }
+      ],
+      "transitionIn": "hard_cut",
+      "vfx": [],
+      "musicState": "building",
+      "callouts": [],
+      "cameraMotion": "static_zoom_in",
+      "colorPalette": {
+        "dominant": "#7e4f34",
+        "accent": "#24130f",
+        "highlight": "#dccda2"
+      },
+      "durationMs": 1744,
+      "subtitle": [
+        {
+          "word": "me.",
+          "start": 8.84,
+          "end": 9.12
+        },
+        {
+          "word": "I",
+          "start": 9.52,
+          "end": 9.66
+        },
+        {
+          "word": "want",
+          "start": 9.66,
+          "end": 9.8
+        },
+        {
+          "word": "to",
+          "start": 9.8,
+          "end": 9.98
+        },
+        {
+          "word": "trade",
+          "start": 9.98,
+          "end": 10.2
+        },
+        {
+          "word": "forex.",
+          "start": 10.2,
+          "end": 10.72
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "scriptLine": "So he became the forex trader.",
+      "startSec": 10.939,
+      "endSec": 13.478,
+      "durationSeconds": 2.539,
+      "durationFrames": 63,
+      "background": "Character now sitting at the forex trading desk, multiple screens, confident posture. Amber/golden light flooding in. Transformation complete.",
+      "chibiEmotion": "confident",
+      "chibiAnimation": "arms-crossed",
+      "chibiEntrance": "flash-in",
+      "captionMode": "quiet",
+      "wordHighlights": [
+        {
+          "word": "became",
+          "color": "#eccb56"
+        },
+        {
+          "word": "forex",
+          "color": "#eccb56"
+        },
+        {
+          "word": "trader",
+          "color": "#eccb56"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 1,
+          "type": "tom/body_hit",
+          "file": "impact-transform.mp3"
+        },
+        {
+          "frame": 1,
+          "type": "dark_texture",
+          "file": "synth-reveal.mp3"
+        }
+      ],
+      "transitionIn": "light_leak_flash",
+      "vfx": [
+        {
+          "type": "light_leak",
+          "startFrame": 0,
+          "durationFrames": 5,
+          "color": "#ffca65"
+        }
+      ],
+      "musicState": "playing",
+      "callouts": [],
+      "cameraMotion": "static_zoom_in",
+      "colorPalette": {
+        "dominant": "#f99450",
+        "accent": "#faad6f",
+        "highlight": "#fce2bf"
+      },
+      "durationMs": 2539,
+      "subtitle": [
+        {
+          "word": "So",
+          "start": 11.2,
+          "end": 11.44
+        },
+        {
+          "word": "he",
+          "start": 11.44,
+          "end": 11.6
+        },
+        {
+          "word": "became",
+          "start": 11.6,
+          "end": 12.02
+        },
+        {
+          "word": "the",
+          "start": 12.02,
+          "end": 12.52
+        },
+        {
+          "word": "forex",
+          "start": 12.52,
+          "end": 12.98
+        },
+        {
+          "word": "trader.",
+          "start": 12.98,
+          "end": 13.44
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "scriptLine": "But then he saw a stock trader.",
+      "startSec": 13.728,
+      "endSec": 16.627,
+      "durationSeconds": 2.899,
+      "durationFrames": 72,
+      "background": "Wall Street exterior — NYSE building facade, bull statue, traders in suits rushing past. Blue-chip corporate energy.",
+      "chibiEmotion": "curious",
+      "chibiAnimation": "looking-up",
+      "chibiEntrance": "slide-in-right",
+      "captionMode": "quiet",
+      "wordHighlights": [
+        {
+          "word": "stock",
+          "color": "#eccb56"
+        },
+        {
+          "word": "trader",
+          "color": "#eccb56"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 20,
+          "type": "dark_texture",
+          "file": "tension-build.mp3"
+        }
+      ],
+      "transitionIn": "hard_cut",
+      "vfx": [],
+      "musicState": "playing",
+      "callouts": [],
+      "cameraMotion": "static_zoom_out",
+      "colorPalette": {
+        "dominant": "#0c102a",
+        "accent": "#dcd9ce",
+        "highlight": "#a96e3f"
+      },
+      "durationMs": 2899,
+      "subtitle": [
+        {
+          "word": "But",
+          "start": 14.32,
+          "end": 14.68
+        },
+        {
+          "word": "then",
+          "start": 14.68,
+          "end": 15.02
+        },
+        {
+          "word": "he",
+          "start": 15.02,
+          "end": 15.2
+        },
+        {
+          "word": "saw",
+          "start": 15.2,
+          "end": 15.54
+        },
+        {
+          "word": "a",
+          "start": 15.54,
+          "end": 15.82
+        },
+        {
+          "word": "stock",
+          "start": 15.82,
+          "end": 16.14
+        },
+        {
+          "word": "trader.",
+          "start": 16.14,
+          "end": 16.58
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "scriptLine": "Stocks are easier than forex. I want to trade stocks.",
+      "startSec": 16.877,
+      "endSec": 21.216,
+      "durationSeconds": 4.339,
+      "durationFrames": 108,
+      "background": "Trading terminal showing clean stock charts — AAPL, TSLA, NVDA tickers. Green candlesticks trending up. Simpler, cleaner interface than forex.",
+      "chibiEmotion": "smug",
+      "chibiAnimation": "shrug",
+      "chibiEntrance": "none",
+      "captionMode": "shout",
+      "wordHighlights": [
+        {
+          "word": "Stocks",
+          "color": "#eccb56"
+        },
+        {
+          "word": "easier",
+          "color": "#eccb56"
+        },
+        {
+          "word": "stocks",
+          "color": "#eccb56"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 60,
+          "type": "tom/body_hit",
+          "file": "impact-mid.mp3"
+        }
+      ],
+      "transitionIn": "hard_cut",
+      "vfx": [],
+      "musicState": "building",
+      "callouts": [],
+      "cameraMotion": "static",
+      "colorPalette": {
+        "dominant": "#11162c",
+        "accent": "#b87537",
+        "highlight": "#f6e7ba"
+      },
+      "durationMs": 4339,
+      "subtitle": [
+        {
+          "word": "Stock",
+          "start": 17.2,
+          "end": 17.64
+        },
+        {
+          "word": "are",
+          "start": 17.64,
+          "end": 17.94
+        },
+        {
+          "word": "easier",
+          "start": 17.94,
+          "end": 18.34
+        },
+        {
+          "word": "than",
+          "start": 18.34,
+          "end": 18.66
+        },
+        {
+          "word": "forex.",
+          "start": 18.66,
+          "end": 19.2
+        },
+        {
+          "word": "I",
+          "start": 19.6,
+          "end": 19.88
+        },
+        {
+          "word": "want",
+          "start": 19.88,
+          "end": 20.18
+        },
+        {
+          "word": "to",
+          "start": 20.18,
+          "end": 20.42
+        },
+        {
+          "word": "trade",
+          "start": 20.42,
+          "end": 20.82
+        },
+        {
+          "word": "stocks.",
+          "start": 20.82,
+          "end": 21.18
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "scriptLine": "And he became the stock trader.",
+      "startSec": 21.466,
+      "endSec": 24.325,
+      "durationSeconds": 2.859,
+      "durationFrames": 71,
+      "background": "Character on NYSE trading floor, surrounded by screens and energy. Blue/gold power colors. Standing tall among other traders.",
+      "chibiEmotion": "proud",
+      "chibiAnimation": "chest-puff",
+      "chibiEntrance": "flash-in",
+      "captionMode": "quiet",
+      "wordHighlights": [
+        {
+          "word": "became",
+          "color": "#eccb56"
+        },
+        {
+          "word": "stock",
+          "color": "#eccb56"
+        },
+        {
+          "word": "trader",
+          "color": "#eccb56"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 1,
+          "type": "tom/body_hit",
+          "file": "impact-transform.mp3"
+        },
+        {
+          "frame": 1,
+          "type": "dark_texture",
+          "file": "synth-reveal.mp3"
+        }
+      ],
+      "transitionIn": "light_leak_flash",
+      "vfx": [
+        {
+          "type": "light_leak",
+          "startFrame": 0,
+          "durationFrames": 5,
+          "color": "#ffca65"
+        }
+      ],
+      "musicState": "playing",
+      "callouts": [],
+      "cameraMotion": "static_zoom_out",
+      "colorPalette": {
+        "dominant": "#c04b10",
+        "accent": "#370f06",
+        "highlight": "#edb36a"
+      },
+      "durationMs": 2859,
+      "subtitle": [
+        {
+          "word": "And",
+          "start": 21.98,
+          "end": 22.24
+        },
+        {
+          "word": "he",
+          "start": 22.24,
+          "end": 22.44
+        },
+        {
+          "word": "became",
+          "start": 22.44,
+          "end": 22.96
+        },
+        {
+          "word": "the",
+          "start": 22.96,
+          "end": 23.28
+        },
+        {
+          "word": "stock",
+          "start": 23.28,
+          "end": 23.62
+        },
+        {
+          "word": "trader.",
+          "start": 23.62,
+          "end": 24.14
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "scriptLine": "Then he saw bitcoin futures.",
+      "startSec": 24.575,
+      "endSec": 27.274,
+      "durationSeconds": 2.699,
+      "durationFrames": 67,
+      "background": "Glowing Bitcoin logo on dark background, futures contract interface (CME BTC), orange/gold ambient lighting. Futuristic crypto aesthetic.",
+      "chibiEmotion": "mesmerized",
+      "chibiAnimation": "eyes-sparkle",
+      "chibiEntrance": "pop-in",
+      "captionMode": "quiet",
+      "wordHighlights": [
+        {
+          "word": "bitcoin",
+          "color": "#f7931a"
+        },
+        {
+          "word": "futures",
+          "color": "#f7931a"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 15,
+          "type": "shimmer/riser",
+          "file": "crypto-shimmer.mp3"
+        }
+      ],
+      "transitionIn": "hard_cut",
+      "vfx": [
+        {
+          "type": "glow_ring",
+          "startFrame": 10,
+          "durationFrames": 30,
+          "color": "#f7931a"
+        }
+      ],
+      "musicState": "playing",
+      "callouts": [],
+      "cameraMotion": "static_zoom_in",
+      "colorPalette": {
+        "dominant": "#f0d2a3",
+        "accent": "#b67830",
+        "highlight": "#39230c"
+      },
+      "durationMs": 2699,
+      "subtitle": [
+        {
+          "word": "Then",
+          "start": 24.86,
+          "end": 25.36
+        },
+        {
+          "word": "he",
+          "start": 25.36,
+          "end": 25.6
+        },
+        {
+          "word": "saw",
+          "start": 25.6,
+          "end": 25.96
+        },
+        {
+          "word": "Bitcoin",
+          "start": 25.96,
+          "end": 26.56
+        },
+        {
+          "word": "future.",
+          "start": 26.56,
+          "end": 26.96
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "scriptLine": "Bitcoin is faster than any stock.",
+      "startSec": 27.524,
+      "endSec": 31.243,
+      "durationSeconds": 3.719,
+      "durationFrames": 93,
+      "background": "Side-by-side comparison: slow-moving stock chart on left, volatile BTC 1-minute chart on right with massive green candles. Speed lines radiating from the BTC chart.",
+      "chibiEmotion": "excited",
+      "chibiAnimation": "pointing",
+      "chibiEntrance": "none",
+      "captionMode": "quiet",
+      "wordHighlights": [
+        {
+          "word": "Bitcoin",
+          "color": "#f7931a"
+        },
+        {
+          "word": "faster",
+          "color": "#eccb56"
+        },
+        {
+          "word": "stock",
+          "color": "#eccb56"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 40,
+          "type": "mid_percussion",
+          "file": "punch-accent.mp3"
+        }
+      ],
+      "transitionIn": "hard_cut",
+      "vfx": [],
+      "musicState": "building",
+      "callouts": [],
+      "cameraMotion": "static",
+      "colorPalette": {
+        "dominant": "#f9d8a7",
+        "accent": "#2c1608",
+        "highlight": "#f0d2a3"
+      },
+      "durationMs": 3719,
+      "subtitle": [
+        {
+          "word": "Bitcoin",
+          "start": 27.94,
+          "end": 28.78
+        },
+        {
+          "word": "is",
+          "start": 28.78,
+          "end": 29.14
+        },
+        {
+          "word": "faster",
+          "start": 29.14,
+          "end": 29.8
+        },
+        {
+          "word": "than",
+          "start": 29.8,
+          "end": 30.3
+        },
+        {
+          "word": "any",
+          "start": 30.3,
+          "end": 30.82
+        },
+        {
+          "word": "stocks.",
+          "start": 30.82,
+          "end": 31.16
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "scriptLine": "I want to trade bitcoin.",
+      "startSec": 31.493,
+      "endSec": 33.772,
+      "durationSeconds": 2.279,
+      "durationFrames": 57,
+      "background": "Close-up of character's face lit by orange BTC chart glow, determined expression, bitcoin logo reflected in eyes.",
+      "chibiEmotion": "determined",
+      "chibiAnimation": "fist-pump",
+      "chibiEntrance": "none",
+      "captionMode": "shout",
+      "wordHighlights": [
+        {
+          "word": "trade",
+          "color": "#f7931a"
+        },
+        {
+          "word": "bitcoin",
+          "color": "#f7931a"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 1,
+          "type": "tom/body_hit",
+          "file": "impact-mid.mp3"
+        }
+      ],
+      "transitionIn": "hard_cut",
+      "vfx": [],
+      "musicState": "building",
+      "callouts": [],
+      "cameraMotion": "static_zoom_in",
+      "colorPalette": {
+        "dominant": "#f0d2a3",
+        "accent": "#b67830",
+        "highlight": "#39230c"
+      },
+      "durationMs": 2279,
+      "subtitle": [
+        {
+          "word": "I",
+          "start": 31.64,
+          "end": 31.88
+        },
+        {
+          "word": "want",
+          "start": 31.88,
+          "end": 32.4
+        },
+        {
+          "word": "to",
+          "start": 32.4,
+          "end": 32.66
+        },
+        {
+          "word": "trade",
+          "start": 32.66,
+          "end": 33.04
+        },
+        {
+          "word": "Bitcoin.",
+          "start": 33.04,
+          "end": 33.76
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "scriptLine": "And he traded bitcoin.",
+      "startSec": 34.022,
+      "endSec": 35.921,
+      "durationSeconds": 1.899,
+      "durationFrames": 47,
+      "background": "Character at a dark desk with orange-lit monitors, crypto trading interface, bitcoin price soaring. Transformation moment.",
+      "chibiEmotion": "victorious",
+      "chibiAnimation": "arms-raised",
+      "chibiEntrance": "flash-in",
+      "captionMode": "quiet",
+      "wordHighlights": [
+        {
+          "word": "traded",
+          "color": "#f7931a"
+        },
+        {
+          "word": "bitcoin",
+          "color": "#f7931a"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 1,
+          "type": "tom/body_hit",
+          "file": "impact-transform.mp3"
+        },
+        {
+          "frame": 1,
+          "type": "dark_texture",
+          "file": "synth-reveal.mp3"
+        }
+      ],
+      "transitionIn": "light_leak_flash",
+      "vfx": [
+        {
+          "type": "light_leak",
+          "startFrame": 0,
+          "durationFrames": 5,
+          "color": "#f7931a"
+        }
+      ],
+      "musicState": "playing",
+      "callouts": [],
+      "cameraMotion": "static",
+      "colorPalette": {
+        "dominant": "#f99450",
+        "accent": "#faad6f",
+        "highlight": "#fce2bf"
+      },
+      "durationMs": 1899,
+      "subtitle": [
+        {
+          "word": "And",
+          "start": 34.52,
+          "end": 34.52
+        },
+        {
+          "word": "he",
+          "start": 34.52,
+          "end": 34.82
+        },
+        {
+          "word": "traded",
+          "start": 34.82,
+          "end": 35.14
+        },
+        {
+          "word": "Bitcoin.",
+          "start": 35.14,
+          "end": 35.86
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "scriptLine": "But Goldman Sachs was on the other side of every trade.",
+      "startSec": 36.171,
+      "endSec": 40.93,
+      "durationSeconds": 4.759,
+      "durationFrames": 119,
+      "background": "Goldman Sachs tower in lower Manhattan, dark and imposing. Corporate logo glowing. Dark blue/gray corporate power. The building looms over the character like a mountain.",
+      "chibiEmotion": "shocked",
+      "chibiAnimation": "step-back",
+      "chibiEntrance": "shrink",
+      "captionMode": "quiet",
+      "wordHighlights": [
+        {
+          "word": "Goldman",
+          "color": "#eccb56"
+        },
+        {
+          "word": "Sachs",
+          "color": "#eccb56"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 1,
+          "type": "low_rumble",
+          "file": "deep-rumble.mp3"
+        },
+        {
+          "frame": 30,
+          "type": "dark_texture",
+          "file": "tension-build.mp3"
+        }
+      ],
+      "transitionIn": "hard_cut",
+      "vfx": [
+        {
+          "type": "duotone",
+          "startFrame": 0,
+          "durationFrames": 121,
+          "colors": [
+            "#031528",
+            "#a0bcd0"
+          ]
+        }
+      ],
+      "musicState": "ducked",
+      "callouts": [],
+      "cameraMotion": "slow_zoom_out",
+      "colorPalette": {
+        "dominant": "#031528",
+        "accent": "#2b5b84",
+        "highlight": "#a0bcd0"
+      },
+      "durationMs": 4759,
+      "subtitle": [
+        {
+          "word": "But",
+          "start": 37.0,
+          "end": 37.22
+        },
+        {
+          "word": "Goldman",
+          "start": 37.22,
+          "end": 37.54
+        },
+        {
+          "word": "Sachs",
+          "start": 37.54,
+          "end": 37.98
+        },
+        {
+          "word": "was",
+          "start": 37.98,
+          "end": 38.44
+        },
+        {
+          "word": "on",
+          "start": 38.44,
+          "end": 38.6
+        },
+        {
+          "word": "the",
+          "start": 38.6,
+          "end": 38.78
+        },
+        {
+          "word": "other",
+          "start": 38.78,
+          "end": 39.24
+        },
+        {
+          "word": "side",
+          "start": 39.24,
+          "end": 39.78
+        },
+        {
+          "word": "of",
+          "start": 39.78,
+          "end": 40.08
+        },
+        {
+          "word": "every",
+          "start": 40.08,
+          "end": 40.44
+        },
+        {
+          "word": "trade.",
+          "start": 40.44,
+          "end": 40.88
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "scriptLine": "The hedge funds were stronger than him, he thought.",
+      "startSec": 41.18,
+      "endSec": 44.519,
+      "durationSeconds": 3.339,
+      "durationFrames": 83,
+      "background": "Wall of hedge fund logos — Citadel, Point72, Renaissance, Two Sigma — towering over a small figure of the character. Dark corporate power aesthetic.",
+      "chibiEmotion": "defeated",
+      "chibiAnimation": "shoulders-slump",
+      "chibiEntrance": "none",
+      "captionMode": "quiet",
+      "wordHighlights": [
+        {
+          "word": "hedge",
+          "color": "#eccb56"
+        },
+        {
+          "word": "funds",
+          "color": "#eccb56"
+        },
+        {
+          "word": "stronger",
+          "color": "#eccb56"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 20,
+          "type": "dark_texture",
+          "file": "weight-of-realization.mp3"
+        }
+      ],
+      "transitionIn": "hard_cut",
+      "vfx": [],
+      "musicState": "ducked",
+      "callouts": [],
+      "cameraMotion": "static",
+      "colorPalette": {
+        "dominant": "#4f473f",
+        "accent": "#b8b3a9",
+        "highlight": "#c98744"
+      },
+      "durationMs": 3339,
+      "subtitle": [
+        {
+          "word": "The",
+          "start": 41.36,
+          "end": 41.5
+        },
+        {
+          "word": "hedge",
+          "start": 41.5,
+          "end": 41.62
+        },
+        {
+          "word": "funds",
+          "start": 41.62,
+          "end": 41.96
+        },
+        {
+          "word": "were",
+          "start": 41.96,
+          "end": 42.3
+        },
+        {
+          "word": "stronger",
+          "start": 42.3,
+          "end": 42.72
+        },
+        {
+          "word": "than",
+          "start": 42.72,
+          "end": 43.06
+        },
+        {
+          "word": "him,",
+          "start": 43.06,
+          "end": 43.4
+        },
+        {
+          "word": "he",
+          "start": 43.58,
+          "end": 43.62
+        },
+        {
+          "word": "thought.",
+          "start": 43.62,
+          "end": 44.04
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "scriptLine": "So he switched to zero-DTE options.",
+      "startSec": 44.769,
+      "endSec": 48.088,
+      "durationSeconds": 3.319,
+      "durationFrames": 83,
+      "background": "Options chain screen showing 0DTE SPX contracts, rapid price changes, green/red flashing. High-intensity short-duration gambling aesthetic.",
+      "chibiEmotion": "manic",
+      "chibiAnimation": "rapid-typing",
+      "chibiEntrance": "slide-in-left",
+      "captionMode": "quiet",
+      "wordHighlights": [
+        {
+          "word": "zero-DTE",
+          "color": "#eccb56"
+        },
+        {
+          "word": "options",
+          "color": "#eccb56"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 1,
+          "type": "noise_sweep",
+          "file": "transition-sweep.mp3"
+        }
+      ],
+      "transitionIn": "hard_cut",
+      "vfx": [],
+      "musicState": "building",
+      "callouts": [],
+      "cameraMotion": "static_zoom_in",
+      "colorPalette": {
+        "dominant": "#315d8e",
+        "accent": "#a4bdcd",
+        "highlight": "#031223"
+      },
+      "durationMs": 3319,
+      "subtitle": [
+        {
+          "word": "So",
+          "start": 44.78,
+          "end": 45.3
+        },
+        {
+          "word": "he",
+          "start": 45.3,
+          "end": 45.48
+        },
+        {
+          "word": "switched",
+          "start": 45.48,
+          "end": 45.9
+        },
+        {
+          "word": "to",
+          "start": 45.9,
+          "end": 46.36
+        },
+        {
+          "word": "0DT",
+          "start": 46.36,
+          "end": 47.0
+        },
+        {
+          "word": "options.",
+          "start": 47.0,
+          "end": 47.58
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "scriptLine": "Then the hedge funds followed him there too. So he jumped to memecoins.",
+      "startSec": 48.338,
+      "endSec": 54.197,
+      "durationSeconds": 5.859,
+      "durationFrames": 146,
+      "background": "First half: hedge fund algorithms descending on 0DTE market (robot arms grabbing coins). Second half: DOGE/PEPE/SHIB logos floating in neon space, memecoin casino aesthetic.",
+      "chibiEmotion": "frustrated-then-hopeful",
+      "chibiAnimation": "running",
+      "chibiEntrance": "none",
+      "captionMode": "quiet",
+      "wordHighlights": [
+        {
+          "word": "hedge",
+          "color": "#eccb56"
+        },
+        {
+          "word": "funds",
+          "color": "#eccb56"
+        },
+        {
+          "word": "memecoins",
+          "color": "#00ff41"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 50,
+          "type": "tom/body_hit",
+          "file": "impact-mid.mp3"
+        },
+        {
+          "frame": 100,
+          "type": "noise_sweep",
+          "file": "whoosh-transition.mp3"
+        }
+      ],
+      "transitionIn": "hard_cut",
+      "vfx": [],
+      "musicState": "building",
+      "callouts": [],
+      "cameraMotion": "static",
+      "colorPalette": {
+        "dominant": "#2c3344",
+        "accent": "#dfac98",
+        "highlight": "#489fc8"
+      },
+      "durationMs": 5859,
+      "subtitle": [
+        {
+          "word": "Then",
+          "start": 48.34,
+          "end": 48.82
+        },
+        {
+          "word": "the",
+          "start": 48.82,
+          "end": 49.26
+        },
+        {
+          "word": "hedge",
+          "start": 49.26,
+          "end": 49.62
+        },
+        {
+          "word": "fund",
+          "start": 49.62,
+          "end": 49.98
+        },
+        {
+          "word": "follow",
+          "start": 49.98,
+          "end": 50.46
+        },
+        {
+          "word": "him",
+          "start": 50.46,
+          "end": 50.78
+        },
+        {
+          "word": "there",
+          "start": 50.78,
+          "end": 51.02
+        },
+        {
+          "word": "too.",
+          "start": 51.02,
+          "end": 51.64
+        },
+        {
+          "word": "So",
+          "start": 51.82,
+          "end": 52.26
+        },
+        {
+          "word": "he",
+          "start": 52.26,
+          "end": 52.46
+        },
+        {
+          "word": "jumped",
+          "start": 52.46,
+          "end": 52.7
+        },
+        {
+          "word": "to",
+          "start": 52.7,
+          "end": 53.24
+        },
+        {
+          "word": "MemeCoins.",
+          "start": 53.24,
+          "end": 54.08
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "scriptLine": "And the hedge funds showed up in memecoins.",
+      "startSec": 54.447,
+      "endSec": 58.915,
+      "durationSeconds": 4.468,
+      "durationFrames": 112,
+      "background": "Hedge fund whale wallets dumping into memecoin pools. On-chain analysis showing massive institutional wallets. The fun meme space invaded by suits.",
+      "chibiEmotion": "exasperated",
+      "chibiAnimation": "face-palm",
+      "chibiEntrance": "none",
+      "captionMode": "quiet",
+      "wordHighlights": [
+        {
+          "word": "hedge",
+          "color": "#eccb56"
+        },
+        {
+          "word": "funds",
+          "color": "#eccb56"
+        },
+        {
+          "word": "memecoins",
+          "color": "#00ff41"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 30,
+          "type": "low_rumble",
+          "file": "deep-rumble.mp3"
+        }
+      ],
+      "transitionIn": "hard_cut",
+      "vfx": [],
+      "musicState": "playing",
+      "callouts": [],
+      "cameraMotion": "static_zoom_out",
+      "colorPalette": {
+        "dominant": "#596990",
+        "accent": "#cac4bc",
+        "highlight": "#100a0a"
+      },
+      "durationMs": 4468,
+      "subtitle": [
+        {
+          "word": "And",
+          "start": 54.67,
+          "end": 55.02
+        },
+        {
+          "word": "the",
+          "start": 55.02,
+          "end": 55.28
+        },
+        {
+          "word": "hedge",
+          "start": 55.28,
+          "end": 55.52
+        },
+        {
+          "word": "fund",
+          "start": 55.52,
+          "end": 55.9
+        },
+        {
+          "word": "showed",
+          "start": 55.9,
+          "end": 56.42
+        },
+        {
+          "word": "up",
+          "start": 56.42,
+          "end": 56.86
+        },
+        {
+          "word": "in",
+          "start": 56.86,
+          "end": 57.26
+        },
+        {
+          "word": "MemeCoin.",
+          "start": 57.26,
+          "end": 57.76
+        },
+        {
+          "word": "So",
+          "start": 58.14,
+          "end": 58.24
+        },
+        {
+          "word": "he",
+          "start": 58.24,
+          "end": 58.46
+        },
+        {
+          "word": "thought.",
+          "start": 58.46,
+          "end": 58.92
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "scriptLine": "So he thought, maybe prediction markets — Polymarket — that's where I'll have an edge.",
+      "startSec": 59.165,
+      "endSec": 63.664,
+      "durationSeconds": 4.499,
+      "durationFrames": 112,
+      "background": "Polymarket interface showing prediction markets — election odds, crypto prices, world events. Purple/indigo brand colors. A new frontier feeling.",
+      "chibiEmotion": "scheming",
+      "chibiAnimation": "chin-stroke",
+      "chibiEntrance": "none",
+      "captionMode": "shout",
+      "wordHighlights": [
+        {
+          "word": "prediction",
+          "color": "#eccb56"
+        },
+        {
+          "word": "Polymarket",
+          "color": "#7c3aed"
+        },
+        {
+          "word": "edge",
+          "color": "#eccb56"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 10,
+          "type": "shimmer/riser",
+          "file": "hope-riser.mp3"
+        }
+      ],
+      "transitionIn": "hard_cut",
+      "vfx": [
+        {
+          "type": "glow_ring",
+          "startFrame": 40,
+          "durationFrames": 30,
+          "color": "#7c3aed"
+        }
+      ],
+      "musicState": "building",
+      "callouts": [],
+      "cameraMotion": "static_zoom_in",
+      "colorPalette": {
+        "dominant": "#f3e7af",
+        "accent": "#373e44",
+        "highlight": "#968c87"
+      },
+      "durationMs": 4499,
+      "subtitle": [
+        {
+          "word": "Maybe",
+          "start": 59.24,
+          "end": 59.52
+        },
+        {
+          "word": "prediction",
+          "start": 59.52,
+          "end": 60.0
+        },
+        {
+          "word": "markets,",
+          "start": 60.0,
+          "end": 60.4
+        },
+        {
+          "word": "Polymarket.",
+          "start": 60.64,
+          "end": 60.78
+        },
+        {
+          "word": "market,",
+          "start": 60.78,
+          "end": 61.12
+        },
+        {
+          "word": "that's",
+          "start": 61.36,
+          "end": 61.74
+        },
+        {
+          "word": "where",
+          "start": 61.74,
+          "end": 62.1
+        },
+        {
+          "word": "I'll",
+          "start": 62.1,
+          "end": 62.46
+        },
+        {
+          "word": "have",
+          "start": 62.46,
+          "end": 62.62
+        },
+        {
+          "word": "an",
+          "start": 62.62,
+          "end": 62.88
+        },
+        {
+          "word": "edge.",
+          "start": 62.88,
+          "end": 63.12
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "scriptLine": "And finally he traded Polymarket.",
+      "startSec": 63.914,
+      "endSec": 67.413,
+      "durationSeconds": 3.499,
+      "durationFrames": 87,
+      "background": "Character at a clean modern desk, Polymarket dashboard on screen, purple glow. The final transformation — confident but weary.",
+      "chibiEmotion": "hopeful",
+      "chibiAnimation": "nod",
+      "chibiEntrance": "flash-in",
+      "captionMode": "quiet",
+      "wordHighlights": [
+        {
+          "word": "finally",
+          "color": "#eccb56"
+        },
+        {
+          "word": "traded",
+          "color": "#eccb56"
+        },
+        {
+          "word": "Polymarket",
+          "color": "#7c3aed"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 1,
+          "type": "tom/body_hit",
+          "file": "impact-transform.mp3"
+        },
+        {
+          "frame": 1,
+          "type": "dark_texture",
+          "file": "synth-reveal.mp3"
+        }
+      ],
+      "transitionIn": "light_leak_flash",
+      "vfx": [
+        {
+          "type": "light_leak",
+          "startFrame": 0,
+          "durationFrames": 5,
+          "color": "#7c3aed"
+        }
+      ],
+      "musicState": "playing",
+      "callouts": [],
+      "cameraMotion": "static_zoom_out",
+      "colorPalette": {
+        "dominant": "#f5f7f6",
+        "accent": "#acb3b5",
+        "highlight": "#645551"
+      },
+      "durationMs": 3499,
+      "subtitle": [
+        {
+          "word": "And",
+          "start": 64.48,
+          "end": 64.66
+        },
+        {
+          "word": "finally",
+          "start": 64.66,
+          "end": 65.4
+        },
+        {
+          "word": "he",
+          "start": 65.4,
+          "end": 65.92
+        },
+        {
+          "word": "traded",
+          "start": 65.92,
+          "end": 66.38
+        },
+        {
+          "word": "Polymarket.",
+          "start": 66.38,
+          "end": 67.28
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "scriptLine": "But then Citadel and Jump Trading were right there, cutting into his profits.",
+      "startSec": 67.663,
+      "endSec": 75.082,
+      "durationSeconds": 7.419,
+      "durationFrames": 185,
+      "background": "Citadel and Jump Trading towers, dark and menacing. Algorithmic trading bots visualized as mechanical arms reaching into the character's profits. Corporate gray/steel palette.",
+      "chibiEmotion": "crushed",
+      "chibiAnimation": "head-in-hands",
+      "chibiEntrance": "none",
+      "captionMode": "quiet",
+      "wordHighlights": [
+        {
+          "word": "Citadel",
+          "color": "#eccb56"
+        },
+        {
+          "word": "Jump",
+          "color": "#eccb56"
+        },
+        {
+          "word": "Trading",
+          "color": "#eccb56"
+        },
+        {
+          "word": "profits",
+          "color": "#ff4444"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 1,
+          "type": "low_rumble",
+          "file": "deep-rumble.mp3"
+        },
+        {
+          "frame": 60,
+          "type": "dark_texture",
+          "file": "dread-swell.mp3"
+        },
+        {
+          "frame": 120,
+          "type": "tom/body_hit",
+          "file": "impact-heavy.mp3"
+        }
+      ],
+      "transitionIn": "hard_cut",
+      "vfx": [
+        {
+          "type": "duotone",
+          "startFrame": 0,
+          "durationFrames": 171,
+          "colors": [
+            "#232a2b",
+            "#94918a"
+          ]
+        }
+      ],
+      "musicState": "ducked",
+      "callouts": [],
+      "cameraMotion": "tilt_down",
+      "colorPalette": {
+        "dominant": "#767c7d",
+        "accent": "#b4bcbb",
+        "highlight": "#45484a"
+      },
+      "durationMs": 7419,
+      "subtitle": [
+        {
+          "word": "But",
+          "start": 67.88,
+          "end": 68.46
+        },
+        {
+          "word": "then",
+          "start": 68.46,
+          "end": 69.0
+        },
+        {
+          "word": "Citadel",
+          "start": 69.0,
+          "end": 70.02
+        },
+        {
+          "word": "and",
+          "start": 70.02,
+          "end": 70.66
+        },
+        {
+          "word": "Jump",
+          "start": 70.66,
+          "end": 70.96
+        },
+        {
+          "word": "Trading",
+          "start": 70.96,
+          "end": 71.6
+        },
+        {
+          "word": "were",
+          "start": 71.6,
+          "end": 72.34
+        },
+        {
+          "word": "right",
+          "start": 72.34,
+          "end": 72.58
+        },
+        {
+          "word": "there,",
+          "start": 72.58,
+          "end": 73.06
+        },
+        {
+          "word": "cutting",
+          "start": 73.42,
+          "end": 73.78
+        },
+        {
+          "word": "into",
+          "start": 73.78,
+          "end": 74.12
+        },
+        {
+          "word": "his",
+          "start": 74.12,
+          "end": 74.32
+        },
+        {
+          "word": "profits.",
+          "start": 74.32,
+          "end": 74.84
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "scriptLine": "And so he wanted — I want to go back — I want to go back to flipping cars. To flip cars.",
+      "startSec": 75.332,
+      "endSec": 81.531,
+      "durationSeconds": 6.199,
+      "durationFrames": 155,
+      "background": "Rapid montage flashing through all previous scenes (forex desk, stock floor, BTC, 0DTE, memecoins, Polymarket) — then settling back on the Miami used car lot. Warm golden hour returns. Full circle.",
+      "chibiEmotion": "resigned-then-peaceful",
+      "chibiAnimation": "slow-nod",
+      "chibiEntrance": "none",
+      "captionMode": "shout",
+      "wordHighlights": [
+        {
+          "word": "go",
+          "color": "#eccb56"
+        },
+        {
+          "word": "back",
+          "color": "#eccb56"
+        },
+        {
+          "word": "flipping",
+          "color": "#eccb56"
+        },
+        {
+          "word": "cars",
+          "color": "#eccb56"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 1,
+          "type": "noise_sweep",
+          "file": "rapid-montage-sweep.mp3"
+        },
+        {
+          "frame": 40,
+          "type": "tom/body_hit",
+          "file": "impact-realization.mp3"
+        },
+        {
+          "frame": 80,
+          "type": "tom/body_hit",
+          "file": "impact-realization.mp3"
+        },
+        {
+          "frame": 130,
+          "type": "low_rumble",
+          "file": "weight-return.mp3"
+        }
+      ],
+      "transitionIn": "fast_cut_montage",
+      "vfx": [
+        {
+          "type": "screen_break",
+          "startFrame": 1,
+          "durationFrames": 40
+        }
+      ],
+      "musicState": "bass_drop",
+      "callouts": [],
+      "cameraMotion": "rapid_zoom_montage_to_static",
+      "colorPalette": {
+        "dominant": "#3a2423",
+        "accent": "#c9ae8b",
+        "highlight": "#c8ebf5"
+      },
+      "durationMs": 6199,
+      "subtitle": [
+        {
+          "word": "And",
+          "start": 75.42,
+          "end": 75.62
+        },
+        {
+          "word": "so",
+          "start": 75.62,
+          "end": 75.96
+        },
+        {
+          "word": "he",
+          "start": 75.96,
+          "end": 76.2
+        },
+        {
+          "word": "wanted",
+          "start": 76.2,
+          "end": 76.58
+        },
+        {
+          "word": "I",
+          "start": 76.86,
+          "end": 77.0
+        },
+        {
+          "word": "want",
+          "start": 77.0,
+          "end": 77.18
+        },
+        {
+          "word": "to",
+          "start": 77.18,
+          "end": 77.34
+        },
+        {
+          "word": "go",
+          "start": 77.34,
+          "end": 77.48
+        },
+        {
+          "word": "back,",
+          "start": 77.48,
+          "end": 77.74
+        },
+        {
+          "word": "I",
+          "start": 77.88,
+          "end": 78.12
+        },
+        {
+          "word": "want",
+          "start": 78.12,
+          "end": 78.3
+        },
+        {
+          "word": "to",
+          "start": 78.3,
+          "end": 78.44
+        },
+        {
+          "word": "go",
+          "start": 78.44,
+          "end": 78.58
+        },
+        {
+          "word": "back",
+          "start": 78.58,
+          "end": 78.78
+        },
+        {
+          "word": "to",
+          "start": 78.78,
+          "end": 78.94
+        },
+        {
+          "word": "flip",
+          "start": 78.94,
+          "end": 79.22
+        },
+        {
+          "word": "cars.",
+          "start": 79.22,
+          "end": 79.58
+        },
+        {
+          "word": "To",
+          "start": 80.18,
+          "end": 80.28
+        },
+        {
+          "word": "flip",
+          "start": 80.28,
+          "end": 80.7
+        },
+        {
+          "word": "cars.",
+          "start": 80.7,
+          "end": 81.34
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "scriptLine": "That's the lesson. The edge was always in the niche. See you on AgiArena.",
+      "startSec": 81.781,
+      "endSec": 89.18,
+      "durationSeconds": 7.399,
+      "durationFrames": 185,
+      "background": "Character back at the car lot, polishing a car, sunset light. Then slow fade to white with AgiArena logo. Peace and acceptance.",
+      "chibiEmotion": "wise",
+      "chibiAnimation": "wink",
+      "chibiEntrance": "none",
+      "captionMode": "quiet",
+      "wordHighlights": [
+        {
+          "word": "lesson",
+          "color": "#eccb56"
+        },
+        {
+          "word": "edge",
+          "color": "#eccb56"
+        },
+        {
+          "word": "niche",
+          "color": "#eccb56"
+        },
+        {
+          "word": "AgiArena",
+          "color": "#eccb56"
+        }
+      ],
+      "sfx": [
+        {
+          "frame": 1,
+          "type": "ambient_bed",
+          "file": "resolution-pad.mp3"
+        },
+        {
+          "frame": 130,
+          "type": "low_rumble",
+          "file": "final-rumble.mp3"
+        }
+      ],
+      "transitionIn": "hard_cut",
+      "vfx": [
+        {
+          "type": "fade_to_white",
+          "startFrame": 130,
+          "durationFrames": 21
+        }
+      ],
+      "musicState": "playing_then_takeover",
+      "callouts": [],
+      "cameraMotion": "slow_zoom_out",
+      "colorPalette": {
+        "dominant": "#fcfcfa",
+        "accent": "#fcebcd",
+        "highlight": "#fabc9e"
+      },
+      "durationMs": 7399,
+      "subtitle": [
+        {
+          "word": "That's",
+          "start": 82.94,
+          "end": 83.64
+        },
+        {
+          "word": "a",
+          "start": 83.64,
+          "end": 83.66
+        },
+        {
+          "word": "lesson.",
+          "start": 83.66,
+          "end": 84.02
+        },
+        {
+          "word": "The",
+          "start": 84.54,
+          "end": 84.62
+        },
+        {
+          "word": "edge",
+          "start": 84.62,
+          "end": 84.98
+        },
+        {
+          "word": "was",
+          "start": 84.98,
+          "end": 85.32
+        },
+        {
+          "word": "always",
+          "start": 85.32,
+          "end": 85.78
+        },
+        {
+          "word": "in",
+          "start": 85.78,
+          "end": 86.04
+        },
+        {
+          "word": "the",
+          "start": 86.04,
+          "end": 86.16
+        },
+        {
+          "word": "niche.",
+          "start": 86.16,
+          "end": 86.54
+        },
+        {
+          "word": "See",
+          "start": 87.34,
+          "end": 87.48
+        },
+        {
+          "word": "you",
+          "start": 87.48,
+          "end": 87.74
+        },
+        {
+          "word": "on",
+          "start": 87.74,
+          "end": 87.94
+        },
+        {
+          "word": "AgiArena.",
+          "start": 87.94,
+          "end": 88.72
+        }
+      ]
+    }
+  ]
+}

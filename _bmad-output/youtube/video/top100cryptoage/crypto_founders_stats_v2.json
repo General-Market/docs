@@ -1,0 +1,157 @@
+{
+  "age_brackets_4yr": {
+    "20-23": {
+      "founders": 8,
+      "avg_tvl": 263625000,
+      "median_tvl": 248000000.0
+    },
+    "24-27": {
+      "founders": 35,
+      "avg_tvl": 62628571,
+      "median_tvl": 12000000.0
+    },
+    "28-31": {
+      "founders": 91,
+      "avg_tvl": 120956044,
+      "median_tvl": 28000000.0
+    },
+    "32-35": {
+      "founders": 149,
+      "avg_tvl": 112120805,
+      "median_tvl": 15000000.0
+    },
+    "36-39": {
+      "founders": 124,
+      "avg_tvl": 134064516,
+      "median_tvl": 46000000.0
+    },
+    "40-43": {
+      "founders": 88,
+      "avg_tvl": 112045455,
+      "median_tvl": 23000000.0
+    },
+    "44-47": {
+      "founders": 53,
+      "avg_tvl": 35622642,
+      "median_tvl": 9000000.0
+    },
+    "48-51": {
+      "founders": 41,
+      "avg_tvl": 162048780,
+      "median_tvl": 21000000.0
+    },
+    "52-55": {
+      "founders": 26,
+      "avg_tvl": 82346154,
+      "median_tvl": 10000000.0
+    },
+    "56-59": {
+      "founders": 17,
+      "avg_tvl": 49647059,
+      "median_tvl": 10000000.0
+    },
+    "60-63": {
+      "founders": 10,
+      "avg_tvl": 171500000,
+      "median_tvl": 20000000.0
+    },
+    "64-67": {
+      "founders": 5,
+      "avg_tvl": 9800000,
+      "median_tvl": 6000000.0
+    },
+    "68-71": {
+      "founders": 1,
+      "avg_tvl": 177000000,
+      "median_tvl": 177000000.0
+    }
+  },
+  "cofounder_age_gap": {
+    "0 (same age)": {
+      "teams": 19,
+      "avg_tvl": 70842105,
+      "median_tvl": 18000000.0
+    },
+    "1-3 years": {
+      "teams": 50,
+      "avg_tvl": 83720000,
+      "median_tvl": 19000000.0
+    },
+    "4-7 years": {
+      "teams": 31,
+      "avg_tvl": 74903226,
+      "median_tvl": 15000000.0
+    },
+    "8-12 years": {
+      "teams": 28,
+      "avg_tvl": 129678571,
+      "median_tvl": 51000000.0
+    },
+    "13-20 years": {
+      "teams": 17,
+      "avg_tvl": 116764706,
+      "median_tvl": 10000000.0
+    },
+    "20+ years": {
+      "teams": 4,
+      "avg_tvl": 114500000,
+      "median_tvl": 155000000.0
+    }
+  },
+  "education_types": {
+    "PhD/Doctorate": {
+      "count": 52,
+      "avg_tvl": 177442308,
+      "avg_age": 42.9
+    },
+    "MBA": {
+      "count": 65,
+      "avg_tvl": 69707692,
+      "avg_age": 42.6
+    },
+    "Master's/MS/MSc": {
+      "count": 112,
+      "avg_tvl": 105410714,
+      "avg_age": 38.5
+    },
+    "Bachelor's/BS/BA": {
+      "count": 234,
+      "avg_tvl": 95649573,
+      "avg_age": 38.2
+    },
+    "Law/JD": {
+      "count": 13,
+      "avg_tvl": 106923077,
+      "avg_age": 41.0
+    },
+    "MD/Medical": {
+      "count": 10,
+      "avg_tvl": 61300000,
+      "avg_age": 48.8
+    },
+    "CPA/CFA": {
+      "count": 21,
+      "avg_tvl": 220809524,
+      "avg_age": 38.8
+    },
+    "Dropped out": {
+      "count": 12,
+      "avg_tvl": 227500000,
+      "avg_age": 29.0
+    }
+  },
+  "phd_vs_others": {
+    "phd": {
+      "count": 56,
+      "avg_tvl": 166196429,
+      "median_tvl": 52000000.0,
+      "avg_age": 42.9
+    },
+    "non_phd": {
+      "count": 1076,
+      "avg_tvl": 128671004,
+      "median_tvl": 24000000.0,
+      "avg_age": 38.1
+    }
+  }
+}

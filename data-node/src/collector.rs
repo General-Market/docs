@@ -1,0 +1,124 @@
+use std::collections::HashSet;
+use std::sync::Arc;
+use std::time::Duration;
+
+use chrono::{DateTime, Utc};
+use sqlx::PgPool;
+use tokio::sync::RwLock;
+use tracing::{error, info, warn};
+
+use common::integrations::bitget::{BitgetReadOnlyClientImpl, BitgetReadOnlyConfig};
+use common::BitgetReadOnlyClient;
+
+use crate::db;
+
+pub struct CollectorState {
+    pub last_fetch_at: RwLock<Option<DateTime<Utc>>>,
+    pub symbols_tracked: RwLock<usize>,
+}
+
+impl CollectorState {
+    pub fn new() -> Self {
+        Self {
+            last_fetch_at: RwLock::new(None),
+            symbols_tracked: RwLock::new(0),
+        }
+    }
+}
+
+fn load_tracked_symbols(assets_file: &str) -> Result<HashSet<String>, Box<dyn std::error::Error>> {
+    let content = std::fs::read_to_string(assets_file)?;
+    let assets: Vec<serde_json::Value> = serde_json::from_str(&content)?;
+
+    let symbols: HashSet<String> = assets
+        .iter()
+        .filter_map(|a| a.get("bitget").and_then(|v| v.as_str()).map(String::from))
+        .collect();
+
+    info!(count = symbols.len(), file = assets_file, "Loaded tracked symbols");
+    Ok(symbols)
+}
+
+pub async fn run(
+    pool: PgPool,
+    state: Arc<CollectorState>,
+    assets_file: String,
+    poll_interval_secs: u64,
+    retention_days: u32,
+) {
+    let tracked = match load_tracked_symbols(&assets_file) {
+        Ok(s) => s,
+        Err(e) => {
+            error!(%e, "Failed to load assets file, collector cannot start");
+            return;
+        }
+    };
+
+    *state.symbols_tracked.write().await = tracked.len();
+
+    let bitget_config = match BitgetReadOnlyConfig::from_env() {
+        Ok(c) => c,
+        Err(e) => {
+            error!(?e, "Failed to load Bitget config from env, collector cannot start");
+            return;
+        }
+    };
+
+    let client = match BitgetReadOnlyClientImpl::new(bitget_config) {
+        Ok(c) => c,
+        Err(e) => {
+            error!(?e, "Failed to create Bitget client, collector cannot start");
+            return;
+        }
+    };
+
+    let poll_interval = Duration::from_secs(poll_interval_secs);
+    let mut prune_counter: u64 = 0;
+    let prune_every = 3600 / poll_interval_secs; // once per hour
+
+    info!(
+        poll_interval_secs,
+        retention_days,
+        symbols = tracked.len(),
+        "Collector started"
+    );
+
+    loop {
+        // Fetch and store prices
+        match client.get_all_tickers().await {
+            Ok(tickers) => {
+                let now = Utc::now();
+                let rows: Vec<(String, String, DateTime<Utc>)> = tickers
+                    .into_iter()
+                    .filter(|t| tracked.contains(&t.symbol))
+                    .map(|t| (t.symbol, t.last_price, now))
+                    .collect();
+
+                let count = rows.len();
+                match db::batch_insert_prices(&pool, &rows).await {
+                    Ok(inserted) => {
+                        *state.last_fetch_at.write().await = Some(now);
+                        info!(fetched = count, inserted, "Price fetch cycle complete");
+                    }
+                    Err(e) => {
+                        error!(%e, "Failed to insert prices into database");
+                    }
+                }
+            }
+            Err(e) => {
+                warn!(?e, "Failed to fetch tickers from Bitget");
+            }
+        }
+
+        // Periodic retention pruning
+        prune_counter += 1;
+        if prune_counter >= prune_every {
+            prune_counter = 0;
+            if let Err(e) = db::prune_old_prices(&pool, retention_days).await {
+                warn!(%e, "Failed to prune old prices");
+            }
+        }
+
+        tokio::time::sleep(poll_interval).await;
+    }
+}

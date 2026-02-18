@@ -1,0 +1,52 @@
+# Prometheus configuration for Index Protocol monitoring
+# Scrapes AP metrics (Prometheus format) and issuer health (via JSON exporter)
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+rule_files:
+  - "alerts.yml"
+
+scrape_configs:
+  # AP Service - native Prometheus metrics endpoint
+  - job_name: "ap"
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["ap:9100"]
+        labels:
+          service: "ap"
+
+  # Issuer Nodes - via JSON exporter (multi-target pattern)
+  # Prometheus passes each issuer URL to the single json-exporter instance
+  - job_name: "issuer-nodes"
+    scrape_interval: 5s
+    metrics_path: /probe
+    params:
+      module: [default]
+    static_configs:
+      - targets:
+          - "http://issuer-1:9001/health"
+          - "http://issuer-2:9002/health"
+          - "http://issuer-3:9003/health"
+    relabel_configs:
+      # Pass the target URL as ?target= parameter to json-exporter
+      - source_labels: [__address__]
+        target_label: __param_target
+      # Keep the original target as the instance label
+      - source_labels: [__param_target]
+        target_label: instance
+      # Route all scrapes through the single json-exporter
+      - target_label: __address__
+        replacement: "json-exporter:7979"
+
+  # Prometheus self-monitoring
+  - job_name: "prometheus"
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["localhost:9090"]

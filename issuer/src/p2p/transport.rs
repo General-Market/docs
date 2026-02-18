@@ -1,0 +1,451 @@
+//! TCP-based P2P transport implementation
+//!
+//! Provides the production implementation of the P2PTransport trait
+//! using TCP connections with optional TLS.
+
+use std::collections::HashMap;
+use std::net::SocketAddr;
+use std::sync::Arc;
+
+use async_trait::async_trait;
+use tokio::net::TcpListener;
+use tokio::sync::{mpsc, RwLock};
+use tracing::{debug, error, info, warn};
+
+use common::error::Error;
+use common::traits::{MessageStream, P2PTransport};
+use common::types::{P2PMessage, PeerId, PeerInfo};
+
+use super::connection::{temp_peer_id_from_addr, ConnectionStatus, PeerConnection};
+use super::tls::TlsConfig;
+
+/// TCP-based P2P transport for issuer nodes
+///
+/// Implements the [`P2PTransport`] trait using TCP connections with optional TLS.
+/// Supports automatic reconnection with exponential backoff.
+pub struct TcpP2PTransport {
+    /// This node's peer ID
+    peer_id: PeerId,
+    /// Active peer connections
+    connections: Arc<RwLock<HashMap<PeerId, PeerConnection>>>,
+    /// Listen port for incoming connections
+    listen_port: u16,
+    /// Channel for incoming messages
+    incoming_tx: mpsc::Sender<(PeerId, P2PMessage)>,
+    /// Receiver for incoming messages (taken once by receive())
+    incoming_rx: Arc<RwLock<Option<mpsc::Receiver<(PeerId, P2PMessage)>>>>,
+    /// TLS configuration (None for plaintext)
+    tls_config: Option<Arc<TlsConfig>>,
+    /// Listener handle
+    listener_handle: Arc<RwLock<Option<tokio::task::JoinHandle<()>>>>,
+}
+
+impl TcpP2PTransport {
+    /// Create a new TCP P2P transport
+    ///
+    /// # Arguments
+    /// * `peer_id` - This node's peer identifier
+    /// * `listen_port` - Port to listen on for incoming connections
+    /// * `tls_config` - Optional TLS configuration for secure connections
+    pub fn new(peer_id: PeerId, listen_port: u16, tls_config: Option<TlsConfig>) -> Self {
+        let (tx, rx) = mpsc::channel(1000);
+
+        Self {
+            peer_id,
+            connections: Arc::new(RwLock::new(HashMap::new())),
+            listen_port,
+            incoming_tx: tx,
+            incoming_rx: Arc::new(RwLock::new(Some(rx))),
+            tls_config: tls_config.map(Arc::new),
+            listener_handle: Arc::new(RwLock::new(None)),
+        }
+    }
+
+    /// Get this node's peer ID
+    pub fn peer_id(&self) -> PeerId {
+        self.peer_id
+    }
+
+    /// Get the listen port
+    pub fn listen_port(&self) -> u16 {
+        self.listen_port
+    }
+
+    /// Check if TLS is enabled
+    pub fn is_tls_enabled(&self) -> bool {
+        self.tls_config.is_some()
+    }
+
+    /// Start listening for incoming connections
+    ///
+    /// This spawns a background task that accepts incoming connections
+    /// and handles TLS handshake if configured.
+    pub async fn start_listener(&self) -> Result<(), Error> {
+        let addr: SocketAddr = format!("0.0.0.0:{}", self.listen_port)
+            .parse()
+            .map_err(|e| Error::P2PConnection(format!("Invalid address: {}", e)))?;
+
+        let listener = TcpListener::bind(addr)
+            .await
+            .map_err(|e| Error::P2PConnection(format!("Failed to bind: {}", e)))?;
+
+        info!(port = self.listen_port, "P2P listener started");
+
+        let connections = self.connections.clone();
+        let incoming_tx = self.incoming_tx.clone();
+        let tls_config = self.tls_config.clone();
+        let peer_id = self.peer_id;
+
+        let handle = tokio::spawn(async move {
+            loop {
+                match listener.accept().await {
+                    Ok((stream, addr)) => {
+                        debug!(%addr, "Accepted incoming connection");
+
+                        let connections = connections.clone();
+                        let incoming_tx = incoming_tx.clone();
+                        let tls_config = tls_config.clone();
+
+                        tokio::spawn(async move {
+                            if let Err(e) = PeerConnection::accept_incoming(
+                                stream,
+                                addr,
+                                connections,
+                                incoming_tx,
+                                tls_config,
+                                peer_id,
+                            )
+                            .await
+                            {
+                                warn!(code = "INFRA-007", %addr, error = %e, "Failed to accept connection");
+                            }
+                        });
+                    }
+                    Err(e) => {
+                        error!(code = "INFRA-007", error = %e, "Accept error");
+                    }
+                }
+            }
+        });
+
+        *self.listener_handle.write().await = Some(handle);
+        Ok(())
+    }
+
+    /// Stop the listener
+    pub async fn stop_listener(&self) {
+        if let Some(handle) = self.listener_handle.write().await.take() {
+            handle.abort();
+            info!("P2P listener stopped");
+        }
+    }
+
+    /// Get connection status for all peers
+    pub async fn get_peer_statuses(&self) -> HashMap<PeerId, ConnectionStatus> {
+        let connections = self.connections.read().await;
+        connections
+            .iter()
+            .map(|(id, conn)| (*id, conn.status()))
+            .collect()
+    }
+
+    /// Get count of connected peers
+    pub async fn connected_peer_count(&self) -> usize {
+        let connections = self.connections.read().await;
+        connections
+            .values()
+            .filter(|c| c.status() == ConnectionStatus::Connected)
+            .count()
+    }
+
+    /// Graceful shutdown - close all connections and stop listener
+    pub async fn shutdown(&self) {
+        info!("Shutting down P2P transport");
+
+        // Stop listener
+        self.stop_listener().await;
+
+        // Close all connections
+        let mut connections = self.connections.write().await;
+        for (peer_id, conn) in connections.drain() {
+            debug!(?peer_id, "Closing connection");
+            conn.close().await;
+        }
+
+        info!("P2P transport shutdown complete");
+    }
+}
+
+#[async_trait]
+impl P2PTransport for TcpP2PTransport {
+    async fn connect_peers(&self, peers: Vec<PeerInfo>) -> Result<(), Error> {
+        for peer in peers {
+            // Skip self
+            if peer.peer_id == self.peer_id {
+                continue;
+            }
+
+            // Connect to peer
+            let addr: SocketAddr = format!("{}:{}", peer.ip, peer.port)
+                .parse()
+                .map_err(|e| Error::P2PConnection(format!("Invalid peer address: {}", e)))?;
+
+            // When peer_id is unknown ([0u8;32], e.g. from on-chain discovery),
+            // generate a unique temporary ID from the address so each peer gets
+            // its own entry in the connection map. The reader_loop will re-key to
+            // the real peer_id once the first message reveals the sender.
+            let connection_key = if peer.peer_id == [0u8; 32] {
+                temp_peer_id_from_addr(&addr, 0xFF)
+            } else {
+                peer.peer_id
+            };
+
+            // Check if already connected (using effective key)
+            {
+                let connections = self.connections.read().await;
+                if connections.contains_key(&connection_key) {
+                    debug!(?connection_key, "Already connected to peer");
+                    continue;
+                }
+            }
+
+            info!(?connection_key, %addr, "Connecting to peer");
+
+            match PeerConnection::connect(
+                connection_key,
+                addr,
+                self.connections.clone(),
+                self.incoming_tx.clone(),
+                self.tls_config.clone(),
+                Some(self.peer_id),
+            )
+            .await
+            {
+                Ok(conn) => {
+                    let mut connections = self.connections.write().await;
+                    connections.insert(connection_key, conn);
+                    info!(?connection_key, %addr, "Connected to peer");
+                }
+                Err(e) => {
+                    warn!(code = "INFRA-007", ?connection_key, %addr, error = %e, "Failed to connect to peer, will retry");
+                    // Start reconnection in background
+                    let connections = self.connections.clone();
+                    let incoming_tx = self.incoming_tx.clone();
+                    let tls_config = self.tls_config.clone();
+                    let our_peer_id = self.peer_id;
+
+                    tokio::spawn(async move {
+                        PeerConnection::reconnect_loop(
+                            connection_key,
+                            addr,
+                            connections,
+                            incoming_tx,
+                            tls_config,
+                            Some(our_peer_id),
+                        )
+                        .await;
+                    });
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn broadcast(&self, message: P2PMessage) -> Result<(), Error> {
+        let connections = self.connections.read().await;
+
+        if connections.is_empty() {
+            debug!("No peers connected for broadcast");
+            return Ok(());
+        }
+
+        let mut send_count = 0;
+        let mut error_count = 0;
+
+        for (peer_id, conn) in connections.iter() {
+            if conn.status() != ConnectionStatus::Connected {
+                continue;
+            }
+
+            match conn.send(message.clone()).await {
+                Ok(_) => {
+                    send_count += 1;
+                }
+                Err(e) => {
+                    warn!(code = "INFRA-008", ?peer_id, error = %e, "Failed to send to peer");
+                    error_count += 1;
+                }
+            }
+        }
+
+        debug!(send_count, error_count, "Broadcast complete");
+
+        // Broadcast is best-effort, don't fail if some sends fail
+        Ok(())
+    }
+
+    async fn send_to(&self, peer_id: PeerId, message: P2PMessage) -> Result<(), Error> {
+        let connections = self.connections.read().await;
+
+        let conn = connections
+            .get(&peer_id)
+            .ok_or_else(|| Error::P2PConnection(format!("Peer not found: {:?}", peer_id)))?;
+
+        if conn.status() != ConnectionStatus::Connected {
+            return Err(Error::P2PConnection(format!(
+                "Peer not connected: {:?}",
+                peer_id
+            )));
+        }
+
+        conn.send(message).await
+    }
+
+    async fn receive(&self) -> Result<MessageStream, Error> {
+        let mut rx_guard = self.incoming_rx.write().await;
+
+        let rx = rx_guard.take().ok_or_else(|| {
+            Error::P2PReceive("receive() can only be called once per transport instance".to_string())
+        })?;
+
+        let stream = async_stream::stream! {
+            let mut rx = rx;
+            while let Some((from, msg)) = rx.recv().await {
+                yield Ok((from, msg));
+            }
+        };
+
+        Ok(Box::pin(stream))
+    }
+}
+
+impl Drop for TcpP2PTransport {
+    fn drop(&mut self) {
+        // Note: Proper cleanup should use shutdown() before drop
+        // This is a fallback to abort the listener task
+        if let Ok(mut handle) = self.listener_handle.try_write() {
+            if let Some(h) = handle.take() {
+                h.abort();
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_peer_id(n: u8) -> PeerId {
+        let mut id = [0u8; 32];
+        id[0] = n;
+        id
+    }
+
+    #[tokio::test]
+    async fn test_transport_creation() {
+        let transport = TcpP2PTransport::new(test_peer_id(1), 9001, None);
+
+        assert_eq!(transport.peer_id(), test_peer_id(1));
+        assert_eq!(transport.listen_port(), 9001);
+        assert!(!transport.is_tls_enabled());
+    }
+
+    #[tokio::test]
+    async fn test_empty_broadcast_succeeds() {
+        let transport = TcpP2PTransport::new(test_peer_id(1), 9002, None);
+
+        let msg = P2PMessage::Heartbeat {
+            sender_id: test_peer_id(1),
+            timestamp: 12345,
+        };
+
+        // Broadcast with no connections should succeed
+        let result = transport.broadcast(msg).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_send_to_unknown_peer_fails() {
+        let transport = TcpP2PTransport::new(test_peer_id(1), 9003, None);
+
+        let msg = P2PMessage::Heartbeat {
+            sender_id: test_peer_id(1),
+            timestamp: 12345,
+        };
+
+        // Send to unknown peer should fail
+        let result = transport.send_to(test_peer_id(99), msg).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_receive_can_only_be_called_once() {
+        let transport = TcpP2PTransport::new(test_peer_id(1), 9004, None);
+
+        // First call should succeed
+        let result1 = transport.receive().await;
+        assert!(result1.is_ok());
+
+        // Second call should fail
+        let result2 = transport.receive().await;
+        assert!(result2.is_err());
+    }
+
+    /// Regression test for P2P bug: incoming connections must be stored for broadcasting
+    ///
+    /// Bug: `accept_incoming` created connections but never stored them in the
+    /// `connections` map, causing broadcasts to fail with "No peers connected".
+    /// Peers could receive messages (reader_loop worked) but couldn't send.
+    ///
+    /// This test verifies that when peer B connects TO peer A (incoming connection
+    /// from A's perspective), peer A can broadcast back to B.
+    #[tokio::test]
+    async fn test_incoming_connection_stored_for_broadcast() {
+        use tokio::time::{sleep, Duration};
+
+        // Create two transports
+        let transport_a = TcpP2PTransport::new(test_peer_id(1), 19001, None);
+        let transport_b = TcpP2PTransport::new(test_peer_id(2), 19002, None);
+
+        // Start listeners
+        transport_a.start_listener().await.expect("A should start listener");
+        transport_b.start_listener().await.expect("B should start listener");
+
+        // B connects to A (creates incoming connection on A)
+        let peers = vec![PeerInfo {
+            peer_id: [0u8; 32], // Unknown peer_id, will be discovered
+            ip: "127.0.0.1".to_string(),
+            port: 19001,
+        }];
+        transport_b.connect_peers(peers).await.expect("B should connect to A");
+
+        // Wait for connection establishment and identification
+        sleep(Duration::from_millis(500)).await;
+
+        // CRITICAL: A must have the incoming connection stored for broadcast
+        // This is what the bug prevented - A had 0 connections for broadcast
+        let a_peer_count = transport_a.connected_peer_count().await;
+        assert!(
+            a_peer_count > 0,
+            "BUG REGRESSION: Transport A has no peers for broadcast! \
+             Incoming connections are not being stored in the connections map. \
+             Check that accept_incoming() inserts the connection after setup."
+        );
+
+        // Verify A can broadcast (this would fail with the bug)
+        let msg = P2PMessage::Heartbeat {
+            sender_id: test_peer_id(1),
+            timestamp: 12345,
+        };
+        let broadcast_result = transport_a.broadcast(msg).await;
+        assert!(
+            broadcast_result.is_ok(),
+            "Transport A should be able to broadcast to incoming connections"
+        );
+
+        // Cleanup
+        transport_a.shutdown().await;
+        transport_b.shutdown().await;
+    }
+}

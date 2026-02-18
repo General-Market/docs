@@ -1,0 +1,1377 @@
+//! Consensus message handling
+//!
+//! Routes incoming P2P messages to appropriate consensus handlers.
+
+use common::types::{BLSSignature as P2PBLSSignature, P2PMessage, PeerId};
+use ethers::types::{Address, H256, U256};
+use tracing::{debug, trace, warn};
+
+use super::state::ConsensusPhase;
+
+/// Handler for consensus-related P2P messages
+#[derive(Debug, Default)]
+pub struct ConsensusMessageHandler {
+    /// Messages received for future cycles (buffer for out-of-order delivery)
+    pending_messages: Vec<(PeerId, P2PMessage, u64)>, // (from, message, cycle_number)
+}
+
+impl ConsensusMessageHandler {
+    /// Create a new message handler
+    pub fn new() -> Self {
+        Self {
+            pending_messages: Vec::new(),
+        }
+    }
+
+    /// Handle an incoming P2P message for consensus
+    ///
+    /// Returns the appropriate action to take based on message type and current state.
+    pub fn handle_message(
+        &mut self,
+        from: PeerId,
+        message: P2PMessage,
+        current_cycle: u64,
+        current_phase: ConsensusPhase,
+    ) -> MessageHandleResult {
+        match message {
+            P2PMessage::PriceProposal { cycle_number, .. } => {
+                self.handle_price_proposal(from, message, cycle_number, current_cycle, current_phase)
+            }
+            P2PMessage::PriceVote { cycle_number, .. } => {
+                self.handle_price_vote(from, message, cycle_number, current_cycle, current_phase)
+            }
+            P2PMessage::BatchProposal { cycle_number, .. } => {
+                self.handle_batch_proposal(from, message, cycle_number, current_cycle, current_phase)
+            }
+            P2PMessage::BatchSign { cycle_number, .. } => {
+                self.handle_batch_sign(from, message, cycle_number, current_cycle, current_phase)
+            }
+            P2PMessage::ItpCreationProposal {
+                leader_id,
+                admin,
+                nonce,
+                name,
+                symbol,
+                weights,
+                assets,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    nonce = %nonce,
+                    "Received ItpCreationProposal"
+                );
+                // Use leader_id from message for routing (more reliable than transport-level from)
+                MessageHandleResult::ProcessItpCreationProposal {
+                    from: leader_id,
+                    admin,
+                    nonce,
+                    name,
+                    symbol,
+                    weights,
+                    assets,
+                    leader_signature,
+                }
+            }
+            P2PMessage::ItpCreationSign { signer_id, signer_index, nonce, signature } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    nonce = %nonce,
+                    "Received ItpCreationSign"
+                );
+                // Use signer_id from message for identification
+                MessageHandleResult::ProcessItpCreationSign {
+                    from: signer_id,
+                    signer_index,
+                    nonce,
+                    signature,
+                }
+            }
+            // Story 7.2: Bridge Arb→L3 orchestration messages
+            P2PMessage::BridgeArbToL3Proposal {
+                leader_id,
+                order_id,
+                itp_id,
+                user,
+                amount,
+                deadline,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    order_id = %order_id,
+                    itp_id = ?itp_id,
+                    "Received BridgeArbToL3Proposal"
+                );
+                // Use leader_id from message for routing
+                MessageHandleResult::ProcessBridgeArbToL3Proposal {
+                    from: leader_id,
+                    order_id,
+                    itp_id,
+                    user,
+                    amount,
+                    deadline,
+                    leader_signature,
+                }
+            }
+            P2PMessage::BridgeArbToL3Sign {
+                signer_id,
+                signer_index,
+                order_id,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    order_id = %order_id,
+                    "Received BridgeArbToL3Sign"
+                );
+                // Use signer_id from message for identification
+                MessageHandleResult::ProcessBridgeArbToL3Sign {
+                    from: signer_id,
+                    signer_index,
+                    order_id,
+                    signature,
+                }
+            }
+            // Story 7.3: Submit Order for User messages
+            P2PMessage::SubmitOrderForUserProposal {
+                leader_id,
+                arb_order_id,
+                itp_id,
+                user,
+                amount,
+                limit_price,
+                slippage_tier,
+                deadline,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    arb_order_id = %arb_order_id,
+                    itp_id = ?itp_id,
+                    "Received SubmitOrderForUserProposal"
+                );
+                // Use leader_id from message for routing
+                MessageHandleResult::ProcessSubmitOrderForUserProposal {
+                    from: leader_id,
+                    arb_order_id,
+                    itp_id,
+                    user,
+                    amount,
+                    limit_price,
+                    slippage_tier,
+                    deadline,
+                    leader_signature,
+                }
+            }
+            P2PMessage::SubmitOrderForUserSign {
+                signer_id,
+                signer_index,
+                arb_order_id,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    arb_order_id = %arb_order_id,
+                    "Received SubmitOrderForUserSign"
+                );
+                // Use signer_id from message for identification
+                MessageHandleResult::ProcessSubmitOrderForUserSign {
+                    from: signer_id,
+                    signer_index,
+                    arb_order_id,
+                    signature,
+                }
+            }
+            // Story 7.4: Batch and Fill confirmation messages
+            P2PMessage::ConfirmBatchProposal {
+                leader_id,
+                cycle_number,
+                order_ids,
+                prices,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    cycle_number,
+                    num_orders = order_ids.len(),
+                    "Received ConfirmBatchProposal"
+                );
+                // Use leader_id from message for routing
+                MessageHandleResult::ProcessConfirmBatchProposal {
+                    from: leader_id,
+                    cycle_number,
+                    order_ids,
+                    prices,
+                    leader_signature,
+                }
+            }
+            P2PMessage::ConfirmBatchSign {
+                signer_id,
+                signer_index,
+                cycle_number,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    cycle_number,
+                    "Received ConfirmBatchSign"
+                );
+                // Use signer_id from message for identification
+                MessageHandleResult::ProcessConfirmBatchSign {
+                    from: signer_id,
+                    signer_index,
+                    cycle_number,
+                    signature,
+                }
+            }
+            P2PMessage::ConfirmFillsProposal {
+                leader_id,
+                cycle_number,
+                fills,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    cycle_number,
+                    num_fills = fills.len(),
+                    "Received ConfirmFillsProposal"
+                );
+                // Use leader_id from message for routing
+                MessageHandleResult::ProcessConfirmFillsProposal {
+                    from: leader_id,
+                    cycle_number,
+                    fills,
+                    leader_signature,
+                }
+            }
+            P2PMessage::ConfirmFillsSign {
+                signer_id,
+                signer_index,
+                cycle_number,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    cycle_number,
+                    "Received ConfirmFillsSign"
+                );
+                // Use signer_id from message for identification
+                MessageHandleResult::ProcessConfirmFillsSign {
+                    from: signer_id,
+                    signer_index,
+                    cycle_number,
+                    signature,
+                }
+            }
+            // Story 7.5: Bridge L3→Arb messages
+            P2PMessage::BridgeL3ToArbProposal {
+                leader_id,
+                cycle_number,
+                order_ids,
+                total_amount,
+                destination,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    cycle_number,
+                    num_orders = order_ids.len(),
+                    total_amount = %total_amount,
+                    "Received BridgeL3ToArbProposal"
+                );
+                // Use leader_id from message for routing
+                MessageHandleResult::ProcessBridgeL3ToArbProposal {
+                    from: leader_id,
+                    cycle_number,
+                    order_ids,
+                    total_amount,
+                    destination,
+                    leader_signature,
+                }
+            }
+            P2PMessage::BridgeL3ToArbSign {
+                signer_id,
+                signer_index,
+                cycle_number,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    cycle_number,
+                    "Received BridgeL3ToArbSign"
+                );
+                // Use signer_id from message for identification
+                MessageHandleResult::ProcessBridgeL3ToArbSign {
+                    from: signer_id,
+                    signer_index,
+                    cycle_number,
+                    signature,
+                }
+            }
+            // Story 7.6: Custody release to vault messages
+            P2PMessage::ReleaseToVaultProposal {
+                leader_id,
+                cycle_number,
+                order_ids,
+                total_amount,
+                vault_address,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    cycle_number,
+                    num_orders = order_ids.len(),
+                    total_amount = %total_amount,
+                    ?vault_address,
+                    "Received ReleaseToVaultProposal"
+                );
+                // Use leader_id from message for routing
+                MessageHandleResult::ProcessReleaseToVaultProposal {
+                    from: leader_id,
+                    cycle_number,
+                    order_ids,
+                    total_amount,
+                    vault_address,
+                    leader_signature,
+                }
+            }
+            P2PMessage::ReleaseToVaultSign {
+                signer_id,
+                signer_index,
+                cycle_number,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    cycle_number,
+                    "Received ReleaseToVaultSign"
+                );
+                // Use signer_id from message for identification
+                MessageHandleResult::ProcessReleaseToVaultSign {
+                    from: signer_id,
+                    signer_index,
+                    cycle_number,
+                    signature,
+                }
+            }
+            // Story 7-14: Rebalance batch messages
+            P2PMessage::RebalanceBatchProposal {
+                leader_id,
+                cycle_number,
+                itp_ids,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    cycle_number,
+                    num_itps = itp_ids.len(),
+                    "Received RebalanceBatchProposal"
+                );
+                MessageHandleResult::ProcessRebalanceBatchProposal {
+                    from: leader_id,
+                    cycle_number,
+                    itp_ids,
+                    leader_signature,
+                }
+            }
+            P2PMessage::RebalanceBatchSign {
+                signer_id,
+                signer_index,
+                cycle_number,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    cycle_number,
+                    "Received RebalanceBatchSign"
+                );
+                MessageHandleResult::ProcessRebalanceBatchSign {
+                    from: signer_id,
+                    signer_index,
+                    cycle_number,
+                    signature,
+                }
+            }
+            // Story 7-14: Update weights messages
+            P2PMessage::UpdateWeightsProposal {
+                leader_id,
+                itp_id,
+                new_weights,
+                new_inventory,
+                nav,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    ?itp_id,
+                    num_weights = new_weights.len(),
+                    num_inventory = new_inventory.len(),
+                    nav = %nav,
+                    "Received UpdateWeightsProposal"
+                );
+                MessageHandleResult::ProcessUpdateWeightsProposal {
+                    from: leader_id,
+                    itp_id,
+                    new_weights,
+                    new_inventory,
+                    nav,
+                    leader_signature,
+                }
+            }
+            P2PMessage::UpdateWeightsSign {
+                signer_id,
+                signer_index,
+                itp_id,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    ?itp_id,
+                    "Received UpdateWeightsSign"
+                );
+                MessageHandleResult::ProcessUpdateWeightsSign {
+                    from: signer_id,
+                    signer_index,
+                    itp_id,
+                    signature,
+                }
+            }
+            // Single-phase rebalance messages
+            P2PMessage::RebalanceProposal {
+                leader_id,
+                itp_id,
+                remove_indices,
+                add_assets,
+                new_weights,
+                prices,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    ?itp_id,
+                    weight_count = new_weights.len(),
+                    "Received RebalanceProposal"
+                );
+                MessageHandleResult::ProcessRebalanceProposal {
+                    from: leader_id,
+                    itp_id,
+                    remove_indices,
+                    add_assets,
+                    new_weights,
+                    prices,
+                    leader_signature,
+                }
+            }
+            P2PMessage::RebalanceSign {
+                signer_id,
+                signer_index,
+                itp_id,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    ?itp_id,
+                    "Received RebalanceSign"
+                );
+                MessageHandleResult::ProcessRebalanceSign {
+                    from: signer_id,
+                    signer_index,
+                    itp_id,
+                    signature,
+                }
+            }
+            P2PMessage::AssetTradesProposal {
+                leader_id,
+                cycle_number,
+                trades_data,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    cycle_number,
+                    trade_count = trades_data.len(),
+                    "Received AssetTradesProposal"
+                );
+                MessageHandleResult::ProcessAssetTradesProposal {
+                    from: leader_id,
+                    cycle_number,
+                    trades_data,
+                    leader_signature,
+                }
+            }
+            P2PMessage::AssetTradesSign {
+                signer_id,
+                signer_index,
+                cycle_number,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    cycle_number,
+                    "Received AssetTradesSign"
+                );
+                MessageHandleResult::ProcessAssetTradesSign {
+                    from: signer_id,
+                    signer_index,
+                    cycle_number,
+                    signature,
+                }
+            }
+            // Cross-chain sell flow messages
+            P2PMessage::SubmitSellOrderProposal {
+                leader_id,
+                order_id,
+                itp_id,
+                user,
+                bridged_itp_address,
+                amount,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    order_id = %order_id,
+                    itp_id = ?itp_id,
+                    "Received SubmitSellOrderProposal"
+                );
+                MessageHandleResult::ProcessSubmitSellOrderProposal {
+                    from: leader_id,
+                    order_id,
+                    itp_id,
+                    user,
+                    bridged_itp_address,
+                    amount,
+                    leader_signature,
+                }
+            }
+            P2PMessage::SubmitSellOrderSign {
+                signer_id,
+                signer_index,
+                order_id,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    order_id = %order_id,
+                    "Received SubmitSellOrderSign"
+                );
+                MessageHandleResult::ProcessSubmitSellOrderSign {
+                    from: signer_id,
+                    signer_index,
+                    order_id,
+                    signature,
+                }
+            }
+            P2PMessage::CompleteSellOrderProposal {
+                leader_id,
+                order_id,
+                usdc_proceeds,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    order_id = %order_id,
+                    usdc_proceeds = %usdc_proceeds,
+                    "Received CompleteSellOrderProposal"
+                );
+                MessageHandleResult::ProcessCompleteSellOrderProposal {
+                    from: leader_id,
+                    order_id,
+                    usdc_proceeds,
+                    leader_signature,
+                }
+            }
+            P2PMessage::CompleteSellOrderSign {
+                signer_id,
+                signer_index,
+                order_id,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    order_id = %order_id,
+                    "Received CompleteSellOrderSign"
+                );
+                MessageHandleResult::ProcessCompleteSellOrderSign {
+                    from: signer_id,
+                    signer_index,
+                    order_id,
+                    signature,
+                }
+            }
+            _ => {
+                trace!(?from, "Non-consensus message received");
+                MessageHandleResult::Ignored
+            }
+        }
+    }
+
+    fn handle_price_proposal(
+        &mut self,
+        from: PeerId,
+        message: P2PMessage,
+        msg_cycle: u64,
+        current_cycle: u64,
+        current_phase: ConsensusPhase,
+    ) -> MessageHandleResult {
+        debug!(
+            ?from,
+            msg_cycle,
+            current_cycle,
+            ?current_phase,
+            "Received PriceProposal"
+        );
+
+        // Check cycle number
+        if msg_cycle < current_cycle {
+            debug!(msg_cycle, current_cycle, "Stale PriceProposal, discarding");
+            return MessageHandleResult::Stale;
+        }
+
+        if msg_cycle > current_cycle {
+            debug!(
+                msg_cycle,
+                current_cycle, "Future PriceProposal, buffering"
+            );
+            self.pending_messages.push((from, message, msg_cycle));
+            return MessageHandleResult::Buffered;
+        }
+
+        // Message is for current cycle
+        if let P2PMessage::PriceProposal {
+            prices,
+            proposer_signature,
+            ..
+        } = message
+        {
+            MessageHandleResult::ProcessPriceProposal {
+                from,
+                prices,
+                proposer_signature,
+            }
+        } else {
+            MessageHandleResult::Ignored
+        }
+    }
+
+    fn handle_price_vote(
+        &mut self,
+        from: PeerId,
+        message: P2PMessage,
+        msg_cycle: u64,
+        current_cycle: u64,
+        current_phase: ConsensusPhase,
+    ) -> MessageHandleResult {
+        debug!(
+            ?from,
+            msg_cycle,
+            current_cycle,
+            ?current_phase,
+            "Received PriceVote"
+        );
+
+        // Check cycle number
+        if msg_cycle != current_cycle {
+            if msg_cycle < current_cycle {
+                debug!(msg_cycle, current_cycle, "Stale PriceVote, discarding");
+                return MessageHandleResult::Stale;
+            } else {
+                debug!(msg_cycle, current_cycle, "Future PriceVote, buffering");
+                self.pending_messages.push((from, message, msg_cycle));
+                return MessageHandleResult::Buffered;
+            }
+        }
+
+        // Check phase
+        if current_phase != ConsensusPhase::PriceVoting
+            && current_phase != ConsensusPhase::PriceProposal
+        {
+            warn!(
+                ?current_phase,
+                "PriceVote received in unexpected phase"
+            );
+            return MessageHandleResult::UnexpectedPhase;
+        }
+
+        if let P2PMessage::PriceVote {
+            voter_id,
+            approved,
+            signature,
+            ..
+        } = message
+        {
+            MessageHandleResult::ProcessPriceVote {
+                from: voter_id,
+                approved,
+                signature,
+            }
+        } else {
+            MessageHandleResult::Ignored
+        }
+    }
+
+    fn handle_batch_proposal(
+        &mut self,
+        from: PeerId,
+        message: P2PMessage,
+        msg_cycle: u64,
+        current_cycle: u64,
+        current_phase: ConsensusPhase,
+    ) -> MessageHandleResult {
+        debug!(
+            ?from,
+            msg_cycle,
+            current_cycle,
+            ?current_phase,
+            "Received BatchProposal"
+        );
+
+        // Check cycle number
+        if msg_cycle != current_cycle {
+            if msg_cycle < current_cycle {
+                debug!(msg_cycle, current_cycle, "Stale BatchProposal, discarding");
+                return MessageHandleResult::Stale;
+            } else {
+                debug!(
+                    msg_cycle,
+                    current_cycle, "Future BatchProposal, buffering"
+                );
+                self.pending_messages.push((from, message, msg_cycle));
+                return MessageHandleResult::Buffered;
+            }
+        }
+
+        if let P2PMessage::BatchProposal {
+            order_ids,
+            fills,
+            proposer_signature,
+            ..
+        } = message
+        {
+            MessageHandleResult::ProcessBatchProposal {
+                from,
+                order_ids,
+                fills,
+                proposer_signature,
+            }
+        } else {
+            MessageHandleResult::Ignored
+        }
+    }
+
+    fn handle_batch_sign(
+        &mut self,
+        from: PeerId,
+        message: P2PMessage,
+        msg_cycle: u64,
+        current_cycle: u64,
+        current_phase: ConsensusPhase,
+    ) -> MessageHandleResult {
+        debug!(
+            ?from,
+            msg_cycle,
+            current_cycle,
+            ?current_phase,
+            "Received BatchSign"
+        );
+
+        // Check cycle number
+        if msg_cycle != current_cycle {
+            if msg_cycle < current_cycle {
+                debug!(msg_cycle, current_cycle, "Stale BatchSign, discarding");
+                return MessageHandleResult::Stale;
+            } else {
+                debug!(msg_cycle, current_cycle, "Future BatchSign, buffering");
+                self.pending_messages.push((from, message, msg_cycle));
+                return MessageHandleResult::Buffered;
+            }
+        }
+
+        // Check phase
+        if current_phase != ConsensusPhase::BatchSigning
+            && current_phase != ConsensusPhase::BatchProposal
+        {
+            warn!(?current_phase, "BatchSign received in unexpected phase");
+            return MessageHandleResult::UnexpectedPhase;
+        }
+
+        if let P2PMessage::BatchSign {
+            signer_id,
+            signature,
+            ..
+        } = message
+        {
+            MessageHandleResult::ProcessBatchSign {
+                from: signer_id,
+                signature,
+            }
+        } else {
+            MessageHandleResult::Ignored
+        }
+    }
+
+    /// Get buffered messages for a specific cycle
+    pub fn get_buffered_for_cycle(&mut self, cycle: u64) -> Vec<(PeerId, P2PMessage)> {
+        let (for_cycle, rest): (Vec<_>, Vec<_>) = self
+            .pending_messages
+            .drain(..)
+            .partition(|(_, _, msg_cycle)| *msg_cycle == cycle);
+
+        self.pending_messages = rest;
+
+        for_cycle
+            .into_iter()
+            .map(|(from, msg, _)| (from, msg))
+            .collect()
+    }
+
+    /// Clear all buffered messages older than the given cycle
+    pub fn clear_stale_messages(&mut self, current_cycle: u64) {
+        self.pending_messages
+            .retain(|(_, _, cycle)| *cycle >= current_cycle);
+    }
+
+    /// Get count of buffered messages
+    pub fn buffered_count(&self) -> usize {
+        self.pending_messages.len()
+    }
+}
+
+/// Result of handling a consensus message
+#[derive(Debug)]
+pub enum MessageHandleResult {
+    /// Message was ignored (not a consensus message)
+    Ignored,
+    /// Message was stale (for a past cycle)
+    Stale,
+    /// Message was buffered for a future cycle
+    Buffered,
+    /// Message received in unexpected phase
+    UnexpectedPhase,
+    /// Process a price proposal from the leader
+    ProcessPriceProposal {
+        from: PeerId,
+        prices: Vec<(u32, ethers::types::U256)>,
+        proposer_signature: P2PBLSSignature,
+    },
+    /// Process a price vote from a follower
+    ProcessPriceVote {
+        from: PeerId,
+        approved: bool,
+        signature: P2PBLSSignature,
+    },
+    /// Process a batch proposal from the leader
+    ProcessBatchProposal {
+        from: PeerId,
+        order_ids: Vec<u64>,
+        fills: Vec<common::Fill>,
+        proposer_signature: P2PBLSSignature,
+    },
+    /// Process a batch signature from a follower
+    ProcessBatchSign {
+        from: PeerId,
+        signature: P2PBLSSignature,
+    },
+    /// Process an ITP creation proposal from the leader (Story 6.21)
+    ProcessItpCreationProposal {
+        from: PeerId,
+        admin: Address,
+        nonce: U256,
+        name: String,
+        symbol: String,
+        weights: Vec<U256>,
+        assets: Vec<Address>,
+        leader_signature: P2PBLSSignature,
+    },
+    /// Process an ITP creation signature from a follower (Story 6.21)
+    ProcessItpCreationSign {
+        from: PeerId,
+        /// Signer's index in the issuer set (for bitmap calculation)
+        signer_index: u8,
+        nonce: U256,
+        signature: P2PBLSSignature,
+    },
+    /// Process a bridge Arb→L3 proposal from the leader (Story 7.2)
+    ProcessBridgeArbToL3Proposal {
+        from: PeerId,
+        order_id: U256,
+        itp_id: H256,
+        user: Address,
+        amount: U256,
+        deadline: U256,
+        leader_signature: P2PBLSSignature,
+    },
+    /// Process a bridge Arb→L3 signature from a follower (Story 7.2)
+    ProcessBridgeArbToL3Sign {
+        from: PeerId,
+        /// Signer's index in the issuer set (for bitmap calculation)
+        signer_index: u8,
+        order_id: U256,
+        signature: P2PBLSSignature,
+    },
+    /// Process a submit order proposal from the leader (Story 7.3)
+    ProcessSubmitOrderForUserProposal {
+        from: PeerId,
+        arb_order_id: U256,
+        itp_id: H256,
+        user: Address,
+        amount: U256,
+        limit_price: U256,
+        slippage_tier: U256,
+        deadline: U256,
+        leader_signature: P2PBLSSignature,
+    },
+    /// Process a submit order signature from a follower (Story 7.3)
+    ProcessSubmitOrderForUserSign {
+        from: PeerId,
+        /// Signer's index in the issuer set (for bitmap calculation)
+        signer_index: u8,
+        arb_order_id: U256,
+        signature: P2PBLSSignature,
+    },
+    /// Process a confirm batch proposal from the leader (Story 7.4)
+    ProcessConfirmBatchProposal {
+        from: PeerId,
+        cycle_number: u64,
+        order_ids: Vec<U256>,
+        prices: Vec<U256>,
+        leader_signature: P2PBLSSignature,
+    },
+    /// Process a confirm batch signature from a follower (Story 7.4)
+    ProcessConfirmBatchSign {
+        from: PeerId,
+        /// Signer's index in the issuer set (for bitmap calculation)
+        signer_index: u8,
+        cycle_number: u64,
+        signature: P2PBLSSignature,
+    },
+    /// Process a confirm fills proposal from the leader (Story 7.4)
+    ProcessConfirmFillsProposal {
+        from: PeerId,
+        cycle_number: u64,
+        fills: Vec<common::types::OrderFill>,
+        leader_signature: P2PBLSSignature,
+    },
+    /// Process a confirm fills signature from a follower (Story 7.4)
+    ProcessConfirmFillsSign {
+        from: PeerId,
+        /// Signer's index in the issuer set (for bitmap calculation)
+        signer_index: u8,
+        cycle_number: u64,
+        signature: P2PBLSSignature,
+    },
+    /// Process a bridge L3→Arb proposal from the leader (Story 7.5)
+    ProcessBridgeL3ToArbProposal {
+        from: PeerId,
+        cycle_number: u64,
+        order_ids: Vec<U256>,
+        total_amount: U256,
+        destination: Address,
+        leader_signature: P2PBLSSignature,
+    },
+    /// Process a bridge L3→Arb signature from a follower (Story 7.5)
+    ProcessBridgeL3ToArbSign {
+        from: PeerId,
+        /// Signer's index in the issuer set (for bitmap calculation)
+        signer_index: u8,
+        cycle_number: u64,
+        signature: P2PBLSSignature,
+    },
+    /// Process a custody release to vault proposal from the leader (Story 7.6)
+    ProcessReleaseToVaultProposal {
+        from: PeerId,
+        cycle_number: u64,
+        order_ids: Vec<U256>,
+        total_amount: U256,
+        vault_address: Address,
+        leader_signature: P2PBLSSignature,
+    },
+    /// Process a custody release to vault signature from a follower (Story 7.6)
+    ProcessReleaseToVaultSign {
+        from: PeerId,
+        /// Signer's index in the issuer set (for bitmap calculation)
+        signer_index: u8,
+        cycle_number: u64,
+        signature: P2PBLSSignature,
+    },
+    /// Process a rebalance batch proposal from the leader (Story 7-14)
+    ProcessRebalanceBatchProposal {
+        from: PeerId,
+        cycle_number: u64,
+        itp_ids: Vec<H256>,
+        leader_signature: P2PBLSSignature,
+    },
+    /// Process a rebalance batch signature from a follower (Story 7-14)
+    ProcessRebalanceBatchSign {
+        from: PeerId,
+        /// Signer's index in the issuer set (for bitmap calculation)
+        signer_index: u8,
+        cycle_number: u64,
+        signature: P2PBLSSignature,
+    },
+    /// Process an update weights proposal from the leader (Story 7-14)
+    ProcessUpdateWeightsProposal {
+        from: PeerId,
+        itp_id: H256,
+        new_weights: Vec<U256>,
+        new_inventory: Vec<U256>,
+        nav: U256,
+        leader_signature: P2PBLSSignature,
+    },
+    /// Process an update weights signature from a follower (Story 7-14)
+    ProcessUpdateWeightsSign {
+        from: PeerId,
+        /// Signer's index in the issuer set (for bitmap calculation)
+        signer_index: u8,
+        itp_id: H256,
+        signature: P2PBLSSignature,
+    },
+    /// Process a single-phase rebalance proposal from the leader
+    ProcessRebalanceProposal {
+        from: PeerId,
+        itp_id: H256,
+        remove_indices: Vec<U256>,
+        add_assets: Vec<Address>,
+        new_weights: Vec<U256>,
+        prices: Vec<U256>,
+        leader_signature: P2PBLSSignature,
+    },
+    /// Process a single-phase rebalance signature from a follower
+    ProcessRebalanceSign {
+        from: PeerId,
+        /// Signer's index in the issuer set (for bitmap calculation)
+        signer_index: u8,
+        itp_id: H256,
+        signature: P2PBLSSignature,
+    },
+    /// Process an asset trades proposal from the leader (issuer-driven settlement)
+    ProcessAssetTradesProposal {
+        from: PeerId,
+        cycle_number: u64,
+        trades_data: Vec<(Address, u8, U256, U256, Address)>,
+        leader_signature: P2PBLSSignature,
+    },
+    /// Process an asset trades signature from a follower (issuer-driven settlement)
+    ProcessAssetTradesSign {
+        from: PeerId,
+        /// Signer's index in the issuer set (for bitmap calculation)
+        signer_index: u8,
+        cycle_number: u64,
+        signature: P2PBLSSignature,
+    },
+    /// Process a submit sell order proposal from the leader (cross-chain sell)
+    ProcessSubmitSellOrderProposal {
+        from: PeerId,
+        order_id: U256,
+        itp_id: H256,
+        user: Address,
+        bridged_itp_address: Address,
+        amount: U256,
+        leader_signature: P2PBLSSignature,
+    },
+    /// Process a submit sell order signature from a follower (cross-chain sell)
+    ProcessSubmitSellOrderSign {
+        from: PeerId,
+        /// Signer's index in the issuer set (for bitmap calculation)
+        signer_index: u8,
+        order_id: U256,
+        signature: P2PBLSSignature,
+    },
+    /// Process a complete sell order proposal from the leader (cross-chain sell)
+    ProcessCompleteSellOrderProposal {
+        from: PeerId,
+        order_id: U256,
+        usdc_proceeds: U256,
+        leader_signature: P2PBLSSignature,
+    },
+    /// Process a complete sell order signature from a follower (cross-chain sell)
+    ProcessCompleteSellOrderSign {
+        from: PeerId,
+        /// Signer's index in the issuer set (for bitmap calculation)
+        signer_index: u8,
+        order_id: U256,
+        signature: P2PBLSSignature,
+    },
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use common::BLSSignature as TestBLSSignature;
+    use ethers::types::U256;
+
+    fn test_peer_id(n: u8) -> PeerId {
+        let mut id = [0u8; 32];
+        id[0] = n;
+        id
+    }
+
+    fn make_price_proposal(cycle: u64) -> P2PMessage {
+        P2PMessage::PriceProposal {
+            cycle_number: cycle,
+            prices: vec![(1, U256::from(1000))],
+            proposer_signature: TestBLSSignature(vec![0; 64]),
+        }
+    }
+
+    fn make_price_vote(cycle: u64, approved: bool) -> P2PMessage {
+        P2PMessage::PriceVote {
+            cycle_number: cycle,
+            voter_id: test_peer_id(1),
+            approved,
+            signature: TestBLSSignature(vec![0; 64]),
+        }
+    }
+
+    fn make_batch_proposal(cycle: u64) -> P2PMessage {
+        P2PMessage::BatchProposal {
+            cycle_number: cycle,
+            order_ids: vec![1, 2, 3],
+            fills: vec![],
+            proposer_signature: TestBLSSignature(vec![0; 64]),
+        }
+    }
+
+    fn make_batch_sign(cycle: u64) -> P2PMessage {
+        P2PMessage::BatchSign {
+            cycle_number: cycle,
+            signer_id: test_peer_id(1),
+            signature: TestBLSSignature(vec![0; 64]),
+        }
+    }
+
+    #[test]
+    fn test_handle_price_proposal_current_cycle() {
+        let mut handler = ConsensusMessageHandler::new();
+        let msg = make_price_proposal(10);
+
+        let result = handler.handle_message(
+            test_peer_id(1),
+            msg,
+            10,
+            ConsensusPhase::Idle,
+        );
+
+        assert!(matches!(
+            result,
+            MessageHandleResult::ProcessPriceProposal { .. }
+        ));
+    }
+
+    #[test]
+    fn test_handle_price_proposal_stale() {
+        let mut handler = ConsensusMessageHandler::new();
+        let msg = make_price_proposal(5);
+
+        let result = handler.handle_message(
+            test_peer_id(1),
+            msg,
+            10,
+            ConsensusPhase::Idle,
+        );
+
+        assert!(matches!(result, MessageHandleResult::Stale));
+    }
+
+    #[test]
+    fn test_handle_price_proposal_future() {
+        let mut handler = ConsensusMessageHandler::new();
+        let msg = make_price_proposal(15);
+
+        let result = handler.handle_message(
+            test_peer_id(1),
+            msg,
+            10,
+            ConsensusPhase::Idle,
+        );
+
+        assert!(matches!(result, MessageHandleResult::Buffered));
+        assert_eq!(handler.buffered_count(), 1);
+    }
+
+    #[test]
+    fn test_handle_price_vote_current_cycle() {
+        let mut handler = ConsensusMessageHandler::new();
+        let msg = make_price_vote(10, true);
+
+        let result = handler.handle_message(
+            test_peer_id(1),
+            msg,
+            10,
+            ConsensusPhase::PriceVoting,
+        );
+
+        assert!(matches!(
+            result,
+            MessageHandleResult::ProcessPriceVote { approved: true, .. }
+        ));
+    }
+
+    #[test]
+    fn test_handle_price_vote_wrong_phase() {
+        let mut handler = ConsensusMessageHandler::new();
+        let msg = make_price_vote(10, true);
+
+        let result = handler.handle_message(
+            test_peer_id(1),
+            msg,
+            10,
+            ConsensusPhase::BatchSigning,
+        );
+
+        assert!(matches!(result, MessageHandleResult::UnexpectedPhase));
+    }
+
+    #[test]
+    fn test_handle_batch_proposal() {
+        let mut handler = ConsensusMessageHandler::new();
+        let msg = make_batch_proposal(10);
+
+        let result = handler.handle_message(
+            test_peer_id(1),
+            msg,
+            10,
+            ConsensusPhase::BatchProposal,
+        );
+
+        assert!(matches!(
+            result,
+            MessageHandleResult::ProcessBatchProposal { .. }
+        ));
+    }
+
+    #[test]
+    fn test_handle_batch_sign() {
+        let mut handler = ConsensusMessageHandler::new();
+        let msg = make_batch_sign(10);
+
+        let result = handler.handle_message(
+            test_peer_id(1),
+            msg,
+            10,
+            ConsensusPhase::BatchSigning,
+        );
+
+        assert!(matches!(
+            result,
+            MessageHandleResult::ProcessBatchSign { .. }
+        ));
+    }
+
+    #[test]
+    fn test_get_buffered_for_cycle() {
+        let mut handler = ConsensusMessageHandler::new();
+
+        // Buffer messages for different cycles
+        handler.handle_message(
+            test_peer_id(1),
+            make_price_proposal(15),
+            10,
+            ConsensusPhase::Idle,
+        );
+        handler.handle_message(
+            test_peer_id(2),
+            make_price_proposal(15),
+            10,
+            ConsensusPhase::Idle,
+        );
+        handler.handle_message(
+            test_peer_id(3),
+            make_price_proposal(20),
+            10,
+            ConsensusPhase::Idle,
+        );
+
+        assert_eq!(handler.buffered_count(), 3);
+
+        // Get messages for cycle 15
+        let msgs = handler.get_buffered_for_cycle(15);
+        assert_eq!(msgs.len(), 2);
+
+        // Only cycle 20 message remains
+        assert_eq!(handler.buffered_count(), 1);
+    }
+
+    #[test]
+    fn test_clear_stale_messages() {
+        let mut handler = ConsensusMessageHandler::new();
+
+        // Add messages manually to pending
+        handler.pending_messages.push((
+            test_peer_id(1),
+            make_price_proposal(5),
+            5,
+        ));
+        handler.pending_messages.push((
+            test_peer_id(2),
+            make_price_proposal(10),
+            10,
+        ));
+        handler.pending_messages.push((
+            test_peer_id(3),
+            make_price_proposal(15),
+            15,
+        ));
+
+        handler.clear_stale_messages(10);
+
+        assert_eq!(handler.buffered_count(), 2); // cycles 10 and 15 remain
+    }
+
+    #[test]
+    fn test_non_consensus_message_ignored() {
+        let mut handler = ConsensusMessageHandler::new();
+        let msg = P2PMessage::Heartbeat {
+            sender_id: test_peer_id(1),
+            timestamp: 12345,
+        };
+
+        let result = handler.handle_message(
+            test_peer_id(1),
+            msg,
+            10,
+            ConsensusPhase::Idle,
+        );
+
+        assert!(matches!(result, MessageHandleResult::Ignored));
+    }
+}

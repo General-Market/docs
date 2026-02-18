@@ -1,0 +1,46 @@
+# prometheus-json-exporter configuration
+# Maps issuer /health JSON responses to Prometheus metrics
+# Used with multi-target pattern: Prometheus passes ?target=<url>&module=default
+
+modules:
+  default:
+    metrics:
+      - name: issuer_is_leader
+        path: "{ .is_leader }"
+        help: "Whether this issuer is the current leader (1=true, 0=false)"
+
+      - name: issuer_leader_elections_count
+        path: "{ .leader_elections_count }"
+        help: "Total number of leader elections participated in"
+
+      - name: issuer_leader_tenure_cycles
+        path: "{ .leader_tenure_cycles }"
+        help: "Number of cycles as leader"
+
+      - name: issuer_consensus_rounds_total
+        path: "{ .consensus_rounds_total }"
+        help: "Total consensus rounds"
+
+      - name: issuer_consensus_success_total
+        path: "{ .consensus_success_total }"
+        help: "Successful consensus rounds"
+
+      - name: issuer_consensus_failed_total
+        path: "{ .consensus_failed_total }"
+        help: "Failed consensus rounds"
+
+      - name: issuer_signatures_collected_total
+        path: "{ .signatures_collected_total }"
+        help: "Total BLS signatures collected"
+
+      - name: issuer_last_consensus_time_ms
+        path: "{ .last_consensus_time_ms }"
+        help: "Last consensus round time in milliseconds"
+
+      - name: issuer_consensus_in_progress
+        path: "{ .consensus_in_progress }"
+        help: "Whether a consensus round is currently in progress (1=true, 0=false)"
+
+      - name: issuer_connected_peers
+        path: "{ .connected_peers }"
+        help: "Number of connected peers"

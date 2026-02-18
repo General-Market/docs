@@ -1,0 +1,34 @@
+{"timestamp":"2026-02-10T21:42:23.863033Z","level":"INFO","fields":{"message":"AP service starting","port":9100,"rpc":"http://localhost:8545","bitget_mode":"mock","chain_mode":"real","has_bitget_credentials":false,"timestamp":"2026-02-10T21:42:23.862829+00:00"},"target":"ap"}
+{"timestamp":"2026-02-10T21:42:23.863504Z","level":"INFO","fields":{"message":"APMetrics initialized (orders, queue, buffer, violations, timeouts)"},"target":"ap"}
+{"timestamp":"2026-02-10T21:42:23.863545Z","level":"ERROR","fields":{"message":"AP service error","code":"E008","error":"Failed to load deployment config: INFRA-001: Chain read error: Failed to read deployment file \"deployments/active-deployment.json\": No such file or directory (os error 2)"},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:06.726313Z","level":"INFO","fields":{"message":"AP service starting","port":9100,"rpc":"http://localhost:8545","bitget_mode":"mock","chain_mode":"real","has_bitget_credentials":false,"timestamp":"2026-02-10T21:43:06.725733+00:00"},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:06.726989Z","level":"INFO","fields":{"message":"APMetrics initialized (orders, queue, buffer, violations, timeouts)"},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:06.734283Z","level":"INFO","fields":{"message":"Real chain initialized (RpcChainReader + RpcChainWriter)","rpc":"http://localhost:8545","index":"0x8a791620dd6260079bf849dc5567adc3f2fdc318","chain_id":111222333},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:06.734569Z","level":"INFO","fields":{"message":"No block tracker state file found, starting fresh","path":"data/ap_block_tracker.json"},"target":"ap::block_tracker"}
+{"timestamp":"2026-02-10T21:43:06.734581Z","level":"INFO","fields":{"message":"EventMonitor initialized","start_block":0,"contract":"\"8a791620dd6260079bf849dc5567adc3f2fdc318\"","confirmation_depth":3},"target":"ap::event_monitor"}
+{"timestamp":"2026-02-10T21:43:06.734597Z","level":"INFO","fields":{"message":"EventMonitor initialized"},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:06.734770Z","level":"INFO","fields":{"message":"MockBitget initialized (APClient - mock mode)"},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:06.734778Z","level":"INFO","fields":{"message":"Bitget mode active","bitget_environment":"mock"},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:06.734795Z","level":"INFO","fields":{"message":"No Bitget API credentials provided, using mock prices only"},"target":"ap::external::price_fetcher"}
+{"timestamp":"2026-02-10T21:43:06.734822Z","level":"INFO","fields":{"message":"Real Bitget price fetcher initialized","has_real_api":false,"cache_ttl_secs":"5"},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:06.734831Z","level":"WARN","fields":{"message":"data/symbol-map.json not found, price updates will be skipped"},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:06.734838Z","level":"INFO","fields":{"message":"TimeoutHandler initialized (60s timeout, 3 retries per NFR8)"},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:06.734843Z","level":"INFO","fields":{"message":"LimitOrderEnforcer initialized (0.15% tolerance)"},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:06.734848Z","level":"INFO","fields":{"message":"All components initialized"},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:06.734911Z","level":"INFO","fields":{"message":"No block tracker state file found, starting fresh","path":"data/ap_block_tracker.json"},"target":"ap::block_tracker"}
+{"timestamp":"2026-02-10T21:43:06.734923Z","level":"INFO","fields":{"message":"AP service listening on port","port":9100},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:06.734932Z","level":"INFO","fields":{"message":"EventMonitor initialized","start_block":0,"contract":"\"8a791620dd6260079bf849dc5567adc3f2fdc318\"","confirmation_depth":3},"target":"ap::event_monitor"}
+{"timestamp":"2026-02-10T21:43:06.734936Z","level":"INFO","fields":{"message":"AP service initialized, entering main loop","port":9100},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:06.734952Z","level":"INFO","fields":{"message":"Event processing task started"},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:06.734963Z","level":"INFO","fields":{"message":"Starting EventMonitor main loop"},"target":"ap::event_monitor"}
+{"timestamp":"2026-02-10T21:43:06.767998Z","level":"INFO","fields":{"message":"Received TradeRequest event","cycle":354144644,"pair_id":"0xada5013122d395ba3c54772283fb069b10426056ef8ca54750cb9bb552a59e7d","side":"Buy","amount":"500000000000000000000","block":90},"target":"ap::event_monitor"}
+{"timestamp":"2026-02-10T21:43:06.768300Z","level":"INFO","fields":{"message":"Received TradeRequest event","cycle":854144645,"pair_id":"0xada5013122d395ba3c54772283fb069b10426056ef8ca54750cb9bb552a59e7d","side":"Sell","amount":"548660531531365558310","block":96},"target":"ap::event_monitor"}
+{"timestamp":"2026-02-10T21:43:06.768381Z","level":"INFO","fields":{"message":"Processing TradeRequest event","cycle":354144644,"pair_id":"0xada5013122d395ba3c54772283fb069b10426056ef8ca54750cb9bb552a59e7d","side":"Buy","amount":"500000000000000000000","limit_price":"1300000000000000000","block":90},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:06.768398Z","level":"INFO","fields":{"message":"Processing TradeRequest event","cycle":854144645,"pair_id":"0xada5013122d395ba3c54772283fb069b10426056ef8ca54750cb9bb552a59e7d","side":"Sell","amount":"548660531531365558310","limit_price":"700000000000000000","block":96},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:06.870605Z","level":"INFO","fields":{"message":"Order placed successfully via APClient","order_id":"1"},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:06.972619Z","level":"INFO","fields":{"message":"Order placed successfully via APClient","order_id":"2"},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:07.974947Z","level":"INFO","fields":{"message":"Order fills verified","order_id":"1","fill_count":1,"attempt":1},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:08.077838Z","level":"INFO","fields":{"message":"Order fills verified","order_id":"2","fill_count":1,"attempt":1},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:25.835187Z","level":"WARN","fields":{"message":"Received SIGTERM, initiating shutdown"},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:25.838811Z","level":"INFO","fields":{"message":"Event processing task stopped"},"target":"ap"}
+{"timestamp":"2026-02-10T21:43:29.866573Z","level":"INFO","fields":{"message":"AP service shutting down gracefully"},"target":"ap"}

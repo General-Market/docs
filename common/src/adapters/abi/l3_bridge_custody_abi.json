@@ -1,0 +1,13 @@
+[
+  {
+    "type": "function",
+    "name": "initiateBridge",
+    "inputs": [
+      { "name": "destChainId", "type": "uint256" },
+      { "name": "amount", "type": "uint256" },
+      { "name": "blsSignature", "type": "bytes" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  }
+]

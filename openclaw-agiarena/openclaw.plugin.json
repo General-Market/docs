@@ -1,0 +1,35 @@
+{
+  "name": "openclaw-agiarena",
+  "version": "0.1.0",
+  "description": "Autonomous market discovery & betting on AgiArena prediction markets",
+  "entry": "dist/index.js",
+  "gateway": "ws://127.0.0.1:18789",
+  "commands": [
+    { "name": "aa status", "description": "Capital, active bets, P&L, research coverage" },
+    { "name": "aa discover", "description": "Trigger immediate market discovery" },
+    { "name": "aa research", "description": "Deep-research a specific market/question", "args": ["topic"] },
+    { "name": "aa scores", "description": "Top 20 highest-EV positions" },
+    { "name": "aa approve", "description": "Approve pending bet", "args": ["id"] },
+    { "name": "aa reject", "description": "Reject pending bet", "args": ["id"] },
+    { "name": "aa stop", "description": "Emergency kill switch" },
+    { "name": "aa resume", "description": "Resume after kill switch" },
+    { "name": "aa improve", "description": "Trigger self-improvement analysis" },
+    { "name": "aa config", "description": "Update config", "args": ["key", "value"] }
+  ],
+  "config": {
+    "backendUrl": { "type": "string", "default": "http://localhost:3001" },
+    "dataNodeUrl": { "type": "string", "default": "http://localhost:8200" },
+    "chainRpc": { "type": "string", "default": "https://index.rpc.zeeve.net" },
+    "chainId": { "type": "number", "default": 111222333 },
+    "dryRun": { "type": "boolean", "default": true },
+    "maxBetWind": { "type": "number", "default": 1.0 },
+    "maxDailyWind": { "type": "number", "default": 10.0 },
+    "discoveryIntervalMin": { "type": "number", "default": 30 },
+    "maxResearchMarkets": { "type": "number", "default": 200 },
+    "autoApproveThreshold": { "type": "number", "default": 0 },
+    "circuitBreakerDrawdownPct": { "type": "number", "default": 15 },
+    "circuitBreakerConsecutiveLosses": { "type": "number", "default": 5 },
+    "circuitBreakerCooldownMin": { "type": "number", "default": 60 },
+    "improvementIntervalHours": { "type": "number", "default": 48 }
+  }
+}

@@ -1,0 +1,170 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Rank change pulse animation - Story 5.7 */
+@keyframes pulse-red {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: rgba(196, 0, 0, 0.2); }
+}
+
+.animate-pulse-red {
+  animation: pulse-red 0.5s ease-in-out;
+}
+
+/* Smooth rank number transition */
+.rank-change-up {
+  color: #4ade80; /* green-400 */
+  transition: all 0.3s ease-out;
+}
+
+.rank-change-down {
+  color: #C40000; /* accent red */
+  transition: all 0.3s ease-out;
+}
+
+/* P&L count animation */
+.pnl-animate {
+  transition: all 0.5s ease-out;
+}
+
+/* Bet feed pulse animation - Story 6.4 */
+/* AC2: Red pulse for new items (0.5s) */
+@keyframes pulse-red-bet {
+  0% { background-color: rgba(196, 0, 0, 0); }
+  50% { background-color: rgba(196, 0, 0, 0.2); }
+  100% { background-color: rgba(196, 0, 0, 0); }
+}
+
+.animate-pulse-red-bet {
+  animation: pulse-red-bet 0.5s ease-out;
+}
+
+/* AC3: Stronger pulse for mega portfolios (>20K markets) */
+@keyframes pulse-red-strong-bet {
+  0% { background-color: rgba(196, 0, 0, 0); }
+  25% { background-color: rgba(196, 0, 0, 0.4); }
+  75% { background-color: rgba(196, 0, 0, 0.3); }
+  100% { background-color: rgba(196, 0, 0, 0); }
+}
+
+.animate-pulse-red-strong-bet {
+  animation: pulse-red-strong-bet 0.7s ease-out;
+}
+
+/* Story 6.5: Leaderboard row animation performance optimization (AC7) */
+/* Optimize animated rows for 60fps - use will-change hint */
+tr[data-wallet] {
+  will-change: transform;
+}
+
+/* Disable will-change on mobile for memory optimization */
+@media (max-width: 767px) {
+  tr[data-wallet] {
+    will-change: auto;
+  }
+}
+
+/* Disable transitions and animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  tr[data-wallet] {
+    will-change: auto;
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .animate-pulse-red,
+  .animate-pulse-red-bet,
+  .animate-pulse-red-strong-bet {
+    animation: none !important;
+  }
+}
+
+/* Story 11-1: Skeleton loading animation (AC3) */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg,
+    rgba(196, 0, 0, 0.1) 0%,
+    rgba(196, 0, 0, 0.2) 50%,
+    rgba(196, 0, 0, 0.1) 100%
+  );
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* Story 11-1: Micro-interactions (AC5) */
+/* Button interactions */
+.btn-interactive {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.btn-interactive:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 12px rgba(196, 0, 0, 0.3);
+}
+.btn-interactive:active {
+  transform: scale(0.98);
+}
+
+/* Card hover */
+.card-interactive {
+  transition: box-shadow 0.2s ease;
+}
+.card-interactive:hover {
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.05);
+}
+
+/* Number flash animation */
+@keyframes number-flash {
+  0% { color: inherit; }
+  30% { color: #C40000; }
+  100% { color: inherit; }
+}
+.number-changed {
+  animation: number-flash 0.4s ease-out;
+}
+
+/* Error state */
+.error-state {
+  border-left: 4px solid #C40000;
+  padding-left: 12px;
+}
+
+/* Story 11-1: Reduced motion - disable micro-interactions */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+    opacity: 0.5;
+  }
+
+  .btn-interactive,
+  .card-interactive {
+    transition: none;
+  }
+
+  .btn-interactive:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .btn-interactive:active {
+    transform: none;
+  }
+
+  .number-changed {
+    animation: none;
+  }
+}

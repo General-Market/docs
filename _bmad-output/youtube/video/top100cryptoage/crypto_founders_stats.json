@@ -1,0 +1,1404 @@
+{
+  "global": {
+    "total_projects": 709,
+    "total_founders": 1132,
+    "avg_protocol_tvl": 126365303.24400564,
+    "median_protocol_tvl": 20000000.0,
+    "avg_founder_age": 38.6,
+    "median_founder_age": 37
+  },
+  "by_country": [
+    {
+      "country": "American",
+      "founder_count": 248,
+      "avg_age": 38.6,
+      "age_sample_size": 177,
+      "avg_tvl": 177737903,
+      "tvl_sample_size": 248
+    },
+    {
+      "country": "Indian",
+      "founder_count": 62,
+      "avg_age": 37.6,
+      "age_sample_size": 37,
+      "avg_tvl": 102306452,
+      "tvl_sample_size": 62
+    },
+    {
+      "country": "Chinese",
+      "founder_count": 61,
+      "avg_age": 37.3,
+      "age_sample_size": 38,
+      "avg_tvl": 101967213,
+      "tvl_sample_size": 61
+    },
+    {
+      "country": "Canadian",
+      "founder_count": 41,
+      "avg_age": 43.4,
+      "age_sample_size": 33,
+      "avg_tvl": 106048780,
+      "tvl_sample_size": 41
+    },
+    {
+      "country": "British",
+      "founder_count": 38,
+      "avg_age": 40.5,
+      "age_sample_size": 27,
+      "avg_tvl": 128552632,
+      "tvl_sample_size": 38
+    },
+    {
+      "country": "French",
+      "founder_count": 26,
+      "avg_age": 38.5,
+      "age_sample_size": 17,
+      "avg_tvl": 253038462,
+      "tvl_sample_size": 26
+    },
+    {
+      "country": "Russian",
+      "founder_count": 26,
+      "avg_age": 38.4,
+      "age_sample_size": 17,
+      "avg_tvl": 106269231,
+      "tvl_sample_size": 26
+    },
+    {
+      "country": "Australian",
+      "founder_count": 23,
+      "avg_age": 37.9,
+      "age_sample_size": 22,
+      "avg_tvl": 48217391,
+      "tvl_sample_size": 23
+    },
+    {
+      "country": "Singaporean",
+      "founder_count": 19,
+      "avg_age": 37.4,
+      "age_sample_size": 12,
+      "avg_tvl": 246894737,
+      "tvl_sample_size": 19
+    },
+    {
+      "country": "Ukrainian",
+      "founder_count": 14,
+      "avg_age": 37.8,
+      "age_sample_size": 9,
+      "avg_tvl": 6857143,
+      "tvl_sample_size": 14
+    },
+    {
+      "country": "Italian",
+      "founder_count": 13,
+      "avg_age": 34.7,
+      "age_sample_size": 11,
+      "avg_tvl": 72000000,
+      "tvl_sample_size": 13
+    },
+    {
+      "country": "German",
+      "founder_count": 12,
+      "avg_age": 40.4,
+      "age_sample_size": 10,
+      "avg_tvl": 239583333,
+      "tvl_sample_size": 12
+    },
+    {
+      "country": "Swiss",
+      "founder_count": 11,
+      "avg_age": 40.9,
+      "age_sample_size": 11,
+      "avg_tvl": 169818182,
+      "tvl_sample_size": 11
+    },
+    {
+      "country": "Japanese",
+      "founder_count": 11,
+      "avg_age": 43.2,
+      "age_sample_size": 5,
+      "avg_tvl": 156181818,
+      "tvl_sample_size": 11
+    },
+    {
+      "country": "Romanian",
+      "founder_count": 11,
+      "avg_age": 33.8,
+      "age_sample_size": 10,
+      "avg_tvl": 30545455,
+      "tvl_sample_size": 11
+    },
+    {
+      "country": "Israeli",
+      "founder_count": 11,
+      "avg_age": 38.3,
+      "age_sample_size": 9,
+      "avg_tvl": 56181818,
+      "tvl_sample_size": 11
+    },
+    {
+      "country": "South Korean",
+      "founder_count": 10,
+      "avg_age": 40.2,
+      "age_sample_size": 8,
+      "avg_tvl": 26100000,
+      "tvl_sample_size": 10
+    },
+    {
+      "country": "Turkish",
+      "founder_count": 10,
+      "avg_age": 36.0,
+      "age_sample_size": 6,
+      "avg_tvl": 16600000,
+      "tvl_sample_size": 10
+    },
+    {
+      "country": "Taiwanese",
+      "founder_count": 9,
+      "avg_age": 43.6,
+      "age_sample_size": 5,
+      "avg_tvl": 157333333,
+      "tvl_sample_size": 9
+    },
+    {
+      "country": "South African",
+      "founder_count": 9,
+      "avg_age": 36.2,
+      "age_sample_size": 8,
+      "avg_tvl": 88444444,
+      "tvl_sample_size": 9
+    },
+    {
+      "country": "Brazilian",
+      "founder_count": 9,
+      "avg_age": 37.0,
+      "age_sample_size": 4,
+      "avg_tvl": 31666667,
+      "tvl_sample_size": 9
+    },
+    {
+      "country": "Dutch",
+      "founder_count": 8,
+      "avg_age": 34.4,
+      "age_sample_size": 5,
+      "avg_tvl": 19625000,
+      "tvl_sample_size": 8
+    },
+    {
+      "country": "Spanish",
+      "founder_count": 8,
+      "avg_age": 39.0,
+      "age_sample_size": 4,
+      "avg_tvl": 9250000,
+      "tvl_sample_size": 8
+    },
+    {
+      "country": "Mexican",
+      "founder_count": 6,
+      "avg_age": 47.0,
+      "age_sample_size": 3,
+      "avg_tvl": 67666667,
+      "tvl_sample_size": 6
+    },
+    {
+      "country": "Indian-American",
+      "founder_count": 6,
+      "avg_age": 35.3,
+      "age_sample_size": 6,
+      "avg_tvl": 65000000,
+      "tvl_sample_size": 6
+    },
+    {
+      "country": "Belgian",
+      "founder_count": 6,
+      "avg_age": 32.0,
+      "age_sample_size": 4,
+      "avg_tvl": 11666667,
+      "tvl_sample_size": 6
+    },
+    {
+      "country": "Bulgarian",
+      "founder_count": 5,
+      "avg_age": 33.0,
+      "age_sample_size": 1,
+      "avg_tvl": 84200000,
+      "tvl_sample_size": 5
+    },
+    {
+      "country": "Chinese-American",
+      "founder_count": 5,
+      "avg_age": 37.5,
+      "age_sample_size": 4,
+      "avg_tvl": 65000000,
+      "tvl_sample_size": 5
+    },
+    {
+      "country": "Argentine",
+      "founder_count": 5,
+      "avg_age": 45.5,
+      "age_sample_size": 4,
+      "avg_tvl": 49000000,
+      "tvl_sample_size": 5
+    },
+    {
+      "country": "Vietnamese",
+      "founder_count": 5,
+      "avg_age": 35.3,
+      "age_sample_size": 3,
+      "avg_tvl": 33600000,
+      "tvl_sample_size": 5
+    },
+    {
+      "country": "Thai",
+      "founder_count": 4,
+      "avg_age": 35.0,
+      "age_sample_size": 4,
+      "avg_tvl": 436500000,
+      "tvl_sample_size": 4
+    },
+    {
+      "country": "Malaysian",
+      "founder_count": 4,
+      "avg_age": 36.3,
+      "age_sample_size": 3,
+      "avg_tvl": 217750000,
+      "tvl_sample_size": 4
+    },
+    {
+      "country": "American (Chinese-American)",
+      "founder_count": 4,
+      "avg_age": 30.0,
+      "age_sample_size": 3,
+      "avg_tvl": 216750000,
+      "tvl_sample_size": 4
+    },
+    {
+      "country": "Nigerian",
+      "founder_count": 4,
+      "avg_age": 50.0,
+      "age_sample_size": 1,
+      "avg_tvl": 165000000,
+      "tvl_sample_size": 4
+    },
+    {
+      "country": "Iranian-American",
+      "founder_count": 4,
+      "avg_age": 34.0,
+      "age_sample_size": 3,
+      "avg_tvl": 97000000,
+      "tvl_sample_size": 4
+    },
+    {
+      "country": "Korean",
+      "founder_count": 4,
+      "avg_age": 25.5,
+      "age_sample_size": 2,
+      "avg_tvl": 81000000,
+      "tvl_sample_size": 4
+    },
+    {
+      "country": "Estonian",
+      "founder_count": 3,
+      "avg_age": 45.0,
+      "age_sample_size": 2,
+      "avg_tvl": 392000000,
+      "tvl_sample_size": 3
+    },
+    {
+      "country": "Indonesian",
+      "founder_count": 3,
+      "avg_age": 37.0,
+      "age_sample_size": 2,
+      "avg_tvl": 390666667,
+      "tvl_sample_size": 3
+    },
+    {
+      "country": "Czech",
+      "founder_count": 3,
+      "avg_age": 39.5,
+      "age_sample_size": 2,
+      "avg_tvl": 332333333,
+      "tvl_sample_size": 3
+    },
+    {
+      "country": "Taiwanese/Chinese",
+      "founder_count": 3,
+      "avg_age": 39.3,
+      "age_sample_size": 3,
+      "avg_tvl": 109000000,
+      "tvl_sample_size": 3
+    },
+    {
+      "country": "Hong Kong Chinese",
+      "founder_count": 3,
+      "avg_age": 29.5,
+      "age_sample_size": 2,
+      "avg_tvl": 82666667,
+      "tvl_sample_size": 3
+    },
+    {
+      "country": "Greek",
+      "founder_count": 3,
+      "avg_age": 38.0,
+      "age_sample_size": 3,
+      "avg_tvl": 59333333,
+      "tvl_sample_size": 3
+    },
+    {
+      "country": "Korean-American",
+      "founder_count": 3,
+      "avg_age": 41.5,
+      "age_sample_size": 2,
+      "avg_tvl": 73000000,
+      "tvl_sample_size": 3
+    },
+    {
+      "country": "Taiwanese-American",
+      "founder_count": 3,
+      "avg_age": 55.7,
+      "age_sample_size": 3,
+      "avg_tvl": 56333333,
+      "tvl_sample_size": 3
+    },
+    {
+      "country": "Slovenian",
+      "founder_count": 3,
+      "avg_age": 43.0,
+      "age_sample_size": 2,
+      "avg_tvl": 53666667,
+      "tvl_sample_size": 3
+    },
+    {
+      "country": "Polish",
+      "founder_count": 3,
+      "avg_age": 32.0,
+      "age_sample_size": 1,
+      "avg_tvl": 24333333,
+      "tvl_sample_size": 3
+    },
+    {
+      "country": "Filipino",
+      "founder_count": 3,
+      "avg_age": 34.7,
+      "age_sample_size": 3,
+      "avg_tvl": 8333333,
+      "tvl_sample_size": 3
+    },
+    {
+      "country": "Canadian-American",
+      "founder_count": 2,
+      "avg_age": 51.5,
+      "age_sample_size": 2,
+      "avg_tvl": 640500000,
+      "tvl_sample_size": 2
+    },
+    {
+      "country": "Venezuelan",
+      "founder_count": 2,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 401000000,
+      "tvl_sample_size": 2
+    },
+    {
+      "country": "Finnish",
+      "founder_count": 2,
+      "avg_age": 46.0,
+      "age_sample_size": 1,
+      "avg_tvl": 168500000,
+      "tvl_sample_size": 2
+    },
+    {
+      "country": "Norwegian",
+      "founder_count": 2,
+      "avg_age": 38.5,
+      "age_sample_size": 2,
+      "avg_tvl": 57500000,
+      "tvl_sample_size": 2
+    },
+    {
+      "country": "Vietnamese-American",
+      "founder_count": 2,
+      "avg_age": 35.5,
+      "age_sample_size": 2,
+      "avg_tvl": 48000000,
+      "tvl_sample_size": 2
+    },
+    {
+      "country": "Chinese-Canadian",
+      "founder_count": 2,
+      "avg_age": 43.5,
+      "age_sample_size": 2,
+      "avg_tvl": 40500000,
+      "tvl_sample_size": 2
+    },
+    {
+      "country": "Argentinian",
+      "founder_count": 2,
+      "avg_age": 43.0,
+      "age_sample_size": 2,
+      "avg_tvl": 31500000,
+      "tvl_sample_size": 2
+    },
+    {
+      "country": "Hong Konger",
+      "founder_count": 2,
+      "avg_age": 35.0,
+      "age_sample_size": 1,
+      "avg_tvl": 15000000,
+      "tvl_sample_size": 2
+    },
+    {
+      "country": "Chinese / Hong Kong",
+      "founder_count": 2,
+      "avg_age": 40.0,
+      "age_sample_size": 1,
+      "avg_tvl": 13000000,
+      "tvl_sample_size": 2
+    },
+    {
+      "country": "Colombian",
+      "founder_count": 2,
+      "avg_age": 45.0,
+      "age_sample_size": 1,
+      "avg_tvl": 6500000,
+      "tvl_sample_size": 2
+    },
+    {
+      "country": "Armenian",
+      "founder_count": 2,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 5500000,
+      "tvl_sample_size": 2
+    },
+    {
+      "country": "New Zealander",
+      "founder_count": 2,
+      "avg_age": 43.0,
+      "age_sample_size": 1,
+      "avg_tvl": 7000000,
+      "tvl_sample_size": 2
+    },
+    {
+      "country": "Chilean",
+      "founder_count": 2,
+      "avg_age": 32.0,
+      "age_sample_size": 2,
+      "avg_tvl": 7000000,
+      "tvl_sample_size": 2
+    },
+    {
+      "country": "Iranian",
+      "founder_count": 2,
+      "avg_age": 39.0,
+      "age_sample_size": 2,
+      "avg_tvl": 4000000,
+      "tvl_sample_size": 2
+    },
+    {
+      "country": "Hungarian",
+      "founder_count": 2,
+      "avg_age": 26.0,
+      "age_sample_size": 2,
+      "avg_tvl": 3000000,
+      "tvl_sample_size": 2
+    },
+    {
+      "country": "American (South Asian/Indian Heritage)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 1290000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Unknown (Educated In Germany, Uk; Career In Europe And Asia)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 1290000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Swiss (Iranian And Swiss-German Heritage)",
+      "founder_count": 1,
+      "avg_age": 41.0,
+      "age_sample_size": 1,
+      "avg_tvl": 1280000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Hungarian (Likely)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 1280000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Singaporean (Likely; Grew Up In Singapore, Mandarin-Speaking)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 1250000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Canadian (Likely; Career Started At Bmo Capital Markets In Toronto)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 955000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Danish-Romanian (Born In Denmark To Romanian Parents)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 860000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "American (Likely Slovenian-American)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 679000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Nigerian (Likely)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 663000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Turkish-American",
+      "founder_count": 1,
+      "avg_age": 50.0,
+      "age_sample_size": 1,
+      "avg_tvl": 557000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Chinese (Hong Kong)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 516000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "American (Hispanic/Latin American Heritage)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 497000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Unknown (Likely Chinese)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 490000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Unknown (Likely Asian-American)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 478000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Chinese (Likely)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 472000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Finnish (Likely, Based On Name)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 461000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "American (Likely)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 401000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "German-American",
+      "founder_count": 1,
+      "avg_age": 59.0,
+      "age_sample_size": 1,
+      "avg_tvl": 396000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "American/British",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 396000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Chilean (French And Syrian Heritage)",
+      "founder_count": 1,
+      "avg_age": 20.0,
+      "age_sample_size": 1,
+      "avg_tvl": 350000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Slovak/Czech",
+      "founder_count": 1,
+      "avg_age": 37.0,
+      "age_sample_size": 1,
+      "avg_tvl": 312000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Latvian",
+      "founder_count": 1,
+      "avg_age": 40.0,
+      "age_sample_size": 1,
+      "avg_tvl": 285000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Russian/Bulgarian",
+      "founder_count": 1,
+      "avg_age": 32.0,
+      "age_sample_size": 1,
+      "avg_tvl": 285000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Brazilian/American",
+      "founder_count": 1,
+      "avg_age": 38.0,
+      "age_sample_size": 1,
+      "avg_tvl": 272000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Korean-Canadian",
+      "founder_count": 1,
+      "avg_age": 30.0,
+      "age_sample_size": 1,
+      "avg_tvl": 270000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "German/Italian",
+      "founder_count": 1,
+      "avg_age": 43.0,
+      "age_sample_size": 1,
+      "avg_tvl": 267000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Swiss/Czech",
+      "founder_count": 1,
+      "avg_age": 51.0,
+      "age_sample_size": 1,
+      "avg_tvl": 252000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "American/Kenyan",
+      "founder_count": 1,
+      "avg_age": 44.0,
+      "age_sample_size": 1,
+      "avg_tvl": 240000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Chinese/New Zealander",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 228000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Chinese/American",
+      "founder_count": 1,
+      "avg_age": 35.0,
+      "age_sample_size": 1,
+      "avg_tvl": 208000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "British-Malaysian",
+      "founder_count": 1,
+      "avg_age": 70.0,
+      "age_sample_size": 1,
+      "avg_tvl": 177000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Bangladeshi-American",
+      "founder_count": 1,
+      "avg_age": 37.0,
+      "age_sample_size": 1,
+      "avg_tvl": 177000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Russian-German",
+      "founder_count": 1,
+      "avg_age": 47.0,
+      "age_sample_size": 1,
+      "avg_tvl": 166000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Egyptian",
+      "founder_count": 1,
+      "avg_age": 28.0,
+      "age_sample_size": 1,
+      "avg_tvl": 161000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Singaporean Or Asian",
+      "founder_count": 1,
+      "avg_age": 38.0,
+      "age_sample_size": 1,
+      "avg_tvl": 146000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Italian-American (Attended American School Of Milan, King'S College London, Duke University)",
+      "founder_count": 1,
+      "avg_age": 33.0,
+      "age_sample_size": 1,
+      "avg_tvl": 142000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Likely British-Lebanese (Studied At Ucl London; 'El Isa' Is Arabic Surname; Career In London And Geneva)",
+      "founder_count": 1,
+      "avg_age": 42.0,
+      "age_sample_size": 1,
+      "avg_tvl": 131000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "French (Name Is French; Based In France Per Linkedin)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 131000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Russian-Australian",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 124000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Singaporean (Likely)",
+      "founder_count": 1,
+      "avg_age": 58.0,
+      "age_sample_size": 1,
+      "avg_tvl": 122000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Taiwanese (Likely)",
+      "founder_count": 1,
+      "avg_age": 34.0,
+      "age_sample_size": 1,
+      "avg_tvl": 122000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Lebanese (Listed On Lebanese Tech Directory)",
+      "founder_count": 1,
+      "avg_age": 35.0,
+      "age_sample_size": 1,
+      "avg_tvl": 121000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "French (Likely)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 121000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Singaporean Or Malaysian (Name Suggests Southeast Asian Chinese)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 120000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "American (Iranian Heritage Based On Name)",
+      "founder_count": 1,
+      "avg_age": 30.0,
+      "age_sample_size": 1,
+      "avg_tvl": 117000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Indian (Likely, Based On Name)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 116000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "American (Or Spanish-Based)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 96000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Israeli-British",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 94000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Likely Taiwanese/Chinese",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 90000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Slovak/Czech (Likely Central European)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 89000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "French-British",
+      "founder_count": 1,
+      "avg_age": 48.0,
+      "age_sample_size": 1,
+      "avg_tvl": 89000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "American (Canadian Origin)",
+      "founder_count": 1,
+      "avg_age": 36.0,
+      "age_sample_size": 1,
+      "avg_tvl": 89000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "German (Likely, Based On Name And Connections To Germany/Switzerland)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 86000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "German (Likely, Mentioned Being Stuck In Germany During Covid)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 86000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "American (Indian-American, Likely Based On Name)",
+      "founder_count": 1,
+      "avg_age": 37.0,
+      "age_sample_size": 1,
+      "avg_tvl": 86000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Hungarian (Based On Name)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 85000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "American (Likely, Sri Lankan Heritage Based On Surname)",
+      "founder_count": 1,
+      "avg_age": 28.0,
+      "age_sample_size": 1,
+      "avg_tvl": 81000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Bulgarian (Likely, Based On Surname Anastassov)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 79000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Thai (Based On Surname Vajarachitkul)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 79000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "American (Half Chinese, Chinese-American Family)",
+      "founder_count": 1,
+      "avg_age": 27.0,
+      "age_sample_size": 1,
+      "avg_tvl": 77000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Canadian (Educated At Polytechnique Montreal)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 74000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Chinese (Professor At Shanghai Jiao Tong University, Educated At Beijing Jiaotong University, Mit, And University Of Buenos Aires)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 74000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Likely New Zealand/Australian (University Of Auckland Education)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 72000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "British (Imperial College London Graduate)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 72000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Italian (Based On Name)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 72000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Uruguayan",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 69000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Japanese (Grew Up Between Japan, Us, And Canada, Originally From Japan)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 68000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Chinese-Born, Citizen Of Saint Kitts And Nevis",
+      "founder_count": 1,
+      "avg_age": 35.0,
+      "age_sample_size": 1,
+      "avg_tvl": 62000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Turkish-Canadian",
+      "founder_count": 1,
+      "avg_age": 29.0,
+      "age_sample_size": 1,
+      "avg_tvl": 62000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Turkish-German",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 33000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "German Or Swiss",
+      "founder_count": 1,
+      "avg_age": 32.0,
+      "age_sample_size": 1,
+      "avg_tvl": 32000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Australian (Vietnamese Heritage Likely)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 31000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Indian American",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 24000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Vietnamese American",
+      "founder_count": 1,
+      "avg_age": 41.0,
+      "age_sample_size": 1,
+      "avg_tvl": 24000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Trinidadian",
+      "founder_count": 1,
+      "avg_age": 38.0,
+      "age_sample_size": 1,
+      "avg_tvl": 23000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Ukrainian-American",
+      "founder_count": 1,
+      "avg_age": 43.0,
+      "age_sample_size": 1,
+      "avg_tvl": 20000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Taiwanese-Canadian",
+      "founder_count": 1,
+      "avg_age": 35.0,
+      "age_sample_size": 1,
+      "avg_tvl": 20000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Pakistani-American",
+      "founder_count": 1,
+      "avg_age": 40.0,
+      "age_sample_size": 1,
+      "avg_tvl": 20000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Iranian-German",
+      "founder_count": 1,
+      "avg_age": 66.0,
+      "age_sample_size": 1,
+      "avg_tvl": 15000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Portuguese",
+      "founder_count": 1,
+      "avg_age": 31.0,
+      "age_sample_size": 1,
+      "avg_tvl": 12000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "American (Filipino Descent)",
+      "founder_count": 1,
+      "avg_age": 27.0,
+      "age_sample_size": 1,
+      "avg_tvl": 9000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Russian (Luxembourg Resident)",
+      "founder_count": 1,
+      "avg_age": 54.0,
+      "age_sample_size": 1,
+      "avg_tvl": 8000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Indian-Canadian",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 8000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Indian (Born In Bahrain)",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 8000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "French-Swiss",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 8000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Georgian",
+      "founder_count": 1,
+      "avg_age": 35.0,
+      "age_sample_size": 1,
+      "avg_tvl": 8000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Italian-Australian",
+      "founder_count": 1,
+      "avg_age": 33.0,
+      "age_sample_size": 1,
+      "avg_tvl": 7000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Serbian",
+      "founder_count": 1,
+      "avg_age": 33.0,
+      "age_sample_size": 1,
+      "avg_tvl": 6000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Bosnian",
+      "founder_count": 1,
+      "avg_age": 30.0,
+      "age_sample_size": 1,
+      "avg_tvl": 6000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Irish",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 5000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "British-Japanese",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 4000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Jordanian",
+      "founder_count": 1,
+      "avg_age": 45.0,
+      "age_sample_size": 1,
+      "avg_tvl": 4000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Cameroonian-American",
+      "founder_count": 1,
+      "avg_age": 38.0,
+      "age_sample_size": 1,
+      "avg_tvl": 3000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Malaysian/Singaporean",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 3000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Syrian",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 3000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Zimbabwean",
+      "founder_count": 1,
+      "avg_age": 42.0,
+      "age_sample_size": 1,
+      "avg_tvl": 3000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Montenegrin",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 3000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Lebanese",
+      "founder_count": 1,
+      "avg_age": null,
+      "age_sample_size": 0,
+      "avg_tvl": 3000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Singaporean/Malaysian",
+      "founder_count": 1,
+      "avg_age": 35.0,
+      "age_sample_size": 1,
+      "avg_tvl": 3000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Israeli-Australian",
+      "founder_count": 1,
+      "avg_age": 48.0,
+      "age_sample_size": 1,
+      "avg_tvl": 2000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Croatian",
+      "founder_count": 1,
+      "avg_age": 32.0,
+      "age_sample_size": 1,
+      "avg_tvl": 2000000,
+      "tvl_sample_size": 1
+    },
+    {
+      "country": "Armenian-American",
+      "founder_count": 1,
+      "avg_age": 35.0,
+      "age_sample_size": 1,
+      "avg_tvl": 2000000,
+      "tvl_sample_size": 1
+    }
+  ],
+  "by_rank_tier": [
+    {
+      "tier": "1-100",
+      "avg_tvl": 830676056,
+      "avg_age": 40.5,
+      "projects": 71,
+      "founders_with_age": 47
+    },
+    {
+      "tier": "101-200",
+      "avg_tvl": 201080460,
+      "avg_age": 37.4,
+      "projects": 87,
+      "founders_with_age": 111
+    },
+    {
+      "tier": "201-300",
+      "avg_tvl": 83533333,
+      "avg_age": 38.3,
+      "projects": 75,
+      "founders_with_age": 59
+    },
+    {
+      "tier": "301-400",
+      "avg_tvl": 44647887,
+      "avg_age": 37.7,
+      "projects": 71,
+      "founders_with_age": 47
+    },
+    {
+      "tier": "401-500",
+      "avg_tvl": 23571429,
+      "avg_age": 38.5,
+      "projects": 63,
+      "founders_with_age": 67
+    },
+    {
+      "tier": "501-600",
+      "avg_tvl": 13716667,
+      "avg_age": 37.3,
+      "projects": 60,
+      "founders_with_age": 56
+    },
+    {
+      "tier": "601-700",
+      "avg_tvl": 8541667,
+      "avg_age": 39.7,
+      "projects": 72,
+      "founders_with_age": 65
+    },
+    {
+      "tier": "701-800",
+      "avg_tvl": 5426230,
+      "avg_age": 38.7,
+      "projects": 61,
+      "founders_with_age": 55
+    },
+    {
+      "tier": "801-900",
+      "avg_tvl": 3555556,
+      "avg_age": 38.9,
+      "projects": 63,
+      "founders_with_age": 60
+    },
+    {
+      "tier": "901-1000",
+      "avg_tvl": 2418605,
+      "avg_age": 39.6,
+      "projects": 86,
+      "founders_with_age": 82
+    }
+  ],
+  "age_distribution": {
+    "20-29": 81,
+    "30-39": 326,
+    "40-49": 164,
+    "50-59": 61,
+    "60-69": 15,
+    "70+": 2
+  }
+}

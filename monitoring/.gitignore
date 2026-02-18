@@ -1,0 +1,4 @@
+# Prometheus/Grafana data (if running locally outside Docker)
+data/
+*.db
+*.wal

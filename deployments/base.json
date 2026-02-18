@@ -1,0 +1,19 @@
+{
+  "chainId": 8453,
+  "deployer": "",
+  "timestamp": 0,
+  "contracts": {
+    "Governance": {
+      "proxy": "",
+      "implementation": ""
+    },
+    "IssuerRegistry": {
+      "proxy": "",
+      "implementation": ""
+    },
+    "BLSCustody": {
+      "proxy": "",
+      "implementation": ""
+    }
+  }
+}

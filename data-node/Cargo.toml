@@ -1,0 +1,45 @@
+[package]
+name = "data-node"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "data-node"
+path = "src/main.rs"
+
+[dependencies]
+common = { path = "../common" }
+
+# Async runtime
+tokio.workspace = true
+
+# CLI
+clap = { version = "4", features = ["derive", "env"] }
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Time
+chrono.workspace = true
+
+# Logging
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+# Web framework
+axum = "0.7"
+tower-http = { version = "0.5", features = ["cors"] }
+
+# Database
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "chrono"] }
+
+# Ethereum
+ethers.workspace = true
+
+# HTTP client (CoinGecko)
+reqwest = { version = "0.12", features = ["json"] }
+
+# Encoding
+hex = "0.4"

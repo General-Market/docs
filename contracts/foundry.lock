@@ -1,0 +1,14 @@
+{
+  "lib/forge-std": {
+    "rev": "0e44f85a13976ba7491c6a9ee994b1a7efc3c281"
+  },
+  "lib/morpho-blue": {
+    "tag": {
+      "name": "v1.0.0",
+      "rev": "55d2d99304fb3fb930c688462ae2ccabb1d533ad"
+    }
+  },
+  "lib/openzeppelin-contracts-upgradeable": {
+    "rev": "fa525310e45f91eb20a6d3baa2644be8e0adba31"
+  }
+}

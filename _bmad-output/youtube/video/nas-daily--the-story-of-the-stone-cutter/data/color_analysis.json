@@ -1,0 +1,2042 @@
+[
+  {
+    "frame": "scene_0001.png",
+    "timestamp": 1.64,
+    "dominant_colors": [
+      {
+        "hex": "#462a1c",
+        "rgb": [
+          70,
+          42,
+          28
+        ],
+        "pct": 50.0
+      },
+      {
+        "hex": "#a86e43",
+        "rgb": [
+          168,
+          110,
+          67
+        ],
+        "pct": 35.9
+      },
+      {
+        "hex": "#e3e1dc",
+        "rgb": [
+          227,
+          225,
+          220
+        ],
+        "pct": 14.1
+      }
+    ],
+    "avg_hsv": {
+      "h": 22.5,
+      "s": 130.8,
+      "v": 129.5
+    },
+    "avg_brightness": 101.4,
+    "contrast": 65.3
+  },
+  {
+    "frame": "scene_0002.png",
+    "timestamp": 3.92,
+    "dominant_colors": [
+      {
+        "hex": "#945e3b",
+        "rgb": [
+          148,
+          94,
+          59
+        ],
+        "pct": 49.9
+      },
+      {
+        "hex": "#e4dabe",
+        "rgb": [
+          228,
+          218,
+          190
+        ],
+        "pct": 28.7
+      },
+      {
+        "hex": "#3c1c13",
+        "rgb": [
+          60,
+          28,
+          19
+        ],
+        "pct": 21.4
+      }
+    ],
+    "avg_hsv": {
+      "h": 23.2,
+      "s": 128.1,
+      "v": 152.4
+    },
+    "avg_brightness": 122.4,
+    "contrast": 70.0
+  },
+  {
+    "frame": "scene_0003.png",
+    "timestamp": 5.56,
+    "dominant_colors": [
+      {
+        "hex": "#8b5941",
+        "rgb": [
+          139,
+          89,
+          65
+        ],
+        "pct": 48.6
+      },
+      {
+        "hex": "#2e1a1a",
+        "rgb": [
+          46,
+          26,
+          26
+        ],
+        "pct": 32.8
+      },
+      {
+        "hex": "#c1b7a5",
+        "rgb": [
+          193,
+          183,
+          165
+        ],
+        "pct": 18.6
+      }
+    ],
+    "avg_hsv": {
+      "h": 34.0,
+      "s": 126.2,
+      "v": 122.8
+    },
+    "avg_brightness": 95.4,
+    "contrast": 57.1
+  },
+  {
+    "frame": "scene_0004.png",
+    "timestamp": 6.84,
+    "dominant_colors": [
+      {
+        "hex": "#7e4f34",
+        "rgb": [
+          126,
+          79,
+          52
+        ],
+        "pct": 55.9
+      },
+      {
+        "hex": "#24130f",
+        "rgb": [
+          36,
+          19,
+          15
+        ],
+        "pct": 29.2
+      },
+      {
+        "hex": "#dccda2",
+        "rgb": [
+          220,
+          205,
+          162
+        ],
+        "pct": 14.9
+      }
+    ],
+    "avg_hsv": {
+      "h": 28.2,
+      "s": 138.8,
+      "v": 114.7
+    },
+    "avg_brightness": 88.0,
+    "contrast": 60.4
+  },
+  {
+    "frame": "scene_0005.png",
+    "timestamp": 10.36,
+    "dominant_colors": [
+      {
+        "hex": "#f99450",
+        "rgb": [
+          249,
+          148,
+          80
+        ],
+        "pct": 61.6
+      },
+      {
+        "hex": "#faad6f",
+        "rgb": [
+          250,
+          173,
+          111
+        ],
+        "pct": 29.8
+      },
+      {
+        "hex": "#fce2bf",
+        "rgb": [
+          252,
+          226,
+          191
+        ],
+        "pct": 8.6
+      }
+    ],
+    "avg_hsv": {
+      "h": 12.9,
+      "s": 154.3,
+      "v": 250.1
+    },
+    "avg_brightness": 181.1,
+    "contrast": 18.6
+  },
+  {
+    "frame": "scene_0006.png",
+    "timestamp": 10.48,
+    "dominant_colors": [
+      {
+        "hex": "#ffca65",
+        "rgb": [
+          255,
+          202,
+          101
+        ],
+        "pct": 50.4
+      },
+      {
+        "hex": "#fff0a8",
+        "rgb": [
+          255,
+          240,
+          168
+        ],
+        "pct": 33.5
+      },
+      {
+        "hex": "#fff1ec",
+        "rgb": [
+          255,
+          241,
+          236
+        ],
+        "pct": 16.1
+      }
+    ],
+    "avg_hsv": {
+      "h": 27.4,
+      "s": 110.5,
+      "v": 255.0
+    },
+    "avg_brightness": 222.8,
+    "contrast": 19.7
+  },
+  {
+    "frame": "scene_0007.png",
+    "timestamp": 10.56,
+    "dominant_colors": [
+      {
+        "hex": "#f7f3b6",
+        "rgb": [
+          247,
+          243,
+          182
+        ],
+        "pct": 46.0
+      },
+      {
+        "hex": "#402219",
+        "rgb": [
+          64,
+          34,
+          25
+        ],
+        "pct": 29.1
+      },
+      {
+        "hex": "#e2ab69",
+        "rgb": [
+          226,
+          171,
+          105
+        ],
+        "pct": 24.9
+      }
+    ],
+    "avg_hsv": {
+      "h": 35.6,
+      "s": 122.8,
+      "v": 193.8
+    },
+    "avg_brightness": 167.4,
+    "contrast": 85.5
+  },
+  {
+    "frame": "scene_0008.png",
+    "timestamp": 13.16,
+    "dominant_colors": [
+      {
+        "hex": "#0c102a",
+        "rgb": [
+          12,
+          16,
+          42
+        ],
+        "pct": 45.6
+      },
+      {
+        "hex": "#dcd9ce",
+        "rgb": [
+          220,
+          217,
+          206
+        ],
+        "pct": 32.7
+      },
+      {
+        "hex": "#a96e3f",
+        "rgb": [
+          169,
+          110,
+          63
+        ],
+        "pct": 21.8
+      }
+    ],
+    "avg_hsv": {
+      "h": 69.1,
+      "s": 141.3,
+      "v": 129.7
+    },
+    "avg_brightness": 103.1,
+    "contrast": 88.8
+  },
+  {
+    "frame": "scene_0009.png",
+    "timestamp": 15.28,
+    "dominant_colors": [
+      {
+        "hex": "#f4824b",
+        "rgb": [
+          244,
+          130,
+          75
+        ],
+        "pct": 48.0
+      },
+      {
+        "hex": "#fdecdc",
+        "rgb": [
+          253,
+          236,
+          220
+        ],
+        "pct": 29.9
+      },
+      {
+        "hex": "#fabc7c",
+        "rgb": [
+          250,
+          188,
+          124
+        ],
+        "pct": 22.1
+      }
+    ],
+    "avg_hsv": {
+      "h": 12.2,
+      "s": 123.4,
+      "v": 248.5
+    },
+    "avg_brightness": 191.6,
+    "contrast": 36.7
+  },
+  {
+    "frame": "scene_0010.png",
+    "timestamp": 15.4,
+    "dominant_colors": [
+      {
+        "hex": "#ffde6f",
+        "rgb": [
+          255,
+          222,
+          111
+        ],
+        "pct": 50.1
+      },
+      {
+        "hex": "#feb150",
+        "rgb": [
+          254,
+          177,
+          80
+        ],
+        "pct": 31.5
+      },
+      {
+        "hex": "#ffefa2",
+        "rgb": [
+          255,
+          239,
+          162
+        ],
+        "pct": 18.4
+      }
+    ],
+    "avg_hsv": {
+      "h": 21.5,
+      "s": 143.9,
+      "v": 255.0
+    },
+    "avg_brightness": 213.0,
+    "contrast": 18.8
+  },
+  {
+    "frame": "scene_0011.png",
+    "timestamp": 15.48,
+    "dominant_colors": [
+      {
+        "hex": "#fbe47e",
+        "rgb": [
+          251,
+          228,
+          126
+        ],
+        "pct": 50.5
+      },
+      {
+        "hex": "#c76833",
+        "rgb": [
+          199,
+          104,
+          51
+        ],
+        "pct": 26.6
+      },
+      {
+        "hex": "#2b0c07",
+        "rgb": [
+          43,
+          12,
+          7
+        ],
+        "pct": 22.9
+      }
+    ],
+    "avg_hsv": {
+      "h": 21.6,
+      "s": 155.6,
+      "v": 191.0
+    },
+    "avg_brightness": 152.2,
+    "contrast": 85.6
+  },
+  {
+    "frame": "scene_0012.png",
+    "timestamp": 17.36,
+    "dominant_colors": [
+      {
+        "hex": "#11162c",
+        "rgb": [
+          17,
+          22,
+          44
+        ],
+        "pct": 38.4
+      },
+      {
+        "hex": "#b87537",
+        "rgb": [
+          184,
+          117,
+          55
+        ],
+        "pct": 31.9
+      },
+      {
+        "hex": "#f6e7ba",
+        "rgb": [
+          246,
+          231,
+          186
+        ],
+        "pct": 29.7
+      }
+    ],
+    "avg_hsv": {
+      "h": 52.9,
+      "s": 153.8,
+      "v": 151.8
+    },
+    "avg_brightness": 118.0,
+    "contrast": 90.0
+  },
+  {
+    "frame": "scene_0013.png",
+    "timestamp": 19.36,
+    "dominant_colors": [
+      {
+        "hex": "#c04b10",
+        "rgb": [
+          192,
+          75,
+          16
+        ],
+        "pct": 41.4
+      },
+      {
+        "hex": "#370f06",
+        "rgb": [
+          55,
+          15,
+          6
+        ],
+        "pct": 38.6
+      },
+      {
+        "hex": "#edb36a",
+        "rgb": [
+          237,
+          179,
+          106
+        ],
+        "pct": 19.9
+      }
+    ],
+    "avg_hsv": {
+      "h": 13.3,
+      "s": 208.9,
+      "v": 149.5
+    },
+    "avg_brightness": 90.9,
+    "contrast": 64.3
+  },
+  {
+    "frame": "scene_0014.png",
+    "timestamp": 21.52,
+    "dominant_colors": [
+      {
+        "hex": "#d3e5f2",
+        "rgb": [
+          211,
+          229,
+          242
+        ],
+        "pct": 44.6
+      },
+      {
+        "hex": "#221e31",
+        "rgb": [
+          34,
+          30,
+          49
+        ],
+        "pct": 30.1
+      },
+      {
+        "hex": "#934c3a",
+        "rgb": [
+          147,
+          76,
+          58
+        ],
+        "pct": 25.4
+      }
+    ],
+    "avg_hsv": {
+      "h": 60.4,
+      "s": 104.4,
+      "v": 167.7
+    },
+    "avg_brightness": 137.8,
+    "contrast": 89.8
+  },
+  {
+    "frame": "scene_0015.png",
+    "timestamp": 24.32,
+    "dominant_colors": [
+      {
+        "hex": "#fdf2f7",
+        "rgb": [
+          253,
+          242,
+          247
+        ],
+        "pct": 48.8
+      },
+      {
+        "hex": "#f3864d",
+        "rgb": [
+          243,
+          134,
+          77
+        ],
+        "pct": 32.9
+      },
+      {
+        "hex": "#f8ac8a",
+        "rgb": [
+          248,
+          172,
+          138
+        ],
+        "pct": 18.3
+      }
+    ],
+    "avg_hsv": {
+      "h": 55.7,
+      "s": 86.2,
+      "v": 249.4
+    },
+    "avg_brightness": 207.1,
+    "contrast": 40.3
+  },
+  {
+    "frame": "scene_0016.png",
+    "timestamp": 24.44,
+    "dominant_colors": [
+      {
+        "hex": "#ffdd6e",
+        "rgb": [
+          255,
+          221,
+          110
+        ],
+        "pct": 70.3
+      },
+      {
+        "hex": "#fff2b8",
+        "rgb": [
+          255,
+          242,
+          184
+        ],
+        "pct": 20.6
+      },
+      {
+        "hex": "#ff9b47",
+        "rgb": [
+          255,
+          155,
+          71
+        ],
+        "pct": 9.1
+      }
+    ],
+    "avg_hsv": {
+      "h": 26.2,
+      "s": 133.0,
+      "v": 255.0
+    },
+    "avg_brightness": 219.1,
+    "contrast": 18.6
+  },
+  {
+    "frame": "scene_0017.png",
+    "timestamp": 24.52,
+    "dominant_colors": [
+      {
+        "hex": "#faec8e",
+        "rgb": [
+          250,
+          236,
+          142
+        ],
+        "pct": 53.5
+      },
+      {
+        "hex": "#d17d3b",
+        "rgb": [
+          209,
+          125,
+          59
+        ],
+        "pct": 23.6
+      },
+      {
+        "hex": "#2d0d06",
+        "rgb": [
+          45,
+          13,
+          6
+        ],
+        "pct": 23.0
+      }
+    ],
+    "avg_hsv": {
+      "h": 30.1,
+      "s": 150.7,
+      "v": 198.0
+    },
+    "avg_brightness": 165.1,
+    "contrast": 85.3
+  },
+  {
+    "frame": "scene_0018.png",
+    "timestamp": 29.12,
+    "dominant_colors": [
+      {
+        "hex": "#feeca1",
+        "rgb": [
+          254,
+          236,
+          161
+        ],
+        "pct": 42.2
+      },
+      {
+        "hex": "#d6612f",
+        "rgb": [
+          214,
+          97,
+          47
+        ],
+        "pct": 34.2
+      },
+      {
+        "hex": "#4f160f",
+        "rgb": [
+          79,
+          22,
+          15
+        ],
+        "pct": 23.5
+      }
+    ],
+    "avg_hsv": {
+      "h": 14.9,
+      "s": 154.1,
+      "v": 199.0
+    },
+    "avg_brightness": 150.5,
+    "contrast": 81.9
+  },
+  {
+    "frame": "scene_0019.png",
+    "timestamp": 29.28,
+    "dominant_colors": [
+      {
+        "hex": "#ae774a",
+        "rgb": [
+          174,
+          119,
+          74
+        ],
+        "pct": 40.9
+      },
+      {
+        "hex": "#f9d8a7",
+        "rgb": [
+          249,
+          216,
+          167
+        ],
+        "pct": 32.6
+      },
+      {
+        "hex": "#2c1608",
+        "rgb": [
+          44,
+          22,
+          8
+        ],
+        "pct": 26.5
+      }
+    ],
+    "avg_hsv": {
+      "h": 14.6,
+      "s": 140.3,
+      "v": 166.1
+    },
+    "avg_brightness": 134.1,
+    "contrast": 78.3
+  },
+  {
+    "frame": "scene_0020.png",
+    "timestamp": 31.68,
+    "dominant_colors": [
+      {
+        "hex": "#f0d2a3",
+        "rgb": [
+          240,
+          210,
+          163
+        ],
+        "pct": 41.6
+      },
+      {
+        "hex": "#b67830",
+        "rgb": [
+          182,
+          120,
+          48
+        ],
+        "pct": 33.3
+      },
+      {
+        "hex": "#39230c",
+        "rgb": [
+          57,
+          35,
+          12
+        ],
+        "pct": 25.1
+      }
+    ],
+    "avg_hsv": {
+      "h": 18.0,
+      "s": 144.2,
+      "v": 177.0
+    },
+    "avg_brightness": 144.0,
+    "contrast": 74.0
+  },
+  {
+    "frame": "scene_0021.png",
+    "timestamp": 34.36,
+    "dominant_colors": [
+      {
+        "hex": "#4f473f",
+        "rgb": [
+          79,
+          71,
+          63
+        ],
+        "pct": 41.6
+      },
+      {
+        "hex": "#b8b3a9",
+        "rgb": [
+          184,
+          179,
+          169
+        ],
+        "pct": 33.9
+      },
+      {
+        "hex": "#c98744",
+        "rgb": [
+          201,
+          135,
+          68
+        ],
+        "pct": 24.5
+      }
+    ],
+    "avg_hsv": {
+      "h": 47.6,
+      "s": 117.8,
+      "v": 158.4
+    },
+    "avg_brightness": 127.5,
+    "contrast": 55.7
+  },
+  {
+    "frame": "scene_0022.png",
+    "timestamp": 37.8,
+    "dominant_colors": [
+      {
+        "hex": "#031528",
+        "rgb": [
+          3,
+          21,
+          40
+        ],
+        "pct": 60.7
+      },
+      {
+        "hex": "#2b5b84",
+        "rgb": [
+          43,
+          91,
+          132
+        ],
+        "pct": 22.6
+      },
+      {
+        "hex": "#a0bcd0",
+        "rgb": [
+          160,
+          188,
+          208
+        ],
+        "pct": 16.7
+      }
+    ],
+    "avg_hsv": {
+      "h": 92.5,
+      "s": 185.5,
+      "v": 93.1
+    },
+    "avg_brightness": 60.6,
+    "contrast": 64.1
+  },
+  {
+    "frame": "scene_0023.png",
+    "timestamp": 40.04,
+    "dominant_colors": [
+      {
+        "hex": "#315d8e",
+        "rgb": [
+          49,
+          93,
+          142
+        ],
+        "pct": 41.7
+      },
+      {
+        "hex": "#a4bdcd",
+        "rgb": [
+          164,
+          189,
+          205
+        ],
+        "pct": 33.5
+      },
+      {
+        "hex": "#031223",
+        "rgb": [
+          3,
+          18,
+          35
+        ],
+        "pct": 24.8
+      }
+    ],
+    "avg_hsv": {
+      "h": 103.4,
+      "s": 147.0,
+      "v": 137.6
+    },
+    "avg_brightness": 101.5,
+    "contrast": 69.5
+  },
+  {
+    "frame": "scene_0024.png",
+    "timestamp": 44.36,
+    "dominant_colors": [
+      {
+        "hex": "#2c3344",
+        "rgb": [
+          44,
+          51,
+          68
+        ],
+        "pct": 63.8
+      },
+      {
+        "hex": "#dfac98",
+        "rgb": [
+          223,
+          172,
+          152
+        ],
+        "pct": 20.0
+      },
+      {
+        "hex": "#489fc8",
+        "rgb": [
+          72,
+          159,
+          200
+        ],
+        "pct": 16.1
+      }
+    ],
+    "avg_hsv": {
+      "h": 79.1,
+      "s": 138.5,
+      "v": 131.5
+    },
+    "avg_brightness": 93.1,
+    "contrast": 64.6
+  },
+  {
+    "frame": "scene_0025.png",
+    "timestamp": 44.44,
+    "dominant_colors": [
+      {
+        "hex": "#edefea",
+        "rgb": [
+          237,
+          239,
+          234
+        ],
+        "pct": 47.2
+      },
+      {
+        "hex": "#ca845c",
+        "rgb": [
+          202,
+          132,
+          92
+        ],
+        "pct": 30.2
+      },
+      {
+        "hex": "#385c8b",
+        "rgb": [
+          56,
+          92,
+          139
+        ],
+        "pct": 22.5
+      }
+    ],
+    "avg_hsv": {
+      "h": 40.4,
+      "s": 91.8,
+      "v": 213.7
+    },
+    "avg_brightness": 177.9,
+    "contrast": 68.8
+  },
+  {
+    "frame": "scene_0026.png",
+    "timestamp": 44.48,
+    "dominant_colors": [
+      {
+        "hex": "#dadddf",
+        "rgb": [
+          218,
+          221,
+          223
+        ],
+        "pct": 37.9
+      },
+      {
+        "hex": "#ac7558",
+        "rgb": [
+          172,
+          117,
+          88
+        ],
+        "pct": 34.0
+      },
+      {
+        "hex": "#2f4d78",
+        "rgb": [
+          47,
+          77,
+          120
+        ],
+        "pct": 28.1
+      }
+    ],
+    "avg_hsv": {
+      "h": 60.3,
+      "s": 97.6,
+      "v": 186.5
+    },
+    "avg_brightness": 151.4,
+    "contrast": 68.7
+  },
+  {
+    "frame": "scene_0027.png",
+    "timestamp": 47.48,
+    "dominant_colors": [
+      {
+        "hex": "#596990",
+        "rgb": [
+          89,
+          105,
+          144
+        ],
+        "pct": 40.8
+      },
+      {
+        "hex": "#cac4bc",
+        "rgb": [
+          202,
+          196,
+          188
+        ],
+        "pct": 33.7
+      },
+      {
+        "hex": "#100a0a",
+        "rgb": [
+          16,
+          10,
+          10
+        ],
+        "pct": 25.4
+      }
+    ],
+    "avg_hsv": {
+      "h": 83.0,
+      "s": 103.9,
+      "v": 140.4
+    },
+    "avg_brightness": 112.7,
+    "contrast": 73.3
+  },
+  {
+    "frame": "scene_0028.png",
+    "timestamp": 50.48,
+    "dominant_colors": [
+      {
+        "hex": "#f79454",
+        "rgb": [
+          247,
+          148,
+          84
+        ],
+        "pct": 47.1
+      },
+      {
+        "hex": "#fcb59f",
+        "rgb": [
+          252,
+          181,
+          159
+        ],
+        "pct": 37.2
+      },
+      {
+        "hex": "#f9d6c3",
+        "rgb": [
+          249,
+          214,
+          195
+        ],
+        "pct": 15.8
+      }
+    ],
+    "avg_hsv": {
+      "h": 17.2,
+      "s": 124.0,
+      "v": 249.9
+    },
+    "avg_brightness": 189.9,
+    "contrast": 21.9
+  },
+  {
+    "frame": "scene_0029.png",
+    "timestamp": 50.6,
+    "dominant_colors": [
+      {
+        "hex": "#ffe090",
+        "rgb": [
+          255,
+          224,
+          144
+        ],
+        "pct": 50.4
+      },
+      {
+        "hex": "#fff0d3",
+        "rgb": [
+          255,
+          240,
+          211
+        ],
+        "pct": 33.8
+      },
+      {
+        "hex": "#ffb57c",
+        "rgb": [
+          255,
+          181,
+          124
+        ],
+        "pct": 15.8
+      }
+    ],
+    "avg_hsv": {
+      "h": 19.8,
+      "s": 90.6,
+      "v": 255.0
+    },
+    "avg_brightness": 226.3,
+    "contrast": 16.2
+  },
+  {
+    "frame": "scene_0030.png",
+    "timestamp": 50.68,
+    "dominant_colors": [
+      {
+        "hex": "#f3e7af",
+        "rgb": [
+          243,
+          231,
+          175
+        ],
+        "pct": 60.6
+      },
+      {
+        "hex": "#373e44",
+        "rgb": [
+          55,
+          62,
+          68
+        ],
+        "pct": 20.6
+      },
+      {
+        "hex": "#968c87",
+        "rgb": [
+          150,
+          140,
+          135
+        ],
+        "pct": 18.9
+      }
+    ],
+    "avg_hsv": {
+      "h": 48.7,
+      "s": 75.7,
+      "v": 195.5
+    },
+    "avg_brightness": 178.4,
+    "contrast": 71.5
+  },
+  {
+    "frame": "scene_0031.png",
+    "timestamp": 55.08,
+    "dominant_colors": [
+      {
+        "hex": "#f5f7f6",
+        "rgb": [
+          245,
+          247,
+          246
+        ],
+        "pct": 55.7
+      },
+      {
+        "hex": "#acb3b5",
+        "rgb": [
+          172,
+          179,
+          181
+        ],
+        "pct": 34.5
+      },
+      {
+        "hex": "#645551",
+        "rgb": [
+          100,
+          85,
+          81
+        ],
+        "pct": 9.8
+      }
+    ],
+    "avg_hsv": {
+      "h": 45.6,
+      "s": 35.7,
+      "v": 219.9
+    },
+    "avg_brightness": 206.9,
+    "contrast": 54.5
+  },
+  {
+    "frame": "scene_0032.png",
+    "timestamp": 55.16,
+    "dominant_colors": [
+      {
+        "hex": "#f1f6f8",
+        "rgb": [
+          241,
+          246,
+          248
+        ],
+        "pct": 42.1
+      },
+      {
+        "hex": "#a7afb5",
+        "rgb": [
+          167,
+          175,
+          181
+        ],
+        "pct": 39.8
+      },
+      {
+        "hex": "#5e6772",
+        "rgb": [
+          94,
+          103,
+          114
+        ],
+        "pct": 18.1
+      }
+    ],
+    "avg_hsv": {
+      "h": 63.6,
+      "s": 37.7,
+      "v": 206.8
+    },
+    "avg_brightness": 192.8,
+    "contrast": 55.8
+  },
+  {
+    "frame": "scene_0033.png",
+    "timestamp": 59.56,
+    "dominant_colors": [
+      {
+        "hex": "#fcfcfa",
+        "rgb": [
+          252,
+          252,
+          250
+        ],
+        "pct": 66.0
+      },
+      {
+        "hex": "#fceccd",
+        "rgb": [
+          252,
+          236,
+          205
+        ],
+        "pct": 18.5
+      },
+      {
+        "hex": "#fcc09e",
+        "rgb": [
+          252,
+          192,
+          158
+        ],
+        "pct": 15.5
+      }
+    ],
+    "avg_hsv": {
+      "h": 11.1,
+      "s": 25.8,
+      "v": 252.8
+    },
+    "avg_brightness": 242.4,
+    "contrast": 17.8
+  },
+  {
+    "frame": "scene_0034.png",
+    "timestamp": 59.88,
+    "dominant_colors": [
+      {
+        "hex": "#f99e74",
+        "rgb": [
+          249,
+          158,
+          116
+        ],
+        "pct": 51.4
+      },
+      {
+        "hex": "#fcd9b2",
+        "rgb": [
+          252,
+          217,
+          178
+        ],
+        "pct": 30.3
+      },
+      {
+        "hex": "#d2553c",
+        "rgb": [
+          210,
+          85,
+          60
+        ],
+        "pct": 18.3
+      }
+    ],
+    "avg_hsv": {
+      "h": 11.2,
+      "s": 125.1,
+      "v": 243.8
+    },
+    "avg_brightness": 183.6,
+    "contrast": 37.7
+  },
+  {
+    "frame": "scene_0035.png",
+    "timestamp": 62.04,
+    "dominant_colors": [
+      {
+        "hex": "#3a2423",
+        "rgb": [
+          58,
+          36,
+          35
+        ],
+        "pct": 61.2
+      },
+      {
+        "hex": "#c9ae8b",
+        "rgb": [
+          201,
+          174,
+          139
+        ],
+        "pct": 26.1
+      },
+      {
+        "hex": "#c8ebf5",
+        "rgb": [
+          200,
+          235,
+          245
+        ],
+        "pct": 12.7
+      }
+    ],
+    "avg_hsv": {
+      "h": 51.7,
+      "s": 104.1,
+      "v": 122.2
+    },
+    "avg_brightness": 100.9,
+    "contrast": 77.6
+  },
+  {
+    "frame": "scene_0036.png",
+    "timestamp": 67.36,
+    "dominant_colors": [
+      {
+        "hex": "#dfb582",
+        "rgb": [
+          223,
+          181,
+          130
+        ],
+        "pct": 50.2
+      },
+      {
+        "hex": "#191716",
+        "rgb": [
+          25,
+          23,
+          22
+        ],
+        "pct": 29.8
+      },
+      {
+        "hex": "#9e6d42",
+        "rgb": [
+          158,
+          109,
+          66
+        ],
+        "pct": 20.1
+      }
+    ],
+    "avg_hsv": {
+      "h": 30.8,
+      "s": 128.3,
+      "v": 153.8
+    },
+    "avg_brightness": 125.0,
+    "contrast": 73.5
+  },
+  {
+    "frame": "scene_0037.png",
+    "timestamp": 69,
+    "dominant_colors": [
+      {
+        "hex": "#f58f5b",
+        "rgb": [
+          245,
+          143,
+          91
+        ],
+        "pct": 60.1
+      },
+      {
+        "hex": "#fbc58e",
+        "rgb": [
+          251,
+          197,
+          142
+        ],
+        "pct": 30.5
+      },
+      {
+        "hex": "#fce9d9",
+        "rgb": [
+          252,
+          233,
+          217
+        ],
+        "pct": 9.4
+      }
+    ],
+    "avg_hsv": {
+      "h": 13.6,
+      "s": 132.2,
+      "v": 248.2
+    },
+    "avg_brightness": 187.0,
+    "contrast": 26.8
+  },
+  {
+    "frame": "scene_0038.png",
+    "timestamp": 69.12,
+    "dominant_colors": [
+      {
+        "hex": "#fecd6a",
+        "rgb": [
+          254,
+          205,
+          106
+        ],
+        "pct": 56.4
+      },
+      {
+        "hex": "#fee198",
+        "rgb": [
+          254,
+          225,
+          152
+        ],
+        "pct": 27.7
+      },
+      {
+        "hex": "#fff8ea",
+        "rgb": [
+          255,
+          248,
+          234
+        ],
+        "pct": 15.9
+      }
+    ],
+    "avg_hsv": {
+      "h": 20.3,
+      "s": 116.3,
+      "v": 255.0
+    },
+    "avg_brightness": 219.8,
+    "contrast": 17.6
+  },
+  {
+    "frame": "scene_0039.png",
+    "timestamp": 69.2,
+    "dominant_colors": [
+      {
+        "hex": "#fbefa3",
+        "rgb": [
+          251,
+          239,
+          163
+        ],
+        "pct": 51.7
+      },
+      {
+        "hex": "#373433",
+        "rgb": [
+          55,
+          52,
+          51
+        ],
+        "pct": 30.7
+      },
+      {
+        "hex": "#df995e",
+        "rgb": [
+          223,
+          153,
+          94
+        ],
+        "pct": 17.6
+      }
+    ],
+    "avg_hsv": {
+      "h": 42.5,
+      "s": 109.4,
+      "v": 191.1
+    },
+    "avg_brightness": 166.9,
+    "contrast": 83.3
+  },
+  {
+    "frame": "scene_0040.png",
+    "timestamp": 71.84,
+    "dominant_colors": [
+      {
+        "hex": "#6d5242",
+        "rgb": [
+          109,
+          82,
+          66
+        ],
+        "pct": 44.3
+      },
+      {
+        "hex": "#291d19",
+        "rgb": [
+          41,
+          29,
+          25
+        ],
+        "pct": 28.9
+      },
+      {
+        "hex": "#a68c77",
+        "rgb": [
+          166,
+          140,
+          119
+        ],
+        "pct": 26.8
+      }
+    ],
+    "avg_hsv": {
+      "h": 20.9,
+      "s": 94.2,
+      "v": 105.6
+    },
+    "avg_brightness": 88.0,
+    "contrast": 46.6
+  },
+  {
+    "frame": "scene_0041.png",
+    "timestamp": 72.24,
+    "dominant_colors": [
+      {
+        "hex": "#846650",
+        "rgb": [
+          132,
+          102,
+          80
+        ],
+        "pct": 42.8
+      },
+      {
+        "hex": "#2f211b",
+        "rgb": [
+          47,
+          33,
+          27
+        ],
+        "pct": 40.2
+      },
+      {
+        "hex": "#c8bfb0",
+        "rgb": [
+          200,
+          191,
+          176
+        ],
+        "pct": 17.0
+      }
+    ],
+    "avg_hsv": {
+      "h": 27.7,
+      "s": 93.8,
+      "v": 111.8
+    },
+    "avg_brightness": 95.1,
+    "contrast": 59.0
+  },
+  {
+    "frame": "scene_0042.png",
+    "timestamp": 72.48,
+    "dominant_colors": [
+      {
+        "hex": "#111016",
+        "rgb": [
+          17,
+          16,
+          22
+        ],
+        "pct": 43.4
+      },
+      {
+        "hex": "#cecbc1",
+        "rgb": [
+          206,
+          203,
+          193
+        ],
+        "pct": 28.9
+      },
+      {
+        "hex": "#6b5549",
+        "rgb": [
+          107,
+          85,
+          73
+        ],
+        "pct": 27.7
+      }
+    ],
+    "avg_hsv": {
+      "h": 61.1,
+      "s": 104.4,
+      "v": 102.2
+    },
+    "avg_brightness": 91.2,
+    "contrast": 80.8
+  },
+  {
+    "frame": "scene_0043.png",
+    "timestamp": 72.72,
+    "dominant_colors": [
+      {
+        "hex": "#1c1712",
+        "rgb": [
+          28,
+          23,
+          18
+        ],
+        "pct": 47.1
+      },
+      {
+        "hex": "#534232",
+        "rgb": [
+          83,
+          66,
+          50
+        ],
+        "pct": 29.8
+      },
+      {
+        "hex": "#ad916d",
+        "rgb": [
+          173,
+          145,
+          109
+        ],
+        "pct": 23.1
+      }
+    ],
+    "avg_hsv": {
+      "h": 27.8,
+      "s": 93.5,
+      "v": 79.0
+    },
+    "avg_brightness": 66.6,
+    "contrast": 51.6
+  },
+  {
+    "frame": "scene_0044.png",
+    "timestamp": 72.96,
+    "dominant_colors": [
+      {
+        "hex": "#091a1c",
+        "rgb": [
+          9,
+          26,
+          28
+        ],
+        "pct": 41.4
+      },
+      {
+        "hex": "#3f646d",
+        "rgb": [
+          63,
+          100,
+          109
+        ],
+        "pct": 30.2
+      },
+      {
+        "hex": "#a2b4ba",
+        "rgb": [
+          162,
+          180,
+          186
+        ],
+        "pct": 28.3
+      }
+    ],
+    "avg_hsv": {
+      "h": 91.4,
+      "s": 126.0,
+      "v": 98.6
+    },
+    "avg_brightness": 85.6,
+    "contrast": 66.7
+  },
+  {
+    "frame": "scene_0045.png",
+    "timestamp": 73.2,
+    "dominant_colors": [
+      {
+        "hex": "#767c7d",
+        "rgb": [
+          118,
+          124,
+          125
+        ],
+        "pct": 39.9
+      },
+      {
+        "hex": "#b4bcbb",
+        "rgb": [
+          180,
+          188,
+          187
+        ],
+        "pct": 35.2
+      },
+      {
+        "hex": "#45484a",
+        "rgb": [
+          69,
+          72,
+          74
+        ],
+        "pct": 24.9
+      }
+    ],
+    "avg_hsv": {
+      "h": 73.6,
+      "s": 30.8,
+      "v": 139.6
+    },
+    "avg_brightness": 132.8,
+    "contrast": 48.1
+  },
+  {
+    "frame": "scene_0046.png",
+    "timestamp": 73.44,
+    "dominant_colors": [
+      {
+        "hex": "#232a2b",
+        "rgb": [
+          35,
+          42,
+          43
+        ],
+        "pct": 38.0
+      },
+      {
+        "hex": "#94918a",
+        "rgb": [
+          148,
+          145,
+          138
+        ],
+        "pct": 32.4
+      },
+      {
+        "hex": "#565855",
+        "rgb": [
+          86,
+          88,
+          85
+        ],
+        "pct": 29.6
+      }
+    ],
+    "avg_hsv": {
+      "h": 70.0,
+      "s": 49.9,
+      "v": 95.4
+    },
+    "avg_brightness": 88.1,
+    "contrast": 46.6
+  },
+  {
+    "frame": "scene_0047.png",
+    "timestamp": 73.72,
+    "dominant_colors": [
+      {
+        "hex": "#2f1e18",
+        "rgb": [
+          47,
+          30,
+          24
+        ],
+        "pct": 50.8
+      },
+      {
+        "hex": "#d3bda7",
+        "rgb": [
+          211,
+          189,
+          167
+        ],
+        "pct": 30.7
+      },
+      {
+        "hex": "#9c7251",
+        "rgb": [
+          156,
+          114,
+          81
+        ],
+        "pct": 18.5
+      }
+    ],
+    "avg_hsv": {
+      "h": 32.5,
+      "s": 108.5,
+      "v": 120.5
+    },
+    "avg_brightness": 98.7,
+    "contrast": 73.2
+  },
+  {
+    "frame": "scene_0048.png",
+    "timestamp": 76.76,
+    "dominant_colors": [
+      {
+        "hex": "#f58749",
+        "rgb": [
+          245,
+          135,
+          73
+        ],
+        "pct": 62.5
+      },
+      {
+        "hex": "#fbbf7d",
+        "rgb": [
+          251,
+          191,
+          125
+        ],
+        "pct": 19.1
+      },
+      {
+        "hex": "#fde1c5",
+        "rgb": [
+          253,
+          225,
+          197
+        ],
+        "pct": 18.4
+      }
+    ],
+    "avg_hsv": {
+      "h": 16.7,
+      "s": 145.1,
+      "v": 248.3
+    },
+    "avg_brightness": 182.8,
+    "contrast": 29.9
+  },
+  {
+    "frame": "scene_0049.png",
+    "timestamp": 76.88,
+    "dominant_colors": [
+      {
+        "hex": "#ffe37b",
+        "rgb": [
+          255,
+          227,
+          123
+        ],
+        "pct": 49.4
+      },
+      {
+        "hex": "#ffe6c3",
+        "rgb": [
+          255,
+          230,
+          195
+        ],
+        "pct": 25.4
+      },
+      {
+        "hex": "#ffb859",
+        "rgb": [
+          255,
+          184,
+          89
+        ],
+        "pct": 25.2
+      }
+    ],
+    "avg_hsv": {
+      "h": 20.5,
+      "s": 122.9,
+      "v": 255.0
+    },
+    "avg_brightness": 218.8,
+    "contrast": 17.1
+  },
+  {
+    "frame": "scene_0050.png",
+    "timestamp": 76.96,
+    "dominant_colors": [
+      {
+        "hex": "#fcea84",
+        "rgb": [
+          252,
+          234,
+          132
+        ],
+        "pct": 46.5
+      },
+      {
+        "hex": "#c49c7e",
+        "rgb": [
+          196,
+          156,
+          126
+        ],
+        "pct": 32.8
+      },
+      {
+        "hex": "#45291c",
+        "rgb": [
+          69,
+          41,
+          28
+        ],
+        "pct": 20.7
+      }
+    ],
+    "avg_hsv": {
+      "h": 33.3,
+      "s": 117.1,
+      "v": 199.3
+    },
+    "avg_brightness": 171.4,
+    "contrast": 71.3
+  },
+  {
+    "frame": "scene_0051.png",
+    "timestamp": 79.28,
+    "dominant_colors": [
+      {
+        "hex": "#fcfcfa",
+        "rgb": [
+          252,
+          252,
+          250
+        ],
+        "pct": 67.4
+      },
+      {
+        "hex": "#fcebcd",
+        "rgb": [
+          252,
+          235,
+          205
+        ],
+        "pct": 20.9
+      },
+      {
+        "hex": "#fabc9e",
+        "rgb": [
+          250,
+          188,
+          158
+        ],
+        "pct": 11.7
+      }
+    ],
+    "avg_hsv": {
+      "h": 9.7,
+      "s": 23.0,
+      "v": 252.6
+    },
+    "avg_brightness": 243.5,
+    "contrast": 16.8
+  }
+]

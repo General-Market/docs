@@ -1,0 +1,6402 @@
+{
+  "drum_events": [
+    {
+      "time": 2.148,
+      "type": "tom/body_hit",
+      "energy": 0.0266,
+      "brightness": 1290.0,
+      "zcr": 0.0059
+    },
+    {
+      "time": 2.299,
+      "type": "mid_percussion",
+      "energy": 0.125,
+      "brightness": 4306.0,
+      "zcr": 0.0473
+    },
+    {
+      "time": 12.353,
+      "type": "thump",
+      "energy": 0.0157,
+      "brightness": 2193.0,
+      "zcr": 0.0164
+    },
+    {
+      "time": 13.003,
+      "type": "mid_percussion",
+      "energy": 0.0302,
+      "brightness": 2679.0,
+      "zcr": 0.0259
+    },
+    {
+      "time": 13.201,
+      "type": "tom/body_hit",
+      "energy": 0.0644,
+      "brightness": 965.0,
+      "zcr": 0.0055
+    },
+    {
+      "time": 14.118,
+      "type": "thump",
+      "energy": 0.0582,
+      "brightness": 2207.0,
+      "zcr": 0.0137
+    },
+    {
+      "time": 14.803,
+      "type": "mid_percussion",
+      "energy": 0.0183,
+      "brightness": 2794.0,
+      "zcr": 0.0359
+    },
+    {
+      "time": 15.023,
+      "type": "tom/body_hit",
+      "energy": 0.1091,
+      "brightness": 1189.0,
+      "zcr": 0.0054
+    },
+    {
+      "time": 15.232,
+      "type": "tom/body_hit",
+      "energy": 0.0563,
+      "brightness": 1739.0,
+      "zcr": 0.0259
+    },
+    {
+      "time": 15.569,
+      "type": "mid_percussion",
+      "energy": 0.0231,
+      "brightness": 4339.0,
+      "zcr": 0.0479
+    },
+    {
+      "time": 15.894,
+      "type": "tom/body_hit",
+      "energy": 0.0586,
+      "brightness": 1135.0,
+      "zcr": 0.0057
+    },
+    {
+      "time": 18.344,
+      "type": "tom/body_hit",
+      "energy": 0.0529,
+      "brightness": 1073.0,
+      "zcr": 0.0089
+    },
+    {
+      "time": 18.785,
+      "type": "tom/body_hit",
+      "energy": 0.0286,
+      "brightness": 1177.0,
+      "zcr": 0.0116
+    },
+    {
+      "time": 19.737,
+      "type": "tom/body_hit",
+      "energy": 0.0193,
+      "brightness": 1816.0,
+      "zcr": 0.0045
+    },
+    {
+      "time": 20.05,
+      "type": "thump",
+      "energy": 0.0245,
+      "brightness": 2277.0,
+      "zcr": 0.0186
+    },
+    {
+      "time": 20.271,
+      "type": "thump",
+      "energy": 0.0151,
+      "brightness": 2224.0,
+      "zcr": 0.0136
+    },
+    {
+      "time": 20.492,
+      "type": "thump",
+      "energy": 0.0152,
+      "brightness": 2345.0,
+      "zcr": 0.0235
+    },
+    {
+      "time": 20.712,
+      "type": "thump",
+      "energy": 0.0166,
+      "brightness": 2328.0,
+      "zcr": 0.0193
+    },
+    {
+      "time": 21.165,
+      "type": "thump",
+      "energy": 0.0244,
+      "brightness": 2147.0,
+      "zcr": 0.0262
+    },
+    {
+      "time": 21.85,
+      "type": "tom/body_hit",
+      "energy": 0.0218,
+      "brightness": 1326.0,
+      "zcr": 0.0093
+    },
+    {
+      "time": 22.28,
+      "type": "tom/body_hit",
+      "energy": 0.0225,
+      "brightness": 1868.0,
+      "zcr": 0.0087
+    },
+    {
+      "time": 22.93,
+      "type": "tom/body_hit",
+      "energy": 0.0207,
+      "brightness": 1997.0,
+      "zcr": 0.0239
+    },
+    {
+      "time": 23.162,
+      "type": "tom/body_hit",
+      "energy": 0.0183,
+      "brightness": 1576.0,
+      "zcr": 0.0086
+    },
+    {
+      "time": 23.638,
+      "type": "tom/body_hit",
+      "energy": 0.0193,
+      "brightness": 1760.0,
+      "zcr": 0.009
+    },
+    {
+      "time": 24.044,
+      "type": "thump",
+      "energy": 0.0209,
+      "brightness": 2004.0,
+      "zcr": 0.0192
+    },
+    {
+      "time": 24.276,
+      "type": "mid_percussion",
+      "energy": 0.0181,
+      "brightness": 4067.0,
+      "zcr": 0.076
+    },
+    {
+      "time": 24.729,
+      "type": "tom/body_hit",
+      "energy": 0.0333,
+      "brightness": 1106.0,
+      "zcr": 0.0114
+    },
+    {
+      "time": 25.728,
+      "type": "tom/body_hit",
+      "energy": 0.0198,
+      "brightness": 1317.0,
+      "zcr": 0.003
+    },
+    {
+      "time": 25.89,
+      "type": "tom/body_hit",
+      "energy": 0.0558,
+      "brightness": 998.0,
+      "zcr": 0.0049
+    },
+    {
+      "time": 26.088,
+      "type": "kick/deep_boom",
+      "energy": 0.0491,
+      "brightness": 664.0,
+      "zcr": 0.0031
+    },
+    {
+      "time": 26.506,
+      "type": "tom/body_hit",
+      "energy": 0.1015,
+      "brightness": 1066.0,
+      "zcr": 0.0028
+    },
+    {
+      "time": 28.27,
+      "type": "tom/body_hit",
+      "energy": 0.0402,
+      "brightness": 1828.0,
+      "zcr": 0.0031
+    },
+    {
+      "time": 29.304,
+      "type": "thump",
+      "energy": 0.0226,
+      "brightness": 2116.0,
+      "zcr": 0.0119
+    },
+    {
+      "time": 29.745,
+      "type": "tom/body_hit",
+      "energy": 0.0193,
+      "brightness": 1843.0,
+      "zcr": 0.0057
+    },
+    {
+      "time": 30.186,
+      "type": "tom/body_hit",
+      "energy": 0.0269,
+      "brightness": 1064.0,
+      "zcr": 0.0047
+    },
+    {
+      "time": 30.383,
+      "type": "mid_percussion",
+      "energy": 0.0275,
+      "brightness": 2565.0,
+      "zcr": 0.0221
+    },
+    {
+      "time": 30.499,
+      "type": "tom/body_hit",
+      "energy": 0.0269,
+      "brightness": 1947.0,
+      "zcr": 0.0033
+    },
+    {
+      "time": 30.824,
+      "type": "tom/body_hit",
+      "energy": 0.0201,
+      "brightness": 1951.0,
+      "zcr": 0.0138
+    },
+    {
+      "time": 31.277,
+      "type": "mid_percussion",
+      "energy": 0.0166,
+      "brightness": 2863.0,
+      "zcr": 0.0193
+    },
+    {
+      "time": 31.498,
+      "type": "thump",
+      "energy": 0.02,
+      "brightness": 2364.0,
+      "zcr": 0.0153
+    },
+    {
+      "time": 31.73,
+      "type": "tom/body_hit",
+      "energy": 0.0222,
+      "brightness": 1604.0,
+      "zcr": 0.0075
+    },
+    {
+      "time": 31.951,
+      "type": "tom/body_hit",
+      "energy": 0.0318,
+      "brightness": 1803.0,
+      "zcr": 0.0076
+    },
+    {
+      "time": 32.16,
+      "type": "mid_percussion",
+      "energy": 0.0246,
+      "brightness": 2750.0,
+      "zcr": 0.0161
+    },
+    {
+      "time": 32.601,
+      "type": "thump",
+      "energy": 0.0355,
+      "brightness": 2120.0,
+      "zcr": 0.0202
+    },
+    {
+      "time": 32.833,
+      "type": "tom/body_hit",
+      "energy": 0.0186,
+      "brightness": 1944.0,
+      "zcr": 0.0121
+    },
+    {
+      "time": 32.938,
+      "type": "tom/body_hit",
+      "energy": 0.0435,
+      "brightness": 1763.0,
+      "zcr": 0.0052
+    },
+    {
+      "time": 33.065,
+      "type": "tom/body_hit",
+      "energy": 0.0458,
+      "brightness": 918.0,
+      "zcr": 0.0039
+    },
+    {
+      "time": 33.274,
+      "type": "tom/body_hit",
+      "energy": 0.0312,
+      "brightness": 1616.0,
+      "zcr": 0.01
+    },
+    {
+      "time": 33.936,
+      "type": "tom/body_hit",
+      "energy": 0.0488,
+      "brightness": 1654.0,
+      "zcr": 0.0074
+    },
+    {
+      "time": 34.284,
+      "type": "tom/body_hit",
+      "energy": 0.0457,
+      "brightness": 1560.0,
+      "zcr": 0.0103
+    },
+    {
+      "time": 34.458,
+      "type": "tom/body_hit",
+      "energy": 0.0433,
+      "brightness": 1612.0,
+      "zcr": 0.0086
+    },
+    {
+      "time": 36.328,
+      "type": "tom/body_hit",
+      "energy": 0.0259,
+      "brightness": 1274.0,
+      "zcr": 0.0069
+    },
+    {
+      "time": 37.361,
+      "type": "thump",
+      "energy": 0.0472,
+      "brightness": 2297.0,
+      "zcr": 0.0109
+    },
+    {
+      "time": 37.895,
+      "type": "tom/body_hit",
+      "energy": 0.0633,
+      "brightness": 1808.0,
+      "zcr": 0.0172
+    },
+    {
+      "time": 40.078,
+      "type": "thump",
+      "energy": 0.0429,
+      "brightness": 2467.0,
+      "zcr": 0.0393
+    },
+    {
+      "time": 40.38,
+      "type": "tom/body_hit",
+      "energy": 0.0615,
+      "brightness": 1960.0,
+      "zcr": 0.0039
+    },
+    {
+      "time": 40.53,
+      "type": "tom/body_hit",
+      "energy": 0.0352,
+      "brightness": 1275.0,
+      "zcr": 0.0105
+    },
+    {
+      "time": 40.6,
+      "type": "tom/body_hit",
+      "energy": 0.0399,
+      "brightness": 1010.0,
+      "zcr": 0.006
+    },
+    {
+      "time": 41.169,
+      "type": "tom/body_hit",
+      "energy": 0.0641,
+      "brightness": 1882.0,
+      "zcr": 0.0236
+    },
+    {
+      "time": 41.715,
+      "type": "thump",
+      "energy": 0.0429,
+      "brightness": 2042.0,
+      "zcr": 0.0176
+    },
+    {
+      "time": 42.249,
+      "type": "thump",
+      "energy": 0.0454,
+      "brightness": 2456.0,
+      "zcr": 0.0323
+    },
+    {
+      "time": 43.456,
+      "type": "tom/body_hit",
+      "energy": 0.0178,
+      "brightness": 1567.0,
+      "zcr": 0.0059
+    },
+    {
+      "time": 43.816,
+      "type": "tom/body_hit",
+      "energy": 0.0175,
+      "brightness": 1616.0,
+      "zcr": 0.0129
+    },
+    {
+      "time": 44.455,
+      "type": "mid_percussion",
+      "energy": 0.0214,
+      "brightness": 2734.0,
+      "zcr": 0.0246
+    },
+    {
+      "time": 45.523,
+      "type": "snare/crack",
+      "energy": 0.0216,
+      "brightness": 4172.0,
+      "zcr": 0.115
+    },
+    {
+      "time": 45.813,
+      "type": "thump",
+      "energy": 0.0291,
+      "brightness": 2490.0,
+      "zcr": 0.0186
+    },
+    {
+      "time": 46.08,
+      "type": "mid_percussion",
+      "energy": 0.0322,
+      "brightness": 2872.0,
+      "zcr": 0.036
+    },
+    {
+      "time": 49.099,
+      "type": "mid_percussion",
+      "energy": 0.1198,
+      "brightness": 3916.0,
+      "zcr": 0.0481
+    },
+    {
+      "time": 49.215,
+      "type": "thump",
+      "energy": 0.085,
+      "brightness": 2417.0,
+      "zcr": 0.0145
+    },
+    {
+      "time": 49.621,
+      "type": "tom/body_hit",
+      "energy": 0.057,
+      "brightness": 1366.0,
+      "zcr": 0.0027
+    },
+    {
+      "time": 49.83,
+      "type": "tom/body_hit",
+      "energy": 0.0273,
+      "brightness": 1236.0,
+      "zcr": 0.0036
+    },
+    {
+      "time": 50.852,
+      "type": "mid_percussion",
+      "energy": 0.0189,
+      "brightness": 4925.0,
+      "zcr": 0.0728
+    },
+    {
+      "time": 51.072,
+      "type": "hi-hat/sizzle",
+      "energy": 0.015,
+      "brightness": 6307.0,
+      "zcr": 0.0813
+    },
+    {
+      "time": 51.525,
+      "type": "tom/body_hit",
+      "energy": 0.0175,
+      "brightness": 1735.0,
+      "zcr": 0.007
+    },
+    {
+      "time": 53.034,
+      "type": "thump",
+      "energy": 0.0246,
+      "brightness": 2102.0,
+      "zcr": 0.0138
+    },
+    {
+      "time": 53.418,
+      "type": "mid_percussion",
+      "energy": 0.0153,
+      "brightness": 3367.0,
+      "zcr": 0.029
+    },
+    {
+      "time": 57.667,
+      "type": "tom/body_hit",
+      "energy": 0.0338,
+      "brightness": 1671.0,
+      "zcr": 0.0027
+    },
+    {
+      "time": 58.955,
+      "type": "thump",
+      "energy": 0.023,
+      "brightness": 2306.0,
+      "zcr": 0.0296
+    },
+    {
+      "time": 59.385,
+      "type": "mid_percussion",
+      "energy": 0.0206,
+      "brightness": 3218.0,
+      "zcr": 0.0728
+    },
+    {
+      "time": 60.43,
+      "type": "mid_percussion",
+      "energy": 0.0252,
+      "brightness": 3865.0,
+      "zcr": 0.0661
+    },
+    {
+      "time": 61.022,
+      "type": "mid_percussion",
+      "energy": 0.0485,
+      "brightness": 3123.0,
+      "zcr": 0.0375
+    },
+    {
+      "time": 63.054,
+      "type": "hi-hat/sizzle",
+      "energy": 0.0458,
+      "brightness": 7127.0,
+      "zcr": 0.2111
+    },
+    {
+      "time": 63.82,
+      "type": "hi-hat/sizzle",
+      "energy": 0.029,
+      "brightness": 11749.0,
+      "zcr": 0.4325
+    },
+    {
+      "time": 65.236,
+      "type": "snare/crack",
+      "energy": 0.0504,
+      "brightness": 4148.0,
+      "zcr": 0.1231
+    },
+    {
+      "time": 65.469,
+      "type": "snare/crack",
+      "energy": 0.0547,
+      "brightness": 5062.0,
+      "zcr": 0.1956
+    },
+    {
+      "time": 66.154,
+      "type": "hi-hat/sizzle",
+      "energy": 0.0727,
+      "brightness": 6313.0,
+      "zcr": 0.1924
+    },
+    {
+      "time": 66.653,
+      "type": "hi-hat/sizzle",
+      "energy": 0.066,
+      "brightness": 6160.0,
+      "zcr": 0.1823
+    },
+    {
+      "time": 67.036,
+      "type": "hi-hat/sizzle",
+      "energy": 0.0435,
+      "brightness": 6300.0,
+      "zcr": 0.233
+    },
+    {
+      "time": 67.524,
+      "type": "hi-hat/sizzle",
+      "energy": 0.0701,
+      "brightness": 6268.0,
+      "zcr": 0.2367
+    },
+    {
+      "time": 67.558,
+      "type": "hi-hat/sizzle",
+      "energy": 0.0381,
+      "brightness": 7102.0,
+      "zcr": 0.3405
+    },
+    {
+      "time": 72.667,
+      "type": "tom/body_hit",
+      "energy": 0.0354,
+      "brightness": 1247.0,
+      "zcr": 0.0025
+    },
+    {
+      "time": 72.783,
+      "type": "tom/body_hit",
+      "energy": 0.0498,
+      "brightness": 1158.0,
+      "zcr": 0.0035
+    },
+    {
+      "time": 73.073,
+      "type": "tom/body_hit",
+      "energy": 0.0362,
+      "brightness": 1595.0,
+      "zcr": 0.0068
+    },
+    {
+      "time": 73.224,
+      "type": "tom/body_hit",
+      "energy": 0.0563,
+      "brightness": 1463.0,
+      "zcr": 0.0103
+    },
+    {
+      "time": 73.352,
+      "type": "mid_percussion",
+      "energy": 0.0637,
+      "brightness": 2704.0,
+      "zcr": 0.0191
+    },
+    {
+      "time": 73.596,
+      "type": "snare/crack",
+      "energy": 0.0332,
+      "brightness": 4932.0,
+      "zcr": 0.1217
+    },
+    {
+      "time": 79.285,
+      "type": "snare/crack",
+      "energy": 0.0164,
+      "brightness": 5381.0,
+      "zcr": 0.1539
+    }
+  ],
+  "other_events": [
+    {
+      "time": 0.035,
+      "type": "ambient_bed",
+      "energy": 0.0159,
+      "brightness": 3488.0,
+      "bandwidth": 3666.0,
+      "zcr": 0.0475
+    },
+    {
+      "time": 0.186,
+      "type": "mid_tone/pad",
+      "energy": 0.0521,
+      "brightness": 2779.0,
+      "bandwidth": 3637.0,
+      "zcr": 0.0325
+    },
+    {
+      "time": 0.29,
+      "type": "dark_texture",
+      "energy": 0.0327,
+      "brightness": 2105.0,
+      "bandwidth": 2914.0,
+      "zcr": 0.035
+    },
+    {
+      "time": 0.441,
+      "type": "dark_texture",
+      "energy": 0.0322,
+      "brightness": 2230.0,
+      "bandwidth": 3134.0,
+      "zcr": 0.0193
+    },
+    {
+      "time": 0.813,
+      "type": "dark_texture",
+      "energy": 0.037,
+      "brightness": 2313.0,
+      "bandwidth": 3227.0,
+      "zcr": 0.023
+    },
+    {
+      "time": 0.952,
+      "type": "dark_texture",
+      "energy": 0.036,
+      "brightness": 2113.0,
+      "bandwidth": 3116.0,
+      "zcr": 0.025
+    },
+    {
+      "time": 1.173,
+      "type": "mid_tone/pad",
+      "energy": 0.0403,
+      "brightness": 3014.0,
+      "bandwidth": 3693.0,
+      "zcr": 0.0483
+    },
+    {
+      "time": 1.219,
+      "type": "noise_sweep",
+      "energy": 0.0222,
+      "brightness": 3045.0,
+      "bandwidth": 3469.0,
+      "zcr": 0.0557
+    },
+    {
+      "time": 1.393,
+      "type": "noise_sweep",
+      "energy": 0.028,
+      "brightness": 2265.0,
+      "bandwidth": 3039.0,
+      "zcr": 0.0414
+    },
+    {
+      "time": 1.498,
+      "type": "noise_sweep",
+      "energy": 0.0265,
+      "brightness": 2807.0,
+      "bandwidth": 3386.0,
+      "zcr": 0.0419
+    },
+    {
+      "time": 1.544,
+      "type": "noise_sweep",
+      "energy": 0.0239,
+      "brightness": 2756.0,
+      "bandwidth": 3230.0,
+      "zcr": 0.0413
+    },
+    {
+      "time": 1.672,
+      "type": "dark_texture",
+      "energy": 0.0392,
+      "brightness": 1918.0,
+      "bandwidth": 2861.0,
+      "zcr": 0.0331
+    },
+    {
+      "time": 1.741,
+      "type": "low_rumble",
+      "energy": 0.0678,
+      "brightness": 1396.0,
+      "bandwidth": 2254.0,
+      "zcr": 0.0261
+    },
+    {
+      "time": 1.927,
+      "type": "low_rumble",
+      "energy": 0.0561,
+      "brightness": 1400.0,
+      "bandwidth": 2276.0,
+      "zcr": 0.0239
+    },
+    {
+      "time": 2.229,
+      "type": "dark_texture",
+      "energy": 0.0509,
+      "brightness": 1902.0,
+      "bandwidth": 3032.0,
+      "zcr": 0.0302
+    },
+    {
+      "time": 2.403,
+      "type": "dark_texture",
+      "energy": 0.0434,
+      "brightness": 1729.0,
+      "bandwidth": 2723.0,
+      "zcr": 0.0316
+    },
+    {
+      "time": 2.589,
+      "type": "dark_texture",
+      "energy": 0.0481,
+      "brightness": 1660.0,
+      "bandwidth": 2883.0,
+      "zcr": 0.0287
+    },
+    {
+      "time": 2.67,
+      "type": "dark_texture",
+      "energy": 0.0441,
+      "brightness": 1550.0,
+      "bandwidth": 2891.0,
+      "zcr": 0.0318
+    },
+    {
+      "time": 2.752,
+      "type": "dark_texture",
+      "energy": 0.047,
+      "brightness": 1844.0,
+      "bandwidth": 3124.0,
+      "zcr": 0.037
+    },
+    {
+      "time": 2.891,
+      "type": "dark_texture",
+      "energy": 0.055,
+      "brightness": 1715.0,
+      "bandwidth": 2766.0,
+      "zcr": 0.0389
+    },
+    {
+      "time": 2.949,
+      "type": "dark_texture",
+      "energy": 0.0573,
+      "brightness": 2196.0,
+      "bandwidth": 3420.0,
+      "zcr": 0.0403
+    },
+    {
+      "time": 3.123,
+      "type": "dark_texture",
+      "energy": 0.0568,
+      "brightness": 2054.0,
+      "bandwidth": 2726.0,
+      "zcr": 0.041
+    },
+    {
+      "time": 3.32,
+      "type": "shimmer/riser",
+      "energy": 0.0182,
+      "brightness": 4571.0,
+      "bandwidth": 4466.0,
+      "zcr": 0.0933
+    },
+    {
+      "time": 3.367,
+      "type": "shimmer/riser",
+      "energy": 0.0195,
+      "brightness": 4232.0,
+      "bandwidth": 4328.0,
+      "zcr": 0.0825
+    },
+    {
+      "time": 3.413,
+      "type": "ambient_bed",
+      "energy": 0.0186,
+      "brightness": 3544.0,
+      "bandwidth": 4132.0,
+      "zcr": 0.0504
+    },
+    {
+      "time": 3.483,
+      "type": "ambient_bed",
+      "energy": 0.0171,
+      "brightness": 3228.0,
+      "bandwidth": 4039.0,
+      "zcr": 0.0421
+    },
+    {
+      "time": 3.564,
+      "type": "noise_sweep",
+      "energy": 0.0221,
+      "brightness": 3148.0,
+      "bandwidth": 4452.0,
+      "zcr": 0.0414
+    },
+    {
+      "time": 3.599,
+      "type": "noise_sweep",
+      "energy": 0.0245,
+      "brightness": 2653.0,
+      "bandwidth": 3728.0,
+      "zcr": 0.0402
+    },
+    {
+      "time": 3.657,
+      "type": "noise_sweep",
+      "energy": 0.0256,
+      "brightness": 2474.0,
+      "bandwidth": 3495.0,
+      "zcr": 0.0364
+    },
+    {
+      "time": 3.704,
+      "type": "noise_sweep",
+      "energy": 0.0239,
+      "brightness": 2611.0,
+      "bandwidth": 3807.0,
+      "zcr": 0.0339
+    },
+    {
+      "time": 3.75,
+      "type": "noise_sweep",
+      "energy": 0.0248,
+      "brightness": 2193.0,
+      "bandwidth": 3381.0,
+      "zcr": 0.0255
+    },
+    {
+      "time": 3.808,
+      "type": "noise_sweep",
+      "energy": 0.0246,
+      "brightness": 2045.0,
+      "bandwidth": 3353.0,
+      "zcr": 0.0225
+    },
+    {
+      "time": 3.924,
+      "type": "noise_sweep",
+      "energy": 0.0215,
+      "brightness": 2303.0,
+      "bandwidth": 3946.0,
+      "zcr": 0.0173
+    },
+    {
+      "time": 3.982,
+      "type": "ambient_bed",
+      "energy": 0.0126,
+      "brightness": 3060.0,
+      "bandwidth": 4808.0,
+      "zcr": 0.0236
+    },
+    {
+      "time": 4.11,
+      "type": "noise_sweep",
+      "energy": 0.0274,
+      "brightness": 2371.0,
+      "bandwidth": 3343.0,
+      "zcr": 0.0282
+    },
+    {
+      "time": 4.261,
+      "type": "dark_texture",
+      "energy": 0.0476,
+      "brightness": 1887.0,
+      "bandwidth": 2913.0,
+      "zcr": 0.0305
+    },
+    {
+      "time": 4.412,
+      "type": "noise_sweep",
+      "energy": 0.0265,
+      "brightness": 2777.0,
+      "bandwidth": 3844.0,
+      "zcr": 0.0374
+    },
+    {
+      "time": 4.47,
+      "type": "noise_sweep",
+      "energy": 0.026,
+      "brightness": 2792.0,
+      "bandwidth": 3696.0,
+      "zcr": 0.0358
+    },
+    {
+      "time": 4.563,
+      "type": "noise_sweep",
+      "energy": 0.0325,
+      "brightness": 3092.0,
+      "bandwidth": 4043.0,
+      "zcr": 0.0247
+    },
+    {
+      "time": 4.69,
+      "type": "noise_sweep",
+      "energy": 0.0283,
+      "brightness": 2188.0,
+      "bandwidth": 3407.0,
+      "zcr": 0.0212
+    },
+    {
+      "time": 4.923,
+      "type": "noise_sweep",
+      "energy": 0.0292,
+      "brightness": 1817.0,
+      "bandwidth": 3462.0,
+      "zcr": 0.0171
+    },
+    {
+      "time": 5.12,
+      "type": "noise_sweep",
+      "energy": 0.0295,
+      "brightness": 1980.0,
+      "bandwidth": 3628.0,
+      "zcr": 0.0172
+    },
+    {
+      "time": 5.166,
+      "type": "dark_texture",
+      "energy": 0.0312,
+      "brightness": 1999.0,
+      "bandwidth": 3711.0,
+      "zcr": 0.0172
+    },
+    {
+      "time": 5.201,
+      "type": "dark_texture",
+      "energy": 0.0337,
+      "brightness": 2074.0,
+      "bandwidth": 3797.0,
+      "zcr": 0.0171
+    },
+    {
+      "time": 5.271,
+      "type": "dark_texture",
+      "energy": 0.0335,
+      "brightness": 2352.0,
+      "bandwidth": 3907.0,
+      "zcr": 0.0171
+    },
+    {
+      "time": 5.364,
+      "type": "dark_texture",
+      "energy": 0.0344,
+      "brightness": 2259.0,
+      "bandwidth": 3638.0,
+      "zcr": 0.017
+    },
+    {
+      "time": 5.48,
+      "type": "dark_texture",
+      "energy": 0.037,
+      "brightness": 2257.0,
+      "bandwidth": 3436.0,
+      "zcr": 0.017
+    },
+    {
+      "time": 5.793,
+      "type": "dark_texture",
+      "energy": 0.0367,
+      "brightness": 2100.0,
+      "bandwidth": 3555.0,
+      "zcr": 0.0171
+    },
+    {
+      "time": 5.979,
+      "type": "dark_texture",
+      "energy": 0.0408,
+      "brightness": 1712.0,
+      "bandwidth": 2948.0,
+      "zcr": 0.0317
+    },
+    {
+      "time": 6.142,
+      "type": "mid_tone/pad",
+      "energy": 0.0404,
+      "brightness": 3126.0,
+      "bandwidth": 4425.0,
+      "zcr": 0.0346
+    },
+    {
+      "time": 6.177,
+      "type": "mid_tone/pad",
+      "energy": 0.0474,
+      "brightness": 3741.0,
+      "bandwidth": 4904.0,
+      "zcr": 0.0346
+    },
+    {
+      "time": 6.211,
+      "type": "mid_tone/pad",
+      "energy": 0.0452,
+      "brightness": 3473.0,
+      "bandwidth": 4729.0,
+      "zcr": 0.0338
+    },
+    {
+      "time": 6.455,
+      "type": "noise_sweep",
+      "energy": 0.0205,
+      "brightness": 1945.0,
+      "bandwidth": 3088.0,
+      "zcr": 0.0309
+    },
+    {
+      "time": 6.629,
+      "type": "noise_sweep",
+      "energy": 0.0217,
+      "brightness": 1993.0,
+      "bandwidth": 3097.0,
+      "zcr": 0.0211
+    },
+    {
+      "time": 6.838,
+      "type": "ambient_bed",
+      "energy": 0.0261,
+      "brightness": 1750.0,
+      "bandwidth": 2954.0,
+      "zcr": 0.0154
+    },
+    {
+      "time": 7.059,
+      "type": "noise_sweep",
+      "energy": 0.0219,
+      "brightness": 1720.0,
+      "bandwidth": 3161.0,
+      "zcr": 0.0184
+    },
+    {
+      "time": 7.21,
+      "type": "noise_sweep",
+      "energy": 0.0213,
+      "brightness": 1771.0,
+      "bandwidth": 3274.0,
+      "zcr": 0.0154
+    },
+    {
+      "time": 7.245,
+      "type": "ambient_bed",
+      "energy": 0.0192,
+      "brightness": 1622.0,
+      "bandwidth": 3286.0,
+      "zcr": 0.0154
+    },
+    {
+      "time": 8.649,
+      "type": "dark_texture",
+      "energy": 0.0456,
+      "brightness": 1903.0,
+      "bandwidth": 2613.0,
+      "zcr": 0.0334
+    },
+    {
+      "time": 8.905,
+      "type": "dark_texture",
+      "energy": 0.0305,
+      "brightness": 1842.0,
+      "bandwidth": 2619.0,
+      "zcr": 0.0356
+    },
+    {
+      "time": 9.009,
+      "type": "ambient_bed",
+      "energy": 0.0247,
+      "brightness": 1709.0,
+      "bandwidth": 2453.0,
+      "zcr": 0.0326
+    },
+    {
+      "time": 9.056,
+      "type": "ambient_bed",
+      "energy": 0.0226,
+      "brightness": 1905.0,
+      "bandwidth": 2656.0,
+      "zcr": 0.0348
+    },
+    {
+      "time": 9.3,
+      "type": "ambient_bed",
+      "energy": 0.0154,
+      "brightness": 1821.0,
+      "bandwidth": 3081.0,
+      "zcr": 0.0311
+    },
+    {
+      "time": 9.334,
+      "type": "ambient_bed",
+      "energy": 0.0179,
+      "brightness": 1771.0,
+      "bandwidth": 3191.0,
+      "zcr": 0.0264
+    },
+    {
+      "time": 9.509,
+      "type": "ambient_bed",
+      "energy": 0.0163,
+      "brightness": 1738.0,
+      "bandwidth": 2902.0,
+      "zcr": 0.033
+    },
+    {
+      "time": 9.601,
+      "type": "ambient_bed",
+      "energy": 0.0106,
+      "brightness": 1698.0,
+      "bandwidth": 2911.0,
+      "zcr": 0.0345
+    },
+    {
+      "time": 9.764,
+      "type": "ambient_bed",
+      "energy": 0.0132,
+      "brightness": 1867.0,
+      "bandwidth": 3016.0,
+      "zcr": 0.0281
+    },
+    {
+      "time": 9.915,
+      "type": "dark_texture",
+      "energy": 0.0324,
+      "brightness": 1678.0,
+      "bandwidth": 2791.0,
+      "zcr": 0.0298
+    },
+    {
+      "time": 10.019,
+      "type": "dark_texture",
+      "energy": 0.0584,
+      "brightness": 1707.0,
+      "bandwidth": 3495.0,
+      "zcr": 0.0178
+    },
+    {
+      "time": 10.159,
+      "type": "dark_texture",
+      "energy": 0.067,
+      "brightness": 2081.0,
+      "bandwidth": 3063.0,
+      "zcr": 0.0287
+    },
+    {
+      "time": 10.194,
+      "type": "dark_texture",
+      "energy": 0.079,
+      "brightness": 2331.0,
+      "bandwidth": 3348.0,
+      "zcr": 0.0303
+    },
+    {
+      "time": 10.344,
+      "type": "mid_tone/pad",
+      "energy": 0.0873,
+      "brightness": 2597.0,
+      "bandwidth": 3633.0,
+      "zcr": 0.0325
+    },
+    {
+      "time": 10.461,
+      "type": "dark_texture",
+      "energy": 0.0614,
+      "brightness": 1857.0,
+      "bandwidth": 2924.0,
+      "zcr": 0.0245
+    },
+    {
+      "time": 10.658,
+      "type": "dark_texture",
+      "energy": 0.0646,
+      "brightness": 2022.0,
+      "bandwidth": 3406.0,
+      "zcr": 0.012
+    },
+    {
+      "time": 10.716,
+      "type": "dark_texture",
+      "energy": 0.0544,
+      "brightness": 2258.0,
+      "bandwidth": 3286.0,
+      "zcr": 0.0253
+    },
+    {
+      "time": 10.844,
+      "type": "noise_sweep",
+      "energy": 0.0384,
+      "brightness": 2700.0,
+      "bandwidth": 3654.0,
+      "zcr": 0.0358
+    },
+    {
+      "time": 11.018,
+      "type": "dark_texture",
+      "energy": 0.0441,
+      "brightness": 1852.0,
+      "bandwidth": 3069.0,
+      "zcr": 0.0214
+    },
+    {
+      "time": 11.169,
+      "type": "dark_texture",
+      "energy": 0.0391,
+      "brightness": 2176.0,
+      "bandwidth": 3012.0,
+      "zcr": 0.0312
+    },
+    {
+      "time": 11.227,
+      "type": "dark_texture",
+      "energy": 0.0435,
+      "brightness": 1921.0,
+      "bandwidth": 2616.0,
+      "zcr": 0.032
+    },
+    {
+      "time": 11.482,
+      "type": "noise_sweep",
+      "energy": 0.0288,
+      "brightness": 2244.0,
+      "bandwidth": 3242.0,
+      "zcr": 0.0308
+    },
+    {
+      "time": 11.529,
+      "type": "noise_sweep",
+      "energy": 0.0241,
+      "brightness": 2337.0,
+      "bandwidth": 3260.0,
+      "zcr": 0.0372
+    },
+    {
+      "time": 11.668,
+      "type": "ambient_bed",
+      "energy": 0.0272,
+      "brightness": 1740.0,
+      "bandwidth": 2752.0,
+      "zcr": 0.0208
+    },
+    {
+      "time": 11.819,
+      "type": "ambient_bed",
+      "energy": 0.0173,
+      "brightness": 1951.0,
+      "bandwidth": 3351.0,
+      "zcr": 0.0172
+    },
+    {
+      "time": 11.912,
+      "type": "ambient_bed",
+      "energy": 0.0105,
+      "brightness": 2075.0,
+      "bandwidth": 3352.0,
+      "zcr": 0.0298
+    },
+    {
+      "time": 12.341,
+      "type": "ambient_bed",
+      "energy": 0.0172,
+      "brightness": 1586.0,
+      "bandwidth": 2717.0,
+      "zcr": 0.0286
+    },
+    {
+      "time": 12.399,
+      "type": "ambient_bed",
+      "energy": 0.0115,
+      "brightness": 2002.0,
+      "bandwidth": 2997.0,
+      "zcr": 0.0359
+    },
+    {
+      "time": 12.794,
+      "type": "ambient_bed",
+      "energy": 0.0108,
+      "brightness": 2017.0,
+      "bandwidth": 2917.0,
+      "zcr": 0.0383
+    },
+    {
+      "time": 13.015,
+      "type": "ambient_bed",
+      "energy": 0.0113,
+      "brightness": 1816.0,
+      "bandwidth": 2813.0,
+      "zcr": 0.0278
+    },
+    {
+      "time": 13.201,
+      "type": "ambient_bed",
+      "energy": 0.0114,
+      "brightness": 2454.0,
+      "bandwidth": 3461.0,
+      "zcr": 0.0648
+    },
+    {
+      "time": 13.235,
+      "type": "ambient_bed",
+      "energy": 0.0168,
+      "brightness": 2497.0,
+      "bandwidth": 3211.0,
+      "zcr": 0.0718
+    },
+    {
+      "time": 13.305,
+      "type": "ambient_bed",
+      "energy": 0.0249,
+      "brightness": 2177.0,
+      "bandwidth": 2517.0,
+      "zcr": 0.0585
+    },
+    {
+      "time": 13.572,
+      "type": "ambient_bed",
+      "energy": 0.0163,
+      "brightness": 1891.0,
+      "bandwidth": 2639.0,
+      "zcr": 0.0432
+    },
+    {
+      "time": 13.711,
+      "type": "ambient_bed",
+      "energy": 0.0158,
+      "brightness": 1873.0,
+      "bandwidth": 2871.0,
+      "zcr": 0.0402
+    },
+    {
+      "time": 13.897,
+      "type": "ambient_bed",
+      "energy": 0.0118,
+      "brightness": 1946.0,
+      "bandwidth": 3022.0,
+      "zcr": 0.0377
+    },
+    {
+      "time": 13.944,
+      "type": "ambient_bed",
+      "energy": 0.0118,
+      "brightness": 1901.0,
+      "bandwidth": 3023.0,
+      "zcr": 0.0358
+    },
+    {
+      "time": 14.118,
+      "type": "ambient_bed",
+      "energy": 0.013,
+      "brightness": 1762.0,
+      "bandwidth": 3320.0,
+      "zcr": 0.0262
+    },
+    {
+      "time": 14.315,
+      "type": "ambient_bed",
+      "energy": 0.0104,
+      "brightness": 2090.0,
+      "bandwidth": 3426.0,
+      "zcr": 0.032
+    },
+    {
+      "time": 15.232,
+      "type": "ambient_bed",
+      "energy": 0.012,
+      "brightness": 1803.0,
+      "bandwidth": 3667.0,
+      "zcr": 0.019
+    },
+    {
+      "time": 15.894,
+      "type": "ambient_bed",
+      "energy": 0.0266,
+      "brightness": 1250.0,
+      "bandwidth": 2884.0,
+      "zcr": 0.0144
+    },
+    {
+      "time": 16.126,
+      "type": "noise_sweep",
+      "energy": 0.0225,
+      "brightness": 1825.0,
+      "bandwidth": 3658.0,
+      "zcr": 0.0147
+    },
+    {
+      "time": 16.242,
+      "type": "ambient_bed",
+      "energy": 0.0145,
+      "brightness": 1383.0,
+      "bandwidth": 3195.0,
+      "zcr": 0.015
+    },
+    {
+      "time": 16.498,
+      "type": "ambient_bed",
+      "energy": 0.0101,
+      "brightness": 1998.0,
+      "bandwidth": 3986.0,
+      "zcr": 0.0163
+    },
+    {
+      "time": 16.579,
+      "type": "ambient_bed",
+      "energy": 0.0232,
+      "brightness": 1221.0,
+      "bandwidth": 2749.0,
+      "zcr": 0.0168
+    },
+    {
+      "time": 16.637,
+      "type": "ambient_bed",
+      "energy": 0.0163,
+      "brightness": 1415.0,
+      "bandwidth": 3154.0,
+      "zcr": 0.0207
+    },
+    {
+      "time": 16.765,
+      "type": "ambient_bed",
+      "energy": 0.0124,
+      "brightness": 1405.0,
+      "bandwidth": 3167.0,
+      "zcr": 0.0155
+    },
+    {
+      "time": 17.055,
+      "type": "ambient_bed",
+      "energy": 0.0129,
+      "brightness": 1904.0,
+      "bandwidth": 3838.0,
+      "zcr": 0.0204
+    },
+    {
+      "time": 17.194,
+      "type": "dark_texture",
+      "energy": 0.0333,
+      "brightness": 1379.0,
+      "bandwidth": 2676.0,
+      "zcr": 0.0174
+    },
+    {
+      "time": 17.241,
+      "type": "dark_texture",
+      "energy": 0.043,
+      "brightness": 1072.0,
+      "bandwidth": 2455.0,
+      "zcr": 0.0127
+    },
+    {
+      "time": 17.31,
+      "type": "ambient_bed",
+      "energy": 0.0263,
+      "brightness": 1245.0,
+      "bandwidth": 2558.0,
+      "zcr": 0.0153
+    },
+    {
+      "time": 17.357,
+      "type": "ambient_bed",
+      "energy": 0.0223,
+      "brightness": 1398.0,
+      "bandwidth": 2730.0,
+      "zcr": 0.0171
+    },
+    {
+      "time": 17.473,
+      "type": "ambient_bed",
+      "energy": 0.0165,
+      "brightness": 1430.0,
+      "bandwidth": 2918.0,
+      "zcr": 0.0209
+    },
+    {
+      "time": 17.682,
+      "type": "dark_texture",
+      "energy": 0.0371,
+      "brightness": 935.0,
+      "bandwidth": 2207.0,
+      "zcr": 0.0159
+    },
+    {
+      "time": 17.775,
+      "type": "noise_sweep",
+      "energy": 0.0263,
+      "brightness": 2146.0,
+      "bandwidth": 3376.0,
+      "zcr": 0.0245
+    },
+    {
+      "time": 18.019,
+      "type": "ambient_bed",
+      "energy": 0.0102,
+      "brightness": 1901.0,
+      "bandwidth": 3411.0,
+      "zcr": 0.0196
+    },
+    {
+      "time": 18.344,
+      "type": "ambient_bed",
+      "energy": 0.0143,
+      "brightness": 1517.0,
+      "bandwidth": 2872.0,
+      "zcr": 0.0181
+    },
+    {
+      "time": 18.506,
+      "type": "ambient_bed",
+      "energy": 0.0193,
+      "brightness": 1750.0,
+      "bandwidth": 2526.0,
+      "zcr": 0.0308
+    },
+    {
+      "time": 18.541,
+      "type": "ambient_bed",
+      "energy": 0.0201,
+      "brightness": 1906.0,
+      "bandwidth": 2897.0,
+      "zcr": 0.0276
+    },
+    {
+      "time": 18.785,
+      "type": "ambient_bed",
+      "energy": 0.0187,
+      "brightness": 2521.0,
+      "bandwidth": 3074.0,
+      "zcr": 0.0391
+    },
+    {
+      "time": 18.959,
+      "type": "dark_texture",
+      "energy": 0.053,
+      "brightness": 2216.0,
+      "bandwidth": 2639.0,
+      "zcr": 0.0518
+    },
+    {
+      "time": 19.215,
+      "type": "dark_texture",
+      "energy": 0.0814,
+      "brightness": 2081.0,
+      "bandwidth": 3073.0,
+      "zcr": 0.0259
+    },
+    {
+      "time": 19.331,
+      "type": "dark_texture",
+      "energy": 0.0772,
+      "brightness": 1936.0,
+      "bandwidth": 3019.0,
+      "zcr": 0.0253
+    },
+    {
+      "time": 19.389,
+      "type": "dark_texture",
+      "energy": 0.0612,
+      "brightness": 1729.0,
+      "bandwidth": 2676.0,
+      "zcr": 0.022
+    },
+    {
+      "time": 19.447,
+      "type": "dark_texture",
+      "energy": 0.0488,
+      "brightness": 1811.0,
+      "bandwidth": 3143.0,
+      "zcr": 0.0183
+    },
+    {
+      "time": 19.598,
+      "type": "ambient_bed",
+      "energy": 0.0196,
+      "brightness": 2901.0,
+      "bandwidth": 3315.0,
+      "zcr": 0.0645
+    },
+    {
+      "time": 19.737,
+      "type": "ambient_bed",
+      "energy": 0.0198,
+      "brightness": 2480.0,
+      "bandwidth": 3670.0,
+      "zcr": 0.0384
+    },
+    {
+      "time": 19.841,
+      "type": "noise_sweep",
+      "energy": 0.0227,
+      "brightness": 2493.0,
+      "bandwidth": 3353.0,
+      "zcr": 0.0465
+    },
+    {
+      "time": 20.062,
+      "type": "dark_texture",
+      "energy": 0.0312,
+      "brightness": 2264.0,
+      "bandwidth": 3422.0,
+      "zcr": 0.0306
+    },
+    {
+      "time": 20.236,
+      "type": "noise_sweep",
+      "energy": 0.0219,
+      "brightness": 2117.0,
+      "bandwidth": 3047.0,
+      "zcr": 0.0404
+    },
+    {
+      "time": 20.283,
+      "type": "ambient_bed",
+      "energy": 0.0234,
+      "brightness": 2082.0,
+      "bandwidth": 2893.0,
+      "zcr": 0.0383
+    },
+    {
+      "time": 20.735,
+      "type": "ambient_bed",
+      "energy": 0.0174,
+      "brightness": 1881.0,
+      "bandwidth": 3280.0,
+      "zcr": 0.0285
+    },
+    {
+      "time": 20.828,
+      "type": "ambient_bed",
+      "energy": 0.0148,
+      "brightness": 2159.0,
+      "bandwidth": 2910.0,
+      "zcr": 0.045
+    },
+    {
+      "time": 21.188,
+      "type": "ambient_bed",
+      "energy": 0.022,
+      "brightness": 2115.0,
+      "bandwidth": 2962.0,
+      "zcr": 0.0401
+    },
+    {
+      "time": 21.455,
+      "type": "noise_sweep",
+      "energy": 0.0235,
+      "brightness": 2750.0,
+      "bandwidth": 3496.0,
+      "zcr": 0.0419
+    },
+    {
+      "time": 21.734,
+      "type": "noise_sweep",
+      "energy": 0.0248,
+      "brightness": 2347.0,
+      "bandwidth": 3006.0,
+      "zcr": 0.0537
+    },
+    {
+      "time": 21.862,
+      "type": "dark_texture",
+      "energy": 0.032,
+      "brightness": 2090.0,
+      "bandwidth": 3138.0,
+      "zcr": 0.0473
+    },
+    {
+      "time": 22.047,
+      "type": "noise_sweep",
+      "energy": 0.021,
+      "brightness": 2568.0,
+      "bandwidth": 3386.0,
+      "zcr": 0.0757
+    },
+    {
+      "time": 22.175,
+      "type": "noise_sweep",
+      "energy": 0.023,
+      "brightness": 2863.0,
+      "bandwidth": 3425.0,
+      "zcr": 0.0981
+    },
+    {
+      "time": 22.28,
+      "type": "noise_sweep",
+      "energy": 0.0244,
+      "brightness": 2795.0,
+      "bandwidth": 3336.0,
+      "zcr": 0.0952
+    },
+    {
+      "time": 22.419,
+      "type": "noise_sweep",
+      "energy": 0.021,
+      "brightness": 3067.0,
+      "bandwidth": 3273.0,
+      "zcr": 0.1124
+    },
+    {
+      "time": 22.547,
+      "type": "noise_sweep",
+      "energy": 0.0226,
+      "brightness": 2097.0,
+      "bandwidth": 3043.0,
+      "zcr": 0.0464
+    },
+    {
+      "time": 22.698,
+      "type": "ambient_bed",
+      "energy": 0.014,
+      "brightness": 3219.0,
+      "bandwidth": 3796.0,
+      "zcr": 0.131
+    },
+    {
+      "time": 22.814,
+      "type": "ambient_bed",
+      "energy": 0.0133,
+      "brightness": 3149.0,
+      "bandwidth": 3255.0,
+      "zcr": 0.138
+    },
+    {
+      "time": 22.848,
+      "type": "ambient_bed",
+      "energy": 0.0141,
+      "brightness": 2929.0,
+      "bandwidth": 3131.0,
+      "zcr": 0.1259
+    },
+    {
+      "time": 22.953,
+      "type": "ambient_bed",
+      "energy": 0.0191,
+      "brightness": 2548.0,
+      "bandwidth": 3106.0,
+      "zcr": 0.0854
+    },
+    {
+      "time": 23.162,
+      "type": "noise_sweep",
+      "energy": 0.0213,
+      "brightness": 2664.0,
+      "bandwidth": 3329.0,
+      "zcr": 0.0761
+    },
+    {
+      "time": 23.197,
+      "type": "noise_sweep",
+      "energy": 0.0242,
+      "brightness": 2600.0,
+      "bandwidth": 3208.0,
+      "zcr": 0.0651
+    },
+    {
+      "time": 23.394,
+      "type": "ambient_bed",
+      "energy": 0.0185,
+      "brightness": 1964.0,
+      "bandwidth": 2932.0,
+      "zcr": 0.0463
+    },
+    {
+      "time": 23.522,
+      "type": "ambient_bed",
+      "energy": 0.0168,
+      "brightness": 2421.0,
+      "bandwidth": 3248.0,
+      "zcr": 0.048
+    },
+    {
+      "time": 23.661,
+      "type": "ambient_bed",
+      "energy": 0.0192,
+      "brightness": 2299.0,
+      "bandwidth": 3081.0,
+      "zcr": 0.0421
+    },
+    {
+      "time": 24.323,
+      "type": "ambient_bed",
+      "energy": 0.0182,
+      "brightness": 2030.0,
+      "bandwidth": 3178.0,
+      "zcr": 0.0319
+    },
+    {
+      "time": 24.369,
+      "type": "ambient_bed",
+      "energy": 0.0195,
+      "brightness": 2111.0,
+      "bandwidth": 3562.0,
+      "zcr": 0.0282
+    },
+    {
+      "time": 24.52,
+      "type": "noise_sweep",
+      "energy": 0.0293,
+      "brightness": 1464.0,
+      "bandwidth": 3211.0,
+      "zcr": 0.0195
+    },
+    {
+      "time": 24.555,
+      "type": "dark_texture",
+      "energy": 0.0317,
+      "brightness": 1264.0,
+      "bandwidth": 2852.0,
+      "zcr": 0.0221
+    },
+    {
+      "time": 24.741,
+      "type": "dark_texture",
+      "energy": 0.0326,
+      "brightness": 948.0,
+      "bandwidth": 2448.0,
+      "zcr": 0.0144
+    },
+    {
+      "time": 24.857,
+      "type": "dark_texture",
+      "energy": 0.041,
+      "brightness": 1070.0,
+      "bandwidth": 2443.0,
+      "zcr": 0.0167
+    },
+    {
+      "time": 24.892,
+      "type": "dark_texture",
+      "energy": 0.0418,
+      "brightness": 879.0,
+      "bandwidth": 2098.0,
+      "zcr": 0.0164
+    },
+    {
+      "time": 25.066,
+      "type": "dark_texture",
+      "energy": 0.0406,
+      "brightness": 1113.0,
+      "bandwidth": 2498.0,
+      "zcr": 0.0175
+    },
+    {
+      "time": 25.205,
+      "type": "dark_texture",
+      "energy": 0.0381,
+      "brightness": 947.0,
+      "bandwidth": 2141.0,
+      "zcr": 0.0207
+    },
+    {
+      "time": 25.391,
+      "type": "dark_texture",
+      "energy": 0.0491,
+      "brightness": 1300.0,
+      "bandwidth": 2645.0,
+      "zcr": 0.0183
+    },
+    {
+      "time": 25.472,
+      "type": "dark_texture",
+      "energy": 0.0402,
+      "brightness": 1151.0,
+      "bandwidth": 2555.0,
+      "zcr": 0.018
+    },
+    {
+      "time": 25.588,
+      "type": "dark_texture",
+      "energy": 0.0399,
+      "brightness": 1227.0,
+      "bandwidth": 2669.0,
+      "zcr": 0.0165
+    },
+    {
+      "time": 25.67,
+      "type": "dark_texture",
+      "energy": 0.0342,
+      "brightness": 1346.0,
+      "bandwidth": 3019.0,
+      "zcr": 0.0153
+    },
+    {
+      "time": 25.786,
+      "type": "ambient_bed",
+      "energy": 0.0247,
+      "brightness": 1412.0,
+      "bandwidth": 2763.0,
+      "zcr": 0.0184
+    },
+    {
+      "time": 26.064,
+      "type": "dark_texture",
+      "energy": 0.037,
+      "brightness": 1135.0,
+      "bandwidth": 2422.0,
+      "zcr": 0.016
+    },
+    {
+      "time": 26.366,
+      "type": "dark_texture",
+      "energy": 0.0337,
+      "brightness": 1235.0,
+      "bandwidth": 2721.0,
+      "zcr": 0.0208
+    },
+    {
+      "time": 26.459,
+      "type": "ambient_bed",
+      "energy": 0.0279,
+      "brightness": 1275.0,
+      "bandwidth": 2826.0,
+      "zcr": 0.0206
+    },
+    {
+      "time": 26.517,
+      "type": "dark_texture",
+      "energy": 0.0348,
+      "brightness": 1307.0,
+      "bandwidth": 2812.0,
+      "zcr": 0.0186
+    },
+    {
+      "time": 26.738,
+      "type": "low_rumble",
+      "energy": 0.0561,
+      "brightness": 1026.0,
+      "bandwidth": 2564.0,
+      "zcr": 0.0109
+    },
+    {
+      "time": 26.796,
+      "type": "low_rumble",
+      "energy": 0.0572,
+      "brightness": 777.0,
+      "bandwidth": 2050.0,
+      "zcr": 0.0096
+    },
+    {
+      "time": 26.854,
+      "type": "dark_texture",
+      "energy": 0.0455,
+      "brightness": 901.0,
+      "bandwidth": 2231.0,
+      "zcr": 0.0172
+    },
+    {
+      "time": 27.179,
+      "type": "low_rumble",
+      "energy": 0.0558,
+      "brightness": 791.0,
+      "bandwidth": 1843.0,
+      "zcr": 0.0156
+    },
+    {
+      "time": 27.609,
+      "type": "dark_texture",
+      "energy": 0.044,
+      "brightness": 828.0,
+      "bandwidth": 2081.0,
+      "zcr": 0.0161
+    },
+    {
+      "time": 27.771,
+      "type": "ambient_bed",
+      "energy": 0.027,
+      "brightness": 1141.0,
+      "bandwidth": 2557.0,
+      "zcr": 0.0203
+    },
+    {
+      "time": 28.108,
+      "type": "dark_texture",
+      "energy": 0.0462,
+      "brightness": 972.0,
+      "bandwidth": 2299.0,
+      "zcr": 0.0193
+    },
+    {
+      "time": 28.294,
+      "type": "dark_texture",
+      "energy": 0.0443,
+      "brightness": 967.0,
+      "bandwidth": 2274.0,
+      "zcr": 0.0164
+    },
+    {
+      "time": 28.398,
+      "type": "dark_texture",
+      "energy": 0.0456,
+      "brightness": 1298.0,
+      "bandwidth": 2735.0,
+      "zcr": 0.0162
+    },
+    {
+      "time": 28.502,
+      "type": "low_rumble",
+      "energy": 0.0504,
+      "brightness": 1209.0,
+      "bandwidth": 2555.0,
+      "zcr": 0.0178
+    },
+    {
+      "time": 28.549,
+      "type": "dark_texture",
+      "energy": 0.0457,
+      "brightness": 993.0,
+      "bandwidth": 2421.0,
+      "zcr": 0.017
+    },
+    {
+      "time": 28.828,
+      "type": "low_rumble",
+      "energy": 0.0653,
+      "brightness": 1238.0,
+      "bandwidth": 2565.0,
+      "zcr": 0.0159
+    },
+    {
+      "time": 29.002,
+      "type": "dark_texture",
+      "energy": 0.0864,
+      "brightness": 1933.0,
+      "bandwidth": 3134.0,
+      "zcr": 0.0288
+    },
+    {
+      "time": 29.304,
+      "type": "dark_texture",
+      "energy": 0.0649,
+      "brightness": 2285.0,
+      "bandwidth": 2938.0,
+      "zcr": 0.0428
+    },
+    {
+      "time": 29.501,
+      "type": "ambient_bed",
+      "energy": 0.0299,
+      "brightness": 2124.0,
+      "bandwidth": 2734.0,
+      "zcr": 0.0469
+    },
+    {
+      "time": 29.803,
+      "type": "dark_texture",
+      "energy": 0.0463,
+      "brightness": 1839.0,
+      "bandwidth": 2522.0,
+      "zcr": 0.049
+    },
+    {
+      "time": 29.849,
+      "type": "dark_texture",
+      "energy": 0.0326,
+      "brightness": 1758.0,
+      "bandwidth": 2409.0,
+      "zcr": 0.0394
+    },
+    {
+      "time": 29.954,
+      "type": "dark_texture",
+      "energy": 0.0485,
+      "brightness": 2018.0,
+      "bandwidth": 2527.0,
+      "zcr": 0.0504
+    },
+    {
+      "time": 30.116,
+      "type": "dark_texture",
+      "energy": 0.0572,
+      "brightness": 2155.0,
+      "bandwidth": 2793.0,
+      "zcr": 0.0485
+    },
+    {
+      "time": 30.186,
+      "type": "dark_texture",
+      "energy": 0.0555,
+      "brightness": 2004.0,
+      "bandwidth": 2603.0,
+      "zcr": 0.051
+    },
+    {
+      "time": 30.256,
+      "type": "dark_texture",
+      "energy": 0.047,
+      "brightness": 1984.0,
+      "bandwidth": 2474.0,
+      "zcr": 0.05
+    },
+    {
+      "time": 30.546,
+      "type": "dark_texture",
+      "energy": 0.0487,
+      "brightness": 2217.0,
+      "bandwidth": 2651.0,
+      "zcr": 0.0535
+    },
+    {
+      "time": 30.836,
+      "type": "dark_texture",
+      "energy": 0.0412,
+      "brightness": 1605.0,
+      "bandwidth": 2336.0,
+      "zcr": 0.0413
+    },
+    {
+      "time": 30.929,
+      "type": "ambient_bed",
+      "energy": 0.0273,
+      "brightness": 1614.0,
+      "bandwidth": 2397.0,
+      "zcr": 0.0401
+    },
+    {
+      "time": 31.115,
+      "type": "ambient_bed",
+      "energy": 0.0283,
+      "brightness": 2137.0,
+      "bandwidth": 2832.0,
+      "zcr": 0.0412
+    },
+    {
+      "time": 31.289,
+      "type": "noise_sweep",
+      "energy": 0.0232,
+      "brightness": 2446.0,
+      "bandwidth": 3161.0,
+      "zcr": 0.048
+    },
+    {
+      "time": 31.347,
+      "type": "noise_sweep",
+      "energy": 0.0259,
+      "brightness": 2509.0,
+      "bandwidth": 3119.0,
+      "zcr": 0.0449
+    },
+    {
+      "time": 31.393,
+      "type": "noise_sweep",
+      "energy": 0.0247,
+      "brightness": 2515.0,
+      "bandwidth": 3128.0,
+      "zcr": 0.0422
+    },
+    {
+      "time": 31.544,
+      "type": "noise_sweep",
+      "energy": 0.0264,
+      "brightness": 2522.0,
+      "bandwidth": 3337.0,
+      "zcr": 0.0483
+    },
+    {
+      "time": 31.777,
+      "type": "ambient_bed",
+      "energy": 0.0183,
+      "brightness": 2602.0,
+      "bandwidth": 3381.0,
+      "zcr": 0.0535
+    },
+    {
+      "time": 31.974,
+      "type": "ambient_bed",
+      "energy": 0.0171,
+      "brightness": 2361.0,
+      "bandwidth": 3052.0,
+      "zcr": 0.0549
+    },
+    {
+      "time": 32.136,
+      "type": "ambient_bed",
+      "energy": 0.0154,
+      "brightness": 2585.0,
+      "bandwidth": 3528.0,
+      "zcr": 0.0499
+    },
+    {
+      "time": 32.171,
+      "type": "ambient_bed",
+      "energy": 0.017,
+      "brightness": 2280.0,
+      "bandwidth": 3524.0,
+      "zcr": 0.0367
+    },
+    {
+      "time": 32.276,
+      "type": "noise_sweep",
+      "energy": 0.0208,
+      "brightness": 2376.0,
+      "bandwidth": 3592.0,
+      "zcr": 0.0406
+    },
+    {
+      "time": 32.52,
+      "type": "noise_sweep",
+      "energy": 0.0277,
+      "brightness": 2224.0,
+      "bandwidth": 3119.0,
+      "zcr": 0.0378
+    },
+    {
+      "time": 32.682,
+      "type": "dark_texture",
+      "energy": 0.0334,
+      "brightness": 2093.0,
+      "bandwidth": 2942.0,
+      "zcr": 0.0395
+    },
+    {
+      "time": 33.065,
+      "type": "ambient_bed",
+      "energy": 0.0255,
+      "brightness": 1888.0,
+      "bandwidth": 2938.0,
+      "zcr": 0.0402
+    },
+    {
+      "time": 33.112,
+      "type": "noise_sweep",
+      "energy": 0.0233,
+      "brightness": 2203.0,
+      "bandwidth": 3196.0,
+      "zcr": 0.0406
+    },
+    {
+      "time": 33.402,
+      "type": "noise_sweep",
+      "energy": 0.0277,
+      "brightness": 2001.0,
+      "bandwidth": 3072.0,
+      "zcr": 0.0357
+    },
+    {
+      "time": 33.506,
+      "type": "dark_texture",
+      "energy": 0.032,
+      "brightness": 1855.0,
+      "bandwidth": 2880.0,
+      "zcr": 0.0353
+    },
+    {
+      "time": 33.553,
+      "type": "dark_texture",
+      "energy": 0.0319,
+      "brightness": 1920.0,
+      "bandwidth": 2663.0,
+      "zcr": 0.0366
+    },
+    {
+      "time": 33.634,
+      "type": "dark_texture",
+      "energy": 0.0322,
+      "brightness": 2489.0,
+      "bandwidth": 3476.0,
+      "zcr": 0.0329
+    },
+    {
+      "time": 33.773,
+      "type": "noise_sweep",
+      "energy": 0.0276,
+      "brightness": 2661.0,
+      "bandwidth": 3399.0,
+      "zcr": 0.0473
+    },
+    {
+      "time": 34.04,
+      "type": "noise_sweep",
+      "energy": 0.0223,
+      "brightness": 2320.0,
+      "bandwidth": 3169.0,
+      "zcr": 0.0419
+    },
+    {
+      "time": 34.354,
+      "type": "shimmer/riser",
+      "energy": 0.0114,
+      "brightness": 4455.0,
+      "bandwidth": 5046.0,
+      "zcr": 0.0818
+    },
+    {
+      "time": 34.458,
+      "type": "ambient_bed",
+      "energy": 0.0104,
+      "brightness": 2385.0,
+      "bandwidth": 3800.0,
+      "zcr": 0.0381
+    },
+    {
+      "time": 37.698,
+      "type": "whoosh/swoosh",
+      "energy": 0.0116,
+      "brightness": 6363.0,
+      "bandwidth": 4488.0,
+      "zcr": 0.2126
+    },
+    {
+      "time": 37.744,
+      "type": "whoosh/swoosh",
+      "energy": 0.017,
+      "brightness": 5952.0,
+      "bandwidth": 4426.0,
+      "zcr": 0.1899
+    },
+    {
+      "time": 37.941,
+      "type": "whoosh/swoosh",
+      "energy": 0.0241,
+      "brightness": 6387.0,
+      "bandwidth": 4713.0,
+      "zcr": 0.1791
+    },
+    {
+      "time": 37.999,
+      "type": "shimmer/riser",
+      "energy": 0.0332,
+      "brightness": 5541.0,
+      "bandwidth": 4854.0,
+      "zcr": 0.1076
+    },
+    {
+      "time": 38.034,
+      "type": "shimmer/riser",
+      "energy": 0.0339,
+      "brightness": 5364.0,
+      "bandwidth": 4933.0,
+      "zcr": 0.103
+    },
+    {
+      "time": 38.22,
+      "type": "shimmer/riser",
+      "energy": 0.034,
+      "brightness": 4509.0,
+      "bandwidth": 4871.0,
+      "zcr": 0.0563
+    },
+    {
+      "time": 38.278,
+      "type": "shimmer/riser",
+      "energy": 0.0305,
+      "brightness": 4518.0,
+      "bandwidth": 4810.0,
+      "zcr": 0.0602
+    },
+    {
+      "time": 38.394,
+      "type": "noise_sweep",
+      "energy": 0.0231,
+      "brightness": 3899.0,
+      "bandwidth": 4384.0,
+      "zcr": 0.0731
+    },
+    {
+      "time": 38.522,
+      "type": "noise_sweep",
+      "energy": 0.0225,
+      "brightness": 3548.0,
+      "bandwidth": 4213.0,
+      "zcr": 0.0666
+    },
+    {
+      "time": 38.696,
+      "type": "ambient_bed",
+      "energy": 0.0189,
+      "brightness": 3263.0,
+      "bandwidth": 3920.0,
+      "zcr": 0.0634
+    },
+    {
+      "time": 38.893,
+      "type": "ambient_bed",
+      "energy": 0.0178,
+      "brightness": 3260.0,
+      "bandwidth": 3759.0,
+      "zcr": 0.0662
+    },
+    {
+      "time": 38.975,
+      "type": "noise_sweep",
+      "energy": 0.0316,
+      "brightness": 2879.0,
+      "bandwidth": 3452.0,
+      "zcr": 0.0696
+    },
+    {
+      "time": 39.242,
+      "type": "noise_sweep",
+      "energy": 0.0276,
+      "brightness": 2316.0,
+      "bandwidth": 3221.0,
+      "zcr": 0.0443
+    },
+    {
+      "time": 39.381,
+      "type": "noise_sweep",
+      "energy": 0.0236,
+      "brightness": 2747.0,
+      "bandwidth": 3677.0,
+      "zcr": 0.0466
+    },
+    {
+      "time": 39.427,
+      "type": "noise_sweep",
+      "energy": 0.0207,
+      "brightness": 3130.0,
+      "bandwidth": 3917.0,
+      "zcr": 0.0632
+    },
+    {
+      "time": 39.532,
+      "type": "noise_sweep",
+      "energy": 0.0264,
+      "brightness": 3476.0,
+      "bandwidth": 3842.0,
+      "zcr": 0.0832
+    },
+    {
+      "time": 40.031,
+      "type": "mid_tone/pad",
+      "energy": 0.0523,
+      "brightness": 2718.0,
+      "bandwidth": 4046.0,
+      "zcr": 0.0333
+    },
+    {
+      "time": 40.124,
+      "type": "dark_texture",
+      "energy": 0.0624,
+      "brightness": 1556.0,
+      "bandwidth": 3164.0,
+      "zcr": 0.0171
+    },
+    {
+      "time": 40.275,
+      "type": "dark_texture",
+      "energy": 0.15,
+      "brightness": 1540.0,
+      "bandwidth": 3456.0,
+      "zcr": 0.0045
+    },
+    {
+      "time": 40.38,
+      "type": "low_rumble",
+      "energy": 0.199,
+      "brightness": 1404.0,
+      "bandwidth": 3517.0,
+      "zcr": 0.0048
+    },
+    {
+      "time": 40.414,
+      "type": "dark_texture",
+      "energy": 0.132,
+      "brightness": 1550.0,
+      "bandwidth": 3527.0,
+      "zcr": 0.0063
+    },
+    {
+      "time": 40.53,
+      "type": "dark_texture",
+      "energy": 0.058,
+      "brightness": 1912.0,
+      "bandwidth": 3508.0,
+      "zcr": 0.0168
+    },
+    {
+      "time": 40.832,
+      "type": "dark_texture",
+      "energy": 0.0376,
+      "brightness": 2467.0,
+      "bandwidth": 3862.0,
+      "zcr": 0.0319
+    },
+    {
+      "time": 41.041,
+      "type": "noise_sweep",
+      "energy": 0.0267,
+      "brightness": 2699.0,
+      "bandwidth": 3765.0,
+      "zcr": 0.045
+    },
+    {
+      "time": 41.169,
+      "type": "noise_sweep",
+      "energy": 0.0341,
+      "brightness": 3216.0,
+      "bandwidth": 3934.0,
+      "zcr": 0.056
+    },
+    {
+      "time": 41.529,
+      "type": "noise_sweep",
+      "energy": 0.0279,
+      "brightness": 2189.0,
+      "bandwidth": 3445.0,
+      "zcr": 0.0374
+    },
+    {
+      "time": 41.587,
+      "type": "noise_sweep",
+      "energy": 0.027,
+      "brightness": 2277.0,
+      "bandwidth": 3420.0,
+      "zcr": 0.0443
+    },
+    {
+      "time": 41.715,
+      "type": "noise_sweep",
+      "energy": 0.0267,
+      "brightness": 3099.0,
+      "bandwidth": 4199.0,
+      "zcr": 0.0461
+    },
+    {
+      "time": 41.819,
+      "type": "noise_sweep",
+      "energy": 0.0225,
+      "brightness": 2599.0,
+      "bandwidth": 3756.0,
+      "zcr": 0.0415
+    },
+    {
+      "time": 42.005,
+      "type": "noise_sweep",
+      "energy": 0.0272,
+      "brightness": 2363.0,
+      "bandwidth": 3737.0,
+      "zcr": 0.0234
+    },
+    {
+      "time": 42.098,
+      "type": "noise_sweep",
+      "energy": 0.0271,
+      "brightness": 2270.0,
+      "bandwidth": 3906.0,
+      "zcr": 0.0187
+    },
+    {
+      "time": 42.237,
+      "type": "noise_sweep",
+      "energy": 0.0393,
+      "brightness": 3169.0,
+      "bandwidth": 3763.0,
+      "zcr": 0.059
+    },
+    {
+      "time": 42.481,
+      "type": "dark_texture",
+      "energy": 0.0349,
+      "brightness": 2283.0,
+      "bandwidth": 3572.0,
+      "zcr": 0.0308
+    },
+    {
+      "time": 42.551,
+      "type": "dark_texture",
+      "energy": 0.0527,
+      "brightness": 1990.0,
+      "bandwidth": 3396.0,
+      "zcr": 0.0221
+    },
+    {
+      "time": 42.806,
+      "type": "dark_texture",
+      "energy": 0.0377,
+      "brightness": 1719.0,
+      "bandwidth": 2906.0,
+      "zcr": 0.0271
+    },
+    {
+      "time": 42.957,
+      "type": "dark_texture",
+      "energy": 0.0318,
+      "brightness": 2180.0,
+      "bandwidth": 3791.0,
+      "zcr": 0.0323
+    },
+    {
+      "time": 43.061,
+      "type": "dark_texture",
+      "energy": 0.0322,
+      "brightness": 2384.0,
+      "bandwidth": 3687.0,
+      "zcr": 0.0384
+    },
+    {
+      "time": 43.584,
+      "type": "dark_texture",
+      "energy": 0.0565,
+      "brightness": 2011.0,
+      "bandwidth": 3546.0,
+      "zcr": 0.0251
+    },
+    {
+      "time": 43.723,
+      "type": "dark_texture",
+      "energy": 0.0475,
+      "brightness": 2165.0,
+      "bandwidth": 3421.0,
+      "zcr": 0.0302
+    },
+    {
+      "time": 43.897,
+      "type": "dark_texture",
+      "energy": 0.0454,
+      "brightness": 1866.0,
+      "bandwidth": 2980.0,
+      "zcr": 0.037
+    },
+    {
+      "time": 43.99,
+      "type": "mid_tone/pad",
+      "energy": 0.0516,
+      "brightness": 2515.0,
+      "bandwidth": 3913.0,
+      "zcr": 0.0298
+    },
+    {
+      "time": 44.083,
+      "type": "mid_tone/pad",
+      "energy": 0.0416,
+      "brightness": 2758.0,
+      "bandwidth": 3908.0,
+      "zcr": 0.0415
+    },
+    {
+      "time": 44.118,
+      "type": "mid_tone/pad",
+      "energy": 0.041,
+      "brightness": 2842.0,
+      "bandwidth": 3887.0,
+      "zcr": 0.0411
+    },
+    {
+      "time": 44.176,
+      "type": "mid_tone/pad",
+      "energy": 0.0456,
+      "brightness": 2739.0,
+      "bandwidth": 3891.0,
+      "zcr": 0.0387
+    },
+    {
+      "time": 44.292,
+      "type": "mid_tone/pad",
+      "energy": 0.0442,
+      "brightness": 2589.0,
+      "bandwidth": 3561.0,
+      "zcr": 0.0439
+    },
+    {
+      "time": 44.455,
+      "type": "mid_tone/pad",
+      "energy": 0.0443,
+      "brightness": 3470.0,
+      "bandwidth": 4434.0,
+      "zcr": 0.0878
+    },
+    {
+      "time": 44.501,
+      "type": "noise_sweep",
+      "energy": 0.0379,
+      "brightness": 3353.0,
+      "bandwidth": 4276.0,
+      "zcr": 0.0704
+    },
+    {
+      "time": 44.64,
+      "type": "dark_texture",
+      "energy": 0.0318,
+      "brightness": 2294.0,
+      "bandwidth": 3605.0,
+      "zcr": 0.0292
+    },
+    {
+      "time": 44.733,
+      "type": "dark_texture",
+      "energy": 0.0357,
+      "brightness": 2220.0,
+      "bandwidth": 3597.0,
+      "zcr": 0.0313
+    },
+    {
+      "time": 44.861,
+      "type": "noise_sweep",
+      "energy": 0.0338,
+      "brightness": 2533.0,
+      "bandwidth": 3825.0,
+      "zcr": 0.0347
+    },
+    {
+      "time": 44.965,
+      "type": "noise_sweep",
+      "energy": 0.0369,
+      "brightness": 2645.0,
+      "bandwidth": 3989.0,
+      "zcr": 0.0305
+    },
+    {
+      "time": 45.058,
+      "type": "noise_sweep",
+      "energy": 0.0312,
+      "brightness": 2773.0,
+      "bandwidth": 3982.0,
+      "zcr": 0.045
+    },
+    {
+      "time": 45.267,
+      "type": "noise_sweep",
+      "energy": 0.0314,
+      "brightness": 3097.0,
+      "bandwidth": 4133.0,
+      "zcr": 0.0552
+    },
+    {
+      "time": 45.395,
+      "type": "dark_texture",
+      "energy": 0.0346,
+      "brightness": 2468.0,
+      "bandwidth": 3955.0,
+      "zcr": 0.0283
+    },
+    {
+      "time": 45.511,
+      "type": "noise_sweep",
+      "energy": 0.0335,
+      "brightness": 3335.0,
+      "bandwidth": 4487.0,
+      "zcr": 0.0516
+    },
+    {
+      "time": 45.546,
+      "type": "noise_sweep",
+      "energy": 0.0352,
+      "brightness": 3127.0,
+      "bandwidth": 4276.0,
+      "zcr": 0.0443
+    },
+    {
+      "time": 45.813,
+      "type": "noise_sweep",
+      "energy": 0.0388,
+      "brightness": 2950.0,
+      "bandwidth": 3924.0,
+      "zcr": 0.0455
+    },
+    {
+      "time": 46.08,
+      "type": "noise_sweep",
+      "energy": 0.0371,
+      "brightness": 2817.0,
+      "bandwidth": 4049.0,
+      "zcr": 0.0293
+    },
+    {
+      "time": 46.173,
+      "type": "dark_texture",
+      "energy": 0.0378,
+      "brightness": 2059.0,
+      "bandwidth": 3368.0,
+      "zcr": 0.0249
+    },
+    {
+      "time": 46.382,
+      "type": "dark_texture",
+      "energy": 0.0395,
+      "brightness": 2200.0,
+      "bandwidth": 3618.0,
+      "zcr": 0.0229
+    },
+    {
+      "time": 46.475,
+      "type": "noise_sweep",
+      "energy": 0.0377,
+      "brightness": 2527.0,
+      "bandwidth": 3786.0,
+      "zcr": 0.0325
+    },
+    {
+      "time": 46.591,
+      "type": "noise_sweep",
+      "energy": 0.0393,
+      "brightness": 2921.0,
+      "bandwidth": 3707.0,
+      "zcr": 0.0447
+    },
+    {
+      "time": 46.881,
+      "type": "mid_tone/pad",
+      "energy": 0.0408,
+      "brightness": 2756.0,
+      "bandwidth": 4200.0,
+      "zcr": 0.0326
+    },
+    {
+      "time": 47.02,
+      "type": "mid_tone/pad",
+      "energy": 0.0518,
+      "brightness": 2511.0,
+      "bandwidth": 4064.0,
+      "zcr": 0.0241
+    },
+    {
+      "time": 47.16,
+      "type": "mid_tone/pad",
+      "energy": 0.0452,
+      "brightness": 2622.0,
+      "bandwidth": 4005.0,
+      "zcr": 0.0334
+    },
+    {
+      "time": 47.311,
+      "type": "dark_texture",
+      "energy": 0.0747,
+      "brightness": 2320.0,
+      "bandwidth": 3945.0,
+      "zcr": 0.0229
+    },
+    {
+      "time": 47.415,
+      "type": "dark_texture",
+      "energy": 0.0976,
+      "brightness": 1885.0,
+      "bandwidth": 3617.0,
+      "zcr": 0.0149
+    },
+    {
+      "time": 47.613,
+      "type": "mid_tone/pad",
+      "energy": 0.0536,
+      "brightness": 2549.0,
+      "bandwidth": 3930.0,
+      "zcr": 0.0234
+    },
+    {
+      "time": 47.705,
+      "type": "mid_tone/pad",
+      "energy": 0.0504,
+      "brightness": 2505.0,
+      "bandwidth": 3626.0,
+      "zcr": 0.0323
+    },
+    {
+      "time": 47.903,
+      "type": "dark_texture",
+      "energy": 0.0345,
+      "brightness": 2495.0,
+      "bandwidth": 3734.0,
+      "zcr": 0.0349
+    },
+    {
+      "time": 47.961,
+      "type": "noise_sweep",
+      "energy": 0.0299,
+      "brightness": 2878.0,
+      "bandwidth": 3801.0,
+      "zcr": 0.0427
+    },
+    {
+      "time": 48.007,
+      "type": "noise_sweep",
+      "energy": 0.0319,
+      "brightness": 2796.0,
+      "bandwidth": 3894.0,
+      "zcr": 0.0405
+    },
+    {
+      "time": 48.077,
+      "type": "noise_sweep",
+      "energy": 0.0246,
+      "brightness": 2536.0,
+      "bandwidth": 3903.0,
+      "zcr": 0.0353
+    },
+    {
+      "time": 48.181,
+      "type": "noise_sweep",
+      "energy": 0.026,
+      "brightness": 3138.0,
+      "bandwidth": 3655.0,
+      "zcr": 0.0681
+    },
+    {
+      "time": 48.216,
+      "type": "noise_sweep",
+      "energy": 0.025,
+      "brightness": 3149.0,
+      "bandwidth": 3615.0,
+      "zcr": 0.0663
+    },
+    {
+      "time": 48.367,
+      "type": "noise_sweep",
+      "energy": 0.0273,
+      "brightness": 2848.0,
+      "bandwidth": 3794.0,
+      "zcr": 0.0491
+    },
+    {
+      "time": 48.739,
+      "type": "mid_tone/pad",
+      "energy": 0.0542,
+      "brightness": 2843.0,
+      "bandwidth": 3458.0,
+      "zcr": 0.0471
+    },
+    {
+      "time": 49.017,
+      "type": "dark_texture",
+      "energy": 0.0404,
+      "brightness": 2341.0,
+      "bandwidth": 3460.0,
+      "zcr": 0.0361
+    },
+    {
+      "time": 49.064,
+      "type": "dark_texture",
+      "energy": 0.0306,
+      "brightness": 2496.0,
+      "bandwidth": 3787.0,
+      "zcr": 0.0359
+    },
+    {
+      "time": 49.157,
+      "type": "noise_sweep",
+      "energy": 0.0249,
+      "brightness": 2559.0,
+      "bandwidth": 4255.0,
+      "zcr": 0.0301
+    },
+    {
+      "time": 49.25,
+      "type": "noise_sweep",
+      "energy": 0.0251,
+      "brightness": 2290.0,
+      "bandwidth": 3686.0,
+      "zcr": 0.0303
+    },
+    {
+      "time": 49.435,
+      "type": "noise_sweep",
+      "energy": 0.0283,
+      "brightness": 2369.0,
+      "bandwidth": 3401.0,
+      "zcr": 0.0336
+    },
+    {
+      "time": 49.551,
+      "type": "dark_texture",
+      "energy": 0.0552,
+      "brightness": 2315.0,
+      "bandwidth": 3511.0,
+      "zcr": 0.0234
+    },
+    {
+      "time": 49.633,
+      "type": "dark_texture",
+      "energy": 0.0511,
+      "brightness": 2216.0,
+      "bandwidth": 3677.0,
+      "zcr": 0.0223
+    },
+    {
+      "time": 49.795,
+      "type": "noise_sweep",
+      "energy": 0.0338,
+      "brightness": 2589.0,
+      "bandwidth": 3459.0,
+      "zcr": 0.0494
+    },
+    {
+      "time": 50.062,
+      "type": "ambient_bed",
+      "energy": 0.0185,
+      "brightness": 3121.0,
+      "bandwidth": 3703.0,
+      "zcr": 0.0537
+    },
+    {
+      "time": 50.318,
+      "type": "dark_texture",
+      "energy": 0.0315,
+      "brightness": 2101.0,
+      "bandwidth": 3016.0,
+      "zcr": 0.0361
+    },
+    {
+      "time": 50.387,
+      "type": "ambient_bed",
+      "energy": 0.0275,
+      "brightness": 2205.0,
+      "bandwidth": 2968.0,
+      "zcr": 0.0433
+    },
+    {
+      "time": 50.666,
+      "type": "ambient_bed",
+      "energy": 0.0243,
+      "brightness": 2287.0,
+      "bandwidth": 2814.0,
+      "zcr": 0.0471
+    },
+    {
+      "time": 50.84,
+      "type": "noise_sweep",
+      "energy": 0.021,
+      "brightness": 2978.0,
+      "bandwidth": 3888.0,
+      "zcr": 0.0519
+    },
+    {
+      "time": 50.945,
+      "type": "noise_sweep",
+      "energy": 0.0217,
+      "brightness": 2264.0,
+      "bandwidth": 3168.0,
+      "zcr": 0.0425
+    },
+    {
+      "time": 50.979,
+      "type": "noise_sweep",
+      "energy": 0.0219,
+      "brightness": 2016.0,
+      "bandwidth": 3081.0,
+      "zcr": 0.0432
+    },
+    {
+      "time": 51.072,
+      "type": "ambient_bed",
+      "energy": 0.0163,
+      "brightness": 2106.0,
+      "bandwidth": 3225.0,
+      "zcr": 0.0372
+    },
+    {
+      "time": 51.212,
+      "type": "ambient_bed",
+      "energy": 0.0192,
+      "brightness": 1969.0,
+      "bandwidth": 3557.0,
+      "zcr": 0.0287
+    },
+    {
+      "time": 51.374,
+      "type": "noise_sweep",
+      "energy": 0.0241,
+      "brightness": 1939.0,
+      "bandwidth": 3481.0,
+      "zcr": 0.0128
+    },
+    {
+      "time": 51.421,
+      "type": "noise_sweep",
+      "energy": 0.0206,
+      "brightness": 3045.0,
+      "bandwidth": 4418.0,
+      "zcr": 0.0291
+    },
+    {
+      "time": 51.467,
+      "type": "noise_sweep",
+      "energy": 0.0204,
+      "brightness": 3446.0,
+      "bandwidth": 4457.0,
+      "zcr": 0.0348
+    },
+    {
+      "time": 51.525,
+      "type": "ambient_bed",
+      "energy": 0.0198,
+      "brightness": 3369.0,
+      "bandwidth": 4111.0,
+      "zcr": 0.0247
+    },
+    {
+      "time": 51.676,
+      "type": "ambient_bed",
+      "energy": 0.0129,
+      "brightness": 3224.0,
+      "bandwidth": 4342.0,
+      "zcr": 0.0328
+    },
+    {
+      "time": 51.815,
+      "type": "ambient_bed",
+      "energy": 0.0118,
+      "brightness": 2876.0,
+      "bandwidth": 3741.0,
+      "zcr": 0.0393
+    },
+    {
+      "time": 51.931,
+      "type": "ambient_bed",
+      "energy": 0.0125,
+      "brightness": 3079.0,
+      "bandwidth": 3761.0,
+      "zcr": 0.0479
+    },
+    {
+      "time": 52.106,
+      "type": "ambient_bed",
+      "energy": 0.0138,
+      "brightness": 2553.0,
+      "bandwidth": 3824.0,
+      "zcr": 0.0216
+    },
+    {
+      "time": 52.28,
+      "type": "ambient_bed",
+      "energy": 0.0157,
+      "brightness": 2057.0,
+      "bandwidth": 3496.0,
+      "zcr": 0.0187
+    },
+    {
+      "time": 52.361,
+      "type": "ambient_bed",
+      "energy": 0.0156,
+      "brightness": 2024.0,
+      "bandwidth": 3246.0,
+      "zcr": 0.0253
+    },
+    {
+      "time": 52.605,
+      "type": "ambient_bed",
+      "energy": 0.0147,
+      "brightness": 1798.0,
+      "bandwidth": 3255.0,
+      "zcr": 0.0274
+    },
+    {
+      "time": 52.953,
+      "type": "noise_sweep",
+      "energy": 0.0203,
+      "brightness": 2829.0,
+      "bandwidth": 3757.0,
+      "zcr": 0.0383
+    },
+    {
+      "time": 53.058,
+      "type": "ambient_bed",
+      "energy": 0.013,
+      "brightness": 3925.0,
+      "bandwidth": 4537.0,
+      "zcr": 0.0661
+    },
+    {
+      "time": 53.104,
+      "type": "ambient_bed",
+      "energy": 0.0146,
+      "brightness": 2257.0,
+      "bandwidth": 3883.0,
+      "zcr": 0.0162
+    },
+    {
+      "time": 53.313,
+      "type": "ambient_bed",
+      "energy": 0.0154,
+      "brightness": 1961.0,
+      "bandwidth": 3583.0,
+      "zcr": 0.0195
+    },
+    {
+      "time": 53.418,
+      "type": "noise_sweep",
+      "energy": 0.0222,
+      "brightness": 3083.0,
+      "bandwidth": 3722.0,
+      "zcr": 0.0609
+    },
+    {
+      "time": 53.534,
+      "type": "noise_sweep",
+      "energy": 0.0229,
+      "brightness": 2615.0,
+      "bandwidth": 3752.0,
+      "zcr": 0.0351
+    },
+    {
+      "time": 53.615,
+      "type": "ambient_bed",
+      "energy": 0.02,
+      "brightness": 2308.0,
+      "bandwidth": 3658.0,
+      "zcr": 0.0272
+    },
+    {
+      "time": 53.801,
+      "type": "ambient_bed",
+      "energy": 0.0167,
+      "brightness": 1645.0,
+      "bandwidth": 3165.0,
+      "zcr": 0.0082
+    },
+    {
+      "time": 53.975,
+      "type": "ambient_bed",
+      "energy": 0.0168,
+      "brightness": 1873.0,
+      "bandwidth": 3080.0,
+      "zcr": 0.0212
+    },
+    {
+      "time": 54.021,
+      "type": "noise_sweep",
+      "energy": 0.0228,
+      "brightness": 1587.0,
+      "bandwidth": 3016.0,
+      "zcr": 0.0152
+    },
+    {
+      "time": 54.126,
+      "type": "ambient_bed",
+      "energy": 0.0157,
+      "brightness": 1608.0,
+      "bandwidth": 3037.0,
+      "zcr": 0.0139
+    },
+    {
+      "time": 54.242,
+      "type": "noise_sweep",
+      "energy": 0.0201,
+      "brightness": 1553.0,
+      "bandwidth": 3204.0,
+      "zcr": 0.0093
+    },
+    {
+      "time": 54.288,
+      "type": "ambient_bed",
+      "energy": 0.0135,
+      "brightness": 1986.0,
+      "bandwidth": 3451.0,
+      "zcr": 0.0202
+    },
+    {
+      "time": 54.346,
+      "type": "ambient_bed",
+      "energy": 0.0271,
+      "brightness": 1861.0,
+      "bandwidth": 2943.0,
+      "zcr": 0.0264
+    },
+    {
+      "time": 54.393,
+      "type": "dark_texture",
+      "energy": 0.0329,
+      "brightness": 2041.0,
+      "bandwidth": 3555.0,
+      "zcr": 0.0145
+    },
+    {
+      "time": 54.509,
+      "type": "dark_texture",
+      "energy": 0.0308,
+      "brightness": 2364.0,
+      "bandwidth": 3277.0,
+      "zcr": 0.0275
+    },
+    {
+      "time": 54.567,
+      "type": "dark_texture",
+      "energy": 0.0511,
+      "brightness": 1605.0,
+      "bandwidth": 2717.0,
+      "zcr": 0.0176
+    },
+    {
+      "time": 54.695,
+      "type": "dark_texture",
+      "energy": 0.0688,
+      "brightness": 1889.0,
+      "bandwidth": 2773.0,
+      "zcr": 0.0244
+    },
+    {
+      "time": 54.857,
+      "type": "mid_tone/pad",
+      "energy": 0.0712,
+      "brightness": 2781.0,
+      "bandwidth": 3489.0,
+      "zcr": 0.0369
+    },
+    {
+      "time": 54.904,
+      "type": "dark_texture",
+      "energy": 0.099,
+      "brightness": 2457.0,
+      "bandwidth": 3487.0,
+      "zcr": 0.029
+    },
+    {
+      "time": 55.124,
+      "type": "mid_tone/pad",
+      "energy": 0.1075,
+      "brightness": 3484.0,
+      "bandwidth": 4305.0,
+      "zcr": 0.054
+    },
+    {
+      "time": 55.356,
+      "type": "dark_texture",
+      "energy": 0.068,
+      "brightness": 1969.0,
+      "bandwidth": 3256.0,
+      "zcr": 0.0212
+    },
+    {
+      "time": 55.391,
+      "type": "dark_texture",
+      "energy": 0.0655,
+      "brightness": 2034.0,
+      "bandwidth": 3378.0,
+      "zcr": 0.0222
+    },
+    {
+      "time": 55.449,
+      "type": "dark_texture",
+      "energy": 0.0647,
+      "brightness": 1652.0,
+      "bandwidth": 3063.0,
+      "zcr": 0.0207
+    },
+    {
+      "time": 55.519,
+      "type": "dark_texture",
+      "energy": 0.043,
+      "brightness": 2116.0,
+      "bandwidth": 3733.0,
+      "zcr": 0.022
+    },
+    {
+      "time": 55.589,
+      "type": "dark_texture",
+      "energy": 0.0474,
+      "brightness": 1856.0,
+      "bandwidth": 3463.0,
+      "zcr": 0.0136
+    },
+    {
+      "time": 55.658,
+      "type": "dark_texture",
+      "energy": 0.0443,
+      "brightness": 2041.0,
+      "bandwidth": 3303.0,
+      "zcr": 0.0234
+    },
+    {
+      "time": 55.705,
+      "type": "dark_texture",
+      "energy": 0.0424,
+      "brightness": 2141.0,
+      "bandwidth": 3303.0,
+      "zcr": 0.0339
+    },
+    {
+      "time": 55.937,
+      "type": "dark_texture",
+      "energy": 0.0391,
+      "brightness": 2467.0,
+      "bandwidth": 3590.0,
+      "zcr": 0.0353
+    },
+    {
+      "time": 55.972,
+      "type": "dark_texture",
+      "energy": 0.0357,
+      "brightness": 2470.0,
+      "bandwidth": 3672.0,
+      "zcr": 0.0323
+    },
+    {
+      "time": 56.181,
+      "type": "dark_texture",
+      "energy": 0.0347,
+      "brightness": 2406.0,
+      "bandwidth": 3277.0,
+      "zcr": 0.0438
+    },
+    {
+      "time": 56.262,
+      "type": "dark_texture",
+      "energy": 0.0363,
+      "brightness": 2249.0,
+      "bandwidth": 3377.0,
+      "zcr": 0.0338
+    },
+    {
+      "time": 56.471,
+      "type": "noise_sweep",
+      "energy": 0.027,
+      "brightness": 2620.0,
+      "bandwidth": 3410.0,
+      "zcr": 0.054
+    },
+    {
+      "time": 56.622,
+      "type": "noise_sweep",
+      "energy": 0.0285,
+      "brightness": 2651.0,
+      "bandwidth": 3613.0,
+      "zcr": 0.0476
+    },
+    {
+      "time": 56.796,
+      "type": "noise_sweep",
+      "energy": 0.029,
+      "brightness": 2571.0,
+      "bandwidth": 3594.0,
+      "zcr": 0.0388
+    },
+    {
+      "time": 56.947,
+      "type": "noise_sweep",
+      "energy": 0.0251,
+      "brightness": 2821.0,
+      "bandwidth": 3593.0,
+      "zcr": 0.0438
+    },
+    {
+      "time": 57.33,
+      "type": "noise_sweep",
+      "energy": 0.0365,
+      "brightness": 3153.0,
+      "bandwidth": 3896.0,
+      "zcr": 0.0571
+    },
+    {
+      "time": 57.585,
+      "type": "noise_sweep",
+      "energy": 0.0299,
+      "brightness": 2519.0,
+      "bandwidth": 3812.0,
+      "zcr": 0.0447
+    },
+    {
+      "time": 57.667,
+      "type": "noise_sweep",
+      "energy": 0.0206,
+      "brightness": 2632.0,
+      "bandwidth": 3812.0,
+      "zcr": 0.0477
+    },
+    {
+      "time": 57.725,
+      "type": "noise_sweep",
+      "energy": 0.0211,
+      "brightness": 2757.0,
+      "bandwidth": 3638.0,
+      "zcr": 0.0559
+    },
+    {
+      "time": 57.818,
+      "type": "noise_sweep",
+      "energy": 0.0257,
+      "brightness": 2501.0,
+      "bandwidth": 3551.0,
+      "zcr": 0.048
+    },
+    {
+      "time": 57.98,
+      "type": "noise_sweep",
+      "energy": 0.025,
+      "brightness": 2631.0,
+      "bandwidth": 3571.0,
+      "zcr": 0.0488
+    },
+    {
+      "time": 58.863,
+      "type": "noise_sweep",
+      "energy": 0.0234,
+      "brightness": 3016.0,
+      "bandwidth": 3579.0,
+      "zcr": 0.0618
+    },
+    {
+      "time": 59.014,
+      "type": "noise_sweep",
+      "energy": 0.0256,
+      "brightness": 2937.0,
+      "bandwidth": 3585.0,
+      "zcr": 0.053
+    },
+    {
+      "time": 59.385,
+      "type": "ambient_bed",
+      "energy": 0.0138,
+      "brightness": 3482.0,
+      "bandwidth": 4407.0,
+      "zcr": 0.0646
+    },
+    {
+      "time": 59.478,
+      "type": "ambient_bed",
+      "energy": 0.0125,
+      "brightness": 3551.0,
+      "bandwidth": 4735.0,
+      "zcr": 0.0591
+    },
+    {
+      "time": 59.524,
+      "type": "ambient_bed",
+      "energy": 0.0133,
+      "brightness": 2647.0,
+      "bandwidth": 4161.0,
+      "zcr": 0.0323
+    },
+    {
+      "time": 62.02,
+      "type": "ambient_bed",
+      "energy": 0.0124,
+      "brightness": 3418.0,
+      "bandwidth": 3964.0,
+      "zcr": 0.0334
+    },
+    {
+      "time": 62.137,
+      "type": "ambient_bed",
+      "energy": 0.0157,
+      "brightness": 3112.0,
+      "bandwidth": 4010.0,
+      "zcr": 0.0361
+    },
+    {
+      "time": 62.206,
+      "type": "noise_sweep",
+      "energy": 0.0273,
+      "brightness": 2965.0,
+      "bandwidth": 3859.0,
+      "zcr": 0.0403
+    },
+    {
+      "time": 62.334,
+      "type": "noise_sweep",
+      "energy": 0.0219,
+      "brightness": 2521.0,
+      "bandwidth": 3402.0,
+      "zcr": 0.0358
+    },
+    {
+      "time": 62.589,
+      "type": "noise_sweep",
+      "energy": 0.0229,
+      "brightness": 2094.0,
+      "bandwidth": 3318.0,
+      "zcr": 0.0184
+    },
+    {
+      "time": 62.798,
+      "type": "noise_sweep",
+      "energy": 0.0262,
+      "brightness": 2140.0,
+      "bandwidth": 3506.0,
+      "zcr": 0.0217
+    },
+    {
+      "time": 62.845,
+      "type": "noise_sweep",
+      "energy": 0.0273,
+      "brightness": 2175.0,
+      "bandwidth": 3483.0,
+      "zcr": 0.0206
+    },
+    {
+      "time": 62.949,
+      "type": "noise_sweep",
+      "energy": 0.0283,
+      "brightness": 2246.0,
+      "bandwidth": 3320.0,
+      "zcr": 0.0217
+    },
+    {
+      "time": 63.077,
+      "type": "noise_sweep",
+      "energy": 0.021,
+      "brightness": 2456.0,
+      "bandwidth": 4081.0,
+      "zcr": 0.0233
+    },
+    {
+      "time": 63.181,
+      "type": "noise_sweep",
+      "energy": 0.0261,
+      "brightness": 2487.0,
+      "bandwidth": 3427.0,
+      "zcr": 0.0375
+    },
+    {
+      "time": 63.263,
+      "type": "ambient_bed",
+      "energy": 0.0136,
+      "brightness": 2780.0,
+      "bandwidth": 3143.0,
+      "zcr": 0.0522
+    },
+    {
+      "time": 63.46,
+      "type": "noise_sweep",
+      "energy": 0.0206,
+      "brightness": 2726.0,
+      "bandwidth": 3792.0,
+      "zcr": 0.0411
+    },
+    {
+      "time": 63.495,
+      "type": "ambient_bed",
+      "energy": 0.0178,
+      "brightness": 2430.0,
+      "bandwidth": 3481.0,
+      "zcr": 0.0411
+    },
+    {
+      "time": 63.588,
+      "type": "ambient_bed",
+      "energy": 0.0162,
+      "brightness": 2478.0,
+      "bandwidth": 3283.0,
+      "zcr": 0.0419
+    },
+    {
+      "time": 63.623,
+      "type": "ambient_bed",
+      "energy": 0.0153,
+      "brightness": 2202.0,
+      "bandwidth": 3098.0,
+      "zcr": 0.0418
+    },
+    {
+      "time": 63.716,
+      "type": "ambient_bed",
+      "energy": 0.0145,
+      "brightness": 2588.0,
+      "bandwidth": 3559.0,
+      "zcr": 0.041
+    },
+    {
+      "time": 63.832,
+      "type": "ambient_bed",
+      "energy": 0.0173,
+      "brightness": 3886.0,
+      "bandwidth": 5008.0,
+      "zcr": 0.043
+    },
+    {
+      "time": 63.89,
+      "type": "ambient_bed",
+      "energy": 0.0131,
+      "brightness": 2893.0,
+      "bandwidth": 3942.0,
+      "zcr": 0.0424
+    },
+    {
+      "time": 63.948,
+      "type": "ambient_bed",
+      "energy": 0.0169,
+      "brightness": 2499.0,
+      "bandwidth": 3175.0,
+      "zcr": 0.0413
+    },
+    {
+      "time": 64.017,
+      "type": "ambient_bed",
+      "energy": 0.0159,
+      "brightness": 2839.0,
+      "bandwidth": 3388.0,
+      "zcr": 0.0442
+    },
+    {
+      "time": 64.145,
+      "type": "ambient_bed",
+      "energy": 0.013,
+      "brightness": 3960.0,
+      "bandwidth": 4507.0,
+      "zcr": 0.046
+    },
+    {
+      "time": 64.192,
+      "type": "ambient_bed",
+      "energy": 0.0127,
+      "brightness": 2517.0,
+      "bandwidth": 3595.0,
+      "zcr": 0.0411
+    },
+    {
+      "time": 64.284,
+      "type": "ambient_bed",
+      "energy": 0.0103,
+      "brightness": 2877.0,
+      "bandwidth": 4047.0,
+      "zcr": 0.0554
+    },
+    {
+      "time": 64.389,
+      "type": "ambient_bed",
+      "energy": 0.0145,
+      "brightness": 2564.0,
+      "bandwidth": 3548.0,
+      "zcr": 0.052
+    },
+    {
+      "time": 64.447,
+      "type": "ambient_bed",
+      "energy": 0.0142,
+      "brightness": 2362.0,
+      "bandwidth": 3314.0,
+      "zcr": 0.0551
+    },
+    {
+      "time": 64.598,
+      "type": "ambient_bed",
+      "energy": 0.0173,
+      "brightness": 2726.0,
+      "bandwidth": 3256.0,
+      "zcr": 0.0474
+    },
+    {
+      "time": 64.644,
+      "type": "ambient_bed",
+      "energy": 0.018,
+      "brightness": 2463.0,
+      "bandwidth": 2932.0,
+      "zcr": 0.0438
+    },
+    {
+      "time": 64.76,
+      "type": "ambient_bed",
+      "energy": 0.0215,
+      "brightness": 2081.0,
+      "bandwidth": 2742.0,
+      "zcr": 0.0405
+    },
+    {
+      "time": 64.9,
+      "type": "dark_texture",
+      "energy": 0.0324,
+      "brightness": 2347.0,
+      "bandwidth": 2961.0,
+      "zcr": 0.0407
+    },
+    {
+      "time": 65.12,
+      "type": "dark_texture",
+      "energy": 0.033,
+      "brightness": 2480.0,
+      "bandwidth": 3343.0,
+      "zcr": 0.0406
+    },
+    {
+      "time": 65.248,
+      "type": "noise_sweep",
+      "energy": 0.0388,
+      "brightness": 2996.0,
+      "bandwidth": 3229.0,
+      "zcr": 0.0513
+    },
+    {
+      "time": 65.469,
+      "type": "ambient_bed",
+      "energy": 0.0113,
+      "brightness": 2971.0,
+      "bandwidth": 3210.0,
+      "zcr": 0.0604
+    },
+    {
+      "time": 66.142,
+      "type": "ambient_bed",
+      "energy": 0.0188,
+      "brightness": 3078.0,
+      "bandwidth": 4015.0,
+      "zcr": 0.0326
+    },
+    {
+      "time": 66.177,
+      "type": "noise_sweep",
+      "energy": 0.0246,
+      "brightness": 2130.0,
+      "bandwidth": 3170.0,
+      "zcr": 0.0247
+    },
+    {
+      "time": 66.397,
+      "type": "dark_texture",
+      "energy": 0.0337,
+      "brightness": 2022.0,
+      "bandwidth": 3020.0,
+      "zcr": 0.0341
+    },
+    {
+      "time": 66.456,
+      "type": "noise_sweep",
+      "energy": 0.0232,
+      "brightness": 2301.0,
+      "bandwidth": 3369.0,
+      "zcr": 0.0361
+    },
+    {
+      "time": 66.548,
+      "type": "noise_sweep",
+      "energy": 0.0201,
+      "brightness": 1970.0,
+      "bandwidth": 3296.0,
+      "zcr": 0.022
+    },
+    {
+      "time": 66.653,
+      "type": "ambient_bed",
+      "energy": 0.0194,
+      "brightness": 2580.0,
+      "bandwidth": 4014.0,
+      "zcr": 0.0202
+    },
+    {
+      "time": 66.804,
+      "type": "ambient_bed",
+      "energy": 0.0204,
+      "brightness": 1953.0,
+      "bandwidth": 2854.0,
+      "zcr": 0.0183
+    },
+    {
+      "time": 67.059,
+      "type": "noise_sweep",
+      "energy": 0.0221,
+      "brightness": 2191.0,
+      "bandwidth": 3706.0,
+      "zcr": 0.0171
+    },
+    {
+      "time": 67.175,
+      "type": "noise_sweep",
+      "energy": 0.0227,
+      "brightness": 2170.0,
+      "bandwidth": 3457.0,
+      "zcr": 0.0171
+    },
+    {
+      "time": 67.222,
+      "type": "noise_sweep",
+      "energy": 0.0214,
+      "brightness": 2277.0,
+      "bandwidth": 3356.0,
+      "zcr": 0.0171
+    },
+    {
+      "time": 67.361,
+      "type": "noise_sweep",
+      "energy": 0.0221,
+      "brightness": 2096.0,
+      "bandwidth": 3673.0,
+      "zcr": 0.0172
+    },
+    {
+      "time": 67.524,
+      "type": "noise_sweep",
+      "energy": 0.0266,
+      "brightness": 2846.0,
+      "bandwidth": 4401.0,
+      "zcr": 0.0176
+    },
+    {
+      "time": 67.558,
+      "type": "noise_sweep",
+      "energy": 0.0256,
+      "brightness": 2240.0,
+      "bandwidth": 3574.0,
+      "zcr": 0.0175
+    },
+    {
+      "time": 67.628,
+      "type": "ambient_bed",
+      "energy": 0.0267,
+      "brightness": 1914.0,
+      "bandwidth": 2904.0,
+      "zcr": 0.0173
+    },
+    {
+      "time": 67.721,
+      "type": "noise_sweep",
+      "energy": 0.0269,
+      "brightness": 2216.0,
+      "bandwidth": 3169.0,
+      "zcr": 0.0191
+    },
+    {
+      "time": 67.756,
+      "type": "noise_sweep",
+      "energy": 0.0275,
+      "brightness": 2341.0,
+      "bandwidth": 3342.0,
+      "zcr": 0.0179
+    },
+    {
+      "time": 67.895,
+      "type": "noise_sweep",
+      "energy": 0.0279,
+      "brightness": 1921.0,
+      "bandwidth": 3004.0,
+      "zcr": 0.0173
+    },
+    {
+      "time": 67.93,
+      "type": "noise_sweep",
+      "energy": 0.0284,
+      "brightness": 1963.0,
+      "bandwidth": 3324.0,
+      "zcr": 0.0195
+    },
+    {
+      "time": 68.023,
+      "type": "ambient_bed",
+      "energy": 0.0294,
+      "brightness": 1885.0,
+      "bandwidth": 2995.0,
+      "zcr": 0.0338
+    },
+    {
+      "time": 68.058,
+      "type": "dark_texture",
+      "energy": 0.03,
+      "brightness": 2046.0,
+      "bandwidth": 3287.0,
+      "zcr": 0.0344
+    },
+    {
+      "time": 68.185,
+      "type": "noise_sweep",
+      "energy": 0.0253,
+      "brightness": 2322.0,
+      "bandwidth": 3633.0,
+      "zcr": 0.0348
+    },
+    {
+      "time": 68.29,
+      "type": "dark_texture",
+      "energy": 0.0403,
+      "brightness": 2137.0,
+      "bandwidth": 3111.0,
+      "zcr": 0.0331
+    },
+    {
+      "time": 68.58,
+      "type": "ambient_bed",
+      "energy": 0.0134,
+      "brightness": 2343.0,
+      "bandwidth": 3079.0,
+      "zcr": 0.0331
+    },
+    {
+      "time": 68.766,
+      "type": "ambient_bed",
+      "energy": 0.0193,
+      "brightness": 2099.0,
+      "bandwidth": 2975.0,
+      "zcr": 0.0176
+    },
+    {
+      "time": 69.184,
+      "type": "ambient_bed",
+      "energy": 0.0198,
+      "brightness": 2169.0,
+      "bandwidth": 3861.0,
+      "zcr": 0.0151
+    },
+    {
+      "time": 69.451,
+      "type": "ambient_bed",
+      "energy": 0.0143,
+      "brightness": 2335.0,
+      "bandwidth": 3853.0,
+      "zcr": 0.0151
+    },
+    {
+      "time": 69.544,
+      "type": "ambient_bed",
+      "energy": 0.0111,
+      "brightness": 2470.0,
+      "bandwidth": 3700.0,
+      "zcr": 0.0192
+    },
+    {
+      "time": 70.008,
+      "type": "dark_texture",
+      "energy": 0.0379,
+      "brightness": 2324.0,
+      "bandwidth": 2308.0,
+      "zcr": 0.0535
+    },
+    {
+      "time": 70.159,
+      "type": "dark_texture",
+      "energy": 0.0302,
+      "brightness": 2177.0,
+      "bandwidth": 2709.0,
+      "zcr": 0.0361
+    },
+    {
+      "time": 70.298,
+      "type": "ambient_bed",
+      "energy": 0.016,
+      "brightness": 2057.0,
+      "bandwidth": 3292.0,
+      "zcr": 0.0411
+    },
+    {
+      "time": 70.368,
+      "type": "ambient_bed",
+      "energy": 0.0117,
+      "brightness": 2133.0,
+      "bandwidth": 3394.0,
+      "zcr": 0.0366
+    },
+    {
+      "time": 70.565,
+      "type": "ambient_bed",
+      "energy": 0.0115,
+      "brightness": 2101.0,
+      "bandwidth": 2829.0,
+      "zcr": 0.0364
+    },
+    {
+      "time": 70.879,
+      "type": "ambient_bed",
+      "energy": 0.0183,
+      "brightness": 1841.0,
+      "bandwidth": 2515.0,
+      "zcr": 0.0328
+    },
+    {
+      "time": 70.914,
+      "type": "ambient_bed",
+      "energy": 0.0177,
+      "brightness": 2119.0,
+      "bandwidth": 2842.0,
+      "zcr": 0.0281
+    },
+    {
+      "time": 71.053,
+      "type": "ambient_bed",
+      "energy": 0.0163,
+      "brightness": 2233.0,
+      "bandwidth": 2884.0,
+      "zcr": 0.0386
+    },
+    {
+      "time": 71.25,
+      "type": "ambient_bed",
+      "energy": 0.0144,
+      "brightness": 2044.0,
+      "bandwidth": 2842.0,
+      "zcr": 0.0416
+    },
+    {
+      "time": 71.285,
+      "type": "ambient_bed",
+      "energy": 0.0151,
+      "brightness": 1992.0,
+      "bandwidth": 2782.0,
+      "zcr": 0.0405
+    },
+    {
+      "time": 71.448,
+      "type": "ambient_bed",
+      "energy": 0.0129,
+      "brightness": 2400.0,
+      "bandwidth": 3269.0,
+      "zcr": 0.0464
+    },
+    {
+      "time": 71.541,
+      "type": "ambient_bed",
+      "energy": 0.0103,
+      "brightness": 2607.0,
+      "bandwidth": 3241.0,
+      "zcr": 0.0619
+    },
+    {
+      "time": 71.866,
+      "type": "ambient_bed",
+      "energy": 0.0129,
+      "brightness": 2870.0,
+      "bandwidth": 3572.0,
+      "zcr": 0.0482
+    },
+    {
+      "time": 72.005,
+      "type": "ambient_bed",
+      "energy": 0.014,
+      "brightness": 2642.0,
+      "bandwidth": 3489.0,
+      "zcr": 0.0444
+    },
+    {
+      "time": 72.04,
+      "type": "ambient_bed",
+      "energy": 0.0149,
+      "brightness": 2251.0,
+      "bandwidth": 3201.0,
+      "zcr": 0.0416
+    },
+    {
+      "time": 72.179,
+      "type": "ambient_bed",
+      "energy": 0.0167,
+      "brightness": 2355.0,
+      "bandwidth": 3009.0,
+      "zcr": 0.0463
+    },
+    {
+      "time": 72.319,
+      "type": "ambient_bed",
+      "energy": 0.0194,
+      "brightness": 2682.0,
+      "bandwidth": 3227.0,
+      "zcr": 0.0511
+    },
+    {
+      "time": 72.458,
+      "type": "noise_sweep",
+      "energy": 0.0201,
+      "brightness": 2146.0,
+      "bandwidth": 3220.0,
+      "zcr": 0.0388
+    },
+    {
+      "time": 72.493,
+      "type": "ambient_bed",
+      "energy": 0.0177,
+      "brightness": 1917.0,
+      "bandwidth": 2908.0,
+      "zcr": 0.0385
+    },
+    {
+      "time": 72.586,
+      "type": "noise_sweep",
+      "energy": 0.0203,
+      "brightness": 2028.0,
+      "bandwidth": 3023.0,
+      "zcr": 0.0422
+    },
+    {
+      "time": 72.667,
+      "type": "ambient_bed",
+      "energy": 0.0169,
+      "brightness": 2040.0,
+      "bandwidth": 3189.0,
+      "zcr": 0.0347
+    },
+    {
+      "time": 72.771,
+      "type": "ambient_bed",
+      "energy": 0.0139,
+      "brightness": 3278.0,
+      "bandwidth": 3606.0,
+      "zcr": 0.0717
+    },
+    {
+      "time": 72.911,
+      "type": "ambient_bed",
+      "energy": 0.0157,
+      "brightness": 3864.0,
+      "bandwidth": 3746.0,
+      "zcr": 0.0837
+    },
+    {
+      "time": 73.073,
+      "type": "ambient_bed",
+      "energy": 0.0148,
+      "brightness": 3759.0,
+      "bandwidth": 3680.0,
+      "zcr": 0.0839
+    },
+    {
+      "time": 73.213,
+      "type": "mid_tone/pad",
+      "energy": 0.041,
+      "brightness": 2505.0,
+      "bandwidth": 3940.0,
+      "zcr": 0.023
+    },
+    {
+      "time": 73.247,
+      "type": "noise_sweep",
+      "energy": 0.0278,
+      "brightness": 1475.0,
+      "bandwidth": 3203.0,
+      "zcr": 0.0156
+    },
+    {
+      "time": 73.352,
+      "type": "ambient_bed",
+      "energy": 0.0155,
+      "brightness": 1926.0,
+      "bandwidth": 3766.0,
+      "zcr": 0.0148
+    },
+    {
+      "time": 73.514,
+      "type": "low_rumble",
+      "energy": 0.0641,
+      "brightness": 1115.0,
+      "bandwidth": 2728.0,
+      "zcr": 0.0073
+    },
+    {
+      "time": 73.584,
+      "type": "low_rumble",
+      "energy": 0.0882,
+      "brightness": 1489.0,
+      "bandwidth": 3313.0,
+      "zcr": 0.0029
+    },
+    {
+      "time": 73.781,
+      "type": "dark_texture",
+      "energy": 0.0348,
+      "brightness": 1746.0,
+      "bandwidth": 3597.0,
+      "zcr": 0.0121
+    },
+    {
+      "time": 73.816,
+      "type": "ambient_bed",
+      "energy": 0.0164,
+      "brightness": 2188.0,
+      "bandwidth": 3808.0,
+      "zcr": 0.0285
+    },
+    {
+      "time": 74.339,
+      "type": "dark_texture",
+      "energy": 0.0354,
+      "brightness": 1509.0,
+      "bandwidth": 2910.0,
+      "zcr": 0.0264
+    },
+    {
+      "time": 74.42,
+      "type": "low_rumble",
+      "energy": 0.0699,
+      "brightness": 1494.0,
+      "bandwidth": 2687.0,
+      "zcr": 0.0245
+    },
+    {
+      "time": 74.699,
+      "type": "low_rumble",
+      "energy": 0.0535,
+      "brightness": 1013.0,
+      "bandwidth": 1727.0,
+      "zcr": 0.0229
+    },
+    {
+      "time": 74.919,
+      "type": "low_rumble",
+      "energy": 0.052,
+      "brightness": 1141.0,
+      "bandwidth": 2136.0,
+      "zcr": 0.0224
+    },
+    {
+      "time": 75.117,
+      "type": "dark_texture",
+      "energy": 0.0418,
+      "brightness": 1116.0,
+      "bandwidth": 2283.0,
+      "zcr": 0.0203
+    },
+    {
+      "time": 75.163,
+      "type": "dark_texture",
+      "energy": 0.0439,
+      "brightness": 1210.0,
+      "bandwidth": 2273.0,
+      "zcr": 0.0204
+    },
+    {
+      "time": 75.825,
+      "type": "dark_texture",
+      "energy": 0.0413,
+      "brightness": 1457.0,
+      "bandwidth": 2626.0,
+      "zcr": 0.0189
+    },
+    {
+      "time": 76.312,
+      "type": "dark_texture",
+      "energy": 0.0465,
+      "brightness": 1225.0,
+      "bandwidth": 2175.0,
+      "zcr": 0.0247
+    },
+    {
+      "time": 76.533,
+      "type": "dark_texture",
+      "energy": 0.0484,
+      "brightness": 1317.0,
+      "bandwidth": 2228.0,
+      "zcr": 0.0276
+    },
+    {
+      "time": 76.777,
+      "type": "dark_texture",
+      "energy": 0.0463,
+      "brightness": 1649.0,
+      "bandwidth": 2646.0,
+      "zcr": 0.0264
+    },
+    {
+      "time": 76.928,
+      "type": "dark_texture",
+      "energy": 0.0523,
+      "brightness": 1619.0,
+      "bandwidth": 2717.0,
+      "zcr": 0.0284
+    },
+    {
+      "time": 77.102,
+      "type": "dark_texture",
+      "energy": 0.0403,
+      "brightness": 1267.0,
+      "bandwidth": 2511.0,
+      "zcr": 0.024
+    },
+    {
+      "time": 77.218,
+      "type": "dark_texture",
+      "energy": 0.045,
+      "brightness": 1145.0,
+      "bandwidth": 1815.0,
+      "zcr": 0.0305
+    },
+    {
+      "time": 77.334,
+      "type": "dark_texture",
+      "energy": 0.0405,
+      "brightness": 1668.0,
+      "bandwidth": 2738.0,
+      "zcr": 0.0335
+    },
+    {
+      "time": 77.497,
+      "type": "dark_texture",
+      "energy": 0.0493,
+      "brightness": 1247.0,
+      "bandwidth": 2118.0,
+      "zcr": 0.0281
+    },
+    {
+      "time": 77.589,
+      "type": "dark_texture",
+      "energy": 0.0559,
+      "brightness": 1594.0,
+      "bandwidth": 2491.0,
+      "zcr": 0.0291
+    },
+    {
+      "time": 77.729,
+      "type": "dark_texture",
+      "energy": 0.0556,
+      "brightness": 1787.0,
+      "bandwidth": 2731.0,
+      "zcr": 0.0329
+    },
+    {
+      "time": 78.124,
+      "type": "dark_texture",
+      "energy": 0.0477,
+      "brightness": 1224.0,
+      "bandwidth": 1911.0,
+      "zcr": 0.0314
+    },
+    {
+      "time": 78.251,
+      "type": "low_rumble",
+      "energy": 0.0653,
+      "brightness": 1432.0,
+      "bandwidth": 2606.0,
+      "zcr": 0.0258
+    },
+    {
+      "time": 78.333,
+      "type": "dark_texture",
+      "energy": 0.0773,
+      "brightness": 1566.0,
+      "bandwidth": 2546.0,
+      "zcr": 0.032
+    },
+    {
+      "time": 78.379,
+      "type": "low_rumble",
+      "energy": 0.0774,
+      "brightness": 1215.0,
+      "bandwidth": 2038.0,
+      "zcr": 0.0274
+    },
+    {
+      "time": 78.913,
+      "type": "low_rumble",
+      "energy": 0.0816,
+      "brightness": 1455.0,
+      "bandwidth": 2381.0,
+      "zcr": 0.03
+    },
+    {
+      "time": 78.959,
+      "type": "dark_texture",
+      "energy": 0.0788,
+      "brightness": 1593.0,
+      "bandwidth": 2648.0,
+      "zcr": 0.033
+    },
+    {
+      "time": 79.076,
+      "type": "dark_texture",
+      "energy": 0.0832,
+      "brightness": 1623.0,
+      "bandwidth": 2731.0,
+      "zcr": 0.0259
+    },
+    {
+      "time": 79.157,
+      "type": "low_rumble",
+      "energy": 0.0796,
+      "brightness": 1342.0,
+      "bandwidth": 2445.0,
+      "zcr": 0.0208
+    },
+    {
+      "time": 79.285,
+      "type": "dark_texture",
+      "energy": 0.0709,
+      "brightness": 1622.0,
+      "bandwidth": 2757.0,
+      "zcr": 0.0248
+    },
+    {
+      "time": 79.795,
+      "type": "low_rumble",
+      "energy": 0.0571,
+      "brightness": 1053.0,
+      "bandwidth": 1911.0,
+      "zcr": 0.0245
+    },
+    {
+      "time": 79.877,
+      "type": "low_rumble",
+      "energy": 0.0645,
+      "brightness": 1070.0,
+      "bandwidth": 1833.0,
+      "zcr": 0.0269
+    },
+    {
+      "time": 80.086,
+      "type": "low_rumble",
+      "energy": 0.0531,
+      "brightness": 1197.0,
+      "bandwidth": 2062.0,
+      "zcr": 0.0289
+    },
+    {
+      "time": 81.34,
+      "type": "ambient_bed",
+      "energy": 0.0242,
+      "brightness": 1111.0,
+      "bandwidth": 1974.0,
+      "zcr": 0.0275
+    },
+    {
+      "time": 81.525,
+      "type": "ambient_bed",
+      "energy": 0.0242,
+      "brightness": 1118.0,
+      "bandwidth": 2017.0,
+      "zcr": 0.0219
+    }
+  ],
+  "bass_events": [
+    {
+      "time": 32.229,
+      "energy": 0.0203,
+      "freq": 983.0
+    }
+  ],
+  "combined_timeline": [
+    {
+      "time": 0.186,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.0521,
+      "brightness": 2779.0
+    },
+    {
+      "time": 0.29,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0327,
+      "brightness": 2105.0
+    },
+    {
+      "time": 0.441,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0322,
+      "brightness": 2230.0
+    },
+    {
+      "time": 0.813,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.037,
+      "brightness": 2313.0
+    },
+    {
+      "time": 0.952,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.036,
+      "brightness": 2113.0
+    },
+    {
+      "time": 1.173,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.0403,
+      "brightness": 3014.0
+    },
+    {
+      "time": 1.672,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0392,
+      "brightness": 1918.0
+    },
+    {
+      "time": 1.741,
+      "stem": "other",
+      "type": "low_rumble",
+      "energy": 0.0678,
+      "brightness": 1396.0
+    },
+    {
+      "time": 1.927,
+      "stem": "other",
+      "type": "low_rumble",
+      "energy": 0.0561,
+      "brightness": 1400.0
+    },
+    {
+      "time": 2.229,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0509,
+      "brightness": 1902.0
+    },
+    {
+      "time": 2.299,
+      "stem": "drums",
+      "type": "mid_percussion",
+      "energy": 0.125,
+      "brightness": 4306.0
+    },
+    {
+      "time": 2.403,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0434,
+      "brightness": 1729.0
+    },
+    {
+      "time": 2.589,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0481,
+      "brightness": 1660.0
+    },
+    {
+      "time": 2.67,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0441,
+      "brightness": 1550.0
+    },
+    {
+      "time": 2.752,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.047,
+      "brightness": 1844.0
+    },
+    {
+      "time": 2.891,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.055,
+      "brightness": 1715.0
+    },
+    {
+      "time": 2.949,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0573,
+      "brightness": 2196.0
+    },
+    {
+      "time": 3.123,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0568,
+      "brightness": 2054.0
+    },
+    {
+      "time": 4.261,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0476,
+      "brightness": 1887.0
+    },
+    {
+      "time": 4.563,
+      "stem": "other",
+      "type": "noise_sweep",
+      "energy": 0.0325,
+      "brightness": 3092.0
+    },
+    {
+      "time": 5.166,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0312,
+      "brightness": 1999.0
+    },
+    {
+      "time": 5.201,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0337,
+      "brightness": 2074.0
+    },
+    {
+      "time": 5.271,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0335,
+      "brightness": 2352.0
+    },
+    {
+      "time": 5.364,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0344,
+      "brightness": 2259.0
+    },
+    {
+      "time": 5.48,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.037,
+      "brightness": 2257.0
+    },
+    {
+      "time": 5.793,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0367,
+      "brightness": 2100.0
+    },
+    {
+      "time": 5.979,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0408,
+      "brightness": 1712.0
+    },
+    {
+      "time": 6.142,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.0404,
+      "brightness": 3126.0
+    },
+    {
+      "time": 6.177,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.0474,
+      "brightness": 3741.0
+    },
+    {
+      "time": 6.211,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.0452,
+      "brightness": 3473.0
+    },
+    {
+      "time": 8.649,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0456,
+      "brightness": 1903.0
+    },
+    {
+      "time": 8.905,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0305,
+      "brightness": 1842.0
+    },
+    {
+      "time": 9.915,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0324,
+      "brightness": 1678.0
+    },
+    {
+      "time": 10.019,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0584,
+      "brightness": 1707.0
+    },
+    {
+      "time": 10.159,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.067,
+      "brightness": 2081.0
+    },
+    {
+      "time": 10.194,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.079,
+      "brightness": 2331.0
+    },
+    {
+      "time": 10.344,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.0873,
+      "brightness": 2597.0
+    },
+    {
+      "time": 10.461,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0614,
+      "brightness": 1857.0
+    },
+    {
+      "time": 10.658,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0646,
+      "brightness": 2022.0
+    },
+    {
+      "time": 10.716,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0544,
+      "brightness": 2258.0
+    },
+    {
+      "time": 10.844,
+      "stem": "other",
+      "type": "noise_sweep",
+      "energy": 0.0384,
+      "brightness": 2700.0
+    },
+    {
+      "time": 11.018,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0441,
+      "brightness": 1852.0
+    },
+    {
+      "time": 11.169,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0391,
+      "brightness": 2176.0
+    },
+    {
+      "time": 11.227,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0435,
+      "brightness": 1921.0
+    },
+    {
+      "time": 13.003,
+      "stem": "drums",
+      "type": "mid_percussion",
+      "energy": 0.0302,
+      "brightness": 2679.0
+    },
+    {
+      "time": 13.201,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0644,
+      "brightness": 965.0
+    },
+    {
+      "time": 14.118,
+      "stem": "drums",
+      "type": "thump",
+      "energy": 0.0582,
+      "brightness": 2207.0
+    },
+    {
+      "time": 15.023,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.1091,
+      "brightness": 1189.0
+    },
+    {
+      "time": 15.232,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0563,
+      "brightness": 1739.0
+    },
+    {
+      "time": 15.894,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0586,
+      "brightness": 1135.0
+    },
+    {
+      "time": 17.194,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0333,
+      "brightness": 1379.0
+    },
+    {
+      "time": 17.241,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.043,
+      "brightness": 1072.0
+    },
+    {
+      "time": 17.682,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0371,
+      "brightness": 935.0
+    },
+    {
+      "time": 18.344,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0529,
+      "brightness": 1073.0
+    },
+    {
+      "time": 18.959,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.053,
+      "brightness": 2216.0
+    },
+    {
+      "time": 19.215,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0814,
+      "brightness": 2081.0
+    },
+    {
+      "time": 19.331,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0772,
+      "brightness": 1936.0
+    },
+    {
+      "time": 19.389,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0612,
+      "brightness": 1729.0
+    },
+    {
+      "time": 19.447,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0488,
+      "brightness": 1811.0
+    },
+    {
+      "time": 20.062,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0312,
+      "brightness": 2264.0
+    },
+    {
+      "time": 21.862,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.032,
+      "brightness": 2090.0
+    },
+    {
+      "time": 24.555,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0317,
+      "brightness": 1264.0
+    },
+    {
+      "time": 24.729,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0333,
+      "brightness": 1106.0
+    },
+    {
+      "time": 24.741,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0326,
+      "brightness": 948.0
+    },
+    {
+      "time": 24.857,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.041,
+      "brightness": 1070.0
+    },
+    {
+      "time": 24.892,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0418,
+      "brightness": 879.0
+    },
+    {
+      "time": 25.066,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0406,
+      "brightness": 1113.0
+    },
+    {
+      "time": 25.205,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0381,
+      "brightness": 947.0
+    },
+    {
+      "time": 25.391,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0491,
+      "brightness": 1300.0
+    },
+    {
+      "time": 25.472,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0402,
+      "brightness": 1151.0
+    },
+    {
+      "time": 25.588,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0399,
+      "brightness": 1227.0
+    },
+    {
+      "time": 25.67,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0342,
+      "brightness": 1346.0
+    },
+    {
+      "time": 25.89,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0558,
+      "brightness": 998.0
+    },
+    {
+      "time": 26.064,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.037,
+      "brightness": 1135.0
+    },
+    {
+      "time": 26.088,
+      "stem": "drums",
+      "type": "kick/deep_boom",
+      "energy": 0.0491,
+      "brightness": 664.0
+    },
+    {
+      "time": 26.366,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0337,
+      "brightness": 1235.0
+    },
+    {
+      "time": 26.506,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.1015,
+      "brightness": 1066.0
+    },
+    {
+      "time": 26.517,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0348,
+      "brightness": 1307.0
+    },
+    {
+      "time": 26.738,
+      "stem": "other",
+      "type": "low_rumble",
+      "energy": 0.0561,
+      "brightness": 1026.0
+    },
+    {
+      "time": 26.796,
+      "stem": "other",
+      "type": "low_rumble",
+      "energy": 0.0572,
+      "brightness": 777.0
+    },
+    {
+      "time": 26.854,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0455,
+      "brightness": 901.0
+    },
+    {
+      "time": 27.179,
+      "stem": "other",
+      "type": "low_rumble",
+      "energy": 0.0558,
+      "brightness": 791.0
+    },
+    {
+      "time": 27.609,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.044,
+      "brightness": 828.0
+    },
+    {
+      "time": 28.108,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0462,
+      "brightness": 972.0
+    },
+    {
+      "time": 28.27,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0402,
+      "brightness": 1828.0
+    },
+    {
+      "time": 28.294,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0443,
+      "brightness": 967.0
+    },
+    {
+      "time": 28.398,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0456,
+      "brightness": 1298.0
+    },
+    {
+      "time": 28.502,
+      "stem": "other",
+      "type": "low_rumble",
+      "energy": 0.0504,
+      "brightness": 1209.0
+    },
+    {
+      "time": 28.549,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0457,
+      "brightness": 993.0
+    },
+    {
+      "time": 28.828,
+      "stem": "other",
+      "type": "low_rumble",
+      "energy": 0.0653,
+      "brightness": 1238.0
+    },
+    {
+      "time": 29.002,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0864,
+      "brightness": 1933.0
+    },
+    {
+      "time": 29.304,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0649,
+      "brightness": 2285.0
+    },
+    {
+      "time": 29.803,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0463,
+      "brightness": 1839.0
+    },
+    {
+      "time": 29.849,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0326,
+      "brightness": 1758.0
+    },
+    {
+      "time": 29.954,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0485,
+      "brightness": 2018.0
+    },
+    {
+      "time": 30.116,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0572,
+      "brightness": 2155.0
+    },
+    {
+      "time": 30.186,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0555,
+      "brightness": 2004.0
+    },
+    {
+      "time": 30.256,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.047,
+      "brightness": 1984.0
+    },
+    {
+      "time": 30.546,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0487,
+      "brightness": 2217.0
+    },
+    {
+      "time": 30.836,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0412,
+      "brightness": 1605.0
+    },
+    {
+      "time": 31.951,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0318,
+      "brightness": 1803.0
+    },
+    {
+      "time": 32.601,
+      "stem": "drums",
+      "type": "thump",
+      "energy": 0.0355,
+      "brightness": 2120.0
+    },
+    {
+      "time": 32.682,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0334,
+      "brightness": 2093.0
+    },
+    {
+      "time": 32.938,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0435,
+      "brightness": 1763.0
+    },
+    {
+      "time": 33.065,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0458,
+      "brightness": 918.0
+    },
+    {
+      "time": 33.274,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0312,
+      "brightness": 1616.0
+    },
+    {
+      "time": 33.506,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.032,
+      "brightness": 1855.0
+    },
+    {
+      "time": 33.553,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0319,
+      "brightness": 1920.0
+    },
+    {
+      "time": 33.634,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0322,
+      "brightness": 2489.0
+    },
+    {
+      "time": 33.936,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0488,
+      "brightness": 1654.0
+    },
+    {
+      "time": 34.284,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0457,
+      "brightness": 1560.0
+    },
+    {
+      "time": 34.458,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0433,
+      "brightness": 1612.0
+    },
+    {
+      "time": 37.361,
+      "stem": "drums",
+      "type": "thump",
+      "energy": 0.0472,
+      "brightness": 2297.0
+    },
+    {
+      "time": 37.895,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0633,
+      "brightness": 1808.0
+    },
+    {
+      "time": 37.999,
+      "stem": "other",
+      "type": "shimmer/riser",
+      "energy": 0.0332,
+      "brightness": 5541.0
+    },
+    {
+      "time": 38.034,
+      "stem": "other",
+      "type": "shimmer/riser",
+      "energy": 0.0339,
+      "brightness": 5364.0
+    },
+    {
+      "time": 38.22,
+      "stem": "other",
+      "type": "shimmer/riser",
+      "energy": 0.034,
+      "brightness": 4509.0
+    },
+    {
+      "time": 38.278,
+      "stem": "other",
+      "type": "shimmer/riser",
+      "energy": 0.0305,
+      "brightness": 4518.0
+    },
+    {
+      "time": 38.975,
+      "stem": "other",
+      "type": "noise_sweep",
+      "energy": 0.0316,
+      "brightness": 2879.0
+    },
+    {
+      "time": 40.031,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.0523,
+      "brightness": 2718.0
+    },
+    {
+      "time": 40.078,
+      "stem": "drums",
+      "type": "thump",
+      "energy": 0.0429,
+      "brightness": 2467.0
+    },
+    {
+      "time": 40.124,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0624,
+      "brightness": 1556.0
+    },
+    {
+      "time": 40.275,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.15,
+      "brightness": 1540.0
+    },
+    {
+      "time": 40.38,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0615,
+      "brightness": 1960.0
+    },
+    {
+      "time": 40.38,
+      "stem": "other",
+      "type": "low_rumble",
+      "energy": 0.199,
+      "brightness": 1404.0
+    },
+    {
+      "time": 40.414,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.132,
+      "brightness": 1550.0
+    },
+    {
+      "time": 40.53,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0352,
+      "brightness": 1275.0
+    },
+    {
+      "time": 40.53,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.058,
+      "brightness": 1912.0
+    },
+    {
+      "time": 40.6,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0399,
+      "brightness": 1010.0
+    },
+    {
+      "time": 40.832,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0376,
+      "brightness": 2467.0
+    },
+    {
+      "time": 41.169,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0641,
+      "brightness": 1882.0
+    },
+    {
+      "time": 41.169,
+      "stem": "other",
+      "type": "noise_sweep",
+      "energy": 0.0341,
+      "brightness": 3216.0
+    },
+    {
+      "time": 41.715,
+      "stem": "drums",
+      "type": "thump",
+      "energy": 0.0429,
+      "brightness": 2042.0
+    },
+    {
+      "time": 42.237,
+      "stem": "other",
+      "type": "noise_sweep",
+      "energy": 0.0393,
+      "brightness": 3169.0
+    },
+    {
+      "time": 42.249,
+      "stem": "drums",
+      "type": "thump",
+      "energy": 0.0454,
+      "brightness": 2456.0
+    },
+    {
+      "time": 42.481,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0349,
+      "brightness": 2283.0
+    },
+    {
+      "time": 42.551,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0527,
+      "brightness": 1990.0
+    },
+    {
+      "time": 42.806,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0377,
+      "brightness": 1719.0
+    },
+    {
+      "time": 42.957,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0318,
+      "brightness": 2180.0
+    },
+    {
+      "time": 43.061,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0322,
+      "brightness": 2384.0
+    },
+    {
+      "time": 43.584,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0565,
+      "brightness": 2011.0
+    },
+    {
+      "time": 43.723,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0475,
+      "brightness": 2165.0
+    },
+    {
+      "time": 43.897,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0454,
+      "brightness": 1866.0
+    },
+    {
+      "time": 43.99,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.0516,
+      "brightness": 2515.0
+    },
+    {
+      "time": 44.083,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.0416,
+      "brightness": 2758.0
+    },
+    {
+      "time": 44.118,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.041,
+      "brightness": 2842.0
+    },
+    {
+      "time": 44.176,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.0456,
+      "brightness": 2739.0
+    },
+    {
+      "time": 44.292,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.0442,
+      "brightness": 2589.0
+    },
+    {
+      "time": 44.455,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.0443,
+      "brightness": 3470.0
+    },
+    {
+      "time": 44.501,
+      "stem": "other",
+      "type": "noise_sweep",
+      "energy": 0.0379,
+      "brightness": 3353.0
+    },
+    {
+      "time": 44.64,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0318,
+      "brightness": 2294.0
+    },
+    {
+      "time": 44.733,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0357,
+      "brightness": 2220.0
+    },
+    {
+      "time": 44.861,
+      "stem": "other",
+      "type": "noise_sweep",
+      "energy": 0.0338,
+      "brightness": 2533.0
+    },
+    {
+      "time": 44.965,
+      "stem": "other",
+      "type": "noise_sweep",
+      "energy": 0.0369,
+      "brightness": 2645.0
+    },
+    {
+      "time": 45.058,
+      "stem": "other",
+      "type": "noise_sweep",
+      "energy": 0.0312,
+      "brightness": 2773.0
+    },
+    {
+      "time": 45.267,
+      "stem": "other",
+      "type": "noise_sweep",
+      "energy": 0.0314,
+      "brightness": 3097.0
+    },
+    {
+      "time": 45.395,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0346,
+      "brightness": 2468.0
+    },
+    {
+      "time": 45.511,
+      "stem": "other",
+      "type": "noise_sweep",
+      "energy": 0.0335,
+      "brightness": 3335.0
+    },
+    {
+      "time": 45.546,
+      "stem": "other",
+      "type": "noise_sweep",
+      "energy": 0.0352,
+      "brightness": 3127.0
+    },
+    {
+      "time": 45.813,
+      "stem": "other",
+      "type": "noise_sweep",
+      "energy": 0.0388,
+      "brightness": 2950.0
+    },
+    {
+      "time": 46.08,
+      "stem": "drums",
+      "type": "mid_percussion",
+      "energy": 0.0322,
+      "brightness": 2872.0
+    },
+    {
+      "time": 46.08,
+      "stem": "other",
+      "type": "noise_sweep",
+      "energy": 0.0371,
+      "brightness": 2817.0
+    },
+    {
+      "time": 46.173,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0378,
+      "brightness": 2059.0
+    },
+    {
+      "time": 46.382,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0395,
+      "brightness": 2200.0
+    },
+    {
+      "time": 46.475,
+      "stem": "other",
+      "type": "noise_sweep",
+      "energy": 0.0377,
+      "brightness": 2527.0
+    },
+    {
+      "time": 46.591,
+      "stem": "other",
+      "type": "noise_sweep",
+      "energy": 0.0393,
+      "brightness": 2921.0
+    },
+    {
+      "time": 46.881,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.0408,
+      "brightness": 2756.0
+    },
+    {
+      "time": 47.02,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.0518,
+      "brightness": 2511.0
+    },
+    {
+      "time": 47.16,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.0452,
+      "brightness": 2622.0
+    },
+    {
+      "time": 47.311,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0747,
+      "brightness": 2320.0
+    },
+    {
+      "time": 47.415,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0976,
+      "brightness": 1885.0
+    },
+    {
+      "time": 47.613,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.0536,
+      "brightness": 2549.0
+    },
+    {
+      "time": 47.705,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.0504,
+      "brightness": 2505.0
+    },
+    {
+      "time": 47.903,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0345,
+      "brightness": 2495.0
+    },
+    {
+      "time": 48.007,
+      "stem": "other",
+      "type": "noise_sweep",
+      "energy": 0.0319,
+      "brightness": 2796.0
+    },
+    {
+      "time": 48.739,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.0542,
+      "brightness": 2843.0
+    },
+    {
+      "time": 49.017,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0404,
+      "brightness": 2341.0
+    },
+    {
+      "time": 49.064,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0306,
+      "brightness": 2496.0
+    },
+    {
+      "time": 49.099,
+      "stem": "drums",
+      "type": "mid_percussion",
+      "energy": 0.1198,
+      "brightness": 3916.0
+    },
+    {
+      "time": 49.215,
+      "stem": "drums",
+      "type": "thump",
+      "energy": 0.085,
+      "brightness": 2417.0
+    },
+    {
+      "time": 49.551,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0552,
+      "brightness": 2315.0
+    },
+    {
+      "time": 49.621,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.057,
+      "brightness": 1366.0
+    },
+    {
+      "time": 49.633,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0511,
+      "brightness": 2216.0
+    },
+    {
+      "time": 49.795,
+      "stem": "other",
+      "type": "noise_sweep",
+      "energy": 0.0338,
+      "brightness": 2589.0
+    },
+    {
+      "time": 50.318,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0315,
+      "brightness": 2101.0
+    },
+    {
+      "time": 54.393,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0329,
+      "brightness": 2041.0
+    },
+    {
+      "time": 54.509,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0308,
+      "brightness": 2364.0
+    },
+    {
+      "time": 54.567,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0511,
+      "brightness": 1605.0
+    },
+    {
+      "time": 54.695,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0688,
+      "brightness": 1889.0
+    },
+    {
+      "time": 54.857,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.0712,
+      "brightness": 2781.0
+    },
+    {
+      "time": 54.904,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.099,
+      "brightness": 2457.0
+    },
+    {
+      "time": 55.124,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.1075,
+      "brightness": 3484.0
+    },
+    {
+      "time": 55.356,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.068,
+      "brightness": 1969.0
+    },
+    {
+      "time": 55.391,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0655,
+      "brightness": 2034.0
+    },
+    {
+      "time": 55.449,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0647,
+      "brightness": 1652.0
+    },
+    {
+      "time": 55.519,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.043,
+      "brightness": 2116.0
+    },
+    {
+      "time": 55.589,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0474,
+      "brightness": 1856.0
+    },
+    {
+      "time": 55.658,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0443,
+      "brightness": 2041.0
+    },
+    {
+      "time": 55.705,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0424,
+      "brightness": 2141.0
+    },
+    {
+      "time": 55.937,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0391,
+      "brightness": 2467.0
+    },
+    {
+      "time": 55.972,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0357,
+      "brightness": 2470.0
+    },
+    {
+      "time": 56.181,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0347,
+      "brightness": 2406.0
+    },
+    {
+      "time": 56.262,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0363,
+      "brightness": 2249.0
+    },
+    {
+      "time": 57.33,
+      "stem": "other",
+      "type": "noise_sweep",
+      "energy": 0.0365,
+      "brightness": 3153.0
+    },
+    {
+      "time": 57.667,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0338,
+      "brightness": 1671.0
+    },
+    {
+      "time": 61.022,
+      "stem": "drums",
+      "type": "mid_percussion",
+      "energy": 0.0485,
+      "brightness": 3123.0
+    },
+    {
+      "time": 63.054,
+      "stem": "drums",
+      "type": "hi-hat/sizzle",
+      "energy": 0.0458,
+      "brightness": 7127.0
+    },
+    {
+      "time": 64.9,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0324,
+      "brightness": 2347.0
+    },
+    {
+      "time": 65.12,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.033,
+      "brightness": 2480.0
+    },
+    {
+      "time": 65.236,
+      "stem": "drums",
+      "type": "snare/crack",
+      "energy": 0.0504,
+      "brightness": 4148.0
+    },
+    {
+      "time": 65.248,
+      "stem": "other",
+      "type": "noise_sweep",
+      "energy": 0.0388,
+      "brightness": 2996.0
+    },
+    {
+      "time": 65.469,
+      "stem": "drums",
+      "type": "snare/crack",
+      "energy": 0.0547,
+      "brightness": 5062.0
+    },
+    {
+      "time": 66.154,
+      "stem": "drums",
+      "type": "hi-hat/sizzle",
+      "energy": 0.0727,
+      "brightness": 6313.0
+    },
+    {
+      "time": 66.397,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0337,
+      "brightness": 2022.0
+    },
+    {
+      "time": 66.653,
+      "stem": "drums",
+      "type": "hi-hat/sizzle",
+      "energy": 0.066,
+      "brightness": 6160.0
+    },
+    {
+      "time": 67.036,
+      "stem": "drums",
+      "type": "hi-hat/sizzle",
+      "energy": 0.0435,
+      "brightness": 6300.0
+    },
+    {
+      "time": 67.524,
+      "stem": "drums",
+      "type": "hi-hat/sizzle",
+      "energy": 0.0701,
+      "brightness": 6268.0
+    },
+    {
+      "time": 67.558,
+      "stem": "drums",
+      "type": "hi-hat/sizzle",
+      "energy": 0.0381,
+      "brightness": 7102.0
+    },
+    {
+      "time": 68.29,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0403,
+      "brightness": 2137.0
+    },
+    {
+      "time": 70.008,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0379,
+      "brightness": 2324.0
+    },
+    {
+      "time": 70.159,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0302,
+      "brightness": 2177.0
+    },
+    {
+      "time": 72.667,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0354,
+      "brightness": 1247.0
+    },
+    {
+      "time": 72.783,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0498,
+      "brightness": 1158.0
+    },
+    {
+      "time": 73.073,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0362,
+      "brightness": 1595.0
+    },
+    {
+      "time": 73.213,
+      "stem": "other",
+      "type": "mid_tone/pad",
+      "energy": 0.041,
+      "brightness": 2505.0
+    },
+    {
+      "time": 73.224,
+      "stem": "drums",
+      "type": "tom/body_hit",
+      "energy": 0.0563,
+      "brightness": 1463.0
+    },
+    {
+      "time": 73.352,
+      "stem": "drums",
+      "type": "mid_percussion",
+      "energy": 0.0637,
+      "brightness": 2704.0
+    },
+    {
+      "time": 73.514,
+      "stem": "other",
+      "type": "low_rumble",
+      "energy": 0.0641,
+      "brightness": 1115.0
+    },
+    {
+      "time": 73.584,
+      "stem": "other",
+      "type": "low_rumble",
+      "energy": 0.0882,
+      "brightness": 1489.0
+    },
+    {
+      "time": 73.596,
+      "stem": "drums",
+      "type": "snare/crack",
+      "energy": 0.0332,
+      "brightness": 4932.0
+    },
+    {
+      "time": 73.781,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0348,
+      "brightness": 1746.0
+    },
+    {
+      "time": 74.339,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0354,
+      "brightness": 1509.0
+    },
+    {
+      "time": 74.42,
+      "stem": "other",
+      "type": "low_rumble",
+      "energy": 0.0699,
+      "brightness": 1494.0
+    },
+    {
+      "time": 74.699,
+      "stem": "other",
+      "type": "low_rumble",
+      "energy": 0.0535,
+      "brightness": 1013.0
+    },
+    {
+      "time": 74.919,
+      "stem": "other",
+      "type": "low_rumble",
+      "energy": 0.052,
+      "brightness": 1141.0
+    },
+    {
+      "time": 75.117,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0418,
+      "brightness": 1116.0
+    },
+    {
+      "time": 75.163,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0439,
+      "brightness": 1210.0
+    },
+    {
+      "time": 75.825,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0413,
+      "brightness": 1457.0
+    },
+    {
+      "time": 76.312,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0465,
+      "brightness": 1225.0
+    },
+    {
+      "time": 76.533,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0484,
+      "brightness": 1317.0
+    },
+    {
+      "time": 76.777,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0463,
+      "brightness": 1649.0
+    },
+    {
+      "time": 76.928,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0523,
+      "brightness": 1619.0
+    },
+    {
+      "time": 77.102,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0403,
+      "brightness": 1267.0
+    },
+    {
+      "time": 77.218,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.045,
+      "brightness": 1145.0
+    },
+    {
+      "time": 77.334,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0405,
+      "brightness": 1668.0
+    },
+    {
+      "time": 77.497,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0493,
+      "brightness": 1247.0
+    },
+    {
+      "time": 77.589,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0559,
+      "brightness": 1594.0
+    },
+    {
+      "time": 77.729,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0556,
+      "brightness": 1787.0
+    },
+    {
+      "time": 78.124,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0477,
+      "brightness": 1224.0
+    },
+    {
+      "time": 78.251,
+      "stem": "other",
+      "type": "low_rumble",
+      "energy": 0.0653,
+      "brightness": 1432.0
+    },
+    {
+      "time": 78.333,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0773,
+      "brightness": 1566.0
+    },
+    {
+      "time": 78.379,
+      "stem": "other",
+      "type": "low_rumble",
+      "energy": 0.0774,
+      "brightness": 1215.0
+    },
+    {
+      "time": 78.913,
+      "stem": "other",
+      "type": "low_rumble",
+      "energy": 0.0816,
+      "brightness": 1455.0
+    },
+    {
+      "time": 78.959,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0788,
+      "brightness": 1593.0
+    },
+    {
+      "time": 79.076,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0832,
+      "brightness": 1623.0
+    },
+    {
+      "time": 79.157,
+      "stem": "other",
+      "type": "low_rumble",
+      "energy": 0.0796,
+      "brightness": 1342.0
+    },
+    {
+      "time": 79.285,
+      "stem": "other",
+      "type": "dark_texture",
+      "energy": 0.0709,
+      "brightness": 1622.0
+    },
+    {
+      "time": 79.795,
+      "stem": "other",
+      "type": "low_rumble",
+      "energy": 0.0571,
+      "brightness": 1053.0
+    },
+    {
+      "time": 79.877,
+      "stem": "other",
+      "type": "low_rumble",
+      "energy": 0.0645,
+      "brightness": 1070.0
+    },
+    {
+      "time": 80.086,
+      "stem": "other",
+      "type": "low_rumble",
+      "energy": 0.0531,
+      "brightness": 1197.0
+    }
+  ]
+}

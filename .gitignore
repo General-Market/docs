@@ -1,0 +1,47 @@
+# Build artifacts
+/target/
+/out/
+
+# Rust
+Cargo.lock
+*.rs.bk
+
+# Logs (runtime)
+/logs/
+*.log
+
+# Deployment addresses (generated)
+/deployments/local.json
+/deployments/l3-testnet.json
+
+# PID files
+.pids
+.pids.info
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.cursor/
+.windsurf/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VS Code Local History
+.history/
+
+# Environment files
+
+
+# Node modules (if any)
+node_modules/
+
+# Foundry
+/contracts/cache/
+/contracts/out/
+/contracts/broadcast/
+bitget-credentials.env
+.vercel

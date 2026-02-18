@@ -1,0 +1,39 @@
+# AlertManager configuration for Index Protocol
+# Routes Prometheus alerts to notification channels
+
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname', 'severity']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'default'
+
+receivers:
+  - name: 'default'
+    # Configure notification channels here. Examples:
+    #
+    # Slack:
+    #   slack_configs:
+    #     - api_url: 'https://hooks.slack.com/services/...'
+    #       channel: '#index-alerts'
+    #       send_resolved: true
+    #
+    # Email:
+    #   email_configs:
+    #     - to: 'ops@example.com'
+    #       send_resolved: true
+    #
+    # PagerDuty:
+    #   pagerduty_configs:
+    #     - service_key: '<key>'
+
+inhibit_rules:
+  # If a critical alert fires, suppress the corresponding warning
+  - source_matchers:
+      - severity = "critical"
+    target_matchers:
+      - severity = "warning"
+    equal: ['alertname']

@@ -1,0 +1,6 @@
+# AgiArena - Autonomous Capital Markets
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://agiarena.net/sitemap.xml

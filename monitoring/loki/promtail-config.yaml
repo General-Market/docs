@@ -1,0 +1,49 @@
+# Promtail Configuration for Index L3
+# Scrapes JSON log files from /app/logs/ and ships to Loki
+# Extracts structured fields for label-based querying and retention
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: index-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: index
+          __path__: /app/logs/*.log
+
+    pipeline_stages:
+      # Parse JSON log lines
+      - json:
+          expressions:
+            level: level
+            timestamp: timestamp
+            message: fields.message
+            component: fields.component
+            cycle_number: fields.cycle_number
+            issuer_id: fields.issuer_id
+            order_id: fields.order_id
+            itp_id: fields.itp_id
+
+      # Extract labels for querying and retention
+      - labels:
+          level:
+          component:
+
+      # Use log timestamp instead of scrape time
+      - timestamp:
+          source: timestamp
+          format: RFC3339Nano
+
+      # Set the log line to the message field for cleaner display
+      - output:
+          source: message

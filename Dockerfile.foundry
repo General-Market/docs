@@ -1,0 +1,28 @@
+# Dockerfile.foundry - Foundry image for contract deployment
+#
+# Used by docker-compose to deploy contracts to local Anvil
+
+FROM ghcr.io/foundry-rs/foundry:latest
+
+WORKDIR /app
+
+# Copy contracts directory
+COPY contracts/ ./contracts/
+
+# Copy deployment output directory
+RUN mkdir -p deployments
+
+# Set working directory to contracts
+WORKDIR /app/contracts
+
+# Install dependencies (forge-std)
+RUN forge install foundry-rs/forge-std --no-commit || true
+
+# Build contracts
+RUN forge build
+
+# Set working directory back to app root
+WORKDIR /app
+
+# Default command: deploy contracts
+CMD ["sh", "-c", "cd /app/contracts && forge script script/Deploy.s.sol:Deploy --broadcast --rpc-url ${RPC_URL:-http://anvil:8545} && echo 'Deployment complete'"]

@@ -1,0 +1,482 @@
+[
+  {
+    "scene": 1,
+    "time": 1.64,
+    "duration": 2.0,
+    "motion": "tilt_down+zoom_in",
+    "avg_dx": -0.17,
+    "avg_dy": -1.2,
+    "magnitude": 1.22,
+    "zoom": 0.94
+  },
+  {
+    "scene": 2,
+    "time": 3.92,
+    "duration": 1.64,
+    "motion": "static+zoom_in",
+    "avg_dx": -0.06,
+    "avg_dy": 0.16,
+    "magnitude": 0.17,
+    "zoom": 0.71
+  },
+  {
+    "scene": 3,
+    "time": 5.56,
+    "duration": 1.28,
+    "motion": "tilt_up+zoom_out",
+    "avg_dx": 0.02,
+    "avg_dy": 1.12,
+    "magnitude": 1.13,
+    "zoom": -1.19
+  },
+  {
+    "scene": 4,
+    "time": 6.84,
+    "duration": 2.0,
+    "motion": "static+zoom_in",
+    "avg_dx": 0.01,
+    "avg_dy": 0.02,
+    "magnitude": 0.03,
+    "zoom": 0.65
+  },
+  {
+    "scene": 5,
+    "time": 10.36,
+    "duration": 0.12,
+    "motion": "static",
+    "avg_dx": 0.0,
+    "avg_dy": -0.0,
+    "magnitude": 0.0,
+    "zoom": -0.0
+  },
+  {
+    "scene": 6,
+    "time": 10.48,
+    "duration": 0.08,
+    "motion": "flash_frame",
+    "note": "Too short for motion analysis"
+  },
+  {
+    "scene": 7,
+    "time": 10.56,
+    "duration": 2.0,
+    "motion": "static+zoom_in",
+    "avg_dx": -0.02,
+    "avg_dy": 0.0,
+    "magnitude": 0.02,
+    "zoom": 0.96
+  },
+  {
+    "scene": 8,
+    "time": 13.16,
+    "duration": 2.0,
+    "motion": "static+zoom_out",
+    "avg_dx": -0.0,
+    "avg_dy": 0.01,
+    "magnitude": 0.01,
+    "zoom": -0.91
+  },
+  {
+    "scene": 9,
+    "time": 15.28,
+    "duration": 0.12,
+    "motion": "static+zoom_out",
+    "avg_dx": -0.0,
+    "avg_dy": 0.0,
+    "magnitude": 0.0,
+    "zoom": -1.45
+  },
+  {
+    "scene": 10,
+    "time": 15.4,
+    "duration": 0.08,
+    "motion": "flash_frame",
+    "note": "Too short for motion analysis"
+  },
+  {
+    "scene": 11,
+    "time": 15.48,
+    "duration": 1.88,
+    "motion": "static+zoom_in",
+    "avg_dx": 0.02,
+    "avg_dy": 0.03,
+    "magnitude": 0.03,
+    "zoom": 0.48
+  },
+  {
+    "scene": 12,
+    "time": 17.36,
+    "duration": 2.0,
+    "motion": "static+zoom_out",
+    "avg_dx": 0.01,
+    "avg_dy": 0.04,
+    "magnitude": 0.04,
+    "zoom": -1.15
+  },
+  {
+    "scene": 13,
+    "time": 19.36,
+    "duration": 2.0,
+    "motion": "static+zoom_out",
+    "avg_dx": 0.0,
+    "avg_dy": -0.0,
+    "magnitude": 0.0,
+    "zoom": -0.4
+  },
+  {
+    "scene": 14,
+    "time": 21.52,
+    "duration": 2.0,
+    "motion": "static",
+    "avg_dx": -0.0,
+    "avg_dy": 0.0,
+    "magnitude": 0.0,
+    "zoom": -0.02
+  },
+  {
+    "scene": 15,
+    "time": 24.32,
+    "duration": 0.12,
+    "motion": "static",
+    "avg_dx": 0.0,
+    "avg_dy": -0.0,
+    "magnitude": 0.0,
+    "zoom": -0.0
+  },
+  {
+    "scene": 16,
+    "time": 24.44,
+    "duration": 0.08,
+    "motion": "flash_frame",
+    "note": "Too short for motion analysis"
+  },
+  {
+    "scene": 17,
+    "time": 24.52,
+    "duration": 2.0,
+    "motion": "static+zoom_out",
+    "avg_dx": 0.0,
+    "avg_dy": -0.0,
+    "magnitude": 0.0,
+    "zoom": -0.47
+  },
+  {
+    "scene": 18,
+    "time": 29.12,
+    "duration": 0.16,
+    "motion": "static",
+    "avg_dx": 0.0,
+    "avg_dy": -0.0,
+    "magnitude": 0.0,
+    "zoom": -0.08
+  },
+  {
+    "scene": 19,
+    "time": 29.28,
+    "duration": 2.0,
+    "motion": "static",
+    "avg_dx": -0.0,
+    "avg_dy": 0.0,
+    "magnitude": 0.0,
+    "zoom": -0.0
+  },
+  {
+    "scene": 20,
+    "time": 31.68,
+    "duration": 2.0,
+    "motion": "static+zoom_out",
+    "avg_dx": 0.0,
+    "avg_dy": 0.08,
+    "magnitude": 0.08,
+    "zoom": -1.29
+  },
+  {
+    "scene": 21,
+    "time": 34.36,
+    "duration": 2.0,
+    "motion": "static",
+    "avg_dx": -0.01,
+    "avg_dy": 0.01,
+    "magnitude": 0.01,
+    "zoom": -0.11
+  },
+  {
+    "scene": 22,
+    "time": 37.8,
+    "duration": 2.0,
+    "motion": "static",
+    "avg_dx": -0.0,
+    "avg_dy": -0.0,
+    "magnitude": 0.0,
+    "zoom": -0.1
+  },
+  {
+    "scene": 23,
+    "time": 40.04,
+    "duration": 2.0,
+    "motion": "static",
+    "avg_dx": -0.0,
+    "avg_dy": -0.0,
+    "magnitude": 0.0,
+    "zoom": -0.1
+  },
+  {
+    "scene": 24,
+    "time": 44.36,
+    "duration": 0.08,
+    "motion": "flash_frame",
+    "note": "Too short for motion analysis"
+  },
+  {
+    "scene": 25,
+    "time": 44.44,
+    "duration": 0.04,
+    "motion": "flash_frame",
+    "note": "Too short for motion analysis"
+  },
+  {
+    "scene": 26,
+    "time": 44.48,
+    "duration": 2.0,
+    "motion": "static+zoom_out",
+    "avg_dx": 0.0,
+    "avg_dy": -0.03,
+    "magnitude": 0.03,
+    "zoom": -1.6
+  },
+  {
+    "scene": 27,
+    "time": 47.48,
+    "duration": 2.0,
+    "motion": "static",
+    "avg_dx": 0.0,
+    "avg_dy": 0.0,
+    "magnitude": 0.0,
+    "zoom": -0.14
+  },
+  {
+    "scene": 28,
+    "time": 50.48,
+    "duration": 0.12,
+    "motion": "static",
+    "avg_dx": 0.0,
+    "avg_dy": 0.0,
+    "magnitude": 0.0,
+    "zoom": -0.01
+  },
+  {
+    "scene": 29,
+    "time": 50.6,
+    "duration": 0.08,
+    "motion": "flash_frame",
+    "note": "Too short for motion analysis"
+  },
+  {
+    "scene": 30,
+    "time": 50.68,
+    "duration": 2.0,
+    "motion": "pan_left+tilt_up+zoom_in+fast_motion",
+    "avg_dx": 0.67,
+    "avg_dy": 1.55,
+    "magnitude": 1.69,
+    "zoom": 1.86
+  },
+  {
+    "scene": 31,
+    "time": 55.08,
+    "duration": 0.08,
+    "motion": "flash_frame",
+    "note": "Too short for motion analysis"
+  },
+  {
+    "scene": 32,
+    "time": 55.16,
+    "duration": 2.0,
+    "motion": "tilt_down",
+    "avg_dx": -0.11,
+    "avg_dy": -0.68,
+    "magnitude": 0.69,
+    "zoom": -0.15
+  },
+  {
+    "scene": 33,
+    "time": 59.56,
+    "duration": 0.32,
+    "motion": "static",
+    "avg_dx": 0.0,
+    "avg_dy": 0.0,
+    "magnitude": 0.0,
+    "zoom": -0.0
+  },
+  {
+    "scene": 34,
+    "time": 59.88,
+    "duration": 2.0,
+    "motion": "static",
+    "avg_dx": 0.03,
+    "avg_dy": 0.1,
+    "magnitude": 0.1,
+    "zoom": 0.13
+  },
+  {
+    "scene": 35,
+    "time": 62.04,
+    "duration": 2.0,
+    "motion": "static",
+    "avg_dx": -0.0,
+    "avg_dy": -0.0,
+    "magnitude": 0.0,
+    "zoom": 0.02
+  },
+  {
+    "scene": 36,
+    "time": 67.36,
+    "duration": 1.64,
+    "motion": "static+zoom_out",
+    "avg_dx": -0.0,
+    "avg_dy": -0.0,
+    "magnitude": 0.0,
+    "zoom": -2.79
+  },
+  {
+    "scene": 37,
+    "time": 69,
+    "duration": 0.12,
+    "motion": "static+zoom_out",
+    "avg_dx": -0.0,
+    "avg_dy": 0.0,
+    "magnitude": 0.0,
+    "zoom": -0.65
+  },
+  {
+    "scene": 38,
+    "time": 69.12,
+    "duration": 0.08,
+    "motion": "flash_frame",
+    "note": "Too short for motion analysis"
+  },
+  {
+    "scene": 39,
+    "time": 69.2,
+    "duration": 2.0,
+    "motion": "static",
+    "avg_dx": 0.13,
+    "avg_dy": 0.0,
+    "magnitude": 0.13,
+    "zoom": 0.19
+  },
+  {
+    "scene": 40,
+    "time": 71.84,
+    "duration": 0.4,
+    "motion": "tilt_up+zoom_in",
+    "avg_dx": -0.02,
+    "avg_dy": 1.22,
+    "magnitude": 1.22,
+    "zoom": 1.23
+  },
+  {
+    "scene": 41,
+    "time": 72.24,
+    "duration": 0.24,
+    "motion": "static+zoom_out",
+    "avg_dx": -0.0,
+    "avg_dy": 0.0,
+    "magnitude": 0.0,
+    "zoom": -1.04
+  },
+  {
+    "scene": 42,
+    "time": 72.48,
+    "duration": 0.24,
+    "motion": "static",
+    "avg_dx": 0.0,
+    "avg_dy": -0.0,
+    "magnitude": 0.0,
+    "zoom": -0.02
+  },
+  {
+    "scene": 43,
+    "time": 72.72,
+    "duration": 0.24,
+    "motion": "static",
+    "avg_dx": -0.0,
+    "avg_dy": -0.0,
+    "magnitude": 0.0,
+    "zoom": -0.12
+  },
+  {
+    "scene": 44,
+    "time": 72.96,
+    "duration": 0.24,
+    "motion": "static+zoom_out",
+    "avg_dx": -0.0,
+    "avg_dy": 0.0,
+    "magnitude": 0.0,
+    "zoom": -3.41
+  },
+  {
+    "scene": 45,
+    "time": 73.2,
+    "duration": 0.24,
+    "motion": "static+zoom_in",
+    "avg_dx": 0.0,
+    "avg_dy": -0.0,
+    "magnitude": 0.0,
+    "zoom": 0.73
+  },
+  {
+    "scene": 46,
+    "time": 73.44,
+    "duration": 0.28,
+    "motion": "static",
+    "avg_dx": -0.0,
+    "avg_dy": -0.0,
+    "magnitude": 0.0,
+    "zoom": -0.21
+  },
+  {
+    "scene": 47,
+    "time": 73.72,
+    "duration": 2.0,
+    "motion": "static+zoom_out",
+    "avg_dx": -0.09,
+    "avg_dy": 0.21,
+    "magnitude": 0.23,
+    "zoom": -0.43
+  },
+  {
+    "scene": 48,
+    "time": 76.76,
+    "duration": 0.12,
+    "motion": "flash_frame",
+    "note": "Too short for motion analysis"
+  },
+  {
+    "scene": 49,
+    "time": 76.88,
+    "duration": 0.08,
+    "motion": "flash_frame",
+    "note": "Too short for motion analysis"
+  },
+  {
+    "scene": 50,
+    "time": 76.96,
+    "duration": 2.0,
+    "motion": "static",
+    "avg_dx": -0.15,
+    "avg_dy": -0.06,
+    "magnitude": 0.16,
+    "zoom": 0.08
+  },
+  {
+    "scene": 51,
+    "time": 79.28,
+    "duration": 2.0,
+    "motion": "static",
+    "avg_dx": 0.0,
+    "avg_dy": -0.0,
+    "magnitude": 0.0,
+    "zoom": -0.0
+  }
+]

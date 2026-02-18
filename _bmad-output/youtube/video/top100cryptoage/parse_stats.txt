@@ -1,0 +1,9 @@
+Parsing market-crypto-founders-top100-research-2026-02-16.md...
+  Found 111 founders
+
+=== STATS ===
+Total founders: 111
+Age: 25 confirmed, 22 estimated, 64 unknown (42.3% coverage)
+Nationality: 101 known (91.0%)
+Location: 100 known (90.1%)
+Corrections: 1
