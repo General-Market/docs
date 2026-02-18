@@ -134,5 +134,10 @@ export function useSimulation(params: UseSimulationParams | null): UseSimulation
   // Cleanup on unmount
   useEffect(() => cleanup, [cleanup])
 
-  return { status, progress, result, error, run }
+  const cancel = useCallback(() => {
+    cleanup()
+    setStatus('idle')
+  }, [cleanup])
+
+  return { status, progress, result, error, run, cancel }
 }

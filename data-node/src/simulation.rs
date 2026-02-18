@@ -578,6 +578,8 @@ pub async fn run_simulation(
         )));
     }
 
+    let eligible_set: HashSet<String> = eligible_coin_ids.iter().cloned().collect();
+
     // Build price_history for momentum/vol strategies from cached data
     let price_history: Option<HashMap<String, Vec<(NaiveDate, f64)>>> =
         if config.weighting.needs_history() {
@@ -593,13 +595,14 @@ pub async fn run_simulation(
         price_history,
     };
 
-    // Find start date: earliest date with >= 1 eligible coin.
+    // Find start date: earliest date with >= 1 eligible category coin.
     // If fewer than top_n are available, the sim starts with fewer assets and scales up
     // as more coins get listed — so top_5 and top_100 share the same start date.
     let mut start_idx = None;
     for (i, date) in cache.all_dates.iter().enumerate() {
         let eligible = count_eligible_coins_mem(
             &cache.mcap_rankings, *date, &cache.coin_symbol_map, &cache.bitget_lookup,
+            &eligible_set,
         );
         if eligible >= 1 {
             start_idx = Some(i);
@@ -684,6 +687,7 @@ pub async fn run_simulation(
             let rebalance_result = perform_rebalance_mem(
                 config, *date, &holdings, &cache.bitget_lookup,
                 &cache.coin_symbol_map, portfolio_value, &preloaded,
+                &eligible_set,
             );
 
             if rebalance_result.new_holdings.is_empty() && !holdings.is_empty() {
@@ -857,18 +861,21 @@ fn is_listed_on_bitget(
 }
 
 /// Count eligible coins at a date using preloaded in-memory data (no DB query).
+/// Only counts coins that are in the category's eligible set.
 fn count_eligible_coins_mem(
     mcap_rankings: &HashMap<NaiveDate, Vec<CoinSnapshot>>,
     date: NaiveDate,
     coin_symbol_map: &HashMap<String, String>,
     bitget_lookup: &HashMap<String, db::BitgetListingRow>,
+    category_coin_ids: &HashSet<String>,
 ) -> usize {
     let coins = match mcap_rankings.get(&date) {
         Some(c) => c,
         None => return 0,
     };
     coins.iter().filter(|c| {
-        if let Some(sym) = coin_symbol_map.get(&c.coin_id) {
+        category_coin_ids.contains(&c.coin_id)
+        && if let Some(sym) = coin_symbol_map.get(&c.coin_id) {
             c.price > 0.0 && is_listed_on_bitget(sym, bitget_lookup, date)
         } else {
             false
@@ -983,6 +990,7 @@ fn perform_rebalance_mem(
     coin_symbol_map: &HashMap<String, String>,
     portfolio_value: f64,
     preloaded: &PreloadedData,
+    category_coin_ids: &HashSet<String>,
 ) -> RebalanceResult {
     // Get market-cap-ranked coins at this date from preloaded cache
     let all_coins = match preloaded.mcap_rankings.get(&date) {
@@ -995,9 +1003,10 @@ fn perform_rebalance_mem(
         },
     };
 
-    // Filter to Bitget-listed coins with valid prices, take top N
+    // Filter to category coins that are Bitget-listed with valid prices, take top N
     let eligible: Vec<&CoinSnapshot> = all_coins.iter().filter(|c| {
-        if let Some(sym) = coin_symbol_map.get(&c.coin_id) {
+        category_coin_ids.contains(&c.coin_id)
+        && if let Some(sym) = coin_symbol_map.get(&c.coin_id) {
             c.price > 0.0 && is_listed_on_bitget(sym, bitget_lookup, date)
         } else {
             false

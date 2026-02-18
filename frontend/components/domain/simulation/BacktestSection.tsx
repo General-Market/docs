@@ -64,15 +64,19 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex }: BacktestS
     } : null,
   )
 
-  const handleRun = useCallback(() => {
-    if (isSweep) {
-      sweep.run()
-    } else {
-      sim.run()
-    }
-  }, [isSweep, sim, sweep])
-
   const isLoading = isSweep ? sweep.status === 'loading' : sim.status === 'loading'
+
+  const handleRun = useCallback(() => {
+    if (isLoading) {
+      // Cancel
+      if (isSweep) sweep.cancel()
+      else sim.cancel()
+    } else {
+      // Run
+      if (isSweep) sweep.run()
+      else sim.run()
+    }
+  }, [isSweep, isLoading, sim, sweep])
 
   // Fetch holdings for a run_id and call onDeployIndex with symbol+weight
   const handleDeployIndex = useCallback(async (runId: number, _label: string) => {

@@ -131,5 +131,10 @@ export function useSimSweep(params: UseSimSweepParams | null): UseSimSweepResult
 
   useEffect(() => cleanup, [cleanup])
 
-  return { status, progress, completedVariants, error, run }
+  const cancel = useCallback(() => {
+    cleanup()
+    setStatus('idle')
+  }, [cleanup])
+
+  return { status, progress, completedVariants, error, run, cancel }
 }

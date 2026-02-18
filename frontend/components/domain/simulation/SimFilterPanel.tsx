@@ -441,11 +441,15 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           </div>
         </div>
         <button
-          className="px-4 py-2 bg-accent text-white text-xs font-mono font-bold rounded hover:bg-accent/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className={`px-4 py-2 text-xs font-mono font-bold rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+            isLoading
+              ? 'bg-white/20 text-white hover:bg-white/30'
+              : 'bg-accent text-white hover:bg-accent/80'
+          }`}
           onClick={onRun}
-          disabled={isLoading || !canRun}
+          disabled={!isLoading && !canRun}
         >
-          {isLoading ? 'Running...' : isSweeping ? 'Run Sweep' : 'Run Simulation'}
+          {isLoading ? 'Cancel' : isSweeping ? 'Run Sweep' : 'Run Simulation'}
         </button>
       </div>
     </div>
