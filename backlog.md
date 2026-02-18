@@ -1,5 +1,19 @@
 # Design Decision Backlog
 
+## Session: 20260218-1800-b5t9
+
+- [DECISION] ITP Backtester: 4-table schema (sim_runs, sim_nav_series, sim_holdings, sim_trades) with unique constraint on config params for caching. CASCADE deletes simplify invalidation.
+- [DECISION] Backtester uses sqlx::query() with Row::get() for sim_runs because 19-column tuples exceed sqlx's 16-element FromRow limit.
+- [DECISION] SSE streaming for simulation progress: mpsc channel bridges async simulation to Sse<Stream>. Progress forwarded every ~50 dates to avoid overwhelming the stream.
+- [DECISION] Sweep mode runs variants sequentially (not parallel) to avoid DB contention. Each variant checks cache first for fast skip.
+- [DECISION] Fee model: base_fee_pct (configurable, default 0.1% = Bitget taker) + spread from DB liquidity_snapshots with fallback 10bps * spread_multiplier.
+- [DECISION] Mcap weighting with 0.5% floor: coins below floor get bumped up, excess redistributed proportionally from larger positions, then normalized to sum=1.0.
+
+## Session: 20260218-fix-bls-signing
+
+- [FAILED] Follower BLS signing used `sign_with_keypair` which adds extra keccak256 on already-hashed message, causing double-hash. Leader used `sign_message_hash` (correct). Aggregated signature was corrupted because leader + followers signed different message points. Root cause of E020_InvalidBLSSignature.
+- [DECISION] All BLS signing of on-chain message hashes must use `sign_message_hash` (pre-hashed path), never `sign_with_keypair` (raw-bytes path that keccaks internally). Fixed 8 follower signing sites in orchestrator.rs.
+
 ## Session: 20260218-2345-w8r3
 
 - [DECISION] Delisting watchdog: data-node as single source of truth for listing status. Issuer queries `/listings/unsafe` endpoint, doesn't call Bitget directly.

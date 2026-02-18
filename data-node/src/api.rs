@@ -17,6 +17,7 @@ use tower_http::cors::{Any, CorsLayer};
 use crate::collector::CollectorState;
 use crate::db;
 use crate::live_cache::{CachedTicker, LiveTickerCache};
+use crate::simulation;
 
 pub struct AppState {
     pub pool: PgPool,
@@ -113,6 +114,14 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/listings", get(listings))
         .route("/listings/unsafe", get(listings_unsafe))
         .route("/listing", get(listing))
+        .route("/sim/categories", get(sim_categories))
+        .route("/sim/run", get(sim_run))
+        .route("/sim/run-stream", get(sim_run_stream))
+        .route("/sim/sweep-stream", get(sim_sweep_stream))
+        .route("/sim/results", get(sim_results))
+        .route("/sim/compare", get(sim_compare))
+        .route("/sim/holdings", get(sim_holdings))
+        .route("/sim/invalidate", get(sim_invalidate))
         .layer(cors)
         .with_state(state)
 }
@@ -2883,4 +2892,537 @@ async fn listing(
             Json(ErrorResponse { error: format!("No listing found for '{}'", params.symbol) }),
         )),
     }
+}
+
+// ======== Simulation endpoints ========
+
+#[derive(Serialize)]
+struct SimCategoryInfo {
+    id: String,
+    name: String,
+    coin_count: usize,
+    market_cap: Option<f64>,
+}
+
+async fn sim_categories(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    // Get all categories
+    let categories = db::cg_query_all_categories(&state.pool)
+        .await
+        .map_err(|e| db_error(e))?;
+
+    // Get all Bitget active listings for filtering
+    let listings = db::bitget_query_listings(&state.pool, None)
+        .await
+        .map_err(|e| db_error(e))?;
+    let bitget_bases: std::collections::HashSet<String> = listings.iter()
+        .filter(|l| l.quote_coin == "USDT" && l.status != "delisted_gone")
+        .map(|l| l.base_coin.to_uppercase())
+        .collect();
+
+    let mut result = Vec::new();
+
+    for cat in &categories {
+        // Count coins with CG data + Bitget listing
+        let coins_with_data = db::cg_query_category_coins_with_data(&state.pool, &cat.id, 500)
+            .await
+            .map_err(|e| db_error(e))?;
+
+        let eligible_count = coins_with_data.iter().filter(|c| {
+            if let Some(ref sym) = c.symbol {
+                bitget_bases.contains(&sym.to_uppercase())
+            } else {
+                false
+            }
+        }).count();
+
+        if eligible_count >= 5 {
+            result.push(SimCategoryInfo {
+                id: cat.id.clone(),
+                name: cat.name.clone(),
+                coin_count: eligible_count,
+                market_cap: cat.market_cap,
+            });
+        }
+    }
+
+    // Sort by market cap desc
+    result.sort_by(|a, b| b.market_cap.partial_cmp(&a.market_cap).unwrap_or(std::cmp::Ordering::Equal));
+
+    Ok(Json(serde_json::json!({ "categories": result })))
+}
+
+#[derive(Deserialize)]
+struct SimRunQuery {
+    category_id: String,
+    top_n: i32,
+    weighting: String,
+    rebalance_days: i32,
+    #[serde(default = "default_base_fee")]
+    base_fee_pct: f64,
+    #[serde(default = "default_spread_mult")]
+    spread_multiplier: f64,
+    #[serde(default)]
+    force: bool,
+}
+
+fn default_base_fee() -> f64 { 0.1 }
+fn default_spread_mult() -> f64 { 1.0 }
+
+async fn sim_run(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<SimRunQuery>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let weighting = simulation::Weighting::from_str(&params.weighting).ok_or_else(|| {
+        (StatusCode::BAD_REQUEST, Json(ErrorResponse {
+            error: format!("Invalid weighting '{}', use 'equal' or 'mcap'", params.weighting),
+        }))
+    })?;
+
+    // Check cache first
+    if !params.force {
+        if let Some(cached) = db::sim_get_cached_run(
+            &state.pool, &params.category_id, params.top_n,
+            weighting.as_str(), params.rebalance_days,
+            params.base_fee_pct, params.spread_multiplier,
+        ).await.map_err(|e| db_error(e))? {
+            let nav_series = db::sim_query_nav_series(&state.pool, cached.id)
+                .await.map_err(|e| db_error(e))?;
+            return Ok(Json(serde_json::json!({
+                "run_id": cached.id,
+                "config": {
+                    "category_id": cached.category_id,
+                    "top_n": cached.top_n,
+                    "weighting": cached.weighting,
+                    "rebalance_days": cached.rebalance_days,
+                    "base_fee_pct": cached.base_fee_pct,
+                    "spread_multiplier": cached.spread_multiplier,
+                },
+                "stats": {
+                    "total_return_pct": cached.total_return_pct,
+                    "annualized_return": cached.annualized_return,
+                    "max_drawdown_pct": cached.max_drawdown_pct,
+                    "sharpe_ratio": cached.sharpe_ratio,
+                    "total_fees_pct": cached.total_fees_pct,
+                    "total_trades": cached.total_trades,
+                    "total_rebalances": cached.total_rebalances,
+                    "total_delistings": cached.total_delistings,
+                    "start_date": cached.start_date,
+                    "end_date": cached.end_date,
+                },
+                "nav_series": nav_series,
+                "cached": true,
+                "computed_in_ms": cached.duration_ms,
+            })));
+        }
+    }
+
+    // Run simulation
+    let config = simulation::SimConfig {
+        category_id: params.category_id.clone(),
+        top_n: params.top_n,
+        weighting,
+        rebalance_days: params.rebalance_days,
+        base_fee_pct: params.base_fee_pct,
+        spread_multiplier: params.spread_multiplier,
+    };
+
+    let result = simulation::run_simulation(&state.pool, &config, None)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse {
+            error: format!("Simulation failed: {e}"),
+        })))?;
+
+    Ok(Json(serde_json::json!({
+        "run_id": result.run_id,
+        "config": result.config,
+        "stats": result.stats,
+        "nav_series": result.nav_series,
+        "cached": false,
+        "computed_in_ms": result.computed_in_ms,
+    })))
+}
+
+// ---- SSE streaming ----
+
+use axum::response::sse::{Event, Sse};
+use futures::stream::Stream;
+use tokio_stream::wrappers::ReceiverStream;
+
+async fn sim_run_stream(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<SimRunQuery>,
+) -> Result<Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>>, (StatusCode, Json<ErrorResponse>)> {
+    let weighting = simulation::Weighting::from_str(&params.weighting).ok_or_else(|| {
+        (StatusCode::BAD_REQUEST, Json(ErrorResponse {
+            error: format!("Invalid weighting '{}', use 'equal' or 'mcap'", params.weighting),
+        }))
+    })?;
+
+    // Check cache first
+    if !params.force {
+        if let Some(cached) = db::sim_get_cached_run(
+            &state.pool, &params.category_id, params.top_n,
+            weighting.as_str(), params.rebalance_days,
+            params.base_fee_pct, params.spread_multiplier,
+        ).await.map_err(|e| db_error(e))? {
+            let nav_series = db::sim_query_nav_series(&state.pool, cached.id)
+                .await.map_err(|e| db_error(e))?;
+
+            let result_json = serde_json::json!({
+                "type": "result",
+                "run_id": cached.id,
+                "config": {
+                    "category_id": cached.category_id,
+                    "top_n": cached.top_n,
+                    "weighting": cached.weighting,
+                    "rebalance_days": cached.rebalance_days,
+                    "base_fee_pct": cached.base_fee_pct,
+                    "spread_multiplier": cached.spread_multiplier,
+                },
+                "stats": {
+                    "total_return_pct": cached.total_return_pct,
+                    "annualized_return": cached.annualized_return,
+                    "max_drawdown_pct": cached.max_drawdown_pct,
+                    "sharpe_ratio": cached.sharpe_ratio,
+                    "total_fees_pct": cached.total_fees_pct,
+                    "total_trades": cached.total_trades,
+                    "total_rebalances": cached.total_rebalances,
+                    "total_delistings": cached.total_delistings,
+                    "start_date": cached.start_date,
+                    "end_date": cached.end_date,
+                },
+                "nav_series": nav_series,
+                "cached": true,
+            });
+
+            let (tx, rx) = tokio::sync::mpsc::channel::<Result<Event, std::convert::Infallible>>(1);
+            tokio::spawn(async move {
+                let _ = tx.send(Ok(Event::default().data(result_json.to_string()))).await;
+            });
+            let stream = ReceiverStream::new(rx);
+            return Ok(Sse::new(stream));
+        }
+    }
+
+    let config = simulation::SimConfig {
+        category_id: params.category_id.clone(),
+        top_n: params.top_n,
+        weighting,
+        rebalance_days: params.rebalance_days,
+        base_fee_pct: params.base_fee_pct,
+        spread_multiplier: params.spread_multiplier,
+    };
+
+    let pool = state.pool.clone();
+    let (sse_tx, sse_rx) = tokio::sync::mpsc::channel::<Result<Event, std::convert::Infallible>>(64);
+    let (progress_tx, mut progress_rx) = tokio::sync::mpsc::channel::<simulation::SimProgress>(64);
+
+    // Spawn simulation task
+    let sse_tx_clone = sse_tx.clone();
+    tokio::spawn(async move {
+        let result = simulation::run_simulation(&pool, &config, Some(progress_tx)).await;
+        match result {
+            Ok(r) => {
+                let result_json = serde_json::json!({
+                    "type": "result",
+                    "run_id": r.run_id,
+                    "config": r.config,
+                    "stats": r.stats,
+                    "nav_series": r.nav_series,
+                    "cached": false,
+                    "computed_in_ms": r.computed_in_ms,
+                });
+                let _ = sse_tx_clone.send(Ok(Event::default().data(result_json.to_string()))).await;
+            }
+            Err(e) => {
+                let err_json = serde_json::json!({ "type": "error", "error": e.to_string() });
+                let _ = sse_tx_clone.send(Ok(Event::default().data(err_json.to_string()))).await;
+            }
+        }
+    });
+
+    // Forward progress events to SSE
+    tokio::spawn(async move {
+        while let Some(progress) = progress_rx.recv().await {
+            let progress_json = serde_json::json!({
+                "type": "progress",
+                "current_date": progress.current_date,
+                "total_dates": progress.total_dates,
+                "pct": progress.pct,
+            });
+            if sse_tx.send(Ok(Event::default().data(progress_json.to_string()))).await.is_err() {
+                break;
+            }
+        }
+    });
+
+    let stream = ReceiverStream::new(sse_rx);
+    Ok(Sse::new(stream))
+}
+
+#[derive(Deserialize)]
+struct SimSweepQuery {
+    category_id: String,
+    sweep: String,  // "top_n", "weighting", "rebalance"
+    #[serde(default = "default_sweep_weighting")]
+    weighting: String,
+    #[serde(default = "default_sweep_rebalance")]
+    rebalance_days: i32,
+    #[serde(default = "default_sweep_top_n")]
+    top_n: i32,
+    #[serde(default = "default_base_fee")]
+    base_fee_pct: f64,
+    #[serde(default = "default_spread_mult")]
+    spread_multiplier: f64,
+}
+
+fn default_sweep_weighting() -> String { "equal".into() }
+fn default_sweep_rebalance() -> i32 { 30 }
+fn default_sweep_top_n() -> i32 { 10 }
+
+async fn sim_sweep_stream(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<SimSweepQuery>,
+) -> Result<Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>>, (StatusCode, Json<ErrorResponse>)> {
+    // Build list of variants based on sweep dimension
+    let variants: Vec<simulation::SimConfig> = match params.sweep.as_str() {
+        "top_n" => {
+            let weighting = simulation::Weighting::from_str(&params.weighting)
+                .unwrap_or(simulation::Weighting::Equal);
+            vec![5, 10, 20, 30, 50, 100, 200].into_iter().map(|n| {
+                simulation::SimConfig {
+                    category_id: params.category_id.clone(),
+                    top_n: n,
+                    weighting,
+                    rebalance_days: params.rebalance_days,
+                    base_fee_pct: params.base_fee_pct,
+                    spread_multiplier: params.spread_multiplier,
+                }
+            }).collect()
+        }
+        "weighting" => {
+            vec![simulation::Weighting::Equal, simulation::Weighting::Mcap].into_iter().map(|w| {
+                simulation::SimConfig {
+                    category_id: params.category_id.clone(),
+                    top_n: params.top_n,
+                    weighting: w,
+                    rebalance_days: params.rebalance_days,
+                    base_fee_pct: params.base_fee_pct,
+                    spread_multiplier: params.spread_multiplier,
+                }
+            }).collect()
+        }
+        "rebalance" => {
+            vec![14, 30, 60, 90, 180].into_iter().map(|d| {
+                simulation::SimConfig {
+                    category_id: params.category_id.clone(),
+                    top_n: params.top_n,
+                    weighting: simulation::Weighting::from_str(&params.weighting)
+                        .unwrap_or(simulation::Weighting::Equal),
+                    rebalance_days: d,
+                    base_fee_pct: params.base_fee_pct,
+                    spread_multiplier: params.spread_multiplier,
+                }
+            }).collect()
+        }
+        other => {
+            return Err((StatusCode::BAD_REQUEST, Json(ErrorResponse {
+                error: format!("Invalid sweep dimension '{}', use 'top_n', 'weighting', or 'rebalance'", other),
+            })));
+        }
+    };
+
+    let total_variants = variants.len();
+    let pool = state.pool.clone();
+    let (sse_tx, sse_rx) = tokio::sync::mpsc::channel::<Result<Event, std::convert::Infallible>>(64);
+
+    tokio::spawn(async move {
+        let mut all_results = Vec::new();
+
+        for (idx, config) in variants.iter().enumerate() {
+            let variant_label = match params.sweep.as_str() {
+                "top_n" => format!("top_n={}", config.top_n),
+                "weighting" => format!("weighting={}", config.weighting.as_str()),
+                "rebalance" => format!("rebalance={}d", config.rebalance_days),
+                _ => format!("variant_{}", idx),
+            };
+
+            // Check cache
+            if let Ok(Some(cached)) = db::sim_get_cached_run(
+                &pool, &config.category_id, config.top_n,
+                config.weighting.as_str(), config.rebalance_days,
+                config.base_fee_pct, config.spread_multiplier,
+            ).await {
+                let nav_series = db::sim_query_nav_series(&pool, cached.id).await.unwrap_or_default();
+                let done_json = serde_json::json!({
+                    "type": "variant_done",
+                    "variant": variant_label,
+                    "variant_index": idx,
+                    "total_variants": total_variants,
+                    "run_id": cached.id,
+                    "stats": {
+                        "total_return_pct": cached.total_return_pct,
+                        "annualized_return": cached.annualized_return,
+                        "max_drawdown_pct": cached.max_drawdown_pct,
+                        "sharpe_ratio": cached.sharpe_ratio,
+                        "total_fees_pct": cached.total_fees_pct,
+                        "total_trades": cached.total_trades,
+                        "total_rebalances": cached.total_rebalances,
+                        "total_delistings": cached.total_delistings,
+                        "start_date": cached.start_date,
+                        "end_date": cached.end_date,
+                    },
+                    "nav_series": nav_series,
+                    "cached": true,
+                });
+                let _ = sse_tx.send(Ok(Event::default().data(done_json.to_string()))).await;
+                all_results.push(done_json);
+                continue;
+            }
+
+            // Run simulation with progress forwarding
+            let (progress_tx, mut progress_rx) = tokio::sync::mpsc::channel::<simulation::SimProgress>(64);
+            let sse_tx_progress = sse_tx.clone();
+            let variant_label_clone = variant_label.clone();
+
+            // Forward progress in background
+            let progress_handle = tokio::spawn(async move {
+                while let Some(mut progress) = progress_rx.recv().await {
+                    progress.variant_index = Some(idx);
+                    progress.total_variants = Some(total_variants);
+                    let progress_json = serde_json::json!({
+                        "type": "progress",
+                        "variant": variant_label_clone,
+                        "variant_index": idx,
+                        "total_variants": total_variants,
+                        "current_date": progress.current_date,
+                        "total_dates": progress.total_dates,
+                        "pct": progress.pct,
+                    });
+                    if sse_tx_progress.send(Ok(Event::default().data(progress_json.to_string()))).await.is_err() {
+                        break;
+                    }
+                }
+            });
+
+            let result = simulation::run_simulation(&pool, config, Some(progress_tx)).await;
+            let _ = progress_handle.await;
+
+            match result {
+                Ok(r) => {
+                    let done_json = serde_json::json!({
+                        "type": "variant_done",
+                        "variant": variant_label,
+                        "variant_index": idx,
+                        "total_variants": total_variants,
+                        "run_id": r.run_id,
+                        "stats": r.stats,
+                        "nav_series": r.nav_series,
+                        "cached": false,
+                    });
+                    let _ = sse_tx.send(Ok(Event::default().data(done_json.to_string()))).await;
+                    all_results.push(done_json);
+                }
+                Err(e) => {
+                    let err_json = serde_json::json!({
+                        "type": "variant_error",
+                        "variant": variant_label,
+                        "variant_index": idx,
+                        "total_variants": total_variants,
+                        "error": e.to_string(),
+                    });
+                    let _ = sse_tx.send(Ok(Event::default().data(err_json.to_string()))).await;
+                }
+            }
+        }
+
+        // Send sweep_done
+        let sweep_done = serde_json::json!({
+            "type": "sweep_done",
+            "total_variants": total_variants,
+            "simulations": all_results,
+        });
+        let _ = sse_tx.send(Ok(Event::default().data(sweep_done.to_string()))).await;
+    });
+
+    let stream = ReceiverStream::new(sse_rx);
+    Ok(Sse::new(stream))
+}
+
+#[derive(Deserialize)]
+struct SimResultsQuery {
+    category_id: Option<String>,
+}
+
+async fn sim_results(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<SimResultsQuery>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let runs = db::sim_list_runs(&state.pool, params.category_id.as_deref())
+        .await
+        .map_err(|e| db_error(e))?;
+
+    Ok(Json(serde_json::json!({ "results": runs })))
+}
+
+#[derive(Deserialize)]
+struct SimCompareQuery {
+    run_ids: String,
+}
+
+async fn sim_compare(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<SimCompareQuery>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let ids: Vec<i64> = params.run_ids.split(',')
+        .filter_map(|s| s.trim().parse().ok())
+        .collect();
+
+    let mut simulations = Vec::new();
+    for id in ids {
+        let nav_series = db::sim_query_nav_series(&state.pool, id)
+            .await
+            .map_err(|e| db_error(e))?;
+        simulations.push(serde_json::json!({
+            "run_id": id,
+            "nav_series": nav_series,
+        }));
+    }
+
+    Ok(Json(serde_json::json!({ "simulations": simulations })))
+}
+
+#[derive(Deserialize)]
+struct SimHoldingsQuery {
+    run_id: i64,
+    date: Option<chrono::NaiveDate>,
+}
+
+async fn sim_holdings(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<SimHoldingsQuery>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let holdings = db::sim_query_holdings_at(&state.pool, params.run_id, params.date)
+        .await
+        .map_err(|e| db_error(e))?;
+
+    Ok(Json(serde_json::json!({ "holdings": holdings })))
+}
+
+#[derive(Deserialize)]
+struct SimInvalidateQuery {
+    run_id: i64,
+}
+
+async fn sim_invalidate(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<SimInvalidateQuery>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let deleted = db::sim_delete_run(&state.pool, params.run_id)
+        .await
+        .map_err(|e| db_error(e))?;
+
+    Ok(Json(serde_json::json!({ "deleted": deleted })))
 }

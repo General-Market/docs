@@ -29,6 +29,8 @@ pub async fn run_migrations(pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::raw_sql(m008).execute(pool).await?;
     let m009 = include_str!("../migrations/009_create_bitget_listings.sql");
     sqlx::raw_sql(m009).execute(pool).await?;
+    let m010 = include_str!("../migrations/010_create_simulations.sql");
+    sqlx::raw_sql(m010).execute(pool).await?;
     info!("Database migrations applied");
     Ok(())
 }
@@ -1399,4 +1401,443 @@ pub async fn bitget_query_listing(
     Ok(row.map(|(symbol, base_coin, quote_coin, listed_at, delisted_at, status)| BitgetListingRow {
         symbol, base_coin, quote_coin, listed_at, delisted_at, status,
     }))
+}
+
+// ---- Simulation functions ----
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct SimRunRow {
+    pub id: i64,
+    pub category_id: String,
+    pub top_n: i32,
+    pub weighting: String,
+    pub rebalance_days: i32,
+    pub start_date: Option<chrono::NaiveDate>,
+    pub end_date: Option<chrono::NaiveDate>,
+    pub total_return_pct: Option<f64>,
+    pub annualized_return: Option<f64>,
+    pub max_drawdown_pct: Option<f64>,
+    pub sharpe_ratio: Option<f64>,
+    pub base_fee_pct: f64,
+    pub spread_multiplier: f64,
+    pub total_fees_pct: Option<f64>,
+    pub total_trades: Option<i32>,
+    pub total_rebalances: Option<i32>,
+    pub total_delistings: Option<i32>,
+    pub computed_at: Option<DateTime<Utc>>,
+    pub duration_ms: Option<i32>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SimRunInsert {
+    pub category_id: String,
+    pub top_n: i32,
+    pub weighting: String,
+    pub rebalance_days: i32,
+    pub start_date: Option<chrono::NaiveDate>,
+    pub end_date: Option<chrono::NaiveDate>,
+    pub total_return_pct: Option<f64>,
+    pub annualized_return: Option<f64>,
+    pub max_drawdown_pct: Option<f64>,
+    pub sharpe_ratio: Option<f64>,
+    pub base_fee_pct: f64,
+    pub spread_multiplier: f64,
+    pub total_fees_pct: Option<f64>,
+    pub total_trades: Option<i32>,
+    pub total_rebalances: Option<i32>,
+    pub total_delistings: Option<i32>,
+    pub duration_ms: Option<i32>,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct SimHoldingRow {
+    pub rebalance_date: chrono::NaiveDate,
+    pub coin_id: String,
+    pub symbol: String,
+    pub weight: f64,
+    pub quantity: f64,
+    pub price_usd: f64,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct SimTradeRow {
+    pub trade_date: chrono::NaiveDate,
+    pub coin_id: String,
+    pub side: String,
+    pub quantity: f64,
+    pub price_usd: f64,
+    pub fee_pct: f64,
+    pub fee_usd: f64,
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct SimNavPoint {
+    pub nav_date: chrono::NaiveDate,
+    pub nav: f64,
+    pub drawdown_pct: f64,
+}
+
+/// Look up a cached simulation run by config params.
+pub async fn sim_get_cached_run(
+    pool: &PgPool,
+    category_id: &str,
+    top_n: i32,
+    weighting: &str,
+    rebalance_days: i32,
+    base_fee_pct: f64,
+    spread_multiplier: f64,
+) -> Result<Option<SimRunRow>, sqlx::Error> {
+    use sqlx::Row;
+    let row = sqlx::query(
+        "SELECT id, category_id, top_n, weighting, rebalance_days, start_date, end_date,
+                total_return_pct, annualized_return, max_drawdown_pct, sharpe_ratio,
+                base_fee_pct, spread_multiplier, total_fees_pct, total_trades,
+                total_rebalances, total_delistings, computed_at, duration_ms
+         FROM sim_runs
+         WHERE category_id = $1 AND top_n = $2 AND weighting = $3
+           AND rebalance_days = $4 AND base_fee_pct = $5 AND spread_multiplier = $6
+           AND computed_at > NOW() - INTERVAL '24 hours'"
+    )
+    .bind(category_id)
+    .bind(top_n)
+    .bind(weighting)
+    .bind(rebalance_days)
+    .bind(base_fee_pct)
+    .bind(spread_multiplier)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(row.map(|r| sim_row_from_pg(&r)))
+}
+
+fn sim_row_from_pg(r: &sqlx::postgres::PgRow) -> SimRunRow {
+    use sqlx::Row;
+    SimRunRow {
+        id: r.get("id"),
+        category_id: r.get("category_id"),
+        top_n: r.get("top_n"),
+        weighting: r.get("weighting"),
+        rebalance_days: r.get("rebalance_days"),
+        start_date: r.get("start_date"),
+        end_date: r.get("end_date"),
+        total_return_pct: r.get("total_return_pct"),
+        annualized_return: r.get("annualized_return"),
+        max_drawdown_pct: r.get("max_drawdown_pct"),
+        sharpe_ratio: r.get("sharpe_ratio"),
+        base_fee_pct: r.get("base_fee_pct"),
+        spread_multiplier: r.get("spread_multiplier"),
+        total_fees_pct: r.get("total_fees_pct"),
+        total_trades: r.get("total_trades"),
+        total_rebalances: r.get("total_rebalances"),
+        total_delistings: r.get("total_delistings"),
+        computed_at: r.get("computed_at"),
+        duration_ms: r.get("duration_ms"),
+    }
+}
+
+/// Insert a new simulation run and return its id.
+pub async fn sim_insert_run(pool: &PgPool, run: &SimRunInsert) -> Result<i64, sqlx::Error> {
+    // Delete any existing run with same config first (replace stale cache)
+    sqlx::query(
+        "DELETE FROM sim_runs
+         WHERE category_id = $1 AND top_n = $2 AND weighting = $3
+           AND rebalance_days = $4 AND base_fee_pct = $5 AND spread_multiplier = $6"
+    )
+    .bind(&run.category_id)
+    .bind(run.top_n)
+    .bind(&run.weighting)
+    .bind(run.rebalance_days)
+    .bind(run.base_fee_pct)
+    .bind(run.spread_multiplier)
+    .execute(pool)
+    .await?;
+
+    let id = sqlx::query_scalar::<_, i64>(
+        "INSERT INTO sim_runs
+            (category_id, top_n, weighting, rebalance_days, start_date, end_date,
+             total_return_pct, annualized_return, max_drawdown_pct, sharpe_ratio,
+             base_fee_pct, spread_multiplier, total_fees_pct, total_trades,
+             total_rebalances, total_delistings, duration_ms)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+         RETURNING id"
+    )
+    .bind(&run.category_id)
+    .bind(run.top_n)
+    .bind(&run.weighting)
+    .bind(run.rebalance_days)
+    .bind(run.start_date)
+    .bind(run.end_date)
+    .bind(run.total_return_pct)
+    .bind(run.annualized_return)
+    .bind(run.max_drawdown_pct)
+    .bind(run.sharpe_ratio)
+    .bind(run.base_fee_pct)
+    .bind(run.spread_multiplier)
+    .bind(run.total_fees_pct)
+    .bind(run.total_trades)
+    .bind(run.total_rebalances)
+    .bind(run.total_delistings)
+    .bind(run.duration_ms)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(id)
+}
+
+/// Batch insert NAV series points.
+pub async fn sim_batch_insert_nav(
+    pool: &PgPool,
+    run_id: i64,
+    points: &[SimNavPoint],
+) -> Result<u64, sqlx::Error> {
+    if points.is_empty() {
+        return Ok(0);
+    }
+
+    let mut run_ids = Vec::with_capacity(points.len());
+    let mut dates = Vec::with_capacity(points.len());
+    let mut navs = Vec::with_capacity(points.len());
+    let mut drawdowns = Vec::with_capacity(points.len());
+
+    for p in points {
+        run_ids.push(run_id);
+        dates.push(p.nav_date);
+        navs.push(p.nav);
+        drawdowns.push(p.drawdown_pct);
+    }
+
+    let result = sqlx::query(
+        "INSERT INTO sim_nav_series (sim_run_id, nav_date, nav, drawdown_pct)
+         SELECT * FROM UNNEST($1::int8[], $2::date[], $3::float8[], $4::float8[])
+         ON CONFLICT (sim_run_id, nav_date) DO NOTHING"
+    )
+    .bind(&run_ids)
+    .bind(&dates)
+    .bind(&navs)
+    .bind(&drawdowns)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected())
+}
+
+/// Batch insert holdings.
+pub async fn sim_batch_insert_holdings(
+    pool: &PgPool,
+    run_id: i64,
+    holdings: &[SimHoldingRow],
+) -> Result<u64, sqlx::Error> {
+    if holdings.is_empty() {
+        return Ok(0);
+    }
+
+    let mut run_ids = Vec::with_capacity(holdings.len());
+    let mut dates = Vec::with_capacity(holdings.len());
+    let mut coin_ids = Vec::with_capacity(holdings.len());
+    let mut symbols = Vec::with_capacity(holdings.len());
+    let mut weights = Vec::with_capacity(holdings.len());
+    let mut quantities = Vec::with_capacity(holdings.len());
+    let mut prices = Vec::with_capacity(holdings.len());
+
+    for h in holdings {
+        run_ids.push(run_id);
+        dates.push(h.rebalance_date);
+        coin_ids.push(h.coin_id.as_str());
+        symbols.push(h.symbol.as_str());
+        weights.push(h.weight);
+        quantities.push(h.quantity);
+        prices.push(h.price_usd);
+    }
+
+    let result = sqlx::query(
+        "INSERT INTO sim_holdings (sim_run_id, rebalance_date, coin_id, symbol, weight, quantity, price_usd)
+         SELECT * FROM UNNEST($1::int8[], $2::date[], $3::text[], $4::text[], $5::float8[], $6::float8[], $7::float8[])
+         ON CONFLICT (sim_run_id, rebalance_date, coin_id) DO NOTHING"
+    )
+    .bind(&run_ids)
+    .bind(&dates)
+    .bind(&coin_ids)
+    .bind(&symbols)
+    .bind(&weights)
+    .bind(&quantities)
+    .bind(&prices)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected())
+}
+
+/// Batch insert trades.
+pub async fn sim_batch_insert_trades(
+    pool: &PgPool,
+    run_id: i64,
+    trades: &[SimTradeRow],
+) -> Result<u64, sqlx::Error> {
+    if trades.is_empty() {
+        return Ok(0);
+    }
+
+    let mut run_ids = Vec::with_capacity(trades.len());
+    let mut dates = Vec::with_capacity(trades.len());
+    let mut coin_ids = Vec::with_capacity(trades.len());
+    let mut sides = Vec::with_capacity(trades.len());
+    let mut quantities = Vec::with_capacity(trades.len());
+    let mut prices = Vec::with_capacity(trades.len());
+    let mut fee_pcts = Vec::with_capacity(trades.len());
+    let mut fee_usds = Vec::with_capacity(trades.len());
+    let mut reasons: Vec<Option<&str>> = Vec::with_capacity(trades.len());
+
+    for t in trades {
+        run_ids.push(run_id);
+        dates.push(t.trade_date);
+        coin_ids.push(t.coin_id.as_str());
+        sides.push(t.side.as_str());
+        quantities.push(t.quantity);
+        prices.push(t.price_usd);
+        fee_pcts.push(t.fee_pct);
+        fee_usds.push(t.fee_usd);
+        reasons.push(t.reason.as_deref());
+    }
+
+    let result = sqlx::query(
+        "INSERT INTO sim_trades (sim_run_id, trade_date, coin_id, side, quantity, price_usd, fee_pct, fee_usd, reason)
+         SELECT * FROM UNNEST($1::int8[], $2::date[], $3::text[], $4::text[], $5::float8[], $6::float8[], $7::float8[], $8::float8[], $9::text[])"
+    )
+    .bind(&run_ids)
+    .bind(&dates)
+    .bind(&coin_ids)
+    .bind(&sides)
+    .bind(&quantities)
+    .bind(&prices)
+    .bind(&fee_pcts)
+    .bind(&fee_usds)
+    .bind(&reasons)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected())
+}
+
+/// Query NAV series for a run, ordered by date.
+pub async fn sim_query_nav_series(pool: &PgPool, run_id: i64) -> Result<Vec<SimNavPoint>, sqlx::Error> {
+    let rows = sqlx::query_as::<_, (chrono::NaiveDate, f64, f64)>(
+        "SELECT nav_date, nav, drawdown_pct FROM sim_nav_series
+         WHERE sim_run_id = $1 ORDER BY nav_date ASC"
+    )
+    .bind(run_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows.into_iter().map(|(nav_date, nav, drawdown_pct)| SimNavPoint { nav_date, nav, drawdown_pct }).collect())
+}
+
+/// Query holdings at a specific rebalance date.
+pub async fn sim_query_holdings_at(
+    pool: &PgPool,
+    run_id: i64,
+    date: Option<chrono::NaiveDate>,
+) -> Result<Vec<SimHoldingRow>, sqlx::Error> {
+    let rows = sqlx::query_as::<_, (chrono::NaiveDate, String, String, f64, f64, f64)>(
+        "SELECT rebalance_date, coin_id, symbol, weight, quantity, price_usd
+         FROM sim_holdings
+         WHERE sim_run_id = $1
+           AND rebalance_date = COALESCE($2, (SELECT MAX(rebalance_date) FROM sim_holdings WHERE sim_run_id = $1))
+         ORDER BY weight DESC"
+    )
+    .bind(run_id)
+    .bind(date)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows.into_iter().map(|(rebalance_date, coin_id, symbol, weight, quantity, price_usd)| SimHoldingRow {
+        rebalance_date, coin_id, symbol, weight, quantity, price_usd,
+    }).collect())
+}
+
+/// List all cached runs, optionally filtered by category.
+pub async fn sim_list_runs(
+    pool: &PgPool,
+    category_filter: Option<&str>,
+) -> Result<Vec<SimRunRow>, sqlx::Error> {
+    let rows = sqlx::query(
+        "SELECT id, category_id, top_n, weighting, rebalance_days, start_date, end_date,
+                total_return_pct, annualized_return, max_drawdown_pct, sharpe_ratio,
+                base_fee_pct, spread_multiplier, total_fees_pct, total_trades,
+                total_rebalances, total_delistings, computed_at, duration_ms
+         FROM sim_runs
+         WHERE ($1::text IS NULL OR category_id = $1)
+         ORDER BY computed_at DESC"
+    )
+    .bind(category_filter)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows.iter().map(|r| sim_row_from_pg(r)).collect())
+}
+
+/// Delete a cached run (CASCADE deletes nav, holdings, trades).
+pub async fn sim_delete_run(pool: &PgPool, run_id: i64) -> Result<bool, sqlx::Error> {
+    let result = sqlx::query("DELETE FROM sim_runs WHERE id = $1")
+        .bind(run_id)
+        .execute(pool)
+        .await?;
+    Ok(result.rows_affected() > 0)
+}
+
+/// Get category coins with market cap at a specific date (for simulation).
+/// Returns coins in this category that have price data on the given date, sorted by market cap.
+pub async fn cg_query_category_market_caps_at(
+    pool: &PgPool,
+    category_id: &str,
+    date: chrono::NaiveDate,
+    limit: i64,
+) -> Result<Vec<CgMarketCapRow>, sqlx::Error> {
+    let rows = sqlx::query_as::<_, (String, Option<String>, Option<String>, Option<f64>, Option<f64>, Option<f64>, Option<i32>, chrono::NaiveDate)>(
+        "SELECT m.coin_id, m.symbol, m.name, m.market_cap_usd, m.price_usd,
+                m.total_volume_usd, m.market_cap_rank, m.snapshot_date
+         FROM coingecko_category_coins cc
+         JOIN LATERAL (
+             SELECT coin_id, symbol, name, market_cap_usd, price_usd,
+                    total_volume_usd, market_cap_rank, snapshot_date
+             FROM coingecko_market_caps
+             WHERE coin_id = cc.coin_id AND snapshot_date = $2
+             LIMIT 1
+         ) m ON true
+         WHERE cc.category_id = $1
+         ORDER BY m.market_cap_usd DESC NULLS LAST
+         LIMIT $3"
+    )
+    .bind(category_id)
+    .bind(date)
+    .bind(limit)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows.into_iter().map(|(coin_id, symbol, name, market_cap_usd, price_usd, total_volume_usd, market_cap_rank, snapshot_date)| CgMarketCapRow {
+        coin_id, symbol, name, market_cap_usd, price_usd, total_volume_usd, market_cap_rank, snapshot_date,
+    }).collect())
+}
+
+/// Query average spread for a Bitget symbol from liquidity snapshots, closest to a date.
+pub async fn sim_query_spread_at(
+    pool: &PgPool,
+    symbol: &str,
+    date: chrono::NaiveDate,
+) -> Result<Option<f64>, sqlx::Error> {
+    // Get average spread within ±7 days of the target date
+    let spread = sqlx::query_scalar::<_, f64>(
+        "SELECT AVG(spread_bps)
+         FROM liquidity_snapshots
+         WHERE symbol = $1
+           AND fetched_at >= ($2::date - INTERVAL '7 days')::timestamptz
+           AND fetched_at <= ($2::date + INTERVAL '7 days')::timestamptz
+           AND spread_bps > 0"
+    )
+    .bind(symbol)
+    .bind(date)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(spread)
 }

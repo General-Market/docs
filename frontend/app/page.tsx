@@ -8,8 +8,9 @@ import { CreateItpSection } from '@/components/domain/CreateItpSection'
 import { PortfolioSection } from '@/components/domain/PortfolioSection'
 import { SystemStatusSection } from '@/components/domain/SystemStatusSection'
 import { VaultModal } from '@/components/domain/VaultModal'
+import { BacktestSection } from '@/components/domain/simulation/BacktestSection'
 
-type Section = 'create' | 'system' | 'portfolio' | null
+type Section = 'create' | 'system' | 'portfolio' | 'backtest' | null
 
 export default function Home() {
   const [expandedSection, setExpandedSection] = useState<Section>(null)
@@ -57,6 +58,14 @@ export default function Home() {
             <SystemStatusSection
               expanded={expandedSection === 'system'}
               onToggle={() => toggle('system')}
+            />
+          </div>
+
+          {/* Index Backtester */}
+          <div className="mb-6">
+            <BacktestSection
+              expanded={expandedSection === 'backtest'}
+              onToggle={() => toggle('backtest')}
             />
           </div>
         </div>

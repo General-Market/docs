@@ -12,6 +12,7 @@ mod liquidity_collector;
 mod listing_sync;
 pub mod live_cache;
 mod logo_downloader;
+mod simulation;
 mod trade_collector;
 
 use std::collections::HashSet;
