@@ -713,7 +713,7 @@ for i in $(seq 1 $ISSUER_COUNT); do
     BLS_IDX=$((i - 1))
 
     ISSUER_ARGS="--node-id $i --port $PORT --rpc $RPC_URL"
-    ISSUER_ARGS="$ISSUER_ARGS --cycle-duration-ms 200 --min-cycle-gap-ms 20 --no-tls"
+    ISSUER_ARGS="$ISSUER_ARGS --cycle-duration-ms 200 --min-cycle-gap-ms 20 --consensus-timeout-ms 150 --no-tls"
     ISSUER_ARGS="$ISSUER_ARGS --test-key-seeds --bls-key-seed-index $BLS_IDX"
     ISSUER_ARGS="$ISSUER_ARGS --signature-threshold $SIG_THRESHOLD --num-issuers $ISSUER_COUNT"
     ISSUER_ARGS="$ISSUER_ARGS --ntp-server \"\""
@@ -728,14 +728,19 @@ for i in $(seq 1 $ISSUER_COUNT); do
     [ -f "$SCRIPT_DIR/data/symbol-map.json" ] && ISSUER_ARGS="$ISSUER_ARGS --symbol-map-file $SCRIPT_DIR/data/symbol-map.json"
 
     ISSUER_KEY=${ISSUER_KEYS[$i]:-""}
-    ISSUER_ENV="ISSUER_PRIVATE_KEY=$ISSUER_KEY ISSUER_ARBITRUM_RPC_URL=$ARB_RPC_URL ISSUER_ARBITRUM_CHAIN_ID=$ARB_CHAIN_ID"
+    # Write key to temp file (eval+inline env mangles hex keys)
+    ISSUER_KEY_FILE="/tmp/issuer-key-$i.txt"
+    echo -n "$ISSUER_KEY" > "$ISSUER_KEY_FILE"
+    export ISSUER_PRIVATE_KEY_PATH="$ISSUER_KEY_FILE"
+    export ISSUER_ARBITRUM_RPC_URL="$ARB_RPC_URL"
+    export ISSUER_ARBITRUM_CHAIN_ID="$ARB_CHAIN_ID"
     # Only pass DATA_NODE_URL when PostgreSQL is available (data-node needs it).
     # Without it, issuers use BitgetPriceFetcher for asset prices and compute NAV locally
     # from on-chain inventory + live Bitget prices (no $1 fallback).
     if $PG_ISREADY -q 2>/dev/null; then
-        ISSUER_ENV="$ISSUER_ENV DATA_NODE_URL=http://localhost:8200"
+        export DATA_NODE_URL="http://localhost:8200"
     fi
-    eval "$ISSUER_ENV ./target/release/issuer $ISSUER_ARGS > /dev/null 2>&1 &"
+    ./target/release/issuer $ISSUER_ARGS > logs/issuer-$i.log 2>&1 &
     ISSUER_PID=$!
     echo $ISSUER_PID >> .pids
     echo "issuer-$i:$ISSUER_PID" >> .pids.info
