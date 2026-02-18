@@ -5,11 +5,13 @@
 //! Story 7.4: Batch and Fill Orchestration
 
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Instant;
 
 use ethers::types::{Address, H256, U256};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use tokio::sync::Notify;
 
 use common::decimals;
 use common::types::{BLSSignature, PeerId};
@@ -244,7 +246,8 @@ pub struct OrderMapping {
     pub created_at: u64,
 }
 
-/// Collects BLS signatures from followers for bridge proposals
+/// Collects BLS signatures from followers for bridge proposals.
+/// Uses a `Notify` to wake the polling loop instantly when a signature arrives.
 #[derive(Debug)]
 pub struct SignatureCollector {
     /// Order ID being signed
@@ -255,6 +258,8 @@ pub struct SignatureCollector {
     signer_bitmap: U256,
     /// Timestamp when collection started
     started_at: Instant,
+    /// Wakes the polling loop when a new signature arrives
+    notify: Arc<Notify>,
 }
 
 impl SignatureCollector {
@@ -265,7 +270,13 @@ impl SignatureCollector {
             signatures: Vec::new(),
             signer_bitmap: U256::zero(),
             started_at: Instant::now(),
+            notify: Arc::new(Notify::new()),
         }
+    }
+
+    /// Get a handle to the notifier (for the polling loop)
+    pub fn notifier(&self) -> Arc<Notify> {
+        Arc::clone(&self.notify)
     }
 
     /// Add a signature from a follower
@@ -280,6 +291,8 @@ impl SignatureCollector {
         // Add signature and update bitmap
         self.signatures.push((signer_index, signature));
         self.signer_bitmap = self.signer_bitmap | (U256::one() << signer_index);
+        // Wake polling loop immediately
+        self.notify.notify_waiters();
         true
     }
 

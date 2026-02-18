@@ -8,6 +8,8 @@
 - [FAILED] First attempt at BuyPhase diagram had 6 steps (Approve→Submit→Bridge→Pending→Batched→Filled) — missed real flow steps (consensus, CEX trading, share bridging). Also used Arb block number as L3 fromBlock which caused L3 polling to never find events. Also showed duplicate diagrams (ours + OrderStatusTracker).
 - [DECISION] Rewrote BuyItpModal with 7-phase flow matching real cross-chain architecture: INPUT→APPROVE→SUBMIT→RELAY→BATCH→FILL→RECEIVE→DONE. Single diagram only.
 - [DECISION] Snapshot L3 block number before buy starts (l3BaseBlock) — used as fromBlock for L3 polling. Previous approach incorrectly used Arb block number on L3.
+- [DECISION] DB cleanup (stop.sh/start.sh): only TRUNCATE itp_snapshots + trades (session-only on-chain data). Preserve: prices, klines, liquidity_snapshots, coingecko_market_caps, coingecko_categories, coingecko_category_coins.
+- [DECISION] Bridge relay speedup: cycle_duration_ms 1000→200, min_cycle_gap_ms 50→20 in start.sh for local dev. Signature polling 50ms→10ms across all consensus phases. Added tokio::sync::Notify to SignatureCollector so bridge polling wakes instantly on signature arrival instead of sleeping.
 - [DECISION] Poll L3 Index.getOrder() directly for order status instead of relying on data-node backend at :8200 — removes data node dependency, more reliable.
 - [DECISION] RECEIVE phase polls user's BridgedITP balance on Arb to detect when shares arrive from mintBridgedShares. Compares against initial snapshot taken before buy.
 - [DECISION] Removed OrderStatusTracker from BuyItpModal — its 3-step diagram (Pending→Batched→Filled) is now subsumed by the comprehensive 6-step progress diagram.

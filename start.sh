@@ -713,7 +713,7 @@ for i in $(seq 1 $ISSUER_COUNT); do
     BLS_IDX=$((i - 1))
 
     ISSUER_ARGS="--node-id $i --port $PORT --rpc $RPC_URL"
-    ISSUER_ARGS="$ISSUER_ARGS --cycle-duration-ms 1000 --min-cycle-gap-ms 50 --no-tls"
+    ISSUER_ARGS="$ISSUER_ARGS --cycle-duration-ms 200 --min-cycle-gap-ms 20 --no-tls"
     ISSUER_ARGS="$ISSUER_ARGS --test-key-seeds --bls-key-seed-index $BLS_IDX"
     ISSUER_ARGS="$ISSUER_ARGS --signature-threshold $SIG_THRESHOLD --num-issuers $ISSUER_COUNT"
     ISSUER_ARGS="$ISSUER_ARGS --ntp-server \"\""

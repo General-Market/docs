@@ -767,6 +767,12 @@ impl BridgeOrchestrator {
         collectors.get(order_id).map(|c| c.signature_count())
     }
 
+    /// Get notifier for a signature collector (wakes on new signature arrival)
+    pub async fn get_notifier(&self, order_id: &U256) -> Option<std::sync::Arc<tokio::sync::Notify>> {
+        let collectors = self.pending_signatures.read().await;
+        collectors.get(order_id).map(|c| c.notifier())
+    }
+
     // ========================================================================
     // Bridge Execution (AC: #4 - Local E2E Simulation)
     // ========================================================================

@@ -2539,8 +2539,8 @@ where
 
     /// Collect bridge signatures from followers (Task 3)
     ///
-    /// Polls the BridgeOrchestrator's signature collector until threshold is reached
-    /// or timeout occurs.
+    /// Event-driven: wakes instantly when a signature arrives via Notify,
+    /// with a 10ms fallback poll to avoid races.
     async fn collect_bridge_signatures(
         &self,
         order_id: U256,
@@ -2578,21 +2578,37 @@ where
                         timeout_ms,
                     });
                 }
-            } else if tokio::time::Instant::now() >= deadline {
-                warn!(
-                    order_id = %order_id,
-                    timeout_ms,
-                    "Bridge signature collection timed out (no orchestrator)"
-                );
-                return Err(BridgeError::SigningTimeout {
-                    received: 0,
-                    timeout_ms,
-                });
-            }
-            drop(bridge_orch_guard);
 
-            // Sleep between polls (same as ITP creation: 50ms)
-            sleep(std::time::Duration::from_millis(50)).await;
+                // Get notifier — wake instantly when a signature arrives
+                let notifier = orch.get_notifier(&order_id).await;
+                drop(orch);
+                drop(bridge_orch_guard);
+
+                let remaining = deadline - tokio::time::Instant::now();
+                if let Some(notify) = notifier {
+                    // Wait for signature arrival OR 10ms fallback OR timeout
+                    tokio::select! {
+                        _ = notify.notified() => {}
+                        _ = sleep(std::time::Duration::from_millis(10).min(remaining)) => {}
+                    }
+                } else {
+                    sleep(std::time::Duration::from_millis(10).min(remaining)).await;
+                }
+            } else {
+                drop(bridge_orch_guard);
+                if tokio::time::Instant::now() >= deadline {
+                    warn!(
+                        order_id = %order_id,
+                        timeout_ms,
+                        "Bridge signature collection timed out (no orchestrator)"
+                    );
+                    return Err(BridgeError::SigningTimeout {
+                        received: 0,
+                        timeout_ms,
+                    });
+                }
+                sleep(std::time::Duration::from_millis(10)).await;
+            }
         }
     }
 
@@ -2773,7 +2789,7 @@ where
                 return Err(BridgeError::SigningTimeout { received: 0, timeout_ms });
             }
             drop(bridge_orch_guard);
-            sleep(std::time::Duration::from_millis(50)).await;
+            sleep(std::time::Duration::from_millis(10)).await;
         }
     }
 
@@ -2912,7 +2928,7 @@ where
                 return Err(BridgeError::SigningTimeout { received: 0, timeout_ms });
             }
             drop(bridge_orch_guard);
-            sleep(std::time::Duration::from_millis(50)).await;
+            sleep(std::time::Duration::from_millis(10)).await;
         }
     }
 
@@ -3148,7 +3164,7 @@ where
                     return Err(BridgeError::SigningTimeout { received: 0, timeout_ms });
                 }
             }
-            sleep(std::time::Duration::from_millis(50)).await;
+            sleep(std::time::Duration::from_millis(10)).await;
         }
     }
 
@@ -3286,7 +3302,7 @@ where
                 return Err(BridgeError::SigningTimeout { received: 0, timeout_ms });
             }
             drop(bridge_orch_guard);
-            sleep(std::time::Duration::from_millis(50)).await;
+            sleep(std::time::Duration::from_millis(10)).await;
         }
     }
 
@@ -3766,7 +3782,7 @@ where
             drop(bridge_orch_guard);
 
             // Sleep between polls (same as ITP creation: 50ms)
-            sleep(std::time::Duration::from_millis(50)).await;
+            sleep(std::time::Duration::from_millis(10)).await;
         }
     }
 
@@ -4250,7 +4266,7 @@ where
             drop(bridge_orch_guard);
 
             // Sleep between polls (same as ITP creation: 50ms)
-            sleep(std::time::Duration::from_millis(50)).await;
+            sleep(std::time::Duration::from_millis(10)).await;
         }
     }
 
@@ -5452,7 +5468,7 @@ where
             }
             drop(bridge_orch_guard);
 
-            sleep(std::time::Duration::from_millis(50)).await;
+            sleep(std::time::Duration::from_millis(10)).await;
         }
     }
 
@@ -5822,7 +5838,7 @@ where
             }
             drop(bridge_orch_guard);
 
-            sleep(std::time::Duration::from_millis(50)).await;
+            sleep(std::time::Duration::from_millis(10)).await;
         }
     }
 
@@ -6166,7 +6182,7 @@ where
             }
             drop(bridge_orch_guard);
 
-            sleep(std::time::Duration::from_millis(50)).await;
+            sleep(std::time::Duration::from_millis(10)).await;
         }
     }
 
@@ -6471,7 +6487,7 @@ where
                 return Err(BridgeError::SigningTimeout { received: 0, timeout_ms });
             }
             drop(bridge_orch_guard);
-            sleep(std::time::Duration::from_millis(50)).await;
+            sleep(std::time::Duration::from_millis(10)).await;
         }
     }
 
@@ -6773,7 +6789,7 @@ where
                 return Err(BridgeError::SigningTimeout { received: 0, timeout_ms });
             }
             drop(bridge_orch_guard);
-            sleep(std::time::Duration::from_millis(50)).await;
+            sleep(std::time::Duration::from_millis(10)).await;
         }
     }
 
