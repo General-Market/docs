@@ -753,8 +753,8 @@ if ! $PG_ISREADY -q 2>/dev/null; then
     echo -e "  ${YELLOW}Charts won't work. Start PostgreSQL and re-run.${NC}"
 else
     if [ "$SKIP_DEPLOY" = false ]; then
-        $PSQL -d index_prices -c "DELETE FROM itp_snapshots;" 2>/dev/null || true
-        $PSQL -d index_prices -c "DELETE FROM price_history;" 2>/dev/null || true
+        # Clean session-only on-chain data; preserve prices, klines, coingecko
+        $PSQL -d index_prices -c "TRUNCATE itp_snapshots, trades;" 2>/dev/null || true
     fi
     ./target/release/data-node serve \
         --database-url postgres://localhost/index_prices \

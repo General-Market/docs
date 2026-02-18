@@ -82,15 +82,14 @@ else
     rm -f .pids .pids.info
     echo -e "  ${GREEN}PID files cleaned up${NC}"
 
-    # Clean data-node DB of stale deployment data
-    echo -e "${YELLOW}Cleaning data-node DB...${NC}"
+    # Clean session-only on-chain data (preserve prices, klines, coingecko data)
+    echo -e "${YELLOW}Cleaning session data (preserving price/market data)...${NC}"
     PSQL_BIN=$(command -v psql 2>/dev/null || find /opt/homebrew /usr/local -name "psql" -type f 2>/dev/null | head -1)
     if [ -n "$PSQL_BIN" ]; then
-        $PSQL_BIN index_prices -c "TRUNCATE itp_snapshots;" 2>/dev/null && \
-            echo -e "  ${GREEN}ITP snapshots cleaned${NC}" || \
+        $PSQL_BIN index_prices -c "TRUNCATE itp_snapshots, trades;" 2>/dev/null && \
+            echo -e "  ${GREEN}ITP snapshots + trades cleaned${NC}" || \
             echo -e "  ${YELLOW}Skipped (DB not available)${NC}"
-        $PSQL_BIN index_prices -c "DELETE FROM price_history;" 2>/dev/null && \
-            echo -e "  ${GREEN}Price history cleaned${NC}" || true
+        echo -e "  ${GREEN}Preserved: prices, klines, liquidity, coingecko data${NC}"
     else
         echo -e "  ${YELLOW}Skipped (psql not found)${NC}"
     fi

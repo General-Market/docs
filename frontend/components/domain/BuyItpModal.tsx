@@ -18,41 +18,45 @@ const ARB_RPC = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'
 /**
  * Buy flow phases — matches the real cross-chain flow:
  *
- * 1. APPROVE   — User approves USDC spend on Arb (if needed)
- * 2. SUBMIT    — User calls buyITPFromArbitrum on Arb → CrossChainOrderCreated
- * 3. RELAY     — Issuer nodes detect event → BLS consensus → bridge to L3 → submitOrderFor
- * 4. BATCH     — Issuers batch the order → confirmBatch (BLS) → AP nodes trade on CEX
- * 5. FILL      — Issuers confirm fill → confirmFills (BLS) → shares minted on L3
- * 6. RECEIVE   — Issuers bridge shares back to Arb → mintBridgedShares → user gets BridgedITP
+ * 1. APPROVE     — User approves USDC spend on Arb (if needed)
+ * 2. SUBMIT      — User calls buyITPFromArbitrum on Arb → CrossChainOrderCreated
+ * 3. RELAY       — Issuer consensus → order relayed to L3 (submitOrderFor)
+ * 4. COLLATERAL  — USDC bridged to L3 custody
+ * 5. FILL        — Issuers batch + AP executes trades + confirmFills
+ * 6. MINT        — ITP shares minted on L3
+ * 7. BRIDGE      — Shares bridged back to Arb → mintBridgedShares → user gets BridgedITP
  */
 enum BuyPhase {
   INPUT = 0,
   APPROVE = 1,
   SUBMIT = 2,
   RELAY = 3,
-  BATCH = 4,
+  COLLATERAL = 4,
   FILL = 5,
-  RECEIVE = 6,
-  DONE = 7,
+  MINT = 6,
+  BRIDGE = 7,
+  DONE = 8,
 }
 
 const PROGRESS_STEPS = [
-  { phase: BuyPhase.APPROVE, label: 'Approve', desc: 'USDC approval' },
-  { phase: BuyPhase.SUBMIT, label: 'Submit', desc: 'Arb order tx' },
-  { phase: BuyPhase.RELAY, label: 'Relay', desc: 'Consensus + bridge to L3' },
-  { phase: BuyPhase.BATCH, label: 'Batch', desc: 'Batch + CEX trade' },
-  { phase: BuyPhase.FILL, label: 'Fill', desc: 'Fill confirmation' },
-  { phase: BuyPhase.RECEIVE, label: 'Receive', desc: 'Bridge shares to Arb' },
+  { phase: BuyPhase.APPROVE, label: 'Approve' },
+  { phase: BuyPhase.SUBMIT, label: 'Submit' },
+  { phase: BuyPhase.RELAY, label: 'Relay' },
+  { phase: BuyPhase.COLLATERAL, label: 'Collateral' },
+  { phase: BuyPhase.FILL, label: 'Fill' },
+  { phase: BuyPhase.MINT, label: 'Mint' },
+  { phase: BuyPhase.BRIDGE, label: 'Bridge' },
 ]
 
 const PHASE_DESCRIPTIONS: Record<number, string | ((ctx: { isPending: boolean }) => string)> = {
   [BuyPhase.APPROVE]: (ctx) => ctx.isPending ? 'Confirm USDC approval in wallet...' : 'Waiting for approval confirmation...',
   [BuyPhase.SUBMIT]: (ctx) => ctx.isPending ? 'Confirm buy order in wallet...' : 'Waiting for Arb tx confirmation...',
-  [BuyPhase.RELAY]: () => 'Issuer nodes: consensus + bridge relay to L3...',
-  [BuyPhase.BATCH]: () => 'Order on L3, waiting for batch + CEX execution...',
-  [BuyPhase.FILL]: () => 'Trades executed, waiting for fill confirmation...',
-  [BuyPhase.RECEIVE]: () => 'Shares minted on L3, bridging to Arb...',
-  [BuyPhase.DONE]: () => 'Complete! Shares received.',
+  [BuyPhase.RELAY]: () => 'Issuer consensus — relaying order to L3...',
+  [BuyPhase.COLLATERAL]: () => 'Bridging USDC collateral to L3 custody...',
+  [BuyPhase.FILL]: () => 'Batching order — AP executing trades on CEX...',
+  [BuyPhase.MINT]: () => 'Fill confirmed — minting ITP shares on L3...',
+  [BuyPhase.BRIDGE]: () => 'Bridging shares back to Arbitrum...',
+  [BuyPhase.DONE]: () => 'Complete! Shares received on Arbitrum.',
 }
 
 const SLIPPAGE_TIERS = [
@@ -283,7 +287,7 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
 
     if (foundL3OrderId !== null) {
       setOrderId(foundL3OrderId)
-      setPhase(BuyPhase.BATCH) // Already on L3, skip relay
+      setPhase(BuyPhase.COLLATERAL) // Already on L3, skip relay
     } else {
       setPhase(BuyPhase.RELAY) // Cross-chain: wait for relay
     }
@@ -326,7 +330,7 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
           const latest = logs[logs.length - 1]
           const realOrderId = (latest.args as any).orderId as bigint
           setOrderId(realOrderId)
-          setPhase(BuyPhase.BATCH)
+          setPhase(BuyPhase.COLLATERAL)
         }
       } catch {
         // Retry on next interval
@@ -338,9 +342,9 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
     return () => { cancelled = true; clearInterval(interval) }
   }, [phase, orderId, l3Client, l3BaseBlock, itpId])
 
-  // BATCH/FILL phases: poll L3 getOrder directly for status changes + FillConfirmed
+  // COLLATERAL→FILL→MINT: poll L3 getOrder directly for status + FillConfirmed
   useEffect(() => {
-    if ((phase !== BuyPhase.BATCH && phase !== BuyPhase.FILL) || orderId === null || !l3Client) return
+    if (phase < BuyPhase.COLLATERAL || phase >= BuyPhase.BRIDGE || orderId === null || !l3Client) return
 
     let cancelled = false
     const poll = async () => {
@@ -356,9 +360,9 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
         if (cancelled) return
 
         const status = Number(order.status ?? order[10] ?? 0)
-        if (status >= 2 && phase < BuyPhase.FILL) {
-          // FILLED — also fetch fill details from FillConfirmed event
-          setPhase(BuyPhase.FILL)
+        // L3 order status: 0=Pending, 1=Batched, 2=Filled
+        if (status >= 2 && phase < BuyPhase.MINT) {
+          // FILLED → MINT phase (shares being minted on L3)
           try {
             const fillLogs = await l3Client.getLogs({
               address: INDEX_PROTOCOL.index,
@@ -382,8 +386,10 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
               setFillAmount((f.args as any).fillAmount as bigint)
             }
           } catch {}
-        } else if (status >= 1 && phase < BuyPhase.BATCH) {
-          setPhase(BuyPhase.BATCH)
+          setPhase(BuyPhase.MINT)
+        } else if (status >= 1 && phase < BuyPhase.FILL) {
+          // BATCHED → FILL phase (AP trading on CEX)
+          setPhase(BuyPhase.FILL)
         }
       } catch {
         // Retry on next interval
@@ -395,18 +401,16 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
     return () => { cancelled = true; clearInterval(interval) }
   }, [phase, orderId, l3Client, l3BaseBlock])
 
-  // FILL → RECEIVE: once filled on L3, poll Arb for BridgedITP balance increase
+  // MINT → BRIDGE: shares minted on L3, now bridging back to Arb
   useEffect(() => {
-    if (phase !== BuyPhase.FILL) return
-
-    // After fill, wait a bit then start checking for share arrival
-    const timer = setTimeout(() => setPhase(BuyPhase.RECEIVE), 2000)
+    if (phase !== BuyPhase.MINT) return
+    const timer = setTimeout(() => setPhase(BuyPhase.BRIDGE), 2000)
     return () => clearTimeout(timer)
   }, [phase])
 
-  // RECEIVE: poll user's BridgedITP balance on Arb until it increases
+  // BRIDGE: poll user's BridgedITP balance on Arb until it increases
   useEffect(() => {
-    if (phase !== BuyPhase.RECEIVE) return
+    if (phase !== BuyPhase.BRIDGE) return
 
     let cancelled = false
     const poll = async () => {

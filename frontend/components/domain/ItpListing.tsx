@@ -643,7 +643,22 @@ function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardPr
   }, [showDetails, publicClient, effectiveArbAddress])
 
   return (
-    <div className="bg-terminal-dark border border-white/10 rounded-lg p-4 hover:border-accent/50 transition-colors">
+    <div className="bg-terminal-dark border border-white/10 rounded-lg overflow-hidden hover:border-accent/50 transition-colors">
+      {/* Video embed — flush top, full width (only if videoUrl set) */}
+      {metadata?.videoUrl && (
+        <div className="aspect-video bg-black">
+          <iframe
+            src={metadata.videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+            className="w-full h-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            title={`${itp.name || 'ITP'} video`}
+          />
+        </div>
+      )}
+
+      {/* Card content */}
+      <div className="p-4">
       <div className="flex justify-between items-start mb-3">
         <div>
           <h3 className="text-lg font-bold text-white">{itp.name || `ITP #${itp.nonce ?? itp.id}`}</h3>
@@ -678,23 +693,6 @@ function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardPr
               </span>
             </div>
           )}
-        </div>
-      )}
-
-      {/* Video embed */}
-      {metadata?.videoUrl ? (
-        <div className="mb-3 rounded overflow-hidden aspect-video bg-black/50">
-          <iframe
-            src={metadata.videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
-            className="w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            title={`${itp.name || 'ITP'} video`}
-          />
-        </div>
-      ) : (
-        <div className="mb-3 rounded bg-black/30 border border-white/5 flex items-center justify-center aspect-video">
-          <span className="text-white/20 text-xs">No video yet</span>
         </div>
       )}
 
@@ -902,6 +900,7 @@ function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardPr
           )}
         </div>
       )}
+      </div>{/* end p-4 wrapper */}
     </div>
   )
 }
