@@ -3205,14 +3205,13 @@ async fn sim_sweep_stream(
             }).collect()
         }
         "weighting" => {
+            // One representative variant per strategy family (default param)
             let all_weightings = vec![
                 simulation::Weighting::Equal,
                 simulation::Weighting::Mcap,
                 simulation::Weighting::CappedMcap { cap_pct: 10.0 },
-                simulation::Weighting::CappedMcap { cap_pct: 25.0 },
                 simulation::Weighting::SqrtMcap,
                 simulation::Weighting::Momentum { lookback_days: 90 },
-                simulation::Weighting::Momentum { lookback_days: 180 },
                 simulation::Weighting::InverseVolatility { lookback_days: 60 },
                 simulation::Weighting::DualMomentum { lookback_days: 180 },
                 simulation::Weighting::RiskParity { lookback_days: 60 },

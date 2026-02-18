@@ -11,21 +11,6 @@ const REBALANCE_OPTIONS = [
   { value: 90, label: '3m' },
   { value: 180, label: '6m' },
 ]
-const WEIGHTING_OPTIONS = [
-  { value: 'equal', label: 'Equal', title: 'Equal weight across all holdings' },
-  { value: 'mcap', label: 'MCap', title: 'Weight by market capitalization' },
-  { value: 'mcap_cap10', label: 'Cap 10%', title: 'MCap-weighted, max 10% per holding' },
-  { value: 'mcap_cap25', label: 'Cap 25%', title: 'MCap-weighted, max 25% per holding' },
-  { value: 'sqrt_mcap', label: 'SqrtMCap', title: 'Square root of MCap: dampened concentration' },
-  { value: 'momentum_90', label: 'Mom 90d', title: 'Momentum: weight by 90-day trailing return' },
-  { value: 'momentum_180', label: 'Mom 180d', title: 'Momentum: weight by 180-day trailing return' },
-  { value: 'invvol_60', label: 'InvVol', title: 'Inverse Volatility: less volatile = higher weight (60d)' },
-  { value: 'dual_mom_180', label: 'DualMom', title: 'Dual Momentum: go to cash when market is down (180d)' },
-  { value: 'risk_parity_60', label: 'RiskPar', title: 'Risk Parity: equal risk contribution per asset (60d)' },
-  { value: 'min_var_60', label: 'MinVar', title: 'Minimum Variance: minimize portfolio volatility (60d)' },
-  { value: 'multi_factor_90', label: 'MultiFac', title: 'Multi-Factor: momentum + low vol + MCap composite (90d)' },
-  { value: 'low_vol_60', label: 'LowVol', title: 'Low Volatility: keep only the least volatile half, equal weight (60d)' },
-]
 const THRESHOLD_OPTIONS = [
   { value: null as number | null, label: 'Periodic' },
   { value: 3 as number | null, label: '3%' },
@@ -35,6 +20,66 @@ const THRESHOLD_OPTIONS = [
 ]
 const SWEEP_OPTIONS = ['none', 'top_n', 'weighting', 'rebalance', 'category'] as const
 
+// Strategy families with their sub-parameters
+interface StrategyFamily {
+  id: string
+  label: string
+  title: string
+  prefix: string               // used to build weighting string: prefix + param
+  params: { value: number; label: string }[] | null  // null = no sub-params
+  defaultParam: number | null
+}
+
+const STRATEGY_FAMILIES: StrategyFamily[] = [
+  { id: 'equal', label: 'Equal', title: 'Equal weight across all holdings', prefix: '', params: null, defaultParam: null },
+  { id: 'mcap', label: 'MCap', title: 'Weight by market capitalization', prefix: '', params: null, defaultParam: null },
+  { id: 'mcap_cap', label: 'Capped', title: 'MCap-weighted with max % cap per holding', prefix: 'mcap_cap', params: [
+    { value: 5, label: '5%' }, { value: 10, label: '10%' }, { value: 15, label: '15%' }, { value: 25, label: '25%' }, { value: 50, label: '50%' },
+  ], defaultParam: 10 },
+  { id: 'sqrt_mcap', label: 'SqrtMCap', title: 'Square root of MCap: dampened concentration', prefix: '', params: null, defaultParam: null },
+  { id: 'momentum', label: 'Momentum', title: 'Weight by trailing return — winners get more', prefix: 'momentum_', params: [
+    { value: 30, label: '30d' }, { value: 60, label: '60d' }, { value: 90, label: '90d' }, { value: 180, label: '180d' }, { value: 365, label: '1y' },
+  ], defaultParam: 90 },
+  { id: 'invvol', label: 'InvVol', title: 'Inverse Volatility: less volatile = higher weight', prefix: 'invvol_', params: [
+    { value: 30, label: '30d' }, { value: 60, label: '60d' }, { value: 90, label: '90d' },
+  ], defaultParam: 60 },
+  { id: 'dual_mom', label: 'DualMom', title: 'Dual Momentum: go to cash when market is down', prefix: 'dual_mom_', params: [
+    { value: 90, label: '90d' }, { value: 180, label: '180d' }, { value: 365, label: '1y' },
+  ], defaultParam: 180 },
+  { id: 'risk_parity', label: 'RiskPar', title: 'Risk Parity: equal risk contribution per asset', prefix: 'risk_parity_', params: [
+    { value: 30, label: '30d' }, { value: 60, label: '60d' }, { value: 90, label: '90d' },
+  ], defaultParam: 60 },
+  { id: 'min_var', label: 'MinVar', title: 'Minimum Variance: minimize portfolio volatility', prefix: 'min_var_', params: [
+    { value: 30, label: '30d' }, { value: 60, label: '60d' }, { value: 90, label: '90d' },
+  ], defaultParam: 60 },
+  { id: 'multi_factor', label: 'MultiFac', title: 'Multi-Factor: momentum + low vol + MCap composite', prefix: 'multi_factor_', params: [
+    { value: 60, label: '60d' }, { value: 90, label: '90d' }, { value: 180, label: '180d' },
+  ], defaultParam: 90 },
+  { id: 'low_vol', label: 'LowVol', title: 'Low Volatility: keep least volatile half, equal weight', prefix: 'low_vol_', params: [
+    { value: 30, label: '30d' }, { value: 60, label: '60d' }, { value: 90, label: '90d' },
+  ], defaultParam: 60 },
+]
+
+// Parse a weighting string back into family + param
+function parseWeighting(w: string): { familyId: string; param: number | null } {
+  for (const f of STRATEGY_FAMILIES) {
+    if (!f.params) {
+      if (f.id === w) return { familyId: f.id, param: null }
+    } else if (f.prefix && w.startsWith(f.prefix)) {
+      const num = parseInt(w.slice(f.prefix.length), 10)
+      if (!isNaN(num)) return { familyId: f.id, param: num }
+    }
+  }
+  return { familyId: 'equal', param: null }
+}
+
+// Build weighting string from family + param
+function buildWeighting(familyId: string, param: number | null): string {
+  const f = STRATEGY_FAMILIES.find(s => s.id === familyId)
+  if (!f || !f.params) return familyId
+  return `${f.prefix}${param ?? f.defaultParam}`
+}
+
 export interface SimFilterState {
   category_id: string
   top_n: number
@@ -43,8 +88,8 @@ export interface SimFilterState {
   base_fee_pct: number
   spread_multiplier: number
   sweep: string
-  sweep_categories: string[]  // for category sweep
-  threshold_pct: number | null  // null = periodic, number = band %
+  sweep_categories: string[]
+  threshold_pct: number | null
 }
 
 interface SimFilterPanelProps {
@@ -63,8 +108,21 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
   const sweepDim = filters.sweep
   const isCategorySweep = sweepDim === 'category'
 
+  // Parse current weighting into family + param
+  const { familyId: activeFamily, param: activeParam } = parseWeighting(filters.weighting)
+  const activeFamilyDef = STRATEGY_FAMILIES.find(f => f.id === activeFamily)
+
   const update = (patch: Partial<SimFilterState>) => {
     onChange({ ...filters, ...patch })
+  }
+
+  const selectFamily = (fam: StrategyFamily) => {
+    if (sweepDim === 'weighting') return
+    update({ weighting: buildWeighting(fam.id, fam.defaultParam) })
+  }
+
+  const selectParam = (param: number) => {
+    update({ weighting: buildWeighting(activeFamily, param) })
   }
 
   const toggleSweepCategory = (catId: string) => {
@@ -76,7 +134,6 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
     }
   }
 
-  // Run is valid when: category sweep has >= 2 categories selected, OR single mode/other sweep has category_id
   const canRun = isCategorySweep
     ? filters.sweep_categories.length >= 2
     : !!filters.category_id
@@ -95,7 +152,6 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           </label>
 
           {isCategorySweep ? (
-            /* Multi-select for category sweep */
             <div className="relative">
               <button
                 className="w-full bg-white/5 border border-accent/30 rounded px-2 py-1.5 text-xs font-mono text-accent text-left"
@@ -137,7 +193,6 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                   ))}
                 </div>
               )}
-              {/* Selected pills */}
               {filters.sweep_categories.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1">
                   {filters.sweep_categories.map(catId => {
@@ -161,7 +216,6 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
               )}
             </div>
           ) : (
-            /* Single select for non-category sweep */
             <select
               className="w-full bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs font-mono text-white cursor-pointer"
               value={filters.category_id}
@@ -200,78 +254,103 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
         </div>
       </div>
 
-      {/* Row 2: Weighting + Rebalance */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <div>
-          <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Weighting</label>
-          <div className="flex flex-wrap gap-0.5">
-            {WEIGHTING_OPTIONS.map(w => (
-              <button
-                key={w.value}
-                title={w.title}
-                className={`px-2 py-1 text-[10px] font-mono border border-white/10 rounded transition-colors ${
-                  sweepDim === 'weighting'
-                    ? 'bg-accent/20 text-accent border-accent/30'
-                    : filters.weighting === w.value
-                      ? 'bg-white/20 text-white'
-                      : 'bg-white/5 text-white/50 hover:bg-white/10'
-                }`}
-                onClick={() => { if (sweepDim !== 'weighting') update({ weighting: w.value }) }}
-                disabled={sweepDim === 'weighting'}
-              >
-                {w.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Rebalance</label>
-          <div className="flex items-center">
-            {/* Periodic intervals */}
-            {REBALANCE_OPTIONS.map(r => (
-              <button
-                key={r.value}
-                title={`Rebalance every ${r.label}`}
-                className={`px-2 py-1 text-xs font-mono border border-white/10 first:rounded-l -ml-px first:ml-0 transition-colors ${
-                  sweepDim === 'rebalance'
-                    ? 'bg-accent/20 text-accent border-accent/30'
-                    : filters.threshold_pct == null && filters.rebalance_days === r.value
-                      ? 'bg-white/20 text-white'
-                      : 'bg-white/5 text-white/50 hover:bg-white/10'
-                }`}
-                onClick={() => { if (sweepDim !== 'rebalance') update({ rebalance_days: r.value, threshold_pct: null }) }}
-                disabled={sweepDim === 'rebalance'}
-              >
-                {r.label}
-              </button>
-            ))}
-            {/* Divider */}
-            <span className="px-1.5 text-white/20 text-[10px] font-mono select-none">|</span>
-            {/* Drift-based bands */}
-            {THRESHOLD_OPTIONS.filter(t => t.value != null).map((t, i) => (
-              <button
-                key={t.label}
-                title={`Rebalance when any holding drifts ${t.label} from target`}
-                className={`px-2 py-1 text-xs font-mono border border-white/10 -ml-px transition-colors ${
-                  i === THRESHOLD_OPTIONS.filter(x => x.value != null).length - 1 ? 'rounded-r' : ''
-                } ${
-                  sweepDim === 'rebalance'
-                    ? 'bg-accent/20 text-accent border-accent/30'
-                    : filters.threshold_pct === t.value
-                      ? 'bg-white/20 text-white'
-                      : 'bg-white/5 text-white/50 hover:bg-white/10'
-                }`}
-                onClick={() => { if (sweepDim !== 'rebalance') update({ threshold_pct: t.value }) }}
-                disabled={sweepDim === 'rebalance'}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+      {/* Row 2: Strategy family buttons */}
+      <div>
+        <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Weighting Strategy</label>
+        <div className="flex flex-wrap gap-0.5">
+          {STRATEGY_FAMILIES.map(fam => (
+            <button
+              key={fam.id}
+              title={fam.title}
+              className={`px-2 py-1 text-[10px] font-mono border border-white/10 rounded transition-colors ${
+                sweepDim === 'weighting'
+                  ? 'bg-accent/20 text-accent border-accent/30'
+                  : activeFamily === fam.id
+                    ? 'bg-white/20 text-white border-white/30'
+                    : 'bg-white/5 text-white/50 hover:bg-white/10'
+              }`}
+              onClick={() => selectFamily(fam)}
+              disabled={sweepDim === 'weighting'}
+            >
+              {fam.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Row 3: Fees */}
+      {/* Row 2b: Sub-parameter picker (only when active family has params, and not sweep=weighting) */}
+      {activeFamilyDef?.params && sweepDim !== 'weighting' && (
+        <div className="flex items-center gap-2 pl-2 border-l-2 border-white/10">
+          <span className="text-[10px] text-white/30 font-mono">
+            {activeFamily === 'mcap_cap' ? 'Max cap' : 'Lookback'}
+          </span>
+          <div className="flex">
+            {activeFamilyDef.params.map((p, i) => (
+              <button
+                key={p.value}
+                className={`px-2 py-0.5 text-[10px] font-mono border border-white/10 -ml-px transition-colors ${
+                  i === 0 ? 'rounded-l ml-0' : ''
+                } ${
+                  i === (activeFamilyDef.params?.length ?? 0) - 1 ? 'rounded-r' : ''
+                } ${
+                  activeParam === p.value
+                    ? 'bg-white/20 text-white'
+                    : 'bg-white/5 text-white/40 hover:bg-white/10'
+                }`}
+                onClick={() => selectParam(p.value)}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Row 3: Rebalance */}
+      <div>
+        <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Rebalance</label>
+        <div className="flex items-center">
+          {REBALANCE_OPTIONS.map(r => (
+            <button
+              key={r.value}
+              title={`Rebalance every ${r.label}`}
+              className={`px-2 py-1 text-xs font-mono border border-white/10 first:rounded-l -ml-px first:ml-0 transition-colors ${
+                sweepDim === 'rebalance'
+                  ? 'bg-accent/20 text-accent border-accent/30'
+                  : filters.threshold_pct == null && filters.rebalance_days === r.value
+                    ? 'bg-white/20 text-white'
+                    : 'bg-white/5 text-white/50 hover:bg-white/10'
+              }`}
+              onClick={() => { if (sweepDim !== 'rebalance') update({ rebalance_days: r.value, threshold_pct: null }) }}
+              disabled={sweepDim === 'rebalance'}
+            >
+              {r.label}
+            </button>
+          ))}
+          <span className="px-1.5 text-white/20 text-[10px] font-mono select-none">|</span>
+          {THRESHOLD_OPTIONS.filter(t => t.value != null).map((t, i) => (
+            <button
+              key={t.label}
+              title={`Rebalance when any holding drifts ${t.label} from target`}
+              className={`px-2 py-1 text-xs font-mono border border-white/10 -ml-px transition-colors ${
+                i === THRESHOLD_OPTIONS.filter(x => x.value != null).length - 1 ? 'rounded-r' : ''
+              } ${
+                sweepDim === 'rebalance'
+                  ? 'bg-accent/20 text-accent border-accent/30'
+                  : filters.threshold_pct === t.value
+                    ? 'bg-white/20 text-white'
+                    : 'bg-white/5 text-white/50 hover:bg-white/10'
+              }`}
+              onClick={() => { if (sweepDim !== 'rebalance') update({ threshold_pct: t.value }) }}
+              disabled={sweepDim === 'rebalance'}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Row 4: Fees */}
       <div className="flex flex-wrap gap-3 items-center">
         <div>
           <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Base Fee %</label>
@@ -300,7 +379,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
         </div>
       </div>
 
-      {/* Row 4: Sweep + Run */}
+      {/* Row 5: Sweep + Run */}
       <div className="flex flex-wrap gap-3 items-center justify-between">
         <div>
           <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Sweep</label>
