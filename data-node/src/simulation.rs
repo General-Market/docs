@@ -100,7 +100,13 @@ impl SimDataCache {
         // 7. Precompute category info with eligible coin counts
         //    A coin is "eligible" if it's in the cache (has prices + Bitget listing).
         let eligible_set: HashSet<&String> = coin_symbol_map.keys().collect();
-        let categories: Vec<CachedCategoryInfo> = cat_meta.into_iter()
+
+        // Add synthetic "all" category containing every eligible coin
+        let all_coin_ids: Vec<String> = eligible_set.iter().map(|s| (*s).clone()).collect();
+        let all_count = all_coin_ids.len();
+        category_coins.insert("all".to_string(), all_coin_ids);
+
+        let mut categories: Vec<CachedCategoryInfo> = cat_meta.into_iter()
             .filter_map(|row| {
                 let eligible_count = category_coins.get(&row.id)
                     .map(|coins| coins.iter().filter(|c| eligible_set.contains(c)).count())
@@ -112,6 +118,15 @@ impl SimDataCache {
                 }
             })
             .collect();
+
+        // Sort by coin_count DESC, then insert "All" at the top
+        categories.sort_by(|a, b| b.coin_count.cmp(&a.coin_count));
+        categories.insert(0, CachedCategoryInfo {
+            id: "all".to_string(),
+            name: "All Eligible Coins".to_string(),
+            coin_count: all_count,
+            market_cap: None,
+        });
 
         let total_ms = t0.elapsed().as_millis();
 

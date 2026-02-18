@@ -17,22 +17,50 @@ interface UseSimCategoriesResult {
   error: string | null
 }
 
+// Module-level cache: fetch once, share across all component instances
+let _cachedCategories: SimCategory[] | null = null
+let _fetchPromise: Promise<SimCategory[]> | null = null
+
+function fetchCategories(): Promise<SimCategory[]> {
+  if (_cachedCategories) return Promise.resolve(_cachedCategories)
+  if (_fetchPromise) return _fetchPromise
+  _fetchPromise = fetch(`${DATA_NODE_URL}/sim/categories`, { signal: AbortSignal.timeout(30_000) })
+    .then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      return r.json()
+    })
+    .then(data => {
+      const cats: SimCategory[] = data.categories || []
+      _cachedCategories = cats
+      return cats
+    })
+    .catch(e => {
+      _fetchPromise = null // allow retry on error
+      throw e
+    })
+  return _fetchPromise
+}
+
+// Preload immediately on module import — categories are ready before any component mounts
+fetchCategories().catch(() => {})
+
 export function useSimCategories(): UseSimCategoriesResult {
-  const [categories, setCategories] = useState<SimCategory[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [categories, setCategories] = useState<SimCategory[]>(_cachedCategories || [])
+  const [isLoading, setIsLoading] = useState(!_cachedCategories)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    let cancelled = false
+    if (_cachedCategories) {
+      setCategories(_cachedCategories)
+      setIsLoading(false)
+      return
+    }
 
-    fetch(`${DATA_NODE_URL}/sim/categories`, { signal: AbortSignal.timeout(30_000) })
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`)
-        return r.json()
-      })
-      .then(data => {
+    let cancelled = false
+    fetchCategories()
+      .then(cats => {
         if (!cancelled) {
-          setCategories(data.categories || [])
+          setCategories(cats)
           setIsLoading(false)
         }
       })
