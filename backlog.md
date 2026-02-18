@@ -2957,3 +2957,99 @@ Compared architecture.md (v1.9) against full codebase. Updated architecture.md t
 - [DECISION] Frontend blacklist via static JSON config (`lib/config/blacklisted-itps.json`) — simple hard-coded array of ITP IDs to hide, no on-chain governance needed
 - [DECISION] YouTube embed fallback shows example video (rickroll) when no metadata set — better UX than empty placeholder during development, deployers can set their own once metadata is live
 - [DECISION] No `whenNotPaused` on metadata setter — metadata updates are non-financial, no risk during pause
+
+## Session: 20260218-2300-r7k1
+
+- [DECISION] Variant legend as side panel alongside sweep chart (flex layout) instead of Recharts built-in Legend — enables interactive "Deploy Index" button on hover per variant
+- [DECISION] Deploy Index flow: BacktestSection fetches /sim/holdings for the run_id, maps symbols to weights, passes up to page.tsx which sets initialHoldings on CreateItpSection and expands it. Symbol→address mapping happens inside CreateItpSection using its already-loaded availableAssets from deployed-assets.json.
+- [DECISION] Weight normalization on deploy: holdings capped at 10 assets (CreateITP limit), weights rounded to integers summing to 100, remainder added to first asset.
+
+---
+
+## Plan: Additional Rebalance Strategies for Index Backtester
+
+### Current state
+
+The backtester currently supports one rebalance method: **periodic time-based rebalance** (every N days) with two weighting schemes (equal weight, market-cap weight). The simulation engine in `data-node/src/simulation.rs` runs a day-by-day loop and triggers rebalance on fixed intervals.
+
+### Proposed strategies (ordered by popularity in traditional ETF rebalancing)
+
+#### 1. Momentum (Cross-Sectional)
+**What**: Rank assets by trailing return over lookback period. Overweight winners, underweight losers.
+**Parameters**: `lookback_days` (90, 180, 365), `top_pct` (long top 30%), `bottom_pct` (optional short/exclude bottom 30%)
+**Weight formula**: `weight[i] = max(0, return_rank[i] - cutoff) / sum(positive_ranks)` — pure relative momentum
+**Implementation**:
+- New `Weighting::Momentum { lookback_days, top_pct }` variant
+- In `perform_rebalance()`: compute trailing returns over lookback, rank, assign weights proportional to excess return above cutoff
+- Need: `load_prices_for_date()` already exists; add `load_price_at_date(pool, coin_id, date)` to get lookback start price
+- Popular ETFs: MTUM (iShares MSCI USA Momentum), SPMO (Invesco S&P 500 Momentum)
+
+#### 2. Low Volatility / Minimum Variance
+**What**: Inverse-volatility weighting. Less volatile assets get higher weight.
+**Parameters**: `vol_lookback_days` (60, 90, 180), `vol_floor` (minimum annualized vol, e.g. 5%)
+**Weight formula**: `weight[i] = (1/vol[i]) / sum(1/vol[j])` where `vol[i]` = annualized std of daily returns
+**Implementation**:
+- New `Weighting::InverseVol { lookback_days }`
+- Compute daily returns over lookback, calculate annualized std, invert, normalize
+- Need: historical daily prices for each coin over lookback window
+- Popular ETFs: USMV (iShares MSCI USA Min Vol), SPLV (Invesco S&P 500 Low Volatility)
+
+#### 3. Risk Parity
+**What**: Equal risk contribution — each asset contributes the same amount of portfolio risk.
+**Parameters**: `vol_lookback_days` (60, 90, 180)
+**Weight formula**: Iterative optimization where `w[i] * vol[i] * corr_contribution[i] = constant` for all i. Simplified: `weight[i] = (1/vol[i]) / sum(1/vol[j])` when ignoring correlations (same as inverse vol). Full version needs correlation matrix.
+**Implementation**:
+- New `Weighting::RiskParity { lookback_days }`
+- Simplified (no correlation): identical to InverseVol
+- Full: compute pairwise correlation matrix from daily returns, use iterative solver (Roncalli algorithm) to find weights with equal marginal risk contribution
+- Popular ETFs: RPAR (RPAR Risk Parity ETF), UPAR (Ultra Risk Parity ETF)
+
+#### 4. Fundamental / Smart Beta
+**What**: Weight by on-chain or market fundamentals instead of market cap.
+**Parameters**: `metric` enum (volume_24h, tvl, active_addresses, fee_revenue)
+**Weight formula**: `weight[i] = metric[i] / sum(metric[j])` with same 0.5% floor as mcap
+**Implementation**:
+- New `Weighting::Fundamental { metric }`
+- Need new data: CoinGecko API provides `total_volume` in market data. Could add volume to `coingecko_market_caps` table
+- TVL/fees would need DeFiLlama integration (separate data source)
+- Popular ETFs: PRF (Invesco FTSE RAFI US 1000), FNDB (Schwab Fundamental International)
+
+#### 5. Threshold Rebalance (Band-Based)
+**What**: Rebalance only when any asset drifts beyond a threshold from target weight.
+**Parameters**: `drift_threshold_pct` (5%, 10%, 20%), inner `weighting` (equal/mcap)
+**Logic**: On each day, compute actual weights from current prices. If any weight differs from target by more than threshold, trigger full rebalance. Otherwise hold.
+**Implementation**:
+- New rebalance trigger mode alongside the existing periodic mode
+- In the day-by-day loop: check `abs(actual_weight[i] - target_weight[i]) > threshold` for any i
+- Reduces turnover and fees compared to fixed-interval
+- Popular approach: Vanguard uses 1-2% bands on their target allocation funds
+
+#### 6. Dual Momentum (Absolute + Relative)
+**What**: Combine relative momentum (pick winners) with absolute momentum (go to cash if overall market is down).
+**Parameters**: `lookback_days` (typically 12 months), `cash_threshold` (0% = switch to cash if negative return)
+**Logic**: First, check if the broad market index (e.g., BTC or total crypto market cap) return over lookback > cash_threshold. If no, allocate 100% to stablecoins. If yes, use relative momentum rankings for allocation.
+**Implementation**:
+- New `Weighting::DualMomentum { lookback_days, benchmark_coin_id }`
+- Compute benchmark return, if negative → hold cash (NAV stays flat minus fees)
+- If positive → rank by relative momentum and allocate
+- Popular: Gary Antonacci's dual momentum strategy
+
+### Implementation priority
+
+| Priority | Strategy | Complexity | Data Needed | Value |
+|----------|----------|------------|-------------|-------|
+| 1 | Momentum | Medium | Existing price data | High — most requested |
+| 2 | Threshold Rebalance | Low | Existing data | High — reduces fees |
+| 3 | Inverse Volatility | Medium | Existing price data | Medium — simple risk mgmt |
+| 4 | Dual Momentum | Medium | Existing + benchmark | Medium — bear market protection |
+| 5 | Risk Parity | High | Correlation matrix | Medium — complex but popular |
+| 6 | Fundamental | High | New data sources | Low — needs DeFiLlama |
+
+### Architecture changes needed
+
+1. **`simulation.rs`**: Extend `Weighting` enum with new variants. Refactor `perform_rebalance()` to dispatch on weighting type. Add helper functions for return calculation, volatility, correlation.
+2. **`simulation.rs`**: Add `RebalanceTrigger` enum (`Periodic { days }` | `Threshold { pct, weighting }`) and check in day loop.
+3. **`db.rs`**: Add `sim_query_price_range(coin_id, start_date, end_date)` for lookback windows.
+4. **`api.rs`**: Extend sweep to include `weighting` variants with sub-parameters.
+5. **Frontend `SimFilterPanel.tsx`**: Add sub-parameter UI (lookback slider, threshold input) shown conditionally when strategy selected.
+6. **`sim_runs` table**: Add nullable columns for strategy-specific params, or store as JSONB `params` column.

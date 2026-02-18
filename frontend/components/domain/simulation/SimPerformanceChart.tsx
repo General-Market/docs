@@ -9,12 +9,12 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
-  Legend,
 } from 'recharts'
-import type { SimNavPoint } from '@/hooks/useSimulation'
+import type { SimNavPoint, SimStats } from '@/hooks/useSimulation'
+import { SimVariantLegend } from './SimVariantLegend'
 
-// Palette for sweep mode
-const SWEEP_COLORS = [
+// Palette for sweep mode (exported for SimVariantLegend)
+export const SWEEP_COLORS = [
   '#4ade80', '#f87171', '#60a5fa', '#fbbf24', '#a78bfa',
   '#34d399', '#fb923c', '#818cf8',
 ]
@@ -22,11 +22,14 @@ const SWEEP_COLORS = [
 interface SingleChartProps {
   mode: 'single'
   navSeries: SimNavPoint[]
+  runId?: number
+  onDeployIndex?: (runId: number, label: string) => void
 }
 
 interface SweepChartProps {
   mode: 'sweep'
-  variants: { label: string; navSeries: SimNavPoint[] }[]
+  variants: { label: string; navSeries: SimNavPoint[]; runId: number; stats: SimStats }[]
+  onDeployIndex?: (runId: number, label: string) => void
 }
 
 type SimPerformanceChartProps = SingleChartProps | SweepChartProps
@@ -40,7 +43,7 @@ function formatDate(dateStr: string) {
 
 export function SimPerformanceChart(props: SimPerformanceChartProps) {
   if (props.mode === 'single') {
-    const { navSeries } = props
+    const { navSeries, runId, onDeployIndex } = props
     if (!navSeries.length) return null
 
     const lastNav = navSeries[navSeries.length - 1]?.nav ?? 1
@@ -48,6 +51,17 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
 
     return (
       <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xs text-white/40 font-mono uppercase">Performance</h3>
+          {runId && onDeployIndex && (
+            <button
+              className="text-[10px] font-mono px-3 py-1 bg-accent text-white rounded hover:bg-accent/80 transition-colors"
+              onClick={() => onDeployIndex(runId, 'simulation')}
+            >
+              Deploy Index
+            </button>
+          )}
+        </div>
         <ResponsiveContainer width="100%" height={350}>
           <LineChart data={navSeries} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
@@ -79,7 +93,7 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
   }
 
   // Sweep mode
-  const { variants } = props
+  const { variants, onDeployIndex } = props
   if (!variants.length) return null
 
   // Merge all nav series into unified data keyed by date
@@ -99,43 +113,53 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
 
   return (
     <div className="mb-4">
-      <ResponsiveContainer width="100%" height={350}>
-        <LineChart data={merged} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
-          <XAxis
-            dataKey="nav_date"
-            tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}
-            tickFormatter={formatDate}
-            interval="preserveStartEnd"
+      <div className="flex gap-3">
+        {/* Chart */}
+        <div className="flex-1 min-w-0">
+          <ResponsiveContainer width="100%" height={350}>
+            <LineChart data={merged} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
+              <XAxis
+                dataKey="nav_date"
+                tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}
+                tickFormatter={formatDate}
+                interval="preserveStartEnd"
+              />
+              <YAxis
+                tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}
+                tickFormatter={v => `$${Number(v).toFixed(2)}`}
+                width={60}
+              />
+              <ReferenceLine y={1.0} stroke="#C40000" strokeDasharray="5 5" strokeOpacity={0.5} />
+              <Tooltip content={<SweepTooltip labels={variants.map(v => v.label)} />} cursor={{ stroke: 'rgba(255,255,255,0.2)' }} />
+              {variants.map((v, i) => (
+                <Line
+                  key={i}
+                  type="monotone"
+                  dataKey={`nav_${i}`}
+                  stroke={SWEEP_COLORS[i % SWEEP_COLORS.length]}
+                  strokeWidth={1.5}
+                  dot={false}
+                  activeDot={{ r: 3 }}
+                  connectNulls
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Variant Legend */}
+        <div className="w-56 flex-shrink-0">
+          <SimVariantLegend
+            variants={variants.map(v => ({
+              label: v.label,
+              runId: v.runId,
+              stats: v.stats,
+            }))}
+            onDeployIndex={onDeployIndex}
           />
-          <YAxis
-            tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}
-            tickFormatter={v => `$${Number(v).toFixed(2)}`}
-            width={60}
-          />
-          <ReferenceLine y={1.0} stroke="#C40000" strokeDasharray="5 5" strokeOpacity={0.5} />
-          <Tooltip content={<SweepTooltip labels={variants.map(v => v.label)} />} cursor={{ stroke: 'rgba(255,255,255,0.2)' }} />
-          <Legend
-            formatter={(value: string) => {
-              const idx = parseInt(value.replace('nav_', ''))
-              return variants[idx]?.label || value
-            }}
-            wrapperStyle={{ fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}
-          />
-          {variants.map((v, i) => (
-            <Line
-              key={i}
-              type="monotone"
-              dataKey={`nav_${i}`}
-              stroke={SWEEP_COLORS[i % SWEEP_COLORS.length]}
-              strokeWidth={1.5}
-              dot={false}
-              activeDot={{ r: 3 }}
-              connectNulls
-            />
-          ))}
-        </LineChart>
-      </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   )
 }

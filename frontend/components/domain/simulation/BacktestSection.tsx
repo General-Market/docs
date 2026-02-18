@@ -10,12 +10,15 @@ import { SimSweepStatsTable } from './SimSweepStatsTable'
 import { useSimulation } from '@/hooks/useSimulation'
 import { useSimSweep } from '@/hooks/useSimSweep'
 
+const DATA_NODE_URL = process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200'
+
 interface BacktestSectionProps {
   expanded: boolean
   onToggle: () => void
+  onDeployIndex?: (holdings: { symbol: string; weight: number }[]) => void
 }
 
-export function BacktestSection({ expanded, onToggle }: BacktestSectionProps) {
+export function BacktestSection({ expanded, onToggle, onDeployIndex }: BacktestSectionProps) {
   const [filters, setFilters] = useState<SimFilterState>({
     category_id: '',
     top_n: 10,
@@ -67,6 +70,29 @@ export function BacktestSection({ expanded, onToggle }: BacktestSectionProps) {
   }, [isSweep, sim, sweep])
 
   const isLoading = isSweep ? sweep.status === 'loading' : sim.status === 'loading'
+
+  // Fetch holdings for a run_id and call onDeployIndex with symbol+weight
+  const handleDeployIndex = useCallback(async (runId: number, _label: string) => {
+    if (!onDeployIndex) return
+    try {
+      const res = await fetch(`${DATA_NODE_URL}/sim/holdings?run_id=${runId}`, {
+        signal: AbortSignal.timeout(10_000),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      const holdings: { symbol: string; weight: number }[] = (data.holdings || []).map(
+        (h: { symbol: string; weight: number }) => ({
+          symbol: h.symbol.toUpperCase(),
+          weight: Math.round(h.weight * 100 * 100) / 100, // convert 0.1 → 10, keep 2 decimals
+        }),
+      )
+      if (holdings.length > 0) {
+        onDeployIndex(holdings)
+      }
+    } catch (e) {
+      console.error('[BacktestSection] Failed to fetch holdings for deploy:', e)
+    }
+  }, [onDeployIndex])
 
   return (
     <div className="bg-terminal-dark/50 border border-white/10 rounded-lg">
@@ -122,6 +148,8 @@ export function BacktestSection({ expanded, onToggle }: BacktestSectionProps) {
                 <SimPerformanceChart
                   mode="single"
                   navSeries={sim.result.nav_series}
+                  runId={sim.result.run_id}
+                  onDeployIndex={handleDeployIndex}
                 />
               )}
 
@@ -158,14 +186,17 @@ export function BacktestSection({ expanded, onToggle }: BacktestSectionProps) {
                 />
               )}
 
-              {/* Sweep Chart (progressively updated) */}
+              {/* Sweep Chart with Variant Legend */}
               {sweep.completedVariants.length > 0 && (
                 <SimPerformanceChart
                   mode="sweep"
                   variants={sweep.completedVariants.map(v => ({
                     label: v.variant,
                     navSeries: v.nav_series,
+                    runId: v.run_id,
+                    stats: v.stats,
                   }))}
+                  onDeployIndex={handleDeployIndex}
                 />
               )}
             </>

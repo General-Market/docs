@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { ItpListing } from '@/components/domain/ItpListing'
@@ -15,10 +15,16 @@ type Section = 'create' | 'system' | 'portfolio' | 'backtest' | null
 export default function Home() {
   const [expandedSection, setExpandedSection] = useState<Section>(null)
   const [showVault, setShowVault] = useState(false)
+  const [deployHoldings, setDeployHoldings] = useState<{ symbol: string; weight: number }[] | null>(null)
 
   const toggle = (section: Section) => {
     setExpandedSection(prev => prev === section ? null : section)
   }
+
+  const handleDeployIndex = useCallback((holdings: { symbol: string; weight: number }[]) => {
+    setDeployHoldings(holdings)
+    setExpandedSection('create')
+  }, [])
 
   return (
     <main className="min-h-screen bg-terminal flex flex-col">
@@ -50,6 +56,7 @@ export default function Home() {
             <CreateItpSection
               expanded={expandedSection === 'create'}
               onToggle={() => toggle('create')}
+              initialHoldings={deployHoldings}
             />
           </div>
 
@@ -66,6 +73,7 @@ export default function Home() {
             <BacktestSection
               expanded={expandedSection === 'backtest'}
               onToggle={() => toggle('backtest')}
+              onDeployIndex={handleDeployIndex}
             />
           </div>
         </div>

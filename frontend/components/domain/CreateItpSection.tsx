@@ -6,6 +6,7 @@ import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { useNonceCheck } from '@/hooks/useNonceCheck'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { activeChainId } from '@/lib/wagmi'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getCoinGeckoUrl } from '@/lib/coingecko'
 
@@ -34,9 +35,10 @@ interface AssetWeight {
 interface CreateItpSectionProps {
   expanded: boolean
   onToggle: () => void
+  initialHoldings?: { symbol: string; weight: number }[] | null
 }
 
-export function CreateItpSection({ expanded, onToggle }: CreateItpSectionProps) {
+export function CreateItpSection({ expanded, onToggle, initialHoldings }: CreateItpSectionProps) {
   const { address, isConnected } = useAccount()
   const [name, setName] = useState('')
   const [symbol, setSymbol] = useState('')
@@ -46,7 +48,7 @@ export function CreateItpSection({ expanded, onToggle }: CreateItpSectionProps) 
   const [availableAssets, setAvailableAssets] = useState<{ address: string; symbol: string }[]>(DEFAULT_SAMPLE_ASSETS)
 
   const { writeContract, data: hash, isPending, error: writeError, reset: resetWrite } = useChainWriteContract()
-  const { isLoading: isConfirming, isSuccess, error: confirmError } = useWaitForTransactionReceipt({ hash })
+  const { isLoading: isConfirming, isSuccess, error: confirmError } = useWaitForTransactionReceipt({ hash, chainId: activeChainId })
   const { hasNonceGap, pendingCount, refresh: refreshNonce } = useNonceCheck()
   const [stuckWarning, setStuckWarning] = useState(false)
 
@@ -63,6 +65,37 @@ export function CreateItpSection({ expanded, onToggle }: CreateItpSectionProps) 
         // Fall back to DEFAULT_SAMPLE_ASSETS (already set as initial state)
       })
   }, [])
+
+  // Pre-populate from backtester when initialHoldings changes
+  useEffect(() => {
+    if (!initialHoldings || initialHoldings.length === 0 || availableAssets.length === 0) return
+
+    const mapped: AssetWeight[] = []
+    for (const h of initialHoldings) {
+      const asset = availableAssets.find(a => a.symbol.toUpperCase() === h.symbol.toUpperCase())
+      if (asset) {
+        mapped.push({ address: asset.address, symbol: asset.symbol, weight: Math.round(h.weight) })
+      }
+    }
+    // Only take first 10 (CreateITP limit)
+    const capped = mapped.slice(0, 10)
+    if (capped.length > 0) {
+      // Normalize weights to sum to 100
+      const rawSum = capped.reduce((s, a) => s + a.weight, 0)
+      if (rawSum > 0) {
+        const normalized = capped.map((a, i) => {
+          const w = Math.floor((a.weight / rawSum) * 100)
+          return { ...a, weight: w }
+        })
+        // Fix rounding: distribute remainder to first asset
+        const normalizedSum = normalized.reduce((s, a) => s + a.weight, 0)
+        if (normalizedSum !== 100 && normalized.length > 0) {
+          normalized[0].weight += 100 - normalizedSum
+        }
+        setSelectedAssets(normalized)
+      }
+    }
+  }, [initialHoldings, availableAssets])
 
   const totalWeight = selectedAssets.reduce((sum, a) => sum + a.weight, 0)
   const isValidWeights = totalWeight === 100
