@@ -13,9 +13,10 @@ import { RebalanceModal } from './RebalanceModal'
 import { CostBasisCard } from './CostBasisCard'
 import { useItpNav } from '@/hooks/useItpNav'
 import { useUserItpShares } from '@/hooks/useUserItpShares'
-import { useDeployerProfile } from '@/hooks/useDeployerProfile'
+import { useItpMetadata } from '@/hooks/useItpMetadata'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { hasLendingMarket } from '@/lib/contracts/morpho-markets-registry'
+import blacklistedItps from '@/lib/config/blacklisted-itps.json'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { truncateAddress } from '@/lib/utils/address'
 import { indexL3 } from '@/lib/wagmi'
@@ -60,6 +61,8 @@ interface ItpInfo {
   completed: boolean
   orbitItpId?: string
   arbAddress?: string
+  totalValue?: bigint
+  totalSupply?: bigint
 }
 
 const INDEX_ITP_ABI = [
@@ -199,6 +202,8 @@ export function ItpListing({ onCreateClick, onLendingClick }: ItpListingProps) {
               createdAt: Number(itp.createdAt),
               source: 'index',
               completed: true,
+              totalValue: BigInt(itp.totalValue || 0),
+              totalSupply: BigInt(itp.totalSupply || 0),
             })
           } catch (e) {
             console.warn(`Failed to fetch Index ITP ${i}:`, e)
@@ -264,18 +269,61 @@ export function ItpListing({ onCreateClick, onLendingClick }: ItpListingProps) {
           }
         }
 
+        // Fetch totalSupply for bridge ITPs with arbAddress (for AUM sorting)
+        for (const itp of allItps) {
+          if (itp.source === 'bridge' && itp.completed && itp.arbAddress) {
+            try {
+              const supply = await publicClient.readContract({
+                address: itp.arbAddress as `0x${string}`,
+                abi: ERC20_ABI,
+                functionName: 'totalSupply',
+              })
+              itp.totalSupply = supply
+            } catch { /* skip */ }
+          }
+        }
+
         // Deduplicate: bridge-completed ITPs with orbitItpId supersede matching Index ITPs
+        // Merge AUM data from Index ITPs into bridge ITPs
+        const indexItpMap = new Map<string, ItpInfo>()
+        for (const itp of allItps) {
+          if (itp.source === 'index' && itp.itpId) indexItpMap.set(itp.itpId, itp)
+        }
         const bridgeItpIds = new Set(
           allItps
             .filter(itp => itp.source === 'bridge' && itp.completed && itp.itpId)
             .map(itp => itp.itpId)
         )
+        for (const itp of allItps) {
+          if (itp.source === 'bridge' && itp.itpId && indexItpMap.has(itp.itpId)) {
+            const indexItp = indexItpMap.get(itp.itpId)!
+            itp.totalValue = indexItp.totalValue
+            if (!itp.totalSupply) itp.totalSupply = indexItp.totalSupply
+          }
+        }
         const deduped = allItps.filter(itp => {
           if (itp.source === 'index' && bridgeItpIds.has(itp.itpId)) return false
           return true
         })
 
-        setItps(deduped)
+        // Filter out blacklisted ITPs
+        const blacklistSet = new Set((blacklistedItps as string[]).map(id => id.toLowerCase()))
+        const filtered = deduped.filter(itp => {
+          if (itp.itpId && blacklistSet.has(itp.itpId.toLowerCase())) return false
+          return true
+        })
+
+        // Sort by AUM (totalValue) descending — active ITPs first, then pending
+        filtered.sort((a, b) => {
+          const aActive = a.source === 'index' || a.completed
+          const bActive = b.source === 'index' || b.completed
+          if (aActive !== bActive) return aActive ? -1 : 1
+          const aVal = Number(a.totalValue || 0n)
+          const bVal = Number(b.totalValue || 0n)
+          return bVal - aVal
+        })
+
+        setItps(filtered)
         setError(null)
       } catch (e: any) {
         console.error('Failed to fetch ITPs:', e)
@@ -299,47 +347,39 @@ export function ItpListing({ onCreateClick, onLendingClick }: ItpListingProps) {
   return (
     <>
       <div className="bg-terminal-dark/50 border border-white/10 rounded-lg p-6">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h2 className="text-xl font-bold text-white">Index Tracking Products</h2>
-            <p className="text-sm text-white/50">
-              {itpCount !== undefined ? `${Number(itpCount)} on Index` : ''}
-              {nextNonce !== undefined && Number(nextNonce) > 0 ? ` · ${Number(nextNonce)} via Bridge` : ''}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 mb-6 flex-wrap">
+          <h2 className="text-xl font-bold text-white">Index Tracking Products</h2>
+          <button
+            onClick={handleWalletClick}
+            disabled={isConnectPending}
+            className="px-3 py-2 bg-black border border-white/30 text-white font-mono text-sm rounded hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
+          >
+            {isConnected && address ? truncateAddress(address) : isConnectPending ? 'Connecting...' : 'Connect Wallet'}
+          </button>
+          {onCreateClick && (
             <button
-              onClick={handleWalletClick}
-              disabled={isConnectPending}
-              className="px-3 py-2 bg-black border border-white/30 text-white font-mono text-sm rounded hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
+              onClick={onCreateClick}
+              className="px-4 py-2 bg-accent text-terminal font-bold rounded hover:bg-accent/90 transition-colors"
             >
-              {isConnected && address ? truncateAddress(address) : isConnectPending ? 'Connecting...' : 'Connect Wallet'}
+              + Create ITP
             </button>
-            {onCreateClick && (
-              <button
-                onClick={onCreateClick}
-                className="px-4 py-2 bg-accent text-terminal font-bold rounded hover:bg-accent/90 transition-colors"
-              >
-                + Create ITP
-              </button>
-            )}
-            {onLendingClick && (
-              <button
-                onClick={onLendingClick}
-                className="px-3 py-2 bg-accent text-terminal font-bold rounded text-sm hover:bg-accent/90 transition-colors"
-              >
-                Lending
-              </button>
-            )}
-            <a
-              href="https://discord.gg/xsfgzwR6"
-              target="_blank"
-              rel="noopener noreferrer"
+          )}
+          {onLendingClick && (
+            <button
+              onClick={onLendingClick}
               className="px-3 py-2 bg-accent text-terminal font-bold rounded text-sm hover:bg-accent/90 transition-colors"
             >
-              Support
-            </a>
-          </div>
+              Lending
+            </button>
+          )}
+          <a
+            href="https://discord.gg/xsfgzwR6"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-2 bg-accent text-terminal font-bold rounded text-sm hover:bg-accent/90 transition-colors"
+          >
+            Support
+          </a>
         </div>
 
         {error && (
@@ -443,42 +483,45 @@ function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardPr
   const [holders, setHolders] = useState<TokenHolder[]>([])
   const [loadingHolders, setLoadingHolders] = useState(false)
   const [holderError, setHolderError] = useState(false)
-  const [showEditProfile, setShowEditProfile] = useState(false)
-  const [editName, setEditName] = useState('')
+  const [showEditMeta, setShowEditMeta] = useState(false)
+  const [editDesc, setEditDesc] = useState('')
   const [editUrl, setEditUrl] = useState('')
+  const [editVideo, setEditVideo] = useState('')
 
-  const { profile, refetch: refetchProfile } = useDeployerProfile(itp.admin as `0x${string}`)
+  const { metadata, refetch: refetchMetadata } = useItpMetadata(itp.itpId as `0x${string}` | undefined)
   const { writeContractAsync, data: txHash, isPending: isWriting } = useChainWriteContract()
   const { isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({ hash: txHash })
 
-  // Refetch profile after tx confirms
+  // Refetch metadata after tx confirms
   useEffect(() => {
     if (isTxConfirmed) {
-      refetchProfile()
-      setShowEditProfile(false)
+      refetchMetadata()
+      setShowEditMeta(false)
     }
-  }, [isTxConfirmed, refetchProfile])
+  }, [isTxConfirmed, refetchMetadata])
 
   const isDeployer = address && address.toLowerCase() === itp.admin.toLowerCase()
 
-  const handleEditProfile = useCallback(() => {
-    setEditName(profile?.displayName ?? '')
-    setEditUrl(profile?.websiteUrl ?? '')
-    setShowEditProfile(true)
-  }, [profile])
+  const handleEditMeta = useCallback(() => {
+    setEditDesc(metadata?.description ?? '')
+    setEditUrl(metadata?.websiteUrl ?? '')
+    setEditVideo(metadata?.videoUrl ?? '')
+    setShowEditMeta(true)
+  }, [metadata])
 
-  const handleSaveProfile = useCallback(async () => {
+  const handleSaveMeta = useCallback(async () => {
+    if (!itp.itpId) return
     try {
       await writeContractAsync({
         address: INDEX_PROTOCOL.bridgeProxy,
         abi: BRIDGE_PROXY_ABI,
-        functionName: 'setDeployerProfile',
-        args: [editName, editUrl],
+        functionName: 'setItpMetadata',
+        args: [itp.itpId as `0x${string}`, editDesc, editUrl, editVideo],
       })
     } catch {
       // User rejected or tx failed
     }
-  }, [writeContractAsync, editName, editUrl])
+  }, [writeContractAsync, itp.itpId, editDesc, editUrl, editVideo])
 
   const { navPerShare, totalAssetCount, pricedAssetCount, isLoading: isNavLoading } = useItpNav(itp.itpId)
   const { shares: userShares } = useUserItpShares(
@@ -638,48 +681,58 @@ function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardPr
         </div>
       )}
 
+      {/* Video embed */}
+      {metadata?.videoUrl ? (
+        <div className="mb-3 rounded overflow-hidden aspect-video bg-black/50">
+          <iframe
+            src={metadata.videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+            className="w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            title={`${itp.name || 'ITP'} video`}
+          />
+        </div>
+      ) : (
+        <div className="mb-3 rounded bg-black/30 border border-white/5 flex items-center justify-center aspect-video">
+          <span className="text-white/20 text-xs">No video yet</span>
+        </div>
+      )}
+
+      {/* Description + website */}
+      {metadata?.description && (
+        <p className="text-xs text-white/60 mb-2 line-clamp-3">{metadata.description}</p>
+      )}
+      {metadata?.websiteUrl && (
+        <a
+          href={metadata.websiteUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-accent hover:text-accent/80 mb-2 block truncate"
+        >
+          {metadata.websiteUrl.replace(/^https?:\/\//, '')}
+        </a>
+      )}
+
       <div className="text-sm text-white/50 mb-4 space-y-1">
         {itp.nonce !== undefined && <p>Request #{itp.nonce}</p>}
-        {profile ? (
-          <div>
-            <p className="text-white/70 font-medium">
-              {profile.displayName}
-              {profile.websiteUrl && (
-                <>
-                  {' '}
-                  <a
-                    href={profile.websiteUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-accent hover:text-accent/80 text-xs"
-                  >
-                    {profile.websiteUrl.replace(/^https?:\/\//, '')}
-                  </a>
-                </>
-              )}
-            </p>
-            <p className="text-xs text-white/30 truncate">{shortenAddress(itp.admin)}</p>
-          </div>
-        ) : (
-          <p className="truncate">Creator: {shortenAddress(itp.admin)}</p>
-        )}
-        {isDeployer && !showEditProfile && (
+        <p className="truncate">Creator: {shortenAddress(itp.admin)}</p>
+        {isDeployer && !showEditMeta && (
           <button
-            onClick={handleEditProfile}
+            onClick={handleEditMeta}
             className="text-xs text-accent hover:text-accent/80 underline"
           >
-            Edit Profile
+            Edit ITP Info
           </button>
         )}
-        {showEditProfile && (
+        {showEditMeta && (
           <div className="bg-black/30 rounded p-3 space-y-2 mt-1">
-            <input
-              type="text"
-              value={editName}
-              onChange={e => setEditName(e.target.value)}
-              maxLength={32}
-              placeholder="Display Name (max 32)"
-              className="w-full bg-black/50 border border-white/20 rounded px-2 py-1 text-xs text-white placeholder-white/30 focus:border-accent outline-none"
+            <textarea
+              value={editDesc}
+              onChange={e => setEditDesc(e.target.value)}
+              maxLength={280}
+              rows={3}
+              placeholder="Description (max 280 chars / ~50 words)"
+              className="w-full bg-black/50 border border-white/20 rounded px-2 py-1 text-xs text-white placeholder-white/30 focus:border-accent outline-none resize-none"
             />
             <input
               type="text"
@@ -689,16 +742,24 @@ function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardPr
               placeholder="Website URL (max 128)"
               className="w-full bg-black/50 border border-white/20 rounded px-2 py-1 text-xs text-white placeholder-white/30 focus:border-accent outline-none"
             />
+            <input
+              type="text"
+              value={editVideo}
+              onChange={e => setEditVideo(e.target.value)}
+              maxLength={256}
+              placeholder="YouTube URL (max 256)"
+              className="w-full bg-black/50 border border-white/20 rounded px-2 py-1 text-xs text-white placeholder-white/30 focus:border-accent outline-none"
+            />
             <div className="flex gap-2">
               <button
-                onClick={handleSaveProfile}
+                onClick={handleSaveMeta}
                 disabled={isWriting}
                 className="px-3 py-1 bg-accent text-terminal text-xs font-bold rounded hover:bg-accent/90 disabled:opacity-50 transition-colors"
               >
                 {isWriting ? 'Saving...' : 'Save'}
               </button>
               <button
-                onClick={() => setShowEditProfile(false)}
+                onClick={() => setShowEditMeta(false)}
                 className="px-3 py-1 border border-white/20 text-white/70 text-xs rounded hover:border-white/40 transition-colors"
               >
                 Cancel
