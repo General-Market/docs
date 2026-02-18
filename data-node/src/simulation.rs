@@ -4,7 +4,7 @@ use chrono::NaiveDate;
 use serde::Serialize;
 use sqlx::PgPool;
 use tokio::sync::mpsc;
-use tracing::{info, warn};
+use tracing::info;
 
 use crate::db;
 
@@ -18,28 +18,74 @@ pub struct SimConfig {
     pub rebalance_days: i32,
     pub base_fee_pct: f64,
     pub spread_multiplier: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub threshold_rebalance_pct: Option<f64>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Weighting {
     Equal,
     Mcap,
+    Momentum { lookback_days: i32 },
+    InverseVolatility { lookback_days: i32 },
+    DualMomentum { lookback_days: i32 },
 }
 
 impl Weighting {
-    pub fn as_str(&self) -> &'static str {
+    pub fn as_str(&self) -> String {
         match self {
-            Weighting::Equal => "equal",
-            Weighting::Mcap => "mcap",
+            Weighting::Equal => "equal".to_string(),
+            Weighting::Mcap => "mcap".to_string(),
+            Weighting::Momentum { lookback_days } => format!("momentum_{}", lookback_days),
+            Weighting::InverseVolatility { lookback_days } => format!("invvol_{}", lookback_days),
+            Weighting::DualMomentum { lookback_days } => format!("dual_mom_{}", lookback_days),
         }
     }
 
     pub fn from_str(s: &str) -> Option<Self> {
-        match s.to_lowercase().as_str() {
+        let s_lower = s.to_lowercase();
+        match s_lower.as_str() {
             "equal" => Some(Weighting::Equal),
             "mcap" => Some(Weighting::Mcap),
+            _ => {
+                // Parse parameterized variants: momentum_90, invvol_60, dual_mom_180
+                if let Some(rest) = s_lower.strip_prefix("momentum_") {
+                    rest.parse::<i32>().ok().map(|d| Weighting::Momentum { lookback_days: d })
+                } else if let Some(rest) = s_lower.strip_prefix("invvol_") {
+                    rest.parse::<i32>().ok().map(|d| Weighting::InverseVolatility { lookback_days: d })
+                } else if let Some(rest) = s_lower.strip_prefix("dual_mom_") {
+                    rest.parse::<i32>().ok().map(|d| Weighting::DualMomentum { lookback_days: d })
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
+    pub fn needs_history(&self) -> bool {
+        matches!(self, Weighting::Momentum { .. } | Weighting::InverseVolatility { .. } | Weighting::DualMomentum { .. })
+    }
+
+    pub fn lookback_days(&self) -> Option<i32> {
+        match self {
+            Weighting::Momentum { lookback_days } => Some(*lookback_days),
+            Weighting::InverseVolatility { lookback_days } => Some(*lookback_days),
+            Weighting::DualMomentum { lookback_days } => Some(*lookback_days),
             _ => None,
+        }
+    }
+}
+
+impl SimConfig {
+    /// Encodes weighting + threshold into one string for cache key.
+    /// e.g. "momentum_90" or "momentum_90_t5" (when threshold active).
+    pub fn cache_key_weighting(&self) -> String {
+        let base = self.weighting.as_str();
+        if let Some(t) = self.threshold_rebalance_pct {
+            format!("{}_t{}", base, t as i32)
+        } else {
+            base
         }
     }
 }
@@ -114,6 +160,118 @@ struct Holding {
     last_price: f64,
 }
 
+// ---- Price history helpers ----
+
+/// Structure flat DB rows into per-coin sorted price series.
+pub fn build_price_history_map(rows: &[(String, NaiveDate, f64)]) -> HashMap<String, Vec<(NaiveDate, f64)>> {
+    let mut map: HashMap<String, Vec<(NaiveDate, f64)>> = HashMap::new();
+    for (coin_id, date, price) in rows {
+        map.entry(coin_id.clone()).or_default().push((*date, *price));
+    }
+    // Sort each coin's series by date
+    for series in map.values_mut() {
+        series.sort_by_key(|(d, _)| *d);
+    }
+    map
+}
+
+/// Compute trailing return from price series over lookback_days ending at the given date.
+fn compute_trailing_return(prices: &[(NaiveDate, f64)], date: NaiveDate, lookback_days: i32) -> Option<f64> {
+    let cutoff = date - chrono::Duration::days(lookback_days as i64);
+    // Find price nearest to cutoff (first price >= cutoff)
+    let start_price = prices.iter()
+        .find(|(d, _)| *d >= cutoff)
+        .map(|(_, p)| *p)?;
+    // Find price nearest to date (last price <= date)
+    let end_price = prices.iter()
+        .rev()
+        .find(|(d, _)| *d <= date)
+        .map(|(_, p)| *p)?;
+    if start_price <= 0.0 {
+        return None;
+    }
+    Some((end_price / start_price) - 1.0)
+}
+
+/// Compute annualized volatility from price series: std(daily log returns) * sqrt(365).
+fn compute_annualized_volatility(prices: &[(NaiveDate, f64)], date: NaiveDate, lookback_days: i32) -> Option<f64> {
+    let cutoff = date - chrono::Duration::days(lookback_days as i64);
+    let relevant: Vec<f64> = prices.iter()
+        .filter(|(d, _)| *d >= cutoff && *d <= date)
+        .map(|(_, p)| *p)
+        .collect();
+    if relevant.len() < 2 {
+        return None;
+    }
+    let log_returns: Vec<f64> = relevant.windows(2)
+        .filter(|w| w[0] > 0.0 && w[1] > 0.0)
+        .map(|w| (w[1] / w[0]).ln())
+        .collect();
+    if log_returns.is_empty() {
+        return None;
+    }
+    let mean = log_returns.iter().sum::<f64>() / log_returns.len() as f64;
+    let variance = log_returns.iter()
+        .map(|r| (r - mean).powi(2))
+        .sum::<f64>() / log_returns.len() as f64;
+    let std_dev = variance.sqrt();
+    Some(std_dev * (365.0_f64).sqrt())
+}
+
+/// Normalize weights so they sum to 1.0.
+fn normalize_weights(weights: &mut [f64]) {
+    let sum: f64 = weights.iter().sum();
+    if sum > 0.0 {
+        for w in weights.iter_mut() {
+            *w /= sum;
+        }
+    }
+}
+
+/// Check if portfolio has drifted beyond threshold from target weights.
+fn should_threshold_rebalance(
+    holdings: &[Holding],
+    prices: &HashMap<String, f64>,
+    target_weights: &HashMap<String, f64>,
+    threshold_pct: f64,
+) -> bool {
+    if holdings.is_empty() || target_weights.is_empty() {
+        return false;
+    }
+
+    // Compute current portfolio value
+    let total_value: f64 = holdings.iter()
+        .map(|h| {
+            let price = prices.get(&h.coin_id).copied().unwrap_or(h.last_price);
+            h.quantity * price
+        })
+        .sum();
+
+    if total_value <= 0.0 {
+        return false;
+    }
+
+    // Check drift for each holding
+    for h in holdings {
+        let price = prices.get(&h.coin_id).copied().unwrap_or(h.last_price);
+        let current_weight = (h.quantity * price) / total_value;
+        let target = target_weights.get(&h.coin_id).copied().unwrap_or(0.0);
+        let drift = (current_weight - target).abs() * 100.0; // as percentage points
+        if drift > threshold_pct {
+            return true;
+        }
+    }
+
+    // Also check if any target coin is missing from holdings
+    for (coin_id, target_w) in target_weights {
+        if *target_w > 0.0 && !holdings.iter().any(|h| h.coin_id == *coin_id) {
+            return true;
+        }
+    }
+
+    false
+}
+
 // ---- Core simulation ----
 
 pub async fn run_simulation(
@@ -165,12 +323,24 @@ pub async fn run_simulation(
     info!(
         category = %config.category_id,
         top_n = config.top_n,
-        weighting = ?config.weighting,
+        weighting = %config.weighting.as_str(),
         rebalance_days = config.rebalance_days,
         start_date = %sim_dates[0],
         total_dates,
         "Starting simulation"
     );
+
+    // 5b. Preload price history if weighting needs it
+    let preloaded_history: Option<HashMap<String, Vec<(NaiveDate, f64)>>> =
+        if config.weighting.needs_history() {
+            let lookback = config.weighting.lookback_days().unwrap_or(365);
+            let from_date = sim_dates[0] - chrono::Duration::days(lookback as i64 + 30); // extra margin
+            let to_date = *sim_dates.last().unwrap();
+            let rows = db::cg_query_price_history(pool, &category_coin_ids, from_date, to_date).await?;
+            Some(build_price_history_map(&rows))
+        } else {
+            None
+        };
 
     // 6. Day-by-day simulation
     let mut holdings: Vec<Holding> = Vec::new();
@@ -183,6 +353,7 @@ pub async fn run_simulation(
     let mut total_delistings = 0_i32;
     let mut total_rebalances = 0_i32;
     let mut portfolio_value = 1.0_f64; // Start at $1
+    let mut last_target_weights: HashMap<String, f64> = HashMap::new();
 
     for (i, date) in sim_dates.iter().enumerate() {
         // Send progress every ~50 dates
@@ -217,17 +388,61 @@ pub async fn run_simulation(
 
         // Check if rebalance is due
         days_since_rebalance += 1;
-        if days_since_rebalance >= config.rebalance_days || holdings.is_empty() {
+        let should_rebalance = if let Some(threshold_pct) = config.threshold_rebalance_pct {
+            holdings.is_empty()
+                || should_threshold_rebalance(&holdings, &today_prices, &last_target_weights, threshold_pct)
+                || days_since_rebalance >= 365 // safety: at least once per year
+        } else {
+            days_since_rebalance >= config.rebalance_days || holdings.is_empty()
+        };
+
+        if should_rebalance {
             let rebalance_result = perform_rebalance(
-                pool, config, *date, &holdings, &today_prices, &bitget_lookup, &coin_symbol_map, portfolio_value,
+                pool, config, *date, &holdings, &today_prices, &bitget_lookup,
+                &coin_symbol_map, portfolio_value, preloaded_history.as_ref(),
             ).await?;
 
-            if !rebalance_result.new_holdings.is_empty() {
+            if rebalance_result.new_holdings.is_empty() && !holdings.is_empty() {
+                // Dual momentum: go to cash — sell everything
+                for h in &holdings {
+                    let price = today_prices.get(&h.coin_id).copied().unwrap_or(h.last_price);
+                    let trade_value = h.quantity * price;
+                    if trade_value > 0.01 {
+                        let fee_rate = config.base_fee_pct / 100.0 + 0.001 * config.spread_multiplier;
+                        let fee_usd = trade_value * fee_rate;
+                        total_fees_usd += fee_usd;
+                        all_trades.push(db::SimTradeRow {
+                            trade_date: *date,
+                            coin_id: h.coin_id.clone(),
+                            side: "sell".into(),
+                            quantity: h.quantity,
+                            price_usd: price,
+                            fee_pct: fee_rate * 100.0,
+                            fee_usd,
+                            reason: Some("dual_mom_cash".into()),
+                        });
+                    }
+                }
+                holdings = Vec::new();
+                last_target_weights.clear();
+                days_since_rebalance = 0;
+                total_rebalances += 1;
+            } else if !rebalance_result.new_holdings.is_empty() {
                 for t in &rebalance_result.trades {
                     total_fees_usd += t.fee_usd;
                 }
                 all_trades.extend(rebalance_result.trades);
                 all_holdings.extend(rebalance_result.holdings_snapshot);
+
+                // Store target weights for threshold drift detection
+                last_target_weights.clear();
+                for h in &rebalance_result.new_holdings {
+                    // Compute weight from value proportion
+                    let price = today_prices.get(&h.coin_id).copied().unwrap_or(h.last_price);
+                    let value = h.quantity * price;
+                    last_target_weights.insert(h.coin_id.clone(), value / rebalance_result.post_fee_value.max(0.001));
+                }
+
                 holdings = rebalance_result.new_holdings;
                 portfolio_value = rebalance_result.post_fee_value;
                 days_since_rebalance = 0;
@@ -236,21 +451,35 @@ pub async fn run_simulation(
         }
 
         // Compute NAV
-        let nav = compute_nav(&holdings, &load_prices_for_date(pool, &holdings, *date).await?);
-        if nav > 0.0 {
-            portfolio_value = nav;
-        }
+        if holdings.is_empty() {
+            // Cash mode (dual momentum) — NAV stays at portfolio_value
+            let nav = portfolio_value;
+            if nav > peak_nav {
+                peak_nav = nav;
+            }
+            let drawdown = if peak_nav > 0.0 { (nav - peak_nav) / peak_nav * 100.0 } else { 0.0 };
+            nav_series.push(db::SimNavPoint {
+                nav_date: *date,
+                nav,
+                drawdown_pct: drawdown,
+            });
+        } else {
+            let nav = compute_nav(&holdings, &load_prices_for_date(pool, &holdings, *date).await?);
+            if nav > 0.0 {
+                portfolio_value = nav;
+            }
 
-        if nav > peak_nav {
-            peak_nav = nav;
-        }
-        let drawdown = if peak_nav > 0.0 { (nav - peak_nav) / peak_nav * 100.0 } else { 0.0 };
+            if nav > peak_nav {
+                peak_nav = nav;
+            }
+            let drawdown = if peak_nav > 0.0 { (nav - peak_nav) / peak_nav * 100.0 } else { 0.0 };
 
-        nav_series.push(db::SimNavPoint {
-            nav_date: *date,
-            nav,
-            drawdown_pct: drawdown,
-        });
+            nav_series.push(db::SimNavPoint {
+                nav_date: *date,
+                nav,
+                drawdown_pct: drawdown,
+            });
+        }
     }
 
     // 7. Compute stats
@@ -261,7 +490,7 @@ pub async fn run_simulation(
     let run_insert = db::SimRunInsert {
         category_id: config.category_id.clone(),
         top_n: config.top_n,
-        weighting: config.weighting.as_str().to_string(),
+        weighting: config.cache_key_weighting(),
         rebalance_days: config.rebalance_days,
         start_date: stats.start_date,
         end_date: stats.end_date,
@@ -504,6 +733,7 @@ async fn perform_rebalance(
     bitget_lookup: &HashMap<String, db::BitgetListingRow>,
     coin_symbol_map: &HashMap<String, String>,
     portfolio_value: f64,
+    preloaded_history: Option<&HashMap<String, Vec<(NaiveDate, f64)>>>,
 ) -> Result<RebalanceResult, SimError> {
     // Get top N coins by market cap in this category, listed on Bitget
     let all_coins = db::cg_query_category_market_caps_at(
@@ -532,7 +762,18 @@ async fn perform_rebalance(
     }
 
     // Compute weights
-    let weights = compute_weights(&top_n, config.weighting);
+    let weights = compute_weights(&top_n, &config.weighting, date, preloaded_history);
+
+    // If all weights are zero (dual momentum cash mode), return empty
+    let weight_sum: f64 = weights.iter().sum();
+    if weight_sum <= 0.0 {
+        return Ok(RebalanceResult {
+            new_holdings: Vec::new(),
+            trades: Vec::new(),
+            holdings_snapshot: Vec::new(),
+            post_fee_value: portfolio_value,
+        });
+    }
 
     // Compute target quantities: qty[i] = (weight[i] * portfolio_value) / price[i]
     let mut new_holdings = Vec::new();
@@ -547,7 +788,7 @@ async fn perform_rebalance(
 
     for (coin, weight) in top_n.iter().zip(weights.iter()) {
         let price = coin.price_usd.unwrap_or(0.0);
-        if price <= 0.0 {
+        if price <= 0.0 || *weight <= 0.0 {
             continue;
         }
 
@@ -641,7 +882,12 @@ async fn perform_rebalance(
     })
 }
 
-fn compute_weights(coins: &[&db::CgMarketCapRow], weighting: Weighting) -> Vec<f64> {
+fn compute_weights(
+    coins: &[&db::CgMarketCapRow],
+    weighting: &Weighting,
+    date: NaiveDate,
+    price_history: Option<&HashMap<String, Vec<(NaiveDate, f64)>>>,
+) -> Vec<f64> {
     let n = coins.len();
     if n == 0 {
         return Vec::new();
@@ -690,13 +936,78 @@ fn compute_weights(coins: &[&db::CgMarketCapRow], weighting: Weighting) -> Vec<f
             }
 
             // Normalize to ensure sum = 1.0
-            let sum: f64 = weights.iter().sum();
-            if sum > 0.0 {
-                for w in &mut weights {
-                    *w /= sum;
-                }
+            normalize_weights(&mut weights);
+            weights
+        }
+        Weighting::Momentum { lookback_days } => {
+            let history = match price_history {
+                Some(h) => h,
+                None => return vec![1.0 / n as f64; n], // fallback to equal
+            };
+
+            let mut raw_returns: Vec<f64> = coins.iter().map(|c| {
+                history.get(&c.coin_id)
+                    .and_then(|prices| compute_trailing_return(prices, date, *lookback_days))
+                    .unwrap_or(0.0)
+            }).collect();
+
+            // Shift so min = 0.01 (all positive), then normalize
+            let min_ret = raw_returns.iter().copied().fold(f64::INFINITY, f64::min);
+            let shift = if min_ret < 0.01 { 0.01 - min_ret } else { 0.0 };
+            for r in &mut raw_returns {
+                *r += shift;
+                if *r < 0.01 { *r = 0.01; }
             }
 
+            normalize_weights(&mut raw_returns);
+            raw_returns
+        }
+        Weighting::InverseVolatility { lookback_days } => {
+            let history = match price_history {
+                Some(h) => h,
+                None => return vec![1.0 / n as f64; n],
+            };
+
+            let mut weights: Vec<f64> = coins.iter().map(|c| {
+                let vol = history.get(&c.coin_id)
+                    .and_then(|prices| compute_annualized_volatility(prices, date, *lookback_days))
+                    .unwrap_or(1.0)
+                    .max(0.001); // floor at 0.001
+                1.0 / vol
+            }).collect();
+
+            normalize_weights(&mut weights);
+            weights
+        }
+        Weighting::DualMomentum { lookback_days } => {
+            let history = match price_history {
+                Some(h) => h,
+                None => return vec![1.0 / n as f64; n],
+            };
+
+            let returns: Vec<f64> = coins.iter().map(|c| {
+                history.get(&c.coin_id)
+                    .and_then(|prices| compute_trailing_return(prices, date, *lookback_days))
+                    .unwrap_or(0.0)
+            }).collect();
+
+            // Absolute momentum check: if average return of universe < 0 → go to cash
+            let avg_return = returns.iter().sum::<f64>() / returns.len() as f64;
+            if avg_return < 0.0 {
+                return vec![0.0; n]; // all-zero signals "go to cash"
+            }
+
+            // Relative momentum: weight proportional to positive returns only
+            let mut weights: Vec<f64> = returns.iter().map(|r| {
+                if *r > 0.0 { *r } else { 0.0 }
+            }).collect();
+
+            let sum: f64 = weights.iter().sum();
+            if sum <= 0.0 {
+                return vec![0.0; n]; // all negative → cash
+            }
+
+            normalize_weights(&mut weights);
             weights
         }
     }

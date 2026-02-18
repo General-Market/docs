@@ -23,13 +23,14 @@ export interface SweepVariantResult {
 
 interface UseSimSweepParams {
   category_id: string
-  sweep: string  // 'top_n' | 'weighting' | 'rebalance' | 'category'
+  sweep: string  // 'top_n' | 'weighting' | 'rebalance' | 'threshold' | 'category'
   weighting: string
   rebalance_days: number
   top_n: number
   base_fee_pct: number
   spread_multiplier: number
   categories?: string[]  // for category sweep
+  threshold_pct?: number | null
 }
 
 interface UseSimSweepResult {
@@ -79,6 +80,7 @@ export function useSimSweep(params: UseSimSweepParams | null): UseSimSweepResult
     })
     if (params.category_id) qs.set('category_id', params.category_id)
     if (params.categories?.length) qs.set('categories', params.categories.join(','))
+    if (params.threshold_pct != null) qs.set('threshold_pct', String(params.threshold_pct))
 
     const es = new EventSource(`${DATA_NODE_URL}/sim/sweep-stream?${qs}`)
     eventSourceRef.current = es

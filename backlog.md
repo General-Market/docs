@@ -3053,3 +3053,15 @@ The backtester currently supports one rebalance method: **periodic time-based re
 4. **`api.rs`**: Extend sweep to include `weighting` variants with sub-parameters.
 5. **Frontend `SimFilterPanel.tsx`**: Add sub-parameter UI (lookback slider, threshold input) shown conditionally when strategy selected.
 6. **`sim_runs` table**: Add nullable columns for strategy-specific params, or store as JSONB `params` column.
+
+## Session: 20260218-1430-r9x5
+
+### Advanced Rebalance Strategies + Sweep Presets
+
+[DECISION] Weighting enum changed from Copy+static str to Clone+String. Momentum/InverseVol/DualMomentum encode lookback in enum variant, serialized as "momentum_90", "invvol_60", "dual_mom_180". Cache key combines weighting + threshold: "momentum_90_t5".
+
+[DECISION] Price history preloaded at sim start for the full date range when weighting.needs_history(). Avoids per-rebalance DB hits. Extra 30d margin on lookback window for edge cases.
+
+[DECISION] Threshold rebalance: drift check compares current weight (value/total) vs target weight. Any coin exceeding threshold_pct triggers full rebalance. Safety: force rebalance at least once per 365d.
+
+[DECISION] Dual momentum cash mode: when avg trailing return < 0, return all-zero weights. Main loop detects empty rebalance result and sells all holdings, keeping portfolio_value as cash NAV until next rebalance.

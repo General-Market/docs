@@ -31,6 +31,8 @@ pub async fn run_migrations(pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::raw_sql(m009).execute(pool).await?;
     let m010 = include_str!("../migrations/010_create_simulations.sql");
     sqlx::raw_sql(m010).execute(pool).await?;
+    let m011 = include_str!("../migrations/011_add_price_history_index.sql");
+    sqlx::raw_sql(m011).execute(pool).await?;
     info!("Database migrations applied");
     Ok(())
 }
@@ -1239,6 +1241,37 @@ pub async fn cg_has_categories(pool: &PgPool) -> Result<bool, sqlx::Error> {
     .fetch_one(pool)
     .await?;
     Ok(count > 0)
+}
+
+/// Batch fetch daily prices for a set of coins over a date range.
+/// Returns (coin_id, snapshot_date, price_usd) triples.
+pub async fn cg_query_price_history(
+    pool: &PgPool,
+    coin_ids: &[String],
+    from_date: chrono::NaiveDate,
+    to_date: chrono::NaiveDate,
+) -> Result<Vec<(String, chrono::NaiveDate, f64)>, sqlx::Error> {
+    if coin_ids.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let cids: Vec<&str> = coin_ids.iter().map(|s| s.as_str()).collect();
+    let rows = sqlx::query_as::<_, (String, chrono::NaiveDate, f64)>(
+        "SELECT coin_id, snapshot_date, price_usd
+         FROM coingecko_market_caps
+         WHERE coin_id = ANY($1)
+           AND snapshot_date >= $2
+           AND snapshot_date <= $3
+           AND price_usd IS NOT NULL
+         ORDER BY coin_id, snapshot_date ASC"
+    )
+    .bind(&cids)
+    .bind(from_date)
+    .bind(to_date)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows)
 }
 
 /// Get all unique snapshot dates.

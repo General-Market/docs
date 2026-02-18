@@ -11,8 +11,24 @@ const REBALANCE_OPTIONS = [
   { value: 90, label: '3m' },
   { value: 180, label: '6m' },
 ]
-const WEIGHTING_OPTIONS = ['equal', 'mcap'] as const
-const SWEEP_OPTIONS = ['none', 'top_n', 'weighting', 'rebalance', 'category'] as const
+const WEIGHTING_OPTIONS = [
+  { value: 'equal', label: 'Equal', title: 'Equal weight across all holdings' },
+  { value: 'mcap', label: 'MCap', title: 'Weight by market capitalization' },
+  { value: 'momentum_90', label: 'Mom 90d', title: 'Momentum: weight by 90-day trailing return' },
+  { value: 'momentum_180', label: 'Mom 180d', title: 'Momentum: weight by 180-day trailing return' },
+  { value: 'momentum_365', label: 'Mom 1y', title: 'Momentum: weight by 365-day trailing return' },
+  { value: 'invvol_60', label: 'InvVol 60d', title: 'Inverse Volatility: less volatile = higher weight (60d)' },
+  { value: 'invvol_90', label: 'InvVol 90d', title: 'Inverse Volatility: less volatile = higher weight (90d)' },
+  { value: 'dual_mom_180', label: 'Dual Mom', title: 'Dual Momentum: go to cash when market is down (180d)' },
+]
+const THRESHOLD_OPTIONS = [
+  { value: null as number | null, label: 'Periodic' },
+  { value: 3 as number | null, label: '3%' },
+  { value: 5 as number | null, label: '5%' },
+  { value: 10 as number | null, label: '10%' },
+  { value: 15 as number | null, label: '15%' },
+]
+const SWEEP_OPTIONS = ['none', 'top_n', 'weighting', 'rebalance', 'threshold', 'category'] as const
 
 export interface SimFilterState {
   category_id: string
@@ -23,6 +39,7 @@ export interface SimFilterState {
   spread_multiplier: number
   sweep: string
   sweep_categories: string[]  // for category sweep
+  threshold_pct: number | null  // null = periodic, number = band %
 }
 
 interface SimFilterPanelProps {
@@ -182,21 +199,22 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
       <div className="flex flex-wrap gap-3 items-center">
         <div>
           <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Weighting</label>
-          <div className="flex">
+          <div className="flex flex-wrap gap-0.5">
             {WEIGHTING_OPTIONS.map(w => (
               <button
-                key={w}
-                className={`px-3 py-1 text-xs font-mono border border-white/10 first:rounded-l last:rounded-r -ml-px first:ml-0 transition-colors capitalize ${
+                key={w.value}
+                title={w.title}
+                className={`px-2 py-1 text-[10px] font-mono border border-white/10 rounded transition-colors ${
                   sweepDim === 'weighting'
                     ? 'bg-accent/20 text-accent border-accent/30'
-                    : filters.weighting === w
+                    : filters.weighting === w.value
                       ? 'bg-white/20 text-white'
                       : 'bg-white/5 text-white/50 hover:bg-white/10'
                 }`}
-                onClick={() => { if (sweepDim !== 'weighting') update({ weighting: w }) }}
+                onClick={() => { if (sweepDim !== 'weighting') update({ weighting: w.value }) }}
                 disabled={sweepDim === 'weighting'}
               >
-                {w}
+                {w.label}
               </button>
             ))}
           </div>
@@ -212,12 +230,39 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                     ? 'bg-accent/20 text-accent border-accent/30'
                     : filters.rebalance_days === r.value
                       ? 'bg-white/20 text-white'
-                      : 'bg-white/5 text-white/50 hover:bg-white/10'
+                      : filters.threshold_pct != null
+                        ? 'bg-white/5 text-white/20'
+                        : 'bg-white/5 text-white/50 hover:bg-white/10'
                 }`}
                 onClick={() => { if (sweepDim !== 'rebalance') update({ rebalance_days: r.value }) }}
                 disabled={sweepDim === 'rebalance'}
               >
                 {r.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Row 2.5: Rebalance Trigger (Threshold) */}
+      <div className="flex flex-wrap gap-3 items-center">
+        <div>
+          <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Rebalance Trigger</label>
+          <div className="flex">
+            {THRESHOLD_OPTIONS.map((t, i) => (
+              <button
+                key={t.label}
+                className={`px-2 py-1 text-xs font-mono border border-white/10 first:rounded-l last:rounded-r -ml-px first:ml-0 transition-colors ${
+                  sweepDim === 'threshold'
+                    ? 'bg-accent/20 text-accent border-accent/30'
+                    : filters.threshold_pct === t.value
+                      ? 'bg-white/20 text-white'
+                      : 'bg-white/5 text-white/50 hover:bg-white/10'
+                }`}
+                onClick={() => { if (sweepDim !== 'threshold') update({ threshold_pct: t.value }) }}
+                disabled={sweepDim === 'threshold'}
+              >
+                {t.label}
               </button>
             ))}
           </div>
@@ -268,7 +313,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                 }`}
                 onClick={() => update({ sweep: s })}
               >
-                {s === 'none' ? 'None' : s === 'top_n' ? 'Top N' : s === 'weighting' ? 'Weight' : s === 'rebalance' ? 'Rebal.' : 'Category'}
+                {s === 'none' ? 'None' : s === 'top_n' ? 'Top N' : s === 'weighting' ? 'Weight' : s === 'rebalance' ? 'Rebal.' : s === 'threshold' ? 'Thresh.' : 'Category'}
               </button>
             ))}
           </div>

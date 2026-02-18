@@ -2930,6 +2930,8 @@ struct SimRunQuery {
     spread_multiplier: f64,
     #[serde(default)]
     force: bool,
+    #[serde(default)]
+    threshold_pct: Option<f64>,
 }
 
 fn default_base_fee() -> f64 { 0.1 }
@@ -2941,15 +2943,25 @@ async fn sim_run(
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
     let weighting = simulation::Weighting::from_str(&params.weighting).ok_or_else(|| {
         (StatusCode::BAD_REQUEST, Json(ErrorResponse {
-            error: format!("Invalid weighting '{}', use 'equal' or 'mcap'", params.weighting),
+            error: format!("Invalid weighting '{}', use 'equal', 'mcap', 'momentum_N', 'invvol_N', or 'dual_mom_N'", params.weighting),
         }))
     })?;
+
+    let config_for_cache = simulation::SimConfig {
+        category_id: params.category_id.clone(),
+        top_n: params.top_n,
+        weighting: weighting.clone(),
+        rebalance_days: params.rebalance_days,
+        base_fee_pct: params.base_fee_pct,
+        spread_multiplier: params.spread_multiplier,
+        threshold_rebalance_pct: params.threshold_pct,
+    };
 
     // Check cache first
     if !params.force {
         if let Some(cached) = db::sim_get_cached_run(
             &state.pool, &params.category_id, params.top_n,
-            weighting.as_str(), params.rebalance_days,
+            &config_for_cache.cache_key_weighting(), params.rebalance_days,
             params.base_fee_pct, params.spread_multiplier,
         ).await.map_err(|e| db_error(e))? {
             let nav_series = db::sim_query_nav_series(&state.pool, cached.id)
@@ -2984,16 +2996,7 @@ async fn sim_run(
     }
 
     // Run simulation
-    let config = simulation::SimConfig {
-        category_id: params.category_id.clone(),
-        top_n: params.top_n,
-        weighting,
-        rebalance_days: params.rebalance_days,
-        base_fee_pct: params.base_fee_pct,
-        spread_multiplier: params.spread_multiplier,
-    };
-
-    let result = simulation::run_simulation(&state.pool, &config, None)
+    let result = simulation::run_simulation(&state.pool, &config_for_cache, None)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse {
             error: format!("Simulation failed: {e}"),
@@ -3021,15 +3024,28 @@ async fn sim_run_stream(
 ) -> Result<Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>>, (StatusCode, Json<ErrorResponse>)> {
     let weighting = simulation::Weighting::from_str(&params.weighting).ok_or_else(|| {
         (StatusCode::BAD_REQUEST, Json(ErrorResponse {
-            error: format!("Invalid weighting '{}', use 'equal' or 'mcap'", params.weighting),
+            error: format!("Invalid weighting '{}', use 'equal', 'mcap', 'momentum_N', 'invvol_N', or 'dual_mom_N'", params.weighting),
         }))
     })?;
+
+    let cache_key_w = {
+        let tmp = simulation::SimConfig {
+            category_id: params.category_id.clone(),
+            top_n: params.top_n,
+            weighting: weighting.clone(),
+            rebalance_days: params.rebalance_days,
+            base_fee_pct: params.base_fee_pct,
+            spread_multiplier: params.spread_multiplier,
+            threshold_rebalance_pct: params.threshold_pct,
+        };
+        tmp.cache_key_weighting()
+    };
 
     // Check cache first
     if !params.force {
         if let Some(cached) = db::sim_get_cached_run(
             &state.pool, &params.category_id, params.top_n,
-            weighting.as_str(), params.rebalance_days,
+            &cache_key_w, params.rebalance_days,
             params.base_fee_pct, params.spread_multiplier,
         ).await.map_err(|e| db_error(e))? {
             let nav_series = db::sim_query_nav_series(&state.pool, cached.id)
@@ -3078,6 +3094,7 @@ async fn sim_run_stream(
         rebalance_days: params.rebalance_days,
         base_fee_pct: params.base_fee_pct,
         spread_multiplier: params.spread_multiplier,
+        threshold_rebalance_pct: params.threshold_pct,
     };
 
     let pool = state.pool.clone();
@@ -3131,7 +3148,7 @@ async fn sim_run_stream(
 struct SimSweepQuery {
     #[serde(default)]
     category_id: String,
-    sweep: String,  // "top_n", "weighting", "rebalance", "category"
+    sweep: String,  // "top_n", "weighting", "rebalance", "category", "threshold"
     /// Comma-separated category IDs for category sweep
     #[serde(default)]
     categories: String,
@@ -3145,6 +3162,8 @@ struct SimSweepQuery {
     base_fee_pct: f64,
     #[serde(default = "default_spread_mult")]
     spread_multiplier: f64,
+    #[serde(default)]
+    threshold_pct: Option<f64>,
 }
 
 fn default_sweep_weighting() -> String { "equal".into() }
@@ -3164,15 +3183,26 @@ async fn sim_sweep_stream(
                 simulation::SimConfig {
                     category_id: params.category_id.clone(),
                     top_n: n,
-                    weighting,
+                    weighting: weighting.clone(),
                     rebalance_days: params.rebalance_days,
                     base_fee_pct: params.base_fee_pct,
                     spread_multiplier: params.spread_multiplier,
+                    threshold_rebalance_pct: params.threshold_pct,
                 }
             }).collect()
         }
         "weighting" => {
-            vec![simulation::Weighting::Equal, simulation::Weighting::Mcap].into_iter().map(|w| {
+            let all_weightings = vec![
+                simulation::Weighting::Equal,
+                simulation::Weighting::Mcap,
+                simulation::Weighting::Momentum { lookback_days: 90 },
+                simulation::Weighting::Momentum { lookback_days: 180 },
+                simulation::Weighting::Momentum { lookback_days: 365 },
+                simulation::Weighting::InverseVolatility { lookback_days: 60 },
+                simulation::Weighting::InverseVolatility { lookback_days: 90 },
+                simulation::Weighting::DualMomentum { lookback_days: 180 },
+            ];
+            all_weightings.into_iter().map(|w| {
                 simulation::SimConfig {
                     category_id: params.category_id.clone(),
                     top_n: params.top_n,
@@ -3180,6 +3210,7 @@ async fn sim_sweep_stream(
                     rebalance_days: params.rebalance_days,
                     base_fee_pct: params.base_fee_pct,
                     spread_multiplier: params.spread_multiplier,
+                    threshold_rebalance_pct: params.threshold_pct,
                 }
             }).collect()
         }
@@ -3193,6 +3224,24 @@ async fn sim_sweep_stream(
                     rebalance_days: d,
                     base_fee_pct: params.base_fee_pct,
                     spread_multiplier: params.spread_multiplier,
+                    threshold_rebalance_pct: params.threshold_pct,
+                }
+            }).collect()
+        }
+        "threshold" => {
+            let weighting = simulation::Weighting::from_str(&params.weighting)
+                .unwrap_or(simulation::Weighting::Equal);
+            // periodic (None) + 4 threshold bands
+            let thresholds: Vec<Option<f64>> = vec![None, Some(3.0), Some(5.0), Some(10.0), Some(15.0)];
+            thresholds.into_iter().map(|t| {
+                simulation::SimConfig {
+                    category_id: params.category_id.clone(),
+                    top_n: params.top_n,
+                    weighting: weighting.clone(),
+                    rebalance_days: params.rebalance_days,
+                    base_fee_pct: params.base_fee_pct,
+                    spread_multiplier: params.spread_multiplier,
+                    threshold_rebalance_pct: t,
                 }
             }).collect()
         }
@@ -3212,16 +3261,17 @@ async fn sim_sweep_stream(
                 simulation::SimConfig {
                     category_id: cid,
                     top_n: params.top_n,
-                    weighting,
+                    weighting: weighting.clone(),
                     rebalance_days: params.rebalance_days,
                     base_fee_pct: params.base_fee_pct,
                     spread_multiplier: params.spread_multiplier,
+                    threshold_rebalance_pct: params.threshold_pct,
                 }
             }).collect()
         }
         other => {
             return Err((StatusCode::BAD_REQUEST, Json(ErrorResponse {
-                error: format!("Invalid sweep dimension '{}', use 'top_n', 'weighting', 'rebalance', or 'category'", other),
+                error: format!("Invalid sweep dimension '{}', use 'top_n', 'weighting', 'rebalance', 'threshold', or 'category'", other),
             })));
         }
     };
@@ -3238,6 +3288,12 @@ async fn sim_sweep_stream(
                 "top_n" => format!("top_n={}", config.top_n),
                 "weighting" => format!("weighting={}", config.weighting.as_str()),
                 "rebalance" => format!("rebalance={}d", config.rebalance_days),
+                "threshold" => {
+                    match config.threshold_rebalance_pct {
+                        None => format!("threshold=periodic_{}d", config.rebalance_days),
+                        Some(t) => format!("threshold={}%_band", t as i32),
+                    }
+                }
                 "category" => config.category_id.clone(),
                 _ => format!("variant_{}", idx),
             };
@@ -3245,7 +3301,7 @@ async fn sim_sweep_stream(
             // Check cache
             if let Ok(Some(cached)) = db::sim_get_cached_run(
                 &pool, &config.category_id, config.top_n,
-                config.weighting.as_str(), config.rebalance_days,
+                &config.cache_key_weighting(), config.rebalance_days,
                 config.base_fee_pct, config.spread_multiplier,
             ).await {
                 let nav_series = db::sim_query_nav_series(&pool, cached.id).await.unwrap_or_default();

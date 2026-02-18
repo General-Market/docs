@@ -28,6 +28,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex }: BacktestS
     spread_multiplier: 1.0,
     sweep: 'none',
     sweep_categories: [],
+    threshold_pct: null,
   })
 
   const isSweep = filters.sweep !== 'none'
@@ -42,6 +43,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex }: BacktestS
       rebalance_days: filters.rebalance_days,
       base_fee_pct: filters.base_fee_pct,
       spread_multiplier: filters.spread_multiplier,
+      threshold_pct: filters.threshold_pct,
     } : null,
   )
 
@@ -58,6 +60,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex }: BacktestS
       base_fee_pct: filters.base_fee_pct,
       spread_multiplier: filters.spread_multiplier,
       categories: isCategorySweep ? filters.sweep_categories : undefined,
+      threshold_pct: filters.threshold_pct,
     } : null,
   )
 
