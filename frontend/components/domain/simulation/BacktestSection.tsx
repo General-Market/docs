@@ -24,9 +24,11 @@ export function BacktestSection({ expanded, onToggle }: BacktestSectionProps) {
     base_fee_pct: 0.1,
     spread_multiplier: 1.0,
     sweep: 'none',
+    sweep_categories: [],
   })
 
   const isSweep = filters.sweep !== 'none'
+  const isCategorySweep = filters.sweep === 'category'
 
   // Single simulation hook
   const sim = useSimulation(
@@ -40,16 +42,19 @@ export function BacktestSection({ expanded, onToggle }: BacktestSectionProps) {
     } : null,
   )
 
-  // Sweep hook
+  // Sweep hook — for category sweep, use first selected category as category_id (backend uses 'categories' param)
   const sweep = useSimSweep(
-    isSweep && filters.category_id ? {
-      category_id: filters.category_id,
+    isSweep ? {
+      category_id: isCategorySweep
+        ? (filters.sweep_categories[0] || '')
+        : filters.category_id,
       sweep: filters.sweep,
       weighting: filters.weighting,
       rebalance_days: filters.rebalance_days,
       top_n: filters.top_n,
       base_fee_pct: filters.base_fee_pct,
       spread_multiplier: filters.spread_multiplier,
+      categories: isCategorySweep ? filters.sweep_categories : undefined,
     } : null,
   )
 

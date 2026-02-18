@@ -2907,48 +2907,13 @@ struct SimCategoryInfo {
 async fn sim_categories(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
-    // Get all categories
-    let categories = db::cg_query_all_categories(&state.pool)
+    let rows = db::sim_query_eligible_categories(&state.pool, 5)
         .await
         .map_err(|e| db_error(e))?;
 
-    // Get all Bitget active listings for filtering
-    let listings = db::bitget_query_listings(&state.pool, None)
-        .await
-        .map_err(|e| db_error(e))?;
-    let bitget_bases: std::collections::HashSet<String> = listings.iter()
-        .filter(|l| l.quote_coin == "USDT" && l.status != "delisted_gone")
-        .map(|l| l.base_coin.to_uppercase())
-        .collect();
-
-    let mut result = Vec::new();
-
-    for cat in &categories {
-        // Count coins with CG data + Bitget listing
-        let coins_with_data = db::cg_query_category_coins_with_data(&state.pool, &cat.id, 500)
-            .await
-            .map_err(|e| db_error(e))?;
-
-        let eligible_count = coins_with_data.iter().filter(|c| {
-            if let Some(ref sym) = c.symbol {
-                bitget_bases.contains(&sym.to_uppercase())
-            } else {
-                false
-            }
-        }).count();
-
-        if eligible_count >= 5 {
-            result.push(SimCategoryInfo {
-                id: cat.id.clone(),
-                name: cat.name.clone(),
-                coin_count: eligible_count,
-                market_cap: cat.market_cap,
-            });
-        }
-    }
-
-    // Sort by market cap desc
-    result.sort_by(|a, b| b.market_cap.partial_cmp(&a.market_cap).unwrap_or(std::cmp::Ordering::Equal));
+    let result: Vec<SimCategoryInfo> = rows.into_iter().map(|(id, name, coin_count, market_cap)| {
+        SimCategoryInfo { id, name, coin_count: coin_count as usize, market_cap }
+    }).collect();
 
     Ok(Json(serde_json::json!({ "categories": result })))
 }
@@ -3164,8 +3129,12 @@ async fn sim_run_stream(
 
 #[derive(Deserialize)]
 struct SimSweepQuery {
+    #[serde(default)]
     category_id: String,
-    sweep: String,  // "top_n", "weighting", "rebalance"
+    sweep: String,  // "top_n", "weighting", "rebalance", "category"
+    /// Comma-separated category IDs for category sweep
+    #[serde(default)]
+    categories: String,
     #[serde(default = "default_sweep_weighting")]
     weighting: String,
     #[serde(default = "default_sweep_rebalance")]
@@ -3227,9 +3196,32 @@ async fn sim_sweep_stream(
                 }
             }).collect()
         }
+        "category" => {
+            let cat_ids: Vec<String> = params.categories.split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
+            if cat_ids.is_empty() {
+                return Err((StatusCode::BAD_REQUEST, Json(ErrorResponse {
+                    error: "category sweep requires 'categories' param with comma-separated IDs".into(),
+                })));
+            }
+            let weighting = simulation::Weighting::from_str(&params.weighting)
+                .unwrap_or(simulation::Weighting::Equal);
+            cat_ids.into_iter().map(|cid| {
+                simulation::SimConfig {
+                    category_id: cid,
+                    top_n: params.top_n,
+                    weighting,
+                    rebalance_days: params.rebalance_days,
+                    base_fee_pct: params.base_fee_pct,
+                    spread_multiplier: params.spread_multiplier,
+                }
+            }).collect()
+        }
         other => {
             return Err((StatusCode::BAD_REQUEST, Json(ErrorResponse {
-                error: format!("Invalid sweep dimension '{}', use 'top_n', 'weighting', or 'rebalance'", other),
+                error: format!("Invalid sweep dimension '{}', use 'top_n', 'weighting', 'rebalance', or 'category'", other),
             })));
         }
     };
@@ -3246,6 +3238,7 @@ async fn sim_sweep_stream(
                 "top_n" => format!("top_n={}", config.top_n),
                 "weighting" => format!("weighting={}", config.weighting.as_str()),
                 "rebalance" => format!("rebalance={}d", config.rebalance_days),
+                "category" => config.category_id.clone(),
                 _ => format!("variant_{}", idx),
             };
 

@@ -1841,3 +1841,34 @@ pub async fn sim_query_spread_at(
 
     Ok(spread)
 }
+
+/// Efficient single-query: for each category, count coins that have CG data AND a matching
+/// Bitget USDT listing (by uppercase symbol). Returns categories with >= min_coins eligible.
+pub async fn sim_query_eligible_categories(
+    pool: &PgPool,
+    min_coins: i64,
+) -> Result<Vec<(String, String, i64, Option<f64>)>, sqlx::Error> {
+    // Join categories → category_coins → latest market cap → bitget listings
+    // Count eligible coins per category in one pass
+    let rows = sqlx::query_as::<_, (String, String, i64, Option<f64>)>(
+        "SELECT cat.id, cat.name, COUNT(*) AS eligible_count, cat.market_cap
+         FROM coingecko_categories cat
+         JOIN coingecko_category_coins cc ON cc.category_id = cat.id
+         JOIN LATERAL (
+             SELECT symbol FROM coingecko_market_caps
+             WHERE coin_id = cc.coin_id
+             ORDER BY snapshot_date DESC LIMIT 1
+         ) m ON true
+         JOIN bitget_listings bl ON bl.base_coin = UPPER(m.symbol)
+            AND bl.quote_coin = 'USDT'
+            AND bl.status != 'delisted_gone'
+         GROUP BY cat.id, cat.name, cat.market_cap
+         HAVING COUNT(*) >= $1
+         ORDER BY cat.market_cap DESC NULLS LAST"
+    )
+    .bind(min_coins)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows)
+}

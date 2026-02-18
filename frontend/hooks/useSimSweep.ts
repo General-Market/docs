@@ -23,12 +23,13 @@ export interface SweepVariantResult {
 
 interface UseSimSweepParams {
   category_id: string
-  sweep: string  // 'top_n' | 'weighting' | 'rebalance'
+  sweep: string  // 'top_n' | 'weighting' | 'rebalance' | 'category'
   weighting: string
   rebalance_days: number
   top_n: number
   base_fee_pct: number
   spread_multiplier: number
+  categories?: string[]  // for category sweep
 }
 
 interface UseSimSweepResult {
@@ -54,7 +55,13 @@ export function useSimSweep(params: UseSimSweepParams | null): UseSimSweepResult
   }, [])
 
   const run = useCallback(() => {
-    if (!params || !params.category_id || !params.sweep) return
+    if (!params || !params.sweep) return
+    // For category sweep, need categories array; for others, need category_id
+    if (params.sweep === 'category') {
+      if (!params.categories || params.categories.length < 2) return
+    } else {
+      if (!params.category_id) return
+    }
 
     cleanup()
     setStatus('loading')
@@ -63,7 +70,6 @@ export function useSimSweep(params: UseSimSweepParams | null): UseSimSweepResult
     setError(null)
 
     const qs = new URLSearchParams({
-      category_id: params.category_id,
       sweep: params.sweep,
       weighting: params.weighting,
       rebalance_days: String(params.rebalance_days),
@@ -71,6 +77,8 @@ export function useSimSweep(params: UseSimSweepParams | null): UseSimSweepResult
       base_fee_pct: String(params.base_fee_pct),
       spread_multiplier: String(params.spread_multiplier),
     })
+    if (params.category_id) qs.set('category_id', params.category_id)
+    if (params.categories?.length) qs.set('categories', params.categories.join(','))
 
     const es = new EventSource(`${DATA_NODE_URL}/sim/sweep-stream?${qs}`)
     eventSourceRef.current = es
