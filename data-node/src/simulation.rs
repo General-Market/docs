@@ -593,13 +593,15 @@ pub async fn run_simulation(
         price_history,
     };
 
-    // Find start date: earliest date with >= top_n Bitget-listed coins
+    // Find start date: earliest date with >= 1 eligible coin.
+    // If fewer than top_n are available, the sim starts with fewer assets and scales up
+    // as more coins get listed — so top_5 and top_100 share the same start date.
     let mut start_idx = None;
     for (i, date) in cache.all_dates.iter().enumerate() {
         let eligible = count_eligible_coins_mem(
             &cache.mcap_rankings, *date, &cache.coin_symbol_map, &cache.bitget_lookup,
         );
-        if eligible >= config.top_n as usize {
+        if eligible >= 1 {
             start_idx = Some(i);
             break;
         }

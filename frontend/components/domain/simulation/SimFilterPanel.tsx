@@ -306,49 +306,90 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
         </div>
       )}
 
-      {/* Row 3: Rebalance */}
+      {/* Row 3: Rebalance family */}
       <div>
         <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Rebalance</label>
-        <div className="flex items-center">
-          {REBALANCE_OPTIONS.map(r => (
-            <button
-              key={r.value}
-              title={`Rebalance every ${r.label}`}
-              className={`px-2 py-1 text-xs font-mono border border-white/10 first:rounded-l -ml-px first:ml-0 transition-colors ${
-                sweepDim === 'rebalance'
-                  ? 'bg-accent/20 text-accent border-accent/30'
-                  : filters.threshold_pct == null && filters.rebalance_days === r.value
-                    ? 'bg-white/20 text-white'
-                    : 'bg-white/5 text-white/50 hover:bg-white/10'
-              }`}
-              onClick={() => { if (sweepDim !== 'rebalance') update({ rebalance_days: r.value, threshold_pct: null }) }}
-              disabled={sweepDim === 'rebalance'}
-            >
-              {r.label}
-            </button>
-          ))}
-          <span className="px-1.5 text-white/20 text-[10px] font-mono select-none">|</span>
-          {THRESHOLD_OPTIONS.filter(t => t.value != null).map((t, i) => (
-            <button
-              key={t.label}
-              title={`Rebalance when any holding drifts ${t.label} from target`}
-              className={`px-2 py-1 text-xs font-mono border border-white/10 -ml-px transition-colors ${
-                i === THRESHOLD_OPTIONS.filter(x => x.value != null).length - 1 ? 'rounded-r' : ''
-              } ${
-                sweepDim === 'rebalance'
-                  ? 'bg-accent/20 text-accent border-accent/30'
-                  : filters.threshold_pct === t.value
-                    ? 'bg-white/20 text-white'
-                    : 'bg-white/5 text-white/50 hover:bg-white/10'
-              }`}
-              onClick={() => { if (sweepDim !== 'rebalance') update({ threshold_pct: t.value }) }}
-              disabled={sweepDim === 'rebalance'}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="flex gap-0.5">
+          <button
+            title="Rebalance at fixed time intervals"
+            className={`px-2 py-1 text-[10px] font-mono border border-white/10 rounded transition-colors ${
+              sweepDim === 'rebalance'
+                ? 'bg-accent/20 text-accent border-accent/30'
+                : filters.threshold_pct == null
+                  ? 'bg-white/20 text-white border-white/30'
+                  : 'bg-white/5 text-white/50 hover:bg-white/10'
+            }`}
+            onClick={() => { if (sweepDim !== 'rebalance') update({ threshold_pct: null, rebalance_days: filters.rebalance_days }) }}
+            disabled={sweepDim === 'rebalance'}
+          >
+            Periodic
+          </button>
+          <button
+            title="Rebalance when any holding drifts past a threshold"
+            className={`px-2 py-1 text-[10px] font-mono border border-white/10 rounded transition-colors ${
+              sweepDim === 'rebalance'
+                ? 'bg-accent/20 text-accent border-accent/30'
+                : filters.threshold_pct != null
+                  ? 'bg-white/20 text-white border-white/30'
+                  : 'bg-white/5 text-white/50 hover:bg-white/10'
+            }`}
+            onClick={() => { if (sweepDim !== 'rebalance') update({ threshold_pct: filters.threshold_pct ?? 5 }) }}
+            disabled={sweepDim === 'rebalance'}
+          >
+            Drift Band
+          </button>
         </div>
       </div>
+
+      {/* Row 3b: Rebalance sub-parameter */}
+      {sweepDim !== 'rebalance' && (
+        <div className="flex items-center gap-2 pl-2 border-l-2 border-white/10">
+          <span className="text-[10px] text-white/30 font-mono">
+            {filters.threshold_pct == null ? 'Interval' : 'Threshold'}
+          </span>
+          <div className="flex">
+            {filters.threshold_pct == null ? (
+              REBALANCE_OPTIONS.map((r, i) => (
+                <button
+                  key={r.value}
+                  title={`Rebalance every ${r.label}`}
+                  className={`px-2 py-0.5 text-[10px] font-mono border border-white/10 -ml-px transition-colors ${
+                    i === 0 ? 'rounded-l ml-0' : ''
+                  } ${
+                    i === REBALANCE_OPTIONS.length - 1 ? 'rounded-r' : ''
+                  } ${
+                    filters.rebalance_days === r.value
+                      ? 'bg-white/20 text-white'
+                      : 'bg-white/5 text-white/40 hover:bg-white/10'
+                  }`}
+                  onClick={() => update({ rebalance_days: r.value })}
+                >
+                  {r.label}
+                </button>
+              ))
+            ) : (
+              THRESHOLD_OPTIONS.filter(t => t.value != null).map((t, i, arr) => (
+                <button
+                  key={t.label}
+                  title={`Rebalance when any holding drifts ${t.label} from target`}
+                  className={`px-2 py-0.5 text-[10px] font-mono border border-white/10 -ml-px transition-colors ${
+                    i === 0 ? 'rounded-l ml-0' : ''
+                  } ${
+                    i === arr.length - 1 ? 'rounded-r' : ''
+                  } ${
+                    filters.threshold_pct === t.value
+                      ? 'bg-white/20 text-white'
+                      : 'bg-white/5 text-white/40 hover:bg-white/10'
+                  }`}
+                  onClick={() => update({ threshold_pct: t.value })}
+                >
+                  {t.label}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Row 4: Fees */}
       <div className="flex flex-wrap gap-3 items-center">
