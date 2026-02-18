@@ -27,6 +27,8 @@ pub async fn run_migrations(pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::raw_sql(m007).execute(pool).await?;
     let m008 = include_str!("../migrations/008_create_coingecko_categories.sql");
     sqlx::raw_sql(m008).execute(pool).await?;
+    let m009 = include_str!("../migrations/009_create_bitget_listings.sql");
+    sqlx::raw_sql(m009).execute(pool).await?;
     info!("Database migrations applied");
     Ok(())
 }
@@ -1245,4 +1247,156 @@ pub async fn cg_query_snapshot_dates(pool: &PgPool) -> Result<Vec<chrono::NaiveD
     .fetch_all(pool)
     .await?;
     Ok(rows)
+}
+
+// ---- Bitget listing functions ----
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct BitgetListingRow {
+    pub symbol: String,
+    pub base_coin: String,
+    pub quote_coin: String,
+    pub listed_at: DateTime<Utc>,
+    pub delisted_at: Option<DateTime<Utc>>,
+    pub status: String,
+}
+
+/// Batch upsert Bitget listing rows.
+pub async fn bitget_batch_upsert_listings(
+    pool: &PgPool,
+    rows: &[BitgetListingRow],
+) -> Result<u64, sqlx::Error> {
+    if rows.is_empty() {
+        return Ok(0);
+    }
+
+    let mut symbols = Vec::with_capacity(rows.len());
+    let mut bases = Vec::with_capacity(rows.len());
+    let mut quotes = Vec::with_capacity(rows.len());
+    let mut listed_ats = Vec::with_capacity(rows.len());
+    let mut delisted_ats: Vec<Option<DateTime<Utc>>> = Vec::with_capacity(rows.len());
+    let mut statuses = Vec::with_capacity(rows.len());
+
+    for r in rows {
+        symbols.push(r.symbol.as_str());
+        bases.push(r.base_coin.as_str());
+        quotes.push(r.quote_coin.as_str());
+        listed_ats.push(r.listed_at);
+        delisted_ats.push(r.delisted_at);
+        statuses.push(r.status.as_str());
+    }
+
+    let result = sqlx::query(
+        "INSERT INTO bitget_listings (symbol, base_coin, quote_coin, listed_at, delisted_at, status, fetched_at)
+         SELECT s, b, q, l, d, st, NOW()
+         FROM UNNEST($1::text[], $2::text[], $3::text[], $4::timestamptz[], $5::timestamptz[], $6::text[])
+            AS t(s, b, q, l, d, st)
+         ON CONFLICT (symbol) DO UPDATE SET
+            base_coin = EXCLUDED.base_coin,
+            quote_coin = EXCLUDED.quote_coin,
+            listed_at = EXCLUDED.listed_at,
+            delisted_at = EXCLUDED.delisted_at,
+            status = EXCLUDED.status,
+            fetched_at = NOW()"
+    )
+    .bind(&symbols)
+    .bind(&bases)
+    .bind(&quotes)
+    .bind(&listed_ats)
+    .bind(&delisted_ats)
+    .bind(&statuses)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected())
+}
+
+/// Query all listings, optionally filtered by status.
+pub async fn bitget_query_listings(
+    pool: &PgPool,
+    status_filter: Option<&str>,
+) -> Result<Vec<BitgetListingRow>, sqlx::Error> {
+    let rows = sqlx::query_as::<_, (String, String, String, DateTime<Utc>, Option<DateTime<Utc>>, String)>(
+        "SELECT symbol, base_coin, quote_coin, listed_at, delisted_at, status
+         FROM bitget_listings
+         WHERE ($1::text IS NULL OR status = $1)
+         ORDER BY listed_at ASC"
+    )
+    .bind(status_filter)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows.into_iter().map(|(symbol, base_coin, quote_coin, listed_at, delisted_at, status)| BitgetListingRow {
+        symbol, base_coin, quote_coin, listed_at, delisted_at, status,
+    }).collect())
+}
+
+/// Returns all symbols currently in DB with status != "delisted_gone".
+pub async fn bitget_query_active_symbols(
+    pool: &PgPool,
+) -> Result<Vec<String>, sqlx::Error> {
+    sqlx::query_scalar::<_, String>(
+        "SELECT symbol FROM bitget_listings WHERE status != 'delisted_gone'"
+    )
+    .fetch_all(pool)
+    .await
+}
+
+/// Marks symbols as 'delisted_gone' with delisted_at = NOW() for pairs that vanished from API.
+pub async fn bitget_mark_disappeared(
+    pool: &PgPool,
+    symbols: &[String],
+) -> Result<u64, sqlx::Error> {
+    if symbols.is_empty() {
+        return Ok(0);
+    }
+
+    let syms: Vec<&str> = symbols.iter().map(|s| s.as_str()).collect();
+    let result = sqlx::query(
+        "UPDATE bitget_listings
+         SET status = 'delisted_gone', delisted_at = NOW()
+         WHERE symbol = ANY($1) AND status != 'delisted_gone'"
+    )
+    .bind(&syms)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected())
+}
+
+/// Query listings with unsafe status (halt, offline, or delisted_gone).
+pub async fn bitget_query_unsafe_listings(
+    pool: &PgPool,
+) -> Result<Vec<BitgetListingRow>, sqlx::Error> {
+    let rows = sqlx::query_as::<_, (String, String, String, DateTime<Utc>, Option<DateTime<Utc>>, String)>(
+        "SELECT symbol, base_coin, quote_coin, listed_at, delisted_at, status
+         FROM bitget_listings
+         WHERE status IN ('halt', 'offline', 'delisted_gone')
+         ORDER BY symbol ASC"
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows.into_iter().map(|(symbol, base_coin, quote_coin, listed_at, delisted_at, status)| BitgetListingRow {
+        symbol, base_coin, quote_coin, listed_at, delisted_at, status,
+    }).collect())
+}
+
+/// Get listing date for a specific symbol.
+pub async fn bitget_query_listing(
+    pool: &PgPool,
+    symbol: &str,
+) -> Result<Option<BitgetListingRow>, sqlx::Error> {
+    let row = sqlx::query_as::<_, (String, String, String, DateTime<Utc>, Option<DateTime<Utc>>, String)>(
+        "SELECT symbol, base_coin, quote_coin, listed_at, delisted_at, status
+         FROM bitget_listings
+         WHERE symbol = $1"
+    )
+    .bind(symbol)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(row.map(|(symbol, base_coin, quote_coin, listed_at, delisted_at, status)| BitgetListingRow {
+        symbol, base_coin, quote_coin, listed_at, delisted_at, status,
+    }))
 }

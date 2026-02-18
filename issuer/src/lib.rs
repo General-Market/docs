@@ -11,6 +11,7 @@ pub mod chain;
 pub mod config;
 pub mod consensus;
 pub mod cycle;
+pub mod delisting_watchdog;
 pub mod execution;
 pub mod heartbeat;
 pub mod leader;

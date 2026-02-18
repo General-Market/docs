@@ -1,5 +1,25 @@
 # Design Decision Backlog
 
+## Session: 20260218-2345-w8r3
+
+- [DECISION] Delisting watchdog: data-node as single source of truth for listing status. Issuer queries `/listings/unsafe` endpoint, doesn't call Bitget directly.
+- [DECISION] Delisting watchdog: equal weights (1/N) redistribution after asset removal — simplest fair approach. `1e18 / remaining_count` with remainder on last.
+- [DECISION] Delisting watchdog: leader-only execution via cycle-based `LeaderElector` to prevent duplicate `requestRebalance` calls from multiple issuers.
+- [DECISION] Listing sync diff detection: `compute_disappeared()` extracted as pure function comparing DB snapshot vs API response. Symbols missing from API get `delisted_gone` status.
+- [DECISION] `requestRebalance()` is permissionless on Index.sol (line 699-707), so watchdog can call it directly. Existing consensus pipeline verifies and executes.
+- [DECISION] Watchdog uses `static_call` for `getItpCount()` — MockChain doesn't implement this, so integration tests validate error handling path instead.
+
+## Session: 20260218-2200-k4d1
+
+- [DECISION] Created frontendV3 as Kalshi-inspired dark theme redesign of frontendV2. Copied V2 as base, restyled in-place. Dark-first (#0A0C0F), data-dense, financial terminal aesthetic.
+- [DECISION] ITP listing changed from paginated 3-card grid to split layout: compact row list (left 55%) + detail panel (right 45%). More like a financial exchange.
+- [DECISION] Hero section replaced with compact strip — title + inline stat pills. No more full-page hero with CTAs.
+- [DECISION] Color system: accent changed from red (#C40000) to blue (#3B82F6) per Kalshi style. Green/red for buy/sell semantic colors.
+- [DECISION] System status section now collapsible by default with health indicator bar, expanded on click.
+- [DECISION] All modals batch-restyled via automated class replacement: bg-white → bg-surface-tertiary, light borders → dark borders, semantic text colors updated.
+- [DECISION] Portfolio tabs switched from underline style to pill-style tab group matching Kalshi's UI pattern.
+- [DECISION] Wallet button restyled as pill with green dot indicator for connected state.
+
 ## Session: 20260218-1800-b3f7
 
 - [DECISION] Fix CrossChainOrderCreated ABI — orderId, itpId, user must be `indexed: true` (they appear in event topics, not data). decodeEventLog was silently failing because indexed mismatch.

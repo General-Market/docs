@@ -17,6 +17,8 @@ pub enum Command {
     CgBackfill(CgBackfillArgs),
     /// Download all missing CoinGecko coin logos
     SyncLogos(SyncLogosArgs),
+    /// Fetch Bitget spot listing/delisting dates and store in DB
+    SyncListings(SyncListingsArgs),
 }
 
 #[derive(Parser, Debug)]
@@ -92,6 +94,10 @@ pub struct ServeArgs {
     /// Directory to store CoinGecko coin logos
     #[arg(long, default_value = "data/logos", env = "LOGOS_DIR")]
     pub logos_dir: String,
+
+    /// Listing sync interval in seconds (default: 24h). Set to 0 to disable.
+    #[arg(long, default_value = "86400", env = "LISTING_SYNC_INTERVAL_SECS")]
+    pub listing_sync_interval: u64,
 }
 
 #[derive(Parser, Debug)]
@@ -165,6 +171,17 @@ pub struct SyncLogosArgs {
     /// Directory to store logos
     #[arg(long, default_value = "data/logos", env = "LOGOS_DIR")]
     pub logos_dir: String,
+
+    /// Log level
+    #[arg(long, default_value = "info", env = "DATA_NODE_LOG_LEVEL")]
+    pub log_level: String,
+}
+
+#[derive(Parser, Debug)]
+pub struct SyncListingsArgs {
+    /// PostgreSQL connection URL
+    #[arg(long, env = "DATABASE_URL")]
+    pub database_url: String,
 
     /// Log level
     #[arg(long, default_value = "info", env = "DATA_NODE_LOG_LEVEL")]

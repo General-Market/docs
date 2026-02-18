@@ -9,6 +9,7 @@ mod db;
 mod itp_collector;
 mod kline_collector;
 mod liquidity_collector;
+mod listing_sync;
 pub mod live_cache;
 mod logo_downloader;
 mod trade_collector;
@@ -36,6 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Command::Backfill(args) => backfill::run(args).await,
         Command::CgBackfill(args) => cg_backfill::run(args).await,
         Command::SyncLogos(args) => run_sync_logos(args).await,
+        Command::SyncListings(args) => listing_sync::run(args).await,
     }
 }
 
@@ -153,6 +155,18 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("CoinGecko market-cap collector started");
     } else {
         info!("CoinGecko collector skipped (no COINGECKO_API_KEY configured)");
+    }
+
+    // Start daily listing sync in background
+    if args.listing_sync_interval > 0 {
+        let listing_pool = pool.clone();
+        let listing_interval = args.listing_sync_interval;
+        tokio::spawn(async move {
+            listing_sync::run_daily(listing_pool, listing_interval).await;
+        });
+        info!(interval_secs = args.listing_sync_interval, "Listing sync started");
+    } else {
+        info!("Listing sync disabled (interval = 0)");
     }
 
     // Create live ticker cache and start fast poller

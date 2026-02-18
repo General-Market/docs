@@ -110,6 +110,9 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/cg/categories", get(cg_categories))
         .route("/cg/category-coins/:category_id", get(cg_category_coins))
         .route("/cg/coin-categories/:coin_id", get(cg_coin_categories))
+        .route("/listings", get(listings))
+        .route("/listings/unsafe", get(listings_unsafe))
+        .route("/listing", get(listing))
         .layer(cors)
         .with_state(state)
 }
@@ -2820,5 +2823,64 @@ async fn serve_logo(
             bytes,
         )),
         Err(_) => Err(StatusCode::NOT_FOUND),
+    }
+}
+
+// ---- /listings ----
+
+#[derive(Deserialize)]
+struct ListingsQuery {
+    status: Option<String>,
+    quote: Option<String>,
+}
+
+async fn listings(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<ListingsQuery>,
+) -> Result<Json<Vec<db::BitgetListingRow>>, (StatusCode, Json<ErrorResponse>)> {
+    let mut rows = db::bitget_query_listings(&state.pool, params.status.as_deref())
+        .await
+        .map_err(|e| db_error(e))?;
+
+    if let Some(ref quote) = params.quote {
+        let q = quote.to_uppercase();
+        rows.retain(|r| r.quote_coin == q);
+    }
+
+    Ok(Json(rows))
+}
+
+// ---- /listings/unsafe ----
+
+async fn listings_unsafe(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Vec<db::BitgetListingRow>>, (StatusCode, Json<ErrorResponse>)> {
+    let rows = db::bitget_query_unsafe_listings(&state.pool)
+        .await
+        .map_err(|e| db_error(e))?;
+    Ok(Json(rows))
+}
+
+// ---- /listing ----
+
+#[derive(Deserialize)]
+struct ListingQuery {
+    symbol: String,
+}
+
+async fn listing(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<ListingQuery>,
+) -> Result<Json<db::BitgetListingRow>, (StatusCode, Json<ErrorResponse>)> {
+    let row = db::bitget_query_listing(&state.pool, &params.symbol)
+        .await
+        .map_err(|e| db_error(e))?;
+
+    match row {
+        Some(r) => Ok(Json(r)),
+        None => Err((
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse { error: format!("No listing found for '{}'", params.symbol) }),
+        )),
     }
 }

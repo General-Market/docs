@@ -867,6 +867,36 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         }
     });
 
+    // Start delisting watchdog (daily background task)
+    if let (Some(ref dn_url), Some(ref writer)) = (&data_node_url, &components.chain.writer) {
+        let index_address = writer.config().contracts.index;
+        let watchdog = Arc::new(issuer::delisting_watchdog::DelistingWatchdog::new(
+            dn_url.clone(),
+            components.chain.reader.clone(),
+            writer.clone() as Arc<dyn common::traits::ChainWriter>,
+            components.price.symbol_map.clone(),
+            index_address,
+        ));
+        let wd_leader = Arc::new(tokio::sync::RwLock::new(
+            issuer::LeaderElector::new(
+                components.consensus.keys.node_index,
+                components.consensus.config.num_issuers,
+            ),
+        ));
+        let wd_shutdown = shutdown.clone();
+        tokio::spawn(async move {
+            issuer::delisting_watchdog::run_daily(
+                watchdog,
+                wd_leader,
+                std::time::Duration::from_secs(86400),
+                wd_shutdown,
+            ).await;
+        });
+        info!(node_id, "Delisting watchdog started (daily, leader-only)");
+    } else {
+        info!(node_id, "Delisting watchdog skipped (no data-node-url or chain writer)");
+    }
+
     // Start heartbeat monitor
     let heartbeat_handles: Option<(tokio::task::JoinHandle<()>, tokio::task::JoinHandle<()>)> =
         if let Some(ref monitor) = components.p2p.heartbeat_monitor {
