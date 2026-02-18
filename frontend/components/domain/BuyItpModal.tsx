@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useAccount, useWaitForTransactionReceipt, usePublicClient } from 'wagmi'
-import { parseUnits, formatUnits, decodeEventLog } from 'viem'
+import { parseUnits, formatUnits, decodeEventLog, createPublicClient, http } from 'viem'
 import { OrderStatusTracker } from '@/components/domain/OrderStatusTracker'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { ARB_CUSTODY_ABI, ERC20_ABI, INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
@@ -12,6 +12,41 @@ import { useUserState } from '@/hooks/useUserState'
 import { useNonceCheck } from '@/hooks/useNonceCheck'
 import { useItpNav } from '@/hooks/useItpNav'
 import { useFillDetails } from '@/hooks/useFillDetails'
+import { useOrderStatus } from '@/hooks/useOrderStatus'
+
+// Direct L3 client for polling OrderSubmitted events (Index contract lives on L3, not Arb)
+const L3_RPC = process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
+
+/** Phases of the full buy flow */
+enum BuyPhase {
+  INPUT = 0,
+  APPROVE = 1,
+  SUBMIT = 2,
+  BRIDGE = 3,
+  PENDING = 4,
+  BATCHED = 5,
+  FILLED = 6,
+}
+
+const BUY_PHASE_LABELS: Record<BuyPhase, string> = {
+  [BuyPhase.INPUT]: 'Input',
+  [BuyPhase.APPROVE]: 'Approve USDC',
+  [BuyPhase.SUBMIT]: 'Submit Order',
+  [BuyPhase.BRIDGE]: 'Bridge Relay',
+  [BuyPhase.PENDING]: 'Pending',
+  [BuyPhase.BATCHED]: 'Batched',
+  [BuyPhase.FILLED]: 'Filled',
+}
+
+/** The visible steps in the progress diagram (skip INPUT) */
+const PROGRESS_STEPS = [
+  { phase: BuyPhase.APPROVE, label: 'Approve' },
+  { phase: BuyPhase.SUBMIT, label: 'Submit' },
+  { phase: BuyPhase.BRIDGE, label: 'Bridge' },
+  { phase: BuyPhase.PENDING, label: 'Pending' },
+  { phase: BuyPhase.BATCHED, label: 'Batched' },
+  { phase: BuyPhase.FILLED, label: 'Filled' },
+]
 
 const SLIPPAGE_TIERS = [
   { value: 0, label: '0.3%', description: 'Tight' },
@@ -41,14 +76,20 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
   const { address, isConnected } = useAccount()
   const publicClient = usePublicClient()
 
+  // L3 viem client for polling cross-chain events (Index contract is on L3, not Arb)
+  const l3Client = useMemo(() => createPublicClient({
+    transport: http(L3_RPC, { timeout: 5_000, retryCount: 2 }),
+  }), [])
+
   const [amount, setAmount] = useState('')
   const [limitPrice, setLimitPrice] = useState('')
   const [slippageTier, setSlippageTier] = useState(2)
   const [deadlineHours, setDeadlineHours] = useState(1)
-  const [step, setStep] = useState<'input' | 'approving' | 'buying' | 'tracking'>('input')
+  const [phase, setPhase] = useState<BuyPhase>(BuyPhase.INPUT)
   const [orderId, setOrderId] = useState<bigint | null>(null)
   const [txError, setTxError] = useState<string | null>(null)
   const [buyTxBlock, setBuyTxBlock] = useState<bigint | null>(null)
+  const [arbOrderId, setArbOrderId] = useState<bigint | null>(null)
 
   const {
     writeContract: writeApprove,
@@ -128,7 +169,7 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
     if (!amount) return
     approveHandled.current = false
     setTxError(null)
-    setStep('approving')
+    setPhase(BuyPhase.APPROVE)
     writeApprove({
       address: INDEX_PROTOCOL.arbUsdc,
       abi: ERC20_ABI,
@@ -142,7 +183,7 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
     if (!publicClient || !amount) return
     buyHandled.current = false
     setTxError(null)
-    setStep('buying')
+    setPhase(BuyPhase.SUBMIT)
 
     let blockTimestamp: bigint
     try {
@@ -200,7 +241,7 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
         } catch {}
       }
     }
-    // Fallback: try CrossChainOrderCreated on ArbCustody
+    // Fallback: try CrossChainOrderCreated on ArbCustody (gives Arb-side orderId)
     if (foundOrderId === null) {
       for (const log of buyReceipt.logs) {
         if (log.address.toLowerCase() === INDEX_PROTOCOL.arbCustody.toLowerCase()) {
@@ -211,7 +252,8 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
               topics: log.topics,
             })
             if (decoded.eventName === 'CrossChainOrderCreated') {
-              foundOrderId = (decoded.args as any).orderId as bigint
+              // Store Arb orderId separately — L3 orderId may differ
+              setArbOrderId((decoded.args as any).orderId as bigint)
               break
             }
           } catch {}
@@ -220,24 +262,25 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
     }
 
     if (foundOrderId !== null) {
+      // Same-chain order — L3 orderId found directly
       setOrderId(foundOrderId)
+      setPhase(BuyPhase.PENDING)
     } else {
-      // Last resort: store block for polling fallback
+      // Cross-chain: need to poll L3 for the relayed order
       setBuyTxBlock(buyReceipt.blockNumber)
+      setPhase(BuyPhase.BRIDGE)
     }
-    setStep('tracking')
     resetBuy()
   }, [isBuySuccess, buyReceipt, resetBuy])
 
-  // Poll for the relayed OrderSubmitted event on the Index contract (L3)
-  // Runs in background during 'tracking' step until orderId is found
+  // Poll L3 for the relayed OrderSubmitted event (uses L3 viem client, NOT wagmi's Arb client)
   useEffect(() => {
-    if (step !== 'tracking' || orderId !== null || !publicClient || !buyTxBlock) return
+    if (phase !== BuyPhase.BRIDGE || orderId !== null || !l3Client) return
 
     let cancelled = false
     const poll = async () => {
       try {
-        const logs = await publicClient.getLogs({
+        const logs = await l3Client.getLogs({
           address: INDEX_PROTOCOL.index,
           event: {
             type: 'event',
@@ -257,7 +300,7 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
           args: {
             itpId: itpId as `0x${string}`,
           },
-          fromBlock: buyTxBlock,
+          fromBlock: buyTxBlock ?? 0n,
           toBlock: 'latest',
         })
 
@@ -266,6 +309,7 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
           const latest = logs[logs.length - 1]
           const realOrderId = (latest.args as any).orderId as bigint
           setOrderId(realOrderId)
+          setPhase(BuyPhase.PENDING)
           return
         }
       } catch {
@@ -279,14 +323,26 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
       cancelled = true
       clearInterval(interval)
     }
-  }, [step, orderId, publicClient, buyTxBlock, itpId])
+  }, [phase, orderId, l3Client, buyTxBlock, itpId])
+
+  // Track order status progression (Pending → Batched → Filled) via OrderStatusTracker's hook
+  const { order: trackedOrder } = useOrderStatus(orderId)
+  useEffect(() => {
+    if (!trackedOrder) return
+    if (trackedOrder.status >= 2 && phase < BuyPhase.FILLED) {
+      setPhase(BuyPhase.FILLED)
+      refetchShares()
+    } else if (trackedOrder.status >= 1 && phase < BuyPhase.BATCHED) {
+      setPhase(BuyPhase.BATCHED)
+    }
+  }, [trackedOrder, phase, refetchShares])
 
   useEffect(() => {
     if (approveError) {
       const msg = approveError.message || 'Approval failed'
       const shortMsg = msg.includes('Details:') ? msg.split('Details:')[1].trim().slice(0, 200) : msg.slice(0, 200)
       setTxError(shortMsg)
-      setStep('input')
+      setPhase(BuyPhase.INPUT)
       resetApprove()
     }
   }, [approveError, resetApprove])
@@ -296,7 +352,7 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
       const msg = buyError.message || 'Buy transaction failed'
       const shortMsg = msg.includes('Details:') ? msg.split('Details:')[1].trim().slice(0, 200) : msg.slice(0, 200)
       setTxError(shortMsg)
-      setStep('input')
+      setPhase(BuyPhase.INPUT)
       resetBuy()
     }
   }, [buyError, resetBuy])
@@ -314,7 +370,7 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
   const handleCancel = useCallback(() => {
     resetApprove()
     resetBuy()
-    setStep('input')
+    setPhase(BuyPhase.INPUT)
     setTxError(null)
     setStuckWarning(false)
     refreshNonce()
@@ -350,69 +406,141 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
             <div className="bg-terminal-dark border border-white/10 rounded-lg p-8 text-center">
               <p className="text-white/70">Connect your wallet to buy ITP shares</p>
             </div>
-          ) : step === 'tracking' ? (
+          ) : phase >= BuyPhase.APPROVE ? (
             <div className="space-y-6">
-              <div className="bg-green-500/20 border border-green-500/50 rounded-lg p-4 text-green-400">
-                <p className="font-bold">Order Submitted</p>
-                <p className="text-sm mt-1">Your buy order has been submitted on the bridge.</p>
-              </div>
-              {orderId !== null ? (
-                <>
-                  <OrderStatusTracker orderId={orderId} onComplete={() => refetchShares()} />
-                  {fillDetails && (
-                    <div className="bg-terminal-dark border border-white/10 rounded-lg p-4 space-y-2">
-                      <p className="text-sm font-bold text-accent">Fill Summary</p>
-                      <div className="text-xs font-mono space-y-1">
-                        <div className="flex justify-between">
-                          <span className="text-white/50">Fill Price</span>
-                          <span className="text-white">${parseFloat(formatUnits(fillDetails.fillPrice, 18)).toFixed(4)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-white/50">Amount Filled</span>
-                          <span className="text-white">{parseFloat(formatUnits(fillDetails.fillAmount, 18)).toFixed(4)} USDC</span>
-                        </div>
-                        {fillDetails.fillPrice > 0n && (
-                          <div className="flex justify-between">
-                            <span className="text-white/50">Shares Received</span>
-                            <span className="text-white">
-                              {parseFloat(formatUnits((fillDetails.fillAmount * BigInt(1e18)) / fillDetails.fillPrice, 18)).toFixed(4)}
-                            </span>
+              {/* Full Progress Diagram — visible from the moment the user clicks Buy */}
+              <div className="bg-terminal-dark border border-white/10 rounded-lg p-4">
+                <div className="flex items-center gap-1">
+                  {PROGRESS_STEPS.map((s, i) => {
+                    // Skip APPROVE step in diagram if approval wasn't needed
+                    if (s.phase === BuyPhase.APPROVE && !needsApproval && phase > BuyPhase.APPROVE) return null
+                    const isDone = phase > s.phase
+                    const isCurrent = phase === s.phase
+                    const isActive = isDone || isCurrent
+                    return (
+                      <div key={s.phase} className="flex items-center flex-1">
+                        <div className="flex flex-col items-center flex-1">
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                            isDone ? 'bg-green-500 text-white' :
+                            isCurrent ? 'bg-accent text-terminal ring-2 ring-accent/50' :
+                            'bg-white/10 text-white/30'
+                          }`}>
+                            {isDone ? '\u2713' : isCurrent ? (
+                              <span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            ) : i + 1}
                           </div>
+                          <span className={`text-[10px] mt-1 text-center leading-tight ${
+                            isActive ? 'text-white' : 'text-white/30'
+                          }`}>{s.label}</span>
+                        </div>
+                        {i < PROGRESS_STEPS.length - 1 && (
+                          <div className={`h-0.5 w-full mx-0.5 transition-colors ${
+                            isDone ? 'bg-green-500' : 'bg-white/10'
+                          }`} />
                         )}
-                        {limitPrice && parseFloat(limitPrice) > 0 && fillDetails.fillPrice > 0n && (() => {
-                          const limitBn = BigInt(Math.floor(parseFloat(limitPrice) * 1e18))
-                          const slippage = Number(fillDetails.fillPrice - limitBn) * 100 / Number(limitBn)
-                          return (
-                            <div className="flex justify-between">
-                              <span className="text-white/50">vs Limit Price</span>
-                              <span className={Math.abs(slippage) < 1 ? 'text-green-400' : Math.abs(slippage) < 3 ? 'text-yellow-400' : 'text-red-400'}>
-                                {slippage > 0 ? '+' : ''}{slippage.toFixed(2)}%
-                              </span>
-                            </div>
-                          )
-                        })()}
                       </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="bg-terminal-dark border border-white/10 rounded-lg p-4 text-center">
-                  <div className="inline-block w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin mb-2" />
-                  <p className="text-sm text-white/70">Processing order...</p>
+                    )
+                  })}
+                </div>
+
+                {/* Phase description */}
+                <p className="text-center text-sm text-white/60 mt-3">
+                  {phase === BuyPhase.APPROVE && (isApprovePending ? 'Confirm USDC approval in your wallet...' : 'Approving USDC spend...')}
+                  {phase === BuyPhase.SUBMIT && (isBuyPending ? 'Confirm buy order in your wallet...' : 'Submitting order to Arbitrum bridge...')}
+                  {phase === BuyPhase.BRIDGE && 'Waiting for bridge relay to L3...'}
+                  {phase === BuyPhase.PENDING && 'Order received, waiting to be batched...'}
+                  {phase === BuyPhase.BATCHED && 'Order batched, waiting for issuer fill...'}
+                  {phase === BuyPhase.FILLED && 'Order filled!'}
+                </p>
+              </div>
+
+              {/* Order details once we have the L3 orderId */}
+              {orderId !== null && (
+                <OrderStatusTracker orderId={orderId} onComplete={() => refetchShares()} />
+              )}
+
+              {/* Arb order ID reference (cross-chain) */}
+              {arbOrderId !== null && orderId === null && (
+                <div className="bg-terminal-dark border border-white/10 rounded-lg p-3">
+                  <p className="text-xs text-white/40 font-mono">Arb Order ID: {arbOrderId.toString()}</p>
+                  <p className="text-xs text-white/40 mt-1">Waiting for L3 relay...</p>
                 </div>
               )}
+
+              {/* Fill Summary */}
+              {fillDetails && (
+                <div className="bg-terminal-dark border border-white/10 rounded-lg p-4 space-y-2">
+                  <p className="text-sm font-bold text-accent">Fill Summary</p>
+                  <div className="text-xs font-mono space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-white/50">Fill Price</span>
+                      <span className="text-white">${parseFloat(formatUnits(fillDetails.fillPrice, 18)).toFixed(4)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/50">Amount Filled</span>
+                      <span className="text-white">{parseFloat(formatUnits(fillDetails.fillAmount, 18)).toFixed(4)} USDC</span>
+                    </div>
+                    {fillDetails.fillPrice > 0n && (
+                      <div className="flex justify-between">
+                        <span className="text-white/50">Shares Received</span>
+                        <span className="text-white">
+                          {parseFloat(formatUnits((fillDetails.fillAmount * BigInt(1e18)) / fillDetails.fillPrice, 18)).toFixed(4)}
+                        </span>
+                      </div>
+                    )}
+                    {limitPrice && parseFloat(limitPrice) > 0 && fillDetails.fillPrice > 0n && (() => {
+                      const limitBn = BigInt(Math.floor(parseFloat(limitPrice) * 1e18))
+                      const slippage = Number(fillDetails.fillPrice - limitBn) * 100 / Number(limitBn)
+                      return (
+                        <div className="flex justify-between">
+                          <span className="text-white/50">vs Limit Price</span>
+                          <span className={Math.abs(slippage) < 1 ? 'text-green-400' : Math.abs(slippage) < 3 ? 'text-yellow-400' : 'text-red-400'}>
+                            {slippage > 0 ? '+' : ''}{slippage.toFixed(2)}%
+                          </span>
+                        </div>
+                      )
+                    })()}
+                  </div>
+                </div>
+              )}
+
               {userShares > 0n && (
                 <div className="bg-terminal-dark border border-white/10 rounded-lg p-4">
                   <p className="text-sm text-white/70">Your ITP Shares</p>
                   <p className="text-2xl font-bold text-accent">{parseFloat(formatUnits(userShares, 18)).toFixed(4)}</p>
                 </div>
               )}
-              <button
-                onClick={() => { setStep('input'); setOrderId(null); setAmount(''); setBuyTxBlock(null) }}
-                className="w-full py-3 bg-accent text-terminal font-bold rounded-lg hover:bg-accent/90 transition-colors"
-              >
-                Buy More
-              </button>
+
+              {/* Cancel (during wallet interaction) or Buy More (after fill) */}
+              {phase === BuyPhase.FILLED ? (
+                <button
+                  onClick={() => { setPhase(BuyPhase.INPUT); setOrderId(null); setArbOrderId(null); setAmount(''); setBuyTxBlock(null) }}
+                  className="w-full py-3 bg-accent text-terminal font-bold rounded-lg hover:bg-accent/90 transition-colors"
+                >
+                  Buy More
+                </button>
+              ) : (phase === BuyPhase.APPROVE || phase === BuyPhase.SUBMIT) && (
+                <button
+                  onClick={handleCancel}
+                  className="w-full text-center text-sm text-white/50 hover:text-white/80 py-2 transition-colors"
+                >
+                  Cancel
+                </button>
+              )}
+
+              {stuckWarning && (
+                <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-3 text-orange-400 text-sm">
+                  <p className="font-bold">Transaction may be stuck</p>
+                  <p className="text-xs mt-1">Not confirmed after 30s. You can cancel and try again.</p>
+                </div>
+              )}
+
+              {txError && (
+                <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-400">
+                  <p className="font-bold">Error</p>
+                  <p className="text-sm mt-1 break-all">{txError}</p>
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-4">

@@ -153,6 +153,44 @@ export const BRIDGE_PROXY_ABI = [
     name: 'ItpCreated',
     type: 'event',
   },
+  // Set ITP metadata (deployer-only)
+  {
+    inputs: [
+      { name: 'itpId', type: 'bytes32' },
+      { name: 'description', type: 'string' },
+      { name: 'websiteUrl', type: 'string' },
+      { name: 'videoUrl', type: 'string' },
+    ],
+    name: 'setItpMetadata',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  // Get ITP metadata
+  {
+    inputs: [{ name: 'itpId', type: 'bytes32' }],
+    name: 'getItpMetadata',
+    outputs: [
+      { name: 'description', type: 'string' },
+      { name: 'websiteUrl', type: 'string' },
+      { name: 'videoUrl', type: 'string' },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  // ItpMetadataUpdated event
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'itpId', type: 'bytes32' },
+      { indexed: true, name: 'deployer', type: 'address' },
+      { indexed: false, name: 'description', type: 'string' },
+      { indexed: false, name: 'websiteUrl', type: 'string' },
+      { indexed: false, name: 'videoUrl', type: 'string' },
+    ],
+    name: 'ItpMetadataUpdated',
+    type: 'event',
+  },
 ] as const
 
 // ArbBridgeCustody ABI - for buying ITPs from Arbitrum
@@ -183,9 +221,9 @@ export const ARB_CUSTODY_ABI = [
   {
     anonymous: false,
     inputs: [
-      { indexed: false, name: 'orderId', type: 'uint256' },
-      { indexed: false, name: 'itpId', type: 'bytes32' },
-      { indexed: false, name: 'user', type: 'address' },
+      { indexed: true, name: 'orderId', type: 'uint256' },
+      { indexed: true, name: 'itpId', type: 'bytes32' },
+      { indexed: true, name: 'user', type: 'address' },
       { indexed: false, name: 'amount', type: 'uint256' },
     ],
     name: 'CrossChainOrderCreated',

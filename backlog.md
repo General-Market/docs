@@ -1,5 +1,13 @@
 # Design Decision Backlog
 
+## Session: 20260218-1800-b3f7
+
+- [DECISION] Fix CrossChainOrderCreated ABI — orderId, itpId, user must be `indexed: true` (they appear in event topics, not data). decodeEventLog was silently failing because indexed mismatch.
+- [DECISION] L3 polling uses direct viem `createPublicClient(http(L3_RPC))` instead of wagmi's `usePublicClient` — wagmi connects to Arb (8546), Index contract lives on L3 (8545). Using wagmi client would never find L3 events.
+- [DECISION] Cross-chain orderId mismatch handled by storing `arbOrderId` separately and polling L3 for the real orderId via OrderSubmitted event. Arb orderId ≠ L3 orderId because each chain has independent counters.
+- [DECISION] Replaced string-based `step` state (`'input'|'approving'|'buying'|'tracking'`) with enum `BuyPhase` (INPUT→APPROVE→SUBMIT→BRIDGE→PENDING→BATCHED→FILLED) — enables full step diagram from moment user clicks Buy.
+- [DECISION] Phase diagram skips APPROVE step in the visual if approval wasn't needed — cleaner UX for returning users with existing allowance.
+
 ## Session: 20260218-1500-k9w3
 
 - [DECISION] Centralized chain-aware tx wrapper hooks (`useChainWriteContract`, `useChainSendTransaction`) in `frontend/hooks/useChainWrite.ts` — injects `chainId` + auto-switches chain before every tx, replaces per-file boilerplate
@@ -2899,3 +2907,13 @@ Compared architecture.md (v1.9) against full codebase. Updated architecture.md t
 - [DECISION] Log `response.usage.input_tokens` and `output_tokens` in research worker — enables cost tracking per research call
 - [DECISION] Configurable `claudeModel` in `PluginConfig`, passed through to improvement-loop — avoids hardcoded model string, allows testing with different models
 - [DECISION] `getTopPositions` looks up stored odds via `store.getConfig('odds:' + marketId)` instead of hardcoded 0.5 — uses actual market data when available for more accurate scoring
+
+## Session: 20260218-2100-m4p7
+
+- [DECISION] Per-ITP metadata instead of per-deployer profile — each ITP needs independent branding (description, website, video); deployers manage multiple products with different identities
+- [FAILED] Per-deployer profile (DeployerProfile struct keyed by address) — user pivoted to per-ITP metadata since each ITP card needs its own video/description/website link
+- [DECISION] Deployer-gated setter for ITP metadata (`msg.sender == itpDeployer[itpId]`) — only the ITP creator can set metadata, no admin override needed
+- [DECISION] Three-field ItpMetadata struct: description (280 bytes), websiteUrl (128 bytes), videoUrl (256 bytes) — description aligns with tweet-length, URL limits prevent storage abuse
+- [DECISION] Frontend blacklist via static JSON config (`lib/config/blacklisted-itps.json`) — simple hard-coded array of ITP IDs to hide, no on-chain governance needed
+- [DECISION] YouTube embed fallback shows example video (rickroll) when no metadata set — better UX than empty placeholder during development, deployers can set their own once metadata is live
+- [DECISION] No `whenNotPaused` on metadata setter — metadata updates are non-financial, no risk during pause
