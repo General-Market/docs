@@ -5,8 +5,12 @@
 - [DECISION] Fix CrossChainOrderCreated ABI — orderId, itpId, user must be `indexed: true` (they appear in event topics, not data). decodeEventLog was silently failing because indexed mismatch.
 - [DECISION] L3 polling uses direct viem `createPublicClient(http(L3_RPC))` instead of wagmi's `usePublicClient` — wagmi connects to Arb (8546), Index contract lives on L3 (8545). Using wagmi client would never find L3 events.
 - [DECISION] Cross-chain orderId mismatch handled by storing `arbOrderId` separately and polling L3 for the real orderId via OrderSubmitted event. Arb orderId ≠ L3 orderId because each chain has independent counters.
-- [DECISION] Replaced string-based `step` state (`'input'|'approving'|'buying'|'tracking'`) with enum `BuyPhase` (INPUT→APPROVE→SUBMIT→BRIDGE→PENDING→BATCHED→FILLED) — enables full step diagram from moment user clicks Buy.
-- [DECISION] Phase diagram skips APPROVE step in the visual if approval wasn't needed — cleaner UX for returning users with existing allowance.
+- [FAILED] First attempt at BuyPhase diagram had 6 steps (Approve→Submit→Bridge→Pending→Batched→Filled) — missed real flow steps (consensus, CEX trading, share bridging). Also used Arb block number as L3 fromBlock which caused L3 polling to never find events. Also showed duplicate diagrams (ours + OrderStatusTracker).
+- [DECISION] Rewrote BuyItpModal with 7-phase flow matching real cross-chain architecture: INPUT→APPROVE→SUBMIT→RELAY→BATCH→FILL→RECEIVE→DONE. Single diagram only.
+- [DECISION] Snapshot L3 block number before buy starts (l3BaseBlock) — used as fromBlock for L3 polling. Previous approach incorrectly used Arb block number on L3.
+- [DECISION] Poll L3 Index.getOrder() directly for order status instead of relying on data-node backend at :8200 — removes data node dependency, more reliable.
+- [DECISION] RECEIVE phase polls user's BridgedITP balance on Arb to detect when shares arrive from mintBridgedShares. Compares against initial snapshot taken before buy.
+- [DECISION] Removed OrderStatusTracker from BuyItpModal — its 3-step diagram (Pending→Batched→Filled) is now subsumed by the comprehensive 6-step progress diagram.
 
 ## Session: 20260218-1500-k9w3
 
