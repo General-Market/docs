@@ -15,6 +15,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title E2EOrderToMint - End-to-End Integration Test (Story 6.10)
 /// @notice Tests the complete order-to-mint flow: submit → batch → fill → mint
+/// @dev Uses real BLS signatures via FFI (bls-tool). All happy-path tests use real BLS signing.
 contract E2EOrderToMintTest is TestHelper {
     Index public index;
     MockERC20 public usdc;
@@ -31,9 +32,6 @@ contract E2EOrderToMintTest is TestHelper {
 
     uint256 constant INITIAL_PRICE = 1e18; // $1.00
     uint256 constant INITIAL_USDC = 10_000e18;
-
-    // Dummy BLS signature (64 bytes) for mock verification
-    bytes public dummyBlsSignature = new bytes(64);
 
     function setUp() public {
         admin = address(this);
@@ -52,16 +50,10 @@ contract E2EOrderToMintTest is TestHelper {
         );
         index = Index(address(proxy));
 
-        // Deploy IssuerRegistry and wire to Index (required for BLS verification)
+        // Deploy IssuerRegistry, register real BLS test issuers, wire to Index
         IssuerRegistry issuerRegistry = deployIssuerRegistry(address(governance));
+        registerTestIssuersWithBLS(issuerRegistry, admin);
         index.setIssuerRegistry(address(issuerRegistry));
-
-        // Set a non-empty aggregated pubkey (128 bytes) so BLS path doesn't revert on empty pubkey
-        bytes memory dummyAggPubkey = new bytes(128);
-        issuerRegistry.setAggregatedPubkey(dummyAggPubkey);
-
-        // Mock the BN254 pairing precompile to always return success
-        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
 
         // Create test ITP with single asset (simplified for E2E)
         address[] memory assets = new address[](1);
@@ -95,6 +87,28 @@ contract E2EOrderToMintTest is TestHelper {
         }
     }
 
+    // ============ SIGNING HELPERS ============
+
+    function _signConfirmBatch(uint256 cycleNumber, uint256[] memory orderIds) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode(block.chainid, address(index), cycleNumber, orderIds));
+        return signWithTestIssuers(message);
+    }
+
+    function _signConfirmFills(uint256 cycleNumber, TypesLib.Fill[] memory fills) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode(block.chainid, address(index), cycleNumber, fills));
+        return signWithTestIssuers(message);
+    }
+
+    function _signRefundExpiredOrder(uint256 orderId) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode(block.chainid, address(index), "refund", orderId));
+        return signWithTestIssuers(message);
+    }
+
+    function _signSetItpNav(bytes32 _itpId, uint256 nav) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode(block.chainid, address(index), "setItpNav", _itpId, nav));
+        return signWithTestIssuers(message);
+    }
+
     // ============ HELPERS ============
 
     function _submitOrder(
@@ -115,11 +129,11 @@ contract E2EOrderToMintTest is TestHelper {
     }
 
     function _confirmBatch(uint256 cycleNumber, uint256[] memory orderIds) internal {
-        index.confirmBatch(cycleNumber, orderIds, dummyBlsSignature);
+        index.confirmBatch(cycleNumber, orderIds, _signConfirmBatch(cycleNumber, orderIds));
     }
 
     function _confirmFills(uint256 cycleNumber, TypesLib.Fill[] memory fills) internal {
-        index.confirmFills(cycleNumber, fills, dummyBlsSignature);
+        index.confirmFills(cycleNumber, fills, _signConfirmFills(cycleNumber, fills));
     }
 
     // ============ E2E HAPPY PATH (AC1, AC2, AC4, AC5, AC7) ============
@@ -161,9 +175,9 @@ contract E2EOrderToMintTest is TestHelper {
         vm.expectEmit(true, true, false, true);
         emit EventsLib.TradeRequest(1, pairId, uint8(TypesLib.Side.BUY), orderAmount, 1e18);
 
-        // Expect BatchConfirmed event
-        vm.expectEmit(true, false, false, true);
-        emit EventsLib.BatchConfirmed(1, orderIds, dummyBlsSignature);
+        // Expect BatchConfirmed event (don't check data — signature bytes vary with real BLS)
+        vm.expectEmit(true, false, false, false);
+        emit EventsLib.BatchConfirmed(1, orderIds, "");
 
         _confirmBatch(1, orderIds);
 
@@ -281,7 +295,7 @@ contract E2EOrderToMintTest is TestHelper {
         vm.expectEmit(true, true, false, true);
         emit EventsLib.OrderRefunded(orderId, user1, orderAmount);
 
-        index.refundExpiredOrder(orderId, dummyBlsSignature);
+        index.refundExpiredOrder(orderId, _signRefundExpiredOrder(orderId));
 
         // Verify USDC refunded
         assertEq(usdc.balanceOf(user1), userUsdcBefore, "Full USDC should be refunded");
@@ -338,7 +352,7 @@ contract E2EOrderToMintTest is TestHelper {
         uint256 expectedShares = (orderAmount * 1e18) / fillPrice; // 50e18
 
         // Set NAV to $2 so limit price validation passes
-        index.setItpNav(itpId, 2e18, dummyBlsSignature);
+        index.setItpNav(itpId, 2e18, _signSetItpNav(itpId, 2e18));
 
         uint256 orderId = _submitOrder(user1, orderAmount, 2e18, 1);
 

@@ -28,8 +28,6 @@ contract IndexOrderSubmissionTest is TestHelper {
     uint256 constant MAX_DEADLINE_DURATION = 24 hours;
     uint256 constant INITIAL_PRICE = 1e18; // $1.00
 
-    bytes public dummyBlsSignature = new bytes(64);
-
     function setUp() public {
         // Deploy mock USDC with 18 decimals
         usdc = new MockERC20("USDC", "USDC", 18);
@@ -45,13 +43,10 @@ contract IndexOrderSubmissionTest is TestHelper {
         );
         index = Index(address(proxy));
 
-        // Deploy IssuerRegistry and wire to Index (required for BLS verification)
+        // Deploy IssuerRegistry with real BLS keys and wire to Index
         issuerRegistry = deployIssuerRegistry(address(governance));
-        issuerRegistry.setAggregatedPubkey(new bytes(128));
+        registerTestIssuersWithBLS(issuerRegistry, address(this));
         index.setIssuerRegistry(address(issuerRegistry));
-
-        // Mock BN254 pairing precompile to always return success
-        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
 
         // Create test ITP using helper function
         uint256[] memory weights = new uint256[](1);
@@ -424,9 +419,6 @@ contract IndexOrderSubmissionTest is TestHelper {
 
     // Helper to setup user with ITP shares (simulates a completed BUY order)
     function _setupUserWithShares(address _user, bytes32 _itpId, uint256 shares) internal {
-        // We need to submit and fill a BUY order to give user shares
-        // Submit a BUY order and call confirmFills (BLS verified via mocked precompile)
-
         uint256 amount = shares; // 1:1 for simplicity
         usdc.mint(_user, amount);
 
@@ -436,21 +428,24 @@ contract IndexOrderSubmissionTest is TestHelper {
         vm.prank(_user);
         uint256 orderId = index.submitOrder(_itpId, TypesLib.Side.BUY, amount, 1e18, 1, block.timestamp + 1 hours);
 
-        // Batch the order
+        // Batch the order with real BLS signature
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(1, orderIds, dummyBlsSignature);
+        uint256 cycleNum = 1;
+        bytes32 batchMsg = keccak256(abi.encode(block.chainid, address(index), cycleNum, orderIds));
+        index.confirmBatch(cycleNum, orderIds, signWithTestIssuers(batchMsg));
 
-        // Fill the order
+        // Fill the order with real BLS signature
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
         fills[0] = TypesLib.Fill({
             orderId: orderId,
-            fillPrice: 1e18, // $1.00 per share
+            fillPrice: 1e18,
             fillAmount: amount,
-            cycleNumber: 1,
+            cycleNumber: cycleNum,
             txHash: keccak256("test_tx")
         });
-        index.confirmFills(1, fills, dummyBlsSignature);
+        bytes32 fillMsg = keccak256(abi.encode(block.chainid, address(index), cycleNum, fills));
+        index.confirmFills(cycleNum, fills, signWithTestIssuers(fillMsg));
     }
 
     // Helper to get user shares (reads internal _userShares via storage slot)
@@ -655,21 +650,24 @@ contract IndexOrderSubmissionTest is TestHelper {
         vm.prank(issuerAddr);
         uint256 orderId = index.submitOrderFor(beneficiary, itpId, TypesLib.Side.BUY, 100e18, 1e18, 1, deadline);
 
-        // Confirm batch
+        // Confirm batch with real BLS signature
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(1, orderIds, dummyBlsSignature);
+        uint256 cycleNum2 = 2;
+        bytes32 batchMsg2 = keccak256(abi.encode(block.chainid, address(index), cycleNum2, orderIds));
+        index.confirmBatch(cycleNum2, orderIds, signWithTestIssuers(batchMsg2));
 
-        // Confirm fill
+        // Confirm fill with real BLS signature
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
         fills[0] = TypesLib.Fill({
             orderId: orderId,
             fillPrice: 1e18,
             fillAmount: 100e18,
-            cycleNumber: 1,
+            cycleNumber: cycleNum2,
             txHash: bytes32(0)
         });
-        index.confirmFills(1, fills, dummyBlsSignature);
+        bytes32 fillMsg2 = keccak256(abi.encode(block.chainid, address(index), cycleNum2, fills));
+        index.confirmFills(cycleNum2, fills, signWithTestIssuers(fillMsg2));
 
         // Verify shares went to beneficiary, not issuer
         // shares = (100e18 * 1e18) / 1e18 = 100e18

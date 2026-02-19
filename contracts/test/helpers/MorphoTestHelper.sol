@@ -54,24 +54,19 @@ abstract contract MorphoTestHelper is TestHelper {
     /// @notice Borrower ITP amount: 1,000 ITP
     uint256 public constant BORROWER_ITP = 1_000e18;
 
-    // ============ BLS MOCK ============
-
-    address constant PRECOMPILE_PAIRING = address(0x08);
-
     // ============ SETUP ============
 
     /// @notice Deploy the full Morpho test stack
     function _deployMorphoStack() internal {
-        // Set realistic block timestamp and mock BLS precompile
+        // Set realistic block timestamp
         vm.warp(1_700_000_000);
-        vm.mockCall(PRECOMPILE_PAIRING, bytes(""), abi.encode(uint256(1)));
 
         // 1. Deploy mock tokens
         itp = new MockERC20("Index Token Product", "ITP", 18);
         usdc = new MockERC20("USD Coin", "USDC", 6);
 
-        // 2. Deploy MirrorIssuerRegistry (UUPS proxy)
-        bytes memory aggPubkey = generateTestPubkey(1);
+        // 2. Deploy MirrorIssuerRegistry (UUPS proxy) with real BLS aggregated pubkey
+        bytes memory aggPubkey = blsAggPubkey("0,1,2");
         MirrorIssuerRegistry mirrorImpl = new MirrorIssuerRegistry();
         ERC1967Proxy mirrorProxy = new ERC1967Proxy(
             address(mirrorImpl),
@@ -81,8 +76,9 @@ abstract contract MorphoTestHelper is TestHelper {
 
         // 3. Deploy ITPNAVOracle with initial price, then push BLS-signed update
         oracle = new ITPNAVOracle(address(mirrorRegistry), address(itp), ORACLE_PRICE);
-        bytes memory mockSig = new bytes(64);
-        oracle.updatePrice(ORACLE_PRICE, block.timestamp, 1, mockSig, 0x07);
+        bytes32 navHash1 = keccak256(abi.encodePacked(address(itp), ORACLE_PRICE, block.timestamp, uint256(1)));
+        bytes memory sig1 = signWithTestIssuers(navHash1);
+        oracle.updatePrice(ORACLE_PRICE, block.timestamp, 1, sig1, 0x07);
 
         // 4. Deploy Morpho Blue core
         morpho = new Morpho(morphoOwner);
@@ -168,16 +164,15 @@ abstract contract MorphoTestHelper is TestHelper {
     /// @notice Deploy Morpho stack with CuratorRateIRM instead of AdaptiveCurveIRM
     /// @param _curator Address of the curator who can set rates
     function _deployMorphoStackWithCuratorIRM(address _curator) internal {
-        // Set realistic block timestamp and mock BLS precompile
+        // Set realistic block timestamp
         vm.warp(1_700_000_000);
-        vm.mockCall(PRECOMPILE_PAIRING, bytes(""), abi.encode(uint256(1)));
 
         // 1. Deploy mock tokens
         itp = new MockERC20("Index Token Product", "ITP", 18);
         usdc = new MockERC20("USD Coin", "USDC", 6);
 
-        // 2. Deploy MirrorIssuerRegistry (UUPS proxy)
-        bytes memory aggPubkey = generateTestPubkey(1);
+        // 2. Deploy MirrorIssuerRegistry (UUPS proxy) with real BLS aggregated pubkey
+        bytes memory aggPubkey = blsAggPubkey("0,1,2");
         MirrorIssuerRegistry mirrorImpl = new MirrorIssuerRegistry();
         ERC1967Proxy mirrorProxy = new ERC1967Proxy(
             address(mirrorImpl),
@@ -187,8 +182,9 @@ abstract contract MorphoTestHelper is TestHelper {
 
         // 3. Deploy ITPNAVOracle with initial price, then push BLS-signed update
         oracle = new ITPNAVOracle(address(mirrorRegistry), address(itp), ORACLE_PRICE);
-        bytes memory mockSig = new bytes(64);
-        oracle.updatePrice(ORACLE_PRICE, block.timestamp, 1, mockSig, 0x07);
+        bytes32 navHash1 = keccak256(abi.encodePacked(address(itp), ORACLE_PRICE, block.timestamp, uint256(1)));
+        bytes memory sig1 = signWithTestIssuers(navHash1);
+        oracle.updatePrice(ORACLE_PRICE, block.timestamp, 1, sig1, 0x07);
 
         // 4. Deploy Morpho Blue core
         morpho = new Morpho(morphoOwner);

@@ -14,7 +14,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title DeployBLSCustodyArbitrumTest - Deployment validation tests for Story 6.5
 /// @notice Tests the full Arbitrum deployment chain: Governance -> IssuerRegistry -> BLSCustody
-/// @dev Uses real IssuerRegistry (empty aggregated pubkey = BLS verification skip)
+/// @dev Uses real IssuerRegistry with real BLS test keys
 ///      for both whitelist tests and initialization chain tests
 contract DeployBLSCustodyArbitrumTest is TestHelper {
     // Real contracts (initialization chain)
@@ -84,8 +84,7 @@ contract DeployBLSCustodyArbitrumTest is TestHelper {
         custodyReal = BLSCustody(blsCustodyRealProxy);
 
         // ===== Deploy BLSCustody with separate IssuerRegistry for whitelist tests =====
-        // Separate IssuerRegistry for whitelist tests
-        // BLS verification mocked via pairing precompile
+        // Separate IssuerRegistry for whitelist tests, BLS verification uses real BLS keys
         IssuerRegistry mockRegImpl = new IssuerRegistry();
         ERC1967Proxy mockRegProxy = new ERC1967Proxy(
             address(mockRegImpl),
@@ -93,10 +92,9 @@ contract DeployBLSCustodyArbitrumTest is TestHelper {
         );
         mockRegistry = IssuerRegistry(address(mockRegProxy));
 
-        // Set aggregated pubkey and mock precompile for BLS test bypass
-        mockRegistry.setAggregatedPubkey(new bytes(128));
-        issuerRegistry.setAggregatedPubkey(new bytes(128));
-        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
+        // Register 3 real BLS test issuers in both registries and set aggregated pubkeys
+        registerTestIssuersWithBLS(mockRegistry, deployer);
+        registerTestIssuersWithBLS(issuerRegistry, deployer);
 
         BLSCustody custodyImpl = new BLSCustody();
         blsCustodyImpl = address(custodyImpl);
@@ -107,12 +105,19 @@ contract DeployBLSCustodyArbitrumTest is TestHelper {
         blsCustodyProxy = address(custodyProxy);
         custody = BLSCustody(blsCustodyProxy);
 
-        // Propose whitelist targets (BLS verified via mocked precompile)
-        bytes memory dummySignature = new bytes(64);
-        custody.proposeWhitelist(ONEINCH_ROUTER_V6, dummySignature);
-        custody.proposeWhitelist(USDC_ARBITRUM, dummySignature);
+        // Propose whitelist targets with real BLS signatures
+        custody.proposeWhitelist(ONEINCH_ROUTER_V6, _signProposeWhitelist(address(custody), ONEINCH_ROUTER_V6));
+        custody.proposeWhitelist(USDC_ARBITRUM, _signProposeWhitelist(address(custody), USDC_ARBITRUM));
 
         vm.stopPrank();
+    }
+
+    // ============ SIGNING HELPERS ============
+
+    /// @notice Sign a BLSCustody.proposeWhitelist call with real BLS signature
+    function _signProposeWhitelist(address custodyAddr, address target) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode(block.chainid, custodyAddr, "proposeWhitelist", target));
+        return signWithTestIssuers(message);
     }
 
     // ============ AC #1: UUPS PROXY DEPLOYMENT ============
@@ -152,7 +157,7 @@ contract DeployBLSCustodyArbitrumTest is TestHelper {
 
     function test_initialization_issuerRegistryIsValid() public view {
         uint256 activeCount = issuerRegistry.activeIssuerCount();
-        assertEq(activeCount, 0, "Should start with 0 active issuers");
+        assertEq(activeCount, 3, "Should have 3 test issuers registered");
     }
 
     function test_initialization_governanceAdminCorrect() public view {
@@ -282,10 +287,9 @@ contract DeployBLSCustodyArbitrumTest is TestHelper {
         assertEq(custodyReal.nonce(), 0);
     }
 
-    function test_blsVerificationWithMockedPrecompile() public view {
-        // Mock registry has 128-byte aggregated pubkey set; BLS verified via mocked precompile
+    function test_blsCustody_mockRegistry_readsAggregatedPubkey() public view {
+        // Real aggregated G2 pubkey is 128 bytes, set via registerTestIssuersWithBLS
         bytes memory aggPubkey = mockRegistry.getAggregatedPubkey();
         assertEq(aggPubkey.length, 128, "Mock registry should return 128-byte aggregated pubkey");
-        // BLS verification succeeds because the pairing precompile (0x08) is mocked to return 1
     }
 }

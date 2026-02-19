@@ -29,9 +29,6 @@ contract QuantityBasedPricingTest is TestHelper {
     uint256 constant ETH_PRICE = 3_000e18;   // $3,000
     uint256 constant SOL_PRICE = 100e18;     // $100
 
-    // Dummy BLS signature (64 bytes for G1 point) — pairing precompile is mocked
-    bytes public dummyBlsSignature = new bytes(64);
-
     function setUp() public {
         admin = address(this);
 
@@ -45,17 +42,31 @@ contract QuantityBasedPricingTest is TestHelper {
         );
         index = Index(address(proxy));
 
-        // Setup IssuerRegistry with dummy aggregated pubkey for BLS verification
+        // Setup IssuerRegistry with real BLS keys
         IssuerRegistry registry = deployIssuerRegistry(address(governance));
-        registry.setAggregatedPubkey(new bytes(128));
+        registerTestIssuersWithBLS(registry, admin);
+        vm.prank(admin);
         index.setIssuerRegistry(address(registry));
-
-        // Mock BN254 pairing precompile to always return true
-        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
 
         btcAddr = makeAddr("BTC");
         ethAddr = makeAddr("ETH");
         solAddr = makeAddr("SOL");
+    }
+
+    function _signSetItpNav(bytes32 itpId, uint256 nav) internal returns (bytes memory) {
+        bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "setItpNav", itpId, nav));
+        return signWithTestIssuers(msgHash);
+    }
+
+    function _signRebalance(
+        bytes32 itpId,
+        uint256[] memory removeIndices,
+        address[] memory addAssets,
+        uint256[] memory newWeights,
+        uint256[] memory prices
+    ) internal returns (bytes memory) {
+        bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "rebalance", itpId, removeIndices, addAssets, newWeights, prices));
+        return signWithTestIssuers(msgHash);
     }
 
     // ============ ITP CREATION: NAV STARTS AT $1 ============
@@ -160,7 +171,7 @@ contract QuantityBasedPricingTest is TestHelper {
         // BTC was 1% of $1 = $0.01. BTC doubles -> contribution becomes $0.02
         // SOL was 99% = $0.99, unchanged
         // New NAV = $0.99 + $0.02 = $1.01
-        index.setItpNav(itpId, 1.01e18, dummyBlsSignature);
+        index.setItpNav(itpId, 1.01e18, _signSetItpNav(itpId, 1.01e18));
 
         uint256 navAfter = index.getNAV(itpId);
         assertApproxEqAbs(navAfter, 1.01e18, 1e3, "NAV should be ~$1.01 after BTC doubles");
@@ -180,7 +191,7 @@ contract QuantityBasedPricingTest is TestHelper {
         bytes32 itpId = index.createITP("5050", "5050", weights, assets, prices, type(uint256).max);
 
         // All prices double -> NAV doubles from $1 to $2
-        index.setItpNav(itpId, 2e18, dummyBlsSignature);
+        index.setItpNav(itpId, 2e18, _signSetItpNav(itpId, 2e18));
 
         uint256 nav = index.getNAV(itpId);
         assertApproxEqAbs(nav, 2e18, 1e4, "NAV should double when all prices double");
@@ -202,7 +213,7 @@ contract QuantityBasedPricingTest is TestHelper {
         // ETH price drops to 0 (oracle failure) — only BTC contributes
         // qty_btc = (6e17 * 1e18) / 100000e18 = 6e12
         // contribution = (6e12 * 100000e18) / 1e18 = 6e17
-        index.setItpNav(itpId, 6e17, dummyBlsSignature);
+        index.setItpNav(itpId, 6e17, _signSetItpNav(itpId, 6e17));
 
         uint256 nav = index.getNAV(itpId);
         assertEq(nav, 6e17, "Only BTC portion should contribute when ETH price is 0");
@@ -229,7 +240,7 @@ contract QuantityBasedPricingTest is TestHelper {
         // new NAV = (6e12 * 120000e18 + 133333333333333 * 2500e18) / 1e18
         //         = (720000000000000000 + 333333333333332500) = 1053333333333332500
         uint256 simulatedNav = 1053333333333332500;
-        index.setItpNav(itpId, simulatedNav, dummyBlsSignature);
+        index.setItpNav(itpId, simulatedNav, _signSetItpNav(itpId, simulatedNav));
 
         uint256 navBefore = index.getNAV(itpId);
         assertGt(navBefore, 0, "NAV should be non-zero before rebalance");
@@ -252,7 +263,7 @@ contract QuantityBasedPricingTest is TestHelper {
         uint256[] memory emptyIndices = new uint256[](0);
         address[] memory emptyAddrs = new address[](0);
 
-        index.rebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices, dummyBlsSignature);
+        index.rebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices, _signRebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices));
 
         uint256 navAfter = index.getNAV(itpId);
 
@@ -299,7 +310,7 @@ contract QuantityBasedPricingTest is TestHelper {
         uint256[] memory emptyIndices = new uint256[](0);
         address[] memory emptyAddrs = new address[](0);
 
-        index.rebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices, dummyBlsSignature);
+        index.rebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices, _signRebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices));
 
         (,,,,, uint256[] memory invAfter) = index.getITPState(itpId);
 

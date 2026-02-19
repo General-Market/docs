@@ -59,7 +59,6 @@ contract E2ECrossChainBuyTest is TestHelper {
     // Story 7-6b: Arb USDC uses 6 decimals, L3 uses 18 decimals
     uint256 public constant INITIAL_ARB_USDC = 10_000e6;  // 6 decimals for Arbitrum
     uint256 public constant INITIAL_L3_USDC = 10_000e18;  // 18 decimals for L3
-    bytes public DUMMY_BLS_SIG = new bytes(64);
 
     // ============ EVENTS (for expectEmit) ============
 
@@ -80,9 +79,8 @@ contract E2ECrossChainBuyTest is TestHelper {
         // Deploy real issuer registry via UUPS proxy (shared)
         mockRegistry = deployIssuerRegistry(address(governance));
 
-        // Set aggregated pubkey and mock BLS precompile for test bypass
-        mockRegistry.setAggregatedPubkey(new bytes(128));
-        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
+        // Register 3 real BLS test issuers and set aggregated pubkey
+        registerTestIssuersWithBLS(mockRegistry, admin);
 
         // Deploy Index as UUPS proxy
         Index impl = new Index();
@@ -196,12 +194,80 @@ contract E2ECrossChainBuyTest is TestHelper {
 
     /// @dev Confirm batch on L3
     function _confirmBatch(uint256 cycleNumber, uint256[] memory orderIds) internal {
-        index.confirmBatch(cycleNumber, orderIds, DUMMY_BLS_SIG);
+        bytes32 message = keccak256(abi.encode(block.chainid, address(index), cycleNumber, orderIds));
+        index.confirmBatch(cycleNumber, orderIds, signWithTestIssuers(message));
     }
 
     /// @dev Confirm fills on L3
     function _confirmFills(uint256 cycleNumber, TypesLib.Fill[] memory fills) internal {
-        index.confirmFills(cycleNumber, fills, DUMMY_BLS_SIG);
+        bytes32 message = keccak256(abi.encode(block.chainid, address(index), cycleNumber, fills));
+        index.confirmFills(cycleNumber, fills, signWithTestIssuers(message));
+    }
+
+    // ============ SIGNING HELPERS ============
+
+    /// @notice Sign Index.confirmBatch
+    function _signConfirmBatch(uint256 cycleNumber, uint256[] memory orderIds) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode(block.chainid, address(index), cycleNumber, orderIds));
+        return signWithTestIssuers(message);
+    }
+
+    /// @notice Sign Index.confirmFills
+    function _signConfirmFills(uint256 cycleNumber, TypesLib.Fill[] memory fills) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode(block.chainid, address(index), cycleNumber, fills));
+        return signWithTestIssuers(message);
+    }
+
+    /// @notice Sign Index.setItpNav
+    function _signSetItpNav(address indexAddr, bytes32 _itpId, uint256 nav) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode(block.chainid, indexAddr, "setItpNav", _itpId, nav));
+        return signWithTestIssuers(message);
+    }
+
+    /// @notice Sign BLSCustody.proposeWhitelist
+    function _signProposeWhitelist(address custodyAddr, address target) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode(block.chainid, custodyAddr, "proposeWhitelist", target));
+        return signWithTestIssuers(message);
+    }
+
+    /// @notice Sign BLSCustody.execute
+    function _signExecute(address custodyAddr, address target, bytes memory data, uint256 nonceValue) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode(block.chainid, custodyAddr, target, data, nonceValue));
+        return signWithTestIssuers(message);
+    }
+
+    /// @notice Sign CollateralRegistry.recordCollateralMove (uses internal auto-incrementing nonce)
+    function _signRecordCollateralMove(
+        address colRegAddr,
+        bytes32 _itpId,
+        uint256 fromChain,
+        uint256 toChain,
+        uint256 amount,
+        TypesLib.TxType txType,
+        uint256 colRegNonce
+    ) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode(block.chainid, colRegAddr, _itpId, fromChain, toChain, amount, txType, colRegNonce));
+        return signWithTestIssuers(message);
+    }
+
+    /// @notice Sign BridgeProxy.completeCreateItp
+    function _signCompleteCreateItp(
+        address bridgeProxAddr,
+        address creationAdmin,
+        uint256 creationNonce,
+        uint256[] memory weights,
+        address[] memory assets
+    ) internal returns (bytes memory) {
+        bytes32 weightsHash = keccak256(abi.encodePacked(weights));
+        bytes32 assetsHash = keccak256(abi.encodePacked(assets));
+        bytes32 message = keccak256(abi.encodePacked(block.chainid, bridgeProxAddr, creationAdmin, creationNonce, weightsHash, assetsHash));
+        return signWithTestIssuers(message);
+    }
+
+    /// @notice Sign BridgeProxy.mintBridgedShares
+    function _signMintBridgedShares(address bridgeProxAddr, bytes32 _itpId, address user, uint256 amount) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode(block.chainid, bridgeProxAddr, "mintBridgedShares", _itpId, user, amount));
+        return signWithTestIssuers(message);
     }
 
     // ============ TASK 1.3: HAPPY PATH (AC #1, #2, #3, #4, #5) ============
@@ -468,7 +534,10 @@ contract E2ECrossChainBuyTest is TestHelper {
         _buyITPFromArbitrum(user1, orderAmount6Dec, 2e18, 1, deadline);
 
         // Set NAV to $2 on L3 so limit price validation passes
-        index.setItpNav(itpId, 2e18, DUMMY_BLS_SIG);
+        {
+            bytes32 navMessage = keccak256(abi.encode(block.chainid, address(index), "setItpNav", itpId, uint256(2e18)));
+            index.setItpNav(itpId, 2e18, signWithTestIssuers(navMessage));
+        }
 
         // Submit matching order on L3 at $2 limit (18-decimal amount)
         uint256 l3OrderId = _submitOrderOnL3(orderAmount18Dec, 2e18, 1);
@@ -666,7 +735,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         MockBitgetVault vault = new MockBitgetVault();
 
         // Whitelist arbUsdc in BLSCustody (requires propose + timelock + activate)
-        blsCustody.proposeWhitelist(address(arbUsdc), DUMMY_BLS_SIG);
+        blsCustody.proposeWhitelist(address(arbUsdc), _signProposeWhitelist(address(blsCustody), address(arbUsdc)));
         vm.warp(block.timestamp + 2 days + 1);
         blsCustody.activateWhitelist(address(arbUsdc));
 
@@ -683,19 +752,20 @@ contract E2ECrossChainBuyTest is TestHelper {
 
         // Create BridgedITP via full requestCreate + completeCreate flow
         // First, request creation (sets pending creation at nonce 0)
+        address[] memory bAssets = new address[](1);
+        uint256[] memory bWeights = new uint256[](1);
         {
-            address[] memory bAssets = new address[](1);
             bAssets[0] = address(l3Usdc);
-            uint256[] memory bWeights = new uint256[](1);
             bWeights[0] = 1e18;
             uint256[] memory bPrices = new uint256[](1);
             bPrices[0] = INITIAL_PRICE;
             bridgeProx.requestCreateItp("Bridged XChain", "bXCHAIN", bWeights, bAssets, bPrices);
         }
-        // Complete creation with dummy BLS sig (mock precompile accepts any sig)
-        // signerBitmap=0x7 (3 signers), aggregatedPubkey=128 bytes (threshold check)
-        bytes memory dummyPubkey = new bytes(128);
-        address bridgedItpAddr = bridgeProx.completeCreateItp(0, itpId, DUMMY_BLS_SIG);
+        // Complete creation with real BLS sig
+        address bridgedItpAddr = bridgeProx.completeCreateItp(
+            0, itpId,
+            _signCompleteCreateItp(address(bridgeProx), admin, 0, bWeights, bAssets)
+        );
 
         // Set deadline after all warps (whitelist timelock advanced block.timestamp)
         uint256 deadline = block.timestamp + 1 hours;
@@ -721,14 +791,17 @@ contract E2ECrossChainBuyTest is TestHelper {
 
         // ====== STEP 3b: Record collateral move (L3→Arb for BUY) ======
         // Seed initial L3 collateral (simulates ITP creation deposited collateral on L3)
+        // CollateralRegistry _nonce starts at 0 and auto-increments on each call
         colReg.recordCollateralMove(
-            itpId, 0, L3_CHAIN_ID, orderAmount18Dec, TypesLib.TxType.BUY, DUMMY_BLS_SIG
+            itpId, 0, L3_CHAIN_ID, orderAmount18Dec, TypesLib.TxType.BUY,
+            _signRecordCollateralMove(address(colReg), itpId, 0, L3_CHAIN_ID, orderAmount18Dec, TypesLib.TxType.BUY, 0)
         );
         assertEq(colReg.getITPCollateralByChain(itpId, L3_CHAIN_ID), orderAmount18Dec, "L3 seeded");
 
-        // Now record the actual L3→Arb move
+        // Now record the actual L3→Arb move (nonce 1)
         colReg.recordCollateralMove(
-            itpId, L3_CHAIN_ID, ARB_CHAIN_ID, orderAmount18Dec, TypesLib.TxType.BUY, DUMMY_BLS_SIG
+            itpId, L3_CHAIN_ID, ARB_CHAIN_ID, orderAmount18Dec, TypesLib.TxType.BUY,
+            _signRecordCollateralMove(address(colReg), itpId, L3_CHAIN_ID, ARB_CHAIN_ID, orderAmount18Dec, TypesLib.TxType.BUY, 1)
         );
 
         assertEq(colReg.getITPCollateralByChain(itpId, L3_CHAIN_ID), 0, "L3 collateral moved out");
@@ -750,7 +823,7 @@ contract E2ECrossChainBuyTest is TestHelper {
             address(vault),
             orderAmount6Dec
         );
-        blsCustody.execute(address(arbUsdc), transferCalldata, DUMMY_BLS_SIG, 0);
+        blsCustody.execute(address(arbUsdc), transferCalldata, _signExecute(address(blsCustody), address(arbUsdc), transferCalldata, 0), 0);
         assertEq(arbUsdc.balanceOf(address(vault)), orderAmount6Dec, "Vault should hold USDC");
         assertEq(arbUsdc.balanceOf(address(blsCustody)), 0, "BLSCustody should be empty");
 
@@ -775,7 +848,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         assertEq(itpVault.balanceOf(user1), expectedShares, "User should have L3 ITP");
 
         // ====== STEP 8: Mint BridgedITP shares on Arbitrum ======
-        bridgeProx.mintBridgedShares(itpId, user1, expectedShares, DUMMY_BLS_SIG);
+        bridgeProx.mintBridgedShares(itpId, user1, expectedShares, _signMintBridgedShares(address(bridgeProx), itpId, user1, expectedShares));
 
         // Verify BridgedITP minted
         assertGt(IERC20(bridgedItpAddr).balanceOf(user1), 0, "User should have BridgedITP on Arb");

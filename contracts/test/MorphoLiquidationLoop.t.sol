@@ -26,12 +26,13 @@ contract MorphoLiquidationLoopTest is MorphoTestHelper {
 
     // ============ HELPERS ============
 
-    /// @notice Update oracle NAV price with mock BLS signature
+    /// @notice Update oracle NAV price with real BLS signature
     /// @param newPrice New oracle price (Morpho-scaled, e.g. 0.8e24 for 0.8 USDC per ITP)
     function _updateOraclePrice(uint256 newPrice) internal {
-        bytes memory mockSig = new bytes(64);
+        bytes32 msgHash = keccak256(abi.encodePacked(address(itp), newPrice, block.timestamp, _nextCycleNumber));
+        bytes memory sig = signWithTestIssuers(msgHash);
         // 0x07 = bitmap indicating signers 0,1,2 participated (binary 0b111 = 7)
-        oracle.updatePrice(newPrice, block.timestamp, _nextCycleNumber, mockSig, 0x07);
+        oracle.updatePrice(newPrice, block.timestamp, _nextCycleNumber, sig, 0x07);
         _nextCycleNumber++;
     }
 

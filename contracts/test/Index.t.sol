@@ -30,9 +30,6 @@ contract IndexTest is TestHelper {
     address public asset3 = address(0x102);
     address public asset4 = address(0x103);
 
-    // Dummy BLS signature (64 bytes for G1 point) — pairing precompile is mocked
-    bytes public dummyBlsSignature = new bytes(64);
-
     // Weight constants
     uint256 constant WEIGHT_50_PERCENT = 5e17; // 50% = 0.5e18
     uint256 constant WEIGHT_25_PERCENT = 25e16; // 25% = 0.25e18
@@ -56,15 +53,11 @@ contract IndexTest is TestHelper {
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), initData);
         index = Index(address(proxy));
 
-        // Setup IssuerRegistry with dummy aggregated pubkey for BLS verification
+        // Setup IssuerRegistry with real BLS keys for verification
         IssuerRegistry issuerRegistry = deployIssuerRegistry(address(governance));
-        vm.startPrank(admin);
-        issuerRegistry.setAggregatedPubkey(new bytes(128));
+        registerTestIssuersWithBLS(issuerRegistry, admin);
+        vm.prank(admin);
         index.setIssuerRegistry(address(issuerRegistry));
-        vm.stopPrank();
-
-        // Mock BN254 pairing precompile to always return true
-        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
 
         // Setup test environment
         vm.label(admin, "Admin");
@@ -831,8 +824,9 @@ contract IndexTest is TestHelper {
         index.configureVenuePool(1, 1000e18, 100e18);
 
         // Update balance above threshold (no PoolRebalanceNeeded event)
-        // BLS sig verification skipped since issuerRegistry not set (test mode)
-        index.updateVenueBalance(1, 500e18, dummyBlsSignature);
+        bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "UPDATE_VENUE", uint256(1), uint256(500e18)));
+        bytes memory sig = signWithTestIssuers(msgHash);
+        index.updateVenueBalance(1, 500e18, sig);
 
         (,uint256 current,,uint256 lastRebalance) = index.venuePools(1);
         assertEq(current, 500e18);
@@ -847,7 +841,9 @@ contract IndexTest is TestHelper {
         vm.expectEmit(true, false, false, true);
         emit EventsLib.PoolRebalanceNeeded(1, 950e18); // 1000 - 50
 
-        index.updateVenueBalance(1, 50e18, dummyBlsSignature);
+        bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "UPDATE_VENUE", uint256(1), uint256(50e18)));
+        bytes memory sig = signWithTestIssuers(msgHash);
+        index.updateVenueBalance(1, 50e18, sig);
     }
 
     function test_updateVenueBalance_zeroBalance() public {
@@ -857,7 +853,9 @@ contract IndexTest is TestHelper {
         vm.expectEmit(true, false, false, true);
         emit EventsLib.PoolRebalanceNeeded(1, 1000e18);
 
-        index.updateVenueBalance(1, 0, dummyBlsSignature);
+        bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "UPDATE_VENUE", uint256(1), uint256(0)));
+        bytes memory sig = signWithTestIssuers(msgHash);
+        index.updateVenueBalance(1, 0, sig);
 
         (,uint256 current,,) = index.venuePools(1);
         assertEq(current, 0);
@@ -868,7 +866,9 @@ contract IndexTest is TestHelper {
         index.configureVenuePool(1, 1000e18, 100e18);
 
         // Set some balance
-        index.updateVenueBalance(1, 500e18, dummyBlsSignature);
+        bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "UPDATE_VENUE", uint256(1), uint256(500e18)));
+        bytes memory sig = signWithTestIssuers(msgHash);
+        index.updateVenueBalance(1, 500e18, sig);
 
         // Reconfigure pool - balance should be preserved
         vm.prank(admin);

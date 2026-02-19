@@ -18,7 +18,7 @@ import "./helpers/TestHelper.sol";
 
 /// @title MorphoBorrowLendTest - Integration tests for Morpho Blue with real ITPNAVOracle
 /// @notice Story 8.7: Full borrow/lend flow with BLS-verified oracle (not MockMorphoOracle)
-/// @dev BLS verification is mocked via vm.mockCall on the bn256 pairing precompile (0x08).
+/// @dev BLS verification uses real signatures via FFI bls-tool (seeds 0,1,2).
 contract MorphoBorrowLendTest is TestHelper {
     using MarketParamsLib for MarketParams;
 
@@ -43,28 +43,16 @@ contract MorphoBorrowLendTest is TestHelper {
     // 1 ITP = 100 USDC, precision = 36 + 6 - 18 = 24
     uint256 constant ORACLE_PRICE = 100e24;
 
-    // Pairing precompile address for BLS mock
-    address constant PRECOMPILE_PAIRING = address(0x08);
-
-    // Mock BLS signature (64 bytes)
-    bytes mockSignature;
-
     function setUp() public {
         // Set a reasonable block timestamp
         vm.warp(1_700_000_000);
-
-        // Mock BLS pairing precompile for all calls in setUp
-        vm.mockCall(PRECOMPILE_PAIRING, bytes(""), abi.encode(uint256(1)));
-
-        // Generate mock BLS signature (all zeros = point at infinity)
-        mockSignature = new bytes(64);
 
         // Deploy tokens
         arbUSDC = new MockERC20("ArbUSDC", "USDC", 6);
         itpToken = new MockERC20("ITP Vault", "ITP", 18);
 
-        // Deploy MirrorIssuerRegistry as UUPS proxy
-        bytes memory testPubkey = generateTestPubkey(1);
+        // Deploy MirrorIssuerRegistry as UUPS proxy with real BLS aggregated pubkey
+        bytes memory testPubkey = blsAggPubkey("0,1,2");
         MirrorIssuerRegistry mirrorImpl = new MirrorIssuerRegistry();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(mirrorImpl),
@@ -75,14 +63,12 @@ contract MorphoBorrowLendTest is TestHelper {
         // Deploy ITPNAVOracle with real BLS oracle
         oracle = new ITPNAVOracle(address(mirror), address(itpToken), ORACLE_PRICE);
 
-        // Push initial BLS-signed price via updatePrice
-        oracle.updatePrice(
-            ORACLE_PRICE,
-            block.timestamp,
-            1, // cycleNumber > 0
-            mockSignature,
-            0x07 // signersBitmask: issuers 0,1,2
-        );
+        // Push initial BLS-signed price via updatePrice (cycle 1)
+        {
+            bytes32 h = keccak256(abi.encodePacked(address(itpToken), ORACLE_PRICE, block.timestamp, uint256(1)));
+            bytes memory sig = signWithTestIssuers(h);
+            oracle.updatePrice(ORACLE_PRICE, block.timestamp, 1, sig, 0x07);
+        }
 
         // Deploy Morpho core
         morpho = new Morpho(owner);
@@ -125,7 +111,11 @@ contract MorphoBorrowLendTest is TestHelper {
         vault.acceptCap(marketParams);
 
         // Refresh oracle price after warp (otherwise price() reverts with E096_StaleOraclePrice)
-        oracle.updatePrice(ORACLE_PRICE, block.timestamp, 2, mockSignature, 0x07);
+        {
+            bytes32 h2 = keccak256(abi.encodePacked(address(itpToken), ORACLE_PRICE, block.timestamp, uint256(2)));
+            bytes memory sig2 = signWithTestIssuers(h2);
+            oracle.updatePrice(ORACLE_PRICE, block.timestamp, 2, sig2, 0x07);
+        }
 
         // Set supply queue
         Id[] memory supplyQueue = new Id[](1);
@@ -192,8 +182,10 @@ contract MorphoBorrowLendTest is TestHelper {
         // Deploy a second market to test cap submission flow
         MockERC20 itpToken2 = new MockERC20("ITP2", "ITP2", 18);
         ITPNAVOracle oracle2 = new ITPNAVOracle(address(mirror), address(itpToken2), ORACLE_PRICE);
-        vm.mockCall(PRECOMPILE_PAIRING, bytes(""), abi.encode(uint256(1)));
-        oracle2.updatePrice(ORACLE_PRICE, block.timestamp, 1, mockSignature, 0x07);
+        {
+            bytes32 h = keccak256(abi.encodePacked(address(itpToken2), ORACLE_PRICE, block.timestamp, uint256(1)));
+            oracle2.updatePrice(ORACLE_PRICE, block.timestamp, 1, signWithTestIssuers(h), 0x07);
+        }
 
         MarketParams memory mp2 = MarketParams({
             loanToken: address(arbUSDC),
@@ -224,8 +216,10 @@ contract MorphoBorrowLendTest is TestHelper {
         // AC4: Accepting cap before timelock should revert
         MockERC20 itpToken3 = new MockERC20("ITP3", "ITP3", 18);
         ITPNAVOracle oracle3 = new ITPNAVOracle(address(mirror), address(itpToken3), ORACLE_PRICE);
-        vm.mockCall(PRECOMPILE_PAIRING, bytes(""), abi.encode(uint256(1)));
-        oracle3.updatePrice(ORACLE_PRICE, block.timestamp, 1, mockSignature, 0x07);
+        {
+            bytes32 h = keccak256(abi.encodePacked(address(itpToken3), ORACLE_PRICE, block.timestamp, uint256(1)));
+            oracle3.updatePrice(ORACLE_PRICE, block.timestamp, 1, signWithTestIssuers(h), 0x07);
+        }
 
         MarketParams memory mp3 = MarketParams({
             loanToken: address(arbUSDC),
@@ -350,8 +344,10 @@ contract MorphoBorrowLendTest is TestHelper {
         morpho.borrow(marketParams, 5000 * 1e6, 0, borrower, borrower);
 
         // Drop price to 50 USDC/ITP via oracle update
-        vm.mockCall(PRECOMPILE_PAIRING, bytes(""), abi.encode(uint256(1)));
-        oracle.updatePrice(50e24, block.timestamp, 3, mockSignature, 0x07);
+        {
+            bytes32 h = keccak256(abi.encodePacked(address(itpToken), uint256(50e24), block.timestamp, uint256(3)));
+            oracle.updatePrice(50e24, block.timestamp, 3, signWithTestIssuers(h), 0x07);
+        }
 
         // At 50 USDC/ITP: collateral = 5,000 USDC, max borrow = 3,850 USDC
         // Already borrowed 5000, so trying to borrow more should fail

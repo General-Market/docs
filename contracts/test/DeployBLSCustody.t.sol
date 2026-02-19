@@ -82,7 +82,7 @@ contract DeployBLSCustodyTest is TestHelper {
         custody = BLSCustody(blsCustodyProxy);
 
         // ===== Deploy BLSCustody with separate IssuerRegistry for whitelist tests =====
-        // Separate IssuerRegistry for whitelist tests, BLS verification mocked via precompile
+        // Separate IssuerRegistry for whitelist tests, BLS verification uses real BLS keys
         IssuerRegistry mockRegImpl = new IssuerRegistry();
         ERC1967Proxy mockRegProxy = new ERC1967Proxy(
             address(mockRegImpl),
@@ -90,10 +90,9 @@ contract DeployBLSCustodyTest is TestHelper {
         );
         mockRegistry = IssuerRegistry(address(mockRegProxy));
 
-        // Set aggregated pubkey and mock precompile for BLS test bypass
-        mockRegistry.setAggregatedPubkey(new bytes(128));
-        issuerRegistry.setAggregatedPubkey(new bytes(128));
-        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
+        // Register 3 real BLS test issuers in both registries and set aggregated pubkeys
+        registerTestIssuersWithBLS(mockRegistry, deployer);
+        registerTestIssuersWithBLS(issuerRegistry, deployer);
 
         BLSCustody custodyImplMock = new BLSCustody();
         ERC1967Proxy mockProxy = new ERC1967Proxy(
@@ -104,6 +103,14 @@ contract DeployBLSCustodyTest is TestHelper {
         custodyMock = BLSCustody(blsCustodyMockProxy);
 
         vm.stopPrank();
+    }
+
+    // ============ SIGNING HELPERS ============
+
+    /// @notice Sign a BLSCustody.proposeWhitelist call with real BLS signature
+    function _signProposeWhitelist(address custodyAddr, address target) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode(block.chainid, custodyAddr, "proposeWhitelist", target));
+        return signWithTestIssuers(message);
     }
 
     // ============ AC #1, #2, #3: UUPS PROXY DEPLOYMENT (Ethereum, Base, Optimism) ============
@@ -139,8 +146,8 @@ contract DeployBLSCustodyTest is TestHelper {
         );
     }
 
-    function test_initialization_issuerRegistryStartsEmpty() public view {
-        assertEq(issuerRegistry.activeIssuerCount(), 0, "Should start with 0 active issuers");
+    function test_initialization_issuerRegistryHasTestIssuers() public view {
+        assertEq(issuerRegistry.activeIssuerCount(), 3, "Should have 3 test issuers registered");
     }
 
     function test_initialization_governanceAdminCorrect() public view {
@@ -185,8 +192,8 @@ contract DeployBLSCustodyTest is TestHelper {
     function test_whitelist_proposeAndActivate1inchRouter() public {
         vm.startPrank(deployer);
 
-        // Propose with dummy signature (BLS verified via mocked precompile)
-        custodyMock.proposeWhitelist(ONEINCH_ROUTER_V6, new bytes(64));
+        // Propose with real BLS signature
+        custodyMock.proposeWhitelist(ONEINCH_ROUTER_V6, _signProposeWhitelist(address(custodyMock), ONEINCH_ROUTER_V6));
         (uint256 proposedAt, ) = custodyMock.getWhitelistStatus(ONEINCH_ROUTER_V6);
         assertGt(proposedAt, 0, "1inch Router should be proposed");
 
@@ -200,7 +207,7 @@ contract DeployBLSCustodyTest is TestHelper {
 
     function test_whitelist_proposeUSDCEthereum() public {
         vm.startPrank(deployer);
-        custodyMock.proposeWhitelist(USDC_ETHEREUM, new bytes(64));
+        custodyMock.proposeWhitelist(USDC_ETHEREUM, _signProposeWhitelist(address(custodyMock), USDC_ETHEREUM));
         (uint256 proposedAt, ) = custodyMock.getWhitelistStatus(USDC_ETHEREUM);
         assertGt(proposedAt, 0, "USDC Ethereum should be proposed");
         vm.stopPrank();
@@ -208,7 +215,7 @@ contract DeployBLSCustodyTest is TestHelper {
 
     function test_whitelist_proposeUSDCBase() public {
         vm.startPrank(deployer);
-        custodyMock.proposeWhitelist(USDC_BASE, new bytes(64));
+        custodyMock.proposeWhitelist(USDC_BASE, _signProposeWhitelist(address(custodyMock), USDC_BASE));
         (uint256 proposedAt, ) = custodyMock.getWhitelistStatus(USDC_BASE);
         assertGt(proposedAt, 0, "USDC Base should be proposed");
         vm.stopPrank();
@@ -216,7 +223,7 @@ contract DeployBLSCustodyTest is TestHelper {
 
     function test_whitelist_proposeUSDCOptimism() public {
         vm.startPrank(deployer);
-        custodyMock.proposeWhitelist(USDC_OPTIMISM, new bytes(64));
+        custodyMock.proposeWhitelist(USDC_OPTIMISM, _signProposeWhitelist(address(custodyMock), USDC_OPTIMISM));
         (uint256 proposedAt, ) = custodyMock.getWhitelistStatus(USDC_OPTIMISM);
         assertGt(proposedAt, 0, "USDC Optimism should be proposed");
         vm.stopPrank();
@@ -224,7 +231,7 @@ contract DeployBLSCustodyTest is TestHelper {
 
     function test_whitelist_cannotActivateBeforeTimelock() public {
         vm.startPrank(deployer);
-        custodyMock.proposeWhitelist(ONEINCH_ROUTER_V6, new bytes(64));
+        custodyMock.proposeWhitelist(ONEINCH_ROUTER_V6, _signProposeWhitelist(address(custodyMock), ONEINCH_ROUTER_V6));
 
         vm.expectRevert();
         custodyMock.activateWhitelist(ONEINCH_ROUTER_V6);

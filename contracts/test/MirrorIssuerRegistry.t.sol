@@ -29,9 +29,6 @@ contract MirrorIssuerRegistryTest is TestHelper {
     // Test BLS signature (64 bytes G1) - for mock/happy path
     bytes public mockSignature;
 
-    // Pairing precompile address for mocking
-    address constant PRECOMPILE_PAIRING = address(0x08);
-
     function setUp() public {
         // Generate valid 128-byte pubkeys
         validPubkey1 = generateTestPubkey(1);
@@ -363,11 +360,8 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
     bytes public pubkey2;
     bytes public pubkey3;
 
-    // Pairing precompile address for mocking
-    address constant PRECOMPILE_PAIRING = address(0x08);
-
     function setUp() public {
-        // Generate test pubkeys
+        // Generate test pubkeys (real BLS keys from seeds 1,2,3 for L3 registration)
         pubkey1 = generateTestPubkey(1);
         pubkey2 = generateTestPubkey(2);
         pubkey3 = generateTestPubkey(3);
@@ -376,17 +370,17 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
         governance = deployGovernance(admin);
         l3Registry = deployIssuerRegistry(address(governance));
 
-        // Register 3 issuers on L3
+        // Register 3 issuers on L3 using seeds 1,2,3
         registerIssuer(l3Registry, admin, issuer1, bytes32("ip1"), 1);
         registerIssuer(l3Registry, admin, issuer2, bytes32("ip2"), 2);
         registerIssuer(l3Registry, admin, issuer3, bytes32("ip3"), 3);
 
-        // Deploy MirrorIssuerRegistry initialized with same state as L3
-        // In production, this would use the actual aggregated pubkey from L3
+        // Deploy MirrorIssuerRegistry initialized with the aggregated pubkey of test issuers 0,1,2
+        // This allows sync() to be signed with signWithTestIssuers()
         MirrorIssuerRegistry impl = new MirrorIssuerRegistry();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(MirrorIssuerRegistry.initialize, (pubkey1, 2, 3, admin))
+            abi.encodeCall(MirrorIssuerRegistry.initialize, (blsAggPubkey("0,1,2"), 2, 3, admin))
         );
         mirror = MirrorIssuerRegistry(address(proxy));
     }
@@ -451,9 +445,9 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
     function test_integration_fullSyncFlow_L3ToMirror() public {
         // This test simulates the full AC8 flow:
         // 1. Add issuer on L3 → RegistryStateChanged emitted
-        // 2. Compute new aggregated pubkey (simulated)
-        // 3. Generate BLS sync proof (mocked via precompile)
-        // 4. Call sync() on mirror
+        // 2. Compute new aggregated pubkey
+        // 3. Generate real BLS sync proof via signWithTestIssuers
+        // 4. Call sync() on mirror (verified against current agg pubkey = blsAggPubkey("0,1,2"))
         // 5. Verify mirror state matches expected
 
         // Step 1: Add 4th issuer on L3
@@ -468,21 +462,18 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
         assertEq(l3NonceAfter, l3NonceBefore + 1);
         assertEq(l3Registry.activeIssuerCount(), 4);
 
-        // Step 2: Compute new aggregated pubkey (in production, this is sum of issuer pubkeys)
-        // For test, we use a deterministic pubkey
-        bytes memory newAggPubkey = generateTestPubkey(100);
+        // Step 2: New aggregated pubkey after adding issuer 4 (for test, use seed 4's pubkey)
+        bytes memory newAggPubkey = generateTestPubkey(4);
 
-        // Step 3: Mock BLS signature verification (in production, issuers sign off-chain)
-        vm.mockCall(PRECOMPILE_PAIRING, abi.encode(), abi.encode(uint256(1)));
-
-        bytes memory blsSignature = new bytes(64);
-        uint256 signersBitmask = 0x7; // First 3 issuers signed
-
-        // Step 4: Call sync on mirror
+        // Step 3: Generate real BLS signature (signed by test issuers 0,1,2)
         uint256 syncNonce = l3NonceAfter;
         uint256 newActiveCount = 4;
         uint256 newThreshold = 3;
+        bytes32 messageHash = keccak256(abi.encode("REGISTRY_SYNC", syncNonce, newAggPubkey, newActiveCount, newThreshold));
+        bytes memory blsSignature = signWithTestIssuers(messageHash);
+        uint256 signersBitmask = 0x7; // First 3 issuers signed
 
+        // Step 4: Call sync on mirror
         vm.expectEmit(true, false, false, true);
         emit EventsLib.RegistrySynced(
             syncNonce,
@@ -502,27 +493,27 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
     }
 
     function test_integration_multipleSyncsTrackL3Changes() public {
-        // Mock BLS for all syncs
-        vm.mockCall(PRECOMPILE_PAIRING, abi.encode(), abi.encode(uint256(1)));
-
-        bytes memory blsSignature = new bytes(64);
-
         // Initial state: mirror has nonce 0, L3 has nonce 3 (from 3 issuer registrations)
+        // Mirror is initialized with blsAggPubkey("0,1,2"), so all syncs use signWithTestIssuers.
         assertEq(mirror.registryNonce(), 0);
         assertTrue(l3Registry.registryNonce() >= 3);
 
-        // Sync 1: Catch up to L3's current state
-        bytes memory aggPubkey1 = generateTestPubkey(10);
-        mirror.sync(aggPubkey1, 3, 2, 1, blsSignature, 0x7);
+        // Sync 1: Catch up to L3's current state.
+        // Use blsAggPubkey("0,1,2") as the new pubkey so the mirror stays signable.
+        bytes memory aggPubkey1 = blsAggPubkey("0,1,2");
+        bytes32 msg1 = keccak256(abi.encode("REGISTRY_SYNC", uint256(1), aggPubkey1, uint256(3), uint256(2)));
+        mirror.sync(aggPubkey1, 3, 2, 1, signWithTestIssuers(msg1), 0x7);
         assertEq(mirror.registryNonce(), 1);
 
         // Add issuer on L3
         vm.prank(admin);
         l3Registry.addIssuer(address(0x1004), bytes32("ip4"), generateTestPubkey(4));
 
-        // Sync 2: Update mirror with new issuer
-        bytes memory aggPubkey2 = generateTestPubkey(20);
-        mirror.sync(aggPubkey2, 4, 3, 2, blsSignature, 0xF);
+        // Sync 2: Update mirror with new issuer count.
+        // Mirror still holds blsAggPubkey("0,1,2") as current pubkey → still signable.
+        bytes memory aggPubkey2 = blsAggPubkey("0,1,2");
+        bytes32 msg2 = keccak256(abi.encode("REGISTRY_SYNC", uint256(2), aggPubkey2, uint256(4), uint256(3)));
+        mirror.sync(aggPubkey2, 4, 3, 2, signWithTestIssuers(msg2), 0xF);
         assertEq(mirror.registryNonce(), 2);
         assertEq(mirror.activeCount(), 4);
         assertEq(mirror.threshold(), 3);

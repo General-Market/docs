@@ -15,6 +15,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title E2ERebalanceFlow - End-to-End Integration Test (V2 - Asset Changes)
 /// @notice Tests the new 2-step rebalance flow: requestRebalance (event) → rebalance (BLS)
+/// @dev Uses real BLS signatures via FFI (bls-tool). All BLS-protected calls use real signing.
 contract E2ERebalanceFlowTest is TestHelper {
     Index public index;
     MockERC20 public usdc;
@@ -41,8 +42,6 @@ contract E2ERebalanceFlowTest is TestHelper {
     uint256 constant SOL_PRICE = 100e18;    // $100 per SOL
     uint256 constant INITIAL_USDC = 1_000_000e18;
 
-    bytes public dummyBlsSignature = new bytes(64);
-
     function setUp() public {
         admin = address(this);
 
@@ -66,17 +65,10 @@ contract E2ERebalanceFlowTest is TestHelper {
         );
         index = Index(address(proxy));
 
-        // Deploy IssuerRegistry and wire to Index (required for BLS verification)
+        // Deploy IssuerRegistry, register real BLS test issuers, wire to Index
         IssuerRegistry issuerRegistry = deployIssuerRegistry(address(governance));
+        registerTestIssuersWithBLS(issuerRegistry, admin);
         index.setIssuerRegistry(address(issuerRegistry));
-
-        // Set a non-empty aggregated pubkey (128 bytes) so BLS path doesn't revert on empty pubkey
-        bytes memory dummyAggPubkey = new bytes(128);
-        issuerRegistry.setAggregatedPubkey(dummyAggPubkey);
-
-        // Mock the BN254 pairing precompile to always return success
-        // This makes BLSLib.verifyBLS return true for any signature
-        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
 
         // Fund creator with USDC
         usdc.mint(creator, INITIAL_USDC);
@@ -135,6 +127,32 @@ contract E2ERebalanceFlowTest is TestHelper {
         _seedITP(itpIdB, user1, 50_000e18, 2);
     }
 
+    // ============ SIGNING HELPERS ============
+
+    function _signConfirmBatch(uint256 cycleNumber, uint256[] memory orderIds) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode(block.chainid, address(index), cycleNumber, orderIds));
+        return signWithTestIssuers(message);
+    }
+
+    function _signConfirmFills(uint256 cycleNumber, TypesLib.Fill[] memory fills) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode(block.chainid, address(index), cycleNumber, fills));
+        return signWithTestIssuers(message);
+    }
+
+    function _signRebalance(
+        bytes32 _itpId,
+        uint256[] memory removeIndices,
+        address[] memory addAssets,
+        uint256[] memory newWeights,
+        uint256[] memory prices
+    ) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(index), "rebalance",
+            _itpId, removeIndices, addAssets, newWeights, prices
+        ));
+        return signWithTestIssuers(message);
+    }
+
     // ============ HELPERS ============
 
     /// @dev Seed an ITP with initial supply via the order-to-mint flow
@@ -153,7 +171,7 @@ contract E2ERebalanceFlowTest is TestHelper {
 
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(cycleNumber, orderIds, dummyBlsSignature);
+        index.confirmBatch(cycleNumber, orderIds, _signConfirmBatch(cycleNumber, orderIds));
 
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
         fills[0] = TypesLib.Fill({
@@ -163,7 +181,7 @@ contract E2ERebalanceFlowTest is TestHelper {
             cycleNumber: cycleNumber,
             txHash: bytes32(0)
         });
-        index.confirmFills(cycleNumber, fills, dummyBlsSignature);
+        index.confirmFills(cycleNumber, fills, _signConfirmFills(cycleNumber, fills));
     }
 
     // ============ TEST: Weight-only Rebalance Happy Path ============
@@ -185,7 +203,7 @@ contract E2ERebalanceFlowTest is TestHelper {
         uint256 navBefore = index.getNAV(itpIdA);
 
         // Execute rebalance (single BLS call)
-        index.rebalance(itpIdA, emptyIndices, emptyAddrs, newWeights, prices, dummyBlsSignature);
+        index.rebalance(itpIdA, emptyIndices, emptyAddrs, newWeights, prices, _signRebalance(itpIdA, emptyIndices, emptyAddrs, newWeights, prices));
 
         // Verify new weights
         (,,,, uint256[] memory finalWeights,) = index.getITPState(itpIdA);
@@ -250,7 +268,7 @@ contract E2ERebalanceFlowTest is TestHelper {
         newPrices[2] = 20e18;  // LINK (swapped from index 4)
         newPrices[3] = 50e18;  // AVAX (stays at index 3)
 
-        index.rebalance(itpId5, removeIndices, noAddAssets, newWeights, newPrices, dummyBlsSignature);
+        index.rebalance(itpId5, removeIndices, noAddAssets, newWeights, newPrices, _signRebalance(itpId5, removeIndices, noAddAssets, newWeights, newPrices));
 
         // Verify 4 assets remain
         (,,, address[] memory finalAssets, uint256[] memory finalWeights,) = index.getITPState(itpId5);
@@ -320,7 +338,7 @@ contract E2ERebalanceFlowTest is TestHelper {
         newPrices[4] = 20e18;
         newPrices[5] = 10e18; // DOT price
 
-        index.rebalance(itpId5, noRemoveIndices, addAssets, newWeights, newPrices, dummyBlsSignature);
+        index.rebalance(itpId5, noRemoveIndices, addAssets, newWeights, newPrices, _signRebalance(itpId5, noRemoveIndices, addAssets, newWeights, newPrices));
 
         // Verify 6 assets
         (,,, address[] memory finalAssets, uint256[] memory finalWeights,) = index.getITPState(itpId5);
@@ -368,7 +386,7 @@ contract E2ERebalanceFlowTest is TestHelper {
         address[] memory emptyAddrs = new address[](0);
 
         vm.recordLogs();
-        index.rebalance(itpIdA, emptyIndices, emptyAddrs, newWeights, prices, dummyBlsSignature);
+        index.rebalance(itpIdA, emptyIndices, emptyAddrs, newWeights, prices, _signRebalance(itpIdA, emptyIndices, emptyAddrs, newWeights, prices));
 
         Vm.Log[] memory logs = vm.getRecordedLogs();
         bytes32 rebalancedTopic = EventsLib.Rebalanced.selector;
@@ -402,7 +420,7 @@ contract E2ERebalanceFlowTest is TestHelper {
 
         // rebalance should revert
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E004_SystemPaused.selector));
-        index.rebalance(itpIdA, emptyIndices, emptyAddrs, newWeights, prices, dummyBlsSignature);
+        index.rebalance(itpIdA, emptyIndices, emptyAddrs, newWeights, prices, _signRebalance(itpIdA, emptyIndices, emptyAddrs, newWeights, prices));
 
         // requestRebalance is permissionless event-only, should still work
         // (no pause check on event emitter)
@@ -411,7 +429,7 @@ contract E2ERebalanceFlowTest is TestHelper {
 
         // Unpause, rebalance succeeds
         governance.unpause();
-        index.rebalance(itpIdA, emptyIndices, emptyAddrs, newWeights, prices, dummyBlsSignature);
+        index.rebalance(itpIdA, emptyIndices, emptyAddrs, newWeights, prices, _signRebalance(itpIdA, emptyIndices, emptyAddrs, newWeights, prices));
     }
 
     // ============ TEST: ITP Supply Preserved During Rebalance ============
@@ -434,7 +452,7 @@ contract E2ERebalanceFlowTest is TestHelper {
         uint256[] memory emptyIndices = new uint256[](0);
         address[] memory emptyAddrs = new address[](0);
 
-        index.rebalance(itpIdA, emptyIndices, emptyAddrs, newWeights, prices, dummyBlsSignature);
+        index.rebalance(itpIdA, emptyIndices, emptyAddrs, newWeights, prices, _signRebalance(itpIdA, emptyIndices, emptyAddrs, newWeights, prices));
 
         // Verify supply unchanged
         TypesLib.ITPCore memory itpAfter = index.getITP(itpIdA);
@@ -461,8 +479,8 @@ contract E2ERebalanceFlowTest is TestHelper {
         uint256[] memory emptyIndices = new uint256[](0);
         address[] memory emptyAddrs = new address[](0);
 
-        index.rebalance(itpIdA, emptyIndices, emptyAddrs, newWeightsA, prices, dummyBlsSignature);
-        index.rebalance(itpIdB, emptyIndices, emptyAddrs, newWeightsB, prices, dummyBlsSignature);
+        index.rebalance(itpIdA, emptyIndices, emptyAddrs, newWeightsA, prices, _signRebalance(itpIdA, emptyIndices, emptyAddrs, newWeightsA, prices));
+        index.rebalance(itpIdB, emptyIndices, emptyAddrs, newWeightsB, prices, _signRebalance(itpIdB, emptyIndices, emptyAddrs, newWeightsB, prices));
 
         // Verify final weights
         (,,,, uint256[] memory finalWeightsA,) = index.getITPState(itpIdA);
@@ -517,7 +535,7 @@ contract E2ERebalanceFlowTest is TestHelper {
         newPrices[1] = ETH_PRICE;
         newPrices[2] = 50e18; // AVAX price
 
-        index.rebalance(itpId3, removeIndices, addAssets, newWeights, newPrices, dummyBlsSignature);
+        index.rebalance(itpId3, removeIndices, addAssets, newWeights, newPrices, _signRebalance(itpId3, removeIndices, addAssets, newWeights, newPrices));
 
         // Verify final state
         (,,, address[] memory finalAssets, uint256[] memory finalWeights,) = index.getITPState(itpId3);

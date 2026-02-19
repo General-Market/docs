@@ -38,15 +38,12 @@ contract CuratorRateIRMTest is TestHelper {
     function setUp() public {
         vm.warp(1_700_000_000);
 
-        // Mock BLS precompile
-        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
-
         // Deploy tokens
         itp = new MockERC20("ITP", "ITP", 18);
         usdc = new MockERC20("USDC", "USDC", 6);
 
-        // Deploy mirror registry
-        bytes memory aggPubkey = generateTestPubkey(1);
+        // Deploy mirror registry with the real aggregated pubkey for seeds 0,1,2
+        bytes memory aggPubkey = blsAggPubkey("0,1,2");
         MirrorIssuerRegistry mirrorImpl = new MirrorIssuerRegistry();
         ERC1967Proxy mirrorProxy = new ERC1967Proxy(
             address(mirrorImpl),
@@ -56,8 +53,7 @@ contract CuratorRateIRMTest is TestHelper {
 
         // Deploy oracle
         oracle = new ITPNAVOracle(address(mirrorRegistry), address(itp), ORACLE_PRICE);
-        bytes memory mockSig = new bytes(64);
-        oracle.updatePrice(ORACLE_PRICE, block.timestamp, 1, mockSig, 0x07);
+        oracle.updatePrice(ORACLE_PRICE, block.timestamp, 1, _signUpdatePrice(ORACLE_PRICE, block.timestamp, 1), 0x07);
 
         // Deploy Morpho
         morpho = new Morpho(morphoOwner);
@@ -91,6 +87,19 @@ contract CuratorRateIRMTest is TestHelper {
 
         // Give borrower ITP
         itp.mint(borrower, 1_000e18);
+    }
+
+    // ============ SIGNING HELPERS ============
+
+    /// @notice Sign an ITPNAVOracle.updatePrice call with real BLS signature
+    /// @dev Message hash: keccak256(abi.encodePacked(itpAddress, newPrice, timestamp, cycleNumber))
+    function _signUpdatePrice(
+        uint256 newPrice,
+        uint256 timestamp,
+        uint256 cycleNumber
+    ) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encodePacked(address(itp), newPrice, timestamp, cycleNumber));
+        return signWithTestIssuers(message);
     }
 
     // ============ BASIC RATE TESTS ============
@@ -405,8 +414,7 @@ contract CuratorRateIRMTest is TestHelper {
         // Crash oracle price to make position liquidatable
         // New price: 0.5 USDC per ITP (halved)
         uint256 crashPrice = ORACLE_PRICE / 2;
-        bytes memory mockSig = new bytes(64);
-        oracle.updatePrice(crashPrice, block.timestamp, 2, mockSig, 0x07);
+        oracle.updatePrice(crashPrice, block.timestamp, 2, _signUpdatePrice(crashPrice, block.timestamp, 2), 0x07);
 
         // Liquidator repays debt and seizes collateral
         address liquidator = address(0xFF);

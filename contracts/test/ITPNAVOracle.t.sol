@@ -15,13 +15,10 @@ import "./helpers/TestHelper.sol";
 
 /// @title ITPNAVOracleTest - Tests for Story 8.6
 /// @notice Tests for ITPNAVOracle with BLS-verified pricing
-/// @dev BLS verification is mocked via vm.mockCall on the bn256 pairing precompile (0x08).
-///      Happy-path tests mock the precompile to return success. Sad-path tests (invalid BLS)
-///      do NOT mock the precompile, so real verification fails. This means the message hash
-///      format (keccak256(abi.encodePacked(itpAddress, newPrice, timestamp, cycleNumber)))
-///      is NOT cryptographically verified against real BLS signing in these tests.
-///      Integration testing with real BLS signatures should be done via FFI or pre-computed
-///      test vectors to confirm Solidity/Rust message hash format alignment.
+/// @dev Uses real BLS signatures via FFI (bls-tool). All happy-path tests use real BLS signing
+///      with test keys (seeds 0,1,2). Tests that revert before BLS verification (zero price,
+///      stale cycle) pass arbitrary bytes since BLS is never reached.
+///      Message hash: keccak256(abi.encodePacked(itpAddress, newPrice, timestamp, cycleNumber))
 contract ITPNAVOracleTest is TestHelper {
     ITPNAVOracle public oracle;
     MirrorIssuerRegistry public mirror;
@@ -33,26 +30,17 @@ contract ITPNAVOracleTest is TestHelper {
     // Initial price: 1.0 in 36 decimals
     uint256 public constant INITIAL_PRICE = 1e36;
 
-    // Test pubkey (128 bytes G2)
+    // Test pubkey (128 bytes G2) — real BLS aggregated pubkey from seeds 0,1,2
     bytes public validPubkey;
-
-    // Mock BLS signature (64 bytes G1)
-    bytes public mockSignature;
-
-    // Pairing precompile address for mocking
-    address constant PRECOMPILE_PAIRING = address(0x08);
 
     function setUp() public {
         // Set a reasonable block timestamp
         vm.warp(1_700_000_000);
 
-        // Generate test pubkey
-        validPubkey = generateTestPubkey(1);
+        // Generate real BLS aggregated pubkey from seeds 0,1,2
+        validPubkey = blsAggPubkey("0,1,2");
 
-        // Generate mock signature (all zeros = point at infinity, passes isOnCurve)
-        mockSignature = new bytes(64);
-
-        // Deploy MirrorIssuerRegistry as UUPS proxy
+        // Deploy MirrorIssuerRegistry as UUPS proxy with real aggregated pubkey
         MirrorIssuerRegistry mirrorImpl = new MirrorIssuerRegistry();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(mirrorImpl),
@@ -62,6 +50,12 @@ contract ITPNAVOracleTest is TestHelper {
 
         // Deploy ITPNAVOracle
         oracle = new ITPNAVOracle(address(mirror), itpToken, INITIAL_PRICE);
+    }
+
+    /// @dev Sign an oracle price update with the 3 test issuers
+    function _signNavUpdate(uint256 price, uint256 timestamp, uint256 cycleNumber) internal returns (bytes memory) {
+        bytes32 h = keccak256(abi.encodePacked(itpToken, price, timestamp, cycleNumber));
+        return signWithTestIssuers(h);
     }
 
     // ============ CONSTRUCTOR / DEPLOYMENT TESTS ============
@@ -87,17 +81,15 @@ contract ITPNAVOracleTest is TestHelper {
     // ============ AC1: VALID PRICE UPDATE ============
 
     function test_updatePrice_validSignature_updatesState() public {
-        // Mock BLS verification to return true
-        vm.mockCall(PRECOMPILE_PAIRING, abi.encode(), abi.encode(uint256(1)));
-
         uint256 newPrice = 1.05e36; // 1.05 in 36 decimals
         uint256 timestamp = block.timestamp;
         uint256 cycleNumber = 1;
+        bytes memory sig = _signNavUpdate(newPrice, timestamp, cycleNumber);
 
         vm.expectEmit(true, false, false, true);
         emit EventsLib.NAVPriceUpdated(itpToken, newPrice, block.timestamp, cycleNumber, 0x7);
 
-        oracle.updatePrice(newPrice, timestamp, cycleNumber, mockSignature, 0x7);
+        oracle.updatePrice(newPrice, timestamp, cycleNumber, sig, 0x7);
 
         assertEq(oracle.currentPrice(), newPrice);
         assertEq(oracle.lastUpdated(), block.timestamp);
@@ -107,12 +99,13 @@ contract ITPNAVOracleTest is TestHelper {
     // ============ AC2: STALE CYCLE NUMBER ============
 
     function test_updatePrice_staleCycleNumber_sameCycle_silentNoOp() public {
-        // First update
-        vm.mockCall(PRECOMPILE_PAIRING, abi.encode(), abi.encode(uint256(1)));
-        oracle.updatePrice(1.05e36, block.timestamp, 42, mockSignature, 0x7);
+        // First update with real BLS signature
+        bytes memory sig42 = _signNavUpdate(1.05e36, block.timestamp, 42);
+        oracle.updatePrice(1.05e36, block.timestamp, 42, sig42, 0x7);
 
-        // Same cycle should be a silent no-op (not revert) — enables atomic bundler multicall
-        oracle.updatePrice(1.06e36, block.timestamp, 42, mockSignature, 0x7);
+        // Same cycle should be a silent no-op (returns before BLS verification)
+        bytes memory sigStale = _signNavUpdate(1.06e36, block.timestamp, 42);
+        oracle.updatePrice(1.06e36, block.timestamp, 42, sigStale, 0x7);
 
         // Price should remain from the first update, not the second
         assertEq(oracle.currentPrice(), 1.05e36, "Price should not change on stale cycle no-op");
@@ -120,12 +113,13 @@ contract ITPNAVOracleTest is TestHelper {
     }
 
     function test_updatePrice_staleCycleNumber_olderCycle_silentNoOp() public {
-        // First update
-        vm.mockCall(PRECOMPILE_PAIRING, abi.encode(), abi.encode(uint256(1)));
-        oracle.updatePrice(1.05e36, block.timestamp, 42, mockSignature, 0x7);
+        // First update with real BLS signature
+        bytes memory sig42 = _signNavUpdate(1.05e36, block.timestamp, 42);
+        oracle.updatePrice(1.05e36, block.timestamp, 42, sig42, 0x7);
 
-        // Older cycle should be a silent no-op (not revert)
-        oracle.updatePrice(1.06e36, block.timestamp, 41, mockSignature, 0x7);
+        // Older cycle should be a silent no-op (returns before BLS verification)
+        bytes memory sigStale = _signNavUpdate(1.06e36, block.timestamp, 41);
+        oracle.updatePrice(1.06e36, block.timestamp, 41, sigStale, 0x7);
 
         // Price should remain from the first update
         assertEq(oracle.currentPrice(), 1.05e36, "Price should not change on older cycle no-op");
@@ -135,16 +129,18 @@ contract ITPNAVOracleTest is TestHelper {
     // ============ AC3: ZERO PRICE ============
 
     function test_updatePrice_zeroPrice_reverts() public {
+        // Zero price reverts before BLS verification — any signature bytes work
         vm.expectRevert(ErrorsLib.E095_InvalidOraclePrice.selector);
-        oracle.updatePrice(0, block.timestamp, 1, mockSignature, 0x7);
+        oracle.updatePrice(0, block.timestamp, 1, new bytes(64), 0x7);
     }
 
     // ============ AC4: INVALID BLS SIGNATURE ============
 
     function test_updatePrice_invalidBLSSignature_reverts() public {
-        // Don't mock the precompile — real BLS verification will fail with random data
+        // Use a signature over wrong message — real BLS verification will fail
+        bytes memory wrongSig = signWithTestIssuers(keccak256("wrong message"));
         vm.expectRevert(ErrorsLib.E020_InvalidBLSSignature.selector);
-        oracle.updatePrice(1.05e36, block.timestamp, 1, mockSignature, 0x7);
+        oracle.updatePrice(1.05e36, block.timestamp, 1, wrongSig, 0x7);
     }
 
     function test_updatePrice_wrongLengthSignature_reverts() public {
@@ -168,9 +164,9 @@ contract ITPNAVOracleTest is TestHelper {
     }
 
     function test_price_returnsAfterRecentUpdate() public {
-        vm.mockCall(PRECOMPILE_PAIRING, abi.encode(), abi.encode(uint256(1)));
         uint256 newPrice = 2e36;
-        oracle.updatePrice(newPrice, block.timestamp, 1, mockSignature, 0x7);
+        bytes memory sig = _signNavUpdate(newPrice, block.timestamp, 1);
+        oracle.updatePrice(newPrice, block.timestamp, 1, sig, 0x7);
 
         // Warp 2 hours forward (still within MAX_STALENESS)
         vm.warp(block.timestamp + 2 hours);
@@ -212,20 +208,20 @@ contract ITPNAVOracleTest is TestHelper {
     // ============ AC7: PERMISSIONLESS UPDATE ============
 
     function test_updatePrice_permissionless_anyAddressCanCall() public {
-        vm.mockCall(PRECOMPILE_PAIRING, abi.encode(), abi.encode(uint256(1)));
+        bytes memory sig = _signNavUpdate(1.5e36, block.timestamp, 1);
 
         // Call from random address (not deployer, not admin)
         vm.prank(randomUser);
-        oracle.updatePrice(1.5e36, block.timestamp, 1, mockSignature, 0x7);
+        oracle.updatePrice(1.5e36, block.timestamp, 1, sig, 0x7);
 
         assertEq(oracle.currentPrice(), 1.5e36);
     }
 
     function test_updatePrice_permissionless_zeroAddressCanCall() public {
-        vm.mockCall(PRECOMPILE_PAIRING, abi.encode(), abi.encode(uint256(1)));
+        bytes memory sig = _signNavUpdate(1.5e36, block.timestamp, 1);
 
         vm.prank(address(0));
-        oracle.updatePrice(1.5e36, block.timestamp, 1, mockSignature, 0x7);
+        oracle.updatePrice(1.5e36, block.timestamp, 1, sig, 0x7);
 
         assertEq(oracle.currentPrice(), 1.5e36);
     }
@@ -233,11 +229,10 @@ contract ITPNAVOracleTest is TestHelper {
     // ============ PRICE FORMAT VERIFICATION ============
 
     function test_price_36decimalFormat() public {
-        vm.mockCall(PRECOMPILE_PAIRING, abi.encode(), abi.encode(uint256(1)));
-
         // Set a price that represents $1.05 in 36 decimals
         uint256 price105 = 1_050_000_000_000_000_000_000_000_000_000_000_000; // 1.05e36
-        oracle.updatePrice(price105, block.timestamp, 1, mockSignature, 0x7);
+        bytes memory sig = _signNavUpdate(price105, block.timestamp, 1);
+        oracle.updatePrice(price105, block.timestamp, 1, sig, 0x7);
 
         uint256 p = oracle.price();
         assertEq(p, price105);
@@ -247,22 +242,20 @@ contract ITPNAVOracleTest is TestHelper {
     // ============ MULTIPLE SEQUENTIAL UPDATES ============
 
     function test_updatePrice_multipleSequentialUpdates() public {
-        vm.mockCall(PRECOMPILE_PAIRING, abi.encode(), abi.encode(uint256(1)));
-
         // Update 1
-        oracle.updatePrice(1.01e36, block.timestamp, 1, mockSignature, 0x7);
+        oracle.updatePrice(1.01e36, block.timestamp, 1, _signNavUpdate(1.01e36, block.timestamp, 1), 0x7);
         assertEq(oracle.currentPrice(), 1.01e36);
         assertEq(oracle.lastCycleNumber(), 1);
 
         // Update 2
         vm.warp(block.timestamp + 1 hours);
-        oracle.updatePrice(1.02e36, block.timestamp, 2, mockSignature, 0x7);
+        oracle.updatePrice(1.02e36, block.timestamp, 2, _signNavUpdate(1.02e36, block.timestamp, 2), 0x7);
         assertEq(oracle.currentPrice(), 1.02e36);
         assertEq(oracle.lastCycleNumber(), 2);
 
         // Update 3
         vm.warp(block.timestamp + 1 hours);
-        oracle.updatePrice(1.03e36, block.timestamp, 3, mockSignature, 0x7);
+        oracle.updatePrice(1.03e36, block.timestamp, 3, _signNavUpdate(1.03e36, block.timestamp, 3), 0x7);
         assertEq(oracle.currentPrice(), 1.03e36);
         assertEq(oracle.lastCycleNumber(), 3);
 
@@ -274,99 +267,93 @@ contract ITPNAVOracleTest is TestHelper {
     // ============ AC8: BLS INTEGRATION WITH MIRROR REGISTRY ============
 
     function test_updatePrice_readsFromMirrorRegistry() public {
-        // Mock BLS verification to succeed
-        vm.mockCall(PRECOMPILE_PAIRING, abi.encode(), abi.encode(uint256(1)));
-
-        // Update price — internally, oracle calls mirror.getAggregatedPubkey()
-        oracle.updatePrice(1.1e36, block.timestamp, 1, mockSignature, 0x7);
+        // Update price with real BLS signature — internally, oracle calls mirror.getAggregatedPubkey()
+        bytes memory sig = _signNavUpdate(1.1e36, block.timestamp, 1);
+        oracle.updatePrice(1.1e36, block.timestamp, 1, sig, 0x7);
 
         // Verify state was updated (proving the oracle correctly read from the registry)
         assertEq(oracle.currentPrice(), 1.1e36);
     }
 
     function test_updatePrice_afterRegistrySync_usesNewPubkey() public {
-        // Mock BLS for all operations
-        vm.mockCall(PRECOMPILE_PAIRING, abi.encode(), abi.encode(uint256(1)));
-
-        // First update with original registry pubkey
-        oracle.updatePrice(1.1e36, block.timestamp, 1, mockSignature, 0x7);
+        // First update with original registry pubkey (seeds 0,1,2)
+        bytes memory sig1 = _signNavUpdate(1.1e36, block.timestamp, 1);
+        oracle.updatePrice(1.1e36, block.timestamp, 1, sig1, 0x7);
         assertEq(oracle.currentPrice(), 1.1e36);
 
-        // Sync registry to new pubkey
-        bytes memory newPubkey = generateTestPubkey(99);
-        bytes memory syncSig = new bytes(64);
-        mirror.sync(newPubkey, 4, 3, 1, syncSig, 0xF);
+        // Sync registry to a new aggregated pubkey (seeds 3,4,5)
+        bytes memory newPubkey = blsAggPubkey("3,4,5");
+        bytes32 syncHash = keccak256(abi.encode("REGISTRY_SYNC", uint256(1), newPubkey, uint256(4), uint256(3)));
+        bytes memory syncSig = signWithTestIssuers(syncHash);
+        mirror.sync(newPubkey, 4, 3, 1, syncSig, 0x7);
 
-        // Second update should use new pubkey from registry
-        oracle.updatePrice(1.2e36, block.timestamp, 2, mockSignature, 0x7);
+        // Second update must now be signed by seeds 3,4,5 (new pubkey)
+        bytes32 h2 = keccak256(abi.encodePacked(itpToken, uint256(1.2e36), block.timestamp, uint256(2)));
+        bytes memory sig2 = blsSign("3,4,5", h2);
+        oracle.updatePrice(1.2e36, block.timestamp, 2, sig2, 0x7);
         assertEq(oracle.currentPrice(), 1.2e36);
     }
 
     // ============ VALIDATION ORDER TESTS ============
 
     function test_validationOrder_zeroPriceBeforeCycleCheck() public {
-        // Zero price should revert before cycle number check
+        // Zero price reverts before cycle number check — any signature bytes work
         vm.expectRevert(ErrorsLib.E095_InvalidOraclePrice.selector);
-        oracle.updatePrice(0, block.timestamp, 1, mockSignature, 0x7);
+        oracle.updatePrice(0, block.timestamp, 1, new bytes(64), 0x7);
     }
 
     function test_validationOrder_cycleCheckBeforeBLS() public {
         // With cycle 0 (stale, since initial lastCycleNumber = 0), should be a silent no-op
-        // (returns before BLS verification, saving gas)
-        oracle.updatePrice(1e36, block.timestamp, 0, mockSignature, 0x7);
+        // (returns before BLS verification, saving gas) — any signature bytes work
+        oracle.updatePrice(1e36, block.timestamp, 0, new bytes(64), 0x7);
         // Price should not have changed from constructor's initial price
     }
 
     // ============ EDGE CASES ============
 
     function test_updatePrice_maxUint256Price() public {
-        vm.mockCall(PRECOMPILE_PAIRING, abi.encode(), abi.encode(uint256(1)));
-
         uint256 maxPrice = type(uint256).max;
-        oracle.updatePrice(maxPrice, block.timestamp, 1, mockSignature, 0x7);
+        bytes memory sig = _signNavUpdate(maxPrice, block.timestamp, 1);
+        oracle.updatePrice(maxPrice, block.timestamp, 1, sig, 0x7);
 
         assertEq(oracle.currentPrice(), maxPrice);
     }
 
     function test_updatePrice_minimalPrice() public {
-        vm.mockCall(PRECOMPILE_PAIRING, abi.encode(), abi.encode(uint256(1)));
-
         // Smallest valid price is 1 (non-zero)
-        oracle.updatePrice(1, block.timestamp, 1, mockSignature, 0x7);
+        bytes memory sig = _signNavUpdate(1, block.timestamp, 1);
+        oracle.updatePrice(1, block.timestamp, 1, sig, 0x7);
 
         assertEq(oracle.currentPrice(), 1);
     }
 
     function test_updatePrice_largeCycleNumberGap() public {
-        vm.mockCall(PRECOMPILE_PAIRING, abi.encode(), abi.encode(uint256(1)));
-
         // Jump from cycle 0 to cycle 1000000
-        oracle.updatePrice(1e36, block.timestamp, 1_000_000, mockSignature, 0x7);
+        bytes memory sig = _signNavUpdate(1e36, block.timestamp, 1_000_000);
+        oracle.updatePrice(1e36, block.timestamp, 1_000_000, sig, 0x7);
         assertEq(oracle.lastCycleNumber(), 1_000_000);
     }
 
     function test_updatePrice_eventEmitsCorrectData() public {
-        vm.mockCall(PRECOMPILE_PAIRING, abi.encode(), abi.encode(uint256(1)));
-
         uint256 newPrice = 2.5e36;
         uint256 cycleNumber = 7;
+        bytes memory sig = _signNavUpdate(newPrice, block.timestamp, cycleNumber);
 
         vm.expectEmit(true, false, false, true);
         emit EventsLib.NAVPriceUpdated(itpToken, newPrice, block.timestamp, cycleNumber, 0x7);
 
-        oracle.updatePrice(newPrice, block.timestamp, cycleNumber, mockSignature, 0x7);
+        oracle.updatePrice(newPrice, block.timestamp, cycleNumber, sig, 0x7);
     }
 
     function test_lastUpdated_usesBlockTimestamp_notIssuerTimestamp() public {
         // Warp forward to avoid underflow
         vm.warp(1000);
 
-        vm.mockCall(PRECOMPILE_PAIRING, abi.encode(), abi.encode(uint256(1)));
-
         // Provide a different issuer timestamp (in the past)
         uint256 issuerTimestamp = block.timestamp - 100;
+        bytes memory sig = _signNavUpdate(1e36, issuerTimestamp, 1);
 
-        oracle.updatePrice(1e36, issuerTimestamp, 1, mockSignature, 0x7);
+        oracle.updatePrice(1e36, issuerTimestamp, 1, sig, 0x7);
 
         // lastUpdated should be block.timestamp, NOT the issuer timestamp
         assertEq(oracle.lastUpdated(), block.timestamp);

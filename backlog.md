@@ -1,5 +1,26 @@
 # Design Decision Backlog
 
+## Session: 20260219-2356-r7q1
+
+- [DECISION] BLS migration batch 4: BridgeProxy.t.sol, E2EOrderToMint.t.sol, E2ERebalanceFlow.t.sol migrated from mocked BLS precompile (vm.mockCall address(0x08)) to real BLS signatures via FFI (bls-tool). setUp now calls registerTestIssuersWithBLS instead of vm.mockCall on getAggregatedPubkey. All _confirmBatch/_confirmFills/_rebalance helpers compute real message hashes and call signWithTestIssuers.
+- [DECISION] BLS migration batch 4: E020_InvalidBLSSignature used instead of E071_InvalidBLSSignature in BridgeProxy tests — BLSVerifier._verifyBLS reverts with E020; E071 is defined but unused in source.
+- [DECISION] BLS migration batch 4: test_completeCreateItp_revertsWithWrongPubkeyLength uses issuerRegistry.setAggregatedPubkey(new bytes(64)) to temporarily inject a wrong-length pubkey, then restores the real 128-byte pubkey via blsAggPubkey("0,1,2").
+- [DECISION] BLS migration batch 4: E2ERebalanceFlow._seedITP helper uses _confirmBatch/_confirmFills helpers that compute real BLS, allowing setUp to work without any mocks.
+
+## Session: 20260219-2345-m9p3
+
+- [DECISION] BLS migration batch 3: CollateralRegistry.t.sol auto-migrated by linter after initial Write triggered file change. Switched from Test to TestHelper, uses _signRecordCollateralMove reading nonce from contract.
+- [DECISION] BLS migration batch 3: DeployBLSCustody.t.sol and DeployBLSCustodyArbitrum.t.sol migrated from mockRegistry.setAggregatedPubkey(new bytes(128)) + vm.mockCall(address(0x08)) to registerTestIssuersWithBLS + real BLS signatures for proposeWhitelist calls.
+
+## Session: 20260219-2330-k4w8
+
+- [DECISION] BLS migration: All 7 core test files migrated from mocked BLS precompile (vm.mockCall on address(0x08)) to real BLS signatures via FFI (bls-tool). Files: BLSCustody.t.sol, QuantityBasedPricing.t.sol, L3BridgeCustody.t.sol, IndexProductionHardening.t.sol, IndexOrderSubmission.t.sol, IndexBatchFillConfirmation.t.sol, Index.t.sol.
+- [DECISION] BLS migration: All 5 Morpho test files migrated from mocked BLS precompile (vm.mockCall on address(0x08)) to real BLS signatures via FFI (bls-tool). Files: MorphoTestHelper.sol, ITPNAVOracle.t.sol, MorphoBorrowLend.t.sol, MorphoPermissionlessLiquidation.t.sol, MirrorIssuerRegistry.t.sol.
+- [DECISION] For "invalid BLS" test cases, use signWithTestIssuers(keccak256("wrong")) (sign a wrong message hash) instead of mocking the precompile to return 0. This exercises real BLS verification failure paths.
+- [DECISION] For stale cycle / validation-order tests that return BEFORE BLS check, use dummy new bytes(64) signatures since the function never reaches BLS verification.
+- [DECISION] Mirror registry syncs in tests use blsAggPubkey("0,1,2") (same agg key) so subsequent operations can still sign with the same test key set. Exception: test_updatePrice_afterRegistrySync_usesNewPubkey transitions to seeds 1,2,3 and signs the second oracle update with blsSign("1,2,3", ...).
+- [FAILED] Edit tool changes were reverted by linter/formatter for 4 of 5 files. Write tool (full file overwrite) was required to persist changes.
+
 ## Session: 20260219-2300-p7r1
 
 - [DECISION] Sim pipeline refactor: replaced flat FNG→DOM override chain with 6-stage pipeline (trigger → params → eligibility → top-N+weights → modifiers → trades). Explicit DOM > FNG precedence prevents silent overwrites.

@@ -32,6 +32,14 @@ contract MorphoCuratorIRMLiquidationTest is MorphoTestHelper {
         usdc.mint(liquidatorAddr, 1_000_000e6);
     }
 
+    // ============ SIGNING HELPER ============
+
+    /// @notice Sign and call oracle.updatePrice with real BLS signature
+    function _updateOraclePrice(uint256 newPrice, uint256 cycleNumber) internal {
+        bytes32 msgHash = keccak256(abi.encodePacked(address(itp), newPrice, block.timestamp, cycleNumber));
+        oracle.updatePrice(newPrice, block.timestamp, cycleNumber, signWithTestIssuers(msgHash), 0x07);
+    }
+
     // ============ BASIC LIQUIDATION ============
 
     function test_liquidation_afterPriceCrash() public {
@@ -44,8 +52,7 @@ contract MorphoCuratorIRMLiquidationTest is MorphoTestHelper {
 
         // Crash oracle price to 50% (0.5 USDC per ITP)
         uint256 crashPrice = ORACLE_PRICE / 2;
-        bytes memory mockSig = new bytes(64);
-        oracle.updatePrice(crashPrice, block.timestamp, 2, mockSig, 0x07);
+        _updateOraclePrice(crashPrice, 2);
 
         // At crashed price:
         // collateral_value = 100 * 0.5 = 50 USDC
@@ -76,8 +83,7 @@ contract MorphoCuratorIRMLiquidationTest is MorphoTestHelper {
         // collateral_value = 100 * 0.25 = 25 USDC
         // max_borrow = 25 * 0.77 = 19.25 USDC < 30 USDC debt → underwater
         uint256 crashPrice = ORACLE_PRICE / 4;
-        bytes memory mockSig = new bytes(64);
-        oracle.updatePrice(crashPrice, block.timestamp, 2, mockSig, 0x07);
+        _updateOraclePrice(crashPrice, 2);
 
         // Liquidate all collateral
         vm.startPrank(liquidatorAddr);
@@ -119,8 +125,7 @@ contract MorphoCuratorIRMLiquidationTest is MorphoTestHelper {
 
         // Now crash price
         uint256 crashPrice = ORACLE_PRICE / 2;
-        bytes memory mockSig = new bytes(64);
-        oracle.updatePrice(crashPrice, block.timestamp, 2, mockSig, 0x07);
+        _updateOraclePrice(crashPrice, 2);
 
         // Liquidate
         vm.startPrank(liquidatorAddr);
@@ -155,8 +160,7 @@ contract MorphoCuratorIRMLiquidationTest is MorphoTestHelper {
 
         // Crash price
         uint256 crashPrice = ORACLE_PRICE / 2;
-        bytes memory mockSig = new bytes(64);
-        oracle.updatePrice(crashPrice, block.timestamp, 2, mockSig, 0x07);
+        _updateOraclePrice(crashPrice, 2);
 
         // Liquidate
         vm.startPrank(liquidatorAddr);
@@ -193,8 +197,7 @@ contract MorphoCuratorIRMLiquidationTest is MorphoTestHelper {
 
         // Crash price and liquidate
         uint256 crashPrice = ORACLE_PRICE / 2;
-        bytes memory mockSig = new bytes(64);
-        oracle.updatePrice(crashPrice, block.timestamp, 2, mockSig, 0x07);
+        _updateOraclePrice(crashPrice, 2);
 
         vm.startPrank(liquidatorAddr);
         usdc.approve(address(morpho), type(uint256).max);
@@ -225,8 +228,7 @@ contract MorphoCuratorIRMLiquidationTest is MorphoTestHelper {
 
         // Crash price
         uint256 crashPrice = ORACLE_PRICE / 2;
-        bytes memory mockSig = new bytes(64);
-        oracle.updatePrice(crashPrice, block.timestamp, 2, mockSig, 0x07);
+        _updateOraclePrice(crashPrice, 2);
 
         // Liquidate borrower 1
         vm.startPrank(liquidatorAddr);
@@ -268,8 +270,7 @@ contract MorphoCuratorIRMLiquidationTest is MorphoTestHelper {
         // Simulate curator bot flow: push oracle price first, then liquidate
         // Step 1: Push crashed oracle price
         uint256 crashPrice = ORACLE_PRICE / 2;
-        bytes memory mockSig = new bytes(64);
-        oracle.updatePrice(crashPrice, block.timestamp, 2, mockSig, 0x07);
+        _updateOraclePrice(crashPrice, 2);
 
         // Step 2: Push fresh rate (curator does this before liquidation)
         uint256 freshRate = RATE_5PCT * 2; // 10% APR
@@ -300,8 +301,7 @@ contract MorphoCuratorIRMLiquidationTest is MorphoTestHelper {
 
         // Crash price
         uint256 crashPrice = ORACLE_PRICE / 2;
-        bytes memory mockSig = new bytes(64);
-        oracle.updatePrice(crashPrice, block.timestamp, 2, mockSig, 0x07);
+        _updateOraclePrice(crashPrice, 2);
 
         // Liquidate only 10 ITP (partial)
         vm.startPrank(liquidatorAddr);
