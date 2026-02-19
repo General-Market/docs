@@ -49,10 +49,10 @@ test.describe('Buy ITP', () => {
     // 9. Wait for "Order Submitted" success banner — this is the frontend's deliverable
     await expect(buyModal.orderSubmittedBanner(page)).toBeVisible({ timeout: 60_000 });
 
-    // 10. Mint BridgedITP to simulate bridge relay completion.
-    // In local dev, the issuer bridge consensus may not complete reliably,
-    // so we call BridgeProxy.mintBridgedShares() directly (BLS check is
-    // skipped when no aggregated pubkey is registered).
+    // 10. Simulate Step 8 of 8-step bridge: mintBridgedShares on Arb.
+    // In local dev, the full issuer consensus pipeline (Steps 3b-8) may not
+    // complete reliably, so we mint BridgedITP directly via anvil impersonation.
+    // In production, this is handled by BridgeProxy.mintBridgedShares() via BLS consensus.
     await mintBridgedItp(TEST_ADDRESS, ITP_ID, 100n * 10n ** 18n);
   });
 });

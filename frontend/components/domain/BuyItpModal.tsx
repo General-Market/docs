@@ -16,15 +16,15 @@ const L3_RPC = process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
 const ARB_RPC = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'
 
 /**
- * Buy flow phases — matches the real cross-chain flow:
+ * Buy flow phases — matches the 8-step cross-chain bridge architecture:
  *
  * 1. APPROVE     — User approves USDC spend on Arb (if needed)
  * 2. SUBMIT      — User calls buyITPFromArbitrum on Arb → CrossChainOrderCreated
- * 3. RELAY       — Issuer consensus → order relayed to L3 (submitOrderFor)
- * 4. COLLATERAL  — USDC bridged to L3 custody
- * 5. FILL        — Issuers batch + AP executes trades + confirmFills
- * 6. MINT        — ITP shares minted on L3
- * 7. BRIDGE      — Shares bridged back to Arb → mintBridgedShares → user gets BridgedITP
+ * 3. RELAY       — Issuer consensus → bridge Arb→L3 + submitOrderFor
+ * 4. COLLATERAL  — Batch confirmed + recordCollateralMove + bridge L3→Arb + custody→vault
+ * 5. FILL        — AP executes trades on CEX + confirmFills
+ * 6. MINT        — ITP shares minted on L3 (from confirmFills)
+ * 7. BRIDGE      — mintBridgedShares on Arb → user gets BridgedITP
  */
 enum BuyPhase {
   INPUT = 0,
@@ -51,11 +51,11 @@ const PROGRESS_STEPS = [
 const PHASE_DESCRIPTIONS: Record<number, string | ((ctx: { isPending: boolean }) => string)> = {
   [BuyPhase.APPROVE]: (ctx) => ctx.isPending ? 'Confirm USDC approval in wallet...' : 'Waiting for approval confirmation...',
   [BuyPhase.SUBMIT]: (ctx) => ctx.isPending ? 'Confirm buy order in wallet...' : 'Waiting for Arb tx confirmation...',
-  [BuyPhase.RELAY]: () => 'Issuer consensus — relaying order to L3...',
-  [BuyPhase.COLLATERAL]: () => 'Bridging USDC collateral to L3 custody...',
-  [BuyPhase.FILL]: () => 'Batching order — AP executing trades on CEX...',
+  [BuyPhase.RELAY]: () => 'Issuer consensus — bridging USDC & relaying order to L3...',
+  [BuyPhase.COLLATERAL]: () => 'Batching + recording collateral move + bridging back to vault...',
+  [BuyPhase.FILL]: () => 'AP executing trades on CEX — confirming fills...',
   [BuyPhase.MINT]: () => 'Fill confirmed — minting ITP shares on L3...',
-  [BuyPhase.BRIDGE]: () => 'Bridging shares back to Arbitrum...',
+  [BuyPhase.BRIDGE]: () => 'Minting BridgedITP on Arbitrum...',
   [BuyPhase.DONE]: () => 'Complete! Shares received on Arbitrum.',
 }
 
