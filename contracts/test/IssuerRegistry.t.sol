@@ -553,13 +553,17 @@ contract IssuerRegistryTest is TestHelper {
 
         vm.startPrank(admin);
         for (uint256 i = 0; i < 20; i++) {
-            // Generate real 128-byte G2 pubkey from deterministic seed
-            pubkeys[i] = blsPubkey(uint8(i));
-            issuerIds[i] = registry.addIssuer(makeAddr(string(abi.encodePacked("issuer", i))), bytes32(i), pubkeys[i]);
+            (issuerIds[i], pubkeys[i]) = _registerSingleIssuer(i);
         }
         vm.stopPrank();
 
         return (issuerIds, pubkeys);
+    }
+
+    /// @dev Inner helper to reduce stack depth in _setupIssuersForRotation loop
+    function _registerSingleIssuer(uint256 i) internal returns (uint256 id, bytes memory pk) {
+        pk = blsPubkey(uint8(i));
+        id = registry.addIssuer(makeAddr(string(abi.encodePacked("issuer", i))), bytes32(i), pk);
     }
 
     // ============ requestKeyRotation Tests ============
