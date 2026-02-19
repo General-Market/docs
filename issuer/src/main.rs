@@ -654,11 +654,11 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                     };
 
                     // Cross-chain order processing
-                    if let (Some(ref arb_reader), Some(ref orchestrator)) =
-                        (&arbitrum_reader_for_task, &bridge_orchestrator_for_task)
+                    if let (Some(ref arb_reader), Some(ref orchestrator), Some(ref arb_writer)) =
+                        (&arbitrum_reader_for_task, &bridge_orchestrator_for_task, &arbitrum_writer_for_task)
                     {
                         run_cross_chain_processing(
-                            &protocol, arb_reader, orchestrator,
+                            &protocol, arb_reader, orchestrator, arb_writer,
                             &consensus_chain_reader,
                             current_cycle, node_index_for_task, consensus_config.num_issuers,
                             &data_node_url_for_task, &itp_id_for_task,
@@ -996,8 +996,8 @@ async fn run_itp_creation_phase<P, W, K, PF>(
                                 if let Some(itp_id) = l3_itp_id {
                                     const RECEIPT_TIMEOUT_SECS: u64 = 60;
                                     match arb_writer.complete_create_itp_and_wait(
-                                        result.nonce, itp_id, result.signer_bitmap,
-                                        result.aggregated_pubkey.clone(), result.aggregated_signature.clone(),
+                                        result.nonce, itp_id,
+                                        result.aggregated_signature.clone(),
                                         RECEIPT_TIMEOUT_SECS,
                                     ).await {
                                         Ok(receipt) => {
@@ -1027,6 +1027,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
     protocol: &Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
     arb_reader: &Arc<issuer::ArbitrumChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
     orchestrator: &Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
+    arb_writer: &Arc<issuer::ArbitrumChainWriter>,
     chain_reader: &Arc<dyn common::traits::ChainReader>,
     current_cycle: u64,
     node_index: u8,
@@ -1090,6 +1091,14 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                 info!(order_id = %order.order_id, signer_count = submit_result.signature_count, "Submit order consensus completed");
                                 // Mark as processed so it won't be retried
                                 arb_reader.mark_order_processed(chain_id, order.order_id).await;
+
+                                // Followers: advance orchestrator to terminal status so the stale
+                                // order watchdog doesn't reset and create an infinite retry loop.
+                                // (Leader status is already advanced by execute_bridge/execute_submit.)
+                                if !am_leader {
+                                    let orch_write = orchestrator.write().await;
+                                    orch_write.set_order_status(order.order_id, issuer::BridgeOrderStatus::Filled).await;
+                                }
                             }
                             Err(e) => {
                                 warn!(order_id = %order.order_id, error = %e, "Submit order consensus failed");
@@ -1128,156 +1137,64 @@ async fn run_cross_chain_processing<P, W, K, PF>(
 
         match protocol.run_batch_confirm_phase(current_cycle, submitted_orders.clone(), prices, batch_am_leader).await {
             Ok(batch_result) => {
-                info!(cycle = current_cycle, signer_count = batch_result.signature_count, "Step 3a: Batch confirmation completed");
+                info!(cycle = current_cycle, signer_count = batch_result.signature_count, "Batch confirmation completed");
 
-                let total_amount = {
-                    let o = orchestrator.read().await;
-                    let mut total = ethers::types::U256::zero();
-                    for order_id in &submitted_orders {
-                        if let Some(amt) = o.get_order_amount(order_id).await {
-                            total = total + amt;
-                        }
-                    }
-                    total
-                };
-
-                // Step 3b: Record collateral move (L3→Arb for BUY)
-                let collateral_registry_addr = {
-                    let o = orchestrator.read().await;
-                    o.config().collateral_registry
-                };
-                let l3_chain_id = {
-                    let o = orchestrator.read().await;
-                    ethers::types::U256::from(o.config().l3_chain_id)
-                };
-                let arb_chain_id = {
-                    let o = orchestrator.read().await;
-                    ethers::types::U256::from(o.config().arbitrum_chain_id)
-                };
-
+                // Emit per-asset trades for cross-chain buy orders
                 if let Ok(itp_h256) = itp_id_for_task.parse::<ethers::types::H256>() {
-                    if collateral_registry_addr != ethers::types::Address::zero() {
-                        match protocol.run_record_collateral_move_phase(
-                            current_cycle, itp_h256, l3_chain_id, arb_chain_id,
-                            total_amount, 0u8 /* BUY */, collateral_registry_addr, batch_am_leader,
-                        ).await {
-                            Ok(cm_result) => {
-                                info!(cycle = current_cycle, signer_count = cm_result.signature_count, "Step 3b: Collateral move recorded");
-                            }
-                            Err(e) => {
-                                warn!(cycle = current_cycle, error = %e, "Step 3b: Record collateral move failed (continuing)");
-                            }
+                    let asset_trade_orders: Vec<(ethers::types::H256, u8, ethers::types::U256)> = {
+                        let o = orchestrator.read().await;
+                        let mut trades = Vec::new();
+                        for order_id in &submitted_orders {
+                            let amount = o.get_order_amount(order_id).await
+                                .unwrap_or(ethers::types::U256::exp10(18));
+                            trades.push((itp_h256, 0u8 /* BUY */, amount));
                         }
-                    } else {
-                        debug!(cycle = current_cycle, "Step 3b: CollateralRegistry not configured, skipping recordCollateralMove");
+                        trades
+                    };
+
+                    match protocol.run_asset_trades_phase(current_cycle, &asset_trade_orders, chain_reader, batch_am_leader, quote_tokens.as_ref()).await {
+                        Ok(at_result) => {
+                            info!(
+                                cycle = current_cycle,
+                                signer_count = at_result.signature_count,
+                                "Cross-chain asset trades emitted"
+                            );
+                        }
+                        Err(e) => {
+                            warn!(cycle = current_cycle, error = %e, "Asset trades emission failed (fills will proceed)");
+                        }
                     }
                 }
 
-                // Step 4: Bridge L3→Arb
-                match protocol.run_bridge_l3_to_arb_phase(current_cycle, submitted_orders.clone(), total_amount, batch_am_leader).await {
-                    Ok(l3_to_arb_result) => {
-                        info!(cycle = current_cycle, signer_count = l3_to_arb_result.signature_count, "Step 4: L3→Arb bridge completed");
-
-                        // Step 5: Release from BLSCustody to MockBitgetVault
-                        match protocol.run_release_to_vault_phase(current_cycle, submitted_orders.clone(), total_amount, batch_am_leader).await {
-                            Ok(release_result) => {
-                                info!(cycle = current_cycle, signer_count = release_result.signature_count, "Step 5: Custody release completed");
-
-                                // Step 6: Emit per-asset trades (after USDC in vault)
-                                if let Ok(itp_h256) = itp_id_for_task.parse::<ethers::types::H256>() {
-                                    let asset_trade_orders: Vec<(ethers::types::H256, u8, ethers::types::U256)> = {
-                                        let o = orchestrator.read().await;
-                                        let mut trades = Vec::new();
-                                        for order_id in &submitted_orders {
-                                            let amount = o.get_order_amount(order_id).await
-                                                .unwrap_or(ethers::types::U256::exp10(18));
-                                            trades.push((itp_h256, 0u8 /* BUY */, amount));
-                                        }
-                                        trades
-                                    };
-
-                                    match protocol.run_asset_trades_phase(current_cycle, &asset_trade_orders, chain_reader, batch_am_leader, quote_tokens.as_ref()).await {
-                                        Ok(at_result) => {
-                                            info!(cycle = current_cycle, signer_count = at_result.signature_count, "Step 6: Asset trades emitted");
-                                        }
-                                        Err(e) => {
-                                            warn!(cycle = current_cycle, error = %e, "Step 6: Asset trades failed (fills will proceed)");
-                                        }
-                                    }
-                                }
-
-                                // Step 7: Confirm fills
-                                let fills: Vec<Fill> = {
-                                    let o = orchestrator.read().await;
-                                    let mut fills = Vec::new();
-                                    for order_id in &submitted_orders {
-                                        let amount = o.get_order_amount(order_id).await
-                                            .unwrap_or(ethers::types::U256::exp10(18));
-                                        fills.push(Fill {
-                                            order_id: *order_id,
-                                            fill_price: nav,
-                                            fill_amount: amount,
-                                        });
-                                    }
-                                    fills
-                                };
-
-                                match protocol.run_fills_confirm_phase(current_cycle, fills, batch_am_leader).await {
-                                    Ok(fills_result) => {
-                                        info!(cycle = current_cycle, signer_count = fills_result.signature_count, "Step 7: Fills confirmed");
-
-                                        // Step 8: Mint BridgedITP shares on Arbitrum
-                                        let bridge_proxy_addr = {
-                                            let o = orchestrator.read().await;
-                                            o.config().bridge_proxy
-                                        };
-
-                                        if bridge_proxy_addr != ethers::types::Address::zero() {
-                                            if let Ok(itp_h256) = itp_id_for_task.parse::<ethers::types::H256>() {
-                                                let o = orchestrator.read().await;
-                                                for order_id in &submitted_orders {
-                                                    if let Some(mapping) = o.get_order_mapping(order_id).await {
-                                                        let order_amount = o.get_order_amount(order_id).await
-                                                            .unwrap_or(ethers::types::U256::exp10(18));
-                                                        // shares = amount * 1e18 / nav (proportional to fill)
-                                                        let shares = if nav > ethers::types::U256::zero() {
-                                                            order_amount.saturating_mul(ethers::types::U256::exp10(18)) / nav
-                                                        } else {
-                                                            order_amount
-                                                        };
-
-                                                        match protocol.run_mint_bridged_shares_phase(
-                                                            current_cycle, itp_h256, mapping.original_user,
-                                                            shares, bridge_proxy_addr, batch_am_leader,
-                                                        ).await {
-                                                            Ok(mint_result) => {
-                                                                info!(
-                                                                    cycle = current_cycle,
-                                                                    order_id = %order_id,
-                                                                    user = ?mapping.original_user,
-                                                                    shares = %shares,
-                                                                    signer_count = mint_result.signature_count,
-                                                                    "Step 8: BridgedITP minted"
-                                                                );
-                                                            }
-                                                            Err(e) => {
-                                                                warn!(cycle = current_cycle, order_id = %order_id, error = %e, "Step 8: Mint bridged shares failed");
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        } else {
-                                            debug!(cycle = current_cycle, "Step 8: BridgeProxy not configured, skipping mintBridgedShares");
-                                        }
-                                    }
-                                    Err(e) => { warn!(cycle = current_cycle, error = %e, "Step 7: Fills confirmation failed"); }
-                                }
-                            }
-                            Err(e) => { warn!(cycle = current_cycle, error = %e, "Step 5: Custody release failed"); }
+                // completeBuyOrder: ArbBridgeCustody → vault
+                if batch_am_leader {
+                    let vault = orchestrator.read().await.config().bitget_vault;
+                    for order_id in &submitted_orders {
+                        match arb_writer.complete_buy_order(*order_id, vault, vec![]).await {
+                            Ok(tx_hash) => info!(?tx_hash, order_id = %order_id, "completeBuyOrder submitted"),
+                            Err(e) => warn!(error = %e, order_id = %order_id, "completeBuyOrder failed"),
                         }
                     }
-                    Err(e) => { warn!(cycle = current_cycle, error = %e, "Step 4: L3→Arb bridge failed"); }
+                }
+
+                let fills: Vec<Fill> = {
+                    let o = orchestrator.read().await;
+                    let mut fills = Vec::new();
+                    for order_id in &submitted_orders {
+                        let amount = o.get_order_amount(order_id).await
+                            .unwrap_or(ethers::types::U256::exp10(18));
+                        fills.push(Fill {
+                            order_id: *order_id,
+                            fill_price: nav,
+                            fill_amount: amount,
+                        });
+                    }
+                    fills
+                };
+
+                match protocol.run_fills_confirm_phase(current_cycle, fills, batch_am_leader).await {
+                    Ok(fills_result) => { info!(cycle = current_cycle, signer_count = fills_result.signature_count, "Fills confirmed"); }
+                    Err(e) => { warn!(cycle = current_cycle, error = %e, "Fills confirmation failed"); }
                 }
             }
             Err(e) => {
@@ -1628,6 +1545,15 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
             am_leader,
             "Phase C: Completing sell order on Arbitrum"
         );
+
+        // fundSellOrder: vault → ArbBridgeCustody (pull USDC before completeSellOrder pays user)
+        if am_leader {
+            let vault = orchestrator.read().await.config().bitget_vault;
+            match arb_writer.fund_sell_order(order_id, vault, usdc_proceeds, vec![]).await {
+                Ok(tx_hash) => info!(?tx_hash, order_id = %order_id, "fundSellOrder submitted"),
+                Err(e) => warn!(error = %e, order_id = %order_id, "fundSellOrder failed"),
+            }
+        }
 
         match protocol.run_complete_sell_order_phase(order_id, usdc_proceeds, am_leader).await {
             Ok(result) => {

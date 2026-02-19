@@ -1,5 +1,16 @@
 # Design Decision Backlog
 
+## Session: 20260219-2300-p7r1
+
+- [DECISION] Sim pipeline refactor: replaced flat FNG→DOM override chain with 6-stage pipeline (trigger → params → eligibility → top-N+weights → modifiers → trades). Explicit DOM > FNG precedence prevents silent overwrites.
+- [DECISION] Removed all GitHub filter/weighting code from simulation pipeline (GithubSnap struct, GithubFilter, 6 Weighting variants, apply_github_filter, github_metrics/history in cache). DB table + collector remain for potential future use.
+- [DECISION] VC eligibility moved pre-top-N (Stage 3) instead of post-weight zeroing. Coins failing VC criteria now excluded before selection, not after. Fallback: if <5 pass, relax VC filter.
+- [DECISION] VcEligibility parsed once pre-loop (not per-rebalance) — HashSet construction amortized across all dates.
+- [DECISION] FNG contrarian + DOM weighted_split stacking fix: contrarian skips BTC index when weighted_split active, so BTC weight set by split isn't disrupted by volatility adjustment.
+- [DECISION] trend_filter DOM mode implemented: Rising DOM → top_n=5 + BTC≥40% weight clamp. Falls through to base params when DOM flat/falling.
+- [DECISION] Sweep variants now propagate all overlay params (FNG/DOM/VC) instead of using ..Default::default() which silently dropped them.
+- [DECISION] Cache key includes VC params (vc_mode, vc_investors, vc_min_amount_m, vc_round_types) to prevent wrong cached results for different VC configurations.
+
 ## Session: 20260219-2100-q8m4
 
 - [DECISION] BLS unification via BLSVerifier abstract contract (EigenLayer BLSSignatureChecker pattern). Single `_verifyBLS(messageHash, sig)` reads aggregated pubkey from IssuerRegistry. All 11 BLS-using contracts inherit it. Eliminates 6 different inline verification patterns.
@@ -7,6 +18,7 @@
 - [DECISION] No backward compatibility concern - breaking interface changes (removing aggregatedPubkey/signerBitmap params from BridgeProxy) are acceptable per project policy.
 - [DECISION] BridgeProxy.completeCreateItp and rebalance: remove signerBitmap + aggregatedPubkey params entirely. Threshold enforcement happens at consensus/issuer level, not contract level.
 - [DECISION] FeeRegistry/AssetPairRegistry/CollateralRegistry: remove local aggregatedPubkey storage + setAggregatedPubkey(). Read from IssuerRegistry via BLSVerifier instead.
+- [DECISION] Rust issuer arbitrum_writer.rs: Updated ABI encoding to match new BridgeProxy signatures. completeCreateItp(uint256,bytes32,bytes) and completeRebalance(uint256,bytes) — removed signer_bitmap and aggregated_pubkey from all function signatures and call sites. Selector auto-computed by ethers-rs from ABI definition.
 
 ## Session: 20260219-1530-b2x7
 

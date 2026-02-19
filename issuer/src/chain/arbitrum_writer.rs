@@ -125,16 +125,14 @@ impl ArbitrumChainWriter {
 
     /// Build a completeCreateItp transaction
     ///
-    /// Encodes: BridgeProxy.completeCreateItp(nonce, signerBitmap, aggregatedPubkey, blsSignature)
+    /// Encodes: BridgeProxy.completeCreateItp(nonce, orbitItpId, blsSignature)
     fn build_complete_create_itp_tx(
         &self,
         nonce: U256,
         orbit_itp_id: H256,
-        signer_bitmap: U256,
-        aggregated_pubkey: Vec<u8>,
         bls_signature: Vec<u8>,
     ) -> TypedTransaction {
-        // Function signature: completeCreateItp(uint256,bytes32,uint256,bytes,bytes)
+        // Function signature: completeCreateItp(uint256,bytes32,bytes)
         let function = ethers::abi::Function {
             name: "completeCreateItp".to_string(),
             inputs: vec![
@@ -146,16 +144,6 @@ impl ArbitrumChainWriter {
                 ethers::abi::Param {
                     name: "orbitItpId".to_string(),
                     kind: ethers::abi::ParamType::FixedBytes(32),
-                    internal_type: None,
-                },
-                ethers::abi::Param {
-                    name: "signerBitmap".to_string(),
-                    kind: ethers::abi::ParamType::Uint(256),
-                    internal_type: None,
-                },
-                ethers::abi::Param {
-                    name: "aggregatedPubkey".to_string(),
-                    kind: ethers::abi::ParamType::Bytes,
                     internal_type: None,
                 },
                 ethers::abi::Param {
@@ -177,8 +165,6 @@ impl ArbitrumChainWriter {
         let tokens = vec![
             ethers::abi::Token::Uint(nonce),
             ethers::abi::Token::FixedBytes(orbit_itp_id.as_bytes().to_vec()),
-            ethers::abi::Token::Uint(signer_bitmap),
-            ethers::abi::Token::Bytes(aggregated_pubkey),
             ethers::abi::Token::Bytes(bls_signature),
         ];
 
@@ -197,16 +183,14 @@ impl ArbitrumChainWriter {
     /// Submit completeCreateItp transaction to BridgeProxy
     ///
     /// This finalizes cross-chain ITP creation by:
-    /// 1. Submitting the signer bitmap and aggregated pubkey
-    /// 2. Submitting the aggregated BLS signature
-    /// 3. BridgeProxy atomically creates ITP on L3 via Index.createITP()
-    /// 4. Deploying the BridgedITP token on Arbitrum
-    /// 5. Setting up bidirectional mappings
+    /// 1. Submitting the aggregated BLS signature
+    /// 2. BridgeProxy atomically creates ITP on L3 via Index.createITP()
+    /// 3. Deploying the BridgedITP token on Arbitrum
+    /// 4. Setting up bidirectional mappings
     ///
     /// # Arguments
     /// * `nonce` - Request nonce from BridgeProxy.requestCreateItp()
-    /// * `signer_bitmap` - Bitmap indicating which issuers signed (bit i = issuer i signed)
-    /// * `aggregated_pubkey` - Aggregated G2 pubkey of signers (128 bytes)
+    /// * `orbit_itp_id` - ITP ID from L3
     /// * `bls_signature` - Aggregated BLS signature (threshold)
     ///
     /// # Returns
@@ -219,15 +203,11 @@ impl ArbitrumChainWriter {
         &self,
         nonce: U256,
         orbit_itp_id: H256,
-        signer_bitmap: U256,
-        aggregated_pubkey: Vec<u8>,
         bls_signature: Vec<u8>,
     ) -> Result<H256, ArbitrumWriterError> {
         info!(
             nonce = %nonce,
             orbit_itp_id = ?orbit_itp_id,
-            signer_bitmap = %signer_bitmap,
-            pubkey_len = aggregated_pubkey.len(),
             sig_len = bls_signature.len(),
             "Submitting completeCreateItp transaction"
         );
@@ -249,8 +229,6 @@ impl ArbitrumChainWriter {
             let mut tx = self.build_complete_create_itp_tx(
                 nonce,
                 orbit_itp_id,
-                signer_bitmap,
-                aggregated_pubkey.clone(),
                 bls_signature.clone(),
             );
             tx.set_nonce(tx_nonce);
@@ -368,8 +346,7 @@ impl ArbitrumChainWriter {
     ///
     /// # Arguments
     /// * `nonce` - Request nonce
-    /// * `signer_bitmap` - Bitmap indicating which issuers signed
-    /// * `aggregated_pubkey` - Aggregated G2 pubkey of signers (128 bytes)
+    /// * `orbit_itp_id` - ITP ID from L3
     /// * `bls_signature` - Aggregated BLS signature
     /// * `timeout_secs` - Receipt wait timeout
     ///
@@ -379,13 +356,11 @@ impl ArbitrumChainWriter {
         &self,
         nonce: U256,
         orbit_itp_id: H256,
-        signer_bitmap: U256,
-        aggregated_pubkey: Vec<u8>,
         bls_signature: Vec<u8>,
         timeout_secs: u64,
     ) -> Result<TransactionReceipt, ArbitrumWriterError> {
         let tx_hash = self
-            .complete_create_itp(nonce, orbit_itp_id, signer_bitmap, aggregated_pubkey, bls_signature)
+            .complete_create_itp(nonce, orbit_itp_id, bls_signature)
             .await?;
 
         let receipt = self.wait_for_receipt(tx_hash, timeout_secs).await?;
@@ -410,32 +385,20 @@ impl ArbitrumChainWriter {
 
     /// Build a completeRebalance transaction
     ///
-    /// Encodes: BridgeProxy.completeRebalance(nonce, signerBitmap, aggregatedPubkey, blsSignature)
+    /// Encodes: BridgeProxy.completeRebalance(nonce, blsSignature)
     fn build_complete_rebalance_tx(
         &self,
         nonce: U256,
-        signer_bitmap: U256,
-        aggregated_pubkey: Vec<u8>,
         bls_signature: Vec<u8>,
     ) -> TypedTransaction {
-        // Function signature: completeRebalance(uint256,uint256,bytes,bytes)
-        // Selector = keccak256("completeRebalance(uint256,uint256,bytes,bytes)")[:4]
+        // Function signature: completeRebalance(uint256,bytes)
+        // Selector = keccak256("completeRebalance(uint256,bytes)")[:4]
         let function = ethers::abi::Function {
             name: "completeRebalance".to_string(),
             inputs: vec![
                 ethers::abi::Param {
                     name: "nonce".to_string(),
                     kind: ethers::abi::ParamType::Uint(256),
-                    internal_type: None,
-                },
-                ethers::abi::Param {
-                    name: "signerBitmap".to_string(),
-                    kind: ethers::abi::ParamType::Uint(256),
-                    internal_type: None,
-                },
-                ethers::abi::Param {
-                    name: "aggregatedPubkey".to_string(),
-                    kind: ethers::abi::ParamType::Bytes,
                     internal_type: None,
                 },
                 ethers::abi::Param {
@@ -452,8 +415,6 @@ impl ArbitrumChainWriter {
 
         let tokens = vec![
             ethers::abi::Token::Uint(nonce),
-            ethers::abi::Token::Uint(signer_bitmap),
-            ethers::abi::Token::Bytes(aggregated_pubkey),
             ethers::abi::Token::Bytes(bls_signature),
         ];
 
@@ -472,14 +433,11 @@ impl ArbitrumChainWriter {
     /// Submit completeRebalance transaction to BridgeProxy
     ///
     /// This finalizes cross-chain ITP rebalance by:
-    /// 1. Submitting the signer bitmap and aggregated pubkey
-    /// 2. Submitting the aggregated BLS signature
-    /// 3. BridgeProxy atomically rebalances ITP on L3 via Index.updateWeights()
+    /// 1. Submitting the aggregated BLS signature
+    /// 2. BridgeProxy atomically rebalances ITP on L3 via Index.updateWeights()
     ///
     /// # Arguments
     /// * `nonce` - Request nonce from BridgeProxy.requestRebalance()
-    /// * `signer_bitmap` - Bitmap indicating which issuers signed (bit i = issuer i signed)
-    /// * `aggregated_pubkey` - Aggregated G2 pubkey of signers (128 bytes)
     /// * `bls_signature` - Aggregated BLS signature (threshold)
     ///
     /// # Returns
@@ -491,14 +449,10 @@ impl ArbitrumChainWriter {
     pub async fn complete_rebalance(
         &self,
         nonce: U256,
-        signer_bitmap: U256,
-        aggregated_pubkey: Vec<u8>,
         bls_signature: Vec<u8>,
     ) -> Result<H256, ArbitrumWriterError> {
         info!(
             nonce = %nonce,
-            signer_bitmap = %signer_bitmap,
-            pubkey_len = aggregated_pubkey.len(),
             sig_len = bls_signature.len(),
             "Submitting completeRebalance transaction"
         );
@@ -519,8 +473,6 @@ impl ArbitrumChainWriter {
             // Build the transaction with fresh nonce
             let mut tx = self.build_complete_rebalance_tx(
                 nonce,
-                signer_bitmap,
-                aggregated_pubkey.clone(),
                 bls_signature.clone(),
             );
             tx.set_nonce(tx_nonce);
@@ -613,8 +565,6 @@ impl ArbitrumChainWriter {
     ///
     /// # Arguments
     /// * `nonce` - Request nonce
-    /// * `signer_bitmap` - Bitmap indicating which issuers signed
-    /// * `aggregated_pubkey` - Aggregated G2 pubkey of signers (128 bytes)
     /// * `bls_signature` - Aggregated BLS signature
     /// * `timeout_secs` - Receipt wait timeout
     ///
@@ -623,13 +573,11 @@ impl ArbitrumChainWriter {
     pub async fn complete_rebalance_and_wait(
         &self,
         nonce: U256,
-        signer_bitmap: U256,
-        aggregated_pubkey: Vec<u8>,
         bls_signature: Vec<u8>,
         timeout_secs: u64,
     ) -> Result<TransactionReceipt, ArbitrumWriterError> {
         let tx_hash = self
-            .complete_rebalance(nonce, signer_bitmap, aggregated_pubkey, bls_signature)
+            .complete_rebalance(nonce, bls_signature)
             .await?;
 
         let receipt = self.wait_for_receipt(tx_hash, timeout_secs).await?;
@@ -971,6 +919,339 @@ impl ArbitrumChainWriter {
             max_attempts
         )))
     }
+
+    // ============ Buy/Sell Order Custody Methods ============
+
+    /// Build a completeBuyOrder transaction
+    ///
+    /// Encodes: ArbBridgeCustody.completeBuyOrder(orderId, vault, blsSignature)
+    fn build_complete_buy_order_tx(
+        &self,
+        order_id: U256,
+        vault: Address,
+        bls_signature: Vec<u8>,
+    ) -> TypedTransaction {
+        let function = ethers::abi::Function {
+            name: "completeBuyOrder".to_string(),
+            inputs: vec![
+                ethers::abi::Param {
+                    name: "orderId".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "vault".to_string(),
+                    kind: ethers::abi::ParamType::Address,
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "blsSignature".to_string(),
+                    kind: ethers::abi::ParamType::Bytes,
+                    internal_type: None,
+                },
+            ],
+            outputs: vec![],
+            #[allow(deprecated)]
+            constant: None,
+            state_mutability: ethers::abi::StateMutability::NonPayable,
+        };
+
+        let tokens = vec![
+            ethers::abi::Token::Uint(order_id),
+            ethers::abi::Token::Address(vault),
+            ethers::abi::Token::Bytes(bls_signature),
+        ];
+
+        let call_data = function
+            .encode_input(&tokens)
+            .expect("ABI encoding should not fail");
+
+        let mut tx = TypedTransaction::default();
+        tx.set_to(self.config.arb_custody_address);
+        tx.set_data(call_data.into());
+        tx.set_chain_id(self.config.chain_id);
+
+        tx
+    }
+
+    /// Submit completeBuyOrder transaction to ArbBridgeCustody
+    ///
+    /// Transfers escrowed USDC from custody to vault after L3 order processing.
+    ///
+    /// # Arguments
+    /// * `order_id` - Cross-chain order ID
+    /// * `vault` - Destination vault address for USDC
+    /// * `bls_signature` - Aggregated BLS signature
+    ///
+    /// # Returns
+    /// Transaction hash on success
+    pub async fn complete_buy_order(
+        &self,
+        order_id: U256,
+        vault: Address,
+        bls_signature: Vec<u8>,
+    ) -> Result<H256, ArbitrumWriterError> {
+        info!(
+            order_id = %order_id,
+            vault = ?vault,
+            sig_len = bls_signature.len(),
+            "Submitting completeBuyOrder transaction"
+        );
+
+        let max_attempts = self.config.retry_config.max_retries + 1;
+
+        for attempt in 0..max_attempts {
+            if let Err(e) = self.nonce_manager.resync().await {
+                debug!(attempt, error = %e, "Nonce resync failed, using cached value");
+            }
+
+            let tx_nonce = U256::from(self.nonce_manager.current_nonce());
+            let _ = self.nonce_manager.get_next_nonce().await;
+
+            let mut tx = self.build_complete_buy_order_tx(
+                order_id,
+                vault,
+                bls_signature.clone(),
+            );
+            tx.set_nonce(tx_nonce);
+
+            let gas = match self.gas_estimator.estimate_gas(&tx).await {
+                Ok(g) => g,
+                Err(e) => {
+                    if attempt < max_attempts - 1 {
+                        debug!(attempt, error = %e, "Gas estimation failed, retrying");
+                        let delay = self.config.retry_config.delay_for_attempt(attempt);
+                        tokio::time::sleep(delay).await;
+                        continue;
+                    }
+                    return Err(ArbitrumWriterError::GasEstimationError(e.to_string()));
+                }
+            };
+            tx.set_gas(gas);
+
+            let gas_price = self
+                .gas_estimator
+                .get_gas_price()
+                .await
+                .map_err(|e| ArbitrumWriterError::GasEstimationError(e.to_string()))?;
+
+            if let TypedTransaction::Eip1559(ref mut eip1559_tx) = tx {
+                gas_price.apply_to_tx(eip1559_tx);
+            }
+
+            debug!(
+                attempt,
+                nonce = %tx_nonce,
+                gas_limit = %gas,
+                "Attempting completeBuyOrder submission"
+            );
+
+            match self.client.send_transaction(tx, None).await {
+                Ok(pending_tx) => {
+                    let tx_hash = pending_tx.tx_hash();
+                    info!(
+                        tx_hash = ?tx_hash,
+                        order_id = %order_id,
+                        tx_nonce = %tx_nonce,
+                        attempt,
+                        "completeBuyOrder transaction submitted"
+                    );
+                    self.nonce_manager.track_pending(tx_nonce, tx_hash);
+                    return Ok(tx_hash);
+                }
+                Err(e) => {
+                    let err_str = e.to_string().to_lowercase();
+                    let is_nonce_error = err_str.contains("nonce too low")
+                        || err_str.contains("nonce has already been used")
+                        || err_str.contains("replacement transaction underpriced");
+
+                    if is_nonce_error && attempt < max_attempts - 1 {
+                        debug!(attempt, error = %e, "Nonce-related error, will resync and retry");
+                        let delay = self.config.retry_config.delay_for_attempt(attempt);
+                        tokio::time::sleep(delay).await;
+                        continue;
+                    }
+                    return Err(ArbitrumWriterError::TransactionError(e.to_string()));
+                }
+            }
+        }
+
+        Err(ArbitrumWriterError::RetryExhausted(format!(
+            "Max attempts ({}) exceeded for completeBuyOrder",
+            max_attempts
+        )))
+    }
+
+    /// Build a fundSellOrder transaction
+    ///
+    /// Encodes: ArbBridgeCustody.fundSellOrder(orderId, vault, usdcAmount, blsSignature)
+    fn build_fund_sell_order_tx(
+        &self,
+        order_id: U256,
+        vault: Address,
+        usdc_amount: U256,
+        bls_signature: Vec<u8>,
+    ) -> TypedTransaction {
+        let function = ethers::abi::Function {
+            name: "fundSellOrder".to_string(),
+            inputs: vec![
+                ethers::abi::Param {
+                    name: "orderId".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "vault".to_string(),
+                    kind: ethers::abi::ParamType::Address,
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "usdcAmount".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "blsSignature".to_string(),
+                    kind: ethers::abi::ParamType::Bytes,
+                    internal_type: None,
+                },
+            ],
+            outputs: vec![],
+            #[allow(deprecated)]
+            constant: None,
+            state_mutability: ethers::abi::StateMutability::NonPayable,
+        };
+
+        let tokens = vec![
+            ethers::abi::Token::Uint(order_id),
+            ethers::abi::Token::Address(vault),
+            ethers::abi::Token::Uint(usdc_amount),
+            ethers::abi::Token::Bytes(bls_signature),
+        ];
+
+        let call_data = function
+            .encode_input(&tokens)
+            .expect("ABI encoding should not fail");
+
+        let mut tx = TypedTransaction::default();
+        tx.set_to(self.config.arb_custody_address);
+        tx.set_data(call_data.into());
+        tx.set_chain_id(self.config.chain_id);
+
+        tx
+    }
+
+    /// Submit fundSellOrder transaction to ArbBridgeCustody
+    ///
+    /// Pulls USDC from vault into custody before completeSellOrder pays user.
+    ///
+    /// # Arguments
+    /// * `order_id` - Sell order ID
+    /// * `vault` - Source vault address to pull USDC from
+    /// * `usdc_amount` - Amount of USDC to pull (6 decimals)
+    /// * `bls_signature` - Aggregated BLS signature
+    ///
+    /// # Returns
+    /// Transaction hash on success
+    pub async fn fund_sell_order(
+        &self,
+        order_id: U256,
+        vault: Address,
+        usdc_amount: U256,
+        bls_signature: Vec<u8>,
+    ) -> Result<H256, ArbitrumWriterError> {
+        info!(
+            order_id = %order_id,
+            vault = ?vault,
+            usdc_amount = %usdc_amount,
+            sig_len = bls_signature.len(),
+            "Submitting fundSellOrder transaction"
+        );
+
+        let max_attempts = self.config.retry_config.max_retries + 1;
+
+        for attempt in 0..max_attempts {
+            if let Err(e) = self.nonce_manager.resync().await {
+                debug!(attempt, error = %e, "Nonce resync failed, using cached value");
+            }
+
+            let tx_nonce = U256::from(self.nonce_manager.current_nonce());
+            let _ = self.nonce_manager.get_next_nonce().await;
+
+            let mut tx = self.build_fund_sell_order_tx(
+                order_id,
+                vault,
+                usdc_amount,
+                bls_signature.clone(),
+            );
+            tx.set_nonce(tx_nonce);
+
+            let gas = match self.gas_estimator.estimate_gas(&tx).await {
+                Ok(g) => g,
+                Err(e) => {
+                    if attempt < max_attempts - 1 {
+                        debug!(attempt, error = %e, "Gas estimation failed, retrying");
+                        let delay = self.config.retry_config.delay_for_attempt(attempt);
+                        tokio::time::sleep(delay).await;
+                        continue;
+                    }
+                    return Err(ArbitrumWriterError::GasEstimationError(e.to_string()));
+                }
+            };
+            tx.set_gas(gas);
+
+            let gas_price = self
+                .gas_estimator
+                .get_gas_price()
+                .await
+                .map_err(|e| ArbitrumWriterError::GasEstimationError(e.to_string()))?;
+
+            if let TypedTransaction::Eip1559(ref mut eip1559_tx) = tx {
+                gas_price.apply_to_tx(eip1559_tx);
+            }
+
+            debug!(
+                attempt,
+                nonce = %tx_nonce,
+                gas_limit = %gas,
+                "Attempting fundSellOrder submission"
+            );
+
+            match self.client.send_transaction(tx, None).await {
+                Ok(pending_tx) => {
+                    let tx_hash = pending_tx.tx_hash();
+                    info!(
+                        tx_hash = ?tx_hash,
+                        order_id = %order_id,
+                        tx_nonce = %tx_nonce,
+                        attempt,
+                        "fundSellOrder transaction submitted"
+                    );
+                    self.nonce_manager.track_pending(tx_nonce, tx_hash);
+                    return Ok(tx_hash);
+                }
+                Err(e) => {
+                    let err_str = e.to_string().to_lowercase();
+                    let is_nonce_error = err_str.contains("nonce too low")
+                        || err_str.contains("nonce has already been used")
+                        || err_str.contains("replacement transaction underpriced");
+
+                    if is_nonce_error && attempt < max_attempts - 1 {
+                        debug!(attempt, error = %e, "Nonce-related error, will resync and retry");
+                        let delay = self.config.retry_config.delay_for_attempt(attempt);
+                        tokio::time::sleep(delay).await;
+                        continue;
+                    }
+                    return Err(ArbitrumWriterError::TransactionError(e.to_string()));
+                }
+            }
+        }
+
+        Err(ArbitrumWriterError::RetryExhausted(format!(
+            "Max attempts ({}) exceeded for fundSellOrder",
+            max_attempts
+        )))
+    }
 }
 
 /// Errors for ArbitrumChainWriter operations
@@ -1030,8 +1311,6 @@ mod tests {
         // We just need to verify the transaction encoding
         let nonce = U256::from(42);
         let orbit_itp_id = H256::from([0x01u8; 32]);
-        let signer_bitmap = U256::from(0b111); // First 3 issuers signed
-        let aggregated_pubkey = vec![0xAAu8; 128]; // G2 pubkey (128 bytes)
         let bls_signature = vec![0x01, 0x02, 0x03, 0x04];
 
         // Build the function call directly without creating the full writer
@@ -1049,16 +1328,6 @@ mod tests {
                     internal_type: None,
                 },
                 ethers::abi::Param {
-                    name: "signerBitmap".to_string(),
-                    kind: ethers::abi::ParamType::Uint(256),
-                    internal_type: None,
-                },
-                ethers::abi::Param {
-                    name: "aggregatedPubkey".to_string(),
-                    kind: ethers::abi::ParamType::Bytes,
-                    internal_type: None,
-                },
-                ethers::abi::Param {
                     name: "blsSignature".to_string(),
                     kind: ethers::abi::ParamType::Bytes,
                     internal_type: None,
@@ -1073,26 +1342,24 @@ mod tests {
         let tokens = vec![
             ethers::abi::Token::Uint(nonce),
             ethers::abi::Token::FixedBytes(orbit_itp_id.as_bytes().to_vec()),
-            ethers::abi::Token::Uint(signer_bitmap),
-            ethers::abi::Token::Bytes(aggregated_pubkey.clone()),
             ethers::abi::Token::Bytes(bls_signature.clone()),
         ];
 
         let call_data = function.encode_input(&tokens).unwrap();
 
         // Verify selector (first 4 bytes)
-        // completeCreateItp(uint256,bytes32,uint256,bytes,bytes) selector
-        let expected_selector = &ethers::utils::keccak256(b"completeCreateItp(uint256,bytes32,uint256,bytes,bytes)")[..4];
+        // completeCreateItp(uint256,bytes32,bytes) selector
+        let expected_selector = &ethers::utils::keccak256(b"completeCreateItp(uint256,bytes32,bytes)")[..4];
         assert_eq!(&call_data[..4], expected_selector);
 
         // Verify data length is reasonable
-        assert!(call_data.len() >= 200);
+        assert!(call_data.len() >= 100);
     }
 
     #[test]
     fn test_function_selector() {
         // Verify the function selector matches Solidity
-        let selector = &ethers::utils::keccak256(b"completeCreateItp(uint256,bytes32,uint256,bytes,bytes)")[..4];
+        let selector = &ethers::utils::keccak256(b"completeCreateItp(uint256,bytes32,bytes)")[..4];
 
         // This should be non-zero
         assert_ne!(selector, &[0u8; 4]);
