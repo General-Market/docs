@@ -24,13 +24,19 @@ contract IssuerCustodyL3Test is TestHelper {
     address public indexContract;
     address public user1 = address(0x111);
 
-    // Empty BLS signature for Phase 1 (mock verification - empty pubkey skips verification)
-    bytes public emptyBlsSignature = "";
+    // Dummy BLS signature (G1 generator point, 64 bytes) — precompile 0x08 is mocked
+    bytes public dummyBlsSignature = abi.encode(uint256(1), uint256(2));
 
     function setUp() public {
+        // Mock BN254 pairing precompile to always return true (we test custody logic, not BLS math)
+        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
+
         // Deploy real governance and issuer registry via UUPS proxy
         governance = deployGovernance(address(this));
         issuerRegistry = deployIssuerRegistry(address(governance));
+
+        // Set non-empty 128-byte aggregated pubkey (hardened contracts revert on empty pubkey)
+        issuerRegistry.setAggregatedPubkey(new bytes(128));
 
         // Deploy mock L3Usdc token (L3 bridged USDC uses 18 decimals)
         l3Usdc = new MockERC20("L3 USDC", "L3USDC", 18);
@@ -67,7 +73,7 @@ contract IssuerCustodyL3Test is TestHelper {
         (bool success, ) = issuerCustodyL3.execute(
             address(l3Usdc),
             transferData,
-            emptyBlsSignature,
+            dummyBlsSignature,
             0
         );
 
@@ -88,7 +94,7 @@ contract IssuerCustodyL3Test is TestHelper {
         vm.expectEmit(true, false, false, true);
         emit EventsLib.Executed(address(l3Usdc), transferData, 0);
 
-        issuerCustodyL3.execute(address(l3Usdc), transferData, emptyBlsSignature, 0);
+        issuerCustodyL3.execute(address(l3Usdc), transferData, dummyBlsSignature, 0);
     }
 
     function test_transferToIndex_multipleTransfersWithDifferentNonces() public {
@@ -101,9 +107,9 @@ contract IssuerCustodyL3Test is TestHelper {
         );
 
         // Execute multiple transfers with different nonces
-        issuerCustodyL3.execute(address(l3Usdc), transferData, emptyBlsSignature, 0);
-        issuerCustodyL3.execute(address(l3Usdc), transferData, emptyBlsSignature, 1);
-        issuerCustodyL3.execute(address(l3Usdc), transferData, emptyBlsSignature, 2);
+        issuerCustodyL3.execute(address(l3Usdc), transferData, dummyBlsSignature, 0);
+        issuerCustodyL3.execute(address(l3Usdc), transferData, dummyBlsSignature, 1);
+        issuerCustodyL3.execute(address(l3Usdc), transferData, dummyBlsSignature, 2);
 
         assertEq(l3Usdc.balanceOf(indexContract), 30e18, "Index should receive 3 transfers");
         assertTrue(issuerCustodyL3.isNonceUsed(0));
@@ -124,7 +130,7 @@ contract IssuerCustodyL3Test is TestHelper {
 
         // Should revert because l3Usdc is not whitelisted
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E026_TargetNotWhitelisted.selector, address(l3Usdc)));
-        issuerCustodyL3.execute(address(l3Usdc), transferData, emptyBlsSignature, 0);
+        issuerCustodyL3.execute(address(l3Usdc), transferData, dummyBlsSignature, 0);
     }
 
     function test_transferToIndex_revertsOnNonceReuse() public {
@@ -137,11 +143,11 @@ contract IssuerCustodyL3Test is TestHelper {
         );
 
         // First execution succeeds
-        issuerCustodyL3.execute(address(l3Usdc), transferData, emptyBlsSignature, 0);
+        issuerCustodyL3.execute(address(l3Usdc), transferData, dummyBlsSignature, 0);
 
         // Second execution with same nonce fails
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E025_NonceAlreadyUsed.selector, 0));
-        issuerCustodyL3.execute(address(l3Usdc), transferData, emptyBlsSignature, 0);
+        issuerCustodyL3.execute(address(l3Usdc), transferData, dummyBlsSignature, 0);
     }
 
     function test_transferToIndex_revertsWithInvalidBLSSignature() public {
@@ -173,12 +179,12 @@ contract IssuerCustodyL3Test is TestHelper {
         bytes memory data = abi.encodeWithSignature("someFunction()");
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E026_TargetNotWhitelisted.selector, randomTarget));
-        issuerCustodyL3.execute(randomTarget, data, emptyBlsSignature, 0);
+        issuerCustodyL3.execute(randomTarget, data, dummyBlsSignature, 0);
     }
 
     function test_whitelistEnforcement_cannotCallNonWhitelistedToken() public {
         // Only whitelist Index contract, NOT l3Usdc
-        issuerCustodyL3.proposeWhitelist(indexContract, emptyBlsSignature);
+        issuerCustodyL3.proposeWhitelist(indexContract, dummyBlsSignature);
         vm.warp(block.timestamp + 2 days + 1);
         issuerCustodyL3.activateWhitelist(indexContract);
 
@@ -196,7 +202,7 @@ contract IssuerCustodyL3Test is TestHelper {
 
         // This should fail because l3Usdc is not whitelisted as a call target
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E026_TargetNotWhitelisted.selector, address(l3Usdc)));
-        issuerCustodyL3.execute(address(l3Usdc), transferData, emptyBlsSignature, 0);
+        issuerCustodyL3.execute(address(l3Usdc), transferData, dummyBlsSignature, 0);
     }
 
     // ============ INITIALIZATION AND SETUP TESTS ============
@@ -213,7 +219,7 @@ contract IssuerCustodyL3Test is TestHelper {
     }
 
     function test_whitelistProposal_succeeds() public {
-        issuerCustodyL3.proposeWhitelist(indexContract, emptyBlsSignature);
+        issuerCustodyL3.proposeWhitelist(indexContract, dummyBlsSignature);
 
         (uint256 proposedAt, uint256 activatedAt) = issuerCustodyL3.getWhitelistStatus(indexContract);
         assertGt(proposedAt, 0, "Proposal timestamp should be set");
@@ -222,7 +228,7 @@ contract IssuerCustodyL3Test is TestHelper {
     }
 
     function test_whitelistActivation_afterTimelock() public {
-        issuerCustodyL3.proposeWhitelist(indexContract, emptyBlsSignature);
+        issuerCustodyL3.proposeWhitelist(indexContract, dummyBlsSignature);
 
         // Fast forward past 2-day timelock
         vm.warp(block.timestamp + 2 days + 1);
@@ -233,7 +239,7 @@ contract IssuerCustodyL3Test is TestHelper {
     }
 
     function test_whitelistActivation_failsBeforeTimelock() public {
-        issuerCustodyL3.proposeWhitelist(indexContract, emptyBlsSignature);
+        issuerCustodyL3.proposeWhitelist(indexContract, dummyBlsSignature);
 
         // Only fast forward 1 day (need 2 days)
         vm.warp(block.timestamp + 1 days);
@@ -250,13 +256,13 @@ contract IssuerCustodyL3Test is TestHelper {
         assertEq(l3Usdc.balanceOf(address(issuerCustodyL3)), 1_000_000e18);
 
         // 2. Whitelist Index contract (with timelock)
-        issuerCustodyL3.proposeWhitelist(indexContract, emptyBlsSignature);
-        vm.warp(block.timestamp + 2 days + 1);
+        issuerCustodyL3.proposeWhitelist(indexContract, dummyBlsSignature);
+        vm.warp(2 days + 2);
         issuerCustodyL3.activateWhitelist(indexContract);
 
         // 3. Also whitelist the l3Usdc token as transfer target
-        issuerCustodyL3.proposeWhitelist(address(l3Usdc), emptyBlsSignature);
-        vm.warp(block.timestamp + 2 days + 1);
+        issuerCustodyL3.proposeWhitelist(address(l3Usdc), dummyBlsSignature);
+        vm.warp(4 days + 3);
         issuerCustodyL3.activateWhitelist(address(l3Usdc));
 
         // 4. BLS-signed transfer to Index for submitOrder
@@ -269,7 +275,7 @@ contract IssuerCustodyL3Test is TestHelper {
         (bool success, ) = issuerCustodyL3.execute(
             address(l3Usdc),
             transferData,
-            emptyBlsSignature,
+            dummyBlsSignature,
             0
         );
 
@@ -282,14 +288,14 @@ contract IssuerCustodyL3Test is TestHelper {
 
     function _whitelistTarget(address target) internal {
         // Whitelist both the target contract AND the l3Usdc token
-        issuerCustodyL3.proposeWhitelist(address(l3Usdc), emptyBlsSignature);
-        vm.warp(block.timestamp + 2 days + 1);
+        issuerCustodyL3.proposeWhitelist(address(l3Usdc), dummyBlsSignature);
+        vm.warp(2 days + 2);
         issuerCustodyL3.activateWhitelist(address(l3Usdc));
 
         // Also whitelist the target if different from l3Usdc
         if (target != address(l3Usdc)) {
-            issuerCustodyL3.proposeWhitelist(target, emptyBlsSignature);
-            vm.warp(block.timestamp + 2 days + 1);
+            issuerCustodyL3.proposeWhitelist(target, dummyBlsSignature);
+            vm.warp(4 days + 3);
             issuerCustodyL3.activateWhitelist(target);
         }
     }

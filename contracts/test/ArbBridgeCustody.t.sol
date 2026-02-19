@@ -41,7 +41,7 @@ contract ArbBridgeCustodyTest is TestHelper {
     // Legacy names for backward compatibility in some tests
     uint256 public constant RELEASE_AMOUNT = RELEASE_AMOUNT_INTERNAL;
     uint256 public constant ORDER_AMOUNT = ORDER_AMOUNT_6DEC;
-    bytes public constant EMPTY_BLS_SIG = "";
+    bytes public DUMMY_BLS_SIG = new bytes(64);
 
     // Test ITP
     bytes32 public constant TEST_ITP_ID = keccak256("TEST_ITP");
@@ -71,10 +71,17 @@ contract ArbBridgeCustodyTest is TestHelper {
         // Deploy proxy
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
-            abi.encodeCall(ArbBridgeCustody.initialize, (address(mockRegistry), address(usdc), l3IndexAddr))
+            abi.encodeCall(ArbBridgeCustody.initialize, (address(mockRegistry), address(usdc), l3IndexAddr, address(0)))
         );
 
         custody = ArbBridgeCustody(address(proxy));
+
+        // Set a non-empty aggregated pubkey so BLS path doesn't revert on empty pubkey
+        bytes memory dummyAggPubkey = new bytes(128);
+        mockRegistry.setAggregatedPubkey(dummyAggPubkey);
+
+        // Mock the BN254 pairing precompile to always return success
+        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
 
         // Fund custody contract for release tests (6-decimal amounts)
         usdc.mint(address(custody), 10_000_000 * 1e6); // 10M USDC
@@ -119,7 +126,7 @@ contract ArbBridgeCustodyTest is TestHelper {
         vm.expectRevert(ErrorsLib.E043_ZeroIssuerRegistry.selector);
         new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(ArbBridgeCustody.initialize, (address(0), address(usdc), l3IndexAddr))
+            abi.encodeCall(ArbBridgeCustody.initialize, (address(0), address(usdc), l3IndexAddr, address(0)))
         );
     }
 
@@ -128,7 +135,7 @@ contract ArbBridgeCustodyTest is TestHelper {
         vm.expectRevert(ErrorsLib.E050_ZeroUSDCAddress.selector);
         new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(ArbBridgeCustody.initialize, (address(mockRegistry), address(0), l3IndexAddr))
+            abi.encodeCall(ArbBridgeCustody.initialize, (address(mockRegistry), address(0), l3IndexAddr, address(0)))
         );
     }
 
@@ -137,7 +144,7 @@ contract ArbBridgeCustodyTest is TestHelper {
         vm.expectRevert(ErrorsLib.E056_ZeroL3IndexAddress.selector);
         new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(ArbBridgeCustody.initialize, (address(mockRegistry), address(usdc), address(0)))
+            abi.encodeCall(ArbBridgeCustody.initialize, (address(mockRegistry), address(usdc), address(0), address(0)))
         );
     }
 
@@ -151,7 +158,7 @@ contract ArbBridgeCustodyTest is TestHelper {
         uint256 custodyBalanceBefore = usdc.balanceOf(address(custody));
 
         // completeBridge receives 18-decimal internal amount from L3
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT_INTERNAL, nonce, proof, EMPTY_BLS_SIG);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT_INTERNAL, nonce, proof, DUMMY_BLS_SIG);
 
         // Check nonce is marked as used
         assertTrue(custody.isNonceUsed(L3_CHAIN_ID, nonce));
@@ -169,7 +176,7 @@ contract ArbBridgeCustodyTest is TestHelper {
         vm.expectEmit(true, false, false, true);
         emit BridgeCompleted(L3_CHAIN_ID, RELEASE_AMOUNT, nonce);
 
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, proof, EMPTY_BLS_SIG);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, proof, DUMMY_BLS_SIG);
     }
 
     function test_completeBridge_emitsEventsLibBridgeCompletedEvent() public {
@@ -179,7 +186,7 @@ contract ArbBridgeCustodyTest is TestHelper {
         vm.expectEmit(true, true, false, true);
         emit EventsLib.BridgeCompleted(L3_CHAIN_ID, nonce, RELEASE_AMOUNT, proof.sourceTxHash);
 
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, proof, EMPTY_BLS_SIG);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, proof, DUMMY_BLS_SIG);
     }
 
     function test_completeBridge_replayProtection_revertsOnSameNonce() public {
@@ -187,13 +194,13 @@ contract ArbBridgeCustodyTest is TestHelper {
         uint256 nonce = 0;
 
         // Complete bridge first time
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, proof, EMPTY_BLS_SIG);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, proof, DUMMY_BLS_SIG);
 
         // Try to complete again (replay attack)
         vm.expectRevert(
             abi.encodeWithSelector(ErrorsLib.E054_BridgeAlreadyCompleted.selector, L3_CHAIN_ID, nonce)
         );
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, proof, EMPTY_BLS_SIG);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, proof, DUMMY_BLS_SIG);
     }
 
     function test_completeBridge_differentSourceChainsCanUseSameNonce() public {
@@ -201,11 +208,11 @@ contract ArbBridgeCustodyTest is TestHelper {
 
         // Complete from L3
         TypesLib.ReleaseProof memory proofL3 = _createValidProof(L3_CHAIN_ID);
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, proofL3, EMPTY_BLS_SIG);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, proofL3, DUMMY_BLS_SIG);
 
         // Complete from Base with same nonce (should succeed)
         TypesLib.ReleaseProof memory proofBase = _createValidProof(BASE_CHAIN_ID);
-        custody.completeBridge(BASE_CHAIN_ID, RELEASE_AMOUNT, nonce, proofBase, EMPTY_BLS_SIG);
+        custody.completeBridge(BASE_CHAIN_ID, RELEASE_AMOUNT, nonce, proofBase, DUMMY_BLS_SIG);
 
         // Both nonces should be marked used for their respective chains
         assertTrue(custody.isNonceUsed(L3_CHAIN_ID, nonce));
@@ -216,14 +223,14 @@ contract ArbBridgeCustodyTest is TestHelper {
         TypesLib.ReleaseProof memory proof = _createValidProof(0);
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E055_InvalidSourceChainId.selector, 0));
-        custody.completeBridge(0, RELEASE_AMOUNT, 0, proof, EMPTY_BLS_SIG);
+        custody.completeBridge(0, RELEASE_AMOUNT, 0, proof, DUMMY_BLS_SIG);
     }
 
     function test_completeBridge_revertsOnCurrentChainId() public {
         TypesLib.ReleaseProof memory proof = _createValidProof(ARB_CHAIN_ID);
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E055_InvalidSourceChainId.selector, ARB_CHAIN_ID));
-        custody.completeBridge(ARB_CHAIN_ID, RELEASE_AMOUNT, 0, proof, EMPTY_BLS_SIG);
+        custody.completeBridge(ARB_CHAIN_ID, RELEASE_AMOUNT, 0, proof, DUMMY_BLS_SIG);
     }
 
     function test_completeBridge_revertsOnInvalidProof_zeroBlockHash() public {
@@ -235,7 +242,7 @@ contract ArbBridgeCustodyTest is TestHelper {
         });
 
         vm.expectRevert(ErrorsLib.E057_InvalidProof.selector);
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, proof, EMPTY_BLS_SIG);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, proof, DUMMY_BLS_SIG);
     }
 
     function test_completeBridge_revertsOnInvalidProof_zeroTxHash() public {
@@ -247,14 +254,14 @@ contract ArbBridgeCustodyTest is TestHelper {
         });
 
         vm.expectRevert(ErrorsLib.E057_InvalidProof.selector);
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, proof, EMPTY_BLS_SIG);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, proof, DUMMY_BLS_SIG);
     }
 
     function test_completeBridge_revertsOnProofChainMismatch() public {
         TypesLib.ReleaseProof memory proof = _createValidProof(BASE_CHAIN_ID); // Proof says Base
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E055_InvalidSourceChainId.selector, BASE_CHAIN_ID));
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, proof, EMPTY_BLS_SIG); // But caller says L3
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, proof, DUMMY_BLS_SIG); // But caller says L3
     }
 
     function test_completeBridge_zeroAmountAllowed() public {
@@ -264,7 +271,7 @@ contract ArbBridgeCustodyTest is TestHelper {
 
         uint256 callerBalanceBefore = usdc.balanceOf(address(this));
 
-        custody.completeBridge(L3_CHAIN_ID, 0, nonce, proof, EMPTY_BLS_SIG);
+        custody.completeBridge(L3_CHAIN_ID, 0, nonce, proof, DUMMY_BLS_SIG);
 
         // Nonce should be marked used
         assertTrue(custody.isNonceUsed(L3_CHAIN_ID, nonce));
@@ -284,7 +291,7 @@ contract ArbBridgeCustodyTest is TestHelper {
 
         uint256 callerBalanceBefore = usdc.balanceOf(address(this));
 
-        custody.completeBridge(L3_CHAIN_ID, internalAmount, nonce, proof, EMPTY_BLS_SIG);
+        custody.completeBridge(L3_CHAIN_ID, internalAmount, nonce, proof, DUMMY_BLS_SIG);
 
         // Verify 6-decimal USDC was transferred
         assertEq(usdc.balanceOf(address(this)), callerBalanceBefore + expectedUsdcTransfer);
@@ -301,7 +308,7 @@ contract ArbBridgeCustodyTest is TestHelper {
 
         uint256 callerBalanceBefore = usdc.balanceOf(address(this));
 
-        custody.completeBridge(L3_CHAIN_ID, internalWithDust, nonce, proof, EMPTY_BLS_SIG);
+        custody.completeBridge(L3_CHAIN_ID, internalWithDust, nonce, proof, DUMMY_BLS_SIG);
 
         // Dust should be truncated
         assertEq(usdc.balanceOf(address(this)), callerBalanceBefore + expectedUsdcTransfer);
@@ -316,7 +323,7 @@ contract ArbBridgeCustodyTest is TestHelper {
 
         uint256 callerBalanceBefore = usdc.balanceOf(address(this));
 
-        custody.completeBridge(L3_CHAIN_ID, verySmallInternal, nonce, proof, EMPTY_BLS_SIG);
+        custody.completeBridge(L3_CHAIN_ID, verySmallInternal, nonce, proof, DUMMY_BLS_SIG);
 
         // No USDC transferred (amount converted to 0)
         assertEq(usdc.balanceOf(address(this)), callerBalanceBefore);
@@ -506,7 +513,7 @@ contract ArbBridgeCustodyTest is TestHelper {
     function test_isNonceUsed_returnsTrueForUsed() public {
         TypesLib.ReleaseProof memory proof = _createValidProof(L3_CHAIN_ID);
 
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, proof, EMPTY_BLS_SIG);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, proof, DUMMY_BLS_SIG);
 
         assertTrue(custody.isNonceUsed(L3_CHAIN_ID, 0));
         assertFalse(custody.isNonceUsed(L3_CHAIN_ID, 1)); // Other nonces still unused
@@ -541,7 +548,7 @@ contract ArbBridgeCustodyTest is TestHelper {
 
         TypesLib.ReleaseProof memory proof = _createValidProof(L3_CHAIN_ID);
 
-        custody.completeBridge(L3_CHAIN_ID, internalAmount, 0, proof, EMPTY_BLS_SIG);
+        custody.completeBridge(L3_CHAIN_ID, internalAmount, 0, proof, DUMMY_BLS_SIG);
 
         assertTrue(custody.isNonceUsed(L3_CHAIN_ID, 0));
     }
@@ -549,7 +556,7 @@ contract ArbBridgeCustodyTest is TestHelper {
     function testFuzz_completeBridge_variousNonces(uint256 nonce) public {
         TypesLib.ReleaseProof memory proof = _createValidProof(L3_CHAIN_ID);
 
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, proof, EMPTY_BLS_SIG);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, proof, DUMMY_BLS_SIG);
 
         assertTrue(custody.isNonceUsed(L3_CHAIN_ID, nonce));
     }
@@ -559,7 +566,7 @@ contract ArbBridgeCustodyTest is TestHelper {
 
         TypesLib.ReleaseProof memory proof = _createValidProof(chainId);
 
-        custody.completeBridge(chainId, RELEASE_AMOUNT, 0, proof, EMPTY_BLS_SIG);
+        custody.completeBridge(chainId, RELEASE_AMOUNT, 0, proof, DUMMY_BLS_SIG);
 
         assertTrue(custody.isNonceUsed(chainId, 0));
     }
@@ -608,7 +615,7 @@ contract ArbBridgeCustodyTest is TestHelper {
     function test_proposeUpgrade_setsState() public {
         ArbBridgeCustody newImpl = new ArbBridgeCustody();
 
-        custody.proposeUpgrade(address(newImpl), EMPTY_BLS_SIG);
+        custody.proposeUpgrade(address(newImpl), DUMMY_BLS_SIG);
 
         (address proposedImpl, uint256 proposedAt, bool isEmergency) = custody.getPendingUpgrade();
         assertEq(proposedImpl, address(newImpl));
@@ -618,22 +625,22 @@ contract ArbBridgeCustodyTest is TestHelper {
 
     function test_proposeUpgrade_revertsOnZeroAddress() public {
         vm.expectRevert(ErrorsLib.E038_ZeroImplementation.selector);
-        custody.proposeUpgrade(address(0), EMPTY_BLS_SIG);
+        custody.proposeUpgrade(address(0), DUMMY_BLS_SIG);
     }
 
     function test_proposeUpgrade_revertsOnAlreadyPending() public {
         ArbBridgeCustody newImpl = new ArbBridgeCustody();
-        custody.proposeUpgrade(address(newImpl), EMPTY_BLS_SIG);
+        custody.proposeUpgrade(address(newImpl), DUMMY_BLS_SIG);
 
         ArbBridgeCustody anotherImpl = new ArbBridgeCustody();
         vm.expectRevert(ErrorsLib.E039_UpgradeAlreadyPending.selector);
-        custody.proposeUpgrade(address(anotherImpl), EMPTY_BLS_SIG);
+        custody.proposeUpgrade(address(anotherImpl), DUMMY_BLS_SIG);
     }
 
     function test_proposeEmergencyUpgrade_setsEmergencyFlag() public {
         ArbBridgeCustody newImpl = new ArbBridgeCustody();
 
-        custody.proposeEmergencyUpgrade(address(newImpl), EMPTY_BLS_SIG);
+        custody.proposeEmergencyUpgrade(address(newImpl), DUMMY_BLS_SIG);
 
         (, , bool isEmergency) = custody.getPendingUpgrade();
         assertTrue(isEmergency);
@@ -641,7 +648,7 @@ contract ArbBridgeCustodyTest is TestHelper {
 
     function test_executeUpgrade_revertsBeforeTimelock() public {
         ArbBridgeCustody newImpl = new ArbBridgeCustody();
-        custody.proposeUpgrade(address(newImpl), EMPTY_BLS_SIG);
+        custody.proposeUpgrade(address(newImpl), DUMMY_BLS_SIG);
 
         uint256 unlockTime = block.timestamp + 7 days;
         vm.expectRevert(
@@ -661,7 +668,7 @@ contract ArbBridgeCustodyTest is TestHelper {
 
     function test_executeUpgrade_revertsOnMismatch() public {
         ArbBridgeCustody newImpl = new ArbBridgeCustody();
-        custody.proposeUpgrade(address(newImpl), EMPTY_BLS_SIG);
+        custody.proposeUpgrade(address(newImpl), DUMMY_BLS_SIG);
 
         vm.warp(block.timestamp + 7 days + 1);
 
@@ -677,7 +684,7 @@ contract ArbBridgeCustodyTest is TestHelper {
 
     function test_executeUpgrade_succeedsAfterTimelock() public {
         ArbBridgeCustody newImpl = new ArbBridgeCustody();
-        custody.proposeUpgrade(address(newImpl), EMPTY_BLS_SIG);
+        custody.proposeUpgrade(address(newImpl), DUMMY_BLS_SIG);
 
         vm.warp(block.timestamp + 7 days + 1);
 
@@ -690,7 +697,7 @@ contract ArbBridgeCustodyTest is TestHelper {
 
     function test_executeEmergencyUpgrade_succeedsAfter24Hours() public {
         ArbBridgeCustody newImpl = new ArbBridgeCustody();
-        custody.proposeEmergencyUpgrade(address(newImpl), EMPTY_BLS_SIG);
+        custody.proposeEmergencyUpgrade(address(newImpl), DUMMY_BLS_SIG);
 
         vm.warp(block.timestamp + 24 hours + 1);
 
@@ -705,14 +712,14 @@ contract ArbBridgeCustodyTest is TestHelper {
 
     function test_cancelUpgrade_clearsPendingUpgrade() public {
         ArbBridgeCustody newImpl = new ArbBridgeCustody();
-        custody.proposeUpgrade(address(newImpl), EMPTY_BLS_SIG);
+        custody.proposeUpgrade(address(newImpl), DUMMY_BLS_SIG);
 
         // Verify pending upgrade exists
         (address proposedImpl, , ) = custody.getPendingUpgrade();
         assertEq(proposedImpl, address(newImpl));
 
         // Cancel the upgrade
-        custody.cancelUpgrade(EMPTY_BLS_SIG);
+        custody.cancelUpgrade(DUMMY_BLS_SIG);
 
         // Verify pending upgrade is cleared
         (proposedImpl, , ) = custody.getPendingUpgrade();
@@ -721,7 +728,7 @@ contract ArbBridgeCustodyTest is TestHelper {
 
     function test_cancelUpgrade_revertsOnNoPending() public {
         vm.expectRevert(ErrorsLib.E040_NoPendingUpgrade.selector);
-        custody.cancelUpgrade(EMPTY_BLS_SIG);
+        custody.cancelUpgrade(DUMMY_BLS_SIG);
     }
 
     function test_cancelUpgrade_allowsNewProposalAfterCancel() public {
@@ -729,13 +736,13 @@ contract ArbBridgeCustodyTest is TestHelper {
         ArbBridgeCustody impl2 = new ArbBridgeCustody();
 
         // Propose first upgrade
-        custody.proposeUpgrade(address(impl1), EMPTY_BLS_SIG);
+        custody.proposeUpgrade(address(impl1), DUMMY_BLS_SIG);
 
         // Cancel it
-        custody.cancelUpgrade(EMPTY_BLS_SIG);
+        custody.cancelUpgrade(DUMMY_BLS_SIG);
 
         // Propose new upgrade (should succeed)
-        custody.proposeUpgrade(address(impl2), EMPTY_BLS_SIG);
+        custody.proposeUpgrade(address(impl2), DUMMY_BLS_SIG);
 
         (address proposedImpl, , ) = custody.getPendingUpgrade();
         assertEq(proposedImpl, address(impl2));
@@ -814,7 +821,7 @@ contract ArbBridgeCustodyTest is TestHelper {
         });
 
         vm.expectRevert(ErrorsLib.E057_InvalidProof.selector);
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, proof, EMPTY_BLS_SIG);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, proof, DUMMY_BLS_SIG);
     }
 
     // ============ MULTI-CHAIN NONCE TESTS ============
@@ -824,12 +831,12 @@ contract ArbBridgeCustodyTest is TestHelper {
         TypesLib.ReleaseProof memory proofBase = _createValidProof(BASE_CHAIN_ID);
 
         // Use nonce 0 on L3
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, proofL3, EMPTY_BLS_SIG);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, proofL3, DUMMY_BLS_SIG);
 
         // Use nonce 0 and 1 on Base
-        custody.completeBridge(BASE_CHAIN_ID, RELEASE_AMOUNT, 0, proofBase, EMPTY_BLS_SIG);
+        custody.completeBridge(BASE_CHAIN_ID, RELEASE_AMOUNT, 0, proofBase, DUMMY_BLS_SIG);
         proofBase.sourceTxHash = keccak256("tx_hash_2");
-        custody.completeBridge(BASE_CHAIN_ID, RELEASE_AMOUNT, 1, proofBase, EMPTY_BLS_SIG);
+        custody.completeBridge(BASE_CHAIN_ID, RELEASE_AMOUNT, 1, proofBase, DUMMY_BLS_SIG);
 
         // Verify L3 state
         assertTrue(custody.isNonceUsed(L3_CHAIN_ID, 0));

@@ -16,6 +16,7 @@ contract IndexOrderSubmissionTest is TestHelper {
     Index public index;
     MockERC20 public usdc;
     Governance public governance;
+    IssuerRegistry public issuerRegistry;
 
     address public user = address(0x1);
     address public admin = address(this);
@@ -26,6 +27,8 @@ contract IndexOrderSubmissionTest is TestHelper {
     uint256 constant MIN_ORDER_AMOUNT = 1e15; // 0.001 USDC
     uint256 constant MAX_DEADLINE_DURATION = 24 hours;
     uint256 constant INITIAL_PRICE = 1e18; // $1.00
+
+    bytes public dummyBlsSignature = new bytes(64);
 
     function setUp() public {
         // Deploy mock USDC with 18 decimals
@@ -41,6 +44,14 @@ contract IndexOrderSubmissionTest is TestHelper {
             abi.encodeCall(Index.initialize, (address(governance), address(usdc)))
         );
         index = Index(address(proxy));
+
+        // Deploy IssuerRegistry and wire to Index (required for BLS verification)
+        issuerRegistry = deployIssuerRegistry(address(governance));
+        issuerRegistry.setAggregatedPubkey(new bytes(128));
+        index.setIssuerRegistry(address(issuerRegistry));
+
+        // Mock BN254 pairing precompile to always return success
+        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
 
         // Create test ITP using helper function
         uint256[] memory weights = new uint256[](1);
@@ -414,8 +425,7 @@ contract IndexOrderSubmissionTest is TestHelper {
     // Helper to setup user with ITP shares (simulates a completed BUY order)
     function _setupUserWithShares(address _user, bytes32 _itpId, uint256 shares) internal {
         // We need to submit and fill a BUY order to give user shares
-        // Since confirmFills requires BLS signature (which we skip in test mode),
-        // we'll submit a BUY order and manually call confirmFills with empty signature
+        // Submit a BUY order and call confirmFills (BLS verified via mocked precompile)
 
         uint256 amount = shares; // 1:1 for simplicity
         usdc.mint(_user, amount);
@@ -429,7 +439,7 @@ contract IndexOrderSubmissionTest is TestHelper {
         // Batch the order
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(1, orderIds, ""); // Empty signature (test mode)
+        index.confirmBatch(1, orderIds, dummyBlsSignature);
 
         // Fill the order
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
@@ -440,7 +450,7 @@ contract IndexOrderSubmissionTest is TestHelper {
             cycleNumber: 1,
             txHash: keccak256("test_tx")
         });
-        index.confirmFills(1, fills, ""); // Empty signature (test mode)
+        index.confirmFills(1, fills, dummyBlsSignature);
     }
 
     // Helper to get user shares (reads internal _userShares via storage slot)
@@ -505,20 +515,24 @@ contract IndexOrderSubmissionTest is TestHelper {
     // ============ Access Control Tests ============
 
     function test_setIssuerRegistry_onlyOnce() public {
-        // First set should succeed (admin is test contract)
-        address mockRegistry = address(0x1234);
-        index.setIssuerRegistry(mockRegistry);
-
-        // Second set should revert with E062_AlreadyInitialized
+        // IssuerRegistry already set in setUp, so second call should revert
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E062_AlreadyInitialized.selector));
         index.setIssuerRegistry(address(0x5678));
     }
 
     function test_setIssuerRegistry_revertsForNonAdmin() public {
+        // Deploy a fresh Index without IssuerRegistry set
+        Index impl2 = new Index();
+        ERC1967Proxy proxy2 = new ERC1967Proxy(
+            address(impl2),
+            abi.encodeCall(Index.initialize, (address(governance), address(usdc)))
+        );
+        Index freshIndex = Index(address(proxy2));
+
         address adminAddr = governance.admin();
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E061_Unauthorized.selector, user, adminAddr));
         vm.prank(user);
-        index.setIssuerRegistry(address(0x1234));
+        freshIndex.setIssuerRegistry(address(0x1234));
     }
 
     // ============ Fuzz Tests ============
@@ -559,8 +573,8 @@ contract IndexOrderSubmissionTest is TestHelper {
     // ============ submitOrderFor Tests ============
 
     function _setupIssuerRegistry() internal returns (IssuerRegistry registry, address issuerAddr) {
-        registry = deployIssuerRegistry(address(governance));
-        index.setIssuerRegistry(address(registry));
+        // Use the registry already wired in setUp
+        registry = issuerRegistry;
 
         // Register an issuer
         issuerAddr = address(0xC0D3);
@@ -611,7 +625,7 @@ contract IndexOrderSubmissionTest is TestHelper {
 
     function test_submitOrderFor_revertsWithNoIssuerRegistry() public {
         // Don't set issuer registry — default is address(0)
-        // Need a fresh index since setUp doesn't set registry
+        // Need a fresh Index (setUp already sets registry on the main one)
         MockERC20 usdc2 = new MockERC20("USDC2", "USDC2", 18);
         Index impl2 = new Index();
         ERC1967Proxy proxy2 = new ERC1967Proxy(
@@ -644,7 +658,7 @@ contract IndexOrderSubmissionTest is TestHelper {
         // Confirm batch
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(1, orderIds, "");
+        index.confirmBatch(1, orderIds, dummyBlsSignature);
 
         // Confirm fill
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
@@ -655,7 +669,7 @@ contract IndexOrderSubmissionTest is TestHelper {
             cycleNumber: 1,
             txHash: bytes32(0)
         });
-        index.confirmFills(1, fills, "");
+        index.confirmFills(1, fills, dummyBlsSignature);
 
         // Verify shares went to beneficiary, not issuer
         // shares = (100e18 * 1e18) / 1e18 = 100e18

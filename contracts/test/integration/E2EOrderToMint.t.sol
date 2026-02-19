@@ -7,6 +7,7 @@ import "../../src/core/ITP.sol";
 import "../../src/mocks/MockERC20.sol";
 import "../helpers/TestHelper.sol";
 import {Governance} from "../../src/Governance.sol";
+import "../../src/registry/IssuerRegistry.sol";
 import "../../src/libraries/TypesLib.sol";
 import "../../src/libraries/ErrorsLib.sol";
 import "../../src/libraries/EventsLib.sol";
@@ -31,8 +32,8 @@ contract E2EOrderToMintTest is TestHelper {
     uint256 constant INITIAL_PRICE = 1e18; // $1.00
     uint256 constant INITIAL_USDC = 10_000e18;
 
-    // Empty BLS signature for mock verification
-    bytes public emptyBlsSignature = "";
+    // Dummy BLS signature (64 bytes) for mock verification
+    bytes public dummyBlsSignature = new bytes(64);
 
     function setUp() public {
         admin = address(this);
@@ -50,6 +51,17 @@ contract E2EOrderToMintTest is TestHelper {
             abi.encodeCall(Index.initialize, (address(governance), address(usdc)))
         );
         index = Index(address(proxy));
+
+        // Deploy IssuerRegistry and wire to Index (required for BLS verification)
+        IssuerRegistry issuerRegistry = deployIssuerRegistry(address(governance));
+        index.setIssuerRegistry(address(issuerRegistry));
+
+        // Set a non-empty aggregated pubkey (128 bytes) so BLS path doesn't revert on empty pubkey
+        bytes memory dummyAggPubkey = new bytes(128);
+        issuerRegistry.setAggregatedPubkey(dummyAggPubkey);
+
+        // Mock the BN254 pairing precompile to always return success
+        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
 
         // Create test ITP with single asset (simplified for E2E)
         address[] memory assets = new address[](1);
@@ -103,11 +115,11 @@ contract E2EOrderToMintTest is TestHelper {
     }
 
     function _confirmBatch(uint256 cycleNumber, uint256[] memory orderIds) internal {
-        index.confirmBatch(cycleNumber, orderIds, emptyBlsSignature);
+        index.confirmBatch(cycleNumber, orderIds, dummyBlsSignature);
     }
 
     function _confirmFills(uint256 cycleNumber, TypesLib.Fill[] memory fills) internal {
-        index.confirmFills(cycleNumber, fills, emptyBlsSignature);
+        index.confirmFills(cycleNumber, fills, dummyBlsSignature);
     }
 
     // ============ E2E HAPPY PATH (AC1, AC2, AC4, AC5, AC7) ============
@@ -151,7 +163,7 @@ contract E2EOrderToMintTest is TestHelper {
 
         // Expect BatchConfirmed event
         vm.expectEmit(true, false, false, true);
-        emit EventsLib.BatchConfirmed(1, orderIds, emptyBlsSignature);
+        emit EventsLib.BatchConfirmed(1, orderIds, dummyBlsSignature);
 
         _confirmBatch(1, orderIds);
 
@@ -269,7 +281,7 @@ contract E2EOrderToMintTest is TestHelper {
         vm.expectEmit(true, true, false, true);
         emit EventsLib.OrderRefunded(orderId, user1, orderAmount);
 
-        index.refundExpiredOrder(orderId, emptyBlsSignature);
+        index.refundExpiredOrder(orderId, dummyBlsSignature);
 
         // Verify USDC refunded
         assertEq(usdc.balanceOf(user1), userUsdcBefore, "Full USDC should be refunded");
@@ -326,7 +338,7 @@ contract E2EOrderToMintTest is TestHelper {
         uint256 expectedShares = (orderAmount * 1e18) / fillPrice; // 50e18
 
         // Set NAV to $2 so limit price validation passes
-        index.setItpNav(itpId, 2e18, emptyBlsSignature);
+        index.setItpNav(itpId, 2e18, dummyBlsSignature);
 
         uint256 orderId = _submitOrder(user1, orderAmount, 2e18, 1);
 

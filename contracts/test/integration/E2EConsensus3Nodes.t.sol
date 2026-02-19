@@ -52,8 +52,8 @@ contract E2EConsensus3NodesTest is TestHelper {
     bytes public blsPubkey2;
     bytes public blsPubkey3;
 
-    // Empty BLS signature for tests that don't require signature verification
-    bytes public emptyBlsSignature = "";
+    // Dummy BLS signature (64 bytes) for tests that don't require real signature verification
+    bytes public dummyBlsSignature = new bytes(64);
 
     function setUp() public {
         admin = address(this);
@@ -91,6 +91,13 @@ contract E2EConsensus3NodesTest is TestHelper {
         issuerRegistry.addIssuer(issuer2, bytes32("issuer2_endpoint"), blsPubkey2);
         vm.prank(admin);
         issuerRegistry.addIssuer(issuer3, bytes32("issuer3_endpoint"), blsPubkey3);
+
+        // Set a non-empty aggregated pubkey so BLS path doesn't revert on empty pubkey
+        bytes memory dummyAggPubkey = new bytes(128);
+        issuerRegistry.setAggregatedPubkey(dummyAggPubkey);
+
+        // Mock the BN254 pairing precompile to always return success
+        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
 
         // Create test ITP with single asset
         address[] memory assets = new address[](1);
@@ -191,8 +198,8 @@ contract E2EConsensus3NodesTest is TestHelper {
         // The registry address should be non-zero after setIssuerRegistry()
         // (verification path is active)
         bytes memory aggPubkey = issuerRegistry.getAggregatedPubkey();
-        // MockIssuerRegistry doesn't auto-aggregate — pubkey starts empty
-        assertEq(aggPubkey.length, 0, "Aggregated pubkey starts empty in mock");
+        // Aggregated pubkey is set in setUp for BLS verification to pass
+        assertEq(aggPubkey.length, 128, "Aggregated pubkey should be 128 bytes");
     }
 
     function test_itp_created_with_single_asset() public view {
@@ -202,8 +209,7 @@ contract E2EConsensus3NodesTest is TestHelper {
 
     // ============ TASK 1.5: THREE-ISSUER AGGREGATED SIGNATURE VERIFICATION ============
 
-    /// @notice Test that confirmBatch succeeds when IssuerRegistry has empty aggregated pubkey
-    ///         (testing mode — BLS verification is skipped but path is active)
+    /// @notice Test that confirmBatch succeeds with mocked BLS verification
     function test_three_issuer_aggregated_signature_verifies() public {
         // Submit an order
         uint256 orderId = _submitOrder(user1, 100e18, 1e18, 1);
@@ -211,9 +217,9 @@ contract E2EConsensus3NodesTest is TestHelper {
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
 
-        // With empty aggregated pubkey (mock), empty sig passes
+        // BLS precompile is mocked to return success in setUp
         // This tests the contract interaction flow through the BLS verification path
-        index.confirmBatch(1, orderIds, emptyBlsSignature);
+        index.confirmBatch(1, orderIds, dummyBlsSignature);
 
         // Verify order is now BATCHED
         TypesLib.LimitOrder memory order = index.getOrder(orderId);
@@ -240,9 +246,9 @@ contract E2EConsensus3NodesTest is TestHelper {
         bytes32 expectedMessage = _computeBatchMessage(1, orderIds);
         assertTrue(expectedMessage != bytes32(0), "Message hash should be non-zero");
 
-        // Confirm batch — in mock mode, the verification path is active but empty pubkey
-        // means signature check is skipped. The contract logic (order batching, events) still runs.
-        index.confirmBatch(1, orderIds, emptyBlsSignature);
+        // Confirm batch — BLS precompile is mocked to return success.
+        // The contract logic (order batching, events) still runs.
+        index.confirmBatch(1, orderIds, dummyBlsSignature);
 
         // Verify the batch was processed
         TypesLib.LimitOrder memory order = index.getOrder(orderId);
@@ -251,13 +257,10 @@ contract E2EConsensus3NodesTest is TestHelper {
 
     // ============ TASK 1.7: SINGLE SIGNATURE REJECTED ============
 
-    /// @notice Test that verification fails when aggregated pubkey is set but signature is invalid.
-    ///         With a real aggregated pubkey, an empty/invalid signature should be rejected.
+    /// @notice Test that verification fails when BLS pairing check fails
     function test_single_signature_rejected() public {
-        // Set a non-empty aggregated pubkey to enable verification
-        // This is a dummy 128-byte pubkey that won't match any valid signature
-        bytes memory fakePubkey = _generateTestPubkey(99);
-        vm.mockCall(address(issuerRegistry), abi.encodeWithSelector(IIssuerRegistry.getAggregatedPubkey.selector), abi.encode(fakePubkey));
+        // Override the precompile mock to return failure for this test
+        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(0)));
 
         // Submit order
         uint256 orderId = _submitOrder(user1, 50e18, 1e18, 1);
@@ -265,17 +268,16 @@ contract E2EConsensus3NodesTest is TestHelper {
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
 
-        // Attempt to confirm with empty signature — should revert because
-        // aggregated pubkey is set and signature is invalid
+        // Attempt to confirm — should revert because BLS pairing returns 0
         vm.expectRevert(ErrorsLib.E020_InvalidBLSSignature.selector);
-        index.confirmBatch(1, orderIds, emptyBlsSignature);
+        index.confirmBatch(1, orderIds, dummyBlsSignature);
+
+        // Restore the success mock for subsequent tests
+        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
     }
 
     /// @notice Test that a short (non-64-byte) signature is rejected
     function test_invalid_signature_length_rejected() public {
-        bytes memory fakePubkey = _generateTestPubkey(99);
-        vm.mockCall(address(issuerRegistry), abi.encodeWithSelector(IIssuerRegistry.getAggregatedPubkey.selector), abi.encode(fakePubkey));
-
         uint256 orderId = _submitOrder(user1, 50e18, 1e18, 1);
 
         uint256[] memory orderIds = new uint256[](1);
@@ -337,13 +339,13 @@ contract E2EConsensus3NodesTest is TestHelper {
         // Batch first order in cycle 1
         uint256[] memory batch1 = new uint256[](1);
         batch1[0] = orderId1;
-        index.confirmBatch(1, batch1, emptyBlsSignature);
+        index.confirmBatch(1, batch1, dummyBlsSignature);
 
         // Try to submit another batch for the same cycle number — should revert
         uint256[] memory batch2 = new uint256[](1);
         batch2[0] = orderId2;
         vm.expectRevert(); // Replay protection revert
-        index.confirmBatch(1, batch2, emptyBlsSignature);
+        index.confirmBatch(1, batch2, dummyBlsSignature);
 
         // Verify only the first order was batched
         assertEq(
@@ -382,9 +384,9 @@ contract E2EConsensus3NodesTest is TestHelper {
 
         // Expect BatchConfirmed event
         vm.expectEmit(true, false, false, true);
-        emit EventsLib.BatchConfirmed(1, orderIds, emptyBlsSignature);
+        emit EventsLib.BatchConfirmed(1, orderIds, dummyBlsSignature);
 
-        index.confirmBatch(1, orderIds, emptyBlsSignature);
+        index.confirmBatch(1, orderIds, dummyBlsSignature);
         assertEq(uint8(index.getOrder(orderId).status), uint8(TypesLib.OrderStatus.BATCHED));
 
         // Step 3: Fill confirmation
@@ -400,7 +402,7 @@ contract E2EConsensus3NodesTest is TestHelper {
         vm.expectEmit(true, true, false, true);
         emit EventsLib.FillConfirmed(orderId, 1, fillPrice, orderAmount);
 
-        index.confirmFills(1, fills, emptyBlsSignature);
+        index.confirmFills(1, fills, dummyBlsSignature);
 
         // Step 4: Verify ITP minted
         uint256 expectedShares = (orderAmount * 1e18) / fillPrice;
@@ -422,7 +424,7 @@ contract E2EConsensus3NodesTest is TestHelper {
         uint256 orderId1 = _submitOrder(user1, 100e18, 1e18, 1);
         uint256[] memory batch1 = new uint256[](1);
         batch1[0] = orderId1;
-        index.confirmBatch(1, batch1, emptyBlsSignature);
+        index.confirmBatch(1, batch1, dummyBlsSignature);
 
         TypesLib.Fill[] memory fills1 = new TypesLib.Fill[](1);
         fills1[0] = TypesLib.Fill({
@@ -432,13 +434,13 @@ contract E2EConsensus3NodesTest is TestHelper {
             cycleNumber: 1,
             txHash: bytes32(0)
         });
-        index.confirmFills(1, fills1, emptyBlsSignature);
+        index.confirmFills(1, fills1, dummyBlsSignature);
 
         // Cycle 2
         uint256 orderId2 = _submitOrder(user1, 150e18, 1e18, 1);
         uint256[] memory batch2 = new uint256[](1);
         batch2[0] = orderId2;
-        index.confirmBatch(2, batch2, emptyBlsSignature);
+        index.confirmBatch(2, batch2, dummyBlsSignature);
 
         TypesLib.Fill[] memory fills2 = new TypesLib.Fill[](1);
         fills2[0] = TypesLib.Fill({
@@ -448,13 +450,13 @@ contract E2EConsensus3NodesTest is TestHelper {
             cycleNumber: 2,
             txHash: bytes32(0)
         });
-        index.confirmFills(2, fills2, emptyBlsSignature);
+        index.confirmFills(2, fills2, dummyBlsSignature);
 
         // Cycle 3
         uint256 orderId3 = _submitOrder(user1, 75e18, 1e18, 1);
         uint256[] memory batch3 = new uint256[](1);
         batch3[0] = orderId3;
-        index.confirmBatch(3, batch3, emptyBlsSignature);
+        index.confirmBatch(3, batch3, dummyBlsSignature);
 
         TypesLib.Fill[] memory fills3 = new TypesLib.Fill[](1);
         fills3[0] = TypesLib.Fill({
@@ -464,7 +466,7 @@ contract E2EConsensus3NodesTest is TestHelper {
             cycleNumber: 3,
             txHash: bytes32(0)
         });
-        index.confirmFills(3, fills3, emptyBlsSignature);
+        index.confirmFills(3, fills3, dummyBlsSignature);
 
         // Verify cumulative state
         uint256 totalExpected = 100e18 + 150e18 + 75e18;
@@ -486,7 +488,7 @@ contract E2EConsensus3NodesTest is TestHelper {
         uint256 orderId = _submitOrder(user1, 50e18, 1e18, 1);
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(1, orderIds, emptyBlsSignature);
+        index.confirmBatch(1, orderIds, dummyBlsSignature);
 
         assertEq(uint8(index.getOrder(orderId).status), uint8(TypesLib.OrderStatus.BATCHED));
     }

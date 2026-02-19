@@ -106,10 +106,12 @@ contract BridgeProxyTest is TestHelper {
         address admin
     );
 
-    event DeployerProfileUpdated(
+    event ItpMetadataUpdated(
+        bytes32 indexed itpId,
         address indexed deployer,
-        string displayName,
-        string websiteUrl
+        string description,
+        string websiteUrl,
+        string videoUrl
     );
 
     function setUp() public {
@@ -155,9 +157,6 @@ contract BridgeProxyTest is TestHelper {
         registerIssuer(issuerRegistry, owner, address(0x103), bytes32(0), 3);
 
         vm.startPrank(owner);
-
-        // Set signer threshold to 2 (2-of-3)
-        bridgeProxy.setSignerThreshold(2);
 
         // Mock aggregated pubkey for BLS verification path
         vm.mockCall(address(issuerRegistry), abi.encodeWithSelector(IIssuerRegistry.getAggregatedPubkey.selector), abi.encode(validPubkey));
@@ -458,7 +457,7 @@ contract BridgeProxyTest is TestHelper {
 
     function test_completeCreateItp_revertsCreationNotFound() public {
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E072_CreationNotFound.selector, 999));
-        bridgeProxy.completeCreateItp(999, bytes32(uint256(1)), validSignerBitmap, validPubkey, validSignature);
+        bridgeProxy.completeCreateItp(999, bytes32(uint256(1)), validSignature);
     }
 
     function test_completeCreateItp_revertsWithWrongSignatureLength() public {
@@ -476,7 +475,7 @@ contract BridgeProxyTest is TestHelper {
 
         // BLS verification returns false for wrong length, causing E071 revert
         vm.expectRevert(ErrorsLib.E071_InvalidBLSSignature.selector);
-        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), validSignerBitmap, validPubkey, wrongLengthSignature);
+        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), wrongLengthSignature);
     }
 
     function test_completeCreateItp_revertsWithWrongPubkeyLength() public {
@@ -494,7 +493,7 @@ contract BridgeProxyTest is TestHelper {
 
         // BLS verification reverts for wrong pubkey length
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E07E_InvalidAggregatedPubkeyLength.selector, 64));
-        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), validSignerBitmap, wrongLengthPubkey, signature);
+        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), signature);
     }
 
     function test_completeCreateItp_revertsWhenPaused() public {
@@ -511,7 +510,7 @@ contract BridgeProxyTest is TestHelper {
         bridgeProxy.pause();
 
         vm.expectRevert();
-        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), validSignerBitmap, validPubkey, validSignature);
+        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), validSignature);
     }
 
     function test_completeCreateItp_success() public {
@@ -550,7 +549,7 @@ contract BridgeProxyTest is TestHelper {
         emit ItpCreated(orbitItpId, address(0), nonce, user);
 
         // Step 4: Call completeCreateItp with L3 itpId (created by issuer on L3 beforehand)
-        address bridgedItpAddress = bridgeProxy.completeCreateItp(nonce, orbitItpId, validSignerBitmap, validPubkey, signature);
+        address bridgedItpAddress = bridgeProxy.completeCreateItp(nonce, orbitItpId, signature);
 
         // Step 5: Verify state changes
         assertFalse(bridgedItpAddress == address(0), "BridgedITP should be deployed");
@@ -587,11 +586,11 @@ contract BridgeProxyTest is TestHelper {
         bytes memory signature = abi.encodePacked(uint256(1), uint256(2));
 
         // Complete the first time
-        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), validSignerBitmap, validPubkey, signature);
+        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), signature);
 
         // Step 2: Try to complete again - should revert
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E070_AlreadyCompleted.selector, nonce));
-        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), validSignerBitmap, validPubkey, signature);
+        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), signature);
 
         vm.clearMockedCalls();
     }
@@ -616,11 +615,11 @@ contract BridgeProxyTest is TestHelper {
 
         // Complete the first request with a specific orbitItpId
         bytes32 sharedOrbitItpId = keccak256(abi.encodePacked("shared_itp"));
-        address firstBridgedItp = bridgeProxy.completeCreateItp(nonce1, sharedOrbitItpId, validSignerBitmap, validPubkey, signature);
+        address firstBridgedItp = bridgeProxy.completeCreateItp(nonce1, sharedOrbitItpId, signature);
 
         // Try to complete second request with the SAME orbitItpId - should revert
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E07C_OrbitItpAlreadyMapped.selector, sharedOrbitItpId, firstBridgedItp));
-        bridgeProxy.completeCreateItp(nonce2, sharedOrbitItpId, validSignerBitmap, validPubkey, signature);
+        bridgeProxy.completeCreateItp(nonce2, sharedOrbitItpId, signature);
 
         vm.clearMockedCalls();
     }
@@ -821,7 +820,7 @@ contract BridgeProxyTest is TestHelper {
         vm.mockCall(address(0x08), abi.encode(), abi.encode(uint256(1)));
         bytes memory signature = abi.encodePacked(uint256(1), uint256(2));
 
-        bridgeProxy.completeCreateItp(nonce, orbitItpId, validSignerBitmap, validPubkey, signature);
+        bridgeProxy.completeCreateItp(nonce, orbitItpId, signature);
 
         // Verify deployer was stored
         assertEq(bridgeProxy.itpDeployer(orbitItpId), user);
@@ -848,7 +847,7 @@ contract BridgeProxyTest is TestHelper {
 
         vm.mockCall(address(0x08), abi.encode(), abi.encode(uint256(1)));
         bytes memory signature = abi.encodePacked(uint256(1), uint256(2));
-        bridgeProxy.completeCreateItp(nonce, orbitItpId, validSignerBitmap, validPubkey, signature);
+        bridgeProxy.completeCreateItp(nonce, orbitItpId, signature);
         vm.clearMockedCalls();
     }
 
@@ -871,8 +870,7 @@ contract BridgeProxyTest is TestHelper {
         bytes memory signature = abi.encodePacked(uint256(1), uint256(2));
 
         bridgeProxy.rebalance(
-            orbitItpId, emptyIndices, emptyAddrs, newWeights, prices,
-            validSignerBitmap, validPubkey, signature
+            orbitItpId, emptyIndices, emptyAddrs, newWeights, prices, signature
         );
 
         // BridgeProxy no longer calls Index.rebalance() directly —
@@ -901,58 +899,10 @@ contract BridgeProxyTest is TestHelper {
 
         vm.expectRevert(ErrorsLib.E071_InvalidBLSSignature.selector);
         bridgeProxy.rebalance(
-            orbitItpId, emptyIndices, emptyAddrs, newWeights, prices,
-            validSignerBitmap, validPubkey, signature
+            orbitItpId, emptyIndices, emptyAddrs, newWeights, prices, signature
         );
 
         vm.clearMockedCalls();
-    }
-
-    function test_rebalance_insufficientSigners() public {
-        bytes32 orbitItpId = _createCompletedItp();
-
-        uint256[] memory newWeights = new uint256[](2);
-        newWeights[0] = 0.6e18;
-        newWeights[1] = 0.4e18;
-
-        uint256[] memory prices = new uint256[](2);
-        prices[0] = 1e18;
-        prices[1] = 1e18;
-
-        uint256[] memory emptyIndices = new uint256[](0);
-        address[] memory emptyAddrs = new address[](0);
-
-        // Only 1 signer (threshold is 2)
-        uint256 insufficientBitmap = 1; // Only bit 0 set
-
-        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E07D_InsufficientSigners.selector, 1, 2));
-        bridgeProxy.rebalance(
-            orbitItpId, emptyIndices, emptyAddrs, newWeights, prices,
-            insufficientBitmap, validPubkey, validSignature
-        );
-    }
-
-    function test_rebalance_invalidPubkeyLength() public {
-        bytes32 orbitItpId = _createCompletedItp();
-
-        uint256[] memory newWeights = new uint256[](2);
-        newWeights[0] = 0.6e18;
-        newWeights[1] = 0.4e18;
-
-        uint256[] memory prices = new uint256[](2);
-        prices[0] = 1e18;
-        prices[1] = 1e18;
-
-        uint256[] memory emptyIndices = new uint256[](0);
-        address[] memory emptyAddrs = new address[](0);
-
-        bytes memory shortPubkey = new bytes(64); // Should be 128
-
-        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E07E_InvalidAggregatedPubkeyLength.selector, 64));
-        bridgeProxy.rebalance(
-            orbitItpId, emptyIndices, emptyAddrs, newWeights, prices,
-            validSignerBitmap, shortPubkey, validSignature
-        );
     }
 
     function test_rebalance_revertsWhenPaused() public {
@@ -974,8 +924,7 @@ contract BridgeProxyTest is TestHelper {
 
         vm.expectRevert();
         bridgeProxy.rebalance(
-            orbitItpId, emptyIndices, emptyAddrs, newWeights, prices,
-            validSignerBitmap, validPubkey, validSignature
+            orbitItpId, emptyIndices, emptyAddrs, newWeights, prices, validSignature
         );
     }
 
@@ -1049,113 +998,137 @@ contract BridgeProxyTest is TestHelper {
         bridgeProxy.transferDeployer(orbitItpId, address(0x6));
     }
 
-    // ============ Rebalance Message Hash Tests ============
+    // ============ ITP Metadata Tests ============
 
-    // ============ Deployer Profile Tests ============
+    function test_setItpMetadata_success() public {
+        bytes32 orbitItpId = _createCompletedItp();
 
-    function test_setDeployerProfile_success() public {
         vm.prank(user);
-        bridgeProxy.setDeployerProfile("My Fund", "https://myfund.io");
+        bridgeProxy.setItpMetadata(orbitItpId, "A great fund", "https://myfund.io", "https://youtube.com/watch?v=abc");
 
-        (string memory name, string memory url) = bridgeProxy.getDeployerProfile(user);
-        assertEq(name, "My Fund");
+        (string memory desc, string memory url, string memory video) = bridgeProxy.getItpMetadata(orbitItpId);
+        assertEq(desc, "A great fund");
         assertEq(url, "https://myfund.io");
+        assertEq(video, "https://youtube.com/watch?v=abc");
     }
 
-    function test_setDeployerProfile_emitsEvent() public {
+    function test_setItpMetadata_emitsEvent() public {
+        bytes32 orbitItpId = _createCompletedItp();
+
         vm.prank(user);
-        vm.expectEmit(true, false, false, true);
-        emit DeployerProfileUpdated(user, "My Fund", "https://myfund.io");
-        bridgeProxy.setDeployerProfile("My Fund", "https://myfund.io");
+        vm.expectEmit(true, true, false, true);
+        emit ItpMetadataUpdated(orbitItpId, user, "Desc", "https://x.io", "https://yt.com/v");
+        bridgeProxy.setItpMetadata(orbitItpId, "Desc", "https://x.io", "https://yt.com/v");
     }
 
-    function test_setDeployerProfile_update() public {
+    function test_setItpMetadata_update() public {
+        bytes32 orbitItpId = _createCompletedItp();
+
         vm.startPrank(user);
-        bridgeProxy.setDeployerProfile("Old Name", "https://old.io");
-        bridgeProxy.setDeployerProfile("New Name", "https://new.io");
+        bridgeProxy.setItpMetadata(orbitItpId, "Old", "https://old.io", "");
+        bridgeProxy.setItpMetadata(orbitItpId, "New", "https://new.io", "https://yt.com/new");
         vm.stopPrank();
 
-        (string memory name, string memory url) = bridgeProxy.getDeployerProfile(user);
-        assertEq(name, "New Name");
+        (string memory desc, string memory url, string memory video) = bridgeProxy.getItpMetadata(orbitItpId);
+        assertEq(desc, "New");
         assertEq(url, "https://new.io");
+        assertEq(video, "https://yt.com/new");
     }
 
-    function test_setDeployerProfile_clear() public {
+    function test_setItpMetadata_clear() public {
+        bytes32 orbitItpId = _createCompletedItp();
+
         vm.startPrank(user);
-        bridgeProxy.setDeployerProfile("My Fund", "https://myfund.io");
-        bridgeProxy.setDeployerProfile("", "");
+        bridgeProxy.setItpMetadata(orbitItpId, "Desc", "https://x.io", "https://yt.com");
+        bridgeProxy.setItpMetadata(orbitItpId, "", "", "");
         vm.stopPrank();
 
-        (string memory name, string memory url) = bridgeProxy.getDeployerProfile(user);
-        assertEq(name, "");
+        (string memory desc, string memory url, string memory video) = bridgeProxy.getItpMetadata(orbitItpId);
+        assertEq(desc, "");
         assertEq(url, "");
+        assertEq(video, "");
     }
 
-    function test_setDeployerProfile_nameTooLong() public {
-        // 33 characters — exceeds MAX_NAME_LENGTH (32)
-        string memory longName = "123456789012345678901234567890123";
-        assertTrue(bytes(longName).length == 33);
+    function test_setItpMetadata_descriptionTooLong() public {
+        bytes32 orbitItpId = _createCompletedItp();
+
+        // 281 bytes — exceeds MAX_DESCRIPTION_LENGTH (280)
+        bytes memory longDescBytes = new bytes(281);
+        for (uint256 i = 0; i < 281; i++) longDescBytes[i] = "a";
+        string memory longDesc = string(longDescBytes);
 
         vm.prank(user);
-        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E121_ProfileNameTooLong.selector, 33, 32));
-        bridgeProxy.setDeployerProfile(longName, "https://ok.io");
+        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E121_DescriptionTooLong.selector, 281, 280));
+        bridgeProxy.setItpMetadata(orbitItpId, longDesc, "", "");
     }
 
-    function test_setDeployerProfile_urlTooLong() public {
-        // 129 characters — exceeds MAX_URL_LENGTH (128)
+    function test_setItpMetadata_urlTooLong() public {
+        bytes32 orbitItpId = _createCompletedItp();
+
         bytes memory longUrlBytes = new bytes(129);
-        for (uint256 i = 0; i < 129; i++) {
-            longUrlBytes[i] = "a";
-        }
+        for (uint256 i = 0; i < 129; i++) longUrlBytes[i] = "a";
         string memory longUrl = string(longUrlBytes);
 
         vm.prank(user);
-        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E122_ProfileUrlTooLong.selector, 129, 128));
-        bridgeProxy.setDeployerProfile("OK", longUrl);
+        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E122_UrlTooLong.selector, 129, 128));
+        bridgeProxy.setItpMetadata(orbitItpId, "", longUrl, "");
     }
 
-    function test_setDeployerProfile_maxLengths() public {
-        // Exactly 32 chars for name
-        string memory maxName = "12345678901234567890123456789012";
-        assertEq(bytes(maxName).length, 32);
+    function test_setItpMetadata_videoUrlTooLong() public {
+        bytes32 orbitItpId = _createCompletedItp();
 
-        // Exactly 128 chars for URL
-        bytes memory maxUrlBytes = new bytes(128);
-        for (uint256 i = 0; i < 128; i++) {
-            maxUrlBytes[i] = "x";
-        }
-        string memory maxUrl = string(maxUrlBytes);
-        assertEq(bytes(maxUrl).length, 128);
+        bytes memory longVideoBytes = new bytes(257);
+        for (uint256 i = 0; i < 257; i++) longVideoBytes[i] = "a";
+        string memory longVideo = string(longVideoBytes);
 
         vm.prank(user);
-        bridgeProxy.setDeployerProfile(maxName, maxUrl);
-
-        (string memory name, string memory url) = bridgeProxy.getDeployerProfile(user);
-        assertEq(name, maxName);
-        assertEq(bytes(url).length, 128);
+        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E123_VideoUrlTooLong.selector, 257, 256));
+        bridgeProxy.setItpMetadata(orbitItpId, "", "", longVideo);
     }
 
-    function test_getDeployerProfile_nonExistent() public view {
-        (string memory name, string memory url) = bridgeProxy.getDeployerProfile(address(0x999));
-        assertEq(name, "");
-        assertEq(url, "");
-    }
-
-    function test_setDeployerProfile_multipleDeployers() public {
-        vm.prank(user);
-        bridgeProxy.setDeployerProfile("User Fund", "https://user.io");
+    function test_setItpMetadata_notDeployer() public {
+        bytes32 orbitItpId = _createCompletedItp();
 
         vm.prank(attacker);
-        bridgeProxy.setDeployerProfile("Attacker Fund", "https://attacker.io");
-
-        (string memory name1, string memory url1) = bridgeProxy.getDeployerProfile(user);
-        assertEq(name1, "User Fund");
-        assertEq(url1, "https://user.io");
-
-        (string memory name2, string memory url2) = bridgeProxy.getDeployerProfile(attacker);
-        assertEq(name2, "Attacker Fund");
-        assertEq(url2, "https://attacker.io");
+        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E124_NotItpDeployer.selector, orbitItpId, attacker, user));
+        bridgeProxy.setItpMetadata(orbitItpId, "Hack", "", "");
     }
+
+    function test_setItpMetadata_maxLengths() public {
+        bytes32 orbitItpId = _createCompletedItp();
+
+        bytes memory descBytes = new bytes(280);
+        for (uint256 i = 0; i < 280; i++) descBytes[i] = "d";
+        bytes memory urlBytes = new bytes(128);
+        for (uint256 i = 0; i < 128; i++) urlBytes[i] = "u";
+        bytes memory videoBytes = new bytes(256);
+        for (uint256 i = 0; i < 256; i++) videoBytes[i] = "v";
+
+        vm.prank(user);
+        bridgeProxy.setItpMetadata(orbitItpId, string(descBytes), string(urlBytes), string(videoBytes));
+
+        (string memory desc, string memory url, string memory video) = bridgeProxy.getItpMetadata(orbitItpId);
+        assertEq(bytes(desc).length, 280);
+        assertEq(bytes(url).length, 128);
+        assertEq(bytes(video).length, 256);
+    }
+
+    function test_getItpMetadata_nonExistent() public view {
+        (string memory desc, string memory url, string memory video) = bridgeProxy.getItpMetadata(bytes32(uint256(999)));
+        assertEq(desc, "");
+        assertEq(url, "");
+        assertEq(video, "");
+    }
+
+    function test_setItpMetadata_itpNotFound() public {
+        bytes32 fakeItpId = bytes32(uint256(999));
+
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E099_BridgeItpNotFound.selector, fakeItpId));
+        bridgeProxy.setItpMetadata(fakeItpId, "Desc", "", "");
+    }
+
+    // ============ Rebalance Message Hash Tests ============
 
     function test_rebalanceMessageHash_construction() public pure {
         uint256 chainId = 42161;

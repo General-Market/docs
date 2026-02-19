@@ -10,6 +10,7 @@ import "../src/libraries/TypesLib.sol";
 import "../src/libraries/ErrorsLib.sol";
 import "../src/libraries/EventsLib.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
 
 /// @title IndexProductionHardening.t.sol - Tests for Story 7.16
 /// @notice Tests BLS price updates, weighted NAV, minBuyAmount, queue depth monitoring
@@ -36,7 +37,8 @@ contract IndexProductionHardeningTest is TestHelper {
     bytes32 public singleAssetItpId;
     bytes32 public multiAssetItpId;
 
-    bytes public emptyBlsSignature = "";
+    // Dummy BLS signature (64 bytes for G1 point) — pairing precompile is mocked
+    bytes public dummyBlsSignature = new bytes(64);
 
     function setUp() public {
         admin = address(this);
@@ -52,6 +54,14 @@ contract IndexProductionHardeningTest is TestHelper {
             abi.encodeCall(Index.initialize, (address(governance), address(usdc)))
         );
         index = Index(address(proxy));
+
+        // Setup IssuerRegistry with dummy aggregated pubkey for BLS verification
+        IssuerRegistry registry = deployIssuerRegistry(address(governance));
+        registry.setAggregatedPubkey(new bytes(128));
+        index.setIssuerRegistry(address(registry));
+
+        // Mock BN254 pairing precompile to always return true
+        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
 
         // Create single-asset ITP (100% BTC)
         {
@@ -168,7 +178,7 @@ contract IndexProductionHardeningTest is TestHelper {
         // qty_btc = (6e17 * 1e18) / 50000e18 = 12000000000000
         // contribution = (12000000000000 * 50000e18) / 1e18 = 6e17 ($0.60)
         uint256 expected = 6e17;
-        index.setItpNav(multiAssetItpId, expected, emptyBlsSignature);
+        index.setItpNav(multiAssetItpId, expected, dummyBlsSignature);
         uint256 nav = index.getNAV(multiAssetItpId);
         assertEq(nav, expected, "NAV should reflect zero ETH price scenario");
     }
@@ -350,7 +360,7 @@ contract IndexProductionHardeningTest is TestHelper {
         // Batch and fill
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(1, orderIds, emptyBlsSignature);
+        index.confirmBatch(1, orderIds, dummyBlsSignature);
 
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
         fills[0] = TypesLib.Fill({
@@ -360,7 +370,7 @@ contract IndexProductionHardeningTest is TestHelper {
             cycleNumber: 1,
             txHash: bytes32(0)
         });
-        index.confirmFills(1, fills, emptyBlsSignature);
+        index.confirmFills(1, fills, dummyBlsSignature);
 
         assertEq(index.pendingOrderCount(), 0, "Should decrement to 0 after fill");
     }
@@ -378,7 +388,7 @@ contract IndexProductionHardeningTest is TestHelper {
         vm.warp(block.timestamp + 2 hours);
 
         // Refund
-        index.refundExpiredOrder(orderId, emptyBlsSignature);
+        index.refundExpiredOrder(orderId, dummyBlsSignature);
 
         assertEq(index.pendingOrderCount(), 0, "Should decrement to 0 after refund");
     }
@@ -482,7 +492,7 @@ contract IndexProductionHardeningTest is TestHelper {
         // Update NAV directly: BTC $50k → $55k (10% increase) → NAV = $1.10
         // qty_btc = (1e18 * 1e18) / 50000e18 = 2e13 (computed at creation)
         // new NAV = (2e13 * 55000e18) / 1e18 = 1.1e18 ($1.10)
-        index.setItpNav(singleAssetItpId, 1.1e18, emptyBlsSignature);
+        index.setItpNav(singleAssetItpId, 1.1e18, dummyBlsSignature);
 
         uint256 nav = index.getNAV(singleAssetItpId);
         assertEq(nav, 1.1e18, "NAV should reflect updated value ($1.10)");
@@ -505,7 +515,7 @@ contract IndexProductionHardeningTest is TestHelper {
 
     function test_integration_zeroPrice_edgeCase() public {
         // Set NAV to 0 (simulates oracle failure — all prices 0)
-        index.setItpNav(multiAssetItpId, 0, emptyBlsSignature);
+        index.setItpNav(multiAssetItpId, 0, dummyBlsSignature);
 
         // NAV should be 0
         uint256 nav = index.getNAV(multiAssetItpId);
@@ -610,7 +620,7 @@ contract IndexProductionHardeningTest is TestHelper {
         orderIds[0] = orderId;
         // Use a unique cycle number
         uint256 cycle = uint256(keccak256(abi.encode(orderId, block.timestamp)));
-        index.confirmBatch(cycle, orderIds, emptyBlsSignature);
+        index.confirmBatch(cycle, orderIds, dummyBlsSignature);
 
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
         fills[0] = TypesLib.Fill({
@@ -620,6 +630,6 @@ contract IndexProductionHardeningTest is TestHelper {
             cycleNumber: cycle,
             txHash: bytes32(0)
         });
-        index.confirmFills(cycle, fills, emptyBlsSignature);
+        index.confirmFills(cycle, fills, dummyBlsSignature);
     }
 }

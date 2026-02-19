@@ -178,7 +178,7 @@ contract Deploy100AssetITP is Script {
         for (uint256 i = 0; i < NUM_ASSETS; i++) {
             weights[i] = WEIGHT_PER_ASSET;
             assets[i] = tokens[i];
-            prices[i] = 1e18; // default $1, overridden below if real prices available
+            prices[i] = 0; // must be loaded from creation-prices.json
         }
         _loadPrices(prices);
 
@@ -270,38 +270,22 @@ contract Deploy100AssetITP is Script {
         console.log("  Deployed assets saved to frontend/public/deployed-assets.json");
     }
 
-    /// @notice Load real Bitget prices from data/creation-prices.json if USE_CREATION_PRICES=true
+    /// @notice Load real Bitget prices from data/creation-prices.json
+    /// @dev Reverts if file is missing or any price is zero — never silently default to $1
     function _loadPrices(uint256[] memory prices) internal {
-        bool useReal = vm.envOr("USE_CREATION_PRICES", false);
-        if (!useReal) {
-            console.log("  Using default $1 prices (USE_CREATION_PRICES not set)");
-            return;
-        }
-
-        string memory json;
-        try vm.readFile("../data/creation-prices.json") returns (string memory content) {
-            json = content;
-        } catch {
-            console.log("  WARNING: creation-prices.json not found, using $1 defaults");
-            return;
-        }
+        string memory json = vm.readFile("../data/creation-prices.json");
 
         uint256 loaded = 0;
         for (uint256 i = 0; i < NUM_ASSETS; i++) {
             string memory pair = _getBitgetPair(i);
             string memory key = string.concat(".", pair);
-            // Try to parse the price for this symbol
-            try vm.parseJsonString(json, key) returns (string memory priceStr) {
-                uint256 price = _stringToUint(priceStr);
-                if (price > 0) {
-                    prices[i] = price;
-                    loaded++;
-                    if (i < 3 || i == 99) {
-                        console.log("  Price", pair, "=", vm.toString(price));
-                    }
-                }
-            } catch {
-                // Symbol not in JSON — keep $1 default
+            string memory priceStr = vm.parseJsonString(json, key);
+            uint256 price = _stringToUint(priceStr);
+            require(price > 0, string.concat("Missing or zero price for ", pair));
+            prices[i] = price;
+            loaded++;
+            if (i < 3 || i == 99) {
+                console.log("  Price", pair, "=", vm.toString(price));
             }
         }
         console.log("  Loaded real prices:", loaded, "of", NUM_ASSETS);

@@ -147,7 +147,7 @@ contract DeployRebalanceE2E is Script {
         console.log("Phase 3: Deploy Registries");
         IssuerRegistry regImpl = new IssuerRegistry();
         issuerRegistry = address(new ERC1967Proxy(address(regImpl), abi.encodeWithSelector(IssuerRegistry.initialize.selector, governance)));
-        collateralRegistry = address(new CollateralRegistry(admin));
+        collateralRegistry = address(new CollateralRegistry(admin, issuerRegistry));
         console.log("  IssuerRegistry:", issuerRegistry);
     }
 
@@ -161,7 +161,7 @@ contract DeployRebalanceE2E is Script {
 
         // ArbBridgeCustody
         address arbImpl = address(new ArbBridgeCustody());
-        bytes memory arbInit = abi.encodeWithSelector(ArbBridgeCustody.initialize.selector, issuerRegistry, arbWusdc, indexProxy);
+        bytes memory arbInit = abi.encodeWithSelector(ArbBridgeCustody.initialize.selector, issuerRegistry, arbWusdc, indexProxy, address(0));
         arbBridgeCustodyProxy = address(new ERC1967Proxy(arbImpl, arbInit));
 
         // BLSCustody

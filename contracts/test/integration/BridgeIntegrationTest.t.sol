@@ -17,7 +17,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 /// @title BridgeIntegrationTest - End-to-end bridge integration tests (L3 <-> Arbitrum)
 /// @notice Tests the full two-phase commit bridge lifecycle across L3BridgeCustody,
 ///         ArbBridgeCustody, and CollateralRegistry working together
-/// @dev Uses real IssuerRegistry with empty aggregated pubkey for BLS signature bypass (Phase 1)
+/// @dev Uses real IssuerRegistry with mocked BN254 pairing precompile for BLS test bypass
 contract BridgeIntegrationTest is TestHelper {
     // ============ CONTRACTS ============
 
@@ -26,7 +26,8 @@ contract BridgeIntegrationTest is TestHelper {
     CollateralRegistry public collateralRegistry;
     IssuerRegistry public mockRegistry;
     Governance public governance;
-    MockERC20 public usdc;
+    MockERC20 public usdc;      // L3 USDC (18 decimals)
+    MockERC20 public arbUsdc;   // Arb USDC (6 decimals, matches production)
 
     // ============ TEST ACCOUNTS ============
 
@@ -41,7 +42,7 @@ contract BridgeIntegrationTest is TestHelper {
     uint256 public constant ARB_CHAIN_ID = 42161;
     uint256 public constant BRIDGE_AMOUNT = 1000e18;
     uint256 public constant LARGE_AMOUNT = 5000e18;
-    bytes public constant EMPTY_BLS_SIG = "";
+    bytes public DUMMY_BLS_SIG = new bytes(64);
     bytes32 public constant TEST_ITP_ID = keccak256("TEST_ITP_001");
 
     // ============ EVENTS (for expectEmit) ============
@@ -63,11 +64,13 @@ contract BridgeIntegrationTest is TestHelper {
         // Deploy real governance and issuer registry via UUPS proxy
         governance = deployGovernance(deployer);
         mockRegistry = deployIssuerRegistry(address(governance));
-        // NOTE: Using 18 decimals for test simplicity. Real USDC on Arbitrum is 6 decimals.
-        // Bridge contracts do not perform decimal conversion (raw amounts pass through),
-        // so decimal choice does not affect logic correctness. If decimal-aware bridging
-        // is added later, a separate test with 6-decimal USDC should be created.
-        usdc = new MockERC20("USDC", "USDC", 18);
+        // Set aggregated pubkey and mock BLS precompile for test bypass
+        mockRegistry.setAggregatedPubkey(new bytes(128));
+        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
+        // L3 USDC uses 18 decimals (internal protocol standard)
+        usdc = new MockERC20("L3USDC", "L3USDC", 18);
+        // Arb USDC uses 6 decimals (matches real USDC on Arbitrum)
+        arbUsdc = new MockERC20("USDC", "USDC", 6);
 
         // --- Deploy L3BridgeCustody (UUPS proxy) ---
         L3BridgeCustody l3Impl = new L3BridgeCustody();
@@ -82,14 +85,12 @@ contract BridgeIntegrationTest is TestHelper {
         ArbBridgeCustody arbImpl = new ArbBridgeCustody();
         ERC1967Proxy arbProxy = new ERC1967Proxy(
             address(arbImpl),
-            abi.encodeCall(ArbBridgeCustody.initialize, (address(mockRegistry), address(usdc), l3IndexAddr))
+            abi.encodeCall(ArbBridgeCustody.initialize, (address(mockRegistry), address(arbUsdc), l3IndexAddr, address(0)))
         );
         arbBridge = ArbBridgeCustody(address(arbProxy));
 
         // --- Deploy CollateralRegistry ---
-        collateralRegistry = new CollateralRegistry(deployer);
-        // Authorize the test contract (deployer) as a caller for recordCollateralMove
-        // deployer is already authorized by constructor
+        collateralRegistry = new CollateralRegistry(deployer, address(mockRegistry));
 
         // --- Register 3 test issuers with BLS keys (128-byte pubkeys, admin prank required) ---
         registerIssuer(mockRegistry, deployer, address(0x1001), bytes32("issuer1_ip"), 1);
@@ -105,8 +106,8 @@ contract BridgeIntegrationTest is TestHelper {
         vm.prank(bob);
         usdc.approve(address(l3Bridge), type(uint256).max);
 
-        // --- Fund ArbBridgeCustody with USDC for release operations ---
-        usdc.mint(address(arbBridge), 50_000_000e18);
+        // --- Fund ArbBridgeCustody with 6-decimal USDC for release operations ---
+        arbUsdc.mint(address(arbBridge), 50_000_000e6);
 
         // --- Seed CollateralRegistry: ITP starts with collateral on L3 ---
         collateralRegistry.recordCollateralMove(
@@ -115,7 +116,7 @@ contract BridgeIntegrationTest is TestHelper {
             L3_CHAIN_ID,  // toChain=L3
             10_000e18,    // initial collateral
             TypesLib.TxType.BUY,
-            EMPTY_BLS_SIG
+            DUMMY_BLS_SIG
         );
     }
 
@@ -124,7 +125,7 @@ contract BridgeIntegrationTest is TestHelper {
     /// @dev Initiate a bridge from L3 and return the nonce
     function _initiateBridge(uint256 amount) internal returns (uint256 nonce) {
         vm.prank(alice);
-        nonce = l3Bridge.initiateBridge(ARB_CHAIN_ID, amount, EMPTY_BLS_SIG);
+        nonce = l3Bridge.initiateBridge(ARB_CHAIN_ID, amount, DUMMY_BLS_SIG);
     }
 
     /// @dev Build a valid ReleaseProof from a lock nonce
@@ -142,14 +143,14 @@ contract BridgeIntegrationTest is TestHelper {
     function _completeBridge(uint256 nonce, uint256 amount) internal {
         TypesLib.ReleaseProof memory proof = _buildProof(nonce);
         vm.chainId(ARB_CHAIN_ID);
-        arbBridge.completeBridge(L3_CHAIN_ID, amount, nonce, proof, EMPTY_BLS_SIG);
+        arbBridge.completeBridge(L3_CHAIN_ID, amount, nonce, proof, DUMMY_BLS_SIG);
         vm.chainId(L3_CHAIN_ID);
     }
 
     /// @dev Mark a lock as released on L3
     function _markReleased(uint256 nonce) internal {
         bytes32 destTxHash = keccak256(abi.encode("arb_completion_tx", nonce));
-        l3Bridge.markReleased(nonce, destTxHash, EMPTY_BLS_SIG);
+        l3Bridge.markReleased(nonce, destTxHash, DUMMY_BLS_SIG);
     }
 
     /// @dev Execute full L3->Arb bridge flow: initiate -> complete -> markReleased
@@ -167,7 +168,7 @@ contract BridgeIntegrationTest is TestHelper {
             toChain,
             amount,
             TypesLib.TxType.BRIDGE,
-            EMPTY_BLS_SIG
+            DUMMY_BLS_SIG
         );
     }
 
@@ -212,14 +213,16 @@ contract BridgeIntegrationTest is TestHelper {
     function test_l3ToArb_completeBridge_releasesUSDC() public {
         uint256 nonce = _initiateBridge(BRIDGE_AMOUNT);
 
-        uint256 callerBalBefore = usdc.balanceOf(address(this));
-        uint256 arbBalBefore = usdc.balanceOf(address(arbBridge));
+        // ArbBridgeCustody uses 6-decimal USDC — completeBridge converts 18→6 internally
+        uint256 expectedArbAmount = BRIDGE_AMOUNT / 1e12; // 1000e18 → 1000e6
+        uint256 callerBalBefore = arbUsdc.balanceOf(address(this));
+        uint256 arbBalBefore = arbUsdc.balanceOf(address(arbBridge));
 
         _completeBridge(nonce, BRIDGE_AMOUNT);
 
-        // USDC released from ArbBridgeCustody to caller
-        assertEq(usdc.balanceOf(address(this)), callerBalBefore + BRIDGE_AMOUNT);
-        assertEq(usdc.balanceOf(address(arbBridge)), arbBalBefore - BRIDGE_AMOUNT);
+        // 6-decimal USDC released from ArbBridgeCustody to caller
+        assertEq(arbUsdc.balanceOf(address(this)), callerBalBefore + expectedArbAmount);
+        assertEq(arbUsdc.balanceOf(address(arbBridge)), arbBalBefore - expectedArbAmount);
 
         // Nonce marked as used
         assertTrue(arbBridge.isNonceUsed(L3_CHAIN_ID, nonce));
@@ -234,7 +237,7 @@ contract BridgeIntegrationTest is TestHelper {
         vm.expectEmit(true, false, false, true);
         emit BridgeCompleted(L3_CHAIN_ID, BRIDGE_AMOUNT, nonce);
 
-        arbBridge.completeBridge(L3_CHAIN_ID, BRIDGE_AMOUNT, nonce, proof, EMPTY_BLS_SIG);
+        arbBridge.completeBridge(L3_CHAIN_ID, BRIDGE_AMOUNT, nonce, proof, DUMMY_BLS_SIG);
         vm.chainId(L3_CHAIN_ID);
     }
 
@@ -254,9 +257,10 @@ contract BridgeIntegrationTest is TestHelper {
     function test_l3ToArb_fullFlow_endToEnd() public {
         // Full two-phase commit lifecycle
         uint256 aliceBalBefore = usdc.balanceOf(alice);
-        uint256 arbBalBefore = usdc.balanceOf(address(arbBridge));
+        uint256 arbBalBefore = arbUsdc.balanceOf(address(arbBridge));
+        uint256 expectedArbAmount = BRIDGE_AMOUNT / 1e12; // 18→6 decimal conversion
 
-        // Phase 1: Lock on L3
+        // Phase 1: Lock on L3 (18-decimal USDC)
         uint256 nonce = _initiateBridge(BRIDGE_AMOUNT);
 
         // Verify lock state
@@ -265,7 +269,7 @@ contract BridgeIntegrationTest is TestHelper {
         assertFalse(lock.released);
         assertFalse(lock.reversed);
 
-        // Phase 2: Complete on Arb
+        // Phase 2: Complete on Arb (6-decimal USDC released)
         _completeBridge(nonce, BRIDGE_AMOUNT);
         assertTrue(arbBridge.isNonceUsed(L3_CHAIN_ID, nonce));
 
@@ -275,8 +279,8 @@ contract BridgeIntegrationTest is TestHelper {
         assertTrue(lock.released);
 
         // Balances verified
-        assertEq(usdc.balanceOf(alice), aliceBalBefore - BRIDGE_AMOUNT);
-        assertEq(usdc.balanceOf(address(arbBridge)), arbBalBefore - BRIDGE_AMOUNT);
+        assertEq(usdc.balanceOf(alice), aliceBalBefore - BRIDGE_AMOUNT); // L3 side: 18 decimals
+        assertEq(arbUsdc.balanceOf(address(arbBridge)), arbBalBefore - expectedArbAmount); // Arb side: 6 decimals
     }
 
     function test_l3ToArb_sequentialNonces() public {
@@ -337,7 +341,7 @@ contract BridgeIntegrationTest is TestHelper {
 
         // Complete bridge from Base (nonce 0 — same nonce but different source chain)
         vm.chainId(ARB_CHAIN_ID);
-        arbBridge.completeBridge(8453, 50e18, 0, baseProof, EMPTY_BLS_SIG);
+        arbBridge.completeBridge(8453, 50e18, 0, baseProof, DUMMY_BLS_SIG);
         vm.chainId(L3_CHAIN_ID);
 
         // Both are completed independently
@@ -360,7 +364,7 @@ contract BridgeIntegrationTest is TestHelper {
         vm.warp(block.timestamp + 1 hours + 1);
 
         // Reverse with 15 signers (meets REVERSAL_THRESHOLD)
-        l3Bridge.reverseLock(nonce, EMPTY_BLS_SIG, 15);
+        l3Bridge.reverseLock(nonce, DUMMY_BLS_SIG, 15);
 
         // Lock is reversed
         TypesLib.PendingLock memory lock = l3Bridge.getPendingLock(nonce);
@@ -381,7 +385,7 @@ contract BridgeIntegrationTest is TestHelper {
         vm.expectEmit(true, false, false, false);
         emit LockReversed(nonce);
 
-        l3Bridge.reverseLock(nonce, EMPTY_BLS_SIG, 15);
+        l3Bridge.reverseLock(nonce, DUMMY_BLS_SIG, 15);
     }
 
     function test_timeout_markReleasedRevertsOnReversedLock() public {
@@ -389,12 +393,12 @@ contract BridgeIntegrationTest is TestHelper {
         vm.warp(block.timestamp + 1 hours + 1);
 
         // Reverse the lock
-        l3Bridge.reverseLock(nonce, EMPTY_BLS_SIG, 15);
+        l3Bridge.reverseLock(nonce, DUMMY_BLS_SIG, 15);
 
         // markReleased should revert on reversed lock
         bytes32 destTxHash = keccak256("some_tx");
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E046_LockAlreadyReversed.selector, nonce));
-        l3Bridge.markReleased(nonce, destTxHash, EMPTY_BLS_SIG);
+        l3Bridge.markReleased(nonce, destTxHash, DUMMY_BLS_SIG);
     }
 
     function test_timeout_reversalFailsBeforeTimeout() public {
@@ -410,7 +414,7 @@ contract BridgeIntegrationTest is TestHelper {
                 block.timestamp
             )
         );
-        l3Bridge.reverseLock(nonce, EMPTY_BLS_SIG, 15);
+        l3Bridge.reverseLock(nonce, DUMMY_BLS_SIG, 15);
     }
 
     function test_timeout_reversalFailsWithInsufficientSigners() public {
@@ -419,7 +423,7 @@ contract BridgeIntegrationTest is TestHelper {
 
         // Try with 14 signers (below REVERSAL_THRESHOLD of 15)
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E048_InsufficientSignerCount.selector, 14, 15));
-        l3Bridge.reverseLock(nonce, EMPTY_BLS_SIG, 14);
+        l3Bridge.reverseLock(nonce, DUMMY_BLS_SIG, 14);
     }
 
     function test_timeout_reversalAt20Signers() public {
@@ -427,7 +431,7 @@ contract BridgeIntegrationTest is TestHelper {
         vm.warp(block.timestamp + 1 hours + 1);
 
         // 20 signers (above threshold) should work
-        l3Bridge.reverseLock(nonce, EMPTY_BLS_SIG, 20);
+        l3Bridge.reverseLock(nonce, DUMMY_BLS_SIG, 20);
 
         TypesLib.PendingLock memory lock = l3Bridge.getPendingLock(nonce);
         assertTrue(lock.reversed);
@@ -444,7 +448,7 @@ contract BridgeIntegrationTest is TestHelper {
         assertTrue(l3Bridge.canReverseLock(nonce));
 
         // After reversal
-        l3Bridge.reverseLock(nonce, EMPTY_BLS_SIG, 15);
+        l3Bridge.reverseLock(nonce, DUMMY_BLS_SIG, 15);
         assertFalse(l3Bridge.canReverseLock(nonce));
     }
 
@@ -452,11 +456,11 @@ contract BridgeIntegrationTest is TestHelper {
         uint256 nonce = _initiateBridge(BRIDGE_AMOUNT);
         vm.warp(block.timestamp + 1 hours + 1);
 
-        l3Bridge.reverseLock(nonce, EMPTY_BLS_SIG, 15);
+        l3Bridge.reverseLock(nonce, DUMMY_BLS_SIG, 15);
 
         // Second reversal should fail
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E046_LockAlreadyReversed.selector, nonce));
-        l3Bridge.reverseLock(nonce, EMPTY_BLS_SIG, 15);
+        l3Bridge.reverseLock(nonce, DUMMY_BLS_SIG, 15);
     }
 
     // ============================================================================
@@ -473,7 +477,7 @@ contract BridgeIntegrationTest is TestHelper {
         TypesLib.ReleaseProof memory proof = _buildProof(nonce);
         vm.chainId(ARB_CHAIN_ID);
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E054_BridgeAlreadyCompleted.selector, L3_CHAIN_ID, nonce));
-        arbBridge.completeBridge(L3_CHAIN_ID, BRIDGE_AMOUNT, nonce, proof, EMPTY_BLS_SIG);
+        arbBridge.completeBridge(L3_CHAIN_ID, BRIDGE_AMOUNT, nonce, proof, DUMMY_BLS_SIG);
         vm.chainId(L3_CHAIN_ID);
     }
 
@@ -491,7 +495,7 @@ contract BridgeIntegrationTest is TestHelper {
             sourceTxHash: keccak256("base_tx")
         });
         vm.chainId(ARB_CHAIN_ID);
-        arbBridge.completeBridge(8453, 50e18, 0, baseProof, EMPTY_BLS_SIG);
+        arbBridge.completeBridge(8453, 50e18, 0, baseProof, DUMMY_BLS_SIG);
         vm.chainId(L3_CHAIN_ID);
 
         assertTrue(arbBridge.isNonceUsed(L3_CHAIN_ID, 0));
@@ -508,7 +512,7 @@ contract BridgeIntegrationTest is TestHelper {
         // Second markReleased fails
         bytes32 destTxHash = keccak256(abi.encode("arb_completion_tx", nonce));
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E045_LockAlreadyReleased.selector, nonce));
-        l3Bridge.markReleased(nonce, destTxHash, EMPTY_BLS_SIG);
+        l3Bridge.markReleased(nonce, destTxHash, DUMMY_BLS_SIG);
     }
 
     function test_replay_sequentialNoncesWork() public {
@@ -603,7 +607,7 @@ contract BridgeIntegrationTest is TestHelper {
         uint256 nonce = _initiateBridge(BRIDGE_AMOUNT);
 
         vm.warp(block.timestamp + 1 hours + 1);
-        l3Bridge.reverseLock(nonce, EMPTY_BLS_SIG, 15);
+        l3Bridge.reverseLock(nonce, DUMMY_BLS_SIG, 15);
 
         // IMPORTANT: CollateralRegistry has no awareness of bridge lock state.
         // The issuer application layer must NOT call recordCollateralMove for reversed bridges.
@@ -623,7 +627,7 @@ contract BridgeIntegrationTest is TestHelper {
         // from actual USDC positions (reversed USDC stays locked in L3BridgeCustody).
         uint256 nonce = _initiateBridge(BRIDGE_AMOUNT);
         vm.warp(block.timestamp + 1 hours + 1);
-        l3Bridge.reverseLock(nonce, EMPTY_BLS_SIG, 15);
+        l3Bridge.reverseLock(nonce, DUMMY_BLS_SIG, 15);
 
         // Accidentally record the reversed bridge — registry accepts it
         _recordBridgeMove(L3_CHAIN_ID, ARB_CHAIN_ID, BRIDGE_AMOUNT);
@@ -732,7 +736,7 @@ contract BridgeIntegrationTest is TestHelper {
 
         // Reverse bridge 2 after timeout
         vm.warp(block.timestamp + 1 hours + 1);
-        l3Bridge.reverseLock(n1, EMPTY_BLS_SIG, 15);
+        l3Bridge.reverseLock(n1, DUMMY_BLS_SIG, 15);
 
         // Do NOT record bridge 2 in collateral registry (it was reversed)
 
@@ -756,7 +760,7 @@ contract BridgeIntegrationTest is TestHelper {
         // Bridge 500 L3->Arb (timeout, reversed)
         uint256 reversedNonce = _initiateBridge(500e18);
         vm.warp(block.timestamp + 1 hours + 1);
-        l3Bridge.reverseLock(reversedNonce, EMPTY_BLS_SIG, 15);
+        l3Bridge.reverseLock(reversedNonce, DUMMY_BLS_SIG, 15);
 
         // Bridge 1500 L3->Arb (success, after time warp)
         _fullBridgeFlow(1500e18);
@@ -786,12 +790,12 @@ contract BridgeIntegrationTest is TestHelper {
         // Alice bridges 1000 USDC
         uint256 aliceBalBefore = usdc.balanceOf(alice);
         vm.prank(alice);
-        uint256 nonceAlice = l3Bridge.initiateBridge(ARB_CHAIN_ID, 1000e18, EMPTY_BLS_SIG);
+        uint256 nonceAlice = l3Bridge.initiateBridge(ARB_CHAIN_ID, 1000e18, DUMMY_BLS_SIG);
 
         // Bob bridges 2000 USDC
         uint256 bobBalBefore = usdc.balanceOf(bob);
         vm.prank(bob);
-        uint256 nonceBob = l3Bridge.initiateBridge(ARB_CHAIN_ID, 2000e18, EMPTY_BLS_SIG);
+        uint256 nonceBob = l3Bridge.initiateBridge(ARB_CHAIN_ID, 2000e18, DUMMY_BLS_SIG);
 
         // Nonces are sequential regardless of caller
         assertEq(nonceAlice, 0);

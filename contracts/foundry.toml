@@ -25,6 +25,7 @@ via_ir = true
 
 # Test settings
 fuzz = { runs = 256 }
+ffi = true
 
 # Allow filesystem access for deployment scripts
 fs_permissions = [
@@ -34,7 +35,7 @@ fs_permissions = [
 ]
 
 [profile.l3-testnet]
-eth_rpc_url = "https://index.rpc.zeeve.net"
+eth_rpc_url = "${INDEX_L3_RPC_URL}"
 chain_id = 111222333
 
 [etherscan]

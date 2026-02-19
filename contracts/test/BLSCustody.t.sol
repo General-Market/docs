@@ -23,13 +23,19 @@ contract BLSCustodyTest is TestHelper {
     address public admin = address(this);
     address public targetContract;
 
-    // Empty BLS signature for Phase 1 (mock verification)
-    bytes public emptyBlsSignature = "";
+    // Dummy BLS signature (G1 generator point, 64 bytes) — precompile 0x08 is mocked
+    bytes public dummyBlsSignature = abi.encode(uint256(1), uint256(2));
 
     function setUp() public {
+        // Mock BN254 pairing precompile to always return true (we test custody logic, not BLS math)
+        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
+
         // Deploy real governance and issuer registry via UUPS proxy
         governance = deployGovernance(admin);
         issuerRegistry = deployIssuerRegistry(address(governance));
+
+        // Set non-empty 128-byte aggregated pubkey (hardened contracts revert on empty pubkey)
+        issuerRegistry.setAggregatedPubkey(new bytes(128));
 
         // Deploy mock token as a target
         token = new MockERC20("Test Token", "TEST", 18);
@@ -61,7 +67,7 @@ contract BLSCustodyTest is TestHelper {
         );
 
         // Execute
-        (bool success, ) = custody.execute(targetContract, data, emptyBlsSignature, 0);
+        (bool success, ) = custody.execute(targetContract, data, dummyBlsSignature, 0);
 
         assertTrue(success);
         assertEq(token.balanceOf(address(0x123)), 100e18);
@@ -80,7 +86,7 @@ contract BLSCustodyTest is TestHelper {
         vm.expectEmit(true, false, false, true);
         emit EventsLib.Executed(targetContract, data, 0);
 
-        custody.execute(targetContract, data, emptyBlsSignature, 0);
+        custody.execute(targetContract, data, dummyBlsSignature, 0);
     }
 
     function test_execute_revertsOnNonceAlreadyUsed() public {
@@ -93,11 +99,11 @@ contract BLSCustodyTest is TestHelper {
         );
 
         // First execution succeeds
-        custody.execute(targetContract, data, emptyBlsSignature, 0);
+        custody.execute(targetContract, data, dummyBlsSignature, 0);
 
         // Second execution with same nonce fails
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E025_NonceAlreadyUsed.selector, 0));
-        custody.execute(targetContract, data, emptyBlsSignature, 0);
+        custody.execute(targetContract, data, dummyBlsSignature, 0);
     }
 
     function test_execute_revertsOnTargetNotWhitelisted() public {
@@ -109,7 +115,7 @@ contract BLSCustodyTest is TestHelper {
         );
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E026_TargetNotWhitelisted.selector, targetContract));
-        custody.execute(targetContract, data, emptyBlsSignature, 0);
+        custody.execute(targetContract, data, dummyBlsSignature, 0);
     }
 
     function test_execute_revertsOnExecutionFailed() public {
@@ -123,7 +129,7 @@ contract BLSCustodyTest is TestHelper {
         );
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E027_ExecutionFailed.selector, targetContract, data));
-        custody.execute(targetContract, data, emptyBlsSignature, 0);
+        custody.execute(targetContract, data, dummyBlsSignature, 0);
     }
 
     function test_execute_nonSequentialNonces() public {
@@ -136,10 +142,10 @@ contract BLSCustodyTest is TestHelper {
         );
 
         // Use nonces out of order (bitmap pattern allows this)
-        custody.execute(targetContract, data, emptyBlsSignature, 100);
-        custody.execute(targetContract, data, emptyBlsSignature, 5);
-        custody.execute(targetContract, data, emptyBlsSignature, 1000);
-        custody.execute(targetContract, data, emptyBlsSignature, 0);
+        custody.execute(targetContract, data, dummyBlsSignature, 100);
+        custody.execute(targetContract, data, dummyBlsSignature, 5);
+        custody.execute(targetContract, data, dummyBlsSignature, 1000);
+        custody.execute(targetContract, data, dummyBlsSignature, 0);
 
         // All nonces should be marked as used
         assertTrue(custody.isNonceUsed(0));
@@ -162,12 +168,12 @@ contract BLSCustodyTest is TestHelper {
         );
 
         // Use nonce 5 first (skip 0-4)
-        custody.execute(targetContract, data, emptyBlsSignature, 5);
+        custody.execute(targetContract, data, dummyBlsSignature, 5);
 
         // Nonces 0-4 should still be usable
-        custody.execute(targetContract, data, emptyBlsSignature, 0);
-        custody.execute(targetContract, data, emptyBlsSignature, 1);
-        custody.execute(targetContract, data, emptyBlsSignature, 2);
+        custody.execute(targetContract, data, dummyBlsSignature, 0);
+        custody.execute(targetContract, data, dummyBlsSignature, 1);
+        custody.execute(targetContract, data, dummyBlsSignature, 2);
 
         // All used nonces should be marked
         assertTrue(custody.isNonceUsed(0));
@@ -194,7 +200,7 @@ contract BLSCustodyTest is TestHelper {
             address(0x111),
             100e18
         );
-        custody.execute(address(token), data1, emptyBlsSignature, 0);
+        custody.execute(address(token), data1, dummyBlsSignature, 0);
 
         // Execute on second target
         bytes memory data2 = abi.encodeWithSignature(
@@ -202,7 +208,7 @@ contract BLSCustodyTest is TestHelper {
             address(0x222),
             50e18
         );
-        custody.execute(address(token2), data2, emptyBlsSignature, 1);
+        custody.execute(address(token2), data2, dummyBlsSignature, 1);
 
         assertEq(token.balanceOf(address(0x111)), 100e18);
         assertEq(token2.balanceOf(address(0x222)), 50e18);
@@ -213,7 +219,7 @@ contract BLSCustodyTest is TestHelper {
     function test_proposeWhitelist_happyPath() public {
         address newTarget = address(0xABC);
 
-        custody.proposeWhitelist(newTarget, emptyBlsSignature);
+        custody.proposeWhitelist(newTarget, dummyBlsSignature);
 
         (uint256 proposedAt, uint256 activatedAt) = custody.getWhitelistStatus(newTarget);
         assertEq(proposedAt, block.timestamp);
@@ -227,30 +233,30 @@ contract BLSCustodyTest is TestHelper {
         vm.expectEmit(true, false, false, true);
         emit EventsLib.WhitelistProposed(newTarget, block.timestamp, block.timestamp + 2 days);
 
-        custody.proposeWhitelist(newTarget, emptyBlsSignature);
+        custody.proposeWhitelist(newTarget, dummyBlsSignature);
     }
 
     function test_proposeWhitelist_revertsOnAlreadyProposed() public {
         address newTarget = address(0xABC);
 
-        custody.proposeWhitelist(newTarget, emptyBlsSignature);
+        custody.proposeWhitelist(newTarget, dummyBlsSignature);
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E028_WhitelistAlreadyProposed.selector, newTarget));
-        custody.proposeWhitelist(newTarget, emptyBlsSignature);
+        custody.proposeWhitelist(newTarget, dummyBlsSignature);
     }
 
     function test_proposeWhitelist_revertsOnAlreadyWhitelisted() public {
         _whitelistTarget(targetContract);
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E031_TargetAlreadyWhitelisted.selector, targetContract));
-        custody.proposeWhitelist(targetContract, emptyBlsSignature);
+        custody.proposeWhitelist(targetContract, dummyBlsSignature);
     }
 
     function test_activateWhitelist_happyPath() public {
         address newTarget = address(0xABC);
 
         // Propose
-        custody.proposeWhitelist(newTarget, emptyBlsSignature);
+        custody.proposeWhitelist(newTarget, dummyBlsSignature);
 
         // Fast forward past timelock
         vm.warp(block.timestamp + 2 days + 1);
@@ -266,7 +272,7 @@ contract BLSCustodyTest is TestHelper {
 
     function test_activateWhitelist_emitsEvent() public {
         address newTarget = address(0xABC);
-        custody.proposeWhitelist(newTarget, emptyBlsSignature);
+        custody.proposeWhitelist(newTarget, dummyBlsSignature);
         vm.warp(block.timestamp + 2 days + 1);
 
         vm.expectEmit(true, false, false, true);
@@ -284,20 +290,21 @@ contract BLSCustodyTest is TestHelper {
 
     function test_activateWhitelist_revertsOnTimelockNotExpired() public {
         address newTarget = address(0xABC);
-        custody.proposeWhitelist(newTarget, emptyBlsSignature);
 
-        // Only fast forward 1 day (need 2 days)
-        vm.warp(block.timestamp + 1 days);
+        // Propose at timestamp 1 (forge default), unlockTime = 1 + 2 days = 172801
+        custody.proposeWhitelist(newTarget, dummyBlsSignature);
 
-        uint256 proposedAt = block.timestamp - 1 days;
-        uint256 unlockTime = proposedAt + 2 days;
+        // Only fast forward 1 day (need 2 days), timestamp becomes 86401
+        vm.warp(1 + 1 days);
 
+        // Use hardcoded values to avoid via_ir optimizer inlining block.timestamp
+        // proposedAt = 1, unlockTime = 1 + 2 days = 172801, currentTime = 86401
         vm.expectRevert(
             abi.encodeWithSelector(
                 ErrorsLib.E030_TimelockNotExpired.selector,
                 newTarget,
-                unlockTime,
-                block.timestamp
+                uint256(1 + 2 days),
+                uint256(1 + 1 days)
             )
         );
         custody.activateWhitelist(newTarget);
@@ -307,7 +314,7 @@ contract BLSCustodyTest is TestHelper {
         address newTarget = address(0xABC);
         uint256 startTime = block.timestamp;
 
-        custody.proposeWhitelist(newTarget, emptyBlsSignature);
+        custody.proposeWhitelist(newTarget, dummyBlsSignature);
 
         // Fast forward to exactly 2 days
         vm.warp(startTime + 2 days);
@@ -321,7 +328,7 @@ contract BLSCustodyTest is TestHelper {
         _whitelistTarget(targetContract);
         assertTrue(custody.isWhitelisted(targetContract));
 
-        custody.emergencyRemoveWhitelist(targetContract, emptyBlsSignature);
+        custody.emergencyRemoveWhitelist(targetContract, dummyBlsSignature);
 
         assertFalse(custody.isWhitelisted(targetContract));
     }
@@ -332,7 +339,7 @@ contract BLSCustodyTest is TestHelper {
         vm.expectEmit(true, false, false, true);
         emit EventsLib.WhitelistRemoved(targetContract, block.timestamp);
 
-        custody.emergencyRemoveWhitelist(targetContract, emptyBlsSignature);
+        custody.emergencyRemoveWhitelist(targetContract, dummyBlsSignature);
     }
 
     function test_emergencyRemoveWhitelist_revertsOnNotWhitelisted() public {
@@ -341,18 +348,18 @@ contract BLSCustodyTest is TestHelper {
         vm.expectRevert(
             abi.encodeWithSelector(ErrorsLib.E032_TargetNotCurrentlyWhitelisted.selector, notWhitelisted)
         );
-        custody.emergencyRemoveWhitelist(notWhitelisted, emptyBlsSignature);
+        custody.emergencyRemoveWhitelist(notWhitelisted, dummyBlsSignature);
     }
 
     function test_emergencyRemove_thenRepropose() public {
         // Whitelist, remove, then re-propose
         _whitelistTarget(targetContract);
-        custody.emergencyRemoveWhitelist(targetContract, emptyBlsSignature);
+        custody.emergencyRemoveWhitelist(targetContract, dummyBlsSignature);
 
         assertFalse(custody.isWhitelisted(targetContract));
 
         // Should be able to propose again
-        custody.proposeWhitelist(targetContract, emptyBlsSignature);
+        custody.proposeWhitelist(targetContract, dummyBlsSignature);
         (uint256 proposedAt, ) = custody.getWhitelistStatus(targetContract);
         assertGt(proposedAt, 0);
     }
@@ -364,7 +371,7 @@ contract BLSCustodyTest is TestHelper {
         assertFalse(custody.isWhitelisted(newTarget));
 
         // Step 2: Propose whitelist
-        custody.proposeWhitelist(newTarget, emptyBlsSignature);
+        custody.proposeWhitelist(newTarget, dummyBlsSignature);
         (uint256 proposedAt, uint256 activatedAt) = custody.getWhitelistStatus(newTarget);
         assertGt(proposedAt, 0);
         assertEq(activatedAt, 0);
@@ -385,14 +392,14 @@ contract BLSCustodyTest is TestHelper {
         assertGt(activatedAt, 0);
 
         // Step 6: Emergency remove
-        custody.emergencyRemoveWhitelist(newTarget, emptyBlsSignature);
+        custody.emergencyRemoveWhitelist(newTarget, dummyBlsSignature);
         assertFalse(custody.isWhitelisted(newTarget));
         (proposedAt, activatedAt) = custody.getWhitelistStatus(newTarget);
         assertEq(proposedAt, 0);
         assertEq(activatedAt, 0); // Both cleared
 
         // Step 7: Can re-propose after removal
-        custody.proposeWhitelist(newTarget, emptyBlsSignature);
+        custody.proposeWhitelist(newTarget, dummyBlsSignature);
         (proposedAt, ) = custody.getWhitelistStatus(newTarget);
         assertGt(proposedAt, 0);
     }
@@ -410,13 +417,13 @@ contract BLSCustodyTest is TestHelper {
         );
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E026_TargetNotWhitelisted.selector, newTarget));
-        custody.execute(newTarget, data, emptyBlsSignature, 0);
+        custody.execute(newTarget, data, dummyBlsSignature, 0);
 
         // Whitelist the target
         _whitelistTarget(newTarget);
 
         // Now execute should work
-        (bool success, ) = custody.execute(newTarget, data, emptyBlsSignature, 0);
+        (bool success, ) = custody.execute(newTarget, data, dummyBlsSignature, 0);
         assertTrue(success);
         assertEq(MockERC20(newTarget).balanceOf(address(0x123)), 10e18);
     }
@@ -430,7 +437,7 @@ contract BLSCustodyTest is TestHelper {
         assertGt(activatedAt, 0);
 
         // Emergency remove
-        custody.emergencyRemoveWhitelist(targetContract, emptyBlsSignature);
+        custody.emergencyRemoveWhitelist(targetContract, dummyBlsSignature);
 
         // Verify both timestamps cleared
         (uint256 proposedAt, uint256 newActivatedAt) = custody.getWhitelistStatus(targetContract);
@@ -455,7 +462,7 @@ contract BLSCustodyTest is TestHelper {
         assertEq(activatedAt, 0);
 
         // After proposal
-        custody.proposeWhitelist(newTarget, emptyBlsSignature);
+        custody.proposeWhitelist(newTarget, dummyBlsSignature);
         (proposedAt, activatedAt) = custody.getWhitelistStatus(newTarget);
         assertGt(proposedAt, 0);
         assertEq(activatedAt, 0);
@@ -479,7 +486,7 @@ contract BLSCustodyTest is TestHelper {
             address(0x123),
             1e18
         );
-        custody.execute(targetContract, data, emptyBlsSignature, 0);
+        custody.execute(targetContract, data, dummyBlsSignature, 0);
 
         assertEq(custody.nonce(), 1);
     }
@@ -536,15 +543,17 @@ contract BLSCustodyTest is TestHelper {
         custody.execute(targetContract, data, hex"1234", 0);
     }
 
-    function test_phase1_emptyPubkey_skipsVerification() public {
-        // Document Phase 1 behavior: empty pubkey skips BLS verification
-        // This test verifies the security note in the contract
-        assertEq(issuerRegistry.getAggregatedPubkey().length, 0, "Mock starts with empty pubkey");
+    function test_emptyPubkey_reverts() public {
+        // Hardened contracts: empty aggregated pubkey causes revert (no bypass)
+        // Override the pubkey to empty to verify revert behavior
+        vm.mockCall(
+            address(issuerRegistry),
+            abi.encodeWithSelector(IIssuerRegistry.getAggregatedPubkey.selector),
+            abi.encode(bytes(""))
+        );
 
-        // Operations work with empty signature when pubkey is empty
-        custody.proposeWhitelist(address(0xDEAD), emptyBlsSignature);
-        (uint256 proposedAt,) = custody.getWhitelistStatus(address(0xDEAD));
-        assertGt(proposedAt, 0, "Proposal should succeed with empty pubkey");
+        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E020_InvalidBLSSignature.selector));
+        custody.proposeWhitelist(address(0xDEAD), dummyBlsSignature);
     }
 
     // ============ UPGRADE TESTS (Story 2.7 Code Review) ============
@@ -552,7 +561,7 @@ contract BLSCustodyTest is TestHelper {
     function test_proposeUpgrade_happyPath() public {
         address newImpl = address(0xBEEF);
 
-        custody.proposeUpgrade(newImpl, emptyBlsSignature);
+        custody.proposeUpgrade(newImpl, dummyBlsSignature);
 
         (address proposedImpl, uint256 proposedAt, bool isEmergency) = custody.getPendingUpgrade();
         assertEq(proposedImpl, newImpl);
@@ -566,20 +575,20 @@ contract BLSCustodyTest is TestHelper {
         vm.expectEmit(true, false, false, true);
         emit IBLSCustody.UpgradeProposed(newImpl, block.timestamp + 7 days);
 
-        custody.proposeUpgrade(newImpl, emptyBlsSignature);
+        custody.proposeUpgrade(newImpl, dummyBlsSignature);
     }
 
     function test_proposeUpgrade_revertsOnZeroAddress() public {
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E038_ZeroImplementation.selector));
-        custody.proposeUpgrade(address(0), emptyBlsSignature);
+        custody.proposeUpgrade(address(0), dummyBlsSignature);
     }
 
     function test_proposeUpgrade_revertsOnAlreadyPending() public {
         address newImpl = address(0xBEEF);
-        custody.proposeUpgrade(newImpl, emptyBlsSignature);
+        custody.proposeUpgrade(newImpl, dummyBlsSignature);
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E039_UpgradeAlreadyPending.selector));
-        custody.proposeUpgrade(address(0xDEAD), emptyBlsSignature);
+        custody.proposeUpgrade(address(0xDEAD), dummyBlsSignature);
     }
 
     function test_executeUpgrade_happyPath() public {
@@ -587,7 +596,7 @@ contract BLSCustodyTest is TestHelper {
         BLSCustody newImpl = new BLSCustody();
 
         // Propose upgrade
-        custody.proposeUpgrade(address(newImpl), emptyBlsSignature);
+        custody.proposeUpgrade(address(newImpl), dummyBlsSignature);
 
         // Fast forward past 7-day timelock
         vm.warp(block.timestamp + 7 days + 1);
@@ -604,7 +613,7 @@ contract BLSCustodyTest is TestHelper {
 
     function test_executeUpgrade_emitsEvent() public {
         BLSCustody newImpl = new BLSCustody();
-        custody.proposeUpgrade(address(newImpl), emptyBlsSignature);
+        custody.proposeUpgrade(address(newImpl), dummyBlsSignature);
         vm.warp(block.timestamp + 7 days + 1);
 
         vm.expectEmit(true, false, false, false);
@@ -620,7 +629,7 @@ contract BLSCustodyTest is TestHelper {
 
     function test_executeUpgrade_revertsOnImplMismatch() public {
         address newImpl = address(0xBEEF);
-        custody.proposeUpgrade(newImpl, emptyBlsSignature);
+        custody.proposeUpgrade(newImpl, dummyBlsSignature);
         vm.warp(block.timestamp + 7 days + 1);
 
         vm.expectRevert(
@@ -631,16 +640,16 @@ contract BLSCustodyTest is TestHelper {
 
     function test_executeUpgrade_revertsOnTimelockActive() public {
         address newImpl = address(0xBEEF);
-        uint256 startTime = block.timestamp;
-        custody.proposeUpgrade(newImpl, emptyBlsSignature);
+        // Propose at timestamp 1 (forge default)
+        custody.proposeUpgrade(newImpl, dummyBlsSignature);
 
-        // Fast forward only 3 days (need 7 days)
-        vm.warp(startTime + 3 days);
+        // Fast forward only 3 days (need 7 days), timestamp becomes 1 + 3 days = 259201
+        vm.warp(1 + 3 days);
 
-        uint256 unlockTime = startTime + 7 days;
-
+        // Use hardcoded values to avoid via_ir optimizer inlining block.timestamp
+        // proposedAt = 1, unlockTime = 1 + 7 days = 604801, currentTime = 1 + 3 days = 259201
         vm.expectRevert(
-            abi.encodeWithSelector(ErrorsLib.E042_UpgradeTimelockActive.selector, unlockTime, block.timestamp)
+            abi.encodeWithSelector(ErrorsLib.E042_UpgradeTimelockActive.selector, uint256(1 + 7 days), uint256(1 + 3 days))
         );
         custody.executeUpgrade(newImpl);
     }
@@ -648,7 +657,7 @@ contract BLSCustodyTest is TestHelper {
     function test_executeUpgrade_exactTimelockExpiry() public {
         BLSCustody newImpl = new BLSCustody();
         uint256 startTime = block.timestamp;
-        custody.proposeUpgrade(address(newImpl), emptyBlsSignature);
+        custody.proposeUpgrade(address(newImpl), dummyBlsSignature);
 
         // Fast forward to exactly 7 days
         vm.warp(startTime + 7 days);
@@ -665,7 +674,7 @@ contract BLSCustodyTest is TestHelper {
     function test_proposeEmergencyUpgrade_happyPath() public {
         address newImpl = address(0xBEEF);
 
-        custody.proposeEmergencyUpgrade(newImpl, emptyBlsSignature);
+        custody.proposeEmergencyUpgrade(newImpl, dummyBlsSignature);
 
         (address proposedImpl, uint256 proposedAt, bool isEmergency) = custody.getPendingUpgrade();
         assertEq(proposedImpl, newImpl);
@@ -679,27 +688,27 @@ contract BLSCustodyTest is TestHelper {
         vm.expectEmit(true, false, false, true);
         emit IBLSCustody.EmergencyUpgradeProposed(newImpl, block.timestamp + 24 hours);
 
-        custody.proposeEmergencyUpgrade(newImpl, emptyBlsSignature);
+        custody.proposeEmergencyUpgrade(newImpl, dummyBlsSignature);
     }
 
     function test_proposeEmergencyUpgrade_revertsOnZeroAddress() public {
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E038_ZeroImplementation.selector));
-        custody.proposeEmergencyUpgrade(address(0), emptyBlsSignature);
+        custody.proposeEmergencyUpgrade(address(0), dummyBlsSignature);
     }
 
     function test_proposeEmergencyUpgrade_revertsOnAlreadyPending() public {
         address newImpl = address(0xBEEF);
-        custody.proposeEmergencyUpgrade(newImpl, emptyBlsSignature);
+        custody.proposeEmergencyUpgrade(newImpl, dummyBlsSignature);
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E039_UpgradeAlreadyPending.selector));
-        custody.proposeEmergencyUpgrade(address(0xDEAD), emptyBlsSignature);
+        custody.proposeEmergencyUpgrade(address(0xDEAD), dummyBlsSignature);
     }
 
     function test_executeEmergencyUpgrade_happyPath() public {
         BLSCustody newImpl = new BLSCustody();
 
         // Propose emergency upgrade
-        custody.proposeEmergencyUpgrade(address(newImpl), emptyBlsSignature);
+        custody.proposeEmergencyUpgrade(address(newImpl), dummyBlsSignature);
 
         // Fast forward past 24-hour timelock
         vm.warp(block.timestamp + 24 hours + 1);
@@ -716,7 +725,7 @@ contract BLSCustodyTest is TestHelper {
 
     function test_executeEmergencyUpgrade_emitsEmergencyEvent() public {
         BLSCustody newImpl = new BLSCustody();
-        custody.proposeEmergencyUpgrade(address(newImpl), emptyBlsSignature);
+        custody.proposeEmergencyUpgrade(address(newImpl), dummyBlsSignature);
         vm.warp(block.timestamp + 24 hours + 1);
 
         vm.expectEmit(true, false, false, false);
@@ -727,16 +736,16 @@ contract BLSCustodyTest is TestHelper {
 
     function test_executeEmergencyUpgrade_revertsOnTimelockActive() public {
         address newImpl = address(0xBEEF);
-        uint256 startTime = block.timestamp;
-        custody.proposeEmergencyUpgrade(newImpl, emptyBlsSignature);
+        // Propose at timestamp 1 (forge default)
+        custody.proposeEmergencyUpgrade(newImpl, dummyBlsSignature);
 
-        // Fast forward only 12 hours (need 24 hours)
-        vm.warp(startTime + 12 hours);
+        // Fast forward only 12 hours (need 24 hours), timestamp becomes 1 + 12 hours = 43201
+        vm.warp(1 + 12 hours);
 
-        uint256 unlockTime = startTime + 24 hours;
-
+        // Use hardcoded values to avoid via_ir optimizer inlining block.timestamp
+        // proposedAt = 1, unlockTime = 1 + 24 hours = 86401, currentTime = 1 + 12 hours = 43201
         vm.expectRevert(
-            abi.encodeWithSelector(ErrorsLib.E042_UpgradeTimelockActive.selector, unlockTime, block.timestamp)
+            abi.encodeWithSelector(ErrorsLib.E042_UpgradeTimelockActive.selector, uint256(1 + 24 hours), uint256(1 + 12 hours))
         );
         custody.executeUpgrade(newImpl);
     }
@@ -744,7 +753,7 @@ contract BLSCustodyTest is TestHelper {
     function test_executeEmergencyUpgrade_exactTimelockExpiry() public {
         BLSCustody newImpl = new BLSCustody();
         uint256 startTime = block.timestamp;
-        custody.proposeEmergencyUpgrade(address(newImpl), emptyBlsSignature);
+        custody.proposeEmergencyUpgrade(address(newImpl), dummyBlsSignature);
 
         // Fast forward to exactly 24 hours
         vm.warp(startTime + 24 hours);
@@ -764,7 +773,7 @@ contract BLSCustodyTest is TestHelper {
         assertEq(proposedImpl, address(0));
 
         // Step 2: Propose standard upgrade
-        custody.proposeUpgrade(address(newImpl), emptyBlsSignature);
+        custody.proposeUpgrade(address(newImpl), dummyBlsSignature);
         (proposedImpl, proposedAt, isEmergency) = custody.getPendingUpgrade();
         assertEq(proposedImpl, address(newImpl));
         assertFalse(isEmergency);
@@ -792,7 +801,7 @@ contract BLSCustodyTest is TestHelper {
         assertEq(proposedImpl, address(0));
 
         // Step 2: Propose emergency upgrade
-        custody.proposeEmergencyUpgrade(address(newImpl), emptyBlsSignature);
+        custody.proposeEmergencyUpgrade(address(newImpl), dummyBlsSignature);
         (proposedImpl, proposedAt, isEmergency) = custody.getPendingUpgrade();
         assertEq(proposedImpl, address(newImpl));
         assertTrue(isEmergency);
@@ -841,7 +850,7 @@ contract BLSCustodyTest is TestHelper {
             1e18
         );
 
-        custody.execute(targetContract, data, emptyBlsSignature, nonceValue);
+        custody.execute(targetContract, data, dummyBlsSignature, nonceValue);
         assertTrue(custody.isNonceUsed(nonceValue));
     }
 
@@ -861,9 +870,9 @@ contract BLSCustodyTest is TestHelper {
         );
 
         // Execute with all three nonces
-        custody.execute(targetContract, data, emptyBlsSignature, nonce1);
-        custody.execute(targetContract, data, emptyBlsSignature, nonce2);
-        custody.execute(targetContract, data, emptyBlsSignature, nonce3);
+        custody.execute(targetContract, data, dummyBlsSignature, nonce1);
+        custody.execute(targetContract, data, dummyBlsSignature, nonce2);
+        custody.execute(targetContract, data, dummyBlsSignature, nonce3);
 
         // All should be marked used
         assertTrue(custody.isNonceUsed(nonce1));
@@ -874,7 +883,7 @@ contract BLSCustodyTest is TestHelper {
     // ============ HELPER FUNCTIONS ============
 
     function _whitelistTarget(address target) internal {
-        custody.proposeWhitelist(target, emptyBlsSignature);
+        custody.proposeWhitelist(target, dummyBlsSignature);
         vm.warp(block.timestamp + 2 days + 1);
         custody.activateWhitelist(target);
     }

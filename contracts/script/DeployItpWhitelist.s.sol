@@ -74,10 +74,9 @@ contract DeployItpWhitelist is Script {
         vm.startBroadcast(deployerKey);
 
         address admin = vm.addr(deployerKey);
-        // Enable test mode for E2E testing (allows admin batch functions)
-        registry = new AssetPairRegistry(admin, true);
+        address issuerReg = vm.envOr("ISSUER_REGISTRY", address(0x1));
+        registry = new AssetPairRegistry(admin, issuerReg);
         console.log("  AssetPairRegistry deployed:", address(registry));
-        console.log("  Test mode enabled: true");
 
         vm.stopBroadcast();
     }
@@ -94,83 +93,44 @@ contract DeployItpWhitelist is Script {
 
     function _whitelistAllAssets() internal {
         console.log("");
-        console.log("Phase 1: Whitelist Assets");
+        console.log("Phase 1: Propose Assets");
 
         uint256 deployerKey = _getDeployerKey();
         vm.startBroadcast(deployerKey);
 
-        // Batch 1: Asset IDs 1-100
-        _whitelistAssetBatch(1, 100);
+        // Mock BN254 pairing precompile (address 0x08) to accept any signature during deployment
+        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
 
-        // Batch 2: Asset IDs 101-200
-        _whitelistAssetBatch(101, 200);
+        // Propose all 627 assets
+        for (uint256 i = 1; i <= 627; i++) {
+            registry.proposeAsset(assetIdToAddress(i), "");
+        }
+        console.log("  All 627 assets proposed");
 
-        // Batch 3: Asset IDs 201-300
-        _whitelistAssetBatch(201, 300);
-
-        // Batch 4: Asset IDs 301-400
-        _whitelistAssetBatch(301, 400);
-
-        // Batch 5: Asset IDs 401-500
-        _whitelistAssetBatch(401, 500);
-
-        // Batch 6: Asset IDs 501-600
-        _whitelistAssetBatch(501, 600);
-
-        // Batch 7: Asset IDs 601-627
-        _whitelistAssetBatch(601, 627);
-
-        console.log("  All 627 assets whitelisted");
-
+        // Warp past timelock, activate assets and propose pairs
+        vm.warp(block.timestamp + 2 days + 1);
         console.log("");
-        console.log("Phase 2: Activate Pairs");
+        console.log("Phase 2: Activate Assets + Propose Pairs");
+        for (uint256 i = 1; i <= 627; i++) {
+            address asset = assetIdToAddress(i);
+            registry.activateAsset(asset);
+            registry.proposePair(asset, BITGET_SOURCE, MOCK_USDC, CEX_CHAIN_ID, "");
+        }
+        console.log("  All 627 assets activated, pairs proposed");
 
-        // Same batches for pairs
-        _activatePairBatch(1, 100);
-        _activatePairBatch(101, 200);
-        _activatePairBatch(201, 300);
-        _activatePairBatch(301, 400);
-        _activatePairBatch(401, 500);
-        _activatePairBatch(501, 600);
-        _activatePairBatch(601, 627);
-
+        // Warp past timelock and activate pairs
+        vm.warp(block.timestamp + 2 days + 1);
+        console.log("");
+        console.log("Phase 3: Activate Pairs");
+        for (uint256 i = 1; i <= 627; i++) {
+            address asset = assetIdToAddress(i);
+            bytes32 pairId = registry.computePairId(asset, BITGET_SOURCE, MOCK_USDC, CEX_CHAIN_ID);
+            registry.activatePair(pairId);
+        }
         console.log("  All 627 pairs activated");
 
+        vm.clearMockedCalls();
         vm.stopBroadcast();
-    }
-
-    function _whitelistAssetBatch(uint256 startId, uint256 endId) internal {
-        uint256 count = endId - startId + 1;
-        address[] memory assets = new address[](count);
-
-        for (uint256 i = 0; i < count;) {
-            uint256 assetId = startId + i;
-            assets[i] = assetIdToAddress(assetId);
-            unchecked { ++i; }
-        }
-
-        registry.adminBatchWhitelistAssets(assets);
-        console.log("  Whitelisted assets", startId, "-", endId);
-    }
-
-    function _activatePairBatch(uint256 startId, uint256 endId) internal {
-        uint256 count = endId - startId + 1;
-        address[] memory assets = new address[](count);
-        bytes32[] memory sources = new bytes32[](count);
-        address[] memory quoteTokens = new address[](count);
-        uint256[] memory chainIds = new uint256[](count);
-
-        for (uint256 i = 0; i < count;) {
-            uint256 assetId = startId + i;
-            assets[i] = assetIdToAddress(assetId);
-            sources[i] = BITGET_SOURCE;
-            quoteTokens[i] = MOCK_USDC;
-            chainIds[i] = CEX_CHAIN_ID;
-            unchecked { ++i; }
-        }
-
-        registry.adminBatchActivatePairs(assets, sources, quoteTokens, chainIds);
-        console.log("  Activated pairs", startId, "-", endId);
     }
 
     function _verifyWhitelist() internal view {

@@ -59,7 +59,7 @@ contract E2ECrossChainBuyTest is TestHelper {
     // Story 7-6b: Arb USDC uses 6 decimals, L3 uses 18 decimals
     uint256 public constant INITIAL_ARB_USDC = 10_000e6;  // 6 decimals for Arbitrum
     uint256 public constant INITIAL_L3_USDC = 10_000e18;  // 18 decimals for L3
-    bytes public constant EMPTY_BLS_SIG = "";
+    bytes public DUMMY_BLS_SIG = new bytes(64);
 
     // ============ EVENTS (for expectEmit) ============
 
@@ -80,6 +80,10 @@ contract E2ECrossChainBuyTest is TestHelper {
         // Deploy real issuer registry via UUPS proxy (shared)
         mockRegistry = deployIssuerRegistry(address(governance));
 
+        // Set aggregated pubkey and mock BLS precompile for test bypass
+        mockRegistry.setAggregatedPubkey(new bytes(128));
+        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
+
         // Deploy Index as UUPS proxy
         Index impl = new Index();
         ERC1967Proxy proxy = new ERC1967Proxy(
@@ -87,6 +91,9 @@ contract E2ECrossChainBuyTest is TestHelper {
             abi.encodeCall(Index.initialize, (address(governance), address(l3Usdc)))
         );
         index = Index(address(proxy));
+
+        // Wire IssuerRegistry to Index (required for BLS verification)
+        index.setIssuerRegistry(address(mockRegistry));
 
         // Create test ITP with single asset (USDC, 100% weight)
         address[] memory assets = new address[](1);
@@ -124,7 +131,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         ArbBridgeCustody arbImpl = new ArbBridgeCustody();
         ERC1967Proxy arbProxy = new ERC1967Proxy(
             address(arbImpl),
-            abi.encodeCall(ArbBridgeCustody.initialize, (address(mockRegistry), address(arbUsdc), address(index)))
+            abi.encodeCall(ArbBridgeCustody.initialize, (address(mockRegistry), address(arbUsdc), address(index), address(0)))
         );
         arbBridge = ArbBridgeCustody(address(arbProxy));
 
@@ -189,12 +196,12 @@ contract E2ECrossChainBuyTest is TestHelper {
 
     /// @dev Confirm batch on L3
     function _confirmBatch(uint256 cycleNumber, uint256[] memory orderIds) internal {
-        index.confirmBatch(cycleNumber, orderIds, EMPTY_BLS_SIG);
+        index.confirmBatch(cycleNumber, orderIds, DUMMY_BLS_SIG);
     }
 
     /// @dev Confirm fills on L3
     function _confirmFills(uint256 cycleNumber, TypesLib.Fill[] memory fills) internal {
-        index.confirmFills(cycleNumber, fills, EMPTY_BLS_SIG);
+        index.confirmFills(cycleNumber, fills, DUMMY_BLS_SIG);
     }
 
     // ============ TASK 1.3: HAPPY PATH (AC #1, #2, #3, #4, #5) ============
@@ -461,7 +468,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         _buyITPFromArbitrum(user1, orderAmount6Dec, 2e18, 1, deadline);
 
         // Set NAV to $2 on L3 so limit price validation passes
-        index.setItpNav(itpId, 2e18, EMPTY_BLS_SIG);
+        index.setItpNav(itpId, 2e18, DUMMY_BLS_SIG);
 
         // Submit matching order on L3 at $2 limit (18-decimal amount)
         uint256 l3OrderId = _submitOrderOnL3(orderAmount18Dec, 2e18, 1);
@@ -636,8 +643,8 @@ contract E2ECrossChainBuyTest is TestHelper {
 
         // --- Deploy additional 8-step contracts ---
 
-        // CollateralRegistry (on L3)
-        CollateralRegistry colReg = new CollateralRegistry(admin);
+        // CollateralRegistry (on L3) — needs aggregated pubkey for BLS verification
+        CollateralRegistry colReg = new CollateralRegistry(admin, address(mockRegistry));
 
         // L3BridgeCustody (on L3)
         L3BridgeCustody l3BridgeImpl = new L3BridgeCustody();
@@ -659,7 +666,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         MockBitgetVault vault = new MockBitgetVault();
 
         // Whitelist arbUsdc in BLSCustody (requires propose + timelock + activate)
-        blsCustody.proposeWhitelist(address(arbUsdc), EMPTY_BLS_SIG);
+        blsCustody.proposeWhitelist(address(arbUsdc), DUMMY_BLS_SIG);
         vm.warp(block.timestamp + 2 days + 1);
         blsCustody.activateWhitelist(address(arbUsdc));
 
@@ -674,8 +681,21 @@ contract E2ECrossChainBuyTest is TestHelper {
         bridgeProx.setBridgedItpFactory(address(factory));
         bridgeProx.setIndexContract(address(index));
 
-        // Register BridgedITP for this ITP
-        address bridgedItpAddr = bridgeProx.adminCreateBridgedItp(itpId, "Bridged XChain", "bXCHAIN");
+        // Create BridgedITP via full requestCreate + completeCreate flow
+        // First, request creation (sets pending creation at nonce 0)
+        {
+            address[] memory bAssets = new address[](1);
+            bAssets[0] = address(l3Usdc);
+            uint256[] memory bWeights = new uint256[](1);
+            bWeights[0] = 1e18;
+            uint256[] memory bPrices = new uint256[](1);
+            bPrices[0] = INITIAL_PRICE;
+            bridgeProx.requestCreateItp("Bridged XChain", "bXCHAIN", bWeights, bAssets, bPrices);
+        }
+        // Complete creation with dummy BLS sig (mock precompile accepts any sig)
+        // signerBitmap=0x7 (3 signers), aggregatedPubkey=128 bytes (threshold check)
+        bytes memory dummyPubkey = new bytes(128);
+        address bridgedItpAddr = bridgeProx.completeCreateItp(0, itpId, DUMMY_BLS_SIG);
 
         // Set deadline after all warps (whitelist timelock advanced block.timestamp)
         uint256 deadline = block.timestamp + 1 hours;
@@ -702,13 +722,13 @@ contract E2ECrossChainBuyTest is TestHelper {
         // ====== STEP 3b: Record collateral move (L3→Arb for BUY) ======
         // Seed initial L3 collateral (simulates ITP creation deposited collateral on L3)
         colReg.recordCollateralMove(
-            itpId, 0, L3_CHAIN_ID, orderAmount18Dec, TypesLib.TxType.BUY, EMPTY_BLS_SIG
+            itpId, 0, L3_CHAIN_ID, orderAmount18Dec, TypesLib.TxType.BUY, DUMMY_BLS_SIG
         );
         assertEq(colReg.getITPCollateralByChain(itpId, L3_CHAIN_ID), orderAmount18Dec, "L3 seeded");
 
         // Now record the actual L3→Arb move
         colReg.recordCollateralMove(
-            itpId, L3_CHAIN_ID, ARB_CHAIN_ID, orderAmount18Dec, TypesLib.TxType.BUY, EMPTY_BLS_SIG
+            itpId, L3_CHAIN_ID, ARB_CHAIN_ID, orderAmount18Dec, TypesLib.TxType.BUY, DUMMY_BLS_SIG
         );
 
         assertEq(colReg.getITPCollateralByChain(itpId, L3_CHAIN_ID), 0, "L3 collateral moved out");
@@ -730,7 +750,7 @@ contract E2ECrossChainBuyTest is TestHelper {
             address(vault),
             orderAmount6Dec
         );
-        blsCustody.execute(address(arbUsdc), transferCalldata, EMPTY_BLS_SIG, 0);
+        blsCustody.execute(address(arbUsdc), transferCalldata, DUMMY_BLS_SIG, 0);
         assertEq(arbUsdc.balanceOf(address(vault)), orderAmount6Dec, "Vault should hold USDC");
         assertEq(arbUsdc.balanceOf(address(blsCustody)), 0, "BLSCustody should be empty");
 
@@ -755,7 +775,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         assertEq(itpVault.balanceOf(user1), expectedShares, "User should have L3 ITP");
 
         // ====== STEP 8: Mint BridgedITP shares on Arbitrum ======
-        bridgeProx.mintBridgedShares(itpId, user1, expectedShares, EMPTY_BLS_SIG);
+        bridgeProx.mintBridgedShares(itpId, user1, expectedShares, DUMMY_BLS_SIG);
 
         // Verify BridgedITP minted
         assertGt(IERC20(bridgedItpAddr).balanceOf(user1), 0, "User should have BridgedITP on Arb");

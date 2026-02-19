@@ -84,14 +84,19 @@ contract DeployBLSCustodyArbitrumTest is TestHelper {
         custodyReal = BLSCustody(blsCustodyRealProxy);
 
         // ===== Deploy BLSCustody with separate IssuerRegistry for whitelist tests =====
-        // Real IssuerRegistry returns empty aggregated pubkey (0 bytes),
-        // so BLS verification is skipped (Phase 1 behavior)
+        // Separate IssuerRegistry for whitelist tests
+        // BLS verification mocked via pairing precompile
         IssuerRegistry mockRegImpl = new IssuerRegistry();
         ERC1967Proxy mockRegProxy = new ERC1967Proxy(
             address(mockRegImpl),
             abi.encodeCall(IssuerRegistry.initialize, (governanceProxy))
         );
         mockRegistry = IssuerRegistry(address(mockRegProxy));
+
+        // Set aggregated pubkey and mock precompile for BLS test bypass
+        mockRegistry.setAggregatedPubkey(new bytes(128));
+        issuerRegistry.setAggregatedPubkey(new bytes(128));
+        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
 
         BLSCustody custodyImpl = new BLSCustody();
         blsCustodyImpl = address(custodyImpl);
@@ -102,10 +107,10 @@ contract DeployBLSCustodyArbitrumTest is TestHelper {
         blsCustodyProxy = address(custodyProxy);
         custody = BLSCustody(blsCustodyProxy);
 
-        // Propose whitelist targets (empty BLS sig - skipped with empty aggregated key)
-        bytes memory emptySignature = "";
-        custody.proposeWhitelist(ONEINCH_ROUTER_V6, emptySignature);
-        custody.proposeWhitelist(USDC_ARBITRUM, emptySignature);
+        // Propose whitelist targets (BLS verified via mocked precompile)
+        bytes memory dummySignature = new bytes(64);
+        custody.proposeWhitelist(ONEINCH_ROUTER_V6, dummySignature);
+        custody.proposeWhitelist(USDC_ARBITRUM, dummySignature);
 
         vm.stopPrank();
     }
@@ -238,9 +243,9 @@ contract DeployBLSCustodyArbitrumTest is TestHelper {
     }
 
     function test_blsCustody_readsAggregatedPubkey() public view {
-        // G2 aggregation is done off-chain; getAggregatedPubkey returns empty bytes
+        // G2 aggregated pubkey must be set (128 bytes for G2 point)
         bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        assertEq(aggregatedPubkey.length, 0, "Aggregated pubkey should be 0 bytes (computed off-chain)");
+        assertEq(aggregatedPubkey.length, 128, "Aggregated pubkey should be 128 bytes (G2 point)");
     }
 
     // ============ FULL DEPLOYMENT FLOW ============
@@ -277,10 +282,10 @@ contract DeployBLSCustodyArbitrumTest is TestHelper {
         assertEq(custodyReal.nonce(), 0);
     }
 
-    function test_blsVerificationSkippedWithEmptyAggregatedPubkey() public view {
-        // MockIssuerRegistry returns empty bytes for aggregatedPubkey
+    function test_blsVerificationWithMockedPrecompile() public view {
+        // Mock registry has 128-byte aggregated pubkey set; BLS verified via mocked precompile
         bytes memory aggPubkey = mockRegistry.getAggregatedPubkey();
-        assertEq(aggPubkey.length, 0, "Mock registry should return empty aggregated pubkey");
-        // This is what allows proposeWhitelist to succeed without a real BLS signature
+        assertEq(aggPubkey.length, 128, "Mock registry should return 128-byte aggregated pubkey");
+        // BLS verification succeeds because the pairing precompile (0x08) is mocked to return 1
     }
 }

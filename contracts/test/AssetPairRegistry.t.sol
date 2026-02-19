@@ -21,11 +21,18 @@ contract AssetPairRegistryTest is Test {
     uint256 public constant CHAIN_ARBITRUM = 42161;
     uint256 public constant CHAIN_CEX = 0;
 
-    bytes public mockSignature = hex"1234";
+    // BLS signature must be exactly 64 bytes (G1 point) and on the BN254 curve.
+    // Use the generator point G1 = (1, 2) which satisfies y² = x³ + 3 (mod P).
+    bytes public mockSignature = abi.encode(uint256(1), uint256(2));
 
     function setUp() public {
-        // Enable test mode for admin batch function tests
-        registry = new AssetPairRegistry(admin, true);
+        registry = new AssetPairRegistry(admin, address(0x1));
+
+        // Mock BN254 pairing precompile (address 0x08) to accept any signature
+        // This allows tests to use mockSignature without real BLS key setup
+        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
+
+        // BLS verification now reads from IssuerRegistry (set via constructor)
     }
 
     // ============ CONSTRUCTOR TESTS ============
@@ -36,16 +43,7 @@ contract AssetPairRegistryTest is Test {
 
     function test_constructor_revertsOnZeroAddress() public {
         vm.expectRevert(AssetPairRegistry.ZeroAddress.selector);
-        new AssetPairRegistry(address(0), true);
-    }
-
-    function test_constructor_testModeEnabled() public view {
-        assertTrue(registry.testModeEnabled());
-    }
-
-    function test_constructor_testModeDisabled() public {
-        AssetPairRegistry prodRegistry = new AssetPairRegistry(admin, false);
-        assertFalse(prodRegistry.testModeEnabled());
+        new AssetPairRegistry(address(0), address(0x1));
     }
 
     // ============ PROPOSE ASSET TESTS ============
@@ -740,19 +738,6 @@ contract AssetPairRegistryTest is Test {
 
     // ============ ADMIN FUNCTION TESTS ============
 
-    function test_setAggregatedPubkey_onlyAdmin() public {
-        bytes memory newPubkey = hex"abcd";
-
-        vm.expectRevert(AssetPairRegistry.Unauthorized.selector);
-        vm.prank(user);
-        registry.setAggregatedPubkey(newPubkey);
-
-        vm.prank(admin);
-        registry.setAggregatedPubkey(newPubkey);
-
-        assertEq(registry.aggregatedPubkey(), newPubkey);
-    }
-
     function test_setAdmin_onlyAdmin() public {
         address newAdmin = address(0x999);
 
@@ -780,198 +765,6 @@ contract AssetPairRegistryTest is Test {
 
         vm.prank(admin);
         registry.setAdmin(newAdmin);
-    }
-
-    // ============ ADMIN BATCH FUNCTIONS (E2E Testing) ============
-
-    function test_adminBatchWhitelistAssets_whitelistsMultiple() public {
-        address[] memory assets = new address[](3);
-        assets[0] = address(0x100);
-        assets[1] = address(0x200);
-        assets[2] = address(0x300);
-
-        vm.prank(admin);
-        registry.adminBatchWhitelistAssets(assets);
-
-        assertTrue(registry.isAssetWhitelisted(assets[0]));
-        assertTrue(registry.isAssetWhitelisted(assets[1]));
-        assertTrue(registry.isAssetWhitelisted(assets[2]));
-
-        address[] memory activeAssets = registry.getActiveAssets();
-        assertEq(activeAssets.length, 3);
-    }
-
-    function test_adminBatchWhitelistAssets_onlyAdmin() public {
-        address[] memory assets = new address[](1);
-        assets[0] = address(0x100);
-
-        vm.expectRevert(AssetPairRegistry.Unauthorized.selector);
-        vm.prank(user);
-        registry.adminBatchWhitelistAssets(assets);
-    }
-
-    function test_adminBatchWhitelistAssets_skipsAlreadyActive() public {
-        // First whitelist one asset
-        address[] memory firstBatch = new address[](1);
-        firstBatch[0] = address(0x100);
-
-        vm.prank(admin);
-        registry.adminBatchWhitelistAssets(firstBatch);
-
-        // Then whitelist including the same asset
-        address[] memory secondBatch = new address[](3);
-        secondBatch[0] = address(0x100); // Already active
-        secondBatch[1] = address(0x200);
-        secondBatch[2] = address(0x300);
-
-        vm.prank(admin);
-        registry.adminBatchWhitelistAssets(secondBatch);
-
-        // Should have 3 assets total (not 4)
-        address[] memory activeAssets = registry.getActiveAssets();
-        assertEq(activeAssets.length, 3);
-    }
-
-    function test_adminBatchWhitelistAssets_revertsOnZeroAddress() public {
-        address[] memory assets = new address[](2);
-        assets[0] = address(0x100);
-        assets[1] = address(0); // Zero address
-
-        vm.expectRevert(AssetPairRegistry.ZeroAddress.selector);
-        vm.prank(admin);
-        registry.adminBatchWhitelistAssets(assets);
-    }
-
-    function test_adminBatchActivatePairs_activatesMultiple() public {
-        // First whitelist assets
-        address[] memory assets = new address[](2);
-        assets[0] = address(0x100);
-        assets[1] = address(0x200);
-
-        vm.prank(admin);
-        registry.adminBatchWhitelistAssets(assets);
-
-        // Now activate pairs
-        address[] memory pairAssets = new address[](2);
-        bytes32[] memory sources = new bytes32[](2);
-        address[] memory quoteTokens = new address[](2);
-        uint256[] memory chainIds = new uint256[](2);
-
-        pairAssets[0] = address(0x100);
-        pairAssets[1] = address(0x200);
-        sources[0] = SOURCE_BITGET;
-        sources[1] = SOURCE_BITGET;
-        quoteTokens[0] = quoteToken;
-        quoteTokens[1] = quoteToken;
-        chainIds[0] = CHAIN_CEX;
-        chainIds[1] = CHAIN_CEX;
-
-        vm.prank(admin);
-        registry.adminBatchActivatePairs(pairAssets, sources, quoteTokens, chainIds);
-
-        bytes32 pairId1 = registry.computePairId(address(0x100), SOURCE_BITGET, quoteToken, CHAIN_CEX);
-        bytes32 pairId2 = registry.computePairId(address(0x200), SOURCE_BITGET, quoteToken, CHAIN_CEX);
-
-        assertTrue(registry.isPairActive(pairId1));
-        assertTrue(registry.isPairActive(pairId2));
-
-        bytes32[] memory activePairs = registry.getActivePairs();
-        assertEq(activePairs.length, 2);
-    }
-
-    function test_adminBatchActivatePairs_onlyAdmin() public {
-        address[] memory assets = new address[](1);
-        bytes32[] memory sources = new bytes32[](1);
-        address[] memory quoteTokens = new address[](1);
-        uint256[] memory chainIds = new uint256[](1);
-
-        assets[0] = address(0x100);
-        sources[0] = SOURCE_BITGET;
-        quoteTokens[0] = quoteToken;
-        chainIds[0] = CHAIN_CEX;
-
-        vm.expectRevert(AssetPairRegistry.Unauthorized.selector);
-        vm.prank(user);
-        registry.adminBatchActivatePairs(assets, sources, quoteTokens, chainIds);
-    }
-
-    function test_adminBatchActivatePairs_failsIfAssetNotWhitelisted() public {
-        address[] memory assets = new address[](1);
-        bytes32[] memory sources = new bytes32[](1);
-        address[] memory quoteTokens = new address[](1);
-        uint256[] memory chainIds = new uint256[](1);
-
-        assets[0] = address(0x100); // Not whitelisted
-        sources[0] = SOURCE_BITGET;
-        quoteTokens[0] = quoteToken;
-        chainIds[0] = CHAIN_CEX;
-
-        vm.expectRevert(AssetPairRegistry.AssetNotWhitelisted.selector);
-        vm.prank(admin);
-        registry.adminBatchActivatePairs(assets, sources, quoteTokens, chainIds);
-    }
-
-    function test_adminBatchWhitelistAssets_revertsWhenTestModeDisabled() public {
-        // Deploy production registry (test mode disabled)
-        AssetPairRegistry prodRegistry = new AssetPairRegistry(admin, false);
-
-        address[] memory assets = new address[](1);
-        assets[0] = address(0x100);
-
-        vm.expectRevert(AssetPairRegistry.TestModeDisabled.selector);
-        vm.prank(admin);
-        prodRegistry.adminBatchWhitelistAssets(assets);
-    }
-
-    function test_adminBatchActivatePairs_revertsWhenTestModeDisabled() public {
-        // Deploy production registry (test mode disabled)
-        AssetPairRegistry prodRegistry = new AssetPairRegistry(admin, false);
-
-        address[] memory assets = new address[](1);
-        bytes32[] memory sources = new bytes32[](1);
-        address[] memory quoteTokens = new address[](1);
-        uint256[] memory chainIds = new uint256[](1);
-
-        assets[0] = address(0x100);
-        sources[0] = SOURCE_BITGET;
-        quoteTokens[0] = quoteToken;
-        chainIds[0] = CHAIN_CEX;
-
-        vm.expectRevert(AssetPairRegistry.TestModeDisabled.selector);
-        vm.prank(admin);
-        prodRegistry.adminBatchActivatePairs(assets, sources, quoteTokens, chainIds);
-    }
-
-    function test_adminBatchFunctions_largeScale() public {
-        // Test with 100 assets (simulating 627 ITPs)
-        uint256 count = 100;
-        address[] memory assets = new address[](count);
-        for (uint256 i = 0; i < count; i++) {
-            assets[i] = address(uint160(i + 1));
-        }
-
-        vm.prank(admin);
-        registry.adminBatchWhitelistAssets(assets);
-
-        address[] memory activeAssets = registry.getActiveAssets();
-        assertEq(activeAssets.length, count);
-
-        // Now activate pairs for all
-        bytes32[] memory sources = new bytes32[](count);
-        address[] memory quoteTokens = new address[](count);
-        uint256[] memory chainIds = new uint256[](count);
-
-        for (uint256 i = 0; i < count; i++) {
-            sources[i] = SOURCE_BITGET;
-            quoteTokens[i] = quoteToken;
-            chainIds[i] = CHAIN_CEX;
-        }
-
-        vm.prank(admin);
-        registry.adminBatchActivatePairs(assets, sources, quoteTokens, chainIds);
-
-        bytes32[] memory activePairs = registry.getActivePairs();
-        assertEq(activePairs.length, count);
     }
 
     // ============ HELPER FUNCTIONS ============

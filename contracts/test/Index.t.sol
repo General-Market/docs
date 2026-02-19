@@ -9,6 +9,7 @@ import {Governance} from "../src/Governance.sol";
 import "../src/libraries/TypesLib.sol";
 import "../src/libraries/ErrorsLib.sol";
 import "../src/libraries/EventsLib.sol";
+import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title Index.t.sol - Tests for Index.sol ITP creation functionality
@@ -28,6 +29,9 @@ contract IndexTest is TestHelper {
     address public asset2 = address(0x101);
     address public asset3 = address(0x102);
     address public asset4 = address(0x103);
+
+    // Dummy BLS signature (64 bytes for G1 point) — pairing precompile is mocked
+    bytes public dummyBlsSignature = new bytes(64);
 
     // Weight constants
     uint256 constant WEIGHT_50_PERCENT = 5e17; // 50% = 0.5e18
@@ -51,6 +55,16 @@ contract IndexTest is TestHelper {
 
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), initData);
         index = Index(address(proxy));
+
+        // Setup IssuerRegistry with dummy aggregated pubkey for BLS verification
+        IssuerRegistry issuerRegistry = deployIssuerRegistry(address(governance));
+        vm.startPrank(admin);
+        issuerRegistry.setAggregatedPubkey(new bytes(128));
+        index.setIssuerRegistry(address(issuerRegistry));
+        vm.stopPrank();
+
+        // Mock BN254 pairing precompile to always return true
+        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
 
         // Setup test environment
         vm.label(admin, "Admin");
@@ -818,7 +832,7 @@ contract IndexTest is TestHelper {
 
         // Update balance above threshold (no PoolRebalanceNeeded event)
         // BLS sig verification skipped since issuerRegistry not set (test mode)
-        index.updateVenueBalance(1, 500e18, "");
+        index.updateVenueBalance(1, 500e18, dummyBlsSignature);
 
         (,uint256 current,,uint256 lastRebalance) = index.venuePools(1);
         assertEq(current, 500e18);
@@ -833,7 +847,7 @@ contract IndexTest is TestHelper {
         vm.expectEmit(true, false, false, true);
         emit EventsLib.PoolRebalanceNeeded(1, 950e18); // 1000 - 50
 
-        index.updateVenueBalance(1, 50e18, "");
+        index.updateVenueBalance(1, 50e18, dummyBlsSignature);
     }
 
     function test_updateVenueBalance_zeroBalance() public {
@@ -843,7 +857,7 @@ contract IndexTest is TestHelper {
         vm.expectEmit(true, false, false, true);
         emit EventsLib.PoolRebalanceNeeded(1, 1000e18);
 
-        index.updateVenueBalance(1, 0, "");
+        index.updateVenueBalance(1, 0, dummyBlsSignature);
 
         (,uint256 current,,) = index.venuePools(1);
         assertEq(current, 0);
@@ -854,7 +868,7 @@ contract IndexTest is TestHelper {
         index.configureVenuePool(1, 1000e18, 100e18);
 
         // Set some balance
-        index.updateVenueBalance(1, 500e18, "");
+        index.updateVenueBalance(1, 500e18, dummyBlsSignature);
 
         // Reconfigure pool - balance should be preserved
         vm.prank(admin);

@@ -265,6 +265,15 @@ contract MockBitgetVault is Initializable {
         emit MalfunctionModeChanged(oldMode, mode);
     }
 
+    /// @notice Approve a spender to transfer tokens from the vault
+    /// @dev Used to allow ArbBridgeCustody to pull USDC for fundSellOrder
+    /// @param token ERC20 token to approve
+    /// @param spender Address to approve
+    /// @param amount Approval amount
+    function approveSpender(address token, address spender, uint256 amount) external onlyOwner {
+        IERC20(token).approve(spender, amount);
+    }
+
     /// @notice Withdraw deposited tokens from the vault (e.g., after custody release)
     /// @dev Only priceSetter (AP) or owner can withdraw. Simulates CEX withdrawal.
     /// @param token ERC20 token to withdraw

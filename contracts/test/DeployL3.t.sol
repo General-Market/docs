@@ -45,8 +45,9 @@ contract DeployL3Test is Test {
         deployer = vm.addr(deployerKey);
         usdc = makeAddr("wUSDC");
 
-        // Give the USDC mock some code so address checks pass
+        // Give the USDC mock some code and mock decimals() so ERC20 checks pass
         vm.etch(usdc, hex"00");
+        vm.mockCall(usdc, abi.encodeWithSignature("decimals()"), abi.encode(uint8(18)));
 
         vm.startPrank(deployer);
 
@@ -75,12 +76,11 @@ contract DeployL3Test is Test {
             feeRegistryProxy = address(proxy);
         }
         {
-            // Production deployment: test mode disabled
-            AssetPairRegistry apr = new AssetPairRegistry(deployer, false);
+            AssetPairRegistry apr = new AssetPairRegistry(deployer, issuerRegistryProxy);
             assetPairRegistryAddr = address(apr);
         }
         {
-            CollateralRegistry cr = new CollateralRegistry(deployer);
+            CollateralRegistry cr = new CollateralRegistry(deployer, issuerRegistryProxy);
             collateralRegistryAddr = address(cr);
         }
 

@@ -123,6 +123,29 @@ interface IArbBridgeCustody {
         uint256 deadline
     ) external returns (uint256 orderId);
 
+    // ============ BUY/SELL ORDER CUSTODY ============
+
+    /// @notice Complete a buy order by transferring escrowed USDC to vault
+    /// @dev Called by issuers after L3 order processing. Deletes the cross-chain order.
+    /// @param orderId The cross-chain order ID
+    /// @param vault Destination vault address for USDC
+    /// @param blsSignature Aggregated BLS signature
+    function completeBuyOrder(uint256 orderId, address vault, bytes calldata blsSignature) external;
+
+    /// @notice Fund a sell order by pulling USDC from vault into custody
+    /// @dev Called by issuers before completeSellOrder. Vault must have approved this contract.
+    /// @param orderId The sell order ID
+    /// @param vault Source vault address to pull USDC from
+    /// @param usdcAmount Amount of USDC to pull (6 decimals)
+    /// @param blsSignature Aggregated BLS signature
+    function fundSellOrder(uint256 orderId, address vault, uint256 usdcAmount, bytes calldata blsSignature) external;
+
+    /// @notice Emitted when a buy order is completed (USDC sent to vault)
+    event BuyOrderCompleted(uint256 indexed orderId, address indexed vault, uint256 usdcAmount);
+
+    /// @notice Emitted when a sell order is funded (USDC pulled from vault)
+    event SellOrderFunded(uint256 indexed orderId, address indexed vault, uint256 usdcAmount);
+
     // ============ VIEW FUNCTIONS ============
 
     /// @notice Check if a nonce has been used (release completed)

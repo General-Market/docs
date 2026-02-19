@@ -27,7 +27,7 @@ contract L3BridgeCustodyTest is TestHelper {
     uint256 public constant DEST_CHAIN_ARBITRUM = 42161;
     uint256 public constant DEST_CHAIN_BASE = 8453;
     uint256 public constant LOCK_AMOUNT = 1000e18;
-    bytes public constant EMPTY_BLS_SIG = "";
+    bytes public DUMMY_BLS_SIG = new bytes(64);
 
     // Events from interface
     event BridgeInitiated(uint256 indexed nonce, uint256 destChainId, uint256 amount);
@@ -50,6 +50,13 @@ contract L3BridgeCustodyTest is TestHelper {
         );
 
         custody = L3BridgeCustody(address(proxy));
+
+        // Set a non-empty aggregated pubkey so BLS path doesn't revert on empty pubkey
+        bytes memory dummyAggPubkey = new bytes(128);
+        mockRegistry.setAggregatedPubkey(dummyAggPubkey);
+
+        // Mock the BN254 pairing precompile to always return success
+        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
 
         // Fund test accounts
         usdc.mint(alice, 10_000_000e18);
@@ -98,7 +105,7 @@ contract L3BridgeCustodyTest is TestHelper {
         uint256 balanceBefore = usdc.balanceOf(alice);
 
         vm.prank(alice);
-        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         // Check nonce
         assertEq(nonce, 0);
@@ -129,7 +136,7 @@ contract L3BridgeCustodyTest is TestHelper {
         );
 
         vm.prank(alice);
-        custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
     }
 
     function test_initiateBridge_emitsBridgeInitiatedEvent() public {
@@ -137,15 +144,15 @@ contract L3BridgeCustodyTest is TestHelper {
         emit BridgeInitiated(0, DEST_CHAIN_ARBITRUM, LOCK_AMOUNT);
 
         vm.prank(alice);
-        custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
     }
 
     function test_initiateBridge_sequentialNonces() public {
         vm.startPrank(alice);
 
-        uint256 nonce1 = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
-        uint256 nonce2 = custody.initiateBridge(DEST_CHAIN_BASE, LOCK_AMOUNT, EMPTY_BLS_SIG);
-        uint256 nonce3 = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        uint256 nonce1 = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
+        uint256 nonce2 = custody.initiateBridge(DEST_CHAIN_BASE, LOCK_AMOUNT, DUMMY_BLS_SIG);
+        uint256 nonce3 = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         vm.stopPrank();
 
@@ -159,7 +166,7 @@ contract L3BridgeCustodyTest is TestHelper {
         uint256 custodyBalanceBefore = usdc.balanceOf(address(custody));
 
         vm.prank(alice);
-        custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         assertEq(usdc.balanceOf(address(custody)), custodyBalanceBefore + LOCK_AMOUNT);
     }
@@ -167,19 +174,19 @@ contract L3BridgeCustodyTest is TestHelper {
     function test_initiateBridge_revertsOnZeroAmount() public {
         vm.prank(alice);
         vm.expectRevert(ErrorsLib.E052_ZeroAmount.selector);
-        custody.initiateBridge(DEST_CHAIN_ARBITRUM, 0, EMPTY_BLS_SIG);
+        custody.initiateBridge(DEST_CHAIN_ARBITRUM, 0, DUMMY_BLS_SIG);
     }
 
     function test_initiateBridge_revertsOnZeroDestChainId() public {
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E053_InvalidDestChainId.selector, 0));
-        custody.initiateBridge(0, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        custody.initiateBridge(0, LOCK_AMOUNT, DUMMY_BLS_SIG);
     }
 
     function test_initiateBridge_revertsOnCurrentChainId() public {
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E053_InvalidDestChainId.selector, block.chainid));
-        custody.initiateBridge(block.chainid, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        custody.initiateBridge(block.chainid, LOCK_AMOUNT, DUMMY_BLS_SIG);
     }
 
     // ============ MARK RELEASED TESTS ============
@@ -187,11 +194,11 @@ contract L3BridgeCustodyTest is TestHelper {
     function test_markReleased_happyPath() public {
         // First initiate a bridge
         vm.prank(alice);
-        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         // Mark as released
         bytes32 destTxHash = keccak256("dest_tx_hash");
-        custody.markReleased(nonce, destTxHash, EMPTY_BLS_SIG);
+        custody.markReleased(nonce, destTxHash, DUMMY_BLS_SIG);
 
         // Check lock is released
         TypesLib.PendingLock memory lock = custody.getPendingLock(nonce);
@@ -201,59 +208,59 @@ contract L3BridgeCustodyTest is TestHelper {
 
     function test_markReleased_emitsLockReleasedEvent() public {
         vm.prank(alice);
-        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         bytes32 destTxHash = keccak256("dest_tx_hash");
 
         vm.expectEmit(true, false, false, true);
         emit LockReleased(nonce, destTxHash);
 
-        custody.markReleased(nonce, destTxHash, EMPTY_BLS_SIG);
+        custody.markReleased(nonce, destTxHash, DUMMY_BLS_SIG);
     }
 
     function test_markReleased_revertsOnNonexistentLock() public {
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E049_LockNotFound.selector, 999));
-        custody.markReleased(999, keccak256("hash"), EMPTY_BLS_SIG);
+        custody.markReleased(999, keccak256("hash"), DUMMY_BLS_SIG);
     }
 
     function test_markReleased_revertsOnDoubleRelease() public {
         vm.prank(alice);
-        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         bytes32 destTxHash = keccak256("dest_tx_hash");
-        custody.markReleased(nonce, destTxHash, EMPTY_BLS_SIG);
+        custody.markReleased(nonce, destTxHash, DUMMY_BLS_SIG);
 
         // Try to release again
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E045_LockAlreadyReleased.selector, nonce));
-        custody.markReleased(nonce, destTxHash, EMPTY_BLS_SIG);
+        custody.markReleased(nonce, destTxHash, DUMMY_BLS_SIG);
     }
 
     function test_markReleased_revertsOnReversedLock() public {
         vm.prank(alice);
-        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         // Fast-forward past timeout
         vm.warp(block.timestamp + 1 hours + 1);
 
         // Reverse the lock
-        custody.reverseLock(nonce, EMPTY_BLS_SIG, 15);
+        custody.reverseLock(nonce, DUMMY_BLS_SIG, 15);
 
         // Try to mark as released
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E046_LockAlreadyReversed.selector, nonce));
-        custody.markReleased(nonce, keccak256("hash"), EMPTY_BLS_SIG);
+        custody.markReleased(nonce, keccak256("hash"), DUMMY_BLS_SIG);
     }
 
     // ============ REVERSE LOCK TESTS ============
 
     function test_reverseLock_happyPathAfterTimeout() public {
         vm.prank(alice);
-        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         // Fast-forward past timeout (1 hour)
         vm.warp(block.timestamp + 1 hours + 1);
 
         // Reverse the lock
-        custody.reverseLock(nonce, EMPTY_BLS_SIG, 15);
+        custody.reverseLock(nonce, DUMMY_BLS_SIG, 15);
 
         // Check lock is reversed
         TypesLib.PendingLock memory lock = custody.getPendingLock(nonce);
@@ -263,19 +270,19 @@ contract L3BridgeCustodyTest is TestHelper {
 
     function test_reverseLock_emitsLockReversedEvent() public {
         vm.prank(alice);
-        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         vm.warp(block.timestamp + 1 hours + 1);
 
         vm.expectEmit(true, false, false, false);
         emit LockReversed(nonce);
 
-        custody.reverseLock(nonce, EMPTY_BLS_SIG, 15);
+        custody.reverseLock(nonce, DUMMY_BLS_SIG, 15);
     }
 
     function test_reverseLock_revertsBeforeTimeout() public {
         vm.prank(alice);
-        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         uint256 lockedAt = block.timestamp;
 
@@ -288,40 +295,40 @@ contract L3BridgeCustodyTest is TestHelper {
                 block.timestamp
             )
         );
-        custody.reverseLock(nonce, EMPTY_BLS_SIG, 15);
+        custody.reverseLock(nonce, DUMMY_BLS_SIG, 15);
     }
 
     function test_reverseLock_revertsOnDoubleReversal() public {
         vm.prank(alice);
-        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         vm.warp(block.timestamp + 1 hours + 1);
 
-        custody.reverseLock(nonce, EMPTY_BLS_SIG, 15);
+        custody.reverseLock(nonce, DUMMY_BLS_SIG, 15);
 
         // Try to reverse again
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E046_LockAlreadyReversed.selector, nonce));
-        custody.reverseLock(nonce, EMPTY_BLS_SIG, 15);
+        custody.reverseLock(nonce, DUMMY_BLS_SIG, 15);
     }
 
     function test_reverseLock_revertsOnReleasedLock() public {
         vm.prank(alice);
-        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         // Mark as released first
-        custody.markReleased(nonce, keccak256("hash"), EMPTY_BLS_SIG);
+        custody.markReleased(nonce, keccak256("hash"), DUMMY_BLS_SIG);
 
         // Fast-forward past timeout
         vm.warp(block.timestamp + 1 hours + 1);
 
         // Try to reverse
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E045_LockAlreadyReleased.selector, nonce));
-        custody.reverseLock(nonce, EMPTY_BLS_SIG, 15);
+        custody.reverseLock(nonce, DUMMY_BLS_SIG, 15);
     }
 
     function test_reverseLock_revertsOnInsufficientSignerCount() public {
         vm.prank(alice);
-        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         vm.warp(block.timestamp + 1 hours + 1);
 
@@ -329,14 +336,14 @@ contract L3BridgeCustodyTest is TestHelper {
         vm.expectRevert(
             abi.encodeWithSelector(ErrorsLib.E048_InsufficientSignerCount.selector, 14, 15)
         );
-        custody.reverseLock(nonce, EMPTY_BLS_SIG, 14);
+        custody.reverseLock(nonce, DUMMY_BLS_SIG, 14);
     }
 
     function test_reverseLock_revertsOnNonexistentLock() public {
         vm.warp(block.timestamp + 1 hours + 1);
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E049_LockNotFound.selector, 999));
-        custody.reverseLock(999, EMPTY_BLS_SIG, 15);
+        custody.reverseLock(999, DUMMY_BLS_SIG, 15);
     }
 
     // ============ VIEW FUNCTION TESTS ============
@@ -345,14 +352,14 @@ contract L3BridgeCustodyTest is TestHelper {
         assertEq(custody.currentNonce(), 0);
 
         vm.prank(alice);
-        custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         assertEq(custody.currentNonce(), 1);
     }
 
     function test_getPendingLock_returnsCorrectData() public {
         vm.prank(alice);
-        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         TypesLib.PendingLock memory lock = custody.getPendingLock(nonce);
 
@@ -366,14 +373,14 @@ contract L3BridgeCustodyTest is TestHelper {
 
     function test_canReverseLock_returnsFalseBeforeTimeout() public {
         vm.prank(alice);
-        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         assertFalse(custody.canReverseLock(nonce));
     }
 
     function test_canReverseLock_returnsTrueAfterTimeout() public {
         vm.prank(alice);
-        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         vm.warp(block.timestamp + 1 hours);
 
@@ -382,9 +389,9 @@ contract L3BridgeCustodyTest is TestHelper {
 
     function test_canReverseLock_returnsFalseIfReleased() public {
         vm.prank(alice);
-        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
-        custody.markReleased(nonce, keccak256("hash"), EMPTY_BLS_SIG);
+        custody.markReleased(nonce, keccak256("hash"), DUMMY_BLS_SIG);
 
         vm.warp(block.timestamp + 1 hours);
 
@@ -393,10 +400,10 @@ contract L3BridgeCustodyTest is TestHelper {
 
     function test_canReverseLock_returnsFalseIfReversed() public {
         vm.prank(alice);
-        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         vm.warp(block.timestamp + 1 hours + 1);
-        custody.reverseLock(nonce, EMPTY_BLS_SIG, 15);
+        custody.reverseLock(nonce, DUMMY_BLS_SIG, 15);
 
         assertFalse(custody.canReverseLock(nonce));
     }
@@ -413,7 +420,7 @@ contract L3BridgeCustodyTest is TestHelper {
         usdc.mint(alice, amount);
 
         vm.prank(alice);
-        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, amount, EMPTY_BLS_SIG);
+        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, amount, DUMMY_BLS_SIG);
 
         TypesLib.PendingLock memory lock = custody.getPendingLock(nonce);
         assertEq(lock.amount, amount);
@@ -423,7 +430,7 @@ contract L3BridgeCustodyTest is TestHelper {
         vm.assume(chainId > 0);
 
         vm.prank(alice);
-        uint256 nonce = custody.initiateBridge(chainId, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        uint256 nonce = custody.initiateBridge(chainId, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         TypesLib.PendingLock memory lock = custody.getPendingLock(nonce);
         assertEq(lock.destChainId, chainId);
@@ -433,12 +440,12 @@ contract L3BridgeCustodyTest is TestHelper {
         vm.assume(extraSeconds <= 1 days);
 
         vm.prank(alice);
-        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        uint256 nonce = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         // Warp to exactly the timeout
         vm.warp(block.timestamp + 1 hours + extraSeconds);
 
-        custody.reverseLock(nonce, EMPTY_BLS_SIG, 15);
+        custody.reverseLock(nonce, DUMMY_BLS_SIG, 15);
 
         TypesLib.PendingLock memory lock = custody.getPendingLock(nonce);
         assertTrue(lock.reversed);
@@ -459,14 +466,14 @@ contract L3BridgeCustodyTest is TestHelper {
     function test_multipleLocks_independentState() public {
         // Alice initiates lock 0
         vm.prank(alice);
-        uint256 nonce0 = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, EMPTY_BLS_SIG);
+        uint256 nonce0 = custody.initiateBridge(DEST_CHAIN_ARBITRUM, LOCK_AMOUNT, DUMMY_BLS_SIG);
 
         // Bob initiates lock 1
         vm.prank(bob);
-        uint256 nonce1 = custody.initiateBridge(DEST_CHAIN_BASE, LOCK_AMOUNT * 2, EMPTY_BLS_SIG);
+        uint256 nonce1 = custody.initiateBridge(DEST_CHAIN_BASE, LOCK_AMOUNT * 2, DUMMY_BLS_SIG);
 
         // Release lock 0
-        custody.markReleased(nonce0, keccak256("hash0"), EMPTY_BLS_SIG);
+        custody.markReleased(nonce0, keccak256("hash0"), DUMMY_BLS_SIG);
 
         // Lock 1 should still be unreleased
         TypesLib.PendingLock memory lock0 = custody.getPendingLock(nonce0);
@@ -489,7 +496,7 @@ contract L3BridgeCustodyTest is TestHelper {
     function test_proposeUpgrade_setsState() public {
         L3BridgeCustody newImpl = new L3BridgeCustody();
 
-        custody.proposeUpgrade(address(newImpl), EMPTY_BLS_SIG);
+        custody.proposeUpgrade(address(newImpl), DUMMY_BLS_SIG);
 
         (address proposedImpl, uint256 proposedAt, bool isEmergency) = custody.getPendingUpgrade();
         assertEq(proposedImpl, address(newImpl));
@@ -499,22 +506,22 @@ contract L3BridgeCustodyTest is TestHelper {
 
     function test_proposeUpgrade_revertsOnZeroAddress() public {
         vm.expectRevert(ErrorsLib.E038_ZeroImplementation.selector);
-        custody.proposeUpgrade(address(0), EMPTY_BLS_SIG);
+        custody.proposeUpgrade(address(0), DUMMY_BLS_SIG);
     }
 
     function test_proposeUpgrade_revertsOnAlreadyPending() public {
         L3BridgeCustody newImpl = new L3BridgeCustody();
-        custody.proposeUpgrade(address(newImpl), EMPTY_BLS_SIG);
+        custody.proposeUpgrade(address(newImpl), DUMMY_BLS_SIG);
 
         L3BridgeCustody anotherImpl = new L3BridgeCustody();
         vm.expectRevert(ErrorsLib.E039_UpgradeAlreadyPending.selector);
-        custody.proposeUpgrade(address(anotherImpl), EMPTY_BLS_SIG);
+        custody.proposeUpgrade(address(anotherImpl), DUMMY_BLS_SIG);
     }
 
     function test_proposeEmergencyUpgrade_setsEmergencyFlag() public {
         L3BridgeCustody newImpl = new L3BridgeCustody();
 
-        custody.proposeEmergencyUpgrade(address(newImpl), EMPTY_BLS_SIG);
+        custody.proposeEmergencyUpgrade(address(newImpl), DUMMY_BLS_SIG);
 
         (, , bool isEmergency) = custody.getPendingUpgrade();
         assertTrue(isEmergency);
@@ -522,7 +529,7 @@ contract L3BridgeCustodyTest is TestHelper {
 
     function test_executeUpgrade_revertsBeforeTimelock() public {
         L3BridgeCustody newImpl = new L3BridgeCustody();
-        custody.proposeUpgrade(address(newImpl), EMPTY_BLS_SIG);
+        custody.proposeUpgrade(address(newImpl), DUMMY_BLS_SIG);
 
         uint256 unlockTime = block.timestamp + 7 days;
         vm.expectRevert(
@@ -542,7 +549,7 @@ contract L3BridgeCustodyTest is TestHelper {
 
     function test_executeUpgrade_revertsOnMismatch() public {
         L3BridgeCustody newImpl = new L3BridgeCustody();
-        custody.proposeUpgrade(address(newImpl), EMPTY_BLS_SIG);
+        custody.proposeUpgrade(address(newImpl), DUMMY_BLS_SIG);
 
         vm.warp(block.timestamp + 7 days + 1);
 
@@ -558,7 +565,7 @@ contract L3BridgeCustodyTest is TestHelper {
 
     function test_executeUpgrade_succeedsAfterTimelock() public {
         L3BridgeCustody newImpl = new L3BridgeCustody();
-        custody.proposeUpgrade(address(newImpl), EMPTY_BLS_SIG);
+        custody.proposeUpgrade(address(newImpl), DUMMY_BLS_SIG);
 
         vm.warp(block.timestamp + 7 days + 1);
 
@@ -571,7 +578,7 @@ contract L3BridgeCustodyTest is TestHelper {
 
     function test_executeEmergencyUpgrade_succeedsAfter24Hours() public {
         L3BridgeCustody newImpl = new L3BridgeCustody();
-        custody.proposeEmergencyUpgrade(address(newImpl), EMPTY_BLS_SIG);
+        custody.proposeEmergencyUpgrade(address(newImpl), DUMMY_BLS_SIG);
 
         vm.warp(block.timestamp + 24 hours + 1);
 
@@ -586,14 +593,14 @@ contract L3BridgeCustodyTest is TestHelper {
 
     function test_cancelUpgrade_clearsPendingUpgrade() public {
         L3BridgeCustody newImpl = new L3BridgeCustody();
-        custody.proposeUpgrade(address(newImpl), EMPTY_BLS_SIG);
+        custody.proposeUpgrade(address(newImpl), DUMMY_BLS_SIG);
 
         // Verify pending upgrade exists
         (address proposedImpl, , ) = custody.getPendingUpgrade();
         assertEq(proposedImpl, address(newImpl));
 
         // Cancel the upgrade
-        custody.cancelUpgrade(EMPTY_BLS_SIG);
+        custody.cancelUpgrade(DUMMY_BLS_SIG);
 
         // Verify pending upgrade is cleared
         (proposedImpl, , ) = custody.getPendingUpgrade();
@@ -602,7 +609,7 @@ contract L3BridgeCustodyTest is TestHelper {
 
     function test_cancelUpgrade_revertsOnNoPending() public {
         vm.expectRevert(ErrorsLib.E040_NoPendingUpgrade.selector);
-        custody.cancelUpgrade(EMPTY_BLS_SIG);
+        custody.cancelUpgrade(DUMMY_BLS_SIG);
     }
 
     function test_cancelUpgrade_allowsNewProposalAfterCancel() public {
@@ -610,13 +617,13 @@ contract L3BridgeCustodyTest is TestHelper {
         L3BridgeCustody impl2 = new L3BridgeCustody();
 
         // Propose first upgrade
-        custody.proposeUpgrade(address(impl1), EMPTY_BLS_SIG);
+        custody.proposeUpgrade(address(impl1), DUMMY_BLS_SIG);
 
         // Cancel it
-        custody.cancelUpgrade(EMPTY_BLS_SIG);
+        custody.cancelUpgrade(DUMMY_BLS_SIG);
 
         // Propose new upgrade (should succeed)
-        custody.proposeUpgrade(address(impl2), EMPTY_BLS_SIG);
+        custody.proposeUpgrade(address(impl2), DUMMY_BLS_SIG);
 
         (address proposedImpl, , ) = custody.getPendingUpgrade();
         assertEq(proposedImpl, address(impl2));

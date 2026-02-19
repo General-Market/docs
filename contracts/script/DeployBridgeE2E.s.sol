@@ -65,55 +65,39 @@ contract DeployBridgeE2E is Script {
         BridgeProxy(bridgeProxy).setIndexContract(indexContract);
         console.log("Index contract set on BridgeProxy");
 
-        // Set signer threshold to 2 (2-of-3)
-        BridgeProxy(bridgeProxy).setSignerThreshold(2);
-        console.log("Signer threshold set to 2");
-
         // Set authorized bridge on Index for cross-chain rebalance/transfer
         Index(indexContract).setAuthorizedBridge(bridgeProxy);
         console.log("Authorized bridge set on Index");
 
-        // Whitelist 627 assets on AssetPairRegistry
-        console.log("Whitelisting 627 assets...");
+        // Whitelist 627 assets on AssetPairRegistry using propose/activate flow
+        // Mock BN254 pairing precompile (address 0x08) to accept any signature during deployment
+        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
+        console.log("Whitelisting 627 assets (propose/activate flow)...");
         AssetPairRegistry apr = AssetPairRegistry(assetPairRegistry);
 
-        for (uint256 batch = 0; batch < 7; batch++) {
-            uint256 start = batch * 100 + 1;
-            uint256 end = batch == 6 ? 627 : (batch + 1) * 100;
-            _batchWhitelist(apr, start, end);
-            _batchActivate(apr, start, end);
+        for (uint256 i = 1; i <= 627; i++) {
+            address asset = address(uint160(i));
+            apr.proposeAsset(asset, "");
         }
+        vm.warp(block.timestamp + 2 days + 1);
+        for (uint256 i = 1; i <= 627; i++) {
+            address asset = address(uint160(i));
+            apr.activateAsset(asset);
+            apr.proposePair(asset, BITGET_SOURCE, MOCK_USDC_QUOTE, 0, "");
+        }
+        vm.warp(block.timestamp + 2 days + 1);
+        for (uint256 i = 1; i <= 627; i++) {
+            address asset = address(uint160(i));
+            bytes32 pairId = apr.computePairId(asset, BITGET_SOURCE, MOCK_USDC_QUOTE, 0);
+            apr.activatePair(pairId);
+        }
+        vm.clearMockedCalls();
         console.log("627 assets whitelisted and activated");
 
         vm.stopBroadcast();
 
         // Export deployment
         _exportDeployment(issuerRegistry, assetPairRegistry, indexContract, mockBitgetVault, bridgeProxy, bridgedItpFactory);
-    }
-
-    function _batchWhitelist(AssetPairRegistry apr, uint256 start, uint256 end) internal {
-        uint256 count = end - start + 1;
-        address[] memory assets = new address[](count);
-        for (uint256 i = 0; i < count; i++) {
-            assets[i] = address(uint160(start + i));
-        }
-        apr.adminBatchWhitelistAssets(assets);
-    }
-
-    function _batchActivate(AssetPairRegistry apr, uint256 start, uint256 end) internal {
-        uint256 count = end - start + 1;
-        address[] memory assets = new address[](count);
-        bytes32[] memory sources = new bytes32[](count);
-        address[] memory quotes = new address[](count);
-        uint256[] memory chains = new uint256[](count);
-
-        for (uint256 i = 0; i < count; i++) {
-            assets[i] = address(uint160(start + i));
-            sources[i] = BITGET_SOURCE;
-            quotes[i] = MOCK_USDC_QUOTE;
-            chains[i] = 0;
-        }
-        apr.adminBatchActivatePairs(assets, sources, quotes, chains);
     }
 
     function _exportDeployment(

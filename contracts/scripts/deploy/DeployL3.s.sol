@@ -164,20 +164,17 @@ contract DeployL3 is Script {
         }
 
         // AssetPairRegistry (non-upgradeable, constructor)
-        // Test mode enables admin batch functions - ONLY for testnet/local deployments
         {
-            bool testMode = vm.envOr("ASSET_PAIR_REGISTRY_TEST_MODE", false);
-            AssetPairRegistry apr = new AssetPairRegistry(admin, testMode);
+            AssetPairRegistry apr = new AssetPairRegistry(admin, issuerRegistryProxy);
             assetPairRegistryAddr = address(apr);
 
             require(apr.admin() == admin, "AssetPairRegistry: admin mismatch");
             console2.log("  AssetPairRegistry:", assetPairRegistryAddr);
-            console2.log("    Test mode:", testMode ? "ENABLED (E2E only)" : "DISABLED (production)");
         }
 
         // CollateralRegistry (non-upgradeable, constructor)
         {
-            CollateralRegistry cr = new CollateralRegistry(admin);
+            CollateralRegistry cr = new CollateralRegistry(admin, issuerRegistryProxy);
             collateralRegistryAddr = address(cr);
 
             require(cr.admin() == admin, "CollateralRegistry: admin mismatch");

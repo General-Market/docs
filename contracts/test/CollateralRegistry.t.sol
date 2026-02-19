@@ -14,6 +14,8 @@ contract CollateralRegistryTest is Test {
     address public user = address(0x2);
     address public authorizedCaller = address(0x3);
 
+    bytes public dummyBlsSignature = new bytes(64);
+
     // Test chain IDs
     // NOTE: Chain 0 represents "external/no-chain" (e.g., CEX operations)
     // Use actual chain IDs for on-chain collateral tracking
@@ -40,10 +42,10 @@ contract CollateralRegistryTest is Test {
     event AuthorizedCallerUpdated(address indexed caller, bool authorized);
 
     function setUp() public {
-        registry = new CollateralRegistry(admin);
-        // Authorize test contract to call recordCollateralMove
-        vm.prank(admin);
-        registry.setAuthorizedCaller(address(this), true);
+        // Mock BN254 pairing precompile to always return true
+        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
+
+        registry = new CollateralRegistry(admin, address(0x1));
     }
 
     // ============ CONSTRUCTOR TESTS ============
@@ -54,7 +56,7 @@ contract CollateralRegistryTest is Test {
 
     function test_Constructor_RevertsOnZeroAddress() public {
         vm.expectRevert(CollateralRegistry.ZeroAddress.selector);
-        new CollateralRegistry(address(0));
+        new CollateralRegistry(address(0), address(0x1));
     }
 
     // ============ AC2: BRIDGE TYPE - Updates Both Chains ============
@@ -236,30 +238,6 @@ contract CollateralRegistryTest is Test {
 
     // ============ ADMIN FUNCTION TESTS ============
 
-    function test_SetAggregatedPubkey_OnlyAdmin() public {
-        bytes memory pubkey = hex"1234567890abcdef";
-
-        vm.prank(admin);
-        registry.setAggregatedPubkey(pubkey);
-
-        assertEq(registry.aggregatedPubkey(), pubkey);
-    }
-
-    function test_SetAggregatedPubkey_RevertsForNonAdmin() public {
-        vm.prank(user);
-        vm.expectRevert(CollateralRegistry.Unauthorized.selector);
-        registry.setAggregatedPubkey(hex"1234");
-    }
-
-    function test_SetBLSLibrary_OnlyAdmin() public {
-        address blsLib = address(0x999);
-
-        vm.prank(admin);
-        registry.setBLSLibrary(blsLib);
-
-        assertEq(registry.blsLibrary(), blsLib);
-    }
-
     function test_SetAdmin_OnlyAdmin() public {
         address newAdmin = address(0x888);
 
@@ -398,58 +376,6 @@ contract CollateralRegistryTest is Test {
         assertEq(registry.getTotalCollateral(ITP_1), 700e18);
     }
 
-    // ============ AUTHORIZATION TESTS ============
-
-    function test_RecordCollateralMove_RevertsForUnauthorized() public {
-        vm.prank(user); // user is not authorized
-        vm.expectRevert(CollateralRegistry.Unauthorized.selector);
-        registry.recordCollateralMove(ITP_1, EXTERNAL, ARBITRUM, AMOUNT, TypesLib.TxType.BUY, "");
-    }
-
-    function test_SetAuthorizedCaller_OnlyAdmin() public {
-        vm.prank(admin);
-        registry.setAuthorizedCaller(authorizedCaller, true);
-
-        assertTrue(registry.authorizedCallers(authorizedCaller));
-    }
-
-    function test_SetAuthorizedCaller_RevertsForNonAdmin() public {
-        vm.prank(user);
-        vm.expectRevert(CollateralRegistry.Unauthorized.selector);
-        registry.setAuthorizedCaller(authorizedCaller, true);
-    }
-
-    function test_SetAuthorizedCaller_RevertsOnZeroAddress() public {
-        vm.prank(admin);
-        vm.expectRevert(CollateralRegistry.ZeroAddress.selector);
-        registry.setAuthorizedCaller(address(0), true);
-    }
-
-    function test_AuthorizedCaller_CanRecordMove() public {
-        // Authorize a new caller
-        vm.prank(admin);
-        registry.setAuthorizedCaller(authorizedCaller, true);
-
-        // New caller can now record moves
-        vm.prank(authorizedCaller);
-        registry.recordCollateralMove(ITP_1, EXTERNAL, ARBITRUM, AMOUNT, TypesLib.TxType.BUY, "");
-
-        assertEq(registry.getITPCollateralByChain(ITP_1, ARBITRUM), AMOUNT);
-    }
-
-    function test_RevokedCaller_CannotRecordMove() public {
-        // Authorize then revoke
-        vm.prank(admin);
-        registry.setAuthorizedCaller(authorizedCaller, true);
-        vm.prank(admin);
-        registry.setAuthorizedCaller(authorizedCaller, false);
-
-        // Revoked caller cannot record moves
-        vm.prank(authorizedCaller);
-        vm.expectRevert(CollateralRegistry.Unauthorized.selector);
-        registry.recordCollateralMove(ITP_1, EXTERNAL, ARBITRUM, AMOUNT, TypesLib.TxType.BUY, "");
-    }
-
     // ============ ADMIN EVENT TESTS ============
 
     function test_SetAdmin_EmitsEvent() public {
@@ -462,41 +388,6 @@ contract CollateralRegistryTest is Test {
         registry.setAdmin(newAdmin);
     }
 
-    function test_SetAggregatedPubkey_EmitsEvent() public {
-        bytes memory pubkey = hex"1234567890abcdef";
-
-        vm.expectEmit(false, false, false, true);
-        emit AggregatedPubkeyUpdated(pubkey);
-
-        vm.prank(admin);
-        registry.setAggregatedPubkey(pubkey);
-    }
-
-    function test_SetBLSLibrary_EmitsEvent() public {
-        address blsLib = address(0x999);
-
-        vm.expectEmit(true, false, false, false);
-        emit BLSLibraryUpdated(blsLib);
-
-        vm.prank(admin);
-        registry.setBLSLibrary(blsLib);
-    }
-
-    function test_SetAuthorizedCaller_EmitsEvent() public {
-        vm.expectEmit(true, false, false, true);
-        emit AuthorizedCallerUpdated(authorizedCaller, true);
-
-        vm.prank(admin);
-        registry.setAuthorizedCaller(authorizedCaller, true);
-    }
-
-    function test_Constructor_EmitsAuthorizedCallerEvent() public {
-        // Create new registry and check event
-        vm.expectEmit(true, false, false, true);
-        emit AuthorizedCallerUpdated(admin, true);
-
-        new CollateralRegistry(admin);
-    }
 
     // ============ MESSAGE HASH FORMAT TESTS ============
 
@@ -588,7 +479,7 @@ contract CollateralRegistryTest is Test {
     function _recordMove(bytes32 itpId, uint256 fromChain, uint256 toChain, uint256 amount, TypesLib.TxType txType)
         internal
     {
-        // Using empty bytes for BLS signature since verification is mocked
-        registry.recordCollateralMove(itpId, fromChain, toChain, amount, txType, "");
+        // Using dummy BLS signature - BN254 pairing precompile is mocked in setUp()
+        registry.recordCollateralMove(itpId, fromChain, toChain, amount, txType, dummyBlsSignature);
     }
 }

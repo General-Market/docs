@@ -371,13 +371,6 @@ contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable, BLSVerifie
     }
 
     /// @inheritdoc IFeeRegistry
-    function setBLSLibrary(address _blsLibrary) external override onlyAdmin {
-        if (_blsLibrary == address(0)) revert ZeroAddress();
-        blsLibrary = _blsLibrary;
-        emit BLSLibraryUpdated(_blsLibrary);
-    }
-
-    /// @inheritdoc IFeeRegistry
     function getNonce() external view override returns (uint256) {
         return _nonce;
     }

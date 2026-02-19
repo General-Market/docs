@@ -136,10 +136,6 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
     /// @dev Current cycle number (for grace period tracking)
     uint256 private _currentCycle;
 
-    /// @dev Test mode flag — when enabled, admin can call BLS-verified functions directly
-    /// @dev ONLY for local/testnet deployments. Must be false in production.
-    bool private _testMode;
-
     /// @dev Registry nonce — incremented on every state change (add/remove issuer, key rotation)
     /// @dev Used for MirrorIssuerRegistry sync tracking and replay protection
     uint256 private _registryNonce;
@@ -257,13 +253,8 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
 
     // ============ KEY ROTATION (Story 2.13, upgraded in Story 7.17) ============
     //
-    // IMPLEMENTATION: BLS signature verification for key rotation requests.
-    // Issuer signs rotation request with OLD key to prove ownership.
-    // testMode bypass preserves admin-only path for testing environments.
-
     /// @inheritdoc IIssuerRegistry
     /// @dev BLS verification: issuer signs keccak256(abi.encode("ROTATE", issuerId, newPubkey)) with old key
-    /// @dev testMode bypass: admin can call directly without BLS signature
     function requestKeyRotation(
         uint256 issuerId,
         bytes calldata newPubkey,
@@ -274,11 +265,8 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
         if (issuer.addr == address(0)) revert IssuerNotFound(issuerId);
         if (issuer.status != 1) revert IssuerNotActive(issuerId);
 
-        // Authorization: BLS signature verification OR admin in testMode
-        if (_testMode) {
-            if (msg.sender != _governance.admin()) revert Unauthorized();
-        } else {
-            // Verify BLS signature with issuer's current (old) key
+        // Verify BLS signature with issuer's current (old) key
+        {
             bytes32 message = keccak256(abi.encode("ROTATE", issuerId, newPubkey));
             if (!BLSLib.verifyBLS(issuer.blsPubkey, message, signatureWithOldKey)) {
                 revert ErrorsLib.E086_InvalidRotationSignature();
@@ -308,7 +296,6 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
 
     /// @inheritdoc IIssuerRegistry
     /// @dev BLS verification: approver signs keccak256(abi.encode("APPROVE_ROTATION", rotatingIssuerId, rotation.newPubkey))
-    /// @dev testMode bypass: admin can call directly without BLS signature
     function approveRotation(
         uint256 rotatingIssuerId,
         uint256 approvingIssuerId,
@@ -327,11 +314,8 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
         // Block self-approval
         if (rotatingIssuerId == approvingIssuerId) revert SelfApprovalNotAllowed();
 
-        // Authorization: BLS signature verification OR admin in testMode
-        if (_testMode) {
-            if (msg.sender != _governance.admin()) revert Unauthorized();
-        } else {
-            // Verify BLS signature from approving issuer
+        // Verify BLS signature from approving issuer
+        {
             bytes32 message = keccak256(abi.encode("APPROVE_ROTATION", rotatingIssuerId, rotation.newPubkey));
             if (!BLSLib.verifyBLS(approver.blsPubkey, message, approverSignature)) {
                 revert ErrorsLib.E087_InvalidApprovalSignature();
@@ -480,20 +464,6 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
         return _currentCycle;
     }
 
-    // ============ TEST MODE ============
-
-    /// @notice Enable or disable test mode
-    /// @dev ONLY for local/testnet deployments. Must be false in production.
-    /// @param enabled Whether test mode is enabled
-    function setTestMode(bool enabled) external onlyAdmin {
-        _testMode = enabled;
-    }
-
-    /// @notice Check if test mode is enabled
-    /// @return Whether test mode is active
-    function testMode() external view returns (bool) {
-        return _testMode;
-    }
 
     // ============ PEER DISCOVERY (Story 7.17) ============
 
@@ -526,18 +496,15 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
     }
 
     /// @notice Update an issuer's IP address
-    /// @dev Issuer can update own IP with BLS signature proof, or admin can update in testMode
     /// @param issuerId The issuer whose IP to update
     /// @param newIp The new IP address (packed as bytes32)
-    /// @param blsSignature BLS signature proving ownership (ignored in testMode)
+    /// @param blsSignature BLS signature proving ownership
     function updateIssuerIp(uint256 issuerId, bytes32 newIp, bytes calldata blsSignature) external {
         TypesLib.Issuer storage issuer = _issuers[issuerId];
         if (issuer.addr == address(0)) revert IssuerNotFound(issuerId);
         if (issuer.status != 1) revert IssuerNotActive(issuerId);
 
-        if (_testMode) {
-            if (msg.sender != _governance.admin()) revert Unauthorized();
-        } else {
+        {
             bytes32 message = keccak256(abi.encode("UPDATE_IP", issuerId, newIp));
             if (!BLSLib.verifyBLS(issuer.blsPubkey, message, blsSignature)) {
                 revert ErrorsLib.E088_InvalidIpUpdateSignature();

@@ -54,7 +54,7 @@ contract DeployCrossChainE2E is Script {
         issuerRegistry = address(new ERC1967Proxy(address(regImpl), abi.encodeWithSelector(IssuerRegistry.initialize.selector, governance)));
         console.log("IssuerRegistry:", issuerRegistry);
 
-        assetPairRegistry = address(new AssetPairRegistry(admin, true));
+        assetPairRegistry = address(new AssetPairRegistry(admin, issuerRegistry));
         console.log("AssetPairRegistry:", assetPairRegistry);
 
         MockBitgetVault vault = new MockBitgetVault();
@@ -119,38 +119,31 @@ contract DeployCrossChainE2E is Script {
     }
 
     function _whitelistAssets() internal {
+        // Mock BN254 pairing precompile (address 0x08) to accept any signature during deployment
+        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
+
         AssetPairRegistry apr = AssetPairRegistry(assetPairRegistry);
-        for (uint256 batch = 0; batch < 7; batch++) {
-            uint256 start = batch * 100 + 1;
-            uint256 end = batch == 6 ? 627 : (batch + 1) * 100;
-            _batchWhitelist(apr, start, end);
-            _batchActivate(apr, start, end);
-        }
-    }
 
-    function _batchWhitelist(AssetPairRegistry apr, uint256 start, uint256 end) internal {
-        uint256 count = end - start + 1;
-        address[] memory assets = new address[](count);
-        for (uint256 i = 0; i < count; i++) {
-            assets[i] = address(uint160(start + i));
+        // Propose all 627 assets
+        for (uint256 i = 1; i <= 627; i++) {
+            apr.proposeAsset(address(uint160(i)), "");
         }
-        apr.adminBatchWhitelistAssets(assets);
-    }
-
-    function _batchActivate(AssetPairRegistry apr, uint256 start, uint256 end) internal {
-        uint256 count = end - start + 1;
-        address[] memory assets = new address[](count);
-        bytes32[] memory sources = new bytes32[](count);
-        address[] memory quotes = new address[](count);
-        uint256[] memory chains = new uint256[](count);
-
-        for (uint256 i = 0; i < count; i++) {
-            assets[i] = address(uint160(start + i));
-            sources[i] = BITGET_SOURCE;
-            quotes[i] = MOCK_USDC_QUOTE;
-            chains[i] = 0;
+        // Warp past timelock and activate assets + propose pairs
+        vm.warp(block.timestamp + 2 days + 1);
+        for (uint256 i = 1; i <= 627; i++) {
+            address asset = address(uint160(i));
+            apr.activateAsset(asset);
+            apr.proposePair(asset, BITGET_SOURCE, MOCK_USDC_QUOTE, 0, "");
         }
-        apr.adminBatchActivatePairs(assets, sources, quotes, chains);
+        // Warp past timelock and activate pairs
+        vm.warp(block.timestamp + 2 days + 1);
+        for (uint256 i = 1; i <= 627; i++) {
+            address asset = address(uint160(i));
+            bytes32 pairId = apr.computePairId(asset, BITGET_SOURCE, MOCK_USDC_QUOTE, 0);
+            apr.activatePair(pairId);
+        }
+
+        vm.clearMockedCalls();
     }
 
     function _exportDeployment() internal {

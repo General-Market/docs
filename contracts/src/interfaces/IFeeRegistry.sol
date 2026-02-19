@@ -158,10 +158,6 @@ interface IFeeRegistry {
     /// @param deployer The deployer address
     function registerITPDeployer(bytes32 itpId, address deployer) external;
 
-    /// @notice Set the BLS library address for signature verification
-    /// @param _blsLibrary The BLS library contract address
-    function setBLSLibrary(address _blsLibrary) external;
-
     /// @notice Claim protocol's share of accumulated fees
     /// @dev Only callable by admin. Protocol share = (100% - deployerShare)
     /// @param itpId The ITP identifier

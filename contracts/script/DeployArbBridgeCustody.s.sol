@@ -64,7 +64,7 @@ contract DeployArbBridgeCustody is Script {
 
         ERC1967Proxy proxy = new ERC1967Proxy(
             arbBridgeCustodyImpl,
-            abi.encodeCall(ArbBridgeCustody.initialize, (issuerRegistryProxy, arbUsdc, l3Index))
+            abi.encodeCall(ArbBridgeCustody.initialize, (issuerRegistryProxy, arbUsdc, l3Index, address(0)))
         );
         arbBridgeCustodyProxy = address(proxy);
         console2.log("  Proxy:", arbBridgeCustodyProxy);
