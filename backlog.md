@@ -1,14 +1,38 @@
 # Design Decision Backlog
 
-## Session: 20260219-1000-k8b3
+## Session: 20260219-2100-q8m4
 
-- [DECISION] 8-step bridge: RecordCollateralMove hash uses ABI encoding (32-byte padded addresses) to match Solidity abi.encode(). MintBridgedShares hash uses ABI encoding with dynamic string offset for "mintBridgedShares" function selector matching.
-- [DECISION] 8-step bridge: Reuse existing release_to_vault phase for step 5 (custody→vault) since it already calls BLSCustody.execute. No new CustodyToVault phase needed — the plan's "CustodyToVaultProposal" maps to existing ReleaseToVaultProposal.
-- [DECISION] 8-step bridge: Keep L3→Arb bridge execution as simulated mint for local E2E (existing behavior). Real bridge contract calls (L3BridgeCustody.initiateBridge → ArbBridgeCustody.completeBridge) deferred to production integration.
-- [DECISION] 8-step bridge: CollateralRegistry requires seeding initial L3 collateral (fromChain=0→L3) before L3→Arb recordCollateralMove can succeed. This mirrors the real flow where bridging USDC to L3 creates the initial L3 collateral balance.
-- [DECISION] 8-step bridge: BLSCustody.execute requires target address whitelisting with 2-day timelock (propose + warp + activate). E2E test uses vm.warp to skip timelock; deadline set after all warps to avoid expiry.
-- [DECISION] 8-step bridge: Shares computation in issuer main loop: `shares = order_amount * 1e18 / nav`. Skips mintBridgedShares if bridge_proxy == Address::zero() (graceful fallback for configs without BridgeProxy).
-- [DECISION] 8-step bridge: recordCollateralMove skipped if collateral_registry == Address::zero(). Both new phases are opt-in via config, maintaining backwards compatibility with existing deployments.
+- [DECISION] BLS unification via BLSVerifier abstract contract (EigenLayer BLSSignatureChecker pattern). Single `_verifyBLS(messageHash, sig)` reads aggregated pubkey from IssuerRegistry. All 11 BLS-using contracts inherit it. Eliminates 6 different inline verification patterns.
+- [DECISION] BLSVerifier adds its own `_blsIssuerRegistry` private slot. For UUPS contracts that already have `issuerRegistry`, both slots point to the same address - BLSVerifier's `_verifyBLS` uses its own private slot, existing code keeps using `issuerRegistry` for non-BLS purposes (isActiveIssuer, etc).
+- [DECISION] No backward compatibility concern - breaking interface changes (removing aggregatedPubkey/signerBitmap params from BridgeProxy) are acceptable per project policy.
+- [DECISION] BridgeProxy.completeCreateItp and rebalance: remove signerBitmap + aggregatedPubkey params entirely. Threshold enforcement happens at consensus/issuer level, not contract level.
+- [DECISION] FeeRegistry/AssetPairRegistry/CollateralRegistry: remove local aggregatedPubkey storage + setAggregatedPubkey(). Read from IssuerRegistry via BLSVerifier instead.
+
+## Session: 20260219-1530-b2x7
+
+- [DECISION] Follower bridge consensus: set orchestrator status to Filled (terminal) after mark_order_processed. Prevents stale order watchdog from resetting the follower's dedup state and creating an infinite retry loop where signer_count=0 repeats forever.
+- [FAILED] Previous follower flow left orchestrator status at Pending after dummy Ok returns from bridge/submit stubs. Watchdog detected Pending as stale → called reset_stale_order + remove_seen_order → order re-detected → infinite loop. Buy flow stuck at "Relay" step indefinitely.
+
+## Session: 20260219-1130-f9k3
+
+- [DECISION] FNG regime overlays: 6 modes (trigger, cash, risk_toggle, top_n_scaler, contrarian, frequency) that modify sim loop behavior without changing the core sim engine. Implemented as helper functions that return effective_top_n, effective_weighting, and cash_fraction per day.
+- [DECISION] BTC/ETH dominance computed from existing mcap_rankings (no new table needed). Avoids external API dependency by using already-collected CoinGecko market cap data.
+- [DECISION] GitHub dev metrics sourced from CoinGecko `/coins/{id}` developer_data (not GitHub API directly). Saves an API key and works within existing CG Pro rate limiter.
+- [DECISION] 6 new Weighting variants (StarWeight, StarMomentum, CommitWeight, DevQualityGate, ContributorWeight, DevMcapRatio) added to simulation engine for GitHub-based strategies.
+- [DECISION] Regime configs stored as Option fields on SimConfig — when None, no behavior change. This preserves backward compatibility for existing API callers.
+- [DECISION] FNG cash mode holds cash_fraction outside the index (earns 0%). Total NAV = invested portion + cash portion. Cash fraction determined by proximity to greed threshold.
+- [DECISION] Rebalance ITP button currently routes to Create ITP section with pre-filled weights. Full ITP-picker dropdown deferred — requires lifting ItpListing state to page level.
+- [DECISION] GitHub UI: separated filter modes (activity, quality_gate) in the Dev Quality panel from weighting strategies (star_w, commit_w, etc.) in the strategy row. Eliminates confusing duplicate controls.
+- [DECISION] Sweep mode performance: batched variant_done events with 200ms flush timer + useMemo for chart data merge. Fixes stale closure in EventSource onerror with statusRef.
+- [DECISION] E2E smoke tests (06-backtester-smoke.spec.ts): 49 Playwright tests covering all categories, 12 core weightings, 5 DeFi, 5 GitHub, 6 FNG, 6 DOM, 2 GitHub filters, combined regime, sanity checks. Allow 10% failure rate for CG categories (data gaps).
+- [RESEARCH] 15+ major Bitget tokens have all-zero CoinGecko developer_data despite active GitHub orgs: Hyperliquid (hyperliquid-dex), EigenLayer (Layr-Labs), Jupiter (jup-ag), dYdX (dydxprotocol), Stacks (stacks-network), Sei (sei-protocol), Worldcoin, Render (rndr-network), Arweave (ArweaveTeam), Berachain, Ethena (ethena-labs), Morpho (morpho-org), Helium (198 repos), Blast (blast-io), Sonic SVM. Root cause: CG requires manual GitHub linking by project teams. Future fix: maintain coin_id→GitHub org mapping for direct API scraping.
+
+## Session: 20260218-2030-q7m4
+
+- [DECISION] Symmetric buy/sell flows via ArbBridgeCustody: Added `completeBuyOrder` (push escrowed USDC to vault) and `fundSellOrder` (pull USDC from vault). Eliminates BLSCustody from both cross-chain flows — user USDC stays in ArbBridgeCustody throughout.
+- [FAILED] Previous buy flow routed USDC through BLSCustody (L3→Arb bridge + custody release), which required BLSCustody whitelisting for ARB_USDC. This failed with E026_TargetNotWhitelisted because BLSCustody was never whitelisted for ARB_USDC transfers.
+- [DECISION] Removed `run_bridge_l3_to_arb_phase` + `run_release_to_vault_phase` from buy flow in main.rs. These consensus phases are no longer needed since ArbBridgeCustody directly transfers to vault. Kept existing functions in codebase for potential future use.
+- [DECISION] `fundSellOrder` uses `safeTransferFrom` (pull pattern) — vault must pre-approve ArbBridgeCustody. Approval wired in both deploy script and start.sh.
 
 ## Session: 20260218-1800-b5t9
 
@@ -18,6 +42,13 @@
 - [DECISION] Sweep mode runs variants sequentially (not parallel) to avoid DB contention. Each variant checks cache first for fast skip.
 - [DECISION] Fee model: base_fee_pct (configurable, default 0.1% = Bitget taker) + spread from DB liquidity_snapshots with fallback 10bps * spread_multiplier.
 - [DECISION] Mcap weighting with 0.5% floor: coins below floor get bumped up, excess redistributed proportionally from larger positions, then normalized to sum=1.0.
+
+## Session: 20260219-1430-f3x8
+
+- [DECISION] Deploy scripts: replaced `adminBatchWhitelistAssets()` and `adminBatchActivatePairs()` (removed from AssetPairRegistry) with proper propose/warp/activate flow. Uses `vm.mockCall(address(0x08), ...)` to mock BN254 pairing precompile during deployment since scripts run against local anvil.
+- [DECISION] AssetPairRegistry constructor: removed `testMode` parameter across all deploy scripts and tests. Constructor now takes only `(address _admin)`.
+- [DECISION] IssuerRegistry tests: replaced `setTestMode()` calls (removed from contract) with `vm.mockCall(address(0x08), ...)` for BN254 precompile mocking. Tests that verify BLS rejection use `vm.clearMockedCalls()` to disable the mock temporarily.
+- [DECISION] AssetPairRegistry tests: removed all adminBatch test functions (10+ tests) since these functions no longer exist. setUp now mocks BN254 precompile and sets a non-empty aggregated pubkey so BLS-verified operations work with mock signatures.
 
 ## Session: 20260218-fix-bls-signing
 

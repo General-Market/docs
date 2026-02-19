@@ -587,15 +587,30 @@ library ErrorsLib {
     /// @param orderId The order ID that was already processed
     error E120_SellOrderAlreadyCompleted(uint256 orderId);
 
-    // ============ DEPLOYER PROFILE ERRORS ============
+    // ============ ITP METADATA ERRORS ============
 
-    /// @notice E121: Deployer profile display name exceeds maximum length
+    /// @notice E121: ITP description exceeds maximum length
     /// @param length The actual length
-    /// @param maxLength The maximum allowed length
-    error E121_ProfileNameTooLong(uint256 length, uint256 maxLength);
+    /// @param maxLength The maximum allowed length (280)
+    error E121_DescriptionTooLong(uint256 length, uint256 maxLength);
 
-    /// @notice E122: Deployer profile website URL exceeds maximum length
+    /// @notice E122: ITP website URL exceeds maximum length
     /// @param length The actual length
-    /// @param maxLength The maximum allowed length
-    error E122_ProfileUrlTooLong(uint256 length, uint256 maxLength);
+    /// @param maxLength The maximum allowed length (128)
+    error E122_UrlTooLong(uint256 length, uint256 maxLength);
+
+    /// @notice E123: ITP video URL exceeds maximum length
+    /// @param length The actual length
+    /// @param maxLength The maximum allowed length (256)
+    error E123_VideoUrlTooLong(uint256 length, uint256 maxLength);
+
+    /// @notice E124: Caller is not the deployer of this ITP
+    /// @param itpId The ITP identifier
+    /// @param caller The actual caller
+    /// @param deployer The expected deployer
+    error E124_NotItpDeployer(bytes32 itpId, address caller, address deployer);
+
+    /// @notice E125: Buy order not found (orderId has no cross-chain order)
+    /// @param orderId The order ID that was not found
+    error E125_BuyOrderNotFound(uint256 orderId);
 }

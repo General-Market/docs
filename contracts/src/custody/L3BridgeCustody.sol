@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "../interfaces/IBridge.sol";
 import "../interfaces/IIssuerRegistry.sol";
 import "../libraries/BLSLib.sol";
+import "../libraries/BLSVerifier.sol";
 import "../libraries/DecimalLib.sol";
 import "../libraries/ErrorsLib.sol";
 import "../libraries/EventsLib.sol";
@@ -17,10 +18,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 /// @title L3BridgeCustody - L3 source chain bridge custody for cross-chain USDC transfers
 /// @notice Handles locking USDC on L3 for bridging to other chains using two-phase commit
 /// @dev UUPS upgradeable, uses sequential nonces for bridge operations
-/// @dev SECURITY: Phase 1 uses aggregated BLS key from IssuerRegistry. If registry returns
-///      empty pubkey, BLS verification is SKIPPED. Production deployment MUST ensure
-///      IssuerRegistry is properly configured with a valid aggregated pubkey.
-contract L3BridgeCustody is Initializable, UUPSUpgradeable, IL3BridgeCustody {
+contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3BridgeCustody {
     using SafeERC20 for IERC20;
 
     // ============ CONSTANTS ============
@@ -87,6 +85,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, IL3BridgeCustody {
         }
 
         issuerRegistry = IIssuerRegistry(issuerRegistry_);
+        __BLSVerifier_init(issuerRegistry_);
         usdc = IERC20(usdc_);
     }
 
@@ -116,11 +115,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, IL3BridgeCustody {
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), destChainId, amount, nonce));
 
         // Verify BLS signature (11/20 threshold)
-        // PHASE 1: If aggregatedPubkey is empty, verification is skipped (for testing)
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length > 0 && !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-            revert ErrorsLib.E020_InvalidBLSSignature();
-        }
+        _verifyBLS(message, blsSignature);
 
         // Transfer USDC from caller to this contract (escrow)
         usdc.safeTransferFrom(msg.sender, address(this), amount);
@@ -182,10 +177,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, IL3BridgeCustody {
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), nonce, destTxHash));
 
         // Verify BLS signature (11/20 threshold)
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length > 0 && !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-            revert ErrorsLib.E020_InvalidBLSSignature();
-        }
+        _verifyBLS(message, blsSignature);
 
         // Mark as released
         lock.released = true;
@@ -232,10 +224,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, IL3BridgeCustody {
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "reverse", nonce, signerCount));
 
         // Verify BLS signature (15/20 threshold for emergency reversal)
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length > 0 && !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-            revert ErrorsLib.E020_InvalidBLSSignature();
-        }
+        _verifyBLS(message, blsSignature);
 
         // Mark as reversed
         lock.reversed = true;
@@ -295,10 +284,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, IL3BridgeCustody {
 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "proposeUpgrade", newImpl));
 
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length > 0 && !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-            revert ErrorsLib.E020_InvalidBLSSignature();
-        }
+        _verifyBLS(message, blsSignature);
 
         pendingUpgradeImpl = newImpl;
         pendingUpgradeProposedAt = block.timestamp;
@@ -318,10 +304,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, IL3BridgeCustody {
 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "proposeEmergencyUpgrade", newImpl));
 
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length > 0 && !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-            revert ErrorsLib.E020_InvalidBLSSignature();
-        }
+        _verifyBLS(message, blsSignature);
 
         pendingUpgradeImpl = newImpl;
         pendingUpgradeProposedAt = block.timestamp;
@@ -363,10 +346,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, IL3BridgeCustody {
 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "cancelUpgrade", pendingUpgradeImpl));
 
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length > 0 && !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-            revert ErrorsLib.E020_InvalidBLSSignature();
-        }
+        _verifyBLS(message, blsSignature);
 
         // Clear pending upgrade
         pendingUpgradeImpl = address(0);

@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "../interfaces/IBLSCustody.sol";
 import "../interfaces/IIssuerRegistry.sol";
 import "../libraries/BLSLib.sol";
+import "../libraries/BLSVerifier.sol";
 import "../libraries/ErrorsLib.sol";
 import "../libraries/EventsLib.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -12,10 +13,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 /// @title BLSCustody - BLS-piloted custody contract for asset management
 /// @notice Manages custody with 11/20 BLS threshold for standard ops, 15/20 for emergency whitelist, 17/20 for emergency upgrade
 /// @dev UUPS upgradeable, uses bitmap nonce for replay protection
-/// @dev SECURITY: Phase 1 uses aggregated BLS key from IssuerRegistry. If registry returns
-///      empty pubkey, BLS verification is SKIPPED. Production deployment MUST ensure
-///      IssuerRegistry is properly configured with a valid aggregated pubkey.
-contract BLSCustody is Initializable, UUPSUpgradeable, IBLSCustody {
+contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody {
     // ============ CONSTRUCTOR ============
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -87,6 +85,7 @@ contract BLSCustody is Initializable, UUPSUpgradeable, IBLSCustody {
             revert ErrorsLib.E043_ZeroIssuerRegistry();
         }
         issuerRegistry = IIssuerRegistry(issuerRegistry_);
+        __BLSVerifier_init(issuerRegistry_);
     }
 
     // ============ EXECUTION ============
@@ -112,13 +111,8 @@ contract BLSCustody is Initializable, UUPSUpgradeable, IBLSCustody {
         // Message: keccak256(abi.encode(chainid, this, target, data, nonce))
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), target, data, nonceValue));
 
-        // Verify BLS signature
-        // PHASE 1: If aggregatedPubkey is empty, verification is skipped (for testing)
-        // PRODUCTION: IssuerRegistry MUST return valid aggregated pubkey
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length > 0 && !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-            revert ErrorsLib.E020_InvalidBLSSignature();
-        }
+        // Verify BLS signature via BLSVerifier
+        _verifyBLS(message, blsSignature);
 
         // Mark nonce as used
         _markNonceUsed(nonceValue);
@@ -157,7 +151,7 @@ contract BLSCustody is Initializable, UUPSUpgradeable, IBLSCustody {
 
         // Verify BLS signature (11/20 threshold)
         bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length > 0 && !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
+        if (aggregatedPubkey.length == 0 || !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
             revert ErrorsLib.E020_InvalidBLSSignature();
         }
 
@@ -208,10 +202,8 @@ contract BLSCustody is Initializable, UUPSUpgradeable, IBLSCustody {
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "emergencyRemove", target));
 
         // Verify BLS signature (15/20 threshold for emergency)
-        // Note: In production, we'd verify signer count >= 15/20
-        // For Phase 1, we use the same aggregated key verification
         bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length > 0 && !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
+        if (aggregatedPubkey.length == 0 || !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
             revert ErrorsLib.E020_InvalidBLSSignature();
         }
 
@@ -243,7 +235,7 @@ contract BLSCustody is Initializable, UUPSUpgradeable, IBLSCustody {
 
         // Verify BLS signature (15/20 threshold for standard upgrades)
         bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length > 0 && !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
+        if (aggregatedPubkey.length == 0 || !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
             revert ErrorsLib.E020_InvalidBLSSignature();
         }
 
@@ -271,7 +263,7 @@ contract BLSCustody is Initializable, UUPSUpgradeable, IBLSCustody {
 
         // Verify BLS signature (17/20 threshold for emergency upgrades per architecture NFR13)
         bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length > 0 && !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
+        if (aggregatedPubkey.length == 0 || !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
             revert ErrorsLib.E020_InvalidBLSSignature();
         }
 

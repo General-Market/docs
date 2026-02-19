@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "../interfaces/IBridge.sol";
 import "../interfaces/IIssuerRegistry.sol";
 import "../libraries/BLSLib.sol";
+import "../libraries/BLSVerifier.sol";
 import "../libraries/DecimalLib.sol";
 import "../libraries/ErrorsLib.sol";
 import "../libraries/EventsLib.sol";
@@ -17,10 +18,7 @@ import "../interfaces/IBridgeProxy.sol";
 /// @title ArbBridgeCustody - Arbitrum destination chain bridge custody
 /// @notice Handles releasing USDC on Arbitrum and cross-chain ITP purchases
 /// @dev UUPS upgradeable, deployed on Arbitrum chain
-/// @dev SECURITY: Phase 1 uses aggregated BLS key from IssuerRegistry. If registry returns
-///      empty pubkey, BLS verification is SKIPPED. Production deployment MUST ensure
-///      IssuerRegistry is properly configured with a valid aggregated pubkey.
-contract ArbBridgeCustody is Initializable, UUPSUpgradeable, IArbBridgeCustody {
+contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBridgeCustody {
     using SafeERC20 for IERC20;
 
     // ============ CONSTANTS ============
@@ -92,7 +90,8 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, IArbBridgeCustody {
     /// @param issuerRegistry_ Address of the IssuerRegistry contract
     /// @param usdc_ Address of the USDC token contract
     /// @param l3Index_ Address of the L3 Index contract
-    function initialize(address issuerRegistry_, address usdc_, address l3Index_) external initializer {
+    /// @param bridgeProxy_ Address of the BridgeProxy contract (set at deploy, BLS-gated after)
+    function initialize(address issuerRegistry_, address usdc_, address l3Index_, address bridgeProxy_) external initializer {
         __UUPSUpgradeable_init();
         if (issuerRegistry_ == address(0)) {
             revert ErrorsLib.E043_ZeroIssuerRegistry();
@@ -104,8 +103,12 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, IArbBridgeCustody {
             revert ErrorsLib.E056_ZeroL3IndexAddress();
         }
         issuerRegistry = IIssuerRegistry(issuerRegistry_);
+        __BLSVerifier_init(issuerRegistry_);
         usdc = IERC20(usdc_);
         l3Index = l3Index_;
+        if (bridgeProxy_ != address(0)) {
+            bridgeProxy = IBridgeProxy(bridgeProxy_);
+        }
     }
 
     // ============ BRIDGE COMPLETION ============
@@ -152,11 +155,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, IArbBridgeCustody {
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), proof, amount, nonce));
 
         // Verify BLS signature (11/20 threshold)
-        // PHASE 1: If aggregatedPubkey is empty, verification is skipped (for testing)
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length > 0 && !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-            revert ErrorsLib.E020_InvalidBLSSignature();
-        }
+        _verifyBLS(message, blsSignature);
 
         // Mark nonce as used
         bridgeCompleted[sourceChainId][nonce] = true;
@@ -249,6 +248,51 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, IArbBridgeCustody {
         emit CrossChainOrderCreated(orderId, itpId, msg.sender, internalAmount);
     }
 
+    // ============ BUY/SELL ORDER CUSTODY ============
+
+    /// @inheritdoc IArbBridgeCustody
+    function completeBuyOrder(
+        uint256 orderId,
+        address vault,
+        bytes calldata blsSignature
+    ) external override {
+        TypesLib.CrossChainOrder storage order = crossChainOrders[orderId];
+        if (order.user == address(0)) revert ErrorsLib.E125_BuyOrderNotFound(orderId);
+
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(this), "completeBuyOrder", orderId, vault
+        ));
+        _verifyBLS(message, blsSignature);
+
+        uint256 internalAmount = order.amount;
+        delete crossChainOrders[orderId];
+
+        uint256 usdcAmount = DecimalLib.toUsdc(internalAmount);
+        if (usdcAmount > 0) usdc.safeTransfer(vault, usdcAmount);
+
+        emit BuyOrderCompleted(orderId, vault, usdcAmount);
+    }
+
+    /// @inheritdoc IArbBridgeCustody
+    function fundSellOrder(
+        uint256 orderId,
+        address vault,
+        uint256 usdcAmount,
+        bytes calldata blsSignature
+    ) external override {
+        TypesLib.CrossChainSellOrder storage order = crossChainSellOrders[orderId];
+        if (order.user == address(0)) revert ErrorsLib.E119_SellOrderNotFound(orderId);
+
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(this), "fundSellOrder", orderId, vault, usdcAmount
+        ));
+        _verifyBLS(message, blsSignature);
+
+        if (usdcAmount > 0) usdc.safeTransferFrom(vault, address(this), usdcAmount);
+
+        emit SellOrderFunded(orderId, vault, usdcAmount);
+    }
+
     // ============ VIEW FUNCTIONS ============
 
     /// @inheritdoc IArbBridgeCustody
@@ -287,10 +331,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, IArbBridgeCustody {
 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "setBridgeProxy", bridgeProxy_));
 
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length > 0 && !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-            revert ErrorsLib.E020_InvalidBLSSignature();
-        }
+        _verifyBLS(message, blsSignature);
 
         bridgeProxy = IBridgeProxy(bridgeProxy_);
     }
@@ -369,10 +410,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, IArbBridgeCustody {
             block.chainid, address(this), "completeSellOrder", orderId, usdcProceeds
         ));
 
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length > 0 && !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-            revert ErrorsLib.E020_InvalidBLSSignature();
-        }
+        _verifyBLS(message, blsSignature);
 
         address user = order.user;
 
@@ -402,10 +440,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, IArbBridgeCustody {
             block.chainid, address(this), "refundSellOrder", orderId
         ));
 
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length > 0 && !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-            revert ErrorsLib.E020_InvalidBLSSignature();
-        }
+        _verifyBLS(message, blsSignature);
 
         address user = order.user;
         address bridgedItpAddress = order.bridgedItpAddress;
@@ -440,10 +475,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, IArbBridgeCustody {
 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "proposeUpgrade", newImpl));
 
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length > 0 && !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-            revert ErrorsLib.E020_InvalidBLSSignature();
-        }
+        _verifyBLS(message, blsSignature);
 
         pendingUpgradeImpl = newImpl;
         pendingUpgradeProposedAt = block.timestamp;
@@ -463,10 +495,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, IArbBridgeCustody {
 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "proposeEmergencyUpgrade", newImpl));
 
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length > 0 && !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-            revert ErrorsLib.E020_InvalidBLSSignature();
-        }
+        _verifyBLS(message, blsSignature);
 
         pendingUpgradeImpl = newImpl;
         pendingUpgradeProposedAt = block.timestamp;
@@ -508,10 +537,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, IArbBridgeCustody {
 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "cancelUpgrade", pendingUpgradeImpl));
 
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length > 0 && !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-            revert ErrorsLib.E020_InvalidBLSSignature();
-        }
+        _verifyBLS(message, blsSignature);
 
         // Clear pending upgrade
         pendingUpgradeImpl = address(0);

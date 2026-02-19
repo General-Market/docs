@@ -8,6 +8,7 @@ import "../libraries/TypesLib.sol";
 import "../libraries/ErrorsLib.sol";
 import "../libraries/EventsLib.sol";
 import "../libraries/BLSLib.sol";
+import "../libraries/BLSVerifier.sol";
 import "../libraries/DecimalLib.sol";
 import "../libraries/RebalanceLib.sol";
 import "../libraries/AdminLib.sol";
@@ -22,7 +23,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 /// @title Index - Main contract for order submission and ITP management
 /// @notice Central contract for submitting limit orders and managing Index Token Products
 /// @dev UUPS upgradeable proxy pattern, all monetary values use 18 decimals
-contract Index is IndexStorage, Initializable, UUPSUpgradeable, ReentrancyGuardUpgradeable, IIndex {
+contract Index is IndexStorage, Initializable, UUPSUpgradeable, ReentrancyGuardUpgradeable, BLSVerifier, IIndex {
     using SafeERC20 for IERC20;
 
     // ============ CONSTANTS ============
@@ -80,6 +81,7 @@ contract Index is IndexStorage, Initializable, UUPSUpgradeable, ReentrancyGuardU
             revert ErrorsLib.E062_AlreadyInitialized();
         }
         issuerRegistry = IIssuerRegistry(issuerRegistry_);
+        __BLSVerifier_init(issuerRegistry_);
     }
 
     /// @notice Set the ITP vault address for an ITP (admin only)
@@ -277,7 +279,7 @@ contract Index is IndexStorage, Initializable, UUPSUpgradeable, ReentrancyGuardU
 
         // Verify BLS signature against aggregated public key
         // SECURITY: issuerRegistry MUST be set in production. Empty pubkey only allowed for testing.
-        _verifyBLSSignature(message, blsSignature);
+        _verifyBLS(message, blsSignature);
 
         // Process each order: validate and mark as BATCHED
         for (uint256 i = 0; i < orderIds.length;) {
@@ -341,7 +343,7 @@ contract Index is IndexStorage, Initializable, UUPSUpgradeable, ReentrancyGuardU
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(this), "assetTrades", cycleNumber, trades
         ));
-        _verifyBLSSignature(message, blsSignature);
+        _verifyBLS(message, blsSignature);
 
         for (uint256 i = 0; i < trades.length;) {
             emit EventsLib.AssetTradeRequest(
@@ -363,7 +365,7 @@ contract Index is IndexStorage, Initializable, UUPSUpgradeable, ReentrancyGuardU
 
         // Verify BLS signature against aggregated public key
         // SECURITY: issuerRegistry MUST be set in production. Empty pubkey only allowed for testing.
-        _verifyBLSSignature(message, blsSignature);
+        _verifyBLS(message, blsSignature);
 
         // Process each fill
         for (uint256 i = 0; i < fills.length;) {
@@ -541,7 +543,7 @@ contract Index is IndexStorage, Initializable, UUPSUpgradeable, ReentrancyGuardU
 
         // Verify BLS signature
         // SECURITY: issuerRegistry MUST be set in production. Empty pubkey only allowed for testing.
-        _verifyBLSSignature(message, blsSignature);
+        _verifyBLS(message, blsSignature);
 
         // Mark order as expired
         order.status = TypesLib.OrderStatus.EXPIRED;
@@ -730,7 +732,7 @@ contract Index is IndexStorage, Initializable, UUPSUpgradeable, ReentrancyGuardU
             block.chainid, address(this), "rebalance",
             itpId, removeIndices, addAssets, newWeights, prices
         ));
-        _verifyBLSSignature(message, blsSignature);
+        _verifyBLS(message, blsSignature);
 
         RebalanceLib.rebalance(
             itpId, removeIndices, addAssets, newWeights, prices,
@@ -767,7 +769,7 @@ contract Index is IndexStorage, Initializable, UUPSUpgradeable, ReentrancyGuardU
     /// @param blsSignature Aggregated BLS signature from issuers
     function setItpNav(bytes32 itpId, uint256 nav, bytes calldata blsSignature) external {
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "setItpNav", itpId, nav));
-        _verifyBLSSignature(message, blsSignature);
+        _verifyBLS(message, blsSignature);
         _itpNavs[itpId] = nav;
         emit EventsLib.ItpNavUpdated(itpId, nav);
     }
@@ -951,7 +953,7 @@ contract Index is IndexStorage, Initializable, UUPSUpgradeable, ReentrancyGuardU
     /// @dev BLS verification done here, pool update delegated to AdminLib.
     function updateVenueBalance(uint256 venueId, uint256 newBalance, bytes calldata blsSignature) external {
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "UPDATE_VENUE", venueId, newBalance));
-        _verifyBLSSignature(message, blsSignature);
+        _verifyBLS(message, blsSignature);
         AdminLib.updateVenueBalance(venueId, newBalance, venuePools);
     }
 
@@ -978,7 +980,7 @@ contract Index is IndexStorage, Initializable, UUPSUpgradeable, ReentrancyGuardU
     /// @param blsSignature Aggregated BLS signature from issuers
     function cancelStalePendingOrders(uint256[] calldata orderIds, bytes calldata blsSignature) external {
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "cancelStale", orderIds));
-        _verifyBLSSignature(message, blsSignature);
+        _verifyBLS(message, blsSignature);
 
         uint256 cancelledCount = 0;
         for (uint256 i = 0; i < orderIds.length;) {
@@ -1042,7 +1044,7 @@ contract Index is IndexStorage, Initializable, UUPSUpgradeable, ReentrancyGuardU
 
         // BLS verification
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "refundBatched", orderId));
-        _verifyBLSSignature(message, blsSignature);
+        _verifyBLS(message, blsSignature);
 
         // Mark as expired and refund
         order.status = TypesLib.OrderStatus.EXPIRED;
@@ -1060,25 +1062,7 @@ contract Index is IndexStorage, Initializable, UUPSUpgradeable, ReentrancyGuardU
 
     // ============ INTERNAL FUNCTIONS ============
 
-    /// @notice Verify BLS signature against aggregated public key
-    /// @dev In production, issuerRegistry MUST be set. Empty pubkey only allowed for testing.
-    /// @param message The message hash that was signed
-    /// @param blsSignature The BLS signature to verify
-    function _verifyBLSSignature(bytes32 message, bytes calldata blsSignature) internal view {
-        // SECURITY: In production, issuerRegistry should be set
-        // Empty aggregatedPubkey is only acceptable during testing/development
-        if (address(issuerRegistry) != address(0)) {
-            bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-            if (aggregatedPubkey.length > 0) {
-                if (!BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-                    revert ErrorsLib.E020_InvalidBLSSignature();
-                }
-            }
-            // Note: Empty pubkey with set issuerRegistry = testing mode, signature check skipped
-        }
-        // Note: Unset issuerRegistry = testing mode, signature check skipped
-        // Production deployments MUST call setIssuerRegistry() before going live
-    }
+    // BLS verification via inherited BLSVerifier._verifyBLS()
 
     /// @notice Get current NAV for an ITP from BLS-pushed stored value
     /// @param itpId The ITP identifier

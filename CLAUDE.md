@@ -39,6 +39,24 @@ NAV = sum(qty[i] * price[i]) / 1e18
 - Issuer: `nav.rs` — `calculate_nav()`, reads inventory via `getITPState`
 - Frontend: `useItpNav.ts` — inventory-first, weight fallback for legacy ITPs
 
+## BLS Signature Verification
+
+**NEVER skip BLS verification.** Not in local dev, not in tests, not anywhere.
+
+- No `aggregatedPubkey.length == 0` bypass paths
+- No `testMode` flags that bypass BLS
+- No `address(issuerRegistry) == address(0)` skip paths
+- No `onlyOwner` admin functions that bypass BLS consensus
+- Local dev MUST use real BLS signing with test keys registered in IssuerRegistry
+- Tests MUST use proper BLS test fixtures (precomputed signatures)
+- Deploy scripts MUST register issuer BLS keys and set aggregated pubkey
+
+If BLS verification is in the way, fix the BLS pipeline — don't bypass the check.
+
+## Backward Compatibility
+
+Not a concern. Break interfaces, change function signatures, remove deprecated storage freely.
+
 ## Contracts
 
 
