@@ -47,6 +47,9 @@ use super::types::{
     // Cross-chain sell consensus
     build_sell_bridge_hash, SellBridgeProposal, SellSubmitOrderResult,
     build_complete_sell_order_consensus_hash, CompleteSellProposal, CompleteSellOrderResult,
+    // 8-step bridge: RecordCollateralMove + MintBridgedShares
+    build_record_collateral_move_hash, RecordCollateralMoveProposal, RecordCollateralMoveResult,
+    build_mint_bridged_shares_hash, MintBridgedSharesProposal, MintBridgedSharesResult,
 };
 
 /// Trait for reading cross-chain order data from Arbitrum
@@ -141,6 +144,14 @@ pub struct BridgeOrchestrator {
     sell_order_mappings: RwLock<HashMap<U256, OrderMapping>>,
     /// Sell order amounts: order_id → amount
     sell_order_amounts: RwLock<HashMap<U256, U256>>,
+    /// Signature collectors for record collateral move proposals (8-step bridge)
+    collateral_move_signatures: RwLock<HashMap<u64, SignatureCollector>>,
+    /// Confirmed collateral moves (for deduplication)
+    confirmed_collateral_moves: RwLock<HashMap<u64, H256>>,
+    /// Signature collectors for mint bridged shares proposals (8-step bridge)
+    mint_shares_signatures: RwLock<HashMap<u64, SignatureCollector>>,
+    /// Confirmed mint bridged shares (for deduplication)
+    confirmed_mint_shares: RwLock<HashMap<u64, H256>>,
 }
 
 impl BridgeOrchestrator {
@@ -192,6 +203,10 @@ impl BridgeOrchestrator {
             complete_sell_order_signatures: RwLock::new(HashMap::new()),
             sell_order_mappings: RwLock::new(HashMap::new()),
             sell_order_amounts: RwLock::new(HashMap::new()),
+            collateral_move_signatures: RwLock::new(HashMap::new()),
+            confirmed_collateral_moves: RwLock::new(HashMap::new()),
+            mint_shares_signatures: RwLock::new(HashMap::new()),
+            confirmed_mint_shares: RwLock::new(HashMap::new()),
         }
     }
 
@@ -4926,6 +4941,499 @@ impl BridgeOrchestrator {
             .await
             .get(order_id)
             .map(|c| c.signature_count())
+    }
+
+    // ========================================================================
+    // 8-step bridge: RecordCollateralMove consensus
+    // ========================================================================
+
+    /// Create a RecordCollateralMove proposal (leader only)
+    pub fn propose_record_collateral_move(
+        &self,
+        cycle_number: u64,
+        itp_id: H256,
+        from_chain: U256,
+        to_chain: U256,
+        amount: U256,
+        tx_type: u8,
+        collateral_registry: Address,
+    ) -> Result<RecordCollateralMoveProposal, BridgeError> {
+        let message_hash = build_record_collateral_move_hash(
+            self.config.l3_chain_id,
+            collateral_registry,
+            itp_id,
+            from_chain,
+            to_chain,
+            amount,
+            tx_type,
+        );
+
+        let hash_bytes: [u8; 32] = message_hash.into();
+        let leader_signature = self
+            .bls_signer
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
+            .map_err(|e| BridgeError::BlsSigningError {
+                reason: e.to_string(),
+            })?;
+
+        info!(
+            cycle_number = cycle_number,
+            itp_id = ?itp_id,
+            amount = %amount,
+            message_hash = ?message_hash,
+            "RecordCollateralMove proposal created"
+        );
+
+        Ok(RecordCollateralMoveProposal {
+            leader_id: self.peer_id,
+            cycle_number,
+            itp_id,
+            from_chain,
+            to_chain,
+            amount,
+            tx_type,
+            leader_signature,
+            message_hash,
+        })
+    }
+
+    /// Validate a RecordCollateralMove proposal from the leader
+    pub async fn validate_record_collateral_move_proposal(
+        &self,
+        proposal: &RecordCollateralMoveProposal,
+        collateral_registry: Address,
+    ) -> Result<bool, BridgeError> {
+        if self.confirmed_collateral_moves.read().await.contains_key(&proposal.cycle_number) {
+            warn!(
+                cycle_number = proposal.cycle_number,
+                "CollateralMove already recorded for this cycle"
+            );
+            return Ok(false);
+        }
+
+        let expected_hash = build_record_collateral_move_hash(
+            self.config.l3_chain_id,
+            collateral_registry,
+            proposal.itp_id,
+            proposal.from_chain,
+            proposal.to_chain,
+            proposal.amount,
+            proposal.tx_type,
+        );
+
+        if expected_hash != proposal.message_hash {
+            warn!(
+                cycle_number = proposal.cycle_number,
+                expected = ?expected_hash,
+                received = ?proposal.message_hash,
+                "RecordCollateralMove proposal: message hash mismatch"
+            );
+            return Ok(false);
+        }
+
+        debug!(
+            cycle_number = proposal.cycle_number,
+            itp_id = ?proposal.itp_id,
+            "RecordCollateralMove proposal validation passed"
+        );
+
+        Ok(true)
+    }
+
+    /// Sign a validated RecordCollateralMove proposal (follower)
+    pub fn sign_record_collateral_move_proposal(
+        &self,
+        proposal: &RecordCollateralMoveProposal,
+        collateral_registry: Address,
+    ) -> Result<BLSSignature, BridgeError> {
+        let expected_hash = build_record_collateral_move_hash(
+            self.config.l3_chain_id,
+            collateral_registry,
+            proposal.itp_id,
+            proposal.from_chain,
+            proposal.to_chain,
+            proposal.amount,
+            proposal.tx_type,
+        );
+
+        if expected_hash != proposal.message_hash {
+            return Err(BridgeError::ProposalMismatch {
+                field: "message_hash".to_string(),
+            });
+        }
+
+        let signature = self
+            .bls_signer
+            .sign_with_keypair(&self.bls_keypair, expected_hash.as_bytes())
+            .map_err(|e| BridgeError::BlsSigningError {
+                reason: e.to_string(),
+            })?;
+
+        info!(
+            cycle_number = proposal.cycle_number,
+            signer_index = self.node_index,
+            "Signed RecordCollateralMove proposal"
+        );
+
+        Ok(signature)
+    }
+
+    /// Start collecting signatures for a RecordCollateralMove proposal (leader)
+    pub async fn start_collateral_move_signature_collection(
+        &self,
+        cycle_number: u64,
+        leader_signature: BLSSignature,
+    ) {
+        let mut collectors = self.collateral_move_signatures.write().await;
+        let mut collector = SignatureCollector::new(U256::from(cycle_number));
+        collector.add_signature(self.node_index, leader_signature);
+        collectors.insert(cycle_number, collector);
+        debug!(cycle_number = cycle_number, "Started signature collection for RecordCollateralMove");
+    }
+
+    /// Add a follower signature to the RecordCollateralMove collection (leader)
+    pub async fn add_collateral_move_follower_signature(
+        &self,
+        cycle_number: u64,
+        signer_index: u8,
+        signature: BLSSignature,
+    ) -> Result<Option<RecordCollateralMoveResult>, BridgeError> {
+        let mut collectors = self.collateral_move_signatures.write().await;
+        let collector = collectors.get_mut(&cycle_number).ok_or_else(|| {
+            BridgeError::CycleNotFound { cycle_number }
+        })?;
+
+        if !collector.add_signature(signer_index, signature) {
+            return Ok(None);
+        }
+
+        info!(
+            cycle_number = cycle_number,
+            signer_index = signer_index,
+            collected = collector.signature_count(),
+            required = self.config.min_signatures,
+            "Added follower signature for RecordCollateralMove"
+        );
+
+        if collector.has_threshold(self.config.min_signatures) {
+            let signatures: Vec<BLSSignature> = collector
+                .signatures()
+                .iter()
+                .map(|(_, sig)| sig.clone())
+                .collect();
+
+            let aggregated_signature = self
+                .bls_signer
+                .aggregate_signatures(signatures)
+                .map_err(|e| BridgeError::BlsSigningError {
+                    reason: e.to_string(),
+                })?;
+
+            Ok(Some(RecordCollateralMoveResult {
+                aggregated_signature,
+                signer_bitmap: collector.signer_bitmap(),
+                signature_count: collector.signature_count(),
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Check if RecordCollateralMove signature threshold is reached
+    pub async fn check_collateral_move_threshold_reached(
+        &self,
+        cycle_number: u64,
+    ) -> Option<RecordCollateralMoveResult> {
+        let collectors = self.collateral_move_signatures.read().await;
+        let collector = collectors.get(&cycle_number)?;
+
+        if collector.has_threshold(self.config.min_signatures) {
+            let signatures: Vec<BLSSignature> = collector
+                .signatures()
+                .iter()
+                .map(|(_, sig)| sig.clone())
+                .collect();
+
+            let aggregated_signature = self
+                .bls_signer
+                .aggregate_signatures(signatures)
+                .ok()?;
+
+            Some(RecordCollateralMoveResult {
+                aggregated_signature,
+                signer_bitmap: collector.signer_bitmap(),
+                signature_count: collector.signature_count(),
+            })
+        } else {
+            None
+        }
+    }
+
+    /// Check if RecordCollateralMove is already confirmed for this cycle
+    pub async fn is_collateral_move_confirmed(&self, cycle_number: u64) -> bool {
+        self.confirmed_collateral_moves.read().await.contains_key(&cycle_number)
+    }
+
+    /// Record a confirmed collateral move (deduplication)
+    pub async fn confirm_collateral_move(&self, cycle_number: u64, tx_hash: H256) {
+        self.confirmed_collateral_moves.write().await.insert(cycle_number, tx_hash);
+    }
+
+    /// Get collateral move signature count for diagnostics
+    pub async fn get_collateral_move_signature_count(&self, cycle_number: u64) -> Option<usize> {
+        let collectors = self.collateral_move_signatures.read().await;
+        collectors.get(&cycle_number).map(|c| c.signature_count())
+    }
+
+    // ========================================================================
+    // 8-step bridge: MintBridgedShares consensus
+    // ========================================================================
+
+    /// Create a MintBridgedShares proposal (leader only)
+    pub fn propose_mint_bridged_shares(
+        &self,
+        cycle_number: u64,
+        itp_id: H256,
+        user: Address,
+        amount: U256,
+        bridge_proxy: Address,
+    ) -> Result<MintBridgedSharesProposal, BridgeError> {
+        let message_hash = build_mint_bridged_shares_hash(
+            self.config.arbitrum_chain_id,
+            bridge_proxy,
+            itp_id,
+            user,
+            amount,
+        );
+
+        let hash_bytes: [u8; 32] = message_hash.into();
+        let leader_signature = self
+            .bls_signer
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
+            .map_err(|e| BridgeError::BlsSigningError {
+                reason: e.to_string(),
+            })?;
+
+        info!(
+            cycle_number = cycle_number,
+            itp_id = ?itp_id,
+            user = ?user,
+            amount = %amount,
+            message_hash = ?message_hash,
+            "MintBridgedShares proposal created"
+        );
+
+        Ok(MintBridgedSharesProposal {
+            leader_id: self.peer_id,
+            cycle_number,
+            itp_id,
+            user,
+            amount,
+            leader_signature,
+            message_hash,
+        })
+    }
+
+    /// Validate a MintBridgedShares proposal from the leader
+    pub async fn validate_mint_bridged_shares_proposal(
+        &self,
+        proposal: &MintBridgedSharesProposal,
+        bridge_proxy: Address,
+    ) -> Result<bool, BridgeError> {
+        if self.confirmed_mint_shares.read().await.contains_key(&proposal.cycle_number) {
+            warn!(
+                cycle_number = proposal.cycle_number,
+                "MintBridgedShares already processed for this cycle"
+            );
+            return Ok(false);
+        }
+
+        let expected_hash = build_mint_bridged_shares_hash(
+            self.config.arbitrum_chain_id,
+            bridge_proxy,
+            proposal.itp_id,
+            proposal.user,
+            proposal.amount,
+        );
+
+        if expected_hash != proposal.message_hash {
+            warn!(
+                cycle_number = proposal.cycle_number,
+                expected = ?expected_hash,
+                received = ?proposal.message_hash,
+                "MintBridgedShares proposal: message hash mismatch"
+            );
+            return Ok(false);
+        }
+
+        if proposal.amount.is_zero() {
+            warn!(
+                cycle_number = proposal.cycle_number,
+                "MintBridgedShares proposal: zero amount"
+            );
+            return Ok(false);
+        }
+
+        debug!(
+            cycle_number = proposal.cycle_number,
+            itp_id = ?proposal.itp_id,
+            user = ?proposal.user,
+            amount = %proposal.amount,
+            "MintBridgedShares proposal validation passed"
+        );
+
+        Ok(true)
+    }
+
+    /// Sign a validated MintBridgedShares proposal (follower)
+    pub fn sign_mint_bridged_shares_proposal(
+        &self,
+        proposal: &MintBridgedSharesProposal,
+        bridge_proxy: Address,
+    ) -> Result<BLSSignature, BridgeError> {
+        let expected_hash = build_mint_bridged_shares_hash(
+            self.config.arbitrum_chain_id,
+            bridge_proxy,
+            proposal.itp_id,
+            proposal.user,
+            proposal.amount,
+        );
+
+        if expected_hash != proposal.message_hash {
+            return Err(BridgeError::ProposalMismatch {
+                field: "message_hash".to_string(),
+            });
+        }
+
+        let signature = self
+            .bls_signer
+            .sign_with_keypair(&self.bls_keypair, expected_hash.as_bytes())
+            .map_err(|e| BridgeError::BlsSigningError {
+                reason: e.to_string(),
+            })?;
+
+        info!(
+            cycle_number = proposal.cycle_number,
+            signer_index = self.node_index,
+            "Signed MintBridgedShares proposal"
+        );
+
+        Ok(signature)
+    }
+
+    /// Start collecting signatures for a MintBridgedShares proposal (leader)
+    pub async fn start_mint_shares_signature_collection(
+        &self,
+        cycle_number: u64,
+        leader_signature: BLSSignature,
+    ) {
+        let mut collectors = self.mint_shares_signatures.write().await;
+        let mut collector = SignatureCollector::new(U256::from(cycle_number));
+        collector.add_signature(self.node_index, leader_signature);
+        collectors.insert(cycle_number, collector);
+        debug!(cycle_number = cycle_number, "Started signature collection for MintBridgedShares");
+    }
+
+    /// Add a follower signature to the MintBridgedShares collection (leader)
+    pub async fn add_mint_shares_follower_signature(
+        &self,
+        cycle_number: u64,
+        signer_index: u8,
+        signature: BLSSignature,
+    ) -> Result<Option<MintBridgedSharesResult>, BridgeError> {
+        let mut collectors = self.mint_shares_signatures.write().await;
+        let collector = collectors.get_mut(&cycle_number).ok_or_else(|| {
+            BridgeError::CycleNotFound { cycle_number }
+        })?;
+
+        if !collector.add_signature(signer_index, signature) {
+            return Ok(None);
+        }
+
+        info!(
+            cycle_number = cycle_number,
+            signer_index = signer_index,
+            collected = collector.signature_count(),
+            required = self.config.min_signatures,
+            "Added follower signature for MintBridgedShares"
+        );
+
+        if collector.has_threshold(self.config.min_signatures) {
+            let signatures: Vec<BLSSignature> = collector
+                .signatures()
+                .iter()
+                .map(|(_, sig)| sig.clone())
+                .collect();
+
+            let aggregated_signature = self
+                .bls_signer
+                .aggregate_signatures(signatures)
+                .map_err(|e| BridgeError::BlsSigningError {
+                    reason: e.to_string(),
+                })?;
+
+            Ok(Some(MintBridgedSharesResult {
+                aggregated_signature,
+                signer_bitmap: collector.signer_bitmap(),
+                signature_count: collector.signature_count(),
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Check if MintBridgedShares signature threshold is reached
+    pub async fn check_mint_shares_threshold_reached(
+        &self,
+        cycle_number: u64,
+    ) -> Option<MintBridgedSharesResult> {
+        let collectors = self.mint_shares_signatures.read().await;
+        let collector = collectors.get(&cycle_number)?;
+
+        if collector.has_threshold(self.config.min_signatures) {
+            let signatures: Vec<BLSSignature> = collector
+                .signatures()
+                .iter()
+                .map(|(_, sig)| sig.clone())
+                .collect();
+
+            let aggregated_signature = self
+                .bls_signer
+                .aggregate_signatures(signatures)
+                .ok()?;
+
+            Some(MintBridgedSharesResult {
+                aggregated_signature,
+                signer_bitmap: collector.signer_bitmap(),
+                signature_count: collector.signature_count(),
+            })
+        } else {
+            None
+        }
+    }
+
+    /// Check if MintBridgedShares is already confirmed for this cycle
+    pub async fn is_mint_shares_confirmed(&self, cycle_number: u64) -> bool {
+        self.confirmed_mint_shares.read().await.contains_key(&cycle_number)
+    }
+
+    /// Record a confirmed mint bridged shares (deduplication)
+    pub async fn confirm_mint_shares(&self, cycle_number: u64, tx_hash: H256) {
+        self.confirmed_mint_shares.write().await.insert(cycle_number, tx_hash);
+    }
+
+    /// Get mint shares signature count for diagnostics
+    pub async fn get_mint_shares_signature_count(&self, cycle_number: u64) -> Option<usize> {
+        let collectors = self.mint_shares_signatures.read().await;
+        collectors.get(&cycle_number).map(|c| c.signature_count())
+    }
+
+    /// Mark orders as SharesBridged (Step 8 complete)
+    pub async fn mark_orders_shares_bridged(&self, order_ids: &[U256]) {
+        let mut status = self.order_status.write().await;
+        for order_id in order_ids {
+            status.insert(*order_id, BridgeOrderStatus::SharesBridged);
+        }
     }
 }
 
