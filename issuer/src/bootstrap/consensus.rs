@@ -385,6 +385,12 @@ impl<'a> ConsensusBuilder<'a> {
                 .map(ethers::types::Address::from)
                 .unwrap_or_default(),
             signer_address: chain_writer.address(),
+            collateral_registry: self.config.collateral_registry_address
+                .as_ref()
+                .and_then(|a| a.parse::<ethers::types::Address>().ok())
+                .unwrap_or_default(),
+            bridge_proxy: self.config.effective_bridge_proxy_address()
+                .unwrap_or_default(),
         };
 
         let orchestrator = BridgeOrchestrator::new(

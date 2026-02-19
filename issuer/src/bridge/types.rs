@@ -45,6 +45,10 @@ pub struct BridgeConfig {
     pub bitget_vault: Address,
     /// Issuer signer address (for bridge mint recipient in local E2E)
     pub signer_address: Address,
+    /// CollateralRegistry contract address on L3 (8-step bridge Step 3)
+    pub collateral_registry: Address,
+    /// BridgeProxy contract address on Arbitrum (8-step bridge Step 8)
+    pub bridge_proxy: Address,
 }
 
 impl Default for BridgeConfig {
@@ -63,6 +67,8 @@ impl Default for BridgeConfig {
             arb_usdc_address: Address::zero(),   // Story 7.5
             bitget_vault: Address::zero(),       // Story 7.6
             signer_address: Address::zero(),
+            collateral_registry: Address::zero(), // 8-step bridge
+            bridge_proxy: Address::zero(),        // 8-step bridge
         }
     }
 }

@@ -1128,34 +1128,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
 
         match protocol.run_batch_confirm_phase(current_cycle, submitted_orders.clone(), prices, batch_am_leader).await {
             Ok(batch_result) => {
-                info!(cycle = current_cycle, signer_count = batch_result.signature_count, "Batch confirmation completed");
-
-                // Emit per-asset trades for cross-chain buy orders
-                if let Ok(itp_h256) = itp_id_for_task.parse::<ethers::types::H256>() {
-                    let asset_trade_orders: Vec<(ethers::types::H256, u8, ethers::types::U256)> = {
-                        let o = orchestrator.read().await;
-                        let mut trades = Vec::new();
-                        for order_id in &submitted_orders {
-                            let amount = o.get_order_amount(order_id).await
-                                .unwrap_or(ethers::types::U256::exp10(18));
-                            trades.push((itp_h256, 0u8 /* BUY */, amount));
-                        }
-                        trades
-                    };
-
-                    match protocol.run_asset_trades_phase(current_cycle, &asset_trade_orders, chain_reader, batch_am_leader, quote_tokens.as_ref()).await {
-                        Ok(at_result) => {
-                            info!(
-                                cycle = current_cycle,
-                                signer_count = at_result.signature_count,
-                                "Cross-chain asset trades emitted"
-                            );
-                        }
-                        Err(e) => {
-                            warn!(cycle = current_cycle, error = %e, "Asset trades emission failed (fills will proceed)");
-                        }
-                    }
-                }
+                info!(cycle = current_cycle, signer_count = batch_result.signature_count, "Step 3a: Batch confirmation completed");
 
                 let total_amount = {
                     let o = orchestrator.read().await;
@@ -1168,14 +1141,72 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                     total
                 };
 
+                // Step 3b: Record collateral move (L3→Arb for BUY)
+                let collateral_registry_addr = {
+                    let o = orchestrator.read().await;
+                    o.config().collateral_registry
+                };
+                let l3_chain_id = {
+                    let o = orchestrator.read().await;
+                    ethers::types::U256::from(o.config().l3_chain_id)
+                };
+                let arb_chain_id = {
+                    let o = orchestrator.read().await;
+                    ethers::types::U256::from(o.config().arbitrum_chain_id)
+                };
+
+                if let Ok(itp_h256) = itp_id_for_task.parse::<ethers::types::H256>() {
+                    if collateral_registry_addr != ethers::types::Address::zero() {
+                        match protocol.run_record_collateral_move_phase(
+                            current_cycle, itp_h256, l3_chain_id, arb_chain_id,
+                            total_amount, 0u8 /* BUY */, collateral_registry_addr, batch_am_leader,
+                        ).await {
+                            Ok(cm_result) => {
+                                info!(cycle = current_cycle, signer_count = cm_result.signature_count, "Step 3b: Collateral move recorded");
+                            }
+                            Err(e) => {
+                                warn!(cycle = current_cycle, error = %e, "Step 3b: Record collateral move failed (continuing)");
+                            }
+                        }
+                    } else {
+                        debug!(cycle = current_cycle, "Step 3b: CollateralRegistry not configured, skipping recordCollateralMove");
+                    }
+                }
+
+                // Step 4: Bridge L3→Arb
                 match protocol.run_bridge_l3_to_arb_phase(current_cycle, submitted_orders.clone(), total_amount, batch_am_leader).await {
                     Ok(l3_to_arb_result) => {
-                        info!(cycle = current_cycle, signer_count = l3_to_arb_result.signature_count, "L3→Arb bridge completed");
+                        info!(cycle = current_cycle, signer_count = l3_to_arb_result.signature_count, "Step 4: L3→Arb bridge completed");
 
+                        // Step 5: Release from BLSCustody to MockBitgetVault
                         match protocol.run_release_to_vault_phase(current_cycle, submitted_orders.clone(), total_amount, batch_am_leader).await {
                             Ok(release_result) => {
-                                info!(cycle = current_cycle, signer_count = release_result.signature_count, "Custody release completed");
+                                info!(cycle = current_cycle, signer_count = release_result.signature_count, "Step 5: Custody release completed");
 
+                                // Step 6: Emit per-asset trades (after USDC in vault)
+                                if let Ok(itp_h256) = itp_id_for_task.parse::<ethers::types::H256>() {
+                                    let asset_trade_orders: Vec<(ethers::types::H256, u8, ethers::types::U256)> = {
+                                        let o = orchestrator.read().await;
+                                        let mut trades = Vec::new();
+                                        for order_id in &submitted_orders {
+                                            let amount = o.get_order_amount(order_id).await
+                                                .unwrap_or(ethers::types::U256::exp10(18));
+                                            trades.push((itp_h256, 0u8 /* BUY */, amount));
+                                        }
+                                        trades
+                                    };
+
+                                    match protocol.run_asset_trades_phase(current_cycle, &asset_trade_orders, chain_reader, batch_am_leader, quote_tokens.as_ref()).await {
+                                        Ok(at_result) => {
+                                            info!(cycle = current_cycle, signer_count = at_result.signature_count, "Step 6: Asset trades emitted");
+                                        }
+                                        Err(e) => {
+                                            warn!(cycle = current_cycle, error = %e, "Step 6: Asset trades failed (fills will proceed)");
+                                        }
+                                    }
+                                }
+
+                                // Step 7: Confirm fills
                                 let fills: Vec<Fill> = {
                                     let o = orchestrator.read().await;
                                     let mut fills = Vec::new();
@@ -1192,14 +1223,61 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                 };
 
                                 match protocol.run_fills_confirm_phase(current_cycle, fills, batch_am_leader).await {
-                                    Ok(fills_result) => { info!(cycle = current_cycle, signer_count = fills_result.signature_count, "Fills confirmed"); }
-                                    Err(e) => { warn!(cycle = current_cycle, error = %e, "Fills confirmation failed"); }
+                                    Ok(fills_result) => {
+                                        info!(cycle = current_cycle, signer_count = fills_result.signature_count, "Step 7: Fills confirmed");
+
+                                        // Step 8: Mint BridgedITP shares on Arbitrum
+                                        let bridge_proxy_addr = {
+                                            let o = orchestrator.read().await;
+                                            o.config().bridge_proxy
+                                        };
+
+                                        if bridge_proxy_addr != ethers::types::Address::zero() {
+                                            if let Ok(itp_h256) = itp_id_for_task.parse::<ethers::types::H256>() {
+                                                let o = orchestrator.read().await;
+                                                for order_id in &submitted_orders {
+                                                    if let Some(mapping) = o.get_order_mapping(order_id).await {
+                                                        let order_amount = o.get_order_amount(order_id).await
+                                                            .unwrap_or(ethers::types::U256::exp10(18));
+                                                        // shares = amount * 1e18 / nav (proportional to fill)
+                                                        let shares = if nav > ethers::types::U256::zero() {
+                                                            order_amount.saturating_mul(ethers::types::U256::exp10(18)) / nav
+                                                        } else {
+                                                            order_amount
+                                                        };
+
+                                                        match protocol.run_mint_bridged_shares_phase(
+                                                            current_cycle, itp_h256, mapping.original_user,
+                                                            shares, bridge_proxy_addr, batch_am_leader,
+                                                        ).await {
+                                                            Ok(mint_result) => {
+                                                                info!(
+                                                                    cycle = current_cycle,
+                                                                    order_id = %order_id,
+                                                                    user = ?mapping.original_user,
+                                                                    shares = %shares,
+                                                                    signer_count = mint_result.signature_count,
+                                                                    "Step 8: BridgedITP minted"
+                                                                );
+                                                            }
+                                                            Err(e) => {
+                                                                warn!(cycle = current_cycle, order_id = %order_id, error = %e, "Step 8: Mint bridged shares failed");
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        } else {
+                                            debug!(cycle = current_cycle, "Step 8: BridgeProxy not configured, skipping mintBridgedShares");
+                                        }
+                                    }
+                                    Err(e) => { warn!(cycle = current_cycle, error = %e, "Step 7: Fills confirmation failed"); }
                                 }
                             }
-                            Err(e) => { warn!(cycle = current_cycle, error = %e, "Custody release failed"); }
+                            Err(e) => { warn!(cycle = current_cycle, error = %e, "Step 5: Custody release failed"); }
                         }
                     }
-                    Err(e) => { warn!(cycle = current_cycle, error = %e, "L3→Arb bridge failed"); }
+                    Err(e) => { warn!(cycle = current_cycle, error = %e, "Step 4: L3→Arb bridge failed"); }
                 }
             }
             Err(e) => {
