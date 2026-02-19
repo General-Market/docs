@@ -6,6 +6,11 @@ mod coingecko;
 mod collector;
 mod config;
 mod db;
+mod defillama;
+mod dl_backfill;
+mod dl_collector;
+mod fng_client;
+mod fng_collector;
 mod itp_collector;
 mod kline_collector;
 mod liquidity_collector;
@@ -39,6 +44,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Command::CgBackfill(args) => cg_backfill::run(args).await,
         Command::SyncLogos(args) => run_sync_logos(args).await,
         Command::SyncListings(args) => listing_sync::run(args).await,
+        Command::DlBackfill(args) => dl_backfill::run(args).await,
     }
 }
 
@@ -57,7 +63,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
 
     // Load global simulation data cache FIRST (before collectors steal pool connections).
     // This loads all Bitget-eligible coin prices into memory for instant simulations.
-    let sim_cache = simulation::SimDataCache::load(&pool).await
+    let sim_cache_inner = simulation::SimDataCache::load(&pool).await
         .unwrap_or_else(|e| {
             tracing::warn!(error = %e, "Failed to load sim data cache, simulations will fail");
             std::sync::Arc::new(simulation::SimDataCache {
@@ -68,8 +74,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
                 prices: std::collections::HashMap::new(),
                 mcap_rankings: std::collections::HashMap::new(),
                 categories: vec![],
+                defi_metrics: std::collections::HashMap::new(),
+                defi_history: std::collections::HashMap::new(),
+                fng_index: std::collections::HashMap::new(),
+                btc_dominance: std::collections::HashMap::new(),
+                eth_dominance: std::collections::HashMap::new(),
             })
         });
+    let sim_cache = Arc::new(tokio::sync::RwLock::new(sim_cache_inner));
 
     // Load symbol map for verify-nav
     let symbol_map = api::load_symbol_map(&args.symbol_map)?;
@@ -184,6 +196,47 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!(interval_secs = args.listing_sync_interval, "Listing sync started");
     } else {
         info!("Listing sync disabled (interval = 0)");
+    }
+
+    // Start DefiLlama collector in background
+    if args.dl_poll_interval > 0 {
+        let dl_pool = pool.clone();
+        let dl_poll = args.dl_poll_interval;
+        let dl_sim_cache = sim_cache.clone();
+        let dl_reload_pool = pool.clone();
+        tokio::spawn(async move {
+            // Run first sync, then reload sim cache to pick up DL categories
+            dl_collector::run_once(&dl_pool).await;
+            info!("DefiLlama first sync done, reloading sim cache...");
+            match simulation::SimDataCache::load(&dl_reload_pool).await {
+                Ok(new_cache) => {
+                    let dl_cats = new_cache.categories.iter().filter(|c| c.source == "defillama").count();
+                    let mut cache = dl_sim_cache.write().await;
+                    *cache = new_cache;
+                    info!(dl_categories = dl_cats, "Sim cache reloaded with DefiLlama data");
+                }
+                Err(e) => {
+                    tracing::error!(%e, "Failed to reload sim cache after DL sync");
+                }
+            }
+            // Then continue with the regular collector loop
+            dl_collector::run(dl_pool, dl_poll).await;
+        });
+        info!(interval_secs = args.dl_poll_interval, "DefiLlama collector started");
+    } else {
+        info!("DefiLlama collector disabled (interval = 0)");
+    }
+
+    // Start FNG collector in background
+    if args.fng_poll_interval > 0 {
+        let fng_pool = pool.clone();
+        let fng_poll = args.fng_poll_interval;
+        tokio::spawn(async move {
+            fng_collector::run(fng_pool, fng_poll).await;
+        });
+        info!(interval_secs = args.fng_poll_interval, "FNG collector started");
+    } else {
+        info!("FNG collector disabled (interval = 0)");
     }
 
     // Create live ticker cache and start fast poller

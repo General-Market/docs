@@ -30,8 +30,8 @@ pub struct AppState {
     pub deployment: serde_json::Value,
     pub morpho_deployment: serde_json::Value,
     pub logos_dir: std::path::PathBuf,
-    /// Global simulation data cache — loaded once at startup, eliminates per-sim DB reads.
-    pub sim_cache: Arc<simulation::SimDataCache>,
+    /// Global simulation data cache — loaded at startup, can be reloaded via /sim/reload-cache.
+    pub sim_cache: Arc<RwLock<Arc<simulation::SimDataCache>>>,
 }
 
 /// In-memory TTL cache for hot endpoints.
@@ -116,6 +116,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/listings", get(listings))
         .route("/listings/unsafe", get(listings_unsafe))
         .route("/listing", get(listing))
+        .route("/dl/investors", get(dl_investors))
         .route("/sim/categories", get(sim_categories))
         .route("/sim/run", get(sim_run))
         .route("/sim/run-stream", get(sim_run_stream))
@@ -125,6 +126,8 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/sim/holdings", get(sim_holdings))
         .route("/sim/invalidate", get(sim_invalidate))
         .route("/sim/benchmarks", get(sim_benchmarks))
+        .route("/sim/reload-cache", get(sim_reload_cache))
+        .route("/fng/latest", get(fng_latest))
         .layer(cors)
         .with_state(state)
 }
@@ -2921,14 +2924,54 @@ const CATEGORY_BLACKLIST: &[&str] = &[
     "wormhole-assets",
 ];
 
+async fn dl_investors(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let rows = db::dl_query_investors(&state.pool).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse {
+            error: format!("DB error: {e}"),
+        })))?;
+    let investors: Vec<serde_json::Value> = rows.iter().map(|(name, count)| {
+        serde_json::json!({ "name": name, "raise_count": count })
+    }).collect();
+    Ok(Json(serde_json::json!({ "investors": investors })))
+}
+
 async fn sim_categories(
     State(state): State<Arc<AppState>>,
 ) -> Json<serde_json::Value> {
     // Serve from in-memory cache — instant response, no DB hit.
-    let result: Vec<&simulation::CachedCategoryInfo> = state.sim_cache.categories.iter()
+    let cache = state.sim_cache.read().await;
+    let result: Vec<&simulation::CachedCategoryInfo> = cache.categories.iter()
         .filter(|c| !CATEGORY_BLACKLIST.contains(&c.id.as_str()))
         .collect();
     Json(serde_json::json!({ "categories": result }))
+}
+
+async fn sim_reload_cache(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    tracing::info!("Reloading sim data cache...");
+    match simulation::SimDataCache::load(&state.pool).await {
+        Ok(new_cache) => {
+            let cat_count = new_cache.categories.len();
+            let dl_cats = new_cache.categories.iter().filter(|c| c.source == "defillama").count();
+            let mut cache = state.sim_cache.write().await;
+            *cache = new_cache;
+            tracing::info!(categories = cat_count, dl_categories = dl_cats, "Sim data cache reloaded");
+            Ok(Json(serde_json::json!({
+                "status": "ok",
+                "categories": cat_count,
+                "dl_categories": dl_cats,
+            })))
+        }
+        Err(e) => {
+            tracing::error!(%e, "Failed to reload sim cache");
+            Err((StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse {
+                error: format!("Cache reload failed: {e}"),
+            })))
+        }
+    }
 }
 
 #[derive(Deserialize)]
@@ -2947,10 +2990,60 @@ struct SimRunQuery {
     threshold_pct: Option<f64>,
     #[serde(default)]
     start_date: Option<chrono::NaiveDate>,
+    #[serde(default)]
+    vc_mode: Option<String>,
+    #[serde(default)]
+    vc_investors: Option<String>,
+    #[serde(default)]
+    vc_min_amount_m: Option<f64>,
+    #[serde(default)]
+    vc_round_types: Option<String>,
+    // FNG regime params
+    #[serde(default)]
+    fng_mode: Option<String>,
+    #[serde(default)]
+    fng_fear_threshold: Option<i32>,
+    #[serde(default)]
+    fng_greed_threshold: Option<i32>,
+    #[serde(default)]
+    fng_cash_pct: Option<f64>,
+    // Dominance regime params
+    #[serde(default)]
+    dom_mode: Option<String>,
+    #[serde(default)]
+    dom_lookback: Option<i32>,
 }
 
 fn default_base_fee() -> f64 { 0.1 }
 fn default_spread_mult() -> f64 { 1.0 }
+
+/// Build FNG regime from query params (returns None if fng_mode is absent).
+fn build_fng_regime(
+    mode: &Option<String>,
+    fear: Option<i32>,
+    greed: Option<i32>,
+    cash_pct: Option<f64>,
+) -> Option<simulation::FngRegime> {
+    let m = mode.as_deref().filter(|s| !s.is_empty())?;
+    Some(simulation::FngRegime {
+        mode: m.to_string(),
+        fear_threshold: fear.unwrap_or(25),
+        greed_threshold: greed.unwrap_or(75),
+        cash_pct_greed: cash_pct.unwrap_or(0.4),
+    })
+}
+
+/// Build Dominance regime from query params.
+fn build_dominance_regime(
+    mode: &Option<String>,
+    lookback: Option<i32>,
+) -> Option<simulation::DominanceRegime> {
+    let m = mode.as_deref().filter(|s| !s.is_empty())?;
+    Some(simulation::DominanceRegime {
+        mode: m.to_string(),
+        lookback_days: lookback.unwrap_or(30),
+    })
+}
 
 async fn sim_run(
     State(state): State<Arc<AppState>>,
@@ -2971,6 +3064,12 @@ async fn sim_run(
         spread_multiplier: params.spread_multiplier,
         threshold_rebalance_pct: params.threshold_pct,
         start_date: params.start_date,
+        vc_mode: params.vc_mode.clone(),
+        vc_investors: params.vc_investors.clone(),
+        vc_min_amount_m: params.vc_min_amount_m,
+        vc_round_types: params.vc_round_types.clone(),
+        fng_regime: build_fng_regime(&params.fng_mode, params.fng_fear_threshold, params.fng_greed_threshold, params.fng_cash_pct),
+        dominance_regime: build_dominance_regime(&params.dom_mode, params.dom_lookback),
     };
 
     // Check cache first
@@ -3012,7 +3111,8 @@ async fn sim_run(
     }
 
     // Run simulation
-    let result = simulation::run_simulation(&state.pool, &config_for_cache, None, &state.sim_cache)
+    let sim_cache = state.sim_cache.read().await.clone();
+    let result = simulation::run_simulation(&state.pool, &config_for_cache, None, &sim_cache)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse {
             error: format!("Simulation failed: {e}"),
@@ -3044,6 +3144,9 @@ async fn sim_run_stream(
         }))
     })?;
 
+    let fng_regime = build_fng_regime(&params.fng_mode, params.fng_fear_threshold, params.fng_greed_threshold, params.fng_cash_pct);
+    let dominance_regime = build_dominance_regime(&params.dom_mode, params.dom_lookback);
+
     let cache_key_w = {
         let tmp = simulation::SimConfig {
             category_id: params.category_id.clone(),
@@ -3054,6 +3157,12 @@ async fn sim_run_stream(
             spread_multiplier: params.spread_multiplier,
             threshold_rebalance_pct: params.threshold_pct,
             start_date: params.start_date,
+            vc_mode: params.vc_mode.clone(),
+            vc_investors: params.vc_investors.clone(),
+            vc_min_amount_m: params.vc_min_amount_m,
+            vc_round_types: params.vc_round_types.clone(),
+            fng_regime: fng_regime.clone(),
+            dominance_regime: dominance_regime.clone(),
         };
         tmp.cache_key_weighting()
     };
@@ -3113,10 +3222,16 @@ async fn sim_run_stream(
         spread_multiplier: params.spread_multiplier,
         threshold_rebalance_pct: params.threshold_pct,
         start_date: params.start_date,
+        vc_mode: params.vc_mode,
+        vc_investors: params.vc_investors,
+        vc_min_amount_m: params.vc_min_amount_m,
+        vc_round_types: params.vc_round_types,
+        fng_regime,
+        dominance_regime,
     };
 
     let pool = state.pool.clone();
-    let sim_cache = state.sim_cache.clone();
+    let sim_cache = state.sim_cache.read().await.clone();
     let (sse_tx, sse_rx) = tokio::sync::mpsc::channel::<Result<Event, std::convert::Infallible>>(64);
     let (progress_tx, mut progress_rx) = tokio::sync::mpsc::channel::<simulation::SimProgress>(64);
 
@@ -3185,6 +3300,28 @@ struct SimSweepQuery {
     threshold_pct: Option<f64>,
     #[serde(default)]
     start_date: Option<chrono::NaiveDate>,
+    #[serde(default)]
+    vc_mode: Option<String>,
+    #[serde(default)]
+    vc_investors: Option<String>,
+    #[serde(default)]
+    vc_min_amount_m: Option<f64>,
+    #[serde(default)]
+    vc_round_types: Option<String>,
+    // FNG regime params
+    #[serde(default)]
+    fng_mode: Option<String>,
+    #[serde(default)]
+    fng_fear_threshold: Option<i32>,
+    #[serde(default)]
+    fng_greed_threshold: Option<i32>,
+    #[serde(default)]
+    fng_cash_pct: Option<f64>,
+    // Dominance regime params
+    #[serde(default)]
+    dom_mode: Option<String>,
+    #[serde(default)]
+    dom_lookback: Option<i32>,
 }
 
 fn default_sweep_weighting() -> String { "equal".into() }
@@ -3195,6 +3332,16 @@ async fn sim_sweep_stream(
     State(state): State<Arc<AppState>>,
     Query(params): Query<SimSweepQuery>,
 ) -> Result<Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>>, (StatusCode, Json<ErrorResponse>)> {
+    // Build regime/filter structs from query params
+    let fng_regime = build_fng_regime(&params.fng_mode, params.fng_fear_threshold, params.fng_greed_threshold, params.fng_cash_pct);
+    let dominance_regime = build_dominance_regime(&params.dom_mode, params.dom_lookback);
+
+    // Build overlay fields once — propagated into every sweep variant
+    let vc_mode = params.vc_mode.clone();
+    let vc_investors = params.vc_investors.clone();
+    let vc_min_amount_m = params.vc_min_amount_m;
+    let vc_round_types = params.vc_round_types.clone();
+
     // Build list of variants based on sweep dimension
     let variants: Vec<simulation::SimConfig> = match params.sweep.as_str() {
         "top_n" => {
@@ -3210,12 +3357,18 @@ async fn sim_sweep_stream(
                     spread_multiplier: params.spread_multiplier,
                     threshold_rebalance_pct: params.threshold_pct,
                     start_date: params.start_date,
+                    vc_mode: vc_mode.clone(),
+                    vc_investors: vc_investors.clone(),
+                    vc_min_amount_m,
+                    vc_round_types: vc_round_types.clone(),
+                    fng_regime: fng_regime.clone(),
+                    dominance_regime: dominance_regime.clone(),
                 }
             }).collect()
         }
         "weighting" => {
             // One representative variant per strategy family (default param)
-            let all_weightings = vec![
+            let mut all_weightings = vec![
                 simulation::Weighting::Equal,
                 simulation::Weighting::Mcap,
                 simulation::Weighting::CappedMcap { cap_pct: 10.0 },
@@ -3228,6 +3381,20 @@ async fn sim_sweep_stream(
                 simulation::Weighting::MultiFactor { lookback_days: 90 },
                 simulation::Weighting::LowVolatility { lookback_days: 60 },
             ];
+            // Include DeFi strategies for dl- categories (or always include them)
+            if params.category_id.starts_with("dl-") {
+                all_weightings.extend(vec![
+                    simulation::Weighting::TvlWeight,
+                    simulation::Weighting::TvlCapped { cap_pct: 10.0 },
+                    simulation::Weighting::TvlSqrt,
+                    simulation::Weighting::FeesWeight,
+                    simulation::Weighting::RevenueWeight,
+                    simulation::Weighting::VolumeWeight,
+                    simulation::Weighting::TvlMomentum { lookback_days: 90 },
+                    simulation::Weighting::FeeEfficiency,
+                    simulation::Weighting::YieldWeight,
+                ]);
+            }
             all_weightings.into_iter().map(|w| {
                 simulation::SimConfig {
                     category_id: params.category_id.clone(),
@@ -3238,6 +3405,12 @@ async fn sim_sweep_stream(
                     spread_multiplier: params.spread_multiplier,
                     threshold_rebalance_pct: params.threshold_pct,
                     start_date: params.start_date,
+                    vc_mode: vc_mode.clone(),
+                    vc_investors: vc_investors.clone(),
+                    vc_min_amount_m,
+                    vc_round_types: vc_round_types.clone(),
+                    fng_regime: fng_regime.clone(),
+                    dominance_regime: dominance_regime.clone(),
                 }
             }).collect()
         }
@@ -3255,6 +3428,12 @@ async fn sim_sweep_stream(
                     spread_multiplier: params.spread_multiplier,
                     threshold_rebalance_pct: None,
                     start_date: params.start_date,
+                    vc_mode: vc_mode.clone(),
+                    vc_investors: vc_investors.clone(),
+                    vc_min_amount_m,
+                    vc_round_types: vc_round_types.clone(),
+                    fng_regime: fng_regime.clone(),
+                    dominance_regime: dominance_regime.clone(),
                 }
             }).collect();
             // Drift-based bands (rebalance_days=365 safety fallback)
@@ -3268,6 +3447,12 @@ async fn sim_sweep_stream(
                     spread_multiplier: params.spread_multiplier,
                     threshold_rebalance_pct: Some(pct),
                     start_date: params.start_date,
+                    vc_mode: vc_mode.clone(),
+                    vc_investors: vc_investors.clone(),
+                    vc_min_amount_m,
+                    vc_round_types: vc_round_types.clone(),
+                    fng_regime: fng_regime.clone(),
+                    dominance_regime: dominance_regime.clone(),
                 });
             }
             configs
@@ -3287,6 +3472,12 @@ async fn sim_sweep_stream(
                     spread_multiplier: params.spread_multiplier,
                     threshold_rebalance_pct: t,
                     start_date: params.start_date,
+                    vc_mode: vc_mode.clone(),
+                    vc_investors: vc_investors.clone(),
+                    vc_min_amount_m,
+                    vc_round_types: vc_round_types.clone(),
+                    fng_regime: fng_regime.clone(),
+                    dominance_regime: dominance_regime.clone(),
                 }
             }).collect()
         }
@@ -3312,6 +3503,12 @@ async fn sim_sweep_stream(
                     spread_multiplier: params.spread_multiplier,
                     threshold_rebalance_pct: params.threshold_pct,
                     start_date: params.start_date,
+                    vc_mode: vc_mode.clone(),
+                    vc_investors: vc_investors.clone(),
+                    vc_min_amount_m,
+                    vc_round_types: vc_round_types.clone(),
+                    fng_regime: fng_regime.clone(),
+                    dominance_regime: dominance_regime.clone(),
                 }
             }).collect()
         }
@@ -3324,7 +3521,7 @@ async fn sim_sweep_stream(
 
     let total_variants = variants.len();
     let pool = state.pool.clone();
-    let sim_cache = state.sim_cache.clone();
+    let sim_cache = state.sim_cache.read().await.clone();
     let (sse_tx, sse_rx) = tokio::sync::mpsc::channel::<Result<Event, std::convert::Infallible>>(64);
 
     tokio::spawn(async move {
@@ -3546,7 +3743,7 @@ async fn sim_benchmarks(
     let end = params.end_date.as_ref()
         .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
 
-    let cache = &state.sim_cache;
+    let cache = state.sim_cache.read().await;
     let benchmarks = vec![("bitcoin", "BTC"), ("ethereum", "ETH")];
     let mut result: Vec<serde_json::Value> = Vec::new();
 
@@ -3582,4 +3779,45 @@ async fn sim_benchmarks(
     }
 
     Ok(Json(serde_json::json!({ "benchmarks": result })))
+}
+
+// ---- /fng/latest ----
+
+async fn fng_latest(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    // Query from sim cache (in-memory) — find latest date
+    let cache = state.sim_cache.read().await;
+    if let Some((&date, &value)) = cache.fng_index.iter()
+        .max_by_key(|(d, _)| *d)
+    {
+        Ok(Json(serde_json::json!({
+            "date": date.to_string(),
+            "value": value,
+            "classification": if value <= 25 { "Extreme Fear" }
+                else if value <= 40 { "Fear" }
+                else if value <= 60 { "Neutral" }
+                else if value <= 75 { "Greed" }
+                else { "Extreme Greed" },
+        })))
+    } else {
+        // Fallback: query DB
+        match db::fng_query_latest(&state.pool).await {
+            Ok(Some((date, value, classification))) => {
+                Ok(Json(serde_json::json!({
+                    "date": date.to_string(),
+                    "value": value,
+                    "classification": classification,
+                })))
+            }
+            Ok(None) => {
+                Ok(Json(serde_json::json!({
+                    "date": null,
+                    "value": null,
+                    "classification": "Unknown",
+                })))
+            }
+            Err(e) => Err(db_error(e)),
+        }
+    }
 }

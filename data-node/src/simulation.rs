@@ -20,7 +20,39 @@ pub struct CachedCategoryInfo {
     pub name: String,
     pub coin_count: usize,
     pub market_cap: Option<f64>,
+    #[serde(default = "default_source")]
+    pub source: String,
 }
+
+fn default_source() -> String {
+    "coingecko".to_string()
+}
+
+/// DeFi metrics for a single coin (keyed by gecko_id).
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct DefiCoinMetrics {
+    pub tvl: f64,
+    pub tvl_change_7d: f64,
+    pub fees_24h: f64,
+    pub revenue_24h: f64,
+    pub volume_24h: f64,
+    pub max_yield_apy: f64,
+    pub total_funding_m: f64,
+    pub latest_funding_m: f64,
+    pub latest_round: Option<String>,
+    pub latest_valuation_m: Option<f64>,
+    pub investor_count: usize,
+    pub lead_investors: Vec<String>,
+}
+
+/// Daily DeFi metrics snapshot for history-based strategies.
+#[derive(Debug, Clone, Default)]
+pub struct DefiDayMetrics {
+    pub tvl: f64,
+    pub fees: f64,
+    pub volume: f64,
+}
+
 
 pub struct SimDataCache {
     /// All unique snapshot dates, sorted ascending.
@@ -37,6 +69,16 @@ pub struct SimDataCache {
     pub mcap_rankings: HashMap<NaiveDate, Vec<CoinSnapshot>>,
     /// Precomputed category list with eligible coin counts (sorted by mcap).
     pub categories: Vec<CachedCategoryInfo>,
+    /// gecko_id → current DeFi metrics (from DefiLlama).
+    pub defi_metrics: HashMap<String, DefiCoinMetrics>,
+    /// gecko_id → { date → DefiDayMetrics } (history for TVL/fees/volume strategies).
+    pub defi_history: HashMap<String, HashMap<NaiveDate, DefiDayMetrics>>,
+    /// FNG index: date → value (0-100).
+    pub fng_index: HashMap<NaiveDate, i32>,
+    /// BTC dominance: date → percentage (0.0-100.0).
+    pub btc_dominance: HashMap<NaiveDate, f64>,
+    /// ETH dominance: date → percentage (0.0-100.0).
+    pub eth_dominance: HashMap<NaiveDate, f64>,
 }
 
 impl SimDataCache {
@@ -106,13 +148,17 @@ impl SimDataCache {
         let all_count = all_coin_ids.len();
         category_coins.insert("all".to_string(), all_coin_ids);
 
+        // CoinGecko categories
         let mut categories: Vec<CachedCategoryInfo> = cat_meta.into_iter()
             .filter_map(|row| {
                 let eligible_count = category_coins.get(&row.id)
                     .map(|coins| coins.iter().filter(|c| eligible_set.contains(c)).count())
                     .unwrap_or(0);
                 if eligible_count >= 5 {
-                    Some(CachedCategoryInfo { id: row.id, name: row.name, coin_count: eligible_count, market_cap: row.market_cap })
+                    Some(CachedCategoryInfo {
+                        id: row.id, name: row.name, coin_count: eligible_count,
+                        market_cap: row.market_cap, source: "coingecko".to_string(),
+                    })
                 } else {
                     None
                 }
@@ -126,9 +172,206 @@ impl SimDataCache {
             name: "All Eligible Coins".to_string(),
             coin_count: all_count,
             market_cap: None,
+            source: "coingecko".to_string(),
         });
 
-        let total_ms = t0.elapsed().as_millis();
+        let t6 = t0.elapsed().as_millis();
+
+        // 8. Load DefiLlama data
+        let mut defi_metrics: HashMap<String, DefiCoinMetrics> = HashMap::new();
+        let mut defi_history: HashMap<String, HashMap<NaiveDate, DefiDayMetrics>> = HashMap::new();
+
+        // Build slug→gecko_id mapping
+        let dl_protocols = db::dl_query_protocols_with_gecko_id(pool).await.unwrap_or_default();
+        let mut slug_to_gecko: HashMap<String, String> = HashMap::new();
+        let mut gecko_to_slug: HashMap<String, String> = HashMap::new();
+
+        for (slug, gecko_id, category, tvl, tvl_change_7d, _mcap) in &dl_protocols {
+            slug_to_gecko.insert(slug.clone(), gecko_id.clone());
+            gecko_to_slug.insert(gecko_id.clone(), slug.clone());
+
+            // Build base metrics from protocol data
+            let entry = defi_metrics.entry(gecko_id.clone()).or_default();
+            entry.tvl = tvl.unwrap_or(0.0);
+            entry.tvl_change_7d = tvl_change_7d.unwrap_or(0.0);
+
+            // Build DeFi sector categories (dl-dexes, dl-lending, etc.)
+            if let Some(cat) = category {
+                let cat_id = format!("dl-{}", cat.to_lowercase().replace(' ', "-").replace('/', "-"));
+                category_coins.entry(cat_id).or_default().push(gecko_id.clone());
+            }
+        }
+
+        // Load fees/revenue/volume metrics
+        for metric_type in &["fees", "revenue", "volume"] {
+            let metrics = db::dl_query_latest_metrics_by_type(pool, metric_type).await.unwrap_or_default();
+            for (slug, v24h, _v7d, _v30d) in &metrics {
+                if let Some(gecko_id) = slug_to_gecko.get(slug) {
+                    let entry = defi_metrics.entry(gecko_id.clone()).or_default();
+                    match *metric_type {
+                        "fees" => entry.fees_24h = v24h.unwrap_or(0.0),
+                        "revenue" => entry.revenue_24h = v24h.unwrap_or(0.0),
+                        "volume" => entry.volume_24h = v24h.unwrap_or(0.0),
+                        _ => {}
+                    }
+                }
+            }
+        }
+
+        // Load yield data (max APY per project → gecko_id)
+        let yield_data = db::dl_query_max_yield_by_project(pool).await.unwrap_or_default();
+        for (project, max_apy) in &yield_data {
+            // Project names often match slug
+            if let Some(gecko_id) = slug_to_gecko.get(project) {
+                let entry = defi_metrics.entry(gecko_id.clone()).or_default();
+                entry.max_yield_apy = *max_apy;
+            }
+        }
+
+        // Load raises data
+        let all_dl_ids: Vec<String> = slug_to_gecko.keys().cloned().collect();
+        let raises = db::dl_query_raises_for_slugs(pool, &all_dl_ids).await.unwrap_or_default();
+        for (dl_id, round, amount_m, valuation_m, _date, lead_inv, _other_inv) in &raises {
+            if let Some(gecko_id) = slug_to_gecko.get(dl_id.as_str()) {
+                let entry = defi_metrics.entry(gecko_id.clone()).or_default();
+                if let Some(amt) = amount_m {
+                    entry.total_funding_m += amt;
+                    // Track latest
+                    if entry.latest_funding_m == 0.0 {
+                        entry.latest_funding_m = *amt;
+                        entry.latest_round = round.clone();
+                        entry.latest_valuation_m = *valuation_m;
+                        entry.lead_investors = lead_inv.clone();
+                    }
+                }
+                entry.investor_count += lead_inv.len();
+            }
+        }
+
+        // Load history for eligible protocols (only those with gecko_id matching our coins)
+        let eligible_slugs: Vec<String> = eligible_set.iter()
+            .filter_map(|gid| gecko_to_slug.get(*gid).cloned())
+            .collect();
+        if !eligible_slugs.is_empty() {
+            let history_rows = db::dl_query_all_history_for_slugs(pool, &eligible_slugs).await.unwrap_or_default();
+            for (slug, date, metric_type, value) in &history_rows {
+                if let Some(gecko_id) = slug_to_gecko.get(slug) {
+                    let day_entry = defi_history
+                        .entry(gecko_id.clone())
+                        .or_default()
+                        .entry(*date)
+                        .or_default();
+                    match metric_type.as_str() {
+                        "tvl" => day_entry.tvl = *value,
+                        "fees" => day_entry.fees = *value,
+                        "volume" => day_entry.volume = *value,
+                        _ => {}
+                    }
+                }
+            }
+        }
+
+        let t7 = t0.elapsed().as_millis();
+
+        // 9. Generate DefiLlama categories (sector + FA)
+        // Sector categories: auto-generated from DL category field
+        let mut dl_category_set: HashSet<String> = HashSet::new();
+        for cat_coins in category_coins.keys() {
+            if cat_coins.starts_with("dl-") {
+                dl_category_set.insert(cat_coins.clone());
+            }
+        }
+
+        // Human-readable names for DL categories
+        let dl_cat_names: HashMap<&str, &str> = [
+            ("dl-dexes", "DEXes"), ("dl-lending", "Lending"), ("dl-derivatives", "Derivatives"),
+            ("dl-bridge", "Bridges"), ("dl-liquid-staking", "Liquid Staking"), ("dl-cdp", "CDP"),
+            ("dl-yield", "Yield"), ("dl-rwa", "RWA"), ("dl-yield-aggregator", "Yield Aggregator"),
+            ("dl-liquidity-manager", "Liquidity Manager"), ("dl-farm", "Farms"),
+            ("dl-launchpad", "Launchpad"), ("dl-cross-chain", "Cross Chain"),
+            ("dl-options", "Options"), ("dl-nft-lending", "NFT Lending"),
+            ("dl-insurance", "Insurance"), ("dl-indexes", "Indexes"),
+            ("dl-prediction-market", "Prediction Market"), ("dl-synthetics", "Synthetics"),
+            ("dl-privacy", "Privacy"), ("dl-payments", "Payments"),
+            ("dl-staking-pool", "Staking Pool"), ("dl-services", "Services"),
+        ].into_iter().collect();
+
+        for cat_id in &dl_category_set {
+            let eligible_count = category_coins.get(cat_id)
+                .map(|coins| coins.iter().filter(|c| eligible_set.contains(c)).count())
+                .unwrap_or(0);
+            if eligible_count >= 5 {
+                let name = dl_cat_names.get(cat_id.as_str())
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| {
+                        cat_id.strip_prefix("dl-").unwrap_or(cat_id)
+                            .split('-')
+                            .map(|w| {
+                                let mut c = w.chars();
+                                match c.next() {
+                                    Some(f) => f.to_uppercase().to_string() + c.as_str(),
+                                    None => String::new(),
+                                }
+                            })
+                            .collect::<Vec<_>>()
+                            .join(" ")
+                    });
+                categories.push(CachedCategoryInfo {
+                    id: cat_id.clone(),
+                    name,
+                    coin_count: eligible_count,
+                    market_cap: None,
+                    source: "defillama".to_string(),
+                });
+            }
+        }
+
+        // FA sub-categories: ranked by DeFi metrics
+        let fa_categories = build_fa_categories(&defi_metrics, &eligible_set);
+        for (cat_id, cat_name, coin_ids) in &fa_categories {
+            if !coin_ids.is_empty() {
+                categories.push(CachedCategoryInfo {
+                    id: cat_id.clone(),
+                    name: cat_name.clone(),
+                    coin_count: coin_ids.len(),
+                    market_cap: None,
+                    source: "defillama".to_string(),
+                });
+                category_coins.insert(cat_id.clone(), coin_ids.clone());
+            }
+        }
+
+        let t8 = t0.elapsed().as_millis();
+        let dl_cats = categories.iter().filter(|c| c.source == "defillama").count();
+
+        // 9. Load FNG index
+        let fng_rows = db::fng_query_all(pool).await.unwrap_or_default();
+        let fng_index: HashMap<NaiveDate, i32> = fng_rows.into_iter()
+            .map(|(d, v, _)| (d, v))
+            .collect();
+        let t9 = t0.elapsed().as_millis();
+
+        // 10. Compute BTC/ETH dominance from mcap_rankings
+        let mut btc_dominance: HashMap<NaiveDate, f64> = HashMap::new();
+        let mut eth_dominance: HashMap<NaiveDate, f64> = HashMap::new();
+        for (date, coins) in &mcap_rankings {
+            let total_mcap: f64 = coins.iter().map(|c| c.mcap).sum();
+            if total_mcap > 0.0 {
+                let btc_mcap = coins.iter()
+                    .find(|c| c.coin_id == "bitcoin")
+                    .map(|c| c.mcap)
+                    .unwrap_or(0.0);
+                let eth_mcap = coins.iter()
+                    .find(|c| c.coin_id == "ethereum")
+                    .map(|c| c.mcap)
+                    .unwrap_or(0.0);
+                btc_dominance.insert(*date, btc_mcap / total_mcap * 100.0);
+                eth_dominance.insert(*date, eth_mcap / total_mcap * 100.0);
+            }
+        }
+        let t10 = t0.elapsed().as_millis();
+
+        let t11 = t0.elapsed().as_millis();
 
         info!(
             t1_bitget_ms = t1,
@@ -136,12 +379,21 @@ impl SimDataCache {
             t3_dates_ms = t3 - t2,
             t4_cats_ms = t4 - t3,
             t5_bulk_ms = t5 - t4,
+            t6_cg_cats_ms = t6 - t5,
+            t7_defi_ms = t7 - t6,
+            t8_dl_cats_ms = t8 - t7,
+            t9_fng_ms = t9 - t8,
+            t10_dom_ms = t10 - t9,
             eligible_coins = eligible_coin_ids.len(),
             bitget_symbols = bitget_symbols.len(),
             bulk_rows = bulk_rows.len(),
-            cached_categories = categories.len(),
-            total_ms,
-            "SimDataCache loaded (Bitget-first)"
+            cg_categories = categories.len() - dl_cats,
+            dl_categories = dl_cats,
+            defi_coins = defi_metrics.len(),
+            defi_history_coins = defi_history.len(),
+            fng_days = fng_index.len(),
+            total_ms = t11,
+            "SimDataCache loaded (Bitget-first + DefiLlama + FNG)"
         );
 
         Ok(Arc::new(Self {
@@ -152,6 +404,11 @@ impl SimDataCache {
             prices,
             mcap_rankings,
             categories,
+            defi_metrics,
+            defi_history,
+            fng_index,
+            btc_dominance,
+            eth_dominance,
         }))
     }
 
@@ -171,9 +428,43 @@ impl SimDataCache {
     }
 }
 
+/// Build FA (fundamental analysis) sub-categories from DeFi metrics.
+/// Returns Vec of (category_id, category_name, Vec<coin_ids>).
+fn build_fa_categories(
+    defi_metrics: &HashMap<String, DefiCoinMetrics>,
+    eligible_set: &HashSet<&String>,
+) -> Vec<(String, String, Vec<String>)> {
+    let top_n = 50usize;
+    let mut result = Vec::new();
+
+    // Helper: sort eligible coins by a metric, take top N
+    let mut rank_by = |metric_fn: &dyn Fn(&DefiCoinMetrics) -> f64, cat_id: &str, cat_name: &str| {
+        let mut scored: Vec<(String, f64)> = defi_metrics.iter()
+            .filter(|(gid, _)| eligible_set.contains(gid))
+            .map(|(gid, m)| (gid.clone(), metric_fn(m)))
+            .filter(|(_, v)| *v > 0.0)
+            .collect();
+        scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        let coin_ids: Vec<String> = scored.into_iter().take(top_n).map(|(id, _)| id).collect();
+        if coin_ids.len() >= 5 {
+            result.push((cat_id.to_string(), cat_name.to_string(), coin_ids));
+        }
+    };
+
+    rank_by(&|m| m.tvl, "dl-fa-top-tvl", "Top TVL");
+    rank_by(&|m| m.fees_24h, "dl-fa-top-fees", "Top Fees");
+    rank_by(&|m| m.revenue_24h, "dl-fa-top-revenue", "Top Revenue");
+    rank_by(&|m| m.volume_24h, "dl-fa-top-volume", "Top Volume");
+    rank_by(&|m| m.tvl_change_7d, "dl-fa-tvl-momentum", "TVL Momentum");
+    rank_by(&|m| if m.tvl > 0.0 { m.fees_24h / m.tvl } else { 0.0 }, "dl-fa-fee-efficiency", "Fee Efficiency");
+    rank_by(&|m| m.max_yield_apy, "dl-fa-top-yield", "Top Yield");
+
+    result
+}
+
 // ---- Types ----
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Default)]
 pub struct SimConfig {
     pub category_id: String,
     pub top_n: i32,
@@ -186,11 +477,131 @@ pub struct SimConfig {
     /// Optional override for simulation start date (default: earliest available)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub start_date: Option<NaiveDate>,
+    /// VC overlay mode: "funding", "valuation", "fresh_12", etc. None = off.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vc_mode: Option<String>,
+    /// Comma-separated VC investor names filter.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vc_investors: Option<String>,
+    /// Minimum funding in millions USD.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vc_min_amount_m: Option<f64>,
+    /// Comma-separated round types filter.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vc_round_types: Option<String>,
+    /// FNG regime overlay.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fng_regime: Option<FngRegime>,
+    /// BTC/ETH dominance regime overlay.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dominance_regime: Option<DominanceRegime>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, Serialize, Default)]
+pub struct FngRegime {
+    pub mode: String,           // "trigger"|"cash"|"risk_toggle"|"top_n_scaler"|"contrarian"|"frequency"
+    pub fear_threshold: i32,    // default 25
+    pub greed_threshold: i32,   // default 75
+    pub cash_pct_greed: f64,    // for "cash" mode (default 0.4)
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub struct DominanceRegime {
+    pub mode: String,           // "alt_rotator"|"trend_filter"|"weighted_split"|"breadth"|"momentum"|"combo"
+    pub lookback_days: i32,     // default 30
+}
+
+// ---- Pipeline types ----
+
+/// Regime signals for a single day, computed once and passed to all stages.
+struct DayRegimeSignals {
+    fng_value: Option<i32>,
+    fng_zone: FngZone,
+    btc_dom: Option<f64>,
+    btc_dom_trend: f64,
+    dom_zone: DomZone,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum FngZone { ExtremeFear, Neutral, ExtremeGreed, Unknown }
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum DomZone { Rising, Falling, Flat, Unknown }
+
+/// Output of Stage 2: effective simulation params for this rebalance.
+struct EffectiveParams {
+    top_n: i32,
+    weighting: Weighting,
+    cash_fraction: f64,
+}
+
+/// VC eligibility criteria (parsed once pre-loop, used in Stage 3).
+struct VcEligibility {
+    investor_names: Option<HashSet<String>>,
+    round_types: Option<HashSet<String>>,
+    min_funding_m: f64,
+}
+
+impl VcEligibility {
+    fn from_config(config: &SimConfig) -> Option<Self> {
+        config.vc_mode.as_ref()?; // None if VC overlay off
+        let investor_names = config.vc_investors.as_ref().map(|s| {
+            s.split(',').map(|v| v.trim().to_lowercase()).filter(|v| !v.is_empty()).collect()
+        });
+        let round_types = config.vc_round_types.as_ref().map(|s| {
+            s.split(',').map(|v| v.trim().to_lowercase()).filter(|v| !v.is_empty()).collect()
+        });
+        let min_funding_m = config.vc_min_amount_m.unwrap_or(0.0);
+        Some(VcEligibility { investor_names, round_types, min_funding_m })
+    }
+
+    fn is_eligible(&self, metrics: &DefiCoinMetrics) -> bool {
+        if metrics.total_funding_m < self.min_funding_m {
+            return false;
+        }
+        if let Some(ref investor_set) = self.investor_names {
+            if !metrics.lead_investors.iter().any(|inv| investor_set.contains(&inv.to_lowercase())) {
+                return false;
+            }
+        }
+        if let Some(ref round_set) = self.round_types {
+            let passes = metrics.latest_round.as_ref()
+                .map(|r| round_set.contains(&r.to_lowercase()))
+                .unwrap_or(false);
+            if !passes {
+                return false;
+            }
+        }
+        true
+    }
+}
+
+fn classify_fng(value: Option<i32>, regime: Option<&FngRegime>) -> FngZone {
+    match (value, regime) {
+        (Some(v), Some(r)) => {
+            if v <= r.fear_threshold { FngZone::ExtremeFear }
+            else if v >= r.greed_threshold { FngZone::ExtremeGreed }
+            else { FngZone::Neutral }
+        }
+        (Some(v), None) => {
+            if v <= 25 { FngZone::ExtremeFear }
+            else if v >= 75 { FngZone::ExtremeGreed }
+            else { FngZone::Neutral }
+        }
+        _ => FngZone::Unknown,
+    }
+}
+
+fn classify_dom(trend: f64) -> DomZone {
+    if trend > 2.0 { DomZone::Rising }
+    else if trend < -2.0 { DomZone::Falling }
+    else { DomZone::Flat }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum Weighting {
+    #[default]
     Equal,
     Mcap,
     CappedMcap { cap_pct: f64 },
@@ -202,6 +613,16 @@ pub enum Weighting {
     MinVariance { lookback_days: i32 },
     MultiFactor { lookback_days: i32 },
     LowVolatility { lookback_days: i32 },
+    // DeFi-metric weighting strategies
+    TvlWeight,
+    TvlCapped { cap_pct: f64 },
+    TvlSqrt,
+    FeesWeight,
+    RevenueWeight,
+    VolumeWeight,
+    TvlMomentum { lookback_days: i32 },
+    FeeEfficiency,
+    YieldWeight,
 }
 
 impl Weighting {
@@ -218,6 +639,15 @@ impl Weighting {
             Weighting::MinVariance { lookback_days } => format!("min_var_{}", lookback_days),
             Weighting::MultiFactor { lookback_days } => format!("multi_factor_{}", lookback_days),
             Weighting::LowVolatility { lookback_days } => format!("low_vol_{}", lookback_days),
+            Weighting::TvlWeight => "tvl".to_string(),
+            Weighting::TvlCapped { cap_pct } => format!("tvl_cap{}", *cap_pct as i32),
+            Weighting::TvlSqrt => "tvl_sqrt".to_string(),
+            Weighting::FeesWeight => "fees_w".to_string(),
+            Weighting::RevenueWeight => "revenue_w".to_string(),
+            Weighting::VolumeWeight => "volume_w".to_string(),
+            Weighting::TvlMomentum { lookback_days } => format!("tvl_mom_{}", lookback_days),
+            Weighting::FeeEfficiency => "fee_eff".to_string(),
+            Weighting::YieldWeight => "yield_w".to_string(),
         }
     }
 
@@ -227,9 +657,20 @@ impl Weighting {
             "equal" => Some(Weighting::Equal),
             "mcap" => Some(Weighting::Mcap),
             "sqrt_mcap" => Some(Weighting::SqrtMcap),
+            "tvl" => Some(Weighting::TvlWeight),
+            "tvl_sqrt" => Some(Weighting::TvlSqrt),
+            "fees_w" => Some(Weighting::FeesWeight),
+            "revenue_w" => Some(Weighting::RevenueWeight),
+            "volume_w" => Some(Weighting::VolumeWeight),
+            "fee_eff" => Some(Weighting::FeeEfficiency),
+            "yield_w" => Some(Weighting::YieldWeight),
             _ => {
                 if let Some(rest) = s_lower.strip_prefix("mcap_cap") {
                     rest.parse::<f64>().ok().map(|c| Weighting::CappedMcap { cap_pct: c })
+                } else if let Some(rest) = s_lower.strip_prefix("tvl_cap") {
+                    rest.parse::<f64>().ok().map(|c| Weighting::TvlCapped { cap_pct: c })
+                } else if let Some(rest) = s_lower.strip_prefix("tvl_mom_") {
+                    rest.parse::<i32>().ok().map(|d| Weighting::TvlMomentum { lookback_days: d })
                 } else if let Some(rest) = s_lower.strip_prefix("momentum_") {
                     rest.parse::<i32>().ok().map(|d| Weighting::Momentum { lookback_days: d })
                 } else if let Some(rest) = s_lower.strip_prefix("invvol_") {
@@ -260,6 +701,15 @@ impl Weighting {
         )
     }
 
+    /// Whether this strategy uses DeFi metrics (from DefiLlama).
+    pub fn needs_defi(&self) -> bool {
+        matches!(self,
+            Weighting::TvlWeight | Weighting::TvlCapped { .. } | Weighting::TvlSqrt |
+            Weighting::FeesWeight | Weighting::RevenueWeight | Weighting::VolumeWeight |
+            Weighting::TvlMomentum { .. } | Weighting::FeeEfficiency | Weighting::YieldWeight
+        )
+    }
+
     pub fn lookback_days(&self) -> Option<i32> {
         match self {
             Weighting::Momentum { lookback_days }
@@ -268,15 +718,15 @@ impl Weighting {
             | Weighting::RiskParity { lookback_days }
             | Weighting::MinVariance { lookback_days }
             | Weighting::MultiFactor { lookback_days }
-            | Weighting::LowVolatility { lookback_days } => Some(*lookback_days),
+            | Weighting::LowVolatility { lookback_days }
+            | Weighting::TvlMomentum { lookback_days } => Some(*lookback_days),
             _ => None,
         }
     }
 }
 
 impl SimConfig {
-    /// Encodes weighting + threshold + start_date into one string for cache key.
-    /// e.g. "momentum_90", "momentum_90_t5", "equal_s2023-01-01"
+    /// Encodes weighting + threshold + start_date + regime params into one string for cache key.
     pub fn cache_key_weighting(&self) -> String {
         let mut key = self.weighting.as_str();
         if let Some(t) = self.threshold_rebalance_pct {
@@ -284,6 +734,24 @@ impl SimConfig {
         }
         if let Some(sd) = self.start_date {
             key = format!("{}_s{}", key, sd);
+        }
+        if let Some(ref fng) = self.fng_regime {
+            key = format!("{}_fng{}_{}_{}", key, fng.mode, fng.fear_threshold, fng.greed_threshold);
+        }
+        if let Some(ref dom) = self.dominance_regime {
+            key = format!("{}_dom{}_{}", key, dom.mode, dom.lookback_days);
+        }
+        if let Some(ref vc) = self.vc_mode {
+            key = format!("{}_vc{}", key, vc);
+        }
+        if let Some(ref inv) = self.vc_investors {
+            key = format!("{}_vci{}", key, inv);
+        }
+        if let Some(min) = self.vc_min_amount_m {
+            key = format!("{}_vcm{}", key, min as i64);
+        }
+        if let Some(ref rt) = self.vc_round_types {
+            key = format!("{}_vcr{}", key, rt);
         }
         key
     }
@@ -377,6 +845,16 @@ struct PreloadedData<'a> {
     mcap_rankings: &'a HashMap<NaiveDate, Vec<CoinSnapshot>>,
     /// For momentum/vol strategies: coin_id → sorted [(date, price)]
     price_history: Option<HashMap<String, Vec<(NaiveDate, f64)>>>,
+    /// DeFi current metrics (gecko_id → DefiCoinMetrics)
+    defi_metrics: &'a HashMap<String, DefiCoinMetrics>,
+    /// DeFi historical metrics (gecko_id → { date → DefiDayMetrics })
+    defi_history: &'a HashMap<String, HashMap<NaiveDate, DefiDayMetrics>>,
+    /// FNG index: date → value
+    fng_index: &'a HashMap<NaiveDate, i32>,
+    /// BTC dominance: date → pct
+    btc_dominance: &'a HashMap<NaiveDate, f64>,
+    /// ETH dominance: date → pct
+    eth_dominance: &'a HashMap<NaiveDate, f64>,
 }
 
 // ---- Price history helpers ----
@@ -586,8 +1064,12 @@ pub async fn run_simulation(
     let eligible_set: HashSet<String> = eligible_coin_ids.iter().cloned().collect();
 
     // Build price_history for momentum/vol strategies from cached data
+    // Also needed if FNG contrarian/risk_toggle may switch to momentum-based strategies
+    let needs_price_hist = config.weighting.needs_history()
+        || config.fng_regime.as_ref().map(|r| matches!(r.mode.as_str(), "contrarian" | "risk_toggle")).unwrap_or(false)
+        || config.dominance_regime.as_ref().map(|r| matches!(r.mode.as_str(), "momentum" | "combo")).unwrap_or(false);
     let price_history: Option<HashMap<String, Vec<(NaiveDate, f64)>>> =
-        if config.weighting.needs_history() {
+        if needs_price_hist {
             Some(cache.build_price_history(&eligible_coin_ids))
         } else {
             None
@@ -598,6 +1080,11 @@ pub async fn run_simulation(
         prices: &cache.prices,
         mcap_rankings: &cache.mcap_rankings,
         price_history,
+        defi_metrics: &cache.defi_metrics,
+        defi_history: &cache.defi_history,
+        fng_index: &cache.fng_index,
+        btc_dominance: &cache.btc_dominance,
+        eth_dominance: &cache.eth_dominance,
     };
 
     // Find start date: use override if provided, otherwise earliest date with >= 1 eligible coin.
@@ -636,7 +1123,10 @@ pub async fn run_simulation(
         "Starting simulation (from global cache)"
     );
 
-    // 7. Day-by-day simulation — ZERO DB queries in this loop
+    // Pre-loop: parse VC eligibility once
+    let vc_eligibility = VcEligibility::from_config(config);
+
+    // 7. Day-by-day simulation — ZERO DB queries in this loop (6-stage pipeline)
     let mut holdings: Vec<Holding> = Vec::new();
     let mut nav_series: Vec<db::SimNavPoint> = Vec::new();
     let mut all_holdings: Vec<db::SimHoldingRow> = Vec::new();
@@ -648,9 +1138,11 @@ pub async fn run_simulation(
     let mut total_rebalances = 0_i32;
     let mut portfolio_value = 1.0_f64; // Start at $1
     let mut last_target_weights: HashMap<String, f64> = HashMap::new();
+    let mut fng_prev: Option<i32> = None;
+    let mut cash_fraction = 0.0_f64;
 
     for (i, date) in sim_dates.iter().enumerate() {
-        // Send progress every ~100 dates (cheaper since loop is fast now)
+        // Send progress every ~100 dates
         if let Some(ref tx) = progress_tx {
             if i % 100 == 0 || i == total_dates - 1 {
                 let _ = tx.send(SimProgress {
@@ -666,7 +1158,7 @@ pub async fn run_simulation(
         // Get prices for held coins today — in-memory O(n) lookup
         let today_prices = get_prices_mem(&preloaded.prices, &holdings, *date);
 
-        // Check delistings
+        // Handle delistings (unchanged)
         let (new_holdings, delist_trades, delist_proceeds) = check_delistings(
             &holdings, &today_prices, &cache.bitget_lookup, *date, config,
         );
@@ -676,95 +1168,160 @@ pub async fn run_simulation(
                 total_fees_usd += t.fee_usd;
             }
             all_trades.extend(delist_trades);
-            // Redistribute proceeds to remaining holdings
             holdings = redistribute_proceeds(new_holdings, delist_proceeds, &today_prices);
         }
 
-        // Check if rebalance is due
-        days_since_rebalance += 1;
-        let should_rebalance = if let Some(threshold_pct) = config.threshold_rebalance_pct {
-            holdings.is_empty()
-                || should_threshold_rebalance(&holdings, &today_prices, &last_target_weights, threshold_pct)
-                || days_since_rebalance >= 365 // safety: at least once per year
-        } else {
-            days_since_rebalance >= config.rebalance_days || holdings.is_empty()
+        // Build day regime signals (computed once, used by all stages)
+        let fng_today = preloaded.fng_index.get(date).copied();
+        let btc_dom_today = preloaded.btc_dominance.get(date).copied();
+        let dom_lookback = config.dominance_regime.as_ref().map(|r| r.lookback_days).unwrap_or(30);
+        let btc_trend = btc_dom_trend(preloaded.btc_dominance, *date, dom_lookback);
+
+        let signals = DayRegimeSignals {
+            fng_value: fng_today,
+            fng_zone: classify_fng(fng_today, config.fng_regime.as_ref()),
+            btc_dom: btc_dom_today,
+            btc_dom_trend: btc_trend,
+            dom_zone: classify_dom(btc_trend),
         };
 
-        if should_rebalance {
-            let rebalance_result = perform_rebalance_mem(
-                config, *date, &holdings, &cache.bitget_lookup,
-                &cache.coin_symbol_map, portfolio_value, &preloaded,
-                &eligible_set,
-            );
+        days_since_rebalance += 1;
 
-            if rebalance_result.new_holdings.is_empty() && !holdings.is_empty() {
-                // Dual momentum: go to cash — sell everything
-                let mut cash_proceeds = 0.0_f64;
-                for h in &holdings {
-                    let price = today_prices.get(&h.coin_id).copied().unwrap_or(h.last_price);
-                    let trade_value = h.quantity * price;
-                    if trade_value > 0.01 {
-                        let fee_rate = config.base_fee_pct / 100.0 + 0.001 * config.spread_multiplier;
-                        let fee_usd = trade_value * fee_rate;
-                        total_fees_usd += fee_usd;
-                        cash_proceeds += trade_value - fee_usd;
-                        all_trades.push(db::SimTradeRow {
-                            trade_date: *date,
-                            coin_id: h.coin_id.clone(),
-                            side: "sell".into(),
-                            quantity: h.quantity,
-                            price_usd: price,
-                            fee_pct: fee_rate * 100.0,
-                            fee_usd,
-                            reason: Some("dual_mom_cash".into()),
-                        });
+        // STAGE 1: Rebalance trigger
+        let should_rebalance = resolve_rebalance_trigger(
+            &holdings, days_since_rebalance, config.rebalance_days,
+            config.threshold_rebalance_pct, &today_prices, &last_target_weights,
+            &signals, config.fng_regime.as_ref(), fng_prev,
+        );
+
+        // STAGE 2: Effective params (DOM > FNG precedence)
+        let params = resolve_effective_params(
+            config.top_n, &config.weighting, &signals,
+            config.fng_regime.as_ref(), config.dominance_regime.as_ref(),
+        );
+        cash_fraction = params.cash_fraction;
+
+        if should_rebalance {
+            let investable_value = portfolio_value * (1.0 - cash_fraction);
+
+            // Get mcap-ranked coins at this date
+            let all_coins = preloaded.mcap_rankings.get(date);
+
+            if let Some(all_coins) = all_coins {
+                // STAGE 3: Eligibility filters (category + Bitget + price + VC)
+                let eligible = filter_eligible_coins(
+                    all_coins, &eligible_set, &cache.coin_symbol_map,
+                    &cache.bitget_lookup, *date, vc_eligibility.as_ref(),
+                    preloaded.defi_metrics,
+                );
+
+                // STAGE 4: Top-N + weights
+                let top_coins: Vec<&CoinSnapshot> = eligible.into_iter()
+                    .take(params.top_n as usize).collect();
+
+                if !top_coins.is_empty() {
+                    let mut weights = compute_weights_snap(
+                        &top_coins, &params.weighting, *date,
+                        preloaded.price_history.as_ref(),
+                        preloaded.defi_metrics,
+                        preloaded.defi_history,
+                    );
+
+                    // STAGE 5: Weight modifiers (VC mult → contrarian → split → trend_filter)
+                    apply_weight_modifiers(
+                        &mut weights, &top_coins, &signals, config,
+                        preloaded.defi_metrics, preloaded.price_history.as_ref(), *date,
+                    );
+
+                    // Check if all weights are zero (dual momentum cash mode)
+                    let weight_sum: f64 = weights.iter().sum();
+
+                    if weight_sum <= 0.0 && !holdings.is_empty() {
+                        // STAGE 6a: Dual momentum go-to-cash
+                        let mut cash_proceeds = 0.0_f64;
+                        for h in &holdings {
+                            let price = today_prices.get(&h.coin_id).copied().unwrap_or(h.last_price);
+                            let trade_value = h.quantity * price;
+                            if trade_value > 0.01 {
+                                let fee_rate = config.base_fee_pct / 100.0 + 0.001 * config.spread_multiplier;
+                                let fee_usd = trade_value * fee_rate;
+                                total_fees_usd += fee_usd;
+                                cash_proceeds += trade_value - fee_usd;
+                                all_trades.push(db::SimTradeRow {
+                                    trade_date: *date,
+                                    coin_id: h.coin_id.clone(),
+                                    side: "sell".into(),
+                                    quantity: h.quantity,
+                                    price_usd: price,
+                                    fee_pct: fee_rate * 100.0,
+                                    fee_usd,
+                                    reason: Some("dual_mom_cash".into()),
+                                });
+                            }
+                        }
+                        portfolio_value = cash_proceeds;
+                        holdings = Vec::new();
+                        last_target_weights.clear();
+                        days_since_rebalance = 0;
+                        total_rebalances += 1;
+                    } else if weight_sum > 0.0 {
+                        // STAGE 6b: Execute trades
+                        let rebalance_result = execute_rebalance_trades(
+                            &top_coins, &weights, investable_value, &holdings,
+                            &cache.coin_symbol_map, config, *date,
+                        );
+
+                        if !rebalance_result.new_holdings.is_empty() {
+                            for t in &rebalance_result.trades {
+                                total_fees_usd += t.fee_usd;
+                            }
+                            all_trades.extend(rebalance_result.trades);
+                            all_holdings.extend(rebalance_result.holdings_snapshot);
+
+                            last_target_weights.clear();
+                            for h in &rebalance_result.new_holdings {
+                                let price = today_prices.get(&h.coin_id).copied().unwrap_or(h.last_price);
+                                let value = h.quantity * price;
+                                last_target_weights.insert(h.coin_id.clone(), value / rebalance_result.post_fee_value.max(0.001));
+                            }
+
+                            holdings = rebalance_result.new_holdings;
+                            portfolio_value = rebalance_result.post_fee_value;
+                            days_since_rebalance = 0;
+                            total_rebalances += 1;
+                        }
                     }
                 }
-                portfolio_value = cash_proceeds; // NAV = cash after fees
-                holdings = Vec::new();
-                last_target_weights.clear();
-                days_since_rebalance = 0;
-                total_rebalances += 1;
-            } else if !rebalance_result.new_holdings.is_empty() {
-                for t in &rebalance_result.trades {
-                    total_fees_usd += t.fee_usd;
-                }
-                all_trades.extend(rebalance_result.trades);
-                all_holdings.extend(rebalance_result.holdings_snapshot);
-
-                // Store target weights for threshold drift detection
-                last_target_weights.clear();
-                for h in &rebalance_result.new_holdings {
-                    let price = today_prices.get(&h.coin_id).copied().unwrap_or(h.last_price);
-                    let value = h.quantity * price;
-                    last_target_weights.insert(h.coin_id.clone(), value / rebalance_result.post_fee_value.max(0.001));
-                }
-
-                holdings = rebalance_result.new_holdings;
-                portfolio_value = rebalance_result.post_fee_value;
-                days_since_rebalance = 0;
-                total_rebalances += 1;
             }
         }
 
-        // Compute NAV — uses today_prices already in memory (NO duplicate DB query!)
+        // Compute NAV
         let nav = if holdings.is_empty() {
-            portfolio_value // Cash mode (dual momentum)
+            portfolio_value
         } else {
             let n = compute_nav(&holdings, &today_prices);
             if n > 0.0 { portfolio_value = n; }
             n
         };
 
-        if nav > peak_nav {
-            peak_nav = nav;
+        // FNG cash mode: total portfolio = invested portion + cash portion
+        let total_nav = if cash_fraction > 0.0 {
+            nav + (portfolio_value * cash_fraction / (1.0 - cash_fraction).max(0.01))
+        } else {
+            nav
+        };
+
+        if total_nav > peak_nav {
+            peak_nav = total_nav;
         }
-        let drawdown = if peak_nav > 0.0 { (nav - peak_nav) / peak_nav * 100.0 } else { 0.0 };
+        let drawdown = if peak_nav > 0.0 { (total_nav - peak_nav) / peak_nav * 100.0 } else { 0.0 };
         nav_series.push(db::SimNavPoint {
             nav_date: *date,
-            nav,
+            nav: total_nav,
             drawdown_pct: drawdown,
         });
+
+        fng_prev = fng_today;
     }
 
     // 8. Compute stats
@@ -988,64 +1545,17 @@ struct RebalanceResult {
     post_fee_value: f64,
 }
 
-/// Perform rebalance using preloaded in-memory data (no DB query).
-fn perform_rebalance_mem(
+/// STAGE 6: Execute rebalance trades given pre-computed coins + weights.
+/// Pure trade execution — no filtering or weight computation.
+fn execute_rebalance_trades(
+    top_coins: &[&CoinSnapshot],
+    weights: &[f64],
+    portfolio_value: f64,
+    old_holdings: &[Holding],
+    coin_symbol_map: &HashMap<String, String>,
     config: &SimConfig,
     date: NaiveDate,
-    old_holdings: &[Holding],
-    bitget_lookup: &HashMap<String, db::BitgetListingRow>,
-    coin_symbol_map: &HashMap<String, String>,
-    portfolio_value: f64,
-    preloaded: &PreloadedData,
-    category_coin_ids: &HashSet<String>,
 ) -> RebalanceResult {
-    // Get market-cap-ranked coins at this date from preloaded cache
-    let all_coins = match preloaded.mcap_rankings.get(&date) {
-        Some(c) => c,
-        None => return RebalanceResult {
-            new_holdings: Vec::new(),
-            trades: Vec::new(),
-            holdings_snapshot: Vec::new(),
-            post_fee_value: portfolio_value,
-        },
-    };
-
-    // Filter to category coins that are Bitget-listed with valid prices, take top N
-    let eligible: Vec<&CoinSnapshot> = all_coins.iter().filter(|c| {
-        category_coin_ids.contains(&c.coin_id)
-        && if let Some(sym) = coin_symbol_map.get(&c.coin_id) {
-            c.price > 0.0 && is_listed_on_bitget(sym, bitget_lookup, date)
-        } else {
-            false
-        }
-    }).collect();
-
-    let top_n: Vec<&CoinSnapshot> = eligible.into_iter().take(config.top_n as usize).collect();
-
-    if top_n.is_empty() {
-        return RebalanceResult {
-            new_holdings: Vec::new(),
-            trades: Vec::new(),
-            holdings_snapshot: Vec::new(),
-            post_fee_value: portfolio_value,
-        };
-    }
-
-    // Compute weights
-    let weights = compute_weights_snap(&top_n, &config.weighting, date, preloaded.price_history.as_ref());
-
-    // If all weights are zero (dual momentum cash mode), return empty
-    let weight_sum: f64 = weights.iter().sum();
-    if weight_sum <= 0.0 {
-        return RebalanceResult {
-            new_holdings: Vec::new(),
-            trades: Vec::new(),
-            holdings_snapshot: Vec::new(),
-            post_fee_value: portfolio_value,
-        };
-    }
-
-    // Compute target quantities: qty[i] = (weight[i] * portfolio_value) / price[i]
     let mut new_holdings = Vec::new();
     let mut holdings_snapshot = Vec::new();
     let mut trades = Vec::new();
@@ -1055,7 +1565,7 @@ fn perform_rebalance_mem(
         .map(|h| (h.coin_id.clone(), h))
         .collect();
 
-    for (coin, weight) in top_n.iter().zip(weights.iter()) {
+    for (coin, weight) in top_coins.iter().zip(weights.iter()) {
         if coin.price <= 0.0 || *weight <= 0.0 {
             continue;
         }
@@ -1067,11 +1577,10 @@ fn perform_rebalance_mem(
             .cloned()
             .unwrap_or_default();
 
-        // Compute trade delta
         let old_qty = old_map.get(&coin.coin_id).map(|h| h.quantity).unwrap_or(0.0);
         let delta_qty = target_qty - old_qty;
 
-        if delta_qty.abs() * coin.price > 0.01 { // Skip dust trades
+        if delta_qty.abs() * coin.price > 0.01 {
             let side = if delta_qty > 0.0 { "buy" } else { "sell" };
             let trade_value = delta_qty.abs() * coin.price;
             let fee_rate = config.base_fee_pct / 100.0 + 0.001 * config.spread_multiplier;
@@ -1155,6 +1664,8 @@ fn compute_weights_snap(
     weighting: &Weighting,
     date: NaiveDate,
     price_history: Option<&HashMap<String, Vec<(NaiveDate, f64)>>>,
+    defi_metrics: &HashMap<String, DefiCoinMetrics>,
+    defi_history: &HashMap<String, HashMap<NaiveDate, DefiDayMetrics>>,
 ) -> Vec<f64> {
     let n = coins.len();
     if n == 0 {
@@ -1475,6 +1986,170 @@ fn compute_weights_snap(
             }
             weights
         }
+
+        // ---- DeFi-metric weighting strategies ----
+
+        Weighting::TvlWeight => {
+            let mut weights: Vec<f64> = coins.iter().map(|c| {
+                defi_metrics.get(&c.coin_id).map(|m| m.tvl.max(0.0)).unwrap_or(0.0)
+            }).collect();
+            let sum: f64 = weights.iter().sum();
+            if sum <= 0.0 { return vec![1.0 / n as f64; n]; }
+            // Apply 0.5% floor (same as Mcap)
+            let min_weight = 0.005;
+            for w in &mut weights { *w /= sum; }
+            let mut excess = 0.0;
+            let mut floored_count = 0;
+            for w in weights.iter_mut() {
+                if *w < min_weight {
+                    excess += min_weight - *w;
+                    *w = min_weight;
+                    floored_count += 1;
+                }
+            }
+            if excess > 0.0 && floored_count < n {
+                let non_floored_total: f64 = weights.iter().filter(|w| **w > min_weight).sum();
+                if non_floored_total > 0.0 {
+                    for w in weights.iter_mut() {
+                        if *w > min_weight {
+                            *w -= excess * (*w / non_floored_total);
+                        }
+                    }
+                }
+            }
+            normalize_weights(&mut weights);
+            weights
+        }
+
+        Weighting::TvlCapped { cap_pct } => {
+            let tvls: Vec<f64> = coins.iter().map(|c| {
+                defi_metrics.get(&c.coin_id).map(|m| m.tvl.max(0.0)).unwrap_or(0.0)
+            }).collect();
+            let total: f64 = tvls.iter().sum();
+            if total <= 0.0 { return vec![1.0 / n as f64; n]; }
+
+            let mut weights: Vec<f64> = tvls.iter().map(|t| t / total).collect();
+            let cap = cap_pct / 100.0;
+
+            for _ in 0..20 {
+                let mut excess = 0.0_f64;
+                for w in weights.iter_mut() {
+                    if *w > cap {
+                        excess += *w - cap;
+                        *w = cap;
+                    }
+                }
+                if excess < 1e-10 { break; }
+                let uncapped_sum: f64 = weights.iter().filter(|w| **w < cap - 1e-10).sum();
+                if uncapped_sum <= 0.0 { break; }
+                for w in weights.iter_mut() {
+                    if *w < cap - 1e-10 {
+                        *w += excess * (*w / uncapped_sum);
+                    }
+                }
+            }
+            normalize_weights(&mut weights);
+            weights
+        }
+
+        Weighting::TvlSqrt => {
+            let mut weights: Vec<f64> = coins.iter().map(|c| {
+                defi_metrics.get(&c.coin_id).map(|m| m.tvl.max(0.0)).unwrap_or(0.0).sqrt()
+            }).collect();
+            let sum: f64 = weights.iter().sum();
+            if sum <= 0.0 { return vec![1.0 / n as f64; n]; }
+            normalize_weights(&mut weights);
+            weights
+        }
+
+        Weighting::FeesWeight => {
+            let mut weights: Vec<f64> = coins.iter().map(|c| {
+                defi_metrics.get(&c.coin_id).map(|m| m.fees_24h.max(0.0)).unwrap_or(0.0)
+            }).collect();
+            let sum: f64 = weights.iter().sum();
+            if sum <= 0.0 { return vec![1.0 / n as f64; n]; }
+            normalize_weights(&mut weights);
+            weights
+        }
+
+        Weighting::RevenueWeight => {
+            let mut weights: Vec<f64> = coins.iter().map(|c| {
+                defi_metrics.get(&c.coin_id).map(|m| m.revenue_24h.max(0.0)).unwrap_or(0.0)
+            }).collect();
+            let sum: f64 = weights.iter().sum();
+            if sum <= 0.0 { return vec![1.0 / n as f64; n]; }
+            normalize_weights(&mut weights);
+            weights
+        }
+
+        Weighting::VolumeWeight => {
+            let mut weights: Vec<f64> = coins.iter().map(|c| {
+                defi_metrics.get(&c.coin_id).map(|m| m.volume_24h.max(0.0)).unwrap_or(0.0)
+            }).collect();
+            let sum: f64 = weights.iter().sum();
+            if sum <= 0.0 { return vec![1.0 / n as f64; n]; }
+            normalize_weights(&mut weights);
+            weights
+        }
+
+        Weighting::TvlMomentum { lookback_days } => {
+            // TVL momentum: ratio of current TVL to TVL N days ago
+            let cutoff = date - chrono::Duration::days(*lookback_days as i64);
+            let mut weights: Vec<f64> = coins.iter().map(|c| {
+                let current_tvl = defi_metrics.get(&c.coin_id)
+                    .map(|m| m.tvl).unwrap_or(0.0);
+                if current_tvl <= 0.0 { return 0.0; }
+
+                // Find TVL nearest to cutoff date
+                let past_tvl = defi_history.get(&c.coin_id)
+                    .and_then(|hist| {
+                        // Find closest date >= cutoff within a 7-day window
+                        (0..7).find_map(|offset| {
+                            let d = cutoff + chrono::Duration::days(offset);
+                            hist.get(&d).map(|m| m.tvl)
+                        })
+                    })
+                    .unwrap_or(0.0);
+
+                if past_tvl <= 0.0 { return 0.01; } // small weight for new protocols
+                let ratio = current_tvl / past_tvl;
+                // Shift so all positive: ratio itself is already positive
+                ratio.max(0.01)
+            }).collect();
+
+            let sum: f64 = weights.iter().sum();
+            if sum <= 0.0 { return vec![1.0 / n as f64; n]; }
+            normalize_weights(&mut weights);
+            weights
+        }
+
+        Weighting::FeeEfficiency => {
+            // Fee efficiency = fees_24h / TVL (higher = more capital-efficient)
+            let mut weights: Vec<f64> = coins.iter().map(|c| {
+                let metrics = match defi_metrics.get(&c.coin_id) {
+                    Some(m) => m,
+                    None => return 0.0,
+                };
+                let tvl = metrics.tvl;
+                let fees = metrics.fees_24h;
+                if tvl <= 0.0 || fees <= 0.0 { return 0.0; }
+                (fees / tvl).max(0.0)
+            }).collect();
+            let sum: f64 = weights.iter().sum();
+            if sum <= 0.0 { return vec![1.0 / n as f64; n]; }
+            normalize_weights(&mut weights);
+            weights
+        }
+
+        Weighting::YieldWeight => {
+            let mut weights: Vec<f64> = coins.iter().map(|c| {
+                defi_metrics.get(&c.coin_id).map(|m| m.max_yield_apy.max(0.0)).unwrap_or(0.0)
+            }).collect();
+            let sum: f64 = weights.iter().sum();
+            if sum <= 0.0 { return vec![1.0 / n as f64; n]; }
+            normalize_weights(&mut weights);
+            weights
+        }
     }
 }
 
@@ -1563,4 +2238,432 @@ fn compute_stats(
         start_date,
         end_date,
     }
+}
+
+// ---- Pipeline Stage Functions ----
+
+/// STAGE 1: Determine if rebalance should happen today.
+/// Consolidates threshold, FNG trigger/frequency, and base schedule logic.
+fn resolve_rebalance_trigger(
+    holdings: &[Holding],
+    days_since: i32,
+    base_rebalance_days: i32,
+    threshold_pct: Option<f64>,
+    today_prices: &HashMap<String, f64>,
+    last_target_weights: &HashMap<String, f64>,
+    signals: &DayRegimeSignals,
+    fng_regime: Option<&FngRegime>,
+    fng_prev: Option<i32>,
+) -> bool {
+    // Empty holdings → always rebalance
+    if holdings.is_empty() {
+        return true;
+    }
+
+    // FNG regime overrides (trigger/frequency modes)
+    if let (Some(regime), Some(fng)) = (fng_regime, signals.fng_value) {
+        match regime.mode.as_str() {
+            "trigger" => {
+                // Rebalance only on FNG threshold crossover
+                if let Some(prev) = fng_prev {
+                    let crossed_fear = prev > regime.fear_threshold && fng <= regime.fear_threshold;
+                    let crossed_greed = prev < regime.greed_threshold && fng >= regime.greed_threshold;
+                    if crossed_fear || crossed_greed {
+                        return true;
+                    }
+                }
+                // 365d safety net
+                return days_since >= 365;
+            }
+            "frequency" => {
+                let interval = if fng <= regime.fear_threshold {
+                    14  // Fear: every 2 weeks
+                } else if fng >= regime.greed_threshold {
+                    90  // Greed: every 3 months
+                } else {
+                    base_rebalance_days
+                };
+                return days_since >= interval;
+            }
+            _ => {} // Other FNG modes don't override rebalance schedule
+        }
+    }
+
+    // Threshold-based drift check
+    if let Some(threshold) = threshold_pct {
+        return should_threshold_rebalance(holdings, today_prices, last_target_weights, threshold)
+            || days_since >= 365; // safety: at least once per year
+    }
+
+    // Base schedule
+    days_since >= base_rebalance_days
+}
+
+/// STAGE 2: Compute effective params with explicit DOM > FNG precedence.
+fn resolve_effective_params(
+    base_top_n: i32,
+    base_weighting: &Weighting,
+    signals: &DayRegimeSignals,
+    fng_regime: Option<&FngRegime>,
+    dom_regime: Option<&DominanceRegime>,
+) -> EffectiveParams {
+    let mut top_n = base_top_n;
+    let mut weighting = base_weighting.clone();
+    let mut cash_fraction = 0.0_f64;
+
+    // Track which params have been overridden
+    let mut top_n_set = false;
+    let mut weighting_set = false;
+
+    // --- Dominance regime (highest priority for top_n + weighting) ---
+    if let (Some(regime), Some(_btc_dom)) = (dom_regime, signals.btc_dom) {
+        let trend = signals.btc_dom_trend;
+
+        // Combo mode: 4-quadrant matrix overrides BOTH → STOP
+        if regime.mode == "combo" {
+            if let Some(fng) = signals.fng_value {
+                let (combo_n, combo_w) = dom_fng_combo(fng, trend);
+                if let Some(n) = combo_n { top_n = n; top_n_set = true; }
+                if let Some(w) = combo_w { weighting = w; weighting_set = true; }
+            }
+        }
+
+        if !top_n_set {
+            if let Some(btc_dom) = signals.btc_dom {
+                match regime.mode.as_str() {
+                    "breadth" | "alt_rotator" => {
+                        if btc_dom < 50.0 {
+                            top_n = base_top_n.max(50);
+                            top_n_set = true;
+                        } else if btc_dom > 60.0 {
+                            top_n = 5;
+                            top_n_set = true;
+                        }
+                    }
+                    "trend_filter" => {
+                        if signals.dom_zone == DomZone::Rising {
+                            top_n = 5;
+                            top_n_set = true;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        if !weighting_set {
+            if regime.mode == "momentum" {
+                if trend < -3.0 {
+                    weighting = Weighting::Momentum { lookback_days: 90 };
+                    weighting_set = true;
+                } else if trend > 3.0 {
+                    weighting = Weighting::Mcap;
+                    weighting_set = true;
+                }
+            }
+        }
+    }
+
+    // --- FNG regime (only if DOM did NOT override same param) ---
+    if let (Some(regime), Some(fng)) = (fng_regime, signals.fng_value) {
+        // top_n_scaler: only if DOM didn't set top_n
+        if !top_n_set && regime.mode == "top_n_scaler" {
+            if fng <= regime.fear_threshold {
+                top_n = 5;
+            } else if fng >= regime.greed_threshold {
+                top_n = base_top_n.max(30);
+            }
+        }
+
+        // risk_toggle: only if DOM didn't set weighting
+        if !weighting_set && regime.mode == "risk_toggle" {
+            if fng <= regime.fear_threshold {
+                weighting = Weighting::Momentum { lookback_days: 90 };
+            } else if fng >= regime.greed_threshold {
+                weighting = Weighting::MinVariance { lookback_days: 60 };
+            }
+        }
+
+        // cash: FNG-only concept, never conflicts with DOM
+        if regime.mode == "cash" && fng >= regime.greed_threshold {
+            cash_fraction = regime.cash_pct_greed.clamp(0.0, 0.95);
+        }
+    }
+
+    EffectiveParams { top_n, weighting, cash_fraction }
+}
+
+/// STAGE 3: Filter eligible coins (category + Bitget + price > 0 + VC eligibility).
+fn filter_eligible_coins<'a>(
+    all_coins: &'a [CoinSnapshot],
+    category_coin_ids: &HashSet<String>,
+    coin_symbol_map: &HashMap<String, String>,
+    bitget_lookup: &HashMap<String, db::BitgetListingRow>,
+    date: NaiveDate,
+    vc_eligibility: Option<&VcEligibility>,
+    defi_metrics: &HashMap<String, DefiCoinMetrics>,
+) -> Vec<&'a CoinSnapshot> {
+    let mut eligible: Vec<&CoinSnapshot> = all_coins.iter().filter(|c| {
+        category_coin_ids.contains(&c.coin_id)
+        && if let Some(sym) = coin_symbol_map.get(&c.coin_id) {
+            c.price > 0.0 && is_listed_on_bitget(sym, bitget_lookup, date)
+        } else {
+            false
+        }
+    }).collect();
+
+    // Apply VC eligibility filter (pre-top-N)
+    if let Some(vc) = vc_eligibility {
+        let filtered: Vec<&CoinSnapshot> = eligible.iter().copied().filter(|c| {
+            match defi_metrics.get(&c.coin_id) {
+                Some(m) => vc.is_eligible(m),
+                None => false, // no VC data → excluded when VC active
+            }
+        }).collect();
+        // Fallback: if <5 pass VC filter, relax (keep all)
+        if filtered.len() >= 5 {
+            eligible = filtered;
+        }
+    }
+
+    eligible
+}
+
+/// STAGE 5: Apply weight modifiers in fixed order.
+/// Order: VC multiplier → FNG contrarian → DOM weighted_split → trend_filter clamp.
+fn apply_weight_modifiers(
+    weights: &mut Vec<f64>,
+    coins: &[&CoinSnapshot],
+    signals: &DayRegimeSignals,
+    config: &SimConfig,
+    defi_metrics: &HashMap<String, DefiCoinMetrics>,
+    price_history: Option<&HashMap<String, Vec<(NaiveDate, f64)>>>,
+    date: NaiveDate,
+) {
+    let n = weights.len();
+    if n == 0 { return; }
+
+    let dom_is_weighted_split = config.dominance_regime.as_ref()
+        .map(|r| r.mode == "weighted_split").unwrap_or(false);
+    let dom_is_trend_filter = config.dominance_regime.as_ref()
+        .map(|r| r.mode == "trend_filter").unwrap_or(false);
+
+    // 1. VC multiplier (eligibility already handled in Stage 3)
+    if let Some(ref vc_mode) = config.vc_mode {
+        vc_apply_multiplier(weights, coins, defi_metrics, vc_mode);
+    }
+
+    // 2. FNG contrarian — skip BTC when DOM weighted_split is also active
+    if let Some(ref regime) = config.fng_regime {
+        if regime.mode == "contrarian" {
+            if let Some(fng) = signals.fng_value {
+                fng_contrarian_adjust(weights, coins, fng, price_history, date, dom_is_weighted_split);
+            }
+        }
+    }
+
+    // 3. DOM weighted_split — set BTC weight = btc_dom%, scale alts
+    if dom_is_weighted_split {
+        if let Some(btc_dom) = signals.btc_dom {
+            dom_weighted_split(weights, coins, btc_dom);
+        }
+    }
+
+    // 4. DOM trend_filter weight clamp — when rising, BTC ≥40%, zero outside top 5
+    if dom_is_trend_filter && signals.dom_zone == DomZone::Rising {
+        // Ensure BTC gets ≥40%
+        if let Some(btc_idx) = coins.iter().position(|c| c.coin_id == "bitcoin") {
+            if weights[btc_idx] < 0.4 {
+                weights[btc_idx] = 0.4;
+            }
+        }
+        // Zero weights for coins ranked beyond top 5 mcap
+        // (coins are already sorted by mcap DESC from filter_eligible_coins)
+        for i in 5..n {
+            weights[i] = 0.0;
+        }
+        // Re-normalize
+        let sum: f64 = weights.iter().sum();
+        if sum > 0.0 {
+            for w in weights.iter_mut() {
+                *w /= sum;
+            }
+        }
+    }
+}
+
+/// VC multiplier: multiply weights based on VC funding metrics, then re-normalize.
+/// Eligibility filtering already done in Stage 3 — this only applies multipliers.
+fn vc_apply_multiplier(
+    weights: &mut Vec<f64>,
+    coins: &[&CoinSnapshot],
+    defi_metrics: &HashMap<String, DefiCoinMetrics>,
+    vc_mode: &str,
+) {
+    for (i, coin) in coins.iter().enumerate() {
+        let metrics = match defi_metrics.get(&coin.coin_id) {
+            Some(m) => m,
+            None => continue,
+        };
+
+        let multiplier = match vc_mode {
+            "funding" => metrics.total_funding_m.max(0.0),
+            "valuation" => metrics.latest_valuation_m.unwrap_or(0.0).max(0.0),
+            s if s.starts_with("fresh_") => {
+                if metrics.latest_funding_m > 0.0 { metrics.latest_funding_m } else { 0.01 }
+            }
+            _ => 1.0,
+        };
+        weights[i] *= multiplier;
+    }
+
+    // Re-normalize
+    let sum: f64 = weights.iter().sum();
+    if sum > 0.0 {
+        for w in weights.iter_mut() {
+            *w /= sum;
+        }
+    }
+}
+
+// ---- FNG Regime Helpers ----
+
+/// FNG contrarian: adjust weights based on fear/greed and coin volatility.
+/// When skip_btc=true, don't modify BTC weight (DOM weighted_split will handle it).
+fn fng_contrarian_adjust(
+    weights: &mut Vec<f64>,
+    coins: &[&CoinSnapshot],
+    fng: i32,
+    price_history: Option<&HashMap<String, Vec<(NaiveDate, f64)>>>,
+    date: NaiveDate,
+    skip_btc: bool,
+) {
+    let n = weights.len();
+    if n == 0 { return; }
+
+    // Compute 30d volatility for each coin
+    let vols: Vec<f64> = coins.iter().map(|c| {
+        price_history.and_then(|ph| ph.get(&c.coin_id)).map(|prices| {
+            compute_trailing_volatility(prices, date, 30)
+        }).unwrap_or(1.0)
+    }).collect();
+
+    // Extreme Fear (<20): overweight high-beta (high vol)
+    // Extreme Greed (>80): overweight low-vol
+    let vol_sum: f64 = vols.iter().sum();
+    if vol_sum <= 0.0 { return; }
+
+    for i in 0..n {
+        if skip_btc && coins[i].coin_id == "bitcoin" {
+            continue;
+        }
+        let vol_frac = vols[i] / vol_sum;
+        if fng <= 20 {
+            // Contrarian: buy the dip — overweight volatile coins
+            weights[i] *= 1.0 + vol_frac;
+        } else if fng >= 80 {
+            // Defensive: overweight stable coins
+            let inv_vol = 1.0 / vols[i].max(0.001);
+            let inv_vol_sum: f64 = vols.iter().map(|v| 1.0 / v.max(0.001)).sum();
+            weights[i] *= 1.0 + (inv_vol / inv_vol_sum);
+        }
+    }
+
+    // Re-normalize
+    let sum: f64 = weights.iter().sum();
+    if sum > 0.0 {
+        for w in weights.iter_mut() {
+            *w /= sum;
+        }
+    }
+}
+
+// ---- Dominance Regime Helpers ----
+
+/// Rolling delta of BTC dominance over lookback days.
+fn btc_dom_trend(btc_dominance: &HashMap<NaiveDate, f64>, date: NaiveDate, lookback: i32) -> f64 {
+    let past = date - chrono::Duration::days(lookback as i64);
+    let dom_now = btc_dominance.get(&date).copied().unwrap_or(50.0);
+    // Find nearest past date
+    let dom_past = (0..5).filter_map(|offset| {
+        btc_dominance.get(&(past + chrono::Duration::days(offset)))
+    }).next().copied().unwrap_or(dom_now);
+    dom_now - dom_past
+}
+
+/// Dominance weighted_split: allocate btc_dom% to BTC, rest to index.
+fn dom_weighted_split(
+    weights: &mut Vec<f64>,
+    coins: &[&CoinSnapshot],
+    btc_dom: f64,
+) {
+    let n = weights.len();
+    if n == 0 { return; }
+
+    let btc_frac = (btc_dom / 100.0).clamp(0.0, 0.95);
+
+    // Find BTC index
+    let btc_idx = coins.iter().position(|c| c.coin_id == "bitcoin");
+
+    if let Some(idx) = btc_idx {
+        // Scale non-BTC weights to fill (1 - btc_frac)
+        let non_btc_sum: f64 = weights.iter().enumerate()
+            .filter(|(i, _)| *i != idx)
+            .map(|(_, w)| *w)
+            .sum();
+        if non_btc_sum > 0.0 {
+            for (i, w) in weights.iter_mut().enumerate() {
+                if i == idx {
+                    *w = btc_frac;
+                } else {
+                    *w = (*w / non_btc_sum) * (1.0 - btc_frac);
+                }
+            }
+        }
+    }
+}
+
+/// Dominance + FNG combo: 4-quadrant matrix.
+fn dom_fng_combo(fng: i32, btc_dom_trend_val: f64) -> (Option<i32>, Option<Weighting>) {
+    let fear = fng <= 25;
+    let greed = fng >= 75;
+    let rising = btc_dom_trend_val > 2.0;
+    let falling = btc_dom_trend_val < -2.0;
+
+    if fear && rising {
+        // BTC accumulation mode
+        (Some(5), Some(Weighting::Mcap))
+    } else if greed && falling {
+        // Max alt breadth
+        (Some(100), Some(Weighting::Equal))
+    } else if fear && falling {
+        // Defensive alt play
+        (Some(20), Some(Weighting::MinVariance { lookback_days: 60 }))
+    } else if greed && rising {
+        // Risk-on concentration
+        (Some(10), Some(Weighting::Momentum { lookback_days: 90 }))
+    } else {
+        (None, None)
+    }
+}
+
+/// Compute trailing volatility (std dev of daily returns) over lookback_days.
+fn compute_trailing_volatility(prices: &[(NaiveDate, f64)], date: NaiveDate, lookback_days: i32) -> f64 {
+    let cutoff = date - chrono::Duration::days(lookback_days as i64);
+    let relevant: Vec<f64> = prices.iter()
+        .filter(|(d, _)| *d >= cutoff && *d <= date)
+        .map(|(_, p)| *p)
+        .collect();
+
+    if relevant.len() < 2 { return 1.0; }
+
+    let returns: Vec<f64> = relevant.windows(2)
+        .map(|w| if w[0] > 0.0 { (w[1] - w[0]) / w[0] } else { 0.0 })
+        .collect();
+
+    if returns.is_empty() { return 1.0; }
+
+    let mean = returns.iter().sum::<f64>() / returns.len() as f64;
+    let variance = returns.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / returns.len() as f64;
+    variance.sqrt().max(0.001)
 }
