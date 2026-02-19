@@ -5,7 +5,13 @@ import "forge-std/Test.sol";
 import "../../src/core/Index.sol";
 import "../../src/core/ITP.sol";
 import "../../src/custody/ArbBridgeCustody.sol";
+import "../../src/custody/L3BridgeCustody.sol";
+import "../../src/core/BLSCustody.sol";
+import "../../src/bridge/BridgeProxy.sol";
+import "../../src/bridge/BridgedItpFactory.sol";
+import "../../src/registry/CollateralRegistry.sol";
 import "../../src/mocks/MockERC20.sol";
+import "../../src/mocks/MockBitgetVault.sol";
 import "../helpers/TestHelper.sol";
 import {Governance} from "../../src/Governance.sol";
 import "../../src/registry/IssuerRegistry.sol";
@@ -615,5 +621,144 @@ contract E2ECrossChainBuyTest is TestHelper {
             }
         }
         assertTrue(found, "CrossChainOrderCreated event must be emitted");
+    }
+
+    // ============ 8-STEP BRIDGE BUY FLOW ============
+
+    /// @notice Full 8-step cross-chain buy flow exercising all bridge contracts
+    /// Steps: 1) Lock USDC on Arb → 2) Submit on L3 → 3) Batch + RecordCollateralMove
+    ///        → 4) Bridge L3→Arb → 5) Custody→Vault → 6) AP Trades (simulated)
+    ///        → 7) ConfirmFills → 8) MintBridgedShares
+    function test_e2e_8step_bridge_buy_happy_path() public {
+        uint256 orderAmount6Dec = 100e6;
+        uint256 orderAmount18Dec = 100e18;
+        uint256 limitPrice = 1e18;
+
+        // --- Deploy additional 8-step contracts ---
+
+        // CollateralRegistry (on L3)
+        CollateralRegistry colReg = new CollateralRegistry(admin);
+
+        // L3BridgeCustody (on L3)
+        L3BridgeCustody l3BridgeImpl = new L3BridgeCustody();
+        ERC1967Proxy l3BridgeProxy = new ERC1967Proxy(
+            address(l3BridgeImpl),
+            abi.encodeCall(L3BridgeCustody.initialize, (address(mockRegistry), address(l3Usdc)))
+        );
+        L3BridgeCustody l3Bridge = L3BridgeCustody(address(l3BridgeProxy));
+
+        // BLSCustody (simulates Arbitrum custody wallet)
+        BLSCustody blsCustodyImpl = new BLSCustody();
+        ERC1967Proxy blsCustodyProxy = new ERC1967Proxy(
+            address(blsCustodyImpl),
+            abi.encodeCall(BLSCustody.initialize, (address(mockRegistry)))
+        );
+        BLSCustody blsCustody = BLSCustody(address(blsCustodyProxy));
+
+        // MockBitgetVault (destination for AP trades)
+        MockBitgetVault vault = new MockBitgetVault();
+
+        // Whitelist arbUsdc in BLSCustody (requires propose + timelock + activate)
+        blsCustody.proposeWhitelist(address(arbUsdc), EMPTY_BLS_SIG);
+        vm.warp(block.timestamp + 2 days + 1);
+        blsCustody.activateWhitelist(address(arbUsdc));
+
+        // BridgeProxy + BridgedItpFactory (on Arbitrum)
+        BridgeProxy bpImpl = new BridgeProxy();
+        ERC1967Proxy bpProxy = new ERC1967Proxy(
+            address(bpImpl),
+            abi.encodeCall(BridgeProxy.initialize, (address(mockRegistry), address(0), admin))
+        );
+        BridgeProxy bridgeProx = BridgeProxy(address(bpProxy));
+        BridgedItpFactory factory = new BridgedItpFactory(address(bridgeProx));
+        bridgeProx.setBridgedItpFactory(address(factory));
+        bridgeProx.setIndexContract(address(index));
+
+        // Register BridgedITP for this ITP
+        address bridgedItpAddr = bridgeProx.adminCreateBridgedItp(itpId, "Bridged XChain", "bXCHAIN");
+
+        // Set deadline after all warps (whitelist timelock advanced block.timestamp)
+        uint256 deadline = block.timestamp + 1 hours;
+
+        // ====== STEP 1: User locks USDC on Arbitrum ======
+        vm.chainId(ARB_CHAIN_ID);
+        vm.prank(user1);
+        uint256 arbOrderId = arbBridge.buyITPFromArbitrum(itpId, orderAmount6Dec, limitPrice, 1, deadline);
+        assertEq(arbOrderId, 0);
+        assertEq(arbUsdc.balanceOf(address(arbBridge)), orderAmount6Dec);
+
+        // ====== STEP 2: Issuer submits order on L3 ======
+        vm.chainId(L3_CHAIN_ID);
+        l3Usdc.mint(user1, orderAmount18Dec);
+        vm.prank(user1);
+        l3Usdc.approve(address(index), type(uint256).max);
+        uint256 l3OrderId = _submitOrderOnL3AsUser(user1, orderAmount18Dec, limitPrice, 1);
+
+        // ====== STEP 3a: Confirm batch ======
+        uint256[] memory orderIds = new uint256[](1);
+        orderIds[0] = l3OrderId;
+        _confirmBatch(1, orderIds);
+
+        // ====== STEP 3b: Record collateral move (L3→Arb for BUY) ======
+        // Seed initial L3 collateral (simulates ITP creation deposited collateral on L3)
+        colReg.recordCollateralMove(
+            itpId, 0, L3_CHAIN_ID, orderAmount18Dec, TypesLib.TxType.BUY, EMPTY_BLS_SIG
+        );
+        assertEq(colReg.getITPCollateralByChain(itpId, L3_CHAIN_ID), orderAmount18Dec, "L3 seeded");
+
+        // Now record the actual L3→Arb move
+        colReg.recordCollateralMove(
+            itpId, L3_CHAIN_ID, ARB_CHAIN_ID, orderAmount18Dec, TypesLib.TxType.BUY, EMPTY_BLS_SIG
+        );
+
+        assertEq(colReg.getITPCollateralByChain(itpId, L3_CHAIN_ID), 0, "L3 collateral moved out");
+        assertEq(colReg.getITPCollateralByChain(itpId, ARB_CHAIN_ID), orderAmount18Dec, "Arb collateral received");
+
+        // ====== STEP 4: Bridge L3→Arb (simulated: mint L3Usdc to L3BridgeCustody, then release on Arb side) ======
+        // In production, L3BridgeCustody.initiateBridge locks USDC on L3,
+        // and ArbBridgeCustody.completeBridge releases on Arb.
+        // For this E2E we simulate by funding BLSCustody directly.
+        l3Usdc.mint(address(l3Bridge), orderAmount18Dec); // Simulate L3 custody holds USDC
+
+        // Simulate Arb side: fund BLSCustody with 6-dec USDC
+        arbUsdc.mint(address(blsCustody), orderAmount6Dec);
+
+        // ====== STEP 5: BLSCustody transfers USDC to MockBitgetVault ======
+        // Build the ERC20.transfer(vault, amount) calldata
+        bytes memory transferCalldata = abi.encodeWithSelector(
+            IERC20.transfer.selector,
+            address(vault),
+            orderAmount6Dec
+        );
+        blsCustody.execute(address(arbUsdc), transferCalldata, EMPTY_BLS_SIG, 0);
+        assertEq(arbUsdc.balanceOf(address(vault)), orderAmount6Dec, "Vault should hold USDC");
+        assertEq(arbUsdc.balanceOf(address(blsCustody)), 0, "BLSCustody should be empty");
+
+        // ====== STEP 6: AP trades (simulated — vault swaps USDC for underlying) ======
+        // In production, the vault executes trades. In E2E, the USDC is already in vault.
+        // No on-chain call needed for simulation.
+
+        // ====== STEP 7: Confirm fills on L3 ======
+        vm.chainId(L3_CHAIN_ID);
+        TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
+        fills[0] = TypesLib.Fill({
+            orderId: l3OrderId,
+            fillPrice: limitPrice,
+            fillAmount: orderAmount18Dec,
+            cycleNumber: 1,
+            txHash: bytes32(uint256(0xdead))
+        });
+        _confirmFills(1, fills);
+
+        // Verify ITP minted on L3
+        uint256 expectedShares = (orderAmount18Dec * 1e18) / limitPrice;
+        assertEq(itpVault.balanceOf(user1), expectedShares, "User should have L3 ITP");
+
+        // ====== STEP 8: Mint BridgedITP shares on Arbitrum ======
+        bridgeProx.mintBridgedShares(itpId, user1, expectedShares, EMPTY_BLS_SIG);
+
+        // Verify BridgedITP minted
+        assertGt(IERC20(bridgedItpAddr).balanceOf(user1), 0, "User should have BridgedITP on Arb");
+        assertEq(IERC20(bridgedItpAddr).balanceOf(user1), expectedShares, "BridgedITP amount matches shares");
     }
 }
