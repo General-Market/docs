@@ -11,11 +11,12 @@ import {IBridgedITP} from "../interfaces/IBridgedITP.sol";
 import {IIssuerRegistry} from "../interfaces/IIssuerRegistry.sol";
 import {IIndex} from "../interfaces/IIndex.sol";
 import {BLSLib} from "../libraries/BLSLib.sol";
+import {BLSVerifier} from "../libraries/BLSVerifier.sol";
 import {ErrorsLib} from "../libraries/ErrorsLib.sol";
 
 /// @title BridgeProxy - Cross-chain ITP creation with BLS consensus
 /// @notice UUPS upgradeable proxy on Arbitrum for bridged ITP creation
-contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, PausableUpgradeable, IBridgeProxy {
+contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, PausableUpgradeable, BLSVerifier, IBridgeProxy {
     // ============ CONSTANTS ============
 
     uint256 public constant override MAX_ASSETS = 1000;
@@ -23,7 +24,9 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     uint256 public constant override WEIGHT_SUM = 1e18;   // 100%
     uint256 public constant override MAX_NAME_LENGTH = 32;
     uint256 public constant override MAX_SYMBOL_LENGTH = 10;
+    uint256 public constant override MAX_DESCRIPTION_LENGTH = 280;
     uint256 public constant override MAX_URL_LENGTH = 128;
+    uint256 public constant override MAX_VIDEO_URL_LENGTH = 256;
 
     // ============ STORAGE ============
 
@@ -40,8 +43,8 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     /// @notice Arbitrum bridgedItp address => L3 orbitItpId
     mapping(address => bytes32) public override arbitrumToOrbit;
 
-    /// @notice Required number of BLS signers
-    uint256 public signerThreshold;
+    /// @notice DEPRECATED: was signerThreshold, slot preserved for UUPS layout
+    uint256 private _deprecated_signerThreshold;
 
     /// @notice Index contract on L3 for atomic ITP creation
     IIndex public indexContract;
@@ -55,8 +58,8 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     /// @notice Pending rebalance requests
     mapping(uint256 => PendingRebalanceRequest) private _pendingRebalanceRequests;
 
-    /// @notice Deployer display profiles (append-only, UUPS safe)
-    mapping(address => DeployerProfile) private _deployerProfiles;
+    /// @notice Per-ITP metadata (append-only, UUPS safe)
+    mapping(bytes32 => ItpMetadata) private _itpMetadata;
 
     // ============ CONSTRUCTOR ============
 
@@ -77,6 +80,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         __Pausable_init();
 
         issuerRegistry = IIssuerRegistry(_issuerRegistry);
+        __BLSVerifier_init(_issuerRegistry);
         bridgedItpFactory = IBridgedItpFactory(_bridgedItpFactory);
     }
 
@@ -138,22 +142,11 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     function completeCreateItp(
         uint256 nonce,
         bytes32 orbitItpId,
-        uint256 signerBitmap,
-        bytes calldata aggregatedPubkey,
         bytes calldata blsSignature
     ) external override whenNotPaused returns (address bridgedItpAddress) {
         PendingItpCreation storage pending = _pendingCreations[nonce];
         if (pending.admin == address(0)) revert ErrorsLib.E072_CreationNotFound(nonce);
         if (pending.completed) revert ErrorsLib.E070_AlreadyCompleted(nonce);
-
-        // Validate pubkey length
-        if (aggregatedPubkey.length != 128)
-            revert ErrorsLib.E07E_InvalidAggregatedPubkeyLength(aggregatedPubkey.length);
-
-        // Count signers from bitmap and verify threshold
-        uint256 signerCount = _countBits(signerBitmap);
-        if (signerCount < signerThreshold)
-            revert ErrorsLib.E07D_InsufficientSigners(signerCount, signerThreshold);
 
         // Build message hash: chainid + bridgeProxy + admin + nonce + weightsHash + assetsHash
         bytes32 weightsHash = keccak256(abi.encodePacked(pending.weights));
@@ -162,9 +155,8 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
             abi.encodePacked(block.chainid, address(this), pending.admin, nonce, weightsHash, assetsHash)
         );
 
-        // Verify BLS signature
-        if (!BLSLib.verifyBLS(aggregatedPubkey, messageHash, blsSignature))
-            revert ErrorsLib.E071_InvalidBLSSignature();
+        // Verify BLS signature via BLSVerifier
+        _verifyBLS(messageHash, blsSignature);
 
         // Mark completed
         pending.completed = true;
@@ -227,28 +219,16 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         address[] calldata addAssets,
         uint256[] calldata newWeights,
         uint256[] calldata prices,
-        uint256 signerBitmap,
-        bytes calldata aggregatedPubkey,
         bytes calldata blsSignature
     ) external override whenNotPaused {
-        // Validate pubkey length
-        if (aggregatedPubkey.length != 128)
-            revert ErrorsLib.E07E_InvalidAggregatedPubkeyLength(aggregatedPubkey.length);
-
-        // Count signers from bitmap and verify threshold
-        uint256 signerCount = _countBits(signerBitmap);
-        if (signerCount < signerThreshold)
-            revert ErrorsLib.E07D_InsufficientSigners(signerCount, signerThreshold);
-
         // Build message hash matching L3 Index.rebalance format
         bytes32 messageHash = keccak256(abi.encode(
             block.chainid, address(this), "rebalance",
             itpId, removeIndices, addAssets, newWeights, prices
         ));
 
-        // Verify BLS signature
-        if (!BLSLib.verifyBLS(aggregatedPubkey, messageHash, blsSignature))
-            revert ErrorsLib.E071_InvalidBLSSignature();
+        // Verify BLS signature via BLSVerifier
+        _verifyBLS(messageHash, blsSignature);
 
         // Index.sol only exists on L3 — issuer relays rebalance to L3 separately
         emit RebalanceCompleted(itpId, 0);
@@ -267,28 +247,35 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         emit DeployerTransferred(itpId, currentDeployer, newDeployer);
     }
 
-    // ============ DEPLOYER PROFILE ============
+    // ============ ITP METADATA ============
 
-    function setDeployerProfile(
-        string calldata displayName,
-        string calldata websiteUrl
+    function setItpMetadata(
+        bytes32 itpId,
+        string calldata description,
+        string calldata websiteUrl,
+        string calldata videoUrl
     ) external override {
-        if (bytes(displayName).length > MAX_NAME_LENGTH)
-            revert ErrorsLib.E121_ProfileNameTooLong(bytes(displayName).length, MAX_NAME_LENGTH);
+        address deployer = itpDeployer[itpId];
+        if (deployer == address(0)) revert ErrorsLib.E099_BridgeItpNotFound(itpId);
+        if (msg.sender != deployer) revert ErrorsLib.E124_NotItpDeployer(itpId, msg.sender, deployer);
+        if (bytes(description).length > MAX_DESCRIPTION_LENGTH)
+            revert ErrorsLib.E121_DescriptionTooLong(bytes(description).length, MAX_DESCRIPTION_LENGTH);
         if (bytes(websiteUrl).length > MAX_URL_LENGTH)
-            revert ErrorsLib.E122_ProfileUrlTooLong(bytes(websiteUrl).length, MAX_URL_LENGTH);
-        _deployerProfiles[msg.sender] = DeployerProfile(displayName, websiteUrl);
-        emit DeployerProfileUpdated(msg.sender, displayName, websiteUrl);
+            revert ErrorsLib.E122_UrlTooLong(bytes(websiteUrl).length, MAX_URL_LENGTH);
+        if (bytes(videoUrl).length > MAX_VIDEO_URL_LENGTH)
+            revert ErrorsLib.E123_VideoUrlTooLong(bytes(videoUrl).length, MAX_VIDEO_URL_LENGTH);
+        _itpMetadata[itpId] = ItpMetadata(description, websiteUrl, videoUrl);
+        emit ItpMetadataUpdated(itpId, msg.sender, description, websiteUrl, videoUrl);
     }
 
     // ============ VIEW FUNCTIONS ============
 
-    function getDeployerProfile(address deployer)
+    function getItpMetadata(bytes32 itpId)
         external view override
-        returns (string memory displayName, string memory websiteUrl)
+        returns (string memory description, string memory websiteUrl, string memory videoUrl)
     {
-        DeployerProfile storage p = _deployerProfiles[deployer];
-        return (p.displayName, p.websiteUrl);
+        ItpMetadata storage m = _itpMetadata[itpId];
+        return (m.description, m.websiteUrl, m.videoUrl);
     }
 
     function getPendingCreation(uint256 nonce)
@@ -362,14 +349,10 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         if (bridgedItp == address(0)) revert ErrorsLib.E099_BridgeItpNotFound(itpId);
         if (amount == 0) revert ErrorsLib.E106_ZeroAddressNotAllowed();
 
-        // BLS verification (skipped if aggregated pubkey not set — local dev / testing)
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(this), "mintBridgedShares", itpId, user, amount
         ));
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length > 0 && !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-            revert ErrorsLib.E020_InvalidBLSSignature();
-        }
+        _verifyBLS(message, blsSignature);
 
         IBridgedITP(bridgedItp).mint(user, amount);
 
@@ -394,10 +377,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(this), "burnBridgedShares", itpId, from, amount
         ));
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length > 0 && !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-            revert ErrorsLib.E020_InvalidBLSSignature();
-        }
+        _verifyBLS(message, blsSignature);
 
         IBridgedITP(bridgedItp).burn(from, amount);
 
@@ -406,35 +386,12 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
 
     // ============ ADMIN FUNCTIONS ============
 
-    /// @notice Admin: deploy BridgedITP and register bidirectional mappings without BLS
-    /// @dev Useful for bootstrapping local dev or migrating existing L3 ITPs
-    function adminCreateBridgedItp(
-        bytes32 orbitItpId,
-        string calldata name,
-        string calldata symbol
-    ) external override onlyOwner returns (address bridgedItpAddress) {
-        if (orbitToArbitrum[orbitItpId] != address(0))
-            revert ErrorsLib.E07C_OrbitItpAlreadyMapped(orbitItpId, orbitToArbitrum[orbitItpId]);
-
-        bridgedItpAddress = bridgedItpFactory.deployBridgedItp(name, symbol, orbitItpId);
-
-        orbitToArbitrum[orbitItpId] = bridgedItpAddress;
-        arbitrumToOrbit[bridgedItpAddress] = orbitItpId;
-        itpDeployer[orbitItpId] = msg.sender;
-
-        emit ItpCreated(orbitItpId, bridgedItpAddress, 0, msg.sender);
-    }
-
     function setIssuerRegistry(address _issuerRegistry) external override onlyOwner {
         issuerRegistry = IIssuerRegistry(_issuerRegistry);
     }
 
     function setBridgedItpFactory(address _bridgedItpFactory) external override onlyOwner {
         bridgedItpFactory = IBridgedItpFactory(_bridgedItpFactory);
-    }
-
-    function setSignerThreshold(uint256 _threshold) external onlyOwner {
-        signerThreshold = _threshold;
     }
 
     function setIndexContract(address indexContract_) external override onlyOwner {
@@ -452,11 +409,4 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     // ============ INTERNAL ============
 
     function _authorizeUpgrade(address) internal override onlyOwner {}
-
-    function _countBits(uint256 bitmap) private pure returns (uint256 count) {
-        while (bitmap != 0) {
-            count += bitmap & 1;
-            bitmap >>= 1;
-        }
-    }
 }

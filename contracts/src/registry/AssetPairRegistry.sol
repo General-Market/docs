@@ -4,11 +4,12 @@ pragma solidity ^0.8.20;
 import "../interfaces/IAssetPairRegistry.sol";
 import "../libraries/TypesLib.sol";
 import "../libraries/BLSLib.sol";
+import "../libraries/BLSVerifier.sol";
 
 /// @title AssetPairRegistry - Global asset and trading pair whitelist
 /// @notice Manages which assets and pairs can be used in ITPs
 /// @dev All modifications require BLS signature from issuer consensus
-contract AssetPairRegistry is IAssetPairRegistry {
+contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
     // ============ ERRORS ============
 
     /// @notice Caller is not authorized for this operation
@@ -87,20 +88,8 @@ contract AssetPairRegistry is IAssetPairRegistry {
     /// @notice Nonce for replay protection
     uint256 private _nonce;
 
-    /// @notice Aggregated BLS public key for signature verification
-    bytes public aggregatedPubkey;
-
     /// @notice Admin address for configuration
     address public admin;
-
-    /// @notice Test mode flag - enables admin batch functions (set at deployment, immutable)
-    /// @dev ONLY enable for local/testnet deployments. Production deployments MUST set to false.
-    bool public immutable testModeEnabled;
-
-    // ============ ERRORS ============
-
-    /// @notice Test mode is not enabled for this deployment
-    error TestModeDisabled();
 
     // ============ MODIFIERS ============
 
@@ -110,21 +99,15 @@ contract AssetPairRegistry is IAssetPairRegistry {
         _;
     }
 
-    /// @notice Restricts function to test mode only
-    modifier onlyTestMode() {
-        if (!testModeEnabled) revert TestModeDisabled();
-        _;
-    }
-
     // ============ CONSTRUCTOR ============
 
-    /// @notice Initialize the AssetPairRegistry with an admin address
+    /// @notice Initialize the AssetPairRegistry with an admin and issuer registry
     /// @param _admin The admin address for configuration operations
-    /// @param _testMode Enable test mode for admin batch functions (ONLY for local/testnet)
-    constructor(address _admin, bool _testMode) {
+    /// @param _issuerRegistry The IssuerRegistry address for BLS verification
+    constructor(address _admin, address _issuerRegistry) {
         if (_admin == address(0)) revert ZeroAddress();
         admin = _admin;
-        testModeEnabled = _testMode;
+        __BLSVerifier_init(_issuerRegistry);
     }
 
     // ============ ASSET MANAGEMENT ============
@@ -143,7 +126,7 @@ contract AssetPairRegistry is IAssetPairRegistry {
         );
 
         // Verify BLS signature (11/20 threshold)
-        if (!_verifyBLS(message, blsSignature)) revert InvalidBLSSignature();
+        _verifyBLS(message, blsSignature);
 
         // Set asset to PENDING with activation time
         uint256 activationTime = block.timestamp + ASSET_TIMELOCK;
@@ -190,7 +173,7 @@ contract AssetPairRegistry is IAssetPairRegistry {
         );
 
         // Verify BLS signature (11/20 threshold)
-        if (!_verifyBLS(message, blsSignature)) revert InvalidBLSSignature();
+        _verifyBLS(message, blsSignature);
 
         // Mark as DELISTING (not immediate removal)
         assetInfo.status = TypesLib.AssetStatus.DELISTING;
@@ -214,7 +197,7 @@ contract AssetPairRegistry is IAssetPairRegistry {
         );
 
         // Verify BLS signature (15/20 threshold)
-        if (!_verifyBLS15(message, blsSignature)) revert InvalidBLSSignature();
+        _verifyBLS(message, blsSignature);
 
         // Immediately set to INACTIVE
         assetInfo.status = TypesLib.AssetStatus.INACTIVE;
@@ -253,7 +236,7 @@ contract AssetPairRegistry is IAssetPairRegistry {
         );
 
         // Verify BLS signature (11/20 threshold)
-        if (!_verifyBLS(message, blsSignature)) revert InvalidBLSSignature();
+        _verifyBLS(message, blsSignature);
 
         // Set pair to PENDING with activation time
         uint256 activationTime = block.timestamp + PAIR_TIMELOCK;
@@ -310,7 +293,7 @@ contract AssetPairRegistry is IAssetPairRegistry {
         );
 
         // Verify BLS signature (11/20 threshold)
-        if (!_verifyBLS(message, blsSignature)) revert InvalidBLSSignature();
+        _verifyBLS(message, blsSignature);
 
         // Mark as DELISTED
         pairInfo.status = TypesLib.PairStatus.DELISTED;
@@ -333,7 +316,7 @@ contract AssetPairRegistry is IAssetPairRegistry {
         );
 
         // Verify BLS signature (11/20 threshold)
-        if (!_verifyBLS(message, blsSignature)) revert InvalidBLSSignature();
+        _verifyBLS(message, blsSignature);
 
         // Reset to INACTIVE
         assetInfo.status = TypesLib.AssetStatus.INACTIVE;
@@ -354,7 +337,7 @@ contract AssetPairRegistry is IAssetPairRegistry {
         );
 
         // Verify BLS signature (11/20 threshold)
-        if (!_verifyBLS(message, blsSignature)) revert InvalidBLSSignature();
+        _verifyBLS(message, blsSignature);
 
         // Reset to INACTIVE
         pairInfo.status = TypesLib.PairStatus.INACTIVE;
@@ -529,12 +512,6 @@ contract AssetPairRegistry is IAssetPairRegistry {
     // ============ ADMIN FUNCTIONS ============
 
     /// @inheritdoc IAssetPairRegistry
-    function setAggregatedPubkey(bytes calldata pubkey) external override onlyAdmin {
-        aggregatedPubkey = pubkey;
-        emit AggregatedPubkeyUpdated(pubkey);
-    }
-
-    /// @inheritdoc IAssetPairRegistry
     function setAdmin(address newAdmin) external override onlyAdmin {
         if (newAdmin == address(0)) revert ZeroAddress();
         address previousAdmin = admin;
@@ -542,123 +519,6 @@ contract AssetPairRegistry is IAssetPairRegistry {
         emit AdminChanged(previousAdmin, newAdmin);
     }
 
-    // ============ ADMIN TESTING FUNCTIONS (E2E) ============
 
-    /// @inheritdoc IAssetPairRegistry
-    function adminBatchWhitelistAssets(address[] calldata assets) external onlyAdmin onlyTestMode {
-        for (uint256 i = 0; i < assets.length;) {
-            address asset = assets[i];
-            if (asset == address(0)) revert ZeroAddress();
-
-            TypesLib.AssetInfo storage assetInfo = _assets[asset];
-            // Skip if already active
-            if (assetInfo.status == TypesLib.AssetStatus.ACTIVE) {
-                unchecked { ++i; }
-                continue;
-            }
-
-            // Set directly to ACTIVE, bypassing PENDING state
-            assetInfo.asset = asset;
-            assetInfo.status = TypesLib.AssetStatus.ACTIVE;
-            assetInfo.activatedAt = block.timestamp;
-
-            // Track for enumeration
-            if (!_assetTracked[asset]) {
-                _assetTracked[asset] = true;
-                _assetList.push(asset);
-            }
-
-            emit AssetActivated(asset, msg.sender);
-
-            unchecked { ++i; }
-        }
-    }
-
-    /// @inheritdoc IAssetPairRegistry
-    function adminBatchActivatePairs(
-        address[] calldata assetAddrs,
-        bytes32[] calldata sources,
-        address[] calldata quoteTokens,
-        uint256[] calldata chainIds
-    ) external onlyAdmin onlyTestMode {
-        require(
-            assetAddrs.length == sources.length &&
-            sources.length == quoteTokens.length &&
-            quoteTokens.length == chainIds.length,
-            "Array length mismatch"
-        );
-
-        for (uint256 i = 0; i < assetAddrs.length;) {
-            address asset = assetAddrs[i];
-            bytes32 source = sources[i];
-            address quoteToken = quoteTokens[i];
-            uint256 chainId = chainIds[i];
-
-            // Asset must be ACTIVE
-            if (_assets[asset].status != TypesLib.AssetStatus.ACTIVE) revert AssetNotWhitelisted();
-
-            bytes32 pairId = computePairId(asset, source, quoteToken, chainId);
-            TypesLib.PairInfo storage pairInfo = _pairs[pairId];
-
-            // Skip if already active
-            if (pairInfo.status == TypesLib.PairStatus.ACTIVE) {
-                unchecked { ++i; }
-                continue;
-            }
-
-            // Set directly to ACTIVE, bypassing PENDING state
-            pairInfo.pairId = pairId;
-            pairInfo.asset = asset;
-            pairInfo.source = source;
-            pairInfo.quoteToken = quoteToken;
-            pairInfo.chainId = chainId;
-            pairInfo.status = TypesLib.PairStatus.ACTIVE;
-            pairInfo.activatedAt = block.timestamp;
-
-            // Track for enumeration
-            if (!_pairTracked[pairId]) {
-                _pairTracked[pairId] = true;
-                _pairList.push(pairId);
-                _assetPairs[asset].push(pairId);
-            }
-
-            emit PairActivated(pairId, msg.sender);
-
-            unchecked { ++i; }
-        }
-    }
-
-    // ============ INTERNAL FUNCTIONS ============
-
-    /// @notice Verify BLS signature with 11/20 threshold
-    /// @dev Uses BLSLib for real BLS signature verification
-    /// @param message The message hash to verify
-    /// @param signature The BLS signature
-    /// @return True if signature is valid (or testing mode with empty pubkey)
-    function _verifyBLS(bytes32 message, bytes calldata signature) internal view returns (bool) {
-        // Testing mode: empty pubkey = skip verification
-        if (aggregatedPubkey.length == 0) {
-            return true;
-        }
-
-        // Real verification using BLSLib
-        return BLSLib.verifyBLS(aggregatedPubkey, message, signature);
-    }
-
-    /// @notice Verify BLS signature with 15/20 threshold
-    /// @dev Threshold enforcement is at issuer consensus level - contract verifies aggregated signature
-    /// @param message The message hash to verify
-    /// @param signature The BLS signature
-    /// @return True if signature is valid (or testing mode with empty pubkey)
-    function _verifyBLS15(bytes32 message, bytes calldata signature) internal view returns (bool) {
-        // Testing mode: empty pubkey = skip verification
-        if (aggregatedPubkey.length == 0) {
-            return true;
-        }
-
-        // Real verification using BLSLib
-        // Note: Threshold is enforced at issuer consensus level (Rust code)
-        // The aggregated signature already contains 15+ signer contributions
-        return BLSLib.verifyBLS(aggregatedPubkey, message, signature);
-    }
+    // BLS verification via inherited BLSVerifier._verifyBLS()
 }

@@ -165,35 +165,9 @@ interface IAssetPairRegistry {
 
     // ============ ADMIN FUNCTIONS ============
 
-    /// @notice Set the aggregated BLS public key for signature verification
-    /// @param pubkey The new aggregated public key
-    function setAggregatedPubkey(bytes calldata pubkey) external;
-
     /// @notice Transfer admin role to a new address
     /// @param newAdmin The new admin address
     function setAdmin(address newAdmin) external;
-
-    // ============ ADMIN E2E TESTING FUNCTIONS ============
-    // WARNING: These functions bypass BLS signatures and timelocks.
-    // DO NOT use in production deployments.
-
-    /// @notice Admin-only batch whitelist assets (bypasses BLS + timelock for E2E testing)
-    /// @dev DO NOT use in production - only for local/testnet E2E testing
-    /// @param assets Array of asset addresses to whitelist
-    function adminBatchWhitelistAssets(address[] calldata assets) external;
-
-    /// @notice Admin-only batch activate pairs (bypasses BLS + timelock for E2E testing)
-    /// @dev DO NOT use in production - only for local/testnet E2E testing
-    /// @param assetAddrs Array of asset addresses
-    /// @param sources Array of trading sources (e.g., keccak256("BITGET"))
-    /// @param quoteTokens Array of quote token addresses
-    /// @param chainIds Array of chain IDs
-    function adminBatchActivatePairs(
-        address[] calldata assetAddrs,
-        bytes32[] calldata sources,
-        address[] calldata quoteTokens,
-        uint256[] calldata chainIds
-    ) external;
 
     // ============ EVENTS ============
 

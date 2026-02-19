@@ -140,9 +140,9 @@ interface IFeeRegistry {
 
     // ============ ADMIN FUNCTIONS ============
 
-    /// @notice Set the aggregated BLS public key for signature verification
-    /// @param pubkey The new aggregated public key
-    function setAggregatedPubkey(bytes calldata pubkey) external;
+    /// @notice Set the IssuerRegistry for BLS verification
+    /// @param issuerRegistry_ Address of the IssuerRegistry contract
+    function setIssuerRegistry(address issuerRegistry_) external;
 
     /// @notice Transfer admin role to a new address
     /// @param newAdmin The new admin address

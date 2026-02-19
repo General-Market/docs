@@ -31,10 +31,11 @@ interface IBridgeProxy {
         bool completed;          // Whether rebalance is complete
     }
 
-    /// @notice Deployer display profile (display-only metadata)
-    struct DeployerProfile {
-        string displayName;
-        string websiteUrl;
+    /// @notice Per-ITP metadata (description, website, video — set by deployer)
+    struct ItpMetadata {
+        string description;      // Short description (max 280 bytes)
+        string websiteUrl;       // Landing page for this ITP (max 128 bytes)
+        string videoUrl;         // YouTube/video URL (max 256 bytes)
     }
 
     // ============ View Functions ============
@@ -128,15 +129,12 @@ interface IBridgeProxy {
     /// @notice Complete ITP creation with BLS signature from issuers
     /// @dev Atomically creates ITP on L3 via indexContract.createITP() and deploys BridgedITP
     /// @param nonce Request nonce from requestCreateItp
-    /// @param signerBitmap Bitmap of which issuers signed
-    /// @param aggregatedPubkey Aggregated BLS public key (128 bytes G2)
+    /// @param orbitItpId The L3 ITP identifier
     /// @param blsSignature Aggregated BLS signature (64 bytes G1)
     /// @return bridgedItpAddress Deployed BridgedITP token address
     function completeCreateItp(
         uint256 nonce,
         bytes32 orbitItpId,
-        uint256 signerBitmap,
-        bytes calldata aggregatedPubkey,
         bytes calldata blsSignature
     ) external returns (address bridgedItpAddress);
 
@@ -161,8 +159,6 @@ interface IBridgeProxy {
     /// @param addAssets New asset addresses to add
     /// @param newWeights Weights for the final asset list
     /// @param prices Prices for inventory computation
-    /// @param signerBitmap Bitmap of which issuers signed
-    /// @param aggregatedPubkey Aggregated BLS public key (128 bytes G2)
     /// @param blsSignature Aggregated BLS signature (64 bytes G1)
     function rebalance(
         bytes32 itpId,
@@ -170,8 +166,6 @@ interface IBridgeProxy {
         address[] calldata addAssets,
         uint256[] calldata newWeights,
         uint256[] calldata prices,
-        uint256 signerBitmap,
-        bytes calldata aggregatedPubkey,
         bytes calldata blsSignature
     ) external;
 
@@ -211,16 +205,6 @@ interface IBridgeProxy {
     // ============ Admin Functions ============
 
     /// @notice Admin: deploy BridgedITP and register mappings without BLS
-    /// @param orbitItpId The L3 ITP identifier
-    /// @param name BridgedITP token name
-    /// @param symbol BridgedITP token symbol
-    /// @return bridgedItpAddress Deployed BridgedITP token address
-    function adminCreateBridgedItp(
-        bytes32 orbitItpId,
-        string calldata name,
-        string calldata symbol
-    ) external returns (address bridgedItpAddress);
-
     /// @notice Update IssuerRegistry address
     function setIssuerRegistry(address _issuerRegistry) external;
 
@@ -291,21 +275,38 @@ interface IBridgeProxy {
         uint256 amount
     );
 
-    /// @notice Emitted when a deployer updates their profile
-    event DeployerProfileUpdated(
+    /// @notice Emitted when ITP metadata is updated by its deployer
+    event ItpMetadataUpdated(
+        bytes32 indexed itpId,
         address indexed deployer,
-        string displayName,
-        string websiteUrl
+        string description,
+        string websiteUrl,
+        string videoUrl
     );
 
-    // ============ Deployer Profile Functions ============
+    // ============ ITP Metadata Functions ============
 
-    /// @notice Set the caller's deployer profile (display name + website URL)
-    function setDeployerProfile(string calldata displayName, string calldata websiteUrl) external;
+    /// @notice Set metadata for an ITP (only its deployer can call)
+    function setItpMetadata(
+        bytes32 itpId,
+        string calldata description,
+        string calldata websiteUrl,
+        string calldata videoUrl
+    ) external;
 
-    /// @notice Get a deployer's profile
-    function getDeployerProfile(address deployer) external view returns (string memory displayName, string memory websiteUrl);
+    /// @notice Get metadata for an ITP
+    function getItpMetadata(bytes32 itpId) external view returns (
+        string memory description,
+        string memory websiteUrl,
+        string memory videoUrl
+    );
 
-    /// @notice Maximum URL length for deployer profiles
+    /// @notice Maximum description length
+    function MAX_DESCRIPTION_LENGTH() external view returns (uint256);
+
+    /// @notice Maximum URL length
     function MAX_URL_LENGTH() external view returns (uint256);
+
+    /// @notice Maximum video URL length
+    function MAX_VIDEO_URL_LENGTH() external view returns (uint256);
 }

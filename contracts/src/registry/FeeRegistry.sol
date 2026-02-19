@@ -4,13 +4,15 @@ pragma solidity ^0.8.20;
 import "../interfaces/IFeeRegistry.sol";
 import "../libraries/TypesLib.sol";
 import "../libraries/BLSLib.sol";
+import "../libraries/BLSVerifier.sol";
+import "../interfaces/IIssuerRegistry.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 /// @title FeeRegistry - Fee calculation and distribution for Index L3
 /// @notice Tracks trading fees, management fees, bridge costs, and gas costs per ITP
-/// @dev UUPS upgradeable. All fee movements require BLS signature from 11/20 issuers (mocked until integration)
-contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable {
+/// @dev UUPS upgradeable. All fee movements require BLS signature from 11/20 issuers.
+contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable, BLSVerifier {
     // ============ ERRORS ============
 
     /// @notice Caller is not authorized for this operation
@@ -106,11 +108,11 @@ contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable {
     /// @notice Deployer share in basis points (default 7000 = 70%)
     uint256 public deployerShareBps;
 
-    /// @notice Aggregated BLS public key for signature verification
-    bytes public aggregatedPubkey;
+    /// @notice DEPRECATED: was aggregatedPubkey, slot preserved for UUPS layout
+    bytes private _deprecated_aggregatedPubkey;
 
-    /// @notice BLS library address for signature verification
-    address public blsLibrary;
+    /// @notice DEPRECATED: was blsLibrary, slot preserved for UUPS layout
+    address private _deprecated_blsLibrary;
 
     /// @notice Replay protection nonce
     uint256 private _nonce;
@@ -129,12 +131,13 @@ contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable {
     /// @dev Reserved storage slots for future upgrades.
     ///      Slot accounting (each mapping/variable = 1 slot):
     ///        _feeRates(0), _accumulatedFees(1), _deployerClaimedFromTotal(2),
-    ///        _protocolClaimedFromTotal(3), deployerShareBps(4), aggregatedPubkey(5),
-    ///        blsLibrary(6), _nonce(7), admin(8), authorizedCallers(9),
+    ///        _protocolClaimedFromTotal(3), deployerShareBps(4), _deprecated_aggregatedPubkey(5),
+    ///        _deprecated_blsLibrary(6), _nonce(7), admin(8), authorizedCallers(9),
     ///        _itpDeployers(10) = 11 slots used
+    ///      BLSVerifier adds 1 slot (_blsIssuerRegistry) = 12 slots used
     ///      Target: 50 total slots for upgradeability buffer
-    ///      Gap: 50 - 11 = 39 slots
-    uint256[39] private __gap;
+    ///      Gap: 50 - 12 = 38 slots
+    uint256[38] private __gap;
 
     // ============ MODIFIERS ============
 
@@ -169,6 +172,12 @@ contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable {
         emit AuthorizedCallerUpdated(_admin, true);
     }
 
+    /// @notice Set the IssuerRegistry for BLS verification (admin only, one-time setup)
+    /// @param issuerRegistry_ Address of the IssuerRegistry contract
+    function setIssuerRegistry(address issuerRegistry_) external onlyAdmin {
+        __BLSVerifier_init(issuerRegistry_);
+    }
+
     // ============ FEE RATE MANAGEMENT ============
 
     /// @inheritdoc IFeeRegistry
@@ -182,7 +191,7 @@ contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable {
         );
 
         // Verify BLS signature
-        if (!_verifyBLS(message, blsSignature)) revert InvalidBLSSignature();
+        _verifyBLS(message, blsSignature);
 
         // Update fee rate
         uint256 oldRate = _feeRates[itpId];
@@ -216,7 +225,7 @@ contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable {
         );
 
         // Verify BLS signature
-        if (!_verifyBLS(message, blsSignature)) revert InvalidBLSSignature();
+        _verifyBLS(message, blsSignature);
 
         // Record fee
         _accumulatedFees[itpId][feeType] += feeAmount;
@@ -260,7 +269,7 @@ contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable {
         );
 
         // Verify BLS signature
-        if (!_verifyBLS(message, blsSignature)) revert InvalidBLSSignature();
+        _verifyBLS(message, blsSignature);
 
         // Update deployer share
         deployerShareBps = _deployerShareBps;
@@ -337,12 +346,6 @@ contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable {
     }
 
     // ============ ADMIN FUNCTIONS ============
-
-    /// @inheritdoc IFeeRegistry
-    function setAggregatedPubkey(bytes calldata pubkey) external override onlyAdmin {
-        aggregatedPubkey = pubkey;
-        emit AggregatedPubkeyUpdated(pubkey);
-    }
 
     /// @inheritdoc IFeeRegistry
     function setAdmin(address newAdmin) external override onlyAdmin {
@@ -453,20 +456,7 @@ contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable {
         claimable = (unprocessed * protocolShareBps) / BASIS_POINTS;
     }
 
-    /// @notice Verify BLS signature using BLSLib
-    /// @dev Uses stored aggregatedPubkey for verification
-    /// @param message The message hash to verify
-    /// @param signature The BLS signature
-    /// @return True if signature is valid (or testing mode with empty pubkey)
-    function _verifyBLS(bytes32 message, bytes calldata signature) internal view returns (bool) {
-        // Testing mode: empty pubkey = skip verification
-        if (aggregatedPubkey.length == 0) {
-            return true;
-        }
-
-        // Real verification using BLSLib
-        return BLSLib.verifyBLS(aggregatedPubkey, message, signature);
-    }
+    // BLS verification via inherited BLSVerifier._verifyBLS()
 
     /// @notice Authorize upgrade (UUPS pattern)
     /// @dev Only admin can upgrade

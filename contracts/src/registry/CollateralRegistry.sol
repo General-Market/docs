@@ -4,11 +4,12 @@ pragma solidity ^0.8.20;
 import "../interfaces/ICollateralRegistry.sol";
 import "../libraries/TypesLib.sol";
 import "../libraries/BLSLib.sol";
+import "../libraries/BLSVerifier.sol";
 
 /// @title CollateralRegistry - On-chain collateral tracking per ITP per chain
 /// @notice Enables stateless issuer operation by tracking all collateral movements
 /// @dev All movements require BLS signature from 11/20 issuers
-contract CollateralRegistry is ICollateralRegistry {
+contract CollateralRegistry is ICollateralRegistry, BLSVerifier {
     // ============ ERRORS ============
 
     /// @notice Caller is not authorized for this operation
@@ -74,18 +75,8 @@ contract CollateralRegistry is ICollateralRegistry {
     /// @notice Nonce for replay protection
     uint256 private _nonce;
 
-    /// @notice Aggregated BLS public key for signature verification
-    bytes public aggregatedPubkey;
-
-    /// @notice Address of BLS library contract (future integration)
-    address public blsLibrary;
-
     /// @notice Admin address for configuration
     address public admin;
-
-    /// @notice Authorized callers for recordCollateralMove (temporary until BLS integration)
-    /// @dev SECURITY: Remove this after BLS verification is properly integrated (Story 2.6)
-    mapping(address => bool) public authorizedCallers;
 
     // ============ MODIFIERS ============
 
@@ -95,24 +86,15 @@ contract CollateralRegistry is ICollateralRegistry {
         _;
     }
 
-    /// @notice Restricts function to authorized callers (temporary until BLS is integrated)
-    /// @dev SECURITY: This is a temporary guard. Once BLS verification is integrated,
-    ///      this check should be removed and rely solely on BLS signature verification.
-    modifier onlyAuthorized() {
-        if (!authorizedCallers[msg.sender]) revert Unauthorized();
-        _;
-    }
-
     // ============ CONSTRUCTOR ============
 
-    /// @notice Initialize the CollateralRegistry with an admin address
+    /// @notice Initialize the CollateralRegistry with an admin and issuer registry
     /// @param _admin The admin address for configuration operations
-    /// @dev Admin is automatically added as an authorized caller
-    constructor(address _admin) {
+    /// @param _issuerRegistry The IssuerRegistry address for BLS verification
+    constructor(address _admin, address _issuerRegistry) {
         if (_admin == address(0)) revert ZeroAddress();
         admin = _admin;
-        authorizedCallers[_admin] = true;
-        emit AuthorizedCallerUpdated(_admin, true);
+        __BLSVerifier_init(_issuerRegistry);
     }
 
     // ============ COLLATERAL TRACKING ============
@@ -128,7 +110,7 @@ contract CollateralRegistry is ICollateralRegistry {
         uint256 amount,
         TypesLib.TxType txType,
         bytes calldata blsSignature
-    ) external override onlyAuthorized {
+    ) external override {
         // Validate amount is non-zero to prevent spam/abuse
         if (amount == 0) revert ZeroAmount();
 
@@ -137,8 +119,8 @@ contract CollateralRegistry is ICollateralRegistry {
             abi.encode(block.chainid, address(this), itpId, fromChain, toChain, amount, txType, _nonce++)
         );
 
-        // Verify BLS signature (integrated via Story 6.23)
-        if (!_verifyBLS(message, blsSignature)) revert InvalidBLSSignature();
+        // Verify BLS signature via BLSVerifier
+        _verifyBLS(message, blsSignature);
 
         // Update fromChain (decrease collateral)
         if (fromChain != 0) {
@@ -220,20 +202,6 @@ contract CollateralRegistry is ICollateralRegistry {
 
     // ============ ADMIN FUNCTIONS ============
 
-    /// @notice Set the aggregated BLS public key for signature verification
-    /// @param pubkey The new aggregated public key
-    function setAggregatedPubkey(bytes calldata pubkey) external onlyAdmin {
-        aggregatedPubkey = pubkey;
-        emit AggregatedPubkeyUpdated(pubkey);
-    }
-
-    /// @notice Set the BLS library address for future integration
-    /// @param _blsLibrary The BLS library contract address
-    function setBLSLibrary(address _blsLibrary) external onlyAdmin {
-        blsLibrary = _blsLibrary;
-        emit BLSLibraryUpdated(_blsLibrary);
-    }
-
     /// @notice Transfer admin role to a new address
     /// @param newAdmin The new admin address
     function setAdmin(address newAdmin) external onlyAdmin {
@@ -243,33 +211,9 @@ contract CollateralRegistry is ICollateralRegistry {
         emit AdminChanged(previousAdmin, newAdmin);
     }
 
-    /// @notice Add or remove an authorized caller for recordCollateralMove
-    /// @param caller The address to authorize or deauthorize
-    /// @param authorized Whether the caller should be authorized
-    /// @dev SECURITY: Temporary function until BLS verification is integrated.
-    ///      Remove this function after Story 2.6 BLS integration is complete.
-    function setAuthorizedCaller(address caller, bool authorized) external onlyAdmin {
-        if (caller == address(0)) revert ZeroAddress();
-        authorizedCallers[caller] = authorized;
-        emit AuthorizedCallerUpdated(caller, authorized);
-    }
-
     // ============ INTERNAL FUNCTIONS ============
 
-    /// @notice Verify BLS signature using BLSLib
-    /// @dev Uses stored aggregatedPubkey for verification
-    /// @param message The message hash to verify
-    /// @param signature The BLS signature
-    /// @return True if signature is valid (or testing mode with empty pubkey)
-    function _verifyBLS(bytes32 message, bytes calldata signature) internal view returns (bool) {
-        // Testing mode: empty pubkey = skip verification
-        if (aggregatedPubkey.length == 0) {
-            return true;
-        }
-
-        // Real verification using BLSLib
-        return BLSLib.verifyBLS(aggregatedPubkey, message, signature);
-    }
+    // BLS verification via inherited BLSVerifier._verifyBLS()
 
     /// @notice Track a chain in the ITP's chain list if not already tracked
     /// @param itpId The ITP identifier
