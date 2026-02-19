@@ -275,15 +275,17 @@ impl Weighting {
 }
 
 impl SimConfig {
-    /// Encodes weighting + threshold into one string for cache key.
-    /// e.g. "momentum_90" or "momentum_90_t5" (when threshold active).
+    /// Encodes weighting + threshold + start_date into one string for cache key.
+    /// e.g. "momentum_90", "momentum_90_t5", "equal_s2023-01-01"
     pub fn cache_key_weighting(&self) -> String {
-        let base = self.weighting.as_str();
+        let mut key = self.weighting.as_str();
         if let Some(t) = self.threshold_rebalance_pct {
-            format!("{}_t{}", base, t as i32)
-        } else {
-            base
+            key = format!("{}_t{}", key, t as i32);
         }
+        if let Some(sd) = self.start_date {
+            key = format!("{}_s{}", key, sd);
+        }
+        key
     }
 }
 

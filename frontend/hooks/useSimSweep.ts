@@ -40,6 +40,7 @@ interface UseSimSweepResult {
   completedVariants: SweepVariantResult[]
   error: string | null
   run: () => void
+  cancel: () => void
 }
 
 export function useSimSweep(params: UseSimSweepParams | null): UseSimSweepResult {

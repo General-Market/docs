@@ -60,6 +60,20 @@ const STRATEGY_FAMILIES: StrategyFamily[] = [
   ], defaultParam: 60 },
 ]
 
+// Date helpers for start date presets
+function fiveYearsAgo(): string {
+  const d = new Date(); d.setFullYear(d.getFullYear() - 5)
+  return d.toISOString().slice(0, 10)
+}
+function threeYearsAgo(): string {
+  const d = new Date(); d.setFullYear(d.getFullYear() - 3)
+  return d.toISOString().slice(0, 10)
+}
+function oneYearAgo(): string {
+  const d = new Date(); d.setFullYear(d.getFullYear() - 1)
+  return d.toISOString().slice(0, 10)
+}
+
 // Parse a weighting string back into family + param
 function parseWeighting(w: string): { familyId: string; param: number | null } {
   for (const f of STRATEGY_FAMILIES) {
@@ -420,22 +434,38 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           <span className="text-[10px] text-white/30 font-mono ml-1">x</span>
         </div>
         <div>
-          <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Start Date</label>
-          <input
-            type="date"
-            className="bg-white/5 border border-white/10 rounded px-2 py-1 text-xs font-mono text-white"
-            value={filters.start_date}
-            onChange={e => update({ start_date: e.target.value })}
-          />
-          {filters.start_date && (
-            <button
-              className="ml-1 text-[10px] text-white/40 hover:text-white font-mono"
-              onClick={() => update({ start_date: '' })}
-              title="Reset to earliest available"
-            >
-              x
-            </button>
-          )}
+          <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Start From</label>
+          <div className="flex items-center gap-1">
+            {[
+              { label: 'All', value: '' },
+              { label: '5y', value: fiveYearsAgo() },
+              { label: '3y', value: threeYearsAgo() },
+              { label: '1y', value: oneYearAgo() },
+            ].map(opt => (
+              <button
+                key={opt.label}
+                className={`px-2 py-0.5 text-[10px] font-mono border border-white/10 rounded transition-colors ${
+                  filters.start_date === opt.value
+                    ? 'bg-white/20 text-white'
+                    : 'bg-white/5 text-white/40 hover:bg-white/10'
+                }`}
+                onClick={() => update({ start_date: opt.value })}
+              >
+                {opt.label}
+              </button>
+            ))}
+            <input
+              type="date"
+              className={`bg-white/5 border rounded px-2 py-1 text-xs font-mono text-white [color-scheme:dark] w-[130px] ${
+                filters.start_date && !['', fiveYearsAgo(), threeYearsAgo(), oneYearAgo()].includes(filters.start_date)
+                  ? 'border-white/30 bg-white/10'
+                  : 'border-white/10'
+              }`}
+              value={filters.start_date}
+              onChange={e => update({ start_date: e.target.value })}
+              min="2017-01-01"
+            />
+          </div>
         </div>
       </div>
 

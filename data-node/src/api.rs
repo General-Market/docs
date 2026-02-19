@@ -124,6 +124,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/sim/compare", get(sim_compare))
         .route("/sim/holdings", get(sim_holdings))
         .route("/sim/invalidate", get(sim_invalidate))
+        .route("/sim/benchmarks", get(sim_benchmarks))
         .layer(cors)
         .with_state(state)
 }
@@ -3525,4 +3526,60 @@ async fn sim_invalidate(
         .map_err(|e| db_error(e))?;
 
     Ok(Json(serde_json::json!({ "deleted": deleted })))
+}
+
+// ── Benchmark price series (BTC + ETH normalized to 1.0 at start) ──────────
+
+#[derive(Deserialize)]
+struct SimBenchmarkQuery {
+    start_date: String,    // YYYY-MM-DD
+    #[serde(default)]
+    end_date: Option<String>,
+}
+
+async fn sim_benchmarks(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<SimBenchmarkQuery>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let start = chrono::NaiveDate::parse_from_str(&params.start_date, "%Y-%m-%d")
+        .map_err(|_| (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: "Invalid start_date".into() })))?;
+    let end = params.end_date.as_ref()
+        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
+
+    let cache = &state.sim_cache;
+    let benchmarks = vec![("bitcoin", "BTC"), ("ethereum", "ETH")];
+    let mut result: Vec<serde_json::Value> = Vec::new();
+
+    for (coin_id, symbol) in &benchmarks {
+        let prices = match cache.prices.get(*coin_id) {
+            Some(p) => p,
+            None => continue,
+        };
+
+        // Collect dates from start..end, sorted
+        let mut points: Vec<(chrono::NaiveDate, f64)> = prices.iter()
+            .filter(|(d, _)| **d >= start && end.map_or(true, |e| **d <= e))
+            .map(|(d, p)| (*d, *p))
+            .collect();
+        points.sort_by_key(|(d, _)| *d);
+
+        if points.is_empty() { continue; }
+        let base_price = points[0].1;
+        if base_price <= 0.0 { continue; }
+
+        let nav_series: Vec<serde_json::Value> = points.iter()
+            .map(|(d, p)| serde_json::json!({
+                "nav_date": d.to_string(),
+                "nav": p / base_price,
+            }))
+            .collect();
+
+        result.push(serde_json::json!({
+            "symbol": symbol,
+            "coin_id": coin_id,
+            "nav_series": nav_series,
+        }));
+    }
+
+    Ok(Json(serde_json::json!({ "benchmarks": result })))
 }

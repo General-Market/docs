@@ -62,6 +62,7 @@ interface UseSimulationResult {
   result: SimRunResult | null
   error: string | null
   run: () => void
+  cancel: () => void
 }
 
 export function useSimulation(params: UseSimulationParams | null): UseSimulationResult {
