@@ -49,4 +49,9 @@ pub use types::{
     // Issuer-driven per-asset settlement
     AssetTrade, AssetTradesProposal, AssetTradesResult,
     build_emit_asset_trades_hash, build_emit_asset_trades_calldata,
+    // 8-step bridge: RecordCollateralMove + MintBridgedShares
+    build_record_collateral_move_hash, build_record_collateral_move_calldata,
+    RecordCollateralMoveProposal, RecordCollateralMoveResult,
+    build_mint_bridged_shares_hash, build_mint_bridged_shares_calldata,
+    MintBridgedSharesProposal, MintBridgedSharesResult,
 };

@@ -532,6 +532,39 @@ pub enum P2PMessage {
         /// Follower's BLS signature
         signature: BLSSignature,
     },
+
+    // 8-step bridge: RecordCollateralMove consensus
+    RecordCollateralMoveProposal {
+        leader_id: PeerId,
+        cycle_number: u64,
+        itp_id: H256,
+        from_chain: U256,
+        to_chain: U256,
+        amount: U256,
+        tx_type: u8,
+        leader_signature: BLSSignature,
+    },
+    RecordCollateralMoveSign {
+        signer_id: PeerId,
+        signer_index: u8,
+        cycle_number: u64,
+        signature: BLSSignature,
+    },
+    // 8-step bridge: MintBridgedShares consensus
+    MintBridgedSharesProposal {
+        leader_id: PeerId,
+        cycle_number: u64,
+        itp_id: H256,
+        user: Address,
+        amount: U256,
+        leader_signature: BLSSignature,
+    },
+    MintBridgedSharesSign {
+        signer_id: PeerId,
+        signer_index: u8,
+        cycle_number: u64,
+        signature: BLSSignature,
+    },
 }
 
 /// Represents a single order fill for consensus

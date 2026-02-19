@@ -1614,6 +1614,114 @@ where
                     );
                 }
             }
+            // 8-step bridge: RecordCollateralMove consensus
+            MessageHandleResult::ProcessRecordCollateralMoveProposal {
+                from,
+                cycle_number: msg_cycle,
+                itp_id,
+                from_chain,
+                to_chain,
+                amount,
+                tx_type,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    cycle_number = msg_cycle,
+                    itp_id = ?itp_id,
+                    "Received RecordCollateralMoveProposal - validating and signing"
+                );
+                if let Err(e) = self
+                    .handle_record_collateral_move_proposal(
+                        from, msg_cycle, itp_id, from_chain, to_chain, amount, tx_type, leader_signature,
+                    )
+                    .await
+                {
+                    warn!(
+                        code = "INFRA-007",
+                        cycle_number = msg_cycle,
+                        error = %e,
+                        "Failed to handle RecordCollateralMoveProposal"
+                    );
+                }
+            }
+            MessageHandleResult::ProcessRecordCollateralMoveSign {
+                from,
+                signer_index,
+                cycle_number: msg_cycle,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    signer_index,
+                    cycle_number = msg_cycle,
+                    "Received RecordCollateralMoveSign - adding to collector"
+                );
+                if let Err(e) = self
+                    .handle_record_collateral_move_sign(from, signer_index, msg_cycle, signature)
+                    .await
+                {
+                    warn!(
+                        code = "INFRA-007",
+                        cycle_number = msg_cycle,
+                        error = %e,
+                        "Failed to handle RecordCollateralMoveSign"
+                    );
+                }
+            }
+            // 8-step bridge: MintBridgedShares consensus
+            MessageHandleResult::ProcessMintBridgedSharesProposal {
+                from,
+                cycle_number: msg_cycle,
+                itp_id,
+                user,
+                amount,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    cycle_number = msg_cycle,
+                    itp_id = ?itp_id,
+                    "Received MintBridgedSharesProposal - validating and signing"
+                );
+                if let Err(e) = self
+                    .handle_mint_bridged_shares_proposal(
+                        from, msg_cycle, itp_id, user, amount, leader_signature,
+                    )
+                    .await
+                {
+                    warn!(
+                        code = "INFRA-007",
+                        cycle_number = msg_cycle,
+                        error = %e,
+                        "Failed to handle MintBridgedSharesProposal"
+                    );
+                }
+            }
+            MessageHandleResult::ProcessMintBridgedSharesSign {
+                from,
+                signer_index,
+                cycle_number: msg_cycle,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    signer_index,
+                    cycle_number = msg_cycle,
+                    "Received MintBridgedSharesSign - adding to collector"
+                );
+                if let Err(e) = self
+                    .handle_mint_bridged_shares_sign(from, signer_index, msg_cycle, signature)
+                    .await
+                {
+                    warn!(
+                        code = "INFRA-007",
+                        cycle_number = msg_cycle,
+                        error = %e,
+                        "Failed to handle MintBridgedSharesSign"
+                    );
+                }
+            }
             MessageHandleResult::Stale => {
                 debug!("Stale message ignored");
             }

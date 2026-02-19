@@ -456,6 +456,11 @@ fn get_sender_id(message: &P2PMessage) -> Option<PeerId> {
         P2PMessage::SubmitSellOrderSign { signer_id, .. } => Some(*signer_id),
         P2PMessage::CompleteSellOrderProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::CompleteSellOrderSign { signer_id, .. } => Some(*signer_id),
+        // 8-step bridge: RecordCollateralMove + MintBridgedShares
+        P2PMessage::RecordCollateralMoveProposal { leader_id, .. } => Some(*leader_id),
+        P2PMessage::RecordCollateralMoveSign { signer_id, .. } => Some(*signer_id),
+        P2PMessage::MintBridgedSharesProposal { leader_id, .. } => Some(*leader_id),
+        P2PMessage::MintBridgedSharesSign { signer_id, .. } => Some(*signer_id),
     }
 }
 

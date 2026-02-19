@@ -84,6 +84,8 @@ pub enum BridgeOrderStatus {
     BridgedBackToArb,
     /// USDC released to MockBitgetVault for AP trading (Story 7.6)
     ReleasedToVault,
+    /// BridgedITP shares minted on Arbitrum via BridgeProxy (Step 8)
+    SharesBridged,
     /// Bridge failed
     Failed,
     /// Sell order received from Arb, waiting for consensus
@@ -447,6 +449,20 @@ pub enum BridgeError {
 
     #[error("custody release failed: {reason}")]
     CustodyReleaseFailed { reason: String },
+
+    // 8-step bridge: RecordCollateralMove error variants
+    #[error("collateral move already recorded: cycle {cycle_number}")]
+    CollateralMoveAlreadyRecorded { cycle_number: u64 },
+
+    #[error("record collateral move failed: {reason}")]
+    RecordCollateralMoveFailed { reason: String },
+
+    // 8-step bridge: MintBridgedShares error variants
+    #[error("mint bridged shares already processed: cycle {cycle_number}")]
+    MintBridgedSharesAlreadyProcessed { cycle_number: u64 },
+
+    #[error("mint bridged shares failed: {reason}")]
+    MintBridgedSharesFailed { reason: String },
 }
 
 /// Build the message hash for bridge Arb→L3 consensus
@@ -990,6 +1006,308 @@ pub struct ReleaseToVaultResult {
     pub signer_bitmap: U256,
     /// Number of signatures collected
     pub signature_count: usize,
+}
+
+// ============================================================================
+// 8-step bridge: RecordCollateralMove Types
+// ============================================================================
+
+/// Proposal for recording collateral movement in CollateralRegistry
+/// This is Step 3 of the 8-step bridge: after batch confirm, before L3→Arb bridge.
+#[derive(Debug, Clone)]
+pub struct RecordCollateralMoveProposal {
+    /// Leader's peer ID
+    pub leader_id: PeerId,
+    /// Cycle number for this batch
+    pub cycle_number: u64,
+    /// ITP being processed
+    pub itp_id: H256,
+    /// Source chain ID (L3 = 111222333)
+    pub from_chain: U256,
+    /// Destination chain ID (Arb = 42161)
+    pub to_chain: U256,
+    /// Amount being moved (18 decimals)
+    pub amount: U256,
+    /// Transaction type (0 = BUY)
+    pub tx_type: u8,
+    /// Leader's BLS signature
+    pub leader_signature: BLSSignature,
+    /// Message hash that was signed
+    pub message_hash: H256,
+}
+
+/// Result of successful RecordCollateralMove consensus
+#[derive(Debug, Clone)]
+pub struct RecordCollateralMoveResult {
+    /// Aggregated BLS signature
+    pub aggregated_signature: BLSSignature,
+    /// Bitmap of signers (bit i = issuer i signed)
+    pub signer_bitmap: U256,
+    /// Number of signatures collected
+    pub signature_count: usize,
+}
+
+// ============================================================================
+// 8-step bridge: MintBridgedShares Types
+// ============================================================================
+
+/// Proposal for minting BridgedITP shares on Arbitrum via BridgeProxy
+/// This is Step 8 of the 8-step bridge: after fills confirmed.
+#[derive(Debug, Clone)]
+pub struct MintBridgedSharesProposal {
+    /// Leader's peer ID
+    pub leader_id: PeerId,
+    /// Cycle number for this batch
+    pub cycle_number: u64,
+    /// ITP ID
+    pub itp_id: H256,
+    /// User receiving shares
+    pub user: Address,
+    /// Number of shares to mint (18 decimals)
+    pub amount: U256,
+    /// Leader's BLS signature
+    pub leader_signature: BLSSignature,
+    /// Message hash that was signed
+    pub message_hash: H256,
+}
+
+/// Result of successful MintBridgedShares consensus
+#[derive(Debug, Clone)]
+pub struct MintBridgedSharesResult {
+    /// Aggregated BLS signature
+    pub aggregated_signature: BLSSignature,
+    /// Bitmap of signers (bit i = issuer i signed)
+    pub signer_bitmap: U256,
+    /// Number of signatures collected
+    pub signature_count: usize,
+}
+
+// ============================================================================
+// 8-step bridge: Hash Builders
+// ============================================================================
+
+/// Build message hash for RecordCollateralMove consensus
+///
+/// Matches: keccak256(abi.encode(chainid, collateralRegistry, itpId, fromChain, toChain, amount, txType))
+/// Uses ABI encoding (32-byte padded addresses).
+pub fn build_record_collateral_move_hash(
+    chain_id: u64,
+    collateral_registry: Address,
+    itp_id: H256,
+    from_chain: U256,
+    to_chain: U256,
+    amount: U256,
+    tx_type: u8,
+) -> H256 {
+    let mut data = Vec::with_capacity(256);
+
+    // chain_id as uint256 (32 bytes)
+    let mut chain_id_bytes = [0u8; 32];
+    U256::from(chain_id).to_big_endian(&mut chain_id_bytes);
+    data.extend_from_slice(&chain_id_bytes);
+
+    // collateral_registry as address (32 bytes, left-padded)
+    let mut addr_bytes = [0u8; 32];
+    addr_bytes[12..32].copy_from_slice(collateral_registry.as_bytes());
+    data.extend_from_slice(&addr_bytes);
+
+    // itp_id as bytes32 (32 bytes)
+    data.extend_from_slice(itp_id.as_bytes());
+
+    // from_chain as uint256 (32 bytes)
+    let mut from_chain_bytes = [0u8; 32];
+    from_chain.to_big_endian(&mut from_chain_bytes);
+    data.extend_from_slice(&from_chain_bytes);
+
+    // to_chain as uint256 (32 bytes)
+    let mut to_chain_bytes = [0u8; 32];
+    to_chain.to_big_endian(&mut to_chain_bytes);
+    data.extend_from_slice(&to_chain_bytes);
+
+    // amount as uint256 (32 bytes)
+    let mut amount_bytes = [0u8; 32];
+    amount.to_big_endian(&mut amount_bytes);
+    data.extend_from_slice(&amount_bytes);
+
+    // tx_type as uint8, padded to 32 bytes
+    let mut tx_type_bytes = [0u8; 32];
+    tx_type_bytes[31] = tx_type;
+    data.extend_from_slice(&tx_type_bytes);
+
+    H256::from_slice(&ethers::utils::keccak256(&data))
+}
+
+/// Build message hash for MintBridgedShares consensus
+///
+/// Matches: keccak256(abi.encode(chainid, bridgeProxy, "mintBridgedShares", itpId, user, amount))
+/// Uses ABI encoding with dynamic string.
+pub fn build_mint_bridged_shares_hash(
+    chain_id: u64,
+    bridge_proxy: Address,
+    itp_id: H256,
+    user: Address,
+    amount: U256,
+) -> H256 {
+    // abi.encode(uint256, address, string, bytes32, address, uint256)
+    // Head: 6 slots (chain_id, address, string_offset, itp_id, user, amount)
+    // Tail: string length + padded data for "mintBridgedShares"
+    let mut data = Vec::with_capacity(320);
+
+    // chain_id as uint256 (32 bytes)
+    let mut chain_id_bytes = [0u8; 32];
+    U256::from(chain_id).to_big_endian(&mut chain_id_bytes);
+    data.extend_from_slice(&chain_id_bytes);
+
+    // bridge_proxy as address (32 bytes, left-padded)
+    let mut proxy_bytes = [0u8; 32];
+    proxy_bytes[12..32].copy_from_slice(bridge_proxy.as_bytes());
+    data.extend_from_slice(&proxy_bytes);
+
+    // string offset (192 = 6 * 32, points past the 6 head slots)
+    let mut offset_bytes = [0u8; 32];
+    U256::from(192).to_big_endian(&mut offset_bytes);
+    data.extend_from_slice(&offset_bytes);
+
+    // itp_id as bytes32 (32 bytes)
+    data.extend_from_slice(itp_id.as_bytes());
+
+    // user as address (32 bytes, left-padded)
+    let mut user_bytes = [0u8; 32];
+    user_bytes[12..32].copy_from_slice(user.as_bytes());
+    data.extend_from_slice(&user_bytes);
+
+    // amount as uint256 (32 bytes)
+    let mut amount_bytes = [0u8; 32];
+    amount.to_big_endian(&mut amount_bytes);
+    data.extend_from_slice(&amount_bytes);
+
+    // Dynamic string "mintBridgedShares" (17 bytes)
+    let s = b"mintBridgedShares";
+    let mut len_bytes = [0u8; 32];
+    U256::from(s.len()).to_big_endian(&mut len_bytes);
+    data.extend_from_slice(&len_bytes);
+
+    let mut padded = [0u8; 32];
+    padded[..s.len()].copy_from_slice(s);
+    data.extend_from_slice(&padded);
+
+    H256::from_slice(&ethers::utils::keccak256(&data))
+}
+
+/// Build calldata for CollateralRegistry.recordCollateralMove(itpId, fromChain, toChain, amount, txType, blsSig)
+pub fn build_record_collateral_move_calldata(
+    itp_id: H256,
+    from_chain: U256,
+    to_chain: U256,
+    amount: U256,
+    tx_type: u8,
+    bls_signature: &[u8],
+) -> Vec<u8> {
+    // recordCollateralMove(bytes32,uint256,uint256,uint256,uint8,bytes)
+    let selector = &ethers::utils::keccak256("recordCollateralMove(bytes32,uint256,uint256,uint256,uint8,bytes)")[..4];
+    let mut data = selector.to_vec();
+
+    // itp_id (32 bytes)
+    data.extend_from_slice(itp_id.as_bytes());
+
+    // from_chain (32 bytes)
+    let mut from_bytes = [0u8; 32];
+    from_chain.to_big_endian(&mut from_bytes);
+    data.extend_from_slice(&from_bytes);
+
+    // to_chain (32 bytes)
+    let mut to_bytes = [0u8; 32];
+    to_chain.to_big_endian(&mut to_bytes);
+    data.extend_from_slice(&to_bytes);
+
+    // amount (32 bytes)
+    let mut amount_bytes = [0u8; 32];
+    amount.to_big_endian(&mut amount_bytes);
+    data.extend_from_slice(&amount_bytes);
+
+    // tx_type as uint8, padded to 32 bytes
+    let mut tx_type_bytes = [0u8; 32];
+    tx_type_bytes[31] = tx_type;
+    data.extend_from_slice(&tx_type_bytes);
+
+    // bls_signature offset (192 = 6 * 32)
+    let mut offset = [0u8; 32];
+    U256::from(192).to_big_endian(&mut offset);
+    data.extend_from_slice(&offset);
+
+    // bls_signature length
+    let mut len_bytes = [0u8; 32];
+    U256::from(bls_signature.len()).to_big_endian(&mut len_bytes);
+    data.extend_from_slice(&len_bytes);
+
+    // bls_signature data (padded to 32 bytes)
+    data.extend_from_slice(bls_signature);
+    let pad_len = (32 - (bls_signature.len() % 32)) % 32;
+    data.extend(std::iter::repeat(0u8).take(pad_len));
+
+    data
+}
+
+/// Build calldata for BridgeProxy.mintBridgedShares(itpId, user, amount, blsSig)
+pub fn build_mint_bridged_shares_calldata(
+    itp_id: H256,
+    user: Address,
+    amount: U256,
+    signer_bitmap: U256,
+    aggregated_pubkey: &[u8],
+    bls_signature: &[u8],
+) -> Vec<u8> {
+    // mintBridgedShares(bytes32,address,uint256,uint256,bytes,bytes)
+    let selector = &ethers::utils::keccak256("mintBridgedShares(bytes32,address,uint256,uint256,bytes,bytes)")[..4];
+    let mut data = selector.to_vec();
+
+    // itp_id (32 bytes)
+    data.extend_from_slice(itp_id.as_bytes());
+
+    // user as address (32 bytes, left-padded)
+    let mut user_bytes = [0u8; 32];
+    user_bytes[12..32].copy_from_slice(user.as_bytes());
+    data.extend_from_slice(&user_bytes);
+
+    // amount (32 bytes)
+    let mut amount_bytes = [0u8; 32];
+    amount.to_big_endian(&mut amount_bytes);
+    data.extend_from_slice(&amount_bytes);
+
+    // signer_bitmap (32 bytes)
+    let mut bitmap_bytes = [0u8; 32];
+    signer_bitmap.to_big_endian(&mut bitmap_bytes);
+    data.extend_from_slice(&bitmap_bytes);
+
+    // aggregated_pubkey offset (dynamic: 6 * 32 = 192)
+    let mut pk_offset = [0u8; 32];
+    U256::from(192).to_big_endian(&mut pk_offset);
+    data.extend_from_slice(&pk_offset);
+
+    // bls_signature offset (dynamic: depends on pubkey length)
+    let pk_padded_len = aggregated_pubkey.len() + ((32 - (aggregated_pubkey.len() % 32)) % 32);
+    let sig_offset = 192 + 32 + pk_padded_len; // offset + pk_len_slot + pk_data
+    let mut sig_offset_bytes = [0u8; 32];
+    U256::from(sig_offset).to_big_endian(&mut sig_offset_bytes);
+    data.extend_from_slice(&sig_offset_bytes);
+
+    // aggregated_pubkey data (length + padded bytes)
+    let mut pk_len = [0u8; 32];
+    U256::from(aggregated_pubkey.len()).to_big_endian(&mut pk_len);
+    data.extend_from_slice(&pk_len);
+    data.extend_from_slice(aggregated_pubkey);
+    let pk_pad = (32 - (aggregated_pubkey.len() % 32)) % 32;
+    data.extend(std::iter::repeat(0u8).take(pk_pad));
+
+    // bls_signature data (length + padded bytes)
+    let mut sig_len = [0u8; 32];
+    U256::from(bls_signature.len()).to_big_endian(&mut sig_len);
+    data.extend_from_slice(&sig_len);
+    data.extend_from_slice(bls_signature);
+    let sig_pad = (32 - (bls_signature.len() % 32)) % 32;
+    data.extend(std::iter::repeat(0u8).take(sig_pad));
+
+    data
 }
 
 // ============================================================================

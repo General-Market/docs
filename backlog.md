@@ -1,5 +1,11 @@
 # Design Decision Backlog
 
+## Session: 20260219-1000-k8b3
+
+- [DECISION] 8-step bridge: RecordCollateralMove hash uses ABI encoding (32-byte padded addresses) to match Solidity abi.encode(). MintBridgedShares hash uses ABI encoding with dynamic string offset for "mintBridgedShares" function selector matching.
+- [DECISION] 8-step bridge: Reuse existing release_to_vault phase for step 5 (custody→vault) since it already calls BLSCustody.execute. No new CustodyToVault phase needed — the plan's "CustodyToVaultProposal" maps to existing ReleaseToVaultProposal.
+- [DECISION] 8-step bridge: Keep L3→Arb bridge execution as simulated mint for local E2E (existing behavior). Real bridge contract calls (L3BridgeCustody.initiateBridge → ArbBridgeCustody.completeBridge) deferred to production integration.
+
 ## Session: 20260218-1800-b5t9
 
 - [DECISION] ITP Backtester: 4-table schema (sim_runs, sim_nav_series, sim_holdings, sim_trades) with unique constraint on config params for caching. CASCADE deletes simplify invalidation.

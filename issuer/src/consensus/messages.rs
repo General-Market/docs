@@ -638,6 +638,100 @@ impl ConsensusMessageHandler {
                     signature,
                 }
             }
+            // 8-step bridge: RecordCollateralMove consensus messages
+            P2PMessage::RecordCollateralMoveProposal {
+                leader_id,
+                cycle_number,
+                itp_id,
+                from_chain,
+                to_chain,
+                amount,
+                tx_type,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    cycle_number,
+                    itp_id = ?itp_id,
+                    "Received RecordCollateralMoveProposal"
+                );
+                MessageHandleResult::ProcessRecordCollateralMoveProposal {
+                    from: leader_id,
+                    cycle_number,
+                    itp_id,
+                    from_chain,
+                    to_chain,
+                    amount,
+                    tx_type,
+                    leader_signature,
+                }
+            }
+            P2PMessage::RecordCollateralMoveSign {
+                signer_id,
+                signer_index,
+                cycle_number,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    cycle_number,
+                    "Received RecordCollateralMoveSign"
+                );
+                MessageHandleResult::ProcessRecordCollateralMoveSign {
+                    from: signer_id,
+                    signer_index,
+                    cycle_number,
+                    signature,
+                }
+            }
+            // 8-step bridge: MintBridgedShares consensus messages
+            P2PMessage::MintBridgedSharesProposal {
+                leader_id,
+                cycle_number,
+                itp_id,
+                user,
+                amount,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    cycle_number,
+                    itp_id = ?itp_id,
+                    "Received MintBridgedSharesProposal"
+                );
+                MessageHandleResult::ProcessMintBridgedSharesProposal {
+                    from: leader_id,
+                    cycle_number,
+                    itp_id,
+                    user,
+                    amount,
+                    leader_signature,
+                }
+            }
+            P2PMessage::MintBridgedSharesSign {
+                signer_id,
+                signer_index,
+                cycle_number,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    cycle_number,
+                    "Received MintBridgedSharesSign"
+                );
+                MessageHandleResult::ProcessMintBridgedSharesSign {
+                    from: signer_id,
+                    signer_index,
+                    cycle_number,
+                    signature,
+                }
+            }
             _ => {
                 trace!(?from, "Non-consensus message received");
                 MessageHandleResult::Ignored
@@ -1129,6 +1223,38 @@ pub enum MessageHandleResult {
         /// Signer's index in the issuer set (for bitmap calculation)
         signer_index: u8,
         order_id: U256,
+        signature: P2PBLSSignature,
+    },
+    // 8-step bridge: RecordCollateralMove
+    ProcessRecordCollateralMoveProposal {
+        from: PeerId,
+        cycle_number: u64,
+        itp_id: H256,
+        from_chain: U256,
+        to_chain: U256,
+        amount: U256,
+        tx_type: u8,
+        leader_signature: P2PBLSSignature,
+    },
+    ProcessRecordCollateralMoveSign {
+        from: PeerId,
+        signer_index: u8,
+        cycle_number: u64,
+        signature: P2PBLSSignature,
+    },
+    // 8-step bridge: MintBridgedShares
+    ProcessMintBridgedSharesProposal {
+        from: PeerId,
+        cycle_number: u64,
+        itp_id: H256,
+        user: Address,
+        amount: U256,
+        leader_signature: P2PBLSSignature,
+    },
+    ProcessMintBridgedSharesSign {
+        from: PeerId,
+        signer_index: u8,
+        cycle_number: u64,
         signature: P2PBLSSignature,
     },
 }
