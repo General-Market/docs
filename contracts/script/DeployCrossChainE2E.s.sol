@@ -13,10 +13,11 @@ import "../src/registry/AssetPairRegistry.sol";
 import "../src/bridge/BridgeProxy.sol";
 import "../src/bridge/BridgedItpFactory.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "./helpers/DeployBLSHelper.sol";
 
 /// @title DeployCrossChainE2E - Cross-chain ITP Creation E2E (Story 6.21)
 /// @notice Deploys ALL contracts (L3 + Bridge) on single L3 chain for E2E testing
-contract DeployCrossChainE2E is Script {
+contract DeployCrossChainE2E is DeployBLSHelper {
     bytes32 constant BITGET_SOURCE = keccak256("BITGET");
     address constant MOCK_USDC_QUOTE = address(0xdead000000000000000000000000000000000001);
 
@@ -107,33 +108,30 @@ contract DeployCrossChainE2E is Script {
             address(0x90F79bf6EB2c4f870365E785982E1f101E93b906)
         ];
         for (uint256 i = 0; i < 3; i++) {
-            // Real IssuerRegistry requires 128-byte G2 BLS pubkeys
-            bytes memory blsPubkey = new bytes(128);
-            for (uint256 j = 0; j < 128; j++) {
-                blsPubkey[j] = bytes1(uint8(i + 1 + j));
-            }
-            // Deployer (admin) is the broadcast sender, so no vm.prank needed
-            IssuerRegistry(issuerRegistry).addIssuer(issuers[i], bytes32(bytes("127.0.0.1:9000")), blsPubkey);
+            bytes memory pubkey = blsPubkey(uint8(i));
+            IssuerRegistry(issuerRegistry).addIssuer(issuers[i], bytes32(bytes("127.0.0.1:9000")), pubkey);
         }
-        // Aggregated pubkey: empty by default (computed off-chain)
+        IssuerRegistry(issuerRegistry).setAggregatedPubkey(blsAggPubkey("0,1,2"));
     }
 
     function _whitelistAssets() internal {
-        // Mock BN254 pairing precompile (address 0x08) to accept any signature during deployment
-        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
-
         AssetPairRegistry apr = AssetPairRegistry(assetPairRegistry);
 
-        // Propose all 627 assets
+        // Propose all 627 assets with real BLS signatures
         for (uint256 i = 1; i <= 627; i++) {
-            apr.proposeAsset(address(uint160(i)), "");
+            address asset = address(uint160(i));
+            uint256 nonce = apr.getNonce();
+            bytes32 msg_ = keccak256(abi.encode("PROPOSE_ASSET", block.chainid, address(apr), asset, nonce));
+            apr.proposeAsset(asset, blsSign("0,1,2", msg_));
         }
         // Warp past timelock and activate assets + propose pairs
         vm.warp(block.timestamp + 2 days + 1);
         for (uint256 i = 1; i <= 627; i++) {
             address asset = address(uint160(i));
             apr.activateAsset(asset);
-            apr.proposePair(asset, BITGET_SOURCE, MOCK_USDC_QUOTE, 0, "");
+            uint256 nonce = apr.getNonce();
+            bytes32 msg_ = keccak256(abi.encode("PROPOSE_PAIR", block.chainid, address(apr), asset, BITGET_SOURCE, MOCK_USDC_QUOTE, uint256(0), nonce));
+            apr.proposePair(asset, BITGET_SOURCE, MOCK_USDC_QUOTE, 0, blsSign("0,1,2", msg_));
         }
         // Warp past timelock and activate pairs
         vm.warp(block.timestamp + 2 days + 1);
@@ -142,8 +140,6 @@ contract DeployCrossChainE2E is Script {
             bytes32 pairId = apr.computePairId(asset, BITGET_SOURCE, MOCK_USDC_QUOTE, 0);
             apr.activatePair(pairId);
         }
-
-        vm.clearMockedCalls();
     }
 
     function _exportDeployment() internal {

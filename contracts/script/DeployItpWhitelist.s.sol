@@ -5,6 +5,7 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 import "../src/registry/AssetPairRegistry.sol";
+import "./helpers/DeployBLSHelper.sol";
 
 /// @title DeployItpWhitelist - Whitelist 627 tradeable assets for E2E testing
 /// @notice Creates SYNTHETIC asset addresses (derived from asset IDs) and whitelists them with Bitget pairs
@@ -17,7 +18,7 @@ import "../src/registry/AssetPairRegistry.sol";
 ///      - Asset = Individual tradeable crypto (Bitcoin, Ethereum, etc.) - 627 in assets.json
 ///      - Pair = Trading configuration (asset + source + quote token + chain)
 ///      - ITP = Index Tracking Product - user-created basket/ETF containing assets
-contract DeployItpWhitelist is Script {
+contract DeployItpWhitelist is DeployBLSHelper {
     // ============ CONSTANTS ============
 
     uint256 public constant CHAIN_ID = 111222333;
@@ -98,12 +99,12 @@ contract DeployItpWhitelist is Script {
         uint256 deployerKey = _getDeployerKey();
         vm.startBroadcast(deployerKey);
 
-        // Mock BN254 pairing precompile (address 0x08) to accept any signature during deployment
-        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
-
-        // Propose all 627 assets
+        // Propose all 627 assets with real BLS signatures
         for (uint256 i = 1; i <= 627; i++) {
-            registry.proposeAsset(assetIdToAddress(i), "");
+            address asset = assetIdToAddress(i);
+            uint256 nonce = registry.getNonce();
+            bytes32 msg_ = keccak256(abi.encode("PROPOSE_ASSET", block.chainid, address(registry), asset, nonce));
+            registry.proposeAsset(asset, blsSign("0,1,2", msg_));
         }
         console.log("  All 627 assets proposed");
 
@@ -114,7 +115,9 @@ contract DeployItpWhitelist is Script {
         for (uint256 i = 1; i <= 627; i++) {
             address asset = assetIdToAddress(i);
             registry.activateAsset(asset);
-            registry.proposePair(asset, BITGET_SOURCE, MOCK_USDC, CEX_CHAIN_ID, "");
+            uint256 nonce = registry.getNonce();
+            bytes32 msg_ = keccak256(abi.encode("PROPOSE_PAIR", block.chainid, address(registry), asset, BITGET_SOURCE, MOCK_USDC, CEX_CHAIN_ID, nonce));
+            registry.proposePair(asset, BITGET_SOURCE, MOCK_USDC, CEX_CHAIN_ID, blsSign("0,1,2", msg_));
         }
         console.log("  All 627 assets activated, pairs proposed");
 
@@ -129,7 +132,6 @@ contract DeployItpWhitelist is Script {
         }
         console.log("  All 627 pairs activated");
 
-        vm.clearMockedCalls();
         vm.stopBroadcast();
     }
 

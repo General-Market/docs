@@ -10,10 +10,11 @@ import "../src/core/Index.sol";
 import "../src/bridge/BridgeProxy.sol";
 import "../src/bridge/BridgedItpFactory.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "./helpers/DeployBLSHelper.sol";
 
 /// @title DeployBridgeE2E - Deploy Bridge + MockBitget on existing L3 deployment
 /// @notice Uses existing IssuerRegistry, Index, AssetPairRegistry from L3 deployment
-contract DeployBridgeE2E is Script {
+contract DeployBridgeE2E is DeployBLSHelper {
     bytes32 constant BITGET_SOURCE = keccak256("BITGET");
     address constant MOCK_USDC_QUOTE = address(0xdead000000000000000000000000000000000001);
 
@@ -69,21 +70,23 @@ contract DeployBridgeE2E is Script {
         Index(indexContract).setAuthorizedBridge(bridgeProxy);
         console.log("Authorized bridge set on Index");
 
-        // Whitelist 627 assets on AssetPairRegistry using propose/activate flow
-        // Mock BN254 pairing precompile (address 0x08) to accept any signature during deployment
-        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
-        console.log("Whitelisting 627 assets (propose/activate flow)...");
+        // Whitelist 627 assets on AssetPairRegistry using propose/activate flow with real BLS
+        console.log("Whitelisting 627 assets (propose/activate flow with real BLS)...");
         AssetPairRegistry apr = AssetPairRegistry(assetPairRegistry);
 
         for (uint256 i = 1; i <= 627; i++) {
             address asset = address(uint160(i));
-            apr.proposeAsset(asset, "");
+            uint256 nonce = apr.getNonce();
+            bytes32 msg_ = keccak256(abi.encode("PROPOSE_ASSET", block.chainid, address(apr), asset, nonce));
+            apr.proposeAsset(asset, blsSign("0,1,2", msg_));
         }
         vm.warp(block.timestamp + 2 days + 1);
         for (uint256 i = 1; i <= 627; i++) {
             address asset = address(uint160(i));
             apr.activateAsset(asset);
-            apr.proposePair(asset, BITGET_SOURCE, MOCK_USDC_QUOTE, 0, "");
+            uint256 nonce = apr.getNonce();
+            bytes32 msg_ = keccak256(abi.encode("PROPOSE_PAIR", block.chainid, address(apr), asset, BITGET_SOURCE, MOCK_USDC_QUOTE, uint256(0), nonce));
+            apr.proposePair(asset, BITGET_SOURCE, MOCK_USDC_QUOTE, 0, blsSign("0,1,2", msg_));
         }
         vm.warp(block.timestamp + 2 days + 1);
         for (uint256 i = 1; i <= 627; i++) {
@@ -91,7 +94,6 @@ contract DeployBridgeE2E is Script {
             bytes32 pairId = apr.computePairId(asset, BITGET_SOURCE, MOCK_USDC_QUOTE, 0);
             apr.activatePair(pairId);
         }
-        vm.clearMockedCalls();
         console.log("627 assets whitelisted and activated");
 
         vm.stopBroadcast();
