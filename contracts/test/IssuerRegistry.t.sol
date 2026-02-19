@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Test, Vm} from "forge-std/Test.sol";
+import {Vm} from "forge-std/Test.sol";
+import "./helpers/TestHelper.sol";
 import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
 import {IIssuerRegistry} from "../src/interfaces/IIssuerRegistry.sol";
 import {Governance} from "../src/Governance.sol";
@@ -13,7 +14,7 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 
 /// @title IssuerRegistryTest - Comprehensive tests for IssuerRegistry.sol (Story 2.12)
 /// @notice Tests issuer management, aggregated key updates, and access control
-contract IssuerRegistryTest is Test {
+contract IssuerRegistryTest is TestHelper {
     IssuerRegistry public implementation;
     IssuerRegistry public registry;
     ERC1967Proxy public proxy;
@@ -32,14 +33,10 @@ contract IssuerRegistryTest is Test {
     bytes32 public constant IP_2 = bytes32(uint256(0x7f000002)); // 127.0.0.2
     bytes32 public constant IP_3 = bytes32(uint256(0x7f000003)); // 127.0.0.3
 
-    // Test BLS pubkeys (G2 points, 128 bytes)
-    // These are mock G2 pubkeys for testing - actual verification happens via pairing
+    // Real BLS pubkeys from deterministic seeds (generated via FFI in setUp)
     bytes public pubkey1;
     bytes public pubkey2;
     bytes public pubkey3;
-
-    // Dummy 64-byte BLS signature for use with the mocked pairing precompile
-    bytes public dummyBlsSignature = new bytes(64);
 
     // Events for expectEmit
     event IssuerAdded(uint256 indexed issuerId, address indexed addr, bytes blsPubkey);
@@ -58,21 +55,35 @@ contract IssuerRegistryTest is Test {
         proxy = new ERC1967Proxy(address(implementation), initData);
         registry = IssuerRegistry(address(proxy));
 
-        // Mock BN254 pairing precompile (address 0x08) to accept any signature
-        // This allows tests to use mock signatures without real BLS key setup
-        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
+        // Generate REAL BLS G2 pubkeys from deterministic seeds via FFI
+        pubkey1 = blsPubkey(0);
+        pubkey2 = blsPubkey(1);
+        pubkey3 = blsPubkey(2);
 
-        // Set aggregated pubkey so BLS verification paths that check it don't revert
+        // Set the aggregated pubkey from seeds 0,1,2
+        bytes memory aggPubkey = blsAggPubkey("0,1,2");
         vm.prank(admin);
-        registry.setAggregatedPubkey(new bytes(128));
+        registry.setAggregatedPubkey(aggPubkey);
+    }
 
-        // Generate mock G2 pubkeys (128 bytes each)
-        // G2 point format: [x_im (32), x_re (32), y_im (32), y_re (32)]
-        // We use simple distinct values for testing - actual G2 curve validation
-        // happens at the pairing precompile level, not at storage level
-        pubkey1 = abi.encodePacked(uint256(1), uint256(2), uint256(3), uint256(4));
-        pubkey2 = abi.encodePacked(uint256(5), uint256(6), uint256(7), uint256(8));
-        pubkey3 = abi.encodePacked(uint256(9), uint256(10), uint256(11), uint256(12));
+    // ============ BLS SIGNING HELPERS ============
+
+    /// @notice Sign a requestKeyRotation message with the individual issuer's key
+    function _signRotationRequest(uint256 issuerId, bytes memory newPubkey, uint8 seedIndex) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode("ROTATE", issuerId, newPubkey));
+        return blsSign(vm.toString(uint256(seedIndex)), message);
+    }
+
+    /// @notice Sign an approveRotation message with the approving issuer's key
+    function _signApproval(uint256 rotatingIssuerId, bytes memory newPubkey, uint8 approverSeedIndex) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode("APPROVE_ROTATION", rotatingIssuerId, newPubkey));
+        return blsSign(vm.toString(uint256(approverSeedIndex)), message);
+    }
+
+    /// @notice Sign an updateIssuerIp message with the issuer's key
+    function _signIpUpdate(uint256 issuerId, bytes32 newIp, uint8 seedIndex) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode("UPDATE_IP", issuerId, newIp));
+        return blsSign(vm.toString(uint256(seedIndex)), message);
     }
 
     // ============ INITIALIZATION TESTS ============
@@ -82,7 +93,7 @@ contract IssuerRegistryTest is Test {
     }
 
     function test_initialization_aggregatedPubkeySetInSetUp() public view {
-        // setUp sets a 128-byte aggregated pubkey for BLS verification paths
+        // setUp sets a real aggregated pubkey from seeds 0,1,2
         bytes memory aggPubkey = registry.getAggregatedPubkey();
         assertEq(aggPubkey.length, 128);
     }
@@ -164,7 +175,7 @@ contract IssuerRegistryTest is Test {
     }
 
     function test_addIssuer_storesPubkeyCorrectly() public {
-        // G2 aggregation is computed off-chain; setUp sets a 128-byte placeholder
+        // Aggregated pubkey is set in setUp
         bytes memory initialAgg = registry.getAggregatedPubkey();
         assertEq(initialAgg.length, 128);
 
@@ -535,21 +546,15 @@ contract IssuerRegistryTest is Test {
     event KeyRotationCancelled(uint256 indexed issuerId);
 
     /// @notice Helper to set up 20 issuers for rotation tests
-    /// @dev Generates mock 128-byte G2 pubkeys for each issuer
+    /// @dev Uses real BLS pubkeys from deterministic seeds via FFI
     function _setupIssuersForRotation() internal returns (uint256[] memory issuerIds, bytes[] memory pubkeys) {
         issuerIds = new uint256[](20);
         pubkeys = new bytes[](20);
 
         vm.startPrank(admin);
         for (uint256 i = 0; i < 20; i++) {
-            // Generate mock 128-byte G2 pubkey: [x_im, x_re, y_im, y_re]
-            // Each coordinate is unique per issuer for testing
-            pubkeys[i] = abi.encodePacked(
-                uint256(100 + i * 4),     // x_im
-                uint256(101 + i * 4),     // x_re
-                uint256(102 + i * 4),     // y_im
-                uint256(103 + i * 4)      // y_re
-            );
+            // Generate real 128-byte G2 pubkey from deterministic seed
+            pubkeys[i] = blsPubkey(uint8(i));
             issuerIds[i] = registry.addIssuer(makeAddr(string(abi.encodePacked("issuer", i))), bytes32(i), pubkeys[i]);
         }
         vm.stopPrank();
@@ -563,11 +568,12 @@ contract IssuerRegistryTest is Test {
         vm.prank(admin);
         uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1);
 
+        bytes memory sig = _signRotationRequest(issuerId, pubkey2, 0);
+
         vm.expectEmit(true, false, false, true);
         emit KeyRotationRequested(issuerId, pubkey2);
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerId, pubkey2, dummyBlsSignature);
+        registry.requestKeyRotation(issuerId, pubkey2, sig);
 
         TypesLib.KeyRotation memory rotation = registry.getPendingRotation(issuerId);
         assertEq(rotation.issuerId, issuerId);
@@ -583,9 +589,11 @@ contract IssuerRegistryTest is Test {
         vm.prank(admin);
         uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1);
 
-        // Non-admin call succeeds because BLS precompile is mocked
+        bytes memory sig = _signRotationRequest(issuerId, pubkey2, 0);
+
+        // Non-admin call succeeds because BLS signature is valid
         vm.prank(user);
-        registry.requestKeyRotation(issuerId, pubkey2, dummyBlsSignature);
+        registry.requestKeyRotation(issuerId, pubkey2, sig);
 
         TypesLib.KeyRotation memory rotation = registry.getPendingRotation(issuerId);
         assertEq(rotation.newPubkey, pubkey2);
@@ -593,8 +601,7 @@ contract IssuerRegistryTest is Test {
 
     function test_requestKeyRotation_revertsIssuerNotFound() public {
         vm.expectRevert(abi.encodeWithSelector(IssuerRegistry.IssuerNotFound.selector, 999));
-        vm.prank(admin);
-        registry.requestKeyRotation(999, pubkey2, dummyBlsSignature);
+        registry.requestKeyRotation(999, pubkey2, new bytes(64));
     }
 
     function test_requestKeyRotation_revertsIssuerNotActive() public {
@@ -605,8 +612,7 @@ contract IssuerRegistryTest is Test {
         registry.removeIssuer(issuerId);
 
         vm.expectRevert(abi.encodeWithSelector(IssuerRegistry.IssuerNotActive.selector, issuerId));
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerId, pubkey2, dummyBlsSignature);
+        registry.requestKeyRotation(issuerId, pubkey2, new bytes(64));
     }
 
     function test_requestKeyRotation_revertsInvalidPubkeyLength() public {
@@ -614,10 +620,11 @@ contract IssuerRegistryTest is Test {
         uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1);
 
         bytes memory shortPubkey = new bytes(32);
+        // BLS check happens before pubkey length check, so sign correctly
+        bytes memory sig = _signRotationRequest(issuerId, shortPubkey, 0);
 
         vm.expectRevert(abi.encodeWithSelector(IssuerRegistry.InvalidPubkeyLength.selector, 32));
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerId, shortPubkey, dummyBlsSignature);
+        registry.requestKeyRotation(issuerId, shortPubkey, sig);
     }
 
     function test_requestKeyRotation_revertsInvalidPubkey() public {
@@ -626,43 +633,43 @@ contract IssuerRegistryTest is Test {
 
         // 64-byte pubkey is invalid length (must be 128 for G2)
         bytes memory invalidPubkey = abi.encodePacked(uint256(12345), uint256(67890));
+        bytes memory sig = _signRotationRequest(issuerId, invalidPubkey, 0);
 
         vm.expectRevert(abi.encodeWithSelector(IssuerRegistry.InvalidPubkeyLength.selector, 64));
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerId, invalidPubkey, dummyBlsSignature);
+        registry.requestKeyRotation(issuerId, invalidPubkey, sig);
     }
 
     function test_requestKeyRotation_revertsRotationAlreadyPending() public {
         vm.prank(admin);
         uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1);
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerId, pubkey2, dummyBlsSignature);
+        registry.requestKeyRotation(issuerId, pubkey2, _signRotationRequest(issuerId, pubkey2, 0));
 
         vm.expectRevert(abi.encodeWithSelector(IssuerRegistry.RotationAlreadyPending.selector, issuerId));
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerId, pubkey3, dummyBlsSignature);
+        registry.requestKeyRotation(issuerId, pubkey3, _signRotationRequest(issuerId, pubkey3, 0));
     }
 
     // ============ approveRotation Tests ============
 
     function test_approveRotation_success() public {
-        (uint256[] memory issuerIds,) = _setupIssuersForRotation();
+        (uint256[] memory issuerIds, bytes[] memory pubkeys) = _setupIssuersForRotation();
         uint256 rotatingId = issuerIds[0];
         uint256 approvingId = issuerIds[1];
 
-        // Request rotation
-        vm.prank(admin);
-        registry.requestKeyRotation(rotatingId, pubkey2, dummyBlsSignature);
+        // Request rotation (seed 0 signs)
+        registry.requestKeyRotation(rotatingId, pubkey2, _signRotationRequest(rotatingId, pubkey2, 0));
+
+        // Get the new pubkey for the approval message
+        TypesLib.KeyRotation memory rotation = registry.getPendingRotation(rotatingId);
+        bytes memory sig = _signApproval(rotatingId, rotation.newPubkey, 1);
 
         vm.expectEmit(true, true, false, true);
         emit KeyRotationApproved(rotatingId, approvingId, 1);
 
-        vm.prank(admin);
-        registry.approveRotation(rotatingId, approvingId, dummyBlsSignature);
+        registry.approveRotation(rotatingId, approvingId, sig);
 
-        TypesLib.KeyRotation memory rotation = registry.getPendingRotation(rotatingId);
-        assertEq(rotation.approvalCount, 1);
+        TypesLib.KeyRotation memory rotationAfter = registry.getPendingRotation(rotatingId);
+        assertEq(rotationAfter.approvalCount, 1);
     }
 
     function test_approveRotation_anyoneCanCallWithValidBLS() public {
@@ -670,74 +677,73 @@ contract IssuerRegistryTest is Test {
         // Anyone can relay a valid BLS-signed approval.
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
-
-        // Non-admin call succeeds because BLS precompile is mocked
-        vm.prank(user);
-        registry.approveRotation(issuerIds[0], issuerIds[1], dummyBlsSignature);
+        registry.requestKeyRotation(issuerIds[0], pubkey2, _signRotationRequest(issuerIds[0], pubkey2, 0));
 
         TypesLib.KeyRotation memory rotation = registry.getPendingRotation(issuerIds[0]);
-        assertEq(rotation.approvalCount, 1);
+        bytes memory sig = _signApproval(issuerIds[0], rotation.newPubkey, 1);
+
+        // Non-admin call succeeds because BLS signature is valid
+        vm.prank(user);
+        registry.approveRotation(issuerIds[0], issuerIds[1], sig);
+
+        TypesLib.KeyRotation memory rotationAfter = registry.getPendingRotation(issuerIds[0]);
+        assertEq(rotationAfter.approvalCount, 1);
     }
 
     function test_approveRotation_revertsNoRotationPending() public {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
         vm.expectRevert(abi.encodeWithSelector(IssuerRegistry.NoRotationPending.selector, issuerIds[0]));
-        vm.prank(admin);
-        registry.approveRotation(issuerIds[0], issuerIds[1], dummyBlsSignature);
+        registry.approveRotation(issuerIds[0], issuerIds[1], new bytes(64));
     }
 
     function test_approveRotation_revertsSelfApproval() public {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
+        registry.requestKeyRotation(issuerIds[0], pubkey2, _signRotationRequest(issuerIds[0], pubkey2, 0));
+
+        TypesLib.KeyRotation memory rotation = registry.getPendingRotation(issuerIds[0]);
+        bytes memory sig = _signApproval(issuerIds[0], rotation.newPubkey, 0);
 
         vm.expectRevert(IssuerRegistry.SelfApprovalNotAllowed.selector);
-        vm.prank(admin);
-        registry.approveRotation(issuerIds[0], issuerIds[0], dummyBlsSignature);
+        registry.approveRotation(issuerIds[0], issuerIds[0], sig);
     }
 
     function test_approveRotation_revertsDoubleApproval() public {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
+        registry.requestKeyRotation(issuerIds[0], pubkey2, _signRotationRequest(issuerIds[0], pubkey2, 0));
 
-        vm.prank(admin);
-        registry.approveRotation(issuerIds[0], issuerIds[1], dummyBlsSignature);
+        TypesLib.KeyRotation memory rotation = registry.getPendingRotation(issuerIds[0]);
+        bytes memory sig1 = _signApproval(issuerIds[0], rotation.newPubkey, 1);
+        bytes memory sig2 = _signApproval(issuerIds[0], rotation.newPubkey, 1);
+
+        registry.approveRotation(issuerIds[0], issuerIds[1], sig1);
 
         vm.expectRevert(abi.encodeWithSelector(IssuerRegistry.AlreadyApproved.selector, issuerIds[1]));
-        vm.prank(admin);
-        registry.approveRotation(issuerIds[0], issuerIds[1], dummyBlsSignature);
+        registry.approveRotation(issuerIds[0], issuerIds[1], sig2);
     }
 
     function test_approveRotation_revertsApprovingIssuerNotFound() public {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
+        registry.requestKeyRotation(issuerIds[0], pubkey2, _signRotationRequest(issuerIds[0], pubkey2, 0));
 
         vm.expectRevert(abi.encodeWithSelector(IssuerRegistry.IssuerNotFound.selector, 999));
-        vm.prank(admin);
-        registry.approveRotation(issuerIds[0], 999, dummyBlsSignature);
+        registry.approveRotation(issuerIds[0], 999, new bytes(64));
     }
 
     function test_approveRotation_revertsApprovingIssuerNotActive() public {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
+        registry.requestKeyRotation(issuerIds[0], pubkey2, _signRotationRequest(issuerIds[0], pubkey2, 0));
 
         // Remove approving issuer
         vm.prank(admin);
         registry.removeIssuer(issuerIds[1]);
 
         vm.expectRevert(abi.encodeWithSelector(IssuerRegistry.IssuerNotActive.selector, issuerIds[1]));
-        vm.prank(admin);
-        registry.approveRotation(issuerIds[0], issuerIds[1], dummyBlsSignature);
+        registry.approveRotation(issuerIds[0], issuerIds[1], new bytes(64));
     }
 
     // ============ executeRotation Tests ============
@@ -747,24 +753,18 @@ contract IssuerRegistryTest is Test {
         uint256 rotatingId = issuerIds[0];
         bytes memory oldPubkey = pubkeys[0];
 
-        // Generate new mock 128-byte G2 pubkey
-        bytes memory newPubkey = abi.encodePacked(
-            uint256(1000),
-            uint256(1001),
-            uint256(1002),
-            uint256(1003)
-        );
+        // Generate new real 128-byte G2 pubkey from seed 20 (not used by any issuer)
+        bytes memory newPubkey = blsPubkey(20);
 
-        // Request rotation
-        vm.prank(admin);
-        registry.requestKeyRotation(rotatingId, newPubkey, dummyBlsSignature);
+        // Request rotation (seed 0 signs)
+        registry.requestKeyRotation(rotatingId, newPubkey, _signRotationRequest(rotatingId, newPubkey, 0));
 
         // Get 10 approvals from other issuers
-        vm.startPrank(admin);
+        TypesLib.KeyRotation memory rotation = registry.getPendingRotation(rotatingId);
         for (uint256 i = 1; i <= 10; i++) {
-            registry.approveRotation(rotatingId, issuerIds[i], dummyBlsSignature);
+            bytes memory sig = _signApproval(rotatingId, rotation.newPubkey, uint8(i));
+            registry.approveRotation(rotatingId, issuerIds[i], sig);
         }
-        vm.stopPrank();
 
         // Wait for timelock (24h) + safe period (1h)
         vm.warp(block.timestamp + 25 hours);
@@ -776,8 +776,8 @@ contract IssuerRegistryTest is Test {
         registry.executeRotation(rotatingId);
 
         // Verify rotation
-        TypesLib.KeyRotation memory rotation = registry.getPendingRotation(rotatingId);
-        assertTrue(rotation.executed);
+        TypesLib.KeyRotation memory rotationAfter = registry.getPendingRotation(rotatingId);
+        assertTrue(rotationAfter.executed);
 
         // Verify issuer pubkey updated
         TypesLib.Issuer memory issuer = registry.getIssuer(rotatingId);
@@ -795,15 +795,15 @@ contract IssuerRegistryTest is Test {
     function test_executeRotation_revertsInsufficientApprovals() public {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
+        bytes memory newPubkey = blsPubkey(20);
+        registry.requestKeyRotation(issuerIds[0], newPubkey, _signRotationRequest(issuerIds[0], newPubkey, 0));
 
         // Only get 9 approvals (need 10)
-        vm.startPrank(admin);
+        TypesLib.KeyRotation memory rotation = registry.getPendingRotation(issuerIds[0]);
         for (uint256 i = 1; i <= 9; i++) {
-            registry.approveRotation(issuerIds[0], issuerIds[i], dummyBlsSignature);
+            bytes memory sig = _signApproval(issuerIds[0], rotation.newPubkey, uint8(i));
+            registry.approveRotation(issuerIds[0], issuerIds[i], sig);
         }
-        vm.stopPrank();
 
         vm.warp(block.timestamp + 25 hours);
 
@@ -814,15 +814,15 @@ contract IssuerRegistryTest is Test {
     function test_executeRotation_revertsTimelockNotExpired() public {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
+        bytes memory newPubkey = blsPubkey(20);
+        registry.requestKeyRotation(issuerIds[0], newPubkey, _signRotationRequest(issuerIds[0], newPubkey, 0));
 
         // Get 10 approvals
-        vm.startPrank(admin);
+        TypesLib.KeyRotation memory rotation = registry.getPendingRotation(issuerIds[0]);
         for (uint256 i = 1; i <= 10; i++) {
-            registry.approveRotation(issuerIds[0], issuerIds[i], dummyBlsSignature);
+            bytes memory sig = _signApproval(issuerIds[0], rotation.newPubkey, uint8(i));
+            registry.approveRotation(issuerIds[0], issuerIds[i], sig);
         }
-        vm.stopPrank();
 
         // Only wait 23 hours (need 24)
         vm.warp(block.timestamp + 23 hours);
@@ -834,22 +834,22 @@ contract IssuerRegistryTest is Test {
     function test_executeRotation_revertsSafePeriodNotElapsed() public {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
+        bytes memory newPubkey = blsPubkey(20);
+        registry.requestKeyRotation(issuerIds[0], newPubkey, _signRotationRequest(issuerIds[0], newPubkey, 0));
 
         // Get 10 approvals
-        vm.startPrank(admin);
+        TypesLib.KeyRotation memory rotation = registry.getPendingRotation(issuerIds[0]);
         for (uint256 i = 1; i <= 10; i++) {
-            registry.approveRotation(issuerIds[0], issuerIds[i], dummyBlsSignature);
+            bytes memory sig = _signApproval(issuerIds[0], rotation.newPubkey, uint8(i));
+            registry.approveRotation(issuerIds[0], issuerIds[i], sig);
         }
-        vm.stopPrank();
 
         // Fast forward 24h - timelock satisfied, but we'll test safe period by adding late approval
         vm.warp(block.timestamp + 24 hours);
 
         // Add one more approval (11th) now - this resets the safe period timer
-        vm.prank(admin);
-        registry.approveRotation(issuerIds[0], issuerIds[11], dummyBlsSignature);
+        bytes memory lateSig = _signApproval(issuerIds[0], rotation.newPubkey, 11);
+        registry.approveRotation(issuerIds[0], issuerIds[11], lateSig);
 
         // Try to execute immediately - safe period (1h) hasn't passed since the late approval
         vm.expectRevert(); // SafePeriodNotElapsed
@@ -868,14 +868,14 @@ contract IssuerRegistryTest is Test {
     function test_executeRotation_revertsAlreadyExecuted() public {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
+        bytes memory newPubkey = blsPubkey(20);
+        registry.requestKeyRotation(issuerIds[0], newPubkey, _signRotationRequest(issuerIds[0], newPubkey, 0));
 
-        vm.startPrank(admin);
+        TypesLib.KeyRotation memory rotation = registry.getPendingRotation(issuerIds[0]);
         for (uint256 i = 1; i <= 10; i++) {
-            registry.approveRotation(issuerIds[0], issuerIds[i], dummyBlsSignature);
+            bytes memory sig = _signApproval(issuerIds[0], rotation.newPubkey, uint8(i));
+            registry.approveRotation(issuerIds[0], issuerIds[i], sig);
         }
-        vm.stopPrank();
 
         vm.warp(block.timestamp + 25 hours);
 
@@ -890,15 +890,15 @@ contract IssuerRegistryTest is Test {
     function test_forceRotationWindow_success() public {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
+        bytes memory newPubkey = blsPubkey(20);
+        registry.requestKeyRotation(issuerIds[0], newPubkey, _signRotationRequest(issuerIds[0], newPubkey, 0));
 
         // Get 10 approvals
-        vm.startPrank(admin);
+        TypesLib.KeyRotation memory rotation = registry.getPendingRotation(issuerIds[0]);
         for (uint256 i = 1; i <= 10; i++) {
-            registry.approveRotation(issuerIds[0], issuerIds[i], dummyBlsSignature);
+            bytes memory sig = _signApproval(issuerIds[0], rotation.newPubkey, uint8(i));
+            registry.approveRotation(issuerIds[0], issuerIds[i], sig);
         }
-        vm.stopPrank();
 
         // Wait 49 hours (past 48h admin force window)
         vm.warp(block.timestamp + 49 hours);
@@ -916,8 +916,8 @@ contract IssuerRegistryTest is Test {
     function test_forceRotationWindow_revertsNonAdmin() public {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
+        bytes memory newPubkey = blsPubkey(20);
+        registry.requestKeyRotation(issuerIds[0], newPubkey, _signRotationRequest(issuerIds[0], newPubkey, 0));
 
         vm.warp(block.timestamp + 49 hours);
 
@@ -935,8 +935,8 @@ contract IssuerRegistryTest is Test {
     function test_forceRotationWindow_revertsForceWindowNotElapsed() public {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
+        bytes memory newPubkey = blsPubkey(20);
+        registry.requestKeyRotation(issuerIds[0], newPubkey, _signRotationRequest(issuerIds[0], newPubkey, 0));
 
         // Only wait 47 hours (need 48)
         vm.warp(block.timestamp + 47 hours);
@@ -951,8 +951,8 @@ contract IssuerRegistryTest is Test {
     function test_cancelRotation_success() public {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
+        bytes memory newPubkey = blsPubkey(20);
+        registry.requestKeyRotation(issuerIds[0], newPubkey, _signRotationRequest(issuerIds[0], newPubkey, 0));
 
         vm.expectEmit(true, false, false, false);
         emit KeyRotationCancelled(issuerIds[0]);
@@ -967,8 +967,8 @@ contract IssuerRegistryTest is Test {
     function test_cancelRotation_revertsNonAdmin() public {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
+        bytes memory newPubkey = blsPubkey(20);
+        registry.requestKeyRotation(issuerIds[0], newPubkey, _signRotationRequest(issuerIds[0], newPubkey, 0));
 
         vm.expectRevert(IssuerRegistry.Unauthorized.selector);
         vm.prank(user);
@@ -984,14 +984,17 @@ contract IssuerRegistryTest is Test {
     function test_cancelRotation_allowsNewRotationAfterCancel() public {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
-        vm.startPrank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
+        bytes memory newPubkey1 = blsPubkey(20);
+        bytes memory newPubkey2 = blsPubkey(21);
+
+        vm.prank(admin);
+        registry.requestKeyRotation(issuerIds[0], newPubkey1, _signRotationRequest(issuerIds[0], newPubkey1, 0));
+        vm.prank(admin);
         registry.cancelRotation(issuerIds[0]);
-        registry.requestKeyRotation(issuerIds[0], pubkey3, dummyBlsSignature);
-        vm.stopPrank();
+        registry.requestKeyRotation(issuerIds[0], newPubkey2, _signRotationRequest(issuerIds[0], newPubkey2, 0));
 
         TypesLib.KeyRotation memory rotation = registry.getPendingRotation(issuerIds[0]);
-        assertEq(rotation.newPubkey, pubkey3);
+        assertEq(rotation.newPubkey, newPubkey2);
     }
 
     function test_cancelRotation_approvalsDoNotCarryOver() public {
@@ -999,16 +1002,20 @@ contract IssuerRegistryTest is Test {
         // Old approvals should NOT count towards a new rotation after cancel
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
+        bytes memory newPubkey1 = blsPubkey(20);
+        bytes memory newPubkey2 = blsPubkey(21);
+
         // Request first rotation and get 5 approvals
-        vm.startPrank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
-        for (uint256 i = 1; i <= 5; i++) {
-            registry.approveRotation(issuerIds[0], issuerIds[i], dummyBlsSignature);
-        }
-        vm.stopPrank();
+        registry.requestKeyRotation(issuerIds[0], newPubkey1, _signRotationRequest(issuerIds[0], newPubkey1, 0));
 
         TypesLib.KeyRotation memory rotation1 = registry.getPendingRotation(issuerIds[0]);
-        assertEq(rotation1.approvalCount, 5);
+        for (uint256 i = 1; i <= 5; i++) {
+            bytes memory sig = _signApproval(issuerIds[0], rotation1.newPubkey, uint8(i));
+            registry.approveRotation(issuerIds[0], issuerIds[i], sig);
+        }
+
+        TypesLib.KeyRotation memory rotation1After = registry.getPendingRotation(issuerIds[0]);
+        assertEq(rotation1After.approvalCount, 5);
 
         // Cancel rotation
         vm.prank(admin);
@@ -1017,19 +1024,17 @@ contract IssuerRegistryTest is Test {
         // Request NEW rotation (with different pubkey)
         // Advance time to ensure new requestedAt is different
         vm.warp(block.timestamp + 1);
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey3, dummyBlsSignature);
+        registry.requestKeyRotation(issuerIds[0], newPubkey2, _signRotationRequest(issuerIds[0], newPubkey2, 0));
 
         // New rotation should start with 0 approvals (old approvals don't carry over)
         TypesLib.KeyRotation memory rotation2 = registry.getPendingRotation(issuerIds[0]);
         assertEq(rotation2.approvalCount, 0, "Old approvals should not carry over after cancel");
 
         // Previous approvers should be able to approve again
-        vm.startPrank(admin);
         for (uint256 i = 1; i <= 5; i++) {
-            registry.approveRotation(issuerIds[0], issuerIds[i], dummyBlsSignature);
+            bytes memory sig = _signApproval(issuerIds[0], rotation2.newPubkey, uint8(i));
+            registry.approveRotation(issuerIds[0], issuerIds[i], sig);
         }
-        vm.stopPrank();
 
         TypesLib.KeyRotation memory rotation3 = registry.getPendingRotation(issuerIds[0]);
         assertEq(rotation3.approvalCount, 5, "Previous approvers should be able to approve new rotation");
@@ -1040,9 +1045,9 @@ contract IssuerRegistryTest is Test {
         uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1);
 
         // Try to rotate to the same pubkey
+        bytes memory sig = _signRotationRequest(issuerId, pubkey1, 0);
         vm.expectRevert(IssuerRegistry.SamePubkey.selector);
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerId, pubkey1, dummyBlsSignature);
+        registry.requestKeyRotation(issuerId, pubkey1, sig);
     }
 
     // ============ Grace Period Tests ============
@@ -1059,14 +1064,14 @@ contract IssuerRegistryTest is Test {
         vm.prank(admin);
         registry.updateCurrentCycle(100);
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
+        bytes memory newPubkey = blsPubkey(20);
+        registry.requestKeyRotation(issuerIds[0], newPubkey, _signRotationRequest(issuerIds[0], newPubkey, 0));
 
-        vm.startPrank(admin);
+        TypesLib.KeyRotation memory rotation = registry.getPendingRotation(issuerIds[0]);
         for (uint256 i = 1; i <= 10; i++) {
-            registry.approveRotation(issuerIds[0], issuerIds[i], dummyBlsSignature);
+            bytes memory sig = _signApproval(issuerIds[0], rotation.newPubkey, uint8(i));
+            registry.approveRotation(issuerIds[0], issuerIds[i], sig);
         }
-        vm.stopPrank();
 
         vm.warp(block.timestamp + 25 hours);
         registry.executeRotation(issuerIds[0]);
@@ -1106,8 +1111,8 @@ contract IssuerRegistryTest is Test {
     function test_canExecuteRotation_returnsFalseWhenInsufficientApprovals() public {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
+        bytes memory newPubkey = blsPubkey(20);
+        registry.requestKeyRotation(issuerIds[0], newPubkey, _signRotationRequest(issuerIds[0], newPubkey, 0));
 
         assertFalse(registry.canExecuteRotation(issuerIds[0]));
     }
@@ -1115,14 +1120,14 @@ contract IssuerRegistryTest is Test {
     function test_canExecuteRotation_returnsFalseWhenTimelockNotPassed() public {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
+        bytes memory newPubkey = blsPubkey(20);
+        registry.requestKeyRotation(issuerIds[0], newPubkey, _signRotationRequest(issuerIds[0], newPubkey, 0));
 
-        vm.startPrank(admin);
+        TypesLib.KeyRotation memory rotation = registry.getPendingRotation(issuerIds[0]);
         for (uint256 i = 1; i <= 10; i++) {
-            registry.approveRotation(issuerIds[0], issuerIds[i], dummyBlsSignature);
+            bytes memory sig = _signApproval(issuerIds[0], rotation.newPubkey, uint8(i));
+            registry.approveRotation(issuerIds[0], issuerIds[i], sig);
         }
-        vm.stopPrank();
 
         // Not enough time passed
         assertFalse(registry.canExecuteRotation(issuerIds[0]));
@@ -1131,14 +1136,14 @@ contract IssuerRegistryTest is Test {
     function test_canExecuteRotation_returnsTrueWhenAllConditionsMet() public {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
+        bytes memory newPubkey = blsPubkey(20);
+        registry.requestKeyRotation(issuerIds[0], newPubkey, _signRotationRequest(issuerIds[0], newPubkey, 0));
 
-        vm.startPrank(admin);
+        TypesLib.KeyRotation memory rotation = registry.getPendingRotation(issuerIds[0]);
         for (uint256 i = 1; i <= 10; i++) {
-            registry.approveRotation(issuerIds[0], issuerIds[i], dummyBlsSignature);
+            bytes memory sig = _signApproval(issuerIds[0], rotation.newPubkey, uint8(i));
+            registry.approveRotation(issuerIds[0], issuerIds[i], sig);
         }
-        vm.stopPrank();
 
         // Wait for timelock (24h) + safe period (1h)
         vm.warp(block.timestamp + 25 hours);
@@ -1149,12 +1154,12 @@ contract IssuerRegistryTest is Test {
     function test_getPendingRotation_returnsCorrectData() public {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
+        bytes memory newPubkey = blsPubkey(20);
+        registry.requestKeyRotation(issuerIds[0], newPubkey, _signRotationRequest(issuerIds[0], newPubkey, 0));
 
         TypesLib.KeyRotation memory rotation = registry.getPendingRotation(issuerIds[0]);
         assertEq(rotation.issuerId, issuerIds[0]);
-        assertEq(rotation.newPubkey, pubkey2);
+        assertEq(rotation.newPubkey, newPubkey);
         assertEq(rotation.approvalCount, 0);
         assertFalse(rotation.executed);
     }
@@ -1178,56 +1183,43 @@ contract IssuerRegistryTest is Test {
     // ============ BLS VERIFICATION TESTS (Story 7.17) ============
 
     function test_requestKeyRotation_revertsWithInvalidSignature() public {
-        // Clear the mock so BLS actually fails
-        vm.clearMockedCalls();
-
         vm.prank(admin);
         uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1);
 
-        // Invalid BLS signature (wrong length or invalid)
-        bytes memory invalidSig = new bytes(64);
+        // Sign with a WRONG seed index (seed 1 instead of seed 0 which owns the key)
+        bytes32 message = keccak256(abi.encode("ROTATE", issuerId, pubkey2));
+        bytes memory wrongSig = blsSign("1", message);
 
         vm.expectRevert(ErrorsLib.E086_InvalidRotationSignature.selector);
-        registry.requestKeyRotation(issuerId, pubkey2, invalidSig);
-
-        // Re-enable mock for other tests
-        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
+        registry.requestKeyRotation(issuerId, pubkey2, wrongSig);
     }
 
     function test_requestKeyRotation_anyoneCanCallWithValidSig() public {
-        // Clear the mock so BLS actually fails
-        vm.clearMockedCalls();
-
         vm.prank(admin);
         uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1);
 
-        // Non-admin calling without valid sig should get E086
-        bytes memory fakeSig = new bytes(64);
+        // Non-admin calling with wrong sig should get E086
+        bytes32 message = keccak256(abi.encode("ROTATE", issuerId, pubkey2));
+        bytes memory wrongSig = blsSign("1", message); // signed by wrong key
         vm.expectRevert(ErrorsLib.E086_InvalidRotationSignature.selector);
         vm.prank(user);
-        registry.requestKeyRotation(issuerId, pubkey2, fakeSig);
-
-        // Re-enable mock for other tests
-        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
+        registry.requestKeyRotation(issuerId, pubkey2, wrongSig);
     }
 
     function test_approveRotation_revertsWithInvalidSignature() public {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
 
-        // Request rotation (with mocked BLS)
-        vm.prank(admin);
-        registry.requestKeyRotation(issuerIds[0], pubkey2, dummyBlsSignature);
+        // Request rotation (with valid BLS from seed 0)
+        bytes memory newPubkey = blsPubkey(20);
+        registry.requestKeyRotation(issuerIds[0], newPubkey, _signRotationRequest(issuerIds[0], newPubkey, 0));
 
-        // Clear mock so BLS actually fails for approval
-        vm.clearMockedCalls();
+        // Sign approval with WRONG seed index (seed 2 instead of seed 1)
+        TypesLib.KeyRotation memory rotation = registry.getPendingRotation(issuerIds[0]);
+        bytes32 message = keccak256(abi.encode("APPROVE_ROTATION", issuerIds[0], rotation.newPubkey));
+        bytes memory wrongSig = blsSign("2", message); // signed by seed 2, not seed 1
 
-        // Invalid BLS signature
-        bytes memory invalidSig = new bytes(64);
         vm.expectRevert(ErrorsLib.E087_InvalidApprovalSignature.selector);
-        registry.approveRotation(issuerIds[0], issuerIds[1], invalidSig);
-
-        // Re-enable mock for other tests
-        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
+        registry.approveRotation(issuerIds[0], issuerIds[1], wrongSig);
     }
 
     // ============ PEER DISCOVERY TESTS (Story 7.17) ============
@@ -1280,8 +1272,9 @@ contract IssuerRegistryTest is Test {
 
         bytes32 newIp = bytes32(uint256(0xC0A80001)); // 192.168.0.1
 
-        // With mocked BLS precompile, empty signature is accepted
-        registry.updateIssuerIp(issuerId, newIp, dummyBlsSignature);
+        // Sign with seed 0 (the issuer's key)
+        bytes memory sig = _signIpUpdate(issuerId, newIp, 0);
+        registry.updateIssuerIp(issuerId, newIp, sig);
 
         TypesLib.Issuer memory issuer = registry.getIssuer(issuerId);
         assertEq(issuer.ip, newIp);
@@ -1291,21 +1284,17 @@ contract IssuerRegistryTest is Test {
         vm.prank(admin);
         uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1);
 
-        // Clear mock so BLS actually fails
-        vm.clearMockedCalls();
+        // Sign with WRONG seed (seed 1 instead of seed 0)
+        bytes32 newIp = bytes32(uint256(1));
+        bytes memory wrongSig = _signIpUpdate(issuerId, newIp, 1);
 
-        bytes memory invalidSig = new bytes(64);
         vm.expectRevert(ErrorsLib.E088_InvalidIpUpdateSignature.selector);
-        registry.updateIssuerIp(issuerId, bytes32(uint256(1)), invalidSig);
-
-        // Re-enable mock for other tests
-        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
+        registry.updateIssuerIp(issuerId, newIp, wrongSig);
     }
 
     function test_updateIssuerIp_revertsIssuerNotFound() public {
         vm.expectRevert(abi.encodeWithSelector(IssuerRegistry.IssuerNotFound.selector, 999));
-        vm.prank(admin);
-        registry.updateIssuerIp(999, bytes32(uint256(1)), dummyBlsSignature);
+        registry.updateIssuerIp(999, bytes32(uint256(1)), new bytes(64));
     }
 
     function test_updateIssuerIp_revertsIssuerNotActive() public {
@@ -1316,8 +1305,7 @@ contract IssuerRegistryTest is Test {
         registry.removeIssuer(issuerId);
 
         vm.expectRevert(abi.encodeWithSelector(IssuerRegistry.IssuerNotActive.selector, issuerId));
-        vm.prank(admin);
-        registry.updateIssuerIp(issuerId, bytes32(uint256(1)), dummyBlsSignature);
+        registry.updateIssuerIp(issuerId, bytes32(uint256(1)), new bytes(64));
     }
 
     function test_updateIssuerIp_reflectedInEndpoints() public {
@@ -1325,8 +1313,8 @@ contract IssuerRegistryTest is Test {
         registry.addIssuer(issuer1Addr, IP_1, pubkey1);
 
         bytes32 newIp = bytes32(uint256(0xC0A80001));
-        vm.prank(admin);
-        registry.updateIssuerIp(0, newIp, dummyBlsSignature);
+        bytes memory sig = _signIpUpdate(0, newIp, 0);
+        registry.updateIssuerIp(0, newIp, sig);
 
         (, bytes32[] memory ips,) = registry.getActiveIssuerEndpoints();
         assertEq(ips[0], newIp);
@@ -1416,23 +1404,17 @@ contract IssuerRegistryTest is Test {
         assertEq(nonceAfterSetup, 20); // 20 issuers added
 
         // New pubkey for rotation
-        bytes memory newPubkey = abi.encodePacked(
-            uint256(9999),
-            uint256(9998),
-            uint256(9997),
-            uint256(9996)
-        );
+        bytes memory newPubkey = blsPubkey(20);
 
         // Request rotation
-        vm.prank(admin);
-        registry.requestKeyRotation(rotatingId, newPubkey, dummyBlsSignature);
+        registry.requestKeyRotation(rotatingId, newPubkey, _signRotationRequest(rotatingId, newPubkey, 0));
 
         // Get 10 approvals
-        vm.startPrank(admin);
+        TypesLib.KeyRotation memory rotation = registry.getPendingRotation(rotatingId);
         for (uint256 i = 1; i <= 10; i++) {
-            registry.approveRotation(rotatingId, issuerIds[i], dummyBlsSignature);
+            bytes memory sig = _signApproval(rotatingId, rotation.newPubkey, uint8(i));
+            registry.approveRotation(rotatingId, issuerIds[i], sig);
         }
-        vm.stopPrank();
 
         // Wait for timelock + safe period
         vm.warp(block.timestamp + 25 hours);
@@ -1625,16 +1607,15 @@ contract IssuerRegistryTest is Test {
         (uint256[] memory issuerIds,) = _setupIssuersForRotation();
         uint256 rotatingId = issuerIds[0];
 
-        bytes memory newPubkey = abi.encodePacked(uint256(1000), uint256(1001), uint256(1002), uint256(1003));
+        bytes memory newPubkey = blsPubkey(20);
 
-        vm.prank(admin);
-        registry.requestKeyRotation(rotatingId, newPubkey, dummyBlsSignature);
+        registry.requestKeyRotation(rotatingId, newPubkey, _signRotationRequest(rotatingId, newPubkey, 0));
 
-        vm.startPrank(admin);
+        TypesLib.KeyRotation memory rotation = registry.getPendingRotation(rotatingId);
         for (uint256 i = 1; i <= 10; i++) {
-            registry.approveRotation(rotatingId, issuerIds[i], dummyBlsSignature);
+            bytes memory sig = _signApproval(rotatingId, rotation.newPubkey, uint8(i));
+            registry.approveRotation(rotatingId, issuerIds[i], sig);
         }
-        vm.stopPrank();
 
         vm.warp(block.timestamp + 25 hours);
 

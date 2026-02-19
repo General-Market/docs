@@ -1,20 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
+import "./helpers/TestHelper.sol";
+import {Governance} from "../src/Governance.sol";
+import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
 import "../src/registry/CollateralRegistry.sol";
 import "../src/libraries/TypesLib.sol";
 
 /// @title CollateralRegistryTest - Comprehensive tests for CollateralRegistry
 /// @notice Tests all acceptance criteria for Story 2.11
-contract CollateralRegistryTest is Test {
+contract CollateralRegistryTest is TestHelper {
     CollateralRegistry public registry;
+    Governance governance;
+    IssuerRegistry issuerReg;
 
     address public admin = address(0x1);
     address public user = address(0x2);
     address public authorizedCaller = address(0x3);
-
-    bytes public dummyBlsSignature = new bytes(64);
 
     // Test chain IDs
     // NOTE: Chain 0 represents "external/no-chain" (e.g., CEX operations)
@@ -42,10 +44,27 @@ contract CollateralRegistryTest is Test {
     event AuthorizedCallerUpdated(address indexed caller, bool authorized);
 
     function setUp() public {
-        // Mock BN254 pairing precompile to always return true
-        vm.mockCall(address(0x08), bytes(""), abi.encode(uint256(1)));
+        governance = deployGovernance(admin);
+        issuerReg = deployIssuerRegistry(address(governance));
+        registerTestIssuersWithBLS(issuerReg, admin);
 
-        registry = new CollateralRegistry(admin, address(0x1));
+        registry = new CollateralRegistry(admin, address(issuerReg));
+    }
+
+    // ============ BLS SIGNING HELPER ============
+
+    function _signRecordCollateralMove(
+        bytes32 itpId,
+        uint256 fromChain,
+        uint256 toChain,
+        uint256 amount,
+        TypesLib.TxType txType
+    ) internal returns (bytes memory) {
+        uint256 nonce = registry.getNonce();
+        bytes32 message = keccak256(
+            abi.encode(block.chainid, address(registry), itpId, fromChain, toChain, amount, txType, nonce)
+        );
+        return signWithTestIssuers(message);
     }
 
     // ============ CONSTRUCTOR TESTS ============
@@ -56,7 +75,7 @@ contract CollateralRegistryTest is Test {
 
     function test_Constructor_RevertsOnZeroAddress() public {
         vm.expectRevert(CollateralRegistry.ZeroAddress.selector);
-        new CollateralRegistry(address(0), address(0x1));
+        new CollateralRegistry(address(0), address(issuerReg));
     }
 
     // ============ AC2: BRIDGE TYPE - Updates Both Chains ============
@@ -419,7 +438,7 @@ contract CollateralRegistryTest is Test {
         );
 
         // The message format is correct if the contract accepted the call
-        // (BLS verification is mocked, but format must be consistent)
+        // (BLS verification uses real signatures now)
         assertTrue(registry.itpExists(ITP_1));
 
         // Verify the hash is deterministic and reproducible
@@ -479,7 +498,7 @@ contract CollateralRegistryTest is Test {
     function _recordMove(bytes32 itpId, uint256 fromChain, uint256 toChain, uint256 amount, TypesLib.TxType txType)
         internal
     {
-        // Using dummy BLS signature - BN254 pairing precompile is mocked in setUp()
-        registry.recordCollateralMove(itpId, fromChain, toChain, amount, txType, dummyBlsSignature);
+        bytes memory sig = _signRecordCollateralMove(itpId, fromChain, toChain, amount, txType);
+        registry.recordCollateralMove(itpId, fromChain, toChain, amount, txType, sig);
     }
 }

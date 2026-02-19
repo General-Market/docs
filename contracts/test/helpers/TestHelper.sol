@@ -77,4 +77,9 @@ abstract contract TestHelper is BLSTestHelper {
         vm.prank(admin);
         registry.setAggregatedPubkey(aggPubkey);
     }
+
+    /// @notice Sign a message hash with the 3 test issuers (seeds 0,1,2)
+    function signWithTestIssuers(bytes32 messageHash) internal returns (bytes memory) {
+        return blsSign("0,1,2", messageHash);
+    }
 }

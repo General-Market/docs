@@ -15,6 +15,7 @@ import "../src/registry/CollateralRegistry.sol";
 import "../src/custody/L3BridgeCustody.sol";
 import "../src/custody/ArbBridgeCustody.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "./helpers/DeployBLSHelper.sol";
 
 /// @title DeployRebalanceE2E - Full E2E deployment for rebalance testing
 /// @notice Deploys all contracts needed for Story 6.17 E2E rebalance tests
@@ -23,7 +24,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 /// ## Decimal Handling (Story 7-6b)
 /// - L3_WUSDC: 18 decimals (internal protocol standard)
 /// - ARB_USDC: 6 decimals (real USDC on Arbitrum)
-contract DeployRebalanceE2E is Script {
+contract DeployRebalanceE2E is DeployBLSHelper {
     // ============ CONSTANTS ============
 
     uint256 public constant CHAIN_ID = 111222333;
@@ -190,7 +191,11 @@ contract DeployRebalanceE2E is Script {
         _registerIssuer(0, issuer1, "127.0.0.1:9000");
         _registerIssuer(1, issuer2, "127.0.0.1:9001");
         _registerIssuer(2, issuer3, "127.0.0.1:9002");
-        // Aggregated pubkey: empty by default (computed off-chain)
+
+        // Set aggregated pubkey from real BLS keys (seeds 0,1,2)
+        bytes memory aggPubkey = blsAggPubkey("0,1,2");
+        IssuerRegistry(issuerRegistry).setAggregatedPubkey(aggPubkey);
+        console.log("  Aggregated pubkey set on IssuerRegistry");
     }
 
     function _createITP() internal {
@@ -248,14 +253,11 @@ contract DeployRebalanceE2E is Script {
         bytes32 ipBytes32;
         assembly { ipBytes32 := mload(add(ipBytes, 32)) }
 
-        // Real IssuerRegistry requires 128-byte G2 BLS pubkeys
-        bytes memory blsPubkey = new bytes(128);
-        for (uint256 i = 0; i < 128; i++) {
-            blsPubkey[i] = bytes1(uint8(idx + 1 + i));
-        }
+        // Real BLS G2 pubkey from deterministic seed via FFI
+        bytes memory pubkey = blsPubkey(uint8(idx));
 
         // Deployer (admin) is the broadcast sender, so no vm.prank needed
-        IssuerRegistry(issuerRegistry).addIssuer(issuer, ipBytes32, blsPubkey);
+        IssuerRegistry(issuerRegistry).addIssuer(issuer, ipBytes32, pubkey);
     }
 
     function _exportDeployment() internal {
