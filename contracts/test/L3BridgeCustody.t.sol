@@ -205,24 +205,30 @@ contract L3BridgeCustodyTest is TestHelper {
     }
 
     function test_initiateBridge_revertsOnZeroAmount() public {
-        // BLS check comes after amount check, so any sig bytes work here
+        // Pre-compute BLS sig BEFORE vm.expectRevert() to avoid bridgeNonce() call being caught
+        uint256 nonce = custody.bridgeNonce();
+        bytes memory sig = _signInitiateBridge(DEST_CHAIN_ARBITRUM, 0, nonce);
         vm.prank(alice);
         vm.expectRevert(ErrorsLib.E052_ZeroAmount.selector);
-        custody.initiateBridge(DEST_CHAIN_ARBITRUM, 0, _signInitiateBridge(DEST_CHAIN_ARBITRUM, 0, custody.bridgeNonce()));
+        custody.initiateBridge(DEST_CHAIN_ARBITRUM, 0, sig);
     }
 
     function test_initiateBridge_revertsOnZeroDestChainId() public {
-        // BLS check comes after destChainId check, so any sig bytes work here
+        // Pre-compute BLS sig BEFORE vm.expectRevert() to avoid bridgeNonce() call being caught
+        uint256 nonce = custody.bridgeNonce();
+        bytes memory sig = _signInitiateBridge(0, LOCK_AMOUNT, nonce);
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E053_InvalidDestChainId.selector, 0));
-        custody.initiateBridge(0, LOCK_AMOUNT, _signInitiateBridge(0, LOCK_AMOUNT, custody.bridgeNonce()));
+        custody.initiateBridge(0, LOCK_AMOUNT, sig);
     }
 
     function test_initiateBridge_revertsOnCurrentChainId() public {
-        // BLS check comes after destChainId check, so any sig bytes work here
+        // Pre-compute BLS sig BEFORE vm.expectRevert() to avoid bridgeNonce() call being caught
+        uint256 nonce = custody.bridgeNonce();
+        bytes memory sig = _signInitiateBridge(block.chainid, LOCK_AMOUNT, nonce);
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E053_InvalidDestChainId.selector, block.chainid));
-        custody.initiateBridge(block.chainid, LOCK_AMOUNT, _signInitiateBridge(block.chainid, LOCK_AMOUNT, custody.bridgeNonce()));
+        custody.initiateBridge(block.chainid, LOCK_AMOUNT, sig);
     }
 
     // ============ MARK RELEASED TESTS ============

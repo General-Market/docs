@@ -93,8 +93,11 @@ contract DeployBLSCustodyArbitrumTest is TestHelper {
         mockRegistry = IssuerRegistry(address(mockRegProxy));
 
         // Register 3 real BLS test issuers in both registries and set aggregated pubkeys
+        // Must stop startPrank — registerTestIssuersWithBLS uses vm.prank internally
+        vm.stopPrank();
         registerTestIssuersWithBLS(mockRegistry, deployer);
         registerTestIssuersWithBLS(issuerRegistry, deployer);
+        vm.startPrank(deployer);
 
         BLSCustody custodyImpl = new BLSCustody();
         blsCustodyImpl = address(custodyImpl);
@@ -238,12 +241,13 @@ contract DeployBLSCustodyArbitrumTest is TestHelper {
 
     function test_issuerRegistry_canAddIssuers() public {
         vm.startPrank(deployer);
+        uint256 countBefore = issuerRegistry.activeIssuerCount();
         // G2 pubkey format: 128 bytes [x_im, x_re, y_im, y_re]
         bytes memory blsPubkey = abi.encodePacked(
             uint256(1), uint256(2), uint256(3), uint256(4)
         );
         issuerRegistry.addIssuer(address(0x1001), bytes32(uint256(1)), blsPubkey);
-        assertEq(issuerRegistry.activeIssuerCount(), 1);
+        assertEq(issuerRegistry.activeIssuerCount(), countBefore + 1);
         vm.stopPrank();
     }
 

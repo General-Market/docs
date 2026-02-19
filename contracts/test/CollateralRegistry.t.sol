@@ -222,10 +222,12 @@ contract CollateralRegistryTest is TestHelper {
 
     function test_RecordCollateralMove_RevertsOnUnderflow() public {
         // Try to move collateral that doesn't exist
+        // Pre-compute signature BEFORE vm.expectRevert to avoid getNonce() being captured
+        bytes memory sig = _signRecordCollateralMove(ITP_1, ARBITRUM, ETHEREUM, AMOUNT, TypesLib.TxType.BRIDGE);
         vm.expectRevert(
             abi.encodeWithSelector(CollateralRegistry.InsufficientCollateral.selector, ITP_1, ARBITRUM, AMOUNT, 0)
         );
-        _recordMove(ITP_1, ARBITRUM, ETHEREUM, AMOUNT, TypesLib.TxType.BRIDGE);
+        registry.recordCollateralMove(ITP_1, ARBITRUM, ETHEREUM, AMOUNT, TypesLib.TxType.BRIDGE, sig);
     }
 
     function test_RecordCollateralMove_RevertsOnPartialUnderflow() public {
@@ -233,10 +235,12 @@ contract CollateralRegistryTest is TestHelper {
         _recordMove(ITP_1, EXTERNAL, ARBITRUM, 100e18, TypesLib.TxType.BUY);
 
         // Try to move more than available
+        // Pre-compute signature BEFORE vm.expectRevert to avoid getNonce() being captured
+        bytes memory sig = _signRecordCollateralMove(ITP_1, ARBITRUM, ETHEREUM, 200e18, TypesLib.TxType.BRIDGE);
         vm.expectRevert(
             abi.encodeWithSelector(CollateralRegistry.InsufficientCollateral.selector, ITP_1, ARBITRUM, 200e18, 100e18)
         );
-        _recordMove(ITP_1, ARBITRUM, ETHEREUM, 200e18, TypesLib.TxType.BRIDGE);
+        registry.recordCollateralMove(ITP_1, ARBITRUM, ETHEREUM, 200e18, TypesLib.TxType.BRIDGE, sig);
     }
 
     // ============ MULTIPLE ITPs TRACK INDEPENDENTLY ============
@@ -330,8 +334,10 @@ contract CollateralRegistryTest is TestHelper {
 
     function test_ZeroAmount_Movement_Reverts() public {
         // Zero amount movements should revert to prevent spam/abuse
+        // Pre-compute signature BEFORE vm.expectRevert to avoid getNonce() being captured
+        bytes memory sig = _signRecordCollateralMove(ITP_1, INDEX_L3, ARBITRUM, 0, TypesLib.TxType.BRIDGE);
         vm.expectRevert(CollateralRegistry.ZeroAmount.selector);
-        _recordMove(ITP_1, INDEX_L3, ARBITRUM, 0, TypesLib.TxType.BRIDGE);
+        registry.recordCollateralMove(ITP_1, INDEX_L3, ARBITRUM, 0, TypesLib.TxType.BRIDGE, sig);
     }
 
     function test_EmptyBreakdown_ForNewITP() public view {

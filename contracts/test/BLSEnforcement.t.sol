@@ -84,7 +84,7 @@ contract BLSEnforcementTest is TestHelper {
         index.setIssuerRegistry(address(issuerRegistry));
 
         uint256[] memory orderIds = new uint256[](0);
-        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E020_InvalidBLSSignature.selector));
+        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E07E_InvalidAggregatedPubkeyLength.selector, 0));
         index.confirmBatch(1, orderIds, new bytes(64));
     }
 

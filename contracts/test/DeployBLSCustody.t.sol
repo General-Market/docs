@@ -91,8 +91,11 @@ contract DeployBLSCustodyTest is TestHelper {
         mockRegistry = IssuerRegistry(address(mockRegProxy));
 
         // Register 3 real BLS test issuers in both registries and set aggregated pubkeys
+        // Must stop startPrank — registerTestIssuersWithBLS uses vm.prank internally
+        vm.stopPrank();
         registerTestIssuersWithBLS(mockRegistry, deployer);
         registerTestIssuersWithBLS(issuerRegistry, deployer);
+        vm.startPrank(deployer);
 
         BLSCustody custodyImplMock = new BLSCustody();
         ERC1967Proxy mockProxy = new ERC1967Proxy(

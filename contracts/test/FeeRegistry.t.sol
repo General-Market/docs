@@ -142,8 +142,9 @@ contract FeeRegistryTest is TestHelper {
     function test_SetFeeRate_RevertsIfRateExceeds10Percent() public {
         uint256 feeRate = 1001; // 10.01% - exceeds max
 
+        bytes memory sig = _signSetFeeRate(ITP_1, feeRate);
         vm.expectRevert(abi.encodeWithSelector(FeeRegistry.FeeRateExceedsMax.selector, feeRate, 1000));
-        registry.setFeeRate(ITP_1, feeRate, _signSetFeeRate(ITP_1, feeRate));
+        registry.setFeeRate(ITP_1, feeRate, sig);
     }
 
     function test_SetFeeRate_AllowsExactlyMaxRate() public {
@@ -171,9 +172,10 @@ contract FeeRegistryTest is TestHelper {
     }
 
     function test_SetFeeRate_RevertsForUnauthorized() public {
+        bytes memory sig = _signSetFeeRate(ITP_1, 500);
         vm.prank(user);
         vm.expectRevert(FeeRegistry.Unauthorized.selector);
-        registry.setFeeRate(ITP_1, 500, _signSetFeeRate(ITP_1, 500));
+        registry.setFeeRate(ITP_1, 500, sig);
     }
 
     // ============ AC3 & AC4: RECORD FEE CHARGE TESTS ============
@@ -232,19 +234,22 @@ contract FeeRegistryTest is TestHelper {
     }
 
     function test_RecordFeeCharge_RevertsOnZeroAddress() public {
+        bytes memory sig = _signRecordFeeCharge(address(0), ITP_1, AMOUNT, TRADING);
         vm.expectRevert(FeeRegistry.ZeroAddress.selector);
-        registry.recordFeeCharge(address(0), ITP_1, AMOUNT, TRADING, _signRecordFeeCharge(address(0), ITP_1, AMOUNT, TRADING));
+        registry.recordFeeCharge(address(0), ITP_1, AMOUNT, TRADING, sig);
     }
 
     function test_RecordFeeCharge_RevertsOnZeroAmount() public {
+        bytes memory sig = _signRecordFeeCharge(user, ITP_1, 0, TRADING);
         vm.expectRevert(FeeRegistry.ZeroAmount.selector);
-        registry.recordFeeCharge(user, ITP_1, 0, TRADING, _signRecordFeeCharge(user, ITP_1, 0, TRADING));
+        registry.recordFeeCharge(user, ITP_1, 0, TRADING, sig);
     }
 
     function test_RecordFeeCharge_RevertsForUnauthorized() public {
+        bytes memory sig = _signRecordFeeCharge(user, ITP_1, AMOUNT, TRADING);
         vm.prank(user);
         vm.expectRevert(FeeRegistry.Unauthorized.selector);
-        registry.recordFeeCharge(user, ITP_1, AMOUNT, TRADING, _signRecordFeeCharge(user, ITP_1, AMOUNT, TRADING));
+        registry.recordFeeCharge(user, ITP_1, AMOUNT, TRADING, sig);
     }
 
     // ============ AC5: GET ACCUMULATED FEES TESTS ============
@@ -305,14 +310,16 @@ contract FeeRegistryTest is TestHelper {
     }
 
     function test_SetFeeSplit_RevertsIfExceeds100Percent() public {
+        bytes memory sig = _signSetFeeSplit(10001);
         vm.expectRevert(abi.encodeWithSelector(FeeRegistry.InvalidDeployerShare.selector, 10001));
-        registry.setFeeSplit(10001, _signSetFeeSplit(10001));
+        registry.setFeeSplit(10001, sig);
     }
 
     function test_SetFeeSplit_RevertsForUnauthorized() public {
+        bytes memory sig = _signSetFeeSplit(6000);
         vm.prank(user);
         vm.expectRevert(FeeRegistry.Unauthorized.selector);
-        registry.setFeeSplit(6000, _signSetFeeSplit(6000));
+        registry.setFeeSplit(6000, sig);
     }
 
     // ============ AC7: CLAIM FEES TESTS ============
@@ -589,9 +596,10 @@ contract FeeRegistryTest is TestHelper {
         vm.prank(admin);
         registry.setAuthorizedCaller(authorizedCaller, false);
 
+        bytes memory sig = _signSetFeeRate(ITP_1, 500);
         vm.prank(authorizedCaller);
         vm.expectRevert(FeeRegistry.Unauthorized.selector);
-        registry.setFeeRate(ITP_1, 500, _signSetFeeRate(ITP_1, 500));
+        registry.setFeeRate(ITP_1, 500, sig);
     }
 
     function test_RegisterITPDeployer_AuthorizedCaller() public {

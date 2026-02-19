@@ -143,9 +143,10 @@ contract AssetPairRegistryTest is TestHelper {
         vm.prank(user);
         registry.proposeAsset(asset1, _signProposeAsset(asset1));
 
+        bytes memory sig = _signProposeAsset(asset1);
         vm.expectRevert(AssetPairRegistry.AssetAlreadyExists.selector);
         vm.prank(user);
-        registry.proposeAsset(asset1, _signProposeAsset(asset1));
+        registry.proposeAsset(asset1, sig);
     }
 
     // ============ ACTIVATE ASSET TESTS ============
@@ -232,8 +233,9 @@ contract AssetPairRegistryTest is TestHelper {
 
     function test_delistAsset_revertsIfNotActive() public {
         // Asset not proposed
+        bytes memory sig = _signDelistAsset(asset1);
         vm.expectRevert(AssetPairRegistry.AssetNotActive.selector);
-        registry.delistAsset(asset1, _signDelistAsset(asset1));
+        registry.delistAsset(asset1, sig);
     }
 
     // ============ EMERGENCY REMOVE ASSET TESTS ============
@@ -276,8 +278,9 @@ contract AssetPairRegistryTest is TestHelper {
     }
 
     function test_emergencyRemoveAsset_revertsIfNotActiveOrDelisting() public {
+        bytes memory sig = _signEmergencyRemoveAsset(asset1);
         vm.expectRevert(AssetPairRegistry.AssetNotActive.selector);
-        registry.emergencyRemoveAsset(asset1, _signEmergencyRemoveAsset(asset1));
+        registry.emergencyRemoveAsset(asset1, sig);
     }
 
     // ============ PROPOSE PAIR TESTS ============
@@ -309,9 +312,10 @@ contract AssetPairRegistryTest is TestHelper {
 
     function test_proposePair_failsIfAssetNotActive() public {
         // Asset not proposed
+        bytes memory sig = _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX);
         vm.expectRevert(AssetPairRegistry.AssetNotWhitelisted.selector);
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX));
+        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, sig);
     }
 
     function test_proposePair_generatesCorrectPairId() public {
@@ -352,9 +356,10 @@ contract AssetPairRegistryTest is TestHelper {
         vm.prank(user);
         registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX));
 
+        bytes memory sig = _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX);
         vm.expectRevert(AssetPairRegistry.PairAlreadyExists.selector);
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX));
+        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, sig);
     }
 
     // ============ ACTIVATE PAIR TESTS ============
@@ -439,8 +444,9 @@ contract AssetPairRegistryTest is TestHelper {
     function test_delistPair_revertsIfNotActive() public {
         bytes32 fakePairId = bytes32(uint256(1));
 
+        bytes memory sig = _signDelistPair(fakePairId);
         vm.expectRevert(AssetPairRegistry.PairNotActive.selector);
-        registry.delistPair(fakePairId, _signDelistPair(fakePairId));
+        registry.delistPair(fakePairId, sig);
     }
 
     // ============ VIEW FUNCTION TESTS ============
@@ -606,9 +612,10 @@ contract AssetPairRegistryTest is TestHelper {
         assertFalse(registry.isAssetWhitelisted(asset1));
 
         // New pairs cannot be proposed for delisting asset
+        bytes memory sig = _signProposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM);
         vm.expectRevert(AssetPairRegistry.AssetNotWhitelisted.selector);
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM, _signProposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM));
+        registry.proposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM, sig);
     }
 
     // ============ ACTIVATE PAIR - ASSET STATUS CHECK (HIGH-3 FIX) ============
@@ -681,8 +688,9 @@ contract AssetPairRegistryTest is TestHelper {
     }
 
     function test_cancelAssetProposal_revertsIfNotPending() public {
+        bytes memory sig = _signCancelAssetProposal(asset1);
         vm.expectRevert(AssetPairRegistry.AssetNotPending.selector);
-        registry.cancelAssetProposal(asset1, _signCancelAssetProposal(asset1));
+        registry.cancelAssetProposal(asset1, sig);
     }
 
     function test_cancelAssetProposal_allowsReproposal() public {
@@ -738,8 +746,9 @@ contract AssetPairRegistryTest is TestHelper {
     function test_cancelPairProposal_revertsIfNotPending() public {
         bytes32 fakePairId = bytes32(uint256(1));
 
+        bytes memory sig = _signCancelPairProposal(fakePairId);
         vm.expectRevert(AssetPairRegistry.PairNotPending.selector);
-        registry.cancelPairProposal(fakePairId, _signCancelPairProposal(fakePairId));
+        registry.cancelPairProposal(fakePairId, sig);
     }
 
     function test_cancelPairProposal_allowsReproposal() public {
