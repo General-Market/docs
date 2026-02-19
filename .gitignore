@@ -45,3 +45,4 @@ node_modules/
 /contracts/broadcast/
 bitget-credentials.env
 .vercel
+.worktrees/
