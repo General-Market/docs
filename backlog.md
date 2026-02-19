@@ -5,6 +5,10 @@
 - [DECISION] 8-step bridge: RecordCollateralMove hash uses ABI encoding (32-byte padded addresses) to match Solidity abi.encode(). MintBridgedShares hash uses ABI encoding with dynamic string offset for "mintBridgedShares" function selector matching.
 - [DECISION] 8-step bridge: Reuse existing release_to_vault phase for step 5 (custody→vault) since it already calls BLSCustody.execute. No new CustodyToVault phase needed — the plan's "CustodyToVaultProposal" maps to existing ReleaseToVaultProposal.
 - [DECISION] 8-step bridge: Keep L3→Arb bridge execution as simulated mint for local E2E (existing behavior). Real bridge contract calls (L3BridgeCustody.initiateBridge → ArbBridgeCustody.completeBridge) deferred to production integration.
+- [DECISION] 8-step bridge: CollateralRegistry requires seeding initial L3 collateral (fromChain=0→L3) before L3→Arb recordCollateralMove can succeed. This mirrors the real flow where bridging USDC to L3 creates the initial L3 collateral balance.
+- [DECISION] 8-step bridge: BLSCustody.execute requires target address whitelisting with 2-day timelock (propose + warp + activate). E2E test uses vm.warp to skip timelock; deadline set after all warps to avoid expiry.
+- [DECISION] 8-step bridge: Shares computation in issuer main loop: `shares = order_amount * 1e18 / nav`. Skips mintBridgedShares if bridge_proxy == Address::zero() (graceful fallback for configs without BridgeProxy).
+- [DECISION] 8-step bridge: recordCollateralMove skipped if collateral_registry == Address::zero(). Both new phases are opt-in via config, maintaining backwards compatibility with existing deployments.
 
 ## Session: 20260218-1800-b5t9
 
