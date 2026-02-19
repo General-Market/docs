@@ -29,7 +29,9 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex }: BacktestS
     sweep: 'none',
     sweep_categories: [],
     threshold_pct: null,
+    start_date: '',
   })
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   const isSweep = filters.sweep !== 'none'
   const isCategorySweep = filters.sweep === 'category'
@@ -44,6 +46,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex }: BacktestS
       base_fee_pct: filters.base_fee_pct,
       spread_multiplier: filters.spread_multiplier,
       threshold_pct: filters.threshold_pct,
+      start_date: filters.start_date || undefined,
     } : null,
   )
 
@@ -61,6 +64,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex }: BacktestS
       spread_multiplier: filters.spread_multiplier,
       categories: isCategorySweep ? filters.sweep_categories : undefined,
       threshold_pct: filters.threshold_pct,
+      start_date: filters.start_date || undefined,
     } : null,
   )
 
@@ -101,115 +105,144 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex }: BacktestS
     }
   }, [onDeployIndex])
 
-  return (
-    <div className="bg-terminal-dark/50 border border-white/10 rounded-lg">
-      {/* Header */}
-      <div className="p-4 flex justify-between items-center">
-        <button
-          onClick={onToggle}
-          className="flex-1 flex justify-between items-center text-left"
-        >
-          <div>
-            <h2 className="text-lg font-bold text-white font-mono">Index Backtester</h2>
-            <p className="text-xs text-white/50 font-mono">
-              Simulate historical index performance across categories, sizes & strategies
-            </p>
-          </div>
-          <span className="text-accent text-2xl font-mono ml-4">{expanded ? '−' : '+'}</span>
-        </button>
-      </div>
+  const hasResults = isSweep
+    ? sweep.completedVariants.length > 0 || sweep.status === 'loading'
+    : (sim.result != null || sim.status === 'loading')
 
-      {/* Content */}
-      {expanded && (
-        <div className="border-t border-white/10 p-4">
-          {/* Filter Panel */}
-          <SimFilterPanel
-            filters={filters}
-            onChange={setFilters}
-            onRun={handleRun}
-            isLoading={isLoading}
-          />
-
-          {/* Error */}
-          {(sim.error || sweep.error) && (
-            <div className="text-accent text-xs font-mono p-3 bg-accent/10 border border-accent/20 rounded mb-4">
-              {sim.error || sweep.error}
-            </div>
-          )}
-
-          {/* Single Simulation Results */}
-          {!isSweep && (
-            <>
-              {/* Progress */}
-              {sim.status === 'loading' && (
-                <SimProgressBar mode="single" progress={sim.progress} />
-              )}
-
-              {/* Stats */}
-              {sim.result?.stats && (
-                <SimStatsGrid stats={sim.result.stats} />
-              )}
-
-              {/* Chart */}
-              {sim.result?.nav_series && sim.result.nav_series.length > 0 && (
-                <SimPerformanceChart
-                  mode="single"
-                  navSeries={sim.result.nav_series}
-                  runId={sim.result.run_id}
-                  onDeployIndex={handleDeployIndex}
-                />
-              )}
-
-              {/* Holdings */}
-              {sim.result?.run_id && (
-                <div className="mt-4">
-                  <h3 className="text-xs text-white/40 font-mono uppercase mb-2">Holdings (Latest Rebalance)</h3>
-                  <SimHoldingsTable runId={sim.result.run_id} />
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Sweep Results */}
-          {isSweep && (
-            <>
-              {/* Progress */}
-              {sweep.status === 'loading' && (
-                <SimProgressBar
-                  mode="sweep"
-                  progress={sweep.progress}
-                  completedCount={sweep.completedVariants.length}
-                  totalVariants={sweep.progress?.total_variants || 0}
-                />
-              )}
-
-              {/* Sweep Stats Table */}
-              {sweep.completedVariants.length > 0 && (
-                <SimSweepStatsTable
-                  variants={sweep.completedVariants.map(v => ({
-                    variant: v.variant,
-                    stats: v.stats,
-                  }))}
-                />
-              )}
-
-              {/* Sweep Chart with Variant Legend */}
-              {sweep.completedVariants.length > 0 && (
-                <SimPerformanceChart
-                  mode="sweep"
-                  variants={sweep.completedVariants.map(v => ({
-                    label: v.variant,
-                    navSeries: v.nav_series,
-                    runId: v.run_id,
-                    stats: v.stats,
-                  }))}
-                  onDeployIndex={handleDeployIndex}
-                />
-              )}
-            </>
-          )}
+  const resultsContent = (
+    <>
+      {/* Error */}
+      {(sim.error || sweep.error) && (
+        <div className="text-accent text-xs font-mono p-3 bg-accent/10 border border-accent/20 rounded mb-4">
+          {sim.error || sweep.error}
         </div>
       )}
-    </div>
+
+      {/* Single Simulation Results */}
+      {!isSweep && (
+        <>
+          {sim.status === 'loading' && (
+            <SimProgressBar mode="single" progress={sim.progress} />
+          )}
+          {sim.result?.stats && (
+            <SimStatsGrid stats={sim.result.stats} />
+          )}
+          {sim.result?.nav_series && sim.result.nav_series.length > 0 && (
+            <SimPerformanceChart
+              mode="single"
+              navSeries={sim.result.nav_series}
+              runId={sim.result.run_id}
+              onDeployIndex={handleDeployIndex}
+            />
+          )}
+          {sim.result?.run_id && (
+            <div className="mt-4">
+              <h3 className="text-xs text-white/40 font-mono uppercase mb-2">Holdings (Latest Rebalance)</h3>
+              <SimHoldingsTable runId={sim.result.run_id} />
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Sweep Results */}
+      {isSweep && (
+        <>
+          {sweep.status === 'loading' && (
+            <SimProgressBar
+              mode="sweep"
+              progress={sweep.progress}
+              completedCount={sweep.completedVariants.length}
+              totalVariants={sweep.progress?.total_variants || 0}
+            />
+          )}
+          {sweep.completedVariants.length > 0 && (
+            <SimSweepStatsTable
+              variants={sweep.completedVariants.map(v => ({
+                variant: v.variant,
+                stats: v.stats,
+              }))}
+            />
+          )}
+          {sweep.completedVariants.length > 0 && (
+            <SimPerformanceChart
+              mode="sweep"
+              variants={sweep.completedVariants.map(v => ({
+                label: v.variant,
+                navSeries: v.nav_series,
+                runId: v.run_id,
+                stats: v.stats,
+              }))}
+              onDeployIndex={handleDeployIndex}
+            />
+          )}
+        </>
+      )}
+    </>
+  )
+
+  return (
+    <>
+      {/* Fullscreen overlay */}
+      {isFullscreen && (
+        <div className="fixed inset-0 z-50 bg-black overflow-y-auto p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-bold text-white font-mono">Index Backtester</h2>
+            <button
+              onClick={() => setIsFullscreen(false)}
+              className="text-white/50 hover:text-white text-xl font-mono px-2"
+              title="Exit fullscreen"
+            >
+              ESC
+            </button>
+          </div>
+          {resultsContent}
+        </div>
+      )}
+
+      <div className="bg-terminal-dark/50 border border-white/10 rounded-lg">
+        {/* Header */}
+        <div className="p-4 flex justify-between items-center">
+          <button
+            onClick={onToggle}
+            className="flex-1 flex justify-between items-center text-left"
+          >
+            <div>
+              <h2 className="text-lg font-bold text-white font-mono">Index Backtester</h2>
+              <p className="text-xs text-white/50 font-mono">
+                Simulate historical index performance across categories, sizes & strategies
+              </p>
+            </div>
+            <span className="text-accent text-2xl font-mono ml-4">{expanded ? '−' : '+'}</span>
+          </button>
+        </div>
+
+        {/* Content */}
+        {expanded && (
+          <div className="border-t border-white/10 p-4">
+            {/* Filter Panel */}
+            <SimFilterPanel
+              filters={filters}
+              onChange={setFilters}
+              onRun={handleRun}
+              isLoading={isLoading}
+            />
+
+            {/* Fullscreen toggle */}
+            {hasResults && !isFullscreen && (
+              <div className="flex justify-end mb-2">
+                <button
+                  onClick={() => setIsFullscreen(true)}
+                  className="text-[10px] text-white/40 hover:text-white font-mono px-2 py-1 border border-white/10 rounded hover:border-white/30 transition-colors"
+                >
+                  Fullscreen
+                </button>
+              </div>
+            )}
+
+            {resultsContent}
+          </div>
+        )}
+      </div>
+    </>
   )
 }

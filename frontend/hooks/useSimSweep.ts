@@ -31,6 +31,7 @@ interface UseSimSweepParams {
   spread_multiplier: number
   categories?: string[]  // for category sweep
   threshold_pct?: number | null
+  start_date?: string
 }
 
 interface UseSimSweepResult {
@@ -81,6 +82,7 @@ export function useSimSweep(params: UseSimSweepParams | null): UseSimSweepResult
     if (params.category_id) qs.set('category_id', params.category_id)
     if (params.categories?.length) qs.set('categories', params.categories.join(','))
     if (params.threshold_pct != null) qs.set('threshold_pct', String(params.threshold_pct))
+    if (params.start_date) qs.set('start_date', params.start_date)
 
     const es = new EventSource(`${DATA_NODE_URL}/sim/sweep-stream?${qs}`)
     eventSourceRef.current = es

@@ -90,6 +90,7 @@ export interface SimFilterState {
   sweep: string
   sweep_categories: string[]
   threshold_pct: number | null
+  start_date: string  // YYYY-MM-DD or '' for auto
 }
 
 interface SimFilterPanelProps {
@@ -391,7 +392,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
         </div>
       )}
 
-      {/* Row 4: Fees */}
+      {/* Row 4: Fees + Start Date */}
       <div className="flex flex-wrap gap-3 items-center">
         <div>
           <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Base Fee %</label>
@@ -417,6 +418,24 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
             onChange={e => update({ spread_multiplier: parseFloat(e.target.value) || 0 })}
           />
           <span className="text-[10px] text-white/30 font-mono ml-1">x</span>
+        </div>
+        <div>
+          <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Start Date</label>
+          <input
+            type="date"
+            className="bg-white/5 border border-white/10 rounded px-2 py-1 text-xs font-mono text-white"
+            value={filters.start_date}
+            onChange={e => update({ start_date: e.target.value })}
+          />
+          {filters.start_date && (
+            <button
+              className="ml-1 text-[10px] text-white/40 hover:text-white font-mono"
+              onClick={() => update({ start_date: '' })}
+              title="Reset to earliest available"
+            >
+              x
+            </button>
+          )}
         </div>
       </div>
 

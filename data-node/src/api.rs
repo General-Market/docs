@@ -2944,6 +2944,8 @@ struct SimRunQuery {
     force: bool,
     #[serde(default)]
     threshold_pct: Option<f64>,
+    #[serde(default)]
+    start_date: Option<chrono::NaiveDate>,
 }
 
 fn default_base_fee() -> f64 { 0.1 }
@@ -2967,6 +2969,7 @@ async fn sim_run(
         base_fee_pct: params.base_fee_pct,
         spread_multiplier: params.spread_multiplier,
         threshold_rebalance_pct: params.threshold_pct,
+        start_date: params.start_date,
     };
 
     // Check cache first
@@ -3049,6 +3052,7 @@ async fn sim_run_stream(
             base_fee_pct: params.base_fee_pct,
             spread_multiplier: params.spread_multiplier,
             threshold_rebalance_pct: params.threshold_pct,
+            start_date: params.start_date,
         };
         tmp.cache_key_weighting()
     };
@@ -3107,6 +3111,7 @@ async fn sim_run_stream(
         base_fee_pct: params.base_fee_pct,
         spread_multiplier: params.spread_multiplier,
         threshold_rebalance_pct: params.threshold_pct,
+        start_date: params.start_date,
     };
 
     let pool = state.pool.clone();
@@ -3177,6 +3182,8 @@ struct SimSweepQuery {
     spread_multiplier: f64,
     #[serde(default)]
     threshold_pct: Option<f64>,
+    #[serde(default)]
+    start_date: Option<chrono::NaiveDate>,
 }
 
 fn default_sweep_weighting() -> String { "equal".into() }
@@ -3201,6 +3208,7 @@ async fn sim_sweep_stream(
                     base_fee_pct: params.base_fee_pct,
                     spread_multiplier: params.spread_multiplier,
                     threshold_rebalance_pct: params.threshold_pct,
+                    start_date: params.start_date,
                 }
             }).collect()
         }
@@ -3228,6 +3236,7 @@ async fn sim_sweep_stream(
                     base_fee_pct: params.base_fee_pct,
                     spread_multiplier: params.spread_multiplier,
                     threshold_rebalance_pct: params.threshold_pct,
+                    start_date: params.start_date,
                 }
             }).collect()
         }
@@ -3244,6 +3253,7 @@ async fn sim_sweep_stream(
                     base_fee_pct: params.base_fee_pct,
                     spread_multiplier: params.spread_multiplier,
                     threshold_rebalance_pct: None,
+                    start_date: params.start_date,
                 }
             }).collect();
             // Drift-based bands (rebalance_days=365 safety fallback)
@@ -3256,6 +3266,7 @@ async fn sim_sweep_stream(
                     base_fee_pct: params.base_fee_pct,
                     spread_multiplier: params.spread_multiplier,
                     threshold_rebalance_pct: Some(pct),
+                    start_date: params.start_date,
                 });
             }
             configs
@@ -3274,6 +3285,7 @@ async fn sim_sweep_stream(
                     base_fee_pct: params.base_fee_pct,
                     spread_multiplier: params.spread_multiplier,
                     threshold_rebalance_pct: t,
+                    start_date: params.start_date,
                 }
             }).collect()
         }
@@ -3298,6 +3310,7 @@ async fn sim_sweep_stream(
                     base_fee_pct: params.base_fee_pct,
                     spread_multiplier: params.spread_multiplier,
                     threshold_rebalance_pct: params.threshold_pct,
+                    start_date: params.start_date,
                 }
             }).collect()
         }

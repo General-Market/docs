@@ -53,6 +53,7 @@ interface UseSimulationParams {
   base_fee_pct: number
   spread_multiplier: number
   threshold_pct?: number | null
+  start_date?: string
 }
 
 interface UseSimulationResult {
@@ -95,6 +96,7 @@ export function useSimulation(params: UseSimulationParams | null): UseSimulation
       spread_multiplier: String(params.spread_multiplier),
     })
     if (params.threshold_pct != null) qs.set('threshold_pct', String(params.threshold_pct))
+    if (params.start_date) qs.set('start_date', params.start_date)
 
     const es = new EventSource(`${DATA_NODE_URL}/sim/run-stream?${qs}`)
     eventSourceRef.current = es

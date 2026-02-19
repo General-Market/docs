@@ -183,6 +183,9 @@ pub struct SimConfig {
     pub spread_multiplier: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub threshold_rebalance_pct: Option<f64>,
+    /// Optional override for simulation start date (default: earliest available)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start_date: Option<NaiveDate>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -595,11 +598,13 @@ pub async fn run_simulation(
         price_history,
     };
 
-    // Find start date: earliest date with >= 1 eligible category coin.
-    // If fewer than top_n are available, the sim starts with fewer assets and scales up
-    // as more coins get listed — so top_5 and top_100 share the same start date.
+    // Find start date: use override if provided, otherwise earliest date with >= 1 eligible coin.
     let mut start_idx = None;
     for (i, date) in cache.all_dates.iter().enumerate() {
+        // If start_date override is set, skip dates before it
+        if let Some(sd) = config.start_date {
+            if *date < sd { continue; }
+        }
         let eligible = count_eligible_coins_mem(
             &cache.mcap_rankings, *date, &cache.coin_symbol_map, &cache.bitget_lookup,
             &eligible_set,
