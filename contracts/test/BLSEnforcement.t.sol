@@ -172,4 +172,38 @@ contract BLSEnforcementTest is TestHelper {
         vm.expectRevert();
         fr.setFeeRate(bytes32(uint256(1)), 100, new bytes(64));
     }
+
+    // ============ WRONG SIGNATURE OVER VALID PUBKEY REVERTS ============
+
+    function test_index_wrongSignature_reverts() public {
+        // Register real BLS issuers so pubkey is valid
+        registerTestIssuersWithBLS(issuerRegistry, address(this));
+        index.setIssuerRegistry(address(issuerRegistry));
+
+        // Sign wrong message — real signature, wrong message hash
+        bytes memory wrongSig = signWithTestIssuers(keccak256("wrong message"));
+
+        uint256[] memory orderIds = new uint256[](0);
+        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E020_InvalidBLSSignature.selector));
+        index.confirmBatch(1, orderIds, wrongSig);
+    }
+
+    // ============ INVALID PUBKEY LENGTH REVERTS ============
+
+    function test_index_wrongPubkeyLength_reverts() public {
+        // Set 64-byte pubkey (should be 128)
+        issuerRegistry.setAggregatedPubkey(new bytes(64));
+        index.setIssuerRegistry(address(issuerRegistry));
+
+        uint256[] memory orderIds = new uint256[](0);
+        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E07E_InvalidAggregatedPubkeyLength.selector, 64));
+        index.confirmBatch(1, orderIds, new bytes(64));
+    }
+
+    // ============ META: NO BLS PRECOMPILE MOCKS REMAIN ============
+    // Verification command (run manually):
+    //   grep -rn "mockCall.*0x08\|mockCall.*address(8)\|PRECOMPILE_PAIRING\|DUMMY_BLS_SIG\|dummyBlsSignature" contracts/test/
+    // Expected: ZERO results. All BLS verification uses real signatures via FFI.
+    // The only remaining vm.mockCall instances mock issuerRegistry.getAggregatedPubkey()
+    // to test empty/invalid pubkey error paths — these are intentional.
 }
