@@ -69,6 +69,8 @@ fn test_config() -> BridgeConfig {
         // Story 7.6: Custody release to vault config
         bitget_vault: Address::from([0x77u8; 20]),
         signer_address: Address::from([0x88; 20]),
+        collateral_registry: Address::zero(),
+        bridge_proxy: Address::zero(),
     }
 }
 
