@@ -470,16 +470,26 @@ json.dump(deploy, open('deployments/active-deployment.json', 'w'), indent=2)
     cd ..
     echo -e "  ${GREEN}100-asset ITP deployed on Arbitrum (mirror)${NC}"
 
-    # 3c: Create BridgedITP on Arbitrum via adminCreateBridgedItp
+    # 3c: Create BridgedITP on Arbitrum via requestCreateItp + completeCreateItp (BLS-signed)
     BRIDGE_PROXY=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['BridgeProxy'])")
     ITP_ID=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['itpId'])")
     ITP_NAME=$(python3 -c "import json; d=json.load(open('deployments/itp-100-asset.json')); print(d.get('name','Top 100 ITP'))" 2>/dev/null || echo "Top 100 ITP")
     ITP_SYMBOL=$(python3 -c "import json; d=json.load(open('deployments/itp-100-asset.json')); print(d.get('symbol','ITP100'))" 2>/dev/null || echo "ITP100")
 
-    cast send --private-key $DEPLOYER_KEY $BRIDGE_PROXY \
-        "adminCreateBridgedItp(bytes32,string,string)" \
-        "$ITP_ID" "$ITP_NAME" "$ITP_SYMBOL" \
-        --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+    # Build comma-separated token addresses from itp-100-asset.json
+    ITP_TOKENS=$(python3 -c "import json; print(','.join(json.load(open('deployments/itp-100-asset.json'))['tokens']))")
+
+    cd contracts
+    if ! BRIDGE_PROXY=$BRIDGE_PROXY \
+    ITP_ID=$ITP_ID \
+    ITP_NAME="$ITP_NAME" \
+    ITP_SYMBOL="$ITP_SYMBOL" \
+    ITP_TOKENS="$ITP_TOKENS" \
+    forge script script/CreateBridgedItp.s.sol:CreateBridgedItp \
+        --broadcast --slow --rpc-url $ARB_RPC_URL > ../logs/deploy-bridged-itp.log 2>&1; then
+        echo -e "${YELLOW}  Warning: BridgedITP creation failed (check logs/deploy-bridged-itp.log)${NC}"
+    fi
+    cd ..
 
     # Read BridgedITP address from BridgeProxy mapping
     BRIDGED_ITP=$(cast call $BRIDGE_PROXY "getBridgedItp(bytes32)(address)" "$ITP_ID" --rpc-url $ARB_RPC_URL 2>/dev/null || echo "")
