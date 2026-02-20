@@ -4,6 +4,7 @@
 //! The issuer node participates in order batching, BLS consensus, and trade execution.
 
 pub mod api;
+pub mod arbitration;
 pub mod batcher;
 pub mod bootstrap;
 pub mod bridge;
