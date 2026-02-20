@@ -116,11 +116,28 @@ export function WalletConnectButton() {
     )
   }
 
+  // No wallet detected — link to MetaMask install
+  if (!injectedConnector) {
+    return (
+      <a
+        href="https://metamask.io/download/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors"
+      >
+        Install MetaMask
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M17 7H7M17 7v10" />
+        </svg>
+      </a>
+    )
+  }
+
   // Disconnected state - "Login on Base"
   return (
     <button
       onClick={handleConnect}
-      disabled={isLoading || !injectedConnector}
+      disabled={isLoading}
       className="px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {isLoading ? 'Connecting...' : 'Login on Base'}

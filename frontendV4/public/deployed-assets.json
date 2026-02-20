@@ -20,10 +20,6 @@
     "symbol": "A8"
   },
   {
-    "address": "0xdc11f7e700a4c898ae5caddb1082cffa76512add",
-    "symbol": "AAVE"
-  },
-  {
     "address": "0x79e8ab29ff79805025c9462a2f2f12e9a496f81d",
     "symbol": "AAVE"
   },
@@ -50,10 +46,6 @@
   {
     "address": "0x512f7469bcc83089497506b5df64c6e246b39925",
     "symbol": "ACX"
-  },
-  {
-    "address": "0xcbeaf3bde82155f56486fb5a1072cb8baaf547cc",
-    "symbol": "ADA"
   },
   {
     "address": "0x9fd16ea9e31233279975d99d5e8fc91dd214c7da",
@@ -112,10 +104,6 @@
     "symbol": "ALCH"
   },
   {
-    "address": "0x7a9ec1d04904907de0ed7b6839ccdd59c3716ac9",
-    "symbol": "ALGO"
-  },
-  {
     "address": "0x572316ac11cb4bc5daf6bdae68f43ea3cce3ae0e",
     "symbol": "ALGO"
   },
@@ -172,20 +160,12 @@
     "symbol": "APR"
   },
   {
-    "address": "0x0355b7b8cb128fa5692729ab3aaa199c1753f726",
-    "symbol": "APT"
-  },
-  {
     "address": "0xf5c4a909455c00b99a90d93b48736f3196db5621",
     "symbol": "APT"
   },
   {
     "address": "0xfd2cf3b56a73c75a7535ffe44ebabe7723c64719",
     "symbol": "AQT"
-  },
-  {
-    "address": "0x51a1ceb83b83f1985a81c295d1ff28afef186e02",
-    "symbol": "ARB"
   },
   {
     "address": "0xb22c255250d74b0add1bfb936676d2a299bf48bd",
@@ -218,10 +198,6 @@
   {
     "address": "0x1e3b98102e19d3a164d239bdd190913c2f02e756",
     "symbol": "ARTX"
-  },
-  {
-    "address": "0xbec49fa140acaa83533fb00a2bb19bddd0290f25",
-    "symbol": "AR"
   },
   {
     "address": "0x3fdc08d815cc4ed3b7f69ee246716f2c8bcd6b07",
@@ -266,10 +242,6 @@
   {
     "address": "0x7cf4be31f546c04787886358b9486ca3d62b9acf",
     "symbol": "AVA"
-  },
-  {
-    "address": "0x922d6956c99e12dfeb3224dea977d0939758a1fe",
-    "symbol": "AVAX"
   },
   {
     "address": "0x33e45b187da34826abceda1039231be46f1b05af",
@@ -348,10 +320,6 @@
     "symbol": "BB"
   },
   {
-    "address": "0xd84379ceae14aa33c123af12424a37803f885889",
-    "symbol": "BCH"
-  },
-  {
     "address": "0x627b9a657eac8c3463ad17009a424dfe3fdbd0b1",
     "symbol": "BCH"
   },
@@ -366,10 +334,6 @@
   {
     "address": "0x3347b4d90ebe72befb30444c9966b2b990ae9fcb",
     "symbol": "BERA"
-  },
-  {
-    "address": "0x4c2f7092c2ae51d986befee378e50bd4db99c901",
-    "symbol": "BGB"
   },
   {
     "address": "0xbee6ffc1e8627f51ccdf0b4399a1e1abc5165f15",
@@ -424,10 +388,6 @@
     "symbol": "BMT"
   },
   {
-    "address": "0xc351628eb244ec633d5f21fbd6621e1a683b1181",
-    "symbol": "BNB"
-  },
-  {
     "address": "0xb007167714e2940013ec3bb551584130b7497e22",
     "symbol": "BNB"
   },
@@ -470,10 +430,6 @@
   {
     "address": "0xe3011a37a904ab90c8881a99bd1f6e21401f1522",
     "symbol": "BSV"
-  },
-  {
-    "address": "0x2bdcc0de6be1f7d2ee689a0342d76f52e8efaba3",
-    "symbol": "BTC"
   },
   {
     "address": "0x24d41dbc3d60d0784f8a937c59fbde51440d5140",
@@ -664,10 +620,6 @@
     "symbol": "CYS"
   },
   {
-    "address": "0x49fd2be640db2910c2fab69bb8531ab6e76127ff",
-    "symbol": "DAI"
-  },
-  {
     "address": "0xab837301d12cdc4b97f1e910fc56c9179894d9cf",
     "symbol": "DAI"
   },
@@ -700,10 +652,6 @@
     "symbol": "DODO"
   },
   {
-    "address": "0x1429859428c0abc9c2c47c8ee9fbaf82cfa0f20f",
-    "symbol": "DOGE"
-  },
-  {
     "address": "0xbe18a1b61ceaf59aeb6a9bc81ab4fb87d56ba167",
     "symbol": "DOGE"
   },
@@ -718,10 +666,6 @@
   {
     "address": "0xd038a2ee73b64f30d65802ad188f27921656f28f",
     "symbol": "DOOD"
-  },
-  {
-    "address": "0xb0d4afd8879ed9f52b28595d31b441d079b2ca07",
-    "symbol": "DOT"
   },
   {
     "address": "0x666432ccb747b2220875ce185f487ed53677fac9",
@@ -824,10 +768,6 @@
     "symbol": "ETHFI"
   },
   {
-    "address": "0x7969c5ed335650692bc04293b07f5bf2e7a673c0",
-    "symbol": "ETH"
-  },
-  {
     "address": "0x73c68f1f41e4890d06ba3e71b9e9dfa555f1fb46",
     "symbol": "ETH"
   },
@@ -838,10 +778,6 @@
   {
     "address": "0x2b639cc84e1ad3aa92d4ee7d2755a6abef300d72",
     "symbol": "FARTCOIN"
-  },
-  {
-    "address": "0xf4b146fba71f41e0592668ffbf264f1d186b2ca8",
-    "symbol": "FET"
   },
   {
     "address": "0xf85895d097b2c25946bb95c4d11e2f3c035f8f0c",
@@ -858,10 +794,6 @@
   {
     "address": "0xb468647b04bf657c9ee2de65252037d781eabafd",
     "symbol": "FIDA"
-  },
-  {
-    "address": "0xd8a5a9b31c3c0232e196d518e89fd8bf83acad43",
-    "symbol": "FIL"
   },
   {
     "address": "0x47c05bcca7d57c87083eb4e586007530ee4539e9",
@@ -1092,10 +1024,6 @@
     "symbol": "ICNT"
   },
   {
-    "address": "0x2e2ed0cfd3ad2f1d34481277b3204d807ca2f8c2",
-    "symbol": "ICP"
-  },
-  {
     "address": "0xc981ec845488b8479539e6b22dc808fb824db00a",
     "symbol": "ICP"
   },
@@ -1134,10 +1062,6 @@
   {
     "address": "0x9d136eea063ede5418a6bc7beaff009bbb6cfa70",
     "symbol": "INIT"
-  },
-  {
-    "address": "0x202cce504e04bed6fc0521238ddf04bc9e8e15ab",
-    "symbol": "INJ"
   },
   {
     "address": "0x687bb6c57915aa2529efc7d2a26668855e022fae",
@@ -1304,10 +1228,6 @@
     "symbol": "LINEA"
   },
   {
-    "address": "0x162a433068f51e18b7d13932f27e66a3f99e6890",
-    "symbol": "LINK"
-  },
-  {
     "address": "0x840748f7fd3ea956e5f4c88001da5cc1abcbc038",
     "symbol": "LINK"
   },
@@ -1342,10 +1262,6 @@
   {
     "address": "0x04d7478fdf318c3c22cece62da9d78ff94807d77",
     "symbol": "LSK"
-  },
-  {
-    "address": "0x1fa02b2d6a771842690194cf62d91bdd92bfe28d",
-    "symbol": "LTC"
   },
   {
     "address": "0xd9abc93f81394bd161a1b24b03518e0a570bdead",
@@ -1512,10 +1428,6 @@
     "symbol": "NAORIS"
   },
   {
-    "address": "0x21df544947ba3e8b3c32561399e88b52dc8b2823",
-    "symbol": "NEAR"
-  },
-  {
     "address": "0x92b0d1cc77b84973b7041cb9275d41f09840eadd",
     "symbol": "NEAR"
   },
@@ -1608,10 +1520,6 @@
     "symbol": "OM"
   },
   {
-    "address": "0x46b142dd1e924fab83ecc3c08e4d46e82f005e0e",
-    "symbol": "ONDO"
-  },
-  {
     "address": "0x20f5f006a0184883068bbf58fb0c526a8eea8bfd",
     "symbol": "ONDO"
   },
@@ -1630,10 +1538,6 @@
   {
     "address": "0xaa5c5496e2586f81d8d2d0b970eb85ab088639c2",
     "symbol": "OPEN"
-  },
-  {
-    "address": "0x36b58f5c1969b7b6591d752ea6f5486d069010ab",
-    "symbol": "OP"
   },
   {
     "address": "0xa95a928eec085801d981d13ffe749872d8fd5bec",
@@ -1696,10 +1600,6 @@
     "symbol": "PEOPLE"
   },
   {
-    "address": "0x2b0d36facd61b71cc05ab8f3d2355ec3631c0dd5",
-    "symbol": "PEPE"
-  },
-  {
     "address": "0xa4d0806d597146df93796a38435abb2a3cb96677",
     "symbol": "PEPE"
   },
@@ -1734,10 +1634,6 @@
   {
     "address": "0x484242986f57dfca98eec2c78427931c63f1c4ce",
     "symbol": "PNUT"
-  },
-  {
-    "address": "0x9dbb24b10502ad166c198dbeb5ab54d2d13afcfd",
-    "symbol": "POL"
   },
   {
     "address": "0xf8b299f87ebb62e0b625eaf440b73cc6b7717dbd",
@@ -1892,10 +1788,6 @@
     "symbol": "RED"
   },
   {
-    "address": "0x172076e0166d1f9cc711c77adf8488051744980c",
-    "symbol": "RENDER"
-  },
-  {
     "address": "0x9bb65b12162a51413272d10399282e730822df44",
     "symbol": "RENDER"
   },
@@ -1926,10 +1818,6 @@
   {
     "address": "0x0dee24c99e8df7f0e058f4f48f228cc07db704fc",
     "symbol": "RLS"
-  },
-  {
-    "address": "0xfcca971fe9ee20c1cf22596e700aa993d8fd19c5",
-    "symbol": "RLUSD"
   },
   {
     "address": "0xcc5bc84c3fdbcf262aadd9f76652d6784293dd9e",
@@ -2040,10 +1928,6 @@
     "symbol": "SHELL"
   },
   {
-    "address": "0x5081a39b8a5f0e35a8d959395a630b68b74dd30f",
-    "symbol": "SHIB"
-  },
-  {
     "address": "0x725314746e727f586e9fca65aed5dbe45aa71b99",
     "symbol": "SHIB"
   },
@@ -2082,10 +1966,6 @@
   {
     "address": "0xfe92134da38df8c399a90a540f20187d19216e05",
     "symbol": "SOLO"
-  },
-  {
-    "address": "0x7bc06c482dead17c0e297afbc32f6e63d3846650",
-    "symbol": "SOL"
   },
   {
     "address": "0x2e13f7644014f6e934e314f0371585845de7b986",
@@ -2156,16 +2036,8 @@
     "symbol": "STRK"
   },
   {
-    "address": "0xc9a43158891282a2b1475592d5719c001986aaec",
-    "symbol": "STX"
-  },
-  {
     "address": "0xa138575a030a2f4977d19cc900781e7be3fd2bc0",
     "symbol": "STX"
-  },
-  {
-    "address": "0x8198f5d8f8cffe8f9c413d98a0a55aeb8ab9fbb7",
-    "symbol": "SUI"
   },
   {
     "address": "0xb8d6d6b01bfe81784be46e5771ef017fa3c906d8",
@@ -2240,10 +2112,6 @@
     "symbol": "TANSSI"
   },
   {
-    "address": "0x1c85638e118b37167e9298c2268758e058ddfda0",
-    "symbol": "TAO"
-  },
-  {
     "address": "0xe4a4b3bc2787aa913e5b4bbce907e8b213250bde",
     "symbol": "TAO"
   },
@@ -2274,10 +2142,6 @@
   {
     "address": "0x81f82957608f74441e085851ca5cc091b23d17a2",
     "symbol": "TNSR"
-  },
-  {
-    "address": "0x4ee6ecad1c2dae9f525404de8555724e3c35d07b",
-    "symbol": "TON"
   },
   {
     "address": "0x0b5dcaf621a877dacf3c540c1e5208c8a3eb7b23",
@@ -2312,10 +2176,6 @@
     "symbol": "TRIA"
   },
   {
-    "address": "0x367761085bf3c12e5da2df99ac6e1a824612b8fb",
-    "symbol": "TRUMP"
-  },
-  {
     "address": "0x0dec227f56ac4d342f041d486aa60742d4bdc483",
     "symbol": "TRUMP"
   },
@@ -2326,10 +2186,6 @@
   {
     "address": "0x71d2ebf08bf4fcb82db5dde46677263f4c534ef3",
     "symbol": "TRU"
-  },
-  {
-    "address": "0x4c4a2f8c81640e47606d3fd77b353e87ba015584",
-    "symbol": "TRX"
   },
   {
     "address": "0x0bfc626b583e93a5f793bc2caa195bdbb2ed9f20",
@@ -2368,10 +2224,6 @@
     "symbol": "UMA"
   },
   {
-    "address": "0xdbc43ba45381e02825b14322cddd15ec4b3164e6",
-    "symbol": "UNI"
-  },
-  {
     "address": "0x72ac6a36de2f72bd39e9c782e9db0dcc41febfe2",
     "symbol": "UNI"
   },
@@ -2384,20 +2236,8 @@
     "symbol": "USAT"
   },
   {
-    "address": "0x2b64822cf4bbdd77d386f51aa2b40c5cdbeb80b5",
-    "symbol": "USD1"
-  },
-  {
     "address": "0x30a6d2b697635a0ecf1975d2386a0fe6b608b0fb",
     "symbol": "USD1"
-  },
-  {
-    "address": "0xcd9bc6ce45194398d12e27e1333d5e1d783104dd",
-    "symbol": ""
-  },
-  {
-    "address": "0xbc153693bfae1ca202872a382aed20a1306c9200",
-    "symbol": "USDE"
   },
   {
     "address": "0xd8e4af8145a8288537b85878bb2371fa070aa5ef",
@@ -2524,10 +2364,6 @@
     "symbol": "WIN"
   },
   {
-    "address": "0xfbc22278a96299d91d41c453234d97b4f5eb9b2d",
-    "symbol": "WLD"
-  },
-  {
     "address": "0xe58cbe144dd5556c84874dec1b3f2d0d6ac45f1b",
     "symbol": "WLD"
   },
@@ -2568,20 +2404,12 @@
     "symbol": "XION"
   },
   {
-    "address": "0x04c89607413713ec9775e14b954286519d836fef",
-    "symbol": "XLM"
-  },
-  {
     "address": "0xf94ab55a20b32ac37c3a105f12db535986697945",
     "symbol": "XLM"
   },
   {
     "address": "0xbcf063a9eb18bc3c6eb005791c61801b7cb16fe4",
     "symbol": "XPL"
-  },
-  {
-    "address": "0xfd471836031dc5108809d173a067e8486b9047a3",
-    "symbol": "XRP"
   },
   {
     "address": "0xf62eec897fa5ef36a957702aa4a45b58fe8fe312",

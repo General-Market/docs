@@ -133,7 +133,17 @@ export function Header({ activePage = 'investment', onPageChange }: HeaderProps)
                 </button>
               ))}
             </div>
-            <WalletConnectButton />
+            <div className="flex items-center gap-2">
+              <a
+                href="https://discord.gg/xsfgzwR6"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-primary rounded-md hover:bg-muted/50 transition-all"
+              >
+                Support
+              </a>
+              <WalletConnectButton />
+            </div>
           </div>
         </div>
 
@@ -153,7 +163,15 @@ export function Header({ activePage = 'investment', onPageChange }: HeaderProps)
                 {link.label}
               </button>
             ))}
-            <div className="pt-2 border-t border-border-light">
+            <div className="pt-2 border-t border-border-light flex items-center justify-between">
+              <a
+                href="https://discord.gg/xsfgzwR6"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-text-muted hover:text-text-primary transition-colors"
+              >
+                Support
+              </a>
               <WalletConnectButton />
             </div>
           </div>

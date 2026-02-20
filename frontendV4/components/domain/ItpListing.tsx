@@ -357,13 +357,6 @@ export function ItpListing({ onCreateClick, onLendingClick }: ItpListingProps) {
       <div className="bg-card border border-border-light rounded-xl p-6">
         <div className="flex items-center gap-3 mb-6 flex-wrap">
           <h2 className="text-xl font-semibold text-text-primary">Index Tracking Products</h2>
-          <button
-            onClick={handleWalletClick}
-            disabled={isConnectPending}
-            className="px-3 py-2 bg-muted border border-border-medium text-text-primary font-mono text-sm rounded hover:border-zinc-600 hover:text-text-primary transition-colors disabled:opacity-50"
-          >
-            {isConnected && address ? truncateAddress(address) : isConnectPending ? 'Connecting...' : 'Connect Wallet'}
-          </button>
           {onCreateClick && (
             <button
               onClick={onCreateClick}
@@ -380,14 +373,6 @@ export function ItpListing({ onCreateClick, onLendingClick }: ItpListingProps) {
               Lending
             </button>
           )}
-          <a
-            href="https://discord.gg/xsfgzwR6"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-3 py-2 bg-zinc-900 text-white font-semibold rounded text-sm hover:bg-zinc-800 transition-colors"
-          >
-            Support
-          </a>
         </div>
 
         {error && (
