@@ -47,10 +47,11 @@ const ARB_CUSTODY_SELL_ABI = [
 
 interface SellItpModalProps {
   itpId: string
+  videoUrl?: string
   onClose: () => void
 }
 
-export function SellItpModal({ itpId, onClose }: SellItpModalProps) {
+export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const { address, isConnected } = useAccount()
   const publicClient = usePublicClient()
 
@@ -223,7 +224,19 @@ export function SellItpModal({ itpId, onClose }: SellItpModalProps) {
             <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
           </div>
           {itpSymbol && <p className="text-text-secondary mb-1 font-mono">${itpSymbol}</p>}
-          <p className="text-xs text-text-muted font-mono mb-6 break-all">ITP ID: {itpId}</p>
+          <p className="text-xs text-text-muted font-mono mb-4 break-all">ITP ID: {itpId}</p>
+
+          {videoUrl && (
+            <div className="aspect-video bg-zinc-950 rounded-lg overflow-hidden mb-4">
+              <iframe
+                src={videoUrl}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title="ITP video"
+              />
+            </div>
+          )}
 
           {!isConnected ? (
             <div className="bg-muted border border-border-light rounded-xl p-8 text-center">

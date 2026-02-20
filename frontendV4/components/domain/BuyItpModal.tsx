@@ -80,10 +80,11 @@ const MINT_ABI = [
 
 interface BuyItpModalProps {
   itpId: string
+  videoUrl?: string
   onClose: () => void
 }
 
-export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
+export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const { address, isConnected } = useAccount()
   const publicClient = usePublicClient()
 
@@ -583,7 +584,7 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
             return (
               <div className="flex justify-between">
                 <span className="text-text-muted">vs Limit</span>
-                <span className={Math.abs(slippage) < 1 ? 'text-color-up' : Math.abs(slippage) < 3 ? 'text-color-warning' : 'text-color-down'}>
+                <span className={slippage <= 0 ? 'text-color-up' : slippage < 1 ? 'text-color-up' : slippage < 3 ? 'text-color-warning' : 'text-color-down'}>
                   {slippage > 0 ? '+' : ''}{slippage.toFixed(2)}%
                 </span>
               </div>
@@ -603,7 +604,19 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
             <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
           </div>
           {itpSymbol && <p className="text-text-secondary mb-1 font-mono">${itpSymbol}</p>}
-          <p className="text-xs text-text-muted font-mono mb-6 break-all">ITP ID: {itpId}</p>
+          <p className="text-xs text-text-muted font-mono mb-4 break-all">ITP ID: {itpId}</p>
+
+          {videoUrl && (
+            <div className="aspect-video bg-zinc-950 rounded-lg overflow-hidden mb-4">
+              <iframe
+                src={videoUrl}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title="ITP video"
+              />
+            </div>
+          )}
 
           {!isConnected ? (
             <div className="bg-muted border border-border-light rounded-xl p-8 text-center">

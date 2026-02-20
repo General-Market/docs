@@ -94,9 +94,8 @@ export function Header({ activePage = 'investment', onPageChange }: HeaderProps)
               </button>
             </nav>
 
-            {/* Right side */}
+            {/* Right side — mobile hamburger only (wallet moved to sub-header) */}
             <div className="flex items-center gap-3 shrink-0">
-              <WalletConnectButton />
               <button
                 className="md:hidden p-2 text-text-muted hover:text-text-primary"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -118,20 +117,23 @@ export function Header({ activePage = 'investment', onPageChange }: HeaderProps)
       {/* Sub Header — Section Navigation */}
       <nav className="bg-white/90 backdrop-blur-sm border-b border-border-light shadow-sm">
         <div className="max-w-site mx-auto px-6 lg:px-12">
-          <div className="hidden md:flex items-center gap-1 h-10">
-            {navLinks.map((link) => (
-              <button
-                key={link.id}
-                onClick={() => scrollTo(link.id)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                  activeSection === link.id
-                    ? 'text-text-primary bg-muted'
-                    : 'text-text-muted hover:text-text-primary hover:bg-muted/50'
-                }`}
-              >
-                {link.label}
-              </button>
-            ))}
+          <div className="hidden md:flex items-center justify-between h-10">
+            <div className="flex items-center gap-1">
+              {navLinks.map((link) => (
+                <button
+                  key={link.id}
+                  onClick={() => scrollTo(link.id)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                    activeSection === link.id
+                      ? 'text-text-primary bg-muted'
+                      : 'text-text-muted hover:text-text-primary hover:bg-muted/50'
+                  }`}
+                >
+                  {link.label}
+                </button>
+              ))}
+            </div>
+            <WalletConnectButton />
           </div>
         </div>
 
@@ -151,6 +153,9 @@ export function Header({ activePage = 'investment', onPageChange }: HeaderProps)
                 {link.label}
               </button>
             ))}
+            <div className="pt-2 border-t border-border-light">
+              <WalletConnectButton />
+            </div>
           </div>
         )}
       </nav>

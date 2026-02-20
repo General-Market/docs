@@ -120,6 +120,14 @@ interface ItpListingProps {
 
 const ITEMS_PER_PAGE = 2
 
+// Test video URLs — shown on ITP cards that don't have a metadata videoUrl set
+const TEST_VIDEOS = [
+  'https://www.youtube.com/embed/bBC-nXj3Ng4',  // Bitcoin whiteboard overview
+  'https://www.youtube.com/embed/p7HKvqRI_Bo',  // How The Economic Machine Works (Ray Dalio)
+  'https://www.youtube.com/embed/PHe0bXAIuk0',  // How The Stock Market Works
+  'https://www.youtube.com/embed/41JCpzvnn_0',  // What is an ETF?
+]
+
 export function ItpListing({ onCreateClick, onLendingClick }: ItpListingProps) {
   const { address, isConnected } = useAccount()
   const { connect, connectors, isPending: isConnectPending } = useConnect()
@@ -144,8 +152,8 @@ export function ItpListing({ onCreateClick, onLendingClick }: ItpListingProps) {
   const [itps, setItps] = useState<ItpInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [buyModalItpId, setBuyModalItpId] = useState<string | null>(null)
-  const [sellModalItpId, setSellModalItpId] = useState<string | null>(null)
+  const [buyModal, setBuyModal] = useState<{ itpId: string; videoUrl: string } | null>(null)
+  const [sellModal, setSellModal] = useState<{ itpId: string; videoUrl: string } | null>(null)
   const [lendModalItp, setLendModalItp] = useState<ItpInfo | null>(null)
   const [chartModalItp, setChartModalItp] = useState<{ itpId: string; name: string; createdAt?: number } | null>(null)
   const [rebalanceModalItp, setRebalanceModalItp] = useState<{ itpId: string; name: string } | null>(null)
@@ -406,8 +414,19 @@ export function ItpListing({ onCreateClick, onLendingClick }: ItpListingProps) {
                 <ItpCard
                   key={itp.id}
                   itp={itp}
-                  onBuy={() => itp.itpId && setBuyModalItpId(itp.itpId)}
-                  onSell={() => itp.itpId && setSellModalItpId(itp.itpId)}
+                  index={currentPage * ITEMS_PER_PAGE + itps.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).indexOf(itp)}
+                  onBuy={() => {
+                    if (!itp.itpId) return
+                    const idx = currentPage * ITEMS_PER_PAGE + itps.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).indexOf(itp)
+                    const videoUrl = TEST_VIDEOS[idx % TEST_VIDEOS.length]
+                    setBuyModal({ itpId: itp.itpId, videoUrl })
+                  }}
+                  onSell={() => {
+                    if (!itp.itpId) return
+                    const idx = currentPage * ITEMS_PER_PAGE + itps.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).indexOf(itp)
+                    const videoUrl = TEST_VIDEOS[idx % TEST_VIDEOS.length]
+                    setSellModal({ itpId: itp.itpId, videoUrl })
+                  }}
                   onLend={(arbAddr) => setLendModalItp({ ...itp, arbAddress: arbAddr })}
                   onChart={() => itp.itpId && setChartModalItp({ itpId: itp.itpId, name: itp.name || `ITP #${itp.nonce ?? itp.id}`, createdAt: itp.createdAt })}
                   onRebalance={() => itp.itpId && setRebalanceModalItp({ itpId: itp.itpId, name: itp.name || `ITP #${itp.nonce ?? itp.id}` })}
@@ -440,11 +459,11 @@ export function ItpListing({ onCreateClick, onLendingClick }: ItpListingProps) {
         )}
       </div>
 
-      {buyModalItpId && (
-        <BuyItpModal itpId={buyModalItpId} onClose={() => setBuyModalItpId(null)} />
+      {buyModal && (
+        <BuyItpModal itpId={buyModal.itpId} videoUrl={buyModal.videoUrl} onClose={() => setBuyModal(null)} />
       )}
-      {sellModalItpId && (
-        <SellItpModal itpId={sellModalItpId} onClose={() => setSellModalItpId(null)} />
+      {sellModal && (
+        <SellItpModal itpId={sellModal.itpId} videoUrl={sellModal.videoUrl} onClose={() => setSellModal(null)} />
       )}
       {lendModalItp && (
         <LendItpModal itpInfo={lendModalItp} isOpen={true} onClose={() => setLendModalItp(null)} />
@@ -468,6 +487,7 @@ interface TokenHolder {
 
 interface ItpCardProps {
   itp: ItpInfo
+  index: number
   onBuy: () => void
   onSell: () => void
   onLend: (arbAddress: string) => void
@@ -475,7 +495,7 @@ interface ItpCardProps {
   onRebalance: () => void
 }
 
-function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardProps) {
+function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardProps) {
   const { address } = useAccount()
   const publicClient = usePublicClient()
   const [showDetails, setShowDetails] = useState(false)
@@ -642,18 +662,23 @@ function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardPr
 
   return (
     <div className="bg-card rounded-xl shadow-card border border-border-light overflow-hidden hover:shadow-card-hover transition-shadow">
-      {/* Video embed — flush top, full width (only if videoUrl set) */}
-      {metadata?.videoUrl && (
-        <div className="aspect-video bg-zinc-950">
-          <iframe
-            src={metadata.videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
-            className="w-full h-full border-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            title={`${itp.name || 'ITP'} video`}
-          />
-        </div>
-      )}
+      {/* Video embed — flush top, full width */}
+      {(() => {
+        const videoUrl = metadata?.videoUrl
+          ? metadata.videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')
+          : TEST_VIDEOS[index % TEST_VIDEOS.length]
+        return (
+          <div className="aspect-video bg-zinc-950">
+            <iframe
+              src={videoUrl}
+              className="w-full h-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title={`${itp.name || 'ITP'} video`}
+            />
+          </div>
+        )
+      })()}
 
       {/* Card content */}
       <div className="p-6">
