@@ -12,6 +12,8 @@ import { getCoinGeckoUrl } from '@/lib/coingecko'
 
 const DATA_NODE_URL = process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200'
 
+interface CoinEntry { id: string; image: string }
+
 // Default sample assets — overridden at runtime from /deployed-assets.json if available
 const DEFAULT_SAMPLE_ASSETS = [
   { address: '0x4c5859f0f772848b2d91f1d83e2fe57935348029', symbol: 'BTC' },
@@ -26,10 +28,10 @@ const DEFAULT_SAMPLE_ASSETS = [
   { address: '0xc351628eb244ec633d5f21fbd6621e1a683b1181', symbol: 'AVAX' },
 ]
 
-/** Tiny coin logo — loads from data-node /logo/:coin_id with graceful fallback */
-function CoinLogo({ symbol, coinMap, size = 20 }: { symbol: string; coinMap: Record<string, string>; size?: number }) {
-  const coinId = coinMap[symbol.toUpperCase()]
-  if (!coinId) {
+/** Tiny coin logo — loads CoinGecko image with graceful fallback */
+function CoinLogo({ symbol, coinMap, size = 20 }: { symbol: string; coinMap: Record<string, CoinEntry>; size?: number }) {
+  const entry = coinMap[symbol.toUpperCase()]
+  if (!entry?.image) {
     return (
       <span
         className="inline-flex items-center justify-center rounded-full bg-muted text-text-muted font-mono text-[9px] flex-shrink-0"
@@ -41,13 +43,12 @@ function CoinLogo({ symbol, coinMap, size = 20 }: { symbol: string; coinMap: Rec
   }
   return (
     <img
-      src={`${DATA_NODE_URL}/logo/${coinId}`}
+      src={entry.image}
       alt={symbol}
       width={size}
       height={size}
       className="rounded-full flex-shrink-0"
       onError={(e) => {
-        // Replace broken image with text fallback
         const span = document.createElement('span')
         span.className = 'inline-flex items-center justify-center rounded-full bg-muted text-text-muted font-mono text-[9px]'
         span.style.width = `${size}px`
@@ -79,7 +80,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   const [searchTerm, setSearchTerm] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
   const [availableAssets, setAvailableAssets] = useState<{ address: string; symbol: string }[]>(DEFAULT_SAMPLE_ASSETS)
-  const [coinMap, setCoinMap] = useState<Record<string, string>>({})
+  const [coinMap, setCoinMap] = useState<Record<string, CoinEntry>>({})
 
   const { writeContract, data: hash, isPending, error: writeError, reset: resetWrite } = useChainWriteContract()
   const { isLoading: isConfirming, isSuccess, error: confirmError } = useWaitForTransactionReceipt({ hash, chainId: activeChainId })
@@ -100,11 +101,11 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       })
   }, [])
 
-  // Load symbol → coin_id mapping for logos
+  // Load symbol → {id, image} mapping for logos from static coin-map
   useEffect(() => {
-    fetch(`${DATA_NODE_URL}/coin-map`, { signal: AbortSignal.timeout(10_000) })
+    fetch('/coin-map.json', { signal: AbortSignal.timeout(10_000) })
       .then(res => res.ok ? res.json() : Promise.reject('not found'))
-      .then((data: Record<string, string>) => setCoinMap(data))
+      .then((data: Record<string, CoinEntry>) => setCoinMap(data))
       .catch(() => { /* logos won't show — acceptable fallback */ })
   }, [])
 
@@ -364,14 +365,27 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                   </div>
                   <div className="flex flex-wrap gap-1.5 max-h-64 overflow-y-auto">
                     {filteredAssets.map(asset => (
-                      <button
-                        key={asset.address}
-                        onClick={() => addAsset(asset)}
-                        className="inline-flex items-center gap-1.5 bg-card text-text-primary border border-border-light rounded-lg px-2.5 py-1.5 text-xs hover:border-border-medium hover:shadow-sm transition-all"
-                      >
-                        <CoinLogo symbol={asset.symbol} coinMap={coinMap} size={18} />
-                        <span className="font-medium">{asset.symbol}</span>
-                      </button>
+                      <span key={asset.address} className="inline-flex items-center gap-1.5 bg-card text-text-primary border border-border-light rounded-lg px-2.5 py-1.5 text-xs hover:border-border-medium hover:shadow-sm transition-all">
+                        <button
+                          onClick={() => addAsset(asset)}
+                          className="inline-flex items-center gap-1.5"
+                        >
+                          <CoinLogo symbol={asset.symbol} coinMap={coinMap} size={18} />
+                          <span className="font-medium">{asset.symbol}</span>
+                        </button>
+                        <a
+                          href={getCoinGeckoUrl(asset.symbol)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          className="text-text-muted hover:text-text-primary transition-colors"
+                          title={`View ${asset.symbol} on CoinGecko`}
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M17 7H7M17 7v10" />
+                          </svg>
+                        </a>
+                      </span>
                     ))}
                   </div>
                 </div>
@@ -399,6 +413,17 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                               <div key={asset.address} className="flex items-center gap-2 bg-card rounded-lg px-2 py-1.5 border border-border-light">
                                 <CoinLogo symbol={asset.symbol} coinMap={coinMap} size={18} />
                                 <span className="w-12 text-text-primary font-mono text-xs tabular-nums truncate">{asset.symbol}</span>
+                                <a
+                                  href={getCoinGeckoUrl(asset.symbol)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-text-muted hover:text-text-primary transition-colors flex-shrink-0"
+                                  title={`View ${asset.symbol} on CoinGecko`}
+                                >
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M17 7H7M17 7v10" />
+                                  </svg>
+                                </a>
                                 <input
                                   type="range"
                                   min="0"

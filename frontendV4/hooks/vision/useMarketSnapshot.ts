@@ -41,7 +41,8 @@ export interface SnapshotMetaResponse {
   assetCounts: Record<string, number>
 }
 
-const VISION_API_URL = process.env.NEXT_PUBLIC_VISION_API_URL || ''
+// Use local API proxy routes that transform data-node responses
+const VISION_API_URL = ''
 const CACHE_KEY_SNAPSHOT = 'gm-vision-snapshot-cache'
 const CACHE_KEY_META = 'gm-vision-meta-cache'
 const CACHE_MAX_AGE_MS = 5 * 60 * 1000 // 5 minutes
@@ -84,7 +85,7 @@ export function useMarketSnapshotMeta() {
     queryKey: ['market-snapshot-meta'],
     queryFn: async () => {
       try {
-        const res = await fetchWithTimeout(`${VISION_API_URL}/data-node/snapshot/meta`, 10_000)
+        const res = await fetchWithTimeout(`${VISION_API_URL}/api/vision/snapshot/meta`, 10_000)
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = await res.json()
         saveCache(CACHE_KEY_META, data)
@@ -109,7 +110,7 @@ export function useMarketSnapshot() {
     queryKey: ['market-snapshot'],
     queryFn: async () => {
       try {
-        const res = await fetchWithTimeout(`${VISION_API_URL}/data-node/snapshot`, 45_000)
+        const res = await fetchWithTimeout(`${VISION_API_URL}/api/vision/snapshot`, 45_000)
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = await res.json()
         saveCache(CACHE_KEY_SNAPSHOT, data)
