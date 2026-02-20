@@ -19,6 +19,7 @@ pub mod live_cache;
 mod logo_downloader;
 mod simulation;
 mod trade_collector;
+mod market_data;
 
 use std::collections::HashSet;
 use std::net::SocketAddr;
