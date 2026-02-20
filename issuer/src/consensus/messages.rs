@@ -732,6 +732,54 @@ impl ConsensusMessageHandler {
                     signature,
                 }
             }
+            // Rebalance NAV consensus: setItpNav
+            P2PMessage::SetItpNavProposal {
+                leader_id,
+                itp_id,
+                nav,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    ?itp_id,
+                    nav = %nav,
+                    "Received SetItpNavProposal"
+                );
+                MessageHandleResult::ProcessSetItpNavProposal {
+                    from: leader_id,
+                    itp_id,
+                    nav,
+                    leader_signature,
+                }
+            }
+            P2PMessage::SetItpNavSign {
+                signer_id,
+                signer_index,
+                itp_id,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    ?itp_id,
+                    "Received SetItpNavSign"
+                );
+                MessageHandleResult::ProcessSetItpNavSign {
+                    from: signer_id,
+                    signer_index,
+                    itp_id,
+                    signature,
+                }
+            }
+            // AA keeper arbitration messages — forward to arbitration subsystem
+            P2PMessage::ArbitrationPriceProposal { .. }
+            | P2PMessage::ArbitrationPriceVote { .. }
+            | P2PMessage::ArbitrationResolutionSign { .. } => {
+                debug!(?from, "Forwarding arbitration message to subsystem");
+                MessageHandleResult::ForwardToArbitration(message)
+            }
             _ => {
                 trace!(?from, "Non-consensus message received");
                 MessageHandleResult::Ignored
@@ -1257,6 +1305,22 @@ pub enum MessageHandleResult {
         cycle_number: u64,
         signature: P2PBLSSignature,
     },
+    /// Process a setItpNav proposal from the leader (rebalance NAV consensus)
+    ProcessSetItpNavProposal {
+        from: PeerId,
+        itp_id: H256,
+        nav: U256,
+        leader_signature: P2PBLSSignature,
+    },
+    /// Process a setItpNav signature from a follower (rebalance NAV consensus)
+    ProcessSetItpNavSign {
+        from: PeerId,
+        signer_index: u8,
+        itp_id: H256,
+        signature: P2PBLSSignature,
+    },
+    /// Forward arbitration message to arbitration subsystem
+    ForwardToArbitration(P2PMessage),
 }
 
 #[cfg(test)]

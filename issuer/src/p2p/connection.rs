@@ -461,6 +461,13 @@ fn get_sender_id(message: &P2PMessage) -> Option<PeerId> {
         P2PMessage::RecordCollateralMoveSign { signer_id, .. } => Some(*signer_id),
         P2PMessage::MintBridgedSharesProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::MintBridgedSharesSign { signer_id, .. } => Some(*signer_id),
+        // Rebalance NAV consensus: setItpNav
+        P2PMessage::SetItpNavProposal { leader_id, .. } => Some(*leader_id),
+        P2PMessage::SetItpNavSign { signer_id, .. } => Some(*signer_id),
+        // AA keeper arbitration consensus
+        P2PMessage::ArbitrationPriceProposal { leader_id, .. } => Some(*leader_id),
+        P2PMessage::ArbitrationPriceVote { voter_id, .. } => Some(*voter_id),
+        P2PMessage::ArbitrationResolutionSign { signer_id, .. } => Some(*signer_id),
     }
 }
 

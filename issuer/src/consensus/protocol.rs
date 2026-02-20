@@ -49,6 +49,8 @@ use crate::bridge::{
     RebalanceBatchResult, UpdateWeightsResult,
     // Single-phase rebalance
     build_rebalance_hash, RebalanceResult,
+    // setItpNav consensus (pre-rebalance NAV push)
+    build_set_itp_nav_hash, SetItpNavResult,
 };
 
 // Asset trades: Issuer-driven per-asset settlement
@@ -1727,6 +1729,59 @@ where
                         "Failed to handle MintBridgedSharesSign"
                     );
                 }
+            }
+            // Rebalance NAV consensus: setItpNav
+            MessageHandleResult::ProcessSetItpNavProposal {
+                from,
+                itp_id,
+                nav,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    itp_id = ?itp_id,
+                    nav = %nav,
+                    "Received SetItpNavProposal - routing to handler"
+                );
+                if let Err(e) = self
+                    .handle_set_itp_nav_proposal(from, itp_id, nav, leader_signature)
+                    .await
+                {
+                    warn!(
+                        code = "INFRA-007",
+                        itp_id = ?itp_id,
+                        error = %e,
+                        "Failed to handle SetItpNavProposal"
+                    );
+                }
+            }
+            MessageHandleResult::ProcessSetItpNavSign {
+                from,
+                signer_index,
+                itp_id,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    signer_index,
+                    itp_id = ?itp_id,
+                    "Received SetItpNavSign - routing to handler"
+                );
+                if let Err(e) = self
+                    .handle_set_itp_nav_sign(from, signer_index, itp_id, signature)
+                    .await
+                {
+                    warn!(
+                        code = "INFRA-007",
+                        itp_id = ?itp_id,
+                        error = %e,
+                        "Failed to handle SetItpNavSign"
+                    );
+                }
+            }
+            // AA keeper arbitration — forwarded to arbitration subsystem (wired in Task 11)
+            MessageHandleResult::ForwardToArbitration(_msg) => {
+                debug!("Arbitration message received — subsystem not yet wired");
             }
             MessageHandleResult::Stale => {
                 debug!("Stale message ignored");
@@ -6414,6 +6469,266 @@ where
             }
             Err(e) => {
                 warn!(code = "INFRA-007", itp_id = ?itp_id, error = %e, "Failed to add rebalance signature");
+            }
+        }
+
+        Ok(())
+    }
+
+    // ============================================================================
+    // setItpNav BLS Consensus (pre-rebalance NAV push)
+    // ============================================================================
+
+    /// Run setItpNav consensus phase before rebalance
+    pub async fn run_set_itp_nav_phase(
+        &self,
+        itp_id: H256,
+        nav: U256,
+        am_leader: bool,
+    ) -> Result<SetItpNavResult, BridgeError> {
+        info!(
+            itp_id = ?itp_id,
+            nav = %nav,
+            am_leader,
+            "Starting setItpNav consensus phase"
+        );
+
+        let bridge_orch_guard = self.bridge_orchestrator.read().await;
+        let _bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
+            BridgeError::ChainWriterError {
+                reason: "BridgeOrchestrator not configured".to_string(),
+            }
+        })?;
+        drop(bridge_orch_guard);
+
+        if am_leader {
+            self.run_set_itp_nav_as_leader(itp_id, nav).await
+        } else {
+            self.run_set_itp_nav_as_follower(itp_id).await
+        }
+    }
+
+    /// Leader: Create setItpNav proposal and collect signatures
+    async fn run_set_itp_nav_as_leader(
+        &self,
+        itp_id: H256,
+        nav: U256,
+    ) -> Result<SetItpNavResult, BridgeError> {
+        info!(itp_id = ?itp_id, nav = %nav, "Leader: Creating setItpNav proposal");
+
+        let bridge_orch_guard = self.bridge_orchestrator.read().await;
+        let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
+            BridgeError::ChainWriterError {
+                reason: "BridgeOrchestrator not configured".to_string(),
+            }
+        })?;
+
+        // Step 1: Create proposal (sign the nav hash)
+        let (_message_hash, leader_signature) = {
+            let orch = bridge_orch.read().await;
+            orch.propose_set_itp_nav(itp_id, nav).await?
+        };
+
+        // Step 2: Start signature collection
+        {
+            let orch = bridge_orch.write().await;
+            orch.start_nav_signature_collection(itp_id, leader_signature.clone()).await;
+        }
+
+        // Step 3: Broadcast proposal
+        let message = P2PMessage::SetItpNavProposal {
+            leader_id: self.config.peer_id,
+            itp_id,
+            nav,
+            leader_signature,
+        };
+
+        drop(bridge_orch_guard);
+
+        self.p2p
+            .broadcast(message)
+            .await
+            .map_err(|e| BridgeError::ChainWriterError {
+                reason: format!("Failed to broadcast setItpNav proposal: {}", e),
+            })?;
+
+        info!(itp_id = ?itp_id, "Leader: setItpNav proposal broadcast, collecting signatures");
+
+        // Step 4: Collect signatures
+        let bridge_orch_guard = self.bridge_orchestrator.read().await;
+        let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
+            BridgeError::ChainWriterError {
+                reason: "BridgeOrchestrator not configured".to_string(),
+            }
+        })?;
+
+        let config = {
+            let orch = bridge_orch.read().await;
+            orch.config().clone()
+        };
+
+        drop(bridge_orch_guard);
+
+        self.collect_nav_signatures(itp_id, config.sign_timeout_ms, config.min_signatures).await
+    }
+
+    /// Follower: return empty result (follower signs via handle_set_itp_nav_proposal)
+    async fn run_set_itp_nav_as_follower(
+        &self,
+        itp_id: H256,
+    ) -> Result<SetItpNavResult, BridgeError> {
+        debug!(itp_id = ?itp_id, "Follower: Waiting for setItpNav proposal");
+        Ok(SetItpNavResult {
+            aggregated_signature: BLSSignature(vec![]),
+            signer_bitmap: U256::zero(),
+            signature_count: 0,
+        })
+    }
+
+    /// Collect setItpNav signatures (leader)
+    async fn collect_nav_signatures(
+        &self,
+        itp_id: H256,
+        timeout_ms: u64,
+        min_signatures: usize,
+    ) -> Result<SetItpNavResult, BridgeError> {
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms);
+
+        loop {
+            let bridge_orch_guard = self.bridge_orchestrator.read().await;
+            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
+                let orch = bridge_orch.read().await;
+                if let Some(result) = orch.check_nav_threshold(itp_id).await {
+                    info!(
+                        itp_id = ?itp_id,
+                        signature_count = result.signature_count,
+                        "setItpNav signature threshold reached"
+                    );
+                    return Ok(result);
+                }
+
+                if tokio::time::Instant::now() >= deadline {
+                    let received = orch.get_nav_signature_count(&itp_id).await.unwrap_or(0);
+                    warn!(
+                        itp_id = ?itp_id, timeout_ms, min_signatures, received,
+                        "setItpNav signature collection timed out"
+                    );
+                    return Err(BridgeError::SigningTimeout { received, timeout_ms });
+                }
+            } else if tokio::time::Instant::now() >= deadline {
+                return Err(BridgeError::SigningTimeout { received: 0, timeout_ms });
+            }
+            drop(bridge_orch_guard);
+
+            sleep(std::time::Duration::from_millis(10)).await;
+        }
+    }
+
+    /// Handle incoming SetItpNavProposal message (as follower)
+    pub async fn handle_set_itp_nav_proposal(
+        &self,
+        leader_id: PeerId,
+        itp_id: H256,
+        nav: U256,
+        leader_signature: BLSSignature,
+    ) -> Result<(), Error> {
+        info!(itp_id = ?itp_id, nav = %nav, "Follower: Received setItpNav proposal");
+
+        let bridge_orch_guard = self.bridge_orchestrator.read().await;
+        let bridge_orch = match bridge_orch_guard.as_ref() {
+            Some(orch) => orch,
+            None => {
+                warn!(code = "INFRA-007", itp_id = ?itp_id, "BridgeOrchestrator not configured");
+                return Ok(());
+            }
+        };
+
+        // Verify leader's BLS signature
+        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
+            let orch = bridge_orch.read().await;
+            let config = orch.config();
+
+            let message_hash = build_set_itp_nav_hash(
+                config.l3_chain_id,
+                config.index_address,
+                itp_id,
+                nav,
+            );
+
+            let hash_bytes: [u8; 32] = message_hash.into();
+            match self.bls_signer.verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature) {
+                Ok(true) => {
+                    debug!(itp_id = ?itp_id, "Leader signature verified for setItpNav");
+                }
+                Ok(false) => {
+                    warn!(code = "INFRA-007", itp_id = ?itp_id, "Invalid leader signature on setItpNav proposal");
+                    return Err(Error::BlsVerification("Invalid leader signature on setItpNav proposal".to_string()));
+                }
+                Err(e) => {
+                    warn!(code = "INFRA-007", itp_id = ?itp_id, error = %e, "Failed to verify leader signature for setItpNav");
+                    return Err(e);
+                }
+            }
+        }
+
+        // Sign the proposal
+        let signature = {
+            let orch = bridge_orch.read().await;
+            let config = orch.config();
+            let message_hash = build_set_itp_nav_hash(
+                config.l3_chain_id,
+                config.index_address,
+                itp_id,
+                nav,
+            );
+            let hash_bytes: [u8; 32] = message_hash.into();
+            self.bls_signer.sign_message_hash(&self.bls_keypair, &hash_bytes)
+                .map_err(|e| Error::BlsVerification(format!("Failed to sign setItpNav proposal: {}", e)))?
+        };
+
+        drop(bridge_orch_guard);
+
+        // Send signature back to leader
+        let message = P2PMessage::SetItpNavSign {
+            signer_id: self.config.peer_id,
+            signer_index: self.config.issuer_registry_index,
+            itp_id,
+            signature,
+        };
+
+        debug!(itp_id = ?itp_id, signer_index = self.config.issuer_registry_index, "Follower: Sending setItpNav signature to leader");
+        self.p2p.send_to(leader_id, message).await
+    }
+
+    /// Handle incoming SetItpNavSign message (as leader)
+    pub async fn handle_set_itp_nav_sign(
+        &self,
+        from: PeerId,
+        signer_index: u8,
+        itp_id: H256,
+        signature: BLSSignature,
+    ) -> Result<(), Error> {
+        debug!(?from, signer_index, itp_id = ?itp_id, "Leader: Received setItpNav signature");
+
+        let bridge_orch_guard = self.bridge_orchestrator.read().await;
+        let bridge_orch = match bridge_orch_guard.as_ref() {
+            Some(orch) => orch,
+            None => {
+                warn!(itp_id = ?itp_id, "BridgeOrchestrator not configured, ignoring setItpNav signature");
+                return Ok(());
+            }
+        };
+
+        let orch = bridge_orch.write().await;
+        match orch.add_nav_signature(itp_id, signer_index, signature).await {
+            Ok(Some(result)) => {
+                info!(itp_id = ?itp_id, signature_count = result.signature_count, "setItpNav signature threshold reached");
+            }
+            Ok(None) => {
+                debug!(itp_id = ?itp_id, signer_index, "setItpNav signature added, threshold not yet reached");
+            }
+            Err(e) => {
+                warn!(code = "INFRA-007", itp_id = ?itp_id, error = %e, "Failed to add setItpNav signature");
             }
         }
 
