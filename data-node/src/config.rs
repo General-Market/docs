@@ -19,6 +19,8 @@ pub enum Command {
     SyncLogos(SyncLogosArgs),
     /// Fetch Bitget spot listing/delisting dates and store in DB
     SyncListings(SyncListingsArgs),
+    /// Backfill DefiLlama TVL/fees/volume history
+    DlBackfill(DlBackfillArgs),
 }
 
 #[derive(Parser, Debug)]
@@ -98,6 +100,52 @@ pub struct ServeArgs {
     /// Listing sync interval in seconds (default: 24h). Set to 0 to disable.
     #[arg(long, default_value = "86400", env = "LISTING_SYNC_INTERVAL_SECS")]
     pub listing_sync_interval: u64,
+
+    /// DefiLlama collector interval in seconds (default: 24h). Set to 0 to disable.
+    #[arg(long, default_value = "86400", env = "DL_POLL_INTERVAL_SECS")]
+    pub dl_poll_interval: u64,
+
+    /// FNG collector interval in seconds (default: 24h). Set to 0 to disable.
+    #[arg(long, default_value = "86400", env = "FNG_POLL_INTERVAL_SECS")]
+    pub fng_poll_interval: u64,
+
+    // === Market data providers (from AA) ===
+
+    /// Finnhub API key (enables stock price polling)
+    #[arg(long, env = "FINNHUB_API_KEY")]
+    pub finnhub_api_key: Option<String>,
+
+    /// Finnhub poll interval in seconds (default: 10 min)
+    #[arg(long, default_value = "600", env = "FINNHUB_SYNC_INTERVAL_SECS")]
+    pub finnhub_sync_interval: u64,
+
+    /// FRED API key (enables Federal Reserve economic data)
+    #[arg(long, env = "FRED_API_KEY")]
+    pub fred_api_key: Option<String>,
+
+    /// BLS API key (enables employment/inflation data)
+    #[arg(long, env = "BLS_API_KEY")]
+    pub bls_api_key: Option<String>,
+
+    /// Nasdaq Data Link API key (enables CFTC, CHRIS, BCHAIN, OPEC, IMF)
+    #[arg(long, env = "NASDAQ_API_KEY")]
+    pub nasdaq_api_key: Option<String>,
+
+    /// Treasury API key (Nasdaq Data Link, enables yield curves)
+    #[arg(long, env = "TREASURY_API_KEY")]
+    pub treasury_api_key: Option<String>,
+
+    /// EIA API key (enables energy data)
+    #[arg(long, env = "EIA_API_KEY")]
+    pub eia_api_key: Option<String>,
+
+    /// Enable ECB rate data (no key needed)
+    #[arg(long, default_value = "false", env = "ECB_ENABLED")]
+    pub ecb_enabled: bool,
+
+    /// OpenMeteo sync interval in seconds (0 = disabled, no key needed)
+    #[arg(long, default_value = "0", env = "OPENMETEO_SYNC_INTERVAL_SECS")]
+    pub openmeteo_sync_interval: u64,
 }
 
 #[derive(Parser, Debug)]
@@ -182,6 +230,21 @@ pub struct SyncListingsArgs {
     /// PostgreSQL connection URL
     #[arg(long, env = "DATABASE_URL")]
     pub database_url: String,
+
+    /// Log level
+    #[arg(long, default_value = "info", env = "DATA_NODE_LOG_LEVEL")]
+    pub log_level: String,
+}
+
+#[derive(Parser, Debug)]
+pub struct DlBackfillArgs {
+    /// PostgreSQL connection URL
+    #[arg(long, env = "DATABASE_URL")]
+    pub database_url: String,
+
+    /// Concurrent workers for backfill fetching
+    #[arg(long, default_value = "5")]
+    pub concurrency: usize,
 
     /// Log level
     #[arg(long, default_value = "info", env = "DATA_NODE_LOG_LEVEL")]

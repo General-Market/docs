@@ -240,6 +240,248 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("FNG collector disabled (interval = 0)");
     }
 
+    // ── Market data providers (from AA) ──────────────────────────────────
+    // Each provider is gated on its config key. We use SyncEngine (fixed interval)
+    // for simple sources and ScheduledSyncEngine for schedule-aware sources.
+
+    // 1. Finnhub (stocks) — gated on API key
+    if let Some(ref key) = args.finnhub_api_key {
+        std::env::set_var("FINNHUB_API_KEY", key);
+        std::env::set_var("FINNHUB_SYNC_INTERVAL_SECS", args.finnhub_sync_interval.to_string());
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::finnhub::FinnhubClient::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Finnhub init failed: {e}"),
+            }
+        });
+        info!("Finnhub stock provider started");
+    }
+
+    // 2. FRED (rates) — gated on API key, schedule-aware
+    if let Some(ref key) = args.fred_api_key {
+        std::env::set_var("FRED_API_KEY", key);
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::fred::FredMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("FRED init failed: {e}"),
+            }
+        });
+        info!("FRED interest rates provider started");
+    }
+
+    // 3. BLS (employment/inflation) — gated on API key, schedule-aware
+    if let Some(ref key) = args.bls_api_key {
+        std::env::set_var("BLS_API_KEY", key);
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::bls::BlsMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("BLS init failed: {e}"),
+            }
+        });
+        info!("BLS employment/inflation provider started");
+    }
+
+    // 4. Treasury (bonds) — gated on treasury_api_key, schedule-aware
+    if let Some(ref key) = args.treasury_api_key {
+        std::env::set_var("NASDAQ_API_KEY", key);
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::treasury::TreasuryMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Treasury init failed: {e}"),
+            }
+        });
+        info!("Treasury yield provider started");
+    }
+
+    // 5. ECB (euro rates) — gated on ecb_enabled flag, schedule-aware
+    if args.ecb_enabled {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::ecb::EcbMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("ECB init failed: {e}"),
+            }
+        });
+        info!("ECB euro rates provider started");
+    }
+
+    // 6. EIA (energy) — gated on API key, schedule-aware
+    if let Some(ref key) = args.eia_api_key {
+        std::env::set_var("EIA_API_KEY", key);
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::eia::EiaMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("EIA init failed: {e}"),
+            }
+        });
+        info!("EIA energy data provider started");
+    }
+
+    // 7. Nasdaq sources (CFTC, CHRIS, BCHAIN, OPEC, IMF) — gated on nasdaq_api_key
+    if let Some(ref key) = args.nasdaq_api_key {
+        std::env::set_var("NASDAQ_API_KEY", key);
+
+        // CFTC
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::nasdaq::CftcMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("CFTC init failed: {e}"),
+            }
+        });
+
+        // CHRIS (continuous futures)
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::nasdaq::ChrisMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("CHRIS init failed: {e}"),
+            }
+        });
+
+        // BCHAIN (bitcoin on-chain)
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::nasdaq::BchainMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("BCHAIN init failed: {e}"),
+            }
+        });
+
+        // OPEC
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::nasdaq::OpecMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("OPEC init failed: {e}"),
+            }
+        });
+
+        // IMF
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::nasdaq::ImfMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("IMF init failed: {e}"),
+            }
+        });
+
+        info!("Nasdaq Data Link providers started (CFTC, CHRIS, BCHAIN, OPEC, IMF)");
+    }
+
+    // 8. OpenMeteo (weather) — gated on sync interval > 0
+    if args.openmeteo_sync_interval > 0 {
+        std::env::set_var("OPENMETEO_SYNC_INTERVAL_SECS", args.openmeteo_sync_interval.to_string());
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::openmeteo::OpenMeteoMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("OpenMeteo init failed: {e}"),
+            }
+        });
+        info!(interval_secs = args.openmeteo_sync_interval, "OpenMeteo weather provider started");
+    }
+
+    // 9. Free/no-key providers — always enabled
+    // SEC EDGAR
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::sec_edgar::SecEdgarMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("SEC EDGAR init failed: {e}"),
+            }
+        });
+    }
+
+    // FINRA
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::finra::FinraMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("FINRA init failed: {e}"),
+            }
+        });
+    }
+
+    // Congress (requires CONGRESS_API_KEY — skip silently if not set)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::congress::CongressMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::warn!("Congress provider skipped: {e}"),
+            }
+        });
+    }
+
+    // World Bank
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::worldbank::WorldBankMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("World Bank init failed: {e}"),
+            }
+        });
+    }
+
+    info!("Free market data providers started (SEC EDGAR, FINRA, Congress, World Bank)");
+
     // Create live ticker cache and start fast poller
     let live_cache = Arc::new(LiveTickerCache::new());
     {

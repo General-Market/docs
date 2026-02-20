@@ -129,6 +129,15 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/sim/benchmarks", get(sim_benchmarks))
         .route("/sim/reload-cache", get(sim_reload_cache))
         .route("/fng/latest", get(fng_latest))
+        // Market data endpoints
+        .route("/market/prices/{source}", get(market_prices))
+        .route("/market/prices/{source}/{asset_id}", get(market_asset_price))
+        .route("/market/prices/{source}/{asset_id}/history", get(market_price_history))
+        .route("/market/assets/{source}", get(market_assets))
+        .route("/market/stats/{source}", get(market_stats))
+        // Admin endpoints
+        .route("/admin/truncate/{table}", axum::routing::post(admin_truncate))
+        .route("/admin/reset-session", axum::routing::post(admin_reset_session))
         .layer(cors)
         .with_state(state)
 }
@@ -2716,6 +2725,14 @@ fn db_error(e: sqlx::Error) -> (StatusCode, Json<ErrorResponse>) {
     )
 }
 
+fn internal_error(e: impl std::fmt::Display) -> (StatusCode, Json<ErrorResponse>) {
+    tracing::error!("{e}", e = e);
+    (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(ErrorResponse { error: format!("Internal error: {}", e) }),
+    )
+}
+
 // ---- /logo/:coin_id ----
 
 // ---- /cg/categories ----
@@ -3835,5 +3852,217 @@ async fn fng_latest(
             }
             Err(e) => Err(db_error(e)),
         }
+    }
+}
+
+// ---- /market/prices/{source} ----
+
+#[derive(Deserialize)]
+struct MarketPricesQuery {
+    symbols: Option<String>,
+    category: Option<String>,
+    page: Option<u32>,
+    limit: Option<u32>,
+}
+
+async fn market_prices(
+    State(state): State<Arc<AppState>>,
+    AxumPath(source): AxumPath<String>,
+    Query(params): Query<MarketPricesQuery>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let page = params.page.unwrap_or(1);
+    let limit = params.limit.unwrap_or(100);
+    let category = params.category.as_deref();
+
+    let symbols_vec: Vec<&str> = params
+        .symbols
+        .as_deref()
+        .map(|s| s.split(',').collect())
+        .unwrap_or_default();
+    let symbols_filter = if symbols_vec.is_empty() {
+        None
+    } else {
+        Some(symbols_vec.as_slice())
+    };
+
+    match crate::market_data::queries::get_market_prices(
+        &state.pool,
+        &source,
+        symbols_filter,
+        category,
+        page,
+        limit,
+    )
+    .await
+    {
+        Ok((prices, total)) => Ok(Json(serde_json::json!({
+            "source": source,
+            "prices": prices,
+            "total": total,
+            "page": page,
+            "limit": limit,
+        }))),
+        Err(e) => Err(internal_error(e)),
+    }
+}
+
+// ---- /market/prices/{source}/{asset_id} ----
+
+async fn market_asset_price(
+    State(state): State<Arc<AppState>>,
+    AxumPath((source, asset_id)): AxumPath<(String, String)>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    match crate::market_data::queries::get_market_asset_price(&state.pool, &source, &asset_id).await
+    {
+        Ok(Some(price)) => Ok(Json(serde_json::json!(price))),
+        Ok(None) => Err((
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse {
+                error: format!("Asset {}/{} not found", source, asset_id),
+            }),
+        )),
+        Err(e) => Err(internal_error(e)),
+    }
+}
+
+// ---- /market/prices/{source}/{asset_id}/history ----
+
+#[derive(Deserialize)]
+struct MarketHistoryQuery {
+    from: Option<String>,
+    to: Option<String>,
+}
+
+async fn market_price_history(
+    State(state): State<Arc<AppState>>,
+    AxumPath((source, asset_id)): AxumPath<(String, String)>,
+    Query(params): Query<MarketHistoryQuery>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let now = Utc::now();
+    let from = params
+        .from
+        .as_deref()
+        .and_then(|s| s.parse::<DateTime<Utc>>().ok())
+        .unwrap_or(now - chrono::Duration::days(7));
+    let to = params
+        .to
+        .as_deref()
+        .and_then(|s| s.parse::<DateTime<Utc>>().ok())
+        .unwrap_or(now);
+
+    match crate::market_data::queries::get_market_price_history(
+        &state.pool,
+        &source,
+        &asset_id,
+        from,
+        to,
+    )
+    .await
+    {
+        Ok(history) => Ok(Json(serde_json::json!({
+            "source": source,
+            "asset_id": asset_id,
+            "from": from,
+            "to": to,
+            "count": history.len(),
+            "prices": history,
+        }))),
+        Err(e) => Err(internal_error(e)),
+    }
+}
+
+// ---- /market/assets/{source} ----
+
+#[derive(Deserialize)]
+struct MarketAssetsQuery {
+    category: Option<String>,
+}
+
+async fn market_assets(
+    State(state): State<Arc<AppState>>,
+    AxumPath(source): AxumPath<String>,
+    Query(params): Query<MarketAssetsQuery>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let category = params.category.as_deref();
+
+    match crate::market_data::queries::get_market_active_assets(&state.pool, &source, category)
+        .await
+    {
+        Ok(assets) => Ok(Json(serde_json::json!({
+            "source": source,
+            "count": assets.len(),
+            "assets": assets,
+        }))),
+        Err(e) => Err(internal_error(e)),
+    }
+}
+
+// ---- /market/stats/{source} ----
+
+async fn market_stats(
+    State(state): State<Arc<AppState>>,
+    AxumPath(source): AxumPath<String>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    match crate::market_data::queries::get_market_sync_stats(&state.pool, &source).await {
+        Ok(stats) => Ok(Json(serde_json::json!(stats))),
+        Err(e) => Err(internal_error(e)),
+    }
+}
+
+// ---- /admin/truncate/{table} ----
+
+const TRUNCATABLE_TABLES: &[&str] = &[
+    "itp_snapshots",
+    "trades",
+    "sim_runs",
+    "sim_nav_series",
+    "sim_holdings",
+    "sim_trades",
+    "market_assets",
+    "market_prices",
+    "prices",
+];
+
+async fn admin_truncate(
+    State(state): State<Arc<AppState>>,
+    AxumPath(table): AxumPath<String>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    if !TRUNCATABLE_TABLES.contains(&table.as_str()) {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: format!(
+                    "Table '{}' not in allowlist. Allowed: {:?}",
+                    table, TRUNCATABLE_TABLES
+                ),
+            }),
+        ));
+    }
+
+    // table name is validated against allowlist, safe to interpolate
+    let sql = format!("TRUNCATE {} CASCADE", table);
+    match sqlx::query(&sql).execute(&state.pool).await {
+        Ok(_) => Ok(Json(serde_json::json!({
+            "ok": true,
+            "truncated": table,
+        }))),
+        Err(e) => Err(internal_error(format!("TRUNCATE failed: {}", e))),
+    }
+}
+
+// ---- /admin/reset-session ----
+
+async fn admin_reset_session(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    match sqlx::query("TRUNCATE itp_snapshots, trades CASCADE")
+        .execute(&state.pool)
+        .await
+    {
+        Ok(_) => Ok(Json(serde_json::json!({
+            "ok": true,
+            "truncated": ["itp_snapshots", "trades"],
+        }))),
+        Err(e) => Err(internal_error(format!("TRUNCATE failed: {}", e))),
     }
 }
