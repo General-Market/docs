@@ -12,6 +12,8 @@ use issuer::{
     RegistrySyncCache, RegistrySyncConfig, RegistrySyncHandler, StubItpRegistryReader,
     MIN_CYCLE_DURATION_MS,
 };
+use issuer::arbitration::{self, ArbitrationSubsystem};
+use issuer::arbitration::types::ArbitrationConfig;
 use common::types::P2PMessage;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -2520,6 +2522,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Save mock USDT address before config is consumed
     let mock_usdt_addr = config.effective_mock_usdt();
 
+    // Save arbitration config before config is consumed
+    let arb_config = ArbitrationConfig::from_issuer_config(&config);
+
     let bootstrap = IssuerBootstrap::new(config, params);
     let mut components = bootstrap.build(shutdown).await.map_err(|e| {
         error!(code = "E008", error = %e, "Bootstrap failed");
@@ -2617,6 +2622,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         None
     };
+
+    // --- Arbitration subsystem (optional) ---
+    if let Some(arb_cfg) = arb_config {
+        let (arb_msg_tx, arb_msg_rx) = arbitration::arbitration_channel();
+        let subsystem = ArbitrationSubsystem::new(arb_cfg, arb_msg_rx);
+        let arb_shutdown = components.shutdown.clone();
+        tokio::spawn(async move {
+            subsystem.run(arb_shutdown).await;
+        });
+        // Wire the sender into the consensus protocol so ForwardToArbitration messages get delivered
+        if let Some(ref protocol) = components.consensus.protocol {
+            protocol.set_arbitration_sender(arb_msg_tx).await;
+        }
+        info!(node_id, "Arbitration subsystem enabled");
+    } else {
+        info!(node_id, "Arbitration subsystem disabled (not configured)");
+    }
 
     if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr).await {
         error!(code = "E008", error = %e, "Issuer node error");

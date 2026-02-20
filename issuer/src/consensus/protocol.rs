@@ -69,6 +69,7 @@ use crate::bridge::{
     build_mint_bridged_shares_hash, MintBridgedSharesProposal, MintBridgedSharesResult,
 };
 
+use crate::arbitration::ArbitrationMessageSender;
 use crate::leader::LeaderElector;
 use crate::price::{PriceFetcher, ToleranceValidator};
 
@@ -213,6 +214,8 @@ where
     /// Written by RegistrySyncHandler, read at cycle start.
     /// Format: (new_active_count, new_threshold)
     pending_config_update: Arc<RwLock<Option<(u8, usize)>>>,
+    /// Optional sender for forwarding arbitration P2P messages to the ArbitrationSubsystem
+    arbitration_tx: RwLock<Option<ArbitrationMessageSender>>,
 }
 
 impl<P, C, K, F> ConsensusProtocol<P, C, K, F>
@@ -252,6 +255,7 @@ where
             itp_creation_config: RwLock::new(None),
             bridge_orchestrator: RwLock::new(None),
             pending_config_update: Arc::new(RwLock::new(None)),
+            arbitration_tx: RwLock::new(None),
         }
     }
 
@@ -303,6 +307,15 @@ where
     pub async fn set_itp_creation_config(&self, config: ItpCreationConfig) {
         let mut itp_config = self.itp_creation_config.write().await;
         *itp_config = Some(config);
+    }
+
+    /// Set the arbitration message sender for forwarding P2P messages to the ArbitrationSubsystem.
+    ///
+    /// When set, `ForwardToArbitration` messages are sent to the arbitration subsystem
+    /// instead of being logged and dropped.
+    pub async fn set_arbitration_sender(&self, tx: ArbitrationMessageSender) {
+        let mut arb_tx = self.arbitration_tx.write().await;
+        *arb_tx = Some(tx);
     }
 
     /// Set a fill verifier for on-chain fill verification (FR13)
@@ -1779,9 +1792,16 @@ where
                     );
                 }
             }
-            // AA keeper arbitration — forwarded to arbitration subsystem (wired in Task 11)
-            MessageHandleResult::ForwardToArbitration(_msg) => {
-                debug!("Arbitration message received — subsystem not yet wired");
+            // AA keeper arbitration — forward to arbitration subsystem
+            MessageHandleResult::ForwardToArbitration(msg) => {
+                let arb_tx = self.arbitration_tx.read().await;
+                if let Some(ref tx) = *arb_tx {
+                    if let Err(e) = tx.send(msg) {
+                        warn!(error = %e, "Failed to forward message to arbitration subsystem");
+                    }
+                } else {
+                    debug!("Arbitration message received but subsystem not enabled");
+                }
             }
             MessageHandleResult::Stale => {
                 debug!("Stale message ignored");
