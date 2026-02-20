@@ -565,6 +565,81 @@ pub enum P2PMessage {
         cycle_number: u64,
         signature: BLSSignature,
     },
+
+    /// Leader proposes setItpNav before rebalance
+    /// Timeout: 500ms, Retry: 1
+    /// Rebalance NAV consensus
+    SetItpNavProposal {
+        /// Leader's peer ID
+        leader_id: PeerId,
+        /// ITP to set NAV for
+        itp_id: H256,
+        /// Computed NAV value (18 decimals)
+        nav: U256,
+        /// Leader's BLS signature on the setItpNav hash
+        leader_signature: BLSSignature,
+    },
+
+    /// Follower signs setItpNav proposal
+    /// Timeout: 300ms, Retry: 0
+    /// Rebalance NAV consensus
+    SetItpNavSign {
+        /// Signer's peer ID
+        signer_id: PeerId,
+        /// Signer's index in issuer set (for bitmap)
+        signer_index: u8,
+        /// ITP identifier (identifies proposal)
+        itp_id: H256,
+        /// Follower's BLS signature
+        signature: BLSSignature,
+    },
+
+    // ==================== Arbitration Consensus ====================
+
+    /// Leader proposes exit prices for arbitration resolution
+    /// Timeout: 500ms, Retry: 1
+    ArbitrationPriceProposal {
+        /// Leader's peer ID
+        leader_id: PeerId,
+        /// Bet ID from CollateralVault
+        bet_id: U256,
+        /// Exit prices per trade: (trade_index, symbol, exit_price_cents)
+        prices: Vec<(u32, String, i64)>,
+        /// Timestamp of price fetch
+        timestamp: u64,
+        /// Leader's BLS signature on the proposal hash
+        leader_signature: BLSSignature,
+    },
+
+    /// Follower votes on arbitration price proposal
+    /// Timeout: 300ms, Retry: 0
+    ArbitrationPriceVote {
+        /// Voter's peer ID
+        voter_id: PeerId,
+        /// Voter's index in issuer set (for bitmap)
+        voter_index: u8,
+        /// Bet ID (identifies proposal)
+        bet_id: U256,
+        /// Accept or reject
+        accept: bool,
+        /// Voter's BLS signature
+        signature: BLSSignature,
+    },
+
+    /// Follower signs arbitration resolution outcome
+    /// Timeout: 300ms, Retry: 0
+    ArbitrationResolutionSign {
+        /// Signer's peer ID
+        signer_id: PeerId,
+        /// Signer's index in issuer set (for bitmap)
+        signer_index: u8,
+        /// Bet ID (identifies proposal)
+        bet_id: U256,
+        /// keccak256(abi.encode(betId, creatorWins))
+        outcome_hash: H256,
+        /// Signer's BLS signature on outcome_hash
+        signature: BLSSignature,
+    },
 }
 
 /// Represents a single order fill for consensus
@@ -1579,5 +1654,49 @@ mod tests {
         let serialized2 = rmp_serde::to_vec(&msg2).expect("Serialization failed");
 
         assert_ne!(serialized1, serialized2);
+    }
+
+    // ==================== Arbitration Consensus Tests ====================
+
+    #[test]
+    fn test_arbitration_price_proposal_serialization_roundtrip() {
+        let msg = P2PMessage::ArbitrationPriceProposal {
+            leader_id: [0x99u8; 32],
+            bet_id: U256::from(42),
+            prices: vec![(0, "AAPL".to_string(), 15023), (1, "MSFT".to_string(), 41520)],
+            timestamp: 1700000000,
+            leader_signature: BLSSignature(vec![0x01, 0x02, 0x03]),
+        };
+        let serialized = rmp_serde::to_vec(&msg).expect("Serialization failed");
+        let deserialized: P2PMessage = rmp_serde::from_slice(&serialized).expect("Deserialization failed");
+        assert_eq!(msg, deserialized);
+    }
+
+    #[test]
+    fn test_arbitration_price_vote_serialization_roundtrip() {
+        let msg = P2PMessage::ArbitrationPriceVote {
+            voter_id: [0x88u8; 32],
+            voter_index: 3,
+            bet_id: U256::from(42),
+            accept: true,
+            signature: BLSSignature(vec![0xAA, 0xBB]),
+        };
+        let serialized = rmp_serde::to_vec(&msg).expect("Serialization failed");
+        let deserialized: P2PMessage = rmp_serde::from_slice(&serialized).expect("Deserialization failed");
+        assert_eq!(msg, deserialized);
+    }
+
+    #[test]
+    fn test_arbitration_resolution_sign_serialization_roundtrip() {
+        let msg = P2PMessage::ArbitrationResolutionSign {
+            signer_id: [0x77u8; 32],
+            signer_index: 1,
+            bet_id: U256::from(42),
+            outcome_hash: H256::from([0xABu8; 32]),
+            signature: BLSSignature(vec![0xCC, 0xDD]),
+        };
+        let serialized = rmp_serde::to_vec(&msg).expect("Serialization failed");
+        let deserialized: P2PMessage = rmp_serde::from_slice(&serialized).expect("Deserialization failed");
+        assert_eq!(msg, deserialized);
     }
 }
