@@ -10,6 +10,7 @@ import { SystemStatusSection } from '@/components/domain/SystemStatusSection'
 import { VaultModal } from '@/components/domain/VaultModal'
 import { BacktestSection } from '@/components/domain/simulation/BacktestSection'
 import { MarketsSection } from '@/components/domain/MarketsSection'
+import { VisionPage } from '@/components/domain/vision/VisionPage'
 
 type ActivePage = 'investment' | 'vision'
 
@@ -82,15 +83,7 @@ export default function Home() {
           </>
         )}
 
-        {activePage === 'vision' && (
-          <div className="max-w-site mx-auto px-6 lg:px-12 py-12">
-            <div className="text-center py-16">
-              <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-2">Coming Soon</p>
-              <h2 className="text-2xl font-bold text-text-primary mb-4">Vision</h2>
-              <p className="text-text-secondary">AI-powered market intelligence — Leaderboard & Markets</p>
-            </div>
-          </div>
-        )}
+        {activePage === 'vision' && <VisionPage />}
       </div>
 
       <Footer />
