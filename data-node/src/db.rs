@@ -39,6 +39,16 @@ pub async fn run_migrations(pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::raw_sql(m013).execute(pool).await?;
     let m014 = include_str!("../migrations/014_add_symbol_lookup_index.sql");
     sqlx::raw_sql(m014).execute(pool).await?;
+    let m015 = include_str!("../migrations/015_create_defillama_protocols.sql");
+    sqlx::raw_sql(m015).execute(pool).await?;
+    let m016 = include_str!("../migrations/016_create_defillama_metrics.sql");
+    sqlx::raw_sql(m016).execute(pool).await?;
+    let m017 = include_str!("../migrations/017_create_defillama_raises.sql");
+    sqlx::raw_sql(m017).execute(pool).await?;
+    let m018 = include_str!("../migrations/018_add_defi_history_covering.sql");
+    sqlx::raw_sql(m018).execute(pool).await?;
+    let m019 = include_str!("../migrations/019_create_fng_index.sql");
+    sqlx::raw_sql(m019).execute(pool).await?;
     info!("Database migrations applied");
     Ok(())
 }
@@ -2003,4 +2013,461 @@ pub async fn sim_query_eligible_categories(
     .await?;
 
     Ok(rows)
+}
+
+// ---- DefiLlama functions ----
+
+/// Batch upsert DefiLlama protocols.
+pub async fn dl_batch_upsert_protocols(
+    pool: &PgPool,
+    rows: &[(String, String, Option<String>, Option<String>, Option<String>, Vec<String>, Option<f64>, Option<f64>, Option<f64>, Option<f64>)],
+) -> Result<u64, sqlx::Error> {
+    if rows.is_empty() {
+        return Ok(0);
+    }
+
+    let mut total = 0u64;
+    for chunk in rows.chunks(3000) {
+        let mut slugs = Vec::with_capacity(chunk.len());
+        let mut names = Vec::with_capacity(chunk.len());
+        let mut gecko_ids: Vec<Option<&str>> = Vec::with_capacity(chunk.len());
+        let mut symbols: Vec<Option<&str>> = Vec::with_capacity(chunk.len());
+        let mut categories: Vec<Option<&str>> = Vec::with_capacity(chunk.len());
+        let mut tvls: Vec<Option<f64>> = Vec::with_capacity(chunk.len());
+        let mut changes_1d: Vec<Option<f64>> = Vec::with_capacity(chunk.len());
+        let mut changes_7d: Vec<Option<f64>> = Vec::with_capacity(chunk.len());
+        let mut mcaps: Vec<Option<f64>> = Vec::with_capacity(chunk.len());
+
+        for (slug, name, gecko_id, symbol, category, _chains, tvl, change_1d, change_7d, mcap) in chunk {
+            slugs.push(slug.as_str());
+            names.push(name.as_str());
+            gecko_ids.push(gecko_id.as_deref());
+            symbols.push(symbol.as_deref());
+            categories.push(category.as_deref());
+            tvls.push(*tvl);
+            changes_1d.push(*change_1d);
+            changes_7d.push(*change_7d);
+            mcaps.push(*mcap);
+        }
+
+        let result = sqlx::query(
+            "INSERT INTO defillama_protocols (slug, name, gecko_id, symbol, category, tvl, tvl_change_1d, tvl_change_7d, mcap, updated_at)
+             SELECT s, n, g, sy, cat, t, c1, c7, mc, NOW()
+             FROM UNNEST($1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::float8[], $7::float8[], $8::float8[], $9::float8[])
+                AS t(s, n, g, sy, cat, t, c1, c7, mc)
+             ON CONFLICT (slug) DO UPDATE SET
+                name = EXCLUDED.name,
+                gecko_id = EXCLUDED.gecko_id,
+                symbol = EXCLUDED.symbol,
+                category = EXCLUDED.category,
+                tvl = EXCLUDED.tvl,
+                tvl_change_1d = EXCLUDED.tvl_change_1d,
+                tvl_change_7d = EXCLUDED.tvl_change_7d,
+                mcap = EXCLUDED.mcap,
+                updated_at = NOW()"
+        )
+        .bind(&slugs)
+        .bind(&names)
+        .bind(&gecko_ids)
+        .bind(&symbols)
+        .bind(&categories)
+        .bind(&tvls)
+        .bind(&changes_1d)
+        .bind(&changes_7d)
+        .bind(&mcaps)
+        .execute(pool)
+        .await?;
+
+        total += result.rows_affected();
+    }
+
+    Ok(total)
+}
+
+/// Count protocols in the defillama_protocols table.
+pub async fn dl_protocol_count(pool: &PgPool) -> Result<i64, sqlx::Error> {
+    let count = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM defillama_protocols")
+        .fetch_one(pool)
+        .await?;
+    Ok(count)
+}
+
+/// Get all protocol slugs.
+pub async fn dl_query_all_protocol_slugs(pool: &PgPool) -> Result<Vec<String>, sqlx::Error> {
+    sqlx::query_scalar::<_, String>("SELECT slug FROM defillama_protocols ORDER BY slug")
+        .fetch_all(pool)
+        .await
+}
+
+/// Get protocols that have a non-null gecko_id.
+/// Returns (slug, gecko_id, category, tvl, tvl_change_7d, mcap).
+pub async fn dl_query_protocols_with_gecko_id(
+    pool: &PgPool,
+) -> Result<Vec<(String, String, Option<String>, Option<f64>, Option<f64>, Option<f64>)>, sqlx::Error> {
+    sqlx::query_as::<_, (String, String, Option<String>, Option<f64>, Option<f64>, Option<f64>)>(
+        "SELECT slug, gecko_id, category, tvl, tvl_change_7d, mcap
+         FROM defillama_protocols
+         WHERE gecko_id IS NOT NULL"
+    )
+    .fetch_all(pool)
+    .await
+}
+
+/// Batch upsert DefiLlama protocol metrics (fees, revenue, volume).
+pub async fn dl_batch_upsert_metrics(
+    pool: &PgPool,
+    rows: &[(String, chrono::NaiveDate, String, Option<f64>, Option<f64>, Option<f64>)],
+) -> Result<u64, sqlx::Error> {
+    if rows.is_empty() {
+        return Ok(0);
+    }
+
+    let mut slugs = Vec::with_capacity(rows.len());
+    let mut dates = Vec::with_capacity(rows.len());
+    let mut types = Vec::with_capacity(rows.len());
+    let mut v24h: Vec<Option<f64>> = Vec::with_capacity(rows.len());
+    let mut v7d: Vec<Option<f64>> = Vec::with_capacity(rows.len());
+    let mut v30d: Vec<Option<f64>> = Vec::with_capacity(rows.len());
+
+    for (slug, date, metric_type, val24, val7, val30) in rows {
+        slugs.push(slug.as_str());
+        dates.push(*date);
+        types.push(metric_type.as_str());
+        v24h.push(*val24);
+        v7d.push(*val7);
+        v30d.push(*val30);
+    }
+
+    let result = sqlx::query(
+        "INSERT INTO defillama_protocol_metrics (slug, snapshot_date, metric_type, value_24h, value_7d, value_30d)
+         SELECT * FROM UNNEST($1::text[], $2::date[], $3::text[], $4::float8[], $5::float8[], $6::float8[])
+         ON CONFLICT (slug, snapshot_date, metric_type) DO UPDATE SET
+            value_24h = EXCLUDED.value_24h,
+            value_7d = EXCLUDED.value_7d,
+            value_30d = EXCLUDED.value_30d"
+    )
+    .bind(&slugs)
+    .bind(&dates)
+    .bind(&types)
+    .bind(&v24h)
+    .bind(&v7d)
+    .bind(&v30d)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected())
+}
+
+/// Query latest metrics by type. Returns (slug, value_24h, value_7d, value_30d).
+pub async fn dl_query_latest_metrics_by_type(
+    pool: &PgPool,
+    metric_type: &str,
+) -> Result<Vec<(String, Option<f64>, Option<f64>, Option<f64>)>, sqlx::Error> {
+    sqlx::query_as::<_, (String, Option<f64>, Option<f64>, Option<f64>)>(
+        "SELECT DISTINCT ON (slug) slug, value_24h, value_7d, value_30d
+         FROM defillama_protocol_metrics
+         WHERE metric_type = $1
+         ORDER BY slug, snapshot_date DESC"
+    )
+    .bind(metric_type)
+    .fetch_all(pool)
+    .await
+}
+
+/// Batch upsert DefiLlama yield pools.
+pub async fn dl_batch_upsert_yield_pools(
+    pool: &PgPool,
+    rows: &[(String, String, String, Option<String>, Option<f64>, Option<f64>, Option<f64>, Option<f64>)],
+) -> Result<u64, sqlx::Error> {
+    if rows.is_empty() {
+        return Ok(0);
+    }
+
+    let mut pool_ids = Vec::with_capacity(rows.len());
+    let mut chains = Vec::with_capacity(rows.len());
+    let mut projects = Vec::with_capacity(rows.len());
+    let mut symbols: Vec<Option<&str>> = Vec::with_capacity(rows.len());
+    let mut tvls: Vec<Option<f64>> = Vec::with_capacity(rows.len());
+    let mut apys: Vec<Option<f64>> = Vec::with_capacity(rows.len());
+    let mut apy_bases: Vec<Option<f64>> = Vec::with_capacity(rows.len());
+    let mut apy_rewards: Vec<Option<f64>> = Vec::with_capacity(rows.len());
+
+    for (pool_id, chain, project, symbol, tvl, apy, apy_base, apy_reward) in rows {
+        pool_ids.push(pool_id.as_str());
+        chains.push(chain.as_str());
+        projects.push(project.as_str());
+        symbols.push(symbol.as_deref());
+        tvls.push(*tvl);
+        apys.push(*apy);
+        apy_bases.push(*apy_base);
+        apy_rewards.push(*apy_reward);
+    }
+
+    let result = sqlx::query(
+        "INSERT INTO defillama_yield_pools (pool_id, chain, project, symbol, tvl_usd, apy, apy_base, apy_reward, updated_at)
+         SELECT p, ch, pr, sy, t, a, ab, ar, NOW()
+         FROM UNNEST($1::text[], $2::text[], $3::text[], $4::text[], $5::float8[], $6::float8[], $7::float8[], $8::float8[])
+            AS t(p, ch, pr, sy, t, a, ab, ar)
+         ON CONFLICT (pool_id) DO UPDATE SET
+            chain = EXCLUDED.chain,
+            project = EXCLUDED.project,
+            symbol = EXCLUDED.symbol,
+            tvl_usd = EXCLUDED.tvl_usd,
+            apy = EXCLUDED.apy,
+            apy_base = EXCLUDED.apy_base,
+            apy_reward = EXCLUDED.apy_reward,
+            updated_at = NOW()"
+    )
+    .bind(&pool_ids)
+    .bind(&chains)
+    .bind(&projects)
+    .bind(&symbols)
+    .bind(&tvls)
+    .bind(&apys)
+    .bind(&apy_bases)
+    .bind(&apy_rewards)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected())
+}
+
+/// Query max yield APY per project.
+pub async fn dl_query_max_yield_by_project(
+    pool: &PgPool,
+) -> Result<Vec<(String, f64)>, sqlx::Error> {
+    sqlx::query_as::<_, (String, f64)>(
+        "SELECT project, MAX(apy) AS max_apy
+         FROM defillama_yield_pools
+         WHERE apy IS NOT NULL AND apy > 0
+         GROUP BY project"
+    )
+    .fetch_all(pool)
+    .await
+}
+
+/// Batch upsert DefiLlama raises.
+pub async fn dl_batch_upsert_raises(
+    pool: &PgPool,
+    rows: &[(String, Option<String>, Option<String>, Option<f64>, Option<f64>, Option<chrono::NaiveDate>, Option<String>, Vec<String>, Vec<String>, Vec<String>, Option<String>)],
+) -> Result<u64, sqlx::Error> {
+    if rows.is_empty() {
+        return Ok(0);
+    }
+
+    let mut total = 0u64;
+    for (name, defillama_id, round, amount, valuation, raise_date, category, _chains, lead_investors, _other_investors, source) in rows {
+        let result = sqlx::query(
+            "INSERT INTO defillama_raises (name, defillama_id, round, amount_m, valuation_m, raise_date, category, lead_investors, source_url, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+             ON CONFLICT DO NOTHING"
+        )
+        .bind(name)
+        .bind(defillama_id)
+        .bind(round)
+        .bind(amount)
+        .bind(valuation)
+        .bind(raise_date)
+        .bind(category)
+        .bind(lead_investors)
+        .bind(source)
+        .execute(pool)
+        .await?;
+        total += result.rows_affected();
+    }
+
+    Ok(total)
+}
+
+/// Query raises for a set of defillama_ids (slugs).
+/// Returns (defillama_id, round, amount_m, valuation_m, raise_date, lead_investors, other_investors).
+pub async fn dl_query_raises_for_slugs(
+    pool: &PgPool,
+    slugs: &[String],
+) -> Result<Vec<(String, Option<String>, Option<f64>, Option<f64>, Option<chrono::NaiveDate>, Vec<String>, Vec<String>)>, sqlx::Error> {
+    if slugs.is_empty() {
+        return Ok(vec![]);
+    }
+    let slug_refs: Vec<&str> = slugs.iter().map(|s| s.as_str()).collect();
+    sqlx::query_as::<_, (String, Option<String>, Option<f64>, Option<f64>, Option<chrono::NaiveDate>, Vec<String>, Vec<String>)>(
+        "SELECT COALESCE(defillama_id, ''), round, amount_m, valuation_m, raise_date, lead_investors, COALESCE(other_investors, ARRAY[]::text[])
+         FROM defillama_raises
+         WHERE defillama_id = ANY($1)
+         ORDER BY raise_date DESC NULLS LAST"
+    )
+    .bind(&slug_refs)
+    .fetch_all(pool)
+    .await
+}
+
+/// Query top investors by raise count.
+pub async fn dl_query_investors(
+    pool: &PgPool,
+) -> Result<Vec<(String, i64)>, sqlx::Error> {
+    sqlx::query_as::<_, (String, i64)>(
+        "SELECT investor_name, COUNT(*) AS raise_count
+         FROM defillama_investors
+         GROUP BY investor_name
+         ORDER BY raise_count DESC
+         LIMIT 200"
+    )
+    .fetch_all(pool)
+    .await
+}
+
+/// Batch upsert history rows (TVL/fees/volume daily data).
+pub async fn dl_batch_upsert_history(
+    pool: &PgPool,
+    rows: &[(String, chrono::NaiveDate, String, f64)],
+) -> Result<u64, sqlx::Error> {
+    if rows.is_empty() {
+        return Ok(0);
+    }
+
+    let mut total = 0u64;
+    for chunk in rows.chunks(5000) {
+        let mut slugs = Vec::with_capacity(chunk.len());
+        let mut dates = Vec::with_capacity(chunk.len());
+        let mut types = Vec::with_capacity(chunk.len());
+        let mut values = Vec::with_capacity(chunk.len());
+
+        for (slug, date, metric_type, value) in chunk {
+            slugs.push(slug.as_str());
+            dates.push(*date);
+            types.push(metric_type.as_str());
+            values.push(*value);
+        }
+
+        let result = sqlx::query(
+            "INSERT INTO defillama_protocol_history (slug, history_date, metric_type, value)
+             SELECT * FROM UNNEST($1::text[], $2::date[], $3::text[], $4::float8[])
+             ON CONFLICT (slug, history_date, metric_type) DO UPDATE SET value = EXCLUDED.value"
+        )
+        .bind(&slugs)
+        .bind(&dates)
+        .bind(&types)
+        .bind(&values)
+        .execute(pool)
+        .await?;
+
+        total += result.rows_affected();
+    }
+
+    Ok(total)
+}
+
+/// Get slugs that have already been backfilled for a given metric type.
+pub async fn dl_get_backfilled_slugs(
+    pool: &PgPool,
+    metric_type: &str,
+) -> Result<std::collections::HashSet<String>, sqlx::Error> {
+    let rows = sqlx::query_scalar::<_, String>(
+        "SELECT slug FROM defillama_backfill_progress WHERE metric_type = $1"
+    )
+    .bind(metric_type)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows.into_iter().collect())
+}
+
+/// Mark a protocol+metric as backfilled.
+pub async fn dl_mark_backfill_done(
+    pool: &PgPool,
+    slug: &str,
+    metric_type: &str,
+    rows_inserted: i64,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO defillama_backfill_progress (slug, metric_type, rows_inserted)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (slug, metric_type) DO UPDATE SET
+            completed_at = NOW(),
+            rows_inserted = EXCLUDED.rows_inserted"
+    )
+    .bind(slug)
+    .bind(metric_type)
+    .bind(rows_inserted)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+/// Query all history rows for a set of slugs.
+/// Returns (slug, history_date, metric_type, value).
+pub async fn dl_query_all_history_for_slugs(
+    pool: &PgPool,
+    slugs: &[String],
+) -> Result<Vec<(String, chrono::NaiveDate, String, f64)>, sqlx::Error> {
+    if slugs.is_empty() {
+        return Ok(vec![]);
+    }
+    let slug_refs: Vec<&str> = slugs.iter().map(|s| s.as_str()).collect();
+    sqlx::query_as::<_, (String, chrono::NaiveDate, String, f64)>(
+        "SELECT slug, history_date, metric_type, value
+         FROM defillama_protocol_history
+         WHERE slug = ANY($1)
+         ORDER BY slug, history_date"
+    )
+    .bind(&slug_refs)
+    .fetch_all(pool)
+    .await
+}
+
+// ---- Fear & Greed Index functions ----
+
+/// Batch upsert FNG index entries.
+pub async fn fng_batch_upsert(
+    pool: &PgPool,
+    rows: &[(chrono::NaiveDate, i32, String)],
+) -> Result<u64, sqlx::Error> {
+    if rows.is_empty() {
+        return Ok(0);
+    }
+
+    let mut dates = Vec::with_capacity(rows.len());
+    let mut values = Vec::with_capacity(rows.len());
+    let mut classifications = Vec::with_capacity(rows.len());
+
+    for (date, value, classification) in rows {
+        dates.push(*date);
+        values.push(*value);
+        classifications.push(classification.as_str());
+    }
+
+    let result = sqlx::query(
+        "INSERT INTO fng_index (fng_date, value, classification)
+         SELECT * FROM UNNEST($1::date[], $2::int4[], $3::text[])
+         ON CONFLICT (fng_date) DO UPDATE SET
+            value = EXCLUDED.value,
+            classification = EXCLUDED.classification"
+    )
+    .bind(&dates)
+    .bind(&values)
+    .bind(&classifications)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected())
+}
+
+/// Query the latest FNG entry.
+pub async fn fng_query_latest(
+    pool: &PgPool,
+) -> Result<Option<(chrono::NaiveDate, i32, String)>, sqlx::Error> {
+    sqlx::query_as::<_, (chrono::NaiveDate, i32, String)>(
+        "SELECT fng_date, value, classification FROM fng_index ORDER BY fng_date DESC LIMIT 1"
+    )
+    .fetch_optional(pool)
+    .await
+}
+
+/// Query all FNG entries.
+pub async fn fng_query_all(
+    pool: &PgPool,
+) -> Result<Vec<(chrono::NaiveDate, i32, String)>, sqlx::Error> {
+    sqlx::query_as::<_, (chrono::NaiveDate, i32, String)>(
+        "SELECT fng_date, value, classification FROM fng_index ORDER BY fng_date ASC"
+    )
+    .fetch_all(pool)
+    .await
 }
