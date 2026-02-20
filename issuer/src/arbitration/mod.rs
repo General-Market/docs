@@ -8,6 +8,8 @@ pub mod types;
 pub mod resolution;
 pub mod market_data;
 pub mod listener;
+pub mod consensus;
+pub mod processor;
 
 use std::sync::Arc;
 use tokio::sync::mpsc;
