@@ -47,7 +47,7 @@ function CoinLogo({ symbol, coinMap, size = 20 }: { symbol: string; coinMap: Rec
       alt={symbol}
       width={size}
       height={size}
-      className="rounded-full flex-shrink-0"
+      className="rounded-full flex-shrink-0 object-cover"
       onError={(e) => {
         const span = document.createElement('span')
         span.className = 'inline-flex items-center justify-center rounded-full bg-muted text-text-muted font-mono text-[9px]'
