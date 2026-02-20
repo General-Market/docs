@@ -26,6 +26,39 @@ const DEFAULT_SAMPLE_ASSETS = [
   { address: '0xc351628eb244ec633d5f21fbd6621e1a683b1181', symbol: 'AVAX' },
 ]
 
+/** Tiny coin logo — loads from data-node /logo/:coin_id with graceful fallback */
+function CoinLogo({ symbol, coinMap, size = 20 }: { symbol: string; coinMap: Record<string, string>; size?: number }) {
+  const coinId = coinMap[symbol.toUpperCase()]
+  if (!coinId) {
+    return (
+      <span
+        className="inline-flex items-center justify-center rounded-full bg-muted text-text-muted font-mono text-[9px] flex-shrink-0"
+        style={{ width: size, height: size }}
+      >
+        {symbol.slice(0, 2)}
+      </span>
+    )
+  }
+  return (
+    <img
+      src={`${DATA_NODE_URL}/logo/${coinId}`}
+      alt={symbol}
+      width={size}
+      height={size}
+      className="rounded-full flex-shrink-0"
+      onError={(e) => {
+        // Replace broken image with text fallback
+        const span = document.createElement('span')
+        span.className = 'inline-flex items-center justify-center rounded-full bg-muted text-text-muted font-mono text-[9px]'
+        span.style.width = `${size}px`
+        span.style.height = `${size}px`
+        span.textContent = symbol.slice(0, 2)
+        ;(e.target as HTMLElement).replaceWith(span)
+      }}
+    />
+  )
+}
+
 interface AssetWeight {
   address: string
   symbol: string
@@ -46,6 +79,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   const [searchTerm, setSearchTerm] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
   const [availableAssets, setAvailableAssets] = useState<{ address: string; symbol: string }[]>(DEFAULT_SAMPLE_ASSETS)
+  const [coinMap, setCoinMap] = useState<Record<string, string>>({})
 
   const { writeContract, data: hash, isPending, error: writeError, reset: resetWrite } = useChainWriteContract()
   const { isLoading: isConfirming, isSuccess, error: confirmError } = useWaitForTransactionReceipt({ hash, chainId: activeChainId })
@@ -66,6 +100,14 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       })
   }, [])
 
+  // Load symbol → coin_id mapping for logos
+  useEffect(() => {
+    fetch(`${DATA_NODE_URL}/coin-map`, { signal: AbortSignal.timeout(10_000) })
+      .then(res => res.ok ? res.json() : Promise.reject('not found'))
+      .then((data: Record<string, string>) => setCoinMap(data))
+      .catch(() => { /* logos won't show — acceptable fallback */ })
+  }, [])
+
   // Pre-populate from backtester when initialHoldings changes
   useEffect(() => {
     if (!initialHoldings || initialHoldings.length === 0 || availableAssets.length === 0) return
@@ -77,8 +119,8 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
         mapped.push({ address: asset.address, symbol: asset.symbol, weight: Math.round(h.weight) })
       }
     }
-    // Only take first 10 (CreateITP limit)
-    const capped = mapped.slice(0, 10)
+    // Only take first 100 (CreateITP limit)
+    const capped = mapped.slice(0, 100)
     if (capped.length > 0) {
       // Normalize weights to sum to 100
       const rawSum = capped.reduce((s, a) => s + a.weight, 0)
@@ -106,7 +148,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   )
 
   const addAsset = (asset: { address: string; symbol: string }) => {
-    if (selectedAssets.length >= 10) return
+    if (selectedAssets.length >= 100) return
     setSelectedAssets([...selectedAssets, { ...asset, weight: 0 }])
   }
 
@@ -241,8 +283,8 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     <div id="create-itp">
       {/* Section header — always visible */}
       <div className="mb-6">
-        <p className="text-xs font-medium uppercase tracking-widest text-text-inverse-muted mb-2">Create Index</p>
-        <h2 className="text-2xl font-semibold text-text-inverse mb-6">Create ITP</h2>
+        <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-2">Create Index</p>
+        <h2 className="text-2xl font-semibold text-text-primary mb-6">Create ITP</h2>
       </div>
 
       {/* Collapsed toggle button */}
@@ -259,7 +301,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       )}
 
       {expanded && (
-        <div className="max-w-2xl mx-auto">
+        <div>
           {/* Collapse toggle */}
           <div className="flex justify-end mb-4">
             <button
@@ -310,7 +352,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                 <div className="bg-muted border border-border-light rounded-lg p-4">
                   <div className="flex justify-between items-center mb-3">
                     <label className="text-xs font-medium uppercase tracking-wider text-text-muted">
-                      Select Assets ({selectedAssets.length}/10 from {availableAssets.length})
+                      Select Assets ({selectedAssets.length}/100 from {availableAssets.length})
                     </label>
                     <input
                       type="text"
@@ -320,73 +362,71 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                       className="bg-card border border-border-medium rounded-lg px-3 py-1 text-sm text-text-primary w-32 focus:outline-none focus:border-zinc-400"
                     />
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {filteredAssets.slice(0, 8).map(asset => (
-                      <div key={asset.address} className="relative group">
-                        <button
-                          onClick={() => addAsset(asset)}
-                          className="bg-muted text-text-primary border border-border-light rounded-lg px-3 py-1.5 text-sm hover:border-border-medium transition-colors pr-7"
-                        >
-                          + {asset.symbol}
-                        </button>
-                        <a
-                          href={getCoinGeckoUrl(asset.symbol)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={e => e.stopPropagation()}
-                          className="absolute top-0 right-0 px-1.5 py-1.5 text-text-muted hover:text-text-secondary text-xs transition-colors"
-                          title={`View ${asset.symbol} on CoinGecko`}
-                        >
-                          ↗
-                        </a>
-                      </div>
+                  <div className="flex flex-wrap gap-1.5 max-h-64 overflow-y-auto">
+                    {filteredAssets.map(asset => (
+                      <button
+                        key={asset.address}
+                        onClick={() => addAsset(asset)}
+                        className="inline-flex items-center gap-1.5 bg-card text-text-primary border border-border-light rounded-lg px-2.5 py-1.5 text-xs hover:border-border-medium hover:shadow-sm transition-all"
+                      >
+                        <CoinLogo symbol={asset.symbol} coinMap={coinMap} size={18} />
+                        <span className="font-medium">{asset.symbol}</span>
+                      </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Asset weights */}
+                {/* Asset weights — horizontal scrollable columns of 10 */}
                 {selectedAssets.length > 0 && (
                   <div className="bg-muted border border-border-light rounded-lg p-4">
                     <div className="flex justify-between items-center mb-3">
                       <label className="text-xs font-medium uppercase tracking-wider text-text-muted">
-                        Asset Weights
+                        Asset Weights ({selectedAssets.length} assets)
                       </label>
                       <button
                         onClick={distributeEvenly}
-                        className="text-xs text-text-secondary hover:bg-muted border border-border-light rounded-lg px-2.5 py-1 transition-colors"
+                        className="text-xs text-text-secondary hover:bg-card border border-border-light rounded-lg px-2.5 py-1 transition-colors"
                       >
                         Distribute Evenly
                       </button>
                     </div>
-                    <div className="space-y-3">
-                      {selectedAssets.map(asset => (
-                        <div key={asset.address} className="flex items-center gap-3">
-                          <span className="w-14 text-text-primary font-mono text-sm tabular-nums">{asset.symbol}</span>
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={asset.weight}
-                            onChange={(e) => updateWeight(asset.address, Number(e.target.value))}
-                            className="flex-1 accent-zinc-900"
-                          />
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={asset.weight}
-                            onChange={(e) => updateWeight(asset.address, Number(e.target.value))}
-                            className="w-14 bg-card border border-border-medium rounded-lg px-2 py-1 text-text-primary text-center text-sm font-mono tabular-nums focus:outline-none focus:border-zinc-400"
-                          />
-                          <span className="text-text-muted text-sm">%</span>
-                          <button
-                            onClick={() => removeAsset(asset.address)}
-                            className="text-text-muted hover:text-color-down transition-colors"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
+                    <div className="overflow-x-auto pb-2">
+                      <div className="flex gap-4" style={{ minWidth: 'min-content' }}>
+                        {/* Split assets into columns of 10 */}
+                        {Array.from({ length: Math.ceil(selectedAssets.length / 10) }, (_, colIdx) => (
+                          <div key={colIdx} className="flex-shrink-0 space-y-1.5" style={{ width: '360px' }}>
+                            {selectedAssets.slice(colIdx * 10, (colIdx + 1) * 10).map(asset => (
+                              <div key={asset.address} className="flex items-center gap-2 bg-card rounded-lg px-2 py-1.5 border border-border-light">
+                                <CoinLogo symbol={asset.symbol} coinMap={coinMap} size={18} />
+                                <span className="w-12 text-text-primary font-mono text-xs tabular-nums truncate">{asset.symbol}</span>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="100"
+                                  value={asset.weight}
+                                  onChange={(e) => updateWeight(asset.address, Number(e.target.value))}
+                                  className="flex-1 accent-zinc-900"
+                                />
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={asset.weight}
+                                  onChange={(e) => updateWeight(asset.address, Number(e.target.value))}
+                                  className="w-12 bg-muted border border-border-medium rounded px-1.5 py-0.5 text-text-primary text-center text-xs font-mono tabular-nums focus:outline-none focus:border-zinc-400"
+                                />
+                                <span className="text-text-muted text-xs">%</span>
+                                <button
+                                  onClick={() => removeAsset(asset.address)}
+                                  className="text-text-muted hover:text-color-down transition-colors text-xs ml-auto"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                     <div className={`mt-3 pt-3 border-t border-border-light flex justify-between text-sm ${isValidWeights ? 'text-color-up' : 'text-color-down'}`}>
                       <span>Total:</span>

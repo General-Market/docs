@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { WalletConnectButton } from '@/components/domain/WalletConnectButton'
 
-type Tab = 'markets' | 'portfolio' | 'create' | 'lend' | 'backtest' | 'system'
+type ActivePage = 'investment' | 'vision'
 
-const TABS: { id: Tab; label: string }[] = [
+const INVESTMENT_NAV = [
   { id: 'markets', label: 'Markets' },
   { id: 'portfolio', label: 'Portfolio' },
   { id: 'create', label: 'Create' },
@@ -15,81 +15,145 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'system', label: 'System' },
 ]
 
+const VISION_NAV = [
+  { id: 'leaderboard', label: 'Leaderboard' },
+  { id: 'markets-data', label: 'Markets' },
+]
+
 interface HeaderProps {
-  activeTab: Tab
-  onTabChange: (tab: Tab) => void
+  activePage?: ActivePage
+  onPageChange?: (page: ActivePage) => void
 }
 
-export function Header({ activeTab, onTabChange }: HeaderProps) {
+export function Header({ activePage = 'investment', onPageChange }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [activeSection, setActiveSection] = useState('markets')
+
+  const navLinks = activePage === 'investment' ? INVESTMENT_NAV : VISION_NAV
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id)
+          }
+        }
+      },
+      { rootMargin: '-40% 0px -50% 0px' }
+    )
+
+    for (const link of navLinks) {
+      const el = document.getElementById(link.id)
+      if (el) observer.observe(el)
+    }
+
+    return () => observer.disconnect()
+  }, [navLinks])
+
+  const scrollTo = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+    setMobileMenuOpen(false)
+  }
 
   return (
-    <header className="sticky top-0 z-50 bg-page border-b border-border-dark">
-      <div className="max-w-site mx-auto px-6 lg:px-12">
-        <div className="flex items-center justify-between h-14">
-          {/* Logo */}
-          <div className="flex items-center gap-3 shrink-0">
-            <Image src="/logo.svg" alt="General Market" width={28} height={28} />
-            <span className="text-text-inverse font-semibold text-lg tracking-tight hidden sm:inline">
-              General Market
-            </span>
-          </div>
+    <div className="sticky top-0 z-50">
+      {/* Primary Header — Logo + Investment / Vision + Wallet */}
+      <header className="bg-white/95 backdrop-blur-md border-b border-border-light">
+        <div className="max-w-site mx-auto px-6 lg:px-12">
+          <div className="flex items-center justify-between h-14">
+            {/* Logo */}
+            <div className="flex items-center gap-3 shrink-0">
+              <Image src="/logo.svg" alt="General Market" width={28} height={28} />
+              <span className="text-text-primary font-semibold text-lg tracking-tight hidden sm:inline">
+                General Market
+              </span>
+            </div>
 
-          {/* Desktop Tabs */}
-          <nav className="hidden md:flex items-center gap-1">
-            {TABS.map((tab) => (
+            {/* Page Tabs */}
+            <nav className="flex items-center gap-0">
               <button
-                key={tab.id}
-                onClick={() => onTabChange(tab.id)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                  activeTab === tab.id
-                    ? 'text-text-inverse bg-white/10'
-                    : 'text-text-inverse-muted hover:text-text-inverse hover:bg-white/5'
+                onClick={() => onPageChange?.('investment')}
+                className={`px-5 py-2 text-sm font-semibold tracking-wide transition-all border-b-2 ${
+                  activePage === 'investment'
+                    ? 'text-text-primary border-zinc-900'
+                    : 'text-text-muted border-transparent hover:text-text-primary hover:border-zinc-300'
                 }`}
               >
-                {tab.label}
+                Investment
+              </button>
+              <button
+                onClick={() => onPageChange?.('vision')}
+                className={`px-5 py-2 text-sm font-semibold tracking-wide transition-all border-b-2 ${
+                  activePage === 'vision'
+                    ? 'text-text-primary border-zinc-900'
+                    : 'text-text-muted border-transparent hover:text-text-primary hover:border-zinc-300'
+                }`}
+              >
+                Vision
+              </button>
+            </nav>
+
+            {/* Right side */}
+            <div className="flex items-center gap-3 shrink-0">
+              <WalletConnectButton />
+              <button
+                className="md:hidden p-2 text-text-muted hover:text-text-primary"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label="Toggle menu"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {mobileMenuOpen ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  )}
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Sub Header — Section Navigation */}
+      <nav className="bg-white/90 backdrop-blur-sm border-b border-border-light shadow-sm">
+        <div className="max-w-site mx-auto px-6 lg:px-12">
+          <div className="hidden md:flex items-center gap-1 h-10">
+            {navLinks.map((link) => (
+              <button
+                key={link.id}
+                onClick={() => scrollTo(link.id)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  activeSection === link.id
+                    ? 'text-text-primary bg-muted'
+                    : 'text-text-muted hover:text-text-primary hover:bg-muted/50'
+                }`}
+              >
+                {link.label}
               </button>
             ))}
-          </nav>
-
-          {/* Right side */}
-          <div className="flex items-center gap-3 shrink-0">
-            <WalletConnectButton />
-            <button
-              className="md:hidden p-2 text-text-inverse-muted hover:text-text-inverse"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle menu"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {mobileMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
-            </button>
           </div>
         </div>
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <nav className="md:hidden pb-4 border-t border-border-dark pt-4 space-y-1">
-            {TABS.map((tab) => (
+          <div className="md:hidden px-6 pb-3 space-y-1">
+            {navLinks.map((link) => (
               <button
-                key={tab.id}
-                onClick={() => { onTabChange(tab.id); setMobileMenuOpen(false) }}
+                key={link.id}
+                onClick={() => scrollTo(link.id)}
                 className={`block w-full text-left px-3 py-2 text-sm font-medium rounded-lg ${
-                  activeTab === tab.id
-                    ? 'text-text-inverse bg-white/10'
-                    : 'text-text-inverse-muted hover:text-text-inverse'
+                  activeSection === link.id
+                    ? 'text-text-primary bg-muted'
+                    : 'text-text-muted hover:text-text-primary'
                 }`}
               >
-                {tab.label}
+                {link.label}
               </button>
             ))}
-          </nav>
+          </div>
         )}
-      </div>
-    </header>
+      </nav>
+    </div>
   )
 }

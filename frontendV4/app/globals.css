@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --background: #09090B;
-  --foreground: #FAFAFA;
+  --background: #F8F8F8;
+  --foreground: #18181B;
 }
 
 body {
@@ -20,14 +20,14 @@ body {
 
 .skeleton {
   background: linear-gradient(90deg,
-    rgba(161, 161, 170, 0.1) 0%,
-    rgba(161, 161, 170, 0.2) 50%,
-    rgba(161, 161, 170, 0.1) 100%
+    rgba(161, 161, 170, 0.15) 0%,
+    rgba(161, 161, 170, 0.25) 50%,
+    rgba(161, 161, 170, 0.15) 100%
   );
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
-/* Button interactions — institutional (no lift, opacity only) */
+/* Button interactions — institutional */
 .btn-interactive {
   transition: opacity 0.15s ease, box-shadow 0.15s ease;
 }
@@ -43,10 +43,10 @@ body {
   transition: box-shadow 0.2s ease;
 }
 
-/* Number flash — neutral blue tint */
+/* Number flash — subtle blue tint */
 @keyframes number-flash {
   0% { background-color: transparent; }
-  30% { background-color: rgba(37, 99, 235, 0.08); }
+  30% { background-color: rgba(37, 99, 235, 0.06); }
   100% { background-color: transparent; }
 }
 .number-changed {
@@ -56,7 +56,7 @@ body {
 /* Rank change animations */
 @keyframes pulse-highlight {
   0%, 100% { background-color: transparent; }
-  50% { background-color: rgba(37, 99, 235, 0.06); }
+  50% { background-color: rgba(37, 99, 235, 0.04); }
 }
 .animate-pulse-red {
   animation: pulse-highlight 0.5s ease-in-out;
@@ -92,11 +92,21 @@ tr[data-wallet] {
   will-change: transform;
 }
 
-/* Custom scrollbar */
+/* Hide number input spinners globally */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Custom scrollbar — light theme */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #3F3F46; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #52525B; }
+::-webkit-scrollbar-thumb { background: #D4D4D8; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #A1A1AA; }
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {

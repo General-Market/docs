@@ -110,6 +110,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/order", get(order))
         .route("/vault-balances", get(vault_balances))
         .route("/logo/:coin_id", get(serve_logo))
+        .route("/coin-map", get(coin_map))
         .route("/cg/categories", get(cg_categories))
         .route("/cg/category-coins/:category_id", get(cg_category_coins))
         .route("/cg/coin-categories/:coin_id", get(cg_coin_categories))
@@ -2816,6 +2817,21 @@ async fn cg_coin_categories(
         coin_id,
         categories,
     }))
+}
+
+// ---- /coin-map ---- returns symbol → coin_id mapping for logo lookups
+
+async fn coin_map(
+    State(state): State<Arc<AppState>>,
+) -> Json<HashMap<String, String>> {
+    let cache = state.sim_cache.read().await;
+    // Invert coin_symbol_map (coin_id→symbol) to symbol→coin_id.
+    // If multiple coin_ids share a symbol, last one wins (fine for logos).
+    let mut map: HashMap<String, String> = HashMap::new();
+    for (coin_id, symbol) in &cache.coin_symbol_map {
+        map.insert(symbol.clone(), coin_id.clone());
+    }
+    Json(map)
 }
 
 async fn serve_logo(
