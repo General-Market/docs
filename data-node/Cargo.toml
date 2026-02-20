@@ -37,7 +37,7 @@ tokio-stream = "0.1"
 futures = "0.3"
 
 # Database
-sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "chrono"] }
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "chrono", "rust_decimal"] }
 
 # Ethereum
 ethers.workspace = true
@@ -47,6 +47,14 @@ reqwest = { version = "0.12", features = ["json"] }
 
 # Encoding
 hex = "0.4"
+
+# Market data providers (from AA)
+async-trait = "0.1"
+anyhow = "1"
+thiserror = "1"
+rust_decimal = { version = "1", features = ["serde-with-str"] }
+chrono-tz = "0.10"
+dashmap = "5.5"
 
 [dev-dependencies]
 wiremock = "0.6"
