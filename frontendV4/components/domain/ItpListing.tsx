@@ -120,13 +120,58 @@ interface ItpListingProps {
 
 const ITEMS_PER_PAGE = 2
 
-// Test video URLs — shown on ITP cards that don't have a metadata videoUrl set
-const TEST_VIDEOS = [
-  'https://www.youtube.com/embed/bBC-nXj3Ng4',  // Bitcoin whiteboard overview
-  'https://www.youtube.com/embed/p7HKvqRI_Bo',  // How The Economic Machine Works (Ray Dalio)
-  'https://www.youtube.com/embed/PHe0bXAIuk0',  // How The Stock Market Works
-  'https://www.youtube.com/embed/41JCpzvnn_0',  // What is an ETF?
+// Test video IDs — shown on ITP cards that don't have a metadata videoUrl set
+const TEST_VIDEO_IDS = [
+  'bBC-nXj3Ng4',  // Bitcoin whiteboard overview (3Blue1Brown)
+  'p7HKvqRI_Bo',  // How The Economic Machine Works (Ray Dalio)
+  'PHe0bXAIuk0',  // How The Stock Market Works
+  '41JCpzvnn_0',  // What is an ETF?
 ]
+
+/** Extract YouTube video ID from various URL formats */
+function extractYouTubeId(url: string): string | null {
+  const m = url.match(/(?:embed\/|watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+  return m ? m[1] : null
+}
+
+/** YouTube thumbnail with click-to-play — avoids black screen embed issues */
+function YouTubeLite({ videoId, title }: { videoId: string; title: string }) {
+  const [playing, setPlaying] = useState(false)
+  if (playing) {
+    return (
+      <div className="aspect-video bg-zinc-950">
+        <iframe
+          src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`}
+          className="w-full h-full border-0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          title={title}
+        />
+      </div>
+    )
+  }
+  return (
+    <button
+      onClick={() => setPlaying(true)}
+      className="relative aspect-video w-full bg-zinc-950 group cursor-pointer overflow-hidden"
+      aria-label={`Play ${title}`}
+    >
+      <img
+        src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+        alt={title}
+        className="w-full h-full object-cover"
+      />
+      {/* Play button overlay */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="w-16 h-11 bg-red-600 rounded-xl flex items-center justify-center group-hover:bg-red-500 transition-colors shadow-lg">
+          <svg className="w-6 h-6 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </div>
+      </div>
+    </button>
+  )
+}
 
 export function ItpListing({ onCreateClick, onLendingClick }: ItpListingProps) {
   const { address, isConnected } = useAccount()
@@ -403,14 +448,14 @@ export function ItpListing({ onCreateClick, onLendingClick }: ItpListingProps) {
                   onBuy={() => {
                     if (!itp.itpId) return
                     const idx = currentPage * ITEMS_PER_PAGE + itps.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).indexOf(itp)
-                    const videoUrl = TEST_VIDEOS[idx % TEST_VIDEOS.length]
-                    setBuyModal({ itpId: itp.itpId, videoUrl })
+                    const vid = TEST_VIDEO_IDS[idx % TEST_VIDEO_IDS.length]
+                    setBuyModal({ itpId: itp.itpId, videoUrl: `https://www.youtube-nocookie.com/embed/${vid}?autoplay=1` })
                   }}
                   onSell={() => {
                     if (!itp.itpId) return
                     const idx = currentPage * ITEMS_PER_PAGE + itps.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).indexOf(itp)
-                    const videoUrl = TEST_VIDEOS[idx % TEST_VIDEOS.length]
-                    setSellModal({ itpId: itp.itpId, videoUrl })
+                    const vid = TEST_VIDEO_IDS[idx % TEST_VIDEO_IDS.length]
+                    setSellModal({ itpId: itp.itpId, videoUrl: `https://www.youtube-nocookie.com/embed/${vid}?autoplay=1` })
                   }}
                   onLend={(arbAddr) => setLendModalItp({ ...itp, arbAddress: arbAddr })}
                   onChart={() => itp.itpId && setChartModalItp({ itpId: itp.itpId, name: itp.name || `ITP #${itp.nonce ?? itp.id}`, createdAt: itp.createdAt })}
@@ -647,23 +692,12 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
 
   return (
     <div className="bg-card rounded-xl shadow-card border border-border-light overflow-hidden hover:shadow-card-hover transition-shadow">
-      {/* Video embed — flush top, full width */}
+      {/* Video — click-to-play YouTube thumbnail */}
       {(() => {
-        const videoUrl = metadata?.videoUrl
-          ? metadata.videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')
-          : TEST_VIDEOS[index % TEST_VIDEOS.length]
-        return (
-          <div className="aspect-video bg-zinc-950">
-            <iframe
-              src={videoUrl}
-              className="w-full h-full border-0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              loading="lazy"
-              title={`${itp.name || 'ITP'} video`}
-            />
-          </div>
-        )
+        const rawUrl = metadata?.videoUrl
+        const videoId = rawUrl ? extractYouTubeId(rawUrl) : TEST_VIDEO_IDS[index % TEST_VIDEO_IDS.length]
+        if (!videoId) return null
+        return <YouTubeLite videoId={videoId} title={itp.name || 'ITP'} />
       })()}
 
       {/* Card content */}
