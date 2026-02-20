@@ -39,6 +39,29 @@ impl Default for ArbitrationConfig {
     }
 }
 
+impl ArbitrationConfig {
+    /// Build ArbitrationConfig from IssuerConfig fields.
+    /// Returns None if arbitration is not enabled.
+    pub fn from_issuer_config(config: &crate::config::IssuerConfig) -> Option<Self> {
+        if !config.arbitration_enabled.unwrap_or(false) {
+            return None;
+        }
+        let vault = config.arbitration_collateral_vault.as_ref()?
+            .parse().ok()?;
+        let settlement = config.arbitration_settlement_contract.as_ref()?
+            .parse().ok()?;
+        Some(Self {
+            collateral_vault: vault,
+            settlement_contract: settlement,
+            signature_threshold: config.arbitration_threshold.unwrap_or(2),
+            poll_interval_secs: config.arbitration_poll_interval.unwrap_or(30),
+            data_node_url: config.arbitration_data_node_url.clone()
+                .unwrap_or_else(|| "http://localhost:8200".to_string()),
+            ..Default::default()
+        })
+    }
+}
+
 /// An arbitration request from CollateralVault
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ArbitrationRequest {

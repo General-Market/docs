@@ -214,6 +214,26 @@ struct Args {
     /// Used with --data-node-url to identify the ITP.
     #[arg(long, default_value = "0x0000000000000000000000000000000000000000000000000000000000000001")]
     itp_id: String,
+
+    /// Enable arbitration subsystem
+    #[arg(long)]
+    arbitration_enabled: Option<bool>,
+
+    /// CollateralVault address for arbitration
+    #[arg(long)]
+    arbitration_vault: Option<String>,
+
+    /// ArbitrationSettlement contract address
+    #[arg(long)]
+    arbitration_settlement: Option<String>,
+
+    /// BLS threshold for arbitration (default: 2)
+    #[arg(long)]
+    arbitration_threshold: Option<usize>,
+
+    /// Data-node URL for arbitration price queries
+    #[arg(long)]
+    arbitration_data_node_url: Option<String>,
 }
 
 fn setup_logging(config: &issuer::IssuerConfig) -> Result<(), Box<dyn std::error::Error>> {
@@ -1192,8 +1212,49 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                     fills
                 };
 
-                match protocol.run_fills_confirm_phase(current_cycle, fills, batch_am_leader).await {
-                    Ok(fills_result) => { info!(cycle = current_cycle, signer_count = fills_result.signature_count, "Fills confirmed"); }
+                match protocol.run_fills_confirm_phase(current_cycle, fills.clone(), batch_am_leader).await {
+                    Ok(fills_result) => {
+                        info!(cycle = current_cycle, signer_count = fills_result.signature_count, "Fills confirmed");
+
+                        // Step 8: Mint BridgedITP shares on Arbitrum
+                        if let Ok(itp_h256) = itp_id_for_task.parse::<ethers::types::H256>() {
+                            let bridge_proxy = orchestrator.read().await.config().bridge_proxy;
+                            for fill in &fills {
+                                // Look up original user from order mapping
+                                let mapping = orchestrator.read().await.get_order_mapping(&fill.order_id).await;
+                                if let Some(mapping) = mapping {
+                                    // shares = fill_amount * 1e18 / fill_price
+                                    let shares = if fill.fill_price > ethers::types::U256::zero() {
+                                        (fill.fill_amount * ethers::types::U256::exp10(18)) / fill.fill_price
+                                    } else {
+                                        fill.fill_amount
+                                    };
+
+                                    match protocol.run_mint_bridged_shares_phase(
+                                        current_cycle, itp_h256, mapping.original_user, shares, bridge_proxy, batch_am_leader,
+                                    ).await {
+                                        Ok(mint_result) => {
+                                            info!(cycle = current_cycle, user = ?mapping.original_user, shares = %shares, signer_count = mint_result.signature_count, "MintBridgedShares consensus completed");
+                                            // Leader executes the Arb transaction
+                                            if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
+                                                match arb_writer.mint_bridged_shares(itp_h256, mapping.original_user, shares, mint_result.aggregated_signature.0.clone()).await {
+                                                    Ok(tx_hash) => {
+                                                        info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted on Arb");
+                                                        let orch = orchestrator.write().await;
+                                                        orch.mark_orders_shares_bridged(&[fill.order_id]).await;
+                                                    }
+                                                    Err(e) => warn!(error = %e, user = ?mapping.original_user, "mintBridgedShares tx failed"),
+                                                }
+                                            }
+                                        }
+                                        Err(e) => warn!(cycle = current_cycle, error = %e, order_id = %fill.order_id, "MintBridgedShares consensus failed"),
+                                    }
+                                } else {
+                                    warn!(order_id = %fill.order_id, "No order mapping found — cannot bridge shares");
+                                }
+                            }
+                        }
+                    }
                     Err(e) => { warn!(cycle = current_cycle, error = %e, "Fills confirmation failed"); }
                 }
             }
@@ -1218,12 +1279,47 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                         fills
                     };
 
-                    match protocol.run_fills_confirm_phase(current_cycle, fills, batch_am_leader).await {
+                    match protocol.run_fills_confirm_phase(current_cycle, fills.clone(), batch_am_leader).await {
                         Ok(fills_result) => {
                             info!(cycle = current_cycle, signer_count = fills_result.signature_count, "Fills confirmed (after E021 batch skip)");
-                            let orch = orchestrator.write().await;
-                            for oid in &submitted_orders {
-                                orch.set_order_status(*oid, issuer::BridgeOrderStatus::Filled).await;
+                            {
+                                let orch = orchestrator.write().await;
+                                for oid in &submitted_orders {
+                                    orch.set_order_status(*oid, issuer::BridgeOrderStatus::Filled).await;
+                                }
+                            }
+
+                            // Step 8: Mint BridgedITP shares on Arbitrum (E021 path)
+                            if let Ok(itp_h256) = itp_id_for_task.parse::<ethers::types::H256>() {
+                                let bridge_proxy = orchestrator.read().await.config().bridge_proxy;
+                                for fill in &fills {
+                                    let mapping = orchestrator.read().await.get_order_mapping(&fill.order_id).await;
+                                    if let Some(mapping) = mapping {
+                                        let shares = if fill.fill_price > ethers::types::U256::zero() {
+                                            (fill.fill_amount * ethers::types::U256::exp10(18)) / fill.fill_price
+                                        } else {
+                                            fill.fill_amount
+                                        };
+
+                                        match protocol.run_mint_bridged_shares_phase(
+                                            current_cycle, itp_h256, mapping.original_user, shares, bridge_proxy, batch_am_leader,
+                                        ).await {
+                                            Ok(mint_result) => {
+                                                if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
+                                                    match arb_writer.mint_bridged_shares(itp_h256, mapping.original_user, shares, mint_result.aggregated_signature.0.clone()).await {
+                                                        Ok(tx_hash) => {
+                                                            info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted (E021 path)");
+                                                            let orch = orchestrator.write().await;
+                                                            orch.mark_orders_shares_bridged(&[fill.order_id]).await;
+                                                        }
+                                                        Err(e) => warn!(error = %e, "mintBridgedShares tx failed (E021 path)"),
+                                                    }
+                                                }
+                                            }
+                                            Err(e) => warn!(cycle = current_cycle, error = %e, "MintBridgedShares failed (E021 path)"),
+                                        }
+                                    }
+                                }
                             }
                         }
                         Err(e) => {
@@ -1805,28 +1901,54 @@ async fn run_rebalance_processing<P, W, K, PF>(
                     "Rebalance consensus complete"
                 );
 
-                // Leader submits rebalance() on-chain
-                if am_leader {
-                    // Compute NAV from on-chain inventory + live prices.
-                    // This fixes the stale _itpNavs bug: the on-chain NAV is
-                    // stuck at 1e18 from createITP and never updated. Without
-                    // this, rebalance resets all quantities as if NAV=$1.00.
-                    let computed_nav = {
-                        let itp_bytes: [u8; 32] = itp_h256.into();
-                        match chain_reader.get_itp_inventory_state(itp_bytes).await {
-                            Ok(state) if !state.quantities.is_empty() => {
-                                let scale = ethers::types::U256::exp10(18);
-                                let mut nav = ethers::types::U256::zero();
-                                for (asset, qty) in state.assets.iter().zip(state.quantities.iter()) {
-                                    if let Some(&price) = price_map.get(asset) {
-                                        if let Some(contribution) = qty.checked_mul(price) {
-                                            nav = nav + contribution / scale;
-                                        }
+                // Compute NAV from on-chain inventory + live prices.
+                // This fixes the stale _itpNavs bug: the on-chain NAV is
+                // stuck at 1e18 from createITP and never updated. Without
+                // this, rebalance resets all quantities as if NAV=$1.00.
+                // All nodes compute this so leader can propose and followers
+                // can verify independently if needed.
+                let computed_nav = {
+                    let itp_bytes: [u8; 32] = itp_h256.into();
+                    match chain_reader.get_itp_inventory_state(itp_bytes).await {
+                        Ok(state) if !state.quantities.is_empty() => {
+                            let scale = ethers::types::U256::exp10(18);
+                            let mut nav = ethers::types::U256::zero();
+                            for (asset, qty) in state.assets.iter().zip(state.quantities.iter()) {
+                                if let Some(&price) = price_map.get(asset) {
+                                    if let Some(contribution) = qty.checked_mul(price) {
+                                        nav = nav + contribution / scale;
                                     }
                                 }
-                                if nav.is_zero() { scale } else { nav }
                             }
-                            _ => ethers::types::U256::exp10(18),
+                            if nav.is_zero() { scale } else { nav }
+                        }
+                        _ => ethers::types::U256::exp10(18),
+                    }
+                };
+
+                // Run setItpNav BLS consensus to get a valid signature.
+                // setItpNav calls _verifyBLS on-chain and will revert
+                // without a properly aggregated signature.
+                let nav_result = protocol.run_set_itp_nav_phase(
+                    itp_h256,
+                    computed_nav,
+                    am_leader,
+                ).await;
+
+                // Leader submits rebalance() on-chain
+                if am_leader {
+                    // Extract nav BLS signature from consensus result
+                    let nav_sig = match &nav_result {
+                        Ok(result) if !result.aggregated_signature.0.is_empty() => {
+                            result.aggregated_signature.0.clone()
+                        }
+                        Ok(_) => {
+                            warn!(itp_id = ?itp_h256, "setItpNav consensus returned empty signature");
+                            vec![]
+                        }
+                        Err(e) => {
+                            warn!(itp_id = ?itp_h256, error = %e, "setItpNav consensus failed, proceeding with empty signature");
+                            vec![]
                         }
                     };
 
@@ -1839,6 +1961,7 @@ async fn run_rebalance_processing<P, W, K, PF>(
                         &rebalance_prices,
                         &rebalance_result,
                         computed_nav,
+                        &nav_sig,
                     ).await {
                         Ok(tx_hash) => {
                             info!(
@@ -2297,6 +2420,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_arb_custody(args.arb_custody.clone())
         .with_mock_usdt(args.mock_usdt.clone())
         .with_registry_sync(args.registry_sync)
+        .with_arbitration(
+            args.arbitration_enabled,
+            args.arbitration_vault.clone(),
+            args.arbitration_settlement.clone(),
+            args.arbitration_threshold,
+            args.arbitration_data_node_url.clone(),
+        )
         .build()
         .map_err(|e| { eprintln!("Configuration error: {}", e); e })?;
 

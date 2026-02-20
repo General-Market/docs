@@ -205,6 +205,20 @@ pub struct IssuerConfig {
     /// When set, the issuer uses BackendPriceFetcher instead of BitgetPriceFetcher.
     /// Can also be set via DATA_NODE_URL env var.
     pub data_node_url: Option<String>,
+
+    // --- Arbitration subsystem fields ---
+    /// Enable arbitration subsystem (default: false)
+    pub arbitration_enabled: Option<bool>,
+    /// CollateralVault contract address for arbitration events
+    pub arbitration_collateral_vault: Option<String>,
+    /// ArbitrationSettlement contract address
+    pub arbitration_settlement_contract: Option<String>,
+    /// BLS signature threshold for arbitration (default: 2)
+    pub arbitration_threshold: Option<usize>,
+    /// Polling interval for arbitration events in seconds (default: 30)
+    pub arbitration_poll_interval: Option<u64>,
+    /// Data-node URL for price queries (default: http://localhost:8200)
+    pub arbitration_data_node_url: Option<String>,
 }
 
 impl IssuerConfig {
@@ -306,6 +320,12 @@ impl IssuerConfig {
             registry_sync_poll_interval_ms: parse_env_var("ISSUER_REGISTRY_SYNC_POLL_INTERVAL_MS"),
             mock_usdt: std::env::var("ISSUER_MOCK_USDT").ok(),
             data_node_url: std::env::var("DATA_NODE_URL").ok(),
+            arbitration_enabled: parse_env_var("ISSUER_ARBITRATION_ENABLED"),
+            arbitration_collateral_vault: std::env::var("ISSUER_ARBITRATION_COLLATERAL_VAULT").ok(),
+            arbitration_settlement_contract: std::env::var("ISSUER_ARBITRATION_SETTLEMENT_CONTRACT").ok(),
+            arbitration_threshold: parse_env_var("ISSUER_ARBITRATION_THRESHOLD"),
+            arbitration_poll_interval: parse_env_var("ISSUER_ARBITRATION_POLL_INTERVAL"),
+            arbitration_data_node_url: std::env::var("ISSUER_ARBITRATION_DATA_NODE_URL").ok(),
         }
     }
 
@@ -420,6 +440,24 @@ impl IssuerConfig {
         }
         if other.data_node_url.is_some() {
             self.data_node_url = other.data_node_url.clone();
+        }
+        if other.arbitration_enabled.is_some() {
+            self.arbitration_enabled = other.arbitration_enabled;
+        }
+        if other.arbitration_collateral_vault.is_some() {
+            self.arbitration_collateral_vault = other.arbitration_collateral_vault.clone();
+        }
+        if other.arbitration_settlement_contract.is_some() {
+            self.arbitration_settlement_contract = other.arbitration_settlement_contract.clone();
+        }
+        if other.arbitration_threshold.is_some() {
+            self.arbitration_threshold = other.arbitration_threshold;
+        }
+        if other.arbitration_poll_interval.is_some() {
+            self.arbitration_poll_interval = other.arbitration_poll_interval;
+        }
+        if other.arbitration_data_node_url.is_some() {
+            self.arbitration_data_node_url = other.arbitration_data_node_url.clone();
         }
     }
 
@@ -997,6 +1035,36 @@ impl ConfigBuilder {
     pub fn with_registry_sync(mut self, enabled: bool) -> Self {
         if enabled {
             self.cli_config.registry_sync_enabled = Some(true);
+        }
+        self
+    }
+
+    /// Set arbitration subsystem CLI overrides.
+    ///
+    /// Configures the arbitration subsystem for resolving bilateral bet disputes
+    /// via BLS consensus among issuers.
+    pub fn with_arbitration(
+        mut self,
+        enabled: Option<bool>,
+        vault: Option<String>,
+        settlement: Option<String>,
+        threshold: Option<usize>,
+        data_node_url: Option<String>,
+    ) -> Self {
+        if enabled.is_some() {
+            self.cli_config.arbitration_enabled = enabled;
+        }
+        if let Some(ref v) = vault {
+            self.cli_config.arbitration_collateral_vault = Some(v.clone());
+        }
+        if let Some(ref v) = settlement {
+            self.cli_config.arbitration_settlement_contract = Some(v.clone());
+        }
+        if threshold.is_some() {
+            self.cli_config.arbitration_threshold = threshold;
+        }
+        if let Some(ref v) = data_node_url {
+            self.cli_config.arbitration_data_node_url = Some(v.clone());
         }
         self
     }
