@@ -1,16 +1,46 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { ItpListing } from '@/components/domain/ItpListing'
-import { CreateItpSection } from '@/components/domain/CreateItpSection'
-import { PortfolioSection } from '@/components/domain/PortfolioSection'
-import { SystemStatusSection } from '@/components/domain/SystemStatusSection'
-import { VaultModal } from '@/components/domain/VaultModal'
-import { BacktestSection } from '@/components/domain/simulation/BacktestSection'
 import { MarketsSection } from '@/components/domain/MarketsSection'
-import { VisionPage } from '@/components/domain/vision/VisionPage'
+
+// Lazy-load below-the-fold sections to reduce First Load JS
+const SectionSkeleton = () => (
+  <div className="animate-pulse bg-muted rounded-xl h-48" />
+)
+
+const PortfolioSection = dynamic(
+  () => import('@/components/domain/PortfolioSection').then(mod => ({ default: mod.PortfolioSection })),
+  { ssr: false, loading: SectionSkeleton }
+)
+
+const CreateItpSection = dynamic(
+  () => import('@/components/domain/CreateItpSection').then(mod => ({ default: mod.CreateItpSection })),
+  { ssr: false, loading: SectionSkeleton }
+)
+
+const VaultModal = dynamic(
+  () => import('@/components/domain/VaultModal').then(mod => ({ default: mod.VaultModal })),
+  { ssr: false, loading: SectionSkeleton }
+)
+
+const BacktestSection = dynamic(
+  () => import('@/components/domain/simulation/BacktestSection').then(mod => ({ default: mod.BacktestSection })),
+  { ssr: false, loading: SectionSkeleton }
+)
+
+const SystemStatusSection = dynamic(
+  () => import('@/components/domain/SystemStatusSection').then(mod => ({ default: mod.SystemStatusSection })),
+  { ssr: false, loading: SectionSkeleton }
+)
+
+const VisionPage = dynamic(
+  () => import('@/components/domain/vision/VisionPage').then(mod => ({ default: mod.VisionPage })),
+  { ssr: false, loading: SectionSkeleton }
+)
 
 type ActivePage = 'investment' | 'vision'
 

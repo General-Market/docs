@@ -64,7 +64,7 @@ export function Header({ activePage = 'investment', onPageChange }: HeaderProps)
           <div className="flex items-center justify-between h-14">
             {/* Logo */}
             <div className="flex items-center gap-3 shrink-0">
-              <Image src="/logo.svg" alt="General Market" width={28} height={28} />
+              <Image src="/logo.svg" alt="General Market" width={28} height={28} priority />
               <span className="text-text-primary font-semibold text-lg tracking-tight hidden sm:inline">
                 General Market
               </span>
