@@ -1,5 +1,28 @@
 # Design Decision Backlog
 
+## Session: 20260221-2300-r2fx (P2Pool Plan Review Round 2)
+
+- [DECISION] Replay attack fix: monotonic tick enforcement in claimRewards (fromTick > lastClaimedTick). BLS sigs include tick range, contract rejects stale ranges.
+- [DECISION] Fee model: 0.3% on profit only for both claimRewards and withdraw. Principal never taxed. withdraw() now takes totalDeposited param (BLS-signed) to compute profit.
+- [DECISION] Solvency invariant: all payout functions (claim, withdraw, forceWithdraw) check USDC.balanceOf(this) >= payout + accumulatedFees before transferring.
+- [DECISION] Flat outcome: separate match arm in side_matching that refunds all players. Was silently dropping via empty vec return.
+- [DECISION] Tick progression: NOT tracked on-chain. Ticks are deterministic (createdAtTick + n). Issuer attests tick ranges via BLS. Contract validates monotonic progression via lastClaimedTick.
+- [DECISION] Bot registry: O(1) register/deregister using _botIndex mapping (1-indexed) + swap-and-pop pattern.
+- [DECISION] Data-node chain indexer (Task 2.5) separate from issuer chain listener (Task 3.9). Data-node populates Postgres for REST API. Issuer feeds tick scheduler.
+- [DECISION] Backtest: time-bucket price sampling instead of ORDER BY DESC + LIMIT. Momentum strategy uses previous tick's outcome (no lookahead bias).
+- [DECISION] Polymarket: shared 60s cache between fetch_assets/fetch_prices to halve rate limit usage.
+
+## Session: 20260221-2100-p2p1 (P2Pool Payout Algorithm)
+
+- [DECISION] P2Pool payout: per-market side matching (sealed parimutuel). UP_total vs DOWN_total matched at aggregate level, excess refunded to larger side. Polymarket-like odds but hidden until reveal.
+- [FAILED] Global score-based payout (accuracy across all markets) — too complex, not zero-sum without arbitrary normalization, blurs per-market alpha that quants want.
+- [FAILED] Poker-style per-player side-pot layers — wrong model for pools (no 1v1 opponents, sides shift per market).
+- [FAILED] Fixed-odds per resolution type — who sets the multiplier? Wrong odds = one side always +EV.
+- [FAILED] Equal-weight/fixed-stake — whales and quant funds want to express conviction with capital size.
+- [FAILED] AMM/bonding curve — kills bitmap model, needs LPs, gas disaster, different product (Polymarket).
+- [DECISION] 10-minute bitmap reveal period after tick resolution. Non-revealed = void. Prevents selective reveal (only reveal if you won). Pre-tick privacy protects strategies from being copied.
+- [DECISION] Target users: quant funds, market makers, bots. Safety > capital efficiency. Sealed bitmaps = competitive advantage (alpha from modeling hidden distribution).
+
 ## Session: 20260221-1530-f8k2 (Security Audit Fixes)
 
 - [DECISION] H1+H3: Combined fix in SELL branch of _processFill. H3: totalSupply decremented by fill.fillAmount instead of order.amount. H1: Added vault.burn() mirroring BUY branch mint.
@@ -3340,3 +3363,47 @@ The backtester currently supports one rebalance method: **periodic time-based re
 [DECISION] Removed 3 more redundant resolve/status calls - (1) protocol.rs mark_orders_batched using L3 IDs after confirmBatch, (2) execute_confirm_batch redundant resolve_l3_order_ids, (3) execute_confirm_fills redundant resolve_l3_order_ids. All callers already pass L3 IDs.
 
 [FAILED] Watchdog "stale order" warning after completed flow - After mintBridgedShares succeeds, order_status remains Batched instead of SharesBridged. mark_orders_shares_bridged is called but watchdog still sees Batched 34 seconds later. Cosmetic issue, doesn't affect flow. Likely a timing/lock issue or the status is being overwritten. Low priority.
+
+## 20260221-1600-a9f3 — Security Audit Fix Triage
+
+[DECISION] Finding 10 (Morpho chain ID 421611337) is false positive - Morpho is intentionally deployed on Arbitrum chain. The chain ID is correct for Arbitrum, not the Orbit L3.
+
+[DECISION] Finding 12 (wagmi default chain ID = Arbitrum) is false positive - Frontend deliberately connects to Arbitrum as its primary chain. Users interact with BridgeProxy/ArbBridgeCustody on Arbitrum, not the Orbit L3 directly.
+
+[DECISION] Finding 7 (AP fill pipeline uses dummy prices) deferred - Significant production code change in AP service. Requires E2E environment with real Bitget feeds to verify correct price propagation through fills. Lower priority since AP fills work correctly in practice.
+
+[DECISION] Finding 8 (BLS hash domain mismatch between issuer/contract) deferred - Requires coordinated change across Rust issuer and Solidity contracts with E2E BLS signing tests. High risk of breaking consensus if done incorrectly. Needs dedicated session with full issuer cluster running.
+
+[DECISION] Finding 9 (arbitration/dispute stubs unimplemented) deferred - Governance arbitration is a future feature. Stubs exist as placeholders. Implementing requires full governance design specification that doesn't exist yet.
+
+## 20260221-2100-r3p2 — P2Pool Implementation Plan Review Round 3
+
+[DECISION] Chain indexer eth_call data population — replaced empty-array INSERT placeholders with actual eth_call to getBatch()/getPosition() for all event handlers. Both data-node (Task 2.5) and issuer (Task 3.9) indexers now fetch real on-chain state.
+
+[DECISION] Solvency check includes fee — changed all solvency checks from `< payout + accumulatedFees` to `< payout + accumulatedFees + fee`. The fee is added to accumulatedFees after the check, so it must be included in the pre-check.
+
+[DECISION] forceWithdraw fee on profit only — added totalDeposited param (BLS-signed). Fee computed as `0.3% × max(0, finalBalance - totalDeposited)`, consistent with withdraw. Prevents penalizing players who lost money.
+
+[DECISION] API response camelCase — added `#[serde(rename_all = "camelCase")]` to all REST response structs. Frontend expects camelCase, Rust convention is snake_case.
+
+[DECISION] updateBitmap emit — added `emit BitmapUpdated(batchId, msg.sender, newBitmapHash)` so chain indexers can track bitmap updates.
+
+[DECISION] collectFees access control — added `if (msg.sender != feeCollector) revert Unauthorized()` and added to IVision interface.
+
+[DECISION] On-chain totalDeposited tracking — added `uint256 totalDeposited` to PlayerPosition struct, incremented in joinBatch and deposit. Withdraw uses on-chain totalDeposited instead of BLS param for fee computation. More robust since verifiable on-chain.
+
+[DECISION] Reveal window implementation — expanded Task 3.6 TickResolver from ~15 lines to full implementation with reveal verification, bitmap decoding, division-by-zero protection, market outcome determination, and balance computation.
+
+[DECISION] Weather division by zero — use Kelvin for temperature (always > 0), cancel sub-market for zero-start precipitation/wind metrics.
+
+[DECISION] Expanded underspecified tasks — Tasks 3.5 (TickScheduler), 3.6 (TickResolver), 3.7 (API endpoints), 3.8 (engine loop + main.rs) all expanded from stubs to full implementations with complete code.
+
+[DECISION] Chain indexer consistency — documented that both indexers (data-node Task 2.5, issuer Task 3.9) must use same vision_address and start_block, handle reorgs by deleting reorged data, and have clear failure modes (stale REST data vs delayed ticks).
+
+[DECISION] updateBatchMarkets BLS-gated — added BLS signature requirement covering (batchId, marketIds, resolutionTypes, currentTick) to prevent mid-tick market manipulation by batch creator.
+
+[DECISION] PlayerMarketResult field rename — renamed `payout` to `total_back` and local `payout` to `winnings` to eliminate naming confusion. `total_back = winnings + refund`, `net_pnl = total_back - effective_stake`.
+
+[DECISION] Backtest mock indicator — added `mock: true` flag to BacktestResult when using placeholder data, so frontend can display appropriate warning.
+
+[DECISION] GammaMarket Clone derive — added Clone to derive macro for Polymarket cache sharing.
