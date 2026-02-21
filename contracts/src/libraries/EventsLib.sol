@@ -481,4 +481,11 @@ library EventsLib {
     /// @param recipient The recipient of the withdrawn funds
     /// @param amount The amount withdrawn
     event ReversedFundsWithdrawn(uint256 indexed nonce, address indexed recipient, uint256 amount);
+
+    // ============ INVESTMENT CONTRACT EVENTS ============
+
+    /// @notice Emitted when the authorized bridge address is updated
+    /// @param previousBridge The previous bridge address
+    /// @param newBridge The new bridge address
+    event AuthorizedBridgeUpdated(address indexed previousBridge, address indexed newBridge);
 }
