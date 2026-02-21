@@ -6,4 +6,5 @@
 
 pub mod bitmap_store;
 pub mod config;
+pub mod multiplier;
 pub mod types;
