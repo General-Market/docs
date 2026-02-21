@@ -99,6 +99,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/portfolio", get(portfolio))
         .route("/portfolio/history", get(portfolio_history))
         .route("/portfolio/trades", get(portfolio_trades))
+        .route("/fill-speed", get(fill_speed))
         .route("/latest-prices", get(latest_prices))
         .route("/prices-by-address", get(prices_by_address))
         .route("/fast-prices", get(fast_prices))
@@ -1637,6 +1638,51 @@ async fn portfolio_trades(
         .collect();
 
     Ok(Json(PortfolioTradesResponse { trades }))
+}
+
+// ---- /fill-speed ----
+
+#[derive(Serialize)]
+struct FillSpeedEntry {
+    order_id: i64,
+    side: i16,
+    amount: String,
+    submit_time: String,
+    fill_time: Option<String>,
+    fill_latency_secs: Option<f64>,
+    fill_price: Option<String>,
+    fill_amount: Option<String>,
+}
+
+async fn fill_speed(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Vec<FillSpeedEntry>>, (StatusCode, Json<ErrorResponse>)> {
+    let rows = sqlx::query_as::<_, (i64, i16, String, DateTime<Utc>, Option<DateTime<Utc>>, Option<String>, Option<String>)>(
+        "SELECT order_id, side, amount, order_timestamp, fill_timestamp, fill_price, fill_amount \
+         FROM trades ORDER BY order_timestamp DESC LIMIT 200"
+    )
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|e| db_error(e))?;
+
+    let entries: Vec<FillSpeedEntry> = rows
+        .into_iter()
+        .map(|(oid, side, amt, submit, fill_ts, fp, fa)| {
+            let latency = fill_ts.map(|ft| (ft - submit).num_milliseconds() as f64 / 1000.0);
+            FillSpeedEntry {
+                order_id: oid,
+                side,
+                amount: amt,
+                submit_time: submit.to_rfc3339(),
+                fill_time: fill_ts.map(|ft| ft.to_rfc3339()),
+                fill_latency_secs: latency,
+                fill_price: fp,
+                fill_amount: fa,
+            }
+        })
+        .collect();
+
+    Ok(Json(entries))
 }
 
 // ---- /latest-prices ----
