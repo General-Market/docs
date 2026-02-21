@@ -30,8 +30,6 @@ interface UseMorphoMarketsReturn {
  * endpoint which returns market-level data alongside per-user data.
  *
  * TODO: When market-level SSE topic is added, switch market state to SSE.
- * TODO: Borrow APY currently estimated from utilization. Add CuratorRateIRM
- *       rate to the data-node poller for accurate APY.
  *
  * @param market - Optional MorphoMarketEntry. Falls back to default singleton.
  */
@@ -91,9 +89,14 @@ export function useMorphoMarkets(market?: MorphoMarketEntry): UseMorphoMarketsRe
       marketState.totalSupplyAssets
     )
 
-    // TODO: Fetch CuratorRateIRM rate from data-node for accurate APY.
-    // For now, estimate from utilization.
-    const borrowApy = utilization * 0.15
+    // Compute APY from CuratorRateIRM rate (1-ray = 1e27 per second)
+    const borrowApy = sseOracle?.borrow_rate_ray && sseOracle.borrow_rate_ray !== '0'
+      ? (() => {
+          const ratePerSec = Number(BigInt(sseOracle.borrow_rate_ray)) / 1e27
+          // APY = (1 + ratePerSec)^(365.25*86400) - 1, approximated for small rates
+          return ratePerSec * 365.25 * 86400
+        })()
+      : utilization * 0.15 // fallback if rate not available
 
     markets.push({
       params: marketParams,

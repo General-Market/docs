@@ -69,6 +69,7 @@ export interface OracleSnapshot {
   price: string
   last_updated: number
   last_cycle: number
+  borrow_rate_ray: string
 }
 
 export interface UserBalances {
