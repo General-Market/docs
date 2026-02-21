@@ -14,6 +14,7 @@ use thiserror::Error;
 use tracing::{debug, info};
 
 use common::adapters::abi::{ERC20Contract, MockBitgetVaultContract};
+use common::adapters::BitgetVaultFill;
 
 /// Signer type alias
 type SignerProvider = SignerMiddleware<Provider<Http>, LocalWallet>;
@@ -335,19 +336,6 @@ pub fn quote_currency_for_symbol(symbol: &str) -> QuoteCurrency {
         // Default to USDT (most Bitget pairs are USDT-denominated)
         QuoteCurrency::USDT
     }
-}
-
-/// Fill data from MockBitgetVault
-// TODO: Consolidate with common::adapters::bitget_vault_reader::BitgetVaultFill to avoid drift
-#[derive(Debug, Clone)]
-pub struct BitgetVaultFill {
-    pub trade_id: u64,
-    pub sell_token: Address,
-    pub buy_token: Address,
-    pub sell_amount: U256,
-    pub buy_amount: U256,
-    pub trader: Address,
-    pub timestamp: u64,
 }
 
 #[cfg(test)]

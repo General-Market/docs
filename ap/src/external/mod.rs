@@ -17,4 +17,4 @@ pub mod bitget;
 pub mod bitget_vault;
 
 pub use bitget::{BitgetClient, BitgetConfig, BitgetCredentials, BitgetError, OrderSide};
-pub use bitget_vault::{BitgetVaultClient, BitgetVaultError, BitgetVaultFill};
+pub use bitget_vault::{BitgetVaultClient, BitgetVaultError};

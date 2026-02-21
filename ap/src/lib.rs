@@ -78,4 +78,5 @@ pub use external::bitget::{
     BitgetClient, BitgetConfig, BitgetCredentials, BitgetError, OrderSide,
     RateLimitedBitgetClient,
 };
-pub use external::bitget_vault::{BitgetVaultClient, BitgetVaultError, BitgetVaultFill};
+pub use external::bitget_vault::{BitgetVaultClient, BitgetVaultError};
+pub use common::adapters::BitgetVaultFill;
