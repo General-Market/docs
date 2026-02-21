@@ -22,6 +22,7 @@ mod logo_downloader;
 mod simulation;
 mod trade_collector;
 mod market_data;
+mod p2pool_api;
 
 use std::collections::HashSet;
 use std::net::SocketAddr;
