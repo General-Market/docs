@@ -109,6 +109,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/liquidity/alerts", get(liquidity_alerts))
         .route("/user-state", get(user_state))
         .route("/morpho-position", get(morpho_position))
+        .route("/morpho-history", get(morpho_history))
         .route("/order", get(order))
         .route("/vault-balances", get(vault_balances))
         .route("/logo/:coin_id", get(serve_logo))
@@ -2591,6 +2592,109 @@ async fn morpho_position(
             total_borrow_shares: total_borrow_shares.to_string(),
         },
     }))
+}
+
+// ---- /morpho-history ----
+
+#[derive(Deserialize)]
+struct MorphoHistoryQuery {
+    address: String,
+}
+
+#[derive(Serialize)]
+struct MorphoHistoryEntry {
+    event_type: String, // "deposit", "withdraw", "borrow", "repay"
+    amount: String,
+    token: String,
+    tx_hash: String,
+    block_number: u64,
+}
+
+async fn morpho_history(
+    State(state): State<Arc<AppState>>,
+    Query(q): Query<MorphoHistoryQuery>,
+) -> Result<Json<Vec<MorphoHistoryEntry>>, (StatusCode, Json<ErrorResponse>)> {
+    let user: Address = q.address.parse()
+        .map_err(|e| rpc_error(format!("Invalid address: {}", e)))?;
+
+    let morpho_addr = deployment_addr(&state.morpho_deployment, "MORPHO")
+        .map_err(|e| rpc_error(e))?;
+
+    // Scan last 10_000 blocks for Morpho events
+    let latest_block = state.arb_provider.get_block_number().await
+        .map_err(|e| rpc_error(format!("get_block_number: {}", e)))?
+        .as_u64();
+    let from_block = latest_block.saturating_sub(10_000);
+
+    // The user address (onBehalf) is topic3, NOT topic2.
+    // Event layout: topic0=sig, topic1=id(bytes32), topic2=caller, topic3=onBehalf
+    let user_h256 = H256::from(user);
+    let filter = ethers::types::Filter::new()
+        .address(morpho_addr)
+        .from_block(from_block)
+        .to_block(latest_block)
+        .topic3(user_h256);
+
+    let logs = state.arb_provider.get_logs(&filter).await
+        .map_err(|e| rpc_error(format!("get_logs: {}", e)))?;
+
+    // Precompute event signature hashes
+    let supply_sig = H256::from(ethers::core::utils::keccak256(
+        "SupplyCollateral(bytes32,address,address,uint256)",
+    ));
+    let withdraw_sig = H256::from(ethers::core::utils::keccak256(
+        "WithdrawCollateral(bytes32,address,address,address,uint256)",
+    ));
+    let borrow_sig = H256::from(ethers::core::utils::keccak256(
+        "Borrow(bytes32,address,address,address,uint256,uint256)",
+    ));
+    let repay_sig = H256::from(ethers::core::utils::keccak256(
+        "Repay(bytes32,address,address,uint256,uint256)",
+    ));
+
+    let mut entries = Vec::new();
+    for log in &logs {
+        if log.topics.is_empty() { continue; }
+        let topic0 = log.topics[0];
+
+        // Determine event type and amount offset in log.data
+        // SupplyCollateral: data = [assets:uint256]            → amount at byte 0
+        // Repay:            data = [assets:uint256, shares]    → amount at byte 0
+        // WithdrawCollateral: data = [receiver:addr, assets]   → amount at byte 32
+        // Borrow:           data = [receiver:addr, assets, shares] → amount at byte 32
+        let (event_type, amount_offset) = if topic0 == supply_sig {
+            ("deposit", 0usize)
+        } else if topic0 == withdraw_sig {
+            ("withdraw", 32usize)
+        } else if topic0 == borrow_sig {
+            ("borrow", 32usize)
+        } else if topic0 == repay_sig {
+            ("repay", 0usize)
+        } else {
+            continue;
+        };
+
+        let amount = if log.data.len() >= amount_offset + 32 {
+            U256::from_big_endian(&log.data[amount_offset..amount_offset + 32]).to_string()
+        } else {
+            "0".to_string()
+        };
+
+        let token = match event_type {
+            "deposit" | "withdraw" => "ITP",
+            _ => "USDC",
+        };
+
+        entries.push(MorphoHistoryEntry {
+            event_type: event_type.to_string(),
+            amount,
+            token: token.to_string(),
+            tx_hash: format!("{:?}", log.transaction_hash.unwrap_or_default()),
+            block_number: log.block_number.map(|b| b.as_u64()).unwrap_or(0),
+        });
+    }
+
+    Ok(Json(entries))
 }
 
 // ---- /order ----
