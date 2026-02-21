@@ -92,6 +92,8 @@ pub enum CrossChainStatus {
 /// Configuration for cross-chain orchestrator
 #[derive(Debug, Clone)]
 pub struct CrossChainOrchestratorConfig {
+    /// Source chain ID (e.g. Arbitrum). Must be set explicitly.
+    pub src_chain_id: u64,
     /// Intent timeout in seconds
     pub intent_timeout_secs: u64,
     /// Max retries per intent
@@ -105,6 +107,7 @@ pub struct CrossChainOrchestratorConfig {
 impl Default for CrossChainOrchestratorConfig {
     fn default() -> Self {
         Self {
+            src_chain_id: 0, // Must be configured explicitly
             intent_timeout_secs: INTENT_TIMEOUT_SECS,
             max_retries: MAX_INTENT_RETRIES,
             max_deferred_cycles: MAX_DEFERRED_CYCLES,
@@ -200,7 +203,7 @@ impl CrossChainOrchestrator {
         request: &CrossChainRequest,
     ) -> Result<CrossChainResult, CrossChainError> {
         // Validate route (Arbitrum must be source)
-        let src_chain_id = 42161; // Arbitrum
+        let src_chain_id = self.config.src_chain_id;
         if !FusionRoute::is_supported(src_chain_id, request.dst_chain_id) {
             return Err(CrossChainError::UnsupportedRoute {
                 src_chain: src_chain_id,
@@ -390,7 +393,7 @@ impl CrossChainOrchestrator {
                 to_refund.push(order_id.clone());
                 results.push(CrossChainResult {
                     order_hash: order_id,
-                    src_chain_id: 42161,
+                    src_chain_id: self.config.src_chain_id,
                     dst_chain_id: order.request.dst_chain_id,
                     amount: order.request.amount.clone(),
                     status: CrossChainStatus::Refunded,

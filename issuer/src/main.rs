@@ -124,8 +124,8 @@ struct Args {
     #[arg(long)]
     signature_threshold: Option<usize>,
 
-    /// Number of issuers in the network (default: 20 for production).
-    #[arg(long, default_value = "20")]
+    /// Number of issuers in the network (default: 3).
+    #[arg(long, default_value = "3")]
     num_issuers: u8,
 
     /// Generate deterministic BLS key from seed [N, 0x42, 0, ...] (for testing).

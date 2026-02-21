@@ -1,5 +1,15 @@
 # Design Decision Backlog
 
+## Session: 20260221-2330-s3au
+
+- [DECISION] H10: TLS now loads from config paths (ISSUER_TLS_CERT_PATH/KEY/CA) in else branch instead of silently falling through to None. Hard error if paths configured but files invalid.
+- [DECISION] H11: Static peer_ids now derived via SHA-256 of "ip:port" instead of zeroed [0u8;32] for all peers.
+- [DECISION] H14: subscribe_events now polls every 2s for new logs after initial historical fetch, instead of returning after one-shot.
+- [DECISION] H19: EventMonitor spawn blocks now have reconnect loop with exponential backoff (1s to 60s) instead of single-shot error exit.
+- [DECISION] H20: BitgetClient::new() returns Result, generate_timestamp() returns Result, sign_request() returns Result. All callers updated.
+- [DECISION] H25: Fill price/quantity parsing now returns Error instead of unwrap_or(Decimal::ZERO) which silently filled zero-price trades.
+- [DECISION] Fixed pre-existing compilation issues: added missing exports (SetItpNavResult, CompleteBuyOrderResult, build_complete_buy_order_hash) from bridge/mod.rs, added missing P2P match arms for CompleteBuyOrderProposal/Sign.
+
 ## Session: 20260221-2300-c14x
 
 - [DECISION] Task 14 cleanup: deleted 4 dead files — useFillDetails.ts, useOrderStatus.ts (only imported by useFillDetails), ActiveOrdersSection.tsx (merged into PortfolioSection), useSystemStatusSSE.ts (types inlined into useSSE.tsx, function never called)

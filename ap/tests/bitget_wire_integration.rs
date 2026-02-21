@@ -203,7 +203,7 @@ async fn test_mock_chain_real_bitget_e2e() {
     };
 
     // Step 2: Query fills (unlikely to have any at extreme price)
-    match client.get_fills(order_id).await {
+    match client.get_fills(order_id, U256::zero()).await {
         Ok(fills) => {
             println!("E2E: Got {} fills for order {}", fills.len(), order_id);
             for fill in &fills {

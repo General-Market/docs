@@ -87,12 +87,13 @@ pub struct SignedRequest {
 }
 
 /// Generate the current timestamp in milliseconds
-pub fn generate_timestamp() -> u64 {
-    // SAFETY: SystemTime::now() is always >= UNIX_EPOCH on supported platforms.
+///
+/// Returns an error if the system clock is before UNIX_EPOCH.
+pub fn generate_timestamp() -> Result<u64, &'static str> {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .expect("time went backwards")
-        .as_millis() as u64
+        .map(|d| d.as_millis() as u64)
+        .map_err(|_| "system clock is before UNIX epoch")
 }
 
 /// Sign a request per Bitget API specification
@@ -114,14 +115,13 @@ pub fn sign_request(
     method: &str,
     request_path: &str,
     body: &str,
-) -> SignedRequest {
+) -> Result<SignedRequest, &'static str> {
     // Build pre-hash string: timestamp + method + requestPath + body
     let pre_hash = format!("{}{}{}{}", timestamp, method, request_path, body);
 
     // Create HMAC-SHA256 signer
-    // SAFETY: HMAC-SHA256 accepts keys of any size per HMAC spec (RFC 2104).
     let mut mac = HmacSha256::new_from_slice(credentials.api_secret.as_bytes())
-        .expect("HMAC can take key of any size");
+        .map_err(|_| "HMAC key initialization failed")?;
 
     // Sign the pre-hash string
     mac.update(pre_hash.as_bytes());
@@ -131,12 +131,12 @@ pub fn sign_request(
     // Base64 encode the signature
     let signature = BASE64.encode(signature_bytes);
 
-    SignedRequest {
+    Ok(SignedRequest {
         signature,
         timestamp,
         api_key: credentials.api_key.clone(),
         passphrase: credentials.passphrase.clone(),
-    }
+    })
 }
 
 /// Build authentication headers for a signed request
@@ -204,7 +204,7 @@ mod tests {
             "POST",
             "/api/spot/v1/trade/orders",
             r#"{"symbol":"BTCUSDC"}"#,
-        );
+        ).unwrap();
 
         let signed2 = sign_request(
             &creds,
@@ -212,7 +212,7 @@ mod tests {
             "POST",
             "/api/spot/v1/trade/orders",
             r#"{"symbol":"BTCUSDC"}"#,
-        );
+        ).unwrap();
 
         // Same inputs should produce same signature
         assert_eq!(signed1.signature, signed2.signature);
@@ -229,8 +229,8 @@ mod tests {
 
         let timestamp = 1704067200000u64;
 
-        let signed1 = sign_request(&creds, timestamp, "POST", "/api/v1/orders", r#"{"a":1}"#);
-        let signed2 = sign_request(&creds, timestamp, "POST", "/api/v1/orders", r#"{"a":2}"#);
+        let signed1 = sign_request(&creds, timestamp, "POST", "/api/v1/orders", r#"{"a":1}"#).unwrap();
+        let signed2 = sign_request(&creds, timestamp, "POST", "/api/v1/orders", r#"{"a":2}"#).unwrap();
 
         // Different body should produce different signature
         assert_ne!(signed1.signature, signed2.signature);
@@ -257,9 +257,9 @@ mod tests {
 
     #[test]
     fn test_generate_timestamp() {
-        let ts1 = generate_timestamp();
+        let ts1 = generate_timestamp().unwrap();
         std::thread::sleep(std::time::Duration::from_millis(10));
-        let ts2 = generate_timestamp();
+        let ts2 = generate_timestamp().unwrap();
 
         // Timestamp should be increasing
         assert!(ts2 > ts1);
@@ -283,7 +283,7 @@ mod tests {
         let path = "/api/spot/v1/trade/orders";
         let body = r#"{"symbol":"BTCUSDC","side":"buy","orderType":"limit","price":"42000","size":"0.001","force":"gtc"}"#;
 
-        let signed = sign_request(&creds, timestamp, method, path, body);
+        let signed = sign_request(&creds, timestamp, method, path, body).unwrap();
 
         // Verify the pre-hash string construction is correct
         // pre_hash = "1704067200000POST/api/spot/v1/trade/orders{\"symbol\":\"BTCUSDC\",...}"

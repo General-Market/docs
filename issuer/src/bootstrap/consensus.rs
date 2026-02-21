@@ -332,8 +332,16 @@ impl<'a> ConsensusBuilder<'a> {
     fn build_itp_creation_config(&self, sig_threshold: usize) -> Option<ItpCreationConfig> {
         let bp_str = self.params.bridge_proxy.as_ref()?;
 
+        let arbitrum_chain_id = match self.config.effective_arbitrum_chain_id() {
+            Ok(id) => id,
+            Err(e) => {
+                warn!(self.node_id, error = %e, "ITP creation config disabled: Arbitrum chain ID not configured");
+                return None;
+            }
+        };
+
         Some(ItpCreationConfig {
-            arbitrum_chain_id: self.config.effective_arbitrum_chain_id(),
+            arbitrum_chain_id,
             bridge_proxy_address: bp_str.parse().unwrap_or_default(),
             proposal_timeout_ms: 10000,
             sign_timeout_ms: 10000,
@@ -371,7 +379,14 @@ impl<'a> ConsensusBuilder<'a> {
             issuer_custody_l3: self.config.effective_issuer_custody_l3().unwrap_or_default(),
             l3_usdc_address: self.config.effective_l3_usdc().unwrap_or_default(),
             arb_custody_address: self.config.effective_arb_custody().unwrap_or_default(),
-            arbitrum_chain_id: self.config.effective_arbitrum_chain_id(),
+            arbitrum_chain_id: match self.config.effective_arbitrum_chain_id() {
+                Ok(id) => id,
+                Err(e) => {
+                    warn!(code = "BRIDGE-004", self.node_id, error = %e,
+                          "BridgeOrchestrator DISABLED: Arbitrum chain ID not configured");
+                    return None;
+                }
+            },
             l3_chain_id: target_chain_id,
             index_address: self.config.effective_contract_addresses()
                 .map(|c| c.index)

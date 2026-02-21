@@ -21,6 +21,9 @@
 //!            Bitget execution → on_replenishment_complete()
 //! ```
 
+// TODO: Wire into AP pipeline — BufferManager is fully implemented but not yet
+// connected to the event processing loop in main.rs. Small orders should be
+// checked against the buffer before being sent to Bitget.
 pub mod config;
 pub mod manager;
 pub mod metrics;

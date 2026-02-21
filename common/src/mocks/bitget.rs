@@ -437,7 +437,7 @@ impl APClient for MockBitget {
         Ok(order_id)
     }
 
-    async fn get_fills(&self, order_id: OrderId) -> Result<Vec<Fill>, Error> {
+    async fn get_fills(&self, order_id: OrderId, cycle_number: U256) -> Result<Vec<Fill>, Error> {
         self.maybe_fail().await?;
         self.apply_latency().await;
 
@@ -451,7 +451,7 @@ impl APClient for MockBitget {
                 order_id: f.order_id,
                 fill_price: f.fill_price,
                 fill_amount: f.fill_amount,
-                cycle_number: U256::zero(),
+                cycle_number,
                 tx_hash: TxHash::zero(),
             })
             .collect())
@@ -589,7 +589,7 @@ mod tests {
         // Wait for fill
         tokio::time::sleep(Duration::from_millis(50)).await;
 
-        let fills = mock.get_fills(order_id).await.unwrap();
+        let fills = mock.get_fills(order_id, U256::zero()).await.unwrap();
         assert!(!fills.is_empty());
 
         let status = mock.get_order_status(order_id).await.unwrap();
@@ -761,7 +761,7 @@ mod tests {
         assert!(filled, "partial fill should succeed");
 
         // Should have one fill
-        let fills = mock.get_fills(order_id).await.unwrap();
+        let fills = mock.get_fills(order_id, U256::zero()).await.unwrap();
         assert_eq!(fills.len(), 1);
         assert_eq!(fills[0].fill_amount, partial_amount);
 
@@ -778,7 +778,7 @@ mod tests {
         assert_eq!(status, OrderStatus::Filled);
 
         // Should have two fills
-        let fills = mock.get_fills(order_id).await.unwrap();
+        let fills = mock.get_fills(order_id, U256::zero()).await.unwrap();
         assert_eq!(fills.len(), 2);
     }
 
@@ -793,7 +793,7 @@ mod tests {
         assert!(result.is_err());
 
         // Query fills of non-existent order (should return empty, not error)
-        let fills = mock.get_fills(U256::from(9999u64)).await.unwrap();
+        let fills = mock.get_fills(U256::from(9999u64), U256::zero()).await.unwrap();
         assert!(fills.is_empty());
     }
 

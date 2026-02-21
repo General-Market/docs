@@ -291,7 +291,8 @@ pub struct WithdrawalRequestEvent {
 }
 
 impl WithdrawalRequestEvent {
-    /// Event topic hash: placeholder - will be updated when event is defined
+    /// Event topic hash: placeholder zero bytes — stays this way until the contract
+    /// defines the WithdrawalRequest event in EventsLib.sol with a real signature.
     pub const TOPIC: [u8; 32] = [0u8; 32];
 
     /// Parse WithdrawalRequestEvent from raw log data

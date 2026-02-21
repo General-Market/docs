@@ -249,8 +249,10 @@ impl<'a> ChainBuilder<'a> {
             }
         };
 
-        let arb_rpc = self.config.effective_arbitrum_rpc_url();
-        let arb_chain_id = self.config.effective_arbitrum_chain_id();
+        let arb_rpc = self.config.effective_arbitrum_rpc_url()
+            .map_err(|e| BootstrapError::Chain(e))?;
+        let arb_chain_id = self.config.effective_arbitrum_chain_id()
+            .map_err(|e| BootstrapError::Chain(e))?;
 
         // Build ArbitrumChainReader
         let arb_reader = {

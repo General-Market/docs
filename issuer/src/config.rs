@@ -206,6 +206,18 @@ pub struct IssuerConfig {
     /// Can also be set via DATA_NODE_URL env var.
     pub data_node_url: Option<String>,
 
+    /// TLS certificate path for P2P connections.
+    /// Can also be set via ISSUER_TLS_CERT_PATH env var.
+    pub tls_cert_path: Option<String>,
+
+    /// TLS key path for P2P connections.
+    /// Can also be set via ISSUER_TLS_KEY_PATH env var.
+    pub tls_key_path: Option<String>,
+
+    /// TLS CA cert path for P2P connections.
+    /// Can also be set via ISSUER_TLS_CA_PATH env var.
+    pub tls_ca_path: Option<String>,
+
     // --- Arbitration subsystem fields ---
     /// Enable arbitration subsystem (default: false)
     pub arbitration_enabled: Option<bool>,
@@ -320,6 +332,9 @@ impl IssuerConfig {
             registry_sync_poll_interval_ms: parse_env_var("ISSUER_REGISTRY_SYNC_POLL_INTERVAL_MS"),
             mock_usdt: std::env::var("ISSUER_MOCK_USDT").ok(),
             data_node_url: std::env::var("DATA_NODE_URL").ok(),
+            tls_cert_path: std::env::var("ISSUER_TLS_CERT_PATH").ok(),
+            tls_key_path: std::env::var("ISSUER_TLS_KEY_PATH").ok(),
+            tls_ca_path: std::env::var("ISSUER_TLS_CA_PATH").ok(),
             arbitration_enabled: parse_env_var("ISSUER_ARBITRATION_ENABLED"),
             arbitration_collateral_vault: std::env::var("ISSUER_ARBITRATION_COLLATERAL_VAULT").ok(),
             arbitration_settlement_contract: std::env::var("ISSUER_ARBITRATION_SETTLEMENT_CONTRACT").ok(),
@@ -440,6 +455,15 @@ impl IssuerConfig {
         }
         if other.data_node_url.is_some() {
             self.data_node_url = other.data_node_url.clone();
+        }
+        if other.tls_cert_path.is_some() {
+            self.tls_cert_path = other.tls_cert_path.clone();
+        }
+        if other.tls_key_path.is_some() {
+            self.tls_key_path = other.tls_key_path.clone();
+        }
+        if other.tls_ca_path.is_some() {
+            self.tls_ca_path = other.tls_ca_path.clone();
         }
         if other.arbitration_enabled.is_some() {
             self.arbitration_enabled = other.arbitration_enabled;
@@ -812,11 +836,11 @@ impl IssuerConfig {
 
     /// Get the effective Arbitrum RPC URL.
     ///
-    /// Default: "https://arb1.arbitrum.io/rpc"
-    pub fn effective_arbitrum_rpc_url(&self) -> String {
+    /// Returns an error if not configured (no silent fallback to mainnet).
+    pub fn effective_arbitrum_rpc_url(&self) -> Result<String, String> {
         self.arbitrum_rpc_url
             .clone()
-            .unwrap_or_else(|| "https://arb1.arbitrum.io/rpc".to_string())
+            .ok_or_else(|| "ISSUER_ARBITRUM_RPC_URL not configured".to_string())
     }
 
     /// Get the effective Arbitrum BLSCustody address.
@@ -839,10 +863,11 @@ impl IssuerConfig {
 
     /// Get the effective Arbitrum chain ID.
     ///
-    /// Default: 42161 (Arbitrum One)
-    /// For E2E testing with BridgeProxy on L3, set ISSUER_ARBITRUM_CHAIN_ID=111222333
-    pub fn effective_arbitrum_chain_id(&self) -> u64 {
-        self.arbitrum_chain_id.unwrap_or(42161)
+    /// Returns an error if not configured (no silent fallback to 42161).
+    /// Set ISSUER_ARBITRUM_CHAIN_ID explicitly.
+    pub fn effective_arbitrum_chain_id(&self) -> Result<u64, String> {
+        self.arbitrum_chain_id
+            .ok_or_else(|| "ISSUER_ARBITRUM_CHAIN_ID not configured".to_string())
     }
 
     /// Get the effective private key (from env var, config field, or key file).

@@ -32,10 +32,11 @@ pub trait APClient: Send + Sync {
     ///
     /// # Arguments
     /// * `order_id` - Order ID to query
+    /// * `cycle_number` - Cycle number to tag returned fills with
     ///
     /// # Returns
     /// List of fills for this order
-    async fn get_fills(&self, order_id: OrderId) -> Result<Vec<Fill>, Error>;
+    async fn get_fills(&self, order_id: OrderId, cycle_number: U256) -> Result<Vec<Fill>, Error>;
 
     /// Get the status of an order
     ///
