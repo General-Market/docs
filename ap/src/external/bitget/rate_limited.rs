@@ -8,7 +8,7 @@ use ethers::types::{H256, U256};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, warn};
+use tracing::{debug, info, warn};
 
 use common::error::Error;
 use common::rate_limit::{BitgetRateLimiter, EndpointType, RateLimiterMetrics};
@@ -23,6 +23,59 @@ use super::client::{
 /// Number of decimal places for U256 fixed-point values (18 decimals per EVM convention)
 const U256_DECIMALS: u8 = 18;
 
+/// File path for persisting the order_id_map between restarts
+const ORDER_ID_MAP_PATH: &str = "data/order_id_map.json";
+
+/// Load order_id_map from disk if the file exists.
+/// Keys are U256 serialized as decimal strings, values are Bitget order ID strings.
+fn load_order_id_map() -> HashMap<U256, String> {
+    let path = std::path::Path::new(ORDER_ID_MAP_PATH);
+    if !path.exists() {
+        return HashMap::new();
+    }
+    match std::fs::read_to_string(path) {
+        Ok(data) => {
+            // Deserialize as HashMap<String, String> then convert keys to U256
+            match serde_json::from_str::<HashMap<String, String>>(&data) {
+                Ok(raw_map) => {
+                    let mut map = HashMap::new();
+                    for (key_str, val) in raw_map {
+                        if let Ok(key) = U256::from_dec_str(&key_str) {
+                            map.insert(key, val);
+                        } else {
+                            warn!(key = %key_str, "Skipping invalid U256 key in order_id_map.json");
+                        }
+                    }
+                    info!(entries = map.len(), "Loaded order_id_map from {}", ORDER_ID_MAP_PATH);
+                    map
+                }
+                Err(e) => {
+                    warn!(error = %e, "Failed to parse {}, starting with empty map", ORDER_ID_MAP_PATH);
+                    HashMap::new()
+                }
+            }
+        }
+        Err(e) => {
+            warn!(error = %e, "Failed to read {}, starting with empty map", ORDER_ID_MAP_PATH);
+            HashMap::new()
+        }
+    }
+}
+
+/// Save order_id_map to disk for persistence across restarts.
+fn save_order_id_map(map: &HashMap<U256, String>) {
+    // Convert U256 keys to decimal strings for JSON serialization
+    let raw_map: HashMap<String, &String> = map.iter()
+        .map(|(k, v)| (k.to_string(), v))
+        .collect();
+    if let Ok(data) = serde_json::to_string_pretty(&raw_map) {
+        let _ = std::fs::create_dir_all("data");
+        if let Err(e) = std::fs::write(ORDER_ID_MAP_PATH, data) {
+            warn!(error = %e, "Failed to save order_id_map to {}", ORDER_ID_MAP_PATH);
+        }
+    }
+}
+
 /// Rate-limited Bitget client that implements APClient
 ///
 /// Wraps a BitgetClient with a BitgetRateLimiter to enforce API rate limits
@@ -36,12 +89,13 @@ pub struct RateLimitedBitgetClient {
 }
 
 impl RateLimitedBitgetClient {
-    /// Create a new rate-limited client
+    /// Create a new rate-limited client.
+    /// Loads any previously persisted order_id_map from disk.
     pub fn new(client: BitgetClient, rate_limiter: Arc<BitgetRateLimiter>) -> Self {
         Self {
             client,
             rate_limiter,
-            order_id_map: RwLock::new(HashMap::new()),
+            order_id_map: RwLock::new(load_order_id_map()),
         }
     }
 
@@ -118,16 +172,17 @@ impl APClient for RateLimitedBitgetClient {
         });
 
         // Store mapping so we can resolve the original Bitget ID for future queries
-        self.order_id_map
-            .write()
-            .await
-            .insert(order_id, bitget_order_id.clone());
+        {
+            let mut map = self.order_id_map.write().await;
+            map.insert(order_id, bitget_order_id.clone());
+            save_order_id_map(&map);
+        }
 
         debug!(order_id = %order_id, bitget_id = %bitget_order_id, "order placed successfully");
         Ok(order_id)
     }
 
-    async fn get_fills(&self, order_id: OrderId) -> Result<Vec<Fill>, Error> {
+    async fn get_fills(&self, order_id: OrderId, cycle_number: U256) -> Result<Vec<Fill>, Error> {
         // Acquire rate limit slot for read operation
         let wait = self.rate_limiter.acquire(EndpointType::ReadOnly).await;
         if !wait.is_zero() {
@@ -143,27 +198,24 @@ impl APClient for RateLimitedBitgetClient {
             .map_err(|e| Error::ApClient(format!("Bitget get_fills failed: {}", e)))?;
 
         // Convert Bitget FillData to common Fill type
-        let fills = bitget_fills
-            .into_iter()
-            .map(|f| {
-                let fill_price = decimal_to_u256(
-                    f.price.parse().unwrap_or(rust_decimal::Decimal::ZERO),
-                    U256_DECIMALS,
-                );
-                let fill_amount = decimal_to_u256(
-                    f.quantity.parse().unwrap_or(rust_decimal::Decimal::ZERO),
-                    U256_DECIMALS,
-                );
+        let mut fills = Vec::with_capacity(bitget_fills.len());
+        for f in bitget_fills {
+            let parsed_price: rust_decimal::Decimal = f.price.parse()
+                .map_err(|e| Error::ApClient(format!("failed to parse fill price '{}': {}", f.price, e)))?;
+            let parsed_qty: rust_decimal::Decimal = f.quantity.parse()
+                .map_err(|e| Error::ApClient(format!("failed to parse fill quantity '{}': {}", f.quantity, e)))?;
 
-                Fill {
-                    order_id,
-                    fill_price,
-                    fill_amount,
-                    cycle_number: U256::zero(), // Cycle tracked at higher level
-                    tx_hash: H256::zero(),      // CEX fills don't have on-chain tx hash
-                }
-            })
-            .collect();
+            let fill_price = decimal_to_u256(parsed_price, U256_DECIMALS);
+            let fill_amount = decimal_to_u256(parsed_qty, U256_DECIMALS);
+
+            fills.push(Fill {
+                order_id,
+                fill_price,
+                fill_amount,
+                cycle_number,
+                tx_hash: H256::zero(), // CEX fills don't have on-chain tx hash
+            });
+        }
 
         Ok(fills)
     }

@@ -4,10 +4,11 @@
 //! for integration tests only.
 
 use super::{BootstrapError, BootstrapParams, ChainComponents, P2PComponents};
-use crate::p2p::{OnChainPeerDiscovery, PeerDiscovery, StaticPeerDiscovery, TcpP2PTransport};
+use crate::p2p::{OnChainPeerDiscovery, PeerDiscovery, StaticPeerDiscovery, TcpP2PTransport, TlsConfig};
 use common::traits::P2PTransport;
 use crate::{HeartbeatMetrics, HeartbeatMonitor, IssuerConfig, PeerHealthTracker};
 use common::types::PeerInfo;
+use sha2::{Sha256, Digest};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
@@ -71,8 +72,27 @@ impl<'a> P2PBuilder<'a> {
             warn!(self.node_id, "TLS disabled for P2P - use only in development!");
             None
         } else {
-            warn!(self.node_id, "TLS certificates not configured, running without TLS");
-            None
+            match (&self.config.tls_cert_path, &self.config.tls_key_path, &self.config.tls_ca_path) {
+                (Some(cert), Some(key), Some(ca)) => {
+                    info!(self.node_id, cert_path = %cert, key_path = %key, ca_path = %ca, "Loading TLS config for P2P");
+                    match TlsConfig::from_pem_files(cert, key, ca) {
+                        Ok(tls) => {
+                            info!(self.node_id, "TLS enabled for P2P connections");
+                            Some(tls)
+                        }
+                        Err(e) => {
+                            return Err(BootstrapError::P2P(format!("Failed to load TLS config: {}", e)));
+                        }
+                    }
+                }
+                _ => {
+                    warn!(
+                        self.node_id,
+                        "TLS certificate paths not configured (set ISSUER_TLS_CERT_PATH, ISSUER_TLS_KEY_PATH, ISSUER_TLS_CA_PATH). Running without TLS."
+                    );
+                    None
+                }
+            }
         };
 
         let transport = TcpP2PTransport::new(*self.peer_id, port, tls_config);
@@ -137,8 +157,14 @@ impl<'a> P2PBuilder<'a> {
                 if parts.len() == 2 {
                     let ip = parts[0].to_string();
                     let port = parts[1].parse::<u16>().ok()?;
+                    // Generate deterministic peer_id from address using SHA-256
+                    let mut hasher = Sha256::new();
+                    hasher.update(format!("{}:{}", ip, port));
+                    let result = hasher.finalize();
+                    let mut peer_id = [0u8; 32];
+                    peer_id.copy_from_slice(&result);
                     Some(PeerInfo {
-                        peer_id: [0u8; 32],
+                        peer_id,
                         ip,
                         port,
                     })

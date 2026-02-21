@@ -433,18 +433,21 @@ impl APConfig {
         })
     }
 
-    /// Get the effective Arbitrum RPC URL
-    /// Falls back to the main RPC URL if --arb-rpc is not set (single-chain mode)
-    pub fn effective_arb_rpc_url(&self) -> String {
+    /// Get the effective Arbitrum RPC URL.
+    ///
+    /// Returns an error if not configured (no silent fallback to L3 RPC).
+    pub fn effective_arb_rpc_url(&self) -> Result<String, String> {
         self.arb_rpc_url
             .clone()
-            .unwrap_or_else(|| self.effective_rpc_url())
+            .ok_or_else(|| "AP_ARB_RPC_URL not configured".to_string())
     }
 
-    /// Get the effective Arbitrum chain ID
-    /// Falls back to the main chain ID if --arb-chain-id is not set (single-chain mode)
-    pub fn effective_arb_chain_id(&self) -> u64 {
-        self.arb_chain_id.unwrap_or_else(|| self.effective_chain_id())
+    /// Get the effective Arbitrum chain ID.
+    ///
+    /// Returns an error if not configured (no silent fallback to L3 chain ID).
+    pub fn effective_arb_chain_id(&self) -> Result<u64, String> {
+        self.arb_chain_id
+            .ok_or_else(|| "AP_ARB_CHAIN_ID not configured".to_string())
     }
 
     /// Check if Bitget credentials are configured (non-empty key, secret, and passphrase)

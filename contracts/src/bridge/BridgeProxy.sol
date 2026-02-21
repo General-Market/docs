@@ -9,7 +9,7 @@ import {IBridgeProxy} from "../interfaces/IBridgeProxy.sol";
 import {IBridgedItpFactory} from "../interfaces/IBridgedItpFactory.sol";
 import {IBridgedITP} from "../interfaces/IBridgedITP.sol";
 import {IIssuerRegistry} from "../interfaces/IIssuerRegistry.sol";
-import {IInvestment} from "../interfaces/IInvestment.sol";
+import {IIndex} from "../interfaces/IIndex.sol";
 import {BLSLib} from "../libraries/BLSLib.sol";
 import {BLSVerifier} from "../libraries/BLSVerifier.sol";
 import {ErrorsLib} from "../libraries/ErrorsLib.sol";
@@ -48,7 +48,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     uint256 private _deprecated_signerThreshold;
 
     /// @notice Investment contract on L3 for atomic ITP creation
-    IInvestment public indexContract;
+    IIndex public indexContract;
 
     /// @notice L3 itpId => deployer address (set during completeCreateItp)
     mapping(bytes32 => address) public override itpDeployer;
@@ -437,7 +437,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     }
 
     function setIndexContract(address indexContract_) external override onlyOwner {
-        indexContract = IInvestment(indexContract_);
+        indexContract = IIndex(indexContract_);
     }
 
     function pause() external override onlyOwner {

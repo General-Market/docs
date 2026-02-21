@@ -239,6 +239,32 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
         emit LockReversed(nonce);
     }
 
+    /// @notice Withdraw USDC from a reversed bridge lock via BLS consensus
+    /// @dev Since PendingLock has no sender field, recovery requires BLS-verified recipient
+    /// @param nonce The lock nonce that was reversed
+    /// @param recipient Address to receive the funds
+    /// @param blsSignature Aggregated BLS signature from issuers
+    function withdrawReversedFunds(
+        uint256 nonce,
+        address recipient,
+        bytes calldata blsSignature
+    ) external {
+        TypesLib.PendingLock storage lock = pendingLocks[nonce];
+        if (lock.amount == 0) revert ErrorsLib.E049_LockNotFound(nonce);
+        if (!lock.reversed) revert ErrorsLib.E046_LockAlreadyReversed(nonce);
+        if (recipient == address(0)) revert ErrorsLib.E050_ZeroUSDCAddress();
+
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(this), "withdrawReversed", nonce, recipient
+        ));
+        _verifyBLS(message, blsSignature);
+
+        uint256 amount = lock.amount;
+        lock.amount = 0; // prevent double withdrawal
+        usdc.safeTransfer(recipient, amount);
+        emit EventsLib.ReversedFundsWithdrawn(nonce, recipient, amount);
+    }
+
     // ============ VIEW FUNCTIONS ============
 
     /// @inheritdoc IL3BridgeCustody

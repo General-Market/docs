@@ -467,6 +467,9 @@ fn get_sender_id(message: &P2PMessage) -> Option<PeerId> {
         // Rebalance NAV consensus: setItpNav
         P2PMessage::SetItpNavProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::SetItpNavSign { signer_id, .. } => Some(*signer_id),
+        // Cross-chain buy completion
+        P2PMessage::CompleteBuyOrderProposal { leader_id, .. } => Some(*leader_id),
+        P2PMessage::CompleteBuyOrderSign { signer_id, .. } => Some(*signer_id),
         // AA keeper arbitration consensus
         P2PMessage::ArbitrationPriceProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::ArbitrationPriceVote { voter_id, .. } => Some(*voter_id),

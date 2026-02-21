@@ -72,7 +72,7 @@ impl Default for BitgetConfig {
 /// use ap::external::bitget::{BitgetClient, BitgetConfig};
 ///
 /// let config = BitgetConfig::testnet();
-/// let mut client = BitgetClient::new(config);
+/// let mut client = BitgetClient::new(config)?;
 ///
 /// client.authenticate("api_key", "api_secret", "passphrase");
 ///
@@ -87,17 +87,8 @@ pub struct BitgetClient {
 impl BitgetClient {
     /// Create a new Bitget client with the given configuration
     ///
-    /// # Panics
-    /// Panics if the HTTP client cannot be created (e.g., TLS initialization fails).
-    /// This should not happen under normal circumstances. Use `try_new` for fallible creation.
-    pub fn new(config: BitgetConfig) -> Self {
-        // SAFETY: HTTP client creation only fails on TLS init failure, which is unrecoverable.
-        // Fallible alternative: use try_new() instead.
-        Self::try_new(config).expect("failed to create HTTP client")
-    }
-
-    /// Try to create a new Bitget client, returning an error if creation fails
-    pub fn try_new(config: BitgetConfig) -> Result<Self, BitgetError> {
+    /// Returns an error if the HTTP client cannot be created (e.g., TLS initialization fails).
+    pub fn new(config: BitgetConfig) -> Result<Self, BitgetError> {
         let http_client = Client::builder()
             .timeout(Duration::from_millis(config.timeout_ms))
             .build()
@@ -198,8 +189,10 @@ impl BitgetClient {
 
         // Sign request
         let request_path = "/api/spot/v1/trade/orders";
-        let timestamp = generate_timestamp();
-        let signed = sign_request(credentials, timestamp, "POST", request_path, &body);
+        let timestamp = generate_timestamp()
+            .map_err(|e| BitgetError::invalid_request(format!("timestamp error: {}", e)))?;
+        let signed = sign_request(credentials, timestamp, "POST", request_path, &body)
+            .map_err(|e| BitgetError::invalid_request(format!("signing error: {}", e)))?;
         let headers = build_auth_headers(&signed);
 
         // Build and send HTTP request
@@ -258,8 +251,10 @@ impl BitgetClient {
         let credentials = self.require_credentials()?;
 
         let request_path = format!("/api/spot/v1/trade/orderInfo?orderId={}", order_id);
-        let timestamp = generate_timestamp();
-        let signed = sign_request(credentials, timestamp, "GET", &request_path, "");
+        let timestamp = generate_timestamp()
+            .map_err(|e| BitgetError::invalid_request(format!("timestamp error: {}", e)))?;
+        let signed = sign_request(credentials, timestamp, "GET", &request_path, "")
+            .map_err(|e| BitgetError::invalid_request(format!("signing error: {}", e)))?;
         let headers = build_auth_headers(&signed);
 
         let url = format!("{}{}", self.config.base_url, request_path);
@@ -310,8 +305,10 @@ impl BitgetClient {
         let credentials = self.require_credentials()?;
 
         let request_path = format!("/api/spot/v1/trade/fills?orderId={}", order_id);
-        let timestamp = generate_timestamp();
-        let signed = sign_request(credentials, timestamp, "GET", &request_path, "");
+        let timestamp = generate_timestamp()
+            .map_err(|e| BitgetError::invalid_request(format!("timestamp error: {}", e)))?;
+        let signed = sign_request(credentials, timestamp, "GET", &request_path, "")
+            .map_err(|e| BitgetError::invalid_request(format!("signing error: {}", e)))?;
         let headers = build_auth_headers(&signed);
 
         let url = format!("{}{}", self.config.base_url, request_path);
@@ -433,7 +430,7 @@ mod tests {
     #[test]
     fn test_client_creation() {
         let config = BitgetConfig::testnet();
-        let client = BitgetClient::new(config);
+        let client = BitgetClient::new(config).unwrap();
 
         assert!(!client.is_authenticated());
     }
@@ -441,7 +438,7 @@ mod tests {
     #[test]
     fn test_authentication_success() {
         let config = BitgetConfig::testnet();
-        let mut client = BitgetClient::new(config);
+        let mut client = BitgetClient::new(config).unwrap();
 
         let result = client.authenticate(
             "bg_test_api_key_12345",
@@ -456,7 +453,7 @@ mod tests {
     #[test]
     fn test_authentication_invalid_format() {
         let config = BitgetConfig::testnet();
-        let mut client = BitgetClient::new(config);
+        let mut client = BitgetClient::new(config).unwrap();
 
         // Empty credentials
         let result = client.authenticate("", "", "");
@@ -471,7 +468,7 @@ mod tests {
     #[test]
     fn test_require_credentials_when_not_authenticated() {
         let config = BitgetConfig::testnet();
-        let client = BitgetClient::new(config);
+        let client = BitgetClient::new(config).unwrap();
 
         let result = client.require_credentials();
         assert!(matches!(result, Err(BitgetError::NotAuthenticated)));
@@ -480,7 +477,7 @@ mod tests {
     #[tokio::test]
     async fn test_place_order_requires_authentication() {
         let config = BitgetConfig::testnet();
-        let client = BitgetClient::new(config);
+        let client = BitgetClient::new(config).unwrap();
 
         let result = client
             .place_limit_order("BTC/USDC", OrderSide::Buy, Decimal::new(1, 3), Decimal::new(42000, 0))
@@ -492,7 +489,7 @@ mod tests {
     #[tokio::test]
     async fn test_place_order_invalid_pair_format() {
         let config = BitgetConfig::testnet();
-        let mut client = BitgetClient::new(config);
+        let mut client = BitgetClient::new(config).unwrap();
         client
             .authenticate("bg_test_key_12345", "test_secret_67890", "passphrase")
             .unwrap();
@@ -507,7 +504,7 @@ mod tests {
     #[tokio::test]
     async fn test_place_order_zero_amount() {
         let config = BitgetConfig::testnet();
-        let mut client = BitgetClient::new(config);
+        let mut client = BitgetClient::new(config).unwrap();
         client
             .authenticate("bg_test_key_12345", "test_secret_67890", "passphrase")
             .unwrap();
@@ -522,7 +519,7 @@ mod tests {
     #[tokio::test]
     async fn test_place_order_negative_amount() {
         let config = BitgetConfig::testnet();
-        let mut client = BitgetClient::new(config);
+        let mut client = BitgetClient::new(config).unwrap();
         client
             .authenticate("bg_test_key_12345", "test_secret_67890", "passphrase")
             .unwrap();
@@ -537,7 +534,7 @@ mod tests {
     #[tokio::test]
     async fn test_place_order_zero_price() {
         let config = BitgetConfig::testnet();
-        let mut client = BitgetClient::new(config);
+        let mut client = BitgetClient::new(config).unwrap();
         client
             .authenticate("bg_test_key_12345", "test_secret_67890", "passphrase")
             .unwrap();
@@ -552,7 +549,7 @@ mod tests {
     #[tokio::test]
     async fn test_place_order_negative_price() {
         let config = BitgetConfig::testnet();
-        let mut client = BitgetClient::new(config);
+        let mut client = BitgetClient::new(config).unwrap();
         client
             .authenticate("bg_test_key_12345", "test_secret_67890", "passphrase")
             .unwrap();

@@ -717,28 +717,76 @@ where
             log_filter = log_filter.topic0(H256::from(filter.topics[0]));
         }
 
-        // Create the event stream
+        // Build a base filter without block range for the polling loop
+        let mut base_filter = Filter::new();
+        if let Some(address) = filter.address {
+            base_filter = base_filter.address(Address::from(address));
+        } else {
+            base_filter = base_filter.address(index_address);
+        }
+        if !filter.topics.is_empty() {
+            base_filter = base_filter.topic0(H256::from(filter.topics[0]));
+        }
+
+        // Create the event stream with polling for new events
         let stream = async_stream::stream! {
             // Fetch historical logs first
-            match provider.get_logs(&log_filter).await {
+            let mut last_block: u64 = match provider.get_logs(&log_filter).await {
                 Ok(logs) => {
+                    let mut max_block = filter.from_block.unwrap_or(0);
+                    for log in &logs {
+                        if let Some(bn) = log.block_number {
+                            let bn_u64 = bn.as_u64();
+                            if bn_u64 > max_block {
+                                max_block = bn_u64;
+                            }
+                        }
+                    }
                     for log in logs {
                         if let Some(event) = parse_log_to_event(&log) {
                             yield Ok(event);
                         }
                     }
+                    max_block
                 }
                 Err(e) => {
                     error!(code = "INFRA-001", error = %e, "Failed to fetch historical logs");
                     yield Err(Error::ChainRead(format!("Failed to fetch logs: {}", e)));
                     return;
                 }
-            }
+            };
 
-            // For real-time events, we would need WebSocket support
-            // HTTP providers don't support subscriptions
-            // In production, use Provider<Ws> and watch_logs
-            debug!("Historical log fetch complete. Real-time subscriptions require WebSocket provider.");
+            debug!(last_block, "Historical log fetch complete, starting polling loop");
+
+            // Poll for new events every 2 seconds
+            loop {
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
+                let poll_filter = base_filter.clone()
+                    .from_block(last_block + 1)
+                    .to_block(ethers::types::BlockNumber::Latest);
+
+                match provider.get_logs(&poll_filter).await {
+                    Ok(logs) => {
+                        for log in &logs {
+                            if let Some(bn) = log.block_number {
+                                let bn_u64 = bn.as_u64();
+                                if bn_u64 > last_block {
+                                    last_block = bn_u64;
+                                }
+                            }
+                        }
+                        for log in logs {
+                            if let Some(event) = parse_log_to_event(&log) {
+                                yield Ok(event);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        warn!(code = "INFRA-001", error = %e, last_block, "Failed to poll for new logs, retrying");
+                    }
+                }
+            }
         };
 
         Ok(Box::pin(stream))

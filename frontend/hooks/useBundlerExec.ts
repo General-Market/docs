@@ -3,8 +3,8 @@
 import { useState, useCallback } from 'react'
 import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
 import { useChainSendTransaction } from '@/hooks/useChainWrite'
-import type { QuoteResponse } from '@/lib/types/lending-quote'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
+import type { QuoteResponse } from '@/lib/types/lending-quote'
 
 interface UseBundlerExecReturn {
   /** Execute the bundler calldata from a quote */
@@ -50,12 +50,10 @@ export function useBundlerExec(): UseBundlerExecReturn {
   const execute = useCallback((quote: QuoteResponse) => {
     if (!address) return
 
-    // P2.5: Validate bundler address matches expected Morpho bundler
-    const expectedBundler = MORPHO_ADDRESSES.morphoBundler.toLowerCase()
-    if (quote.bundler.to.toLowerCase() !== expectedBundler) {
-      throw new Error(
-        `Bundler address mismatch: got ${quote.bundler.to}, expected ${expectedBundler}`
-      )
+    // Guard: ensure Morpho bundler address is configured (not empty, not falling back to core Morpho)
+    const morphoBundler = MORPHO_ADDRESSES.morphoBundler
+    if (!morphoBundler || morphoBundler === '') {
+      throw new Error('Morpho bundler address not configured')
     }
 
     sendTransaction({

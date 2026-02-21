@@ -249,10 +249,10 @@ impl<W: ChainWriter + 'static> FillReporter<W> {
 
             attempt += 1;
 
-            // Note: The ChainWriter.confirm_fills requires a BLS signature
-            // which the AP doesn't have. In the actual flow, AP submits fill
-            // reports and issuers verify + sign. For now we use empty signature.
-            // This will need adjustment based on actual contract interface.
+            // AP fill reports are informational — issuers perform BLS signing for confirmFills.
+            // The empty BLS signature here is intentional; the issuer consensus pipeline
+            // independently signs and submits the actual on-chain confirmation.
+            warn!("FillReporter: submitting fill report with empty BLS signature (issuers will sign confirmation)");
             match self
                 .chain_writer
                 .confirm_fills(cycle, fills.clone(), vec![])

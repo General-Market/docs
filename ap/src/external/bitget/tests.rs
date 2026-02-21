@@ -14,7 +14,7 @@ mod mock_tests {
     /// Helper to create a client pointing to the mock server
     fn create_test_client(mock_server_uri: &str) -> BitgetClient {
         let config = BitgetConfig::testnet().with_base_url(mock_server_uri);
-        let mut client = BitgetClient::new(config);
+        let mut client = BitgetClient::new(config).unwrap();
         client
             .authenticate(
                 "test_api_key_12345",
@@ -356,7 +356,7 @@ mod mock_tests {
         let config = BitgetConfig::testnet()
             .with_base_url(&mock_server.uri())
             .with_timeout(100); // 100ms timeout
-        let mut client = BitgetClient::new(config);
+        let mut client = BitgetClient::new(config).unwrap();
         client
             .authenticate(
                 "test_api_key_12345",

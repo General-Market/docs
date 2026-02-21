@@ -1,11 +1,31 @@
 # Design Decision Backlog
 
-## Session: 20260222-0100-p2pt
+## Session: 20260221-1530-f8k2 (Security Audit Fixes)
 
-- [RESOLVED] setItpNav E020_InvalidBLSSignature — verified fixed by commit 85c26c8c (domain encoding correction in bridge/types.rs). All 7 nav_sign_integration tests pass, all 25 batch_fill_integration tests pass.
-- [RESOLVED] emitAssetTrades E020_InvalidBLSSignature — same root cause as setItpNav, same fix. batch_fill tests confirm correct hash computation.
-- [DECISION] P2P TLS integration: added P2PStream enum (Plain|Tls) in tls.rs with AsyncRead+AsyncWrite delegation via pin-project-lite. wrap_stream() now performs real TLS handshake (accept_tls for server, connect_tls for client with SNI "issuer.index.local"). connection.rs setup_connection wraps plaintext in P2PStream::Plain when no TLS config, or P2PStream::Tls after handshake. writer_loop/reader_loop already generic — no changes needed.
-- [DECISION] Removed hardcoded chain_id=111222333 from arbitration/processor.rs. Added chain_id: u64 to ArbitrationConfig (default 0). ArbitrationSubsystem::run() queries provider.get_chainid().await at startup and injects into config before creating processor.
+- [DECISION] H1+H3: Combined fix in SELL branch of _processFill. H3: totalSupply decremented by fill.fillAmount instead of order.amount. H1: Added vault.burn() mirroring BUY branch mint.
+- [DECISION] H2: All 3 refund paths (cancelStalePendingOrders, refundExpiredOrder, refundTimedOutBatchedOrder) now check order.side — BUY gets USDC, SELL gets shares restored.
+- [DECISION] H5: CollateralVault.setKeeperRegistry gains owner check, one-time guard removed so owner can update.
+- [DECISION] H6: Added withdrawReversedFunds() to L3BridgeCustody — BLS-verified recovery since PendingLock has no sender field. Zeroes amount to prevent double withdrawal.
+- [DECISION] H7: removeIssuerByVote implemented using BLSLib.verifyBLS directly (no BLSVerifier inheritance needed — IssuerRegistry already stores _aggregatedPubkey).
+- [DECISION] Pre-existing: Fixed BridgeProxy.sol IInvestment->IIndex rename, added quoteTokens param to Index.rebalance to match RebalanceLib signature.
+- [DECISION] H8+H9: Issuer arb RPC/chain ID return Result instead of defaulting to mainnet. Callers in bootstrap gracefully return None with warning.
+- [DECISION] H13: CrossChainOrchestratorConfig gets src_chain_id field, wired from effective_arbitrum_chain_id().
+- [DECISION] H15+H16: AP arb RPC/chain ID return Result instead of falling back to L3 values.
+- [DECISION] H18: AP index_contract zero address changed from warn to hard startup error.
+- [DECISION] H23: order_id_map persisted to data/order_id_map.json with serde_json, loaded on startup.
+- [DECISION] H24: cycle_number passed as parameter through APClient trait instead of hardcoded zero.
+- [DECISION] H31: Removed TRACKED_HOLDERS array and Minted Balances UI from ItpListing — hardcoded test accounts don't belong in production.
+- [DECISION] H30: morphoBundler falls back to empty string, useBundlerExec throws explicitly instead of silently using Morpho core address.
+
+## Session: 20260221-2330-s3au
+
+- [DECISION] H10: TLS now loads from config paths (ISSUER_TLS_CERT_PATH/KEY/CA) in else branch instead of silently falling through to None. Hard error if paths configured but files invalid.
+- [DECISION] H11: Static peer_ids now derived via SHA-256 of "ip:port" instead of zeroed [0u8;32] for all peers.
+- [DECISION] H14: subscribe_events now polls every 2s for new logs after initial historical fetch, instead of returning after one-shot.
+- [DECISION] H19: EventMonitor spawn blocks now have reconnect loop with exponential backoff (1s to 60s) instead of single-shot error exit.
+- [DECISION] H20: BitgetClient::new() returns Result, generate_timestamp() returns Result, sign_request() returns Result. All callers updated.
+- [DECISION] H25: Fill price/quantity parsing now returns Error instead of unwrap_or(Decimal::ZERO) which silently filled zero-price trades.
+- [DECISION] Fixed pre-existing compilation issues: added missing exports (SetItpNavResult, CompleteBuyOrderResult, build_complete_buy_order_hash) from bridge/mod.rs, added missing P2P match arms for CompleteBuyOrderProposal/Sign.
 
 ## Session: 20260221-2300-c14x
 
@@ -106,7 +126,7 @@
 - [DECISION] Fixed confirmFills calldata selector test — was checking 3-field Fill tuple, now matches 5-field (orderId, fillPrice, fillAmount, cycleNumber, txHash).
 - [DECISION] useItpNav: keep isLoading=true for up to 10 attempts (~15s) while data-node syncs ITP snapshots. Previously showed "No asset prices available" warning immediately on first failed fetch even though polling continues.
 - [DECISION] PortfolioSection: always fetch orders when wallet connected (not just when Orders tab is active). Show active orders banner at top of portfolio. Collapsed card shows active count badge.
-- [DECISION] Deleted /frontend directory — frontendV4 was the only frontend. Later renamed frontendV4 → frontend.
+- [DECISION] Deleted /frontend directory — frontendV4 is the only frontend now.
 
 ## Session: 20260220-2100-rcn1
 
@@ -145,7 +165,7 @@
 
 - [DECISION] Replaced adminCreateBridgedItp (admin bypass removed during BLS unification) with proper requestCreateItp + completeCreateItp BLS-signed flow. Created contracts/script/CreateBridgedItp.s.sol that extends DeployBLSHelper, reads ITP token addresses from env, and signs with blsSign("0,1,2", messageHash). Updated start.sh step 3c to call this Forge script instead of cast send.
 - [DECISION] Deploy scripts (DeployBridgeE2E, DeployCrossChainE2E, DeployItpWhitelist) all migrated from vm.mockCall(address(0x08)) to real BLS signatures via DeployBLSHelper. Each now reads the AssetPairRegistry nonce, computes the exact message hash, and calls blsSign. DeployCrossChainE2E also registers real BLS pubkeys via blsPubkey(i) + blsAggPubkey("0,1,2").
-- [DECISION] Switched start.sh and stop.sh from /frontend to /frontendV4 (later renamed back to /frontend). All deployment.json syncing (step 6), .env.local generation (step 10), npm install/dev server/E2E tests target frontend/.
+- [DECISION] Switched start.sh and stop.sh from /frontend to /frontendV4. All deployment.json syncing (step 6), .env.local generation (step 10), npm install/dev server/E2E tests now target frontendV4/. frontendV4 uses the same contract loading pattern (lib/contracts/deployment.json → addresses.ts → INDEX_PROTOCOL). Verified with full start.sh run: 16 E2E tests passed, all services healthy.
 - [DECISION] Fixed "vs Limit" color logic in BuyItpModal.tsx: was using Math.abs(slippage) which showed negative slippage (fill below limit = GOOD for buyer) in red. Changed to: slippage <= 0 always green, positive slippage uses warning/red thresholds. The -4.75% was correct math (limit = NAV * 1.05, fill = NAV → always ~-5%) but was misleadingly colored red.
 - [DECISION] Wired up BridgeProxy.mintBridgedShares (8-step bridge Step 8): (1) Updated build_mint_bridged_shares_calldata in types.rs to match post-BLS-unification signature (bytes32,address,uint256,bytes) — removed signer_bitmap and aggregated_pubkey params. (2) Added ArbitrumChainWriter.mint_bridged_shares() method. (3) After fills confirm in run_cross_chain_processing (main.rs), look up OrderMapping for original_user, compute shares = fillAmount * 1e18 / fillPrice, call run_mint_bridged_shares_phase for BLS consensus, then leader calls arb_writer.mint_bridged_shares(). Applied to both normal and E021-already-batched paths.
 
@@ -3320,5 +3340,3 @@ The backtester currently supports one rebalance method: **periodic time-based re
 [DECISION] Removed 3 more redundant resolve/status calls - (1) protocol.rs mark_orders_batched using L3 IDs after confirmBatch, (2) execute_confirm_batch redundant resolve_l3_order_ids, (3) execute_confirm_fills redundant resolve_l3_order_ids. All callers already pass L3 IDs.
 
 [FAILED] Watchdog "stale order" warning after completed flow - After mintBridgedShares succeeds, order_status remains Batched instead of SharesBridged. mark_orders_shares_bridged is called but watchdog still sees Batched 34 seconds later. Cosmetic issue, doesn't affect flow. Likely a timing/lock issue or the status is being overwritten. Low priority.
-
-[BACKLOG] SSE migration for useNonceCheck, useItpFees, useMetaMorphoVault, useMorphoMarkets — existing chain reads are low-frequency, not a security risk

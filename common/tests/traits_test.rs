@@ -322,7 +322,7 @@ async fn test_ap_client_trait() {
     assert_eq!(order_id, U256::from(1));
 
     // Test get_fills
-    let fills = client.get_fills(order_id).await.unwrap();
+    let fills = client.get_fills(order_id, U256::zero()).await.unwrap();
     assert!(fills.is_empty());
 
     // Test get_order_status

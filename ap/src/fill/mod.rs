@@ -9,6 +9,10 @@
 //! - `retry`: Retry configuration and error classification
 //! - `reporter`: Main FillReporter implementation
 
+// TODO: Wire into AP pipeline — FillBatcher, FillReporter, and batch submission
+// are fully implemented but not yet connected to the event processing loop in main.rs.
+// The AP currently places orders and polls fills inline; these modules should replace
+// that with proper batched fill reporting to the chain.
 pub mod batch;
 pub mod reporter;
 pub mod retry;

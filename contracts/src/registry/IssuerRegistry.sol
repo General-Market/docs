@@ -251,14 +251,26 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
     }
 
     /// @notice Remove an issuer via BLS vote from other issuers
-    /// @dev KNOWN LIMITATION: BLS verification not yet functional. BLSLib.verifyBLS expects
-    /// G2 pubkeys (128 bytes) but we store G1 pubkeys (64 bytes) for on-chain aggregation.
-    /// Use removeIssuer (admin-only) until BLSLib is updated to support G1 pubkey verification.
-    /// @dev Parameters: issuerId (issuer to remove), blsSignature (aggregated BLS signature)
-    function removeIssuerByVote(uint256, bytes calldata) external pure {
-        // BLS verification requires G2 pubkeys but we store G1 for aggregation
-        // This function will be enabled when BLSLib supports G1 pubkey verification
-        revert BLSVerificationNotYetSupported();
+    /// @param issuerId The issuer to remove
+    /// @param blsSignature Aggregated BLS signature over the removal message
+    function removeIssuerByVote(uint256 issuerId, bytes calldata blsSignature) external {
+        TypesLib.Issuer storage issuer = _issuers[issuerId];
+        if (issuer.addr == address(0)) revert IssuerNotFound(issuerId);
+        if (issuer.status != 1) revert IssuerNotActive(issuerId);
+
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(this), "removeIssuerByVote", issuerId
+        ));
+
+        // Verify against aggregated pubkey (same as BLSVerifier pattern)
+        if (!BLSLib.verifyBLS(_aggregatedPubkey, message, blsSignature)) {
+            revert InvalidBLSSignature();
+        }
+
+        issuer.status = 0;
+        _activeCount--;
+        emit IssuerRemoved(issuerId);
+        _emitStateChange();
     }
 
     // ============ KEY ROTATION (Story 2.13, upgraded in Story 7.17) ============

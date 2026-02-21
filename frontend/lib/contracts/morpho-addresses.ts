@@ -13,7 +13,7 @@ export const MORPHO_ADDRESSES = {
   itpOracle: c.MOCK_ORACLE as `0x${string}`,
   adaptiveIrm: c.ADAPTIVE_IRM as `0x${string}`,
   curatorRateIrm: (c.CURATOR_RATE_IRM ?? c.ADAPTIVE_IRM) as `0x${string}`,
-  morphoBundler: (c.MORPHO_BUNDLER ?? c.MORPHO) as `0x${string}`,
+  morphoBundler: (c.MORPHO_BUNDLER ?? '') as `0x${string}`,
   marketId: c.MARKET_ID as `0x${string}`,
   loanToken: mp.loanToken as `0x${string}`,
   collateralToken: mp.collateralToken as `0x${string}`,

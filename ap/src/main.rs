@@ -393,7 +393,7 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
         info!("MockChain initialized (ChainReader + ChainWriter)");
 
         if index_contract == [0u8; 20] {
-            warn!("Index.sol contract address not configured - event filtering will not work correctly. Set via --index-contract or AP_INDEX_CONTRACT env var.");
+            return Err("AP_INDEX_CONTRACT required: Index.sol contract address not configured. Set via --index-contract or AP_INDEX_CONTRACT env var.".into());
         }
 
         let mut monitor = EventMonitorBuilder::new()
@@ -410,10 +410,23 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
         let receiver = monitor.take_event_receiver()
             .ok_or("Failed to get event receiver")?;
 
-        // Spawn EventMonitor to poll for chain events (fix: monitor was not running)
+        // Spawn EventMonitor to poll for chain events with reconnect
         tokio::spawn(async move {
-            if let Err(e) = monitor.run().await {
-                error!(code = "E008", error = %e, "MockChain EventMonitor error");
+            let mut backoff = Duration::from_secs(1);
+            let max_backoff = Duration::from_secs(60);
+            loop {
+                match monitor.run().await {
+                    Ok(()) => {
+                        info!("MockChain EventMonitor stopped cleanly");
+                        break;
+                    }
+                    Err(e) => {
+                        warn!(code = "E008", error = %e, backoff_secs = backoff.as_secs(),
+                            "MockChain EventMonitor disconnected, reconnecting...");
+                        tokio::time::sleep(backoff).await;
+                        backoff = std::cmp::min(backoff * 2, max_backoff);
+                    }
+                }
             }
         });
 
@@ -478,10 +491,23 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
         let receiver = monitor.take_event_receiver()
             .ok_or("Failed to get event receiver")?;
 
-        // Spawn EventMonitor to poll for TradeRequest events from chain (fix: monitor was not running)
+        // Spawn EventMonitor to poll for TradeRequest events from chain with reconnect
         tokio::spawn(async move {
-            if let Err(e) = monitor.run().await {
-                error!(code = "E008", error = %e, "RpcChain EventMonitor error");
+            let mut backoff = Duration::from_secs(1);
+            let max_backoff = Duration::from_secs(60);
+            loop {
+                match monitor.run().await {
+                    Ok(()) => {
+                        info!("RpcChain EventMonitor stopped cleanly");
+                        break;
+                    }
+                    Err(e) => {
+                        warn!(code = "E008", error = %e, backoff_secs = backoff.as_secs(),
+                            "RpcChain EventMonitor disconnected, reconnecting...");
+                        tokio::time::sleep(backoff).await;
+                        backoff = std::cmp::min(backoff * 2, max_backoff);
+                    }
+                }
             }
         });
 
@@ -517,7 +543,8 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
         info!(environment = env_label, "Initializing live Bitget client");
 
         // Construct and authenticate BitgetClient
-        let mut bitget_client = BitgetClient::new(bitget_config);
+        let mut bitget_client = BitgetClient::new(bitget_config)
+            .map_err(|e| format!("Failed to create Bitget client: {}", e))?;
         bitget_client
             .authenticate(
                 config.bitget_api_key.as_deref().unwrap_or_default(),
@@ -636,8 +663,10 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
                 .map_err(|e| format!("Deployment missing ARB_USDC/L3_WUSDC token address: {}", e))?;
 
             // Use Arbitrum RPC for MockBitgetVault (vault is on Arbitrum chain)
-            let arb_rpc = config.effective_arb_rpc_url();
-            let arb_chain_id = config.effective_arb_chain_id();
+            let arb_rpc = config.effective_arb_rpc_url()
+                .map_err(|e| format!("On-chain settlement requires Arbitrum RPC: {}", e))?;
+            let arb_chain_id = config.effective_arb_chain_id()
+                .map_err(|e| format!("On-chain settlement requires Arbitrum chain ID: {}", e))?;
 
             let vault_client = BitgetVaultClient::new(
                 &arb_rpc,
@@ -833,6 +862,7 @@ async fn process_events(
                     let price = trade.limit_price;
                     let trade_pair_id = trade.pair_id;
                     let trade_block_number = trade.block_number;
+                    let trade_cycle_number = trade.cycle_number;
                     let order_tracking_id = format!(
                         "{}:{:x}:{}",
                         trade.block_number, trade.tx_hash, trade.log_index
@@ -857,7 +887,7 @@ async fn process_events(
                                     let delay = Duration::from_secs(1 << attempt);
                                     tokio::time::sleep(delay).await;
 
-                                    match ap_client.get_fills(order_id).await {
+                                    match ap_client.get_fills(order_id, U256::from(trade_cycle_number)).await {
                                         Ok(fills) if !fills.is_empty() => {
                                             let limit_order = LimitOrder {
                                                 id: order_id,
@@ -1189,13 +1219,12 @@ async fn process_events(
                     });
                 }
                 APEvent::WithdrawalRequest(withdrawal) => {
-                    info!(
+                    warn!(
                         itp_id = ?withdrawal.itp_id,
                         amount = %withdrawal.amount,
                         block = withdrawal.block_number,
-                        "Processing WithdrawalRequest event"
+                        "WithdrawalRequest event received but not implemented yet"
                     );
-                    // TODO: Queue for withdrawal processing
                 }
             }
         }
