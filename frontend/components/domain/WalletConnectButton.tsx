@@ -8,7 +8,7 @@ import { indexL3 } from '@/lib/wagmi'
 export function WalletConnectButton() {
   const [mounted, setMounted] = useState(false)
   const { address, isConnected, isConnecting, isReconnecting } = useAccount()
-  const { connect, connectors, isPending, error: connectError } = useConnect()
+  const { connect, connectors, isPending } = useConnect()
   const { disconnect } = useDisconnect()
   const chainId = useChainId()
   const { switchChain, isPending: isSwitching } = useSwitchChain()
@@ -40,9 +40,9 @@ export function WalletConnectButton() {
     return (
       <button
         disabled
-        className="px-6 py-3 bg-black border border-white text-white font-mono opacity-50 cursor-not-allowed"
+        className="px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg opacity-50 cursor-not-allowed"
       >
-        Connect Wallet
+        Login on Base
       </button>
     )
   }
@@ -96,57 +96,51 @@ export function WalletConnectButton() {
       <button
         onClick={handleSwitchNetwork}
         disabled={isSwitching}
-        className="px-6 py-3 bg-black border border-accent text-accent hover:bg-accent hover:text-white transition-colors font-mono disabled:opacity-50 disabled:cursor-not-allowed"
+        className="px-4 py-2 bg-surface-warning border border-color-warning/30 text-color-warning text-sm font-medium rounded-lg hover:bg-color-warning hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isSwitching ? 'Switching...' : 'Switch to Index Arbitrum'}
       </button>
     )
   }
 
-  // Connected state - show address and disconnect
+  // Connected state - single button, hover swaps address to "Disconnect" with red tint
   if (isConnected && address) {
     return (
-      <div className="flex items-center gap-3">
-        <span className="px-4 py-2 bg-black border border-accent text-white font-mono">
-          {truncateAddress(address)}
-        </span>
-        <button
-          onClick={() => disconnect()}
-          className="px-4 py-2 bg-black border border-white text-white hover:bg-accent hover:border-accent transition-colors font-mono"
-        >
-          Disconnect
-        </button>
-      </div>
+      <button
+        onClick={() => disconnect()}
+        className="group px-3 py-2 bg-muted border border-border-medium text-text-primary text-sm font-mono rounded-lg transition-all hover:bg-red-950/20 hover:border-red-400/30 hover:text-red-400"
+      >
+        <span className="group-hover:hidden">{truncateAddress(address)}</span>
+        <span className="hidden group-hover:inline">Disconnect</span>
+      </button>
     )
   }
 
-  // Check if no wallet available
-  const noWalletAvailable = !injectedConnector
-
-  // Disconnected state - show connect button
-  return (
-    <div className="flex flex-col items-end gap-2">
-      <button
-        onClick={handleConnect}
-        disabled={isLoading || noWalletAvailable}
-        className="px-6 py-3 bg-black border border-white text-white hover:bg-accent hover:border-accent transition-colors font-mono disabled:opacity-50 disabled:cursor-not-allowed"
+  // No wallet detected — link to MetaMask install
+  if (!injectedConnector) {
+    return (
+      <a
+        href="https://metamask.io/download/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors"
       >
-        {isLoading ? 'Connecting...' : 'Connect Wallet'}
-      </button>
-      {noWalletAvailable && (
-        <p className="text-white/60 text-sm font-mono">
-          Install MetaMask to connect
-        </p>
-      )}
-      {connectError && (
-        <p className="text-accent text-sm font-mono">
-          {connectError.name === 'UserRejectedRequestError' ||
-           connectError.message.toLowerCase().includes('reject') ||
-           connectError.message.toLowerCase().includes('denied')
-            ? 'Connection rejected'
-            : 'Connection failed'}
-        </p>
-      )}
-    </div>
+        Install MetaMask
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M17 7H7M17 7v10" />
+        </svg>
+      </a>
+    )
+  }
+
+  // Disconnected state - "Login on Base"
+  return (
+    <button
+      onClick={handleConnect}
+      disabled={isLoading}
+      className="px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {isLoading ? 'Connecting...' : 'Login on Base'}
+    </button>
   )
 }

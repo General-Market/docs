@@ -20,21 +20,21 @@ import { Skeleton } from '@/components/ui/Skeleton'
  */
 export function LeaderboardSkeleton() {
   return (
-    <div className="border border-white/20 bg-terminal">
-      {/* Table Header */}
-      <div className="bg-black px-4 py-3 border-b border-white/20 flex justify-between items-center">
-        <div>
-          <Skeleton width={180} height={24} className="mb-2" />
-          <Skeleton width={140} height={16} />
+    <div className="border border-border-light overflow-hidden">
+      {/* Black section bar */}
+      <div className="section-bar">
+        <div className="flex items-center gap-3">
+          <div className="section-bar-title">AGENT LEADERBOARD</div>
+          <div className="w-2 h-2 rounded-full bg-zinc-500" />
+          <div className="section-bar-value">Loading...</div>
         </div>
-        <Skeleton width={100} height={16} />
       </div>
 
       {/* Table */}
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="bg-black border-b border-white/20 hover:bg-black">
+            <TableRow>
               <TableHead className="text-center w-16">Rank</TableHead>
               <TableHead>Agent</TableHead>
               <TableHead>P&L</TableHead>
@@ -50,7 +50,7 @@ export function LeaderboardSkeleton() {
           </TableHeader>
           <TableBody>
             {Array.from({ length: 7 }).map((_, i) => (
-              <TableRow key={i} className="border-b border-white/10">
+              <TableRow key={i} className="border-b border-border-light">
                 <TableCell className="text-center">
                   <Skeleton width={24} height={20} />
                 </TableCell>

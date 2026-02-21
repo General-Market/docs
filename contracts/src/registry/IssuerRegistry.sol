@@ -182,6 +182,16 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
         if (issuerAddr == address(0)) revert ZeroAddress();
         if (blsPubkey.length != PUBKEY_LENGTH) revert InvalidPubkeyLength(blsPubkey.length);
 
+        // Reject all-zeros pubkey
+        bool allZeros = true;
+        for (uint256 i = 0; i < 32 && i < blsPubkey.length; i++) {
+            if (blsPubkey[i] != 0) {
+                allZeros = false;
+                break;
+            }
+        }
+        if (allZeros) revert InvalidPubkeyLength(0);
+
         // G2 pubkey validation: we can't verify G2 curve membership on-chain
         // (no precompile for G2 operations). The pairing check will fail if invalid.
         // Basic length check is sufficient - BLSLib.verifyBLS will reject invalid G2 points.

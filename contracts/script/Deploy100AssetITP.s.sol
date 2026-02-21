@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 import "../src/mocks/MockERC20.sol";
-import "../src/core/Index.sol";
+import "../src/core/Investment.sol";
 import "../src/core/ITP.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -188,7 +188,7 @@ contract Deploy100AssetITP is Script {
         }
         require(totalWeight == 1e18, "Weight sum must be 1e18");
 
-        itpId = Index(indexProxy).createITP("ITP-100", "ITP100", weights, assets, prices, type(uint256).max);
+        itpId = Investment(indexProxy).createITP("ITP-100", "ITP100", weights, assets, prices, type(uint256).max);
         console.log("  ITP-100 created, ID:", vm.toString(itpId));
 
         // Phase 3: Fund MockBitgetVault with all tokens (AP acquires tokens through settlement only)
@@ -206,7 +206,7 @@ contract Deploy100AssetITP is Script {
         vm.startBroadcast(adminKey);
         ITP itpVaultContract = new ITP(itpId, indexProxy, "ITP-100", "ITP100", IERC20(l3Wusdc));
         itpVaultAddr = address(itpVaultContract);
-        Index(indexProxy).setITPVault(itpId, itpVaultAddr);
+        Investment(indexProxy).setITPVault(itpId, itpVaultAddr);
         console.log("  ITP Vault:", itpVaultAddr);
         vm.stopBroadcast();
 

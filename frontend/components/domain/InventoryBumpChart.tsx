@@ -3,23 +3,23 @@
 import { useState, useMemo, useRef } from 'react'
 import { useInventoryRanking, RankingSnapshot, RankedAsset } from '@/hooks/useInventoryRanking'
 
-// 15-color palette for dark backgrounds
+// 15-color palette — muted institutional tones for white backgrounds
 const PALETTE = [
-  '#ef4444', // red
-  '#3b82f6', // blue
-  '#22c55e', // green
-  '#f59e0b', // amber
-  '#8b5cf6', // violet
-  '#ec4899', // pink
-  '#06b6d4', // cyan
-  '#f97316', // orange
-  '#14b8a6', // teal
-  '#a855f7', // purple
-  '#84cc16', // lime
-  '#e879f9', // fuchsia
-  '#fbbf24', // yellow
-  '#6366f1', // indigo
-  '#fb7185', // rose
+  '#2563EB', // blue
+  '#16A34A', // green
+  '#DC2626', // red
+  '#D97706', // amber
+  '#7C3AED', // violet
+  '#DB2777', // pink
+  '#0891B2', // cyan
+  '#EA580C', // orange
+  '#0D9488', // teal
+  '#9333EA', // purple
+  '#65A30D', // lime
+  '#C026D3', // fuchsia
+  '#CA8A04', // yellow
+  '#4F46E5', // indigo
+  '#E11D48', // rose
 ]
 
 // SVG layout constants
@@ -182,18 +182,18 @@ export function InventoryBumpChart() {
   // Render states
   if (error) {
     return (
-      <div className="bg-terminal-dark/50 border border-white/10 rounded-lg p-6">
-        <h2 className="text-xl font-bold text-white mb-2">AUM Ranking</h2>
-        <div className="text-red-400 text-sm">{error}</div>
+      <div className="bg-white rounded-xl shadow-card p-6">
+        <h2 className="text-xl font-bold text-text-primary mb-2">AUM Ranking</h2>
+        <div className="text-color-down text-sm">{error}</div>
       </div>
     )
   }
 
   if (isLoading) {
     return (
-      <div className="bg-terminal-dark/50 border border-white/10 rounded-lg p-6">
-        <h2 className="text-xl font-bold text-white mb-4">AUM Ranking</h2>
-        <div className="h-64 flex items-center justify-center text-white/50">
+      <div className="bg-white rounded-xl shadow-card p-6">
+        <h2 className="text-xl font-bold text-text-primary mb-4">AUM Ranking</h2>
+        <div className="h-64 flex items-center justify-center text-text-secondary">
           Loading ranking data...
         </div>
       </div>
@@ -202,12 +202,12 @@ export function InventoryBumpChart() {
 
   if (snapshots.length < 2) {
     return (
-      <div className="bg-terminal-dark/50 border border-white/10 rounded-lg p-6">
-        <h2 className="text-xl font-bold text-white mb-2">AUM Ranking</h2>
-        <p className="text-sm text-white/50 mb-4">
+      <div className="bg-white rounded-xl shadow-card p-6">
+        <h2 className="text-xl font-bold text-text-primary mb-2">AUM Ranking</h2>
+        <p className="text-sm text-text-secondary mb-4">
           Asset rankings by AUM across all ITPs
         </p>
-        <div className="h-48 flex items-center justify-center text-white/50 border border-white/5 rounded">
+        <div className="h-48 flex items-center justify-center text-text-secondary border border-border-light rounded-lg">
           Need 2+ events (ITP creations, rebalances, or fills) to display ranking chart.
           {snapshots.length === 1 && ' Currently showing 1 event.'}
         </div>
@@ -216,17 +216,17 @@ export function InventoryBumpChart() {
   }
 
   return (
-    <div className="bg-terminal-dark/50 border border-white/10 rounded-lg p-6">
+    <div className="bg-white rounded-xl shadow-card p-6">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h2 className="text-xl font-bold text-white">AUM Ranking</h2>
-          <p className="text-sm text-white/50">
+          <h2 className="text-xl font-bold text-text-primary">AUM Ranking</h2>
+          <p className="text-sm text-text-secondary">
             Asset rankings by AUM across all ITPs
           </p>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-bold text-accent">{formatAum(latestTotalAum)}</p>
-          <p className="text-xs text-white/50">total AUM</p>
+          <p className="text-2xl font-bold text-zinc-900 font-mono tabular-nums">{formatAum(latestTotalAum)}</p>
+          <p className="text-xs text-text-secondary">total AUM</p>
         </div>
       </div>
 
@@ -249,7 +249,7 @@ export function InventoryBumpChart() {
               y={MARGIN.top + i * ROW_HEIGHT}
               width={chartWidth}
               height={ROW_HEIGHT}
-              fill={i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent'}
+              fill={i % 2 === 0 ? '#F4F4F5' : 'transparent'}
             />
           ))}
 
@@ -261,9 +261,9 @@ export function InventoryBumpChart() {
               y={rankY(i + 1)}
               textAnchor="end"
               dominantBaseline="central"
-              fill="rgba(255,255,255,0.4)"
+              fill="#A1A1AA"
               fontSize={11}
-              fontFamily="monospace"
+              fontFamily="var(--font-jetbrains-mono), monospace"
             >
               #{i + 1}
             </text>
@@ -283,7 +283,7 @@ export function InventoryBumpChart() {
                     : (colX[i + 1] - colX[i - 1]) / 2
               }
               height={chartHeight}
-              fill={hoveredCol === i ? 'rgba(255,255,255,0.04)' : 'transparent'}
+              fill={hoveredCol === i ? 'rgba(0,0,0,0.03)' : 'transparent'}
               onMouseEnter={(e) => handleColHover(i, e)}
               onMouseMove={(e) => handleColHover(i, e)}
               style={{ cursor: 'crosshair' }}
@@ -298,7 +298,7 @@ export function InventoryBumpChart() {
               y1={MARGIN.top}
               x2={x}
               y2={MARGIN.top + chartHeight}
-              stroke={hoveredCol === i ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)'}
+              stroke={hoveredCol === i ? '#D4D4D8' : '#E4E4E7'}
               strokeWidth={1}
             />
           ))}
@@ -339,7 +339,7 @@ export function InventoryBumpChart() {
                   r={isHovered ? 5 : 4}
                   fill={assetColorMap.get(asset.address) || PALETTE[0]}
                   opacity={isDimmed ? 0.2 : 1}
-                  stroke={isHovered ? '#fff' : 'none'}
+                  stroke={isHovered ? '#18181B' : 'none'}
                   strokeWidth={1.5}
                   onMouseEnter={() => setHoveredAsset(asset.address)}
                   onMouseLeave={() => setHoveredAsset(null)}
@@ -359,11 +359,11 @@ export function InventoryBumpChart() {
               dominantBaseline="central"
               fill={
                 hoveredAsset === null || hoveredAsset === asset.address
-                  ? (assetColorMap.get(asset.address) || '#fff')
-                  : 'rgba(255,255,255,0.15)'
+                  ? (assetColorMap.get(asset.address) || '#18181B')
+                  : '#D4D4D8'
               }
               fontSize={10}
-              fontFamily="monospace"
+              fontFamily="var(--font-jetbrains-mono), monospace"
               fontWeight={hoveredAsset === asset.address ? 'bold' : 'normal'}
               style={{ transition: 'fill 0.15s' }}
             >
@@ -381,11 +381,11 @@ export function InventoryBumpChart() {
               dominantBaseline="central"
               fill={
                 hoveredAsset === null || hoveredAsset === asset.address
-                  ? (assetColorMap.get(asset.address) || '#fff')
-                  : 'rgba(255,255,255,0.15)'
+                  ? (assetColorMap.get(asset.address) || '#18181B')
+                  : '#D4D4D8'
               }
               fontSize={10}
-              fontFamily="monospace"
+              fontFamily="var(--font-jetbrains-mono), monospace"
               fontWeight={hoveredAsset === asset.address ? 'bold' : 'normal'}
               style={{ transition: 'fill 0.15s' }}
             >
@@ -400,9 +400,9 @@ export function InventoryBumpChart() {
                 x={colX[i]}
                 y={MARGIN.top + chartHeight + 16}
                 textAnchor="middle"
-                fill="rgba(255,255,255,0.5)"
+                fill="#52525B"
                 fontSize={10}
-                fontFamily="monospace"
+                fontFamily="var(--font-jetbrains-mono), monospace"
               >
                 {snap.label}
               </text>
@@ -410,9 +410,9 @@ export function InventoryBumpChart() {
                 x={colX[i]}
                 y={MARGIN.top + chartHeight + 28}
                 textAnchor="middle"
-                fill="rgba(255,255,255,0.3)"
+                fill="#A1A1AA"
                 fontSize={9}
-                fontFamily="monospace"
+                fontFamily="var(--font-jetbrains-mono), monospace"
               >
                 {eventLabel(snap.eventType)}
               </text>
@@ -430,17 +430,17 @@ export function InventoryBumpChart() {
             }}
           >
             <div
-              className="rounded-lg p-3 text-xs font-mono"
+              className="rounded-xl p-3 text-xs font-mono shadow-card-hover"
               style={{
-                backgroundColor: '#000',
-                border: '1px solid rgba(255,255,255,0.2)',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E4E4E7',
                 minWidth: 200,
               }}
             >
-              <div className="text-white/80 mb-1">
+              <div className="text-text-secondary mb-1">
                 {tooltip.snapshot.label} — {eventLabel(tooltip.snapshot.eventType)}
               </div>
-              <div className="text-accent font-medium mb-2">
+              <div className="text-zinc-900 font-semibold mb-2">
                 Total AUM: {formatAum(tooltip.snapshot.totalAum)}
               </div>
               {tooltip.snapshot.ranked.map((asset) => (
@@ -449,9 +449,9 @@ export function InventoryBumpChart() {
                     className="inline-block w-2 h-2 rounded-full flex-shrink-0"
                     style={{ backgroundColor: assetColorMap.get(asset.address) || PALETTE[0] }}
                   />
-                  <span className="text-white/70">#{asset.rank}</span>
-                  <span className="text-white font-medium">{asset.symbol}</span>
-                  <span className="text-white/40 ml-auto">
+                  <span className="text-text-secondary">#{asset.rank}</span>
+                  <span className="text-text-primary font-medium">{asset.symbol}</span>
+                  <span className="text-text-muted ml-auto">
                     {formatAum(asset.aum)} ({asset.weightPct.toFixed(1)}%)
                   </span>
                 </div>
@@ -462,7 +462,7 @@ export function InventoryBumpChart() {
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-4 pt-4 border-t border-white/10 text-xs text-white/50">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-4 pt-4 border-t border-border-light text-xs text-text-secondary">
         {snapshots.length > 0 &&
           snapshots[snapshots.length - 1].ranked.map((asset) => (
             <div
@@ -475,12 +475,12 @@ export function InventoryBumpChart() {
                 className="w-2.5 h-2.5 rounded-full"
                 style={{ backgroundColor: assetColorMap.get(asset.address) || PALETTE[0] }}
               />
-              <span className={hoveredAsset === asset.address ? 'text-white' : ''}>
+              <span className={hoveredAsset === asset.address ? 'text-text-primary font-medium' : ''}>
                 {asset.symbol}
               </span>
             </div>
           ))}
-        <span className="ml-auto">{snapshots.length} snapshots</span>
+        <span className="ml-auto font-mono tabular-nums">{snapshots.length} snapshots</span>
       </div>
     </div>
   )

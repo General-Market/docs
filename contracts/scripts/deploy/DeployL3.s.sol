@@ -10,7 +10,7 @@ import {IssuerRegistry} from "../../src/registry/IssuerRegistry.sol";
 import {FeeRegistry} from "../../src/registry/FeeRegistry.sol";
 import {BLSCustody} from "../../src/core/BLSCustody.sol";
 import {L3BridgeCustody} from "../../src/custody/L3BridgeCustody.sol";
-import {Index} from "../../src/core/Index.sol";
+import {Investment} from "../../src/core/Investment.sol";
 
 // Non-upgradeable contracts (constructor-based)
 import {AssetPairRegistry} from "../../src/registry/AssetPairRegistry.sol";
@@ -90,7 +90,7 @@ contract DeployL3 is Script {
 
         // ============ PHASE 5: ITP ============
         console2.log("--- Phase 5: ITP ---");
-        console2.log("  ITP: created dynamically via Index.createITP() (no standalone deploy)");
+        console2.log("  ITP: created dynamically via Investment.createITP() (no standalone deploy)");
 
         // ============ PHASE 6: Post-deploy wiring ============
         console2.log("--- Phase 6: Post-deploy wiring ---");
@@ -224,32 +224,32 @@ contract DeployL3 is Script {
     // ============ PHASE 4 ============
 
     function _deployIndex(address usdc) internal {
-        Index impl = new Index();
+        Investment impl = new Investment();
         indexImpl = address(impl);
 
-        bytes memory initData = abi.encodeWithSelector(Index.initialize.selector, governanceProxy, usdc);
+        bytes memory initData = abi.encodeWithSelector(Investment.initialize.selector, governanceProxy, usdc);
         ERC1967Proxy proxy = new ERC1967Proxy(indexImpl, initData);
         indexProxy = address(proxy);
 
-        Index idx = Index(indexProxy);
-        require(address(idx.governance()) == governanceProxy, "Index: governance mismatch");
-        require(address(idx.usdc()) == usdc, "Index: usdc mismatch");
-        console2.log("  Index impl:", indexImpl);
-        console2.log("  Index proxy:", indexProxy);
+        Investment idx = Investment(indexProxy);
+        require(address(idx.governance()) == governanceProxy, "Investment: governance mismatch");
+        require(address(idx.usdc()) == usdc, "Investment: usdc mismatch");
+        console2.log("  Investment impl:", indexImpl);
+        console2.log("  Investment proxy:", indexProxy);
     }
 
     // ============ PHASE 6 ============
 
     function _wireIndexRegistries() internal {
-        Index idx = Index(indexProxy);
+        Investment idx = Investment(indexProxy);
 
-        // Wire IssuerRegistry into Index (one-time setter)
+        // Wire IssuerRegistry into Investment (one-time setter)
         idx.setIssuerRegistry(issuerRegistryProxy);
-        console2.log("  Index.setIssuerRegistry:", issuerRegistryProxy);
+        console2.log("  Investment.setIssuerRegistry:", issuerRegistryProxy);
 
-        // Wire FeeRegistry into Index
+        // Wire FeeRegistry into Investment
         idx.setFeeRegistry(feeRegistryProxy);
-        console2.log("  Index.setFeeRegistry:", feeRegistryProxy);
+        console2.log("  Investment.setFeeRegistry:", feeRegistryProxy);
     }
 
     function _registerTestIssuers() internal {

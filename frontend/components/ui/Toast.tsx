@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
-export type ToastType = 'success' | 'error' | 'info'
+export type ToastType = 'success' | 'error' | 'info' | 'warning'
 
 export interface ToastData {
   id: string
@@ -22,6 +22,7 @@ interface ToastProps {
 
 /**
  * Individual toast notification component
+ * Institutional style: white card with colored left accent bar
  */
 export function Toast({ toast, onDismiss }: ToastProps) {
   const [isExiting, setIsExiting] = useState(false)
@@ -41,29 +42,31 @@ export function Toast({ toast, onDismiss }: ToastProps) {
     setTimeout(() => onDismiss(toast.id), 300)
   }
 
-  const borderColor = {
-    success: 'border-green-500',
-    error: 'border-accent',
-    info: 'border-white'
+  const accentBar = {
+    success: 'border-l-color-up',
+    error: 'border-l-color-down',
+    warning: 'border-l-color-warning',
+    info: 'border-l-zinc-400',
   }[toast.type]
 
   const iconColor = {
-    success: 'text-green-500',
-    error: 'text-accent',
-    info: 'text-white'
+    success: 'text-color-up',
+    error: 'text-color-down',
+    warning: 'text-color-warning',
+    info: 'text-zinc-500',
   }[toast.type]
 
   return (
     <div
       className={`
-        bg-black border ${borderColor} text-white p-4 rounded font-mono
+        bg-card border border-border-light ${accentBar} border-l-4 text-text-primary p-4 rounded-xl shadow-card
         transition-all duration-300 ease-in-out
         ${isExiting ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'}
       `}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
-          <p className={toast.type === 'error' ? 'text-accent' : 'text-white'}>
+          <p className={toast.type === 'error' ? 'text-color-down' : 'text-text-primary'}>
             {toast.message}
           </p>
           {toast.link && (
@@ -79,7 +82,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
         </div>
         <button
           onClick={handleDismiss}
-          className="text-white/60 hover:text-white transition-colors"
+          className="text-text-muted hover:text-text-primary transition-colors"
           aria-label="Dismiss"
         >
           <svg

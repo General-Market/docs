@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../../src/core/Index.sol";
+import "../../src/core/Investment.sol";
 import "../../src/core/ITP.sol";
 import "../../src/mocks/MockERC20.sol";
 import "../helpers/TestHelper.sol";
@@ -20,7 +20,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 ///         and leader rotation determinism on-chain
 /// @dev Uses real BLS signatures via FFI (bls-tool). Test issuers use seeds 0,1,2.
 contract E2EConsensus3NodesTest is TestHelper {
-    Index public index;
+    Investment public index;
     MockERC20 public usdc;
     Governance public governance;
     IssuerRegistry public issuerRegistry;
@@ -50,12 +50,12 @@ contract E2EConsensus3NodesTest is TestHelper {
         governance = deployGovernance(admin);
 
         // Deploy Index as UUPS proxy
-        Index impl = new Index();
+        Investment impl = new Investment();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(Index.initialize, (address(governance), address(usdc)))
+            abi.encodeCall(Investment.initialize, (address(governance), address(usdc)))
         );
-        index = Index(address(proxy));
+        index = Investment(address(proxy));
 
         // Deploy real IssuerRegistry, register 3 BLS test issuers (seeds 0,1,2)
         issuerRegistry = deployIssuerRegistry(address(governance));

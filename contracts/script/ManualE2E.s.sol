@@ -2,17 +2,17 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import "../src/interfaces/IIndex.sol";
+import "../src/interfaces/IInvestment.sol";
 import "../src/libraries/TypesLib.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract ManualE2E is Script {
-    IIndex index;
+    IInvestment index;
     address user;
     uint256 deployerKey;
 
     function run() external {
-        index = IIndex(vm.envAddress("INDEX_ADDRESS"));
+        index = IInvestment(vm.envAddress("INDEX_ADDRESS"));
         user = vm.envAddress("USER_ADDRESS");
         deployerKey = vm.envUint("DEPLOYER_KEY");
         console.log("=== Manual E2E Flow ===");

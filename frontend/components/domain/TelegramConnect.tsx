@@ -12,9 +12,8 @@
 import { useState, useEffect } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 
-// Use relative path to go through Vercel rewrites to production backend
-const BACKEND_URL = ''
-const TELEGRAM_BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'AgiArenaBot'
+import { BACKEND_URL } from '@/lib/contracts/addresses'
+const TELEGRAM_BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'GeneralMarketBot'
 
 interface TelegramConnectProps {
   walletAddress: string
@@ -46,7 +45,7 @@ async function fetchTelegramStatus(walletAddress: string): Promise<TelegramStatu
  *
  * Displays:
  * - QR code linking to t.me/BotUsername
- * - Connection status (Connected ✓ or Not Connected)
+ * - Connection status (Connected or Not Connected)
  * - Step-by-step instructions
  */
 export function TelegramConnect({ walletAddress }: TelegramConnectProps) {
@@ -76,21 +75,21 @@ export function TelegramConnect({ walletAddress }: TelegramConnectProps) {
   const telegramUrl = `https://t.me/${TELEGRAM_BOT_USERNAME}`
 
   return (
-    <div className="border border-white/20 bg-terminal mb-8">
-      <div className="flex justify-between items-center p-4 border-b border-white/20">
-        <h2 className="text-lg font-bold text-white font-mono">
+    <div className="border border-border-medium bg-card rounded-xl shadow-card mb-8">
+      <div className="flex justify-between items-center p-4 border-b border-border-medium">
+        <h2 className="text-lg font-bold text-text-primary">
           Telegram Notifications
         </h2>
         {/* Connection Status Badge */}
         {isLoading ? (
-          <span className="text-white/40 text-sm font-mono">Checking...</span>
+          <span className="text-text-muted text-sm">Checking...</span>
         ) : status?.connected ? (
-          <span className="text-white text-sm font-mono flex items-center gap-2">
-            <span className="w-2 h-2 bg-white rounded-full" />
+          <span className="text-text-primary text-sm flex items-center gap-2">
+            <span className="w-2 h-2 bg-color-up rounded-full" />
             Connected
           </span>
         ) : (
-          <span className="text-[#C40000] text-sm font-mono flex items-center gap-2">
+          <span className="text-[#C40000] text-sm flex items-center gap-2">
             <span className="w-2 h-2 bg-[#C40000] rounded-full" />
             Not Connected
           </span>
@@ -102,17 +101,17 @@ export function TelegramConnect({ walletAddress }: TelegramConnectProps) {
           /* Connected State */
           <div className="text-center">
             <div className="text-4xl mb-4">✅</div>
-            <p className="text-white font-mono mb-2">
+            <p className="text-text-primary mb-2">
               Notifications Enabled
             </p>
-            <p className="text-white/60 text-sm font-mono">
+            <p className="text-text-muted text-sm">
               You'll receive Telegram notifications for bet matches, settlements, and rank changes.
             </p>
             <a
               href={telegramUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block mt-4 px-4 py-2 border border-white/20 text-white/60 hover:text-white hover:bg-white/10 font-mono text-sm transition-colors"
+              className="inline-block mt-4 px-4 py-2 border border-border-medium text-text-muted hover:text-text-primary hover:bg-card-hover text-sm transition-colors rounded-lg"
             >
               Open Bot →
             </a>
@@ -134,20 +133,20 @@ export function TelegramConnect({ walletAddress }: TelegramConnectProps) {
 
             {/* Instructions */}
             <div className="flex-1 text-center md:text-left">
-              <p className="text-white font-mono mb-4">
+              <p className="text-text-primary mb-4">
                 Get notified on Telegram
               </p>
-              <ol className="text-white/60 text-sm font-mono space-y-2 list-decimal list-inside">
+              <ol className="text-text-muted text-sm space-y-2 list-decimal list-inside">
                 <li>Open Telegram on your phone</li>
-                <li>Scan the QR code or <a href={telegramUrl} target="_blank" rel="noopener noreferrer" className="text-white underline hover:no-underline">click here</a></li>
-                <li>Send <code className="bg-white/10 px-1 rounded">/start</code> to the bot</li>
+                <li>Scan the QR code or <a href={telegramUrl} target="_blank" rel="noopener noreferrer" className="text-text-primary underline hover:no-underline">click here</a></li>
+                <li>Send <code className="bg-muted px-1 rounded">/start</code> to the bot</li>
                 <li>Follow the link to verify your wallet</li>
               </ol>
               <a
                 href={telegramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block mt-4 px-4 py-2 bg-white text-black hover:bg-white/90 font-mono text-sm transition-colors"
+                className="inline-block mt-4 px-4 py-2 bg-zinc-900 text-white hover:bg-zinc-800 text-sm transition-colors rounded-lg"
               >
                 Open @{TELEGRAM_BOT_USERNAME}
               </a>

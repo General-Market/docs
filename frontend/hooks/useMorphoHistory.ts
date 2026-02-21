@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useAccount, usePublicClient } from 'wagmi'
-import { formatUnits, parseAbiItem } from 'viem'
+import { useAccount } from 'wagmi'
+import { DATA_NODE_URL } from '@/lib/config'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
 
 export interface MorphoTx {
@@ -14,138 +14,77 @@ export interface MorphoTx {
   timestamp: number    // 0 if unknown
 }
 
-const EVENT_SIGS = {
-  SupplyCollateral: parseAbiItem('event SupplyCollateral(bytes32 indexed id, address caller, address indexed onBehalf, uint256 assets)'),
-  WithdrawCollateral: parseAbiItem('event WithdrawCollateral(bytes32 indexed id, address caller, address indexed onBehalf, address receiver, uint256 assets)'),
-  Borrow: parseAbiItem('event Borrow(bytes32 indexed id, address caller, address indexed onBehalf, address indexed receiver, uint256 assets, uint256 shares)'),
-  Repay: parseAbiItem('event Repay(bytes32 indexed id, address indexed caller, address indexed onBehalf, uint256 assets, uint256 shares)'),
+interface RawMorphoEvent {
+  event_type: string
+  amount: string
+  token: string
+  tx_hash: string
+  block_number: number
+  timestamp?: number
 }
 
-export function useMorphoHistory(market: MorphoMarketEntry | undefined) {
+/**
+ * Hook for Morpho lending history.
+ *
+ * Fetches from the data-node `/morpho-history?address=...` endpoint which
+ * indexes Morpho events (SupplyCollateral, WithdrawCollateral, Borrow, Repay)
+ * server-side in SQLite.
+ */
+export function useMorphoHistory(_market: MorphoMarketEntry | undefined) {
   const { address } = useAccount()
-  const publicClient = usePublicClient()
   const [txs, setTxs] = useState<MorphoTx[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const clientRef = useRef(publicClient)
-  clientRef.current = publicClient
+  const addressRef = useRef(address)
 
-  const fetchHistory = useCallback(async () => {
-    const client = clientRef.current
-    if (!client || !address || !market) return
+  useEffect(() => { addressRef.current = address }, [address])
+
+  const refetch = useCallback(async () => {
+    const user = addressRef.current
+    if (!user) {
+      setTxs([])
+      setIsLoading(false)
+      return
+    }
 
     setIsLoading(true)
     try {
-      const morphoAddress = market.morpho
-      const marketId = market.marketId
-
-      // Fetch all 4 event types in parallel
-      const [deposits, withdrawals, borrows, repays] = await Promise.all([
-        client.getLogs({
-          address: morphoAddress,
-          event: EVENT_SIGS.SupplyCollateral,
-          args: { id: marketId, onBehalf: address },
-          fromBlock: 0n,
-          toBlock: 'latest',
-        }),
-        client.getLogs({
-          address: morphoAddress,
-          event: EVENT_SIGS.WithdrawCollateral,
-          args: { id: marketId, onBehalf: address },
-          fromBlock: 0n,
-          toBlock: 'latest',
-        }),
-        client.getLogs({
-          address: morphoAddress,
-          event: EVENT_SIGS.Borrow,
-          args: { id: marketId, onBehalf: address },
-          fromBlock: 0n,
-          toBlock: 'latest',
-        }),
-        client.getLogs({
-          address: morphoAddress,
-          event: EVENT_SIGS.Repay,
-          args: { id: marketId, onBehalf: address },
-          fromBlock: 0n,
-          toBlock: 'latest',
-        }),
-      ])
-
-      const all: MorphoTx[] = []
-
-      for (const log of deposits) {
-        all.push({
-          type: 'deposit',
-          amount: formatUnits(log.args.assets ?? 0n, 18),
-          token: 'ITP',
-          txHash: log.transactionHash ?? '',
-          blockNumber: log.blockNumber ?? 0n,
-          timestamp: 0,
-        })
-      }
-      for (const log of withdrawals) {
-        all.push({
-          type: 'withdraw',
-          amount: formatUnits(log.args.assets ?? 0n, 18),
-          token: 'ITP',
-          txHash: log.transactionHash ?? '',
-          blockNumber: log.blockNumber ?? 0n,
-          timestamp: 0,
-        })
-      }
-      for (const log of borrows) {
-        all.push({
-          type: 'borrow',
-          amount: formatUnits(log.args.assets ?? 0n, 6),
-          token: 'USDC',
-          txHash: log.transactionHash ?? '',
-          blockNumber: log.blockNumber ?? 0n,
-          timestamp: 0,
-        })
-      }
-      for (const log of repays) {
-        all.push({
-          type: 'repay',
-          amount: formatUnits(log.args.assets ?? 0n, 6),
-          token: 'USDC',
-          txHash: log.transactionHash ?? '',
-          blockNumber: log.blockNumber ?? 0n,
-          timestamp: 0,
-        })
-      }
-
-      // Sort by block number descending (most recent first)
-      all.sort((a, b) => Number(b.blockNumber - a.blockNumber))
-
-      // Fetch timestamps for unique blocks
-      const uniqueBlocks = [...new Set(all.map(t => t.blockNumber))]
-      const blockTimestamps = new Map<bigint, number>()
-
-      await Promise.all(
-        uniqueBlocks.slice(0, 20).map(async (bn) => {
-          try {
-            const block = await client.getBlock({ blockNumber: bn })
-            blockTimestamps.set(bn, Number(block.timestamp))
-          } catch {
-            // ignore
-          }
-        })
+      const res = await fetch(
+        `${DATA_NODE_URL}/morpho-history?address=${user}`,
+        { signal: AbortSignal.timeout(5000) },
       )
-
-      for (const tx of all) {
-        tx.timestamp = blockTimestamps.get(tx.blockNumber) ?? 0
+      if (!res.ok) {
+        setTxs([])
+        return
       }
-
-      setTxs(all)
+      const raw: RawMorphoEvent[] = await res.json()
+      const mapped: MorphoTx[] = raw.map((e) => ({
+        type: e.event_type as MorphoTx['type'],
+        amount: e.amount,
+        token: e.token,
+        txHash: e.tx_hash,
+        blockNumber: BigInt(e.block_number),
+        timestamp: e.timestamp ?? 0,
+      }))
+      setTxs(mapped)
     } catch {
-      // Non-critical — history is nice-to-have
+      // Network error — keep previous txs if any
     } finally {
       setIsLoading(false)
     }
-  }, [address, market])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Fetch on mount and when address changes
   useEffect(() => {
-    fetchHistory()
-  }, [fetchHistory])
+    setTxs([])
+    refetch()
+  }, [address, refetch])
 
-  return { txs, isLoading, refetch: fetchHistory }
+  // Poll every 30s for new events
+  useEffect(() => {
+    if (!address) return
+    const interval = setInterval(refetch, 30_000)
+    return () => clearInterval(interval)
+  }, [address, refetch])
+
+  return { txs, isLoading, refetch }
 }

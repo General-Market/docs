@@ -16,15 +16,12 @@ interface AgentOGData {
 
 /**
  * Generates deterministic performance bar heights from wallet address
- * Creates a realistic-looking performance trend based on agent's seed
  */
 function generatePerformanceBars(walletAddress: string, isPositive: boolean): number[] {
-  // Use wallet address to generate deterministic but varied bar heights
   const bars: number[] = []
   for (let i = 0; i < 10; i++) {
     const charCode = walletAddress.charCodeAt((i * 4) % walletAddress.length)
     const baseHeight = 0.3 + (charCode % 50) / 100
-    // Trending up for positive P&L, down for negative
     const trend = isPositive ? i * 0.05 : -i * 0.03
     const height = Math.min(1, Math.max(0.2, baseHeight + trend))
     bars.push(height)
@@ -34,7 +31,6 @@ function generatePerformanceBars(walletAddress: string, isPositive: boolean): nu
 
 /**
  * Fetches agent data for OG image generation from backend API
- * Returns null if backend is unavailable (shows default AgiArena image)
  */
 async function fetchAgentData(walletAddress: string): Promise<AgentOGData | null> {
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
@@ -46,11 +42,10 @@ async function fetchAgentData(walletAddress: string): Promise<AgentOGData | null
 
   try {
     const response = await fetch(`${backendUrl}/api/agents/${walletAddress}`, {
-      next: { revalidate: 300 } // Cache for 5 minutes
+      next: { revalidate: 300 }
     })
 
     if (!response.ok) {
-      // Agent not found or API error - return null to show default image
       return null
     }
 
@@ -64,15 +59,11 @@ async function fetchAgentData(walletAddress: string): Promise<AgentOGData | null
       winRate: agent.winRate ?? 0
     }
   } catch (error) {
-    // Network error or backend unavailable - return null to show default image
     console.error('Failed to fetch agent data for OG image:', error)
     return null
   }
 }
 
-/**
- * Formats P&L for display
- */
 function formatPnL(pnl: number): string {
   const sign = pnl >= 0 ? '+' : '-'
   const formatted = Math.abs(pnl).toLocaleString('en-US', {
@@ -85,8 +76,7 @@ function formatPnL(pnl: number): string {
 /**
  * GET /api/og/[walletAddress]
  *
- * Generates dynamic Open Graph image for agent sharing
- * Returns 1200x630 PNG with agent stats and AgiArena branding
+ * Generates dynamic Open Graph image for portfolio sharing
  */
 export async function GET(
   request: NextRequest,
@@ -94,30 +84,29 @@ export async function GET(
 ) {
   const { walletAddress } = await params
 
-  // Fetch agent data
   const agent = await fetchAgentData(walletAddress)
 
   if (!agent) {
-    // Return default AgiArena fallback image
+    // Return default General Market fallback image
     return new ImageResponse(
       (
         <div
           style={{
-            background: '#000000',
+            background: '#09090B',
             width: '100%',
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            fontFamily: 'monospace'
+            fontFamily: 'system-ui, sans-serif'
           }}
         >
-          <span style={{ color: '#C40000', fontSize: '64px', fontWeight: 'bold' }}>
-            AgiArena
+          <span style={{ color: '#FAFAFA', fontSize: '64px', fontWeight: 'bold', letterSpacing: '-0.02em' }}>
+            General Market
           </span>
-          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '24px', marginTop: '20px' }}>
-            AI-Powered Portfolio Betting
+          <span style={{ color: 'rgba(250,250,250,0.6)', fontSize: '24px', marginTop: '20px' }}>
+            On-chain Index Products
           </span>
         </div>
       ),
@@ -128,22 +117,22 @@ export async function GET(
     )
   }
 
-  const pnlColor = agent.pnl >= 0 ? '#4ade80' : '#C40000'
+  const pnlColor = agent.pnl >= 0 ? '#16A34A' : '#DC2626'
 
   return new ImageResponse(
     (
       <div
         style={{
-          background: '#000000',
+          background: '#09090B',
           width: '100%',
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
           padding: '48px',
-          fontFamily: 'monospace'
+          fontFamily: 'system-ui, sans-serif'
         }}
       >
-        {/* Header with logo and rank badge */}
+        {/* Header */}
         <div
           style={{
             display: 'flex',
@@ -152,19 +141,20 @@ export async function GET(
             marginBottom: '32px'
           }}
         >
-          <span style={{ color: '#C40000', fontSize: '40px', fontWeight: 'bold' }}>
-            AgiArena
+          <span style={{ color: '#FAFAFA', fontSize: '36px', fontWeight: 'bold', letterSpacing: '-0.02em' }}>
+            General Market
           </span>
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              background: '#C40000',
-              color: 'white',
+              background: '#18181B',
+              color: '#FAFAFA',
               padding: '12px 24px',
-              borderRadius: '8px',
+              borderRadius: '12px',
               fontSize: '28px',
-              fontWeight: 'bold'
+              fontWeight: 'bold',
+              border: '1px solid #3F3F46'
             }}
           >
             #{agent.rank}
@@ -185,7 +175,8 @@ export async function GET(
               fontSize: '96px',
               fontWeight: 'bold',
               color: pnlColor,
-              lineHeight: 1.1
+              lineHeight: 1.1,
+              fontFamily: 'monospace'
             }}
           >
             {formatPnL(agent.pnl)}
@@ -197,28 +188,27 @@ export async function GET(
               display: 'flex',
               gap: '48px',
               marginTop: '32px',
-              color: 'rgba(255,255,255,0.8)',
+              color: 'rgba(250,250,250,0.7)',
               fontSize: '28px'
             }}
           >
-            <span>{(agent.portfolioSize ?? 0).toLocaleString()} markets</span>
+            <span>{(agent.portfolioSize ?? 0).toLocaleString()} positions</span>
             <span>{agent.winRate ?? 0}% win rate</span>
             <span>{(agent.roi ?? 0) >= 0 ? '+' : ''}{(agent.roi ?? 0).toFixed(1)}% ROI</span>
           </div>
         </div>
 
-        {/* Footer with performance indicator (simplified graph placeholder) */}
+        {/* Footer */}
         <div
           style={{
             display: 'flex',
             alignItems: 'flex-end',
             justifyContent: 'space-between',
             marginTop: '32px',
-            borderTop: '1px solid rgba(255,255,255,0.2)',
+            borderTop: '1px solid #3F3F46',
             paddingTop: '24px'
           }}
         >
-          {/* Mini graph visualization - deterministic bars based on agent performance */}
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '80px' }}>
             {generatePerformanceBars(walletAddress, agent.pnl >= 0).map((height, i) => (
               <div
@@ -226,16 +216,15 @@ export async function GET(
                 style={{
                   width: '24px',
                   height: `${height * 80}px`,
-                  background: agent.pnl >= 0 ? '#4ade80' : '#C40000',
+                  background: agent.pnl >= 0 ? '#16A34A' : '#DC2626',
                   opacity: 0.4 + (i * 0.06),
-                  borderRadius: '2px'
+                  borderRadius: '4px'
                 }}
               />
             ))}
           </div>
 
-          {/* Wallet address truncated */}
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '20px' }}>
+          <span style={{ color: 'rgba(250,250,250,0.4)', fontSize: '20px', fontFamily: 'monospace' }}>
             {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
           </span>
         </div>

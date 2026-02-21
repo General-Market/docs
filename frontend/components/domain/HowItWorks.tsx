@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '0xE44c20fbac58Eb1ca4115AC7890F28271aD94364'
 const EXPLORER_BASE = process.env.NEXT_PUBLIC_EXPLORER_URL || 'https://index.explorer.zeeve.net/address'
 const EXPLORER_URL = `${EXPLORER_BASE}/${CONTRACT_ADDRESS}`
-const STORAGE_KEY = 'agiarena-how-it-works-collapsed'
+const STORAGE_KEY = 'gm-how-it-works-collapsed'
 
 /**
  * Step configuration
@@ -66,17 +66,17 @@ export function HowItWorks() {
     return (
       <section
         id="how-it-works"
-        className="border border-white/20 bg-terminal"
+        className="border border-border-light bg-card rounded-xl shadow-card"
         aria-labelledby="how-it-works-heading"
       >
         <button
-          className="w-full flex justify-between items-center p-4 text-left font-mono"
+          className="w-full flex justify-between items-center p-4 text-left"
           disabled
         >
-          <h2 id="how-it-works-heading" className="text-lg font-bold text-white">
+          <h2 id="how-it-works-heading" className="text-lg font-bold text-text-primary">
             HOW AGIARENA WORKS
           </h2>
-          <span className="text-white/40">▾</span>
+          <span className="text-text-muted">▾</span>
         </button>
       </section>
     )
@@ -85,21 +85,21 @@ export function HowItWorks() {
   return (
     <section
       id="how-it-works"
-      className="border border-white/20 bg-terminal"
+      className="border border-border-light bg-card rounded-xl shadow-card"
       aria-labelledby="how-it-works-heading"
     >
       {/* Header - always visible, acts as toggle */}
       <button
         type="button"
-        className="w-full flex justify-between items-center p-4 text-left font-mono hover:bg-white/5 transition-colors"
+        className="w-full flex justify-between items-center p-4 text-left hover:bg-card-hover transition-colors rounded-t-xl"
         onClick={toggleCollapsed}
         aria-expanded={!isCollapsed}
         aria-controls="how-it-works-content"
       >
-        <h2 id="how-it-works-heading" className="text-lg font-bold text-white">
+        <h2 id="how-it-works-heading" className="text-lg font-bold text-text-primary">
           HOW AGIARENA WORKS
         </h2>
-        <span className="text-white/40 text-xl" aria-hidden="true">
+        <span className="text-text-muted text-xl" aria-hidden="true">
           {isCollapsed ? '▸' : '▾'}
         </span>
       </button>
@@ -108,7 +108,7 @@ export function HowItWorks() {
       {!isCollapsed && (
         <div
           id="how-it-works-content"
-          className="border-t border-white/10 p-6"
+          className="border-t border-border-light p-6"
         >
           {/* Three-step flow */}
           <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8 mb-8">
@@ -116,17 +116,17 @@ export function HowItWorks() {
               <div key={step.number} className="flex items-center">
                 {/* Step card */}
                 <div className="text-center w-40">
-                  <div className="border border-white/20 p-4 mb-2">
-                    <div className="text-3xl text-accent font-bold mb-1">{step.number}</div>
-                    <div className="text-lg font-bold text-white font-mono">{step.title}</div>
+                  <div className="border border-border-medium rounded-xl p-4 mb-2">
+                    <div className="text-3xl text-zinc-900 font-bold mb-1">{step.number}</div>
+                    <div className="text-lg font-bold text-text-primary">{step.title}</div>
                   </div>
-                  <div className="text-sm text-white/60 font-mono">{step.subtitle}</div>
-                  <div className="text-xs text-white/40 mt-1 hidden md:block">{step.description}</div>
+                  <div className="text-sm text-text-muted">{step.subtitle}</div>
+                  <div className="text-xs text-text-muted mt-1 hidden md:block">{step.description}</div>
                 </div>
 
                 {/* Arrow between steps (not after last) */}
                 {index < STEPS.length - 1 && (
-                  <div className="text-white/20 text-2xl mx-2 hidden md:block" aria-hidden="true">→</div>
+                  <div className="text-border-medium text-2xl mx-2 hidden md:block" aria-hidden="true">→</div>
                 )}
               </div>
             ))}
@@ -135,22 +135,22 @@ export function HowItWorks() {
           {/* Mobile descriptions */}
           <div className="md:hidden space-y-3 mb-6">
             {STEPS.map((step) => (
-              <div key={step.number} className="text-xs text-white/40">
-                <span className="text-accent">{step.number}.</span> {step.description}
+              <div key={step.number} className="text-xs text-text-muted">
+                <span className="text-zinc-900">{step.number}.</span> {step.description}
               </div>
             ))}
           </div>
 
           {/* Trust statement */}
-          <div className="text-center border-t border-white/10 pt-6">
-            <p className="text-sm text-white/60 font-mono mb-2">
+          <div className="text-center border-t border-border-light pt-6">
+            <p className="text-sm text-text-muted mb-2">
               All funds held in smart contract • Never custodial
             </p>
             <a
               href={EXPLORER_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-white/40 hover:text-white/60 transition-colors font-mono"
+              className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text-secondary transition-colors"
             >
               View contract on explorer
               <svg

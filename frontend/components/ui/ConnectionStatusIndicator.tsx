@@ -14,14 +14,15 @@ interface ConnectionStatusIndicatorProps {
 
 /**
  * Connection status configuration per state
+ * Institutional style: semantic colors (green up / red down / warning)
  */
 const stateConfig: Record<SSEState, { color: string; text: string | ((attempt: number) => string) }> = {
-  connected: { color: 'bg-green-400', text: 'Live' },
-  connecting: { color: 'bg-yellow-400 animate-pulse', text: (attempt) => attempt > 0 ? `Reconnecting (${attempt})...` : 'Connecting...' },
-  error: { color: 'bg-yellow-400 animate-pulse', text: (attempt) => `Reconnecting (${attempt})...` },
-  disconnected: { color: 'bg-red-400', text: 'Offline' },
-  disabled: { color: 'bg-white/40', text: 'Disabled' },
-  polling: { color: 'bg-yellow-400', text: 'Polling' }
+  connected: { color: 'bg-color-up', text: 'Live' },
+  connecting: { color: 'bg-color-warning animate-pulse', text: (attempt) => attempt > 0 ? `Reconnecting (${attempt})...` : 'Connecting...' },
+  error: { color: 'bg-color-warning animate-pulse', text: (attempt) => `Reconnecting (${attempt})...` },
+  disconnected: { color: 'bg-color-down', text: 'Offline' },
+  disabled: { color: 'bg-text-muted', text: 'Disabled' },
+  polling: { color: 'bg-color-warning', text: 'Polling' }
 }
 
 /**
@@ -47,7 +48,7 @@ export function ConnectionStatusIndicator({
         className={`w-2 h-2 rounded-full ${config.color}`}
         aria-hidden="true"
       />
-      <span className="text-xs text-white/60 font-mono">{text}</span>
+      <span className="text-xs text-text-muted">{text}</span>
     </div>
   )
 }

@@ -11,7 +11,7 @@ import {AssetPairRegistry} from "../src/registry/AssetPairRegistry.sol";
 import {CollateralRegistry} from "../src/registry/CollateralRegistry.sol";
 import {BLSCustody} from "../src/core/BLSCustody.sol";
 import {L3BridgeCustody} from "../src/custody/L3BridgeCustody.sol";
-import {Index} from "../src/core/Index.sol";
+import {Investment} from "../src/core/Investment.sol";
 import {BLSLib} from "../src/libraries/BLSLib.sol";
 import {TypesLib} from "../src/libraries/TypesLib.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -104,16 +104,16 @@ contract DeployL3Test is Test {
 
         // ============ PHASE 4: Index ============
         {
-            Index impl = new Index();
+            Investment impl = new Investment();
             indexImpl = address(impl);
-            bytes memory initData = abi.encodeWithSelector(Index.initialize.selector, governanceProxy, usdc);
+            bytes memory initData = abi.encodeWithSelector(Investment.initialize.selector, governanceProxy, usdc);
             ERC1967Proxy proxy = new ERC1967Proxy(indexImpl, initData);
             indexProxy = address(proxy);
         }
 
         // Wire registries into Index
-        Index(indexProxy).setIssuerRegistry(issuerRegistryProxy);
-        Index(indexProxy).setFeeRegistry(feeRegistryProxy);
+        Investment(indexProxy).setIssuerRegistry(issuerRegistryProxy);
+        Investment(indexProxy).setFeeRegistry(feeRegistryProxy);
 
         vm.stopPrank();
     }
@@ -185,22 +185,22 @@ contract DeployL3Test is Test {
     // ============ Phase 4 Tests: Index ============
 
     function test_index_governanceMatches() public view {
-        Index idx = Index(indexProxy);
+        Investment idx = Investment(indexProxy);
         assertEq(address(idx.governance()), governanceProxy);
     }
 
     function test_index_usdcMatches() public view {
-        Index idx = Index(indexProxy);
+        Investment idx = Investment(indexProxy);
         assertEq(address(idx.usdc()), usdc);
     }
 
     function test_index_issuerRegistryWired() public view {
-        Index idx = Index(indexProxy);
+        Investment idx = Investment(indexProxy);
         assertEq(address(idx.issuerRegistry()), issuerRegistryProxy);
     }
 
     function test_index_feeRegistryWired() public view {
-        Index idx = Index(indexProxy);
+        Investment idx = Investment(indexProxy);
         assertEq(address(idx.feeRegistry()), feeRegistryProxy);
     }
 
@@ -335,6 +335,6 @@ contract DeployL3Test is Test {
 
     function test_index_cannotReinitialize() public {
         vm.expectRevert(Initializable.InvalidInitialization.selector);
-        Index(indexProxy).initialize(makeAddr("attacker"), makeAddr("fake-usdc"));
+        Investment(indexProxy).initialize(makeAddr("attacker"), makeAddr("fake-usdc"));
     }
 }

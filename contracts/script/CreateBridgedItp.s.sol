@@ -46,7 +46,7 @@ contract CreateBridgedItp is DeployBLSHelper {
         BridgeProxy bridge = BridgeProxy(bridgeProxyAddr);
 
         // Step 1: requestCreateItp
-        uint256 nonce = bridge.requestCreateItp(itpName, itpSymbol, weights, assets, prices);
+        uint256 nonce = bridge.requestCreateItp(itpName, itpSymbol, weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
         console.log("  requestCreateItp nonce:", nonce);
 
         // Step 2: Compute message hash matching completeCreateItp

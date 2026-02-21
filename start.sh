@@ -15,7 +15,7 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-# Configuration (basic — chain/RPC set after global.env to avoid overwrite)
+# Configuration (basic — chain/RPC set after system.env to avoid overwrite)
 ISSUER_COUNT=${ISSUER_COUNT:-3}
 SKIP_DEPLOY=${SKIP_DEPLOY:-false}
 NO_TAIL=${NO_TAIL:-false}
@@ -35,17 +35,17 @@ export BITGET_READONLY_PASSPHRASE=${BITGET_READONLY_PASSPHRASE:-dummypass}
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Load global.env if present (Bitget credentials, etc.)
-if [ -f "$SCRIPT_DIR/global.env" ]; then
-    set -a && source "$SCRIPT_DIR/global.env" && set +a
+# Load system.env if present (Bitget credentials, etc.)
+if [ -f "$SCRIPT_DIR/system.env" ]; then
+    set -a && source "$SCRIPT_DIR/system.env" && set +a
 fi
-# Prefer real credentials from global.env (BITGET_PUB/PK/PASS) over dummy defaults
+# Prefer real credentials from system.env (BITGET_PUB/PK/PASS) over dummy defaults
 export BITGET_READONLY_API_KEY="${BITGET_PUB:-${BITGET_READONLY_API_KEY}}"
 export BITGET_READONLY_API_SECRET="${BITGET_PK:-${BITGET_READONLY_API_SECRET}}"
 export BITGET_READONLY_PASSPHRASE="${BITGET_PASS:-${BITGET_READONLY_PASSPHRASE}}"
 
-# Local chain configuration — MUST be set AFTER sourcing global.env
-# (global.env defines ARB_RPC_URL pointing to real Arbitrum which would break local dev)
+# Local chain configuration — MUST be set AFTER sourcing system.env
+# (system.env defines ARB_RPC_URL pointing to real Arbitrum which would break local dev)
 CHAIN_ID=111222333
 RPC_URL="http://localhost:8545"
 ARB_CHAIN_ID=421611337
@@ -509,7 +509,7 @@ json.dump(deploy, open('deployments/active-deployment.json', 'w'), indent=2)
         echo -e "  ${YELLOW}Warning: BridgedITP creation failed (sell won't work)${NC}"
     fi
 
-    cp deployments/active-deployment.json frontendV4/lib/contracts/deployment.json
+    cp deployments/active-deployment.json frontend/lib/contracts/deployment.json
 
     # ============ STEP 4: All Bitget tokens ============
     echo -e "${BLUE}[4/$TOTAL_STEPS] Deploying Bitget pair tokens (fetching live pairs from API)...${NC}"
@@ -662,16 +662,16 @@ echo -e "${BLUE}[6/$TOTAL_STEPS] Syncing frontend addresses...${NC}"
 
 # Copy deployment JSON directly — frontend imports it as single source of truth
 if [ -f "deployments/active-deployment.json" ]; then
-    cp deployments/active-deployment.json frontendV4/lib/contracts/deployment.json
-    echo "  Copied deployment.json → frontendV4/lib/contracts/deployment.json"
+    cp deployments/active-deployment.json frontend/lib/contracts/deployment.json
+    echo "  Copied deployment.json → frontend/lib/contracts/deployment.json"
 else
     echo "  No deployment file, skipping"
 fi
 
 # Copy morpho deployment if it exists
 if [ -f "deployments/morpho-e2e.json" ]; then
-    cp deployments/morpho-e2e.json frontendV4/lib/contracts/morpho-deployment.json
-    echo "  Copied morpho-e2e.json → frontendV4/lib/contracts/morpho-deployment.json"
+    cp deployments/morpho-e2e.json frontend/lib/contracts/morpho-deployment.json
+    echo "  Copied morpho-e2e.json → frontend/lib/contracts/morpho-deployment.json"
 fi
 
 echo "  Address sync complete"
@@ -855,7 +855,7 @@ sleep 2
 
 # Install frontend deps + Playwright browser
 echo -e "  Installing frontend dependencies..."
-cd frontendV4
+cd frontend
 npm install --prefer-offline --no-audit > ../logs/frontend-install.log 2>&1
 echo -e "  Installing Playwright chromium..."
 npx playwright install chromium > ../logs/playwright-install.log 2>&1
@@ -894,7 +894,7 @@ echo -e ""
 echo -e "  ${BLUE}Running Playwright E2E tests...${NC}"
 echo -e "  Tests: health-check → connect-wallet → buy-itp → lending-cycle → sell-itp"
 echo -e ""
-cd frontendV4
+cd frontend
 npm run e2e 2>&1 | tee ../logs/e2e-results.log
 E2E_EXIT=$?
 cd ..
@@ -910,7 +910,7 @@ else
     echo -e "  ${RED}╚════════════════════════════════╝${NC}"
     echo -e "  ${YELLOW}Exit code: $E2E_EXIT${NC}"
     echo -e "  ${YELLOW}Full log:  logs/e2e-results.log${NC}"
-    echo -e "  ${YELLOW}Debug:     cd frontendV4 && npm run e2e:headed${NC}"
+    echo -e "  ${YELLOW}Debug:     cd frontend && npm run e2e:headed${NC}"
 fi
 echo ""
 
@@ -965,7 +965,7 @@ echo -e "  ${BLUE}Arb Anvil:${NC} http://localhost:8546 (chain $ARB_CHAIN_ID)"
 echo -e "  ${BLUE}Issuers:${NC}   ports 9001-900$ISSUER_COUNT (bitget-vault + arb-custody)"
 echo -e "  ${BLUE}AP:${NC}        port 9100 (real Bitget price proxy)"
 echo -e "  ${BLUE}Frontend:${NC}  http://localhost:3000 (running)"
-echo -e "  ${BLUE}E2E Tests:${NC} cd frontendV4 && npm run e2e:headed"
+echo -e "  ${BLUE}E2E Tests:${NC} cd frontend && npm run e2e:headed"
 echo -e "  ${BLUE}Logs:${NC}      ./logs/"
 echo ""
 echo -e "Run ${YELLOW}./stop.sh${NC} to shut down all services"

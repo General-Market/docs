@@ -115,51 +115,6 @@ impl<'a> ChainBuilder<'a> {
         Ok(Box::new(reader))
     }
 
-    #[allow(dead_code)]
-    async fn query_asset_count(
-        &self,
-        provider: &ethers::providers::Provider<ethers::providers::Http>,
-        node_id: u32,
-    ) -> u64 {
-        let selector = ethers::utils::keccak256("assetCount()");
-        let call_data = ethers::types::Bytes::from(selector[..4].to_vec());
-        let tx = ethers::types::TransactionRequest::new()
-            .to(self.contract_addresses.index)
-            .data(call_data);
-
-        let on_chain_count = match provider.call(&tx.into(), None).await {
-            Ok(result) => {
-                let count = ethers::types::U256::from_big_endian(&result).as_u64();
-                info!(node_id, asset_count = count, "Asset count loaded from chain");
-                count
-            }
-            Err(e) => {
-                warn!(code = "INFRA-001", node_id, error = %e, "Failed to query assetCount from chain");
-                0
-            }
-        };
-
-        // If on-chain count is 0 (setPriceAdmin not called yet), use CLI override
-        if on_chain_count == 0 {
-            if let Some(override_count) = self.params.asset_count_override {
-                info!(
-                    node_id,
-                    override_count,
-                    "On-chain assetCount is 0 (no setPriceAdmin), using --asset-count override"
-                );
-                return override_count;
-            }
-            warn!(
-                code = "INFRA-001",
-                node_id,
-                "On-chain assetCount is 0 and no --asset-count override provided. \
-                 Prices will be fetched from Bitget (not on-chain)."
-            );
-        }
-
-        on_chain_count
-    }
-
     async fn build_writer(
         &self,
         node_id: u32,

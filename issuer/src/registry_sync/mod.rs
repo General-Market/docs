@@ -969,10 +969,8 @@ mod tests {
     fn create_test_issuer(id: u8, active: bool) -> Issuer {
         use ethers::types::{Address, Bytes, U256};
 
-        // Generate a deterministic keypair for testing
-        let mut seed = [0u8; 32];
-        seed[0] = id;
-        seed[1] = 0x42;
+        // Generate a deterministic keypair for testing (must match bls-tool: vec![idx; 32])
+        let seed = vec![id; 32];
         let keypair = BLSKeyPair::from_seed(&seed).expect("valid seed");
 
         Issuer {
@@ -1125,9 +1123,7 @@ mod tests {
         let issuers: Vec<Issuer> = (0..3).map(|i| create_test_issuer(i, true)).collect();
         let keypairs: Vec<BLSKeyPair> = (0..3u8)
             .map(|i| {
-                let mut seed = [0u8; 32];
-                seed[0] = i;
-                seed[1] = 0x42;
+                let seed = vec![i; 32];
                 BLSKeyPair::from_seed(&seed).unwrap()
             })
             .collect();

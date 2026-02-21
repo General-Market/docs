@@ -2,12 +2,12 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import {Index} from "../src/core/Index.sol";
+import {Investment} from "../src/core/Investment.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /**
  * @title UpgradeIndex
- * @notice Upgrade Index proxy to new implementation with getAllItps support
+ * @notice Upgrade Investment proxy to new implementation with getAllItps support
  */
 contract UpgradeIndex is Script {
     function run() external {
@@ -16,14 +16,14 @@ contract UpgradeIndex is Script {
         vm.startBroadcast();
 
         // Deploy new implementation
-        Index newImpl = new Index();
-        console.log("New Index implementation:", address(newImpl));
+        Investment newImpl = new Investment();
+        console.log("New Investment implementation:", address(newImpl));
 
         // Upgrade proxy (caller must be admin)
-        Index proxy = Index(proxyAddress);
+        Investment proxy = Investment(proxyAddress);
         proxy.upgradeToAndCall(address(newImpl), "");
 
-        console.log("Index upgraded successfully");
+        console.log("Investment upgraded successfully");
         console.log("Proxy address:", proxyAddress);
 
         vm.stopBroadcast();

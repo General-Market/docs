@@ -1,4 +1,4 @@
-const BASE_URL = process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200'
+import { DATA_NODE_URL } from '@/lib/config'
 
 export interface UserState {
   usdc_balance: string
@@ -63,7 +63,7 @@ export interface VaultBalances {
 
 async function fetchJson<T>(path: string): Promise<T | null> {
   try {
-    const res = await fetch(`${BASE_URL}${path}`, { signal: AbortSignal.timeout(5000) })
+    const res = await fetch(`${DATA_NODE_URL}${path}`, { signal: AbortSignal.timeout(5000) })
     if (!res.ok) return null
     return await res.json()
   } catch {

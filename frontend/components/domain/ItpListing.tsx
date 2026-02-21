@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { useAccount, useConnect, useDisconnect, useReadContract, usePublicClient, useWaitForTransactionReceipt } from 'wagmi'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useAccount, useConnect, useDisconnect, usePublicClient, useWaitForTransactionReceipt } from 'wagmi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
-import { BRIDGE_PROXY_ABI, BRIDGED_ITP_FACTORY_ABI } from '@/lib/contracts/index-protocol-abi'
-import { toHex, formatUnits } from 'viem'
+import { BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
+import { formatUnits } from 'viem'
 import { BuyItpModal } from './BuyItpModal'
 import { SellItpModal } from './SellItpModal'
 import { LendItpModal } from './LendItpModal'
@@ -14,14 +14,15 @@ import { CostBasisCard } from './CostBasisCard'
 import { useItpNav } from '@/hooks/useItpNav'
 import { useUserItpShares } from '@/hooks/useUserItpShares'
 import { useItpMetadata } from '@/hooks/useItpMetadata'
+import { useDeployerName } from '@/hooks/useDeployerName'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { hasLendingMarket } from '@/lib/contracts/morpho-markets-registry'
 import blacklistedItps from '@/lib/config/blacklisted-itps.json'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
-import { truncateAddress } from '@/lib/utils/address'
 import { indexL3 } from '@/lib/wagmi'
+import { useSSENav, type NavSnapshot } from '@/hooks/useSSE'
 
-// ERC20 ABI for balance queries
+// ERC20 ABI for balance queries — used by ItpCard detail expansion (low priority migration)
 const ERC20_ABI = [
   {
     inputs: [{ name: 'account', type: 'address' }],
@@ -65,66 +66,125 @@ interface ItpInfo {
   totalSupply?: bigint
 }
 
-const INDEX_ITP_ABI = [
-  {
-    inputs: [],
-    name: 'getItpCount',
-    outputs: [{ name: 'count', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [{ name: 'itpId', type: 'bytes32' }],
-    name: 'getITP',
-    outputs: [{
-      name: 'itp',
-      type: 'tuple',
-      components: [
-        { name: 'name', type: 'bytes32' },
-        { name: 'symbol', type: 'bytes32' },
-        { name: 'creator', type: 'address' },
-        { name: 'createdAt', type: 'uint256' },
-        { name: 'feeRate', type: 'uint256' },
-        { name: 'status', type: 'uint256' },
-        { name: 'totalSupply', type: 'uint256' },
-        { name: 'totalValue', type: 'uint256' },
-        { name: 'assetCount', type: 'uint256' },
-      ],
-    }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-] as const
-
-function bytes32ToString(b32: string): string {
-  try {
-    if (!b32 || b32 === '0x' || b32 === '0x0000000000000000000000000000000000000000000000000000000000000000') return ''
-    // Manual hex-to-ASCII: take pairs of hex chars, convert to char codes, skip nulls
-    const hex = b32.startsWith('0x') ? b32.slice(2) : b32
-    let result = ''
-    for (let i = 0; i < hex.length; i += 2) {
-      const code = parseInt(hex.slice(i, i + 2), 16)
-      if (code === 0) break // null terminator
-      if (code >= 32 && code < 127) result += String.fromCharCode(code)
-    }
-    return result
-  } catch {
-    return ''
-  }
+export interface DeployedItpRef {
+  itpId: string
+  name: string
+  symbol: string
 }
 
 interface ItpListingProps {
   onCreateClick?: () => void
   onLendingClick?: () => void
+  onItpsLoaded?: (itps: DeployedItpRef[]) => void
 }
 
-const ITEMS_PER_PAGE = 2
+// Test video IDs — shown on ITP cards that don't have a metadata videoUrl set
+const TEST_VIDEO_IDS = [
+  'bBC-nXj3Ng4',  // Bitcoin whiteboard overview (3Blue1Brown)
+  'p7HKvqRI_Bo',  // How The Economic Machine Works (Ray Dalio)
+  'PHe0bXAIuk0',  // How The Stock Market Works
+  '41JCpzvnn_0',  // What is an ETF?
+]
 
-export function ItpListing({ onCreateClick, onLendingClick }: ItpListingProps) {
+/** Extract YouTube video ID from various URL formats */
+function extractYouTubeId(url: string): string | null {
+  const m = url.match(/(?:embed\/|watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+  return m ? m[1] : null
+}
+
+/** YouTube thumbnail with click-to-play — avoids black screen embed issues */
+function YouTubeLite({ videoId, title }: { videoId: string; title: string }) {
+  const [playing, setPlaying] = useState(false)
+  if (playing) {
+    return (
+      <div className="aspect-video bg-zinc-950">
+        <iframe
+          src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`}
+          className="w-full h-full border-0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          title={title}
+        />
+      </div>
+    )
+  }
+  return (
+    <button
+      onClick={() => setPlaying(true)}
+      className="relative aspect-video w-full bg-zinc-950 group cursor-pointer overflow-hidden"
+      aria-label={`Play ${title}`}
+    >
+      <img
+        src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+        alt={title}
+        className="w-full h-full object-cover"
+      />
+      {/* Play button overlay */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="w-16 h-11 bg-red-600 rounded-xl flex items-center justify-center group-hover:bg-red-500 transition-colors shadow-lg">
+          <svg className="w-6 h-6 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </div>
+      </div>
+    </button>
+  )
+}
+
+/**
+ * Derive ITP number from hex itp_id (e.g. "0x000...0001" -> 1).
+ * Returns 0 if parsing fails.
+ */
+function itpIdToNumber(itpId: string): number {
+  try {
+    const hex = itpId.startsWith('0x') ? itpId.slice(2) : itpId
+    return parseInt(hex, 16) || 0
+  } catch {
+    return 0
+  }
+}
+
+/**
+ * Convert SSE NavSnapshot[] into ItpInfo[] for the listing.
+ * SSE provides: itp_id, nav_per_share, total_supply, aum_usd
+ * Missing from SSE: name, symbol, creator, createdAt — derived from ITP number or filled by per-card hooks.
+ */
+function navSnapshotsToItpInfos(navList: NavSnapshot[]): ItpInfo[] {
+  const blacklistSet = new Set((blacklistedItps as string[]).map(id => id.toLowerCase()))
+
+  const itps: ItpInfo[] = navList
+    .filter(nav => !blacklistSet.has(nav.itp_id.toLowerCase()))
+    .map(nav => {
+      const num = itpIdToNumber(nav.itp_id)
+      return {
+        id: nav.itp_id,
+        itpId: nav.itp_id,
+        admin: '', // Not available from SSE — shown per-card via useItpMetadata
+        name: `ITP #${num}`, // Default name — overridden by per-card metadata
+        symbol: `ITP${num}`,
+        createdAt: 0, // Not available from SSE
+        source: 'index' as const,
+        completed: true,
+        arbAddress: nav.arb_address ?? undefined,
+        totalValue: BigInt(Math.round(nav.aum_usd * 1e18)),
+        totalSupply: BigInt(nav.total_supply),
+      }
+    })
+
+  // Sort by AUM descending
+  itps.sort((a, b) => {
+    const aVal = Number(a.totalValue || 0n)
+    const bVal = Number(b.totalValue || 0n)
+    return bVal - aVal
+  })
+
+  return itps
+}
+
+export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpListingProps) {
   const { address, isConnected } = useAccount()
   const { connect, connectors, isPending: isConnectPending } = useConnect()
   const { disconnect } = useDisconnect()
-  const publicClient = usePublicClient()
 
   const injectedConnector = connectors.find(c => c.id === 'injected')
 
@@ -141,310 +201,149 @@ export function ItpListing({ onCreateClick, onLendingClick }: ItpListingProps) {
       connect({ connector: injectedConnector, chainId: indexL3.id })
     }
   }
-  const [itps, setItps] = useState<ItpInfo[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [buyModalItpId, setBuyModalItpId] = useState<string | null>(null)
-  const [sellModalItpId, setSellModalItpId] = useState<string | null>(null)
+
+  // ── SSE-driven ITP list (replaces getItpCount + getITP loop + bridge loop + getLogs) ──
+  const navList = useSSENav()
+  const loading = navList.length === 0
+  const [buyModal, setBuyModal] = useState<{ itpId: string; videoUrl: string } | null>(null)
+  const [sellModal, setSellModal] = useState<{ itpId: string; videoUrl: string } | null>(null)
   const [lendModalItp, setLendModalItp] = useState<ItpInfo | null>(null)
   const [chartModalItp, setChartModalItp] = useState<{ itpId: string; name: string; createdAt?: number } | null>(null)
   const [rebalanceModalItp, setRebalanceModalItp] = useState<{ itpId: string; name: string } | null>(null)
   const [currentPage, setCurrentPage] = useState(0)
 
-  const { data: nextNonce, refetch: refetchNonce } = useReadContract({
-    address: INDEX_PROTOCOL.bridgeProxy,
-    abi: BRIDGE_PROXY_ABI,
-    functionName: 'nextCreationNonce',
-    query: {
-      enabled: !!publicClient,
-      retry: false,
-    },
-  })
+  // Derive ITP list from SSE nav snapshots
+  const itps = useMemo(() => navSnapshotsToItpInfos(navList), [navList])
 
-  const { data: itpCount, refetch: refetchItpCount } = useReadContract({
-    address: INDEX_PROTOCOL.index,
-    abi: INDEX_ITP_ABI,
-    functionName: 'getItpCount',
-    query: {
-      enabled: !!publicClient,
-      retry: false,
-    },
-  })
-
+  // Notify parent of loaded ITPs
   useEffect(() => {
-    async function fetchAllItps() {
-      if (!publicClient) {
-        setLoading(false)
-        return
-      }
-
-      try {
-        const allItps: ItpInfo[] = []
-
-        const count = Number(itpCount || 0)
-        for (let i = 1; i <= count; i++) {
-          try {
-            const itpId = toHex(i, { size: 32 })
-            const data = await publicClient.readContract({
-              address: INDEX_PROTOCOL.index,
-              abi: INDEX_ITP_ABI,
-              functionName: 'getITP',
-              args: [itpId],
-            })
-
-            const itp = data as any
-            allItps.push({
-              id: itpId,
-              itpId: itpId,
-              admin: itp.creator,
-              name: bytes32ToString(itp.name),
-              symbol: bytes32ToString(itp.symbol),
-              createdAt: Number(itp.createdAt),
-              source: 'index',
-              completed: true,
-              totalValue: BigInt(itp.totalValue || 0),
-              totalSupply: BigInt(itp.totalSupply || 0),
-            })
-          } catch (e) {
-            console.warn(`Failed to fetch Index ITP ${i}:`, e)
-          }
-        }
-
-        const nonceNum = Number(nextNonce || 0)
-        for (let i = 0; i < nonceNum; i++) {
-          try {
-            const data = await publicClient.readContract({
-              address: INDEX_PROTOCOL.bridgeProxy,
-              abi: BRIDGE_PROXY_ABI,
-              functionName: 'getPendingCreation',
-              args: [BigInt(i)],
-            }) as unknown as [string, string, string, bigint[], string[], bigint[], bigint, boolean]
-
-            if (data[0] === '0x0000000000000000000000000000000000000000') continue
-
-            const itpInfo: ItpInfo = {
-              id: `bridge-${i}`,
-              nonce: i,
-              admin: data[0],
-              name: data[1],
-              symbol: data[2],
-              createdAt: Number(data[6]),
-              source: 'bridge',
-              completed: data[7],
-            }
-
-            if (data[7]) {
-              try {
-                const logs = await publicClient.getLogs({
-                  address: INDEX_PROTOCOL.bridgeProxy,
-                  event: {
-                    type: 'event',
-                    name: 'ItpCreated',
-                    inputs: [
-                      { indexed: true, name: 'orbitItpId', type: 'bytes32' },
-                      { indexed: true, name: 'bridgedItpAddress', type: 'address' },
-                      { indexed: true, name: 'nonce', type: 'uint256' },
-                      { indexed: false, name: 'admin', type: 'address' },
-                    ],
-                  },
-                  args: { nonce: BigInt(i) },
-                  fromBlock: 0n,
-                  toBlock: 'latest',
-                })
-
-                if (logs.length > 0) {
-                  const log = logs[0]
-                  itpInfo.orbitItpId = log.topics[1] as string
-                  itpInfo.itpId = log.topics[1] as string
-                  itpInfo.arbAddress = `0x${log.topics[2]?.slice(-40)}`
-                }
-              } catch (e) {
-                console.warn(`Failed to fetch ItpCreated event for nonce ${i}:`, e)
-              }
-            }
-
-            allItps.push(itpInfo)
-          } catch (e) {
-            console.warn(`Failed to fetch BridgeProxy ITP ${i}:`, e)
-          }
-        }
-
-        // Fetch totalSupply for bridge ITPs with arbAddress (for AUM sorting)
-        for (const itp of allItps) {
-          if (itp.source === 'bridge' && itp.completed && itp.arbAddress) {
-            try {
-              const supply = await publicClient.readContract({
-                address: itp.arbAddress as `0x${string}`,
-                abi: ERC20_ABI,
-                functionName: 'totalSupply',
-              })
-              itp.totalSupply = supply
-            } catch { /* skip */ }
-          }
-        }
-
-        // Deduplicate: bridge-completed ITPs with orbitItpId supersede matching Index ITPs
-        // Merge AUM data from Index ITPs into bridge ITPs
-        const indexItpMap = new Map<string, ItpInfo>()
-        for (const itp of allItps) {
-          if (itp.source === 'index' && itp.itpId) indexItpMap.set(itp.itpId, itp)
-        }
-        const bridgeItpIds = new Set(
-          allItps
-            .filter(itp => itp.source === 'bridge' && itp.completed && itp.itpId)
-            .map(itp => itp.itpId)
-        )
-        for (const itp of allItps) {
-          if (itp.source === 'bridge' && itp.itpId && indexItpMap.has(itp.itpId)) {
-            const indexItp = indexItpMap.get(itp.itpId)!
-            itp.totalValue = indexItp.totalValue
-            if (!itp.totalSupply) itp.totalSupply = indexItp.totalSupply
-          }
-        }
-        const deduped = allItps.filter(itp => {
-          if (itp.source === 'index' && bridgeItpIds.has(itp.itpId)) return false
-          return true
-        })
-
-        // Filter out blacklisted ITPs
-        const blacklistSet = new Set((blacklistedItps as string[]).map(id => id.toLowerCase()))
-        const filtered = deduped.filter(itp => {
-          if (itp.itpId && blacklistSet.has(itp.itpId.toLowerCase())) return false
-          return true
-        })
-
-        // Sort by AUM (totalValue) descending — active ITPs first, then pending
-        filtered.sort((a, b) => {
-          const aActive = a.source === 'index' || a.completed
-          const bActive = b.source === 'index' || b.completed
-          if (aActive !== bActive) return aActive ? -1 : 1
-          const aVal = Number(a.totalValue || 0n)
-          const bVal = Number(b.totalValue || 0n)
-          return bVal - aVal
-        })
-
-        setItps(filtered)
-        setError(null)
-      } catch (e: any) {
-        console.error('Failed to fetch ITPs:', e)
-        setError(e.message || 'Failed to fetch ITPs')
-      } finally {
-        setLoading(false)
-      }
+    if (onItpsLoaded && itps.length > 0) {
+      onItpsLoaded(
+        itps
+          .filter(itp => itp.itpId)
+          .map(itp => ({ itpId: itp.itpId!, name: itp.name, symbol: itp.symbol }))
+      )
     }
+  }, [itps, onItpsLoaded])
 
-    fetchAllItps()
-  }, [nextNonce, itpCount, publicClient])
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      refetchNonce()
-      refetchItpCount()
-    }, 10000)
-    return () => clearInterval(interval)
-  }, [refetchNonce, refetchItpCount])
+  const activeItps = itps.filter(i => i.source === 'index' || i.completed)
+  const pendingItps = itps.filter(i => i.source !== 'index' && !i.completed)
+  const [showAll, setShowAll] = useState(false)
+  const displayedItps = showAll ? itps : itps.slice(0, 6)
 
   return (
     <>
-      <div className="bg-terminal-dark/50 border border-white/10 rounded-lg p-6">
-        <div className="flex items-center gap-3 mb-6 flex-wrap">
-          <h2 className="text-xl font-bold text-white">Index Tracking Products</h2>
-          <button
-            onClick={handleWalletClick}
-            disabled={isConnectPending}
-            className="px-3 py-2 bg-black border border-white/30 text-white font-mono text-sm rounded hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
-          >
-            {isConnected && address ? truncateAddress(address) : isConnectPending ? 'Connecting...' : 'Connect Wallet'}
-          </button>
-          {onCreateClick && (
-            <button
-              onClick={onCreateClick}
-              className="px-4 py-2 bg-accent text-terminal font-bold rounded hover:bg-accent/90 transition-colors"
-            >
-              + Create ITP
-            </button>
-          )}
-          {onLendingClick && (
-            <button
-              onClick={onLendingClick}
-              className="px-3 py-2 bg-accent text-terminal font-bold rounded text-sm hover:bg-accent/90 transition-colors"
-            >
-              Lending
-            </button>
-          )}
-          <a
-            href="https://discord.gg/xsfgzwR6"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-3 py-2 bg-accent text-terminal font-bold rounded text-sm hover:bg-accent/90 transition-colors"
-          >
-            Support
-          </a>
+      {/* Hero Band */}
+      <div className="hero-band">
+        <div className="hero-band-inner">
+          <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-2">
+            Index Tracking Products
+          </div>
+          <h2 className="text-[28px] md:text-[42px] font-black tracking-[-0.03em] text-black leading-[1.1] mb-2">
+            Markets
+          </h2>
+          <p className="text-[16px] text-text-secondary max-w-[600px]">
+            Explore decentralized index products. Each ITP tracks a basket of crypto assets with live NAV pricing and on-chain settlement.
+          </p>
         </div>
-
-        {error && (
-          <div className="bg-red-500/20 border border-red-500/50 rounded p-3 text-red-400 text-sm mb-4">
-            {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="text-center py-8 text-white/50">Loading ITPs...</div>
-        ) : itps.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-white/50 mb-4">No ITPs created yet</p>
-            {onCreateClick && (
-              <button onClick={onCreateClick} className="text-accent hover:text-accent/80">
-                Create the first ITP →
-              </button>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {itps.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).map(itp => (
-                <ItpCard
-                  key={itp.id}
-                  itp={itp}
-                  onBuy={() => itp.itpId && setBuyModalItpId(itp.itpId)}
-                  onSell={() => itp.itpId && setSellModalItpId(itp.itpId)}
-                  onLend={(arbAddr) => setLendModalItp({ ...itp, arbAddress: arbAddr })}
-                  onChart={() => itp.itpId && setChartModalItp({ itpId: itp.itpId, name: itp.name || `ITP #${itp.nonce ?? itp.id}`, createdAt: itp.createdAt })}
-                  onRebalance={() => itp.itpId && setRebalanceModalItp({ itpId: itp.itpId, name: itp.name || `ITP #${itp.nonce ?? itp.id}` })}
-                />
-              ))}
-            </div>
-
-            {itps.length > ITEMS_PER_PAGE && (
-              <div className="flex justify-center items-center gap-4 mt-4 pt-4 border-t border-white/10">
-                <button
-                  onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
-                  disabled={currentPage === 0}
-                  className="px-3 py-1 text-sm font-mono border border-white/20 rounded text-white/70 hover:border-accent hover:text-accent disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                >
-                  Prev
-                </button>
-                <span className="text-xs text-white/50 font-mono">
-                  {currentPage + 1} / {Math.ceil(itps.length / ITEMS_PER_PAGE)}
-                </span>
-                <button
-                  onClick={() => setCurrentPage(p => Math.min(Math.ceil(itps.length / ITEMS_PER_PAGE) - 1, p + 1))}
-                  disabled={currentPage >= Math.ceil(itps.length / ITEMS_PER_PAGE) - 1}
-                  className="px-3 py-1 text-sm font-mono border border-white/20 rounded text-white/70 hover:border-accent hover:text-accent disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                >
-                  Next
-                </button>
-              </div>
-            )}
-          </>
-        )}
       </div>
 
-      {buyModalItpId && (
-        <BuyItpModal itpId={buyModalItpId} onClose={() => setBuyModalItpId(null)} />
+      {/* Filter Bar — mockup: padding 20px 48px */}
+      <div className="py-5 px-6 lg:px-12 border-b border-border-light">
+        <div className="max-w-site mx-auto flex items-center gap-3 flex-wrap">
+          <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-text-primary mr-1">Filters</span>
+          <button
+            onClick={() => { setCurrentPage(0); setShowAll(false) }}
+            className={`filter-pill ${currentPage === 0 ? 'active' : ''}`}
+          >
+            All ({itps.length})
+          </button>
+          <button className="filter-pill">Active ({activeItps.length})</button>
+          <button className="filter-pill">Pending ({pendingItps.length})</button>
+          <input
+            type="text"
+            placeholder="Search funds by name or ticker..."
+            className="flex-1 min-w-0 md:min-w-[200px] max-w-[320px] border-2 border-border-light rounded-full px-4 py-[9px] text-[13px] text-text-primary placeholder-text-muted focus:outline-none focus:border-black transition-colors"
+          />
+          <select className="ml-auto border border-border-light rounded-md px-3.5 py-2 text-[12px] font-medium text-text-secondary bg-white focus:outline-none cursor-pointer">
+            <option>Sort: AUM High &rarr; Low</option>
+            <option>Sort: AUM Low &rarr; High</option>
+            <option>Sort: Newest</option>
+            <option>Sort: Name A-Z</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Section Bar */}
+      <div className="px-6 lg:px-12">
+        <div className="max-w-site mx-auto">
+          <div className="section-bar">
+            <div>
+              <div className="section-bar-title">Data View</div>
+              <div className="section-bar-value">Fund Overview — Live NAV</div>
+            </div>
+            <div className="section-bar-right">
+              {showAll ? `Showing all ${itps.length} products` : `Showing ${Math.min(6, itps.length)} of ${itps.length} products`}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-12 text-text-muted">Loading ITPs...</div>
+      ) : itps.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-text-muted mb-4">No ITPs created yet</p>
+        </div>
+      ) : (
+        <>
+          {/* Fund Cards Grid — mockup: .fund-grid padding: 24px 48px */}
+          <div className="px-6 lg:px-12 py-6">
+            <div className="max-w-site mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border border-border-light">
+                {displayedItps.map((itp, idx) => (
+                  <ItpCard
+                    key={itp.id}
+                    itp={itp}
+                    index={idx}
+                    onBuy={() => {
+                      if (!itp.itpId) return
+                      const vid = TEST_VIDEO_IDS[idx % TEST_VIDEO_IDS.length]
+                      setBuyModal({ itpId: itp.itpId, videoUrl: `https://www.youtube-nocookie.com/embed/${vid}?autoplay=1` })
+                    }}
+                    onSell={() => {
+                      if (!itp.itpId) return
+                      const vid = TEST_VIDEO_IDS[idx % TEST_VIDEO_IDS.length]
+                      setSellModal({ itpId: itp.itpId, videoUrl: `https://www.youtube-nocookie.com/embed/${vid}?autoplay=1` })
+                    }}
+                    onLend={(arbAddr) => setLendModalItp({ ...itp, arbAddress: arbAddr })}
+                    onChart={() => itp.itpId && setChartModalItp({ itpId: itp.itpId, name: itp.name || `ITP #${itp.nonce ?? itp.id}`, createdAt: itp.createdAt })}
+                    onRebalance={() => itp.itpId && setRebalanceModalItp({ itpId: itp.itpId, name: itp.name || `ITP #${itp.nonce ?? itp.id}` })}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Show All button — mockup: .show-more padding: 16px 48px 32px */}
+          {!showAll && itps.length > 6 && (
+            <div className="pt-4 pb-8 text-center">
+              <button
+                onClick={() => setShowAll(true)}
+                className="inline-flex items-center gap-2 px-8 py-3 border-2 border-black rounded-md text-[13px] font-bold text-black hover:bg-black hover:text-white transition-colors"
+              >
+                Show All {itps.length} Funds
+              </button>
+            </div>
+          )}
+        </>
       )}
-      {sellModalItpId && (
-        <SellItpModal itpId={sellModalItpId} onClose={() => setSellModalItpId(null)} />
+
+      {buyModal && (
+        <BuyItpModal itpId={buyModal.itpId} videoUrl={buyModal.videoUrl} onClose={() => setBuyModal(null)} />
+      )}
+      {sellModal && (
+        <SellItpModal itpId={sellModal.itpId} videoUrl={sellModal.videoUrl} onClose={() => setSellModal(null)} />
       )}
       {lendModalItp && (
         <LendItpModal itpInfo={lendModalItp} isOpen={true} onClose={() => setLendModalItp(null)} />
@@ -468,6 +367,7 @@ interface TokenHolder {
 
 interface ItpCardProps {
   itp: ItpInfo
+  index: number
   onBuy: () => void
   onSell: () => void
   onLend: (arbAddress: string) => void
@@ -475,7 +375,7 @@ interface ItpCardProps {
   onRebalance: () => void
 }
 
-function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardProps) {
+function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardProps) {
   const { address } = useAccount()
   const publicClient = usePublicClient()
   const [showDetails, setShowDetails] = useState(false)
@@ -489,6 +389,7 @@ function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardPr
   const [editVideo, setEditVideo] = useState('')
 
   const { metadata, refetch: refetchMetadata } = useItpMetadata(itp.itpId as `0x${string}` | undefined)
+  const { name: deployerName } = useDeployerName(itp.admin as `0x${string}` | undefined)
   const { writeContractAsync, data: txHash, isPending: isWriting } = useChainWriteContract()
   const { isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({ hash: txHash })
 
@@ -500,7 +401,7 @@ function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardPr
     }
   }, [isTxConfirmed, refetchMetadata])
 
-  const isDeployer = address && address.toLowerCase() === itp.admin.toLowerCase()
+  const isDeployer = address && itp.admin && address.toLowerCase() === itp.admin.toLowerCase()
 
   const handleEditMeta = useCallback(() => {
     setEditDesc(metadata?.description ?? '')
@@ -529,36 +430,18 @@ function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardPr
     address as `0x${string}` | undefined
   )
 
-  // Resolve bridged ERC20 address from BridgedItpFactory for ITPs without arbAddress
-  const { data: resolvedArbAddress } = useReadContract({
-    address: INDEX_PROTOCOL.bridgedItpFactory,
-    abi: BRIDGED_ITP_FACTORY_ABI,
-    functionName: 'deployedItps',
-    args: itp.itpId ? [itp.itpId as `0x${string}`] : undefined,
-    query: {
-      enabled: !!itp.itpId && !itp.arbAddress,
-    },
-  })
-
-  // Use existing arbAddress or the resolved one from factory
-  const effectiveArbAddress = itp.arbAddress ?? (
-    resolvedArbAddress && resolvedArbAddress !== '0x0000000000000000000000000000000000000000'
-      ? resolvedArbAddress
-      : undefined
-  )
+  // arbAddress is now provided via SSE NAV payload (resolved in data-node poll_nav)
+  const effectiveArbAddress = itp.arbAddress ?? undefined
 
   const isActive = itp.source === 'index' || itp.completed
-  const statusColor = isActive ? 'text-green-400' : 'text-yellow-400'
-  const statusBg = isActive ? 'bg-green-500/20' : 'bg-yellow-500/20'
-  const statusText = itp.source === 'index' ? 'Active (L3)' : itp.completed ? 'Active (Bridged)' : 'Pending Consensus'
 
-  const createdDate = new Date(itp.createdAt * 1000)
-  const timeAgo = getTimeAgo(createdDate)
+  const createdDate = itp.createdAt > 0 ? new Date(itp.createdAt * 1000) : null
+  const timeAgo = createdDate ? getTimeAgo(createdDate) : ''
 
   const shortenAddress = (addr: string) =>
     addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : 'N/A'
 
-  // Fetch minted balances when details are expanded and we have an arbAddress
+  // Fetch minted balances when details are expanded (low priority migration to REST)
   useEffect(() => {
     // Skip if conditions not met
     if (!showDetails || !effectiveArbAddress) return
@@ -643,156 +526,174 @@ function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardPr
   }, [showDetails, publicClient, effectiveArbAddress])
 
   return (
-    <div className="bg-terminal-dark border border-white/10 rounded-lg overflow-hidden hover:border-accent/50 transition-colors">
-      {/* Video embed — flush top, full width (only if videoUrl set) */}
-      {metadata?.videoUrl && (
-        <div className="aspect-video bg-black">
-          <iframe
-            src={metadata.videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
-            className="w-full h-full border-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            title={`${itp.name || 'ITP'} video`}
-          />
-        </div>
-      )}
+    <div id={itp.itpId ? `itp-card-${itp.itpId}` : undefined} className="bg-white border-r border-b border-border-light overflow-hidden">
+      {/* Video — click-to-play YouTube thumbnail */}
+      {(() => {
+        const rawUrl = metadata?.videoUrl
+        const videoId = rawUrl ? extractYouTubeId(rawUrl) : TEST_VIDEO_IDS[index % TEST_VIDEO_IDS.length]
+        if (!videoId) return null
+        return <YouTubeLite videoId={videoId} title={itp.name || 'ITP'} />
+      })()}
 
-      {/* Card content */}
-      <div className="p-4">
+      {/* Card content — mockup: .fund-body padding: 16px 20px */}
+      <div className="px-5 py-4">
       <div className="flex justify-between items-start mb-3">
         <div>
-          <h3 className="text-lg font-bold text-white">{itp.name || `ITP #${itp.nonce ?? itp.id}`}</h3>
-          <p className="text-accent font-mono">${itp.symbol || 'N/A'}</p>
+          <h3 className="text-[16px] font-extrabold text-black tracking-[-0.01em]">{itp.name || `ITP #${itp.nonce ?? itp.id}`}</h3>
+          {deployerName && <p className="text-[11px] text-text-muted">by {deployerName}</p>}
+          <p className="text-[12px] text-text-muted font-mono font-medium">${itp.symbol || 'N/A'}</p>
         </div>
-        <span className={`text-xs px-2 py-1 rounded ${statusColor} ${statusBg}`}>
-          {statusText}
-        </span>
+        <div className="flex items-center gap-1">
+          <span className={`w-[6px] h-[6px] rounded-full ${isActive ? 'bg-color-up' : 'bg-text-muted'}`} />
+          <span className={`text-[11px] font-semibold ${isActive ? 'text-color-up' : 'text-text-muted'}`}>{isActive ? 'Active' : 'Pending'}</span>
+        </div>
       </div>
 
+      {/* Metrics Row — mockup: .fund-metrics border-t/b, .fund-metric padding: 10px 0, value 15px/700 */}
       {isActive && (
-        <div className="bg-black/30 rounded p-3 mb-3">
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-white/50">NAV / Share</span>
+        <div className="grid grid-cols-3 border-t border-b border-border-light -mx-5 px-5">
+          <div className="py-2.5 pr-3">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">NAV / Share</div>
             {isNavLoading || navPerShare === 0 ? (
-              <span className="text-sm text-white/40 animate-pulse">Loading...</span>
+              <span className="text-sm text-text-muted animate-pulse">...</span>
             ) : (
-              <span className="text-lg font-bold text-accent font-mono">${navPerShare.toFixed(6)}</span>
+              <span className="text-[15px] font-bold text-black font-mono tabular-nums">${navPerShare.toFixed(4)}</span>
             )}
           </div>
-          {totalAssetCount > 0 && (
-            <div className="flex justify-between items-center mt-1">
-              <span className="text-xs text-white/40">{totalAssetCount} assets</span>
-              <span className="text-xs text-white/40">{pricedAssetCount}/{totalAssetCount} priced</span>
-            </div>
-          )}
-          {address && userShares > 0n && (
-            <div className="flex justify-between items-center mt-2 pt-2 border-t border-white/10">
-              <span className="text-xs text-white/50">Your Balance</span>
-              <span className="text-sm font-bold text-white font-mono">
-                {parseFloat(formatUnits(userShares, 18)).toFixed(4)} {itp.symbol || 'shares'}
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Description + website */}
-      {metadata?.description && (
-        <p className="text-xs text-white/60 mb-2 line-clamp-3">{metadata.description}</p>
-      )}
-      {metadata?.websiteUrl && (
-        <a
-          href={metadata.websiteUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-accent hover:text-accent/80 mb-2 block truncate"
-        >
-          {metadata.websiteUrl.replace(/^https?:\/\//, '')}
-        </a>
-      )}
-
-      <div className="text-sm text-white/50 mb-4 space-y-1">
-        {itp.nonce !== undefined && <p>Request #{itp.nonce}</p>}
-        <p className="truncate">Creator: {shortenAddress(itp.admin)}</p>
-        {isDeployer && !showEditMeta && (
-          <button
-            onClick={handleEditMeta}
-            className="text-xs text-accent hover:text-accent/80 underline"
-          >
-            Edit ITP Info
-          </button>
-        )}
-        {showEditMeta && (
-          <div className="bg-black/30 rounded p-3 space-y-2 mt-1">
-            <textarea
-              value={editDesc}
-              onChange={e => setEditDesc(e.target.value)}
-              maxLength={280}
-              rows={3}
-              placeholder="Description (max 280 chars / ~50 words)"
-              className="w-full bg-black/50 border border-white/20 rounded px-2 py-1 text-xs text-white placeholder-white/30 focus:border-accent outline-none resize-none"
-            />
-            <input
-              type="text"
-              value={editUrl}
-              onChange={e => setEditUrl(e.target.value)}
-              maxLength={128}
-              placeholder="Website URL (max 128)"
-              className="w-full bg-black/50 border border-white/20 rounded px-2 py-1 text-xs text-white placeholder-white/30 focus:border-accent outline-none"
-            />
-            <input
-              type="text"
-              value={editVideo}
-              onChange={e => setEditVideo(e.target.value)}
-              maxLength={256}
-              placeholder="YouTube URL (max 256)"
-              className="w-full bg-black/50 border border-white/20 rounded px-2 py-1 text-xs text-white placeholder-white/30 focus:border-accent outline-none"
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={handleSaveMeta}
-                disabled={isWriting}
-                className="px-3 py-1 bg-accent text-terminal text-xs font-bold rounded hover:bg-accent/90 disabled:opacity-50 transition-colors"
-              >
-                {isWriting ? 'Saving...' : 'Save'}
-              </button>
-              <button
-                onClick={() => setShowEditMeta(false)}
-                className="px-3 py-1 border border-white/20 text-white/70 text-xs rounded hover:border-white/40 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
+          <div className="py-2.5 px-3 border-l border-border-light">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Assets</div>
+            <span className="text-[15px] font-bold text-black font-mono tabular-nums">{totalAssetCount || '—'}</span>
           </div>
-        )}
-        <p>{timeAgo}</p>
-      </div>
-
-      {effectiveArbAddress && (
-        <div className="bg-black/30 rounded p-3 mb-4 text-xs font-mono space-y-2">
-          <div>
-            <span className="text-white/40">Arbitrum ERC20:</span>
-            <p className="text-accent break-all">{effectiveArbAddress}</p>
+          <div className="py-2.5 pl-3 border-l border-border-light">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Balance</div>
+            <span className="text-[15px] font-bold text-black font-mono tabular-nums">
+              {address && userShares > 0n ? parseFloat(formatUnits(userShares, 18)).toFixed(2) : '—'}
+            </span>
           </div>
         </div>
       )}
 
-      {itp.itpId && (
-        <div className="bg-black/30 rounded p-3 mb-4 text-xs font-mono">
-          <span className="text-white/40">ITP ID:</span>
-          <p className="text-white/60 break-all">{itp.itpId.slice(0, 22)}...{itp.itpId.slice(-8)}</p>
+      {/* Action links — mockup: .fund-actions padding-top: 12px, .fund-action padding: 6px 0, separator margin: 0 10px */}
+      {itp.itpId && isActive && (
+        <div className="pt-3 flex items-center flex-wrap">
+          <WalletActionButton onClick={onBuy} className="text-[12px] font-bold uppercase tracking-[0.04em] text-brand-dark hover:text-brand transition-colors py-1.5">Buy</WalletActionButton>
+          <span className="mx-2.5 text-border-light font-normal">|</span>
+          <WalletActionButton onClick={onSell} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">Sell</WalletActionButton>
+          <span className="mx-2.5 text-border-light font-normal">|</span>
+          <button onClick={onChart} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">Chart</button>
+          <span className="mx-2.5 text-border-light font-normal">|</span>
+          <WalletActionButton onClick={onRebalance} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">Rebalance</WalletActionButton>
+          {effectiveArbAddress && hasLendingMarket(effectiveArbAddress) && (
+            <>
+              <span className="mx-2.5 text-border-light font-normal">|</span>
+              <WalletActionButton onClick={() => onLend(effectiveArbAddress)} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">Borrow</WalletActionButton>
+            </>
+          )}
         </div>
       )}
 
+      {/* Pending fill status */}
+      {itp.itpId && !isActive && (
+        <div className="pt-2 text-[11px] text-text-muted uppercase tracking-wider">Pending Fill</div>
+      )}
+
+      {/* Expandable details toggle */}
       <button
         onClick={() => setShowDetails(!showDetails)}
-        className="w-full py-2 border border-white/20 rounded text-white/70 text-sm hover:border-white/40 transition-colors"
+        className="mt-2 text-[11px] text-text-muted hover:text-text-primary transition-colors underline"
       >
-        {showDetails ? 'Hide Details' : 'View Details'}
+        {showDetails ? 'Hide Details' : 'Details'}
       </button>
 
       {showDetails && (
-        <div className="mt-4 pt-4 border-t border-white/10 space-y-4">
+        <div className="mt-3 pt-3 border-t border-border-light space-y-3 text-xs">
+          {/* Description + website */}
+          {metadata?.description && (
+            <p className="text-text-muted line-clamp-3">{metadata.description}</p>
+          )}
+          {metadata?.websiteUrl && (
+            <a
+              href={metadata.websiteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-zinc-700 hover:text-zinc-900 block truncate"
+            >
+              {metadata.websiteUrl.replace(/^https?:\/\//, '')}
+            </a>
+          )}
+
+          <div className="text-text-muted space-y-0.5">
+            {itp.nonce !== undefined && <p>Request #{itp.nonce}</p>}
+            {itp.admin && <p className="truncate">Creator: {shortenAddress(itp.admin)}</p>}
+            {timeAgo && <p>{timeAgo}</p>}
+          </div>
+
+          {isDeployer && !showEditMeta && (
+            <button
+              onClick={handleEditMeta}
+              className="text-zinc-700 hover:text-zinc-900 underline"
+            >
+              Edit ITP Info
+            </button>
+          )}
+          {showEditMeta && (
+            <div className="bg-muted rounded p-3 space-y-2">
+              <textarea
+                value={editDesc}
+                onChange={e => setEditDesc(e.target.value)}
+                maxLength={280}
+                rows={3}
+                placeholder="Description (max 280 chars / ~50 words)"
+                className="w-full bg-card border border-border-medium rounded px-2 py-1 text-xs text-text-primary placeholder-text-muted focus:border-zinc-600 outline-none resize-none"
+              />
+              <input
+                type="text"
+                value={editUrl}
+                onChange={e => setEditUrl(e.target.value)}
+                maxLength={128}
+                placeholder="Website URL (max 128)"
+                className="w-full bg-card border border-border-medium rounded px-2 py-1 text-xs text-text-primary placeholder-text-muted focus:border-zinc-600 outline-none"
+              />
+              <input
+                type="text"
+                value={editVideo}
+                onChange={e => setEditVideo(e.target.value)}
+                maxLength={256}
+                placeholder="YouTube URL (max 256)"
+                className="w-full bg-card border border-border-medium rounded px-2 py-1 text-xs text-text-primary placeholder-text-muted focus:border-zinc-600 outline-none"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveMeta}
+                  disabled={isWriting}
+                  className="px-3 py-1 bg-zinc-900 text-white text-xs font-semibold rounded hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+                >
+                  {isWriting ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={() => setShowEditMeta(false)}
+                  className="px-3 py-1 border border-border-medium text-text-secondary text-xs rounded hover:border-zinc-500 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {effectiveArbAddress && (
+            <div className="bg-muted rounded p-2 font-mono space-y-1">
+              <span className="text-text-muted">Arbitrum ERC20:</span>
+              <p className="text-text-secondary break-all">{effectiveArbAddress}</p>
+            </div>
+          )}
+
+          {itp.itpId && (
+            <div className="bg-muted rounded p-2 font-mono">
+              <span className="text-text-muted">ITP ID:</span>
+              <p className="text-text-secondary break-all">{itp.itpId.slice(0, 22)}...{itp.itpId.slice(-8)}</p>
+            </div>
+          )}
+
           {/* Cost Basis / Position */}
           {itp.itpId && isActive && (
             <CostBasisCard itpId={itp.itpId} />
@@ -800,29 +701,29 @@ function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardPr
 
           {/* Minted Balances Section */}
           {effectiveArbAddress && (
-            <div className="bg-black/20 rounded p-3">
+            <div className="bg-muted rounded p-3">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-xs text-white/60 font-bold">Minted Supply</span>
-                <span className="text-xs text-accent font-mono">
+                <span className="text-text-secondary font-medium">Minted Supply</span>
+                <span className="text-text-primary font-mono">
                   {parseFloat(formatUnits(totalSupply, 18)).toFixed(4)} {itp.symbol}
                 </span>
               </div>
               {loadingHolders ? (
-                <div className="text-xs text-white/40 text-center py-2">Loading holders...</div>
+                <div className="text-text-muted text-center py-2">Loading holders...</div>
               ) : holderError ? (
-                <div className="text-xs text-white/40 text-center py-2">Unable to fetch holders</div>
+                <div className="text-text-muted text-center py-2">Unable to fetch holders</div>
               ) : holders.length === 0 ? (
-                <div className="text-xs text-white/40 text-center py-2">No tracked holders</div>
+                <div className="text-text-muted text-center py-2">No tracked holders</div>
               ) : (
                 <div className="space-y-1">
                   {holders.map(holder => (
-                    <div key={holder.address} className="flex justify-between items-center text-xs">
-                      <span className="text-white/70">{holder.label}</span>
+                    <div key={holder.address} className="flex justify-between items-center">
+                      <span className="text-text-secondary">{holder.label}</span>
                       <div className="flex gap-2">
-                        <span className="text-white/50 font-mono">
+                        <span className="text-text-muted font-mono">
                           {parseFloat(formatUnits(holder.balance, 18)).toFixed(2)}
                         </span>
-                        <span className="text-accent w-12 text-right">{holder.percentage.toFixed(1)}%</span>
+                        <span className="text-text-primary w-12 text-right font-mono">{holder.percentage.toFixed(1)}%</span>
                       </div>
                     </div>
                   ))}
@@ -832,13 +733,13 @@ function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardPr
                     const unaccounted = totalSupply - accountedBalance
                     if (unaccounted > 0n && totalSupply > 0n) {
                       return (
-                        <div className="flex justify-between items-center text-xs pt-1 border-t border-white/10 mt-1">
-                          <span className="text-yellow-400">Other Holders</span>
+                        <div className="flex justify-between items-center pt-1 border-t border-border-light mt-1">
+                          <span className="text-color-warning">Other Holders</span>
                           <div className="flex gap-2">
-                            <span className="text-yellow-400/70 font-mono">
+                            <span className="text-color-warning/70 font-mono">
                               {parseFloat(formatUnits(unaccounted, 18)).toFixed(2)}
                             </span>
-                            <span className="text-yellow-400 w-12 text-right">
+                            <span className="text-color-warning w-12 text-right">
                               {(Number((unaccounted * 10000n) / totalSupply) / 100).toFixed(1)}%
                             </span>
                           </div>
@@ -853,54 +754,18 @@ function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardPr
           )}
 
           {/* Technical Details */}
-          <div className="text-xs font-mono text-white/40 space-y-1">
+          <div className="font-mono text-text-muted space-y-0.5">
             {itp.nonce !== undefined && <p>Nonce: {itp.nonce}</p>}
             <p>Source: {itp.source === 'index' ? 'Index.sol (L3)' : 'BridgeProxy'}</p>
-            <p>Admin: {itp.admin}</p>
-            <p>Created: {createdDate.toISOString()}</p>
+            {itp.admin && <p>Admin: {itp.admin}</p>}
+            {createdDate && <p>Created: {createdDate.toISOString()}</p>}
             {effectiveArbAddress && <p className="break-all">Arb Address: {effectiveArbAddress}</p>}
             {itp.itpId && <p className="break-all">ITP ID: {itp.itpId}</p>}
           </div>
         </div>
       )}
 
-      {itp.itpId && isActive && (
-        <div className="mt-3 flex gap-2">
-          <WalletActionButton
-            onClick={onBuy}
-            className="flex-1 py-2 bg-accent text-terminal font-bold rounded text-sm text-center hover:bg-accent/90 transition-colors"
-          >
-            Buy
-          </WalletActionButton>
-          <WalletActionButton
-            onClick={onSell}
-            className="flex-1 py-2 border border-white/20 text-white font-bold rounded text-sm text-center hover:border-white/40 transition-colors"
-          >
-            Sell
-          </WalletActionButton>
-          <button
-            onClick={onChart}
-            className="flex-1 py-2 border border-white/20 text-white/70 font-bold rounded text-sm text-center hover:border-accent hover:text-accent transition-colors"
-          >
-            Chart
-          </button>
-          <WalletActionButton
-            onClick={onRebalance}
-            className="flex-1 py-2 border border-white/20 text-white/70 font-bold rounded text-sm text-center hover:border-accent hover:text-accent transition-colors"
-          >
-            Rebalance
-          </WalletActionButton>
-          {effectiveArbAddress && hasLendingMarket(effectiveArbAddress) && (
-            <WalletActionButton
-              onClick={() => onLend(effectiveArbAddress)}
-              className="flex-1 py-2 border border-accent/50 text-accent font-bold rounded text-sm text-center hover:border-accent hover:bg-accent/10 transition-colors"
-            >
-              Borrow
-            </WalletActionButton>
-          )}
-        </div>
-      )}
-      </div>{/* end p-4 wrapper */}
+      </div>{/* end p-6 wrapper */}
     </div>
   )
 }

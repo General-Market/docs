@@ -9,13 +9,13 @@ set -e
 cd /Users/maxguillabert/Downloads/index
 export PATH="$HOME/.foundry/bin:$PATH"
 
-# Source Bitget credentials if available (BITGET_PUB, BITGET_PK, BITGET_PASS)
-if [ -f "global.env" ]; then
-    set -a && source global.env && set +a
-    echo "Loaded credentials from global.env"
+# Source system config if available (BITGET_PUB, BITGET_PK, BITGET_PASS)
+if [ -f "system.env" ]; then
+    set -a && source system.env && set +a
+    echo "Loaded credentials from system.env"
 fi
 
-# Map global.env names → issuer read-only env vars
+# Map system.env names → issuer read-only env vars
 export BITGET_READONLY_API_KEY="${BITGET_READONLY_API_KEY:-$BITGET_PUB}"
 export BITGET_READONLY_API_SECRET="${BITGET_READONLY_API_SECRET:-$BITGET_PK}"
 export BITGET_READONLY_PASSPHRASE="${BITGET_READONLY_PASSPHRASE:-$BITGET_PASS}"

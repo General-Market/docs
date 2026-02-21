@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../src/core/Index.sol";
+import "../src/core/Investment.sol";
 import "../src/mocks/MockERC20.sol";
 import "./helpers/TestHelper.sol";
 import {Governance} from "../src/Governance.sol";
@@ -15,8 +15,8 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 /// @title Index.t.sol - Tests for Index.sol ITP creation functionality
 /// @notice Tests for Story 2.2: Index.sol - Storage & ITP Creation
 contract IndexTest is TestHelper {
-    Index public implementation;
-    Index public index;
+    Investment public implementation;
+    Investment public index;
     Governance public governance;
     MockERC20 public usdc;
 
@@ -45,13 +45,13 @@ contract IndexTest is TestHelper {
         usdc = new MockERC20("USDC", "USDC", 18);
 
         // Deploy Index implementation
-        implementation = new Index();
+        implementation = new Investment();
 
         // Deploy proxy
-        bytes memory initData = abi.encodeWithSelector(Index.initialize.selector, address(governance), address(usdc));
+        bytes memory initData = abi.encodeWithSelector(Investment.initialize.selector, address(governance), address(usdc));
 
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), initData);
-        index = Index(address(proxy));
+        index = Investment(address(proxy));
 
         // Setup IssuerRegistry with real BLS keys for verification
         IssuerRegistry issuerRegistry = deployIssuerRegistry(address(governance));

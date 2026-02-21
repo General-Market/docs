@@ -1,0 +1,1938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>General Market — BlackRock Direction v4</title>
+<style>
+  /* ============================================
+     V4 — TRUE BLACKROCK DNA
+     Bold black + accent color, dramatic type scale,
+     proper dropdown filters, solid black section anchors
+     ============================================ */
+
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --page: #FFFFFF;
+    --surface: #F5F5F5;
+    --accent: #00A36C;
+    --accent-dark: #008A5A;
+    --black: #000000;
+    --text-primary: #1A1A1A;
+    --text-secondary: #555555;
+    --text-muted: #999999;
+    --border: #E0E0E0;
+    --border-strong: #000000;
+    --up: #16A34A;
+    --down: #DC2626;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', -apple-system, sans-serif;
+    --max-width: 1280px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--page);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+
+  /* ── TOPBAR (thin black strip like BlackRock) ── */
+  .topbar {
+    background: var(--black);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    padding: 6px 0;
+    text-align: center;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--page);
+    border-bottom: 1px solid var(--border);
+    padding: 0 48px;
+  }
+  .header-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+  }
+  .logo {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    color: var(--black);
+  }
+  .header-nav {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .header-nav a {
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 20px 24px;
+    color: var(--text-secondary);
+    border-bottom: 3px solid transparent;
+    transition: all 0.15s;
+  }
+  .header-nav a.active {
+    color: var(--black);
+    border-bottom-color: var(--black);
+  }
+  .header-nav a:hover {
+    color: var(--black);
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .header-right a {
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+  .btn-wallet {
+    background: var(--black);
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+  }
+
+  /* ── SUB-NAV ── */
+  .subnav {
+    background: var(--page);
+    border-bottom: 1px solid var(--border);
+    padding: 0 48px;
+  }
+  .subnav-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 44px;
+  }
+  .subnav a {
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 16px;
+    color: var(--text-secondary);
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+  .subnav a.active {
+    color: var(--black);
+    background: var(--surface);
+    font-weight: 600;
+  }
+  .subnav a:hover {
+    color: var(--black);
+    background: var(--surface);
+  }
+
+  /* ── SECTION CONTAINERS ── */
+  .section {
+    padding: 0 48px;
+  }
+  .section-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+  }
+
+  /* ── HERO ACCENT BAND (like BlackRock's yellow) ── */
+  .hero-band {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 40px 48px 32px;
+  }
+  .hero-band-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+  }
+  .hero-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .hero-title {
+    font-size: 42px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    color: var(--black);
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+  .hero-subtitle {
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    max-width: 600px;
+  }
+
+  /* ── FILTER BAR (BlackRock-style dropdown pills) ── */
+  .filter-bar {
+    padding: 20px 48px;
+    border-bottom: 1px solid var(--border);
+  }
+  .filter-bar-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .filter-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-primary);
+    margin-right: 4px;
+  }
+  .filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: 2px solid var(--black);
+    border-radius: 24px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--black);
+    background: var(--page);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-pill:hover {
+    background: var(--surface);
+  }
+  .filter-pill.active {
+    background: var(--black);
+    color: #fff;
+  }
+  .filter-pill .chevron {
+    font-size: 10px;
+    opacity: 0.6;
+  }
+  .search-input {
+    flex: 1;
+    min-width: 200px;
+    max-width: 320px;
+    padding: 9px 16px;
+    border: 2px solid var(--border);
+    border-radius: 24px;
+    font-size: 13px;
+    font-family: var(--sans);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-input:focus {
+    border-color: var(--black);
+  }
+  .search-input::placeholder {
+    color: var(--text-muted);
+  }
+  .sort-dropdown {
+    margin-left: auto;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--page);
+    cursor: pointer;
+  }
+
+  /* ── BLACK SECTION BAR (like BlackRock's DATA VIEW bar) ── */
+  .section-bar {
+    background: var(--black);
+    color: #fff;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0;
+  }
+  .section-bar-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+  .section-bar-value {
+    font-size: 15px;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+  .section-bar-right {
+    font-size: 12px;
+    font-weight: 500;
+    opacity: 0.8;
+  }
+
+  /* ── ITP FUND CARDS ── */
+  .fund-grid {
+    padding: 24px 48px;
+  }
+  .fund-grid-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border: 1px solid var(--border);
+  }
+  .fund-card {
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--page);
+  }
+  .fund-card:nth-child(3n) {
+    border-right: none;
+  }
+  .fund-card:nth-last-child(-n+3) {
+    border-bottom: none;
+  }
+  .fund-video {
+    background: #1a1a1a;
+    aspect-ratio: 16/9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .play-btn {
+    width: 48px;
+    height: 48px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .play-btn::after {
+    content: '';
+    width: 0;
+    height: 0;
+    border-left: 14px solid #fff;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    margin-left: 3px;
+  }
+  .fund-body {
+    padding: 16px 20px;
+  }
+  .fund-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .fund-name {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--black);
+    letter-spacing: -0.01em;
+  }
+  .fund-ticker {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    font-family: var(--mono);
+  }
+  .fund-status {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--up);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .fund-status .dot {
+    width: 6px;
+    height: 6px;
+    background: var(--up);
+    border-radius: 50%;
+  }
+  .fund-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin: 0 -20px;
+    padding: 0 20px;
+  }
+  .fund-metric {
+    padding: 10px 0;
+    text-align: left;
+  }
+  .fund-metric:not(:last-child) {
+    border-right: 1px solid var(--border);
+    padding-right: 12px;
+    margin-right: 12px;
+  }
+  .fund-metric-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+  .fund-metric-value {
+    font-size: 15px;
+    font-weight: 700;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--black);
+  }
+  .fund-actions {
+    padding-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .fund-action {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--black);
+    text-decoration: none;
+    padding: 6px 0;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .fund-action:hover {
+    color: var(--accent);
+  }
+  .fund-action:not(:last-child)::after {
+    content: '|';
+    margin: 0 10px;
+    color: var(--border);
+    font-weight: 400;
+  }
+  .fund-action.primary {
+    color: var(--accent-dark);
+  }
+
+  /* ── SHOW MORE ── */
+  .show-more {
+    padding: 16px 48px 32px;
+    text-align: center;
+  }
+  .show-more-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+  }
+  .show-more-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 32px;
+    border: 2px solid var(--black);
+    border-radius: 6px;
+    background: var(--page);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--black);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .show-more-btn:hover {
+    background: var(--black);
+    color: #fff;
+  }
+
+  /* ── SECTION DIVIDER ── */
+  .section-divider {
+    border-top: 3px solid var(--black);
+    margin: 0;
+  }
+
+  /* ── SECTION HEADER (used within sections) ── */
+  .section-header {
+    padding: 40px 48px 0;
+  }
+  .section-header-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+  }
+  .sh-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .sh-title {
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: var(--black);
+    line-height: 1.1;
+  }
+  .sh-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+  }
+
+  /* ── DATA TABLE (iShares style) ── */
+  .data-table-wrap {
+    padding: 20px 48px 40px;
+    overflow-x: auto;
+  }
+  .data-table-wrap-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+  }
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  table.data-table thead th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    padding: 12px 16px;
+    border-bottom: 3px solid var(--black);
+    white-space: nowrap;
+  }
+  table.data-table thead th.right {
+    text-align: right;
+  }
+  table.data-table tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  table.data-table tbody td.right {
+    text-align: right;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+  }
+  table.data-table tbody td.bold {
+    font-weight: 700;
+  }
+  table.data-table tbody td.green { color: var(--up); }
+  table.data-table tbody td.red { color: var(--down); }
+  table.data-table tbody td a {
+    color: var(--black);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  table.data-table tbody td a:hover {
+    text-decoration: underline;
+  }
+  table.data-table tbody td .sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: block;
+  }
+  table.data-table tbody tr:hover {
+    background: var(--surface);
+  }
+
+  /* ── STATS ROW (horizontal metric cells) ── */
+  .stats-row {
+    padding: 20px 48px;
+    border-bottom: 1px solid var(--border);
+  }
+  .stats-row-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    display: flex;
+    gap: 0;
+  }
+  .stat-cell {
+    flex: 1;
+    padding: 12px 24px;
+    border-right: 1px solid var(--border);
+  }
+  .stat-cell:last-child {
+    border-right: none;
+  }
+  .stat-cell:first-child {
+    padding-left: 0;
+  }
+  .stat-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .stat-value {
+    font-size: 22px;
+    font-weight: 800;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--black);
+  }
+  .stat-value.green { color: var(--up); }
+  .stat-value.red { color: var(--down); }
+  .stat-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  /* ── CREATE SECTION ── */
+  .create-area {
+    padding: 20px 48px 40px;
+  }
+  .create-area-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+  }
+  .create-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+  .create-panel {
+    border: 1px solid var(--border);
+  }
+  .create-panel-header {
+    background: var(--black);
+    color: #fff;
+    padding: 12px 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .create-panel-body {
+    padding: 20px;
+  }
+  .asset-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .asset-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  .asset-chip:hover, .asset-chip.selected {
+    background: var(--black);
+    color: #fff;
+    border-color: var(--black);
+  }
+  .asset-chip .coin-dot {
+    width: 12px;
+    height: 12px;
+    background: var(--border);
+    border-radius: 50%;
+  }
+  .asset-chip.selected .coin-dot {
+    background: rgba(255,255,255,0.3);
+  }
+  .weight-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .weight-row:last-child {
+    border-bottom: none;
+  }
+  .weight-name {
+    width: 80px;
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .weight-bar-container {
+    flex: 1;
+    height: 6px;
+    background: var(--surface);
+    margin: 0 16px;
+  }
+  .weight-bar-fill {
+    height: 100%;
+    background: var(--black);
+    transition: width 0.2s;
+  }
+  .weight-pct {
+    width: 48px;
+    text-align: right;
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 12px;
+  }
+
+  /* ── BUTTONS ── */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    background: var(--black);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-primary:hover {
+    background: #333;
+  }
+  .btn-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    background: transparent;
+    color: var(--black);
+    border: 2px solid var(--black);
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-outline:hover {
+    background: var(--black);
+    color: #fff;
+  }
+
+  /* ── CHART PLACEHOLDER ── */
+  .chart-placeholder {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* ── BACKTEST FILTER PANEL ── */
+  .backtest-filters {
+    padding: 20px 48px;
+    border-bottom: 1px solid var(--border);
+  }
+  .backtest-filters-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+  }
+  .bf-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .bf-row:last-child {
+    margin-bottom: 0;
+  }
+  .bf-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    width: 80px;
+    flex-shrink: 0;
+  }
+  .bf-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .bf-pill {
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  .bf-pill:hover {
+    border-color: var(--black);
+    color: var(--black);
+  }
+  .bf-pill.active {
+    background: var(--black);
+    color: #fff;
+    border-color: var(--black);
+  }
+  .bf-select {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--page);
+  }
+
+  /* ── SYSTEM SECTION ── */
+  .node-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border: 1px solid var(--border);
+    margin: 20px 0;
+  }
+  .node-card {
+    padding: 16px 20px;
+    border-right: 1px solid var(--border);
+  }
+  .node-card:nth-child(3n) {
+    border-right: none;
+  }
+  .node-name {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--black);
+    margin-bottom: 8px;
+  }
+  .node-stat {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    padding: 3px 0;
+  }
+  .node-stat-label {
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .node-stat-value {
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 11px;
+  }
+
+  /* ── LEND SECTION ── */
+  .lend-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 1px solid var(--border);
+  }
+  .lend-panel {
+    padding: 0;
+  }
+  .lend-panel:first-child {
+    border-right: 1px solid var(--border);
+  }
+  .lend-panel-header {
+    background: var(--surface);
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .lend-panel-body {
+    padding: 20px;
+  }
+  .lend-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .lend-row:last-child {
+    border-bottom: none;
+  }
+  .lend-row-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  .lend-row-value {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    background: var(--black);
+    color: rgba(255,255,255,0.5);
+    padding: 24px 48px;
+    margin-top: 0;
+    font-size: 11px;
+  }
+  .footer-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .footer a {
+    color: rgba(255,255,255,0.7);
+    text-decoration: none;
+    margin-left: 24px;
+  }
+  .footer a:hover {
+    color: #fff;
+  }
+
+  /* ── VERSION LABEL ── */
+  .version-label {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    background: var(--black);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    z-index: 100;
+  }
+</style>
+</head>
+<body>
+
+<!-- VERSION LABEL -->
+<div class="version-label">V4</div>
+
+<!-- ═══════════════════════════════════════════
+     TOP BAR — thin black strip
+     ═══════════════════════════════════════════ -->
+<div class="topbar">
+  General Market — Decentralized Index Products
+</div>
+
+<!-- ═══════════════════════════════════════════
+     HEADER
+     ═══════════════════════════════════════════ -->
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">General Market.</div>
+    <nav class="header-nav">
+      <a href="#" class="active">Investment</a>
+      <a href="#">Vision</a>
+    </nav>
+    <div class="header-right">
+      <a href="#">Support</a>
+      <button class="btn-wallet">Connect Wallet</button>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════
+     SUB-NAV
+     ═══════════════════════════════════════════ -->
+<nav class="subnav">
+  <div class="subnav-inner">
+    <a href="#" class="active">Markets</a>
+    <a href="#">Portfolio</a>
+    <a href="#">Create</a>
+    <a href="#">Lend</a>
+    <a href="#">Backtest</a>
+    <a href="#">System</a>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════
+     MARKETS — HERO BAND
+     ═══════════════════════════════════════════ -->
+<section id="markets">
+  <div class="hero-band">
+    <div class="hero-band-inner">
+      <div class="hero-eyebrow">Index Tracking Products</div>
+      <h1 class="hero-title">Markets</h1>
+      <p class="hero-subtitle">Explore decentralized index products. Each ITP tracks a basket of crypto assets with live NAV pricing and on-chain settlement.</p>
+    </div>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <div class="filter-bar-inner">
+      <span class="filter-label">Filters</span>
+      <span class="filter-pill active">All (20) <span class="chevron">▾</span></span>
+      <span class="filter-pill">Active (16) <span class="chevron">▾</span></span>
+      <span class="filter-pill">Pending (4) <span class="chevron">▾</span></span>
+      <input type="text" class="search-input" placeholder="Search funds by name or ticker...">
+      <select class="sort-dropdown">
+        <option>Sort: AUM High → Low</option>
+        <option>Sort: NAV High → Low</option>
+        <option>Sort: Name A → Z</option>
+        <option>Sort: 24h Change</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- BLACK DATA VIEW BAR -->
+  <div class="section" style="padding-top: 0;">
+    <div class="section-inner">
+      <div class="section-bar" style="margin-top: 0;">
+        <div>
+          <div class="section-bar-title">Data View</div>
+          <div class="section-bar-value">Fund Overview — Live NAV</div>
+        </div>
+        <div class="section-bar-right">Showing 6 of 20 products</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FUND CARDS GRID -->
+  <div class="fund-grid">
+    <div class="fund-grid-inner">
+
+      <!-- Card 1 -->
+      <div class="fund-card">
+        <div class="fund-video"><div class="play-btn"></div></div>
+        <div class="fund-body">
+          <div class="fund-header">
+            <div>
+              <div class="fund-name">Top 100 Crypto</div>
+              <div class="fund-ticker">$T100</div>
+            </div>
+            <div class="fund-status"><span class="dot"></span> Active</div>
+          </div>
+          <div class="fund-metrics">
+            <div class="fund-metric">
+              <div class="fund-metric-label">NAV / Share</div>
+              <div class="fund-metric-value">$1.0429</div>
+            </div>
+            <div class="fund-metric">
+              <div class="fund-metric-label">AUM</div>
+              <div class="fund-metric-value">$842K</div>
+            </div>
+            <div class="fund-metric">
+              <div class="fund-metric-label">Assets</div>
+              <div class="fund-metric-value">100</div>
+            </div>
+          </div>
+          <div class="fund-actions">
+            <a class="fund-action primary">Buy</a>
+            <a class="fund-action">Sell</a>
+            <a class="fund-action">Chart</a>
+            <a class="fund-action">Rebalance</a>
+            <a class="fund-action">Borrow</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="fund-card">
+        <div class="fund-video"><div class="play-btn"></div></div>
+        <div class="fund-body">
+          <div class="fund-header">
+            <div>
+              <div class="fund-name">DeFi Blue Chip</div>
+              <div class="fund-ticker">$DEFI</div>
+            </div>
+            <div class="fund-status"><span class="dot"></span> Active</div>
+          </div>
+          <div class="fund-metrics">
+            <div class="fund-metric">
+              <div class="fund-metric-label">NAV / Share</div>
+              <div class="fund-metric-value">$0.9874</div>
+            </div>
+            <div class="fund-metric">
+              <div class="fund-metric-label">AUM</div>
+              <div class="fund-metric-value">$512K</div>
+            </div>
+            <div class="fund-metric">
+              <div class="fund-metric-label">Assets</div>
+              <div class="fund-metric-value">25</div>
+            </div>
+          </div>
+          <div class="fund-actions">
+            <a class="fund-action primary">Buy</a>
+            <a class="fund-action">Sell</a>
+            <a class="fund-action">Chart</a>
+            <a class="fund-action">Rebalance</a>
+            <a class="fund-action">Borrow</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="fund-card">
+        <div class="fund-video"><div class="play-btn"></div></div>
+        <div class="fund-body">
+          <div class="fund-header">
+            <div>
+              <div class="fund-name">AI & Compute</div>
+              <div class="fund-ticker">$AICP</div>
+            </div>
+            <div class="fund-status"><span class="dot"></span> Active</div>
+          </div>
+          <div class="fund-metrics">
+            <div class="fund-metric">
+              <div class="fund-metric-label">NAV / Share</div>
+              <div class="fund-metric-value">$1.1245</div>
+            </div>
+            <div class="fund-metric">
+              <div class="fund-metric-label">AUM</div>
+              <div class="fund-metric-value">$328K</div>
+            </div>
+            <div class="fund-metric">
+              <div class="fund-metric-label">Assets</div>
+              <div class="fund-metric-value">15</div>
+            </div>
+          </div>
+          <div class="fund-actions">
+            <a class="fund-action primary">Buy</a>
+            <a class="fund-action">Sell</a>
+            <a class="fund-action">Chart</a>
+            <a class="fund-action">Rebalance</a>
+            <a class="fund-action">Borrow</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="fund-card">
+        <div class="fund-video"><div class="play-btn"></div></div>
+        <div class="fund-body">
+          <div class="fund-header">
+            <div>
+              <div class="fund-name">Layer 1 Index</div>
+              <div class="fund-ticker">$L1X</div>
+            </div>
+            <div class="fund-status"><span class="dot"></span> Active</div>
+          </div>
+          <div class="fund-metrics">
+            <div class="fund-metric">
+              <div class="fund-metric-label">NAV / Share</div>
+              <div class="fund-metric-value">$0.9612</div>
+            </div>
+            <div class="fund-metric">
+              <div class="fund-metric-label">AUM</div>
+              <div class="fund-metric-value">$215K</div>
+            </div>
+            <div class="fund-metric">
+              <div class="fund-metric-label">Assets</div>
+              <div class="fund-metric-value">10</div>
+            </div>
+          </div>
+          <div class="fund-actions">
+            <a class="fund-action primary">Buy</a>
+            <a class="fund-action">Sell</a>
+            <a class="fund-action">Chart</a>
+            <a class="fund-action">Rebalance</a>
+            <a class="fund-action">Borrow</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 5 -->
+      <div class="fund-card">
+        <div class="fund-video"><div class="play-btn"></div></div>
+        <div class="fund-body">
+          <div class="fund-header">
+            <div>
+              <div class="fund-name">Gaming & Metaverse</div>
+              <div class="fund-ticker">$GAME</div>
+            </div>
+            <div class="fund-status" style="color: var(--text-muted);"><span class="dot" style="background: var(--text-muted);"></span> Pending</div>
+          </div>
+          <div class="fund-metrics">
+            <div class="fund-metric">
+              <div class="fund-metric-label">NAV / Share</div>
+              <div class="fund-metric-value">$1.0000</div>
+            </div>
+            <div class="fund-metric">
+              <div class="fund-metric-label">AUM</div>
+              <div class="fund-metric-value">—</div>
+            </div>
+            <div class="fund-metric">
+              <div class="fund-metric-label">Assets</div>
+              <div class="fund-metric-value">20</div>
+            </div>
+          </div>
+          <div class="fund-actions">
+            <a class="fund-action" style="color: var(--text-muted);">Pending Fill</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 6 -->
+      <div class="fund-card">
+        <div class="fund-video"><div class="play-btn"></div></div>
+        <div class="fund-body">
+          <div class="fund-header">
+            <div>
+              <div class="fund-name">Privacy Coins</div>
+              <div class="fund-ticker">$PRIV</div>
+            </div>
+            <div class="fund-status"><span class="dot"></span> Active</div>
+          </div>
+          <div class="fund-metrics">
+            <div class="fund-metric">
+              <div class="fund-metric-label">NAV / Share</div>
+              <div class="fund-metric-value">$0.8923</div>
+            </div>
+            <div class="fund-metric">
+              <div class="fund-metric-label">AUM</div>
+              <div class="fund-metric-value">$94K</div>
+            </div>
+            <div class="fund-metric">
+              <div class="fund-metric-label">Assets</div>
+              <div class="fund-metric-value">8</div>
+            </div>
+          </div>
+          <div class="fund-actions">
+            <a class="fund-action primary">Buy</a>
+            <a class="fund-action">Sell</a>
+            <a class="fund-action">Chart</a>
+            <a class="fund-action">Rebalance</a>
+            <a class="fund-action">Borrow</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SHOW MORE -->
+  <div class="show-more">
+    <div class="show-more-inner">
+      <button class="show-more-btn">Show All 20 Funds ↓</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     PORTFOLIO
+     ═══════════════════════════════════════════ -->
+<div class="section-divider"></div>
+<section id="portfolio">
+  <div class="section-header">
+    <div class="section-header-inner">
+      <div class="sh-eyebrow">Your Holdings</div>
+      <h2 class="sh-title">Portfolio</h2>
+    </div>
+  </div>
+
+  <!-- PORTFOLIO STATS -->
+  <div class="stats-row">
+    <div class="stats-row-inner">
+      <div class="stat-cell">
+        <div class="stat-label">Total Value</div>
+        <div class="stat-value">$12,847.32</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">24h Change</div>
+        <div class="stat-value green">+$342.18</div>
+        <div class="stat-sub">+2.74%</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Positions</div>
+        <div class="stat-value">4</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Unrealized P&L</div>
+        <div class="stat-value green">+$1,247.32</div>
+        <div class="stat-sub">+10.74% all time</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">USDC Available</div>
+        <div class="stat-value">$4,500.00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POSITIONS TABLE -->
+  <div class="section" style="padding-top: 0;">
+    <div class="section-inner">
+      <div class="section-bar">
+        <div>
+          <div class="section-bar-title">Positions</div>
+          <div class="section-bar-value">Active Holdings</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="data-table-wrap">
+    <div class="data-table-wrap-inner">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Fund</th>
+            <th>Ticker</th>
+            <th class="right">Shares</th>
+            <th class="right">NAV / Share</th>
+            <th class="right">Value</th>
+            <th class="right">Avg Cost</th>
+            <th class="right">P&L</th>
+            <th class="right">24h</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="bold"><a href="#">Top 100 Crypto</a><span class="sub">100 assets</span></td>
+            <td>$T100</td>
+            <td class="right">5,000.00</td>
+            <td class="right">$1.0429</td>
+            <td class="right bold">$5,214.50</td>
+            <td class="right">$0.9800</td>
+            <td class="right green bold">+$314.50</td>
+            <td class="right green">+2.1%</td>
+          </tr>
+          <tr>
+            <td class="bold"><a href="#">DeFi Blue Chip</a><span class="sub">25 assets</span></td>
+            <td>$DEFI</td>
+            <td class="right">3,200.00</td>
+            <td class="right">$0.9874</td>
+            <td class="right bold">$3,159.68</td>
+            <td class="right">$0.9500</td>
+            <td class="right green bold">+$119.68</td>
+            <td class="right red">-0.8%</td>
+          </tr>
+          <tr>
+            <td class="bold"><a href="#">AI & Compute</a><span class="sub">15 assets</span></td>
+            <td>$AICP</td>
+            <td class="right">2,000.00</td>
+            <td class="right">$1.1245</td>
+            <td class="right bold">$2,249.00</td>
+            <td class="right">$0.8500</td>
+            <td class="right green bold">+$549.00</td>
+            <td class="right green">+4.2%</td>
+          </tr>
+          <tr>
+            <td class="bold"><a href="#">Layer 1 Index</a><span class="sub">10 assets</span></td>
+            <td>$L1X</td>
+            <td class="right">2,320.00</td>
+            <td class="right">$0.9612</td>
+            <td class="right bold">$2,230.00</td>
+            <td class="right">$0.8460</td>
+            <td class="right green bold">+$267.14</td>
+            <td class="right green">+1.5%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     CREATE
+     ═══════════════════════════════════════════ -->
+<div class="section-divider"></div>
+<section id="create">
+  <div class="section-header">
+    <div class="section-header-inner">
+      <div class="sh-eyebrow">Deploy New Product</div>
+      <h2 class="sh-title">Create</h2>
+      <p class="sh-subtitle">Build a custom index product. Select assets, set weights, and deploy on-chain.</p>
+    </div>
+  </div>
+
+  <div class="create-area">
+    <div class="create-area-inner">
+      <div class="create-grid">
+        <!-- Left: Asset Selection -->
+        <div class="create-panel">
+          <div class="create-panel-header">Select Assets</div>
+          <div class="create-panel-body">
+            <input type="text" class="search-input" placeholder="Search assets..." style="width: 100%; margin-bottom: 12px; max-width: none;">
+            <div class="asset-chips">
+              <span class="asset-chip selected"><span class="coin-dot"></span>BTC</span>
+              <span class="asset-chip selected"><span class="coin-dot"></span>ETH</span>
+              <span class="asset-chip selected"><span class="coin-dot"></span>SOL</span>
+              <span class="asset-chip selected"><span class="coin-dot"></span>AVAX</span>
+              <span class="asset-chip selected"><span class="coin-dot"></span>LINK</span>
+              <span class="asset-chip"><span class="coin-dot"></span>AAVE</span>
+              <span class="asset-chip"><span class="coin-dot"></span>UNI</span>
+              <span class="asset-chip"><span class="coin-dot"></span>MKR</span>
+              <span class="asset-chip"><span class="coin-dot"></span>ARB</span>
+              <span class="asset-chip"><span class="coin-dot"></span>OP</span>
+              <span class="asset-chip"><span class="coin-dot"></span>DOT</span>
+              <span class="asset-chip"><span class="coin-dot"></span>MATIC</span>
+              <span class="asset-chip"><span class="coin-dot"></span>ATOM</span>
+              <span class="asset-chip"><span class="coin-dot"></span>FIL</span>
+              <span class="asset-chip"><span class="coin-dot"></span>GRT</span>
+            </div>
+            <div style="margin-top: 12px; font-size: 12px; color: var(--text-muted);">5 selected · <a href="#" style="color: var(--black); font-weight: 600;">Clear all</a></div>
+          </div>
+        </div>
+
+        <!-- Right: Weight Configuration -->
+        <div class="create-panel">
+          <div class="create-panel-header">Configure Weights</div>
+          <div class="create-panel-body">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-size: 12px; font-weight: 700; color: var(--text-primary);">Total: 100%</span>
+              <button class="btn-outline" style="padding: 4px 12px; font-size: 11px;">Distribute Evenly</button>
+            </div>
+            <div class="weight-row">
+              <span class="weight-name">BTC</span>
+              <div class="weight-bar-container"><div class="weight-bar-fill" style="width: 35%;"></div></div>
+              <span class="weight-pct">35%</span>
+            </div>
+            <div class="weight-row">
+              <span class="weight-name">ETH</span>
+              <div class="weight-bar-container"><div class="weight-bar-fill" style="width: 25%;"></div></div>
+              <span class="weight-pct">25%</span>
+            </div>
+            <div class="weight-row">
+              <span class="weight-name">SOL</span>
+              <div class="weight-bar-container"><div class="weight-bar-fill" style="width: 20%;"></div></div>
+              <span class="weight-pct">20%</span>
+            </div>
+            <div class="weight-row">
+              <span class="weight-name">AVAX</span>
+              <div class="weight-bar-container"><div class="weight-bar-fill" style="width: 12%;"></div></div>
+              <span class="weight-pct">12%</span>
+            </div>
+            <div class="weight-row">
+              <span class="weight-name">LINK</span>
+              <div class="weight-bar-container"><div class="weight-bar-fill" style="width: 8%;"></div></div>
+              <span class="weight-pct">8%</span>
+            </div>
+            <div style="margin-top: 16px; text-align: right;">
+              <button class="btn-primary">Deploy ITP →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     LEND
+     ═══════════════════════════════════════════ -->
+<div class="section-divider"></div>
+<section id="lend">
+  <div class="section-header">
+    <div class="section-header-inner">
+      <div class="sh-eyebrow">Morpho Vaults</div>
+      <h2 class="sh-title">Lend</h2>
+      <p class="sh-subtitle">Deposit USDC to earn yield or borrow against your ITP positions.</p>
+    </div>
+  </div>
+
+  <!-- LEND STATS -->
+  <div class="stats-row">
+    <div class="stats-row-inner">
+      <div class="stat-cell">
+        <div class="stat-label">Vault TVL</div>
+        <div class="stat-value">$2.4M</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Supply APY</div>
+        <div class="stat-value green">8.42%</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Borrow APY</div>
+        <div class="stat-value">12.18%</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Utilization</div>
+        <div class="stat-value">74.2%</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="data-table-wrap">
+    <div class="data-table-wrap-inner">
+      <div class="lend-grid">
+        <!-- Supply side -->
+        <div class="lend-panel">
+          <div class="lend-panel-header">Supply — USDC Vault</div>
+          <div class="lend-panel-body">
+            <div class="lend-row">
+              <span class="lend-row-label">Your Deposits</span>
+              <span class="lend-row-value">$10,000.00</span>
+            </div>
+            <div class="lend-row">
+              <span class="lend-row-label">Accrued Interest</span>
+              <span class="lend-row-value" style="color: var(--up);">+$84.21</span>
+            </div>
+            <div class="lend-row">
+              <span class="lend-row-label">Current APY</span>
+              <span class="lend-row-value">8.42%</span>
+            </div>
+            <div style="margin-top: 16px; display: flex; gap: 12px;">
+              <button class="btn-primary" style="flex: 1;">Deposit</button>
+              <button class="btn-outline" style="flex: 1;">Withdraw</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Borrow side -->
+        <div class="lend-panel">
+          <div class="lend-panel-header">Borrow — Against ITP</div>
+          <div class="lend-panel-body">
+            <div class="lend-row">
+              <span class="lend-row-label">Collateral (ITP value)</span>
+              <span class="lend-row-value">$12,847.32</span>
+            </div>
+            <div class="lend-row">
+              <span class="lend-row-label">Outstanding Debt</span>
+              <span class="lend-row-value">$0.00</span>
+            </div>
+            <div class="lend-row">
+              <span class="lend-row-label">Max Borrow (70% LTV)</span>
+              <span class="lend-row-value">$8,993.12</span>
+            </div>
+            <div style="margin-top: 16px; display: flex; gap: 12px;">
+              <button class="btn-primary" style="flex: 1;">Borrow USDC</button>
+              <button class="btn-outline" style="flex: 1;">Repay</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Markets Table -->
+      <div style="margin-top: 32px;">
+        <div class="section-bar">
+          <div>
+            <div class="section-bar-title">Morpho Markets</div>
+            <div class="section-bar-value">Available Lending Markets</div>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Market</th>
+              <th>Collateral</th>
+              <th class="right">Supply APY</th>
+              <th class="right">Borrow APY</th>
+              <th class="right">TVL</th>
+              <th class="right">Utilization</th>
+              <th class="right">LLTV</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="bold">USDC / T100</td>
+              <td>Top 100 Crypto</td>
+              <td class="right green">8.42%</td>
+              <td class="right">12.18%</td>
+              <td class="right">$1.2M</td>
+              <td class="right">74.2%</td>
+              <td class="right">70%</td>
+            </tr>
+            <tr>
+              <td class="bold">USDC / DEFI</td>
+              <td>DeFi Blue Chip</td>
+              <td class="right green">6.81%</td>
+              <td class="right">10.42%</td>
+              <td class="right">$680K</td>
+              <td class="right">68.1%</td>
+              <td class="right">65%</td>
+            </tr>
+            <tr>
+              <td class="bold">USDC / AICP</td>
+              <td>AI & Compute</td>
+              <td class="right green">11.24%</td>
+              <td class="right">15.60%</td>
+              <td class="right">$420K</td>
+              <td class="right">82.5%</td>
+              <td class="right">60%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     BACKTEST
+     ═══════════════════════════════════════════ -->
+<div class="section-divider"></div>
+<section id="backtest">
+  <div class="section-header">
+    <div class="section-header-inner">
+      <div class="sh-eyebrow">Strategy Simulation</div>
+      <h2 class="sh-title">Backtest</h2>
+      <p class="sh-subtitle">Test index strategies against historical data before deploying capital.</p>
+    </div>
+  </div>
+
+  <!-- BACKTEST FILTER PANEL -->
+  <div class="backtest-filters">
+    <div class="backtest-filters-inner">
+      <div class="bf-row">
+        <span class="bf-label">Category</span>
+        <select class="bf-select">
+          <option>All Categories</option>
+          <option>DeFi</option>
+          <option>Layer 1</option>
+          <option>AI & Compute</option>
+        </select>
+        <span class="bf-label" style="margin-left: 16px;">Top N</span>
+        <div class="bf-pills">
+          <span class="bf-pill">5</span>
+          <span class="bf-pill active">10</span>
+          <span class="bf-pill">20</span>
+          <span class="bf-pill">50</span>
+          <span class="bf-pill">100</span>
+        </div>
+      </div>
+      <div class="bf-row">
+        <span class="bf-label">Strategy</span>
+        <div class="bf-pills">
+          <span class="bf-pill active">Equal</span>
+          <span class="bf-pill">MCap</span>
+          <span class="bf-pill">Capped</span>
+          <span class="bf-pill">SqrtMCap</span>
+          <span class="bf-pill">Momentum</span>
+          <span class="bf-pill">InvVol</span>
+          <span class="bf-pill">DualMom</span>
+          <span class="bf-pill">RiskPar</span>
+          <span class="bf-pill">MinVar</span>
+          <span class="bf-pill">MultiFac</span>
+          <span class="bf-pill">LowVol</span>
+        </div>
+      </div>
+      <div class="bf-row">
+        <span class="bf-label">DeFi</span>
+        <div class="bf-pills">
+          <span class="bf-pill">TVL</span>
+          <span class="bf-pill">FeeRev</span>
+          <span class="bf-pill">TVL×Fee</span>
+          <span class="bf-pill">FDVtoTVL</span>
+          <span class="bf-pill">SqrtTVL</span>
+        </div>
+      </div>
+      <div class="bf-row">
+        <span class="bf-label">Rebalance</span>
+        <div class="bf-pills">
+          <span class="bf-pill active">Monthly</span>
+          <span class="bf-pill">Weekly</span>
+          <span class="bf-pill">Quarterly</span>
+        </div>
+        <span class="bf-label" style="margin-left: 16px;">Fees</span>
+        <select class="bf-select">
+          <option>0.1%</option>
+          <option>0.25%</option>
+          <option>0.5%</option>
+        </select>
+      </div>
+      <div class="bf-row">
+        <span class="bf-label">Overlay</span>
+        <div class="bf-pills">
+          <span class="bf-pill">Fear & Greed</span>
+          <span class="bf-pill">BTC Dominance</span>
+          <span class="bf-pill">VC Overlay</span>
+        </div>
+        <span class="bf-label" style="margin-left: 16px;">Sweep</span>
+        <div class="bf-pills">
+          <span class="bf-pill">Off</span>
+          <span class="bf-pill">Top N</span>
+          <span class="bf-pill">Strategy</span>
+        </div>
+      </div>
+      <div class="bf-row" style="margin-top: 8px;">
+        <span class="bf-label"></span>
+        <button class="btn-primary">Run Backtest →</button>
+        <button class="btn-outline" style="margin-left: 8px;">Reset Filters</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BACKTEST RESULTS -->
+  <div class="stats-row">
+    <div class="stats-row-inner">
+      <div class="stat-cell">
+        <div class="stat-label">Total Return</div>
+        <div class="stat-value green">+142.8%</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Annualized</div>
+        <div class="stat-value green">+48.2%</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Sharpe Ratio</div>
+        <div class="stat-value">1.84</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Max Drawdown</div>
+        <div class="stat-value red">-34.2%</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Win Rate</div>
+        <div class="stat-value">68.4%</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="data-table-wrap">
+    <div class="data-table-wrap-inner">
+      <!-- Performance Chart Placeholder -->
+      <div class="chart-placeholder" style="margin-bottom: 24px;">
+        ▬ Performance Chart — Strategy vs Benchmark (Recharts)
+      </div>
+
+      <!-- Holdings Table -->
+      <div class="section-bar">
+        <div>
+          <div class="section-bar-title">Backtest Result</div>
+          <div class="section-bar-value">Current Holdings — Equal Weight Top 10</div>
+        </div>
+        <div class="section-bar-right">
+          <button class="btn-outline" style="border-color: rgba(255,255,255,0.3); color: #fff; padding: 6px 16px; font-size: 11px;">Deploy as ITP →</button>
+        </div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Asset</th>
+            <th class="right">Weight</th>
+            <th class="right">Price</th>
+            <th class="right">24h</th>
+            <th class="right">Market Cap</th>
+            <th class="right">Contribution</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td class="bold">Bitcoin (BTC)</td><td class="right">10.0%</td><td class="right">$97,234</td><td class="right green">+1.2%</td><td class="right">$1.92T</td><td class="right green">+0.12%</td></tr>
+          <tr><td>2</td><td class="bold">Ethereum (ETH)</td><td class="right">10.0%</td><td class="right">$2,718</td><td class="right green">+2.4%</td><td class="right">$327B</td><td class="right green">+0.24%</td></tr>
+          <tr><td>3</td><td class="bold">Solana (SOL)</td><td class="right">10.0%</td><td class="right">$178.42</td><td class="right green">+5.1%</td><td class="right">$86B</td><td class="right green">+0.51%</td></tr>
+          <tr><td>4</td><td class="bold">BNB (BNB)</td><td class="right">10.0%</td><td class="right">$654.12</td><td class="right red">-0.8%</td><td class="right">$97B</td><td class="right red">-0.08%</td></tr>
+          <tr><td>5</td><td class="bold">XRP (XRP)</td><td class="right">10.0%</td><td class="right">$2.41</td><td class="right green">+3.2%</td><td class="right">$138B</td><td class="right green">+0.32%</td></tr>
+          <tr><td>6</td><td class="bold">Cardano (ADA)</td><td class="right">10.0%</td><td class="right">$0.742</td><td class="right red">-1.4%</td><td class="right">$26B</td><td class="right red">-0.14%</td></tr>
+          <tr><td>7</td><td class="bold">Avalanche (AVAX)</td><td class="right">10.0%</td><td class="right">$38.12</td><td class="right green">+4.2%</td><td class="right">$15B</td><td class="right green">+0.42%</td></tr>
+          <tr><td>8</td><td class="bold">Chainlink (LINK)</td><td class="right">10.0%</td><td class="right">$18.94</td><td class="right green">+1.8%</td><td class="right">$12B</td><td class="right green">+0.18%</td></tr>
+          <tr><td>9</td><td class="bold">Polkadot (DOT)</td><td class="right">10.0%</td><td class="right">$7.82</td><td class="right red">-2.1%</td><td class="right">$11B</td><td class="right red">-0.21%</td></tr>
+          <tr><td>10</td><td class="bold">Polygon (MATIC)</td><td class="right">10.0%</td><td class="right">$0.412</td><td class="right green">+6.8%</td><td class="right">$4B</td><td class="right green">+0.68%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SYSTEM
+     ═══════════════════════════════════════════ -->
+<div class="section-divider"></div>
+<section id="system">
+  <div class="section-header">
+    <div class="section-header-inner">
+      <div class="sh-eyebrow">Infrastructure</div>
+      <h2 class="sh-title">System</h2>
+      <p class="sh-subtitle">Live operational data — AP keeper balances, fill speed, consensus health, and inventory.</p>
+    </div>
+  </div>
+
+  <!-- SYSTEM STATS -->
+  <div class="stats-row">
+    <div class="stats-row-inner">
+      <div class="stat-cell">
+        <div class="stat-label">Consensus Status</div>
+        <div class="stat-value green" style="font-size: 18px;">● Healthy</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Active Issuers</div>
+        <div class="stat-value">3 / 3</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Avg Fill Speed</div>
+        <div class="stat-value">4.2s</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Orders (24h)</div>
+        <div class="stat-value">847</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">L3 Block</div>
+        <div class="stat-value" style="font-size: 16px;">#1,284,721</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="data-table-wrap">
+    <div class="data-table-wrap-inner">
+
+      <!-- Issuer Nodes -->
+      <div class="section-bar">
+        <div>
+          <div class="section-bar-title">Issuer Network</div>
+          <div class="section-bar-value">BLS Consensus Nodes</div>
+        </div>
+      </div>
+      <div class="node-grid">
+        <div class="node-card">
+          <div class="node-name">● Issuer Alpha</div>
+          <div class="node-stat"><span class="node-stat-label">Peer ID</span><span class="node-stat-value">12D3…kF8x</span></div>
+          <div class="node-stat"><span class="node-stat-label">AP Balance</span><span class="node-stat-value" style="color: var(--up);">$48,234</span></div>
+          <div class="node-stat"><span class="node-stat-label">Orders Filled</span><span class="node-stat-value">312</span></div>
+          <div class="node-stat"><span class="node-stat-label">Avg Speed</span><span class="node-stat-value">3.8s</span></div>
+          <div class="node-stat"><span class="node-stat-label">Uptime</span><span class="node-stat-value">99.9%</span></div>
+        </div>
+        <div class="node-card">
+          <div class="node-name">● Issuer Beta</div>
+          <div class="node-stat"><span class="node-stat-label">Peer ID</span><span class="node-stat-value">12D3…mN2p</span></div>
+          <div class="node-stat"><span class="node-stat-label">AP Balance</span><span class="node-stat-value" style="color: var(--up);">$42,891</span></div>
+          <div class="node-stat"><span class="node-stat-label">Orders Filled</span><span class="node-stat-value">298</span></div>
+          <div class="node-stat"><span class="node-stat-label">Avg Speed</span><span class="node-stat-value">4.1s</span></div>
+          <div class="node-stat"><span class="node-stat-label">Uptime</span><span class="node-stat-value">99.7%</span></div>
+        </div>
+        <div class="node-card">
+          <div class="node-name">● Issuer Gamma</div>
+          <div class="node-stat"><span class="node-stat-label">Peer ID</span><span class="node-stat-value">12D3…qR4v</span></div>
+          <div class="node-stat"><span class="node-stat-label">AP Balance</span><span class="node-stat-value" style="color: var(--up);">$39,102</span></div>
+          <div class="node-stat"><span class="node-stat-label">Orders Filled</span><span class="node-stat-value">237</span></div>
+          <div class="node-stat"><span class="node-stat-label">Avg Speed</span><span class="node-stat-value">4.8s</span></div>
+          <div class="node-stat"><span class="node-stat-label">Uptime</span><span class="node-stat-value">99.5%</span></div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0;">
+        <div>
+          <div class="section-bar">
+            <div>
+              <div class="section-bar-title">Fill Speed</div>
+              <div class="section-bar-value">Last 24 Hours (bar chart)</div>
+            </div>
+          </div>
+          <div class="chart-placeholder">▬ Fill Speed Bar Chart (Recharts)</div>
+        </div>
+        <div>
+          <div class="section-bar">
+            <div>
+              <div class="section-bar-title">Inventory</div>
+              <div class="section-bar-value">AP Bump Chart (area chart)</div>
+            </div>
+          </div>
+          <div class="chart-placeholder">▬ Inventory Bump Chart (Recharts)</div>
+        </div>
+      </div>
+
+      <!-- Keeper Signatures Table -->
+      <div class="section-bar">
+        <div>
+          <div class="section-bar-title">Recent Activity</div>
+          <div class="section-bar-value">Keeper BLS Signatures</div>
+        </div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Order ID</th>
+            <th>Fund</th>
+            <th>Type</th>
+            <th class="right">Amount</th>
+            <th class="right">Fill Time</th>
+            <th>Signers</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>14:23:08</td>
+            <td style="font-family: var(--mono); font-size: 11px;">0x8f2a…4d1c</td>
+            <td class="bold">$T100</td>
+            <td>Buy</td>
+            <td class="right">$2,500.00</td>
+            <td class="right">3.4s</td>
+            <td>α β γ</td>
+            <td style="color: var(--up); font-weight: 700;">✓ Confirmed</td>
+          </tr>
+          <tr>
+            <td>14:22:41</td>
+            <td style="font-family: var(--mono); font-size: 11px;">0x1b7e…9a3f</td>
+            <td class="bold">$DEFI</td>
+            <td>Sell</td>
+            <td class="right">$1,200.00</td>
+            <td class="right">4.1s</td>
+            <td>α β γ</td>
+            <td style="color: var(--up); font-weight: 700;">✓ Confirmed</td>
+          </tr>
+          <tr>
+            <td>14:22:12</td>
+            <td style="font-family: var(--mono); font-size: 11px;">0x3c5d…7e2a</td>
+            <td class="bold">$AICP</td>
+            <td>Buy</td>
+            <td class="right">$5,000.00</td>
+            <td class="right">2.9s</td>
+            <td>α β γ</td>
+            <td style="color: var(--up); font-weight: 700;">✓ Confirmed</td>
+          </tr>
+          <tr>
+            <td>14:21:33</td>
+            <td style="font-family: var(--mono); font-size: 11px;">0x6a9f…1b4c</td>
+            <td class="bold">$T100</td>
+            <td>Buy</td>
+            <td class="right">$800.00</td>
+            <td class="right">5.2s</td>
+            <td>α β</td>
+            <td style="color: orange; font-weight: 700;">⏳ 2/3 sigs</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     FOOTER
+     ═══════════════════════════════════════════ -->
+<footer class="footer">
+  <div class="footer-inner">
+    <span>© 2026 General Market. All rights reserved.</span>
+    <div>
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="#">Docs</a>
+      <a href="#">Discord</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

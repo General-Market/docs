@@ -17,23 +17,23 @@ const mockVerifySuccess = {
 describe('useTelegramVerification', () => {
   describe('Message Format', () => {
     it('should format message correctly per AC2', () => {
-      // AC2: "AgiArena Telegram Link: {telegramUserId} at {timestamp}"
+      // AC2: "General Market Telegram Link: {telegramUserId} at {timestamp}"
       const telegramUserId = 123456789
       const timestamp = 1737590400
-      const message = `AgiArena Telegram Link: ${telegramUserId} at ${timestamp}`
+      const message = `General Market Telegram Link: ${telegramUserId} at ${timestamp}`
 
-      expect(message).toBe('AgiArena Telegram Link: 123456789 at 1737590400')
+      expect(message).toBe('General Market Telegram Link: 123456789 at 1737590400')
     })
 
     it('should handle various telegram user IDs', () => {
       const testCases = [
-        { id: 1, expected: 'AgiArena Telegram Link: 1 at 100' },
-        { id: 999999999, expected: 'AgiArena Telegram Link: 999999999 at 100' },
-        { id: 1234567890, expected: 'AgiArena Telegram Link: 1234567890 at 100' },
+        { id: 1, expected: 'General Market Telegram Link: 1 at 100' },
+        { id: 999999999, expected: 'General Market Telegram Link: 999999999 at 100' },
+        { id: 1234567890, expected: 'General Market Telegram Link: 1234567890 at 100' },
       ]
 
       for (const { id, expected } of testCases) {
-        const message = `AgiArena Telegram Link: ${id} at 100`
+        const message = `General Market Telegram Link: ${id} at 100`
         expect(message).toBe(expected)
       }
     })
@@ -184,11 +184,11 @@ describe('Telegram Verification Page', () => {
 
   describe('Verification Link Format', () => {
     it('should generate correct verification URL', () => {
-      const frontendUrl = 'https://agiarena.xyz'
+      const frontendUrl = 'https://generalmarket.io'
       const code = 'ABC123'
       const verificationUrl = `${frontendUrl}/telegram/verify?code=${code}`
 
-      expect(verificationUrl).toBe('https://agiarena.xyz/telegram/verify?code=ABC123')
+      expect(verificationUrl).toBe('https://generalmarket.io/telegram/verify?code=ABC123')
     })
   })
 })

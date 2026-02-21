@@ -71,14 +71,14 @@ function formatOdds(oddsBps: number | undefined): string {
 function getEventStyles(eventType: BetEventType): { textColor: string; icon: string } {
   switch (eventType) {
     case 'won':
-      return { textColor: 'text-green-400', icon: '' }
+      return { textColor: 'text-color-up', icon: '' }
     case 'lost':
-      return { textColor: 'text-accent', icon: '' }
+      return { textColor: 'text-color-down', icon: '' }
     case 'matched':
-      return { textColor: 'text-white', icon: '' }
+      return { textColor: 'text-text-primary', icon: '' }
     case 'placed':
     default:
-      return { textColor: 'text-white', icon: '' }
+      return { textColor: 'text-text-primary', icon: '' }
   }
 }
 
@@ -112,7 +112,7 @@ interface BetFeedItemProps {
 function MegaPortfolioBadge() {
   return (
     <Tooltip content="Mega Portfolio - Only AI can manage this scale">
-      <span className="inline-flex items-center gap-1 text-accent animate-pulse cursor-help" role="img" aria-label="Mega Portfolio">
+      <span className="inline-flex items-center gap-1 text-zinc-900 animate-pulse cursor-help" role="img" aria-label="Mega Portfolio">
         <span>🔥</span>
         <span className="text-[10px] font-bold uppercase tracking-wide">MEGA</span>
       </span>
@@ -139,14 +139,14 @@ export function BetFeedItem({ event }: BetFeedItemProps) {
 
   return (
     <div
-      className="px-4 py-3 border-b border-white/10 last:border-b-0 hover:bg-white/5 transition-colors"
+      className="px-4 py-3 border-b border-border-light last:border-b-0 hover:bg-card-hover transition-colors"
       role="listitem"
     >
       {/* Main row: wallet + description + odds badge */}
       <div className="flex items-center gap-2 mb-1">
         <Link
           href={`/agent/${event.walletAddress}`}
-          className="font-mono text-sm text-white/80 hover:text-white transition-colors"
+          className="font-mono text-sm text-text-secondary hover:text-text-primary transition-colors"
           title={event.walletAddress}
         >
           {truncateAddress(event.walletAddress)}
@@ -165,7 +165,7 @@ export function BetFeedItem({ event }: BetFeedItemProps) {
       </div>
 
       {/* Secondary row: details */}
-      <div className="flex items-center justify-between text-xs text-white/60 font-mono">
+      <div className="flex items-center justify-between text-xs text-text-muted font-mono">
         <div className="flex items-center gap-3">
           {/* Result for won/lost - show P&L prominently */}
           {showResult && event.result && (
@@ -175,7 +175,7 @@ export function BetFeedItem({ event }: BetFeedItemProps) {
           )}
 
           {/* Amount - always show for context (AC3 format includes amount) */}
-          <span className={showResult ? 'text-white/40' : ''}>
+          <span className={showResult ? 'text-text-muted' : ''}>
             {formatAmount(event.amount)}
           </span>
 
@@ -192,7 +192,7 @@ export function BetFeedItem({ event }: BetFeedItemProps) {
         {/* View Details link */}
         <Link
           href={`/bet/${event.betId}`}
-          className="text-white/40 hover:text-white transition-colors"
+          className="text-text-muted hover:text-text-primary transition-colors"
         >
           View Details
         </Link>

@@ -556,9 +556,9 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
 
     // Create L3 + ARB providers
     let l3_provider = Arc::new(Provider::<Http>::try_from(&args.rpc_url)
-        .expect("Failed to create L3 provider"));
+        .map_err(|e| format!("Failed to create L3 provider from {}: {}", args.rpc_url, e))?);
     let arb_provider = Arc::new(Provider::<Http>::try_from(&args.arb_rpc_url)
-        .expect("Failed to create ARB provider"));
+        .map_err(|e| format!("Failed to create ARB provider from {}: {}", args.arb_rpc_url, e))?);
     info!(l3_rpc = %args.rpc_url, arb_rpc = %args.arb_rpc_url, "RPC providers created");
 
     // Load deployment JSONs
@@ -597,6 +597,8 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         logos_dir,
         sim_cache,
         chain_cache,
+        admin_token: args.admin_token.clone(),
+        cors_origins: args.cors_origin.clone(),
     });
 
     // Spawn chain pollers (NAV=1s, Oracle=2s)
@@ -611,7 +613,12 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     info!("Chain pollers started (NAV=1s, Oracle=2s, Balances=1s, Allowances=3s, Orders=1s, Positions=3s, CostBasis=5s)");
 
     let app = api::router(app_state);
-    let addr = SocketAddr::from(([0, 0, 0, 0], args.port));
+    // P2.9: Use configurable bind address
+    let bind_ip: std::net::IpAddr = args.bind.parse().unwrap_or_else(|e| {
+        tracing::warn!(bind = %args.bind, error = %e, "Invalid bind address, falling back to 0.0.0.0");
+        std::net::IpAddr::V4(std::net::Ipv4Addr::new(0, 0, 0, 0))
+    });
+    let addr = SocketAddr::from((bind_ip, args.port));
     info!(%addr, "HTTP server listening");
 
     let listener = tokio::net::TcpListener::bind(addr).await?;

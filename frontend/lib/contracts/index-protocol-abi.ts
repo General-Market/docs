@@ -13,6 +13,15 @@ export const BRIDGE_PROXY_ABI = [
       { name: 'weights', type: 'uint256[]' },
       { name: 'assets', type: 'address[]' },
       { name: 'prices', type: 'uint256[]' },
+      {
+        name: 'metadata',
+        type: 'tuple',
+        components: [
+          { name: 'description', type: 'string' },
+          { name: 'websiteUrl', type: 'string' },
+          { name: 'videoUrl', type: 'string' },
+        ],
+      },
     ],
     name: 'requestCreateItp',
     outputs: [{ name: 'nonce', type: 'uint256' }],
@@ -190,6 +199,30 @@ export const BRIDGE_PROXY_ABI = [
     ],
     name: 'ItpMetadataUpdated',
     type: 'event',
+  },
+  // Set deployer display name
+  {
+    inputs: [{ name: 'name', type: 'string' }],
+    name: 'setDeployerName',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  // Get deployer display name
+  {
+    inputs: [{ name: 'deployer', type: 'address' }],
+    name: 'getDeployerName',
+    outputs: [{ name: '', type: 'string' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  // Get ITP deployer address
+  {
+    inputs: [{ name: 'itpId', type: 'bytes32' }],
+    name: 'itpDeployer',
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
   },
 ] as const
 
@@ -434,46 +467,30 @@ export const INDEX_ABI = [
     stateMutability: 'nonpayable',
     type: 'function',
   },
-] as const
-
-// MockBitgetVault ABI - for AP balance dashboard
-export const MOCK_BITGET_VAULT_ABI = [
-  // Get vault's balance of a specific token
+  // Public storage getters for system status
   {
-    inputs: [{ name: 'token', type: 'address' }],
-    name: 'getBalance',
+    inputs: [],
+    name: 'lastProcessedCycleNumber',
     outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
   },
-  // Get price of an asset in USDC (18 decimals)
   {
-    inputs: [{ name: 'asset', type: 'address' }],
-    name: 'getPrice',
+    inputs: [],
+    name: 'pendingOrderCount',
     outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
   },
-  // VaultFunded event
+  // BatchConfirmed event
   {
     anonymous: false,
     inputs: [
-      { indexed: true, name: 'token', type: 'address' },
-      { indexed: false, name: 'amount', type: 'uint256' },
-      { indexed: true, name: 'funder', type: 'address' },
+      { indexed: true, name: 'cycleNumber', type: 'uint256' },
+      { indexed: false, name: 'orderIds', type: 'uint256[]' },
+      { indexed: false, name: 'blsSignature', type: 'bytes' },
     ],
-    name: 'VaultFunded',
-    type: 'event',
-  },
-  // PriceUpdated event
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'asset', type: 'address' },
-      { indexed: false, name: 'price', type: 'uint256' },
-      { indexed: true, name: 'setter', type: 'address' },
-    ],
-    name: 'PriceUpdated',
+    name: 'BatchConfirmed',
     type: 'event',
   },
 ] as const

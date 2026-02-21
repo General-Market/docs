@@ -45,7 +45,7 @@ pub use types::{
     // Single-phase rebalance (replaces 2-phase for on-chain call)
     build_rebalance_hash, build_rebalance_calldata, RebalanceResult,
     // NAV push
-    build_set_itp_nav_calldata, build_set_itp_nav_hash,
+    build_set_itp_nav_calldata, build_set_itp_nav_hash, SetItpNavResult,
     // Issuer-driven per-asset settlement
     AssetTrade, AssetTradesProposal, AssetTradesResult,
     build_emit_asset_trades_hash, build_emit_asset_trades_calldata,
@@ -54,4 +54,6 @@ pub use types::{
     RecordCollateralMoveProposal, RecordCollateralMoveResult,
     build_mint_bridged_shares_hash, build_mint_bridged_shares_calldata,
     MintBridgedSharesProposal, MintBridgedSharesResult,
+    // completeBuyOrder BLS consensus
+    build_complete_buy_order_hash, CompleteBuyOrderProposal, CompleteBuyOrderResult,
 };

@@ -18,15 +18,15 @@ function FeedSkeleton() {
   return (
     <div className="animate-pulse">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="px-4 py-3 border-b border-white/10 last:border-b-0">
+        <div key={i} className="px-4 py-3 border-b border-border-light last:border-b-0">
           <div className="flex items-center gap-2 mb-2">
-            <div className="h-4 w-24 bg-white/10 rounded" />
-            <div className="h-4 w-32 bg-white/10 rounded" />
+            <div className="h-4 w-24 bg-muted rounded" />
+            <div className="h-4 w-32 bg-muted rounded" />
           </div>
           <div className="flex items-center gap-3">
-            <div className="h-3 w-16 bg-white/10 rounded" />
-            <div className="h-3 w-20 bg-white/10 rounded" />
-            <div className="h-3 w-14 bg-white/10 rounded" />
+            <div className="h-3 w-16 bg-muted rounded" />
+            <div className="h-3 w-20 bg-muted rounded" />
+            <div className="h-3 w-14 bg-muted rounded" />
           </div>
         </div>
       ))}
@@ -40,8 +40,8 @@ function FeedSkeleton() {
 function EmptyState() {
   return (
     <div className="p-8 text-center">
-      <p className="text-white/60 font-mono">No recent bets</p>
-      <p className="text-white/40 text-sm font-mono mt-1">
+      <p className="text-text-muted">No recent bets</p>
+      <p className="text-text-muted text-sm mt-1">
         Portfolio bets will appear here as they are placed
       </p>
     </div>
@@ -54,7 +54,7 @@ function EmptyState() {
 function LoadingSpinner() {
   return (
     <div className="flex justify-center py-4">
-      <div className="w-5 h-5 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+      <div className="w-5 h-5 border-2 border-border-medium border-t-text-muted rounded-full animate-spin" />
     </div>
   )
 }
@@ -189,7 +189,7 @@ export function RecentBetsFeed() {
   const visibleEvents = displayEvents
 
   return (
-    <Card className="border-white/20">
+    <Card className="border-border-light">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle>Recent Portfolio Bets</CardTitle>
@@ -232,7 +232,7 @@ export function RecentBetsFeed() {
 
               {/* End of data indicator */}
               {!hasMore && displayEvents.length > 0 && (
-                <div className="py-3 text-center text-xs text-white/40 font-mono">
+                <div className="py-3 text-center text-xs text-text-muted font-mono">
                   End of feed
                 </div>
               )}

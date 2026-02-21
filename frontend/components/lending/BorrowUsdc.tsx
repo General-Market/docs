@@ -121,17 +121,17 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
   const formatMaxBorrow = maxBorrow ? formatUnits(maxBorrow, 6) : '0'
 
   return (
-    <div className="bg-terminal-dark border border-white/10 rounded-lg p-6">
-      <h2 className="text-lg font-bold text-white mb-4">Borrow USDC</h2>
-      <p className="text-white/60 text-sm mb-4">
+    <div className="bg-white rounded-xl shadow-card border border-border-light p-6">
+      <h2 className="text-lg font-bold text-text-primary mb-4">Borrow USDC</h2>
+      <p className="text-text-secondary text-sm mb-4">
         Borrow USDC against your ITP collateral
       </p>
 
       <div className="space-y-4">
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="text-sm text-white/70">Amount (USDC)</label>
-            <span className="text-xs text-white/40">
+            <label className="text-sm text-text-secondary">Amount (USDC)</label>
+            <span className="text-xs text-text-muted">
               Max borrow: {parseFloat(formatMaxBorrow).toFixed(2)} USDC
             </span>
           </div>
@@ -144,12 +144,12 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
               min="0"
               step="1"
               disabled={isProcessing}
-              className="w-full bg-terminal border border-white/20 rounded px-4 py-3 text-white text-lg focus:border-accent focus:outline-none disabled:opacity-50"
+              className="w-full bg-muted border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg focus:border-zinc-900 focus:outline-none disabled:opacity-50"
             />
             <button
               onClick={() => setAmount(formatMaxBorrow)}
               disabled={isProcessing || maxBorrow === 0n}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-accent hover:text-accent/80 disabled:opacity-50"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-900 font-medium hover:text-zinc-700 disabled:opacity-50"
             >
               MAX
             </button>
@@ -158,24 +158,24 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
 
         {/* Projected Health Factor */}
         {amount && parsedAmount > 0n && (
-          <div className="bg-black/30 rounded-lg p-3">
+          <div className="bg-muted rounded-xl p-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-white/70">Projected Health Factor</span>
-              <span className={`font-mono font-bold ${
-                projectedHealthFactor >= 1.5 ? 'text-green-400' :
-                projectedHealthFactor >= 1.0 ? 'text-yellow-400' :
-                'text-red-400'
+              <span className="text-sm text-text-secondary">Projected Health Factor</span>
+              <span className={`font-mono tabular-nums font-bold ${
+                projectedHealthFactor >= 1.5 ? 'text-color-up' :
+                projectedHealthFactor >= 1.0 ? 'text-color-warning' :
+                'text-color-down'
               }`}>
                 {projectedHealthFactor === Infinity ? '∞' : projectedHealthFactor.toFixed(2)}
               </span>
             </div>
             {projectedHealthFactor < 1.0 && (
-              <p className="text-red-400 text-xs mt-2">
+              <p className="text-color-down text-xs mt-2">
                 Cannot borrow: health factor would be below 1.0
               </p>
             )}
             {projectedHealthFactor >= 1.0 && projectedHealthFactor < 1.5 && (
-              <p className="text-yellow-400 text-xs mt-2">
+              <p className="text-color-warning text-xs mt-2">
                 Warning: Low health factor increases liquidation risk
               </p>
             )}
@@ -184,37 +184,37 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
 
         {/* Quote API Terms (when in quote mode) */}
         {useQuoteMode && quote && !isExpired && (
-          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 space-y-2">
-            <div className="text-xs text-blue-400 font-bold uppercase tracking-wider">Quote Terms</div>
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 space-y-2">
+            <div className="text-xs text-blue-700 font-bold uppercase tracking-wider">Quote Terms</div>
             <div className="flex justify-between text-sm">
-              <span className="text-white/70">Borrow APR</span>
-              <span className="text-white font-mono">{quote.terms.borrowRate}%</span>
+              <span className="text-text-secondary">Borrow APR</span>
+              <span className="text-text-primary font-mono tabular-nums">{quote.terms.borrowRate}%</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-white/70">Health Factor</span>
-              <span className={`font-mono font-bold ${
-                parseFloat(quote.terms.healthFactor) >= 1.5 ? 'text-green-400' :
-                parseFloat(quote.terms.healthFactor) >= 1.0 ? 'text-yellow-400' :
-                'text-red-400'
+              <span className="text-text-secondary">Health Factor</span>
+              <span className={`font-mono tabular-nums font-bold ${
+                parseFloat(quote.terms.healthFactor) >= 1.5 ? 'text-color-up' :
+                parseFloat(quote.terms.healthFactor) >= 1.0 ? 'text-color-warning' :
+                'text-color-down'
               }`}>{quote.terms.healthFactor}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-white/70">Liquidation Price</span>
-              <span className="text-white font-mono">${quote.terms.liquidationPrice}</span>
+              <span className="text-text-secondary">Liquidation Price</span>
+              <span className="text-text-primary font-mono tabular-nums">${quote.terms.liquidationPrice}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-white/70">Max Borrow</span>
-              <span className="text-white font-mono">{quote.terms.maxBorrow} USDC</span>
+              <span className="text-text-secondary">Max Borrow</span>
+              <span className="text-text-primary font-mono tabular-nums">{quote.terms.maxBorrow} USDC</span>
             </div>
-            <div className="text-xs text-white/40">
+            <div className="text-xs text-text-muted">
               Bundle: {quote.bundler.steps.join(' → ')}
             </div>
           </div>
         )}
 
         {useQuoteMode && isExpired && (
-          <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-2 text-orange-400 text-xs text-center">
-            Quote expired — <button onClick={fetchQuote} className="underline">refresh</button>
+          <div className="bg-surface-warning border border-orange-300 rounded-xl p-2 text-orange-700 text-xs text-center">
+            Quote expired -- <button onClick={fetchQuote} className="underline">refresh</button>
           </div>
         )}
 
@@ -223,7 +223,7 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
           <button
             onClick={() => executeBundler(quote)}
             disabled={isBundlerPending || isBundlerConfirming}
-            className="w-full py-3 font-bold rounded-lg transition-colors bg-blue-500 text-white hover:bg-blue-600 disabled:bg-white/20 disabled:text-white/50 disabled:cursor-not-allowed"
+            className="w-full py-3 font-bold rounded-lg transition-colors bg-zinc-900 text-white hover:bg-zinc-800 disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed"
           >
             {isBundlerPending ? 'Confirm in wallet...' :
              isBundlerConfirming ? 'Executing bundle...' :
@@ -236,8 +236,8 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
             disabled={!amount || parsedAmount === 0n || isProcessing || !canBorrow}
             className={`w-full py-3 font-bold rounded-lg transition-colors ${
               step === 'success'
-                ? 'bg-green-500 text-white'
-                : 'bg-accent text-terminal hover:bg-accent/90 disabled:bg-white/20 disabled:text-white/50 disabled:cursor-not-allowed'
+                ? 'bg-color-up text-white'
+                : 'bg-zinc-900 text-white hover:bg-zinc-800 disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed'
             }`}
           >
             {buttonText}
@@ -245,18 +245,18 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
         )}
 
         {/* Quote mode toggle */}
-        <label className="flex items-center gap-2 text-xs text-white/50 cursor-pointer">
+        <label className="flex items-center gap-2 text-xs text-text-muted cursor-pointer">
           <input
             type="checkbox"
             checked={useQuoteMode}
             onChange={(e) => setUseQuoteMode(e.target.checked)}
-            className="rounded border-white/30"
+            className="rounded border-border-medium"
           />
           Use intent-based flow (quote + bundler)
         </label>
 
         {(txError || quoteError || bundlerError) && (
-          <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 text-red-400 text-sm">
+          <div className="bg-surface-down border border-red-300 rounded-xl p-3 text-color-down text-sm">
             {(() => {
               const msg = txError || quoteError?.message || bundlerError?.message || 'Unknown error'
               if (msg.includes('User rejected') || msg.includes('denied')) return 'Transaction rejected'

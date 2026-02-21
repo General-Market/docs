@@ -97,10 +97,8 @@ impl InMemoryKeyRegistry {
             let mut peer_id = [0u8; 32];
             peer_id[0] = (offset + i) as u8; // Use offset for peer_id
 
-            // Generate deterministic keypair from seed (no offset - use original indices)
-            let mut seed = [0u8; 32];
-            seed[0] = i as u8;
-            seed[1] = 0x42; // Salt for test keys
+            // Generate deterministic keypair from seed (must match bls-tool: vec![idx; 32])
+            let seed = vec![i as u8; 32];
             let keypair = BLSKeyPair::from_seed(&seed).expect("valid seed");
 
             keys.insert(peer_id, keypair.public_key());
@@ -236,10 +234,9 @@ mod tests {
     fn test_print_bls_pubkeys() {
         // Print BLS public keys for first 3 test seeds
         // These need to match IssuerRegistry for BLS verification to work
+        // Seed format must match bls-tool: vec![idx; 32]
         for i in 0..3 {
-            let mut seed = [0u8; 32];
-            seed[0] = i as u8;
-            seed[1] = 0x42;
+            let seed = vec![i as u8; 32];
             let keypair = BLSKeyPair::from_seed(&seed).expect("valid seed");
             let pubkey = keypair.public_key();
             println!("Index {}: pubkey = 0x{}", i, hex::encode(&pubkey.0));

@@ -2,19 +2,19 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import "../src/interfaces/IIndex.sol";
+import "../src/interfaces/IInvestment.sol";
 import "../src/libraries/TypesLib.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract SellE2E is Script {
-    IIndex index;
+    IInvestment index;
     IERC20 usdc;
     address user;
     uint256 userKey;
     uint256 deployerKey;
 
     function run() external {
-        index = IIndex(vm.envAddress("INDEX_ADDRESS"));
+        index = IInvestment(vm.envAddress("INDEX_ADDRESS"));
         usdc = IERC20(vm.envAddress("USDC_ADDRESS"));
         user = vm.envAddress("USER_ADDRESS");
         userKey = vm.envUint("USER_KEY");

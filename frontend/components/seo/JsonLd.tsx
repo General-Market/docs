@@ -7,15 +7,14 @@ export function OrganizationJsonLd() {
   const data = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "AgiArena",
-    url: "https://agiarena.net",
-    logo: "https://agiarena.net/logo.png",
+    name: "General Market",
+    url: "https://generalmarket.io",
+    logo: "https://generalmarket.io/logo.svg",
     sameAs: [
       "https://x.com/otc_max",
-      "https://github.com/AgiArena",
     ],
     description:
-      "AGI Capital Markets. AI agents compete by predicting thousands of markets at once. The best world model wins.",
+      "The institutional-grade protocol for on-chain index products.",
   }
 
   return (
@@ -30,13 +29,13 @@ export function WebsiteJsonLd() {
   const data = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "AgiArena",
-    url: "https://agiarena.net",
+    name: "General Market",
+    url: "https://generalmarket.io",
     description:
-      "AGI Capital Markets. Deploy AI agents that predict thousands of markets at once. Not betting on markets—betting on worldviews. The best model of reality wins.",
+      "The institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index products on-chain.",
     potentialAction: {
       "@type": "SearchAction",
-      target: "https://agiarena.net/?search={search_term_string}",
+      target: "https://generalmarket.io/?search={search_term_string}",
       "query-input": "required name=search_term_string",
     },
   }
@@ -53,11 +52,11 @@ export function SoftwareApplicationJsonLd() {
   const data = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    name: "AgiArena",
-    operatingSystem: "Web, Linux, macOS",
+    name: "General Market",
+    operatingSystem: "Web",
     applicationCategory: "FinanceApplication",
     description:
-      "AGI Capital Markets. Deploy AI agents that predict everything at once. The best world model wins.",
+      "The institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index products.",
     offers: {
       "@type": "Offer",
       price: "0",
@@ -65,8 +64,8 @@ export function SoftwareApplicationJsonLd() {
     },
     author: {
       "@type": "Organization",
-      name: "AgiArena",
-      url: "https://agiarena.net",
+      name: "General Market",
+      url: "https://generalmarket.io",
     },
   }
 
@@ -85,26 +84,26 @@ export function FAQJsonLd() {
     mainEntity: [
       {
         "@type": "Question",
-        name: "What is AgiArena?",
+        name: "What is General Market?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "AgiArena is AGI Capital Markets—a platform where AI agents compete by predicting thousands of markets at once. Each trade is a portfolio of predictions across politics, crypto, sports, weather, and more. The AI with the best model of reality wins.",
+          text: "General Market is an institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index tracking products (ITPs) that track baskets of crypto assets, similar to how ETFs work in traditional finance.",
         },
       },
       {
         "@type": "Question",
-        name: "Why is AgiArena AI only?",
+        name: "What are Index Tracking Products (ITPs)?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Humans cannot analyze 25,000 markets in 5 minutes. AI agents can. This tests something humans can't do: predict everything at once. To win, an AI needs a complete world model—understanding how politics affects markets, how weather affects sports, how culture affects crypto. This is how we find AGI.",
+          text: "ITPs are tokenized index products that hold a fixed basket of crypto assets with defined weights. Their NAV (Net Asset Value) floats with the underlying asset prices, just like an ETF. You can create custom ITPs or trade existing ones.",
         },
       },
       {
         "@type": "Question",
-        name: "How do I make money on AgiArena?",
+        name: "How does lending work on General Market?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "You fund your AI agent with USDC. It predicts thousands of markets at once—a complete worldview. Another AI takes the opposite view. When markets resolve, the AI with the better world model wins the stake. Platform takes 0.1% fee on wins only.",
+          text: "General Market integrates with Morpho lending markets. You can deposit USDC to earn yield, or use your ITP shares as collateral to borrow against your positions.",
         },
       },
       {
@@ -112,7 +111,7 @@ export function FAQJsonLd() {
         name: "What do I need to get started?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "You need Claude Code and USDC on Base L2. Run 'npx agiarena init' to deploy your agent in 5 minutes.",
+          text: "You need a Web3 wallet (like MetaMask) connected to the Index L3 network, and WIND tokens for gas fees. You can then browse the Markets tab to buy existing ITPs or create your own custom index.",
         },
       },
     ],

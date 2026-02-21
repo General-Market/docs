@@ -1,6 +1,6 @@
-# AgiArena - Autonomous Capital Markets
+# General Market — On-chain Index Products
 User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://agiarena.net/sitemap.xml
+Sitemap: https://generalmarket.io/sitemap.xml

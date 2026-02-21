@@ -16,6 +16,12 @@ use tracing::{debug, info};
 use common::adapters::abi::{ERC20Contract, MockBitgetVaultContract};
 use common::adapters::BitgetVaultFill;
 
+const GAS_LIMIT_APPROVE: u64 = 100_000;
+const GAS_LIMIT_TRADE: u64 = 500_000;
+const GAS_LIMIT_SET_PRICE: u64 = 100_000;
+const GAS_LIMIT_SWAP: u64 = 300_000;
+const GAS_LIMIT_WITHDRAW: u64 = 200_000;
+
 /// Signer type alias
 type SignerProvider = SignerMiddleware<Provider<Http>, LocalWallet>;
 
@@ -124,7 +130,9 @@ impl BitgetVaultClient {
         }
 
         // Approve max uint256 for convenience
-        let call = erc20.approve(self.vault_address, U256::MAX).nonce(self.next_nonce());
+        let call = erc20.approve(self.vault_address, U256::MAX)
+            .nonce(self.next_nonce())
+            .gas(GAS_LIMIT_APPROVE);
         let pending = call
             .send()
             .await
@@ -134,6 +142,10 @@ impl BitgetVaultClient {
             .await
             .map_err(|e| BitgetVaultError::ApprovalFailed(format!("approve receipt failed: {}", e)))?
             .ok_or_else(|| BitgetVaultError::ApprovalFailed("no receipt".to_string()))?;
+
+        if receipt.status == Some(ethers::types::U64::from(0)) {
+            return Err(BitgetVaultError::TransactionFailed(format!("tx reverted: {:?}", receipt.transaction_hash)));
+        }
 
         info!(
             token = ?token_address,
@@ -163,7 +175,7 @@ impl BitgetVaultClient {
             buy_token,
             sell_amount,
             buy_amount,
-        ).nonce(self.next_nonce());
+        ).nonce(self.next_nonce()).gas(GAS_LIMIT_TRADE);
 
         let pending = call
             .send()
@@ -174,6 +186,10 @@ impl BitgetVaultClient {
             .await
             .map_err(|e| BitgetVaultError::TransactionFailed(format!("executeTrade receipt failed: {}", e)))?
             .ok_or_else(|| BitgetVaultError::TransactionFailed("no receipt".to_string()))?;
+
+        if receipt.status == Some(ethers::types::U64::from(0)) {
+            return Err(BitgetVaultError::TransactionFailed(format!("tx reverted: {:?}", receipt.transaction_hash)));
+        }
 
         info!(
             trade_id,
@@ -197,7 +213,9 @@ impl BitgetVaultClient {
         asset: Address,
         price: U256,
     ) -> Result<TxHash, BitgetVaultError> {
-        let call = self.vault_contract.set_price(asset, price).nonce(self.next_nonce());
+        let call = self.vault_contract.set_price(asset, price)
+            .nonce(self.next_nonce())
+            .gas(GAS_LIMIT_SET_PRICE);
 
         let pending = call
             .send()
@@ -208,6 +226,10 @@ impl BitgetVaultClient {
             .await
             .map_err(|e| BitgetVaultError::TransactionFailed(format!("setPrice receipt failed: {}", e)))?
             .ok_or_else(|| BitgetVaultError::TransactionFailed("no receipt".to_string()))?;
+
+        if receipt.status == Some(ethers::types::U64::from(0)) {
+            return Err(BitgetVaultError::TransactionFailed(format!("tx reverted: {:?}", receipt.transaction_hash)));
+        }
 
         info!(
             asset = ?asset,
@@ -241,7 +263,9 @@ impl BitgetVaultClient {
         to_token: Address,
         amount: U256,
     ) -> Result<TxHash, BitgetVaultError> {
-        let call = self.vault_contract.swap_stable(from_token, to_token, amount).nonce(self.next_nonce());
+        let call = self.vault_contract.swap_stable(from_token, to_token, amount)
+            .nonce(self.next_nonce())
+            .gas(GAS_LIMIT_SWAP);
 
         let pending = call
             .send()
@@ -252,6 +276,10 @@ impl BitgetVaultClient {
             .await
             .map_err(|e| BitgetVaultError::TransactionFailed(format!("swapStable receipt failed: {}", e)))?
             .ok_or_else(|| BitgetVaultError::TransactionFailed("no receipt".to_string()))?;
+
+        if receipt.status == Some(ethers::types::U64::from(0)) {
+            return Err(BitgetVaultError::TransactionFailed(format!("tx reverted: {:?}", receipt.transaction_hash)));
+        }
 
         info!(
             from_token = ?from_token,
@@ -273,7 +301,9 @@ impl BitgetVaultClient {
         token: Address,
         amount: U256,
     ) -> Result<TxHash, BitgetVaultError> {
-        let call = self.vault_contract.withdraw(token, amount).nonce(self.next_nonce());
+        let call = self.vault_contract.withdraw(token, amount)
+            .nonce(self.next_nonce())
+            .gas(GAS_LIMIT_WITHDRAW);
 
         let pending = call
             .send()
@@ -285,6 +315,10 @@ impl BitgetVaultClient {
             .map_err(|e| BitgetVaultError::TransactionFailed(format!("withdraw receipt failed: {}", e)))?
             .ok_or_else(|| BitgetVaultError::TransactionFailed("no receipt".to_string()))?;
 
+        if receipt.status == Some(ethers::types::U64::from(0)) {
+            return Err(BitgetVaultError::TransactionFailed(format!("tx reverted: {:?}", receipt.transaction_hash)));
+        }
+
         info!(
             token = ?token,
             amount = %amount,
@@ -293,6 +327,17 @@ impl BitgetVaultClient {
         );
 
         Ok(receipt.transaction_hash)
+    }
+
+    /// Re-synchronize the local nonce counter from on-chain pending count.
+    pub async fn resync_nonce(&self) -> Result<(), BitgetVaultError> {
+        let addr = self.client.address();
+        let count = self.client.get_transaction_count(addr, Some(ethers::types::BlockId::Number(ethers::types::BlockNumber::Pending)))
+            .await
+            .map_err(|e| BitgetVaultError::ProviderError(format!("nonce resync: {}", e)))?;
+        let old = self.nonce.swap(count.as_u64(), Ordering::SeqCst);
+        tracing::warn!(old_nonce = old, new_nonce = count.as_u64(), "Nonce resynced from chain");
+        Ok(())
     }
 
     /// Get fill data for a trade (FR13: read-only verification)

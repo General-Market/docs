@@ -1,6 +1,8 @@
 # Build artifacts
 /target/
 /out/
+.next/
+*.tsbuildinfo
 
 # Rust
 Cargo.lock
@@ -34,15 +36,47 @@ Thumbs.db
 .history/
 
 # Environment files
+*.env
+*.env.local
+!*.env.example
+!*.env.local.example
 
-
-# Node modules (if any)
+# Node modules
 node_modules/
 
 # Foundry
 /contracts/cache/
 /contracts/out/
 /contracts/broadcast/
-bitget-credentials.env
-.vercel
+
+# Claude Code (keep commands/ and CLAUDE.md, ignore the rest)
+.claude/settings.local.json
+.claude/worktrees/
+
+# Vercel & worktrees
+.vercel/
 .worktrees/
+
+# Playwright MCP logs
+.playwright-mcp/
+
+# Test results
+test-results/
+frontend/test-results/
+
+# Runtime data (re-fetchable)
+data/bitget-all-pairs.json
+data/exchange-listings.json
+data/deployed-tokens-all.json
+data/creation-prices.json
+data/creation-spreads.json
+data/symbol-map.json
+data/symbol-map-local.json
+
+# Media files
+*.mp3
+*.wav
+*.mp4
+
+# Stress test reports
+scripts/stress-test/reports/

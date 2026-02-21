@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../src/core/Index.sol";
+import "../src/core/Investment.sol";
 import "../src/mocks/MockERC20.sol";
 import "./helpers/TestHelper.sol";
 import {Governance} from "../src/Governance.sol";
@@ -13,7 +13,7 @@ import "../src/libraries/EventsLib.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract IndexOrderSubmissionTest is TestHelper {
-    Index public index;
+    Investment public index;
     MockERC20 public usdc;
     Governance public governance;
     IssuerRegistry public issuerRegistry;
@@ -36,12 +36,12 @@ contract IndexOrderSubmissionTest is TestHelper {
         governance = deployGovernance(address(this));
 
         // Deploy Index as UUPS proxy
-        Index impl = new Index();
+        Investment impl = new Investment();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(Index.initialize, (address(governance), address(usdc)))
+            abi.encodeCall(Investment.initialize, (address(governance), address(usdc)))
         );
-        index = Index(address(proxy));
+        index = Investment(address(proxy));
 
         // Deploy IssuerRegistry with real BLS keys and wire to Index
         issuerRegistry = deployIssuerRegistry(address(governance));
@@ -517,12 +517,12 @@ contract IndexOrderSubmissionTest is TestHelper {
 
     function test_setIssuerRegistry_revertsForNonAdmin() public {
         // Deploy a fresh Index without IssuerRegistry set
-        Index impl2 = new Index();
+        Investment impl2 = new Investment();
         ERC1967Proxy proxy2 = new ERC1967Proxy(
             address(impl2),
-            abi.encodeCall(Index.initialize, (address(governance), address(usdc)))
+            abi.encodeCall(Investment.initialize, (address(governance), address(usdc)))
         );
-        Index freshIndex = Index(address(proxy2));
+        Investment freshIndex = Investment(address(proxy2));
 
         address adminAddr = governance.admin();
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E061_Unauthorized.selector, user, adminAddr));
@@ -622,12 +622,12 @@ contract IndexOrderSubmissionTest is TestHelper {
         // Don't set issuer registry — default is address(0)
         // Need a fresh Index (setUp already sets registry on the main one)
         MockERC20 usdc2 = new MockERC20("USDC2", "USDC2", 18);
-        Index impl2 = new Index();
+        Investment impl2 = new Investment();
         ERC1967Proxy proxy2 = new ERC1967Proxy(
             address(impl2),
-            abi.encodeCall(Index.initialize, (address(governance), address(usdc2)))
+            abi.encodeCall(Investment.initialize, (address(governance), address(usdc2)))
         );
-        Index index2 = Index(address(proxy2));
+        Investment index2 = Investment(address(proxy2));
 
         uint256[] memory w = new uint256[](1);
         w[0] = 1e18;

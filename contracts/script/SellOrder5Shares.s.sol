@@ -2,12 +2,12 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import "../src/interfaces/IIndex.sol";
+import "../src/interfaces/IInvestment.sol";
 import "../src/libraries/TypesLib.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract SellOrder5Shares is Script {
-    IIndex index = IIndex(0x0B306BF915C4d645ff596e518fAf3F9669b97016);
+    IInvestment index = IInvestment(0x0B306BF915C4d645ff596e518fAf3F9669b97016);
     IERC20 usdc = IERC20(0x5FbDB2315678afecb367f032d93F642f64180aa3);
     address user = 0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65;
     uint256 userKey = 0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a;

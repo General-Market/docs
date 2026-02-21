@@ -21,8 +21,8 @@ SYMBOL_MAP_PATH = os.path.join(DATA_DIR, "symbol-map.json")
 ALL_PAIRS_PATH = os.path.join(DATA_DIR, "bitget-all-pairs.json")
 FOUNDRY_BIN = os.path.expanduser("~/.foundry/bin")
 DEPLOYER_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-BATCH_SIZE = 80  # tokens per forge script call (avoid gas/stack limits)
-FORGE_TIMEOUT = 600  # seconds per batch (80 deploys can be slow on Anvil)
+BATCH_SIZE = 40  # tokens per forge script call (avoid gas/stack limits)
+FORGE_TIMEOUT = 1800  # seconds per batch
 
 def _parse_rpc_url():
     """Parse --rpc-url from CLI args, fall back to RPC_URL env, then default."""

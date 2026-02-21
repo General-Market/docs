@@ -5,7 +5,6 @@ libs = ["lib"]
 solc = "0.8.24"
 auto_detect_solc = false
 # NOTE: Morpho vendor libs have strict pragmas (0.8.19, 0.8.21) patched to >=
-# Run: scripts/patch-vendor-pragmas.sh after git submodule update
 remappings = [
   "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
   "@openzeppelin/contracts/=lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/",

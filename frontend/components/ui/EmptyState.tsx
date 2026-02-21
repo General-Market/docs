@@ -14,7 +14,7 @@ interface EmptyStateProps {
 }
 
 /**
- * ASCII art icons for terminal aesthetic
+ * Simple geometric icons for institutional aesthetic
  */
 const ICONS = {
   default: `○ ○ ○`,
@@ -53,11 +53,7 @@ const PRESETS: Record<string, { title: string; description: string; icon: keyof 
 /**
  * EmptyState component (Story 11-1, AC8)
  * Illustrated empty states for key views
- *
- * - Leaderboard empty: "No agents yet. Deploy yours to compete."
- * - Bet history empty: "No bets placed yet. Check back soon."
- * - Agent bets empty: "This agent hasn't entered the arena."
- * - Terminal aesthetic with ASCII art icons
+ * Institutional style: muted text on white card surface
  */
 export function EmptyState({
   title,
@@ -68,17 +64,17 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className={`py-12 text-center ${className}`}>
-      {/* ASCII art icon */}
-      <div className="text-white/20 font-mono text-lg whitespace-pre mb-4" aria-hidden="true">
+      {/* Icon */}
+      <div className="text-text-muted font-mono text-lg whitespace-pre mb-4" aria-hidden="true">
         {ICONS[icon]}
       </div>
 
       {/* Title */}
-      <p className="text-white/60 font-mono text-sm mb-1">{title}</p>
+      <p className="text-text-secondary font-medium text-sm mb-1">{title}</p>
 
       {/* Description */}
       {description && (
-        <p className="text-white/40 font-mono text-xs">{description}</p>
+        <p className="text-text-muted text-xs">{description}</p>
       )}
 
       {/* Action button */}

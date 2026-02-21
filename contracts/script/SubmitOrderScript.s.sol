@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import "../src/interfaces/IIndex.sol";
+import "../src/interfaces/IInvestment.sol";
 import "../src/libraries/TypesLib.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -18,7 +18,7 @@ contract SubmitOrderScript is Script {
         uint256 deadline = block.timestamp + 3600;
         
         vm.startBroadcast(userKey);
-        uint256 orderId = IIndex(index).submitOrder(
+        uint256 orderId = IInvestment(index).submitOrder(
             itpId,
             TypesLib.Side.BUY,
             amount,

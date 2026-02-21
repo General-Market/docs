@@ -1,16 +1,13 @@
 'use client'
 
-import { useReadContract } from 'wagmi'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { MORPHO_ADDRESSES, getDefaultMarketParams } from '@/lib/contracts/morpho-addresses'
-import { MORPHO_ABI } from '@/lib/contracts/morpho-abi'
-import { CURATOR_RATE_IRM_ABI } from '@/lib/contracts/curator-rate-irm-abi'
-import { useOraclePrice } from './useOraclePrice'
+import { useSSEOracle } from './useSSE'
+import { fetchMorphoPosition } from '@/lib/api/backend'
 import {
   MarketInfo,
-  MarketState,
   MORPHO_CONSTANTS,
   calculateUtilization,
-  borrowRateToApy,
 } from '@/lib/types/morpho'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
 
@@ -26,73 +23,62 @@ interface UseMorphoMarketsReturn {
 }
 
 /**
- * Hook to fetch available Morpho markets
+ * Hook to fetch available Morpho markets.
  *
- * Returns market info including NAV price, LLTV, utilization, and borrow APY.
+ * Oracle price: from SSE oracle-prices stream (instant push).
+ * Market state (totalSupplyAssets, totalBorrowAssets): from REST /morpho-position
+ * endpoint which returns market-level data alongside per-user data.
+ *
+ * TODO: When market-level SSE topic is added, switch market state to SSE.
  *
  * @param market - Optional MorphoMarketEntry. Falls back to default singleton.
  */
 export function useMorphoMarkets(market?: MorphoMarketEntry): UseMorphoMarketsReturn {
-  const morphoAddress = market?.morpho ?? MORPHO_ADDRESSES.morpho
   const marketId = market?.marketId ?? MORPHO_ADDRESSES.marketId
   const lltv = market?.lltv ?? getDefaultMarketParams().lltv
-  const oracleAddress = market?.oracle
   const marketParams = market
     ? { loanToken: market.loanToken, collateralToken: market.collateralToken, oracle: market.oracle, irm: market.irm, lltv: market.lltv }
     : getDefaultMarketParams()
 
-  // Fetch market state
-  const {
-    data: marketData,
-    isLoading: isMarketLoading,
-    error: marketError,
-    refetch: refetchMarket,
-  } = useReadContract({
-    address: morphoAddress,
-    abi: MORPHO_ABI,
-    functionName: 'market',
-    args: [marketId],
-    query: {
-      retry: false,
-      refetchInterval: 15000,
-    },
-  })
+  // Oracle price from SSE (instant)
+  const sseOracle = useSSEOracle()
+  const oraclePrice = sseOracle ? BigInt(sseOracle.price) : undefined
 
-  // Fetch oracle price
-  const {
-    price: oraclePrice,
-    isLoading: isOracleLoading,
-    error: oracleError,
-    refetch: refetchOracle,
-  } = useOraclePrice(oracleAddress)
+  // Market state from REST /morpho-position (uses a zero-address query to get market data)
+  const [marketState, setMarketState] = useState<{
+    totalSupplyAssets: bigint
+    totalBorrowAssets: bigint
+  } | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
-  // Fetch CuratorRateIRM rate (per-second WAD)
-  const curatorIrmAddress = market?.irm ?? MORPHO_ADDRESSES.curatorRateIrm
-  const {
-    data: irmRate,
-    refetch: refetchIrmRate,
-  } = useReadContract({
-    address: curatorIrmAddress,
-    abi: CURATOR_RATE_IRM_ABI,
-    functionName: 'rates',
-    args: [marketId],
-    query: {
-      retry: false,
-      refetchInterval: 30000,
-    },
-  })
-
-  // Parse market data
-  const marketState: MarketState | undefined = marketData
-    ? {
-        totalSupplyAssets: BigInt(marketData[0]),
-        totalSupplyShares: BigInt(marketData[1]),
-        totalBorrowAssets: BigInt(marketData[2]),
-        totalBorrowShares: BigInt(marketData[3]),
-        lastUpdate: BigInt(marketData[4]),
-        fee: BigInt(marketData[5]),
+  const fetchMarketData = useCallback(async () => {
+    try {
+      // Fetch with zero address — the endpoint returns market state regardless
+      const result = await fetchMorphoPosition('0x0000000000000000000000000000000000000000')
+      if (result?.market) {
+        setMarketState({
+          totalSupplyAssets: BigInt(result.market.total_supply_assets),
+          totalBorrowAssets: BigInt(result.market.total_borrow_assets),
+        })
+        setError(null)
       }
-    : undefined
+    } catch (e: any) {
+      if (!marketState) setError(new Error(e.message || 'Failed to fetch market data'))
+    } finally {
+      setIsLoading(false)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    fetchMarketData()
+  }, [fetchMarketData])
+
+  // Poll market data every 30s (market state changes slowly)
+  useEffect(() => {
+    const interval = setInterval(fetchMarketData, 30_000)
+    return () => clearInterval(interval)
+  }, [fetchMarketData])
 
   // Calculate market info
   const markets: MarketInfo[] = []
@@ -103,16 +89,14 @@ export function useMorphoMarkets(market?: MorphoMarketEntry): UseMorphoMarketsRe
       marketState.totalSupplyAssets
     )
 
-    // Use CuratorRateIRM rate if available, else estimate from utilization
-    let borrowApy: number
-    if (irmRate) {
-      // irmRate is per-second WAD. APR = rate * 31536000 / 1e18
-      const ratePerSec = Number(irmRate)
-      borrowApy = (ratePerSec * 31_536_000) / 1e18
-    } else {
-      // Fallback: estimate from utilization
-      borrowApy = utilization * 0.15
-    }
+    // Compute APY from CuratorRateIRM rate (1-ray = 1e27 per second)
+    const borrowApy = sseOracle?.borrow_rate_ray && sseOracle.borrow_rate_ray !== '0'
+      ? (() => {
+          const ratePerSec = Number(BigInt(sseOracle.borrow_rate_ray)) / 1e27
+          // APY = (1 + ratePerSec)^(365.25*86400) - 1, approximated for small rates
+          return ratePerSec * 365.25 * 86400
+        })()
+      : utilization * 0.15 // fallback if rate not available
 
     markets.push({
       params: marketParams,
@@ -127,15 +111,13 @@ export function useMorphoMarkets(market?: MorphoMarketEntry): UseMorphoMarketsRe
   }
 
   const refetch = () => {
-    refetchMarket()
-    refetchOracle()
-    refetchIrmRate()
+    fetchMarketData()
   }
 
   return {
     markets,
-    isLoading: isMarketLoading || isOracleLoading,
-    error: (marketError || oracleError) as Error | null,
+    isLoading: isLoading && !sseOracle,
+    error,
     refetch,
   }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "agiarena-frontend",
+  "name": "generalmarket-frontend",
   "version": "0.1.0",
   "private": true,
   "resolutions": {
@@ -30,7 +30,7 @@
     "test": "bun test",
     "test:watch": "bun test --watch",
     "test:live": "bun test app/__tests__/data-integrity.test.ts app/__tests__/page-load-validation.test.ts",
-    "test:live:prod": "BACKEND_URL=https://api.agiarena.com bun test app/__tests__/",
+    "test:live:prod": "BACKEND_URL=https://api.generalmarket.io bun test app/__tests__/",
     "test:live:local": "BACKEND_URL=http://localhost:3001 bun test app/__tests__/",
     "e2e": "npx playwright test --config=e2e/playwright.config.ts",
     "e2e:headed": "npx playwright test --config=e2e/playwright.config.ts --headed",
@@ -38,9 +38,11 @@
     "e2e:ui": "npx playwright test --config=e2e/playwright.config.ts --ui"
   },
   "dependencies": {
+    "@metamask/sdk": "^0.33.1",
     "@next/swc-darwin-arm64": "^16.1.6",
     "@solana/web3.js": "^1.98.4",
     "@tanstack/react-query": "^5",
+    "@tanstack/react-virtual": "^3.13.18",
     "@vercel/og": "^0.8.6",
     "@walletconnect/ethereum-provider": "^2.23.4",
     "bs58": "^6.0.0",

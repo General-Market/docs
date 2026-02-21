@@ -27,14 +27,17 @@ export const BRIDGE_PROXY = c.BridgeProxy as `0x${string}`
 // Chain config
 export const CHAIN_ID = deployment.chainId
 
-// Legacy / AgiArena compat (unused but other files import these)
+// Legacy / General Market compat (unused but other files import these)
 export const CONTRACT_ADDRESS = c.Index as `0x${string}`
 export const RESOLUTION_CONTRACT_ADDRESS = (c as any).Governance as `0x${string}` || '' as `0x${string}`
 export const COLLATERAL_TOKEN_ADDRESS = c.L3_WUSDC as `0x${string}`
 export const COLLATERAL_SYMBOL: string = 'WIND'
 export const COLLATERAL_DECIMALS = 18
 export const MIN_BET_AMOUNT = BigInt(10 ** (COLLATERAL_DECIMALS - 2))
-export const BACKEND_URL = ''
+export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || ''
+if (typeof window !== 'undefined' && !BACKEND_URL) {
+  console.warn('[addresses] NEXT_PUBLIC_BACKEND_URL is empty — SSE and backend API calls will fail')
+}
 
 // Legacy exports
 export const BASE_CHAIN_ID = CHAIN_ID

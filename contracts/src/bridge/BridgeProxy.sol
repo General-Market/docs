@@ -27,6 +27,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     uint256 public constant override MAX_DESCRIPTION_LENGTH = 280;
     uint256 public constant override MAX_URL_LENGTH = 128;
     uint256 public constant override MAX_VIDEO_URL_LENGTH = 256;
+    uint256 public constant MAX_DEPLOYER_NAME_LENGTH = 64;
 
     // ============ STORAGE ============
 
@@ -61,6 +62,12 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     /// @notice Per-ITP metadata (append-only, UUPS safe)
     mapping(bytes32 => ItpMetadata) private _itpMetadata;
 
+    /// @notice Deployer display names
+    mapping(address => string) private _deployerNames;
+
+    /// @notice Pending metadata for ITP creation (nonce => metadata, consumed by completeCreateItp)
+    mapping(uint256 => ItpMetadata) private _pendingMetadata;
+
     // ============ CONSTRUCTOR ============
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -91,7 +98,8 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         string calldata symbol,
         uint256[] calldata weights,
         address[] calldata assets,
-        uint256[] calldata prices
+        uint256[] calldata prices,
+        ItpMetadata calldata metadata
     ) external override whenNotPaused returns (uint256 nonce) {
         // Validate inputs
         if (weights.length != assets.length)
@@ -125,6 +133,14 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
             }
         }
 
+        // Validate metadata lengths
+        if (bytes(metadata.description).length > MAX_DESCRIPTION_LENGTH)
+            revert ErrorsLib.E121_DescriptionTooLong(bytes(metadata.description).length, MAX_DESCRIPTION_LENGTH);
+        if (bytes(metadata.websiteUrl).length > MAX_URL_LENGTH)
+            revert ErrorsLib.E122_UrlTooLong(bytes(metadata.websiteUrl).length, MAX_URL_LENGTH);
+        if (bytes(metadata.videoUrl).length > MAX_VIDEO_URL_LENGTH)
+            revert ErrorsLib.E123_VideoUrlTooLong(bytes(metadata.videoUrl).length, MAX_VIDEO_URL_LENGTH);
+
         nonce = nextCreationNonce++;
 
         PendingItpCreation storage pending = _pendingCreations[nonce];
@@ -135,6 +151,11 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         pending.assets = assets;
         pending.prices = prices;
         pending.createdAt = uint64(block.timestamp);
+
+        // Store metadata separately (consumed by completeCreateItp)
+        if (bytes(metadata.description).length > 0 || bytes(metadata.websiteUrl).length > 0 || bytes(metadata.videoUrl).length > 0) {
+            _pendingMetadata[nonce] = metadata;
+        }
 
         emit CreateItpRequested(msg.sender, nonce, name, symbol, weights, assets);
     }
@@ -178,6 +199,13 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         // Store bidirectional mappings
         orbitToArbitrum[orbitItpId] = bridgedItpAddress;
         arbitrumToOrbit[bridgedItpAddress] = orbitItpId;
+
+        // Auto-store metadata from creation request (if any provided)
+        ItpMetadata storage meta = _pendingMetadata[nonce];
+        if (bytes(meta.description).length > 0 || bytes(meta.websiteUrl).length > 0 || bytes(meta.videoUrl).length > 0) {
+            _itpMetadata[orbitItpId] = ItpMetadata(meta.description, meta.websiteUrl, meta.videoUrl);
+            emit ItpMetadataUpdated(orbitItpId, pending.admin, meta.description, meta.websiteUrl, meta.videoUrl);
+        }
 
         emit ItpCreated(orbitItpId, bridgedItpAddress, nonce, pending.admin);
     }
@@ -267,6 +295,19 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
             revert ErrorsLib.E123_VideoUrlTooLong(bytes(videoUrl).length, MAX_VIDEO_URL_LENGTH);
         _itpMetadata[itpId] = ItpMetadata(description, websiteUrl, videoUrl);
         emit ItpMetadataUpdated(itpId, msg.sender, description, websiteUrl, videoUrl);
+    }
+
+    // ============ DEPLOYER NAME ============
+
+    function setDeployerName(string calldata name) external override {
+        if (bytes(name).length > MAX_DEPLOYER_NAME_LENGTH)
+            revert ErrorsLib.E127_DeployerNameTooLong(bytes(name).length, MAX_DEPLOYER_NAME_LENGTH);
+        _deployerNames[msg.sender] = name;
+        emit DeployerNameUpdated(msg.sender, name);
+    }
+
+    function getDeployerName(address deployer) external view override returns (string memory) {
+        return _deployerNames[deployer];
     }
 
     // ============ VIEW FUNCTIONS ============

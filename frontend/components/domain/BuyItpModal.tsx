@@ -2,61 +2,66 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useAccount, useWaitForTransactionReceipt, usePublicClient } from 'wagmi'
-import { parseUnits, formatUnits, decodeEventLog, createPublicClient, http } from 'viem'
+import { parseUnits, formatUnits, decodeEventLog } from 'viem'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { ARB_CUSTODY_ABI, ERC20_ABI, INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
+import { TransactionStepper } from '@/components/ui/TransactionStepper'
+import type { MicroStep, VisibleStep } from '@/components/ui/TransactionStepper'
+import { getTxUrl } from '@/lib/utils/basescan'
 import { useUserState } from '@/hooks/useUserState'
 import { useNonceCheck } from '@/hooks/useNonceCheck'
 import { useItpNav } from '@/hooks/useItpNav'
-
-// L3 client for direct contract reads (Index contract lives on L3, not Arb)
-const L3_RPC = process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
-const ARB_RPC = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'
+import { useSSEOrders, useSSEBalances, type UserOrder } from '@/hooks/useSSE'
 
 /**
- * Buy flow phases — matches the 8-step cross-chain bridge architecture:
+ * Buy flow micro-steps — 10 steps mapped to 3 visible steps + Done:
  *
- * 1. APPROVE     — User approves USDC spend on Arb (if needed)
- * 2. SUBMIT      — User calls buyITPFromArbitrum on Arb → CrossChainOrderCreated
- * 3. RELAY       — Issuer consensus → bridge Arb→L3 + submitOrderFor
- * 4. COLLATERAL  — Batch confirmed + recordCollateralMove + bridge L3→Arb + custody→vault
- * 5. FILL        — AP executes trades on CEX + confirmFills
- * 6. MINT        — ITP shares minted on L3 (from confirmFills)
- * 7. BRIDGE      — mintBridgedShares on Arb → user gets BridgedITP
+ * Step 1 "Submit":   APPROVE (0), SUBMIT (1)
+ * Step 2 "Process":  BRIDGE_TO_L3 (2), RELAY (3), BATCH (4), FILL (5)
+ * Step 3 "Deliver":  RECORD_COLLATERAL (6), BRIDGE_TO_ARB (7), COMPLETE_BRIDGE (8), MINT_SHARES (9)
+ * Done:              DONE (10)
  */
-enum BuyPhase {
-  INPUT = 0,
-  APPROVE = 1,
-  SUBMIT = 2,
+enum BuyMicro {
+  APPROVE = 0,
+  SUBMIT = 1,
+  BRIDGE_TO_L3 = 2,
   RELAY = 3,
-  COLLATERAL = 4,
+  BATCH = 4,
   FILL = 5,
-  MINT = 6,
-  BRIDGE = 7,
-  DONE = 8,
+  RECORD_COLLATERAL = 6,
+  BRIDGE_TO_ARB = 7,
+  COMPLETE_BRIDGE = 8,
+  MINT_SHARES = 9,
+  DONE = 10,
 }
 
-const PROGRESS_STEPS = [
-  { phase: BuyPhase.APPROVE, label: 'Approve' },
-  { phase: BuyPhase.SUBMIT, label: 'Submit' },
-  { phase: BuyPhase.RELAY, label: 'Relay' },
-  { phase: BuyPhase.COLLATERAL, label: 'Collateral' },
-  { phase: BuyPhase.FILL, label: 'Fill' },
-  { phase: BuyPhase.MINT, label: 'Mint' },
-  { phase: BuyPhase.BRIDGE, label: 'Bridge' },
+const VISIBLE_STEPS: VisibleStep[] = [
+  { label: 'Submit' },
+  { label: 'Process' },
+  { label: 'Deliver' },
 ]
 
-const PHASE_DESCRIPTIONS: Record<number, string | ((ctx: { isPending: boolean }) => string)> = {
-  [BuyPhase.APPROVE]: (ctx) => ctx.isPending ? 'Confirm USDC approval in wallet...' : 'Waiting for approval confirmation...',
-  [BuyPhase.SUBMIT]: (ctx) => ctx.isPending ? 'Confirm buy order in wallet...' : 'Waiting for Arb tx confirmation...',
-  [BuyPhase.RELAY]: () => 'Issuer consensus — bridging USDC & relaying order to L3...',
-  [BuyPhase.COLLATERAL]: () => 'Batching + recording collateral move + bridging back to vault...',
-  [BuyPhase.FILL]: () => 'AP executing trades on CEX — confirming fills...',
-  [BuyPhase.MINT]: () => 'Fill confirmed — minting ITP shares on L3...',
-  [BuyPhase.BRIDGE]: () => 'Minting BridgedITP on Arbitrum...',
-  [BuyPhase.DONE]: () => 'Complete! Shares received on Arbitrum.',
+// Maps visible step index → [startMicro, endMicro) range
+const STEP_RANGES: [number, number][] = [
+  [BuyMicro.APPROVE, BuyMicro.BRIDGE_TO_L3],       // Submit: 0-1
+  [BuyMicro.BRIDGE_TO_L3, BuyMicro.RECORD_COLLATERAL], // Process: 2-5
+  [BuyMicro.RECORD_COLLATERAL, BuyMicro.DONE],      // Deliver: 6-9
+]
+
+const MICRO_LABELS: Record<number, string | ((ctx: { isPending: boolean }) => string)> = {
+  [BuyMicro.APPROVE]: (ctx) => ctx.isPending ? 'Confirm USDC approval in wallet...' : 'Approving USDC spend...',
+  [BuyMicro.SUBMIT]: (ctx) => ctx.isPending ? 'Confirm buy order in wallet...' : 'Submitting buy order...',
+  [BuyMicro.BRIDGE_TO_L3]: () => 'Bridging USDC to L3...',
+  [BuyMicro.RELAY]: () => 'Relaying order to L3...',
+  [BuyMicro.BATCH]: () => 'Batching order...',
+  [BuyMicro.FILL]: () => 'Executing trades...',
+  [BuyMicro.RECORD_COLLATERAL]: () => 'Recording collateral...',
+  [BuyMicro.BRIDGE_TO_ARB]: () => 'Bridging USDC to Arbitrum...',
+  [BuyMicro.COMPLETE_BRIDGE]: () => 'Completing bridge...',
+  [BuyMicro.MINT_SHARES]: () => 'Minting BridgedITP...',
+  [BuyMicro.DONE]: () => 'Shares received!',
 }
 
 const SLIPPAGE_TIERS = [
@@ -80,31 +85,43 @@ const MINT_ABI = [
 
 interface BuyItpModalProps {
   itpId: string
+  videoUrl?: string
   onClose: () => void
 }
 
-export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
+export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const { address, isConnected } = useAccount()
   const publicClient = usePublicClient()
 
-  // Direct L3 client for polling (Index contract is on L3, not Arb)
-  const l3Client = useMemo(() => createPublicClient({
-    transport: http(L3_RPC, { timeout: 5_000, retryCount: 2 }),
-  }), [])
+  // SSE-driven order & balance tracking (replaces L3 polling)
+  const sseOrders = useSSEOrders()
+  const sseBalances = useSSEBalances()
 
   const [amount, setAmount] = useState('')
   const [limitPrice, setLimitPrice] = useState('')
   const [slippageTier, setSlippageTier] = useState(2)
   const [deadlineHours, setDeadlineHours] = useState(1)
-  const [phase, setPhase] = useState<BuyPhase>(BuyPhase.INPUT)
+  const [micro, setMicro] = useState<number>(-1) // -1 = INPUT mode
   const [orderId, setOrderId] = useState<bigint | null>(null)
   const [arbOrderId, setArbOrderId] = useState<bigint | null>(null)
   const [txError, setTxError] = useState<string | null>(null)
-  const [l3BaseBlock, setL3BaseBlock] = useState<bigint>(0n)
   const [fillPrice, setFillPrice] = useState<bigint | null>(null)
   const [fillAmount, setFillAmount] = useState<bigint | null>(null)
-  const [initialShares, setInitialShares] = useState<bigint | null>(null)
+  const [initialBridgedItp, setInitialBridgedItp] = useState<string | null>(null)
   const [skippedApproval, setSkippedApproval] = useState(false)
+
+  // Saved tx hashes
+  const [savedApproveHash, setSavedApproveHash] = useState<string | null>(null)
+  const [savedBuyHash, setSavedBuyHash] = useState<string | null>(null)
+  const [submittedLimitPrice, setSubmittedLimitPrice] = useState<string>('')
+  // Keeper tx hashes
+  const [relayTxHash, setRelayTxHash] = useState<string | null>(null)
+  const [batchTxHash, setBatchTxHash] = useState<string | null>(null)
+  const [fillTxHash, setFillTxHash] = useState<string | null>(null)
+  const [collateralTxHash, setCollateralTxHash] = useState<string | null>(null)
+  const [bridgeBackTxHash, setBridgeBackTxHash] = useState<string | null>(null)
+  const [completeBridgeTxHash, setCompleteBridgeTxHash] = useState<string | null>(null)
+  const [mintTxHash, setMintTxHash] = useState<string | null>(null)
 
   const {
     writeContract: writeApprove,
@@ -130,15 +147,12 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
   const approveHandled = useRef(false)
   const buyHandled = useRef(false)
 
-  // Get balances, allowances, and ITP metadata from backend
   const userState = useUserState(itpId)
   const itpName = userState.bridgedItpName || 'ITP'
   const itpSymbol = userState.bridgedItpSymbol || ''
 
-  // Compute NAV from asset composition + real-time AP prices
   const { navPerShare, navPerShareBn, totalAssetCount, pricedAssetCount, isLoading: isNavLoading } = useItpNav(itpId)
 
-  // Set limit price from computed NAV (with 5% buffer)
   const navPriceSet = useRef(false)
   useEffect(() => {
     if (navPriceSet.current || isNavLoading) return
@@ -153,16 +167,15 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
   const usdcAllowance = userState.usdcAllowanceCustody
   const refetchAllowance = userState.refetch
   const userShares = userState.bridgedItpBalance
-  const refetchShares = userState.refetch
 
   const {
     writeContract: writeMint,
-    data: mintHash,
+    data: mintHashTx,
     isPending: isMintPending,
     error: mintError,
     reset: resetMint,
   } = useChainWriteContract()
-  const { isSuccess: isMintSuccess } = useWaitForTransactionReceipt({ hash: mintHash })
+  const { isSuccess: isMintSuccess } = useWaitForTransactionReceipt({ hash: mintHashTx })
 
   const handleMintTestUsdc = useCallback(() => {
     if (!address) return
@@ -178,43 +191,35 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
   const parsedAmount = amount ? parseUnits(amount, 6) : 0n
   const needsApproval = usdcAllowance !== undefined && parsedAmount > 0n && (usdcAllowance) < parsedAmount
 
-  // Snapshot L3 block + user shares before starting the flow
-  const snapshotL3 = useCallback(async () => {
-    try {
-      const block = await l3Client.getBlockNumber()
-      setL3BaseBlock(block > 10n ? block - 10n : 0n) // small buffer
-    } catch {
-      setL3BaseBlock(0n)
-    }
-    setInitialShares(userShares)
-  }, [l3Client, userShares])
+  const snapshotBalances = useCallback(() => {
+    setInitialBridgedItp(sseBalances?.bridged_itp ?? null)
+  }, [sseBalances])
 
-  const handleApprove = useCallback(async () => {
+  const handleApprove = useCallback(() => {
     if (!amount) return
     approveHandled.current = false
     setTxError(null)
     setSkippedApproval(false)
-    await snapshotL3()
-    setPhase(BuyPhase.APPROVE)
+    snapshotBalances()
+    setMicro(BuyMicro.APPROVE)
     writeApprove({
       address: INDEX_PROTOCOL.arbUsdc,
       abi: ERC20_ABI,
       functionName: 'approve',
       args: [INDEX_PROTOCOL.arbCustody, parsedAmount],
     })
-  }, [amount, parsedAmount, writeApprove, snapshotL3])
+  }, [amount, parsedAmount, writeApprove, snapshotBalances])
 
   const handleBuy = useCallback(async () => {
     if (!publicClient || !amount) return
     buyHandled.current = false
     setTxError(null)
 
-    // If going straight to buy (no approval needed), snapshot L3 now
-    if (phase === BuyPhase.INPUT) {
+    if (micro < 0) {
       setSkippedApproval(true)
-      await snapshotL3()
+      snapshotBalances()
     }
-    setPhase(BuyPhase.SUBMIT)
+    setMicro(BuyMicro.SUBMIT)
 
     let blockTimestamp: bigint
     try {
@@ -226,6 +231,7 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
 
     const deadline = blockTimestamp + BigInt(deadlineHours * 3600)
     const priceBn = limitPrice ? parseUnits(limitPrice, 18) : 0n
+    setSubmittedLimitPrice(limitPrice)
 
     writeBuy({
       address: INDEX_PROTOCOL.arbCustody,
@@ -239,24 +245,25 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
         deadline,
       ],
     })
-  }, [publicClient, amount, limitPrice, deadlineHours, slippageTier, itpId, parsedAmount, writeBuy, phase, snapshotL3])
+  }, [publicClient, amount, limitPrice, deadlineHours, slippageTier, itpId, parsedAmount, writeBuy, micro, snapshotBalances])
 
-  // Approve success → auto-trigger buy
+  // Approve success -> save hash, auto-trigger buy
   useEffect(() => {
     if (!isApproveSuccess || approveHandled.current) return
     approveHandled.current = true
+    if (approveHash) setSavedApproveHash(approveHash)
     refetchAllowance().then(() => {
       resetApprove()
       handleBuy()
     })
-  }, [isApproveSuccess, refetchAllowance, resetApprove, handleBuy])
+  }, [isApproveSuccess, approveHash, refetchAllowance, resetApprove, handleBuy])
 
-  // Buy success → extract Arb orderId, move to RELAY phase
+  // Buy success -> save hash, extract Arb orderId, advance to BRIDGE_TO_L3
   useEffect(() => {
     if (!isBuySuccess || !buyReceipt || buyHandled.current) return
     buyHandled.current = true
+    if (buyHash) setSavedBuyHash(buyHash)
 
-    // Try same-chain OrderSubmitted (direct L3 tx, unlikely for cross-chain)
     let foundL3OrderId: bigint | null = null
     for (const log of buyReceipt.logs) {
       if (log.address.toLowerCase() === INDEX_PROTOCOL.index.toLowerCase()) {
@@ -270,7 +277,6 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
       }
     }
 
-    // Cross-chain: extract Arb orderId from CrossChainOrderCreated
     if (foundL3OrderId === null) {
       for (const log of buyReceipt.logs) {
         if (log.address.toLowerCase() === INDEX_PROTOCOL.arbCustody.toLowerCase()) {
@@ -287,144 +293,96 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
 
     if (foundL3OrderId !== null) {
       setOrderId(foundL3OrderId)
-      setPhase(BuyPhase.COLLATERAL) // Already on L3, skip relay
+      setMicro(BuyMicro.BATCH) // Already on L3, skip bridge+relay
     } else {
-      setPhase(BuyPhase.RELAY) // Cross-chain: wait for relay
+      setMicro(BuyMicro.BRIDGE_TO_L3) // Cross-chain: start bridging
     }
     resetBuy()
   }, [isBuySuccess, buyReceipt, resetBuy])
 
-  // RELAY phase: poll L3 for OrderSubmitted event using L3 block numbers
+  // BRIDGE_TO_L3: timer-based advance (bridge takes ~3s after submit)
   useEffect(() => {
-    if (phase !== BuyPhase.RELAY || orderId !== null || !l3Client) return
-
-    let cancelled = false
-    const poll = async () => {
-      try {
-        const logs = await l3Client.getLogs({
-          address: INDEX_PROTOCOL.index,
-          event: {
-            type: 'event',
-            name: 'OrderSubmitted',
-            inputs: [
-              { indexed: true, name: 'orderId', type: 'uint256' },
-              { indexed: true, name: 'user', type: 'address' },
-              { indexed: true, name: 'itpId', type: 'bytes32' },
-              { indexed: false, name: 'pairId', type: 'bytes32' },
-              { indexed: false, name: 'side', type: 'uint8' },
-              { indexed: false, name: 'amount', type: 'uint256' },
-              { indexed: false, name: 'limitPrice', type: 'uint256' },
-              { indexed: false, name: 'slippageTier', type: 'uint256' },
-              { indexed: false, name: 'deadline', type: 'uint256' },
-            ],
-          },
-          args: {
-            itpId: itpId as `0x${string}`,
-          },
-          fromBlock: l3BaseBlock,
-          toBlock: 'latest',
-        })
-
-        if (cancelled) return
-        if (logs.length > 0) {
-          const latest = logs[logs.length - 1]
-          const realOrderId = (latest.args as any).orderId as bigint
-          setOrderId(realOrderId)
-          setPhase(BuyPhase.COLLATERAL)
-        }
-      } catch {
-        // Retry on next interval
-      }
-    }
-
-    poll()
-    const interval = setInterval(poll, 3000)
-    return () => { cancelled = true; clearInterval(interval) }
-  }, [phase, orderId, l3Client, l3BaseBlock, itpId])
-
-  // COLLATERAL→FILL→MINT: poll L3 getOrder directly for status + FillConfirmed
-  useEffect(() => {
-    if (phase < BuyPhase.COLLATERAL || phase >= BuyPhase.BRIDGE || orderId === null || !l3Client) return
-
-    let cancelled = false
-    const poll = async () => {
-      try {
-        // Read order status directly from L3 Index contract
-        const order = await l3Client.readContract({
-          address: INDEX_PROTOCOL.index,
-          abi: INDEX_ABI,
-          functionName: 'getOrder',
-          args: [orderId],
-        }) as any
-
-        if (cancelled) return
-
-        const status = Number(order.status ?? order[10] ?? 0)
-        // L3 order status: 0=Pending, 1=Batched, 2=Filled
-        if (status >= 2 && phase < BuyPhase.MINT) {
-          // FILLED → MINT phase (shares being minted on L3)
-          try {
-            const fillLogs = await l3Client.getLogs({
-              address: INDEX_PROTOCOL.index,
-              event: {
-                type: 'event',
-                name: 'FillConfirmed',
-                inputs: [
-                  { indexed: true, name: 'orderId', type: 'uint256' },
-                  { indexed: true, name: 'cycleNumber', type: 'uint256' },
-                  { indexed: false, name: 'fillPrice', type: 'uint256' },
-                  { indexed: false, name: 'fillAmount', type: 'uint256' },
-                ],
-              },
-              args: { orderId },
-              fromBlock: l3BaseBlock,
-              toBlock: 'latest',
-            })
-            if (fillLogs.length > 0) {
-              const f = fillLogs[fillLogs.length - 1]
-              setFillPrice((f.args as any).fillPrice as bigint)
-              setFillAmount((f.args as any).fillAmount as bigint)
-            }
-          } catch {}
-          setPhase(BuyPhase.MINT)
-        } else if (status >= 1 && phase < BuyPhase.FILL) {
-          // BATCHED → FILL phase (AP trading on CEX)
-          setPhase(BuyPhase.FILL)
-        }
-      } catch {
-        // Retry on next interval
-      }
-    }
-
-    poll()
-    const interval = setInterval(poll, 3000)
-    return () => { cancelled = true; clearInterval(interval) }
-  }, [phase, orderId, l3Client, l3BaseBlock])
-
-  // MINT → BRIDGE: shares minted on L3, now bridging back to Arb
-  useEffect(() => {
-    if (phase !== BuyPhase.MINT) return
-    const timer = setTimeout(() => setPhase(BuyPhase.BRIDGE), 2000)
+    if (micro !== BuyMicro.BRIDGE_TO_L3) return
+    const timer = setTimeout(() => setMicro(BuyMicro.RELAY), 3000)
     return () => clearTimeout(timer)
-  }, [phase])
+  }, [micro])
 
-  // BRIDGE: poll user's BridgedITP balance on Arb until it increases
+  // SSE-driven order tracking: RELAY -> BATCH -> FILL -> RECORD_COLLATERAL
+  // Finds the matching order in sseOrders by order_id (if known) or by itpId + side=0 (buy)
+  const trackedOrder = useMemo((): UserOrder | undefined => {
+    if (micro < BuyMicro.RELAY || micro >= BuyMicro.RECORD_COLLATERAL) return undefined
+    if (orderId !== null) {
+      return sseOrders.find(o => o.order_id === Number(orderId))
+    }
+    // Before we know the L3 orderId, match by itpId and side=0 (buy), pick most recent
+    const candidates = sseOrders
+      .filter(o => o.itp_id === itpId && o.side === 0)
+      .sort((a, b) => b.timestamp - a.timestamp)
+    return candidates[0]
+  }, [sseOrders, orderId, micro, itpId])
+
   useEffect(() => {
-    if (phase !== BuyPhase.BRIDGE) return
+    if (!trackedOrder || micro < BuyMicro.RELAY || micro >= BuyMicro.RECORD_COLLATERAL) return
 
-    let cancelled = false
-    const poll = async () => {
-      await refetchShares()
-      if (cancelled) return
-      // Compare with initial shares — if increased, shares have arrived
-      if (initialShares !== null && userShares > initialShares) {
-        setPhase(BuyPhase.DONE)
-      }
+    // Capture orderId when first seen
+    if (orderId === null) {
+      setOrderId(BigInt(trackedOrder.order_id))
     }
 
-    const interval = setInterval(poll, 3000)
-    return () => { cancelled = true; clearInterval(interval) }
-  }, [phase, refetchShares, userShares, initialShares])
+    // Advance through RELAY -> BATCH based on order status
+    if (micro === BuyMicro.RELAY) {
+      setMicro(BuyMicro.BATCH)
+    }
+
+    const status = trackedOrder.status
+
+    if (status >= 2 && micro < BuyMicro.RECORD_COLLATERAL) {
+      // FILLED — capture fill details from SSE
+      if (trackedOrder.fill_price) {
+        try { setFillPrice(BigInt(trackedOrder.fill_price)) } catch {}
+      }
+      if (trackedOrder.fill_amount) {
+        try { setFillAmount(BigInt(trackedOrder.fill_amount)) } catch {}
+      }
+      setMicro(BuyMicro.RECORD_COLLATERAL)
+    } else if (status >= 1 && micro < BuyMicro.FILL) {
+      // BATCHED
+      setMicro(BuyMicro.FILL)
+    }
+  }, [trackedOrder, micro, orderId])
+
+  // RECORD_COLLATERAL: timer-based advance (~2s after fill)
+  useEffect(() => {
+    if (micro !== BuyMicro.RECORD_COLLATERAL) return
+    const timer = setTimeout(() => setMicro(BuyMicro.BRIDGE_TO_ARB), 2000)
+    return () => clearTimeout(timer)
+  }, [micro])
+
+  // BRIDGE_TO_ARB: timer-based advance
+  useEffect(() => {
+    if (micro !== BuyMicro.BRIDGE_TO_ARB) return
+    const timer = setTimeout(() => setMicro(BuyMicro.COMPLETE_BRIDGE), 3000)
+    return () => clearTimeout(timer)
+  }, [micro])
+
+  // COMPLETE_BRIDGE + MINT_SHARES: detect bridged_itp balance increase via SSE
+  useEffect(() => {
+    if (micro < BuyMicro.COMPLETE_BRIDGE || micro >= BuyMicro.DONE) return
+    if (!sseBalances || initialBridgedItp === null) return
+
+    const currentBridgedItp = sseBalances.bridged_itp
+    try {
+      if (BigInt(currentBridgedItp) > BigInt(initialBridgedItp)) {
+        if (micro === BuyMicro.COMPLETE_BRIDGE) {
+          setMicro(BuyMicro.MINT_SHARES)
+          // Brief delay then mark done
+          setTimeout(() => setMicro(BuyMicro.DONE), 1000)
+        } else {
+          setMicro(BuyMicro.DONE)
+        }
+      }
+    } catch {}
+  }, [micro, sseBalances, initialBridgedItp])
 
   // Error handlers
   useEffect(() => {
@@ -432,7 +390,7 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
       const msg = approveError.message || 'Approval failed'
       const shortMsg = msg.includes('Details:') ? msg.split('Details:')[1].trim().slice(0, 200) : msg.slice(0, 200)
       setTxError(shortMsg)
-      setPhase(BuyPhase.INPUT)
+      setMicro(-1)
       resetApprove()
     }
   }, [approveError, resetApprove])
@@ -442,7 +400,7 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
       const msg = buyError.message || 'Buy transaction failed'
       const shortMsg = msg.includes('Details:') ? msg.split('Details:')[1].trim().slice(0, 200) : msg.slice(0, 200)
       setTxError(shortMsg)
-      setPhase(BuyPhase.INPUT)
+      setMicro(-1)
       resetBuy()
     }
   }, [buyError, resetBuy])
@@ -454,30 +412,44 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
     return () => clearTimeout(timer)
   }, [isApproveConfirming, isBuyConfirming])
 
+  const clearTxHashes = useCallback(() => {
+    setSavedApproveHash(null)
+    setSavedBuyHash(null)
+    setRelayTxHash(null)
+    setBatchTxHash(null)
+    setFillTxHash(null)
+    setCollateralTxHash(null)
+    setBridgeBackTxHash(null)
+    setCompleteBridgeTxHash(null)
+    setMintTxHash(null)
+  }, [])
+
   const handleCancel = useCallback(() => {
     resetApprove()
     resetBuy()
-    setPhase(BuyPhase.INPUT)
+    setMicro(-1)
     setTxError(null)
     setStuckWarning(false)
+    clearTxHashes()
     refreshNonce()
-  }, [resetApprove, resetBuy, refreshNonce])
+  }, [resetApprove, resetBuy, clearTxHashes, refreshNonce])
 
   const handleReset = useCallback(() => {
-    setPhase(BuyPhase.INPUT)
+    setMicro(-1)
     setOrderId(null)
     setArbOrderId(null)
     setAmount('')
     setFillPrice(null)
     setFillAmount(null)
-    setInitialShares(null)
-    setL3BaseBlock(0n)
+    setInitialBridgedItp(null)
     setSkippedApproval(false)
-  }, [])
+    clearTxHashes()
+  }, [clearTxHashes])
 
   const formattedBalance = usdcBalance > 0n ? formatUnits(usdcBalance, 6) : '0'
   const isProcessing = isApprovePending || isApproveConfirming || isBuyPending || isBuyConfirming
   const isPending = isApprovePending || isBuyPending
+  const isDone = micro === BuyMicro.DONE
 
   const buttonText = isApprovePending
     ? 'Confirm approval in wallet...'
@@ -491,99 +463,151 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
     ? 'Approve & Buy'
     : 'Buy ITP'
 
-  // --- Render ---
+  // --- Stepper data ---
 
-  const renderProgressDiagram = () => {
-    const steps = PROGRESS_STEPS.filter(s => {
-      // Hide APPROVE step if it wasn't needed
-      if (s.phase === BuyPhase.APPROVE && skippedApproval) return false
-      return true
+  const effectiveMicro = useMemo(() => {
+    if (micro < 0) return 0
+    // If approval was skipped, shift micro-step 0 out
+    if (skippedApproval && micro === BuyMicro.SUBMIT) return BuyMicro.SUBMIT
+    return micro
+  }, [micro, skippedApproval])
+
+  const microSteps = useMemo((): MicroStep[] => {
+    const getLabel = (m: number): string => {
+      const desc = MICRO_LABELS[m]
+      if (!desc) return ''
+      return typeof desc === 'function' ? desc({ isPending }) : desc
+    }
+
+    const steps: MicroStep[] = []
+
+    if (!skippedApproval) {
+      steps.push({
+        label: getLabel(BuyMicro.APPROVE),
+        txHash: savedApproveHash ?? undefined,
+        explorerUrl: savedApproveHash ? getTxUrl(savedApproveHash, 'arb') : undefined,
+        chain: 'arb',
+      })
+    }
+
+    steps.push({
+      label: getLabel(BuyMicro.SUBMIT),
+      txHash: savedBuyHash ?? undefined,
+      explorerUrl: savedBuyHash ? getTxUrl(savedBuyHash, 'arb') : undefined,
+      chain: 'arb',
     })
 
-    return (
-      <div className="bg-terminal-dark border border-white/10 rounded-lg p-5">
-        {/* Step circles + connectors */}
-        <div className="flex items-start">
-          {steps.map((s, i) => {
-            const isDone = phase > s.phase
-            const isCurrent = phase === s.phase
-            return (
-              <div key={s.phase} className="flex items-start flex-1">
-                <div className="flex flex-col items-center flex-1 min-w-0">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                    isDone ? 'bg-green-500 text-white' :
-                    isCurrent ? 'bg-accent text-terminal ring-2 ring-accent/40 shadow-[0_0_12px_rgba(var(--accent-rgb,0,255,136),0.3)]' :
-                    'bg-white/5 text-white/20 border border-white/10'
-                  }`}>
-                    {isDone ? '\u2713' : isCurrent ? (
-                      <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    ) : i + 1}
-                  </div>
-                  <span className={`text-[10px] mt-1.5 text-center leading-tight font-medium ${
-                    isDone ? 'text-green-400' : isCurrent ? 'text-accent' : 'text-white/20'
-                  }`}>{s.label}</span>
-                </div>
-                {i < steps.length - 1 && (
-                  <div className={`h-0.5 flex-shrink-0 w-full mt-4 mx-0.5 transition-all duration-300 ${
-                    isDone ? 'bg-green-500/60' : 'bg-white/5'
-                  }`} />
-                )}
-              </div>
-            )
-          })}
-        </div>
+    steps.push({ label: getLabel(BuyMicro.BRIDGE_TO_L3), chain: 'l3' })
 
-        {/* Current phase description */}
-        <div className="mt-4 pt-3 border-t border-white/5">
-          <p className="text-center text-sm text-white/50">
-            {(() => {
-              const desc = PHASE_DESCRIPTIONS[phase]
-              if (!desc) return ''
-              return typeof desc === 'function' ? desc({ isPending }) : desc
-            })()}
-          </p>
-        </div>
+    steps.push({
+      label: getLabel(BuyMicro.RELAY),
+      txHash: relayTxHash ?? undefined,
+      explorerUrl: relayTxHash ? getTxUrl(relayTxHash, 'l3') : undefined,
+      chain: 'l3',
+    })
 
-        {/* Order IDs */}
-        {(arbOrderId !== null || orderId !== null) && (
-          <div className="mt-2 flex justify-center gap-4 text-[10px] font-mono text-white/25">
-            {arbOrderId !== null && <span>Arb #{arbOrderId.toString()}</span>}
-            {orderId !== null && <span>L3 #{orderId.toString()}</span>}
-          </div>
-        )}
-      </div>
-    )
-  }
+    steps.push({
+      label: getLabel(BuyMicro.BATCH),
+      txHash: batchTxHash ?? undefined,
+      explorerUrl: batchTxHash ? getTxUrl(batchTxHash, 'l3') : undefined,
+      chain: 'l3',
+    })
+
+    steps.push({
+      label: getLabel(BuyMicro.FILL),
+      txHash: fillTxHash ?? undefined,
+      explorerUrl: fillTxHash ? getTxUrl(fillTxHash, 'l3') : undefined,
+      chain: 'l3',
+    })
+
+    steps.push({
+      label: getLabel(BuyMicro.RECORD_COLLATERAL),
+      txHash: collateralTxHash ?? undefined,
+      explorerUrl: collateralTxHash ? getTxUrl(collateralTxHash, 'l3') : undefined,
+      chain: 'l3',
+    })
+
+    steps.push({ label: getLabel(BuyMicro.BRIDGE_TO_ARB), chain: 'l3' })
+
+    steps.push({
+      label: getLabel(BuyMicro.COMPLETE_BRIDGE),
+      txHash: completeBridgeTxHash ?? undefined,
+      explorerUrl: completeBridgeTxHash ? getTxUrl(completeBridgeTxHash, 'arb') : undefined,
+      chain: 'arb',
+    })
+
+    steps.push({
+      label: getLabel(BuyMicro.MINT_SHARES),
+      txHash: mintTxHash ?? undefined,
+      explorerUrl: mintTxHash ? getTxUrl(mintTxHash, 'arb') : undefined,
+      chain: 'arb',
+    })
+
+    return steps
+  }, [isPending, skippedApproval, savedApproveHash, savedBuyHash, relayTxHash, batchTxHash, fillTxHash, collateralTxHash, completeBridgeTxHash, mintTxHash])
+
+  // Map internal micro enum to stepper array index (accounts for skipped approval)
+  const stepperMicroIndex = useMemo(() => {
+    if (isDone) return microSteps.length
+    if (micro < 0) return 0
+    // If approval was skipped, subtract 1 from all indices
+    const offset = skippedApproval ? -1 : 0
+    return Math.max(0, micro + offset)
+  }, [micro, skippedApproval, isDone, microSteps.length])
+
+  // Adjust step ranges for skipped approval
+  const adjustedRanges = useMemo((): [number, number][] => {
+    if (skippedApproval) {
+      // Approval was skipped: micro array is 9 items (no approve), shift ranges down by 1
+      return [
+        [0, 1],    // Submit: just index 0 (submit)
+        [1, 5],    // Process: bridge(1), relay(2), batch(3), fill(4)
+        [5, 9],    // Deliver: collateral(5), bridgeArb(6), complete(7), mint(8)
+      ]
+    }
+    return [
+      [0, 2],    // Submit: approve(0), submit(1)
+      [2, 6],    // Process: bridge(2), relay(3), batch(4), fill(5)
+      [6, 10],   // Deliver: collateral(6), bridgeArb(7), complete(8), mint(9)
+    ]
+  }, [skippedApproval])
+
+  const txRefs = useMemo(() => {
+    const refs: { label: string; value: string }[] = []
+    if (arbOrderId !== null) refs.push({ label: 'Arb', value: `#${arbOrderId.toString()}` })
+    if (orderId !== null) refs.push({ label: 'L3', value: `#${orderId.toString()}` })
+    return refs
+  }, [arbOrderId, orderId])
 
   const renderFillDetails = () => {
     if (!fillPrice || !fillAmount) return null
     return (
-      <div className="bg-terminal-dark border border-white/10 rounded-lg p-4 space-y-2">
-        <p className="text-sm font-bold text-accent">Fill Details</p>
+      <div className="bg-muted border border-border-light rounded-xl p-4 space-y-2">
+        <p className="text-sm font-semibold text-text-primary">Fill Details</p>
         <div className="text-xs font-mono space-y-1">
           <div className="flex justify-between">
-            <span className="text-white/50">Fill Price</span>
-            <span className="text-white">${parseFloat(formatUnits(fillPrice, 18)).toFixed(4)}</span>
+            <span className="text-text-muted">Fill Price</span>
+            <span className="text-text-primary tabular-nums">${parseFloat(formatUnits(fillPrice, 18)).toFixed(4)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-white/50">Amount Filled</span>
-            <span className="text-white">{parseFloat(formatUnits(fillAmount, 18)).toFixed(4)} USDC</span>
+            <span className="text-text-muted">Amount Filled</span>
+            <span className="text-text-primary tabular-nums">{parseFloat(formatUnits(fillAmount, 18)).toFixed(4)} USDC</span>
           </div>
           {fillPrice > 0n && (
             <div className="flex justify-between">
-              <span className="text-white/50">Shares</span>
-              <span className="text-white">
+              <span className="text-text-muted">Shares</span>
+              <span className="text-text-primary tabular-nums">
                 {parseFloat(formatUnits((fillAmount * BigInt(1e18)) / fillPrice, 18)).toFixed(4)}
               </span>
             </div>
           )}
-          {limitPrice && parseFloat(limitPrice) > 0 && fillPrice > 0n && (() => {
-            const limitBn = BigInt(Math.floor(parseFloat(limitPrice) * 1e18))
+          {submittedLimitPrice && parseFloat(submittedLimitPrice) > 0 && fillPrice > 0n && (() => {
+            const limitBn = BigInt(Math.floor(parseFloat(submittedLimitPrice) * 1e18))
             const slippage = Number(fillPrice - limitBn) * 100 / Number(limitBn)
             return (
               <div className="flex justify-between">
-                <span className="text-white/50">vs Limit</span>
-                <span className={Math.abs(slippage) < 1 ? 'text-green-400' : Math.abs(slippage) < 3 ? 'text-yellow-400' : 'text-red-400'}>
+                <span className="text-text-muted">vs Limit</span>
+                <span className={slippage <= 0 ? 'text-color-up' : slippage < 1 ? 'text-color-up' : slippage < 3 ? 'text-color-warning' : 'text-color-down'}>
                   {slippage > 0 ? '+' : ''}{slippage.toFixed(2)}%
                 </span>
               </div>
@@ -595,69 +619,89 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-terminal border border-white/20 rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-card border border-border-light rounded-xl shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-accent">Buy {itpName}</h2>
-            <button onClick={onClose} className="text-white/60 hover:text-white text-2xl">&times;</button>
+            <h2 className="text-lg font-semibold text-text-primary">Buy {itpName}</h2>
+            <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
           </div>
-          {itpSymbol && <p className="text-white/70 mb-1 font-mono">${itpSymbol}</p>}
-          <p className="text-xs text-white/40 font-mono mb-6 break-all">ITP ID: {itpId}</p>
+          {itpSymbol && <p className="text-text-secondary mb-1 font-mono">${itpSymbol}</p>}
+          <p className="text-xs text-text-muted font-mono mb-4 break-all">ITP ID: {itpId}</p>
+
+          {videoUrl && (
+            <div className="aspect-video bg-zinc-950 rounded-lg overflow-hidden mb-4">
+              <iframe
+                src={videoUrl}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                loading="lazy"
+                title="ITP video"
+              />
+            </div>
+          )}
 
           {!isConnected ? (
-            <div className="bg-terminal-dark border border-white/10 rounded-lg p-8 text-center">
-              <p className="text-white/70">Connect your wallet to buy ITP shares</p>
+            <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
+              <p className="text-text-secondary">Connect your wallet to buy ITP shares</p>
             </div>
-          ) : phase >= BuyPhase.APPROVE ? (
+          ) : micro >= 0 ? (
             <div className="space-y-4">
-              {renderProgressDiagram()}
+              <TransactionStepper
+                visibleSteps={VISIBLE_STEPS}
+                microSteps={microSteps}
+                currentMicroStep={stepperMicroIndex}
+                isDone={isDone}
+                stepRanges={adjustedRanges}
+                txRefs={txRefs}
+              />
               {renderFillDetails()}
 
               {userShares > 0n && (
-                <div className="bg-terminal-dark border border-white/10 rounded-lg p-4">
-                  <p className="text-sm text-white/70">Your ITP Shares</p>
-                  <p className="text-2xl font-bold text-accent">{parseFloat(formatUnits(userShares, 18)).toFixed(4)}</p>
+                <div className="bg-muted border border-border-light rounded-xl p-4">
+                  <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1">Your ITP Shares</p>
+                  <p className="text-2xl font-bold text-text-primary tabular-nums font-mono">{parseFloat(formatUnits(userShares, 18)).toFixed(4)}</p>
                 </div>
               )}
 
-              {phase === BuyPhase.DONE ? (
+              {isDone ? (
                 <button
                   onClick={handleReset}
-                  className="w-full py-3 bg-accent text-terminal font-bold rounded-lg hover:bg-accent/90 transition-colors"
+                  className="w-full py-3 bg-color-up text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
                 >
                   Buy More
                 </button>
-              ) : (phase <= BuyPhase.SUBMIT) ? (
+              ) : (micro <= BuyMicro.SUBMIT) ? (
                 <button
                   onClick={handleCancel}
-                  className="w-full text-center text-sm text-white/50 hover:text-white/80 py-2 transition-colors"
+                  className="w-full text-center text-sm text-text-muted hover:text-text-primary py-2 transition-colors"
                 >
                   Cancel
                 </button>
               ) : null}
 
               {stuckWarning && (
-                <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-3 text-orange-400 text-sm">
-                  <p className="font-bold">Transaction may be stuck</p>
+                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-orange-500 text-sm">
+                  <p className="font-medium">Transaction may be stuck</p>
                   <p className="text-xs mt-1">Not confirmed after 30s. You can cancel and try again.</p>
                 </div>
               )}
 
               {txError && (
-                <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-400">
-                  <p className="font-bold">Error</p>
+                <div className="bg-surface-down border border-color-down/30 rounded-lg p-4 text-color-down">
+                  <p className="font-medium">Error</p>
                   <p className="text-sm mt-1 break-all">{txError}</p>
                 </div>
               )}
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="bg-terminal-dark border border-white/10 rounded-lg p-4 space-y-4">
+              <div className="bg-muted border border-border-light rounded-xl p-4 space-y-4">
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <label className="text-sm text-white/70">Amount (USDC)</label>
-                    <span className="text-xs text-white/40">Balance: {parseFloat(formattedBalance).toFixed(2)} USDC</span>
+                    <label className="text-xs font-medium uppercase tracking-wider text-text-muted">Amount (USDC)</label>
+                    <span className="text-xs text-text-muted font-mono">Balance: {parseFloat(formattedBalance).toFixed(2)} USDC</span>
                   </div>
                   <input
                     type="number"
@@ -666,32 +710,32 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
                     placeholder="e.g., 100"
                     min="0"
                     step="1"
-                    className="w-full bg-terminal border border-white/20 rounded px-4 py-3 text-white text-lg focus:border-accent focus:outline-none"
+                    className="w-full bg-card border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg font-mono tabular-nums focus:border-zinc-600 focus:outline-none"
                   />
                   {amount && parsedAmount > (usdcBalance ?? 0n) && (
-                    <p className="text-red-400 text-xs mt-1">Insufficient USDC balance</p>
+                    <p className="text-color-down text-xs mt-1">Insufficient USDC balance</p>
                   )}
                 </div>
                 {(usdcBalance ?? 0n) === 0n && (
-                  <div className="flex items-center gap-3 pt-2 border-t border-white/5">
+                  <div className="flex items-center gap-3 pt-2 border-t border-border-light">
                     <button
                       onClick={handleMintTestUsdc}
                       disabled={isMintPending}
-                      className="px-3 py-1.5 text-xs bg-accent/20 text-accent border border-accent/30 rounded hover:bg-accent/30 disabled:opacity-50 transition-colors"
+                      className="px-3 py-1.5 text-xs bg-muted text-text-secondary border border-border-medium rounded hover:border-zinc-500 disabled:opacity-50 transition-colors"
                     >
                       {isMintPending ? 'Minting...' : 'Mint 10,000 Test USDC'}
                     </button>
-                    {isMintSuccess && <span className="text-xs text-green-400">Minted!</span>}
-                    {mintError && <span className="text-xs text-red-400">Mint failed</span>}
+                    {isMintSuccess && <span className="text-xs text-color-up">Minted!</span>}
+                    {mintError && <span className="text-xs text-color-down">Mint failed</span>}
                   </div>
                 )}
               </div>
 
-              <div className="bg-terminal-dark border border-white/10 rounded-lg p-4">
+              <div className="bg-muted border border-border-light rounded-xl p-4">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-sm text-white/70">Max Price (USDC/share)</label>
+                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted">Max Price (USDC/share)</label>
                   {navPerShare > 0 && (
-                    <span className="text-xs text-accent font-mono">
+                    <span className="text-xs text-text-secondary font-mono">
                       NAV: ${navPerShare.toFixed(6)} ({pricedAssetCount}/{totalAssetCount} priced)
                     </span>
                   )}
@@ -703,26 +747,26 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
                   placeholder={isNavLoading ? 'Computing price...' : navPerShare === 0 ? 'Set limit price' : '0 (no limit)'}
                   min="0"
                   step="0.01"
-                  className="w-full bg-terminal border border-white/20 rounded px-4 py-2 text-white focus:border-accent focus:outline-none"
+                  className="w-full bg-card border border-border-medium rounded-lg px-4 py-2 text-text-primary font-mono tabular-nums focus:border-zinc-600 focus:outline-none"
                 />
                 {!isNavLoading && navPerShare === 0 && (
-                  <p className="text-orange-400 text-xs mt-2">
+                  <p className="text-color-warning text-xs mt-2">
                     No asset prices available. Set a limit price manually or use 0 for no limit.
                   </p>
                 )}
               </div>
 
-              <div className="bg-terminal-dark border border-white/10 rounded-lg p-4">
-                <label className="block text-sm text-white/70 mb-3">Slippage</label>
+              <div className="bg-muted border border-border-light rounded-xl p-4">
+                <label className="block text-xs font-medium uppercase tracking-wider text-text-muted mb-3">Slippage</label>
                 <div className="flex gap-2">
                   {SLIPPAGE_TIERS.map(tier => (
                     <button
                       key={tier.value}
                       onClick={() => setSlippageTier(tier.value)}
-                      className={`flex-1 py-2 rounded border text-sm font-mono transition-colors ${
+                      className={`flex-1 py-2 rounded-lg border text-sm font-mono transition-colors ${
                         slippageTier === tier.value
-                          ? 'border-accent text-accent bg-accent/10'
-                          : 'border-white/20 text-white/50 hover:border-white/40'
+                          ? 'border-zinc-900 text-white bg-zinc-900'
+                          : 'border-border-medium text-text-muted hover:border-zinc-500'
                       }`}
                     >
                       {tier.label}
@@ -732,8 +776,8 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
               </div>
 
               {hasNonceGap && (
-                <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-3 text-orange-400 text-sm">
-                  <p className="font-bold">Pending Transactions Detected</p>
+                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-orange-500 text-sm">
+                  <p className="font-medium">Pending Transactions Detected</p>
                   <p className="text-xs mt-1">You have {pendingCount} pending transaction(s). New transactions may get stuck.</p>
                 </div>
               )}
@@ -741,7 +785,7 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
               <WalletActionButton
                 onClick={needsApproval ? handleApprove : handleBuy}
                 disabled={!amount || parsedAmount === 0n || isProcessing || parsedAmount > (usdcBalance ?? 0n) || hasNonceGap}
-                className="w-full py-4 bg-accent text-terminal font-bold rounded-lg hover:bg-accent/90 disabled:bg-white/20 disabled:text-white/50 disabled:cursor-not-allowed transition-colors"
+                className="w-full py-4 bg-color-up text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
               >
                 {buttonText}
               </WalletActionButton>
@@ -749,22 +793,22 @@ export function BuyItpModal({ itpId, onClose }: BuyItpModalProps) {
               {isProcessing && (
                 <button
                   onClick={handleCancel}
-                  className="w-full text-center text-sm text-white/50 hover:text-white/80 py-2 transition-colors"
+                  className="w-full text-center text-sm text-text-muted hover:text-text-primary py-2 transition-colors"
                 >
                   Cancel
                 </button>
               )}
 
               {stuckWarning && (
-                <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-3 text-orange-400 text-sm">
-                  <p className="font-bold">Transaction may be stuck</p>
+                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-orange-500 text-sm">
+                  <p className="font-medium">Transaction may be stuck</p>
                   <p className="text-xs mt-1">Not confirmed after 30s. You can cancel and try again.</p>
                 </div>
               )}
 
               {txError && (
-                <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-400">
-                  <p className="font-bold">Error</p>
+                <div className="bg-surface-down border border-color-down/30 rounded-lg p-4 text-color-down">
+                  <p className="font-medium">Error</p>
                   <p className="text-sm mt-1 break-all">{txError}</p>
                 </div>
               )}

@@ -487,9 +487,13 @@ impl IssuerConfig {
     ///
     /// Default: "http://localhost:8545"
     pub fn effective_rpc_url(&self) -> String {
-        self.rpc_url
-            .clone()
-            .unwrap_or_else(|| "http://localhost:8545".to_string())
+        match &self.rpc_url {
+            Some(url) => url.clone(),
+            None => {
+                tracing::warn!("ISSUER_RPC_URL not set — falling back to http://localhost:8545 (not suitable for production)");
+                "http://localhost:8545".to_string()
+            }
+        }
     }
 
     /// Get the effective log level (using default if not set).

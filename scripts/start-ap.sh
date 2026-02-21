@@ -6,13 +6,13 @@ set -e
 cd /Users/maxguillabert/Downloads/index
 export PATH="$HOME/.foundry/bin:$PATH"
 
-# Source Bitget credentials if available (BITGET_PUB, BITGET_PK, BITGET_PASS)
-if [ -f "global.env" ]; then
-    set -a && source global.env && set +a
-    echo "Loaded credentials from global.env"
+# Source system config if available (BITGET_PUB, BITGET_PK, BITGET_PASS)
+if [ -f "system.env" ]; then
+    set -a && source system.env && set +a
+    echo "Loaded credentials from system.env"
 fi
 
-# Map global.env names → AP price fetcher env vars
+# Map system.env names → AP price fetcher env vars
 export BITGET_API_KEY="${BITGET_API_KEY:-$BITGET_PUB}"
 export BITGET_API_SECRET="${BITGET_API_SECRET:-$BITGET_PK}"
 export BITGET_API_PASSPHRASE="${BITGET_API_PASSPHRASE:-$BITGET_PASS}"
@@ -33,7 +33,7 @@ BITGET_VAULT=$(jq -r '.contracts.MockBitgetVault' "$DEPLOYMENT_FILE")
 MOCK_USDT=$(jq -r '.contracts.MOCK_USDT // .contracts.MockUSDT // empty' "$DEPLOYMENT_FILE")
 
 # AP private key
-AP_KEY="0x582978b132648fe53de139c6b9297040a2757616cac9a2fd17aa167bdc6fa340"
+AP_KEY="${AP_PRIVATE_KEY:?ERROR: AP_PRIVATE_KEY env var required}"
 
 echo "=== Starting AP Node ==="
 echo "Config: $DEPLOYMENT_FILE"

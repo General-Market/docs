@@ -1,6 +1,8 @@
 //! SEC EDGAR API client implementing MarketDataSource
 //!
 //! Fetches 13F filings from https://data.sec.gov/
+//! Downloads and parses the information table XML to compute
+//! AUM, top-10 concentration, and position count.
 //! Tracks 15 major institutional investors.
 
 use anyhow::{Context, Result};
@@ -11,10 +13,10 @@ use std::str::FromStr;
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
+use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::traits::{
     AssetUpdate, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
 };
-use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
 /// Major institutional investors tracked via 13F filings
 /// (cik, asset_prefix, name, manager)
@@ -125,8 +127,61 @@ struct SecRecentFilings {
     #[serde(rename = "filingDate")]
     filing_date: Vec<String>,
     #[serde(rename = "primaryDocument")]
-    #[allow(dead_code)]
     primary_document: Vec<String>,
+    #[serde(rename = "accessionNumber")]
+    accession_number: Vec<String>,
+}
+
+/// Filing index JSON structure
+#[derive(Debug, Deserialize)]
+struct FilingIndex {
+    directory: FilingDirectory,
+}
+
+#[derive(Debug, Deserialize)]
+struct FilingDirectory {
+    item: Vec<FilingDirectoryItem>,
+}
+
+#[derive(Debug, Deserialize)]
+struct FilingDirectoryItem {
+    name: String,
+}
+
+// ── 13F Information Table XML deserialization ──
+
+/// Root element of the 13F information table XML
+#[derive(Debug, Deserialize)]
+#[serde(rename = "informationTable")]
+struct InformationTable {
+    #[serde(rename = "infoTable", default)]
+    entries: Vec<InfoTableEntry>,
+}
+
+/// A single holding in the 13F information table
+#[derive(Debug, Deserialize)]
+#[serde(rename = "infoTable")]
+struct InfoTableEntry {
+    #[serde(rename = "nameOfIssuer")]
+    #[allow(dead_code)]
+    name_of_issuer: String,
+    #[allow(dead_code)]
+    cusip: String,
+    /// Value in thousands of USD
+    value: i64,
+    #[serde(rename = "shrsOrPrnAmt")]
+    #[allow(dead_code)]
+    shrs_or_prn_amt: Option<SharesOrPrincipal>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SharesOrPrincipal {
+    #[serde(rename = "sshPrnamt")]
+    #[allow(dead_code)]
+    amount: Option<i64>,
+    #[serde(rename = "sshPrnamtType")]
+    #[allow(dead_code)]
+    amount_type: Option<String>,
 }
 
 /// SEC EDGAR market data source
@@ -158,13 +213,6 @@ impl SecEdgarMarketSource {
         let month = now.month();
         let day = now.day();
 
-        // Filing windows: ~45 days after quarter end
-        // Q1 (Jan-Mar) due by May 15
-        // Q2 (Apr-Jun) due by Aug 14
-        // Q3 (Jul-Sep) due by Nov 14
-        // Q4 (Oct-Dec) due by Feb 14
-
-        // Check if we're in the 2 weeks before deadline
         matches!(
             (month, day),
             (2, 1..=14) |   // Q4 filings
@@ -174,14 +222,113 @@ impl SecEdgarMarketSource {
         )
     }
 
-    /// Fetch 13F data for a fund (placeholder - actual implementation requires XML parsing)
-    async fn fetch_fund_data(&self, cik: &str) -> Result<Option<FundData>> {
-        // Note: Full implementation would:
-        // 1. Fetch submissions list from SEC
-        // 2. Find latest 13F-HR filing
-        // 3. Parse the XML to extract holdings
-        // 4. Calculate AUM, top 10 concentration, position count
+    /// Fetch and parse the information table XML from a 13F filing.
+    ///
+    /// Steps:
+    /// 1. Fetch the filing index JSON to find the infotable document filename
+    /// 2. Download the XML
+    /// 3. Strip namespace prefixes and deserialize
+    async fn fetch_information_table(
+        &self,
+        cik: &str,
+        accession_number: &str,
+    ) -> Result<Vec<InfoTableEntry>> {
+        let accession_nodash = accession_number.replace('-', "");
 
+        // Step 1: Fetch filing index to find the infotable document
+        let index_url = format!(
+            "https://www.sec.gov/Archives/edgar/data/{}/{}/{}-index.json",
+            cik.trim_start_matches('0'),
+            accession_nodash,
+            accession_number
+        );
+
+        let index_resp = self
+            .client
+            .get(&index_url)
+            .send()
+            .await
+            .with_context(|| format!("Failed to fetch filing index for {}", accession_number))?;
+
+        if !index_resp.status().is_success() {
+            warn!(
+                "SEC filing index error for {}: {}",
+                accession_number,
+                index_resp.status()
+            );
+            return Ok(vec![]);
+        }
+
+        let index: FilingIndex = index_resp
+            .json()
+            .await
+            .with_context(|| format!("Failed to parse filing index for {}", accession_number))?;
+
+        // Find the information table document (filename contains "infotable")
+        let infotable_name = index
+            .directory
+            .item
+            .iter()
+            .find(|item| {
+                let lower = item.name.to_lowercase();
+                lower.contains("infotable") && (lower.ends_with(".xml") || lower.ends_with(".htm"))
+            })
+            .map(|item| item.name.clone());
+
+        let infotable_name = match infotable_name {
+            Some(name) => name,
+            None => {
+                debug!(
+                    "No infotable document found in filing {}",
+                    accession_number
+                );
+                return Ok(vec![]);
+            }
+        };
+
+        // Step 2: Download the XML
+        let xml_url = format!(
+            "https://www.sec.gov/Archives/edgar/data/{}/{}/{}",
+            cik.trim_start_matches('0'),
+            accession_nodash,
+            infotable_name
+        );
+
+        let xml_resp = self
+            .client
+            .get(&xml_url)
+            .send()
+            .await
+            .with_context(|| format!("Failed to fetch infotable XML for {}", accession_number))?;
+
+        if !xml_resp.status().is_success() {
+            warn!(
+                "SEC infotable download error for {}: {}",
+                accession_number,
+                xml_resp.status()
+            );
+            return Ok(vec![]);
+        }
+
+        let xml_text = xml_resp
+            .text()
+            .await
+            .with_context(|| format!("Failed to read infotable XML for {}", accession_number))?;
+
+        // Step 3: Strip namespace prefixes and parse
+        let holdings = parse_information_table_xml(&xml_text)?;
+
+        info!(
+            "Parsed {} holdings from 13F filing {}",
+            holdings.len(),
+            accession_number
+        );
+
+        Ok(holdings)
+    }
+
+    /// Fetch 13F data for a fund, downloading and parsing the actual XML
+    async fn fetch_fund_data(&self, cik: &str) -> Result<Option<FundData>> {
         let url = format!(
             "https://data.sec.gov/submissions/CIK{}.json",
             cik.trim_start_matches('0')
@@ -200,7 +347,6 @@ impl SecEdgarMarketSource {
             return Ok(None);
         }
 
-        // Parse submissions to find latest 13F-HR
         let submissions: SecSubmissions = resp
             .json()
             .await
@@ -214,30 +360,103 @@ impl SecEdgarMarketSource {
             .iter()
             .position(|f| f == "13F-HR");
 
-        if let Some(idx) = form_index {
-            let filing_date = submissions.filings.recent.filing_date.get(idx).cloned();
+        let idx = match form_index {
+            Some(idx) => idx,
+            None => return Ok(None),
+        };
 
-            // In a full implementation, we'd fetch and parse the actual 13F XML here
-            // For now, return placeholder data indicating the filing exists
+        let filing_date = submissions.filings.recent.filing_date.get(idx).cloned();
+        let accession_number = match submissions.filings.recent.accession_number.get(idx) {
+            Some(acc) => acc.clone(),
+            None => return Ok(None),
+        };
+
+        // Fetch and parse the information table
+        // Rate-limit: small sleep before fetching more SEC pages
+        tokio::time::sleep(Duration::from_millis(200)).await;
+
+        let holdings = self
+            .fetch_information_table(cik, &accession_number)
+            .await?;
+
+        if holdings.is_empty() {
             return Ok(Some(FundData {
                 filing_date,
-                aum: None,            // Would be calculated from holdings
-                top10_pct: None,      // Would be calculated from holdings
-                position_count: None, // Would be calculated from holdings
+                aum: None,
+                top10_pct: None,
+                position_count: None,
             }));
         }
 
-        Ok(None)
+        // Compute metrics from holdings
+        let metrics = compute_fund_metrics(&holdings);
+
+        Ok(Some(FundData {
+            filing_date,
+            aum: Some(metrics.aum),
+            top10_pct: Some(metrics.top10_pct),
+            position_count: Some(metrics.position_count),
+        }))
     }
 }
 
 /// Fund data extracted from 13F
-#[allow(dead_code)]
 struct FundData {
+    #[allow(dead_code)]
     filing_date: Option<String>,
     aum: Option<f64>,
     top10_pct: Option<f64>,
     position_count: Option<i64>,
+}
+
+/// Computed metrics from parsed holdings
+struct FundMetrics {
+    aum: f64,
+    top10_pct: f64,
+    position_count: i64,
+}
+
+/// Parse information table XML, stripping namespace prefixes first.
+fn parse_information_table_xml(xml_text: &str) -> Result<Vec<InfoTableEntry>> {
+    // Strip common namespace prefixes (ns1:, n1:, etc.) for easier parsing
+    let cleaned = xml_text
+        .replace("ns1:", "")
+        .replace("n1:", "")
+        .replace("ns2:", "")
+        .replace("n2:", "");
+
+    match quick_xml::de::from_str::<InformationTable>(&cleaned) {
+        Ok(table) => Ok(table.entries),
+        Err(e) => {
+            warn!("Failed to parse 13F XML: {}", e);
+            Ok(vec![])
+        }
+    }
+}
+
+/// Compute AUM, top-10 concentration, and position count from holdings.
+fn compute_fund_metrics(holdings: &[InfoTableEntry]) -> FundMetrics {
+    // Values in the XML are in thousands of USD
+    let total_value: i64 = holdings.iter().map(|h| h.value).sum();
+    let aum = total_value as f64 * 1000.0;
+
+    let position_count = holdings.len() as i64;
+
+    // Top 10 concentration
+    let mut values: Vec<i64> = holdings.iter().map(|h| h.value).collect();
+    values.sort_unstable_by(|a, b| b.cmp(a));
+    let top10_sum: i64 = values.iter().take(10).sum();
+    let top10_pct = if total_value > 0 {
+        (top10_sum as f64 / total_value as f64) * 100.0
+    } else {
+        0.0
+    };
+
+    FundMetrics {
+        aum,
+        top10_pct,
+        position_count,
+    }
 }
 
 #[async_trait::async_trait]
@@ -425,5 +644,132 @@ mod tests {
         // June 15 should NOT be in filing window
         let june = chrono::Utc.with_ymd_and_hms(2026, 6, 15, 12, 0, 0).unwrap();
         assert!(!SecEdgarMarketSource::is_filing_window(june));
+    }
+
+    #[test]
+    fn test_parse_information_table_xml() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<informationTable>
+    <infoTable>
+        <nameOfIssuer>APPLE INC</nameOfIssuer>
+        <cusip>037833100</cusip>
+        <value>91819000</value>
+        <shrsOrPrnAmt>
+            <sshPrnamt>400000000</sshPrnamt>
+            <sshPrnamtType>SH</sshPrnamtType>
+        </shrsOrPrnAmt>
+    </infoTable>
+    <infoTable>
+        <nameOfIssuer>BANK OF AMERICA CORP</nameOfIssuer>
+        <cusip>060505104</cusip>
+        <value>34764000</value>
+        <shrsOrPrnAmt>
+            <sshPrnamt>1032852006</sshPrnamt>
+            <sshPrnamtType>SH</sshPrnamtType>
+        </shrsOrPrnAmt>
+    </infoTable>
+    <infoTable>
+        <nameOfIssuer>COCA-COLA CO</nameOfIssuer>
+        <cusip>191216100</cusip>
+        <value>23684000</value>
+        <shrsOrPrnAmt>
+            <sshPrnamt>400000000</sshPrnamt>
+            <sshPrnamtType>SH</sshPrnamtType>
+        </shrsOrPrnAmt>
+    </infoTable>
+</informationTable>"#;
+
+        let holdings = parse_information_table_xml(xml).unwrap();
+        assert_eq!(holdings.len(), 3);
+        assert_eq!(holdings[0].name_of_issuer, "APPLE INC");
+        assert_eq!(holdings[0].cusip, "037833100");
+        assert_eq!(holdings[0].value, 91819000);
+        assert_eq!(holdings[1].name_of_issuer, "BANK OF AMERICA CORP");
+        assert_eq!(holdings[2].value, 23684000);
+    }
+
+    #[test]
+    fn test_parse_information_table_xml_with_namespace() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<ns1:informationTable xmlns:ns1="http://www.sec.gov/edgar/document/thirteenf/informationtable">
+    <ns1:infoTable>
+        <ns1:nameOfIssuer>MICROSOFT CORP</ns1:nameOfIssuer>
+        <ns1:cusip>594918104</ns1:cusip>
+        <ns1:value>5000000</ns1:value>
+        <ns1:shrsOrPrnAmt>
+            <ns1:sshPrnamt>12000000</ns1:sshPrnamt>
+            <ns1:sshPrnamtType>SH</ns1:sshPrnamtType>
+        </ns1:shrsOrPrnAmt>
+    </ns1:infoTable>
+</ns1:informationTable>"#;
+
+        let holdings = parse_information_table_xml(xml).unwrap();
+        assert_eq!(holdings.len(), 1);
+        assert_eq!(holdings[0].name_of_issuer, "MICROSOFT CORP");
+        assert_eq!(holdings[0].value, 5000000);
+    }
+
+    #[test]
+    fn test_compute_fund_metrics() {
+        let holdings = vec![
+            InfoTableEntry {
+                name_of_issuer: "APPLE".to_string(),
+                cusip: "037833100".to_string(),
+                value: 91819000,
+                shrs_or_prn_amt: None,
+            },
+            InfoTableEntry {
+                name_of_issuer: "BANK OF AMERICA".to_string(),
+                cusip: "060505104".to_string(),
+                value: 34764000,
+                shrs_or_prn_amt: None,
+            },
+            InfoTableEntry {
+                name_of_issuer: "COCA-COLA".to_string(),
+                cusip: "191216100".to_string(),
+                value: 23684000,
+                shrs_or_prn_amt: None,
+            },
+        ];
+
+        let metrics = compute_fund_metrics(&holdings);
+
+        // AUM = sum(value) * 1000
+        let expected_aum = (91819000 + 34764000 + 23684000) as f64 * 1000.0;
+        assert!((metrics.aum - expected_aum).abs() < 1.0);
+
+        // Position count
+        assert_eq!(metrics.position_count, 3);
+
+        // Top 10 % = 100% (only 3 holdings, all in top 10)
+        assert!((metrics.top10_pct - 100.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_compute_fund_metrics_top10() {
+        // 15 holdings, check that top 10 concentration is correct
+        let mut holdings = Vec::new();
+        for i in 0..15 {
+            holdings.push(InfoTableEntry {
+                name_of_issuer: format!("COMPANY_{}", i),
+                cusip: format!("{:09}", i),
+                value: (15 - i) as i64 * 1000, // 15000, 14000, ..., 1000
+                shrs_or_prn_amt: None,
+            });
+        }
+
+        let metrics = compute_fund_metrics(&holdings);
+
+        // Total = 15000 + 14000 + ... + 1000 = 120000
+        let total: i64 = (1..=15).sum::<i64>() * 1000;
+        assert_eq!(total, 120000);
+
+        // Top 10 = 15000 + 14000 + ... + 6000 = 105000
+        let top10: i64 = (6..=15).sum::<i64>() * 1000;
+        assert_eq!(top10, 105000);
+
+        let expected_pct = top10 as f64 / total as f64 * 100.0;
+        assert!((metrics.top10_pct - expected_pct).abs() < 0.01);
+        assert_eq!(metrics.position_count, 15);
     }
 }

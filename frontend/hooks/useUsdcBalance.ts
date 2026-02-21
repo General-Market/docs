@@ -1,8 +1,6 @@
 'use client'
 
-import { useReadContract, useAccount } from 'wagmi'
-import { erc20Abi } from '@/lib/contracts/abi'
-import { COLLATERAL_TOKEN_ADDRESS } from '@/lib/contracts/addresses'
+import { useSSEBalances } from './useSSE'
 import { formatUsdcAmount } from '@/lib/utils/formatters'
 
 interface UseUsdcBalanceReturn {
@@ -14,39 +12,26 @@ interface UseUsdcBalanceReturn {
   isLoading: boolean
   /** Whether there was an error fetching the balance */
   isError: boolean
-  /** Refetch the balance */
+  /** Refetch the balance (no-op — SSE handles updates) */
   refetch: () => void
 }
 
 /**
- * Hook to fetch USDC balance for the connected wallet
- * Auto-refreshes every 5 seconds
+ * Hook to fetch USDC balance for the connected wallet.
+ * Reads from the SSE stream (userBalances.usdc_l3) instead of direct chain calls.
  * @returns Balance data, loading state, and error state
  */
 export function useUsdcBalance(): UseUsdcBalanceReturn {
-  const { address, isConnected } = useAccount()
+  const balances = useSSEBalances()
 
-  const { data: balance, isLoading, isError, refetch } = useReadContract({
-    address: COLLATERAL_TOKEN_ADDRESS,
-    abi: erc20Abi,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    query: {
-      enabled: isConnected && !!address,
-      refetchInterval: 5000
-    }
-  })
-
-  // Format balance to display string with commas and 2 decimal places
-  const formatted = balance !== undefined
-    ? formatUsdcAmount(balance)
-    : '0.00'
+  const balance = balances ? BigInt(balances.usdc_l3) : undefined
+  const formatted = balance !== undefined ? formatUsdcAmount(balance) : '0.00'
 
   return {
     balance,
     formatted,
-    isLoading,
-    isError,
-    refetch
+    isLoading: !balances,
+    isError: false,
+    refetch: () => {},
   }
 }

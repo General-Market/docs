@@ -37,9 +37,9 @@ interface LendItpModalProps {
 type Tab = 'borrow' | 'repay'
 
 const LendingErrorFallback = (
-  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-6 text-center">
-    <h3 className="text-red-400 font-bold mb-2">Something went wrong</h3>
-    <p className="text-white/60 text-sm">Please close and reopen the modal.</p>
+  <div className="bg-surface-down border border-color-down/30 rounded-xl p-6 text-center">
+    <h3 className="text-color-down font-semibold mb-2">Something went wrong</h3>
+    <p className="text-text-muted text-sm">Please close and reopen the modal.</p>
   </div>
 )
 
@@ -66,47 +66,47 @@ export function LendItpModal({ itpInfo, isOpen, onClose }: LendItpModalProps) {
   if (!isOpen || !market) return null
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div
-        className="bg-terminal border border-white/20 rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto"
+        className="bg-card border border-border-light rounded-xl shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-accent">Borrow against {itpInfo.name || 'ITP'}</h2>
-            <button onClick={onClose} className="text-white/60 hover:text-white text-2xl">&times;</button>
+            <h2 className="text-lg font-semibold text-text-primary">Borrow against {itpInfo.name || 'ITP'}</h2>
+            <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
           </div>
-          {itpInfo.symbol && <p className="text-white/70 mb-1 font-mono">${itpInfo.symbol}</p>}
-          <p className="text-xs text-white/40 font-mono mb-6">
+          {itpInfo.symbol && <p className="text-text-secondary mb-1 font-mono">${itpInfo.symbol}</p>}
+          <p className="text-xs text-text-muted mb-6">
             Borrow USDC against your {itpInfo.symbol || 'ITP'} collateral via Morpho
           </p>
 
           {!isConnected ? (
-            <div className="bg-terminal-dark border border-white/10 rounded-lg p-8 text-center">
-              <p className="text-white/70">Connect your wallet to access lending</p>
+            <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
+              <p className="text-text-secondary">Connect your wallet to access lending</p>
             </div>
           ) : (
             <ErrorBoundary fallback={LendingErrorFallback}>
               <div className="space-y-4">
                 {/* Tabs */}
-                <div className="flex gap-4 border-b border-white/10">
+                <div className="flex gap-4 border-b border-border-light">
                   <button
                     onClick={() => setActiveTab('borrow')}
-                    className={`pb-3 px-4 font-mono text-sm transition-colors border-b-2 ${
+                    className={`pb-3 px-4 text-sm transition-colors border-b-2 ${
                       activeTab === 'borrow'
-                        ? 'text-accent border-accent'
-                        : 'text-white/60 border-transparent hover:text-white/80'
+                        ? 'text-text-primary border-zinc-900'
+                        : 'text-text-secondary border-transparent hover:text-text-primary'
                     }`}
                   >
                     Borrow
                   </button>
                   <button
                     onClick={() => setActiveTab('repay')}
-                    className={`pb-3 px-4 font-mono text-sm transition-colors border-b-2 ${
+                    className={`pb-3 px-4 text-sm transition-colors border-b-2 ${
                       activeTab === 'repay'
-                        ? 'text-accent border-accent'
-                        : 'text-white/60 border-transparent hover:text-white/80'
+                        ? 'text-text-primary border-zinc-900'
+                        : 'text-text-secondary border-transparent hover:text-text-primary'
                     }`}
                   >
                     Repay
@@ -133,9 +133,9 @@ export function LendItpModal({ itpInfo, isOpen, onClose }: LendItpModalProps) {
                       <WithdrawCollateral market={market} onSuccess={refetchPosition} />
                     )}
                     {(!position || (position.debtAmount === 0n && position.collateralAmount === 0n)) && (
-                      <div className="bg-terminal-dark border border-white/10 rounded-lg p-8 text-center">
-                        <p className="text-white/50">No active position to repay or withdraw</p>
-                        <p className="text-white/30 text-sm mt-2">Switch to the Borrow tab to open a position</p>
+                      <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
+                        <p className="text-text-muted">No active position to repay or withdraw</p>
+                        <p className="text-text-muted text-sm mt-2">Switch to the Borrow tab to open a position</p>
                       </div>
                     )}
                   </div>

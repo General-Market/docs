@@ -24,10 +24,10 @@ interface TierConfig {
  * Elite: 20K+, Advanced: 15K+, Intermediate: 10K+, Beginner: <10K
  */
 const TIERS: TierConfig[] = [
-  { label: 'Elite', color: 'bg-accent text-white', threshold: 20000 },
+  { label: 'Elite', color: 'bg-zinc-900 text-white', threshold: 20000 },
   { label: 'Advanced', color: 'bg-amber-600 text-white', threshold: 15000 },
   { label: 'Intermediate', color: 'bg-blue-600 text-white', threshold: 10000 },
-  { label: 'Beginner', color: 'bg-white/20 text-white', threshold: 0 }
+  { label: 'Beginner', color: 'bg-muted text-text-primary', threshold: 0 }
 ]
 
 /**
@@ -70,7 +70,7 @@ function getTierExplanation(tierLabel: string): string {
 /**
  * AICapabilityBadge component (AC2)
  * Displays agent's AI capability tier based on max portfolio size
- * Dev Arena themed with tier-specific colors
+ * Themed with tier-specific colors
  */
 export function AICapabilityBadge({ maxPortfolioSize }: AICapabilityBadgeProps) {
   const tier = getTier(maxPortfolioSize)

@@ -7,7 +7,7 @@ import "../libraries/EventsLib.sol";
 import "../interfaces/IGovernance.sol";
 
 /// @title AdminLib - External library for admin configuration functions
-/// @notice Extracted from Index.sol to reduce contract size below the 24,576 byte limit
+/// @notice Extracted from Investment.sol to reduce contract size below the 24,576 byte limit
 /// @dev Uses external functions that compile to delegatecall, preserving caller's storage context
 library AdminLib {
 

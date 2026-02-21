@@ -69,21 +69,21 @@ interface IERC4626Minimal {
 
 /// @title IITP - Index Token Product interface
 /// @notice ERC4626-compliant vault for ITP tokens
-/// @dev Extends ERC4626 with restricted mint/burn callable only by Index.sol
-/// @dev Direct deposit() and withdraw() MUST revert - all orders go through Index.sol
+/// @dev Extends ERC4626 with restricted mint/burn callable only by Investment.sol
+/// @dev Direct deposit() and withdraw() MUST revert - all orders go through Investment.sol
 interface IITP is IERC4626Minimal {
     // ============ RESTRICTED FUNCTIONS ============
 
     /// @notice Mint ITP shares to a user
-    /// @dev ONLY callable by Index.sol after order fill confirmation
-    /// @dev Reverts if caller is not the Index contract
+    /// @dev ONLY callable by Investment.sol after order fill confirmation
+    /// @dev Reverts if caller is not the Investment contract
     /// @param to Address to receive the shares
     /// @param shares Amount of shares to mint
     function mint(address to, uint256 shares) external;
 
     /// @notice Burn ITP shares from a user
-    /// @dev ONLY callable by Index.sol after sell order fill confirmation
-    /// @dev Reverts if caller is not the Index contract
+    /// @dev ONLY callable by Investment.sol after sell order fill confirmation
+    /// @dev Reverts if caller is not the Investment contract
     /// @param from Address to burn shares from
     /// @param shares Amount of shares to burn
     function burn(address from, uint256 shares) external;
@@ -91,14 +91,14 @@ interface IITP is IERC4626Minimal {
     // ============ BLOCKED FUNCTIONS ============
 
     /// @notice Deposit assets for shares
-    /// @dev MUST REVERT - direct deposits not allowed, use Index.submitOrder
+    /// @dev MUST REVERT - direct deposits not allowed, use Investment.submitOrder
     /// @param assets Amount of assets to deposit
     /// @param receiver Address to receive shares
     /// @return shares Amount of shares minted (always reverts)
     function deposit(uint256 assets, address receiver) external returns (uint256 shares);
 
     /// @notice Withdraw assets by burning shares
-    /// @dev MUST REVERT - direct withdrawals not allowed, use Index.submitOrder with SELL
+    /// @dev MUST REVERT - direct withdrawals not allowed, use Investment.submitOrder with SELL
     /// @param assets Amount of assets to withdraw
     /// @param receiver Address to receive assets
     /// @param owner Address that owns the shares
@@ -106,7 +106,7 @@ interface IITP is IERC4626Minimal {
     function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares);
 
     /// @notice Redeem shares for assets
-    /// @dev MUST REVERT - direct redemptions not allowed, use Index.submitOrder with SELL
+    /// @dev MUST REVERT - direct redemptions not allowed, use Investment.submitOrder with SELL
     /// @param shares Amount of shares to redeem
     /// @param receiver Address to receive assets
     /// @param owner Address that owns the shares
@@ -115,8 +115,8 @@ interface IITP is IERC4626Minimal {
 
     // ============ VIEW FUNCTIONS ============
 
-    /// @notice Returns the Index contract address
-    /// @return The address of the Index contract that can call mint/burn
+    /// @notice Returns the Investment contract address
+    /// @return The address of the Investment contract that can call mint/burn
     function indexContract() external view returns (address);
 
     /// @notice Returns the ITP identifier

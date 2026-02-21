@@ -28,10 +28,10 @@ const BetRow = memo(function BetRow({ bet, isExpanded, onToggle }: BetRowProps) 
     <>
       <tr
         onClick={onToggle}
-        className="cursor-pointer hover:bg-white/5 border-b border-white/10 transition-colors"
+        className="cursor-pointer hover:bg-card-hover border-b border-border-light transition-colors"
       >
         {/* Portfolio Size - use tradeCount from backend (Epic 8) */}
-        <td className="px-4 py-3 font-mono font-bold text-white">
+        <td className="px-4 py-3 font-mono font-bold text-text-primary">
           {(() => {
             const count = bet.tradeCount || bet.portfolioSize || 0
             return count >= 1000
@@ -41,7 +41,7 @@ const BetRow = memo(function BetRow({ bet, isExpanded, onToggle }: BetRowProps) 
         </td>
 
         {/* Amount */}
-        <td className="px-4 py-3 font-mono text-white">
+        <td className="px-4 py-3 font-mono text-text-primary">
           {formatUSD(amount)}
         </td>
 
@@ -51,7 +51,7 @@ const BetRow = memo(function BetRow({ bet, isExpanded, onToggle }: BetRowProps) 
         </td>
 
         {/* Created */}
-        <td className="px-4 py-3 text-white/60 text-sm">
+        <td className="px-4 py-3 text-text-muted text-sm">
           {formatRelativeTime(bet.createdAt)}
         </td>
 
@@ -62,18 +62,18 @@ const BetRow = memo(function BetRow({ bet, isExpanded, onToggle }: BetRowProps) 
               href={getTxUrl(bet.txHash)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white/60 hover:text-white text-sm font-mono transition-colors"
+              className="text-text-muted hover:text-text-primary text-sm font-mono transition-colors"
               onClick={(e) => e.stopPropagation()}
             >
               {bet.txHash.slice(0, 8)}...
             </a>
           ) : (
-            <span className="text-white/40 text-sm font-mono">-</span>
+            <span className="text-text-muted text-sm font-mono">-</span>
           )}
         </td>
 
         {/* Expand Indicator */}
-        <td className="px-4 py-3 text-white/40">
+        <td className="px-4 py-3 text-text-muted">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="16"
@@ -94,7 +94,7 @@ const BetRow = memo(function BetRow({ bet, isExpanded, onToggle }: BetRowProps) 
       {/* Expanded Details */}
       {isExpanded && (
         <tr>
-          <td colSpan={6} className="bg-white/5 px-4 py-4 border-b border-white/10">
+          <td colSpan={6} className="bg-muted px-4 py-4 border-b border-border-light">
             <BetDetailsExpanded bet={bet} />
           </td>
         </tr>
@@ -110,24 +110,24 @@ function LoadingSkeleton() {
   return (
     <>
       {Array.from({ length: 5 }).map((_, i) => (
-        <tr key={i} className="border-b border-white/10">
+        <tr key={i} className="border-b border-border-light">
           <td className="px-4 py-3">
-            <div className="h-4 w-24 bg-white/10 animate-pulse rounded" />
+            <div className="h-4 w-24 bg-muted animate-pulse rounded" />
           </td>
           <td className="px-4 py-3">
-            <div className="h-4 w-20 bg-white/10 animate-pulse rounded" />
+            <div className="h-4 w-20 bg-muted animate-pulse rounded" />
           </td>
           <td className="px-4 py-3">
-            <div className="h-4 w-16 bg-white/10 animate-pulse rounded" />
+            <div className="h-4 w-16 bg-muted animate-pulse rounded" />
           </td>
           <td className="px-4 py-3">
-            <div className="h-4 w-16 bg-white/10 animate-pulse rounded" />
+            <div className="h-4 w-16 bg-muted animate-pulse rounded" />
           </td>
           <td className="px-4 py-3">
-            <div className="h-4 w-20 bg-white/10 animate-pulse rounded" />
+            <div className="h-4 w-20 bg-muted animate-pulse rounded" />
           </td>
           <td className="px-4 py-3">
-            <div className="h-4 w-4 bg-white/10 animate-pulse rounded" />
+            <div className="h-4 w-4 bg-muted animate-pulse rounded" />
           </td>
         </tr>
       ))}
@@ -142,8 +142,8 @@ function EmptyState() {
   return (
     <tr>
       <td colSpan={6} className="px-4 py-12 text-center">
-        <p className="text-white/60 font-mono">No bets found</p>
-        <p className="text-white/40 text-sm mt-1">
+        <p className="text-text-muted">No bets found</p>
+        <p className="text-text-muted text-sm mt-1">
           Place your first bet to see it here
         </p>
       </td>
@@ -165,21 +165,21 @@ function Pagination({ currentPage, totalPages, onPrev, onNext }: PaginationProps
   if (totalPages <= 1) return null
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-t border-white/10">
+    <div className="flex items-center justify-between px-4 py-3 border-t border-border-light">
       <button
         onClick={onPrev}
         disabled={currentPage === 1}
-        className="px-3 py-1 border border-white/30 text-white/60 text-sm font-mono hover:text-white hover:border-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        className="px-3 py-1 border border-border-medium text-text-muted text-sm font-mono hover:text-text-primary hover:border-zinc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded"
       >
         Previous
       </button>
-      <span className="text-white/60 text-sm font-mono">
+      <span className="text-text-muted text-sm font-mono">
         Page {currentPage} of {totalPages}
       </span>
       <button
         onClick={onNext}
         disabled={currentPage === totalPages}
-        className="px-3 py-1 border border-white/30 text-white/60 text-sm font-mono hover:text-white hover:border-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        className="px-3 py-1 border border-border-medium text-text-muted text-sm font-mono hover:text-text-primary hover:border-zinc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded"
       >
         Next
       </button>
@@ -227,8 +227,8 @@ export function PortfolioBetHistoryTable() {
   // Not connected state
   if (!isConnected) {
     return (
-      <div className="border border-white/20 p-6 text-center">
-        <p className="text-white/60 font-mono">Connect your wallet to view bet history</p>
+      <div className="border border-border-medium rounded-xl p-6 text-center">
+        <p className="text-text-muted">Connect your wallet to view bet history</p>
       </div>
     )
   }
@@ -236,19 +236,19 @@ export function PortfolioBetHistoryTable() {
   // Error state
   if (isError) {
     return (
-      <div className="border border-accent/50 p-6 text-center">
-        <p className="text-accent font-mono">Error loading bet history</p>
-        <p className="text-white/40 text-sm mt-1">{error?.message}</p>
+      <div className="border border-color-down/50 rounded-xl p-6 text-center">
+        <p className="text-color-down">Error loading bet history</p>
+        <p className="text-text-muted text-sm mt-1">{error?.message}</p>
       </div>
     )
   }
 
   return (
-    <div className="border border-white/20">
+    <div className="border border-border-light rounded-xl shadow-card">
       {/* Table Header */}
-      <div className="bg-black px-4 py-3 border-b border-white/20">
-        <h3 className="text-lg font-bold text-white font-mono">Bet History</h3>
-        <p className="text-sm text-white/60 font-mono">
+      <div className="bg-muted px-4 py-3 border-b border-border-medium rounded-t-xl">
+        <h3 className="text-lg font-bold text-text-primary">Bet History</h3>
+        <p className="text-sm text-text-muted">
           {isLoading ? 'Loading...' : `${formatNumber(bets.length)} total bets`}
         </p>
       </div>
@@ -257,7 +257,7 @@ export function PortfolioBetHistoryTable() {
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="bg-black text-white/60 text-xs font-mono uppercase border-b border-white/20">
+            <tr className="bg-muted text-xs font-medium uppercase tracking-wider text-text-muted border-b border-border-medium">
               <th className="px-4 py-2 text-left">Portfolio Size</th>
               <th className="px-4 py-2 text-left">Amount</th>
               <th className="px-4 py-2 text-left">Status</th>

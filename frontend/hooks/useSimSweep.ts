@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { SimRunResult, SimStats, SimNavPoint } from './useSimulation'
-
-const DATA_NODE_URL = process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200'
+import { DATA_NODE_URL } from '@/lib/config'
 
 export interface SweepProgress {
   variant: string
@@ -23,7 +22,7 @@ export interface SweepVariantResult {
 
 interface UseSimSweepParams {
   category_id: string
-  sweep: string  // 'top_n' | 'weighting' | 'rebalance' | 'threshold' | 'category'
+  sweep: string  // 'top_n' | 'weighting' | 'rebalance' | 'threshold' | 'category' | 'defi_weight' | 'fng_regime' | 'dom_regime'
   weighting: string
   rebalance_days: number
   top_n: number
@@ -32,6 +31,18 @@ interface UseSimSweepParams {
   categories?: string[]  // for category sweep
   threshold_pct?: number | null
   start_date?: string
+  // Regime overlays
+  fng_mode?: string
+  fng_fear?: number
+  fng_greed?: number
+  fng_cash_pct?: number
+  dom_mode?: string
+  dom_lookback?: number
+  // VC overlay
+  vc_mode?: string
+  vc_investors?: string
+  vc_min_amount_m?: number
+  vc_round_types?: string
 }
 
 interface UseSimSweepResult {
@@ -84,6 +95,24 @@ export function useSimSweep(params: UseSimSweepParams | null): UseSimSweepResult
     if (params.categories?.length) qs.set('categories', params.categories.join(','))
     if (params.threshold_pct != null) qs.set('threshold_pct', String(params.threshold_pct))
     if (params.start_date) qs.set('start_date', params.start_date)
+    // Regime overlays
+    if (params.fng_mode) {
+      qs.set('fng_mode', params.fng_mode)
+      if (params.fng_fear != null) qs.set('fng_fear_threshold', String(params.fng_fear))
+      if (params.fng_greed != null) qs.set('fng_greed_threshold', String(params.fng_greed))
+      if (params.fng_cash_pct != null) qs.set('fng_cash_pct', String(params.fng_cash_pct))
+    }
+    if (params.dom_mode) {
+      qs.set('dom_mode', params.dom_mode)
+      if (params.dom_lookback != null) qs.set('dom_lookback', String(params.dom_lookback))
+    }
+    // VC overlay
+    if (params.vc_mode) {
+      qs.set('vc_mode', params.vc_mode)
+      if (params.vc_investors) qs.set('vc_investors', params.vc_investors)
+      if (params.vc_min_amount_m) qs.set('vc_min_amount_m', String(params.vc_min_amount_m))
+      if (params.vc_round_types) qs.set('vc_round_types', params.vc_round_types)
+    }
 
     const es = new EventSource(`${DATA_NODE_URL}/sim/sweep-stream?${qs}`)
     eventSourceRef.current = es

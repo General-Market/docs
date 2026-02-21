@@ -29,7 +29,7 @@ pub const MAX_BATCH_RETRIES: u8 = 3;
 /// - 20 nodes → 11
 pub fn calculate_threshold(num_issuers: usize) -> usize {
     if num_issuers == 0 {
-        return 0;
+        return 1;
     }
     let scaled = (num_issuers * 11 + 19) / 20; // ceil(n * 11 / 20)
     scaled.max(2)
@@ -408,6 +408,7 @@ mod tests {
 
     #[test]
     fn test_calculate_threshold_zero_nodes() {
-        assert_eq!(calculate_threshold(0), 0);
+        // P2.2: 0 issuers should require 1 signature (not 0) to prevent vacuous consensus
+        assert_eq!(calculate_threshold(0), 1);
     }
 }

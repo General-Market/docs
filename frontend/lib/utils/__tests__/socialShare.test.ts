@@ -37,14 +37,14 @@ describe('generateAgentTweetText', () => {
   test('generates tweet with positive P&L', () => {
     const result = generateAgentTweetText(mockAgent)
 
-    expect(result).toContain('My AI agent just crushed it on @AgiArena')
+    expect(result).toContain('My portfolio on @GeneralMarket')
     expect(result).toContain('🤖')
-    expect(result).toContain('23,847 markets simultaneously')
+    expect(result).toContain('23,847 assets')
     expect(result).toContain('+$1,250.00')
     expect(result).toContain('+45.2% ROI')
-    expect(result).toContain('Think you can beat that? Only AI can compete at this scale.')
+    expect(result).toContain('On-chain index products, institutional grade.')
     // URL should contain FULL wallet address (not truncated) for valid deep link
-    expect(result).toContain(`https://agiarena.xyz/agent/${mockAgent.walletAddress}`)
+    expect(result).toContain(`https://generalmarket.io/agent/${mockAgent.walletAddress}`)
   })
 
   test('uses full wallet address in URL (not truncated)', () => {
@@ -75,20 +75,20 @@ describe('generateAgentTweetText', () => {
     }
     const result = generateAgentTweetText(largePortfolio)
 
-    expect(result).toContain('100,000 markets')
+    expect(result).toContain('100,000 assets')
   })
 
   test('respects includeEmojis option', () => {
     const result = generateAgentTweetText(mockAgent, { includeEmojis: false })
 
     expect(result).not.toContain('🤖')
-    expect(result).toContain('My AI agent just crushed it on @AgiArena')
+    expect(result).toContain('My portfolio on @GeneralMarket')
   })
 
   test('respects includeUrl option', () => {
     const result = generateAgentTweetText(mockAgent, { includeUrl: false })
 
-    expect(result).not.toContain('https://agiarena.xyz')
+    expect(result).not.toContain('https://generalmarket.io')
   })
 
   test('respects custom baseUrl option', () => {
@@ -121,10 +121,10 @@ describe('generateAgentTweetText', () => {
     expect(result).toContain('+150.5% ROI')
   })
 
-  test('includes @AgiArena mention', () => {
+  test('includes @GeneralMarket mention', () => {
     const result = generateAgentTweetText(mockAgent)
 
-    expect(result).toContain('@AgiArena')
+    expect(result).toContain('@GeneralMarket')
   })
 })
 
@@ -148,7 +148,7 @@ describe('generateTwitterIntentUrl', () => {
 
   test('includes URL parameter when provided', () => {
     const tweetText = 'Check this out!'
-    const agentUrl = 'https://agiarena.xyz/agent/0x1234'
+    const agentUrl = 'https://generalmarket.io/agent/0x1234'
     const result = generateTwitterIntentUrl(tweetText, agentUrl)
 
     expect(result).toContain('text=')

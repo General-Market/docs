@@ -266,6 +266,36 @@ pub async fn get_market_active_assets(
     Ok(assets)
 }
 
+/// Get price history for multiple assets from any source.
+/// Returns a map of asset_id -> Vec<PriceRecord>.
+pub async fn get_batch_market_price_history(
+    pool: &PgPool,
+    asset_ids: &[String],
+    from: DateTime<Utc>,
+    to: DateTime<Utc>,
+) -> Result<Vec<MarketPriceRecord>> {
+    if asset_ids.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let prices = sqlx::query_as::<_, MarketPriceRecord>(
+        r#"
+        SELECT id, asset_id, source, symbol, value, prev_close,
+               change_pct, volume_24h, market_cap, fetched_at, created_at
+        FROM market_prices
+        WHERE asset_id = ANY($1) AND fetched_at >= $2 AND fetched_at <= $3
+        ORDER BY asset_id ASC, fetched_at ASC
+        "#,
+    )
+    .bind(asset_ids)
+    .bind(from)
+    .bind(to)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(prices)
+}
+
 /// Get sync statistics for a source
 pub async fn get_market_sync_stats(pool: &PgPool, source: &str) -> Result<MarketSyncStats> {
     let asset_count: (i64,) =

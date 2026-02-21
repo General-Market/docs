@@ -146,6 +146,26 @@ pub struct ServeArgs {
     /// OpenMeteo sync interval in seconds (0 = disabled, no key needed)
     #[arg(long, default_value = "0", env = "OPENMETEO_SYNC_INTERVAL_SECS")]
     pub openmeteo_sync_interval: u64,
+
+    /// FINRA OAuth client ID (enables short interest data)
+    #[arg(long, env = "FINRA_CLIENT_ID")]
+    pub finra_client_id: Option<String>,
+
+    /// FINRA OAuth client secret
+    #[arg(long, env = "FINRA_CLIENT_SECRET")]
+    pub finra_client_secret: Option<String>,
+
+    /// Admin token for protecting destructive admin endpoints (/admin/*)
+    #[arg(long, env = "ADMIN_TOKEN")]
+    pub admin_token: Option<String>,
+
+    /// P2.8: Allowed CORS origins (repeat for multiple). Empty = allow all.
+    #[arg(long, env = "CORS_ORIGIN")]
+    pub cors_origin: Vec<String>,
+
+    /// P2.9: Bind address for the HTTP server (default: 0.0.0.0)
+    #[arg(long, default_value = "0.0.0.0", env = "BIND_ADDRESS")]
+    pub bind: String,
 }
 
 #[derive(Parser, Debug)]

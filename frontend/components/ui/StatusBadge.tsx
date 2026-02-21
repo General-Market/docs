@@ -23,19 +23,19 @@ export type BadgeStatus = BetStatus | ResolutionStatus | AgentBetStatus | AgentB
  */
 const STATUS_CONFIG: Record<string, { icon: string; label: string; color: string }> = {
   // Bet statuses - action-oriented labels (Story 14-1: single-filler model)
-  pending: { icon: '○', label: 'Awaiting match', color: 'text-white/60' },
-  matched: { icon: '●', label: 'Position active', color: 'text-white' },
-  settling: { icon: '◐', label: 'Keepers voting', color: 'text-yellow-400' },
-  settled: { icon: '●', label: 'Settled', color: 'text-white/60' },
+  pending: { icon: '○', label: 'Awaiting match', color: 'text-text-muted' },
+  matched: { icon: '●', label: 'Position active', color: 'text-text-primary' },
+  settling: { icon: '◐', label: 'Keepers voting', color: 'text-color-warning' },
+  settled: { icon: '●', label: 'Settled', color: 'text-text-muted' },
   // Story 14-1: Early exit status
-  early_exit: { icon: '⊗', label: 'Early exit', color: 'text-cyan-400' },
+  early_exit: { icon: '⊗', label: 'Early exit', color: 'text-color-info' },
   // Resolution statuses (Epic 8: majority-wins)
-  resolved: { icon: '✓', label: 'Resolved', color: 'text-green-400' },
-  resolving: { icon: '◐', label: 'Keepers voting', color: 'text-yellow-400' },
-  tie: { icon: '≈', label: 'Tie', color: 'text-yellow-400' },
+  resolved: { icon: '✓', label: 'Resolved', color: 'text-color-up' },
+  resolving: { icon: '◐', label: 'Keepers voting', color: 'text-color-warning' },
+  tie: { icon: '≈', label: 'Tie', color: 'text-color-warning' },
   // Agent bet outcomes (AC6) - include P&L inline when available
-  won: { icon: '✓', label: 'Won', color: 'text-green-400' },
-  lost: { icon: '✗', label: 'Lost', color: 'text-red-400' },
+  won: { icon: '✓', label: 'Won', color: 'text-color-up' },
+  lost: { icon: '✗', label: 'Lost', color: 'text-color-down' },
 }
 
 interface StatusBadgeProps {
@@ -48,7 +48,7 @@ interface StatusBadgeProps {
 
 /**
  * Status badge component with action-oriented labels
- * Uses black/white/red color scheme
+ * Institutional style: semantic colors for up/down/warning
  * Supports both bet statuses and resolution statuses
  *
  * Story 11-1, AC6: Status System Upgrade
@@ -57,7 +57,7 @@ interface StatusBadgeProps {
  * - Won/Lost includes P&L inline when provided
  */
 export function StatusBadge({ status, pnl, size = 'md' }: StatusBadgeProps) {
-  const config = STATUS_CONFIG[status] || { icon: '?', label: status, color: 'text-white/60' }
+  const config = STATUS_CONFIG[status] || { icon: '?', label: status, color: 'text-text-muted' }
 
   // Format P&L for won/lost statuses
   const formatPnL = (amount: number): string => {
@@ -77,7 +77,7 @@ export function StatusBadge({ status, pnl, size = 'md' }: StatusBadgeProps) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1 font-mono font-medium ${config.color} ${sizeClasses}`}
+      className={`inline-flex items-center gap-1 font-medium ${config.color} ${sizeClasses}`}
     >
       <span aria-hidden="true">{config.icon}</span>
       <span>{displayLabel}</span>
@@ -93,22 +93,22 @@ export function StatusBadgeOld({ status }: { status: BadgeStatus }) {
   const getStatusStyles = (): string => {
     switch (status) {
       case 'pending':
-        return 'bg-white/30 text-white'
+        return 'bg-muted text-text-secondary'
       case 'matched':
-        return 'bg-white text-black'
+        return 'bg-zinc-900 text-white'
       case 'settling':
       case 'settled':
-        return 'bg-white/30 text-white'
+        return 'bg-muted text-text-secondary'
       case 'resolved':
-        return 'bg-green-600 text-white'
+        return 'bg-surface-up text-color-up'
       case 'tie':
-        return 'bg-yellow-600 text-white'
+        return 'bg-surface-warning text-color-warning'
       case 'won':
-        return 'bg-green-600 text-white'
+        return 'bg-surface-up text-color-up'
       case 'lost':
-        return 'bg-accent text-white'
+        return 'bg-surface-down text-color-down'
       default:
-        return 'bg-white/30 text-white'
+        return 'bg-muted text-text-secondary'
     }
   }
 
@@ -137,7 +137,7 @@ export function StatusBadgeOld({ status }: { status: BadgeStatus }) {
 
   return (
     <span
-      className={`px-2 py-1 text-xs font-bold font-mono ${getStatusStyles()}`}
+      className={`px-2 py-1 text-xs font-bold rounded ${getStatusStyles()}`}
     >
       {getStatusLabel()}
     </span>

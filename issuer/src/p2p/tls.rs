@@ -4,17 +4,70 @@
 //! rustls with certificate-based authentication.
 
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{self, BufReader};
 use std::path::Path;
+use std::pin::Pin;
 use std::sync::Arc;
+use std::task::{Context, Poll};
 
+use pin_project_lite::pin_project;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use rustls::{ClientConfig, RootCertStore, ServerConfig};
+use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 use tokio::net::TcpStream;
 use tokio_rustls::{TlsAcceptor, TlsConnector, TlsStream};
-use tracing::debug;
+use tracing::info;
 
 use common::error::Error;
+
+pin_project! {
+    /// Unified stream type for P2P connections — either plaintext or TLS.
+    #[project = P2PStreamProj]
+    pub enum P2PStream {
+        Plain { #[pin] inner: TcpStream },
+        Tls { #[pin] inner: TlsStream<TcpStream> },
+    }
+}
+
+impl AsyncRead for P2PStream {
+    fn poll_read(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<()>> {
+        match self.project() {
+            P2PStreamProj::Plain { inner } => inner.poll_read(cx, buf),
+            P2PStreamProj::Tls { inner } => inner.poll_read(cx, buf),
+        }
+    }
+}
+
+impl AsyncWrite for P2PStream {
+    fn poll_write(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &[u8],
+    ) -> Poll<io::Result<usize>> {
+        match self.project() {
+            P2PStreamProj::Plain { inner } => inner.poll_write(cx, buf),
+            P2PStreamProj::Tls { inner } => inner.poll_write(cx, buf),
+        }
+    }
+
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        match self.project() {
+            P2PStreamProj::Plain { inner } => inner.poll_flush(cx),
+            P2PStreamProj::Tls { inner } => inner.poll_flush(cx),
+        }
+    }
+
+    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        match self.project() {
+            P2PStreamProj::Plain { inner } => inner.poll_shutdown(cx),
+            P2PStreamProj::Tls { inner } => inner.poll_shutdown(cx),
+        }
+    }
+}
 
 /// TLS configuration for P2P connections
 #[derive(Clone)]
@@ -77,17 +130,16 @@ impl TlsConfig {
     /// # Arguments
     /// * `stream` - The TCP stream to wrap
     /// * `is_server` - Whether this is a server (accepting) or client (connecting) side
-    pub async fn wrap_stream(&self, stream: TcpStream, is_server: bool) -> Result<TcpStream, Error> {
-        // Note: In production, we'd return TlsStream, but for API compatibility
-        // with the trait that expects TcpStream, we need a different approach.
-        // For now, this is a placeholder that returns the unwrapped stream.
-        // The actual TLS implementation would need trait modifications.
-
-        debug!(is_server, "TLS handshake (placeholder - TLS not yet fully integrated)");
-
-        // TODO: Properly integrate TLS when the trait supports it
-        // For now, return the stream as-is (plaintext)
-        Ok(stream)
+    pub async fn wrap_stream(&self, stream: TcpStream, is_server: bool) -> Result<P2PStream, Error> {
+        if is_server {
+            let tls = self.accept_tls(stream).await?;
+            info!("TLS handshake complete (server)");
+            Ok(P2PStream::Tls { inner: tls })
+        } else {
+            let tls = self.connect_tls(stream, "issuer.index.local").await?;
+            info!("TLS handshake complete (client)");
+            Ok(P2PStream::Tls { inner: tls })
+        }
     }
 
     /// Get a TLS connector for client connections

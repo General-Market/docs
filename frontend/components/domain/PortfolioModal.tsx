@@ -71,9 +71,9 @@ const PositionRow = memo(function PositionRow({ position }: PositionRowProps) {
   const sourceBadge = getSourceBadge(parsedMarketId.dataSource)
 
   const priceChange = calculatePositionChange(position)
-  const changeColor = priceChange.direction === 'up' ? 'text-green-400'
-    : priceChange.direction === 'down' ? 'text-red-400'
-    : 'text-white/40'
+  const changeColor = priceChange.direction === 'up' ? 'text-color-up'
+    : priceChange.direction === 'down' ? 'text-color-down'
+    : 'text-text-muted'
 
   // Parse weather info once if this is a weather market
   const weatherInfo = parsedMarketId.dataSource === 'openmeteo'
@@ -111,14 +111,14 @@ const PositionRow = memo(function PositionRow({ position }: PositionRowProps) {
   )
 
   return (
-    <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 hover:bg-white/5 h-[60px]">
+    <div className="flex items-center justify-between px-4 py-2 border-b border-border-light hover:bg-card-hover h-[60px]">
       <div className="flex-1 min-w-0 mr-4">
         <div className="flex items-center gap-2">
           <a
             href={marketUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-white hover:text-accent truncate block"
+            className="text-sm text-text-primary hover:text-zinc-900 truncate block"
             title={displayTitle}
           >
             {displayTitle}
@@ -132,7 +132,7 @@ const PositionRow = memo(function PositionRow({ position }: PositionRowProps) {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-white/60 font-mono truncate">{parsedMarketId.rawId}</span>
+          <span className="text-xs text-text-muted font-mono truncate">{parsedMarketId.rawId}</span>
           {position.isClosed && (
             <span className="text-xs text-purple-400 font-mono">Resolved</span>
           )}
@@ -146,7 +146,7 @@ const PositionRow = memo(function PositionRow({ position }: PositionRowProps) {
             px-2 py-1 text-xs font-bold font-mono
             ${position.position === 'YES'
               ? 'bg-white text-black'
-              : 'bg-accent text-white'
+              : 'bg-zinc-900 text-white'
             }
           `}
         >
@@ -154,12 +154,12 @@ const PositionRow = memo(function PositionRow({ position }: PositionRowProps) {
         </span>
 
         {/* Entry price */}
-        <span className="text-sm font-mono text-white/60 w-14 text-right">
+        <span className="text-sm font-mono text-text-muted w-14 text-right">
           {formatPrice(position.startingPrice, parsedMarketId.dataSource)}
         </span>
 
         {/* Current price */}
-        <span className="text-sm font-mono text-white w-14 text-right">
+        <span className="text-sm font-mono text-text-primary w-14 text-right">
           {formatPrice(position.currentPrice, parsedMarketId.dataSource)}
         </span>
 
@@ -170,7 +170,7 @@ const PositionRow = memo(function PositionRow({ position }: PositionRowProps) {
 
         {/* Confidence score if available */}
         {position.confidence !== undefined && (
-          <span className="text-xs font-mono text-white/60 w-10 text-right">
+          <span className="text-xs font-mono text-text-muted w-10 text-right">
             {(position.confidence * 100).toFixed(0)}%
           </span>
         )}
@@ -288,13 +288,13 @@ function PositionBreakdown({ positions }: { positions: PortfolioPosition[] }) {
 
   return (
     <div className="flex items-center gap-4 text-xs font-mono">
-      <span className="text-white/60">Position Breakdown:</span>
-      <span className="text-white">
+      <span className="text-text-muted">Position Breakdown:</span>
+      <span className="text-text-primary">
         <span className="bg-white text-black px-1 mr-1">YES</span>
         {yesPercent}% ({yesCount.toLocaleString()})
       </span>
-      <span className="text-white">
-        <span className="bg-accent text-white px-1 mr-1">NO</span>
+      <span className="text-text-primary">
+        <span className="bg-zinc-900 text-white px-1 mr-1">NO</span>
         {noPercent}% ({noCount.toLocaleString()})
       </span>
     </div>
@@ -401,14 +401,14 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
       />
 
       {/* Modal content */}
-      <div className="relative bg-black border border-white w-full max-w-3xl max-h-[80vh] mx-4 flex flex-col">
+      <div className="relative bg-card border border-border-medium rounded-xl shadow-card w-full max-w-3xl max-h-[80vh] mx-4 flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/20">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-medium">
           <div>
-            <h2 id="portfolio-modal-title" className="text-xl font-bold text-white font-mono">
+            <h2 id="portfolio-modal-title" className="text-xl font-bold text-text-primary">
               Full Portfolio
             </h2>
-            <p className="text-sm text-white/60 font-mono">
+            <p className="text-sm text-text-muted">
               {filteredPositions.length === positions.length
                 ? `${portfolioSize.toLocaleString()} market positions`
                 : `${filteredPositions.length.toLocaleString()} of ${portfolioSize.toLocaleString()} positions`}
@@ -416,7 +416,7 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
           </div>
           <button
             onClick={onClose}
-            className="text-white/60 hover:text-white transition-colors p-2"
+            className="text-text-muted hover:text-text-primary transition-colors p-2"
             aria-label="Close modal"
           >
             <svg
@@ -437,7 +437,7 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
         </div>
 
         {/* Search and Actions Bar */}
-        <div className="px-6 py-3 border-b border-white/20 space-y-3">
+        <div className="px-6 py-3 border-b border-border-medium space-y-3">
           {/* Search Input */}
           <div className="relative">
             <input
@@ -445,12 +445,12 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
               value={searchInput}
               onChange={handleSearchChange}
               placeholder="Search by market ID or title..."
-              className="w-full px-4 py-2 bg-black border border-white/30 text-white font-mono text-sm focus:outline-none focus:border-white placeholder-white/40"
+              className="w-full px-4 py-2 bg-card border border-border-medium text-text-primary font-mono text-sm focus:outline-none focus:border-zinc-900 placeholder-text-muted rounded-lg"
             />
             {searchInput && (
               <button
                 onClick={() => { setSearchInput(''); setSearchQuery('') }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -475,7 +475,7 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
             <PositionBreakdown positions={filteredPositions} />
             <button
               onClick={handleExport}
-              className="px-3 py-1 border border-white/30 text-white/60 text-xs font-mono hover:text-white hover:border-white transition-colors"
+              className="px-3 py-1 border border-border-medium text-text-muted text-xs font-mono hover:text-text-primary hover:border-zinc-900 transition-colors rounded"
             >
               Export to CSV
             </button>
@@ -483,7 +483,7 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
         </div>
 
         {/* Column headers */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-white/20 text-xs text-white/60 font-mono">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border-medium bg-muted text-xs font-medium uppercase tracking-wider text-text-muted">
           <span className="flex-1">Market</span>
           <div className="flex items-center gap-3">
             <span className="w-12">Position</span>
@@ -498,7 +498,7 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
         <div className="flex-1 overflow-hidden">
           {filteredPositions.length === 0 ? (
             <div className="flex items-center justify-center h-full">
-              <p className="text-white/40 font-mono">No positions match your search</p>
+              <p className="text-text-muted">No positions match your search</p>
             </div>
           ) : (
             <VirtualizedList positions={filteredPositions} />
@@ -506,10 +506,10 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-white/20">
+        <div className="px-6 py-4 border-t border-border-medium">
           <button
             onClick={onClose}
-            className="w-full px-4 py-2 bg-black border border-white text-white hover:bg-white hover:text-black transition-colors font-mono"
+            className="w-full px-4 py-2 bg-zinc-900 text-white hover:bg-zinc-800 transition-colors rounded-lg"
           >
             Close
           </button>

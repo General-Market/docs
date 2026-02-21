@@ -13,8 +13,8 @@
 //! The hash-to-curve and serialization formats are designed to match
 //! the Solidity implementation for cross-chain verification.
 
-mod keypair;
-mod signer;
+pub mod keypair;
+pub mod signer;
 mod utils;
 
 #[cfg(test)]
@@ -22,4 +22,4 @@ mod test_vectors;
 
 pub use keypair::BLSKeyPair;
 pub use signer::Bn254BLSSigner;
-pub use utils::{aggregate_pubkeys, hash_to_g1};
+pub use utils::{aggregate_pubkeys, deserialize_g1_point, hash_to_g1, serialize_g1_point};

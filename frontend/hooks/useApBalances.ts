@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { fetchVaultBalances } from '@/lib/api/backend'
-
-const DATA_NODE_URL = process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200'
+import { DATA_NODE_URL } from '@/lib/config'
 const PRICE_POLL_MS = 3000
 const FULL_REFRESH_MS = 30000
 

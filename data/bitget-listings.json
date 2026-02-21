@@ -1,0 +1,5826 @@
+[
+  {
+    "symbol": "ETHUSDT",
+    "baseCoin": "ETH",
+    "quoteCoin": "USDT",
+    "listedAt": "2018-07-24T16:40:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BTCUSDT",
+    "baseCoin": "BTC",
+    "quoteCoin": "USDT",
+    "listedAt": "2018-07-24T17:46:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ETHBTC",
+    "baseCoin": "ETH",
+    "quoteCoin": "BTC",
+    "listedAt": "2018-07-31T08:19:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LTCUSDT",
+    "baseCoin": "LTC",
+    "quoteCoin": "USDT",
+    "listedAt": "2018-08-06T01:26:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BCHUSDT",
+    "baseCoin": "BCH",
+    "quoteCoin": "USDT",
+    "listedAt": "2018-08-22T07:07:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ETCUSDT",
+    "baseCoin": "ETC",
+    "quoteCoin": "USDT",
+    "listedAt": "2018-09-28T07:08:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TRXUSDT",
+    "baseCoin": "TRX",
+    "quoteCoin": "USDT",
+    "listedAt": "2019-02-21T08:01:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "XRPUSDT",
+    "baseCoin": "XRP",
+    "quoteCoin": "USDT",
+    "listedAt": "2019-05-06T09:02:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LINKUSDT",
+    "baseCoin": "LINK",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-04-15T06:04:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "UNIUSDT",
+    "baseCoin": "UNI",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-04-20T06:13:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SUSHIUSDT",
+    "baseCoin": "SUSHI",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-04-21T06:04:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "COMPUSDT",
+    "baseCoin": "COMP",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-04-21T06:05:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "YFIUSDT",
+    "baseCoin": "YFI",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-04-22T03:16:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AAVEUSDT",
+    "baseCoin": "AAVE",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-04-22T03:51:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DOGEUSDT",
+    "baseCoin": "DOGE",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-04-25T03:51:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CHZUSDT",
+    "baseCoin": "CHZ",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-04-26T06:42:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MANAUSDT",
+    "baseCoin": "MANA",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-04-30T06:31:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "1INCHUSDT",
+    "baseCoin": "1INCH",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-05-10T06:31:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SHIBUSDT",
+    "baseCoin": "SHIB",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-05-10T06:39:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "UMAUSDT",
+    "baseCoin": "UMA",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-05-11T07:13:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LRCUSDT",
+    "baseCoin": "LRC",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-05-12T05:38:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BALUSDT",
+    "baseCoin": "BAL",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-05-12T05:38:00+00:00",
+    "delistedAt": "2026-02-24T10:00:00+00:00",
+    "status": "online"
+  },
+  {
+    "symbol": "ZRXUSDT",
+    "baseCoin": "ZRX",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-05-12T06:12:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BNTUSDT",
+    "baseCoin": "BNT",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-05-13T06:32:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CRVUSDT",
+    "baseCoin": "CRV",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-05-13T06:32:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BATUSDT",
+    "baseCoin": "BAT",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-05-14T06:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "STORJUSDT",
+    "baseCoin": "STORJ",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-05-15T06:38:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SNXUSDT",
+    "baseCoin": "SNX",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-05-15T07:15:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "QTUMUSDT",
+    "baseCoin": "QTUM",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-05-18T06:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "XRPBTC",
+    "baseCoin": "XRP",
+    "quoteCoin": "BTC",
+    "listedAt": "2021-05-22T07:29:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "KNCUSDT",
+    "baseCoin": "KNC",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-05-27T09:06:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BANDUSDT",
+    "baseCoin": "BAND",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-05-27T09:07:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GRTUSDT",
+    "baseCoin": "GRT",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-05-29T07:23:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NKNUSDT",
+    "baseCoin": "NKN",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-05-29T07:23:00+00:00",
+    "delistedAt": "2026-02-24T10:00:00+00:00",
+    "status": "online"
+  },
+  {
+    "symbol": "RLCUSDT",
+    "baseCoin": "RLC",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-05-31T07:43:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "OGNUSDT",
+    "baseCoin": "OGN",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-05-31T07:43:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CHRUSDT",
+    "baseCoin": "CHR",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-06-01T07:26:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CAKEUSDT",
+    "baseCoin": "CAKE",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-06-01T07:39:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BNBUSDT",
+    "baseCoin": "BNB",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-06-01T07:39:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ANKRUSDT",
+    "baseCoin": "ANKR",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-06-03T09:27:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RSRUSDT",
+    "baseCoin": "RSR",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-06-03T09:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "JSTUSDT",
+    "baseCoin": "JST",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-06-05T03:13:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ICPUSDT",
+    "baseCoin": "ICP",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-06-05T03:13:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ETCBTC",
+    "baseCoin": "ETC",
+    "quoteCoin": "BTC",
+    "listedAt": "2021-06-08T06:56:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TRXBTC",
+    "baseCoin": "TRX",
+    "quoteCoin": "BTC",
+    "listedAt": "2021-06-08T06:56:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MASKUSDT",
+    "baseCoin": "MASK",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-06-08T06:56:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LINKBTC",
+    "baseCoin": "LINK",
+    "quoteCoin": "BTC",
+    "listedAt": "2021-06-09T07:44:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AAVEBTC",
+    "baseCoin": "AAVE",
+    "quoteCoin": "BTC",
+    "listedAt": "2021-06-09T07:44:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DOGEBTC",
+    "baseCoin": "DOGE",
+    "quoteCoin": "BTC",
+    "listedAt": "2021-06-09T08:36:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SOLUSDT",
+    "baseCoin": "SOL",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-06-22T08:02:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CRVBTC",
+    "baseCoin": "CRV",
+    "quoteCoin": "BTC",
+    "listedAt": "2021-06-28T07:45:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "FILUSDT",
+    "baseCoin": "FIL",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-07-06T02:31:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CELOUSDT",
+    "baseCoin": "CELO",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-07-06T02:32:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BGBUSDT",
+    "baseCoin": "BGB",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-07-26T10:29:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "YGGUSDT",
+    "baseCoin": "YGG",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-09-27T06:34:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LDOUSDT",
+    "baseCoin": "LDO",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-09-27T06:34:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AGLDUSDT",
+    "baseCoin": "AGLD",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-09-27T06:34:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DYDXUSDT",
+    "baseCoin": "DYDX",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-10-09T06:12:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CELRUSDT",
+    "baseCoin": "CELR",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-10-13T05:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MBOXUSDT",
+    "baseCoin": "MBOX",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-10-18T06:52:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AXSUSDT",
+    "baseCoin": "AXS",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-10-18T06:52:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "HIGHUSDT",
+    "baseCoin": "HIGH",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-10-18T06:52:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SLPUSDT",
+    "baseCoin": "SLP",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-10-21T07:03:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GALAUSDT",
+    "baseCoin": "GALA",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-10-21T07:03:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SANDUSDT",
+    "baseCoin": "SAND",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-10-22T02:17:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ALICEUSDT",
+    "baseCoin": "ALICE",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-10-22T02:17:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TLMUSDT",
+    "baseCoin": "TLM",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-10-22T02:17:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GODSUSDT",
+    "baseCoin": "GODS",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-11-08T06:20:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DOTUSDT",
+    "baseCoin": "DOT",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-11-09T03:41:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ATOMUSDT",
+    "baseCoin": "ATOM",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-11-09T03:41:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "IMXUSDT",
+    "baseCoin": "IMX",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-11-10T03:33:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MOVRUSDT",
+    "baseCoin": "MOVR",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-11-10T03:33:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ENSUSDT",
+    "baseCoin": "ENS",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-11-15T03:42:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AVAXUSDT",
+    "baseCoin": "AVAX",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-11-18T06:46:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CROUSDT",
+    "baseCoin": "CRO",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-12-01T06:05:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "XRPETH",
+    "baseCoin": "XRP",
+    "quoteCoin": "ETH",
+    "listedAt": "2021-12-03T06:19:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "JASMYUSDT",
+    "baseCoin": "JASMY",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-12-06T06:52:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CVXUSDT",
+    "baseCoin": "CVX",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-12-14T06:51:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SPELLUSDT",
+    "baseCoin": "SPELL",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-12-15T06:36:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "HOTUSDT",
+    "baseCoin": "HOT",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-12-20T03:58:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "COTIUSDT",
+    "baseCoin": "COTI",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-12-20T06:26:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DENTUSDT",
+    "baseCoin": "DENT",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-12-22T06:31:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "FLOKIUSDT",
+    "baseCoin": "FLOKI",
+    "quoteCoin": "USDT",
+    "listedAt": "2021-12-22T07:34:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TRXETH",
+    "baseCoin": "TRX",
+    "quoteCoin": "ETH",
+    "listedAt": "2021-12-23T07:44:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LTCETH",
+    "baseCoin": "LTC",
+    "quoteCoin": "ETH",
+    "listedAt": "2021-12-24T06:15:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PEOPLEUSDT",
+    "baseCoin": "PEOPLE",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-01-19T03:45:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "METISUSDT",
+    "baseCoin": "METIS",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-01-26T06:40:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BABYDOGEUSDT",
+    "baseCoin": "BABYDOGE",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-01-28T07:21:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "USDCUSDT",
+    "baseCoin": "USDC",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-01-28T08:01:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "JUVUSDT",
+    "baseCoin": "JUV",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-01-29T02:33:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AUDIOUSDT",
+    "baseCoin": "AUDIO",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-02-09T06:24:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "C98USDT",
+    "baseCoin": "C98",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-02-09T06:25:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ILVUSDT",
+    "baseCoin": "ILV",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-02-10T03:56:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "WEMIXUSDT",
+    "baseCoin": "WEMIX",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-02-11T06:46:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ARPAUSDT",
+    "baseCoin": "ARPA",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-02-15T06:55:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DUSKUSDT",
+    "baseCoin": "DUSK",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-02-18T07:26:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "WOOUSDT",
+    "baseCoin": "WOO",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-02-22T03:26:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "FTTUSDT",
+    "baseCoin": "FTT",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-02-24T08:39:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "WINUSDT",
+    "baseCoin": "WIN",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-02-25T07:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SUNUSDT",
+    "baseCoin": "SUN",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-02-25T07:34:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LUNAUSDT",
+    "baseCoin": "LUNA",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-03-03T07:56:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ARUSDT",
+    "baseCoin": "AR",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-03-04T08:34:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GMTUSDT",
+    "baseCoin": "GMT",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-03-14T09:43:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SDUSDT",
+    "baseCoin": "SD",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-03-15T14:32:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MAGICUSDT",
+    "baseCoin": "MAGIC",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-03-16T07:25:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "KSMUSDT",
+    "baseCoin": "KSM",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-03-17T06:52:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "APEUSDT",
+    "baseCoin": "APE",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-03-17T12:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TLOSUSDT",
+    "baseCoin": "TLOS",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-03-22T06:08:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "XDCUSDT",
+    "baseCoin": "XDC",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-03-22T13:15:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ADAUSDT",
+    "baseCoin": "ADA",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-03-23T07:52:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "EGLDUSDT",
+    "baseCoin": "EGLD",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-03-29T07:08:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "STGUSDT",
+    "baseCoin": "STG",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-03-29T07:08:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RUNEUSDT",
+    "baseCoin": "RUNE",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-03-29T07:08:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RAYUSDT",
+    "baseCoin": "RAY",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-03-30T08:37:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DODOUSDT",
+    "baseCoin": "DODO",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-03-30T08:38:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "OSMOUSDT",
+    "baseCoin": "OSMO",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-04-01T06:49:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ZILUSDT",
+    "baseCoin": "ZIL",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-04-01T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NEXOUSDT",
+    "baseCoin": "NEXO",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-04-06T08:25:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AMPUSDT",
+    "baseCoin": "AMP",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-04-06T08:25:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LPTUSDT",
+    "baseCoin": "LPT",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-04-06T08:25:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PAXGUSDT",
+    "baseCoin": "PAXG",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-04-08T07:57:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NFTUSDT",
+    "baseCoin": "NFT",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-04-15T09:09:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BTTUSDT",
+    "baseCoin": "BTT",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-04-15T09:18:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GLMUSDT",
+    "baseCoin": "GLM",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-04-15T09:59:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NYMUSDT",
+    "baseCoin": "NYM",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-04-15T09:59:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "FLUXUSDT",
+    "baseCoin": "FLUX",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-04-22T09:41:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ROSEUSDT",
+    "baseCoin": "ROSE",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-04-27T08:11:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NEARUSDT",
+    "baseCoin": "NEAR",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-04-29T08:05:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DAIUSDT",
+    "baseCoin": "DAI",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-05-07T10:03:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "WBTCUSDT",
+    "baseCoin": "WBTC",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-05-07T10:03:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "HNTUSDT",
+    "baseCoin": "HNT",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-05-09T08:03:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SOLUSDC",
+    "baseCoin": "SOL",
+    "quoteCoin": "USDC",
+    "listedAt": "2022-05-25T09:06:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BTCUSDC",
+    "baseCoin": "BTC",
+    "quoteCoin": "USDC",
+    "listedAt": "2022-05-25T09:07:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ETHUSDC",
+    "baseCoin": "ETH",
+    "quoteCoin": "USDC",
+    "listedAt": "2022-05-25T09:07:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "XRPUSDC",
+    "baseCoin": "XRP",
+    "quoteCoin": "USDC",
+    "listedAt": "2022-05-25T09:07:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ADAUSDC",
+    "baseCoin": "ADA",
+    "quoteCoin": "USDC",
+    "listedAt": "2022-05-25T09:07:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LINKUSDC",
+    "baseCoin": "LINK",
+    "quoteCoin": "USDC",
+    "listedAt": "2022-05-26T08:48:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DOTUSDC",
+    "baseCoin": "DOT",
+    "quoteCoin": "USDC",
+    "listedAt": "2022-05-27T08:55:00+00:00",
+    "delistedAt": "2026-02-24T10:00:00+00:00",
+    "status": "online"
+  },
+  {
+    "symbol": "DOGEUSDC",
+    "baseCoin": "DOGE",
+    "quoteCoin": "USDC",
+    "listedAt": "2022-05-27T09:01:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LUNCUSDT",
+    "baseCoin": "LUNC",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-05-29T10:34:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "USTCUSDT",
+    "baseCoin": "USTC",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-05-29T10:34:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SXPUSDT",
+    "baseCoin": "SXP",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-05-31T09:51:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "OPUSDT",
+    "baseCoin": "OP",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-05-31T19:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BGBETH",
+    "baseCoin": "BGB",
+    "quoteCoin": "ETH",
+    "listedAt": "2022-06-08T10:42:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BGBBTC",
+    "baseCoin": "BGB",
+    "quoteCoin": "BTC",
+    "listedAt": "2022-06-08T10:42:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "FILUSDC",
+    "baseCoin": "FIL",
+    "quoteCoin": "USDC",
+    "listedAt": "2022-06-14T09:31:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DAIUSDC",
+    "baseCoin": "DAI",
+    "quoteCoin": "USDC",
+    "listedAt": "2022-06-14T10:26:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "JOEUSDT",
+    "baseCoin": "JOE",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-06-20T09:09:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BNBUSDC",
+    "baseCoin": "BNB",
+    "quoteCoin": "USDC",
+    "listedAt": "2022-06-30T07:50:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TRXUSDC",
+    "baseCoin": "TRX",
+    "quoteCoin": "USDC",
+    "listedAt": "2022-06-30T07:50:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BGBUSDC",
+    "baseCoin": "BGB",
+    "quoteCoin": "USDC",
+    "listedAt": "2022-07-01T02:36:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NEARUSDC",
+    "baseCoin": "NEAR",
+    "quoteCoin": "USDC",
+    "listedAt": "2022-07-01T09:04:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SFPUSDT",
+    "baseCoin": "SFP",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-07-01T11:07:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AVAXUSDC",
+    "baseCoin": "AVAX",
+    "quoteCoin": "USDC",
+    "listedAt": "2022-07-05T09:53:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LATUSDT",
+    "baseCoin": "LAT",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-07-07T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SYSUSDT",
+    "baseCoin": "SYS",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-07-20T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ZIGUSDT",
+    "baseCoin": "ZIG",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-08-10T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PSGUSDT",
+    "baseCoin": "PSG",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-08-22T10:07:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ACMUSDT",
+    "baseCoin": "ACM",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-08-22T10:10:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BARUSDT",
+    "baseCoin": "BAR",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-08-22T10:11:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PORTOUSDT",
+    "baseCoin": "PORTO",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-08-23T11:07:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LAZIOUSDT",
+    "baseCoin": "LAZIO",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-08-23T11:07:00+00:00",
+    "delistedAt": "2026-02-24T10:00:00+00:00",
+    "status": "online"
+  },
+  {
+    "symbol": "SANTOSUSDT",
+    "baseCoin": "SANTOS",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-08-23T11:07:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ASRUSDT",
+    "baseCoin": "ASR",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-08-24T09:24:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ATMUSDT",
+    "baseCoin": "ATM",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-08-24T09:24:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "INTERUSDT",
+    "baseCoin": "INTER",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-01T09:45:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AFCUSDT",
+    "baseCoin": "AFC",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-01T09:45:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SWEATUSDT",
+    "baseCoin": "SWEAT",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-13T07:57:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ETHWUSDT",
+    "baseCoin": "ETHW",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-15T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "FETUSDT",
+    "baseCoin": "FET",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-16T11:34:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ACHUSDT",
+    "baseCoin": "ACH",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-19T08:38:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AERGOUSDT",
+    "baseCoin": "AERGO",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-19T08:55:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AUCTIONUSDT",
+    "baseCoin": "AUCTION",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-19T11:07:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ALPINEUSDT",
+    "baseCoin": "ALPINE",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-19T11:07:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BICOUSDT",
+    "baseCoin": "BICO",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-20T08:35:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CTSIUSDT",
+    "baseCoin": "CTSI",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-21T09:44:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GHSTUSDT",
+    "baseCoin": "GHST",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-27T09:28:00+00:00",
+    "delistedAt": "2026-02-24T10:00:00+00:00",
+    "status": "online"
+  },
+  {
+    "symbol": "GNOUSDT",
+    "baseCoin": "GNO",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-27T09:33:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GLMRUSDT",
+    "baseCoin": "GLMR",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-27T10:29:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ONEUSDT",
+    "baseCoin": "ONE",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-27T10:46:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SSVUSDT",
+    "baseCoin": "SSV",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-28T09:46:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AXLUSDT",
+    "baseCoin": "AXL",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-28T09:46:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "IDEXUSDT",
+    "baseCoin": "IDEX",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-29T09:01:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "INJUSDT",
+    "baseCoin": "INJ",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-29T09:01:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "IOTXUSDT",
+    "baseCoin": "IOTX",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-29T10:19:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ARGUSDT",
+    "baseCoin": "ARG",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-09-30T14:06:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GMXUSDT",
+    "baseCoin": "GMX",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-05T09:20:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MTLUSDT",
+    "baseCoin": "MTL",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-11T08:51:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MINAUSDT",
+    "baseCoin": "MINA",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-11T08:51:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NMRUSDT",
+    "baseCoin": "NMR",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-12T09:50:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "OXTUSDT",
+    "baseCoin": "OXT",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-13T09:01:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "OGUSDT",
+    "baseCoin": "OG",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-13T09:04:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "POWRUSDT",
+    "baseCoin": "POWR",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-14T07:56:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PYRUSDT",
+    "baseCoin": "PYR",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-14T08:47:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PUNDIXUSDT",
+    "baseCoin": "PUNDIX",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-14T08:47:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PONDUSDT",
+    "baseCoin": "POND",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-14T08:47:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PROMUSDT",
+    "baseCoin": "PROM",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-14T10:34:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PHBUSDT",
+    "baseCoin": "PHB",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-14T10:34:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "QKCUSDT",
+    "baseCoin": "QKC",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-17T08:43:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "QNTUSDT",
+    "baseCoin": "QNT",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-17T08:43:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "APTUSDT",
+    "baseCoin": "APT",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-19T01:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SUPERUSDT",
+    "baseCoin": "SUPER",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-19T08:59:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SYNUSDT",
+    "baseCoin": "SYN",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-19T08:59:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SNTUSDT",
+    "baseCoin": "SNT",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-19T09:39:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TWTUSDT",
+    "baseCoin": "TWT",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-20T09:07:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TRBUSDT",
+    "baseCoin": "TRB",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-20T09:09:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TUSDT",
+    "baseCoin": "T",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-20T09:57:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "WAVESUSDT",
+    "baseCoin": "WAVES",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-10-25T09:19:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "HFTUSDT",
+    "baseCoin": "HFT",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-11-07T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "USDTBRL",
+    "baseCoin": "USDT",
+    "quoteCoin": "BRL",
+    "listedAt": "2022-11-16T11:24:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BTCBRL",
+    "baseCoin": "BTC",
+    "quoteCoin": "BRL",
+    "listedAt": "2022-11-16T11:43:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ETHBRL",
+    "baseCoin": "ETH",
+    "quoteCoin": "BRL",
+    "listedAt": "2022-11-16T11:48:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ONTUSDT",
+    "baseCoin": "ONT",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-11-23T06:52:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "HOOKUSDT",
+    "baseCoin": "HOOK",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-12-02T14:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "KAVAUSDT",
+    "baseCoin": "KAVA",
+    "quoteCoin": "USDT",
+    "listedAt": "2022-12-12T08:44:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BONKUSDT",
+    "baseCoin": "BONK",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-01-05T06:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GNSUSDT",
+    "baseCoin": "GNS",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-01-12T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RPLUSDT",
+    "baseCoin": "RPL",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-01-18T07:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "USDTEUR",
+    "baseCoin": "USDT",
+    "quoteCoin": "EUR",
+    "listedAt": "2023-01-18T10:02:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BTCEUR",
+    "baseCoin": "BTC",
+    "quoteCoin": "EUR",
+    "listedAt": "2023-01-18T10:02:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ETHEUR",
+    "baseCoin": "ETH",
+    "quoteCoin": "EUR",
+    "listedAt": "2023-01-18T10:02:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RDNTUSDT",
+    "baseCoin": "RDNT",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-02-08T07:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "COREUSDT",
+    "baseCoin": "CORE",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-02-08T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CHESSUSDT",
+    "baseCoin": "CHESS",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-02-10T11:00:00+00:00",
+    "delistedAt": "2026-02-24T10:00:00+00:00",
+    "status": "online"
+  },
+  {
+    "symbol": "BLURUSDT",
+    "baseCoin": "BLUR",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-02-14T18:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "XAUTUSDT",
+    "baseCoin": "XAUT",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-02-15T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RAREUSDT",
+    "baseCoin": "RARE",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-02-16T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TRUUSDT",
+    "baseCoin": "TRU",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-02-17T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CFXUSDT",
+    "baseCoin": "CFX",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-02-20T10:54:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "VELODROMEUSDT",
+    "baseCoin": "VELODROME",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-02-21T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LQTYUSDT",
+    "baseCoin": "LQTY",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-02-23T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NEOUSDT",
+    "baseCoin": "NEO",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-03-01T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PRIMEUSDT",
+    "baseCoin": "PRIME",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-03-02T08:00:49.368000+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ASTRUSDT",
+    "baseCoin": "ASTR",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-03-08T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "STXUSDT",
+    "baseCoin": "STX",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-03-09T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RONUSDT",
+    "baseCoin": "RON",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-03-21T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "IDUSDT",
+    "baseCoin": "ID",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-03-22T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ARBUSDT",
+    "baseCoin": "ARB",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-03-23T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TAOUSDT",
+    "baseCoin": "TAO",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-03-30T22:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "VELOUSDT",
+    "baseCoin": "VELO",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-04-06T13:37:51.028000+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TONUSDT",
+    "baseCoin": "TON",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-04-07T10:40:42+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CGPTUSDT",
+    "baseCoin": "CGPT",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-04-10T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PENDLEUSDT",
+    "baseCoin": "PENDLE",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-04-12T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PEPEUSDT",
+    "baseCoin": "PEPE",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-04-18T09:58:57.480000+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BGBEUR",
+    "baseCoin": "BGB",
+    "quoteCoin": "EUR",
+    "listedAt": "2023-04-19T07:00:23+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BGBBRL",
+    "baseCoin": "BGB",
+    "quoteCoin": "BRL",
+    "listedAt": "2023-04-19T07:02:50+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "STETHUSDT",
+    "baseCoin": "STETH",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-04-19T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SUIUSDT",
+    "baseCoin": "SUI",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-05-03T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TURBOUSDT",
+    "baseCoin": "TURBO",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-05-05T11:53:08.174000+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "KASUSDT",
+    "baseCoin": "KAS",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-05-09T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PCIUSDT",
+    "baseCoin": "PCI",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-05-09T12:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ORDIUSDT",
+    "baseCoin": "ORDI",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-05-10T12:22:53.765000+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MAVUSDT",
+    "baseCoin": "MAV",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-06-28T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ARKMUSDT",
+    "baseCoin": "ARKM",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-07-18T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MOGUSDT",
+    "baseCoin": "MOG",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-07-21T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "QUICKUSDT",
+    "baseCoin": "QUICK",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-07-22T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "WLDUSDT",
+    "baseCoin": "WLD",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-07-24T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MXUSDT",
+    "baseCoin": "MX",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-07-31T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SDEXUSDT",
+    "baseCoin": "SDEX",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-08-07T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SEIUSDT",
+    "baseCoin": "SEI",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-08-15T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CYBERUSDT",
+    "baseCoin": "CYBER",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-08-15T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "XLMUSDT",
+    "baseCoin": "XLM",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-08-24T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AITECHUSDT",
+    "baseCoin": "AITECH",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-08-28T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GOMININGUSDT",
+    "baseCoin": "GOMINING",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-08-30T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MAXEXCHANGEUSDT",
+    "baseCoin": "MAXEXCHANGE",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-09-15T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BANANAUSDT",
+    "baseCoin": "BANANA",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-09-19T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PYUSDUSDT",
+    "baseCoin": "PYUSD",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-09-26T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BIGTIMEUSDT",
+    "baseCoin": "BIGTIME",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-10-11T06:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CBKUSDT",
+    "baseCoin": "CBK",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-10-11T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ORBSUSDT",
+    "baseCoin": "ORBS",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-10-13T14:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "XRPEUR",
+    "baseCoin": "XRP",
+    "quoteCoin": "EUR",
+    "listedAt": "2023-10-19T10:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SOLEUR",
+    "baseCoin": "SOL",
+    "quoteCoin": "EUR",
+    "listedAt": "2023-10-19T10:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BSVUSDT",
+    "baseCoin": "BSV",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-10-20T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GASUSDT",
+    "baseCoin": "GAS",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-10-25T05:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "POLYXUSDT",
+    "baseCoin": "POLYX",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-10-25T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LTCEUR",
+    "baseCoin": "LTC",
+    "quoteCoin": "EUR",
+    "listedAt": "2023-10-26T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PEPEEUR",
+    "baseCoin": "PEPE",
+    "quoteCoin": "EUR",
+    "listedAt": "2023-10-26T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BEAMUSDT",
+    "baseCoin": "BEAM",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-10-26T12:30:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "POLUSDT",
+    "baseCoin": "POL",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-10-27T11:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "WAXPUSDT",
+    "baseCoin": "WAXP",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-10-30T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TIAUSDT",
+    "baseCoin": "TIA",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-10-31T16:05:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "FLOWUSDT",
+    "baseCoin": "FLOW",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-11-01T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MEMEUSDT",
+    "baseCoin": "MEME",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-11-03T08:10:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MBLUSDT",
+    "baseCoin": "MBL",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-11-03T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ENJUSDT",
+    "baseCoin": "ENJ",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-11-07T07:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SATSUSDT",
+    "baseCoin": "SATS",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-11-09T04:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NTRNUSDT",
+    "baseCoin": "NTRN",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-11-15T07:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RATSUSDT",
+    "baseCoin": "RATS",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-11-16T15:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DOGEEUR",
+    "baseCoin": "DOGE",
+    "quoteCoin": "EUR",
+    "listedAt": "2023-11-17T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AVAXEUR",
+    "baseCoin": "AVAX",
+    "quoteCoin": "EUR",
+    "listedAt": "2023-11-17T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LINKEUR",
+    "baseCoin": "LINK",
+    "quoteCoin": "EUR",
+    "listedAt": "2023-11-17T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ADAEUR",
+    "baseCoin": "ADA",
+    "quoteCoin": "EUR",
+    "listedAt": "2023-11-17T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PYTHUSDT",
+    "baseCoin": "PYTH",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-11-20T14:10:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SKLUSDT",
+    "baseCoin": "SKL",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-11-22T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "XTZUSDT",
+    "baseCoin": "XTZ",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-11-24T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "VICUSDT",
+    "baseCoin": "VIC",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-11-27T07:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "HOLDUSDT",
+    "baseCoin": "HOLD",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-11-27T12:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "FIDAUSDT",
+    "baseCoin": "FIDA",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-11-28T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RIFUSDT",
+    "baseCoin": "RIF",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-12-01T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "VANRYUSDT",
+    "baseCoin": "VANRY",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-12-04T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ARKUSDT",
+    "baseCoin": "ARK",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-12-04T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LSKUSDT",
+    "baseCoin": "LSK",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-12-04T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CETUSUSDT",
+    "baseCoin": "CETUS",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-12-07T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "JTOUSDT",
+    "baseCoin": "JTO",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-12-07T15:59:59+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CTCUSDT",
+    "baseCoin": "CTC",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-12-14T06:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LMWRUSDT",
+    "baseCoin": "LMWR",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-12-14T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ACEUSDT",
+    "baseCoin": "ACE",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-12-18T06:15:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NFPUSDT",
+    "baseCoin": "NFP",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-12-27T10:15:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SNEKUSDT",
+    "baseCoin": "SNEK",
+    "quoteCoin": "USDT",
+    "listedAt": "2023-12-28T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AIUSDT",
+    "baseCoin": "AI",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-01-04T10:10:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SWCHUSDT",
+    "baseCoin": "SWCH",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-01-05T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ELAUSDT",
+    "baseCoin": "ELA",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-01-08T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "XAIUSDT",
+    "baseCoin": "XAI",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-01-09T10:31:43.023000+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SOLOUSDT",
+    "baseCoin": "SOLO",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-01-12T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "IOSTUSDT",
+    "baseCoin": "IOST",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-01-16T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PROPSUSDT",
+    "baseCoin": "PROPS",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-01-17T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "UPCUSDT",
+    "baseCoin": "UPC",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-01-17T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MANTAUSDT",
+    "baseCoin": "MANTA",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-01-18T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SAROSUSDT",
+    "baseCoin": "SAROS",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-01-19T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ONDOUSDT",
+    "baseCoin": "ONDO",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-01-24T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "WIFUSDT",
+    "baseCoin": "WIF",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-01-24T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ALTUSDT",
+    "baseCoin": "ALT",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-01-25T10:15:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "API3USDT",
+    "baseCoin": "API3",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-01-30T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "JUPUSDT",
+    "baseCoin": "JUP",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-01-31T15:10:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ZETAUSDT",
+    "baseCoin": "ZETA",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-02-01T03:15:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "USDCEUR",
+    "baseCoin": "USDC",
+    "quoteCoin": "EUR",
+    "listedAt": "2024-02-05T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DYMUSDT",
+    "baseCoin": "DYM",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-02-06T17:15:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PIXELUSDT",
+    "baseCoin": "PIXEL",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-02-19T10:15:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "STRKUSDT",
+    "baseCoin": "STRK",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-02-20T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "WLDUSDC",
+    "baseCoin": "WLD",
+    "quoteCoin": "USDC",
+    "listedAt": "2024-02-26T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "IQUSDT",
+    "baseCoin": "IQ",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-02-26T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MLUSDT",
+    "baseCoin": "ML",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-02-27T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PORTALUSDT",
+    "baseCoin": "PORTAL",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-02-29T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MAPOUSDT",
+    "baseCoin": "MAPO",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-03-06T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NESSUSDT",
+    "baseCoin": "NESS",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-03-07T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SOLBTC",
+    "baseCoin": "SOL",
+    "quoteCoin": "BTC",
+    "listedAt": "2024-03-07T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AVAXBTC",
+    "baseCoin": "AVAX",
+    "quoteCoin": "BTC",
+    "listedAt": "2024-03-07T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LTCBTC",
+    "baseCoin": "LTC",
+    "quoteCoin": "BTC",
+    "listedAt": "2024-03-07T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SCAUSDT",
+    "baseCoin": "SCA",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-03-08T10:10:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AEVOUSDT",
+    "baseCoin": "AEVO",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-03-13T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BOMEUSDT",
+    "baseCoin": "BOME",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-03-15T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "KLVUSDT",
+    "baseCoin": "KLV",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-03-15T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CREOUSDT",
+    "baseCoin": "CREO",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-03-15T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ETHFIUSDT",
+    "baseCoin": "ETHFI",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-03-18T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ZKJUSDT",
+    "baseCoin": "ZKJ",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-03-19T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "HTXUSDT",
+    "baseCoin": "HTX",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-03-25T05:52:09.613000+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BRETTUSDT",
+    "baseCoin": "BRETT",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-03-25T08:01:28.089000+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DEGENUSDT",
+    "baseCoin": "DEGEN",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-03-25T12:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AEROUSDT",
+    "baseCoin": "AERO",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-03-26T11:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CVCUSDT",
+    "baseCoin": "CVC",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-03-27T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "USDEUSDT",
+    "baseCoin": "USDE",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-03-30T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ENAUSDT",
+    "baseCoin": "ENA",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-04-02T08:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MEWUSDT",
+    "baseCoin": "MEW",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-04-03T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "IAGUSDT",
+    "baseCoin": "IAG",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-04-03T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "WUSDT",
+    "baseCoin": "W",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-04-03T12:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MOEWUSDT",
+    "baseCoin": "MOEW",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-04-04T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TNSRUSDT",
+    "baseCoin": "TNSR",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-04-08T15:15:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SAGAUSDT",
+    "baseCoin": "SAGA",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-04-09T08:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MASUSDT",
+    "baseCoin": "MAS",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-04-15T11:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PRCLUSDT",
+    "baseCoin": "PRCL",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-04-16T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CKBUSDT",
+    "baseCoin": "CKB",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-04-19T07:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MERLUSDT",
+    "baseCoin": "MERL",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-04-19T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AQTUSDT",
+    "baseCoin": "AQT",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-04-19T11:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ALPHUSDT",
+    "baseCoin": "ALPH",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-04-20T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SAFEUSDT",
+    "baseCoin": "SAFE",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-04-23T09:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ONGUSDT",
+    "baseCoin": "ONG",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-04-24T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ZBCNUSDT",
+    "baseCoin": "ZBCN",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-04-26T07:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "STRAXUSDT",
+    "baseCoin": "STRAX",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-04-26T07:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "KUBUSDT",
+    "baseCoin": "KUB",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-04-26T11:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "KMNOUSDT",
+    "baseCoin": "KMNO",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-04-30T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "REZUSDT",
+    "baseCoin": "REZ",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-04-30T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "OPUSDC",
+    "baseCoin": "OP",
+    "quoteCoin": "USDC",
+    "listedAt": "2024-05-10T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ARBUSDC",
+    "baseCoin": "ARB",
+    "quoteCoin": "USDC",
+    "listedAt": "2024-05-10T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TONUSDC",
+    "baseCoin": "TON",
+    "quoteCoin": "USDC",
+    "listedAt": "2024-05-10T11:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BBUSDT",
+    "baseCoin": "BB",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-05-13T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ZENTUSDT",
+    "baseCoin": "ZENT",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-05-13T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ALUSDT",
+    "baseCoin": "AL",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-05-13T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GAME2USDT",
+    "baseCoin": "GAME2",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-05-15T10:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "VIRTUALUSDT",
+    "baseCoin": "VIRTUAL",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-05-15T14:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DRIFTUSDT",
+    "baseCoin": "DRIFT",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-05-16T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NOTUSDT",
+    "baseCoin": "NOT",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-05-16T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "VETUSDT",
+    "baseCoin": "VET",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-05-21T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DOGUSDT",
+    "baseCoin": "DOG",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-05-23T11:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ARUSDC",
+    "baseCoin": "AR",
+    "quoteCoin": "USDC",
+    "listedAt": "2024-05-24T10:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "APTUSDC",
+    "baseCoin": "APT",
+    "quoteCoin": "USDC",
+    "listedAt": "2024-05-24T10:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "WUSDUSDT",
+    "baseCoin": "WUSD",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-05-30T11:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "STXUSDC",
+    "baseCoin": "STX",
+    "quoteCoin": "USDC",
+    "listedAt": "2024-06-04T10:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TAIKOUSDT",
+    "baseCoin": "TAIKO",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-06-05T13:00:01+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TUSDUSDT",
+    "baseCoin": "TUSD",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-06-06T08:59:59.890000+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "IOUSDT",
+    "baseCoin": "IO",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-06-11T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ATHUSDT",
+    "baseCoin": "ATH",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-06-12T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "COOKIEUSDT",
+    "baseCoin": "COOKIE",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-06-13T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ZKUSDT",
+    "baseCoin": "ZK",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-06-17T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NPCUSDT",
+    "baseCoin": "NPC",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-06-19T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LISTAUSDT",
+    "baseCoin": "LISTA",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-06-20T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LNQUSDT",
+    "baseCoin": "LNQ",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-06-20T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ZROUSDT",
+    "baseCoin": "ZRO",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-06-20T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BLASTUSDT",
+    "baseCoin": "BLAST",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-06-26T15:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "QUBICUSDT",
+    "baseCoin": "QUBIC",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-07-01T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MOCAUSDT",
+    "baseCoin": "MOCA",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-07-11T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "A8USDT",
+    "baseCoin": "A8",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-07-17T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GUSDT",
+    "baseCoin": "G",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-07-19T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ZKLUSDT",
+    "baseCoin": "ZKL",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-07-22T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ACXUSDT",
+    "baseCoin": "ACX",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-07-24T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RENDERUSDT",
+    "baseCoin": "RENDER",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-07-31T07:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "WIFEUR",
+    "baseCoin": "WIF",
+    "quoteCoin": "EUR",
+    "listedAt": "2024-07-31T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DTECUSDT",
+    "baseCoin": "DTEC",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-08-01T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ICXUSDT",
+    "baseCoin": "ICX",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-08-13T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ORDERUSDT",
+    "baseCoin": "ORDER",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-08-26T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DOGSUSDT",
+    "baseCoin": "DOGS",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-08-26T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CPOOLUSDT",
+    "baseCoin": "CPOOL",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-09-04T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MAKUSDT",
+    "baseCoin": "MAK",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-09-05T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NEIROCTOUSDT",
+    "baseCoin": "NEIROCTO",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-09-16T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CATIUSDT",
+    "baseCoin": "CATI",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-09-20T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CSPRUSDT",
+    "baseCoin": "CSPR",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-09-25T08:00:04.511000+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "HMSTRUSDT",
+    "baseCoin": "HMSTR",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-09-26T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MOODENGUSDT",
+    "baseCoin": "MOODENG",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-09-27T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "EIGENUSDT",
+    "baseCoin": "EIGEN",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-10-01T04:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CARVUSDT",
+    "baseCoin": "CARV",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-10-10T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PUFFERUSDT",
+    "baseCoin": "PUFFER",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-10-14T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DBRUSDT",
+    "baseCoin": "DBR",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-10-17T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SHIBEUR",
+    "baseCoin": "SHIB",
+    "quoteCoin": "EUR",
+    "listedAt": "2024-10-17T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "WLDEUR",
+    "baseCoin": "WLD",
+    "quoteCoin": "EUR",
+    "listedAt": "2024-10-17T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ENAEUR",
+    "baseCoin": "ENA",
+    "quoteCoin": "EUR",
+    "listedAt": "2024-10-18T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TONEUR",
+    "baseCoin": "TON",
+    "quoteCoin": "EUR",
+    "listedAt": "2024-10-18T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GOATUSDT",
+    "baseCoin": "GOAT",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-10-19T05:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LUMIAUSDT",
+    "baseCoin": "LUMIA",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-10-19T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NEAREUR",
+    "baseCoin": "NEAR",
+    "quoteCoin": "EUR",
+    "listedAt": "2024-10-21T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ONDOEUR",
+    "baseCoin": "ONDO",
+    "quoteCoin": "EUR",
+    "listedAt": "2024-10-23T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SUIEUR",
+    "baseCoin": "SUI",
+    "quoteCoin": "EUR",
+    "listedAt": "2024-10-24T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GRASSUSDT",
+    "baseCoin": "GRASS",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-10-28T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ACTUSDT",
+    "baseCoin": "ACT",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-10-29T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BANUSDT",
+    "baseCoin": "BAN",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-10-29T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "KAIAUSDT",
+    "baseCoin": "KAIA",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-10-31T08:00:06.457000+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "COWUSDT",
+    "baseCoin": "COW",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-11-06T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SWELLUSDT",
+    "baseCoin": "SWELL",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-11-07T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PNUTUSDT",
+    "baseCoin": "PNUT",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-11-07T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PEAQUSDT",
+    "baseCoin": "PEAQ",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-11-12T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BTCWUSD",
+    "baseCoin": "BTC",
+    "quoteCoin": "WUSD",
+    "listedAt": "2024-11-13T08:19:11.538000+00:00",
+    "delistedAt": null,
+    "status": "halt"
+  },
+  {
+    "symbol": "FARTCOINUSDT",
+    "baseCoin": "FARTCOIN",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-11-13T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "HIPPOUSDT",
+    "baseCoin": "HIPPO",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-11-13T15:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NSUSDT",
+    "baseCoin": "NS",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-11-14T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SOLUSDE",
+    "baseCoin": "SOL",
+    "quoteCoin": "USDE",
+    "listedAt": "2024-11-21T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MORPHOUSDT",
+    "baseCoin": "MORPHO",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-11-21T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BTCUSDE",
+    "baseCoin": "BTC",
+    "quoteCoin": "USDE",
+    "listedAt": "2024-11-21T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ETHUSDE",
+    "baseCoin": "ETH",
+    "quoteCoin": "USDE",
+    "listedAt": "2024-11-21T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CHEEMSUSDT",
+    "baseCoin": "CHEEMS",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-11-23T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ZRCUSDT",
+    "baseCoin": "ZRC",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-11-25T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "THEUSDT",
+    "baseCoin": "THE",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-11-26T15:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CHILLGUYUSDT",
+    "baseCoin": "CHILLGUY",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-11-27T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CLANKERUSDT",
+    "baseCoin": "CLANKER",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-11-28T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AIXBTUSDT",
+    "baseCoin": "AIXBT",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-11-30T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "HBARUSDT",
+    "baseCoin": "HBAR",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-02T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "OMUSDT",
+    "baseCoin": "OM",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-05T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "XIONUSDT",
+    "baseCoin": "XION",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-05T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "FUSDT",
+    "baseCoin": "F",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-06T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ORCAUSDT",
+    "baseCoin": "ORCA",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-06T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BGSCUSDT",
+    "baseCoin": "BGSC",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-09T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MOVEUSDT",
+    "baseCoin": "MOVE",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-09T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "KOMAUSDT",
+    "baseCoin": "KOMA",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-10T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MEUSDT",
+    "baseCoin": "ME",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-10T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ALCHUSDT",
+    "baseCoin": "ALCH",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-11T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AVAUSDT",
+    "baseCoin": "AVA",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-14T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ALGOUSDT",
+    "baseCoin": "ALGO",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-16T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "VANAUSDT",
+    "baseCoin": "VANA",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-16T11:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PENGUUSDT",
+    "baseCoin": "PENGU",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-17T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "HYPEUSDT",
+    "baseCoin": "HYPE",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-18T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "USUALUSDT",
+    "baseCoin": "USUAL",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-18T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "FUELUSDT",
+    "baseCoin": "FUEL",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-19T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PHAUSDT",
+    "baseCoin": "PHA",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-27T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "WEETHUSDT",
+    "baseCoin": "WEETH",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-30T07:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BLUEUSDT",
+    "baseCoin": "BLUE",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-31T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ZEREBROUSDT",
+    "baseCoin": "ZEREBRO",
+    "quoteCoin": "USDT",
+    "listedAt": "2024-12-31T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SWARMSUSDT",
+    "baseCoin": "SWARMS",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-02T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BIOUSDT",
+    "baseCoin": "BIO",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-03T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "HIVEUSDT",
+    "baseCoin": "HIVE",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-07T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SONICUSDT",
+    "baseCoin": "SONIC",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-07T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "XTERUSDT",
+    "baseCoin": "XTER",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-08T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "U2UUSDT",
+    "baseCoin": "U2U",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-08T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DUSDT",
+    "baseCoin": "D",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-09T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SUSDT",
+    "baseCoin": "S",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-16T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GPSUSDT",
+    "baseCoin": "GPS",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-16T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DUCKUSDT",
+    "baseCoin": "DUCK",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-16T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SOLVUSDT",
+    "baseCoin": "SOLV",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-17T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "VERTUSDT",
+    "baseCoin": "VERT",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-17T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TRUMPUSDT",
+    "baseCoin": "TRUMP",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-18T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TRUMPUSDC",
+    "baseCoin": "TRUMP",
+    "quoteCoin": "USDC",
+    "listedAt": "2025-01-20T11:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PLUMEUSDT",
+    "baseCoin": "PLUME",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-21T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "VTHOUSDT",
+    "baseCoin": "VTHO",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-22T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "JUSDT",
+    "baseCoin": "J",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-22T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ZENUSDT",
+    "baseCoin": "ZEN",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-22T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SKYUSDT",
+    "baseCoin": "SKY",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-23T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ANIMEUSDT",
+    "baseCoin": "ANIME",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-23T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "VINEUSDT",
+    "baseCoin": "VINE",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-23T14:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "USDSUSDT",
+    "baseCoin": "USDS",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-24T06:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ONDOUSDC",
+    "baseCoin": "ONDO",
+    "quoteCoin": "USDC",
+    "listedAt": "2025-01-26T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TAOUSDC",
+    "baseCoin": "TAO",
+    "quoteCoin": "USDC",
+    "listedAt": "2025-01-26T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "FETUSDC",
+    "baseCoin": "FET",
+    "quoteCoin": "USDC",
+    "listedAt": "2025-01-26T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PEPEUSDC",
+    "baseCoin": "PEPE",
+    "quoteCoin": "USDC",
+    "listedAt": "2025-01-26T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SUIUSDC",
+    "baseCoin": "SUI",
+    "quoteCoin": "USDC",
+    "listedAt": "2025-01-26T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "INJUSDC",
+    "baseCoin": "INJ",
+    "quoteCoin": "USDC",
+    "listedAt": "2025-01-27T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RENDERUSDC",
+    "baseCoin": "RENDER",
+    "quoteCoin": "USDC",
+    "listedAt": "2025-01-27T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "XLMUSDC",
+    "baseCoin": "XLM",
+    "quoteCoin": "USDC",
+    "listedAt": "2025-01-27T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SHIBUSDC",
+    "baseCoin": "SHIB",
+    "quoteCoin": "USDC",
+    "listedAt": "2025-01-27T10:00:00+00:00",
+    "delistedAt": "2026-02-24T10:00:00+00:00",
+    "status": "online"
+  },
+  {
+    "symbol": "JELLYJELLYUSDT",
+    "baseCoin": "JELLYJELLY",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-01-30T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "POLUSDC",
+    "baseCoin": "POL",
+    "quoteCoin": "USDC",
+    "listedAt": "2025-02-06T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "USDEUSDC",
+    "baseCoin": "USDE",
+    "quoteCoin": "USDC",
+    "listedAt": "2025-02-06T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ICPUSDC",
+    "baseCoin": "ICP",
+    "quoteCoin": "USDC",
+    "listedAt": "2025-02-06T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BCHUSDC",
+    "baseCoin": "BCH",
+    "quoteCoin": "USDC",
+    "listedAt": "2025-02-06T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "UNIUSDC",
+    "baseCoin": "UNI",
+    "quoteCoin": "USDC",
+    "listedAt": "2025-02-06T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BERAUSDT",
+    "baseCoin": "BERA",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-02-06T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LTCUSDC",
+    "baseCoin": "LTC",
+    "quoteCoin": "USDC",
+    "listedAt": "2025-02-07T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AAVEUSDC",
+    "baseCoin": "AAVE",
+    "quoteCoin": "USDC",
+    "listedAt": "2025-02-07T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ALGOUSDC",
+    "baseCoin": "ALGO",
+    "quoteCoin": "USDC",
+    "listedAt": "2025-02-08T10:00:00+00:00",
+    "delistedAt": "2026-02-24T10:00:00+00:00",
+    "status": "online"
+  },
+  {
+    "symbol": "LAYERUSDT",
+    "baseCoin": "LAYER",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-02-11T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "HEIUSDT",
+    "baseCoin": "HEI",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-02-13T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "IPUSDT",
+    "baseCoin": "IP",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-02-13T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SHELLUSDT",
+    "baseCoin": "SHELL",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-02-13T14:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BROCCOLIUSDT",
+    "baseCoin": "BROCCOLI",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-02-14T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PIUSDT",
+    "baseCoin": "PI",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-02-20T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "KAITOUSDT",
+    "baseCoin": "KAITO",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-02-20T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BGSOLUSDT",
+    "baseCoin": "BGSOL",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-02-22T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ABUSDT",
+    "baseCoin": "AB",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-03-03T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ROAMUSDT",
+    "baseCoin": "ROAM",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-03-06T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "REDUSDT",
+    "baseCoin": "RED",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-03-06T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BMTUSDT",
+    "baseCoin": "BMT",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-03-11T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MUBARAKUSDT",
+    "baseCoin": "MUBARAK",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-03-17T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TUTUSDT",
+    "baseCoin": "TUT",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-03-18T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BRUSDT",
+    "baseCoin": "BR",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-03-20T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "FORMUSDT",
+    "baseCoin": "FORM",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-03-21T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NILUSDT",
+    "baseCoin": "NIL",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-03-24T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PARTIUSDT",
+    "baseCoin": "PARTI",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-03-25T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BANANAS31USDT",
+    "baseCoin": "BANANAS31",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-03-27T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "WALUSDT",
+    "baseCoin": "WAL",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-03-27T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GUNUSDT",
+    "baseCoin": "GUN",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-03-31T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "STOUSDT",
+    "baseCoin": "STO",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-04-03T10:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BABYUSDT",
+    "baseCoin": "BABY",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-04-10T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PROMPTUSDT",
+    "baseCoin": "PROMPT",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-04-10T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "FHEUSDT",
+    "baseCoin": "FHE",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-04-10T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "KERNELUSDT",
+    "baseCoin": "KERNEL",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-04-14T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "WCTUSDT",
+    "baseCoin": "WCT",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-04-15T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BANKUSDT",
+    "baseCoin": "BANK",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-04-18T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "EPTUSDT",
+    "baseCoin": "EPT",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-04-21T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "HYPERUSDT",
+    "baseCoin": "HYPER",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-04-22T11:10:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ZORAUSDT",
+    "baseCoin": "ZORA",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-04-23T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "INITUSDT",
+    "baseCoin": "INIT",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-04-24T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DEEPUSDT",
+    "baseCoin": "DEEP",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-04-25T05:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SIGNUSDT",
+    "baseCoin": "SIGN",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-04-28T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "HAEDALUSDT",
+    "baseCoin": "HAEDAL",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-04-29T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MYXUSDT",
+    "baseCoin": "MYX",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-05-06T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SYRUPUSDT",
+    "baseCoin": "SYRUP",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-05-06T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SXTUSDT",
+    "baseCoin": "SXT",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-05-08T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DOODUSDT",
+    "baseCoin": "DOOD",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-05-09T13:05:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RDACUSDT",
+    "baseCoin": "RDAC",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-05-13T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PRAIUSDT",
+    "baseCoin": "PRAI",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-05-14T15:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NXPCUSDT",
+    "baseCoin": "NXPC",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-05-15T06:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AWEUSDT",
+    "baseCoin": "AWE",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-05-22T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BUSDT",
+    "baseCoin": "B",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-05-22T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SOONUSDT",
+    "baseCoin": "SOON",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-05-23T11:13:44.105000+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "USD1USDT",
+    "baseCoin": "USD1",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-05-26T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "HUMAUSDT",
+    "baseCoin": "HUMA",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-05-26T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AUSDT",
+    "baseCoin": "A",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-05-28T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DOGEUSD1",
+    "baseCoin": "DOGE",
+    "quoteCoin": "USD1",
+    "listedAt": "2025-05-28T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BTCUSD1",
+    "baseCoin": "BTC",
+    "quoteCoin": "USD1",
+    "listedAt": "2025-05-28T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SOPHUSDT",
+    "baseCoin": "SOPH",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-05-28T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RLUSDUSDT",
+    "baseCoin": "RLUSD",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-05-29T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "FLOCKUSDT",
+    "baseCoin": "FLOCK",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-01T15:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BDXNUSDT",
+    "baseCoin": "BDXN",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-03T10:05:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RWAUSDT",
+    "baseCoin": "RWA",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-03T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LAUSDT",
+    "baseCoin": "LA",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-04T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CUDISUSDT",
+    "baseCoin": "CUDIS",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-05T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RVNUSDT",
+    "baseCoin": "RVN",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-06T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "B2USDT",
+    "baseCoin": "B2",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-10T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "HOMEUSDT",
+    "baseCoin": "HOME",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-10T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RESOLVUSDT",
+    "baseCoin": "RESOLV",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-10T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "IDOLUSDT",
+    "baseCoin": "IDOL",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-11T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TAGUSDT",
+    "baseCoin": "TAG",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-12T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PUMPBTCUSDT",
+    "baseCoin": "PUMPBTC",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-13T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SPKUSDT",
+    "baseCoin": "SPK",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-17T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MGOUSDT",
+    "baseCoin": "MGO",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-24T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DMCUSDT",
+    "baseCoin": "DMC",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-24T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NEWTUSDT",
+    "baseCoin": "NEWT",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-24T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "HUSDT",
+    "baseCoin": "H",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-25T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CESSUSDT",
+    "baseCoin": "CESS",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-26T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SAHARAUSDT",
+    "baseCoin": "SAHARA",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-26T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BLUMUSDT",
+    "baseCoin": "BLUM",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-27T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NODEUSDT",
+    "baseCoin": "NODE",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-06-30T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RLUSDUSDC",
+    "baseCoin": "RLUSD",
+    "quoteCoin": "USDC",
+    "listedAt": "2025-07-01T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MUSDT",
+    "baseCoin": "M",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-07-03T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ICNTUSDT",
+    "baseCoin": "ICNT",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-07-03T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CROSSUSDT",
+    "baseCoin": "CROSS",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-07-04T08:15:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TANSSIUSDT",
+    "baseCoin": "TANSSI",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-07-09T11:00:00+00:00",
+    "delistedAt": "2026-02-24T10:00:00+00:00",
+    "status": "online"
+  },
+  {
+    "symbol": "A47USDT",
+    "baseCoin": "A47",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-07-12T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CUSDT",
+    "baseCoin": "C",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-07-14T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PUMPUSDT",
+    "baseCoin": "PUMP",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-07-14T17:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TACUSDT",
+    "baseCoin": "TAC",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-07-15T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ESUSDT",
+    "baseCoin": "ES",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-07-16T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ERAUSDT",
+    "baseCoin": "ERA",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-07-17T15:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ESPORTSUSDT",
+    "baseCoin": "ESPORTS",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-07-19T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "EGL1USDT",
+    "baseCoin": "EGL1",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-07-23T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NEROUSDT",
+    "baseCoin": "NERO",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-07-28T07:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AINUSDT",
+    "baseCoin": "AIN",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-07-29T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "IKAUSDT",
+    "baseCoin": "IKA",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-07-29T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TREEUSDT",
+    "baseCoin": "TREE",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-07-29T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GAIAUSDT",
+    "baseCoin": "GAIA",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-07-30T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RHEAUSDT",
+    "baseCoin": "RHEA",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-07-30T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NAORISUSDT",
+    "baseCoin": "NAORIS",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-07-31T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AIOUSDT",
+    "baseCoin": "AIO",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-08-02T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TOWNSUSDT",
+    "baseCoin": "TOWNS",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-08-05T14:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PROVEUSDT",
+    "baseCoin": "PROVE",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-08-05T17:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "INUSDT",
+    "baseCoin": "IN",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-08-07T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GHOUSDT",
+    "baseCoin": "GHO",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-08-07T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "KUSDT",
+    "baseCoin": "K",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-08-08T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "XCXUSDT",
+    "baseCoin": "XCX",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-08-11T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "WAIUSDT",
+    "baseCoin": "WAI",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-08-12T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PUBLICUSDT",
+    "baseCoin": "PUBLIC",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-08-15T08:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TCOMUSDT",
+    "baseCoin": "TCOM",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-08-15T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SAPIENUSDT",
+    "baseCoin": "SAPIEN",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-08-20T17:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ARIAUSDT",
+    "baseCoin": "ARIA",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-08-21T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TOWNUSDT",
+    "baseCoin": "TOWN",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-08-26T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CAMPUSDT",
+    "baseCoin": "CAMP",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-08-27T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BTRUSDT",
+    "baseCoin": "BTR",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-08-27T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "WLFIUSDT",
+    "baseCoin": "WLFI",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-01T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "WLFIUSD1",
+    "baseCoin": "WLFI",
+    "quoteCoin": "USD1",
+    "listedAt": "2025-09-01T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "halt"
+  },
+  {
+    "symbol": "QUSDT",
+    "baseCoin": "Q",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-02T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SOMIUSDT",
+    "baseCoin": "SOMI",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-02T14:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TRADOORUSDT",
+    "baseCoin": "TRADOOR",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-04T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "OPENUSDT",
+    "baseCoin": "OPEN",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-08T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AVNTUSDT",
+    "baseCoin": "AVNT",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-09T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "FROGGIEUSDT",
+    "baseCoin": "FROGGIE",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-10T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LINEAUSDT",
+    "baseCoin": "LINEA",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-10T15:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "HOLOUSDT",
+    "baseCoin": "HOLO",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-11T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ZKCUSDT",
+    "baseCoin": "ZKC",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-15T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AIAUSDT",
+    "baseCoin": "AIA",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-18T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BARDUSDT",
+    "baseCoin": "BARD",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-18T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "0GUSDT",
+    "baseCoin": "0G",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-22T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RIVERUSDT",
+    "baseCoin": "RIVER",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-22T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BLESSUSDT",
+    "baseCoin": "BLESS",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-23T09:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BSUUSDT",
+    "baseCoin": "BSU",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-24T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "COAIUSDT",
+    "baseCoin": "COAI",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-25T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "XPLUSDT",
+    "baseCoin": "XPL",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-25T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MIRAUSDT",
+    "baseCoin": "MIRA",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-26T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LIGHTUSDT",
+    "baseCoin": "LIGHT",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-27T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "FFUSDT",
+    "baseCoin": "FF",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-29T13:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TOSHIUSDT",
+    "baseCoin": "TOSHI",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-30T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "EDENUSDT",
+    "baseCoin": "EDEN",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-30T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "VFYUSDT",
+    "baseCoin": "VFY",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-09-30T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "NOMUSDT",
+    "baseCoin": "NOM",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-10-01T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "2ZUSDT",
+    "baseCoin": "2Z",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-10-02T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PUSDT",
+    "baseCoin": "P",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-10-03T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ASTERUSDT",
+    "baseCoin": "ASTER",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-10-06T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "KGENUSDT",
+    "baseCoin": "KGEN",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-10-07T15:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "UXLINKUSDT",
+    "baseCoin": "UXLINK",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-10-13T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ENSOUSDT",
+    "baseCoin": "ENSO",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-10-14T09:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "FLKUSDT",
+    "baseCoin": "FLK",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-10-14T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LABUSDT",
+    "baseCoin": "LAB",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-10-14T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "YBUSDT",
+    "baseCoin": "YB",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-10-15T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RECALLUSDT",
+    "baseCoin": "RECALL",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-10-15T12:05:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ZBTUSDT",
+    "baseCoin": "ZBT",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-10-17T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RVVUSDT",
+    "baseCoin": "RVV",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-10-18T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CGNUSDT",
+    "baseCoin": "CGN",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-10-23T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "APRUSDT",
+    "baseCoin": "APR",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-10-23T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "METUSDT",
+    "baseCoin": "MET",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-10-23T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "VELVETUSDT",
+    "baseCoin": "VELVET",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-10-24T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "COMMONUSDT",
+    "baseCoin": "COMMON",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-10-27T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BOSUSDT",
+    "baseCoin": "BOS",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-10-29T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BAYUSDT",
+    "baseCoin": "BAY",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-11-01T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "KITEUSDT",
+    "baseCoin": "KITE",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-11-03T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MMTUSDT",
+    "baseCoin": "MMT",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-11-04T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PLAIUSDT",
+    "baseCoin": "PLAI",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-11-04T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TRUSTUSDT",
+    "baseCoin": "TRUST",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-11-05T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "UAIUSDT",
+    "baseCoin": "UAI",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-11-06T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ARIAIPUSDT",
+    "baseCoin": "ARIAIP",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-11-07T07:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "JCTUSDT",
+    "baseCoin": "JCT",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-11-10T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ALLOUSDT",
+    "baseCoin": "ALLO",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-11-11T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ELIZAOSUSDT",
+    "baseCoin": "ELIZAOS",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-11-13T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PLANCKUSDT",
+    "baseCoin": "PLANCK",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-11-13T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GAIBUSDT",
+    "baseCoin": "GAIB",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-11-19T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MONUSDT",
+    "baseCoin": "MON",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-11-24T15:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "IRYSUSDT",
+    "baseCoin": "IRYS",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-11-25T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RLSUSDT",
+    "baseCoin": "RLS",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-12-01T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ZECUSDT",
+    "baseCoin": "ZEC",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-12-03T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "POWERUSDT",
+    "baseCoin": "POWER",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-12-05T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "STABLEUSDT",
+    "baseCoin": "STABLE",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-12-08T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "USDTUSD",
+    "baseCoin": "USDT",
+    "quoteCoin": "USD",
+    "listedAt": "2025-12-09T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "USDCUSD",
+    "baseCoin": "USDC",
+    "quoteCoin": "USD",
+    "listedAt": "2025-12-09T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "USD1USDC",
+    "baseCoin": "USD1",
+    "quoteCoin": "USDC",
+    "listedAt": "2025-12-10T07:20:43.677000+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ETHUSD1",
+    "baseCoin": "ETH",
+    "quoteCoin": "USD1",
+    "listedAt": "2025-12-10T07:21:10.327000+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "FRAXUSDT",
+    "baseCoin": "FRAX",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-12-11T08:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "CYSUSDT",
+    "baseCoin": "CYS",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-12-11T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ALMANAKUSDT",
+    "baseCoin": "ALMANAK",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-12-11T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "USUSDT",
+    "baseCoin": "US",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-12-11T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "VSNUSDT",
+    "baseCoin": "VSN",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-12-12T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RAVEUSDT",
+    "baseCoin": "RAVE",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-12-12T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SUIUSD1",
+    "baseCoin": "SUI",
+    "quoteCoin": "USD1",
+    "listedAt": "2025-12-15T09:06:58.994000+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "XRPUSD1",
+    "baseCoin": "XRP",
+    "quoteCoin": "USD1",
+    "listedAt": "2025-12-15T09:07:15.753000+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SOLUSD1",
+    "baseCoin": "SOL",
+    "quoteCoin": "USD1",
+    "listedAt": "2025-12-15T09:07:46.037000+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "MAGMAUSDT",
+    "baseCoin": "MAGMA",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-12-16T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "THQUSDT",
+    "baseCoin": "THQ",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-12-16T15:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "IRUSDT",
+    "baseCoin": "IR",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-12-17T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "VOOIUSDT",
+    "baseCoin": "VOOI",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-12-18T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "RTXUSDT",
+    "baseCoin": "RTX",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-12-19T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "COLLECTUSDT",
+    "baseCoin": "COLLECT",
+    "quoteCoin": "USDT",
+    "listedAt": "2025-12-27T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "AIAVUSDT",
+    "baseCoin": "AIAV",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-01-02T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ESIMUSDT",
+    "baseCoin": "ESIM",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-01-05T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BREVUSDT",
+    "baseCoin": "BREV",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-01-06T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ZTCUSDT",
+    "baseCoin": "ZTC",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-01-07T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BYTEUSDT",
+    "baseCoin": "BYTE",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-01-08T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "DNUSDT",
+    "baseCoin": "DN",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-01-09T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "FUNUSDT",
+    "baseCoin": "FUN",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-01-15T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "FOGOUSDT",
+    "baseCoin": "FOGO",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-01-15T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "LITUSDT",
+    "baseCoin": "LIT",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-01-15T14:30:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ROLLUSDT",
+    "baseCoin": "ROLL",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-01-16T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SKRUSDT",
+    "baseCoin": "SKR",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-01-21T02:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "GWEIUSDT",
+    "baseCoin": "GWEI",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-01-21T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SENTUSDT",
+    "baseCoin": "SENT",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-01-22T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "IMUUSDT",
+    "baseCoin": "IMU",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-01-22T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "SPACEUSDT",
+    "baseCoin": "SPACE",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-01-23T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "USATUSDT",
+    "baseCoin": "USAT",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-01-27T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BIRBUSDT",
+    "baseCoin": "BIRB",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-01-28T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "PENGUINUSDT",
+    "baseCoin": "PENGUIN",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-01-31T11:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ARTXUSDT",
+    "baseCoin": "ARTX",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-01-31T12:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ZAMAUSDT",
+    "baseCoin": "ZAMA",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-02-02T13:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "TRIAUSDT",
+    "baseCoin": "TRIA",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-02-03T10:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "WARDUSDT",
+    "baseCoin": "WARD",
+    "quoteCoin": "USDT",
+    "listedAt": "2026-02-04T14:00:00+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "BTCRLUSD",
+    "baseCoin": "BTC",
+    "quoteCoin": "RLUSD",
+    "listedAt": "2026-02-10T08:01:11.652000+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "ETHRLUSD",
+    "baseCoin": "ETH",
+    "quoteCoin": "RLUSD",
+    "listedAt": "2026-02-10T08:01:40.545000+00:00",
+    "delistedAt": null,
+    "status": "online"
+  },
+  {
+    "symbol": "XRPRLUSD",
+    "baseCoin": "XRP",
+    "quoteCoin": "RLUSD",
+    "listedAt": "2026-02-10T08:02:08.791000+00:00",
+    "delistedAt": null,
+    "status": "online"
+  }
+]

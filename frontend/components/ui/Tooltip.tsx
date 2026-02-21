@@ -11,9 +11,9 @@ interface TooltipProps {
 }
 
 /**
- * Reusable Tooltip component with Dev Arena styling
+ * Reusable Tooltip component with institutional styling
  * Uses portal to escape overflow:hidden containers
- * Black background, white text, monospace font
+ * White card surface, neutral border, shadow
  * Accessible with proper ARIA attributes
  */
 export function Tooltip({ content, children, position = 'top' }: TooltipProps) {
@@ -58,7 +58,7 @@ export function Tooltip({ content, children, position = 'top' }: TooltipProps) {
       id={tooltipId}
       role="tooltip"
       style={tooltipStyle}
-      className="px-3 py-2 bg-black border border-white/20 text-white text-xs font-mono rounded whitespace-nowrap max-w-xs"
+      className="px-3 py-2 bg-card text-text-primary border border-border-light shadow-card text-xs rounded-lg whitespace-nowrap max-w-xs"
     >
       {content}
     </div>,

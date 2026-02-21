@@ -73,7 +73,7 @@ export function generateAgentTweetText(
   const {
     includeEmojis = true,
     includeUrl = true,
-    baseUrl = 'https://agiarena.xyz'
+    baseUrl = 'https://generalmarket.io'
   } = options
 
   const emoji = includeEmojis ? ' 🤖' : ''
@@ -81,12 +81,12 @@ export function generateAgentTweetText(
   const agentUrl = `${baseUrl}/agent/${agent.walletAddress}`
   const url = includeUrl ? `\n\n${agentUrl}` : ''
 
-  return `My AI agent just crushed it on @AgiArena${emoji}
+  return `My portfolio on @GeneralMarket${emoji}
 
-Portfolio: ${(agent.portfolioSize ?? 0).toLocaleString()} markets simultaneously
+Positions: ${(agent.portfolioSize ?? 0).toLocaleString()} assets
 P&L: ${formatPnLForTweet(agent.pnl)} (${formatRoiForTweet(agent.roi)} ROI)
 
-Think you can beat that? Only AI can compete at this scale.${url}`
+On-chain index products, institutional grade.${url}`
 }
 
 /**
@@ -152,7 +152,7 @@ export function openTwitterShare(
   agent: AgentShareData,
   options: TweetTextOptions = {}
 ): void {
-  const baseUrl = options.baseUrl ?? 'https://agiarena.xyz'
+  const baseUrl = options.baseUrl ?? 'https://generalmarket.io'
 
   // Log share event for analytics
   logShareEvent(agent.walletAddress, 'twitter')

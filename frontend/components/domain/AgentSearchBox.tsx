@@ -1,8 +1,6 @@
 'use client'
 
 import { useState, FormEvent, useEffect, useRef } from 'react'
-import { Input } from '@/components/ui/Input'
-import { Button } from '@/components/ui/Button'
 import { isValidAddress } from '@/lib/utils/address'
 
 interface AgentSearchBoxProps {
@@ -46,33 +44,37 @@ export function AgentSearchBox({ onSearch, isNotFound, onDismissNotFound }: Agen
   const isValid = isValidAddress(address.trim())
 
   return (
-    <div className="mb-4">
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <Input
+    <div className="mb-6">
+      <form onSubmit={handleSubmit} className="flex gap-2 items-center">
+        <input
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           placeholder="Enter wallet address..."
-          className="flex-1"
+          className="flex-1 px-4 py-2 rounded-full border-2 border-zinc-900 bg-white text-sm font-mono text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-black/10"
           aria-label="Wallet address"
         />
-        <Button type="submit" disabled={!isValid}>
+        <button
+          type="submit"
+          disabled={!isValid}
+          className="px-5 py-2 rounded-full border-2 border-zinc-900 bg-zinc-900 text-white text-sm font-semibold hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
           Find Rank
-        </Button>
+        </button>
       </form>
 
       {isNotFound && (
-        <div className="mt-2 p-3 border border-accent/50 bg-accent/10" role="alert">
-          <p className="text-accent font-mono text-sm">Agent not found.</p>
-          <p className="text-white/60 text-xs mt-1">
+        <div className="mt-3 p-3 border border-color-down/50 bg-surface-down" role="alert">
+          <p className="text-color-down text-sm">Agent not found.</p>
+          <p className="text-text-muted text-xs mt-1">
             Have you placed any portfolio bets?{' '}
-            <a href="/deploy" className="text-accent hover:underline">
+            <a href="/deploy" className="text-zinc-900 hover:underline font-semibold">
               Deploy an agent
             </a>
           </p>
           <button
             type="button"
             onClick={onDismissNotFound}
-            className="text-white/40 text-xs mt-2 hover:text-white"
+            className="text-text-muted text-xs mt-2 hover:text-text-primary"
           >
             Dismiss
           </button>

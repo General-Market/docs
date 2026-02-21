@@ -50,7 +50,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
     /// @notice USDC token contract
     IERC20 public usdc;
 
-    /// @notice L3 Index contract address reference
+    /// @notice L3 Investment contract address reference
     address public l3Index;
 
     /// @notice Mapping of sourceChainId => nonce => completed
@@ -89,7 +89,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
     /// @notice Initialize the ArbBridgeCustody contract
     /// @param issuerRegistry_ Address of the IssuerRegistry contract
     /// @param usdc_ Address of the USDC token contract
-    /// @param l3Index_ Address of the L3 Index contract
+    /// @param l3Index_ Address of the L3 Investment contract
     /// @param bridgeProxy_ Address of the BridgeProxy contract (set at deploy, BLS-gated after)
     function initialize(address issuerRegistry_, address usdc_, address l3Index_, address bridgeProxy_) external initializer {
         __UUPSUpgradeable_init();

@@ -14,6 +14,7 @@ interface ErrorBoundaryState {
 
 /**
  * Error boundary component to catch and display React errors gracefully
+ * Institutional style: white card with red error border
  * Prevents entire app from crashing on component errors
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -42,22 +43,22 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       }
 
       return (
-        <div className="min-h-screen bg-black flex items-center justify-center p-4">
-          <div className="max-w-md w-full border border-red-500/50 bg-red-500/10 p-6 text-center error-state">
-            <h2 className="text-xl font-bold text-red-400 font-mono mb-2">
+        <div className="min-h-screen bg-page flex items-center justify-center p-4">
+          <div className="max-w-md w-full rounded-xl border border-color-down bg-surface-down p-6 text-center shadow-card">
+            <h2 className="text-xl font-bold text-color-down font-sans mb-2">
               Something went wrong
             </h2>
-            <p className="text-white/60 font-mono text-sm mb-4">
+            <p className="text-text-secondary text-sm mb-4">
               An unexpected error occurred. Please try again.
             </p>
             {this.state.error && (
-              <p className="text-white/40 font-mono text-xs mb-4 break-words">
+              <p className="text-text-muted text-xs mb-4 break-words">
                 {this.state.error.message}
               </p>
             )}
             <button
               onClick={this.handleRetry}
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-mono text-sm transition-colors"
+              className="px-4 py-2 bg-card hover:bg-muted border border-border-medium text-text-primary text-sm rounded-lg transition-colors"
             >
               Try Again
             </button>

@@ -983,7 +983,8 @@ async fn process_events(
                             // Compute asset amount from issuer-provided price
                             // asset_amount = usdc_amount * 1e18 / price
                             let asset_amount = if asset_trade.price.is_zero() {
-                                warn!(code = "E008", "AssetTradeRequest has zero price, skipping");
+                                // TODO: add metrics counter for zero-price trades
+                                error!(code = "E008", "AssetTradeRequest has zero price, skipping");
                                 return;
                             } else {
                                 asset_trade.usdc_amount.checked_mul(scale)
@@ -1084,7 +1085,12 @@ async fn process_events(
                             let (sell_token, buy_token, sell_amt, buy_amt) = if asset_trade.side == 0 {
                                 // BUY: use ask price for asset amount (buyer pays the ask)
                                 let adj_amount = if let Some(ask) = live_ask {
-                                    asset_trade.usdc_amount.checked_mul(scale).unwrap_or_default() / ask
+                                    if ask.is_zero() {
+                                        warn!("ask price is zero for asset, using issuer price fallback");
+                                        asset_amount
+                                    } else {
+                                        asset_trade.usdc_amount.checked_mul(scale).unwrap_or_default() / ask
+                                    }
                                 } else {
                                     asset_amount // fallback to issuer price
                                 };
@@ -1092,7 +1098,12 @@ async fn process_events(
                             } else {
                                 // SELL: use bid price for USDC return (seller gets the bid)
                                 let adj_usdc = if let Some(bid) = live_bid {
-                                    asset_amount.checked_mul(bid).unwrap_or_default() / scale
+                                    if bid.is_zero() {
+                                        warn!("bid price is zero for asset, using issuer price fallback");
+                                        asset_trade.usdc_amount
+                                    } else {
+                                        asset_amount.checked_mul(bid).unwrap_or_default() / scale
+                                    }
                                 } else {
                                     asset_trade.usdc_amount // fallback to issuer price
                                 };

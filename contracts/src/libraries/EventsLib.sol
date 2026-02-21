@@ -473,4 +473,139 @@ library EventsLib {
         uint256[] newInventory,
         uint256 nav
     );
+
+    // ============ VISION (BILATERAL P2P) EVENTS ============
+
+    /// @notice Emitted when a bilateral bet is committed by both parties
+    /// @param betId Unique bet identifier
+    /// @param creator Address that created the bet
+    /// @param filler Address that accepted the bet
+    /// @param creatorAmount Creator's WIND collateral
+    /// @param fillerAmount Filler's WIND collateral
+    /// @param deadline Resolution deadline
+    event BetCommitted(
+        bytes32 indexed betId,
+        address indexed creator,
+        address indexed filler,
+        uint256 creatorAmount,
+        uint256 fillerAmount,
+        uint256 deadline
+    );
+
+    /// @notice Emitted when a bet is settled (by agreement or arbitration)
+    /// @param betId The settled bet ID
+    /// @param creatorPayout Amount paid to creator
+    /// @param fillerPayout Amount paid to filler
+    /// @param byArbitration Whether settlement was via keeper arbitration
+    event BetSettled(
+        bytes32 indexed betId,
+        uint256 creatorPayout,
+        uint256 fillerPayout,
+        bool byArbitration
+    );
+
+    /// @notice Emitted when arbitration is requested for a bet
+    /// @param betId The bet entering arbitration
+    /// @param requester Address that requested arbitration
+    event ArbitrationRequested(
+        bytes32 indexed betId,
+        address indexed requester
+    );
+
+    /// @notice Emitted when collateral is deposited to the vault
+    /// @param user Address that deposited
+    /// @param amount WIND amount deposited
+    event CollateralDeposited(
+        address indexed user,
+        uint256 amount
+    );
+
+    /// @notice Emitted when collateral is withdrawn from the vault
+    /// @param user Address that withdrew
+    /// @param amount WIND amount withdrawn
+    event CollateralWithdrawn(
+        address indexed user,
+        uint256 amount
+    );
+
+    /// @notice Emitted when a P2P trading bot is registered
+    /// @param bot Bot owner address
+    /// @param endpoint P2P HTTP endpoint
+    /// @param pubkeyHash keccak256 of signing key
+    /// @param stake WIND staked
+    event BotRegistered(
+        address indexed bot,
+        string endpoint,
+        bytes32 pubkeyHash,
+        uint256 stake
+    );
+
+    /// @notice Emitted when a bot is deregistered and stake returned
+    /// @param bot Bot owner address
+    /// @param stakeReturned WIND returned
+    event BotDeregistered(
+        address indexed bot,
+        uint256 stakeReturned
+    );
+
+    /// @notice Emitted when a keeper is registered for Vision arbitration
+    /// @param keeper Keeper address
+    /// @param ip IP:port as bytes32
+    /// @param blsPubkey BLS public key (128 bytes)
+    /// @param stake WIND staked
+    event KeeperRegistered(
+        address indexed keeper,
+        bytes32 indexed ip,
+        bytes blsPubkey,
+        uint256 stake
+    );
+
+    /// @notice Emitted when a keeper is suspended by admin
+    /// @param keeper Keeper address
+    event KeeperSuspended(address indexed keeper);
+
+    /// @notice Emitted when a keeper is reinstated by admin
+    /// @param keeper Keeper address
+    event KeeperReinstated(address indexed keeper);
+
+    /// @notice Emitted when a keeper BLS key rotation is requested
+    /// @param keeper Keeper requesting rotation
+    /// @param newPubkey Proposed new BLS public key
+    event KeyRotationRequested(
+        address indexed keeper,
+        bytes newPubkey
+    );
+
+    /// @notice Emitted when a keeper BLS key rotation is executed
+    /// @param keeper Keeper whose key was rotated
+    /// @param oldPubkey Previous BLS public key
+    /// @param newPubkey New BLS public key
+    event KeyRotationExecuted(
+        address indexed keeper,
+        bytes oldPubkey,
+        bytes newPubkey
+    );
+
+    /// @notice Emitted when referral Merkle root is set for an epoch
+    /// @param epoch The epoch number
+    /// @param merkleRoot The Merkle root for claims
+    event ReferralEpochSet(
+        uint256 indexed epoch,
+        bytes32 merkleRoot
+    );
+
+    /// @notice Emitted when referral reward is claimed
+    /// @param epoch The epoch
+    /// @param claimer Address that claimed
+    /// @param amount WIND amount claimed
+    event ReferralClaimed(
+        uint256 indexed epoch,
+        address indexed claimer,
+        uint256 amount
+    );
+
+    /// @notice Emitted when the authorized bridge address is updated
+    /// @param previousBridge The previous bridge address
+    /// @param newBridge The new bridge address
+    event AuthorizedBridgeUpdated(address indexed previousBridge, address indexed newBridge);
 }

@@ -9,10 +9,7 @@ import { activeChainId } from '@/lib/wagmi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getCoinGeckoUrl } from '@/lib/coingecko'
-
-const DATA_NODE_URL = process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200'
-const ARB_RPC = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'
-const L3_RPC = process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
+import { DATA_NODE_URL, ARB_RPC_URL as ARB_RPC, L3_RPC_URL as L3_RPC } from '@/lib/config'
 const L3_INDEX = '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6'
 const DEPLOYER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
 
@@ -366,38 +363,38 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
   const isWorking = status === 'requesting' || status === 'confirming' || status === 'executing'
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div
-        className="bg-terminal border border-white/20 rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto"
+        className="bg-card border border-border-light rounded-xl shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-accent">Rebalance {itpName}</h2>
-            <button onClick={onClose} className="text-white/60 hover:text-white text-2xl">&times;</button>
+            <h2 className="text-lg font-semibold text-text-primary">Rebalance {itpName}</h2>
+            <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
           </div>
-          <p className="text-xs text-white/40 font-mono mb-4 break-all">ITP ID: {itpId}</p>
+          <p className="text-xs text-text-muted font-mono mb-4 break-all">ITP ID: {itpId}</p>
 
           {loading ? (
-            <div className="text-center py-8 text-white/50">Loading ITP state...</div>
+            <div className="text-center py-8 text-text-muted">Loading ITP state...</div>
           ) : status === 'error' && assets.length === 0 ? (
-            <div className="bg-red-500/20 border border-red-500/50 rounded p-3 text-red-400 text-sm">
+            <div className="bg-surface-down border border-color-down/30 rounded-lg p-3 text-color-down text-sm">
               {errorMsg}
             </div>
           ) : (
             <>
               {/* Add asset search bar */}
-              <div className="bg-black/20 border border-white/10 rounded p-3 mb-4">
+              <div className="bg-muted border border-border-light rounded-lg p-3 mb-4">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-white/70">Add Asset ({assets.length} in basket, {availableAssets.length} available)</span>
+                  <span className="text-sm text-text-secondary">Add Asset ({assets.length} in basket, {availableAssets.length} available)</span>
                 </div>
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search asset to add..."
-                  className="w-full bg-terminal-dark border border-white/20 rounded px-3 py-1.5 text-sm text-white focus:border-accent focus:outline-none mb-2"
+                  className="w-full bg-card border border-border-medium rounded-lg px-3 py-1.5 text-sm text-text-primary focus:border-zinc-600 focus:outline-none mb-2"
                   disabled={isWorking || status === 'success'}
                 />
                 {filteredSearch.length > 0 && (
@@ -406,7 +403,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
                       <div key={asset.address} className="relative group">
                         <button
                           onClick={() => addAsset(asset)}
-                          className="px-2 py-0.5 pr-5 bg-terminal-dark border border-white/20 rounded text-xs text-white hover:border-accent transition-colors"
+                          className="px-2 py-0.5 pr-5 bg-card border border-border-medium rounded text-xs text-text-primary hover:border-zinc-500 transition-colors"
                         >
                           + {asset.symbol}
                         </button>
@@ -415,10 +412,10 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={e => e.stopPropagation()}
-                          className="absolute top-0 right-0 px-1 py-0.5 text-white/30 hover:text-accent text-xs transition-colors"
+                          className="absolute top-0 right-0 px-1 py-0.5 text-text-muted hover:text-text-primary text-xs transition-colors"
                           title={`View ${asset.symbol} on CoinGecko`}
                         >
-                          ↗
+                          &nearr;
                         </a>
                       </div>
                     ))}
@@ -430,7 +427,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
               <div className="flex gap-2 mb-4">
                 <button
                   onClick={setEqualWeights}
-                  className="px-3 py-1 text-xs border border-white/20 rounded text-white/70 hover:border-accent hover:text-accent transition-colors"
+                  className="px-3 py-1 text-xs border border-border-medium rounded text-text-secondary hover:border-zinc-500 hover:text-text-primary transition-colors"
                 >
                   Equal Weights
                 </button>
@@ -439,18 +436,18 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
               {/* Weight sum indicator */}
               <div className={`flex justify-between items-center mb-3 p-2 rounded text-sm font-mono ${
                 isValid
-                  ? 'bg-green-500/10 border border-green-500/30 text-green-400'
-                  : 'bg-red-500/10 border border-red-500/30 text-red-400'
+                  ? 'bg-surface-up border border-color-up/30 text-color-up'
+                  : 'bg-surface-down border border-color-down/30 text-color-down'
               }`}>
                 <span>Weight Sum</span>
                 <span>{weightSum.toFixed(2)}%</span>
               </div>
 
               {/* Asset table */}
-              <div className="max-h-[400px] overflow-y-auto border border-white/10 rounded">
+              <div className="max-h-[400px] overflow-y-auto border border-border-light rounded-lg">
                 <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-terminal-dark">
-                    <tr className="text-white/50 text-xs">
+                  <thead className="sticky top-0 bg-muted">
+                    <tr className="text-text-muted text-xs">
                       <th className="text-left p-2">Asset</th>
                       <th className="text-right p-2">Current %</th>
                       <th className="text-right p-2">New %</th>
@@ -459,21 +456,21 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
                   </thead>
                   <tbody>
                     {assets.map((asset, i) => (
-                      <tr key={asset.address} className={`border-t border-white/5 hover:bg-white/5 ${asset.isNew ? 'bg-green-500/5' : ''}`}>
+                      <tr key={asset.address} className={`border-t border-border-light hover:bg-card-hover ${asset.isNew ? 'bg-surface-up/30' : ''}`}>
                         <td className="p-2">
-                          <span className="text-white/80">{asset.symbol}</span>
+                          <span className="text-text-secondary">{asset.symbol}</span>
                           <a
                             href={getCoinGeckoUrl(asset.symbol)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="ml-1 text-white/20 hover:text-accent text-xs transition-colors"
+                            className="ml-1 text-text-muted hover:text-text-primary text-xs transition-colors"
                             title={`View ${asset.symbol} on CoinGecko`}
                           >
-                            ↗
+                            &nearr;
                           </a>
-                          {asset.isNew && <span className="ml-1 text-green-400 text-xs">NEW</span>}
+                          {asset.isNew && <span className="ml-1 text-color-up text-xs">NEW</span>}
                         </td>
-                        <td className="p-2 text-right text-white/50 font-mono">
+                        <td className="p-2 text-right text-text-muted font-mono">
                           {asset.isNew ? '—' : `${(Number(asset.currentWeight) / 1e16).toFixed(2)}%`}
                         </td>
                         <td className="p-2 text-right">
@@ -482,7 +479,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
                             step="0.01"
                             value={asset.newWeight}
                             onChange={e => updateWeight(i, e.target.value)}
-                            className="w-20 bg-black/30 border border-white/20 rounded px-2 py-1 text-right text-white font-mono text-sm focus:border-accent focus:outline-none"
+                            className="w-20 bg-muted border border-border-medium rounded px-2 py-1 text-right text-text-primary font-mono text-sm focus:border-zinc-600 focus:outline-none"
                             disabled={isWorking || status === 'success'}
                           />
                         </td>
@@ -490,7 +487,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
                           {asset.isNew && !isWorking && status !== 'success' && (
                             <button
                               onClick={() => removeAsset(i)}
-                              className="text-red-400 hover:text-red-300 text-sm"
+                              className="text-color-down hover:text-color-down/80 text-sm"
                             >
                               x
                             </button>
@@ -504,34 +501,34 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
 
               {/* Status messages */}
               {status === 'requesting' && (
-                <div className="mt-4 bg-blue-500/10 border border-blue-500/30 rounded p-3 text-blue-400 text-sm">
+                <div className="mt-4 bg-color-info/10 border border-color-info/30 rounded-lg p-3 text-color-info text-sm">
                   Step 1/2: Confirm in your wallet...
                 </div>
               )}
 
               {status === 'confirming' && (
-                <div className="mt-4 bg-blue-500/10 border border-blue-500/30 rounded p-3 text-blue-400 text-sm">
+                <div className="mt-4 bg-color-info/10 border border-color-info/30 rounded-lg p-3 text-color-info text-sm">
                   Step 1/2: Confirming on-chain...
-                  {requestHash && <p className="text-xs font-mono mt-1 text-blue-400/60 break-all">Tx: {requestHash}</p>}
+                  {requestHash && <p className="text-xs font-mono mt-1 text-color-info/60 break-all">Tx: {requestHash}</p>}
                 </div>
               )}
 
               {status === 'executing' && (
-                <div className="mt-4 bg-blue-500/10 border border-blue-500/30 rounded p-3 text-blue-400 text-sm">
+                <div className="mt-4 bg-color-info/10 border border-color-info/30 rounded-lg p-3 text-color-info text-sm">
                   Step 2/2: Executing rebalance on L3 (issuer consensus)...
                 </div>
               )}
 
               {status === 'error' && errorMsg && (
-                <div className="mt-4 bg-red-500/20 border border-red-500/50 rounded p-3 text-red-400 text-sm break-all">
+                <div className="mt-4 bg-surface-down border border-color-down/30 rounded-lg p-3 text-color-down text-sm break-all">
                   {errorMsg}
                 </div>
               )}
 
               {status === 'success' && (
-                <div className="mt-4 bg-green-500/20 border border-green-500/50 rounded p-3 text-green-400 text-sm">
-                  <p className="font-bold mb-1">Rebalanced!</p>
-                  <p className="text-xs font-mono break-all text-green-400/70">L3 Tx: {txHash}</p>
+                <div className="mt-4 bg-surface-up border border-color-up/30 rounded-lg p-3 text-color-up text-sm">
+                  <p className="font-medium mb-1">Rebalanced!</p>
+                  <p className="text-xs font-mono break-all text-color-up/70">L3 Tx: {txHash}</p>
                 </div>
               )}
 
@@ -540,7 +537,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
                 <WalletActionButton
                   onClick={handleRebalance}
                   disabled={!isValid || isWorking || status === 'success'}
-                  className="flex-1 py-3 bg-accent text-terminal font-bold rounded text-sm hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 bg-zinc-900 text-white font-medium rounded-lg text-sm hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {status === 'requesting' ? 'Waiting for wallet...'
                     : status === 'confirming' ? 'Confirming...'
@@ -552,7 +549,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
                   href="https://discord.gg/xsfgzwR6"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3 py-3 bg-accent text-terminal font-bold rounded text-sm hover:bg-accent/90 transition-colors flex items-center"
+                  className="px-3 py-3 bg-zinc-900 text-white font-medium rounded-lg text-sm hover:bg-zinc-800 transition-colors flex items-center"
                 >
                   Support
                 </a>

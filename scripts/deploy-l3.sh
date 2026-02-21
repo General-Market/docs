@@ -7,11 +7,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Source environment if global.env exists
-if [ -f "$PROJECT_ROOT/global.env" ]; then
-    echo "Loading environment from global.env..."
+# Source environment if system.env exists
+if [ -f "$PROJECT_ROOT/system.env" ]; then
+    echo "Loading environment from system.env..."
     set -a
-    source "$PROJECT_ROOT/global.env"
+    source "$PROJECT_ROOT/system.env"
     set +a
 fi
 

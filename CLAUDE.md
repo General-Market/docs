@@ -57,6 +57,22 @@ If BLS verification is in the way, fix the BLS pipeline — don't bypass the che
 
 Not a concern. Break interfaces, change function signatures, remove deprecated storage freely.
 
+## VPS Servers
+
+All servers accessed via SSH through bastion (65.109.10.32).
+
+| Name | Host | IP | User | Sudo Password | Purpose |
+|------|------|----|------|---------------|---------|
+| prod-be (vps2) | `index-maker/prod/be` | 116.203.156.98 | max | 5x64dLPYRghu7FtTrCTVASoaC9HHCO | Backend: data-node, orbit chain, keepers |
+| prod-postgres (vps3) | `index-maker/prod/postgres` | 142.132.164.24 | max | ZKlZLsPE5w5ZclAr7FmNoYKZHvMSXh | PostgreSQL 17 |
+
+**prod-be data-node setup:**
+- Binary: `~/index-data-node` (run from `~/index-dn-work/`)
+- Build workspace: `~/index-data-node-build/`
+- DB: Docker Postgres `datanode:datanode123@localhost:5432/index_prices`
+- Port: 8200 (default)
+- Logs: `~/index-data-node.log`
+
 ## Contracts
 
 

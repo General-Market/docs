@@ -8,12 +8,6 @@ import { ERC20_ABI } from '@/lib/contracts/index-protocol-abi'
 import { useVaultDeposit } from '@/hooks/useVaultDeposit'
 import { useMetaMorphoVault } from '@/hooks/useMetaMorphoVault'
 
-/**
- * VaultDeposit component (AC7)
- *
- * Allows USDC lenders to deposit into the MetaMorpho vault.
- * Handles approval flow and tracks vault shares.
- */
 export function VaultDeposit() {
   const { address } = useAccount()
   const [amount, setAmount] = useState('')
@@ -22,7 +16,6 @@ export function VaultDeposit() {
 
   const { refetch: refetchVault } = useMetaMorphoVault()
 
-  // Fetch user's USDC balance
   const { data: usdcBalance, refetch: refetchBalance } = useReadContract({
     address: MORPHO_ADDRESSES.loanToken,
     abi: ERC20_ABI,
@@ -35,7 +28,6 @@ export function VaultDeposit() {
     deposit,
     isApprovalNeeded,
     approve,
-    allowance,
     isPending,
     isConfirming,
     isSuccess,
@@ -49,14 +41,11 @@ export function VaultDeposit() {
   const formattedBalance = usdcBalance ? formatUnits(usdcBalance as bigint, 6) : '0'
   const [pendingDepositAmount, setPendingDepositAmount] = useState<bigint>(0n)
 
-  // Track success state
   const successHandled = useRef(false)
   const approvalHandled = useRef(false)
 
-  // Watch for approval completion to trigger deposit
   useEffect(() => {
     if (step === 'approving' && isSuccess && pendingDepositAmount > 0n && !approvalHandled.current) {
-      // Approval TX confirmed — refetch allowance then deposit
       approvalHandled.current = true
       refetchAllowance()
       setTimeout(() => {
@@ -122,7 +111,6 @@ export function VaultDeposit() {
 
   const [stuckWarning, setStuckWarning] = useState(false)
 
-  // Detect stuck transactions — warn after 30s of confirming
   useEffect(() => {
     if (!isConfirming && step !== 'approving') {
       setStuckWarning(false)
@@ -157,18 +145,20 @@ export function VaultDeposit() {
     : 'Deposit USDC'
 
   return (
-    <div className="bg-terminal-dark border border-white/10 rounded-lg p-6">
-      <h2 className="text-lg font-bold text-white mb-4">Deposit to Vault</h2>
-      <p className="text-white/60 text-sm mb-4">
-        Deposit USDC to earn yield from borrowers
-      </p>
+    <div className="py-5">
+      <div className="section-bar">
+        <div>
+          <div className="section-bar-title">Deposit</div>
+          <div className="section-bar-value">Supply USDC to Vault</div>
+        </div>
+      </div>
 
-      <div className="space-y-4">
+      <div className="border border-border-light border-t-0 p-5 space-y-4">
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="text-sm text-white/70">Amount (USDC)</label>
-            <span className="text-xs text-white/40">
-              Balance: {parseFloat(formattedBalance).toFixed(2)} USDC
+            <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted">Amount (USDC)</label>
+            <span className="text-[11px] text-text-muted font-mono tabular-nums">
+              Balance: {parseFloat(formattedBalance).toFixed(2)}
             </span>
           </div>
           <div className="relative">
@@ -180,28 +170,28 @@ export function VaultDeposit() {
               min="0"
               step="1"
               disabled={isProcessing}
-              className="w-full bg-terminal border border-white/20 rounded px-4 py-3 text-white text-lg focus:border-accent focus:outline-none disabled:opacity-50"
+              className="w-full bg-muted border border-border-medium rounded-lg px-4 py-2.5 text-text-primary text-[15px] font-mono tabular-nums focus:border-zinc-900 focus:outline-none disabled:opacity-50"
             />
             <button
               onClick={() => setAmount(formattedBalance)}
               disabled={isProcessing}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-accent hover:text-accent/80 disabled:opacity-50"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-zinc-900 hover:text-zinc-700 disabled:opacity-50 uppercase tracking-wider"
             >
-              MAX
+              Max
             </button>
           </div>
           {amount && parsedAmount > (usdcBalance as bigint ?? 0n) && (
-            <p className="text-red-400 text-xs mt-1">Insufficient USDC balance</p>
+            <p className="text-color-down text-[11px] mt-1">Insufficient USDC balance</p>
           )}
         </div>
 
         <button
           onClick={handleSubmit}
           disabled={!amount || parsedAmount === 0n || isProcessing || parsedAmount > (usdcBalance as bigint ?? 0n)}
-          className={`w-full py-3 font-bold rounded-lg transition-colors ${
+          className={`w-full py-2.5 font-bold text-[13px] uppercase tracking-[0.06em] transition-colors ${
             step === 'success'
-              ? 'bg-green-500 text-white'
-              : 'bg-accent text-terminal hover:bg-accent/90 disabled:bg-white/20 disabled:text-white/50 disabled:cursor-not-allowed'
+              ? 'bg-color-up text-white'
+              : 'bg-zinc-900 text-white hover:bg-zinc-800 disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed'
           }`}
         >
           {buttonText}
@@ -210,21 +200,21 @@ export function VaultDeposit() {
         {isProcessing && (
           <button
             onClick={handleCancel}
-            className="w-full text-center text-sm text-white/50 hover:text-white/80 py-2 transition-colors"
+            className="w-full text-center text-[11px] text-text-muted hover:text-text-secondary py-1 transition-colors"
           >
             Cancel
           </button>
         )}
 
         {stuckWarning && (
-          <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-3 text-orange-400 text-sm">
+          <div className="bg-orange-500/10 border border-orange-300 p-3 text-orange-700 text-[12px]">
             <p className="font-bold">Transaction may be stuck</p>
-            <p className="text-xs mt-1">Not confirmed after 30s. You can cancel and try again.</p>
+            <p className="text-[11px] mt-1">Not confirmed after 30s. You can cancel and try again.</p>
           </div>
         )}
 
         {txError && (
-          <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 text-red-400 text-sm">
+          <div className="bg-color-down/10 border border-color-down/30 p-3 text-color-down text-[12px]">
             {txError.includes('User rejected') || txError.includes('denied')
               ? 'Transaction rejected'
               : txError.length > 100

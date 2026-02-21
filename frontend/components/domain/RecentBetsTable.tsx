@@ -27,13 +27,13 @@ function TableSkeleton() {
   return (
     <div className="animate-pulse">
       {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 p-4 border-b border-white/10">
-          <div className="h-4 w-24 bg-white/10 rounded" />
-          <div className="h-4 w-16 bg-white/10 rounded" />
-          <div className="h-4 w-20 bg-white/10 rounded" />
-          <div className="h-4 w-16 bg-white/10 rounded" />
-          <div className="h-4 w-16 bg-white/10 rounded" />
-          <div className="h-4 w-20 bg-white/10 rounded" />
+        <div key={i} className="flex items-center gap-4 p-4 border-b border-border-light">
+          <div className="h-4 w-24 bg-muted rounded" />
+          <div className="h-4 w-16 bg-muted rounded" />
+          <div className="h-4 w-20 bg-muted rounded" />
+          <div className="h-4 w-16 bg-muted rounded" />
+          <div className="h-4 w-16 bg-muted rounded" />
+          <div className="h-4 w-20 bg-muted rounded" />
         </div>
       ))}
     </div>
@@ -46,8 +46,8 @@ function TableSkeleton() {
 function EmptyState() {
   return (
     <div className="p-8 text-center">
-      <p className="text-white/60 font-mono">No bets yet</p>
-      <p className="text-white/40 text-sm font-mono mt-1">
+      <p className="text-text-muted">No bets yet</p>
+      <p className="text-text-muted text-sm mt-1">
         This agent has not placed any portfolio bets
       </p>
     </div>
@@ -102,7 +102,7 @@ export function RecentBetsTable({ bets, isLoading = false }: RecentBetsTableProp
       </TableHeader>
       <TableBody>
         {bets.map((bet) => {
-          const resultColor = bet.result >= 0 ? 'text-green-400' : 'text-white/60'
+          const resultColor = bet.result >= 0 ? 'text-color-up' : 'text-text-muted'
           // Display outcome for settled bets, otherwise show status
           const displayStatus = bet.status === 'settled' && bet.outcome ? bet.outcome : bet.status
 
@@ -111,16 +111,16 @@ export function RecentBetsTable({ bets, isLoading = false }: RecentBetsTableProp
               <TableCell>
                 {/* Bet detail page coming in future story */}
                 <span
-                  className="text-white/60 font-mono text-sm cursor-default"
+                  className="text-text-muted font-mono text-sm cursor-default"
                   title={bet.betId}
                 >
                   {formatBetId(bet.betId)}
                 </span>
               </TableCell>
-              <TableCell className="font-mono text-white/80">
+              <TableCell className="font-mono text-text-secondary">
                 {formatPortfolioSize(bet.tradeCount || bet.portfolioSize)}
               </TableCell>
-              <TableCell className="font-mono text-white/80">
+              <TableCell className="font-mono text-text-secondary">
                 {formatVolume(bet.amount)}
               </TableCell>
               <TableCell className={`font-mono font-bold ${resultColor}`}>
@@ -129,7 +129,7 @@ export function RecentBetsTable({ bets, isLoading = false }: RecentBetsTableProp
               <TableCell>
                 <StatusBadge status={displayStatus} />
               </TableCell>
-              <TableCell className="font-mono text-white/60 text-sm">
+              <TableCell className="font-mono text-text-muted text-sm">
                 {formatBetDate(bet.createdAt)}
               </TableCell>
             </TableRow>

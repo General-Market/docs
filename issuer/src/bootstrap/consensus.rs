@@ -239,9 +239,8 @@ impl<'a> ConsensusBuilder<'a> {
 
         // Override with deterministic seed if specified
         if let Some(seed_idx) = self.params.bls_key_seed_index {
-            let mut seed = [0u8; 32];
-            seed[0] = seed_idx;
-            seed[1] = 0x42;
+            // Must match bls-tool's keypair_from_seed_index: vec![idx; 32]
+            let seed = vec![seed_idx; 32];
             match BLSKeyPair::from_seed(&seed) {
                 Ok(kp) => {
                     info!(self.node_id, seed_index = seed_idx, "BLS keypair from deterministic seed");
@@ -389,9 +388,40 @@ impl<'a> ConsensusBuilder<'a> {
                 .as_ref()
                 .and_then(|a| a.parse::<ethers::types::Address>().ok())
                 .unwrap_or_default(),
-            bridge_proxy: self.config.effective_bridge_proxy_address()
+            bridge_proxy: self.params.bridge_proxy.as_ref()
+                .and_then(|a| a.parse::<ethers::types::Address>().ok())
+                .or_else(|| self.config.effective_bridge_proxy_address())
                 .unwrap_or_default(),
         };
+
+        // Validate critical bridge config addresses
+        if bridge_config.index_address == ethers::types::Address::zero() {
+            warn!(code = "BRIDGE-004", self.node_id,
+                  "BridgeConfig.index_address is zero — bridge orchestrator may not function correctly");
+        }
+        if bridge_config.issuer_custody_l3 == ethers::types::Address::zero() {
+            warn!(code = "BRIDGE-005", self.node_id,
+                  "BridgeConfig.issuer_custody_l3 is zero address");
+        }
+        if bridge_config.l3_usdc_address == ethers::types::Address::zero() {
+            warn!(code = "BRIDGE-006", self.node_id,
+                  "BridgeConfig.l3_usdc_address is zero address");
+        }
+        if bridge_config.arb_custody_address == ethers::types::Address::zero() {
+            warn!(code = "BRIDGE-007", self.node_id,
+                  "BridgeConfig.arb_custody_address is zero address");
+        }
+
+        info!(
+            self.node_id,
+            node_index = keys.node_index,
+            arb_custody = ?self.config.effective_arb_custody(),
+            issuer_custody_l3 = ?self.config.effective_issuer_custody_l3(),
+            bridge_proxy = ?bridge_config.bridge_proxy,
+            arb_chain_id = bridge_config.arbitrum_chain_id,
+            min_signatures = sig_threshold,
+            "BridgeOrchestrator initialized"
+        );
 
         let orchestrator = BridgeOrchestrator::new(
             bridge_config,
@@ -400,15 +430,6 @@ impl<'a> ConsensusBuilder<'a> {
             bls_keypair.clone(),
             keys.peer_id,
             keys.node_index,
-        );
-
-        info!(
-            self.node_id,
-            node_index = keys.node_index,
-            arb_custody = ?self.config.effective_arb_custody(),
-            issuer_custody_l3 = ?self.config.effective_issuer_custody_l3(),
-            min_signatures = sig_threshold,
-            "BridgeOrchestrator initialized"
         );
 
         Some(Arc::new(RwLock::new(orchestrator)))

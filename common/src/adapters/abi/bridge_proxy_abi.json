@@ -480,6 +480,21 @@
         "name": "assets",
         "type": "address[]",
         "internalType": "address[]"
+      },
+      {
+        "name": "prices",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
+      },
+      {
+        "name": "metadata",
+        "type": "tuple",
+        "internalType": "struct IBridgeProxy.ItpMetadata",
+        "components": [
+          { "name": "description", "type": "string", "internalType": "string" },
+          { "name": "websiteUrl", "type": "string", "internalType": "string" },
+          { "name": "videoUrl", "type": "string", "internalType": "string" }
+        ]
       }
     ],
     "outputs": [
@@ -490,6 +505,38 @@
       }
     ],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setDeployerName",
+    "inputs": [
+      {
+        "name": "name",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "getDeployerName",
+    "inputs": [
+      {
+        "name": "deployer",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -696,6 +743,25 @@
         "type": "address",
         "indexed": true,
         "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "DeployerNameUpdated",
+    "inputs": [
+      {
+        "name": "deployer",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
       }
     ],
     "anonymous": false

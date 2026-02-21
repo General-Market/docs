@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-
-const DATA_NODE_URL = process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200'
+import { DATA_NODE_URL } from '@/lib/config'
 
 export interface SimHolding {
   rebalance_date: string

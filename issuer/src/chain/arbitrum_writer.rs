@@ -1082,6 +1082,112 @@ impl ArbitrumChainWriter {
         )))
     }
 
+    /// Mint BridgedITP shares on Arbitrum via BridgeProxy (8-step bridge Step 8)
+    ///
+    /// Calls BridgeProxy.mintBridgedShares(itpId, user, amount, blsSignature)
+    pub async fn mint_bridged_shares(
+        &self,
+        itp_id: H256,
+        user: Address,
+        amount: U256,
+        bls_signature: Vec<u8>,
+    ) -> Result<H256, ArbitrumWriterError> {
+        info!(
+            itp_id = ?itp_id,
+            user = ?user,
+            amount = %amount,
+            sig_len = bls_signature.len(),
+            "Submitting mintBridgedShares transaction"
+        );
+
+        let calldata = crate::bridge::build_mint_bridged_shares_calldata(
+            itp_id, user, amount, &bls_signature,
+        );
+
+        let max_attempts = self.config.retry_config.max_retries + 1;
+
+        for attempt in 0..max_attempts {
+            if let Err(e) = self.nonce_manager.resync().await {
+                debug!(attempt, error = %e, "Nonce resync failed, using cached value");
+            }
+
+            let tx_nonce = U256::from(self.nonce_manager.current_nonce());
+            let _ = self.nonce_manager.get_next_nonce().await;
+
+            let mut tx: TypedTransaction = Eip1559TransactionRequest::new()
+                .to(self.config.bridge_proxy_address)
+                .data(calldata.clone())
+                .chain_id(self.config.chain_id)
+                .into();
+            tx.set_nonce(tx_nonce);
+
+            let gas = match self.gas_estimator.estimate_gas(&tx).await {
+                Ok(g) => g,
+                Err(e) => {
+                    if attempt < max_attempts - 1 {
+                        debug!(attempt, error = %e, "Gas estimation failed, retrying");
+                        let delay = self.config.retry_config.delay_for_attempt(attempt);
+                        tokio::time::sleep(delay).await;
+                        continue;
+                    }
+                    return Err(ArbitrumWriterError::GasEstimationError(e.to_string()));
+                }
+            };
+            tx.set_gas(gas);
+
+            let gas_price = self
+                .gas_estimator
+                .get_gas_price()
+                .await
+                .map_err(|e| ArbitrumWriterError::GasEstimationError(e.to_string()))?;
+
+            if let TypedTransaction::Eip1559(ref mut eip1559_tx) = tx {
+                gas_price.apply_to_tx(eip1559_tx);
+            }
+
+            debug!(
+                attempt,
+                nonce = %tx_nonce,
+                gas_limit = %gas,
+                "Attempting mintBridgedShares submission"
+            );
+
+            match self.client.send_transaction(tx, None).await {
+                Ok(pending_tx) => {
+                    let tx_hash = pending_tx.tx_hash();
+                    info!(
+                        tx_hash = ?tx_hash,
+                        itp_id = ?itp_id,
+                        user = ?user,
+                        amount = %amount,
+                        "mintBridgedShares transaction submitted"
+                    );
+                    self.nonce_manager.track_pending(tx_nonce, tx_hash);
+                    return Ok(tx_hash);
+                }
+                Err(e) => {
+                    let err_str = e.to_string().to_lowercase();
+                    let is_nonce_error = err_str.contains("nonce too low")
+                        || err_str.contains("nonce has already been used")
+                        || err_str.contains("replacement transaction underpriced");
+
+                    if is_nonce_error && attempt < max_attempts - 1 {
+                        debug!(attempt, error = %e, "Nonce-related error, will resync and retry");
+                        let delay = self.config.retry_config.delay_for_attempt(attempt);
+                        tokio::time::sleep(delay).await;
+                        continue;
+                    }
+                    return Err(ArbitrumWriterError::TransactionError(e.to_string()));
+                }
+            }
+        }
+
+        Err(ArbitrumWriterError::RetryExhausted(format!(
+            "Max attempts ({}) exceeded for mintBridgedShares",
+            max_attempts
+        )))
+    }
+
     /// Build a fundSellOrder transaction
     ///
     /// Encodes: ArbBridgeCustody.fundSellOrder(orderId, vault, usdcAmount, blsSignature)

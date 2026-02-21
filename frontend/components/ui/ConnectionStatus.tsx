@@ -12,6 +12,7 @@ export interface ConnectionStatusProps {
 
 /**
  * Simple connection status indicator
+ * Institutional style: semantic dot colors (green up / red down)
  *
  * Displays a colored dot with status text:
  * - Green + "Live": SSE connected
@@ -23,11 +24,11 @@ export interface ConnectionStatusProps {
  */
 export function ConnectionStatus({ isConnected, isPolling }: ConnectionStatusProps) {
   const statusText = isConnected ? 'Live' : (isPolling ? 'Polling' : 'Offline')
-  const statusColor = isConnected ? 'text-green-400' : (isPolling ? 'text-yellow-400' : 'text-white/40')
-  const dotColor = isConnected ? 'bg-green-400' : (isPolling ? 'bg-yellow-400' : 'bg-white/40')
+  const statusColor = isConnected ? 'text-color-up' : (isPolling ? 'text-color-warning' : 'text-text-muted')
+  const dotColor = isConnected ? 'bg-color-up' : (isPolling ? 'bg-color-warning' : 'bg-text-muted')
 
   return (
-    <div className="flex items-center gap-2 text-xs font-mono" role="status" aria-live="polite">
+    <div className="flex items-center gap-2 text-xs" role="status" aria-live="polite">
       <span
         className={`w-2 h-2 rounded-full ${dotColor} ${isConnected || isPolling ? 'animate-pulse' : ''}`}
         aria-hidden="true"

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../../src/core/Index.sol";
+import "../../src/core/Investment.sol";
 import "../../src/mocks/MockERC20.sol";
 import "../../src/mocks/MockTokenFactory.sol";
 import "../helpers/TestHelper.sol";
@@ -15,8 +15,8 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 /// @title RegisteredAssetsStressTest
 /// @notice Stress tests for large ITP creation (100+ assets, up to MAX_ASSETS=1000)
 contract RegisteredAssetsStressTest is TestHelper {
-    Index public implementation;
-    Index public index;
+    Investment public implementation;
+    Investment public index;
     Governance public governance;
     MockERC20 public usdc;
     MockTokenFactory public factory;
@@ -31,10 +31,10 @@ contract RegisteredAssetsStressTest is TestHelper {
         usdc = new MockERC20("USDC", "USDC", 18);
         factory = new MockTokenFactory();
 
-        implementation = new Index();
-        bytes memory initData = abi.encodeWithSelector(Index.initialize.selector, address(governance), address(usdc));
+        implementation = new Investment();
+        bytes memory initData = abi.encodeWithSelector(Investment.initialize.selector, address(governance), address(usdc));
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), initData);
-        index = Index(address(proxy));
+        index = Investment(address(proxy));
 
         vm.label(admin, "Admin");
         vm.label(user1, "User1");

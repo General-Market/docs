@@ -1,11 +1,11 @@
-# General Market — frontendV4 Design
+# General Market — frontend Design
 
 **Date:** 2026-02-19
 **Status:** Approved
 
 ## Overview
 
-Create `/frontendV4` by copying `/frontend` (latest functional code) and restyling it with `/frontendV2`'s institutional Blackrock aesthetic. Rebrand from "Index" to "General Market".
+Create `/frontend` by copying `/frontend` (latest functional code) and restyling it with `/frontendV2`'s institutional Blackrock aesthetic. Rebrand from "Index" to "General Market".
 
 ## Brand
 
@@ -206,7 +206,7 @@ Ghost:    bg-transparent text-text-secondary hover:bg-muted border border-border
 
 ## Implementation Strategy
 
-1. Copy `/frontend` → `/frontendV4`
+1. Copy `/frontend` → `/frontend`
 2. Replace `tailwind.config.js` — full token system with all semantic tokens
 3. Replace `globals.css` — new base styles, animations adapted for light cards
 4. Add Inter font to `layout.tsx`, update body classes

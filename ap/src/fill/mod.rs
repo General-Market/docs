@@ -13,6 +13,8 @@ pub mod batch;
 pub mod reporter;
 pub mod retry;
 pub mod types;
+#[allow(dead_code)]
+pub mod wal;
 
 // Re-export main types
 pub use batch::{batch_fills, FillBatch, FillBatchConfig, FillBatcher};

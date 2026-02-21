@@ -1,162 +1,214 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 inputDocuments:
-  - prd.md
-  - project-overview.md
-  - frontendV4/app/page.tsx
-  - frontendV4/components/layout/Header.tsx
-  - frontendV4/tailwind.config.js
-  - frontendV4/app/globals.css
-  - AA/frontend/app/page.tsx
-  - AA/frontend/app/markets/page.tsx
-  - AA/frontend/components/domain/LeaderboardTable.tsx
-  - AA/frontend/hooks/useLeaderboard.ts
-  - AA/frontend/hooks/useMarketSnapshot.ts
+  - docs/plans/2026-02-19-general-market-frontendv4-design.md
+  - frontend/app/page.tsx
+  - frontend/app/globals.css
+  - frontend/tailwind.config.js
+  - frontend/components/layout/Header.tsx
+  - frontend/components/layout/Footer.tsx
+  - frontend/components/domain/ItpListing.tsx
+  - frontend/components/domain/MarketsSection.tsx
+  - frontend/components/domain/PortfolioSection.tsx
 ---
 
-# UX Design Specification: General Market (Investment + Vision)
+# UX Design Specification — General Market
 
 **Author:** max
 **Date:** 2026-02-20
-**Reference:** BlackRock / iShares institutional design language
+**Approach:** Upgrade existing frontend to be more BlackRock/iShares institutional
 
 ---
 
-## 1. Design Philosophy
+## Executive Summary
 
-General Market is a dual-mode financial platform:
-- **Investment** (default / "Prime"): Index product creation, portfolio management, lending, backtesting
-- **Vision**: AI agent leaderboard + 50k+ market data grid (from AgiArena)
+### Target Users
 
-Both modes share a single design system inspired by BlackRock/iShares: clean white backgrounds, subtle borders, restrained color, dense data tables, horizontal tab navigation, and cards with minimal shadows.
+Crypto-native investors expecting iShares-level visual credibility. Not developers.
 
----
+### Key Design Challenge
 
-## 2. Design System Tokens
-
-### Colors
-
-| Token | Value | Usage |
-|-------|-------|-------|
-| `page` | `#F8F8F8` | Page background (light warm gray) |
-| `card` | `#FFFFFF` | Card/content surfaces |
-| `card-hover` | `#FAFAFA` | Card hover state |
-| `brand` | `#00A36C` | Primary brand (institutional green) |
-| `brand-light` | `#E6F7F0` | Brand tint for badges/highlights |
-| `brand-dark` | `#007A50` | Brand dark for hover states |
-| `text-primary` | `#18181B` | Primary text (zinc-900) |
-| `text-secondary` | `#3F3F46` | Secondary text (zinc-700) |
-| `text-muted` | `#71717A` | Muted labels (zinc-500) |
-| `border-light` | `#E4E4E7` | Subtle borders (zinc-200) |
-| `border-medium` | `#D4D4D8` | Medium borders (zinc-300) |
-| `color-up` | `#16A34A` | Positive values (green-600) |
-| `color-down` | `#DC2626` | Negative values (red-600) |
-| `surface-dark` | `#18181B` | Footer, dark sections |
-
-### Typography
-
-- **Font family**: System sans-serif stack
-- **Data/numbers**: `font-mono tabular-nums` for all financial figures
-- **Section labels**: `text-xs font-medium uppercase tracking-widest text-text-muted`
-- **Section headings**: `text-xl font-bold text-text-primary`
-- **Body text**: `text-sm text-text-secondary`
-- **Table headers**: `text-xs font-medium uppercase tracking-wider text-text-muted`
-
-### Spacing & Layout
-
-- **Max content width**: `1280px` (`max-w-site`)
-- **Section padding**: `py-12 px-6 lg:px-12`
-- **Card padding**: `p-6` or `p-8`
-- **Card border**: `border border-border-light rounded-xl`
-- **Card shadow**: `shadow-card` (subtle: `0 1px 3px rgba(0,0,0,0.04)`)
-- **Section separator**: `border-t border-border-light`
+Developer artifacts in UI — raw hex IDs, contract addresses, nonces, emoji icons, and collapsible debug sections need to be removed or abstracted.
 
 ---
 
-## 3. Layout Architecture
+## Core User Experience
 
-### Two-Tier Header
+### Goal
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  [Logo] General Market     [Investment] [Vision]    [Wallet]│  ← Primary (h-14)
-├─────────────────────────────────────────────────────────────┤
-│  Markets  Portfolio  Create  Lend  Backtest  System         │  ← Sub-nav (h-10)
-└─────────────────────────────────────────────────────────────┘
-```
+Take the current frontend and make it look and feel like iShares.com — same layout, same functionality, just more polished and institutional.
 
-- Primary header: white bg, logo left, page tabs center, wallet right
-- Sub header: section scroll-anchors, changes based on active page
-- Both sticky, stacked
-- Investment sub-nav: Markets | Portfolio | Create | Lend | Backtest | System
-- Vision sub-nav: Leaderboard | Markets
+### What "More BlackRock" Means
 
-### Investment Page (Default / Prime)
+- Tighter typography — smaller labels, more uppercase tracking, cleaner hierarchy
+- Denser data — less whitespace waste, more info per card
+- Remove dev artifacts — no hex IDs, no emoji icons, no expand/collapse toggles
+- Proper data tables — iShares-style: muted headers, clean rows, right-aligned numbers
+- Restrained interaction — no hover lifts, no glow effects, just subtle border/shadow changes
+- ITP cards as fund tiles — name, ticker, NAV, AUM, status, YouTube video. Clean and compact.
 
-Single scrolling page with all sections stacked vertically, separated by `border-t border-border-light`.
+### What Stays
 
-### Vision Page
-
-Single scrolling page:
-- Section 1: **Leaderboard** — search + dense data table with agent rankings
-- Section 2: **Markets Data** — category tabs + virtualized grid of 50k+ assets
+- Light color system (#F8F8F8 page, white cards)
+- Tab-based single page layout
+- Current header/footer structure
+- All hooks, logic, contracts unchanged
+- YouTube videos on ITP cards (trust signal)
 
 ---
 
-## 4. Component Patterns (BlackRock-Inspired)
+## Desired Emotional Response
 
-### Data Tables
-- White background, no cell borders
-- Header row: uppercase, small, muted text, bottom border only
-- Row hover: `bg-card-hover`
-- Numbers: right-aligned, monospace, tabular-nums
-- Positive/negative: green-600 / red-600
+### Primary
 
-### Cards
-- `bg-white rounded-xl border border-border-light shadow-card`
-- Section label above card: `text-xs uppercase tracking-widest text-text-muted`
+**Trust and confidence.** The user should feel like they're using a real financial platform built by professionals, not a crypto side-project. The same feeling you get landing on iShares.com — "these people know what they're doing."
 
-### Buttons
-- Primary: `bg-zinc-900 text-white rounded-lg` (not colored)
-- Secondary: `border border-border-light text-text-secondary rounded-lg`
+### Emotion-Design Connections
+
+- **Confidence** → clean data tables, consistent typography, no visual noise
+- **Trust** → no dev artifacts visible, polished empty states, proper number formatting
+- **Calm control** → restrained colors, no flashy animations, institutional spacing
+- **Avoid: anxiety** → no red pulsing, no urgency tricks, no "crypto startup" energy
 
 ---
 
-## 5. Vision Page — AA Integration Spec
+## UX Pattern Analysis & Inspiration
 
-### Restyle Rules (AA Dark → Light)
+### Reference: iShares.com
 
-| AA Pattern | General Market Pattern |
-|---|---|
-| `bg-terminal` / `bg-black` | `bg-page` |
-| `text-white` | `text-text-primary` |
-| `text-white/60` | `text-text-muted` |
-| `border-white/10` | `border-border-light` |
-| `bg-white/10` | `bg-muted` |
-| `text-accent` (red) | `text-brand` (green) |
-| `font-mono` everywhere | `font-mono` only on numbers |
+**What they do that we adopt:**
 
-### Components to Port
+- **Filter bar above content** — category/sort controls sit above the data, not in a sidebar
+- **Number formatting** — percentages to 2 decimals, currency with commas, right-aligned, consistent
+- **Neutral palette** — white/light gray backgrounds, blue for links only, no decorative color
+- **Typography hierarchy** — large page title, medium section headers, small dense data. Clear without being loud.
+- **Uppercase muted column headers** — `text-xs tracking-wider` for labels
 
-| AA Source | Target | Notes |
-|---|---|---|
-| `LeaderboardTable.tsx` | `vision/LeaderboardTable.tsx` | Restyle to white card |
-| `LeaderboardWithSearch.tsx` | `vision/LeaderboardSection.tsx` | Add institutional header |
-| `AnimatedLeaderboardRow.tsx` | `vision/AnimatedLeaderboardRow.tsx` | Keep animations |
-| `app/markets/page.tsx` | `vision/VisionMarketsGrid.tsx` | Extract as component |
-| `useLeaderboard.ts` | `hooks/vision/useLeaderboard.ts` | Change API URL |
-| `useLeaderboardSSE.ts` | `hooks/vision/useLeaderboardSSE.ts` | Change API URL |
-| `useMarketSnapshot.ts` | `hooks/vision/useMarketSnapshot.ts` | Change API URL |
+### What to Adopt
 
-### New Dependencies
-- `@tanstack/react-virtual` ^3
+- **Smart card grid for ITPs** — keep card-based, but add a sort/filter bar above (sort by NAV, AUM, 24h%, name). Paginate or virtualize when card count grows.
+- Filter bar pattern for Markets section (replace emoji tile grid)
+- Compact number formatting with `tabular-nums font-mono`
+
+### Anti-Patterns to Avoid
+
+- Emoji icons for market categories
+- Collapsible accordion sections for primary content
+- Showing raw contract addresses / hex IDs to end users
+- "View Details" buttons that dump debug info
 
 ---
 
-## 6. Responsive Breakpoints
+## Design System Foundation
 
-| Breakpoint | Width | Behavior |
-|---|---|---|
-| Mobile | < 768px | Single column, hamburger menu |
-| Tablet | 768-1024px | 2-column grids |
-| Desktop | > 1024px | Full layout |
+### Choice
+
+**Tailwind CSS with custom semantic tokens** as base, plus new libraries where they add institutional polish.
+
+### Current Problem
+
+Looks like a default Vercel/Next.js template. Clean but generic. Needs more visual personality to feel like a real financial platform.
+
+### Libraries to Evaluate
+
+- **shadcn/ui** — headless Tailwind components (tables, dialogs, tabs, dropdowns). Gives polished interaction patterns without owning the visual style.
+- **Recharts** (already used) — keep for portfolio charts
+- **@tanstack/react-table** — proper sortable/filterable data tables with column resizing, pagination. Replaces hand-rolled table markup.
+- **framer-motion** — subtle micro-animations (card entrance, number transitions, tab switches) that make it feel premium without being flashy
+
+### Customization Strategy
+
+- Use shadcn/ui primitives for consistent dialogs, dropdowns, tabs — restyle to match iShares aesthetic
+- Use @tanstack/react-table for ITP listing sort/filter and portfolio tables
+- Tighten Tailwind tokens where needed (spacing, shadows, typography scale)
+- Add subtle transitions that make it feel crafted, not template-generated
+
+---
+
+## Defining Experience
+
+### The Core Interaction
+
+**"Everything is here, live, on one page."**
+
+Trust comes from showing the full stack: fund cards with videos, backtester, live AP keeper balances, inventory bumps, consensus status. Nothing hidden. A user scrolls down and sees the entire operation — that's what makes it feel real, not just a buy button with a nice font.
+
+### Trust Through Transparency
+
+The long single page IS the product differentiator:
+- **Markets** — fund cards with video explainers, live NAVs
+- **Portfolio** — positions, PnL, trade history
+- **Create** — build your own index product
+- **Lend** — vault stats, deposit/withdraw, Morpho markets
+- **Backtest** — run simulations before committing money
+- **System** — live AP balances, fill speed charts, inventory bumps, consensus health
+
+No other crypto product shows you the AP keeper's wallet balance and fill speed in real-time. That's the trust.
+
+### ITP Card Structure
+
+1. **YouTube video** (top) — trust/explainer content
+2. **Fund identity** — name, ticker, status dot
+3. **Key metrics** — NAV (large), AUM, asset count
+4. **Actions** — Buy / Sell / Chart / Rebalance / Borrow
+
+### What "More BlackRock" Means Here
+
+Make each of those sections look institutional — not add/remove sections. The content is right, the styling needs to catch up.
+
+---
+
+## Visual Design Foundation
+
+### Color System
+
+**Keep current tokens** — already iShares-aligned:
+
+| Token | Value | Status |
+|-------|-------|--------|
+| `page` | `#F8F8F8` | Keep |
+| `card` | `#FFFFFF` | Keep |
+| `text-primary` | `#18181B` | Keep |
+| `text-muted` | `#A1A1AA` | Keep |
+| `border-light` | `#E4E4E7` | Keep |
+| `color-up` | `#16A34A` | Keep |
+| `color-down` | `#DC2626` | Keep |
+| `brand` | `#00A36C` | Evaluate — currently unused. Either use it or remove it. |
+
+### Typography — What to Change
+
+Current fonts (Inter + JetBrains Mono) are fine but applied too loosely. Tighten:
+
+- **Section eyebrows**: `text-[10px] font-medium uppercase tracking-[0.15em] text-text-muted` — smaller, wider tracked
+- **Card titles**: `text-[15px] font-semibold` — not `text-xl`, tighter
+- **Table headers**: `text-[11px] font-medium uppercase tracking-wider` — smaller than current
+- **Financial numbers**: always `font-mono tabular-nums` — enforce everywhere
+
+### Spacing — What to Change
+
+Current spacing is too generous. BlackRock is denser:
+
+- **Card padding**: `p-5` not `p-6` or `p-8`
+- **Section gaps**: `gap-3` not `gap-4` between cards
+- **Table cell padding**: `px-3 py-2.5` not `px-4 py-3`
+- **Section padding**: `py-10` not `py-12`
+
+### Isometric Illustrations
+
+Add isometric 3D illustrations/animations as visual personality:
+
+- **Section headers** — small iso graphics next to section eyebrows (e.g., iso chart for Markets, iso vault for Lend, iso gears for System)
+- **Empty states** — iso illustrations instead of plain text ("No positions yet" + iso portfolio graphic)
+- **Loading states** — subtle iso animations instead of generic spinners
+- **Animated** — gentle float/rotate animations via framer-motion, not static images
+- **Style** — monochrome or zinc-toned to match institutional palette. Not colorful cartoon iso.
+- **Source** — consider libraries like 3dicons.co, iconscout isometric packs, or custom SVGs
+
+### What Makes It Stop Looking Like a Template
+
+1. **Tighter type scale** — smaller labels, wider tracking on uppercase text
+2. **Denser spacing** — less air between elements
+3. **Consistent number formatting** — every financial value: mono, tabular-nums, right-aligned, 2 decimals
+4. **Isometric illustrations** — unique visual identity at section headers and empty states
+5. **shadcn/ui components** — replace hand-rolled dialogs/tabs/dropdowns with polished primitives
+6. **framer-motion entrances** — cards and iso graphics animate in on scroll

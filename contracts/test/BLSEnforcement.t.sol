@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../src/core/Index.sol";
+import "../src/core/Investment.sol";
 import "../src/core/BLSCustody.sol";
 import "../src/registry/IssuerRegistry.sol";
 import "../src/registry/CollateralRegistry.sol";
@@ -20,7 +20,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 ///         Empty signatures, empty pubkeys, unset registries must all revert.
 ///         No testMode, no adminCreateBridgedItp, no admin bypass functions exist.
 contract BLSEnforcementTest is TestHelper {
-    Index public index;
+    Investment public index;
     BLSCustody public custody;
     IssuerRegistry public issuerRegistry;
     Governance public governance;
@@ -31,12 +31,12 @@ contract BLSEnforcementTest is TestHelper {
 
         // Deploy Index with real MockERC20 as USDC (address(0x1) is ecrecover precompile)
         MockERC20 usdc = new MockERC20("USDC", "USDC", 18);
-        Index impl = new Index();
+        Investment impl = new Investment();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(Index.initialize, (address(governance), address(usdc)))
+            abi.encodeCall(Investment.initialize, (address(governance), address(usdc)))
         );
-        index = Index(address(proxy));
+        index = Investment(address(proxy));
 
         // Deploy BLSCustody
         BLSCustody custodyImpl = new BLSCustody();

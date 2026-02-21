@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use axum::extract::{Path as AxumPath, Query, State};
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::Json;
 use axum::routing::get;
 use axum::Router;
@@ -33,6 +33,10 @@ pub struct AppState {
     /// Global simulation data cache — loaded at startup, can be reloaded via /sim/reload-cache.
     pub sim_cache: Arc<RwLock<Arc<simulation::SimDataCache>>>,
     pub chain_cache: Arc<crate::chain_cache::ChainCache>,
+    /// Optional admin token for protecting destructive admin endpoints.
+    pub admin_token: Option<String>,
+    /// P2.8: Allowed CORS origins (empty = allow any, with warning)
+    pub cors_origins: Vec<String>,
 }
 
 /// In-memory TTL cache for hot endpoints.
@@ -83,10 +87,23 @@ pub fn load_symbol_map(
 }
 
 pub fn router(state: Arc<AppState>) -> Router {
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
+    // P2.8: Restrict CORS origins when configured
+    let cors = if state.cors_origins.is_empty() {
+        tracing::warn!("No CORS origins configured — allowing all origins (use --cors-origin to restrict)");
+        CorsLayer::new()
+            .allow_origin(Any)
+            .allow_methods(Any)
+            .allow_headers(Any)
+    } else {
+        let origins: Vec<axum::http::HeaderValue> = state.cors_origins.iter()
+            .filter_map(|o| o.parse().ok())
+            .collect();
+        tracing::info!(origins = ?state.cors_origins, "CORS restricted to configured origins");
+        CorsLayer::new()
+            .allow_origin(origins)
+            .allow_methods(Any)
+            .allow_headers(Any)
+    };
 
     Router::new()
         .route("/health", get(health))
@@ -4478,6 +4495,39 @@ async fn snapshot(
     }))
 }
 
+// ---- Admin auth helper ----
+
+/// Validates the Authorization header against the configured admin token.
+/// Returns 403 if no token is configured or if the provided token does not match.
+fn require_admin_auth(
+    headers: &HeaderMap,
+    state: &AppState,
+) -> Result<(), (StatusCode, Json<ErrorResponse>)> {
+    let expected = state.admin_token.as_deref().ok_or_else(|| {
+        (
+            StatusCode::FORBIDDEN,
+            Json(ErrorResponse {
+                error: "Admin endpoints disabled (no ADMIN_TOKEN configured)".to_string(),
+            }),
+        )
+    })?;
+
+    let provided = headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .map(|v| v.strip_prefix("Bearer ").unwrap_or(v));
+
+    match provided {
+        Some(token) if token == expected => Ok(()),
+        _ => Err((
+            StatusCode::FORBIDDEN,
+            Json(ErrorResponse {
+                error: "Invalid or missing admin token".to_string(),
+            }),
+        )),
+    }
+}
+
 // ---- /admin/truncate/{table} ----
 
 const TRUNCATABLE_TABLES: &[&str] = &[
@@ -4494,8 +4544,11 @@ const TRUNCATABLE_TABLES: &[&str] = &[
 
 async fn admin_truncate(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
     AxumPath(table): AxumPath<String>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    require_admin_auth(&headers, &state)?;
+
     if !TRUNCATABLE_TABLES.contains(&table.as_str()) {
         return Err((
             StatusCode::BAD_REQUEST,
@@ -4523,7 +4576,10 @@ async fn admin_truncate(
 
 async fn admin_reset_session(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    require_admin_auth(&headers, &state)?;
+
     match sqlx::query("TRUNCATE itp_snapshots, trades CASCADE")
         .execute(&state.pool)
         .await

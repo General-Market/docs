@@ -2,12 +2,12 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import "../src/interfaces/IIndex.sol";
+import "../src/interfaces/IInvestment.sol";
 import "../src/libraries/TypesLib.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract ProcessOrder5 is Script {
-    IIndex index = IIndex(0x0B306BF915C4d645ff596e518fAf3F9669b97016);
+    IInvestment index = IInvestment(0x0B306BF915C4d645ff596e518fAf3F9669b97016);
     address user = 0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65;
     uint256 deployerKey = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
 

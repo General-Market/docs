@@ -24,13 +24,13 @@ export function SimProgressBar(props: SimProgressBarProps) {
 
     return (
       <div className="mb-4">
-        <div className="flex justify-between text-xs text-white/60 font-mono mb-1">
+        <div className="flex justify-between text-xs text-text-muted font-mono mb-1">
           <span>Simulating... {progress.current_date}</span>
           <span>{progress.pct.toFixed(1)}%</span>
         </div>
-        <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+        <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
           <div
-            className="h-full bg-accent rounded-full transition-all duration-300 ease-out"
+            className="h-full bg-zinc-900 rounded-full transition-all duration-300 ease-out"
             style={{ width: `${Math.min(progress.pct, 100)}%` }}
           />
         </div>
@@ -44,7 +44,7 @@ export function SimProgressBar(props: SimProgressBarProps) {
 
   return (
     <div className="mb-4">
-      <div className="flex justify-between text-xs text-white/60 font-mono mb-1">
+      <div className="flex justify-between text-xs text-text-muted font-mono mb-1">
         <span>
           {progress
             ? `Running ${progress.variant} (${progress.variant_index + 1}/${totalVariants}) — ${progress.current_date}`
@@ -62,9 +62,9 @@ export function SimProgressBar(props: SimProgressBarProps) {
           }
         </span>
       </div>
-      <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-2">
+      <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-2">
         <div
-          className="h-full bg-accent rounded-full transition-all duration-300 ease-out"
+          className="h-full bg-zinc-900 rounded-full transition-all duration-300 ease-out"
           style={{ width: `${totalVariants === 0 ? 0 : progress ? ((completedCount + progress.pct / 100) / safeTotalVariants) * 100 : (completedCount / safeTotalVariants) * 100}%` }}
         />
       </div>
@@ -75,10 +75,10 @@ export function SimProgressBar(props: SimProgressBarProps) {
             key={i}
             className={`w-3 h-3 rounded-full transition-colors duration-300 ${
               i < completedCount
-                ? 'bg-green-400'
+                ? 'bg-color-up'
                 : i === completedCount && progress
-                  ? 'bg-accent animate-pulse'
-                  : 'bg-white/20'
+                  ? 'bg-zinc-900 animate-pulse'
+                  : 'bg-border-light'
             }`}
           />
         ))}

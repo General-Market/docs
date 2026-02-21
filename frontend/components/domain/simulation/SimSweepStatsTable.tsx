@@ -26,49 +26,49 @@ export function SimSweepStatsTable({ variants }: SimSweepStatsTableProps) {
     <div className="overflow-x-auto mb-4">
       <table className="w-full">
         <thead>
-          <tr className="text-white/60 text-[10px] font-mono border-b border-white/10 uppercase">
-            <th className="text-left pb-2 pr-3">Variant</th>
-            <th className="text-right pb-2 pr-3">Return</th>
-            <th className="text-right pb-2 pr-3">Annual.</th>
-            <th className="text-right pb-2 pr-3">Max DD</th>
-            <th className="text-right pb-2 pr-3">Sharpe</th>
-            <th className="text-right pb-2 pr-3">Fees</th>
-            <th className="text-right pb-2">Trades</th>
+          <tr className="text-xs font-medium uppercase tracking-wider text-text-muted border-b border-border-light bg-muted">
+            <th className="text-left pb-2 pt-2 pr-3 px-3">Variant</th>
+            <th className="text-right pb-2 pt-2 pr-3 px-3">Return</th>
+            <th className="text-right pb-2 pt-2 pr-3 px-3">Annual.</th>
+            <th className="text-right pb-2 pt-2 pr-3 px-3">Max DD</th>
+            <th className="text-right pb-2 pt-2 pr-3 px-3">Sharpe</th>
+            <th className="text-right pb-2 pt-2 pr-3 px-3">Fees</th>
+            <th className="text-right pb-2 pt-2 px-3">Trades</th>
           </tr>
         </thead>
         <tbody>
           {sorted.map(v => (
-            <tr key={v.variant} className="border-b border-white/5 hover:bg-white/5">
-              <td className="py-1.5 pr-3 text-white text-xs font-mono font-bold">
+            <tr key={v.variant} className="border-b border-border-light hover:bg-card-hover">
+              <td className="py-1.5 pr-3 px-3 text-text-primary text-xs font-mono font-bold">
                 {v.variant}
               </td>
-              <td className={`py-1.5 pr-3 text-right text-xs font-mono ${
-                v.stats.total_return_pct === bestReturn ? 'text-green-400 font-bold' :
-                v.stats.total_return_pct >= 0 ? 'text-green-400' : 'text-accent'
+              <td className={`py-1.5 pr-3 px-3 text-right text-xs font-mono tabular-nums ${
+                v.stats.total_return_pct === bestReturn ? 'text-color-up font-bold' :
+                v.stats.total_return_pct >= 0 ? 'text-color-up' : 'text-color-down'
               }`}>
                 {v.stats.total_return_pct >= 0 ? '+' : ''}{v.stats.total_return_pct.toFixed(2)}%
               </td>
-              <td className={`py-1.5 pr-3 text-right text-xs font-mono ${
-                v.stats.annualized_return >= 0 ? 'text-green-400' : 'text-accent'
+              <td className={`py-1.5 pr-3 px-3 text-right text-xs font-mono tabular-nums ${
+                v.stats.annualized_return >= 0 ? 'text-color-up' : 'text-color-down'
               }`}>
                 {v.stats.annualized_return >= 0 ? '+' : ''}{v.stats.annualized_return.toFixed(2)}%
               </td>
-              <td className={`py-1.5 pr-3 text-right text-xs font-mono ${
-                v.stats.max_drawdown_pct === bestDrawdown ? 'text-green-400 font-bold' : 'text-accent'
+              <td className={`py-1.5 pr-3 px-3 text-right text-xs font-mono tabular-nums ${
+                v.stats.max_drawdown_pct === bestDrawdown ? 'text-color-up font-bold' : 'text-color-down'
               }`}>
                 {v.stats.max_drawdown_pct.toFixed(2)}%
               </td>
-              <td className={`py-1.5 pr-3 text-right text-xs font-mono ${
-                v.stats.sharpe_ratio === bestSharpe ? 'text-green-400 font-bold' :
-                v.stats.sharpe_ratio >= 1 ? 'text-green-400' :
-                v.stats.sharpe_ratio >= 0 ? 'text-white' : 'text-accent'
+              <td className={`py-1.5 pr-3 px-3 text-right text-xs font-mono tabular-nums ${
+                v.stats.sharpe_ratio === bestSharpe ? 'text-color-up font-bold' :
+                v.stats.sharpe_ratio >= 1 ? 'text-color-up' :
+                v.stats.sharpe_ratio >= 0 ? 'text-text-primary' : 'text-color-down'
               }`}>
                 {v.stats.sharpe_ratio.toFixed(3)}
               </td>
-              <td className="py-1.5 pr-3 text-right text-white/60 text-xs font-mono">
+              <td className="py-1.5 pr-3 px-3 text-right text-text-muted text-xs font-mono tabular-nums">
                 {v.stats.total_fees_pct.toFixed(2)}%
               </td>
-              <td className="py-1.5 text-right text-white/60 text-xs font-mono">
+              <td className="py-1.5 px-3 text-right text-text-muted text-xs font-mono tabular-nums">
                 {v.stats.total_trades}
               </td>
             </tr>

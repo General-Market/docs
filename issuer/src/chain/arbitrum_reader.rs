@@ -690,11 +690,14 @@ impl<M: Middleware> ArbitrumChainReader<M> {
                     orders.push(full_order);
                 }
                 None => {
-                    warn!(
+                    // Order was deleted (already completed via completeBuyOrder) or never existed.
+                    // Mark as seen to prevent infinite retries on stale events.
+                    debug!(
                         order_id = %event.order_id,
                         code = "ORDER-004",
-                        "Cross-chain order not found on-chain (order_id may be invalid)"
+                        "Cross-chain order not found on-chain (already completed or invalid), marking as seen"
                     );
+                    self.seen_orders.write().await.insert(dedup_key);
                 }
             }
         }

@@ -54,19 +54,15 @@ impl Default for ReconstructorConfig {
     }
 }
 
-// Generate contract bindings for Index.sol (extended for state reconstruction)
+// Generate contract bindings for Investment.sol (state reconstruction)
 abigen!(
     IndexReconstructContract,
     r#"[
-        function currentCycle() external view returns (uint256)
+        function lastProcessedCycleNumber() external view returns (uint256)
         function nextOrderId() external view returns (uint256)
-        function lastProcessedOrderId() external view returns (uint256)
-        function assetCount() external view returns (uint256)
-        function getPrice(uint256 assetIdx) external view returns (uint256)
-        function orders(uint256 orderId) external view returns (uint256 id, address user, bytes32 pairId, uint8 side, uint256 amount, uint256 limitPrice, uint256 slippageTier, uint256 deadline, bytes32 itpId, uint256 timestamp, uint8 status)
-        function nextItpId() external view returns (uint256)
-        function getITPState(bytes32 itpId) external view returns (uint256[] assetIndices, uint256[] weights, uint256[] inventory)
-        function getPendingRebalance(bytes32 itpId) external view returns (bool active, uint256[] targetWeights, uint256 timestamp)
+        function getOrder(uint256 orderId) external view returns (uint256 id, address user, bytes32 pairId, uint8 side, uint256 amount, uint256 limitPrice, uint256 slippageTier, uint256 deadline, bytes32 itpId, uint256 timestamp, uint8 status)
+        function getItpCount() external view returns (uint256)
+        function getITPState(bytes32 itpId) external view returns (address creator, uint256 totalSupply, uint256 nav, address[] assets, uint256[] weights, uint256[] inventory)
     ]"#
 );
 
@@ -99,8 +95,6 @@ pub struct ReconstructionStats {
     pub batched_orders: u64,
     /// Number of ITPs loaded
     pub itps_loaded: u64,
-    /// Number of prices loaded
-    pub prices_loaded: u64,
     /// Current cycle number
     pub current_cycle: U256,
 }
@@ -167,10 +161,10 @@ where
         // Step 1: Read cycle and order metadata
         info!("Step 1: Reading cycle and order metadata...");
         let current_cycle = contract
-            .current_cycle()
+            .last_processed_cycle_number()
             .call()
             .await
-            .map_err(|e| Error::ChainRead(format!("Failed to read currentCycle: {}", e)))?;
+            .map_err(|e| Error::ChainRead(format!("Failed to read lastProcessedCycleNumber: {}", e)))?;
 
         let next_order_id = contract
             .next_order_id()
@@ -178,112 +172,83 @@ where
             .await
             .map_err(|e| Error::ChainRead(format!("Failed to read nextOrderId: {}", e)))?;
 
-        let last_processed_id = contract
-            .last_processed_order_id()
-            .call()
-            .await
-            .map_err(|e| Error::ChainRead(format!("Failed to read lastProcessedOrderId: {}", e)))?;
-
         state.current_cycle = current_cycle;
         state.next_order_id = next_order_id;
-        state.last_processed_order_id = last_processed_id;
+        state.last_processed_order_id = U256::zero();
         stats.current_cycle = current_cycle;
 
         debug!(
             current_cycle = %current_cycle,
             next_order_id = %next_order_id,
-            last_processed_id = %last_processed_id,
             "Cycle metadata loaded"
         );
 
-        // Step 2: Read all prices
-        info!("Step 2: Reading asset prices...");
-        let asset_count = contract
-            .asset_count()
-            .call()
-            .await
-            .map_err(|e| Error::ChainRead(format!("Failed to read assetCount: {}", e)))?;
+        // Step 2: Prices — on-chain assetPrices mapping is unused; prices come from
+        // the data-node / Bitget feed at runtime. Nothing to load here.
+        debug!("Step 2: Skipping on-chain prices (sourced from data-node)");
 
-        for i in 0..asset_count.as_u64() {
-            let idx = U256::from(i);
-            match contract.get_price(idx).call().await {
-                Ok(price) => {
-                    state.prices.insert(idx, price);
-                    stats.prices_loaded += 1;
-                }
-                Err(e) => {
-                    warn!(code = "INFRA-001", asset_idx = i, error = %e, "Failed to read price, skipping");
-                }
-            }
-        }
+        // Step 3: Read all orders (IDs start at 1)
+        info!("Step 3: Reading orders...");
+        for i in 1..next_order_id.as_u64() {
+            stats.orders_read += 1;
 
-        debug!(prices_loaded = stats.prices_loaded, "Prices loaded");
+            match contract.get_order(U256::from(i)).call().await {
+                Ok((
+                    id,
+                    user,
+                    pair_id,
+                    side,
+                    amount,
+                    limit_price,
+                    slippage_tier,
+                    deadline,
+                    itp_id,
+                    timestamp,
+                    status,
+                )) => {
+                    let order_status = match status {
+                        0 => OrderStatus::Pending,
+                        1 => OrderStatus::Batched,
+                        2 => OrderStatus::Filled,
+                        3 => OrderStatus::Cancelled,
+                        4 => OrderStatus::Expired,
+                        _ => OrderStatus::Pending,
+                    };
 
-        // Step 3: Read pending orders
-        info!("Step 3: Reading pending orders...");
-        if next_order_id > last_processed_id {
-            let start_id = last_processed_id + U256::from(1);
-            for i in start_id.as_u64()..next_order_id.as_u64() {
-                stats.orders_read += 1;
-
-                match contract.orders(U256::from(i)).call().await {
-                    Ok((
+                    let order = LimitOrder {
                         id,
                         user,
-                        pair_id,
-                        side,
+                        pair_id: pair_id.into(),
+                        side: side.into(),
                         amount,
                         limit_price,
                         slippage_tier,
                         deadline,
-                        itp_id,
+                        itp_id: itp_id.into(),
                         timestamp,
-                        status,
-                    )) => {
-                        let order_status = match status {
-                            0 => OrderStatus::Pending,
-                            1 => OrderStatus::Batched,
-                            2 => OrderStatus::Filled,
-                            3 => OrderStatus::Cancelled,
-                            4 => OrderStatus::Expired,
-                            _ => OrderStatus::Pending,
-                        };
+                        status: order_status,
+                    };
 
-                        let order = LimitOrder {
-                            id,
-                            user,
-                            pair_id: pair_id.into(),
-                            side: side.into(),
-                            amount,
-                            limit_price,
-                            slippage_tier,
-                            deadline,
-                            itp_id: itp_id.into(),
-                            timestamp,
-                            status: order_status,
-                        };
-
-                        match order_status {
-                            OrderStatus::Pending => {
-                                state.pending_orders.push(order);
-                                stats.pending_orders += 1;
-                            }
-                            OrderStatus::Batched => {
-                                state.pending_fills.push(order);
-                                stats.batched_orders += 1;
-                            }
-                            _ => {
-                                // Skip filled/cancelled/expired orders
-                            }
+                    match order_status {
+                        OrderStatus::Pending => {
+                            state.pending_orders.push(order);
+                            stats.pending_orders += 1;
                         }
-
-                        if stats.orders_read % 1000 == 0 {
-                            debug!(orders_read = stats.orders_read, "Reading orders progress...");
+                        OrderStatus::Batched => {
+                            state.pending_fills.push(order);
+                            stats.batched_orders += 1;
+                        }
+                        _ => {
+                            // Skip filled/cancelled/expired orders
                         }
                     }
-                    Err(e) => {
-                        warn!(code = "INFRA-001", order_id = i, error = %e, "Failed to read order, skipping");
+
+                    if stats.orders_read % 1000 == 0 {
+                        debug!(orders_read = stats.orders_read, "Reading orders progress...");
                     }
+                }
+                Err(e) => {
+                    warn!(code = "INFRA-001", order_id = i, error = %e, "Failed to read order, skipping");
                 }
             }
         }
@@ -294,21 +259,21 @@ where
             "Orders loaded"
         );
 
-        // Step 4: Read all ITPs
+        // Step 4: Read all ITPs (IDs start at 1)
         info!("Step 4: Reading ITP states...");
-        let next_itp_id = contract
-            .next_itp_id()
+        let itp_count = contract
+            .get_itp_count()
             .call()
             .await
-            .map_err(|e| Error::ChainRead(format!("Failed to read nextItpId: {}", e)))?;
+            .map_err(|e| Error::ChainRead(format!("Failed to read getItpCount: {}", e)))?;
 
-        for i in 0..next_itp_id.as_u64() {
+        for i in 1..=itp_count.as_u64() {
             // Convert index to bytes32 ITP ID
             let mut itp_id_bytes = [0u8; 32];
             itp_id_bytes[24..32].copy_from_slice(&i.to_be_bytes());
             let itp_id = H256::from(itp_id_bytes);
 
-            match self.reconstruct_itp(&contract, itp_id, &state.prices).await {
+            match self.reconstruct_itp(&contract, itp_id).await {
                 Ok(itp_state) => {
                     state.itps.insert(itp_id, itp_state);
                     stats.itps_loaded += 1;
@@ -401,7 +366,6 @@ where
             pending_orders = stats.pending_orders,
             batched_orders = stats.batched_orders,
             itps_loaded = stats.itps_loaded,
-            prices_loaded = stats.prices_loaded,
             current_cycle = %stats.current_cycle,
             block = state.reconstructed_at_block,
             "State reconstruction complete"
@@ -415,70 +379,33 @@ where
         &self,
         contract: &IndexReconstructContract<M>,
         itp_id: H256,
-        prices: &HashMap<U256, U256>,
     ) -> Result<ITPState, Error> {
-        // Get ITP state (assets, weights, inventory)
-        let (asset_indices, weights, inventory) = contract
+        // getITPState returns (creator, totalSupply, nav, assets, weights, inventory)
+        let (_creator, total_supply, nav, _assets, weights, inventory) = contract
             .get_itp_state(itp_id.into())
             .call()
             .await
             .map_err(|e| Error::ChainRead(format!("Failed to read ITP state: {}", e)))?;
 
-        // Get pending rebalance info
-        let (active, target_weights, rebalance_timestamp) = contract
-            .get_pending_rebalance(itp_id.into())
-            .call()
-            .await
-            .map_err(|e| Error::ChainRead(format!("Failed to read pending rebalance: {}", e)))?;
-
-        let mut itp_state = ITPState {
-            asset_indices: asset_indices.clone(),
-            current_weights: weights.clone(),
-            current_inventory: inventory.clone(),
-            target_weights: if active { Some(target_weights.clone()) } else { None },
-            rebalance_progress: 1.0, // Will compute below if rebalance active
-            collateral_by_chain: HashMap::new(),
-            rebalance_started_at: if active { Some(rebalance_timestamp) } else { None },
-            total_value: U256::zero(),
+        // total_value = nav * totalSupply / 1e18
+        let total_value = if !total_supply.is_zero() && !nav.is_zero() {
+            nav.saturating_mul(total_supply) / U256::exp10(18)
+        } else {
+            U256::zero()
         };
 
-        // Calculate total value using prices
-        itp_state.total_value = self.calculate_itp_value(&inventory, &asset_indices, prices);
-
-        // Compute rebalance progress if active
-        if active && !itp_state.total_value.is_zero() {
-            itp_state.rebalance_progress = self.compute_rebalance_progress(
-                &inventory,
-                &weights,
-                &target_weights,
-                itp_state.total_value,
-            );
-        }
+        let itp_state = ITPState {
+            asset_indices: vec![], // No longer tracked by index; assets are addresses
+            current_weights: weights,
+            current_inventory: inventory,
+            target_weights: None, // getPendingRebalance removed; rebalance tracked via events
+            rebalance_progress: 1.0,
+            collateral_by_chain: HashMap::new(),
+            rebalance_started_at: None,
+            total_value,
+        };
 
         Ok(itp_state)
-    }
-
-    /// Calculate ITP total value from inventory and prices
-    ///
-    /// Value = sum(inventory[i] * price[asset_indices[i]] / 1e18)
-    /// All values use 18 decimals precision.
-    fn calculate_itp_value(
-        &self,
-        inventory: &[U256],
-        asset_indices: &[U256],
-        prices: &HashMap<U256, U256>,
-    ) -> U256 {
-        let mut total = U256::zero();
-        for (i, &asset_idx) in asset_indices.iter().enumerate() {
-            if let Some(&price) = prices.get(&asset_idx) {
-                if let Some(&amount) = inventory.get(i) {
-                    // value = amount * price / 1e18
-                    let value = amount.saturating_mul(price) / U256::exp10(18);
-                    total = total.saturating_add(value);
-                }
-            }
-        }
-        total
     }
 
     /// Compute rebalance progress per architecture algorithm
@@ -691,59 +618,6 @@ mod tests {
         assert_eq!(stats.duration_ms, 0);
         assert_eq!(stats.orders_read, 0);
         assert_eq!(stats.itps_loaded, 0);
-    }
-
-    #[test]
-    fn test_calculate_itp_value_with_prices() {
-        let config = ReconstructorConfig::default();
-        let provider = Arc::new(Provider::<Http>::try_from("http://localhost:8545").unwrap());
-        let reconstructor = StateReconstructor::with_provider(provider, config);
-
-        let e18 = U256::exp10(18);
-
-        // Inventory: 100 units of asset 0, 50 units of asset 1
-        let inventory = vec![
-            U256::from(100) * e18, // 100 units (18 decimals)
-            U256::from(50) * e18,  // 50 units (18 decimals)
-        ];
-        let asset_indices = vec![U256::from(0), U256::from(1)];
-
-        // Prices: asset 0 = $10, asset 1 = $20
-        let mut prices = HashMap::new();
-        prices.insert(U256::from(0), U256::from(10) * e18); // $10
-        prices.insert(U256::from(1), U256::from(20) * e18); // $20
-
-        let total_value = reconstructor.calculate_itp_value(&inventory, &asset_indices, &prices);
-
-        // Expected: 100 * $10 + 50 * $20 = $1000 + $1000 = $2000
-        let expected = U256::from(2000) * e18;
-        assert_eq!(total_value, expected);
-    }
-
-    #[test]
-    fn test_calculate_itp_value_missing_price() {
-        let config = ReconstructorConfig::default();
-        let provider = Arc::new(Provider::<Http>::try_from("http://localhost:8545").unwrap());
-        let reconstructor = StateReconstructor::with_provider(provider, config);
-
-        let e18 = U256::exp10(18);
-
-        // Inventory includes asset 2, but we don't have a price for it
-        let inventory = vec![
-            U256::from(100) * e18,
-            U256::from(50) * e18,
-        ];
-        let asset_indices = vec![U256::from(0), U256::from(2)]; // Asset 2 has no price
-
-        let mut prices = HashMap::new();
-        prices.insert(U256::from(0), U256::from(10) * e18);
-        // No price for asset 2
-
-        let total_value = reconstructor.calculate_itp_value(&inventory, &asset_indices, &prices);
-
-        // Expected: only asset 0 counted: 100 * $10 = $1000
-        let expected = U256::from(1000) * e18;
-        assert_eq!(total_value, expected);
     }
 
     #[test]

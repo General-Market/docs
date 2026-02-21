@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { SimFilterPanel, SimFilterState } from './SimFilterPanel'
 import { SimProgressBar } from './SimProgressBar'
 import { SimStatsGrid } from './SimStatsGrid'
@@ -9,20 +9,27 @@ import { SimHoldingsTable } from './SimHoldingsTable'
 import { SimSweepStatsTable } from './SimSweepStatsTable'
 import { useSimulation } from '@/hooks/useSimulation'
 import { useSimSweep } from '@/hooks/useSimSweep'
+import { DATA_NODE_URL } from '@/lib/config'
 
-const DATA_NODE_URL = process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200'
+interface DeployedItpRef {
+  itpId: string
+  name: string
+  symbol: string
+}
 
 interface BacktestSectionProps {
   expanded: boolean
   onToggle: () => void
   onDeployIndex?: (holdings: { symbol: string; weight: number }[]) => void
+  deployedItps?: DeployedItpRef[]
+  onRebalanceItp?: (itpId: string) => void
 }
 
-export function BacktestSection({ expanded, onToggle, onDeployIndex }: BacktestSectionProps) {
+export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItps, onRebalanceItp }: BacktestSectionProps) {
   const [filters, setFilters] = useState<SimFilterState>({
-    category_id: 'layer-1',
-    top_n: 10,
-    weighting: 'equal',
+    category_id: 'made-in-china',
+    top_n: 5,
+    weighting: 'multi_factor_90',
     rebalance_days: 30,
     base_fee_pct: 0.1,
     spread_multiplier: 1.0,
@@ -30,6 +37,16 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex }: BacktestS
     sweep_categories: [],
     threshold_pct: null,
     start_date: '',
+    fng_mode: '',
+    fng_fear: 25,
+    fng_greed: 75,
+    fng_cash_pct: 0.5,
+    dom_mode: '',
+    dom_lookback: 30,
+    vc_mode: '',
+    vc_investors: 'a16z, paradigm, sequoia, binance labs, coinbase ventures',
+    vc_min_amount_m: 0,
+    vc_round_types: 'series_a, seed, series_b',
   })
   const [isFullscreen, setIsFullscreen] = useState(false)
 
@@ -47,6 +64,16 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex }: BacktestS
       spread_multiplier: filters.spread_multiplier,
       threshold_pct: filters.threshold_pct,
       start_date: filters.start_date || undefined,
+      fng_mode: filters.fng_mode || undefined,
+      fng_fear: filters.fng_fear,
+      fng_greed: filters.fng_greed,
+      fng_cash_pct: filters.fng_cash_pct,
+      dom_mode: filters.dom_mode || undefined,
+      dom_lookback: filters.dom_lookback,
+      vc_mode: filters.vc_mode || undefined,
+      vc_investors: filters.vc_investors || undefined,
+      vc_min_amount_m: filters.vc_min_amount_m || undefined,
+      vc_round_types: filters.vc_round_types || undefined,
     } : null,
   )
 
@@ -65,10 +92,29 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex }: BacktestS
       categories: isCategorySweep ? filters.sweep_categories : undefined,
       threshold_pct: filters.threshold_pct,
       start_date: filters.start_date || undefined,
+      fng_mode: filters.fng_mode || undefined,
+      fng_fear: filters.fng_fear,
+      fng_greed: filters.fng_greed,
+      fng_cash_pct: filters.fng_cash_pct,
+      dom_mode: filters.dom_mode || undefined,
+      dom_lookback: filters.dom_lookback,
+      vc_mode: filters.vc_mode || undefined,
+      vc_investors: filters.vc_investors || undefined,
+      vc_min_amount_m: filters.vc_min_amount_m || undefined,
+      vc_round_types: filters.vc_round_types || undefined,
     } : null,
   )
 
   const isLoading = isSweep ? sweep.status === 'loading' : sim.status === 'loading'
+
+  // Auto-run simulation on first mount with default params
+  const hasAutoRun = useRef(false)
+  useEffect(() => {
+    if (!hasAutoRun.current && sim.status === 'idle' && !isSweep && filters.category_id) {
+      hasAutoRun.current = true
+      sim.run()
+    }
+  }, [sim.status, sim.run, isSweep, filters.category_id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRun = useCallback(() => {
     if (isLoading) {
@@ -113,7 +159,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex }: BacktestS
     <>
       {/* Error */}
       {(sim.error || sweep.error) && (
-        <div className="text-accent text-xs font-mono p-3 bg-accent/10 border border-accent/20 rounded mb-4">
+        <div className="text-color-down text-sm p-4 bg-surface-down border border-border-light rounded-xl mb-6">
           {sim.error || sweep.error}
         </div>
       )}
@@ -133,11 +179,13 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex }: BacktestS
               navSeries={sim.result.nav_series}
               runId={sim.result.run_id}
               onDeployIndex={handleDeployIndex}
+              deployedItps={deployedItps}
+              onRebalanceItp={onRebalanceItp}
             />
           )}
           {sim.result?.run_id && (
-            <div className="mt-4">
-              <h3 className="text-xs text-white/40 font-mono uppercase mb-2">Holdings (Latest Rebalance)</h3>
+            <div className="mt-6">
+              <h3 className="text-xs font-medium uppercase tracking-widest text-text-muted mb-3">Holdings (Latest Rebalance)</h3>
               <SimHoldingsTable runId={sim.result.run_id} />
             </div>
           )}
@@ -173,6 +221,8 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex }: BacktestS
                 stats: v.stats,
               }))}
               onDeployIndex={handleDeployIndex}
+              deployedItps={deployedItps}
+              onRebalanceItp={onRebalanceItp}
             />
           )}
         </>
@@ -184,12 +234,15 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex }: BacktestS
     <>
       {/* Fullscreen overlay */}
       {isFullscreen && (
-        <div className="fixed inset-0 z-50 bg-black overflow-y-auto p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold text-white font-mono">Index Backtester</h2>
+        <div className="fixed inset-0 z-50 bg-page overflow-y-auto p-6">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-1">Index Backtester</p>
+              <h2 className="text-lg font-bold text-text-primary">Simulation Results</h2>
+            </div>
             <button
               onClick={() => setIsFullscreen(false)}
-              className="text-white/50 hover:text-white text-xl font-mono px-2"
+              className="text-text-muted hover:text-text-primary text-sm px-3 py-1 border border-border-light rounded-lg transition-colors"
               title="Exit fullscreen"
             >
               ESC
@@ -199,46 +252,39 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex }: BacktestS
         </div>
       )}
 
-      <div className="bg-terminal-dark/50 border border-white/10 rounded-lg">
-        {/* Header */}
-        <div className="p-4 flex justify-between items-center">
-          <button
-            onClick={onToggle}
-            className="flex-1 flex justify-between items-center text-left"
-          >
-            <div>
-              <h2 className="text-lg font-bold text-white font-mono">Index Backtester</h2>
-              <p className="text-xs text-white/50 font-mono">
-                Simulate historical index performance across categories, sizes & strategies
-              </p>
-            </div>
-            <span className="text-accent text-2xl font-mono ml-4">{expanded ? '−' : '+'}</span>
-          </button>
+      <div className="space-y-3 pb-10">
+        {/* Section Header */}
+        <div className="pt-10">
+          <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">Strategy Simulation</p>
+          <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">Backtest</h2>
+          <p className="text-[14px] text-text-secondary mt-1.5">Test index strategies against historical data before deploying capital.</p>
         </div>
 
-        {/* Content */}
-        {expanded && (
-          <div className="border-t border-white/10 p-4">
-            {/* Filter Panel */}
-            <SimFilterPanel
-              filters={filters}
-              onChange={setFilters}
-              onRun={handleRun}
-              isLoading={isLoading}
-            />
+        {/* Filter Panel */}
+        <div className="border border-border-light">
+          <SimFilterPanel
+            filters={filters}
+            onChange={setFilters}
+            onRun={handleRun}
+            isLoading={isLoading}
+          />
+        </div>
 
-            {/* Fullscreen toggle */}
-            {hasResults && !isFullscreen && (
-              <div className="flex justify-end mb-2">
-                <button
-                  onClick={() => setIsFullscreen(true)}
-                  className="text-[10px] text-white/40 hover:text-white font-mono px-2 py-1 border border-white/10 rounded hover:border-white/30 transition-colors"
-                >
-                  Fullscreen
-                </button>
-              </div>
-            )}
+        {/* Fullscreen toggle */}
+        {hasResults && !isFullscreen && (
+          <div className="flex justify-end">
+            <button
+              onClick={() => setIsFullscreen(true)}
+              className="text-xs text-text-muted hover:text-text-primary px-3 py-1.5 border border-border-light rounded-lg hover:border-border-medium transition-colors"
+            >
+              Fullscreen
+            </button>
+          </div>
+        )}
 
+        {/* Results */}
+        {hasResults && (
+          <div className="border border-border-light p-4">
             {resultsContent}
           </div>
         )}

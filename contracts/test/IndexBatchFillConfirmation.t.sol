@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../src/core/Index.sol";
+import "../src/core/Investment.sol";
 import "../src/mocks/MockERC20.sol";
 import "./helpers/TestHelper.sol";
 import {Governance} from "../src/Governance.sol";
@@ -15,7 +15,7 @@ import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
 /// @title IndexBatchFillConfirmation.t.sol - Tests for Story 2.4
 /// @notice Tests for confirmBatch, confirmFills, and refundExpiredOrder
 contract IndexBatchFillConfirmationTest is TestHelper {
-    Index public index;
+    Investment public index;
     MockERC20 public usdc;
     Governance public governance;
 
@@ -37,12 +37,12 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         governance = deployGovernance(address(this));
 
         // Deploy Index as UUPS proxy
-        Index impl = new Index();
+        Investment impl = new Investment();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(Index.initialize, (address(governance), address(usdc)))
+            abi.encodeCall(Investment.initialize, (address(governance), address(usdc)))
         );
-        index = Index(address(proxy));
+        index = Investment(address(proxy));
 
         // Setup IssuerRegistry with real BLS keys for verification
         IssuerRegistry registry = deployIssuerRegistry(address(governance));
@@ -419,7 +419,9 @@ contract IndexBatchFillConfirmationTest is TestHelper {
     }
 
     function test_confirmFills_differentFillPrice() public {
-        uint256 orderId = _createOrder(user, 10e18);
+        // Use limitPrice=0 (no limit) since this test is about share calculation, not limit enforcement
+        vm.prank(user);
+        uint256 orderId = index.submitOrder(itpId, TypesLib.Side.BUY, 10e18, 0, 1, block.timestamp + 1 hours);
 
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
@@ -897,7 +899,10 @@ contract IndexBatchFillConfirmationTest is TestHelper {
     }
 
     function test_confirmFills_revertsOnZeroShares() public {
-        uint256 orderId = _createOrder(user, 10e18);
+        // Use limitPrice=0 (no limit) so the very high fill price passes limit check
+        // This test is about the MIN_SHARES guard, not limit price enforcement
+        vm.prank(user);
+        uint256 orderId = index.submitOrder(itpId, TypesLib.Side.BUY, 10e18, 0, 1, block.timestamp + 1 hours);
 
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;

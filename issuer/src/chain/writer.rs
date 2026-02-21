@@ -757,6 +757,101 @@ impl EthersChainWriter {
             "ItpCreated event not found in receipt".to_string(),
         ))
     }
+
+    /// Submit an arbitration settlement on-chain
+    ///
+    /// Encodes: ArbitrationSettlement.settleBet(uint256 betId, bool creatorWins, bytes blsSignature, uint256 signerBitmap)
+    ///
+    /// # Arguments
+    /// * `settlement_contract` - ArbitrationSettlement contract address
+    /// * `bet_id` - The bet ID to settle
+    /// * `creator_wins` - Whether the creator wins
+    /// * `bls_signature` - Aggregated BLS signature (threshold)
+    /// * `signer_bitmap` - Bitmap of signing issuer indices
+    pub async fn submit_settlement(
+        &self,
+        settlement_contract: Address,
+        bet_id: U256,
+        creator_wins: bool,
+        bls_signature: Vec<u8>,
+        signer_bitmap: U256,
+    ) -> Result<TxHash, Error> {
+        info!(
+            bet_id = %bet_id,
+            creator_wins = creator_wins,
+            sig_len = bls_signature.len(),
+            bitmap = %signer_bitmap,
+            settlement = ?settlement_contract,
+            "Building settleBet transaction"
+        );
+
+        let tx = self.build_settle_bet_tx(
+            settlement_contract,
+            bet_id,
+            creator_wins,
+            bls_signature,
+            signer_bitmap,
+        );
+        self.submit_tx(tx, "settle_bet").await
+    }
+
+    /// Build a settleBet transaction
+    ///
+    /// Encodes: settleBet(uint256 betId, bool creatorWins, bytes memory blsSignature, uint256 signerBitmap)
+    fn build_settle_bet_tx(
+        &self,
+        settlement_contract: Address,
+        bet_id: U256,
+        creator_wins: bool,
+        bls_signature: Vec<u8>,
+        signer_bitmap: U256,
+    ) -> TypedTransaction {
+        let function = ethers::abi::Function {
+            name: "settleBet".to_string(),
+            inputs: vec![
+                ethers::abi::Param {
+                    name: "betId".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "creatorWins".to_string(),
+                    kind: ethers::abi::ParamType::Bool,
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "blsSignature".to_string(),
+                    kind: ethers::abi::ParamType::Bytes,
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "signerBitmap".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+            ],
+            outputs: vec![],
+            #[allow(deprecated)]
+            constant: None,
+            state_mutability: ethers::abi::StateMutability::NonPayable,
+        };
+
+        let tokens = vec![
+            ethers::abi::Token::Uint(bet_id),
+            ethers::abi::Token::Bool(creator_wins),
+            ethers::abi::Token::Bytes(bls_signature),
+            ethers::abi::Token::Uint(signer_bitmap),
+        ];
+
+        let calldata = function
+            .encode_input(&tokens)
+            .expect("ABI encoding should not fail");
+
+        Eip1559TransactionRequest::new()
+            .to(settlement_contract)
+            .data(calldata)
+            .into()
+    }
 }
 
 #[cfg(test)]
@@ -916,6 +1011,42 @@ mod tests {
             &calldata[0..4],
             &expected_selector[0..4],
             "Function selector should match keccak256 of signature"
+        );
+    }
+
+    #[test]
+    fn test_build_settle_bet_tx() {
+        let private_key = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+        let config = ChainWriterConfig::default();
+        let writer = EthersChainWriter::new(config, private_key).unwrap();
+
+        let settlement = "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"
+            .parse::<Address>()
+            .unwrap();
+        let tx = writer.build_settle_bet_tx(
+            settlement,
+            U256::from(42),
+            true,
+            vec![0xAA; 64],
+            U256::from(5), // bitmap: bits 0 and 2
+        );
+
+        assert!(tx.to().is_some());
+        assert!(tx.data().is_some());
+
+        let calldata = tx.data().unwrap();
+        let expected_selector =
+            ethers::utils::keccak256("settleBet(uint256,bool,bytes,uint256)");
+        assert_eq!(
+            &calldata[0..4],
+            &expected_selector[0..4],
+            "Function selector should match keccak256 of settleBet signature"
+        );
+
+        // Calldata should contain encoded parameters
+        assert!(
+            calldata.len() > 4 + 32 * 4,
+            "Calldata should contain encoded parameters"
         );
     }
 

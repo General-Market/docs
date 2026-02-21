@@ -96,14 +96,14 @@ describe('ShareTwitterButton', () => {
     expect(url).not.toContain('0x12345678...')
   })
 
-  test('Twitter intent URL contains @AgiArena mention', () => {
+  test('Twitter intent URL contains @GeneralMarket mention', () => {
     openTwitterShare(mockAgent)
 
     const callArgs = mockWindowOpen.mock.calls[0]
     const url = callArgs[0] as string
 
-    // Tweet text should mention @AgiArena
-    expect(url).toContain(encodeURIComponent('@AgiArena'))
+    // Tweet text should mention @GeneralMarket
+    expect(url).toContain(encodeURIComponent('@GeneralMarket'))
   })
 
   test('opens popup window with correct dimensions', () => {
@@ -173,7 +173,7 @@ describe('ShareTwitterButton', () => {
 
   test('generates complete Twitter Intent URL', () => {
     const tweetText = generateAgentTweetText(mockAgent, { includeUrl: false })
-    const agentUrl = `https://agiarena.xyz/agent/${mockAgent.walletAddress}`
+    const agentUrl = `https://generalmarket.io/agent/${mockAgent.walletAddress}`
     const intentUrl = generateTwitterIntentUrl(tweetText, agentUrl)
 
     // Verify URL structure

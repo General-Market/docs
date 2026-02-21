@@ -128,14 +128,14 @@ export function BilateralBetsList({
       <div className="flex flex-wrap gap-4 items-center justify-between">
         {/* Status Filter */}
         <div className="flex items-center gap-2">
-          <label className="text-xs font-mono text-gray-400">Status:</label>
+          <label className="text-xs font-mono text-text-muted">Status:</label>
           <select
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value as BilateralBetStatus | 'all')
               setPage(1)
             }}
-            className="bg-black border border-gray-700 rounded px-3 py-1.5 text-sm font-mono text-white focus:border-cyan-500 focus:outline-none"
+            className="bg-muted border border-border-light rounded-lg px-3 py-1.5 text-sm font-mono text-text-primary focus:border-border-medium focus:outline-none"
           >
             {STATUS_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -147,11 +147,11 @@ export function BilateralBetsList({
 
         {/* Sort Controls */}
         <div className="flex items-center gap-2">
-          <label className="text-xs font-mono text-gray-400">Sort by:</label>
+          <label className="text-xs font-mono text-text-muted">Sort by:</label>
           <select
             value={sortField}
             onChange={(e) => setSortField(e.target.value as SortField)}
-            className="bg-black border border-gray-700 rounded px-3 py-1.5 text-sm font-mono text-white focus:border-cyan-500 focus:outline-none"
+            className="bg-muted border border-border-light rounded-lg px-3 py-1.5 text-sm font-mono text-text-primary focus:border-border-medium focus:outline-none"
           >
             {SORT_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -161,7 +161,7 @@ export function BilateralBetsList({
           </select>
           <button
             onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-            className="px-2 py-1.5 border border-gray-700 rounded text-sm font-mono text-white hover:border-gray-500 transition-colors"
+            className="px-2 py-1.5 border border-border-light rounded-lg text-sm font-mono text-text-primary hover:border-border-medium transition-colors"
             title={sortOrder === 'asc' ? 'Sort Ascending' : 'Sort Descending'}
           >
             {sortOrder === 'asc' ? '\u2191' : '\u2193'}
@@ -172,11 +172,11 @@ export function BilateralBetsList({
         <div className="flex items-center gap-2">
           <span
             className={`w-2 h-2 rounded-full ${
-              sseConnected ? 'bg-green-400' : 'bg-gray-500'
+              sseConnected ? 'bg-green-500' : 'bg-gray-400'
             }`}
             title={sseConnected ? 'Real-time updates active' : 'Real-time updates disconnected'}
           />
-          <span className="text-xs font-mono text-gray-500">
+          <span className="text-xs font-mono text-text-muted">
             {sseConnected ? 'Live' : 'Polling'}
           </span>
         </div>
@@ -185,19 +185,19 @@ export function BilateralBetsList({
       {/* Loading State */}
       {isLoading && (
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cyan-400" />
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-zinc-900" />
         </div>
       )}
 
       {/* Error State */}
       {isError && (
-        <div className="bg-red-900/20 border border-red-800/50 rounded-lg p-4 text-center">
-          <p className="text-red-400 font-mono text-sm">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+          <p className="text-red-600 font-mono text-sm">
             Failed to load bilateral bets: {(error as Error)?.message || 'Unknown error'}
           </p>
           <button
             onClick={() => refetch()}
-            className="mt-2 px-4 py-1 bg-red-800/30 border border-red-700/50 rounded text-sm font-mono text-red-300 hover:bg-red-800/50 transition-colors"
+            className="mt-2 px-4 py-1 bg-red-100 border border-red-200 rounded-lg text-sm font-mono text-red-700 hover:bg-red-200 transition-colors"
           >
             Retry
           </button>
@@ -206,17 +206,17 @@ export function BilateralBetsList({
 
       {/* Empty State */}
       {!isLoading && !isError && sortedBets.length === 0 && (
-        <div className="bg-gray-900/30 border border-gray-800 rounded-lg p-8 text-center">
-          <p className="text-gray-400 font-mono text-sm">No bilateral bets found</p>
+        <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
+          <p className="text-text-muted font-mono text-sm">No bilateral bets found</p>
           {statusFilter !== 'all' && (
-            <p className="text-gray-500 text-xs mt-2">
+            <p className="text-text-muted text-xs mt-2">
               Try changing the status filter or{' '}
               <button
                 onClick={() => {
                   setStatusFilter('all')
                   setPage(1)
                 }}
-                className="text-cyan-400 hover:text-cyan-300"
+                className="text-color-info hover:text-color-info/80"
               >
                 view all statuses
               </button>
@@ -244,17 +244,17 @@ export function BilateralBetsList({
           <button
             onClick={() => handlePageChange(page - 1)}
             disabled={page <= 1}
-            className="px-3 py-1.5 border border-gray-700 rounded text-sm font-mono text-white hover:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-3 py-1.5 border border-border-light rounded-lg text-sm font-mono text-text-primary hover:border-border-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Previous
           </button>
-          <span className="text-sm font-mono text-gray-400 px-4">
+          <span className="text-sm font-mono text-text-muted px-4">
             Page {page} of {totalPages}
           </span>
           <button
             onClick={() => handlePageChange(page + 1)}
             disabled={page >= totalPages}
-            className="px-3 py-1.5 border border-gray-700 rounded text-sm font-mono text-white hover:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-3 py-1.5 border border-border-light rounded-lg text-sm font-mono text-text-primary hover:border-border-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Next
           </button>
@@ -263,7 +263,7 @@ export function BilateralBetsList({
 
       {/* Total count */}
       {data && (
-        <div className="text-center text-xs font-mono text-gray-500">
+        <div className="text-center text-xs font-mono text-text-muted">
           Showing {sortedBets.length} of {data.total} bilateral bet{data.total !== 1 ? 's' : ''}
         </div>
       )}

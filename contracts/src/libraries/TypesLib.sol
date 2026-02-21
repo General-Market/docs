@@ -341,4 +341,118 @@ library TypesLib {
 
     /// @notice Basis points denominator (10000 = 100%)
     uint256 constant BASIS_POINTS = 10000;
+
+    // ============ VISION (BILATERAL P2P) ENUMS ============
+
+    /// @notice Bet status lifecycle for bilateral P2P trading
+    enum BetStatus {
+        None,           // Bet does not exist
+        Active,         // Bet committed by both parties
+        InArbitration,  // Dispute raised, awaiting keeper resolution
+        Settled,        // Resolved by mutual agreement or arbitration
+        CustomPayout    // Resolved with custom split (partial win)
+    }
+
+    /// @notice Keeper status for Vision arbitration
+    enum KeeperStatus {
+        Inactive,   // Keeper not active
+        Active,     // Keeper available for arbitration
+        Suspended   // Keeper temporarily suspended by admin
+    }
+
+    // ============ VISION (BILATERAL P2P) STRUCTS ============
+
+    /// @notice Bilateral bet between two parties
+    /// @param tradesRoot Merkle root of trades in this bet
+    /// @param creator Address that created the bet
+    /// @param filler Address that accepted the bet
+    /// @param creatorAmount WIND collateral from creator (18 decimals)
+    /// @param fillerAmount WIND collateral from filler (18 decimals)
+    /// @param deadline Resolution deadline timestamp
+    /// @param status Current bet status
+    struct Bet {
+        bytes32 tradesRoot;
+        address creator;
+        address filler;
+        uint256 creatorAmount;
+        uint256 fillerAmount;
+        uint256 deadline;
+        BetStatus status;
+    }
+
+    /// @notice Keeper node for Vision arbitration
+    /// @param addr Keeper's Ethereum address
+    /// @param ip IP:port as bytes32 for P2P discovery
+    /// @param blsPubkey BLS public key (128 bytes, G2 point)
+    /// @param status Keeper lifecycle status
+    /// @param registeredAt Registration timestamp
+    /// @param stakedAmount WIND staked (always MIN_KEEPER_STAKE)
+    struct Keeper {
+        address addr;
+        bytes32 ip;
+        bytes blsPubkey;
+        KeeperStatus status;
+        uint256 registeredAt;
+        uint256 stakedAmount;
+    }
+
+    /// @notice Keeper BLS key rotation request
+    /// @param newPubkey Proposed new BLS public key (128 bytes)
+    /// @param requestedAt Timestamp of rotation request
+    /// @param approvalCount Number of approvals received
+    /// @param rotationNonce For replay protection
+    /// @param executed Whether rotation has been executed
+    struct KeeperKeyRotation {
+        bytes newPubkey;
+        uint256 requestedAt;
+        uint256 approvalCount;
+        uint256 rotationNonce;
+        bool executed;
+    }
+
+    /// @notice Old BLS key info during safe period after rotation
+    /// @param oldPubkey Previous BLS key
+    /// @param validUntil Timestamp until which old key is still accepted
+    struct OldKeyInfo {
+        bytes oldPubkey;
+        uint256 validUntil;
+    }
+
+    /// @notice P2P trading bot registration
+    /// @param owner Bot owner address
+    /// @param endpoint HTTP endpoint for P2P discovery
+    /// @param pubkeyHash keccak256 of signing public key
+    /// @param active Whether bot is currently active
+    /// @param registeredAt Registration timestamp
+    /// @param stake WIND staked for registration
+    struct Bot {
+        address owner;
+        string endpoint;
+        bytes32 pubkeyHash;
+        bool active;
+        uint256 registeredAt;
+        uint256 stake;
+    }
+
+    /// @notice Trade within a bet (used in Merkle proof verification)
+    /// @param tradeId Unique trade identifier: keccak256(snapshotId, index)
+    /// @param ticker Asset ticker symbol
+    /// @param source Price data source
+    /// @param method Resolution method (price, binary, drop30, drop80, pump2x, pump10x)
+    /// @param position 0=LONG/YES, 1=SHORT/NO
+    /// @param entryPrice Entry price (18 decimals)
+    /// @param exitPrice Exit price (18 decimals)
+    /// @param won Whether this trade was won
+    /// @param cancelled Whether this trade was cancelled
+    struct Trade {
+        bytes32 tradeId;
+        string ticker;
+        string source;
+        string method;
+        uint8 position;
+        uint256 entryPrice;
+        uint256 exitPrice;
+        bool won;
+        bool cancelled;
+    }
 }

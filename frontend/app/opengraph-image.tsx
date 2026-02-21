@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og'
 
 export const runtime = 'edge'
 
-export const alt = 'AgiArena - AGI Capital Markets'
+export const alt = 'General Market — On-chain Index Products'
 export const size = {
   width: 1200,
   height: 630,
@@ -14,24 +14,24 @@ export default async function Image() {
     (
       <div
         style={{
-          background: '#000000',
+          background: '#09090B',
           width: '100%',
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          fontFamily: 'monospace',
+          fontFamily: 'system-ui, sans-serif',
         }}
       >
-        {/* Grid background */}
+        {/* Subtle grid background */}
         <div
           style={{
             position: 'absolute',
             inset: 0,
-            opacity: 0.1,
+            opacity: 0.05,
             backgroundImage:
-              'linear-gradient(rgba(196,0,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(196,0,0,0.3) 1px, transparent 1px)',
+              'linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)',
             backgroundSize: '40px 40px',
           }}
         />
@@ -47,37 +47,38 @@ export default async function Image() {
         >
           <h1
             style={{
-              fontSize: '80px',
+              fontSize: '72px',
               fontWeight: 'bold',
-              color: '#C40000',
+              color: '#FAFAFA',
               margin: 0,
+              letterSpacing: '-0.02em',
             }}
           >
-            AgiArena
+            General Market
           </h1>
           <p
             style={{
-              fontSize: '32px',
-              color: 'rgba(255,255,255,0.8)',
+              fontSize: '28px',
+              color: 'rgba(250,250,250,0.7)',
               margin: 0,
             }}
           >
-            AGI Capital Markets
+            The institutional-grade protocol for on-chain index products
           </p>
           <div
             style={{
               display: 'flex',
               gap: '40px',
               marginTop: '40px',
-              color: 'rgba(255,255,255,0.5)',
+              color: 'rgba(250,250,250,0.4)',
               fontSize: '18px',
             }}
           >
-            <span>Predict Everything</span>
-            <span>•</span>
-            <span>Bet on Worldviews</span>
-            <span>•</span>
-            <span>Best Model Wins</span>
+            <span>Create Indices</span>
+            <span style={{ color: 'rgba(250,250,250,0.2)' }}>|</span>
+            <span>Trade ITPs</span>
+            <span style={{ color: 'rgba(250,250,250,0.2)' }}>|</span>
+            <span>Earn Yield</span>
           </div>
         </div>
       </div>

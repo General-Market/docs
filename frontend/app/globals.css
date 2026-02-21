@@ -3,168 +3,219 @@
 @tailwind utilities;
 
 :root {
-  --background: #000000;
-  --foreground: #ffffff;
+  --background: #FFFFFF;
+  --foreground: #1A1A1A;
+  --surface: #F5F5F5;
+  --border: #E0E0E0;
+  --border-strong: #000000;
+  --up: #16A34A;
+  --down: #DC2626;
+  --mono: 'JetBrains Mono', monospace;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Rank change pulse animation - Story 5.7 */
-@keyframes pulse-red {
-  0%, 100% { background-color: transparent; }
-  50% { background-color: rgba(196, 0, 0, 0.2); }
+/* ── SECTION BAR — solid black bar (DATA VIEW pattern) ── */
+.section-bar {
+  background: #000000;
+  color: #fff;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.section-bar-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.section-bar-value {
+  font-size: 15px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+.section-bar-right {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.8;
 }
 
-.animate-pulse-red {
-  animation: pulse-red 0.5s ease-in-out;
+/* ── HERO BAND — gray surface with bold title ── */
+.hero-band {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 40px 48px 32px;
+}
+.hero-band-inner {
+  max-width: 1280px;
+  margin: 0 auto;
 }
 
-/* Smooth rank number transition */
-.rank-change-up {
-  color: #4ade80; /* green-400 */
-  transition: all 0.3s ease-out;
+/* ── SECTION DIVIDER — 3px solid black ── */
+.section-divider {
+  border-top: 3px solid #000000;
+  margin: 0;
 }
 
-.rank-change-down {
-  color: #C40000; /* accent red */
-  transition: all 0.3s ease-out;
+/* ── FILTER PILL ── */
+.filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 2px solid #000000;
+  border-radius: 24px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #000000;
+  background: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.filter-pill:hover {
+  background: var(--surface);
+}
+.filter-pill.active {
+  background: #000000;
+  color: #fff;
 }
 
-/* P&L count animation */
-.pnl-animate {
-  transition: all 0.5s ease-out;
+/* ── HEATMAP TILES — intensity tinted backgrounds ── */
+.heat-up-1 { background-color: rgba(22, 163, 74, 0.06); }
+.heat-up-2 { background-color: rgba(22, 163, 74, 0.12); }
+.heat-up-3 { background-color: rgba(22, 163, 74, 0.20); }
+.heat-up-4 { background-color: rgba(22, 163, 74, 0.30); }
+.heat-down-1 { background-color: rgba(220, 38, 38, 0.06); }
+.heat-down-2 { background-color: rgba(220, 38, 38, 0.12); }
+.heat-down-3 { background-color: rgba(220, 38, 38, 0.20); }
+.heat-down-4 { background-color: rgba(220, 38, 38, 0.30); }
+
+/* ── CARD INTERACTIVE — subtle border, no lift/glow ── */
+.card-interactive {
+  transition: border-color 0.15s ease;
+}
+.card-interactive:hover {
+  border-color: #000000;
 }
 
-/* Bet feed pulse animation - Story 6.4 */
-/* AC2: Red pulse for new items (0.5s) */
-@keyframes pulse-red-bet {
-  0% { background-color: rgba(196, 0, 0, 0); }
-  50% { background-color: rgba(196, 0, 0, 0.2); }
-  100% { background-color: rgba(196, 0, 0, 0); }
-}
-
-.animate-pulse-red-bet {
-  animation: pulse-red-bet 0.5s ease-out;
-}
-
-/* AC3: Stronger pulse for mega portfolios (>20K markets) */
-@keyframes pulse-red-strong-bet {
-  0% { background-color: rgba(196, 0, 0, 0); }
-  25% { background-color: rgba(196, 0, 0, 0.4); }
-  75% { background-color: rgba(196, 0, 0, 0.3); }
-  100% { background-color: rgba(196, 0, 0, 0); }
-}
-
-.animate-pulse-red-strong-bet {
-  animation: pulse-red-strong-bet 0.7s ease-out;
-}
-
-/* Story 6.5: Leaderboard row animation performance optimization (AC7) */
-/* Optimize animated rows for 60fps - use will-change hint */
-tr[data-wallet] {
-  will-change: transform;
-}
-
-/* Disable will-change on mobile for memory optimization */
-@media (max-width: 767px) {
-  tr[data-wallet] {
-    will-change: auto;
-  }
-}
-
-/* Disable transitions and animations for users who prefer reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  tr[data-wallet] {
-    will-change: auto;
-    transition: none !important;
-    animation: none !important;
-  }
-
-  .animate-pulse-red,
-  .animate-pulse-red-bet,
-  .animate-pulse-red-strong-bet {
-    animation: none !important;
-  }
-}
-
-/* Story 11-1: Skeleton loading animation (AC3) */
+/* Skeleton loading — neutral gray */
 @keyframes skeleton-pulse {
   0%, 100% { opacity: 0.4; }
   50% { opacity: 0.7; }
 }
-
 .skeleton {
   background: linear-gradient(90deg,
-    rgba(196, 0, 0, 0.1) 0%,
-    rgba(196, 0, 0, 0.2) 50%,
-    rgba(196, 0, 0, 0.1) 100%
+    rgba(161, 161, 170, 0.15) 0%,
+    rgba(161, 161, 170, 0.25) 50%,
+    rgba(161, 161, 170, 0.15) 100%
   );
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
-/* Story 11-1: Micro-interactions (AC5) */
-/* Button interactions */
+/* Button interactions — institutional */
 .btn-interactive {
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 .btn-interactive:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 0 12px rgba(196, 0, 0, 0.3);
+  opacity: 0.9;
 }
 .btn-interactive:active {
-  transform: scale(0.98);
+  opacity: 0.8;
 }
 
-/* Card hover */
-.card-interactive {
-  transition: box-shadow 0.2s ease;
-}
-.card-interactive:hover {
-  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.05);
-}
-
-/* Number flash animation */
+/* Number flash — subtle blue tint */
 @keyframes number-flash {
-  0% { color: inherit; }
-  30% { color: #C40000; }
-  100% { color: inherit; }
+  0% { background-color: transparent; }
+  30% { background-color: rgba(37, 99, 235, 0.06); }
+  100% { background-color: transparent; }
 }
 .number-changed {
   animation: number-flash 0.4s ease-out;
 }
 
+/* Rank change animations */
+@keyframes pulse-highlight {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: rgba(37, 99, 235, 0.04); }
+}
+.animate-pulse-red {
+  animation: pulse-highlight 0.5s ease-in-out;
+}
+.animate-pulse-red-bet {
+  animation: pulse-highlight 0.5s ease-out;
+}
+.animate-pulse-red-strong-bet {
+  animation: pulse-highlight 0.7s ease-out;
+}
+
+.rank-change-up {
+  color: #16A34A;
+  transition: all 0.3s ease-out;
+}
+.rank-change-down {
+  color: #DC2626;
+  transition: all 0.3s ease-out;
+}
+
+.pnl-animate {
+  transition: all 0.5s ease-out;
+}
+
 /* Error state */
 .error-state {
-  border-left: 4px solid #C40000;
+  border-left: 4px solid #DC2626;
   padding-left: 12px;
 }
 
-/* Story 11-1: Reduced motion - disable micro-interactions */
-@media (prefers-reduced-motion: reduce) {
-  .skeleton {
-    animation: none;
-    opacity: 0.5;
-  }
+/* Leaderboard row optimization */
+tr[data-wallet] {
+  will-change: transform;
+}
 
-  .btn-interactive,
-  .card-interactive {
+/* Hide number input spinners globally */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Custom scrollbar — dark aesthetic */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #A1A1AA; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #555555; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .animate-pulse-red,
+  .animate-pulse-red-bet,
+  .animate-pulse-red-strong-bet,
+  .number-changed {
+    animation: none !important;
+  }
+  .btn-interactive, .card-interactive {
     transition: none;
   }
-
-  .btn-interactive:hover {
-    transform: none;
-    box-shadow: none;
+  tr[data-wallet] {
+    will-change: auto;
+    transition: none !important;
+    animation: none !important;
   }
+}
 
-  .btn-interactive:active {
-    transform: none;
-  }
-
-  .number-changed {
-    animation: none;
-  }
+@media (max-width: 767px) {
+  tr[data-wallet] { will-change: auto; }
+  .hero-band { padding: 28px 16px 24px; }
+  .section-bar { padding: 12px 16px; }
+  .section-bar-value { font-size: 13px; }
 }

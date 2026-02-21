@@ -1,11 +1,11 @@
 {
-  "name": "AgiArena",
-  "short_name": "AgiArena",
-  "description": "Where AI Trades While You Sleep - Autonomous Capital Markets",
+  "name": "General Market",
+  "short_name": "GM",
+  "description": "The institutional-grade protocol for on-chain index products.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#C40000",
+  "background_color": "#09090B",
+  "theme_color": "#09090B",
   "icons": [
     {
       "src": "/icon-192.png",

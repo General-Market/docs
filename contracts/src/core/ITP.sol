@@ -5,22 +5,22 @@ import {ERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.so
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IITP, IERC4626Minimal} from "../interfaces/IITP.sol";
-import {IIndex} from "../interfaces/IIndex.sol";
+import {IInvestment} from "../interfaces/IInvestment.sol";
 
 /// @title ITP - Index Token Product
-/// @notice ERC4626-compliant vault token for Index products
-/// @dev Thin wrapper - all state lives in Index.sol except ERC20 balances
+/// @notice ERC4626-compliant vault token for Investment products
+/// @dev Thin wrapper - all state lives in Investment.sol except ERC20 balances
 /// @dev NOT upgradeable - each ITP is immutable once deployed
 contract ITP is ERC4626, IITP {
     // ============ CUSTOM ERRORS ============
 
-    /// @notice Caller is not the Index contract
+    /// @notice Caller is not the Investment contract
     error OnlyIndexAllowed();
 
-    /// @notice Direct deposits are not allowed - use Index.submitOrder
+    /// @notice Direct deposits are not allowed - use Investment.submitOrder
     error DirectDepositNotAllowed();
 
-    /// @notice Direct withdrawals are not allowed - use Index.submitOrder with SELL
+    /// @notice Direct withdrawals are not allowed - use Investment.submitOrder with SELL
     error DirectWithdrawNotAllowed();
 
     /// @notice Zero address provided where non-zero required
@@ -31,12 +31,12 @@ contract ITP is ERC4626, IITP {
     /// @notice Unique identifier for this ITP
     bytes32 public immutable override itpId;
 
-    /// @notice Address of the Index contract that controls this ITP
+    /// @notice Address of the Investment contract that controls this ITP
     address public immutable override indexContract;
 
     // ============ MODIFIERS ============
 
-    /// @notice Restricts function to Index.sol only
+    /// @notice Restricts function to Investment.sol only
     modifier onlyIndex() {
         if (msg.sender != indexContract) revert OnlyIndexAllowed();
         _;
@@ -46,7 +46,7 @@ contract ITP is ERC4626, IITP {
 
     /// @notice Creates a new ITP vault
     /// @param _itpId Unique identifier for this ITP
-    /// @param _index Address of the Index contract
+    /// @param _index Address of the Investment contract
     /// @param _name Token name (e.g., "Index Crypto Blend")
     /// @param _symbol Token symbol (e.g., "ICRYPTO")
     /// @param _asset Underlying asset address (USDC)
@@ -71,7 +71,7 @@ contract ITP is ERC4626, IITP {
     function totalAssets() public view override(ERC4626, IERC4626Minimal) returns (uint256) {
         uint256 supply = totalSupply();
         if (supply == 0) return 0;
-        uint256 nav = IIndex(indexContract).getNAV(itpId);
+        uint256 nav = IInvestment(indexContract).getNAV(itpId);
         return (nav * supply) / 1e18;
     }
 
@@ -79,7 +79,7 @@ contract ITP is ERC4626, IITP {
     /// @param assets Amount of assets (USDC) to convert
     /// @return Amount of shares that would be received
     function convertToShares(uint256 assets) public view override(ERC4626, IERC4626Minimal) returns (uint256) {
-        uint256 nav = IIndex(indexContract).getNAV(itpId);
+        uint256 nav = IInvestment(indexContract).getNAV(itpId);
         if (nav == 0) return assets; // 1:1 when NAV not set
         return (assets * 1e18) / nav;
     }
@@ -88,7 +88,7 @@ contract ITP is ERC4626, IITP {
     /// @param shares Amount of shares to convert
     /// @return Amount of assets (USDC) that would be received
     function convertToAssets(uint256 shares) public view override(ERC4626, IERC4626Minimal) returns (uint256) {
-        uint256 nav = IIndex(indexContract).getNAV(itpId);
+        uint256 nav = IInvestment(indexContract).getNAV(itpId);
         return (shares * nav) / 1e18;
     }
 
@@ -134,42 +134,42 @@ contract ITP is ERC4626, IITP {
 
     // ============ BLOCKED ERC4626 FUNCTIONS ============
 
-    /// @notice Direct deposits not allowed - use Index.submitOrder
+    /// @notice Direct deposits not allowed - use Investment.submitOrder
     /// @dev Always reverts with DirectDepositNotAllowed error
     function deposit(uint256, address) public pure override(ERC4626, IITP) returns (uint256) {
         revert DirectDepositNotAllowed();
     }
 
-    /// @notice Direct mints not allowed - use Index.submitOrder
+    /// @notice Direct mints not allowed - use Investment.submitOrder
     /// @dev Always reverts with DirectDepositNotAllowed error
     function mint(uint256, address) public pure override(ERC4626) returns (uint256) {
         revert DirectDepositNotAllowed();
     }
 
-    /// @notice Direct withdrawals not allowed - use Index.submitOrder with SELL
+    /// @notice Direct withdrawals not allowed - use Investment.submitOrder with SELL
     /// @dev Always reverts with DirectWithdrawNotAllowed error
     function withdraw(uint256, address, address) public pure override(ERC4626, IITP) returns (uint256) {
         revert DirectWithdrawNotAllowed();
     }
 
-    /// @notice Direct redemptions not allowed - use Index.submitOrder with SELL
+    /// @notice Direct redemptions not allowed - use Investment.submitOrder with SELL
     /// @dev Always reverts with DirectWithdrawNotAllowed error
     function redeem(uint256, address, address) public pure override(ERC4626, IITP) returns (uint256) {
         revert DirectWithdrawNotAllowed();
     }
 
-    // ============ RESTRICTED FUNCTIONS (INDEX.SOL ONLY) ============
+    // ============ RESTRICTED FUNCTIONS (INVESTMENT.SOL ONLY) ============
 
-    /// @notice Mint shares to user (Index.sol only)
-    /// @dev Called by Index.sol when buy orders are filled
+    /// @notice Mint shares to user (Investment.sol only)
+    /// @dev Called by Investment.sol when buy orders are filled
     /// @param to Recipient address
     /// @param shares Amount of shares to mint
     function mint(address to, uint256 shares) external override onlyIndex {
         _mint(to, shares);
     }
 
-    /// @notice Burn shares from user (Index.sol only)
-    /// @dev Called by Index.sol when sell orders are filled
+    /// @notice Burn shares from user (Investment.sol only)
+    /// @dev Called by Investment.sol when sell orders are filled
     /// @param from Address to burn from
     /// @param shares Amount of shares to burn
     function burn(address from, uint256 shares) external override onlyIndex {

@@ -8,7 +8,7 @@ import "../src/mocks/MockERC20.sol";
 import "../src/Governance.sol";
 import "../src/registry/IssuerRegistry.sol";
 import "../src/mocks/MockBitgetVault.sol";
-import "../src/core/Index.sol";
+import "../src/core/Investment.sol";
 import "../src/registry/AssetPairRegistry.sol";
 import "../src/bridge/BridgeProxy.sol";
 import "../src/bridge/BridgedItpFactory.sol";
@@ -46,8 +46,8 @@ contract DeployCrossChainE2E is DeployBLSHelper {
         address governance = address(new ERC1967Proxy(address(govImpl), abi.encodeWithSelector(Governance.initialize.selector, admin)));
         console.log("Governance:", governance);
 
-        address indexImpl = address(new Index());
-        bytes memory indexInit = abi.encodeWithSelector(Index.initialize.selector, governance, usdc);
+        address indexImpl = address(new Investment());
+        bytes memory indexInit = abi.encodeWithSelector(Investment.initialize.selector, governance, usdc);
         indexProxy = address(new ERC1967Proxy(indexImpl, indexInit));
         console.log("Index:", indexProxy);
 
@@ -63,7 +63,7 @@ contract DeployCrossChainE2E is DeployBLSHelper {
         mockBitgetVault = address(vault);
         console.log("MockBitgetVault:", mockBitgetVault);
 
-        Index(indexProxy).setIssuerRegistry(issuerRegistry);
+        Investment(indexProxy).setIssuerRegistry(issuerRegistry);
 
         // Bridge Side
         address bridgeImpl = address(new BridgeProxy());
@@ -86,7 +86,7 @@ contract DeployCrossChainE2E is DeployBLSHelper {
         console.log("Index contract set on BridgeProxy");
 
         // Set authorized bridge on Index for cross-chain rebalance/transfer
-        Index(indexProxy).setAuthorizedBridge(bridgeProxy);
+        Investment(indexProxy).setAuthorizedBridge(bridgeProxy);
         console.log("Authorized bridge set on Index");
 
         // Setup

@@ -26,5 +26,5 @@ mod transport;
 pub use codec::{decode, encode, Codec};
 pub use connection::{ConnectionStatus, PeerConnection};
 pub use discovery::{OnChainPeerDiscovery, PeerDiscovery, PeerDiscoveryRunner, StaticPeerDiscovery};
-pub use tls::TlsConfig;
+pub use tls::{P2PStream, TlsConfig};
 pub use transport::TcpP2PTransport;

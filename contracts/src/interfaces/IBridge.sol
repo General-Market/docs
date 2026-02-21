@@ -154,8 +154,8 @@ interface IArbBridgeCustody {
     /// @return Whether this nonce has been released
     function isNonceUsed(uint256 sourceChainId, uint256 nonce) external view returns (bool);
 
-    /// @notice Get the L3 Index contract address
-    /// @return The address of the Index contract on L3
+    /// @notice Get the L3 Investment contract address
+    /// @return The address of the Investment contract on L3
     function l3IndexContract() external view returns (address);
 
     /// @notice Get the next order ID to be assigned

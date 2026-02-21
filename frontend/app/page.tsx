@@ -1,86 +1,150 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
-import { ItpListing } from '@/components/domain/ItpListing'
-import { CreateItpSection } from '@/components/domain/CreateItpSection'
-import { PortfolioSection } from '@/components/domain/PortfolioSection'
-import { SystemStatusSection } from '@/components/domain/SystemStatusSection'
-import { VaultModal } from '@/components/domain/VaultModal'
-import { BacktestSection } from '@/components/domain/simulation/BacktestSection'
+import { ItpListing, DeployedItpRef } from '@/components/domain/ItpListing'
 
-type Section = 'create' | 'system' | 'portfolio' | 'backtest' | null
+// Lazy-load below-the-fold sections to reduce First Load JS
+const SectionSkeleton = () => (
+  <div className="animate-pulse bg-surface rounded-md h-48" />
+)
+
+const PortfolioSection = dynamic(
+  () => import('@/components/domain/PortfolioSection').then(mod => ({ default: mod.PortfolioSection })),
+  { ssr: false, loading: SectionSkeleton }
+)
+
+const CreateItpSection = dynamic(
+  () => import('@/components/domain/CreateItpSection').then(mod => ({ default: mod.CreateItpSection })),
+  { ssr: false, loading: SectionSkeleton }
+)
+
+const VaultModal = dynamic(
+  () => import('@/components/domain/VaultModal').then(mod => ({ default: mod.VaultModal })),
+  { ssr: false, loading: SectionSkeleton }
+)
+
+const BacktestSection = dynamic(
+  () => import('@/components/domain/simulation/BacktestSection').then(mod => ({ default: mod.BacktestSection })),
+  { ssr: false, loading: SectionSkeleton }
+)
+
+const SystemStatusSection = dynamic(
+  () => import('@/components/domain/SystemStatusSection').then(mod => ({ default: mod.SystemStatusSection })),
+  { ssr: false, loading: SectionSkeleton }
+)
+
+const VisionPage = dynamic(
+  () => import('@/components/domain/vision/VisionPage').then(mod => ({ default: mod.VisionPage })),
+  { ssr: false, loading: SectionSkeleton }
+)
+
+type ActivePage = 'investment' | 'vision'
 
 export default function Home() {
-  const [expandedSection, setExpandedSection] = useState<Section>(null)
-  const [showVault, setShowVault] = useState(false)
+  const [activePage, setActivePage] = useState<ActivePage>('investment')
   const [deployHoldings, setDeployHoldings] = useState<{ symbol: string; weight: number }[] | null>(null)
-
-  const toggle = (section: Section) => {
-    setExpandedSection(prev => prev === section ? null : section)
-  }
+  const [deployedItps, setDeployedItps] = useState<DeployedItpRef[]>([])
 
   const handleDeployIndex = useCallback((holdings: { symbol: string; weight: number }[]) => {
     setDeployHoldings(holdings)
-    setExpandedSection('create')
+    document.getElementById('create')?.scrollIntoView({ behavior: 'smooth' })
+  }, [])
+
+  const handleItpsLoaded = useCallback((itps: DeployedItpRef[]) => {
+    setDeployedItps(itps)
+  }, [])
+
+  const handleRebalanceItp = useCallback((itpId: string) => {
+    const el = document.getElementById(`itp-card-${itpId}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      // Brief highlight effect
+      el.classList.add('ring-2', 'ring-zinc-900')
+      setTimeout(() => el.classList.remove('ring-2', 'ring-zinc-900'), 2000)
+    } else {
+      document.getElementById('markets')?.scrollIntoView({ behavior: 'smooth' })
+    }
   }, [])
 
   return (
-    <main className="min-h-screen bg-terminal flex flex-col">
-      <Header />
+    <main className="min-h-screen bg-page flex flex-col">
+      <Header activePage={activePage} onPageChange={setActivePage} />
 
-      <div className="flex-1">
-        <div className="max-w-4xl mx-auto p-6">
-          {/* Hero */}
-          <div className="mb-8 text-center">
-            <h2 className="text-4xl font-bold text-accent mb-2">Index</h2>
-            <p className="text-lg text-white/70">The First AGI Capital Market</p>
-          </div>
+      <div className="flex-1 overflow-x-clip">
+        {activePage === 'investment' && (
+          <>
+            {/* Markets */}
+            <section id="markets">
+              <ItpListing onItpsLoaded={handleItpsLoaded} />
+            </section>
 
-          {/* ITP Listing Section */}
-          <div className="mb-6">
-            <ItpListing onCreateClick={() => toggle('create')} onLendingClick={() => setShowVault(true)} />
-          </div>
+            {/* Portfolio */}
+            <div className="section-divider" />
+            <section id="portfolio">
+              <div className="px-6 lg:px-12">
+                <div className="max-w-site mx-auto">
+                  <PortfolioSection expanded={true} onToggle={() => {}} deployedItps={deployedItps} />
+                </div>
+              </div>
+            </section>
 
-          {/* Portfolio Section (includes Orders tab) */}
-          <div className="mb-6">
-            <PortfolioSection
-              expanded={expandedSection === 'portfolio'}
-              onToggle={() => toggle('portfolio')}
-            />
-          </div>
+            {/* Create */}
+            <div className="section-divider" />
+            <section id="create">
+              <div className="px-6 lg:px-12">
+                <div className="max-w-site mx-auto">
+                  <CreateItpSection
+                    expanded={true}
+                    onToggle={() => {}}
+                    initialHoldings={deployHoldings}
+                  />
+                </div>
+              </div>
+            </section>
 
-          {/* Create ITP Section */}
-          <div className="mb-6">
-            <CreateItpSection
-              expanded={expandedSection === 'create'}
-              onToggle={() => toggle('create')}
-              initialHoldings={deployHoldings}
-            />
-          </div>
+            {/* Lend */}
+            <div className="section-divider" />
+            <section id="lend">
+              <div className="px-6 lg:px-12">
+                <div className="max-w-site mx-auto">
+                  <VaultModal inline onClose={() => {}} />
+                </div>
+              </div>
+            </section>
 
-          {/* System Status (AP Status + Performance merged) */}
-          <div className="mb-6">
-            <SystemStatusSection
-              expanded={expandedSection === 'system'}
-              onToggle={() => toggle('system')}
-            />
-          </div>
+            {/* Backtest */}
+            <div className="section-divider" />
+            <section id="backtest">
+              <div className="px-6 lg:px-12">
+                <div className="max-w-site mx-auto">
+                  <BacktestSection
+                    expanded={true}
+                    onToggle={() => {}}
+                    onDeployIndex={handleDeployIndex}
+                    deployedItps={deployedItps}
+                    onRebalanceItp={handleRebalanceItp}
+                  />
+                </div>
+              </div>
+            </section>
 
-          {/* Index Backtester */}
-          <div className="mb-6">
-            <BacktestSection
-              expanded={expandedSection === 'backtest'}
-              onToggle={() => toggle('backtest')}
-              onDeployIndex={handleDeployIndex}
-            />
-          </div>
-        </div>
+            {/* System */}
+            <div className="section-divider" />
+            <section id="system">
+              <div className="px-6 lg:px-12">
+                <div className="max-w-site mx-auto">
+                  <SystemStatusSection />
+                </div>
+              </div>
+            </section>
+          </>
+        )}
+
+        {activePage === 'vision' && <VisionPage />}
       </div>
-
-      {/* Lending Modal */}
-      {showVault && <VaultModal onClose={() => setShowVault(false)} />}
 
       <Footer />
     </main>

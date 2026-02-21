@@ -35,8 +35,8 @@ function formatShortDate(isoString: string): string {
 }
 
 /**
- * Custom tooltip component matching Dev Arena design
- * Black bg, white border, monospace numbers
+ * Custom tooltip component matching institutional design
+ * White card bg, border, monospace numbers
  * Uses shared formatters from lib/utils/formatters.ts
  */
 function PerformanceTooltip({
@@ -48,13 +48,13 @@ function PerformanceTooltip({
   const data = payload[0].payload as PerformanceDataPoint
 
   return (
-    <div className="bg-terminal border border-white/20 p-3 font-mono text-sm shadow-lg">
-      <p className="text-white font-bold mb-2">Portfolio Bet #{data.betNumber}</p>
-      <div className="space-y-1 text-white/80">
+    <div className="bg-card border border-border-medium rounded-xl p-3 font-mono text-sm shadow-card">
+      <p className="text-text-primary font-bold mb-2">Portfolio Bet #{data.betNumber}</p>
+      <div className="space-y-1 text-text-secondary">
         <p>Date: {formatDate(data.timestamp)}</p>
         <p>Markets: {(data.portfolioSize ?? 0).toLocaleString()}</p>
         <p>Amount: ${(data.amount ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
-        <p className={data.result >= 0 ? 'text-green-400' : 'text-white/60'}>
+        <p className={data.result >= 0 ? 'text-color-up' : 'text-text-muted'}>
           Result: {formatResultWithPercent(data.result, data.resultPercent)}
         </p>
       </div>
@@ -68,17 +68,17 @@ function PerformanceTooltip({
 function PerformanceGraphSkeleton({ height }: { height: number }) {
   return (
     <div
-      className="bg-terminal border border-white/20 animate-pulse"
+      className="bg-card border border-border-light rounded-xl shadow-card animate-pulse"
       style={{ height }}
     >
       <div className="h-full flex items-center justify-center">
-        <div className="w-full h-3/4 mx-8 bg-white/5 rounded">
+        <div className="w-full h-3/4 mx-8 bg-muted rounded">
           {/* Simulate chart area */}
           <div className="w-full h-full flex items-end justify-around px-4 pb-4">
             {Array.from({ length: 10 }).map((_, i) => (
               <div
                 key={i}
-                className="w-2 bg-white/10 rounded-t"
+                className="w-2 bg-muted rounded-t"
                 style={{ height: `${20 + Math.random() * 60}%` }}
               />
             ))}
@@ -95,12 +95,12 @@ function PerformanceGraphSkeleton({ height }: { height: number }) {
 function EmptyState({ height }: { height: number }) {
   return (
     <div
-      className="bg-terminal border border-white/20 flex items-center justify-center"
+      className="bg-card border border-border-light rounded-xl shadow-card flex items-center justify-center"
       style={{ height }}
     >
       <div className="text-center">
-        <p className="text-white/60 font-mono">No performance data</p>
-        <p className="text-white/40 text-sm mt-1">
+        <p className="text-text-muted">No performance data</p>
+        <p className="text-text-muted text-sm mt-1">
           Data will appear once the agent has settled bets
         </p>
       </div>
@@ -111,7 +111,7 @@ function EmptyState({ height }: { height: number }) {
 /**
  * PerformanceGraph component
  * Displays line chart of cumulative P&L over time using Recharts
- * Implements Dev Arena-style design (AC: 1, 3, 6)
+ * Implements institutional-style design (AC: 1, 3, 6)
  */
 export function PerformanceGraph({
   walletAddress,
@@ -140,12 +140,12 @@ export function PerformanceGraph({
   if (isError) {
     return (
       <div
-        className="bg-terminal border border-accent/50 flex items-center justify-center"
+        className="bg-card border border-color-down/50 rounded-xl shadow-card flex items-center justify-center"
         style={{ height }}
       >
         <div className="text-center">
-          <p className="text-accent font-mono">Error loading performance data</p>
-          <p className="text-white/40 text-sm mt-1">{error?.message}</p>
+          <p className="text-color-down">Error loading performance data</p>
+          <p className="text-text-muted text-sm mt-1">{error?.message}</p>
         </div>
       </div>
     )
@@ -158,7 +158,7 @@ export function PerformanceGraph({
 
   return (
     <div
-      className="bg-terminal border border-white/20"
+      className="bg-card border border-border-light rounded-xl shadow-card"
       role="img"
       aria-label={`Performance graph showing ${data.dataPoints.length} data points with cumulative P&L of $${data.summary.endingPnL.toLocaleString()}`}
     >
@@ -167,34 +167,34 @@ export function PerformanceGraph({
           data={data.dataPoints}
           margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
         >
-          {/* Grid - subtle white lines (AC: 3) */}
+          {/* Grid - subtle lines (AC: 3) */}
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="rgba(255,255,255,0.1)"
+            stroke="rgba(0,0,0,0.1)"
             vertical={false}
           />
 
           {/* X-Axis - Time (AC: 1) */}
           <XAxis
             dataKey="timestamp"
-            tick={showAxisLabels ? { fill: 'white', fontSize: 12 } : false}
+            tick={showAxisLabels ? { fill: '#71717A', fontSize: 12 } : false}
             tickFormatter={formatShortDate}
-            stroke="rgba(255,255,255,0.3)"
-            axisLine={{ stroke: 'rgba(255,255,255,0.3)' }}
-            tickLine={{ stroke: 'rgba(255,255,255,0.3)' }}
+            stroke="rgba(0,0,0,0.15)"
+            axisLine={{ stroke: 'rgba(0,0,0,0.15)' }}
+            tickLine={{ stroke: 'rgba(0,0,0,0.15)' }}
           />
 
           {/* Y-Axis - Cumulative P&L (AC: 1) */}
           <YAxis
             tick={showAxisLabels ? {
-              fill: 'white',
+              fill: '#71717A',
               fontSize: 12,
               fontFamily: 'JetBrains Mono, monospace'
             } : false}
             tickFormatter={(value) => `$${value.toLocaleString()}`}
-            stroke="rgba(255,255,255,0.3)"
-            axisLine={{ stroke: 'rgba(255,255,255,0.3)' }}
-            tickLine={{ stroke: 'rgba(255,255,255,0.3)' }}
+            stroke="rgba(0,0,0,0.15)"
+            axisLine={{ stroke: 'rgba(0,0,0,0.15)' }}
+            tickLine={{ stroke: 'rgba(0,0,0,0.15)' }}
             width={showAxisLabels ? 80 : 30}
           />
 
@@ -210,7 +210,7 @@ export function PerformanceGraph({
           {showTooltip && (
             <Tooltip
               content={<PerformanceTooltip />}
-              cursor={{ stroke: 'rgba(255,255,255,0.2)' }}
+              cursor={{ stroke: 'rgba(0,0,0,0.1)' }}
             />
           )}
 

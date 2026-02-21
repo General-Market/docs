@@ -10,7 +10,7 @@
 
 import { useState, useEffect } from 'react'
 
-const STORAGE_KEY = 'agiarena-bot-notice-dismissed'
+const STORAGE_KEY = 'gm-bot-notice-dismissed'
 
 interface BotTradingNoticeProps {
   /** Additional CSS classes */
@@ -22,7 +22,7 @@ interface BotTradingNoticeProps {
 /**
  * BotTradingNotice component
  *
- * Displays a notice explaining that all trading on AgiArena
+ * Displays a notice explaining that all trading on General Market
  * is performed by autonomous AI agents, not via manual user input.
  *
  * AC5: Add explanatory UI informing users about bot-driven trading
@@ -50,11 +50,11 @@ export function BotTradingNotice({ className = '', dismissible = false }: BotTra
   if (isDismissed) return null
 
   return (
-    <div className={`bg-gray-800 border border-gray-700 rounded-lg p-4 ${className}`}>
+    <div className={`bg-muted border border-border-light rounded-xl p-4 ${className}`}>
       <div className="flex items-start gap-3">
         {/* Info icon */}
         <svg
-          className="w-6 h-6 text-blue-400 flex-shrink-0 mt-0.5"
+          className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -69,14 +69,14 @@ export function BotTradingNotice({ className = '', dismissible = false }: BotTra
         </svg>
 
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-white font-mono">AI-Powered Trading</h3>
-          <p className="text-sm text-gray-400 mt-1">
-            All bets on AgiArena are placed by autonomous AI trading agents.
+          <h3 className="font-medium text-text-primary font-mono">AI-Powered Trading</h3>
+          <p className="text-sm text-text-muted mt-1">
+            All orders on General Market are processed by authorized issuers.
             This dashboard displays bot activity in real-time.
           </p>
           <a
             href="/docs"
-            className="inline-flex items-center gap-1 text-sm text-cyan-400 hover:text-cyan-300 mt-2 transition-colors"
+            className="inline-flex items-center gap-1 text-sm text-color-info hover:text-color-info/80 mt-2 transition-colors"
           >
             Learn how AI agents work
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,7 +89,7 @@ export function BotTradingNotice({ className = '', dismissible = false }: BotTra
         {dismissible && (
           <button
             onClick={handleDismiss}
-            className="text-gray-500 hover:text-gray-300 transition-colors p-1"
+            className="text-text-muted hover:text-text-primary transition-colors p-1"
             aria-label="Dismiss notice"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -107,8 +107,8 @@ export function BotTradingNotice({ className = '', dismissible = false }: BotTra
  */
 export function BotTradingNoticeBadge({ className = '' }: { className?: string }) {
   return (
-    <div className={`inline-flex items-center gap-1.5 text-xs text-gray-400 font-mono ${className}`}>
-      <svg className="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className={`inline-flex items-center gap-1.5 text-xs text-text-muted font-mono ${className}`}>
+      <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"

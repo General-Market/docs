@@ -62,11 +62,11 @@ export function MarketsTable({ market }: MarketsTableProps) {
 
   if (isLoading) {
     return (
-      <div className="bg-terminal-dark border border-white/10 rounded-lg p-6">
-        <h2 className="text-lg font-bold text-white mb-4">ITP Markets</h2>
+      <div className="bg-white rounded-xl shadow-card border border-border-light p-6">
+        <h2 className="text-lg font-bold text-text-primary mb-4">ITP Markets</h2>
         <div className="animate-pulse space-y-3">
-          <div className="h-4 bg-white/10 rounded w-full" />
-          <div className="h-10 bg-white/10 rounded w-full" />
+          <div className="h-4 bg-muted rounded w-full" />
+          <div className="h-10 bg-muted rounded w-full" />
         </div>
       </div>
     )
@@ -75,57 +75,57 @@ export function MarketsTable({ market }: MarketsTableProps) {
   // If on-chain data available, show full table
   if (!error && markets.length > 0) {
     return (
-      <div className="bg-terminal-dark border border-white/10 rounded-lg p-6">
-        <h2 className="text-lg font-bold text-white mb-4">ITP Markets</h2>
+      <div className="bg-white rounded-xl shadow-card border border-border-light p-6">
+        <h2 className="text-lg font-bold text-text-primary mb-4">ITP Markets</h2>
 
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="text-white/60 text-xs font-mono border-b border-white/10">
-                <th className="text-left pb-3">Collateral</th>
-                <th className="text-right pb-3">NAV Price</th>
-                <th className="text-right pb-3">LTV</th>
-                <th className="text-right pb-3">Utilization</th>
-                <th className="text-right pb-3">Borrow APY</th>
+              <tr className="bg-muted text-xs font-medium uppercase tracking-wider text-text-muted border-b border-border-light">
+                <th className="text-left pb-3 pt-2 px-2">Collateral</th>
+                <th className="text-right pb-3 pt-2 px-2">NAV Price</th>
+                <th className="text-right pb-3 pt-2 px-2">LTV</th>
+                <th className="text-right pb-3 pt-2 px-2">Utilization</th>
+                <th className="text-right pb-3 pt-2 px-2">Borrow APY</th>
               </tr>
             </thead>
             <tbody>
               {markets.map((m) => (
-                <tr key={m.marketId} className="border-b border-white/5 last:border-0">
-                  <td className="py-4">
+                <tr key={m.marketId} className="border-b border-border-light last:border-0">
+                  <td className="py-4 px-2">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-accent/20 rounded-full flex items-center justify-center">
-                        <span className="text-accent text-xs font-bold">{itpSymbol.slice(0, 3)}</span>
+                      <div className="w-8 h-8 bg-zinc-100 rounded-full flex items-center justify-center">
+                        <span className="text-zinc-900 text-xs font-bold">{itpSymbol.slice(0, 3)}</span>
                       </div>
                       <div>
-                        <p className="text-white font-medium">{itpName} / USDC</p>
-                        <p className="text-white/40 text-xs font-mono truncate max-w-[180px]">
+                        <p className="text-text-primary font-medium">{itpName} / USDC</p>
+                        <p className="text-text-muted text-xs font-mono truncate max-w-[180px]">
                           {collateralToken.slice(0, 10)}...
                         </p>
                       </div>
                     </div>
                   </td>
-                  <td className="py-4 text-right">
-                    <span className="text-white font-mono">
+                  <td className="py-4 px-2 text-right">
+                    <span className="text-text-primary font-mono tabular-nums">
                       ${formatOraclePrice(m.navPrice).toFixed(4)}
                     </span>
                   </td>
-                  <td className="py-4 text-right">
-                    <span className="text-accent font-mono font-bold">
+                  <td className="py-4 px-2 text-right">
+                    <span className="text-zinc-900 font-mono tabular-nums font-bold">
                       {m.lltvPercent.toFixed(0)}%
                     </span>
                   </td>
-                  <td className="py-4 text-right">
-                    <span className={`font-mono ${
-                      m.utilization > 90 ? 'text-red-400' :
-                      m.utilization > 70 ? 'text-yellow-400' :
-                      'text-green-400'
+                  <td className="py-4 px-2 text-right">
+                    <span className={`font-mono tabular-nums ${
+                      m.utilization > 90 ? 'text-color-down' :
+                      m.utilization > 70 ? 'text-color-warning' :
+                      'text-color-up'
                     }`}>
                       {m.utilization.toFixed(1)}%
                     </span>
                   </td>
-                  <td className="py-4 text-right">
-                    <span className="text-white font-mono">
+                  <td className="py-4 px-2 text-right">
+                    <span className="text-text-primary font-mono tabular-nums">
                       {m.borrowApy.toFixed(2)}%
                     </span>
                   </td>
@@ -136,18 +136,18 @@ export function MarketsTable({ market }: MarketsTableProps) {
         </div>
 
         {/* Key metrics summary */}
-        <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-3 gap-4">
+        <div className="mt-4 pt-4 border-t border-border-light grid grid-cols-3 gap-4">
           <div className="text-center">
-            <p className="text-xs text-white/40">Loan Asset</p>
-            <p className="text-sm text-white font-mono">USDC</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-text-muted">Loan Asset</p>
+            <p className="text-sm text-text-primary font-mono tabular-nums">USDC</p>
           </div>
           <div className="text-center">
-            <p className="text-xs text-white/40">Max LTV</p>
-            <p className="text-sm text-accent font-mono font-bold">{markets[0].lltvPercent.toFixed(0)}%</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-text-muted">Max LTV</p>
+            <p className="text-sm text-zinc-900 font-mono tabular-nums font-bold">{markets[0].lltvPercent.toFixed(0)}%</p>
           </div>
           <div className="text-center">
-            <p className="text-xs text-white/40">Borrow Rate (SERM)</p>
-            <p className="text-sm text-white font-mono">{markets[0].borrowApy.toFixed(2)}% APR</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-text-muted">Borrow Rate (SERM)</p>
+            <p className="text-sm text-text-primary font-mono tabular-nums">{markets[0].borrowApy.toFixed(2)}% APR</p>
           </div>
         </div>
       </div>
@@ -156,44 +156,44 @@ export function MarketsTable({ market }: MarketsTableProps) {
 
   // Fallback: show static config data when on-chain reads fail
   return (
-    <div className="bg-terminal-dark border border-white/10 rounded-lg p-6">
-      <h2 className="text-lg font-bold text-white mb-4">ITP Markets</h2>
+    <div className="bg-white rounded-xl shadow-card border border-border-light p-6">
+      <h2 className="text-lg font-bold text-text-primary mb-4">ITP Markets</h2>
 
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="text-white/60 text-xs font-mono border-b border-white/10">
-              <th className="text-left pb-3">Collateral</th>
-              <th className="text-right pb-3">NAV Price</th>
-              <th className="text-right pb-3">LTV</th>
-              <th className="text-right pb-3">Borrow APY</th>
+            <tr className="bg-muted text-xs font-medium uppercase tracking-wider text-text-muted border-b border-border-light">
+              <th className="text-left pb-3 pt-2 px-2">Collateral</th>
+              <th className="text-right pb-3 pt-2 px-2">NAV Price</th>
+              <th className="text-right pb-3 pt-2 px-2">LTV</th>
+              <th className="text-right pb-3 pt-2 px-2">Borrow APY</th>
             </tr>
           </thead>
           <tbody>
-            <tr className="border-b border-white/5">
-              <td className="py-4">
+            <tr className="border-b border-border-light">
+              <td className="py-4 px-2">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-accent/20 rounded-full flex items-center justify-center">
-                    <span className="text-accent text-xs font-bold">{itpSymbol.slice(0, 3)}</span>
+                  <div className="w-8 h-8 bg-zinc-100 rounded-full flex items-center justify-center">
+                    <span className="text-zinc-900 text-xs font-bold">{itpSymbol.slice(0, 3)}</span>
                   </div>
                   <div>
-                    <p className="text-white font-medium">{itpName} / USDC</p>
-                    <p className="text-white/40 text-xs font-mono truncate max-w-[180px]">
+                    <p className="text-text-primary font-medium">{itpName} / USDC</p>
+                    <p className="text-text-muted text-xs font-mono truncate max-w-[180px]">
                       {collateralToken.slice(0, 10)}...
                     </p>
                   </div>
                 </div>
               </td>
-              <td className="py-4 text-right">
-                <span className="text-white/40 font-mono text-sm">Unavailable</span>
+              <td className="py-4 px-2 text-right">
+                <span className="text-text-muted font-mono text-sm">Unavailable</span>
               </td>
-              <td className="py-4 text-right">
-                <span className="text-accent font-mono font-bold">
+              <td className="py-4 px-2 text-right">
+                <span className="text-zinc-900 font-mono tabular-nums font-bold">
                   {STATIC_LTV.toFixed(0)}%
                 </span>
               </td>
-              <td className="py-4 text-right">
-                <span className="text-white/40 font-mono text-sm">--</span>
+              <td className="py-4 px-2 text-right">
+                <span className="text-text-muted font-mono text-sm">--</span>
               </td>
             </tr>
           </tbody>
@@ -201,23 +201,23 @@ export function MarketsTable({ market }: MarketsTableProps) {
       </div>
 
       {/* Always show key metrics from config */}
-      <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-3 gap-4">
+      <div className="mt-4 pt-4 border-t border-border-light grid grid-cols-3 gap-4">
         <div className="text-center">
-          <p className="text-xs text-white/40">Loan Asset</p>
-          <p className="text-sm text-white font-mono">USDC</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-text-muted">Loan Asset</p>
+          <p className="text-sm text-text-primary font-mono tabular-nums">USDC</p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-white/40">Max LTV</p>
-          <p className="text-sm text-accent font-mono font-bold">{STATIC_LTV.toFixed(0)}%</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-text-muted">Max LTV</p>
+          <p className="text-sm text-zinc-900 font-mono tabular-nums font-bold">{STATIC_LTV.toFixed(0)}%</p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-white/40">Protocol</p>
-          <p className="text-sm text-white font-mono">Morpho Blue</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-text-muted">Protocol</p>
+          <p className="text-sm text-text-primary font-mono tabular-nums">Morpho Blue</p>
         </div>
       </div>
 
       {error && (
-        <p className="text-white/30 text-xs mt-3 text-center">Live market data unavailable — showing config parameters</p>
+        <p className="text-text-muted text-xs mt-3 text-center">Live market data unavailable -- showing config parameters</p>
       )}
     </div>
   )

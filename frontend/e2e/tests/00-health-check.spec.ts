@@ -5,7 +5,7 @@ import { RPC_URL, L3_RPC_URL } from '../fixtures/wallet';
 test.describe('Health Check', () => {
   test('frontend loads and shows page title', async ({ page }) => {
     await page.goto('/');
-    await expect(page).toHaveTitle(/AgiArena/i);
+    await expect(page).toHaveTitle(/General Market/i);
     // The hero heading should be visible
     await expect(page.getByRole('heading', { name: 'Index', exact: true })).toBeVisible({ timeout: 15_000 });
   });

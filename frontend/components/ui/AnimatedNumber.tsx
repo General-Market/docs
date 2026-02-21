@@ -31,7 +31,7 @@ export interface AnimatedNumberProps {
  * Uses requestAnimationFrame for 60fps animation with ease-out easing.
  *
  * Story 11-1, AC5: Flash effect when value changes
- * - Brief color flash (white → accent → white) on value change
+ * - Brief color flash on value change (works on white bg via CSS class)
  * - Respects prefers-reduced-motion via CSS
  *
  * AC3: P&L and rank numbers animate smoothly over specified duration

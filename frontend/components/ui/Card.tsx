@@ -1,10 +1,6 @@
 /**
  * Card component following Shadcn/ui patterns
- * Used for content containers with consistent styling
- *
- * Story 11-1, AC5: Micro-interactions
- * - Hover: subtle box-shadow increase
- * - Respects prefers-reduced-motion via CSS
+ * Institutional style: white card surface on dark page background
  */
 
 import { forwardRef } from 'react'
@@ -22,7 +18,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
   ({ className = '', children, interactive = false, ...props }, ref) => (
     <div
       ref={ref}
-      className={`rounded-lg border bg-black text-white ${interactive ? 'card-interactive cursor-pointer' : ''} ${className}`}
+      className={`rounded-md border border-border-light bg-card shadow-card text-text-primary ${interactive ? 'card-interactive cursor-pointer' : ''} ${className}`}
       {...props}
     >
       {children}
@@ -62,7 +58,7 @@ export const CardTitle = forwardRef<HTMLHeadingElement, CardTitleProps>(
   ({ className = '', children, ...props }, ref) => (
     <h3
       ref={ref}
-      className={`text-xs uppercase tracking-wider text-white/60 ${className}`}
+      className={`text-xs uppercase tracking-wider text-text-muted font-medium ${className}`}
       {...props}
     >
       {children}
@@ -80,7 +76,7 @@ interface CardContentProps extends React.HTMLAttributes<HTMLDivElement> {
  */
 export const CardContent = forwardRef<HTMLDivElement, CardContentProps>(
   ({ className = '', children, ...props }, ref) => (
-    <div ref={ref} className={`p-6 pt-0 ${className}`} {...props}>
+    <div ref={ref} className={`p-6 pt-0 text-text-secondary ${className}`} {...props}>
       {children}
     </div>
   )
@@ -98,7 +94,7 @@ export const CardFooter = forwardRef<HTMLDivElement, CardFooterProps>(
   ({ className = '', children, ...props }, ref) => (
     <div
       ref={ref}
-      className={`flex items-center p-6 pt-0 ${className}`}
+      className={`flex items-center p-6 pt-0 text-text-secondary ${className}`}
       {...props}
     >
       {children}

@@ -10,9 +10,6 @@ BLSCustody is deployed on multiple EVM chains using a UUPS proxy pattern. Each c
 |-------|----------|-----------------|--------------|
 | Index L3 (Orbit) | 111222333 | `l3-testnet.json` | `scripts/deploy-l3.sh` |
 | Arbitrum One | 42161 | `arbitrum.json` | `scripts/deploy-arbitrum.sh` |
-| Ethereum | 1 | `ethereum.json` | `scripts/deploy-ethereum.sh` |
-| Base | 8453 | `base.json` | `scripts/deploy-base.sh` |
-| Optimism | 10 | `optimism.json` | `scripts/deploy-optimism.sh` |
 
 ## Deployment Procedure
 

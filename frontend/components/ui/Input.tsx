@@ -7,7 +7,7 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 
 /**
  * Input component following Shadcn/ui pattern
- * Dev Arena themed: black background, white/red borders
+ * Institutional style: muted background, neutral borders
  */
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, ...props }, ref) => {
@@ -15,9 +15,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <input
         type={type}
         className={cn(
-          'flex h-10 w-full rounded-none border border-white/20 bg-terminal px-3 py-2',
-          'text-sm text-white font-mono placeholder:text-white/40',
-          'focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent',
+          'flex h-10 w-full rounded-lg border border-border-medium bg-muted px-3 py-2',
+          'text-sm text-text-primary placeholder:text-text-muted',
+          'focus:outline-none focus:ring-1 focus:ring-zinc-400 focus:border-zinc-400',
           'disabled:cursor-not-allowed disabled:opacity-50',
           className
         )}

@@ -8,18 +8,17 @@
  *
  * Environment: Set BACKEND_URL to test against production or staging
  * Examples:
- *   BACKEND_URL=https://agiarena.vercel.app bun test  # Via Vercel (recommended)
+ *   BACKEND_URL=https://generalmarket.vercel.app bun test  # Via Vercel (recommended)
  *   NODE_TLS_REJECT_UNAUTHORIZED=0 bun test          # Direct server with self-signed cert
  */
 
 import { describe, it, expect, beforeAll } from 'bun:test'
 
-// Backend URL - defaults to production server
-// Use Vercel URL for proper SSL, or set NODE_TLS_REJECT_UNAUTHORIZED=0 for direct server
-const BACKEND_URL = process.env.BACKEND_URL || 'https://63.179.141.230'
+// Backend URL - defaults to localhost; set BACKEND_URL env var for production/staging
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001'
 
 // Disable SSL verification for self-signed certs in testing
-if (BACKEND_URL.includes('63.179.141.230') || BACKEND_URL.includes('localhost')) {
+if (BACKEND_URL.includes('localhost')) {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 }
 

@@ -21,10 +21,21 @@ import { formatRelativeTime } from '@/lib/utils/time'
  * Rank badge component for top 3 agents with animation support
  */
 function RankBadge({ rank }: { rank: number }) {
-  if (rank === 1) return <span className="text-2xl" aria-label="First place">🥇</span>
-  if (rank === 2) return <span className="text-2xl" aria-label="Second place">🥈</span>
-  if (rank === 3) return <span className="text-2xl" aria-label="Third place">🥉</span>
-  return null
+  const colors: Record<number, string> = {
+    1: 'bg-yellow-500 text-white',
+    2: 'bg-zinc-400 text-white',
+    3: 'bg-amber-700 text-white',
+  }
+  const color = colors[rank]
+  if (!color) return null
+  return (
+    <span
+      className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-bold ${color}`}
+      aria-label={`${rank === 1 ? 'First' : rank === 2 ? 'Second' : 'Third'} place`}
+    >
+      {rank}
+    </span>
+  )
 }
 
 /**
@@ -63,8 +74,8 @@ export function AnimatedLeaderboardRow({
   prefersReducedMotion,
   isMobile
 }: AnimatedLeaderboardRowProps) {
-  const pnlColor = agent.pnl >= 0 ? 'text-green-400' : 'text-white/60'
-  const roiColor = agent.roi >= 0 ? 'text-green-400' : 'text-white/60'
+  const pnlColor = agent.pnl >= 0 ? 'text-color-up' : 'text-text-muted'
+  const roiColor = agent.roi >= 0 ? 'text-color-up' : 'text-text-muted'
 
   // Track rank change animations for this agent
   const { isAnimating, isPositive } = useRankChangeAnimation(agent.walletAddress)
@@ -74,7 +85,7 @@ export function AnimatedLeaderboardRow({
 
   // Highlight class for searched agent
   const highlightClass = isHighlighted
-    ? 'shadow-[0_0_15px_rgba(196,0,0,0.5)] bg-accent/10'
+    ? 'shadow-[0_0_15px_rgba(196,0,0,0.5)] bg-muted'
     : ''
 
   // Animation class for rank change (2s duration per AC4)
@@ -99,7 +110,7 @@ export function AnimatedLeaderboardRow({
       role="button"
       tabIndex={0}
       aria-label={`View details for agent ${formatWalletAddress(agent.walletAddress)}, ranked ${agent.rank}, P&L ${formatPnL(agent.pnl)}`}
-      className={`cursor-pointer hover:shadow-[0_0_10px_rgba(196,0,0,0.3)] focus:outline-none focus:ring-2 focus:ring-accent/50 transition-colors duration-300 ${highlightClass} ${rankChangeClass}`}
+      className={`cursor-pointer hover:bg-surface focus:outline-none focus:ring-2 focus:ring-zinc-900/50 transition-colors duration-300 ${highlightClass} ${rankChangeClass}`}
       style={{ willChange: shouldAnimate ? 'transform' : 'auto' }}
     >
       {/* Rank - AnimatedNumber for ranks > 3, emoji badges for top 3 */}
@@ -112,13 +123,13 @@ export function AnimatedLeaderboardRow({
             decimals={0}
             duration={500}
             disabled={!shouldAnimate}
-            className="font-mono text-white/60"
+            className="font-mono text-text-muted"
           />
         )}
       </TableCell>
 
       {/* Agent (wallet address) - no animation */}
-      <TableCell className="font-mono text-white">
+      <TableCell className="font-mono text-text-primary">
         {formatWalletAddress(agent.walletAddress)}
       </TableCell>
 
@@ -147,12 +158,12 @@ export function AnimatedLeaderboardRow({
       </TableCell>
 
       {/* Portfolio Bets (totalBets) - hidden on mobile */}
-      <TableCell className="font-mono text-white hidden md:table-cell">
+      <TableCell className="font-mono text-text-primary hidden md:table-cell">
         {(agent.totalBets ?? 0).toLocaleString()}
       </TableCell>
 
       {/* Avg Portfolio Size - animated (AC6) */}
-      <TableCell className="font-mono text-white font-bold hidden md:table-cell">
+      <TableCell className="font-mono text-text-primary font-bold hidden md:table-cell">
         <Tooltip content="Average number of markets per bet - only AI can manage this scale">
           <AnimatedNumber
             value={agent.avgPortfolioSize}
@@ -165,7 +176,7 @@ export function AnimatedLeaderboardRow({
       </TableCell>
 
       {/* Max Portfolio - animated (AC6) */}
-      <TableCell className="font-mono text-accent font-bold">
+      <TableCell className="font-mono text-zinc-900 font-bold">
         <Tooltip content="Maximum markets traded simultaneously in a single bet">
           <AnimatedNumber
             value={agent.maxPortfolioSize}
@@ -178,7 +189,7 @@ export function AnimatedLeaderboardRow({
       </TableCell>
 
       {/* Win Rate - hidden on mobile */}
-      <TableCell className="font-mono text-white hidden md:table-cell">
+      <TableCell className="font-mono text-text-primary hidden md:table-cell">
         {formatWinRate(agent.winRate)}
       </TableCell>
 
@@ -188,12 +199,12 @@ export function AnimatedLeaderboardRow({
       </TableCell>
 
       {/* Volume - hidden on mobile */}
-      <TableCell className="font-mono text-white/60 hidden md:table-cell">
+      <TableCell className="font-mono text-text-muted hidden md:table-cell">
         {formatVolume(agent.volume)}
       </TableCell>
 
       {/* Last Active - hidden on mobile */}
-      <TableCell className="text-white/40 text-sm hidden md:table-cell">
+      <TableCell className="text-text-muted text-sm hidden md:table-cell">
         {formatRelativeTime(agent.lastActiveAt ?? '')}
       </TableCell>
     </motion.tr>

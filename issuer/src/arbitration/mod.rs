@@ -13,10 +13,18 @@ pub mod processor;
 
 use std::sync::Arc;
 use tokio::sync::mpsc;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
+use common::bls::BLSKeyPair;
+use common::traits::P2PTransport;
 use common::types::P2PMessage;
-use types::ArbitrationConfig;
+use ethers::providers::{Http, Middleware, Provider};
+
+use crate::EthersChainWriter;
+
+use self::listener::ArbitrationListener;
+use self::processor::ArbitrationProcessor;
+use self::types::{ArbitrationConfig, ArbitrationRequest};
 
 /// Channel for forwarding arbitration P2P messages from consensus handler
 pub type ArbitrationMessageSender = mpsc::UnboundedSender<P2PMessage>;
@@ -28,14 +36,42 @@ pub fn arbitration_channel() -> (ArbitrationMessageSender, ArbitrationMessageRec
 }
 
 /// Top-level arbitration subsystem
+///
+/// Orchestrates the ArbitrationListener (event polling) and ArbitrationProcessor
+/// (4-phase consensus state machine). The subsystem:
+/// 1. Spawns a listener that polls CollateralVault for ArbitrationRequested events
+/// 2. Routes incoming P2P messages to the processor
+/// 3. Kicks off consensus when the listener detects a new request
+/// 4. Submits settlement on-chain when consensus completes
 pub struct ArbitrationSubsystem {
     config: ArbitrationConfig,
     message_rx: ArbitrationMessageReceiver,
+    p2p: Arc<dyn P2PTransport>,
+    chain_writer: Arc<EthersChainWriter>,
+    bls_keypair: BLSKeyPair,
+    issuer_index: u8,
+    rpc_url: String,
 }
 
 impl ArbitrationSubsystem {
-    pub fn new(config: ArbitrationConfig, message_rx: ArbitrationMessageReceiver) -> Self {
-        Self { config, message_rx }
+    pub fn new(
+        config: ArbitrationConfig,
+        message_rx: ArbitrationMessageReceiver,
+        p2p: Arc<dyn P2PTransport>,
+        chain_writer: Arc<EthersChainWriter>,
+        bls_keypair: BLSKeyPair,
+        issuer_index: u8,
+        rpc_url: String,
+    ) -> Self {
+        Self {
+            config,
+            message_rx,
+            p2p,
+            chain_writer,
+            bls_keypair,
+            issuer_index,
+            rpc_url,
+        }
     }
 
     /// Run the arbitration subsystem (blocks until shutdown)
@@ -47,6 +83,54 @@ impl ArbitrationSubsystem {
             "Arbitration subsystem started"
         );
 
+        // Create request channel (listener -> subsystem)
+        let (request_tx, mut request_rx) = mpsc::unbounded_channel::<ArbitrationRequest>();
+
+        // Spawn the ArbitrationListener to poll CollateralVault events
+        let listener_provider = match Provider::<Http>::try_from(&self.rpc_url) {
+            Ok(p) => Arc::new(p),
+            Err(e) => {
+                error!(error = %e, "Failed to create provider for ArbitrationListener");
+                return;
+            }
+        };
+
+        // Query chain ID from provider and inject into config
+        match listener_provider.get_chainid().await {
+            Ok(cid) => {
+                self.config.chain_id = cid.as_u64();
+                info!(chain_id = self.config.chain_id, "Arbitration chain ID from provider");
+            }
+            Err(e) => {
+                error!(error = %e, "Failed to query chain ID from provider, aborting arbitration");
+                return;
+            }
+        }
+
+        let listener = ArbitrationListener::new(
+            listener_provider,
+            self.config.collateral_vault,
+            self.config.poll_interval_secs,
+            request_tx,
+        );
+        let listener_shutdown = shutdown.clone();
+        tokio::spawn(async move {
+            listener.run(listener_shutdown).await;
+        });
+
+        // Create the processor with all dependencies
+        let mut processor = ArbitrationProcessor::new(
+            self.config.clone(),
+            self.p2p.clone(),
+            self.bls_keypair.clone(),
+            self.issuer_index,
+        );
+
+        let settlement_contract = self.config.settlement_contract;
+
+        // Main run loop with 3 select branches
+        let mut drain_interval = tokio::time::interval(std::time::Duration::from_secs(1));
+
         loop {
             if shutdown.load(std::sync::atomic::Ordering::Relaxed) {
                 info!("Arbitration subsystem shutting down");
@@ -54,24 +138,54 @@ impl ArbitrationSubsystem {
             }
 
             tokio::select! {
+                // Branch 1: P2P messages from consensus handler
                 Some(msg) = self.message_rx.recv() => {
-                    match msg {
-                        P2PMessage::ArbitrationPriceProposal { bet_id, .. } => {
-                            info!(bet_id = %bet_id, "Received arbitration price proposal");
-                        }
-                        P2PMessage::ArbitrationPriceVote { bet_id, .. } => {
-                            info!(bet_id = %bet_id, "Received arbitration price vote");
-                        }
-                        P2PMessage::ArbitrationResolutionSign { bet_id, .. } => {
-                            info!(bet_id = %bet_id, "Received arbitration resolution signature");
-                        }
-                        _ => {
-                            warn!("Unexpected message type in arbitration channel");
+                    processor.handle_message(msg);
+                }
+
+                // Branch 2: New arbitration requests from listener
+                Some(request) = request_rx.recv() => {
+                    let bet_id = request.bet_id;
+                    if processor.has_active_consensus(&bet_id) {
+                        warn!(bet_id = %bet_id, "Ignoring duplicate arbitration request");
+                        continue;
+                    }
+                    processor.start_consensus(request).await;
+                }
+
+                // Branch 3: Periodic drain of completed results + chain submission
+                _ = drain_interval.tick() => {
+                    let results = processor.drain_completed();
+                    for result in results {
+                        info!(
+                            bet_id = %result.bet_id,
+                            creator_wins = result.creator_wins,
+                            signers = result.signer_count,
+                            "Submitting arbitration settlement"
+                        );
+                        match self.chain_writer.submit_settlement(
+                            settlement_contract,
+                            result.bet_id,
+                            result.creator_wins,
+                            result.aggregated_signature,
+                            result.signer_bitmap,
+                        ).await {
+                            Ok(tx_hash) => {
+                                info!(
+                                    bet_id = %result.bet_id,
+                                    tx_hash = ?tx_hash,
+                                    "Settlement submitted"
+                                );
+                            }
+                            Err(e) => {
+                                error!(
+                                    bet_id = %result.bet_id,
+                                    error = %e,
+                                    "Settlement submission failed"
+                                );
+                            }
                         }
                     }
-                }
-                _ = tokio::time::sleep(std::time::Duration::from_secs(1)) => {
-                    // Periodic tick for future listener polling
                 }
             }
         }

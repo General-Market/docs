@@ -1,36 +1,27 @@
 /**
- * Block Explorer URL utilities for Index L3 (Orbit)
+ * Block Explorer URL utilities for Index L3 (Orbit) and Arbitrum Sepolia
  */
 
-/**
- * Index L3 Explorer URL
- * Note: Update this URL when an official explorer is available
- */
-const EXPLORER_URL = 'https://index.rpc.zeeve.net' // Placeholder - use actual explorer when available
+import { L3_EXPLORER_URL, ARB_EXPLORER_URL } from '@/lib/config'
 
-/**
- * Generate explorer URL for a transaction
- * @param txHash - The transaction hash
- * @returns Full explorer URL for the transaction
- */
-export function getTxUrl(txHash: string): string {
-  return `${EXPLORER_URL}/tx/${txHash}`
+export type ExplorerChain = 'arb' | 'l3'
+
+function explorerBase(chain: ExplorerChain): string {
+  const base = chain === 'arb' ? ARB_EXPLORER_URL : L3_EXPLORER_URL
+  return base
 }
 
-/**
- * Generate explorer URL for an address
- * @param address - The address
- * @returns Full explorer URL for the address
- */
-export function getAddressUrl(address: string): string {
-  return `${EXPLORER_URL}/address/${address}`
+export function getTxUrl(txHash: string, chain: ExplorerChain = 'l3'): string {
+  const base = explorerBase(chain)
+  return base ? `${base}/tx/${txHash}` : '#'
 }
 
-/**
- * Generate explorer URL for a contract
- * @param address - The contract address
- * @returns Full explorer URL for the contract
- */
-export function getContractUrl(address: string): string {
-  return `${EXPLORER_URL}/address/${address}#code`
+export function getAddressUrl(address: string, chain: ExplorerChain = 'l3'): string {
+  const base = explorerBase(chain)
+  return base ? `${base}/address/${address}` : '#'
+}
+
+export function getContractUrl(address: string, chain: ExplorerChain = 'l3'): string {
+  const base = explorerBase(chain)
+  return base ? `${base}/address/${address}#code` : '#'
 }

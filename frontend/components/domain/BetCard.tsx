@@ -21,20 +21,20 @@ function getHorizonBadge(horizon?: TradeHorizon): { label: string; bgColor: stri
     case 'weekly':
       return {
         label: 'Weekly',
-        bgColor: 'bg-amber-800/30',
-        textColor: 'text-amber-300',
+        bgColor: 'bg-amber-100',
+        textColor: 'text-amber-700',
       };
     case 'monthly':
       return {
         label: 'Monthly',
-        bgColor: 'bg-orange-800/30',
-        textColor: 'text-orange-300',
+        bgColor: 'bg-orange-100',
+        textColor: 'text-orange-700',
       };
     case 'quarterly':
       return {
         label: 'Quarterly',
-        bgColor: 'bg-red-800/30',
-        textColor: 'text-red-300',
+        bgColor: 'bg-red-100',
+        textColor: 'text-red-700',
       };
     default:
       return null;
@@ -76,24 +76,24 @@ function formatStatus(status: string): string {
  */
 function getStatusColor(status: string): string {
   switch (status) {
-    // Legacy statuses (AgiArenaCore)
+    // Legacy statuses (GeneralMarketCore)
     case 'pending':
-      return 'text-yellow-400'
+      return 'text-yellow-600'
     case 'matched':
-      return 'text-green-400'
+      return 'text-green-600'
     case 'settling':
-      return 'text-blue-400'
+      return 'text-blue-600'
     case 'settled':
-      return 'text-cyan-400'
+      return 'text-cyan-600'
     // Bilateral custody statuses (CollateralVault)
     case 'active':
-      return 'text-green-400'
+      return 'text-green-600'
     case 'in_arbitration':
-      return 'text-orange-400'
+      return 'text-orange-600'
     case 'custom_payout':
-      return 'text-purple-400'
+      return 'text-purple-600'
     default:
-      return 'text-white/60'
+      return 'text-text-muted'
   }
 }
 
@@ -114,17 +114,17 @@ export function BetCard({ bet, className = '' }: BetCardProps) {
   const category = useCategoryById(bet.categoryId)
 
   return (
-    <div className={`border border-gray-700 rounded-lg p-4 bg-black/50 ${className}`}>
+    <div className={`border border-border-light rounded-xl p-4 bg-white shadow-card ${className}`}>
       {/* Header with odds badge and status */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
           <OddsBadge display={odds.display} favorability={odds.favorability} />
           {/* Category badge (Epic 8) */}
           {category && (
-            <span className="px-2 py-1 bg-gray-800 rounded text-xs font-mono text-white/80">
+            <span className="px-2 py-1 bg-muted rounded text-xs font-mono text-text-secondary">
               {formatCategoryDisplay(category)}
               {bet.listSize && (
-                <span className="text-white/40 ml-1">({bet.listSize})</span>
+                <span className="text-text-muted ml-1">({bet.listSize})</span>
               )}
             </span>
           )}
@@ -139,7 +139,7 @@ export function BetCard({ bet, className = '' }: BetCardProps) {
           })()}
           {/* Story 14-1: Early exit badge */}
           {bet.earlyExit && (
-            <span className="px-2 py-1 bg-cyan-800/30 rounded text-xs font-mono text-cyan-300">
+            <span className="px-2 py-1 bg-cyan-100 rounded text-xs font-mono text-cyan-700">
               ⊗ Early Exit
             </span>
           )}
@@ -152,43 +152,43 @@ export function BetCard({ bet, className = '' }: BetCardProps) {
       {/* Stake information (AC2) */}
       <div className="grid grid-cols-2 gap-4 text-sm mb-4">
         <div>
-          <div className="text-gray-400 text-xs uppercase font-mono mb-1">Creator Staked</div>
-          <div className="font-mono text-white">{odds.creatorRisk}</div>
+          <div className="text-text-muted text-xs uppercase font-mono mb-1">Creator Staked</div>
+          <div className="font-mono text-text-primary">{odds.creatorRisk}</div>
         </div>
         <div>
-          <div className="text-gray-400 text-xs uppercase font-mono mb-1">Filler Stake</div>
-          <div className="font-mono text-white">{odds.matcherRisk}</div>
+          <div className="text-text-muted text-xs uppercase font-mono mb-1">Filler Stake</div>
+          <div className="font-mono text-text-primary">{odds.matcherRisk}</div>
         </div>
       </div>
 
       {/* Match status indicator */}
-      <div className="mb-4 text-xs font-mono text-gray-400">
+      <div className="mb-4 text-xs font-mono text-text-muted">
         {odds.isMatched ? (
-          <span className="text-green-400">Matched</span>
+          <span className="text-green-600">Matched</span>
         ) : (
-          <span className="text-yellow-400">Awaiting match</span>
+          <span className="text-yellow-600">Awaiting match</span>
         )}
       </div>
 
       {/* Payout info (AC4) */}
-      <div className="bg-gray-900/60 p-3 rounded border border-gray-800 mb-4">
-        <div className="text-gray-400 text-xs uppercase font-mono mb-2">Payout Info</div>
+      <div className="bg-muted p-3 rounded-lg border border-border-light mb-4">
+        <div className="text-text-muted text-xs uppercase font-mono mb-2">Payout Info</div>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between font-mono">
-            <span className="text-gray-400">Total Pot:</span>
-            <span className="text-white">{odds.totalPot}</span>
+            <span className="text-text-muted">Total Pot:</span>
+            <span className="text-text-primary">{odds.totalPot}</span>
           </div>
           <div className="flex justify-between font-mono">
             <Tooltip content="Return multiplier if creator wins">
-              <span className="text-gray-400 cursor-help">Creator Return:</span>
+              <span className="text-text-muted cursor-help">Creator Return:</span>
             </Tooltip>
-            <span className="text-green-400">{odds.creatorReturn}</span>
+            <span className="text-green-600">{odds.creatorReturn}</span>
           </div>
           <div className="flex justify-between font-mono">
             <Tooltip content="Return multiplier if matcher wins">
-              <span className="text-gray-400 cursor-help">Matcher Return:</span>
+              <span className="text-text-muted cursor-help">Matcher Return:</span>
             </Tooltip>
-            <span className="text-green-400">{odds.matcherReturn}</span>
+            <span className="text-green-600">{odds.matcherReturn}</span>
           </div>
         </div>
       </div>
@@ -196,30 +196,30 @@ export function BetCard({ bet, className = '' }: BetCardProps) {
       {/* Implied probability toggle (AC5) */}
       <button
         onClick={() => setShowAdvanced(!showAdvanced)}
-        className="w-full text-xs text-gray-500 hover:text-gray-300 transition-colors mb-3 font-mono"
+        className="w-full text-xs text-text-muted hover:text-text-primary transition-colors mb-3 font-mono"
       >
         {showAdvanced ? '▼ Hide' : '▶ Show'} implied probability
       </button>
 
       {showAdvanced && (
-        <div className="bg-gray-900/40 p-3 rounded border border-gray-800 mb-4 text-sm">
+        <div className="bg-muted p-3 rounded-lg border border-border-light mb-4 text-sm">
           <div className="flex justify-between font-mono">
             <Tooltip content="Probability implied by the odds that creator wins">
-              <span className="text-gray-400 cursor-help">Creator implied:</span>
+              <span className="text-text-muted cursor-help">Creator implied:</span>
             </Tooltip>
-            <span className="text-white">{formatImpliedProbability(odds.impliedProbability)}</span>
+            <span className="text-text-primary">{formatImpliedProbability(odds.impliedProbability)}</span>
           </div>
           <div className="flex justify-between font-mono mt-1">
             <Tooltip content="Probability implied by the odds that matcher wins">
-              <span className="text-gray-400 cursor-help">Matcher implied:</span>
+              <span className="text-text-muted cursor-help">Matcher implied:</span>
             </Tooltip>
-            <span className="text-white">{formatImpliedProbability(1 - odds.impliedProbability)}</span>
+            <span className="text-text-primary">{formatImpliedProbability(1 - odds.impliedProbability)}</span>
           </div>
         </div>
       )}
 
       {/* List/Portfolio size */}
-      <div className="text-xs text-gray-500 font-mono mb-3">
+      <div className="text-xs text-text-muted font-mono mb-3">
         {bet.tradeCount && bet.tradeCount > 0 ? (
           <span>Portfolio: {bet.tradeCount.toLocaleString()} markets</span>
         ) : bet.listSize ? (
@@ -244,13 +244,13 @@ export function BetCard({ bet, className = '' }: BetCardProps) {
       <div className="flex justify-between items-center">
         <Link
           href={`/bet/${bet.betId}`}
-          className="text-cyan-400 hover:text-cyan-300 text-xs font-mono transition-colors"
+          className="text-color-info hover:text-color-info/80 text-xs font-mono transition-colors"
         >
           View Details →
         </Link>
 
         {/* Read-only notice (AC6) */}
-        <span className="text-[10px] text-gray-600 italic">
+        <span className="text-[10px] text-text-muted italic">
           Bets placed by AI agents
         </span>
       </div>

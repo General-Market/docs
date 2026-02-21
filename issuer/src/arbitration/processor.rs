@@ -20,12 +20,14 @@
 
 use ethers::types::U256;
 use std::collections::HashMap;
-use tokio::sync::mpsc;
-use tracing::info;
+use std::sync::Arc;
+use tracing::{error, info, warn};
 
+use common::bls::{BLSKeyPair, Bn254BLSSigner};
+use common::traits::{BLSSigner, P2PTransport};
 use common::types::{BLSSignature, P2PMessage};
 
-use super::consensus::build_outcome_hash;
+use super::consensus::{build_outcome_hash, build_price_proposal_hash};
 use super::market_data::DataNodePriceFetcher;
 use super::types::{ArbitrationConfig, ArbitrationPhase, ArbitrationRequest, ArbitrationResult};
 
@@ -46,20 +48,32 @@ pub struct ArbitrationProcessor {
     config: ArbitrationConfig,
     price_fetcher: DataNodePriceFetcher,
     active: HashMap<U256, BetConsensusState>,
-    _request_rx: mpsc::UnboundedReceiver<ArbitrationRequest>,
+    /// P2P transport for broadcasting proposals
+    p2p: Arc<dyn P2PTransport>,
+    /// BLS signer for signature operations
+    bls_signer: Bn254BLSSigner,
+    /// BLS keypair for this node
+    bls_keypair: BLSKeyPair,
+    /// This node's issuer index (for signer bitmap)
+    issuer_index: u8,
 }
 
 impl ArbitrationProcessor {
     pub fn new(
         config: ArbitrationConfig,
-        request_rx: mpsc::UnboundedReceiver<ArbitrationRequest>,
+        p2p: Arc<dyn P2PTransport>,
+        bls_keypair: BLSKeyPair,
+        issuer_index: u8,
     ) -> Self {
         let price_fetcher = DataNodePriceFetcher::new(&config.data_node_url);
         Self {
             config,
             price_fetcher,
             active: HashMap::new(),
-            _request_rx: request_rx,
+            p2p,
+            bls_signer: Bn254BLSSigner::new(),
+            bls_keypair,
+            issuer_index,
         }
     }
 
@@ -139,7 +153,60 @@ impl ArbitrationProcessor {
                 creator_wins: None,
             },
         );
-        // TODO: Fetch trades, compute prices, broadcast ArbitrationPriceProposal via P2P
+
+        // Fetch exit prices from data-node
+        // TODO: trades list should come from the request/on-chain data; stub for now
+        let trades: Vec<(u32, String)> = vec![]; // Will be populated from bet metadata
+        let prices = match self.price_fetcher.fetch_trade_prices(&trades).await {
+            Ok(p) => p,
+            Err(e) => {
+                warn!(bet_id = %bet_id, error = %e, "Failed to fetch trade prices, aborting consensus");
+                self.active.remove(&bet_id);
+                return;
+            }
+        };
+
+        // Build price tuples for hashing and P2P message
+        let price_tuples: Vec<(u32, String, i64)> = prices
+            .iter()
+            .map(|p| (p.trade_index, p.symbol.clone(), p.exit_price_cents))
+            .collect();
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+
+        // Build price proposal hash and BLS-sign it
+        let proposal_hash = build_price_proposal_hash(bet_id, &price_tuples, timestamp);
+        let signature = match self
+            .bls_signer
+            .sign_message_hash(&self.bls_keypair, proposal_hash.as_fixed_bytes())
+        {
+            Ok(sig) => sig,
+            Err(e) => {
+                error!(bet_id = %bet_id, error = %e, "Failed to BLS-sign price proposal");
+                self.active.remove(&bet_id);
+                return;
+            }
+        };
+
+        // Broadcast ArbitrationPriceProposal via P2P
+        let mut leader_id = [0u8; 32];
+        leader_id[0] = self.issuer_index;
+        let msg = P2PMessage::ArbitrationPriceProposal {
+            leader_id,
+            bet_id,
+            prices: price_tuples,
+            timestamp,
+            leader_signature: signature,
+        };
+
+        if let Err(e) = self.p2p.broadcast(msg).await {
+            error!(bet_id = %bet_id, error = %e, "Failed to broadcast price proposal");
+            // Keep the bet active — followers may still be able to drive consensus
+        } else {
+            info!(bet_id = %bet_id, "Broadcasting ArbitrationPriceProposal");
+        }
     }
 
     /// Check if a bet has an active consensus round
@@ -154,12 +221,10 @@ impl ArbitrationProcessor {
 
     /// Build the outcome hash for a bet (delegates to consensus module).
     ///
-    /// Uses the settlement contract address and L3 chain ID from config.
+    /// Uses the settlement contract address and chain ID from config.
     pub fn build_outcome_hash(&self, bet_id: U256, creator_wins: bool) -> ethers::types::H256 {
-        // L3 chain ID = 111222333 (from ArbitrationSettlement.sol: block.chainid)
-        let chain_id = 111222333u64;
         build_outcome_hash(
-            chain_id,
+            self.config.chain_id,
             self.config.settlement_contract,
             bet_id,
             creator_wins,
@@ -183,10 +248,28 @@ impl ArbitrationProcessor {
                 for idx in state.resolution_sigs.keys() {
                     bitmap = bitmap | (U256::one() << *idx as usize);
                 }
+
+                // Aggregate BLS signatures
+                let sigs: Vec<BLSSignature> =
+                    state.resolution_sigs.values().cloned().collect();
+                let aggregated_signature = match self.bls_signer.aggregate_signatures(sigs) {
+                    Ok(agg) => agg.0,
+                    Err(e) => {
+                        error!(
+                            bet_id = %bet_id,
+                            error = %e,
+                            "Failed to aggregate BLS signatures, skipping bet"
+                        );
+                        // Re-insert for retry on next drain cycle
+                        self.active.insert(bet_id, state);
+                        continue;
+                    }
+                };
+
                 results.push(ArbitrationResult {
                     bet_id,
                     creator_wins: state.creator_wins.unwrap_or(false),
-                    aggregated_signature: vec![], // TODO: actual BLS aggregation
+                    aggregated_signature,
                     signer_bitmap: bitmap,
                     signer_count: state.resolution_sigs.len(),
                 });
@@ -199,12 +282,42 @@ impl ArbitrationProcessor {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use async_trait::async_trait;
+    use common::types::PeerInfo;
     use ethers::types::{Address, H256};
+
+    /// Minimal no-op P2P transport for processor unit tests
+    struct NoOpP2P;
+
+    #[async_trait]
+    impl P2PTransport for NoOpP2P {
+        async fn connect_peers(&self, _peers: Vec<PeerInfo>) -> Result<(), common::error::Error> {
+            Ok(())
+        }
+        async fn broadcast(&self, _message: P2PMessage) -> Result<(), common::error::Error> {
+            Ok(())
+        }
+        async fn send_to(
+            &self,
+            _peer_id: common::types::PeerId,
+            _message: P2PMessage,
+        ) -> Result<(), common::error::Error> {
+            Ok(())
+        }
+        async fn receive(
+            &self,
+        ) -> Result<common::MessageStream, common::error::Error> {
+            Err(common::error::Error::P2PReceive(
+                "not implemented".to_string(),
+            ))
+        }
+    }
 
     fn test_config() -> ArbitrationConfig {
         ArbitrationConfig {
             signature_threshold: 2,
             settlement_contract: Address::from([0xAA; 20]),
+            chain_id: 111222333,
             ..Default::default()
         }
     }
@@ -221,10 +334,25 @@ mod tests {
         }
     }
 
+    fn test_processor() -> ArbitrationProcessor {
+        let p2p: Arc<dyn P2PTransport> = Arc::new(NoOpP2P);
+        let keypair = BLSKeyPair::generate();
+        ArbitrationProcessor::new(test_config(), p2p, keypair, 0)
+    }
+
+    /// Generate real BLS signatures for drain_completed tests
+    fn real_bls_sigs(message_hash: &[u8; 32]) -> (BLSSignature, BLSSignature) {
+        let signer = Bn254BLSSigner::new();
+        let kp1 = BLSKeyPair::from_seed(&[0u8; 32]).unwrap();
+        let kp2 = BLSKeyPair::from_seed(&[2u8; 32]).unwrap();
+        let sig1 = signer.sign_message_hash(&kp1, message_hash).unwrap();
+        let sig2 = signer.sign_message_hash(&kp2, message_hash).unwrap();
+        (sig1, sig2)
+    }
+
     #[tokio::test]
     async fn test_start_consensus_creates_active_state() {
-        let (_tx, rx) = mpsc::unbounded_channel();
-        let mut processor = ArbitrationProcessor::new(test_config(), rx);
+        let mut processor = test_processor();
 
         assert!(!processor.has_active_consensus(&U256::from(42)));
         processor.start_consensus(test_request(42)).await;
@@ -237,8 +365,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_price_vote_threshold_advances_phase() {
-        let (_tx, rx) = mpsc::unbounded_channel();
-        let mut processor = ArbitrationProcessor::new(test_config(), rx);
+        let mut processor = test_processor();
 
         processor.start_consensus(test_request(1)).await;
 
@@ -271,8 +398,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_reject_votes_dont_advance_phase() {
-        let (_tx, rx) = mpsc::unbounded_channel();
-        let mut processor = ArbitrationProcessor::new(test_config(), rx);
+        let mut processor = test_processor();
 
         processor.start_consensus(test_request(1)).await;
 
@@ -299,8 +425,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_resolution_sigs_advance_to_complete() {
-        let (_tx, rx) = mpsc::unbounded_channel();
-        let mut processor = ArbitrationProcessor::new(test_config(), rx);
+        let mut processor = test_processor();
 
         processor.start_consensus(test_request(7)).await;
 
@@ -337,18 +462,21 @@ mod tests {
 
     #[tokio::test]
     async fn test_drain_completed_returns_results() {
-        let (_tx, rx) = mpsc::unbounded_channel();
-        let mut processor = ArbitrationProcessor::new(test_config(), rx);
+        let mut processor = test_processor();
 
         processor.start_consensus(test_request(10)).await;
 
-        // Force to complete state with sigs
+        // Use real BLS signatures so aggregation succeeds
+        let outcome_hash = processor.build_outcome_hash(U256::from(10), true);
+        let (sig0, sig2) = real_bls_sigs(outcome_hash.as_fixed_bytes());
+
+        // Force to complete state with real sigs
         {
             let state = processor.active.get_mut(&U256::from(10)).unwrap();
             state.phase = ArbitrationPhase::Complete;
             state.creator_wins = Some(true);
-            state.resolution_sigs.insert(0, BLSSignature(vec![0xAA]));
-            state.resolution_sigs.insert(2, BLSSignature(vec![0xBB]));
+            state.resolution_sigs.insert(0, sig0);
+            state.resolution_sigs.insert(2, sig2);
         }
 
         let results = processor.drain_completed();
@@ -359,6 +487,8 @@ mod tests {
         assert_eq!(r.signer_count, 2);
         // Bitmap: bit 0 and bit 2 set = 0b101 = 5
         assert_eq!(r.signer_bitmap, U256::from(5));
+        // Aggregated signature should be 64 bytes (real BLS)
+        assert_eq!(r.aggregated_signature.len(), 64);
 
         // After drain, bet should no longer be active
         assert!(!processor.has_active_consensus(&U256::from(10)));
@@ -366,8 +496,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_drain_completed_empty_when_no_completions() {
-        let (_tx, rx) = mpsc::unbounded_channel();
-        let mut processor = ArbitrationProcessor::new(test_config(), rx);
+        let mut processor = test_processor();
 
         processor.start_consensus(test_request(1)).await;
         let results = processor.drain_completed();
@@ -376,8 +505,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_messages_for_unknown_bet_are_ignored() {
-        let (_tx, rx) = mpsc::unbounded_channel();
-        let mut processor = ArbitrationProcessor::new(test_config(), rx);
+        let mut processor = test_processor();
 
         // Send vote for a bet that doesn't exist
         processor.handle_message(P2PMessage::ArbitrationPriceVote {
@@ -394,8 +522,7 @@ mod tests {
 
     #[test]
     fn test_build_outcome_hash_uses_config() {
-        let (_tx, rx) = mpsc::unbounded_channel();
-        let processor = ArbitrationProcessor::new(test_config(), rx);
+        let processor = test_processor();
 
         let h1 = processor.build_outcome_hash(U256::from(42), true);
         let h2 = processor.build_outcome_hash(U256::from(42), true);

@@ -12,8 +12,9 @@ use tracing::{debug, error, info, warn};
 use super::rate_limiter::SlidingWindowRateLimiter;
 use crate::market_data::traits::MarketDataSource;
 
-/// How many days of price history to keep
-const PRICE_HISTORY_DAYS: i64 = 7;
+/// Default: keep forever (365 days). These sources have no historical API,
+/// so every data point is irreplaceable.
+const DEFAULT_PRICE_HISTORY_DAYS: i64 = 365;
 
 /// Generic market data sync engine
 pub struct SyncEngine {
@@ -21,17 +22,23 @@ pub struct SyncEngine {
     source: Box<dyn MarketDataSource>,
     rate_limiter: SlidingWindowRateLimiter,
     sync_count: AtomicU64,
+    retention_days: i64,
 }
 
 impl SyncEngine {
     /// Create a new sync engine for the given source
     pub fn new(pool: PgPool, source: Box<dyn MarketDataSource>) -> Self {
+        let retention_days = std::env::var("MARKET_DATA_RETENTION_DAYS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(DEFAULT_PRICE_HISTORY_DAYS);
         let rate_limiter = SlidingWindowRateLimiter::new(source.rate_limit_config());
         Self {
             pool,
             source,
             rate_limiter,
             sync_count: AtomicU64::new(0),
+            retention_days,
         }
     }
 
@@ -237,10 +244,10 @@ impl SyncEngine {
         Ok((updated, errors))
     }
 
-    /// Prune price records older than PRICE_HISTORY_DAYS
+    /// Prune price records older than retention_days
     async fn prune_old_prices(&self) -> Result<u64> {
         let source_id = self.source.source_id();
-        let cutoff = Utc::now() - ChronoDuration::days(PRICE_HISTORY_DAYS);
+        let cutoff = Utc::now() - ChronoDuration::days(self.retention_days);
 
         let result = sqlx::query("DELETE FROM market_prices WHERE source = $1 AND fetched_at < $2")
             .bind(source_id)

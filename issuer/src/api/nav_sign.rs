@@ -229,7 +229,7 @@ where
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs())
-            .unwrap_or(0);
+            .expect("System clock required for NAV signing");
 
         // Build message hash for signing
         let message_hash = build_nav_message_hash(itp_address, nav_36_decimals, timestamp, cycle_number);

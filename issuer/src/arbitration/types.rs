@@ -23,6 +23,8 @@ pub struct ArbitrationConfig {
     pub data_node_url: String,
     /// Price tolerance in basis points (e.g. 50 = 0.5%)
     pub price_tolerance_bps: u32,
+    /// Chain ID where ArbitrationSettlement is deployed (queried from provider at startup)
+    pub chain_id: u64,
 }
 
 impl Default for ArbitrationConfig {
@@ -35,6 +37,7 @@ impl Default for ArbitrationConfig {
             consensus_timeout_ms: 1100,
             data_node_url: "http://localhost:8200".to_string(),
             price_tolerance_bps: 50,
+            chain_id: 0,
         }
     }
 }

@@ -117,13 +117,15 @@ interface IBridgeProxy {
     /// @param weights Asset weights (must sum to 1e18)
     /// @param assets Asset addresses (same length as weights)
     /// @param prices Asset prices for inventory computation (18 decimals)
+    /// @param metadata Optional metadata (description, websiteUrl, videoUrl)
     /// @return nonce Unique identifier for this request
     function requestCreateItp(
         string calldata name,
         string calldata symbol,
         uint256[] calldata weights,
         address[] calldata assets,
-        uint256[] calldata prices
+        uint256[] calldata prices,
+        ItpMetadata calldata metadata
     ) external returns (uint256 nonce);
 
     /// @notice Complete ITP creation with BLS signature from issuers
@@ -311,4 +313,17 @@ interface IBridgeProxy {
 
     /// @notice Maximum video URL length
     function MAX_VIDEO_URL_LENGTH() external view returns (uint256);
+
+    // ============ Deployer Name Functions ============
+
+    /// @notice Set deployer display name (once per address, max 64 chars)
+    function setDeployerName(string calldata name) external;
+
+    /// @notice Get deployer display name
+    function getDeployerName(address deployer) external view returns (string memory);
+
+    // ============ Deployer Name Events ============
+
+    /// @notice Emitted when a deployer sets their display name
+    event DeployerNameUpdated(address indexed deployer, string name);
 }

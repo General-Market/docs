@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import type { IChartApi, ISeriesApi, CandlestickData, Time } from 'lightweight-charts'
 import { useItpNavSeries, useBtcPriceSeries, NavTimeframe } from '@/hooks/useItpNavSeries'
+import { DATA_NODE_URL } from '@/lib/config'
 
 const TIMEFRAME_SECONDS: Record<NavTimeframe, number> = {
   '5m': 300,
@@ -20,8 +21,6 @@ const TIMEFRAMES: { label: string; value: NavTimeframe }[] = [
   { label: '1H', value: '1h' },
   { label: '1D', value: '1d' },
 ]
-
-const DATA_NODE_URL = process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200'
 
 interface ChartModalProps {
   itpId: string
@@ -57,35 +56,35 @@ export function ChartModal({ itpId, itpName, createdAt, onClose }: ChartModalPro
         width: chartContainerRef.current.clientWidth,
         height: 360,
         layout: {
-          background: { color: '#0a0a0a' },
-          textColor: '#888',
-          fontFamily: 'monospace',
+          background: { color: '#fafafa' },
+          textColor: '#71717a',
+          fontFamily: 'sans-serif',
         },
         grid: {
-          vertLines: { color: '#1a1a1a' },
-          horzLines: { color: '#1a1a1a' },
+          vertLines: { color: '#f4f4f5' },
+          horzLines: { color: '#f4f4f5' },
         },
         crosshair: {
-          vertLine: { color: '#C40000', width: 1, style: 2 },
-          horzLine: { color: '#C40000', width: 1, style: 2 },
+          vertLine: { color: '#18181b', width: 1, style: 2 },
+          horzLine: { color: '#18181b', width: 1, style: 2 },
         },
         timeScale: {
-          borderColor: '#333',
+          borderColor: '#e4e4e7',
           timeVisible: true,
           secondsVisible: false,
         },
         rightPriceScale: {
-          borderColor: '#333',
+          borderColor: '#e4e4e7',
         },
       })
 
       const series = chart.addSeries(lc.CandlestickSeries, {
-        upColor: '#26a69a',
-        downColor: '#ef5350',
-        borderUpColor: '#26a69a',
-        borderDownColor: '#ef5350',
-        wickUpColor: '#26a69a',
-        wickDownColor: '#ef5350',
+        upColor: '#16a34a',
+        downColor: '#dc2626',
+        borderUpColor: '#16a34a',
+        borderDownColor: '#dc2626',
+        wickUpColor: '#16a34a',
+        wickDownColor: '#dc2626',
         priceFormat: {
           type: 'price',
           precision: 6,
@@ -258,15 +257,15 @@ export function ChartModal({ itpId, itpName, createdAt, onClose }: ChartModalPro
   }, [chartReady, data, timeframe, itpId])
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div
-        className="bg-terminal border border-white/20 rounded-lg max-w-2xl w-full"
+        className="bg-card border border-border-light rounded-xl shadow-modal max-w-2xl w-full"
         onClick={e => e.stopPropagation()}
       >
-        <div className="p-4 border-b border-white/10 flex justify-between items-center">
+        <div className="p-4 border-b border-border-light flex justify-between items-center">
           <div>
-            <h2 className="text-lg font-bold text-accent">{itpName}</h2>
-            <p className="text-xs text-white/40 font-mono">NAV OHLC</p>
+            <h2 className="text-lg font-semibold text-text-primary">{itpName}</h2>
+            <p className="text-xs text-text-muted">NAV OHLC</p>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex gap-1">
@@ -274,10 +273,10 @@ export function ChartModal({ itpId, itpName, createdAt, onClose }: ChartModalPro
                 <button
                   key={tf.value}
                   onClick={() => setTimeframe(tf.value)}
-                  className={`px-3 py-1 text-xs font-mono rounded transition-colors ${
+                  className={`px-3 py-1 text-xs rounded transition-colors ${
                     timeframe === tf.value
-                      ? 'bg-accent/20 text-accent border border-accent/50'
-                      : 'text-white/50 border border-white/10 hover:border-white/30'
+                      ? 'bg-zinc-900 text-white'
+                      : 'bg-muted text-text-secondary border border-border-light hover:border-zinc-500'
                   }`}
                 >
                   {tf.label}
@@ -286,39 +285,39 @@ export function ChartModal({ itpId, itpName, createdAt, onClose }: ChartModalPro
             </div>
             <button
               onClick={() => setShowBtc(v => !v)}
-              className={`px-3 py-1 text-xs font-mono rounded transition-colors ${
+              className={`px-3 py-1 text-xs rounded transition-colors ${
                 showBtc
                   ? 'bg-[#f7931a]/20 text-[#f7931a] border border-[#f7931a]/50'
-                  : 'text-white/50 border border-white/10 hover:border-white/30'
+                  : 'bg-muted text-text-secondary border border-border-light hover:border-zinc-500'
               }`}
             >
               BTC
             </button>
-            <button onClick={onClose} className="text-white/60 hover:text-white text-2xl leading-none">&times;</button>
+            <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
           </div>
         </div>
 
         <div className="p-4 relative">
           <div ref={chartContainerRef} className="w-full" style={{ height: 360 }} />
           {(isLoading && data.length === 0) && (
-            <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0a]">
+            <div className="absolute inset-0 flex items-center justify-center bg-card">
               <div className="text-center">
-                <div className="inline-block w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin mb-2" />
-                <p className="text-sm text-white/50">Loading NAV data...</p>
+                <div className="inline-block w-6 h-6 border-2 border-zinc-900 border-t-transparent rounded-full animate-spin mb-2" />
+                <p className="text-sm text-text-muted">Loading NAV data...</p>
               </div>
             </div>
           )}
           {error && (
-            <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0a]">
+            <div className="absolute inset-0 flex items-center justify-center bg-card">
               <div className="text-center">
-                <p className="text-sm text-red-400 mb-1">Failed to load chart data</p>
-                <p className="text-xs text-white/40">{error}</p>
+                <p className="text-sm text-color-down mb-1">Failed to load chart data</p>
+                <p className="text-xs text-text-muted">{error}</p>
               </div>
             </div>
           )}
           {!isLoading && !error && data.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0a]">
-              <p className="text-sm text-white/40">No NAV data available for this timeframe</p>
+            <div className="absolute inset-0 flex items-center justify-center bg-card">
+              <p className="text-sm text-text-muted">No NAV data available for this timeframe</p>
             </div>
           )}
         </div>

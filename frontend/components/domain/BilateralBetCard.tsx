@@ -75,17 +75,17 @@ export function BilateralBetCard({
   )
 
   return (
-    <div className={`border border-gray-700 rounded-lg p-4 bg-black/50 ${className}`}>
+    <div className={`border border-border-light rounded-xl p-4 bg-white shadow-card ${className}`}>
       {/* Header with bet ID and status */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-mono text-white/80">Bet #{bet.betId}</span>
+          <span className="text-sm font-mono text-text-primary">Bet #{bet.betId}</span>
           {userRole && (
             <span
               className={`px-2 py-0.5 rounded text-xs font-mono ${
                 userRole === 'creator'
-                  ? 'bg-blue-800/30 text-blue-300'
-                  : 'bg-purple-800/30 text-purple-300'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-purple-100 text-purple-700'
               }`}
             >
               {userRole === 'creator' ? 'Creator' : 'Filler'}
@@ -102,16 +102,16 @@ export function BilateralBetCard({
       {/* Parties */}
       <div className="grid grid-cols-2 gap-4 text-sm mb-4">
         <div>
-          <div className="text-gray-400 text-xs uppercase font-mono mb-1">Creator</div>
-          <div className="font-mono text-white">{truncateAddress(bet.creator, 6)}</div>
-          <div className="text-xs text-green-400 font-mono mt-0.5">
+          <div className="text-text-muted text-xs uppercase font-mono mb-1">Creator</div>
+          <div className="font-mono text-text-primary">{truncateAddress(bet.creator, 6)}</div>
+          <div className="text-xs text-green-600 font-mono mt-0.5">
             {formatWINDAmount(bet.creatorAmount)} WIND
           </div>
         </div>
         <div>
-          <div className="text-gray-400 text-xs uppercase font-mono mb-1">Filler</div>
-          <div className="font-mono text-white">{truncateAddress(bet.filler, 6)}</div>
-          <div className="text-xs text-green-400 font-mono mt-0.5">
+          <div className="text-text-muted text-xs uppercase font-mono mb-1">Filler</div>
+          <div className="font-mono text-text-primary">{truncateAddress(bet.filler, 6)}</div>
+          <div className="text-xs text-green-600 font-mono mt-0.5">
             {formatWINDAmount(bet.fillerAmount)} WIND
           </div>
         </div>
@@ -120,14 +120,14 @@ export function BilateralBetCard({
       {/* Total pot and deadline */}
       <div className="grid grid-cols-2 gap-4 text-sm mb-4">
         <div>
-          <div className="text-gray-400 text-xs uppercase font-mono mb-1">Total Locked</div>
-          <div className="font-mono text-white font-bold">
+          <div className="text-text-muted text-xs uppercase font-mono mb-1">Total Locked</div>
+          <div className="font-mono text-text-primary font-bold">
             {formatWINDAmount(bet.totalAmount)} WIND
           </div>
         </div>
         <div>
-          <div className="text-gray-400 text-xs uppercase font-mono mb-1">Deadline</div>
-          <div className="font-mono text-white">{formatDeadline(bet.deadline)}</div>
+          <div className="text-text-muted text-xs uppercase font-mono mb-1">Deadline</div>
+          <div className="font-mono text-text-primary">{formatDeadline(bet.deadline)}</div>
         </div>
       </div>
 
@@ -140,41 +140,41 @@ export function BilateralBetCard({
 
       {/* Settlement info (if settled) */}
       {isTerminal && (
-        <div className="bg-gray-900/60 p-3 rounded border border-gray-800 mb-4">
-          <div className="text-gray-400 text-xs uppercase font-mono mb-2">Settlement</div>
+        <div className="bg-muted p-3 rounded-lg border border-border-light mb-4">
+          <div className="text-text-muted text-xs uppercase font-mono mb-2">Settlement</div>
           <div className="space-y-2 text-sm">
             {bet.winner && (
               <div className="flex justify-between font-mono">
-                <span className="text-gray-400">Winner:</span>
-                <span className="text-green-400">{truncateAddress(bet.winner, 6)}</span>
+                <span className="text-text-muted">Winner:</span>
+                <span className="text-green-600">{truncateAddress(bet.winner, 6)}</span>
               </div>
             )}
             {bet.resolutionType && (
               <div className="flex justify-between font-mono">
-                <span className="text-gray-400">Resolution:</span>
-                <span className="text-white">{getResolutionTypeDisplay(bet.resolutionType)}</span>
+                <span className="text-text-muted">Resolution:</span>
+                <span className="text-text-primary">{getResolutionTypeDisplay(bet.resolutionType)}</span>
               </div>
             )}
             {bet.status === 'custom_payout' && (
               <>
                 {bet.creatorPayout && (
                   <div className="flex justify-between font-mono">
-                    <span className="text-gray-400">Creator Payout:</span>
-                    <span className="text-cyan-400">{formatWINDAmount(bet.creatorPayout)} WIND</span>
+                    <span className="text-text-muted">Creator Payout:</span>
+                    <span className="text-color-info">{formatWINDAmount(bet.creatorPayout)} WIND</span>
                   </div>
                 )}
                 {bet.fillerPayout && (
                   <div className="flex justify-between font-mono">
-                    <span className="text-gray-400">Filler Payout:</span>
-                    <span className="text-cyan-400">{formatWINDAmount(bet.fillerPayout)} WIND</span>
+                    <span className="text-text-muted">Filler Payout:</span>
+                    <span className="text-color-info">{formatWINDAmount(bet.fillerPayout)} WIND</span>
                   </div>
                 )}
               </>
             )}
             {bet.keeperCount !== undefined && bet.keeperCount > 0 && (
               <div className="flex justify-between font-mono">
-                <span className="text-gray-400">Keeper Votes:</span>
-                <span className="text-white">{bet.keeperCount}</span>
+                <span className="text-text-muted">Keeper Votes:</span>
+                <span className="text-text-primary">{bet.keeperCount}</span>
               </div>
             )}
           </div>
@@ -182,7 +182,7 @@ export function BilateralBetCard({
       )}
 
       {/* Timestamps */}
-      <div className="text-xs text-gray-500 font-mono mb-3 space-y-1">
+      <div className="text-xs text-text-muted font-mono mb-3 space-y-1">
         {bet.committedAt && (
           <div>Committed: {new Date(bet.committedAt).toLocaleString()}</div>
         )}
@@ -193,7 +193,7 @@ export function BilateralBetCard({
       <div className="flex justify-between items-center">
         <Link
           href={`/bilateral-bet/${bet.betId}`}
-          className="text-cyan-400 hover:text-cyan-300 text-xs font-mono transition-colors"
+          className="text-color-info hover:text-color-info/80 text-xs font-mono transition-colors"
         >
           View Details \u2192
         </Link>
@@ -201,14 +201,14 @@ export function BilateralBetCard({
         {/* Status indicators */}
         <div className="flex items-center gap-2">
           {canDispute && (
-            <span className="text-[10px] text-orange-400 font-mono">Can dispute</span>
+            <span className="text-[10px] text-orange-600 font-mono">Can dispute</span>
           )}
           {bet.txHash && (
             <a
               href={getTxUrl(bet.txHash)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[10px] text-gray-500 hover:text-gray-300 font-mono"
+              className="text-[10px] text-text-muted hover:text-text-primary font-mono"
             >
               Tx \u2197
             </a>

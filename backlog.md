@@ -1,5 +1,12 @@
 # Design Decision Backlog
 
+## Session: 20260222-0100-p2pt
+
+- [RESOLVED] setItpNav E020_InvalidBLSSignature — verified fixed by commit 85c26c8c (domain encoding correction in bridge/types.rs). All 7 nav_sign_integration tests pass, all 25 batch_fill_integration tests pass.
+- [RESOLVED] emitAssetTrades E020_InvalidBLSSignature — same root cause as setItpNav, same fix. batch_fill tests confirm correct hash computation.
+- [DECISION] P2P TLS integration: added P2PStream enum (Plain|Tls) in tls.rs with AsyncRead+AsyncWrite delegation via pin-project-lite. wrap_stream() now performs real TLS handshake (accept_tls for server, connect_tls for client with SNI "issuer.index.local"). connection.rs setup_connection wraps plaintext in P2PStream::Plain when no TLS config, or P2PStream::Tls after handshake. writer_loop/reader_loop already generic — no changes needed.
+- [DECISION] Removed hardcoded chain_id=111222333 from arbitration/processor.rs. Added chain_id: u64 to ArbitrationConfig (default 0). ArbitrationSubsystem::run() queries provider.get_chainid().await at startup and injects into config before creating processor.
+
 ## Session: 20260221-2300-c14x
 
 - [DECISION] Task 14 cleanup: deleted 4 dead files — useFillDetails.ts, useOrderStatus.ts (only imported by useFillDetails), ActiveOrdersSection.tsx (merged into PortfolioSection), useSystemStatusSSE.ts (types inlined into useSSE.tsx, function never called)
@@ -99,7 +106,7 @@
 - [DECISION] Fixed confirmFills calldata selector test — was checking 3-field Fill tuple, now matches 5-field (orderId, fillPrice, fillAmount, cycleNumber, txHash).
 - [DECISION] useItpNav: keep isLoading=true for up to 10 attempts (~15s) while data-node syncs ITP snapshots. Previously showed "No asset prices available" warning immediately on first failed fetch even though polling continues.
 - [DECISION] PortfolioSection: always fetch orders when wallet connected (not just when Orders tab is active). Show active orders banner at top of portfolio. Collapsed card shows active count badge.
-- [DECISION] Deleted /frontend directory — frontendV4 is the only frontend now.
+- [DECISION] Deleted /frontend directory — frontendV4 was the only frontend. Later renamed frontendV4 → frontend.
 
 ## Session: 20260220-2100-rcn1
 
@@ -138,7 +145,7 @@
 
 - [DECISION] Replaced adminCreateBridgedItp (admin bypass removed during BLS unification) with proper requestCreateItp + completeCreateItp BLS-signed flow. Created contracts/script/CreateBridgedItp.s.sol that extends DeployBLSHelper, reads ITP token addresses from env, and signs with blsSign("0,1,2", messageHash). Updated start.sh step 3c to call this Forge script instead of cast send.
 - [DECISION] Deploy scripts (DeployBridgeE2E, DeployCrossChainE2E, DeployItpWhitelist) all migrated from vm.mockCall(address(0x08)) to real BLS signatures via DeployBLSHelper. Each now reads the AssetPairRegistry nonce, computes the exact message hash, and calls blsSign. DeployCrossChainE2E also registers real BLS pubkeys via blsPubkey(i) + blsAggPubkey("0,1,2").
-- [DECISION] Switched start.sh and stop.sh from /frontend to /frontendV4. All deployment.json syncing (step 6), .env.local generation (step 10), npm install/dev server/E2E tests now target frontendV4/. frontendV4 uses the same contract loading pattern (lib/contracts/deployment.json → addresses.ts → INDEX_PROTOCOL). Verified with full start.sh run: 16 E2E tests passed, all services healthy.
+- [DECISION] Switched start.sh and stop.sh from /frontend to /frontendV4 (later renamed back to /frontend). All deployment.json syncing (step 6), .env.local generation (step 10), npm install/dev server/E2E tests target frontend/.
 - [DECISION] Fixed "vs Limit" color logic in BuyItpModal.tsx: was using Math.abs(slippage) which showed negative slippage (fill below limit = GOOD for buyer) in red. Changed to: slippage <= 0 always green, positive slippage uses warning/red thresholds. The -4.75% was correct math (limit = NAV * 1.05, fill = NAV → always ~-5%) but was misleadingly colored red.
 - [DECISION] Wired up BridgeProxy.mintBridgedShares (8-step bridge Step 8): (1) Updated build_mint_bridged_shares_calldata in types.rs to match post-BLS-unification signature (bytes32,address,uint256,bytes) — removed signer_bitmap and aggregated_pubkey params. (2) Added ArbitrumChainWriter.mint_bridged_shares() method. (3) After fills confirm in run_cross_chain_processing (main.rs), look up OrderMapping for original_user, compute shares = fillAmount * 1e18 / fillPrice, call run_mint_bridged_shares_phase for BLS consensus, then leader calls arb_writer.mint_bridged_shares(). Applied to both normal and E021-already-batched paths.
 
@@ -3313,3 +3320,5 @@ The backtester currently supports one rebalance method: **periodic time-based re
 [DECISION] Removed 3 more redundant resolve/status calls - (1) protocol.rs mark_orders_batched using L3 IDs after confirmBatch, (2) execute_confirm_batch redundant resolve_l3_order_ids, (3) execute_confirm_fills redundant resolve_l3_order_ids. All callers already pass L3 IDs.
 
 [FAILED] Watchdog "stale order" warning after completed flow - After mintBridgedShares succeeds, order_status remains Batched instead of SharesBridged. mark_orders_shares_bridged is called but watchdog still sees Batched 34 seconds later. Cosmetic issue, doesn't affect flow. Likely a timing/lock issue or the status is being overwritten. Low priority.
+
+[BACKLOG] SSE migration for useNonceCheck, useItpFees, useMetaMorphoVault, useMorphoMarkets — existing chain reads are low-frequency, not a security risk

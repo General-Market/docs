@@ -17,7 +17,7 @@ use common::error::Error;
 use common::types::{P2PMessage, PeerId};
 
 use super::codec::{self, Codec};
-use super::tls::TlsConfig;
+use super::tls::{P2PStream, TlsConfig};
 
 /// Reconnection configuration
 const INITIAL_BACKOFF_MS: u64 = 100;
@@ -195,13 +195,13 @@ impl PeerConnection {
         connections: Arc<RwLock<HashMap<PeerId, PeerConnection>>>,
         incoming_tx: mpsc::Sender<(PeerId, P2PMessage)>,
         tls_config: Option<Arc<TlsConfig>>,
-        _is_server: bool,
+        is_server: bool,
     ) -> Result<PeerConnection, Error> {
-        // Apply TLS if configured
-        let stream = if let Some(config) = tls_config {
-            config.wrap_stream(stream, _is_server).await?
+        // Apply TLS if configured, otherwise wrap as plaintext
+        let stream: P2PStream = if let Some(config) = tls_config {
+            config.wrap_stream(stream, is_server).await?
         } else {
-            stream
+            P2PStream::Plain { inner: stream }
         };
 
         let (read_half, write_half) = tokio::io::split(stream);
@@ -461,6 +461,9 @@ fn get_sender_id(message: &P2PMessage) -> Option<PeerId> {
         P2PMessage::RecordCollateralMoveSign { signer_id, .. } => Some(*signer_id),
         P2PMessage::MintBridgedSharesProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::MintBridgedSharesSign { signer_id, .. } => Some(*signer_id),
+        // completeBuyOrder BLS consensus
+        P2PMessage::CompleteBuyOrderProposal { leader_id, .. } => Some(*leader_id),
+        P2PMessage::CompleteBuyOrderSign { signer_id, .. } => Some(*signer_id),
         // Rebalance NAV consensus: setItpNav
         P2PMessage::SetItpNavProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::SetItpNavSign { signer_id, .. } => Some(*signer_id),

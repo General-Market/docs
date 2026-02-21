@@ -262,7 +262,7 @@ library ErrorsLib {
     /// @param sourceChainId The invalid chain ID
     error E055_InvalidSourceChainId(uint256 sourceChainId);
 
-    /// @notice E056: Zero address for L3 Index contract
+    /// @notice E056: Zero address for L3 Investment contract
     error E056_ZeroL3IndexAddress();
 
     /// @notice E057: Invalid proof (zero values not allowed)
@@ -613,4 +613,138 @@ library ErrorsLib {
     /// @notice E125: Buy order not found (orderId has no cross-chain order)
     /// @param orderId The order ID that was not found
     error E125_BuyOrderNotFound(uint256 orderId);
+
+    // ============ LIMIT PRICE ENFORCEMENT ERRORS ============
+
+    /// @notice E126: Fill price violates order limit price
+    /// @param orderId The order that was violated
+    /// @param fillPrice The price in the fill
+    /// @param limitPrice The limit price on the order
+    /// @param side 0=BUY (fill too high), 1=SELL (fill too low)
+    error E126_FillPriceViolatesLimit(uint256 orderId, uint256 fillPrice, uint256 limitPrice, uint8 side);
+
+    /// @notice E127: Deployer name exceeds maximum length
+    /// @param length Actual length
+    /// @param maxLength Maximum allowed length
+    error E127_DeployerNameTooLong(uint256 length, uint256 maxLength);
+
+    // ============ VISION (BILATERAL P2P) ERRORS (E200+) ============
+
+    /// @notice E200: Insufficient available collateral for bet
+    /// @param user The user address
+    /// @param required Amount required
+    /// @param available Amount available
+    error E200_InsufficientCollateral(address user, uint256 required, uint256 available);
+
+    /// @notice E201: Bet already exists with this ID
+    /// @param betId The duplicate bet ID
+    error E201_BetAlreadyExists(bytes32 betId);
+
+    /// @notice E202: Invalid EIP-712 signature for bet commitment
+    error E202_InvalidBetSignature();
+
+    /// @notice E203: Bet not found
+    /// @param betId The bet ID that was not found
+    error E203_BetNotFound(bytes32 betId);
+
+    /// @notice E204: Bet is not in Active status
+    /// @param betId The bet ID
+    /// @param status Current bet status
+    error E204_BetNotActive(bytes32 betId, uint8 status);
+
+    /// @notice E205: Bet deadline has not passed yet (required for settlement)
+    /// @param betId The bet ID
+    /// @param deadline The bet deadline
+    /// @param currentTime Current timestamp
+    error E205_DeadlineNotPassed(bytes32 betId, uint256 deadline, uint256 currentTime);
+
+    /// @notice E206: Arbitration not requested for this bet
+    /// @param betId The bet ID
+    error E206_ArbitrationNotRequested(bytes32 betId);
+
+    /// @notice E207: Insufficient valid keeper signatures for arbitration threshold
+    /// @param validCount Number of valid signatures
+    /// @param required Required threshold
+    error E207_InsufficientKeeperSignatures(uint256 validCount, uint256 required);
+
+    /// @notice E208: Caller is not a party to this bet
+    /// @param betId The bet ID
+    /// @param caller The unauthorized caller
+    error E208_NotBetParty(bytes32 betId, address caller);
+
+    /// @notice E209: Custom payout amounts exceed total pot
+    /// @param creatorPayout Payout to creator
+    /// @param fillerPayout Payout to filler
+    /// @param totalPot Total collateral in bet
+    error E209_PayoutExceedsPot(uint256 creatorPayout, uint256 fillerPayout, uint256 totalPot);
+
+    /// @notice E210: Bot already registered
+    /// @param bot The bot address
+    error E210_BotAlreadyRegistered(address bot);
+
+    /// @notice E211: Bot not registered or inactive
+    /// @param bot The bot address
+    error E211_BotNotActive(address bot);
+
+    /// @notice E212: Insufficient stake for bot registration
+    /// @param provided Amount provided
+    /// @param required Minimum required
+    error E212_InsufficientBotStake(uint256 provided, uint256 required);
+
+    /// @notice E213: Keeper already registered
+    /// @param keeper The keeper address
+    error E213_KeeperAlreadyRegistered(address keeper);
+
+    /// @notice E214: Invalid BLS public key length (must be 128 bytes for G2)
+    error E214_InvalidKeeperPubkey();
+
+    /// @notice E215: Keeper not found or inactive
+    /// @param keeper The keeper address
+    error E215_KeeperNotActive(address keeper);
+
+    /// @notice E216: Keeper is suspended
+    /// @param keeper The keeper address
+    error E216_KeeperSuspended(address keeper);
+
+    /// @notice E217: No pending key rotation for this keeper
+    /// @param keeper The keeper address
+    error E217_NoRotationPending(address keeper);
+
+    /// @notice E218: Key rotation threshold not met
+    /// @param approvals Current approvals
+    /// @param required Required approvals
+    error E218_RotationThresholdNotMet(uint256 approvals, uint256 required);
+
+    /// @notice E219: Cannot approve own key rotation
+    /// @param keeper The keeper trying to self-approve
+    error E219_CannotSelfApprove(address keeper);
+
+    /// @notice E220: Key rotation already approved by this keeper
+    /// @param keeper The keeper that already approved
+    error E220_AlreadyApproved(address keeper);
+
+    /// @notice E221: Force rotation timeout not reached
+    /// @param requestedAt When rotation was requested
+    /// @param timeoutAt When force rotation becomes available
+    error E221_ForceRotationTooEarly(uint256 requestedAt, uint256 timeoutAt);
+
+    /// @notice E222: Invalid endpoint (empty string)
+    error E222_InvalidEndpoint();
+
+    /// @notice E223: Referral epoch already has a Merkle root
+    /// @param epoch The epoch number
+    error E223_EpochAlreadySet(uint256 epoch);
+
+    /// @notice E224: Referral already claimed for this epoch
+    /// @param epoch The epoch number
+    /// @param claimer The address that already claimed
+    error E224_AlreadyClaimed(uint256 epoch, address claimer);
+
+    /// @notice E225: Invalid Merkle proof for referral claim
+    error E225_InvalidMerkleProof();
+
+    /// @notice E226: Withdraw amount exceeds available balance
+    /// @param requested Amount requested
+    /// @param available Amount available
+    error E226_InsufficientBalance(uint256 requested, uint256 available);
 }

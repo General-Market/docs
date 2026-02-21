@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../../src/core/Index.sol";
+import "../../src/core/Investment.sol";
 import "../../src/core/ITP.sol";
 import "../../src/mocks/MockERC20.sol";
 import "../helpers/TestHelper.sol";
@@ -17,7 +17,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 /// @notice Tests the complete order-to-mint flow: submit → batch → fill → mint
 /// @dev Uses real BLS signatures via FFI (bls-tool). All happy-path tests use real BLS signing.
 contract E2EOrderToMintTest is TestHelper {
-    Index public index;
+    Investment public index;
     MockERC20 public usdc;
     Governance public governance;
     ITP public itpVault;
@@ -43,12 +43,12 @@ contract E2EOrderToMintTest is TestHelper {
         governance = deployGovernance(admin);
 
         // Deploy Index as UUPS proxy
-        Index impl = new Index();
+        Investment impl = new Investment();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(Index.initialize, (address(governance), address(usdc)))
+            abi.encodeCall(Investment.initialize, (address(governance), address(usdc)))
         );
-        index = Index(address(proxy));
+        index = Investment(address(proxy));
 
         // Deploy IssuerRegistry, register real BLS test issuers, wire to Index
         IssuerRegistry issuerRegistry = deployIssuerRegistry(address(governance));

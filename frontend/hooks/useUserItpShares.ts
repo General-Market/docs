@@ -1,8 +1,6 @@
 'use client'
 
-import { useReadContract } from 'wagmi'
-import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
-import { INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
+import { useSSEBalances } from './useSSE'
 
 interface UseUserItpSharesReturn {
   shares: bigint
@@ -11,25 +9,22 @@ interface UseUserItpSharesReturn {
   refetch: () => void
 }
 
+/**
+ * Hook to fetch ITP shares for the connected wallet.
+ * Reads from the SSE stream (userBalances.itp_shares) instead of direct chain calls.
+ */
 export function useUserItpShares(
   itpId: `0x${string}` | undefined,
   userAddress: `0x${string}` | undefined
 ): UseUserItpSharesReturn {
-  const { data, isLoading, error, refetch } = useReadContract({
-    address: INDEX_PROTOCOL.index,
-    abi: INDEX_ABI,
-    functionName: 'getUserShares',
-    args: itpId && userAddress ? [itpId, userAddress] : undefined,
-    query: {
-      enabled: !!itpId && !!userAddress,
-      refetchInterval: 10000,
-    },
-  })
+  const balances = useSSEBalances()
+
+  const shares = balances ? BigInt(balances.itp_shares) : 0n
 
   return {
-    shares: (data as bigint) ?? 0n,
-    isLoading,
-    error: error ?? null,
-    refetch,
+    shares,
+    isLoading: !balances,
+    error: null,
+    refetch: () => {},
   }
 }

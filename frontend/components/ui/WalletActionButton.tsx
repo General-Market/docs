@@ -15,6 +15,8 @@ interface WalletActionButtonProps {
  * Wrapper for action buttons (Buy, Sell, Rebalance, Borrow, etc.)
  * When wallet is NOT connected: shows "Connect Wallet" on hover and triggers connection on click.
  * When wallet IS connected: behaves as a normal button.
+ *
+ * Styling is applied by the caller via className (use Button variants: buy, sell, default, outline).
  */
 export function WalletActionButton({ onClick, children, className, disabled }: WalletActionButtonProps) {
   const { isConnected } = useAccount()

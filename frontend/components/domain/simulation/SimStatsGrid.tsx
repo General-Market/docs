@@ -11,58 +11,58 @@ export function SimStatsGrid({ stats }: SimStatsGridProps) {
     {
       label: 'Total Return',
       value: `${stats.total_return_pct >= 0 ? '+' : ''}${stats.total_return_pct.toFixed(2)}%`,
-      color: stats.total_return_pct >= 0 ? 'text-green-400' : 'text-accent',
+      color: stats.total_return_pct >= 0 ? 'text-color-up' : 'text-color-down',
     },
     {
       label: 'Annualized',
       value: `${stats.annualized_return >= 0 ? '+' : ''}${stats.annualized_return.toFixed(2)}%`,
-      color: stats.annualized_return >= 0 ? 'text-green-400' : 'text-accent',
+      color: stats.annualized_return >= 0 ? 'text-color-up' : 'text-color-down',
     },
     {
       label: 'Max Drawdown',
       value: `${stats.max_drawdown_pct.toFixed(2)}%`,
-      color: 'text-accent',
+      color: 'text-color-down',
     },
     {
       label: 'Sharpe Ratio',
       value: stats.sharpe_ratio.toFixed(3),
-      color: stats.sharpe_ratio >= 1 ? 'text-green-400' : stats.sharpe_ratio >= 0 ? 'text-white' : 'text-accent',
+      color: stats.sharpe_ratio >= 1 ? 'text-color-up' : stats.sharpe_ratio >= 0 ? 'text-text-primary' : 'text-color-down',
     },
     {
       label: 'Total Fees',
       value: `${stats.total_fees_pct.toFixed(2)}%`,
-      color: 'text-white/70',
+      color: 'text-text-secondary',
     },
     {
       label: 'Trades',
       value: String(stats.total_trades),
-      color: 'text-white/70',
+      color: 'text-text-secondary',
     },
     {
       label: 'Rebalances',
       value: String(stats.total_rebalances),
-      color: 'text-white/70',
+      color: 'text-text-secondary',
     },
     {
       label: 'Delistings',
       value: String(stats.total_delistings),
-      color: stats.total_delistings > 0 ? 'text-yellow-400' : 'text-white/70',
+      color: stats.total_delistings > 0 ? 'text-color-warning' : 'text-text-secondary',
     },
     {
       label: 'Period',
       value: stats.start_date && stats.end_date
         ? `${stats.start_date} to ${stats.end_date}`
         : 'N/A',
-      color: 'text-white/50',
+      color: 'text-text-muted',
     },
   ]
 
   return (
-    <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mb-4">
+    <div className="grid grid-cols-3 md:grid-cols-5 gap-4 mb-6">
       {items.map(item => (
-        <div key={item.label} className="bg-white/5 rounded p-2">
-          <div className="text-[10px] text-white/40 font-mono uppercase">{item.label}</div>
-          <div className={`text-sm font-mono font-bold ${item.color}`}>{item.value}</div>
+        <div key={item.label} className="bg-white rounded-xl shadow-card border border-border-light p-6 text-center">
+          <div className="text-xs font-medium uppercase tracking-widest text-text-muted">{item.label}</div>
+          <div className={`text-2xl font-bold tabular-nums font-mono mt-1 ${item.color}`}>{item.value}</div>
         </div>
       ))}
     </div>

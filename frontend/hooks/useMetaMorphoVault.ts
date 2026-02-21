@@ -19,9 +19,18 @@ interface UseMetaMorphoVaultReturn {
 }
 
 /**
- * Hook to fetch MetaMorpho vault info and user position
+ * Hook to fetch MetaMorpho vault info and user position.
  *
  * Returns vault APY, total deposits, utilization, and user's shares/value.
+ *
+ * TODO: Vault-level data (totalAssets, totalSupply, name, symbol, decimals)
+ * is not in the SSE stream or REST endpoints yet. These wagmi useReadContract
+ * calls remain until a `vault-info` SSE topic or REST endpoint is added to
+ * the data-node. The polling reads are lightweight (single view calls) so
+ * they are lower priority than the heavy getLogs scans that were eliminated.
+ *
+ * TODO: User's vault share balance (balanceOf) should move to the per-user
+ * SSE poller once vault positions are tracked in ChainCache.
  */
 export function useMetaMorphoVault(): UseMetaMorphoVaultReturn {
   const { address } = useAccount()

@@ -69,26 +69,19 @@ fn test_bridge_config() -> BridgeConfig {
 
 #[test]
 fn test_build_confirm_batch_hash_deterministic() {
+    let addr = Address::zero();
     let hash1 = build_confirm_batch_hash(
         111222333,
+        addr,
         42,
         &[U256::from(1), U256::from(2), U256::from(3)],
-        &[
-            U256::from(1000000000000000000u64),
-            U256::from(2000000000000000000u64),
-            U256::from(3000000000000000000u64),
-        ],
     );
 
     let hash2 = build_confirm_batch_hash(
         111222333,
+        addr,
         42,
         &[U256::from(1), U256::from(2), U256::from(3)],
-        &[
-            U256::from(1000000000000000000u64),
-            U256::from(2000000000000000000u64),
-            U256::from(3000000000000000000u64),
-        ],
     );
 
     assert_eq!(hash1, hash2, "Same inputs should produce same hash");
@@ -96,8 +89,9 @@ fn test_build_confirm_batch_hash_deterministic() {
 
 #[test]
 fn test_build_confirm_batch_hash_different_cycles() {
-    let hash1 = build_confirm_batch_hash(111222333, 1, &[U256::from(1)], &[U256::from(1000000000000000000u64)]);
-    let hash2 = build_confirm_batch_hash(111222333, 2, &[U256::from(1)], &[U256::from(1000000000000000000u64)]);
+    let addr = Address::zero();
+    let hash1 = build_confirm_batch_hash(111222333, addr, 1, &[U256::from(1)]);
+    let hash2 = build_confirm_batch_hash(111222333, addr, 2, &[U256::from(1)]);
 
     assert_ne!(hash1, hash2, "Different cycles should produce different hashes");
 }
@@ -112,8 +106,9 @@ fn test_build_confirm_fills_hash_deterministic() {
         },
     ];
 
-    let hash1 = build_confirm_fills_hash(111222333, 42, &fills);
-    let hash2 = build_confirm_fills_hash(111222333, 42, &fills);
+    let addr = Address::zero();
+    let hash1 = build_confirm_fills_hash(111222333, addr, 42, &fills);
+    let hash2 = build_confirm_fills_hash(111222333, addr, 42, &fills);
 
     assert_eq!(hash1, hash2, "Same inputs should produce same hash");
 }
@@ -132,8 +127,9 @@ fn test_build_confirm_fills_hash_different_prices() {
         fill_amount: U256::from(500000000000000000u64),
     }];
 
-    let hash1 = build_confirm_fills_hash(111222333, 1, &fills1);
-    let hash2 = build_confirm_fills_hash(111222333, 1, &fills2);
+    let addr = Address::zero();
+    let hash1 = build_confirm_fills_hash(111222333, addr, 1, &fills1);
+    let hash2 = build_confirm_fills_hash(111222333, addr, 1, &fills2);
 
     assert_ne!(hash1, hash2, "Different fill prices should produce different hashes");
 }
@@ -194,9 +190,9 @@ fn test_batch_bls_signing() {
 
     let message_hash = build_confirm_batch_hash(
         111222333,
+        Address::zero(),
         42,
         &[U256::from(1), U256::from(2)],
-        &[U256::from(1000000000000000000u64), U256::from(2000000000000000000u64)],
     );
 
     let signature = signer
@@ -215,9 +211,9 @@ fn test_batch_signature_aggregation() {
 
     let message_hash = build_confirm_batch_hash(
         111222333,
+        Address::zero(),
         42,
         &[U256::from(1)],
-        &[U256::from(1000000000000000000u64)],
     );
 
     let sig1 = signer.sign_with_keypair(&keypair1, message_hash.as_bytes()).unwrap();
@@ -282,7 +278,7 @@ async fn test_orchestrator_propose_confirm_batch() {
     assert!(!proposal.leader_signature.0.is_empty());
 
     // Verify message hash
-    let expected_hash = build_confirm_batch_hash(config.l3_chain_id, 42, &order_ids, &prices);
+    let expected_hash = build_confirm_batch_hash(config.l3_chain_id, config.index_address, 42, &order_ids);
     assert_eq!(proposal.message_hash, expected_hash);
 }
 
@@ -330,7 +326,7 @@ async fn test_orchestrator_validate_batch_proposal() {
 
     let order_ids = vec![U256::from(1), U256::from(2)];
     let prices = vec![U256::from(1000000000000000000u64), U256::from(2000000000000000000u64)];
-    let message_hash = build_confirm_batch_hash(config.l3_chain_id, 42, &order_ids, &prices);
+    let message_hash = build_confirm_batch_hash(config.l3_chain_id, config.index_address, 42, &order_ids);
 
     let proposal = BatchProposal {
         leader_id: test_peer_id(1),
@@ -394,7 +390,7 @@ async fn test_orchestrator_sign_batch_proposal() {
 
     let order_ids = vec![U256::from(1)];
     let prices = vec![U256::from(1000000000000000000u64)];
-    let message_hash = build_confirm_batch_hash(config.l3_chain_id, 42, &order_ids, &prices);
+    let message_hash = build_confirm_batch_hash(config.l3_chain_id, config.index_address, 42, &order_ids);
 
     let proposal = BatchProposal {
         leader_id: test_peer_id(1),
@@ -431,7 +427,7 @@ async fn test_orchestrator_batch_signature_collection() {
     let cycle_number = 42u64;
     let order_ids = vec![U256::from(1)];
     let prices = vec![U256::from(1000000000000000000u64)];
-    let message_hash = build_confirm_batch_hash(config.l3_chain_id, cycle_number, &order_ids, &prices);
+    let message_hash = build_confirm_batch_hash(config.l3_chain_id, config.index_address, cycle_number, &order_ids);
 
     let leader_sig = signer.sign_with_keypair(&keypair1, message_hash.as_bytes()).unwrap();
     let follower_sig = signer.sign_with_keypair(&keypair2, message_hash.as_bytes()).unwrap();
@@ -491,7 +487,7 @@ async fn test_orchestrator_propose_confirm_fills() {
     assert!(!proposal.leader_signature.0.is_empty());
 
     // Verify message hash
-    let expected_hash = build_confirm_fills_hash(config.l3_chain_id, 42, &fills);
+    let expected_hash = build_confirm_fills_hash(config.l3_chain_id, config.index_address, 42, &fills);
     assert_eq!(proposal.message_hash, expected_hash);
 }
 
@@ -516,7 +512,7 @@ async fn test_orchestrator_validate_fills_proposal() {
         fill_price: U256::from(1500000000000000000u64),
         fill_amount: U256::from(1000000000000000000u64),
     }];
-    let message_hash = build_confirm_fills_hash(config.l3_chain_id, 42, &fills);
+    let message_hash = build_confirm_fills_hash(config.l3_chain_id, config.index_address, 42, &fills);
 
     let proposal = FillsProposal {
         leader_id: test_peer_id(1),
@@ -552,7 +548,7 @@ async fn test_orchestrator_validate_fills_proposal_zero_amount() {
         fill_price: U256::from(1500000000000000000u64),
         fill_amount: U256::zero(), // Invalid
     }];
-    let message_hash = build_confirm_fills_hash(config.l3_chain_id, 42, &fills);
+    let message_hash = build_confirm_fills_hash(config.l3_chain_id, config.index_address, 42, &fills);
 
     let proposal = FillsProposal {
         leader_id: test_peer_id(1),
@@ -588,7 +584,7 @@ async fn test_orchestrator_validate_fills_proposal_zero_price() {
         fill_price: U256::zero(), // Invalid - would cause division by zero
         fill_amount: U256::from(1000000000000000000u64),
     }];
-    let message_hash = build_confirm_fills_hash(config.l3_chain_id, 42, &fills);
+    let message_hash = build_confirm_fills_hash(config.l3_chain_id, config.index_address, 42, &fills);
 
     let proposal = FillsProposal {
         leader_id: test_peer_id(1),
@@ -634,7 +630,7 @@ async fn test_orchestrator_fills_signature_collection() {
         fill_price: U256::from(1500000000000000000u64),
         fill_amount: U256::from(1000000000000000000u64),
     }];
-    let message_hash = build_confirm_fills_hash(config.l3_chain_id, cycle_number, &fills);
+    let message_hash = build_confirm_fills_hash(config.l3_chain_id, config.index_address, cycle_number, &fills);
 
     let leader_sig = signer.sign_with_keypair(&keypair1, message_hash.as_bytes()).unwrap();
     let follower_sig = signer.sign_with_keypair(&keypair2, message_hash.as_bytes()).unwrap();
@@ -847,9 +843,9 @@ async fn test_full_batch_consensus_flow() {
     // 1. Leader creates message hash and signs
     let message_hash = build_confirm_batch_hash(
         config.l3_chain_id,
+        config.index_address,
         cycle_number,
         &order_ids,
-        &prices,
     );
 
     let leader_sig = signer
@@ -869,9 +865,9 @@ async fn test_full_batch_consensus_flow() {
     // 3. Followers validate hash matches
     let follower2_hash = build_confirm_batch_hash(
         config.l3_chain_id,
+        config.index_address,
         proposal.cycle_number,
         &proposal.order_ids,
-        &proposal.prices,
     );
     assert_eq!(follower2_hash, proposal.message_hash, "Follower hash should match");
 
@@ -920,7 +916,7 @@ async fn test_full_fills_consensus_flow() {
     ];
 
     // 1. Leader creates message hash and signs
-    let message_hash = build_confirm_fills_hash(config.l3_chain_id, cycle_number, &fills);
+    let message_hash = build_confirm_fills_hash(config.l3_chain_id, config.index_address, cycle_number, &fills);
 
     let leader_sig = signer
         .sign_with_keypair(&keypair1, message_hash.as_bytes())

@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 import "../src/mocks/MockERC20.sol";
-import "../src/core/Index.sol";
+import "../src/core/Investment.sol";
 
 /// @title Deploy200AssetITP - Deploy 200 mock tokens and create a 200-asset ITP
 /// @notice Creates a 200-asset ITP for sell flow E2E testing with vital-test.md
@@ -74,7 +74,7 @@ contract Deploy200AssetITP is Script {
         }
 
         // Phase 3: Create ITP
-        itpId = Index(indexProxy).createITP("ITP-200", "ITP200", weights, assets, prices, type(uint256).max);
+        itpId = Investment(indexProxy).createITP("ITP-200", "ITP200", weights, assets, prices, type(uint256).max);
         console.log("  ITP-200 created, ID:", vm.toString(itpId));
 
         vm.stopBroadcast();

@@ -64,7 +64,7 @@ const SEL = {
   'nextOrderId()': '2a58b330',
   'createITP(string,string,uint256[],address[],uint256[],uint256)': '6e33917d',
   'getUserShares(bytes32,address)': 'd6df3741',
-  'requestCreateItp(string,string,uint256[],address[],uint256[])': '9ff4657b',
+  'requestCreateItp(string,string,uint256[],address[],uint256[],(string,string,string))': 'd27cc052',
   'isPending(uint256)': 'ca8836d2',
   'nextCreationNonce()': '321bb03f',
   'requestRebalance(bytes32,uint256[],address[],uint256[],string)': '60267044',
@@ -553,15 +553,16 @@ export async function getUserShares(itpId: string, user: string): Promise<bigint
   return BigInt(result);
 }
 
-/** requestCreateItp(string,string,uint256[],address[],uint256[]) on BridgeProxy */
+/** requestCreateItp(string,string,uint256[],address[],uint256[],(string,string,string)) on BridgeProxy */
 export async function requestCreateItp(
   name: string, symbol: string, weights: bigint[], assets: string[], prices: bigint[],
   from: string = DEPLOYER,
+  description: string = '', websiteUrl: string = '', videoUrl: string = '',
 ): Promise<TxReceipt> {
-  const fnSel = sel('requestCreateItp(string,string,uint256[],address[],uint256[])');
+  const fnSel = sel('requestCreateItp(string,string,uint256[],address[],uint256[],(string,string,string))');
 
-  // 5 dynamic params — all offsets
-  let currentOffset = 5 * 32;
+  // 6 dynamic params — all offsets (6th is the metadata tuple)
+  let currentOffset = 6 * 32;
 
   const nameEnc = encodeString(name);
   const nameOff = padUint(currentOffset);
@@ -581,8 +582,25 @@ export async function requestCreateItp(
 
   const pricesEnc = encodeUint256Array(prices);
   const pricesOff = padUint(currentOffset);
+  currentOffset += pricesEnc.length / 2;
 
-  const calldata = `0x${fnSel}${nameOff}${symbolOff}${weightsOff}${assetsOff}${pricesOff}${nameEnc}${symbolEnc}${weightsEnc}${assetsEnc}${pricesEnc}`;
+  // Metadata tuple: (string,string,string) — encoded as a dynamic struct
+  // Inner layout: 3 offsets then 3 string encodings
+  const descEnc = encodeString(description);
+  const websiteEnc = encodeString(websiteUrl);
+  const videoEnc = encodeString(videoUrl);
+
+  let tupleInnerOffset = 3 * 32;
+  const descTupleOff = padUint(tupleInnerOffset);
+  tupleInnerOffset += descEnc.length / 2;
+  const websiteTupleOff = padUint(tupleInnerOffset);
+  tupleInnerOffset += websiteEnc.length / 2;
+  const videoTupleOff = padUint(tupleInnerOffset);
+
+  const metadataBody = `${descTupleOff}${websiteTupleOff}${videoTupleOff}${descEnc}${websiteEnc}${videoEnc}`;
+  const metadataOff = padUint(currentOffset);
+
+  const calldata = `0x${fnSel}${nameOff}${symbolOff}${weightsOff}${assetsOff}${pricesOff}${metadataOff}${nameEnc}${symbolEnc}${weightsEnc}${assetsEnc}${pricesEnc}${metadataBody}`;
   return sendTx(ARB_RPC, ARB_BRIDGE_PROXY, calldata, from, '0x500000');
 }
 

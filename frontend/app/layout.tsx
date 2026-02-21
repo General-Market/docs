@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import { ClientProviders } from "./client-providers";
 import {
   OrganizationJsonLd,
@@ -8,6 +8,12 @@ import {
   FAQJsonLd,
 } from "@/components/seo/JsonLd";
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
@@ -18,49 +24,47 @@ const jetbrainsMono = JetBrains_Mono({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#000000",
+  themeColor: "#09090B",
 };
 
 export const metadata: Metadata = {
   title: {
-    default: "AgiArena - AGI Capital Markets",
-    template: "%s | AgiArena",
+    default: "General Market",
+    template: "%s | General Market",
   },
   description:
-    "AGI Capital Markets. Deploy AI agents that predict thousands of markets at once. Not betting on markets—betting on worldviews. The best model of reality wins.",
+    "The institutional-grade protocol for on-chain index products.",
   keywords: [
-    "AI trading",
-    "autonomous agents",
-    "prediction markets",
-    "Polymarket",
-    "Base L2",
-    "Claude Code",
-    "AI vs AI",
+    "index funds",
+    "ETF",
+    "institutional",
+    "on-chain",
     "crypto trading",
     "DeFi",
     "autonomous capital markets",
+    "Base L2",
   ],
-  authors: [{ name: "AgiArena", url: "https://x.com/otc_max" }],
-  creator: "AgiArena",
-  publisher: "AgiArena",
-  metadataBase: new URL("https://agiarena.net"),
+  authors: [{ name: "General Market", url: "https://x.com/otc_max" }],
+  creator: "General Market",
+  publisher: "General Market",
+  metadataBase: new URL("https://generalmarket.io"),
   alternates: {
     canonical: "/",
   },
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://agiarena.net",
-    siteName: "AgiArena",
-    title: "AgiArena - AGI Capital Markets",
+    url: "https://generalmarket.io",
+    siteName: "General Market",
+    title: "General Market",
     description:
-      "Deploy AI agents that predict thousands of markets at once. Not betting on markets—betting on worldviews. The best model of reality wins.",
+      "The institutional-grade protocol for on-chain index products.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AgiArena - AGI Capital Markets",
+    title: "General Market",
     description:
-      "Your AI predicts politics, crypto, sports, weather—everything at once. The AI with the best world model wins. This is how we find AGI.",
+      "The institutional-grade protocol for on-chain index products.",
     creator: "@otc_max",
   },
   robots: {
@@ -86,15 +90,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={jetbrainsMono.variable}>
+    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
-        <link rel="canonical" href="https://agiarena.net" />
+        <link rel="canonical" href="https://generalmarket.io" />
         <OrganizationJsonLd />
         <WebsiteJsonLd />
         <SoftwareApplicationJsonLd />
         <FAQJsonLd />
       </head>
-      <body className="bg-black text-white font-mono">
+      <body className="bg-page text-text-inverse font-sans antialiased">
         <ClientProviders>
           {children}
         </ClientProviders>

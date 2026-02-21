@@ -201,7 +201,7 @@ contract BridgeProxyTest is TestHelper {
         vm.expectEmit(true, true, false, true);
         emit CreateItpRequested(user, 0, "Test ITP", "TITP", weights, assets);
 
-        uint256 nonce = bridgeProxy.requestCreateItp("Test ITP", "TITP", weights, assets, prices);
+        uint256 nonce = bridgeProxy.requestCreateItp("Test ITP", "TITP", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
 
         assertEq(nonce, 0);
         assertTrue(bridgeProxy.isPending(0));
@@ -249,9 +249,9 @@ contract BridgeProxyTest is TestHelper {
         uint256[] memory prices = new uint256[](1);
         prices[0] = 1e18;
 
-        uint256 nonce1 = bridgeProxy.requestCreateItp("ITP1", "ITP1", weights, assets, prices);
-        uint256 nonce2 = bridgeProxy.requestCreateItp("ITP2", "ITP2", weights, assets, prices);
-        uint256 nonce3 = bridgeProxy.requestCreateItp("ITP3", "ITP3", weights, assets, prices);
+        uint256 nonce1 = bridgeProxy.requestCreateItp("ITP1", "ITP1", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
+        uint256 nonce2 = bridgeProxy.requestCreateItp("ITP2", "ITP2", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
+        uint256 nonce3 = bridgeProxy.requestCreateItp("ITP3", "ITP3", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
 
         assertEq(nonce1, 0);
         assertEq(nonce2, 1);
@@ -277,7 +277,7 @@ contract BridgeProxyTest is TestHelper {
         prices[1] = 1e18;
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E073_InvalidWeightsSum.selector, 0.9e18, 1e18));
-        bridgeProxy.requestCreateItp("Test ITP", "TITP", weights, assets, prices);
+        bridgeProxy.requestCreateItp("Test ITP", "TITP", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
 
         vm.stopPrank();
     }
@@ -298,7 +298,7 @@ contract BridgeProxyTest is TestHelper {
         prices[1] = 1e18;
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E074_WeightBelowMinimum.selector, 0, 2e15, 2.5e15));
-        bridgeProxy.requestCreateItp("Test ITP", "TITP", weights, assets, prices);
+        bridgeProxy.requestCreateItp("Test ITP", "TITP", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
 
         vm.stopPrank();
     }
@@ -321,7 +321,7 @@ contract BridgeProxyTest is TestHelper {
         prices[2] = 1e18;
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E075_BridgeLengthMismatch.selector, 2, 3));
-        bridgeProxy.requestCreateItp("Test ITP", "TITP", weights, assets, prices);
+        bridgeProxy.requestCreateItp("Test ITP", "TITP", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
 
         vm.stopPrank();
     }
@@ -334,7 +334,7 @@ contract BridgeProxyTest is TestHelper {
         uint256[] memory prices = new uint256[](0);
 
         vm.expectRevert(ErrorsLib.E076_NoAssets.selector);
-        bridgeProxy.requestCreateItp("Test ITP", "TITP", weights, assets, prices);
+        bridgeProxy.requestCreateItp("Test ITP", "TITP", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
 
         vm.stopPrank();
     }
@@ -358,7 +358,7 @@ contract BridgeProxyTest is TestHelper {
         }
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E077_TooManyAssets.selector, 1001, 1000));
-        bridgeProxy.requestCreateItp("Test ITP", "TITP", weights, assets, prices);
+        bridgeProxy.requestCreateItp("Test ITP", "TITP", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
 
         vm.stopPrank();
     }
@@ -379,7 +379,7 @@ contract BridgeProxyTest is TestHelper {
         prices[1] = 1e18;
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E078_DuplicateAsset.selector, asset1));
-        bridgeProxy.requestCreateItp("Test ITP", "TITP", weights, assets, prices);
+        bridgeProxy.requestCreateItp("Test ITP", "TITP", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
 
         vm.stopPrank();
     }
@@ -400,7 +400,7 @@ contract BridgeProxyTest is TestHelper {
         prices[1] = 1e18;
 
         vm.expectRevert(ErrorsLib.E079_ZeroAddressAsset.selector);
-        bridgeProxy.requestCreateItp("Test ITP", "TITP", weights, assets, prices);
+        bridgeProxy.requestCreateItp("Test ITP", "TITP", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
 
         vm.stopPrank();
     }
@@ -422,7 +422,7 @@ contract BridgeProxyTest is TestHelper {
         assertTrue(bytes(longName).length > 32);
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E07A_NameTooLong.selector, 33, 32));
-        bridgeProxy.requestCreateItp(longName, "TITP", weights, assets, prices);
+        bridgeProxy.requestCreateItp(longName, "TITP", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
 
         vm.stopPrank();
     }
@@ -444,7 +444,7 @@ contract BridgeProxyTest is TestHelper {
         assertTrue(bytes(longSymbol).length > 10);
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E07B_SymbolTooLong.selector, 11, 10));
-        bridgeProxy.requestCreateItp("Test", longSymbol, weights, assets, prices);
+        bridgeProxy.requestCreateItp("Test", longSymbol, weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
 
         vm.stopPrank();
     }
@@ -465,7 +465,7 @@ contract BridgeProxyTest is TestHelper {
         prices[0] = 1e18;
 
         vm.expectRevert();
-        bridgeProxy.requestCreateItp("Test ITP", "TITP", weights, assets, prices);
+        bridgeProxy.requestCreateItp("Test ITP", "TITP", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
 
         vm.stopPrank();
     }
@@ -485,7 +485,7 @@ contract BridgeProxyTest is TestHelper {
         assets[0] = asset1;
         uint256[] memory prices = new uint256[](1);
         prices[0] = 1e18;
-        uint256 nonce = bridgeProxy.requestCreateItp("Test", "TST", weights, assets, prices);
+        uint256 nonce = bridgeProxy.requestCreateItp("Test", "TST", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
 
         // Wrong signature length (32 instead of 64)
         bytes memory wrongLengthSignature = new bytes(32);
@@ -503,7 +503,7 @@ contract BridgeProxyTest is TestHelper {
         assets[0] = asset1;
         uint256[] memory prices = new uint256[](1);
         prices[0] = 1e18;
-        uint256 nonce = bridgeProxy.requestCreateItp("Test", "TST", weights, assets, prices);
+        uint256 nonce = bridgeProxy.requestCreateItp("Test", "TST", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
 
         bytes memory signature = new bytes(64);
 
@@ -529,7 +529,7 @@ contract BridgeProxyTest is TestHelper {
         assets[0] = asset1;
         uint256[] memory prices = new uint256[](1);
         prices[0] = 1e18;
-        uint256 nonce = bridgeProxy.requestCreateItp("Test", "TST", weights, assets, prices);
+        uint256 nonce = bridgeProxy.requestCreateItp("Test", "TST", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
 
         vm.prank(owner);
         bridgeProxy.pause();
@@ -551,7 +551,7 @@ contract BridgeProxyTest is TestHelper {
         uint256[] memory prices = new uint256[](2);
         prices[0] = 1e18;
         prices[1] = 1e18;
-        uint256 nonce = bridgeProxy.requestCreateItp("Success Test", "SUCC", weights, assets, prices);
+        uint256 nonce = bridgeProxy.requestCreateItp("Success Test", "SUCC", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
 
         // Expected orbitItpId from MockIndex (deterministic based on nonce)
         bytes32 orbitItpId = keccak256(abi.encodePacked("mock_itp_", nonce));
@@ -591,7 +591,7 @@ contract BridgeProxyTest is TestHelper {
         assets[0] = asset1;
         uint256[] memory prices = new uint256[](1);
         prices[0] = 1e18;
-        uint256 nonce = bridgeProxy.requestCreateItp("Already Completed", "DONE", weights, assets, prices);
+        uint256 nonce = bridgeProxy.requestCreateItp("Already Completed", "DONE", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
 
         // Sign with real BLS for the first completion
         bytes memory signature = _signCompleteCreateItp(nonce, user, weights, assets);
@@ -613,8 +613,8 @@ contract BridgeProxyTest is TestHelper {
         assets[0] = asset1;
         uint256[] memory prices = new uint256[](1);
         prices[0] = 1e18;
-        uint256 nonce1 = bridgeProxy.requestCreateItp("First", "FIRST", weights, assets, prices);
-        uint256 nonce2 = bridgeProxy.requestCreateItp("Second", "SECOND", weights, assets, prices);
+        uint256 nonce1 = bridgeProxy.requestCreateItp("First", "FIRST", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
+        uint256 nonce2 = bridgeProxy.requestCreateItp("Second", "SECOND", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
         vm.stopPrank();
 
         // Complete the first request with a specific orbitItpId
@@ -638,7 +638,7 @@ contract BridgeProxyTest is TestHelper {
         assets[0] = asset1;
         uint256[] memory prices = new uint256[](1);
         prices[0] = 1e18;
-        uint256 nonce = bridgeProxy.requestCreateItp("Test", "TST", weights, assets, prices);
+        uint256 nonce = bridgeProxy.requestCreateItp("Test", "TST", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
 
         assertTrue(bridgeProxy.isPending(nonce));
     }
@@ -734,7 +734,7 @@ contract BridgeProxyTest is TestHelper {
             prices[i] = 1e18;
         }
 
-        uint256 nonce = bridgeProxy.requestCreateItp("Max Assets ITP", "MITP", weights, assets, prices);
+        uint256 nonce = bridgeProxy.requestCreateItp("Max Assets ITP", "MITP", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
         assertTrue(bridgeProxy.isPending(nonce));
 
         vm.stopPrank();
@@ -755,7 +755,7 @@ contract BridgeProxyTest is TestHelper {
         prices[0] = 1e18;
         prices[1] = 1e18;
 
-        uint256 nonce = bridgeProxy.requestCreateItp("Min Weight", "MW", weights, assets, prices);
+        uint256 nonce = bridgeProxy.requestCreateItp("Min Weight", "MW", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
         assertTrue(bridgeProxy.isPending(nonce));
 
         vm.stopPrank();
@@ -777,7 +777,7 @@ contract BridgeProxyTest is TestHelper {
         string memory exactName = "12345678901234567890123456789012";
         assertEq(bytes(exactName).length, 32);
 
-        uint256 nonce = bridgeProxy.requestCreateItp(exactName, "TST", weights, assets, prices);
+        uint256 nonce = bridgeProxy.requestCreateItp(exactName, "TST", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
         assertTrue(bridgeProxy.isPending(nonce));
 
         vm.stopPrank();
@@ -799,7 +799,7 @@ contract BridgeProxyTest is TestHelper {
         string memory exactSymbol = "1234567890";
         assertEq(bytes(exactSymbol).length, 10);
 
-        uint256 nonce = bridgeProxy.requestCreateItp("Test", exactSymbol, weights, assets, prices);
+        uint256 nonce = bridgeProxy.requestCreateItp("Test", exactSymbol, weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
         assertTrue(bridgeProxy.isPending(nonce));
 
         vm.stopPrank();
@@ -816,7 +816,7 @@ contract BridgeProxyTest is TestHelper {
         assets[0] = asset1;
         uint256[] memory prices = new uint256[](1);
         prices[0] = 1e18;
-        uint256 nonce = bridgeProxy.requestCreateItp("Deployer Test", "DTST", weights, assets, prices);
+        uint256 nonce = bridgeProxy.requestCreateItp("Deployer Test", "DTST", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
 
         bytes32 orbitItpId = bytes32(uint256(1));
 
@@ -842,7 +842,7 @@ contract BridgeProxyTest is TestHelper {
         uint256[] memory prices = new uint256[](2);
         prices[0] = 1e18;
         prices[1] = 1e18;
-        uint256 nonce = bridgeProxy.requestCreateItp("Rebalance Test", "RTST", weights, assets, prices);
+        uint256 nonce = bridgeProxy.requestCreateItp("Rebalance Test", "RTST", weights, assets, prices, IBridgeProxy.ItpMetadata("", "", ""));
 
         orbitItpId = bytes32(uint256(nonce + 1));
 

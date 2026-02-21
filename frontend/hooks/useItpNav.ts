@@ -1,8 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-
-const DATA_NODE_URL = process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200'
+import { useSSENav } from './useSSE'
 
 interface ItpNavResult {
   /** NAV per share in USD (float) */
@@ -21,83 +19,54 @@ interface ItpNavResult {
 }
 
 /**
- * Gets ITP NAV from data-node backend's /itp-price endpoint (live prices).
+ * Gets ITP NAV from the SSE itp-nav stream.
  *
  * The backend computes NAV = Σ(inventory[i] * latestPrice[i]) / 1e18
- * from its price DB.
- *
- * Never regresses from a good backend NAV (no-regression logic).
+ * and pushes it via SSE.
  */
 export function useItpNav(itpId: string | undefined): ItpNavResult {
-  const [navPerShare, setNavPerShare] = useState(0)
-  const [navPerShareBn, setNavPerShareBn] = useState(0n)
-  const [totalSupply, setTotalSupply] = useState(0n)
-  const [totalAssetCount, setTotalAssetCount] = useState(0)
-  const [pricedAssetCount, setPricedAssetCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const navList = useSSENav()
 
-  const hasReceivedNav = useRef(false)
-  const itpIdRef = useRef(itpId)
-
-  useEffect(() => { itpIdRef.current = itpId }, [itpId])
-
-  const compute = useCallback(async () => {
-    const id = itpIdRef.current
-    if (!id) {
-      setIsLoading(false)
-      return
+  if (!itpId || navList.length === 0) {
+    return {
+      navPerShare: 0,
+      navPerShareBn: 0n,
+      totalSupply: 0n,
+      totalAssetCount: 0,
+      pricedAssetCount: 0,
+      isLoading: navList.length === 0,
+      error: null,
+      refresh: async () => {},
     }
+  }
 
-    try {
-      const navResponse = await fetch(
-        `${DATA_NODE_URL}/itp-price?itp_id=${id}`,
-        { signal: AbortSignal.timeout(5000) }
-      ).then(r => r.ok ? r.json() : null).catch(() => null)
+  const match = navList.find(n => n.itp_id === itpId)
 
-      if (navResponse && navResponse.nav && navResponse.nav !== '0') {
-        setNavPerShareBn(BigInt(navResponse.nav))
-        setNavPerShare(parseFloat(navResponse.nav_display))
-        setPricedAssetCount(navResponse.assets_priced)
-        setTotalAssetCount(navResponse.assets_total)
-        setError(null)
-        hasReceivedNav.current = true
-      } else if (!hasReceivedNav.current) {
-        // No data yet — keep loading state
-      }
-    } catch (e: any) {
-      if (!hasReceivedNav.current) {
-        setError(e.message || 'Failed to fetch NAV')
-      }
-    } finally {
-      setIsLoading(false)
+  if (!match) {
+    return {
+      navPerShare: 0,
+      navPerShareBn: 0n,
+      totalSupply: 0n,
+      totalAssetCount: 0,
+      pricedAssetCount: 0,
+      isLoading: false,
+      error: 'ITP not found',
+      refresh: async () => {},
     }
-  }, [])
+  }
 
-  // Reset state when itpId changes
-  useEffect(() => {
-    hasReceivedNav.current = false
-    setIsLoading(true)
-    setNavPerShare(0)
-    setNavPerShareBn(0n)
-    setTotalSupply(0n)
-    setError(null)
-  }, [itpId])
-
-  useEffect(() => {
-    compute()
-    const interval = setInterval(compute, 1_500)
-    return () => clearInterval(interval)
-  }, [compute, itpId])
+  // Derive bigint NAV (18 decimals) from the float value.
+  // Precision is sufficient for limit-price seeding (consumers add 5% buffer).
+  const navPerShareBn = BigInt(Math.round(match.nav_per_share * 1e18))
 
   return {
-    navPerShare,
+    navPerShare: match.nav_per_share,
     navPerShareBn,
-    totalSupply,
-    totalAssetCount,
-    pricedAssetCount,
-    isLoading,
-    error,
-    refresh: compute,
+    totalSupply: BigInt(match.total_supply),
+    totalAssetCount: 0,   // Not available from SSE chain poller
+    pricedAssetCount: 0,  // Not available from SSE chain poller
+    isLoading: false,
+    error: null,
+    refresh: async () => {},
   }
 }

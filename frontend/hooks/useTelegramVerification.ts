@@ -10,8 +10,7 @@
 import { useState, useCallback } from 'react'
 import { useAccount, useSignMessage } from 'wagmi'
 
-// Use relative path to go through Vercel rewrites to production backend
-const BACKEND_URL = ''
+import { BACKEND_URL } from '@/lib/contracts/addresses'
 
 interface VerificationState {
   status: 'idle' | 'loading' | 'signing' | 'verifying' | 'success' | 'error'
@@ -85,7 +84,7 @@ export function useTelegramVerification() {
 
       // 2. Create and sign message
       const timestamp = Math.floor(Date.now() / 1000)
-      const message = `AgiArena Telegram Link: ${codeInfo.telegramUserId} at ${timestamp}`
+      const message = `General Market Telegram Link: ${codeInfo.telegramUserId} at ${timestamp}`
 
       let signature: string
       try {

@@ -2,11 +2,11 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import "../src/interfaces/IIndex.sol";
+import "../src/interfaces/IInvestment.sol";
 import "../src/libraries/TypesLib.sol";
 
 contract NewOrder is Script {
-    IIndex index = IIndex(0x0B306BF915C4d645ff596e518fAf3F9669b97016);
+    IInvestment index = IInvestment(0x0B306BF915C4d645ff596e518fAf3F9669b97016);
     uint256 userKey = 0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a;
     
     function run() external {

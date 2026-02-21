@@ -61,19 +61,19 @@ export function ChainGuard({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm">
-        <div className="border border-white/20 bg-black p-8 max-w-md text-center font-mono">
-          <div className="text-accent text-xl mb-4">Wrong Network</div>
-          <p className="text-white/70 text-sm mb-2">
-            Your wallet is on chain <span className="text-white">{chainId}</span>.
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="border border-border-light bg-card rounded-xl shadow-modal p-8 max-w-md text-center">
+          <div className="text-color-warning text-xl font-semibold mb-4">Wrong Network</div>
+          <p className="text-text-secondary text-sm mb-2">
+            Your wallet is on chain <span className="text-text-primary font-mono">{chainId}</span>.
           </p>
-          <p className="text-white/70 text-sm mb-6">
-            Please switch to <span className="text-accent">Index Arbitrum</span> (chain {indexL3.id}).
+          <p className="text-text-secondary text-sm mb-6">
+            Please switch to <span className="text-text-primary font-medium">Index Arbitrum</span> (chain {indexL3.id}).
           </p>
           <button
             onClick={forceSwitch}
             disabled={isSwitching}
-            className="px-6 py-3 bg-accent text-black font-mono font-bold hover:bg-accent/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full"
+            className="px-6 py-3 bg-zinc-900 text-white font-medium rounded-lg hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full"
           >
             {isSwitching ? 'Switching...' : 'Switch Network'}
           </button>

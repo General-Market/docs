@@ -11,7 +11,7 @@ import {AssetPairRegistry} from "../../src/registry/AssetPairRegistry.sol";
 import {CollateralRegistry} from "../../src/registry/CollateralRegistry.sol";
 import {BLSCustody} from "../../src/core/BLSCustody.sol";
 import {L3BridgeCustody} from "../../src/custody/L3BridgeCustody.sol";
-import {Index} from "../../src/core/Index.sol";
+import {Investment} from "../../src/core/Investment.sol";
 
 /// @title VerifyL3Deployment - Post-deployment verification for L3 testnet
 /// @notice Reads l3-testnet.json and verifies all contracts are correctly initialized
@@ -101,10 +101,10 @@ contract VerifyL3Deployment is Script {
             _checkHasCode("proxy has code", l3BridgeCustodyProxy);
         }
 
-        // ============ Index ============
-        console2.log("--- Index ---");
+        // ============ Investment ============
+        console2.log("--- Investment ---");
         {
-            Index idx = Index(indexProxy);
+            Investment idx = Investment(indexProxy);
             _check("governance matches", address(idx.governance()) == governanceProxy);
             _check("usdc matches", address(idx.usdc()) == usdc);
             _checkHasCode("proxy has code", indexProxy);

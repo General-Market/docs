@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 
 import "../src/mocks/MockBitgetVault.sol";
 import "../src/registry/AssetPairRegistry.sol";
-import "../src/core/Index.sol";
+import "../src/core/Investment.sol";
 import "../src/bridge/BridgeProxy.sol";
 import "../src/bridge/BridgedItpFactory.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -67,7 +67,7 @@ contract DeployBridgeE2E is DeployBLSHelper {
         console.log("Index contract set on BridgeProxy");
 
         // Set authorized bridge on Index for cross-chain rebalance/transfer
-        Index(indexContract).setAuthorizedBridge(bridgeProxy);
+        Investment(indexContract).setAuthorizedBridge(bridgeProxy);
         console.log("Authorized bridge set on Index");
 
         // Whitelist 627 assets on AssetPairRegistry using propose/activate flow with real BLS

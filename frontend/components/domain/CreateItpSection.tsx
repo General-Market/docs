@@ -9,8 +9,10 @@ import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { activeChainId } from '@/lib/wagmi'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getCoinGeckoUrl } from '@/lib/coingecko'
+import { DATA_NODE_URL } from '@/lib/config'
+import { useDeployerName } from '@/hooks/useDeployerName'
 
-const DATA_NODE_URL = process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200'
+interface CoinEntry { id: string; image: string }
 
 // Default sample assets — overridden at runtime from /deployed-assets.json if available
 const DEFAULT_SAMPLE_ASSETS = [
@@ -25,6 +27,38 @@ const DEFAULT_SAMPLE_ASSETS = [
   { address: '0x7bc06c482dead17c0e297afbc32f6e63d3846650', symbol: 'LINK' },
   { address: '0xc351628eb244ec633d5f21fbd6621e1a683b1181', symbol: 'AVAX' },
 ]
+
+/** Tiny coin logo — loads CoinGecko image with graceful fallback */
+function CoinLogo({ symbol, coinMap, size = 20 }: { symbol: string; coinMap: Record<string, CoinEntry>; size?: number }) {
+  const entry = coinMap[symbol.toUpperCase()]
+  if (!entry?.image) {
+    return (
+      <span
+        className="inline-flex items-center justify-center rounded-full bg-muted text-text-muted font-mono text-[9px] flex-shrink-0"
+        style={{ width: size, height: size }}
+      >
+        {symbol.slice(0, 2)}
+      </span>
+    )
+  }
+  return (
+    <img
+      src={entry.image}
+      alt={symbol}
+      width={size}
+      height={size}
+      className="rounded-full flex-shrink-0 object-cover"
+      onError={(e) => {
+        const span = document.createElement('span')
+        span.className = 'inline-flex items-center justify-center rounded-full bg-muted text-text-muted font-mono text-[9px]'
+        span.style.width = `${size}px`
+        span.style.height = `${size}px`
+        span.textContent = symbol.slice(0, 2)
+        ;(e.target as HTMLElement).replaceWith(span)
+      }}
+    />
+  )
+}
 
 interface AssetWeight {
   address: string
@@ -42,10 +76,17 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   const { address, isConnected } = useAccount()
   const [name, setName] = useState('')
   const [symbol, setSymbol] = useState('')
+  const [description, setDescription] = useState('')
+  const [websiteUrl, setWebsiteUrl] = useState('')
+  const [videoUrl, setVideoUrl] = useState('')
+  const [issuerName, setIssuerName] = useState('')
   const [selectedAssets, setSelectedAssets] = useState<AssetWeight[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
   const [availableAssets, setAvailableAssets] = useState<{ address: string; symbol: string }[]>(DEFAULT_SAMPLE_ASSETS)
+  const [coinMap, setCoinMap] = useState<Record<string, CoinEntry>>({})
+  const { name: existingDeployerName, refetch: refetchDeployerName } = useDeployerName(address as `0x${string}` | undefined)
+  const needsIssuerName = isConnected && !existingDeployerName
 
   const { writeContract, data: hash, isPending, error: writeError, reset: resetWrite } = useChainWriteContract()
   const { isLoading: isConfirming, isSuccess, error: confirmError } = useWaitForTransactionReceipt({ hash, chainId: activeChainId })
@@ -66,6 +107,14 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       })
   }, [])
 
+  // Load symbol → {id, image} mapping for logos from static coin-map
+  useEffect(() => {
+    fetch('/coin-map.json', { signal: AbortSignal.timeout(10_000) })
+      .then(res => res.ok ? res.json() : Promise.reject('not found'))
+      .then((data: Record<string, CoinEntry>) => setCoinMap(data))
+      .catch(() => { /* logos won't show — acceptable fallback */ })
+  }, [])
+
   // Pre-populate from backtester when initialHoldings changes
   useEffect(() => {
     if (!initialHoldings || initialHoldings.length === 0 || availableAssets.length === 0) return
@@ -77,8 +126,8 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
         mapped.push({ address: asset.address, symbol: asset.symbol, weight: Math.round(h.weight) })
       }
     }
-    // Only take first 10 (CreateITP limit)
-    const capped = mapped.slice(0, 10)
+    // Only take first 100 (CreateITP limit)
+    const capped = mapped.slice(0, 100)
     if (capped.length > 0) {
       // Normalize weights to sum to 100
       const rawSum = capped.reduce((s, a) => s + a.weight, 0)
@@ -106,7 +155,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   )
 
   const addAsset = (asset: { address: string; symbol: string }) => {
-    if (selectedAssets.length >= 10) return
+    if (selectedAssets.length >= 100) return
     setSelectedAssets([...selectedAssets, { ...asset, weight: 0 }])
   }
 
@@ -174,18 +223,33 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     setIsFetchingPrices(false)
 
     try {
+      // If deployer hasn't set their name yet, set it first
+      if (needsIssuerName && issuerName.trim()) {
+        console.log('[CreateITP] Setting deployer name:', issuerName.trim())
+        writeContract({
+          address: INDEX_PROTOCOL.bridgeProxy,
+          abi: BRIDGE_PROXY_ABI,
+          functionName: 'setDeployerName',
+          args: [issuerName.trim()],
+        })
+        // Note: the deployer name tx will be confirmed separately.
+        // For simplicity, we proceed with the create call — user can retry if name tx fails.
+        refetchDeployerName()
+      }
+
       console.log('[CreateITP] Submitting tx:', {
         bridgeProxy: INDEX_PROTOCOL.bridgeProxy,
         name, symbol,
         assetsCount: assets.length,
         weightsSum: weights.reduce((a, b) => a + b, 0n).toString(),
         prices: prices.map(p => p.toString()),
+        metadata: { description, websiteUrl, videoUrl },
       })
       writeContract({
         address: INDEX_PROTOCOL.bridgeProxy,
         abi: BRIDGE_PROXY_ABI,
         functionName: 'requestCreateItp',
-        args: [name, symbol, weights, assets, prices],
+        args: [name, symbol, weights, assets, prices, { description, websiteUrl, videoUrl }],
       })
     } catch (e: any) {
       console.error('[CreateITP] writeContract threw:', e)
@@ -215,8 +279,13 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       refreshNonce()
       setName('')
       setSymbol('')
+      setDescription('')
+      setWebsiteUrl('')
+      setVideoUrl('')
+      setIssuerName('')
       setSelectedAssets([])
       setStuckWarning(false)
+      refetchDeployerName()
     }
   }, [isSuccess, refreshNonce])
 
@@ -238,171 +307,382 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   }, [resetWrite, refreshNonce])
 
   return (
-    <div id="create-itp" className="bg-terminal-dark/50 border border-white/10 rounded-lg">
-      <button
-        onClick={onToggle}
-        className="w-full p-4 flex justify-between items-center text-left"
-      >
-        <div>
-          <h2 className="text-xl font-bold text-white">Create ITP</h2>
-          <p className="text-sm text-white/50">Create an Index Tracking Product with custom weights</p>
-        </div>
-        <span className="text-accent text-2xl">{expanded ? '−' : '+'}</span>
-      </button>
+    <div id="create-itp" className="pb-10">
+      {/* Section header */}
+      <div className="pt-10 mb-6">
+        <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">Deploy New Product</p>
+        <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">Create</h2>
+        <p className="text-[14px] text-text-secondary mt-1.5">Build a custom index product. Select assets, set weights, and deploy on-chain.</p>
+      </div>
+
+      {/* Collapsed toggle button */}
+      {!expanded && (
+        <button
+          onClick={onToggle}
+          className="w-full bg-card rounded-xl shadow-card border border-border-light p-4 hover:shadow-card-hover cursor-pointer text-left flex justify-between items-center"
+        >
+          <div>
+            <span className="text-sm text-text-secondary">Create an Index Tracking Product with custom weights</span>
+          </div>
+          <span className="text-text-muted text-2xl">+</span>
+        </button>
+      )}
 
       {expanded && (
-        <div className="p-4 pt-0 border-t border-white/10">
+        <div>
+          {/* Collapse toggle */}
+          <div className="flex justify-end mb-2">
+            <button
+              onClick={onToggle}
+              className="text-text-muted hover:text-text-secondary text-2xl leading-none"
+              aria-label="Collapse"
+            >
+              −
+            </button>
+          </div>
+
           {!isConnected ? (
-            <div className="bg-terminal border border-white/10 rounded-lg p-8 text-center">
-              <p className="text-white/70">Connect your wallet to create an ITP</p>
+            <div className="border border-border-light p-5">
+              <CreateSkeleton coinMap={coinMap} />
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Name + Symbol row */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-white/70 mb-2">ITP Name (max 32)</label>
+                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">
+                    ITP Name (max 32)
+                  </label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value.slice(0, 32))}
                     placeholder="e.g., DeFi Blue Chips"
-                    className="w-full bg-terminal border border-white/20 rounded px-4 py-2 text-white focus:border-accent focus:outline-none"
+                    className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-white/70 mb-2">Symbol (max 10)</label>
+                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">
+                    Symbol (max 10)
+                  </label>
                   <input
                     type="text"
                     value={symbol}
                     onChange={(e) => setSymbol(e.target.value.toUpperCase().slice(0, 10))}
                     placeholder="e.g., DEFI"
-                    className="w-full bg-terminal border border-white/20 rounded px-4 py-2 text-white focus:border-accent focus:outline-none"
+                    className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="bg-terminal border border-white/10 rounded-lg p-4">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm text-white/70">Select Assets ({selectedAssets.length}/10 from {availableAssets.length})</span>
+              {/* Issuer Name (only if first time) */}
+              {needsIssuerName && (
+                <div>
+                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">
+                    Your Name / Issuer (max 64, shown on ITP cards)
+                  </label>
                   <input
                     type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search..."
-                    className="bg-terminal-dark border border-white/20 rounded px-3 py-1 text-sm text-white w-32"
+                    value={issuerName}
+                    onChange={(e) => setIssuerName(e.target.value.slice(0, 64))}
+                    placeholder="e.g., Vanguard Labs"
+                    className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
                   />
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {filteredAssets.slice(0, 8).map(asset => (
-                    <div key={asset.address} className="relative group">
-                      <button
-                        onClick={() => addAsset(asset)}
-                        className="px-3 py-1 pr-7 bg-terminal-dark border border-white/20 rounded text-sm text-white hover:border-accent transition-colors"
-                      >
-                        + {asset.symbol}
-                      </button>
-                      <a
-                        href={getCoinGeckoUrl(asset.symbol)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={e => e.stopPropagation()}
-                        className="absolute top-0 right-0 px-1.5 py-1 text-white/30 hover:text-accent text-xs transition-colors"
-                        title={`View ${asset.symbol} on CoinGecko`}
-                      >
-                        ↗
-                      </a>
-                    </div>
-                  ))}
+              )}
+
+              {/* Description */}
+              <div>
+                <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">
+                  Description (optional, ~50 words)
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value.slice(0, 280))}
+                  placeholder="Brief description shown on ITP cards"
+                  rows={2}
+                  className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none resize-none"
+                />
+                <span className="text-[10px] text-text-muted">{description.length}/280</span>
+              </div>
+
+              {/* Website + Video URLs */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">
+                    Website URL (optional)
+                  </label>
+                  <input
+                    type="url"
+                    value={websiteUrl}
+                    onChange={(e) => setWebsiteUrl(e.target.value.slice(0, 128))}
+                    placeholder="https://yoursite.io"
+                    className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">
+                    Video URL (optional)
+                  </label>
+                  <input
+                    type="url"
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value.slice(0, 256))}
+                    placeholder="https://youtube.com/watch?v=..."
+                    className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
+                  />
                 </div>
               </div>
 
-              {selectedAssets.length > 0 && (
-                <div className="bg-terminal border border-white/10 rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-sm text-white/70">Asset Weights</span>
-                    <button onClick={distributeEvenly} className="text-xs text-accent hover:text-accent/80">
-                      Distribute Evenly
-                    </button>
+              {/* Two-column: Select Assets | Configure Weights */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+
+                {/* LEFT — Select Assets */}
+                <div className="border border-border-light">
+                  <div className="bg-black text-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.08em]">
+                    Select Assets ({selectedAssets.length}/100)
                   </div>
-                  <div className="space-y-2">
-                    {selectedAssets.map(asset => (
-                      <div key={asset.address} className="flex items-center gap-3">
-                        <span className="w-14 text-white font-mono text-sm">{asset.symbol}</span>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={asset.weight}
-                          onChange={(e) => updateWeight(asset.address, Number(e.target.value))}
-                          className="flex-1 accent-accent"
-                        />
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={asset.weight}
-                          onChange={(e) => updateWeight(asset.address, Number(e.target.value))}
-                          className="w-14 bg-terminal-dark border border-white/20 rounded px-2 py-1 text-white text-center text-sm"
-                        />
-                        <span className="text-white/50 text-sm">%</span>
-                        <button onClick={() => removeAsset(asset.address)} className="text-red-400 hover:text-red-300">×</button>
-                      </div>
-                    ))}
-                  </div>
-                  <div className={`mt-3 pt-3 border-t border-white/10 flex justify-between text-sm ${isValidWeights ? 'text-green-400' : 'text-red-400'}`}>
-                    <span>Total:</span>
-                    <span className="font-bold">{totalWeight}% {isValidWeights ? '✓' : '(must be 100%)'}</span>
+                  <div className="p-5">
+                    <div className="flex justify-between items-center mb-3">
+                      <label className="text-xs font-semibold text-text-muted">
+                        {availableAssets.length} available
+                      </label>
+                      <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Search..."
+                        className="bg-card border border-border-medium rounded-lg px-3 py-1 text-sm text-text-primary w-32 focus:outline-none focus:border-zinc-400"
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 max-h-64 overflow-y-auto">
+                      {filteredAssets.map(asset => (
+                        <span key={asset.address} className="inline-flex items-center gap-1.5 bg-card text-text-primary border border-border-light rounded-lg px-2.5 py-1.5 text-xs hover:border-border-medium hover:shadow-sm transition-all">
+                          <button
+                            onClick={() => addAsset(asset)}
+                            className="inline-flex items-center gap-1.5"
+                          >
+                            <CoinLogo symbol={asset.symbol} coinMap={coinMap} size={18} />
+                            <span className="font-medium">{asset.symbol}</span>
+                          </button>
+                          <a
+                            href={getCoinGeckoUrl(asset.symbol)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={e => e.stopPropagation()}
+                            className="text-text-muted hover:text-text-primary transition-colors"
+                            title={`View ${asset.symbol} on CoinGecko`}
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M17 7H7M17 7v10" />
+                            </svg>
+                          </a>
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              )}
 
-              {hasNonceGap && (
-                <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-3 text-orange-400 text-sm">
-                  <p className="font-bold">Pending Transactions Detected</p>
-                  <p className="text-xs mt-1">You have {pendingCount} pending transaction(s). New transactions may get stuck.</p>
+                {/* RIGHT — Configure Weights */}
+                <div className="border border-border-light">
+                  <div className="bg-black text-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.08em]">
+                    Configure Weights ({selectedAssets.length} assets)
+                  </div>
+                  <div className="p-5">
+                    {selectedAssets.length === 0 ? (
+                      <p className="text-sm text-text-muted py-8 text-center">Select assets to configure weights</p>
+                    ) : (
+                      <>
+                        <div className="flex justify-between items-center mb-3">
+                          <label className="text-xs font-semibold text-text-primary">
+                            Total: {totalWeight}%
+                          </label>
+                          <button
+                            onClick={distributeEvenly}
+                            className="text-xs text-text-secondary hover:bg-card border border-border-light rounded-lg px-2.5 py-1 transition-colors"
+                          >
+                            Distribute Evenly
+                          </button>
+                        </div>
+                        <div className="space-y-1.5 max-h-80 overflow-y-auto">
+                          {selectedAssets.map(asset => (
+                            <div key={asset.address} className="flex items-center gap-2 bg-card rounded-lg px-2 py-1.5 border border-border-light">
+                              <CoinLogo symbol={asset.symbol} coinMap={coinMap} size={18} />
+                              <span className="w-12 text-text-primary font-mono text-xs tabular-nums truncate">{asset.symbol}</span>
+                              <a
+                                href={getCoinGeckoUrl(asset.symbol)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-text-muted hover:text-text-primary transition-colors flex-shrink-0"
+                                title={`View ${asset.symbol} on CoinGecko`}
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M17 7H7M17 7v10" />
+                                </svg>
+                              </a>
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={asset.weight}
+                                onChange={(e) => updateWeight(asset.address, Number(e.target.value))}
+                                className="flex-1 accent-zinc-900"
+                              />
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={asset.weight}
+                                onChange={(e) => updateWeight(asset.address, Number(e.target.value))}
+                                className="w-12 bg-muted border border-border-medium rounded px-1.5 py-0.5 text-text-primary text-center text-xs font-mono tabular-nums focus:outline-none focus:border-zinc-400"
+                              />
+                              <span className="text-text-muted text-xs">%</span>
+                              <button
+                                onClick={() => removeAsset(asset.address)}
+                                className="text-text-muted hover:text-color-down transition-colors text-xs ml-auto"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <div className={`mt-3 pt-3 border-t border-border-light flex justify-between text-sm ${isValidWeights ? 'text-color-up' : 'text-color-down'}`}>
+                          <span>Total:</span>
+                          <span className="font-mono tabular-nums font-medium">{totalWeight}% {isValidWeights ? '' : '(must be 100%)'}</span>
+                        </div>
+
+                        {/* Deploy button */}
+                        <div className="flex justify-end mt-4">
+                          <WalletActionButton
+                            onClick={handleSubmit}
+                            disabled={!name || !symbol || selectedAssets.length === 0 || !isValidWeights || isPending || isConfirming || isFetchingPrices || hasNonceGap}
+                            className="bg-zinc-900 text-white font-medium rounded-lg px-6 py-2.5 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          >
+                            {isFetchingPrices ? 'Fetching prices...' : isPending ? 'Waiting for wallet...' : isConfirming ? 'Confirming...' : 'Deploy ITP →'}
+                          </WalletActionButton>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
-              )}
+              </div>
 
-              <WalletActionButton
-                onClick={handleSubmit}
-                disabled={!name || !symbol || selectedAssets.length === 0 || !isValidWeights || isPending || isConfirming || isFetchingPrices || hasNonceGap}
-                className="w-full py-3 bg-accent text-terminal font-bold rounded-lg hover:bg-accent/90 disabled:bg-white/20 disabled:text-white/50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isFetchingPrices ? 'Fetching prices...' : isPending ? 'Waiting for wallet...' : isConfirming ? 'Confirming...' : 'Create ITP Request'}
-              </WalletActionButton>
-
+              {/* Status messages below the grid */}
               {(isPending || isConfirming) && (
                 <button
                   onClick={handleCancel}
-                  className="w-full text-center text-sm text-white/50 hover:text-white/80 py-2 transition-colors"
+                  className="w-full text-center text-sm text-text-muted hover:text-text-secondary py-2 transition-colors"
                 >
                   Cancel
                 </button>
               )}
 
+              {hasNonceGap && (
+                <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-3 text-orange-400 text-sm">
+                  <p className="font-medium">Pending Transactions Detected</p>
+                  <p className="text-xs mt-1">You have {pendingCount} pending transaction(s). New transactions may get stuck.</p>
+                </div>
+              )}
+
               {stuckWarning && (
                 <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-3 text-orange-400 text-sm">
-                  <p className="font-bold">Transaction may be stuck</p>
+                  <p className="font-medium">Transaction may be stuck</p>
                   <p className="text-xs mt-1">Not confirmed after 30s. You can cancel and try again.</p>
                 </div>
               )}
 
               {txError && (
-                <div className="bg-red-500/20 border border-red-500/50 rounded p-3 text-red-400 text-sm break-all">
+                <div className="bg-color-down/10 border border-color-down/30 rounded-lg p-3 text-color-down text-xs break-all">
                   {txError}
                 </div>
               )}
 
               {isSuccess && (
-                <div className="bg-green-500/20 border border-green-500/50 rounded p-3 text-green-400 text-sm">
-                  <p className="font-bold">ITP Request Created!</p>
-                  <p className="text-xs mt-1">Waiting for issuer consensus...</p>
+                <div className="bg-color-up/10 border border-color-up/30 rounded-lg p-3 text-color-up text-xs">
+                  <p className="font-medium">ITP Request Created!</p>
+                  <p className="mt-1">Waiting for issuer consensus...</p>
                 </div>
               )}
             </div>
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+/* ── Skeleton ── */
+function Bone({ w = 'w-20', h = 'h-4' }: { w?: string; h?: string }) {
+  return <div className={`${w} ${h} bg-border-light rounded animate-pulse`} />
+}
+
+const SKELETON_SYMBOLS = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'ADA', 'DOGE', 'DOT', 'LINK', 'AVAX']
+
+function CreateSkeleton({ coinMap }: { coinMap: Record<string, CoinEntry> }) {
+  return (
+    <div className="space-y-4">
+      {/* Name + Symbol fields */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5">ITP Name (max 32)</p>
+          <div className="w-full h-[38px] bg-muted border border-border-medium rounded-lg animate-pulse" />
+        </div>
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5">Symbol (max 10)</p>
+          <div className="w-full h-[38px] bg-muted border border-border-medium rounded-lg animate-pulse" />
+        </div>
+      </div>
+
+      {/* Two-column: Select Assets | Configure Weights */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+        {/* LEFT — Select Assets */}
+        <div className="border border-border-light">
+          <div className="bg-black text-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.08em]">
+            Select Assets (0/100)
+          </div>
+          <div className="p-5">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-xs font-semibold text-text-muted">— available</span>
+              <div className="w-32 h-[30px] bg-card border border-border-medium rounded-lg animate-pulse" />
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {SKELETON_SYMBOLS.map(sym => (
+                <span key={sym} className="inline-flex items-center gap-1.5 bg-card text-text-primary border border-border-light rounded-lg px-2.5 py-1.5 text-xs opacity-50">
+                  <CoinLogo symbol={sym} coinMap={coinMap} size={18} />
+                  <span className="font-medium">{sym}</span>
+                </span>
+              ))}
+              {[0, 1, 2, 3, 4].map(i => (
+                <div key={i} className="h-[30px] bg-border-light rounded-lg animate-pulse" style={{ width: `${56 + (i % 3) * 12}px` }} />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT — Configure Weights */}
+        <div className="border border-border-light">
+          <div className="bg-black text-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.08em]">
+            Configure Weights
+          </div>
+          <div className="p-5">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-xs font-semibold text-text-muted">Total: —%</span>
+              <Bone w="w-28" h="h-6" />
+            </div>
+            <div className="space-y-1.5">
+              {SKELETON_SYMBOLS.slice(0, 5).map(sym => (
+                <div key={sym} className="flex items-center gap-2 bg-card rounded-lg px-2 py-1.5 border border-border-light opacity-50">
+                  <CoinLogo symbol={sym} coinMap={coinMap} size={18} />
+                  <span className="w-12 text-text-primary font-mono text-xs">{sym}</span>
+                  <div className="flex-1 h-1.5 bg-border-light rounded animate-pulse" />
+                  <Bone w="w-12" h="h-5" />
+                  <span className="text-text-muted text-xs">%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

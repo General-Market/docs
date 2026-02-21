@@ -8,7 +8,7 @@ import "../src/mocks/MockERC20.sol";
 import "../src/Governance.sol";
 import "../src/registry/IssuerRegistry.sol";
 import "../src/mocks/MockBitgetVault.sol";
-import "../src/core/Index.sol";
+import "../src/core/Investment.sol";
 import "../src/core/ITP.sol";
 import "../src/core/BLSCustody.sol";
 import "../src/registry/CollateralRegistry.sol";
@@ -137,8 +137,8 @@ contract DeployRebalanceE2E is DeployBLSHelper {
         Governance govImpl = new Governance();
         governance = address(new ERC1967Proxy(address(govImpl), abi.encodeWithSelector(Governance.initialize.selector, admin)));
 
-        address indexImpl = address(new Index());
-        bytes memory initData = abi.encodeWithSelector(Index.initialize.selector, governance, l3Wusdc);
+        address indexImpl = address(new Investment());
+        bytes memory initData = abi.encodeWithSelector(Investment.initialize.selector, governance, l3Wusdc);
         indexProxy = address(new ERC1967Proxy(indexImpl, initData));
         console.log("  Governance:", governance);
         console.log("  Index:", indexProxy);
@@ -183,7 +183,7 @@ contract DeployRebalanceE2E is DeployBLSHelper {
 
     function _wireContracts() internal {
         console.log("Phase 6: Wire Contracts");
-        Index(indexProxy).setIssuerRegistry(issuerRegistry);
+        Investment(indexProxy).setIssuerRegistry(issuerRegistry);
     }
 
     function _registerIssuers() internal {

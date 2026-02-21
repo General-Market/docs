@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../../src/core/Index.sol";
+import "../../src/core/Investment.sol";
 import "../../src/core/ITP.sol";
 import "../../src/custody/ArbBridgeCustody.sol";
 import "../../src/custody/L3BridgeCustody.sol";
@@ -29,7 +29,7 @@ contract E2ECrossChainBuyTest is TestHelper {
     // ============ CONTRACTS ============
 
     // L3 contracts
-    Index public index;
+    Investment public index;
     MockERC20 public l3Usdc;
     Governance public governance;
     ITP public itpVault;
@@ -83,12 +83,12 @@ contract E2ECrossChainBuyTest is TestHelper {
         registerTestIssuersWithBLS(mockRegistry, admin);
 
         // Deploy Index as UUPS proxy
-        Index impl = new Index();
+        Investment impl = new Investment();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(Index.initialize, (address(governance), address(l3Usdc)))
+            abi.encodeCall(Investment.initialize, (address(governance), address(l3Usdc)))
         );
-        index = Index(address(proxy));
+        index = Investment(address(proxy));
 
         // Wire IssuerRegistry to Index (required for BLS verification)
         index.setIssuerRegistry(address(mockRegistry));
@@ -759,7 +759,7 @@ contract E2ECrossChainBuyTest is TestHelper {
             bWeights[0] = 1e18;
             uint256[] memory bPrices = new uint256[](1);
             bPrices[0] = INITIAL_PRICE;
-            bridgeProx.requestCreateItp("Bridged XChain", "bXCHAIN", bWeights, bAssets, bPrices);
+            bridgeProx.requestCreateItp("Bridged XChain", "bXCHAIN", bWeights, bAssets, bPrices, IBridgeProxy.ItpMetadata("", "", ""));
         }
         // Complete creation with real BLS sig
         address bridgedItpAddr = bridgeProx.completeCreateItp(

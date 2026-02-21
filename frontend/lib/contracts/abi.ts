@@ -3,7 +3,7 @@
  */
 
 /**
- * AgiArenaCore contract ABI
+ * GeneralMarketCore contract ABI
  * Contract handles portfolio bets with off-chain JSON storage
  */
 export const agiArenaCoreAbi = [

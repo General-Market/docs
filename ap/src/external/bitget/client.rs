@@ -28,6 +28,8 @@ pub struct BitgetConfig {
 }
 
 impl BitgetConfig {
+    /// Bitget uses the same URL for testnet and mainnet; the environment is determined by API key scope.
+
     /// Testnet configuration
     pub fn testnet() -> Self {
         Self {

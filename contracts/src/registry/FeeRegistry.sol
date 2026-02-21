@@ -114,7 +114,9 @@ contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable, BLSVerifie
     /// @notice DEPRECATED: was blsLibrary, slot preserved for UUPS layout
     address private _deprecated_blsLibrary;
 
-    /// @notice Replay protection nonce
+    /// @dev Replay-protection nonce. Domain-separated by including the function name
+    /// string in each signed payload (e.g. "setFees", "setGlobalFee"), so nonces from
+    /// one function cannot be replayed against another.
     uint256 private _nonce;
 
     /// @notice Admin address
@@ -147,7 +149,7 @@ contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable, BLSVerifie
         _;
     }
 
-    /// @notice Restricts function to authorized callers (includes Index.sol for ITP registration)
+    /// @notice Restricts function to authorized callers (includes Investment.sol for ITP registration)
     modifier onlyAuthorized() {
         if (!authorizedCallers[msg.sender]) revert Unauthorized();
         _;
@@ -363,7 +365,7 @@ contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable, BLSVerifie
     }
 
     /// @inheritdoc IFeeRegistry
-    /// @dev Callable by authorized callers (including Index.sol) to register deployers when ITPs are created
+    /// @dev Callable by authorized callers (including Investment.sol) to register deployers when ITPs are created
     function registerITPDeployer(bytes32 itpId, address deployer) external override onlyAuthorized {
         if (deployer == address(0)) revert ZeroAddress();
         _itpDeployers[itpId] = deployer;

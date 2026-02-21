@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const BACKEND_URL = "https://63.179.141.230";
+const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3001";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -33,6 +33,18 @@ const nextConfig: NextConfig = {
           {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
+          },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          {
+            key: "X-XSS-Protection",
+            value: "1; mode=block",
+          },
+          {
+            key: "Content-Security-Policy",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://index.rpc.zeeve.net wss://relay.walletconnect.com https://*.walletconnect.com; frame-ancestors 'none'",
           },
         ],
       },

@@ -47,44 +47,44 @@ export function CostBasisCard({ itpId }: CostBasisCardProps) {
   const fmtUsd = (val: bigint) => `$${fmt(val)}`
 
   return (
-    <div className="bg-terminal-dark border border-white/10 rounded-lg p-4 space-y-3">
-      <h4 className="text-sm font-bold text-white">Your Position</h4>
+    <div className="bg-card rounded-xl shadow-card border border-border-light p-4 space-y-3">
+      <h4 className="text-xs font-medium uppercase tracking-wider text-text-muted">Your Position</h4>
 
       <div className="space-y-1 text-xs font-mono">
         <div className="flex justify-between">
-          <span className="text-white/50">Shares</span>
-          <span className="text-white">{parseFloat(formatUnits(shares, 18)).toFixed(4)}</span>
+          <span className="text-text-muted">Shares</span>
+          <span className="text-text-primary tabular-nums">{parseFloat(formatUnits(shares, 18)).toFixed(4)}</span>
         </div>
         {avgCost > 0n && (
           <div className="flex justify-between">
-            <span className="text-white/50">Avg Cost</span>
-            <span className="text-white">{fmtUsd(avgCost)}/share</span>
+            <span className="text-text-muted">Avg Cost</span>
+            <span className="text-text-primary tabular-nums">{fmtUsd(avgCost)}/share</span>
           </div>
         )}
         {totalCost > 0n && (
           <div className="flex justify-between">
-            <span className="text-white/50">Total Cost</span>
-            <span className="text-white">{fmtUsd(totalCost)}</span>
+            <span className="text-text-muted">Total Cost</span>
+            <span className="text-text-primary tabular-nums">{fmtUsd(totalCost)}</span>
           </div>
         )}
         {currentValue > 0n && (
           <div className="flex justify-between">
-            <span className="text-white/50">Current Value</span>
-            <span className="text-white">{fmtUsd(currentValue)}</span>
+            <span className="text-text-muted">Current Value</span>
+            <span className="text-text-primary tabular-nums">{fmtUsd(currentValue)}</span>
           </div>
         )}
         {remainingCostBasis > 0n && (
           <div className="flex justify-between">
-            <span className="text-white/50">Unrealized P&L</span>
-            <span className={unrealizedPnL >= 0n ? 'text-green-400' : 'text-red-400'}>
+            <span className="text-text-muted">Unrealized P&amp;L</span>
+            <span className={unrealizedPnL >= 0n ? 'text-color-up' : 'text-color-down'}>
               {unrealizedPnL >= 0n ? '+' : ''}{fmtUsd(unrealizedPnL)} ({unrealizedPnLPct >= 0 ? '+' : ''}{unrealizedPnLPct.toFixed(1)}%)
             </span>
           </div>
         )}
         {realizedPnL !== 0n && (
           <div className="flex justify-between">
-            <span className="text-white/50">Realized P&L</span>
-            <span className={realizedPnL >= 0n ? 'text-green-400' : 'text-red-400'}>
+            <span className="text-text-muted">Realized P&amp;L</span>
+            <span className={realizedPnL >= 0n ? 'text-color-up' : 'text-color-down'}>
               {realizedPnL >= 0n ? '+' : ''}{fmtUsd(realizedPnL)}
             </span>
           </div>
@@ -93,36 +93,36 @@ export function CostBasisCard({ itpId }: CostBasisCardProps) {
 
       {fees && (
         <>
-          <div className="border-t border-white/10 pt-2">
-            <p className="text-xs font-bold text-white/70 mb-1">Fees Paid</p>
+          <div className="border-t border-border-light pt-2">
+            <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1">Fees Paid</p>
             <div className="space-y-1 text-xs font-mono">
               {fees.tradingFees > 0n && (
                 <div className="flex justify-between">
-                  <span className="text-white/50">Trading</span>
-                  <span className="text-white/70">{fmtUsd(fees.tradingFees)}</span>
+                  <span className="text-text-muted">Trading</span>
+                  <span className="text-text-secondary tabular-nums">{fmtUsd(fees.tradingFees)}</span>
                 </div>
               )}
               {fees.managementFees > 0n && (
                 <div className="flex justify-between">
-                  <span className="text-white/50">Management</span>
-                  <span className="text-white/70">{fmtUsd(fees.managementFees)}</span>
+                  <span className="text-text-muted">Management</span>
+                  <span className="text-text-secondary tabular-nums">{fmtUsd(fees.managementFees)}</span>
                 </div>
               )}
               {fees.bridgeFees > 0n && (
                 <div className="flex justify-between">
-                  <span className="text-white/50">Bridge</span>
-                  <span className="text-white/70">{fmtUsd(fees.bridgeFees)}</span>
+                  <span className="text-text-muted">Bridge</span>
+                  <span className="text-text-secondary tabular-nums">{fmtUsd(fees.bridgeFees)}</span>
                 </div>
               )}
               {fees.gasFees > 0n && (
                 <div className="flex justify-between">
-                  <span className="text-white/50">Gas</span>
-                  <span className="text-white/70">{fmtUsd(fees.gasFees)}</span>
+                  <span className="text-text-muted">Gas</span>
+                  <span className="text-text-secondary tabular-nums">{fmtUsd(fees.gasFees)}</span>
                 </div>
               )}
-              <div className="flex justify-between pt-1 border-t border-white/5">
-                <span className="text-white/50">Total Fees</span>
-                <span className="text-white">{fmtUsd(fees.totalFees)}</span>
+              <div className="flex justify-between pt-1 border-t border-border-light">
+                <span className="text-text-muted">Total Fees</span>
+                <span className="text-text-primary tabular-nums">{fmtUsd(fees.totalFees)}</span>
               </div>
             </div>
           </div>
@@ -130,7 +130,7 @@ export function CostBasisCard({ itpId }: CostBasisCardProps) {
       )}
 
       {isCostLoading && (
-        <p className="text-xs text-white/30 text-center">Loading cost data...</p>
+        <p className="text-xs text-text-muted text-center">Loading cost data...</p>
       )}
     </div>
   )

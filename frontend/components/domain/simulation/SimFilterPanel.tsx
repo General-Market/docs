@@ -18,7 +18,41 @@ const THRESHOLD_OPTIONS = [
   { value: 10 as number | null, label: '10%' },
   { value: 15 as number | null, label: '15%' },
 ]
-const SWEEP_OPTIONS = ['none', 'top_n', 'weighting', 'rebalance', 'category'] as const
+const SWEEP_OPTIONS = ['none', 'top_n', 'weighting', 'rebalance', 'category', 'defi_weight', 'fng_regime', 'dom_regime'] as const
+
+const SWEEP_LABELS: Record<string, string> = {
+  none: 'None', top_n: 'Top N', weighting: 'Weight', rebalance: 'Rebalance',
+  category: 'Category', defi_weight: 'DeFi Wt', fng_regime: 'FNG', dom_regime: 'DOM',
+}
+
+const FNG_MODES = [
+  { value: '', label: 'Off' },
+  { value: 'contrarian', label: 'Contrarian' },
+  { value: 'risk_toggle', label: 'Risk Toggle' },
+  { value: 'cash_shift', label: 'Cash Shift' },
+] as const
+
+const DOM_MODES = [
+  { value: '', label: 'Off' },
+  { value: 'alts_when_low', label: 'Alts Low' },
+  { value: 'alts_when_falling', label: 'Alts Falling' },
+  { value: 'btc_when_high', label: 'BTC High' },
+] as const
+
+const DOM_LOOKBACK_OPTIONS = [
+  { value: 14, label: '14d' },
+  { value: 30, label: '30d' },
+  { value: 60, label: '60d' },
+  { value: 90, label: '90d' },
+]
+
+const VC_MODES = [
+  { value: '', label: 'Off' },
+  { value: 'funding', label: 'Funding' },
+  { value: 'valuation', label: 'Valuation' },
+  { value: 'fresh_12', label: 'Fresh 12m' },
+  { value: 'fresh_6', label: 'Fresh 6m' },
+] as const
 
 // Strategy families with their sub-parameters
 interface StrategyFamily {
@@ -28,36 +62,52 @@ interface StrategyFamily {
   prefix: string               // used to build weighting string: prefix + param
   params: { value: number; label: string }[] | null  // null = no sub-params
   defaultParam: number | null
+  group?: 'price' | 'defi'
 }
 
 const STRATEGY_FAMILIES: StrategyFamily[] = [
-  { id: 'equal', label: 'Equal', title: 'Equal weight across all holdings', prefix: '', params: null, defaultParam: null },
-  { id: 'mcap', label: 'MCap', title: 'Weight by market capitalization', prefix: '', params: null, defaultParam: null },
+  // Price-based strategies
+  { id: 'equal', label: 'Equal', title: 'Equal weight across all holdings', prefix: '', params: null, defaultParam: null, group: 'price' },
+  { id: 'mcap', label: 'MCap', title: 'Weight by market capitalization', prefix: '', params: null, defaultParam: null, group: 'price' },
   { id: 'mcap_cap', label: 'Capped', title: 'MCap-weighted with max % cap per holding', prefix: 'mcap_cap', params: [
     { value: 5, label: '5%' }, { value: 10, label: '10%' }, { value: 15, label: '15%' }, { value: 25, label: '25%' }, { value: 50, label: '50%' },
-  ], defaultParam: 10 },
-  { id: 'sqrt_mcap', label: 'SqrtMCap', title: 'Square root of MCap: dampened concentration', prefix: '', params: null, defaultParam: null },
+  ], defaultParam: 10, group: 'price' },
+  { id: 'sqrt_mcap', label: 'SqrtMCap', title: 'Square root of MCap: dampened concentration', prefix: '', params: null, defaultParam: null, group: 'price' },
   { id: 'momentum', label: 'Momentum', title: 'Weight by trailing return — winners get more', prefix: 'momentum_', params: [
     { value: 30, label: '30d' }, { value: 60, label: '60d' }, { value: 90, label: '90d' }, { value: 180, label: '180d' }, { value: 365, label: '1y' },
-  ], defaultParam: 90 },
+  ], defaultParam: 90, group: 'price' },
   { id: 'invvol', label: 'InvVol', title: 'Inverse Volatility: less volatile = higher weight', prefix: 'invvol_', params: [
     { value: 30, label: '30d' }, { value: 60, label: '60d' }, { value: 90, label: '90d' },
-  ], defaultParam: 60 },
+  ], defaultParam: 60, group: 'price' },
   { id: 'dual_mom', label: 'DualMom', title: 'Dual Momentum: go to cash when market is down', prefix: 'dual_mom_', params: [
     { value: 90, label: '90d' }, { value: 180, label: '180d' }, { value: 365, label: '1y' },
-  ], defaultParam: 180 },
+  ], defaultParam: 180, group: 'price' },
   { id: 'risk_parity', label: 'RiskPar', title: 'Risk Parity: equal risk contribution per asset', prefix: 'risk_parity_', params: [
     { value: 30, label: '30d' }, { value: 60, label: '60d' }, { value: 90, label: '90d' },
-  ], defaultParam: 60 },
+  ], defaultParam: 60, group: 'price' },
   { id: 'min_var', label: 'MinVar', title: 'Minimum Variance: minimize portfolio volatility', prefix: 'min_var_', params: [
     { value: 30, label: '30d' }, { value: 60, label: '60d' }, { value: 90, label: '90d' },
-  ], defaultParam: 60 },
+  ], defaultParam: 60, group: 'price' },
   { id: 'multi_factor', label: 'MultiFac', title: 'Multi-Factor: momentum + low vol + MCap composite', prefix: 'multi_factor_', params: [
     { value: 60, label: '60d' }, { value: 90, label: '90d' }, { value: 180, label: '180d' },
-  ], defaultParam: 90 },
+  ], defaultParam: 90, group: 'price' },
   { id: 'low_vol', label: 'LowVol', title: 'Low Volatility: keep least volatile half, equal weight', prefix: 'low_vol_', params: [
     { value: 30, label: '30d' }, { value: 60, label: '60d' }, { value: 90, label: '90d' },
-  ], defaultParam: 60 },
+  ], defaultParam: 60, group: 'price' },
+  // DeFi strategies
+  { id: 'tvl', label: 'TVL', title: 'Weight by Total Value Locked', prefix: '', params: null, defaultParam: null, group: 'defi' },
+  { id: 'tvl_cap', label: 'TVL Cap', title: 'TVL-weighted with max % cap per holding', prefix: 'tvl_cap', params: [
+    { value: 5, label: '5%' }, { value: 10, label: '10%' }, { value: 15, label: '15%' }, { value: 25, label: '25%' }, { value: 50, label: '50%' },
+  ], defaultParam: 10, group: 'defi' },
+  { id: 'tvl_sqrt', label: 'TVL Sqrt', title: 'Square root of TVL: dampened concentration', prefix: '', params: null, defaultParam: null, group: 'defi' },
+  { id: 'fees_w', label: 'Fees', title: 'Weight by protocol fees generated', prefix: '', params: null, defaultParam: null, group: 'defi' },
+  { id: 'revenue_w', label: 'Revenue', title: 'Weight by protocol revenue', prefix: '', params: null, defaultParam: null, group: 'defi' },
+  { id: 'volume_w', label: 'Volume', title: 'Weight by trading volume', prefix: '', params: null, defaultParam: null, group: 'defi' },
+  { id: 'tvl_mom', label: 'TVL Mom', title: 'TVL Momentum: weight by TVL growth rate', prefix: 'tvl_mom_', params: [
+    { value: 30, label: '30d' }, { value: 60, label: '60d' }, { value: 90, label: '90d' },
+  ], defaultParam: 60, group: 'defi' },
+  { id: 'fee_eff', label: 'Fee Eff', title: 'Fee Efficiency: fees relative to TVL', prefix: '', params: null, defaultParam: null, group: 'defi' },
+  { id: 'yield_w', label: 'Yield', title: 'Weight by protocol yield', prefix: '', params: null, defaultParam: null, group: 'defi' },
 ]
 
 // Date helpers for start date presets
@@ -105,6 +155,19 @@ export interface SimFilterState {
   sweep_categories: string[]
   threshold_pct: number | null
   start_date: string  // YYYY-MM-DD or '' for auto
+  // FNG regime overlay
+  fng_mode: string       // '' | 'contrarian' | 'risk_toggle' | 'cash_shift'
+  fng_fear: number       // 25
+  fng_greed: number      // 75
+  fng_cash_pct: number   // 0.5
+  // BTC Dominance regime overlay
+  dom_mode: string       // '' | 'alts_when_low' | 'alts_when_falling' | 'btc_when_high'
+  dom_lookback: number   // 30
+  // VC overlay
+  vc_mode: string           // '' | 'funding' | 'valuation' | 'fresh_12' | 'fresh_6'
+  vc_investors: string      // ''
+  vc_min_amount_m: number   // 0
+  vc_round_types: string    // ''
 }
 
 interface SimFilterPanelProps {
@@ -158,18 +221,18 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
     : categories
 
   return (
-    <div className="bg-black border border-white/10 rounded p-4 mb-4 space-y-3">
+    <div className="space-y-2.5 p-4">
       {/* Row 1: Category + Top N */}
-      <div className="flex flex-wrap gap-3 items-center">
+      <div className="flex flex-wrap gap-4 items-center">
         <div className="flex-1 min-w-[200px]">
-          <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">
+          <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">
             {isCategorySweep ? 'Categories (select 2+)' : 'Category'}
           </label>
 
           {isCategorySweep ? (
             <div className="relative">
               <button
-                className="w-full bg-white/5 border border-accent/30 rounded px-2 py-1.5 text-xs font-mono text-accent text-left"
+                className="w-full bg-muted border border-border-light rounded-lg px-3 py-2 text-sm text-text-primary text-left hover:border-border-medium transition-colors"
                 onClick={() => setCatSearchOpen(!catSearchOpen)}
               >
                 {filters.sweep_categories.length === 0
@@ -178,10 +241,10 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                 }
               </button>
               {catSearchOpen && (
-                <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-black border border-white/20 rounded max-h-60 overflow-y-auto">
+                <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-border-medium rounded-lg shadow-card-hover max-h-60 overflow-y-auto">
                   <input
                     type="text"
-                    className="w-full bg-white/5 border-b border-white/10 px-2 py-1.5 text-xs font-mono text-white outline-none"
+                    className="w-full border-b border-border-light px-3 py-2 text-sm text-text-primary outline-none placeholder:text-text-muted"
                     placeholder="Search categories..."
                     value={catSearch}
                     onChange={e => setCatSearch(e.target.value)}
@@ -190,18 +253,18 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                   {filteredCategories.map(c => (
                     <label
                       key={c.id}
-                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-white/5 cursor-pointer"
+                      className="flex items-center gap-2 px-3 py-2 hover:bg-muted cursor-pointer transition-colors"
                     >
                       <input
                         type="checkbox"
-                        className="accent-[#C40000]"
+                        className="accent-zinc-900"
                         checked={filters.sweep_categories.includes(c.id)}
                         onChange={() => toggleSweepCategory(c.id)}
                       />
-                      <span className="text-xs font-mono text-white truncate">
+                      <span className="text-sm text-text-primary truncate">
                         {c.name}
                       </span>
-                      <span className="text-[10px] font-mono text-white/30 ml-auto">
+                      <span className="text-xs text-text-muted ml-auto">
                         {c.coin_count}
                       </span>
                     </label>
@@ -209,17 +272,17 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                 </div>
               )}
               {filters.sweep_categories.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-1">
+                <div className="flex flex-wrap gap-1.5 mt-2">
                   {filters.sweep_categories.map(catId => {
                     const cat = categories.find(c => c.id === catId)
                     return (
                       <span
                         key={catId}
-                        className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-accent/20 border border-accent/30 rounded text-[10px] font-mono text-accent"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-muted border border-border-light rounded-md text-xs text-text-secondary"
                       >
                         {cat?.name || catId}
                         <button
-                          className="hover:text-white"
+                          className="hover:text-text-primary transition-colors"
                           onClick={() => toggleSweepCategory(catId)}
                         >
                           x
@@ -232,7 +295,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
             </div>
           ) : (
             <select
-              className="w-full bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs font-mono text-white cursor-pointer"
+              className="w-full bg-muted border border-border-light rounded-lg px-3 py-2 text-sm text-text-primary cursor-pointer hover:border-border-medium transition-colors"
               value={filters.category_id}
               onChange={e => update({ category_id: e.target.value })}
               disabled={catsLoading}
@@ -247,17 +310,17 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           )}
         </div>
         <div>
-          <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Top N</label>
+          <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Top N</label>
           <div className="flex">
             {TOP_N_OPTIONS.map(n => (
               <button
                 key={n}
-                className={`px-2 py-1 text-xs font-mono border border-white/10 first:rounded-l last:rounded-r -ml-px first:ml-0 transition-colors ${
+                className={`px-2.5 py-1.5 text-xs border border-border-light first:rounded-l-lg last:rounded-r-lg -ml-px first:ml-0 transition-colors ${
                   sweepDim === 'top_n'
-                    ? 'bg-accent/20 text-accent border-accent/30'
+                    ? 'bg-muted text-text-muted border-border-light'
                     : filters.top_n === n
-                      ? 'bg-white/20 text-white'
-                      : 'bg-white/5 text-white/50 hover:bg-white/10'
+                      ? 'bg-zinc-900 text-white border-zinc-900'
+                      : 'bg-white text-text-secondary hover:bg-muted'
                 }`}
                 onClick={() => { if (sweepDim !== 'top_n') update({ top_n: n }) }}
                 disabled={sweepDim === 'top_n'}
@@ -271,21 +334,40 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
 
       {/* Row 2: Strategy family buttons */}
       <div>
-        <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Weighting Strategy</label>
-        <div className="flex flex-wrap gap-0.5">
-          {STRATEGY_FAMILIES.map(fam => (
+        <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Weighting Strategy</label>
+        <div className="flex flex-wrap gap-1 items-center">
+          {STRATEGY_FAMILIES.filter(f => f.group === 'price').map(fam => (
             <button
               key={fam.id}
               title={fam.title}
-              className={`px-2 py-1 text-[10px] font-mono border border-white/10 rounded transition-colors ${
-                sweepDim === 'weighting'
-                  ? 'bg-accent/20 text-accent border-accent/30'
+              className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
+                sweepDim === 'weighting' || sweepDim === 'defi_weight'
+                  ? 'bg-muted text-text-muted border-border-light'
                   : activeFamily === fam.id
-                    ? 'bg-white/20 text-white border-white/30'
-                    : 'bg-white/5 text-white/50 hover:bg-white/10'
+                    ? 'bg-zinc-900 text-white border-zinc-900'
+                    : 'bg-white text-text-secondary border-border-light hover:bg-muted'
               }`}
               onClick={() => selectFamily(fam)}
-              disabled={sweepDim === 'weighting'}
+              disabled={sweepDim === 'weighting' || sweepDim === 'defi_weight'}
+            >
+              {fam.label}
+            </button>
+          ))}
+          <span className="text-xs text-text-muted px-1">|</span>
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">DeFi</span>
+          {STRATEGY_FAMILIES.filter(f => f.group === 'defi').map(fam => (
+            <button
+              key={fam.id}
+              title={fam.title}
+              className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
+                sweepDim === 'weighting' || sweepDim === 'defi_weight'
+                  ? 'bg-muted text-text-muted border-border-light'
+                  : activeFamily === fam.id
+                    ? 'bg-zinc-900 text-white border-zinc-900'
+                    : 'bg-white text-text-secondary border-border-light hover:bg-muted'
+              }`}
+              onClick={() => selectFamily(fam)}
+              disabled={sweepDim === 'weighting' || sweepDim === 'defi_weight'}
             >
               {fam.label}
             </button>
@@ -295,22 +377,22 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
 
       {/* Row 2b: Sub-parameter picker (only when active family has params, and not sweep=weighting) */}
       {activeFamilyDef?.params && sweepDim !== 'weighting' && (
-        <div className="flex items-center gap-2 pl-2 border-l-2 border-white/10">
-          <span className="text-[10px] text-white/30 font-mono">
+        <div className="flex items-center gap-2 pl-3 border-l-2 border-border-light">
+          <span className="text-xs text-text-muted">
             {activeFamily === 'mcap_cap' ? 'Max cap' : 'Lookback'}
           </span>
           <div className="flex">
             {activeFamilyDef.params.map((p, i) => (
               <button
                 key={p.value}
-                className={`px-2 py-0.5 text-[10px] font-mono border border-white/10 -ml-px transition-colors ${
-                  i === 0 ? 'rounded-l ml-0' : ''
+                className={`px-2.5 py-1 text-xs border border-border-light -ml-px transition-colors ${
+                  i === 0 ? 'rounded-l-lg ml-0' : ''
                 } ${
-                  i === (activeFamilyDef.params?.length ?? 0) - 1 ? 'rounded-r' : ''
+                  i === (activeFamilyDef.params?.length ?? 0) - 1 ? 'rounded-r-lg' : ''
                 } ${
                   activeParam === p.value
-                    ? 'bg-white/20 text-white'
-                    : 'bg-white/5 text-white/40 hover:bg-white/10'
+                    ? 'bg-zinc-900 text-white border-zinc-900'
+                    : 'bg-white text-text-muted hover:bg-muted'
                 }`}
                 onClick={() => selectParam(p.value)}
               >
@@ -323,16 +405,16 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
 
       {/* Row 3: Rebalance family */}
       <div>
-        <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Rebalance</label>
-        <div className="flex gap-0.5">
+        <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Rebalance</label>
+        <div className="flex gap-1">
           <button
             title="Rebalance at fixed time intervals"
-            className={`px-2 py-1 text-[10px] font-mono border border-white/10 rounded transition-colors ${
+            className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
               sweepDim === 'rebalance'
-                ? 'bg-accent/20 text-accent border-accent/30'
+                ? 'bg-muted text-text-muted border-border-light'
                 : filters.threshold_pct == null
-                  ? 'bg-white/20 text-white border-white/30'
-                  : 'bg-white/5 text-white/50 hover:bg-white/10'
+                  ? 'bg-zinc-900 text-white border-zinc-900'
+                  : 'bg-white text-text-secondary border-border-light hover:bg-muted'
             }`}
             onClick={() => { if (sweepDim !== 'rebalance') update({ threshold_pct: null, rebalance_days: filters.rebalance_days }) }}
             disabled={sweepDim === 'rebalance'}
@@ -341,12 +423,12 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           </button>
           <button
             title="Rebalance when any holding drifts past a threshold"
-            className={`px-2 py-1 text-[10px] font-mono border border-white/10 rounded transition-colors ${
+            className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
               sweepDim === 'rebalance'
-                ? 'bg-accent/20 text-accent border-accent/30'
+                ? 'bg-muted text-text-muted border-border-light'
                 : filters.threshold_pct != null
-                  ? 'bg-white/20 text-white border-white/30'
-                  : 'bg-white/5 text-white/50 hover:bg-white/10'
+                  ? 'bg-zinc-900 text-white border-zinc-900'
+                  : 'bg-white text-text-secondary border-border-light hover:bg-muted'
             }`}
             onClick={() => { if (sweepDim !== 'rebalance') update({ threshold_pct: filters.threshold_pct ?? 5 }) }}
             disabled={sweepDim === 'rebalance'}
@@ -358,8 +440,8 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
 
       {/* Row 3b: Rebalance sub-parameter */}
       {sweepDim !== 'rebalance' && (
-        <div className="flex items-center gap-2 pl-2 border-l-2 border-white/10">
-          <span className="text-[10px] text-white/30 font-mono">
+        <div className="flex items-center gap-2 pl-3 border-l-2 border-border-light">
+          <span className="text-xs text-text-muted">
             {filters.threshold_pct == null ? 'Interval' : 'Threshold'}
           </span>
           <div className="flex">
@@ -368,14 +450,14 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                 <button
                   key={r.value}
                   title={`Rebalance every ${r.label}`}
-                  className={`px-2 py-0.5 text-[10px] font-mono border border-white/10 -ml-px transition-colors ${
-                    i === 0 ? 'rounded-l ml-0' : ''
+                  className={`px-2.5 py-1 text-xs border border-border-light -ml-px transition-colors ${
+                    i === 0 ? 'rounded-l-lg ml-0' : ''
                   } ${
-                    i === REBALANCE_OPTIONS.length - 1 ? 'rounded-r' : ''
+                    i === REBALANCE_OPTIONS.length - 1 ? 'rounded-r-lg' : ''
                   } ${
                     filters.rebalance_days === r.value
-                      ? 'bg-white/20 text-white'
-                      : 'bg-white/5 text-white/40 hover:bg-white/10'
+                      ? 'bg-zinc-900 text-white border-zinc-900'
+                      : 'bg-white text-text-muted hover:bg-muted'
                   }`}
                   onClick={() => update({ rebalance_days: r.value })}
                 >
@@ -387,14 +469,14 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                 <button
                   key={t.label}
                   title={`Rebalance when any holding drifts ${t.label} from target`}
-                  className={`px-2 py-0.5 text-[10px] font-mono border border-white/10 -ml-px transition-colors ${
-                    i === 0 ? 'rounded-l ml-0' : ''
+                  className={`px-2.5 py-1 text-xs border border-border-light -ml-px transition-colors ${
+                    i === 0 ? 'rounded-l-lg ml-0' : ''
                   } ${
-                    i === arr.length - 1 ? 'rounded-r' : ''
+                    i === arr.length - 1 ? 'rounded-r-lg' : ''
                   } ${
                     filters.threshold_pct === t.value
-                      ? 'bg-white/20 text-white'
-                      : 'bg-white/5 text-white/40 hover:bg-white/10'
+                      ? 'bg-zinc-900 text-white border-zinc-900'
+                      : 'bg-white text-text-muted hover:bg-muted'
                   }`}
                   onClick={() => update({ threshold_pct: t.value })}
                 >
@@ -407,34 +489,34 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
       )}
 
       {/* Row 4: Fees + Start Date */}
-      <div className="flex flex-wrap gap-3 items-center">
+      <div className="flex flex-wrap gap-4 items-center">
         <div>
-          <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Base Fee %</label>
+          <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Base Fee %</label>
           <input
             type="number"
             step="0.01"
             min="0"
             max="5"
-            className="w-20 bg-white/5 border border-white/10 rounded px-2 py-1 text-xs font-mono text-white"
+            className="w-20 bg-muted border border-border-light rounded-lg px-3 py-1.5 text-sm text-text-primary tabular-nums font-mono"
             value={filters.base_fee_pct}
             onChange={e => update({ base_fee_pct: parseFloat(e.target.value) || 0 })}
           />
         </div>
         <div>
-          <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Spread Mult.</label>
+          <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Spread Mult.</label>
           <input
             type="number"
             step="0.1"
             min="0"
             max="10"
-            className="w-20 bg-white/5 border border-white/10 rounded px-2 py-1 text-xs font-mono text-white"
+            className="w-20 bg-muted border border-border-light rounded-lg px-3 py-1.5 text-sm text-text-primary tabular-nums font-mono"
             value={filters.spread_multiplier}
             onChange={e => update({ spread_multiplier: parseFloat(e.target.value) || 0 })}
           />
-          <span className="text-[10px] text-white/30 font-mono ml-1">x</span>
+          <span className="text-xs text-text-muted ml-1">x</span>
         </div>
         <div>
-          <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Start From</label>
+          <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Start From</label>
           <div className="flex items-center gap-1">
             {[
               { label: 'All', value: '' },
@@ -444,10 +526,10 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
             ].map(opt => (
               <button
                 key={opt.label}
-                className={`px-2 py-0.5 text-[10px] font-mono border border-white/10 rounded transition-colors ${
+                className={`px-2.5 py-1 text-xs border border-border-light rounded-lg transition-colors ${
                   filters.start_date === opt.value
-                    ? 'bg-white/20 text-white'
-                    : 'bg-white/5 text-white/40 hover:bg-white/10'
+                    ? 'bg-zinc-900 text-white border-zinc-900'
+                    : 'bg-white text-text-muted hover:bg-muted'
                 }`}
                 onClick={() => update({ start_date: opt.value })}
               >
@@ -456,10 +538,10 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
             ))}
             <input
               type="date"
-              className={`bg-white/5 border rounded px-2 py-1 text-xs font-mono text-white [color-scheme:dark] w-[130px] ${
+              className={`bg-muted border rounded-lg px-3 py-1.5 text-sm text-text-primary w-[130px] ${
                 filters.start_date && !['', fiveYearsAgo(), threeYearsAgo(), oneYearAgo()].includes(filters.start_date)
-                  ? 'border-white/30 bg-white/10'
-                  : 'border-white/10'
+                  ? 'border-border-medium bg-white'
+                  : 'border-border-light'
               }`}
               value={filters.start_date}
               onChange={e => update({ start_date: e.target.value })}
@@ -469,31 +551,204 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
         </div>
       </div>
 
-      {/* Row 5: Sweep + Run */}
-      <div className="flex flex-wrap gap-3 items-center justify-between">
+      {/* Row 5: Regime Overlays */}
+      <div className="border border-border-light rounded-xl overflow-hidden">
+        <button
+          className="w-full flex items-center justify-between px-4 py-2.5 bg-muted hover:bg-border-light transition-colors"
+          onClick={() => update({} as Partial<SimFilterState>)} // no-op, toggle via local state
+          type="button"
+        >
+          <span className="text-xs font-medium uppercase tracking-widest text-text-muted">Regime Overlays</span>
+          <span className="text-xs text-text-muted">
+            {filters.fng_mode || filters.dom_mode ? 'Active' : 'Off'}
+          </span>
+        </button>
+        <div className="p-4 space-y-4">
+          {/* FNG Regime */}
+          <div>
+            <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Fear & Greed</label>
+            <div className="flex flex-wrap gap-1">
+              {FNG_MODES.map(m => (
+                <button
+                  key={m.value}
+                  className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
+                    filters.fng_mode === m.value
+                      ? m.value === '' ? 'bg-white text-text-secondary border-border-light' : 'bg-zinc-900 text-white border-zinc-900'
+                      : 'bg-white text-text-secondary border-border-light hover:bg-muted'
+                  }`}
+                  onClick={() => update({ fng_mode: m.value })}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            {filters.fng_mode && (
+              <div className="flex flex-wrap gap-4 mt-2 pl-3 border-l-2 border-border-light">
+                <div>
+                  <span className="text-xs text-text-muted block mb-1">Fear &le; {filters.fng_fear}</span>
+                  <input
+                    type="range" min={10} max={40} step={1}
+                    className="w-28 accent-zinc-900"
+                    value={filters.fng_fear}
+                    onChange={e => update({ fng_fear: parseInt(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <span className="text-xs text-text-muted block mb-1">Greed &ge; {filters.fng_greed}</span>
+                  <input
+                    type="range" min={60} max={90} step={1}
+                    className="w-28 accent-zinc-900"
+                    value={filters.fng_greed}
+                    onChange={e => update({ fng_greed: parseInt(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <span className="text-xs text-text-muted block mb-1">Cash %</span>
+                  <input
+                    type="number" step="0.05" min="0" max="1"
+                    className="w-16 bg-muted border border-border-light rounded-lg px-2 py-1 text-xs text-text-primary tabular-nums font-mono"
+                    value={filters.fng_cash_pct}
+                    onChange={e => update({ fng_cash_pct: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* BTC Dominance Regime */}
+          <div>
+            <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">BTC Dominance</label>
+            <div className="flex flex-wrap gap-1">
+              {DOM_MODES.map(m => (
+                <button
+                  key={m.value}
+                  className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
+                    filters.dom_mode === m.value
+                      ? m.value === '' ? 'bg-white text-text-secondary border-border-light' : 'bg-zinc-900 text-white border-zinc-900'
+                      : 'bg-white text-text-secondary border-border-light hover:bg-muted'
+                  }`}
+                  onClick={() => update({ dom_mode: m.value })}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            {filters.dom_mode && (
+              <div className="flex items-center gap-2 mt-2 pl-3 border-l-2 border-border-light">
+                <span className="text-xs text-text-muted">Lookback</span>
+                <div className="flex">
+                  {DOM_LOOKBACK_OPTIONS.map((opt, i) => (
+                    <button
+                      key={opt.value}
+                      className={`px-2.5 py-1 text-xs border border-border-light -ml-px transition-colors ${
+                        i === 0 ? 'rounded-l-lg ml-0' : ''
+                      } ${
+                        i === DOM_LOOKBACK_OPTIONS.length - 1 ? 'rounded-r-lg' : ''
+                      } ${
+                        filters.dom_lookback === opt.value
+                          ? 'bg-zinc-900 text-white border-zinc-900'
+                          : 'bg-white text-text-muted hover:bg-muted'
+                      }`}
+                      onClick={() => update({ dom_lookback: opt.value })}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Row 6: VC Overlay */}
+      <div className="border border-border-light rounded-xl overflow-hidden">
+        <button
+          className="w-full flex items-center justify-between px-4 py-2.5 bg-muted hover:bg-border-light transition-colors"
+          type="button"
+        >
+          <span className="text-xs font-medium uppercase tracking-widest text-text-muted">VC Overlay</span>
+          <span className="text-xs text-text-muted">
+            {filters.vc_mode ? 'Active' : 'Off'}
+          </span>
+        </button>
+        <div className="p-4 space-y-3">
+          <div className="flex flex-wrap gap-1">
+            {VC_MODES.map(m => (
+              <button
+                key={m.value}
+                className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
+                  filters.vc_mode === m.value
+                    ? m.value === '' ? 'bg-white text-text-secondary border-border-light' : 'bg-zinc-900 text-white border-zinc-900'
+                    : 'bg-white text-text-secondary border-border-light hover:bg-muted'
+                }`}
+                onClick={() => update({ vc_mode: m.value })}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+          {filters.vc_mode && (
+            <div className="flex flex-wrap gap-4 pl-3 border-l-2 border-border-light">
+              <div>
+                <span className="text-xs text-text-muted block mb-1">Min Funding ($M)</span>
+                <input
+                  type="number" step="1" min="0"
+                  className="w-20 bg-muted border border-border-light rounded-lg px-2 py-1 text-xs text-text-primary tabular-nums font-mono"
+                  value={filters.vc_min_amount_m}
+                  onChange={e => update({ vc_min_amount_m: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="flex-1 min-w-[140px]">
+                <span className="text-xs text-text-muted block mb-1">Investors (comma-sep)</span>
+                <input
+                  type="text"
+                  className="w-full bg-muted border border-border-light rounded-lg px-2 py-1 text-xs text-text-primary"
+                  placeholder="a16z, paradigm..."
+                  value={filters.vc_investors}
+                  onChange={e => update({ vc_investors: e.target.value })}
+                />
+              </div>
+              <div className="flex-1 min-w-[140px]">
+                <span className="text-xs text-text-muted block mb-1">Round Types (comma-sep)</span>
+                <input
+                  type="text"
+                  className="w-full bg-muted border border-border-light rounded-lg px-2 py-1 text-xs text-text-primary"
+                  placeholder="series_a, seed..."
+                  value={filters.vc_round_types}
+                  onChange={e => update({ vc_round_types: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Row 7: Sweep + Run */}
+      <div className="flex flex-wrap gap-4 items-center justify-between pt-2 border-t border-border-light">
         <div>
-          <label className="text-[10px] text-white/40 font-mono uppercase block mb-1">Sweep</label>
-          <div className="flex">
+          <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Sweep</label>
+          <div className="flex flex-wrap gap-y-1">
             {SWEEP_OPTIONS.map(s => (
               <button
                 key={s}
-                className={`px-2 py-1 text-xs font-mono border border-white/10 first:rounded-l last:rounded-r -ml-px first:ml-0 transition-colors ${
+                className={`px-2.5 py-1.5 text-xs border border-border-light first:rounded-l-lg last:rounded-r-lg -ml-px first:ml-0 transition-colors ${
                   filters.sweep === s
-                    ? s === 'none' ? 'bg-white/20 text-white' : 'bg-accent/30 text-accent border-accent/30'
-                    : 'bg-white/5 text-white/50 hover:bg-white/10'
+                    ? 'bg-zinc-900 text-white border-zinc-900'
+                    : 'bg-white text-text-secondary hover:bg-muted'
                 }`}
                 onClick={() => update({ sweep: s })}
               >
-                {s === 'none' ? 'None' : s === 'top_n' ? 'Top N' : s === 'weighting' ? 'Weight' : s === 'rebalance' ? 'Rebalance' : 'Category'}
+                {SWEEP_LABELS[s] || s}
               </button>
             ))}
           </div>
         </div>
         <button
-          className={`px-4 py-2 text-xs font-mono font-bold rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+          className={`px-6 py-2.5 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
             isLoading
-              ? 'bg-white/20 text-white hover:bg-white/30'
-              : 'bg-accent text-white hover:bg-accent/80'
+              ? 'bg-muted text-text-secondary hover:bg-border-light'
+              : 'bg-zinc-900 text-white hover:bg-zinc-800'
           }`}
           onClick={onRun}
           disabled={!isLoading && !canRun}

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../src/core/Index.sol";
+import "../src/core/Investment.sol";
 import "../src/mocks/MockERC20.sol";
 import "./helpers/TestHelper.sol";
 import {Governance} from "../src/Governance.sol";
@@ -15,7 +15,7 @@ import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
 /// @title IndexProductionHardening.t.sol - Tests for Story 7.16
 /// @notice Tests BLS price updates, weighted NAV, minBuyAmount, queue depth monitoring
 contract IndexProductionHardeningTest is TestHelper {
-    Index public index;
+    Investment public index;
     MockERC20 public usdc;
     Governance public governance;
 
@@ -45,12 +45,12 @@ contract IndexProductionHardeningTest is TestHelper {
         governance = deployGovernance(admin);
 
         // Deploy Index as UUPS proxy
-        Index impl = new Index();
+        Investment impl = new Investment();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(Index.initialize, (address(governance), address(usdc)))
+            abi.encodeCall(Investment.initialize, (address(governance), address(usdc)))
         );
-        index = Index(address(proxy));
+        index = Investment(address(proxy));
 
         // Setup IssuerRegistry with real BLS keys
         IssuerRegistry registry = deployIssuerRegistry(address(governance));

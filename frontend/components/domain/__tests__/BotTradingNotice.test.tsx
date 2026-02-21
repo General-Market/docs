@@ -35,15 +35,3 @@ describe('BotTradingNotice', () => {
   })
 })
 
-describe('PortfolioBetProposal stubbed component', () => {
-  it('exports PortfolioBetProposal function', async () => {
-    const module = await import('../PortfolioBetProposal')
-    expect(typeof module.PortfolioBetProposal).toBe('function')
-  })
-
-  it('exports PortfolioBetProposalData interface type', async () => {
-    // This is a compile-time check - if the type doesn't exist, TypeScript would fail
-    const module = await import('../PortfolioBetProposal')
-    expect(module).toBeDefined()
-  })
-})
