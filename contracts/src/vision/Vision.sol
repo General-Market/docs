@@ -5,9 +5,11 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {BLSLib} from "../libraries/BLSLib.sol";
+import {BLSVerifier} from "../libraries/BLSVerifier.sol";
 import {IVision} from "../interfaces/IVision.sol";
+import {IIssuerRegistry} from "../interfaces/IIssuerRegistry.sol";
 
-contract Vision is IVision, ReentrancyGuard {
+contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     using SafeERC20 for IERC20;
 
     // ============ CONSTANTS ============
@@ -15,6 +17,7 @@ contract Vision is IVision, ReentrancyGuard {
     uint256 public constant MIN_STAKE_PER_TICK = 1e5; // 0.1 USDC (6 decimals)
     uint256 public constant BOT_MIN_STAKE = 1e18; // 1 WIND (18 decimals)
     uint256 public constant BPS_DENOMINATOR = 10000;
+    uint256 public constant MAX_TICK_DURATION = 30 days;
 
     // ============ IMMUTABLES ============
     IERC20 public immutable USDC;
@@ -69,6 +72,7 @@ contract Vision is IVision, ReentrancyGuard {
         WIND = IERC20(_wind);
         issuerRegistry = _issuerRegistry;
         feeCollector = _feeCollector;
+        __BLSVerifier_init(_issuerRegistry);
     }
 
     // ============ BATCH MANAGEMENT ============
@@ -79,8 +83,24 @@ contract Vision is IVision, ReentrancyGuard {
         uint256 tickDuration,
         uint256[] calldata customThresholds
     ) external returns (uint256 batchId) {
-        // TODO: Task 1.2
-        revert("NOT_IMPLEMENTED");
+        if (marketIds.length != resolutionTypes.length) revert ArrayLengthMismatch();
+        if (tickDuration == 0) revert InvalidTickDuration();
+        if (tickDuration > MAX_TICK_DURATION) revert InvalidTickDuration();
+
+        batchId = nextBatchId;
+
+        Batch storage batch = _batches[batchId];
+        batch.creator = msg.sender;
+        batch.marketIds = marketIds;
+        batch.resolutionTypes = resolutionTypes;
+        batch.tickDuration = tickDuration;
+        batch.customThresholds = customThresholds;
+        batch.createdAtTick = block.timestamp / tickDuration;
+        batch.paused = false;
+
+        nextBatchId = batchId + 1;
+
+        emit BatchCreated(batchId, msg.sender, tickDuration);
     }
 
     function updateBatchMarkets(
@@ -89,8 +109,28 @@ contract Vision is IVision, ReentrancyGuard {
         uint8[] calldata resolutionTypes,
         bytes calldata blsSig
     ) external {
-        // TODO: Task 1.2
-        revert("NOT_IMPLEMENTED");
+        Batch storage batch = _batches[batchId];
+        if (batch.creator == address(0)) revert BatchNotFound();
+        if (msg.sender != batch.creator) revert Unauthorized();
+        if (marketIds.length != resolutionTypes.length) revert ArrayLengthMismatch();
+
+        // BLS verify: signature over (batchId, keccak256(marketIds), keccak256(resolutionTypes), currentTick)
+        uint256 currentTick = block.timestamp / batch.tickDuration;
+        bytes32 message = keccak256(abi.encode(
+            block.chainid,
+            address(this),
+            "updateBatchMarkets",
+            batchId,
+            keccak256(abi.encodePacked(marketIds)),
+            keccak256(abi.encodePacked(resolutionTypes)),
+            currentTick
+        ));
+        _verifyBLS(message, blsSig);
+
+        batch.marketIds = marketIds;
+        batch.resolutionTypes = resolutionTypes;
+
+        emit BatchMarketsUpdated(batchId);
     }
 
     function getBatch(uint256 batchId) external view returns (Batch memory) {
