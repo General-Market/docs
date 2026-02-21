@@ -1,15 +1,19 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useAccount, useWaitForTransactionReceipt, usePublicClient } from 'wagmi'
 import { parseUnits, formatUnits, decodeEventLog } from 'viem'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { ERC20_ABI } from '@/lib/contracts/index-protocol-abi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
+import { TransactionStepper } from '@/components/ui/TransactionStepper'
+import type { MicroStep, VisibleStep } from '@/components/ui/TransactionStepper'
+import { getTxUrl } from '@/lib/utils/basescan'
 import { useUserState } from '@/hooks/useUserState'
 import { useItpCostBasis } from '@/hooks/useItpCostBasis'
 import { useItpNav } from '@/hooks/useItpNav'
+import { useSSEOrders, useSSEBalances, type UserOrder } from '@/hooks/useSSE'
 
 const SLIPPAGE_TIERS = [
   { value: 0, label: '0.3%', description: 'Tight' },
@@ -43,7 +47,60 @@ const ARB_CUSTODY_SELL_ABI = [
     name: 'CrossChainSellOrderCreated',
     type: 'event',
   },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'orderId', type: 'uint256' },
+      { indexed: false, name: 'usdcProceeds', type: 'uint256' },
+    ],
+    name: 'SellOrderCompleted',
+    type: 'event',
+  },
 ] as const
+
+/**
+ * Sell flow micro-steps — 8 steps mapped to 3 visible steps + Done:
+ *
+ * Step 1 "Submit":   APPROVE (0), SUBMIT (1)
+ * Step 2 "Process":  RELAY (2), BATCH (3), FILL (4)
+ * Step 3 "Deliver":  RECORD_COLLATERAL (5), BRIDGE_TO_ARB (6), COMPLETE_SELL (7)
+ * Done:              DONE (8)
+ */
+enum SellMicro {
+  APPROVE = 0,
+  SUBMIT = 1,
+  RELAY = 2,
+  BATCH = 3,
+  FILL = 4,
+  RECORD_COLLATERAL = 5,
+  BRIDGE_TO_ARB = 6,
+  COMPLETE_SELL = 7,
+  DONE = 8,
+}
+
+const VISIBLE_STEPS: VisibleStep[] = [
+  { label: 'Submit' },
+  { label: 'Process' },
+  { label: 'Deliver' },
+]
+
+const STEP_RANGES: [number, number][] = [
+  [SellMicro.APPROVE, SellMicro.RELAY],           // Submit: 0-1
+  [SellMicro.RELAY, SellMicro.RECORD_COLLATERAL], // Process: 2-4
+  [SellMicro.RECORD_COLLATERAL, SellMicro.DONE],  // Deliver: 5-7
+]
+
+const MICRO_LABELS: Record<number, string | ((ctx: { isPending: boolean }) => string)> = {
+  [SellMicro.APPROVE]: (ctx) => ctx.isPending ? 'Confirm BridgedITP approval in wallet...' : 'Approving shares...',
+  [SellMicro.SUBMIT]: (ctx) => ctx.isPending ? 'Confirm sell order in wallet...' : 'Submitting sell order...',
+  [SellMicro.RELAY]: () => 'Relaying sell to L3...',
+  [SellMicro.BATCH]: () => 'Batching order...',
+  [SellMicro.FILL]: () => 'Executing trades...',
+  [SellMicro.RECORD_COLLATERAL]: () => 'Recording collateral...',
+  [SellMicro.BRIDGE_TO_ARB]: () => 'Bridging USDC to Arbitrum...',
+  [SellMicro.COMPLETE_SELL]: () => 'Completing sell order...',
+  [SellMicro.DONE]: () => 'USDC received!',
+}
 
 interface SellItpModalProps {
   itpId: string
@@ -55,24 +112,43 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const { address, isConnected } = useAccount()
   const publicClient = usePublicClient()
 
+  // SSE-driven order & balance tracking (replaces L3 polling)
+  const sseOrders = useSSEOrders()
+  const sseBalances = useSSEBalances()
+
   const [amount, setAmount] = useState('')
   const [limitPrice, setLimitPrice] = useState('0')
   const [slippageTier, setSlippageTier] = useState(2)
   const [deadlineHours, setDeadlineHours] = useState(1)
-  const [step, setStep] = useState<'input' | 'approving' | 'selling' | 'tracking'>('input')
+  const [micro, setMicro] = useState<number>(-1) // -1 = INPUT mode
   const [orderId, setOrderId] = useState<bigint | null>(null)
+  const [l3OrderId, setL3OrderId] = useState<bigint | null>(null)
   const [txError, setTxError] = useState<string | null>(null)
   const [bridgedItpAddress, setBridgedItpAddress] = useState<`0x${string}` | null>(null)
+  const [skippedApproval, setSkippedApproval] = useState(false)
+  const [fillPrice, setFillPrice] = useState<bigint | null>(null)
+  const [fillAmount, setFillAmount] = useState<bigint | null>(null)
+  const [usdcProceeds, setUsdcProceeds] = useState<bigint | null>(null)
+  const [initialUsdcArb, setInitialUsdcArb] = useState<string | null>(null)
+
+  // Saved tx hashes
+  const [savedApproveHash, setSavedApproveHash] = useState<string | null>(null)
+  const [savedSellHash, setSavedSellHash] = useState<string | null>(null)
+  const [relayTxHash, setRelayTxHash] = useState<string | null>(null)
+  const [batchTxHash, setBatchTxHash] = useState<string | null>(null)
+  const [fillTxHash, setFillTxHash] = useState<string | null>(null)
+  const [completeSellTxHash, setCompleteSellTxHash] = useState<string | null>(null)
 
   const { writeContract, data: hash, isPending, error: writeError, reset } = useChainWriteContract()
   const { isLoading: isConfirming, isSuccess, data: receipt } = useWaitForTransactionReceipt({ hash })
 
-  // Get balances, allowances, and ITP metadata from backend
+  const approveHandled = useRef(false)
+  const sellHandled = useRef(false)
+
   const userState = useUserState(itpId)
   const itpName = userState.bridgedItpName || 'ITP'
   const itpSymbol = userState.bridgedItpSymbol || ''
 
-  // Set bridgedItpAddress from backend
   useEffect(() => {
     const addr = userState.bridgedItpAddress
     if (addr && addr !== '0x0000000000000000000000000000000000000000') {
@@ -81,14 +157,12 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   }, [userState.bridgedItpAddress])
 
   const userShares = userState.bridgedItpBalance
-  const refetchShares = userState.refetch
   const allowance = userState.bridgedItpAllowanceCustody
   const refetchAllowance = userState.refetch
 
   const { costBasis } = useItpCostBasis(itpId, address ?? null)
   const { navPerShare, navPerShareBn, totalAssetCount, pricedAssetCount, isLoading: isNavLoading } = useItpNav(itpId)
 
-  // Auto-set min price from NAV (with 5% discount buffer for sells)
   const navPriceSet = useRef(false)
   useEffect(() => {
     if (navPriceSet.current || isNavLoading) return
@@ -105,29 +179,36 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const insufficientShares = parsedAmount > 0n && parsedAmount > userShares
   const needsApproval = parsedAmount > 0n && allowance < parsedAmount
 
+  const snapshotBalances = useCallback(() => {
+    setInitialUsdcArb(sseBalances?.usdc_arb ?? null)
+  }, [sseBalances])
+
   const handleSell = useCallback(async () => {
     if (!publicClient || !amount || insufficientShares || !bridgedItpAddress) return
     setTxError(null)
+    approveHandled.current = false
+    sellHandled.current = false
+    snapshotBalances()
 
     if (needsApproval) {
-      // Step 1: Approve BridgedITP to ArbBridgeCustody
-      setStep('approving')
+      setSkippedApproval(false)
+      setMicro(SellMicro.APPROVE)
       writeContract({
         address: bridgedItpAddress,
         abi: ERC20_ABI,
         functionName: 'approve',
         args: [INDEX_PROTOCOL.arbCustody, parsedAmount],
-
       })
     } else {
-      // Step 2: Sell
+      setSkippedApproval(true)
       await submitSell()
     }
-  }, [publicClient, amount, insufficientShares, bridgedItpAddress, needsApproval, parsedAmount, writeContract])
+  }, [publicClient, amount, insufficientShares, bridgedItpAddress, needsApproval, parsedAmount, writeContract, snapshotBalances])
 
   const submitSell = useCallback(async () => {
     if (!publicClient) return
-    setStep('selling')
+    sellHandled.current = false
+    setMicro(SellMicro.SUBMIT)
 
     let blockTimestamp: bigint
     try {
@@ -158,17 +239,19 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   useEffect(() => {
     if (!isSuccess || !receipt) return
 
-    if (step === 'approving') {
-      // Approval done, now sell
+    if (micro === SellMicro.APPROVE && !approveHandled.current) {
+      approveHandled.current = true
+      if (hash) setSavedApproveHash(hash)
       reset()
       refetchAllowance()
-      // Small delay to let allowance update
       setTimeout(() => submitSell(), 500)
       return
     }
 
-    if (step === 'selling') {
-      // Extract orderId from CrossChainSellOrderCreated event
+    if (micro === SellMicro.SUBMIT && !sellHandled.current) {
+      sellHandled.current = true
+      if (hash) setSavedSellHash(hash)
+
       for (const log of receipt.logs) {
         if (log.address.toLowerCase() !== INDEX_PROTOCOL.arbCustody.toLowerCase()) continue
         try {
@@ -183,17 +266,91 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
           }
         } catch {}
       }
-      setStep('tracking')
+      setMicro(SellMicro.RELAY)
       reset()
     }
-  }, [isSuccess, receipt, step, reset, refetchAllowance, submitSell])
+  }, [isSuccess, receipt, micro, hash, reset, refetchAllowance, submitSell])
+
+  // SSE-driven order tracking: RELAY -> BATCH -> FILL -> RECORD_COLLATERAL
+  // Finds the matching order in sseOrders by l3OrderId (if known) or by itpId + side=1 (sell)
+  const trackedOrder = useMemo((): UserOrder | undefined => {
+    if (micro < SellMicro.RELAY || micro >= SellMicro.RECORD_COLLATERAL) return undefined
+    if (l3OrderId !== null) {
+      return sseOrders.find(o => o.order_id === Number(l3OrderId))
+    }
+    // Before we know the L3 orderId, match by itpId and side=1 (sell), pick most recent
+    const candidates = sseOrders
+      .filter(o => o.itp_id === itpId && o.side === 1)
+      .sort((a, b) => b.timestamp - a.timestamp)
+    return candidates[0]
+  }, [sseOrders, l3OrderId, micro, itpId])
+
+  useEffect(() => {
+    if (!trackedOrder || micro < SellMicro.RELAY || micro >= SellMicro.RECORD_COLLATERAL) return
+
+    // Capture l3OrderId when first seen
+    if (l3OrderId === null) {
+      setL3OrderId(BigInt(trackedOrder.order_id))
+    }
+
+    // Advance through RELAY -> BATCH based on order status
+    if (micro === SellMicro.RELAY) {
+      setMicro(SellMicro.BATCH)
+    }
+
+    const status = trackedOrder.status
+
+    if (status >= 2 && micro < SellMicro.RECORD_COLLATERAL) {
+      // FILLED — capture fill details from SSE
+      if (trackedOrder.fill_price) {
+        try { setFillPrice(BigInt(trackedOrder.fill_price)) } catch {}
+      }
+      if (trackedOrder.fill_amount) {
+        try { setFillAmount(BigInt(trackedOrder.fill_amount)) } catch {}
+      }
+      setMicro(SellMicro.RECORD_COLLATERAL)
+    } else if (status >= 1 && micro < SellMicro.FILL) {
+      // BATCHED
+      setMicro(SellMicro.FILL)
+    }
+  }, [trackedOrder, micro, l3OrderId])
+
+  // RECORD_COLLATERAL: timer-based advance (~2s after fill)
+  useEffect(() => {
+    if (micro !== SellMicro.RECORD_COLLATERAL) return
+    const timer = setTimeout(() => setMicro(SellMicro.BRIDGE_TO_ARB), 2000)
+    return () => clearTimeout(timer)
+  }, [micro])
+
+  // BRIDGE_TO_ARB: timer-based advance
+  useEffect(() => {
+    if (micro !== SellMicro.BRIDGE_TO_ARB) return
+    const timer = setTimeout(() => setMicro(SellMicro.COMPLETE_SELL), 3000)
+    return () => clearTimeout(timer)
+  }, [micro])
+
+  // COMPLETE_SELL: detect USDC balance increase via SSE
+  useEffect(() => {
+    if (micro < SellMicro.COMPLETE_SELL || micro >= SellMicro.DONE) return
+    if (!sseBalances || initialUsdcArb === null) return
+
+    const currentUsdcArb = sseBalances.usdc_arb
+    try {
+      if (BigInt(currentUsdcArb) > BigInt(initialUsdcArb)) {
+        // Calculate proceeds from balance difference
+        const proceeds = BigInt(currentUsdcArb) - BigInt(initialUsdcArb)
+        setUsdcProceeds(proceeds)
+        setMicro(SellMicro.DONE)
+      }
+    } catch {}
+  }, [micro, sseBalances, initialUsdcArb])
 
   useEffect(() => {
     if (writeError) {
       const msg = writeError.message || 'Transaction failed'
       const shortMsg = msg.includes('Details:') ? msg.split('Details:')[1].trim().slice(0, 200) : msg.slice(0, 200)
       setTxError(shortMsg)
-      setStep('input')
+      setMicro(-1)
     }
   }, [writeError])
 
@@ -208,12 +365,176 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     return () => clearTimeout(timer)
   }, [isConfirming])
 
+  const clearTxHashes = useCallback(() => {
+    setSavedApproveHash(null)
+    setSavedSellHash(null)
+    setRelayTxHash(null)
+    setBatchTxHash(null)
+    setFillTxHash(null)
+    setCompleteSellTxHash(null)
+  }, [])
+
   const handleCancel = useCallback(() => {
     reset()
-    setStep('input')
+    setMicro(-1)
     setTxError(null)
     setStuckWarning(false)
-  }, [reset])
+    clearTxHashes()
+  }, [reset, clearTxHashes])
+
+  const handleReset = useCallback(() => {
+    setMicro(-1)
+    setOrderId(null)
+    setL3OrderId(null)
+    setAmount('')
+    setSkippedApproval(false)
+    setFillPrice(null)
+    setFillAmount(null)
+    setUsdcProceeds(null)
+    setInitialUsdcArb(null)
+    clearTxHashes()
+  }, [clearTxHashes])
+
+  // --- Stepper data ---
+  const isDone = micro === SellMicro.DONE
+
+  const microSteps = useMemo((): MicroStep[] => {
+    const getLabel = (m: number): string => {
+      const desc = MICRO_LABELS[m]
+      if (!desc) return ''
+      return typeof desc === 'function' ? desc({ isPending }) : desc
+    }
+
+    const steps: MicroStep[] = []
+
+    if (!skippedApproval) {
+      steps.push({
+        label: getLabel(SellMicro.APPROVE),
+        txHash: savedApproveHash ?? undefined,
+        explorerUrl: savedApproveHash ? getTxUrl(savedApproveHash, 'arb') : undefined,
+        chain: 'arb',
+      })
+    }
+
+    steps.push({
+      label: getLabel(SellMicro.SUBMIT),
+      txHash: savedSellHash ?? undefined,
+      explorerUrl: savedSellHash ? getTxUrl(savedSellHash, 'arb') : undefined,
+      chain: 'arb',
+    })
+
+    steps.push({
+      label: getLabel(SellMicro.RELAY),
+      txHash: relayTxHash ?? undefined,
+      explorerUrl: relayTxHash ? getTxUrl(relayTxHash, 'l3') : undefined,
+      chain: 'l3',
+    })
+
+    steps.push({
+      label: getLabel(SellMicro.BATCH),
+      txHash: batchTxHash ?? undefined,
+      explorerUrl: batchTxHash ? getTxUrl(batchTxHash, 'l3') : undefined,
+      chain: 'l3',
+    })
+
+    steps.push({
+      label: getLabel(SellMicro.FILL),
+      txHash: fillTxHash ?? undefined,
+      explorerUrl: fillTxHash ? getTxUrl(fillTxHash, 'l3') : undefined,
+      chain: 'l3',
+    })
+
+    steps.push({ label: getLabel(SellMicro.RECORD_COLLATERAL), chain: 'l3' })
+
+    steps.push({ label: getLabel(SellMicro.BRIDGE_TO_ARB), chain: 'l3' })
+
+    steps.push({
+      label: getLabel(SellMicro.COMPLETE_SELL),
+      txHash: completeSellTxHash ?? undefined,
+      explorerUrl: completeSellTxHash ? getTxUrl(completeSellTxHash, 'arb') : undefined,
+      chain: 'arb',
+    })
+
+    return steps
+  }, [isPending, skippedApproval, savedApproveHash, savedSellHash, relayTxHash, batchTxHash, fillTxHash, completeSellTxHash])
+
+  const stepperMicroIndex = useMemo(() => {
+    if (isDone) return microSteps.length
+    if (micro < 0) return 0
+    const offset = skippedApproval ? -1 : 0
+    return Math.max(0, micro + offset)
+  }, [micro, skippedApproval, isDone, microSteps.length])
+
+  const adjustedRanges = useMemo((): [number, number][] => {
+    if (skippedApproval) {
+      // 7 items: submit(0), relay(1), batch(2), fill(3), collateral(4), bridge(5), complete(6)
+      return [
+        [0, 1],    // Submit: submit(0)
+        [1, 4],    // Process: relay(1), batch(2), fill(3)
+        [4, 7],    // Deliver: collateral(4), bridge(5), complete(6)
+      ]
+    }
+    return [
+      [0, 2],    // Submit: approve(0), submit(1)
+      [2, 5],    // Process: relay(2), batch(3), fill(4)
+      [5, 8],    // Deliver: collateral(5), bridge(6), complete(7)
+    ]
+  }, [skippedApproval])
+
+  const txRefs = useMemo(() => {
+    const refs: { label: string; value: string }[] = []
+    if (orderId !== null) refs.push({ label: 'Arb', value: `#${orderId.toString()}` })
+    if (l3OrderId !== null) refs.push({ label: 'L3', value: `#${l3OrderId.toString()}` })
+    return refs
+  }, [orderId, l3OrderId])
+
+  const buttonText = isPending
+    ? 'Waiting for wallet...'
+    : isConfirming
+    ? (micro === SellMicro.APPROVE ? 'Approving...' : 'Submitting...')
+    : needsApproval
+    ? 'Approve & Sell'
+    : 'Sell Shares'
+
+  const renderFillDetails = () => {
+    if (!fillPrice || !fillAmount) return null
+
+    const proceeds = usdcProceeds ?? ((fillAmount * fillPrice) / BigInt(1e18))
+
+    return (
+      <div className="bg-muted border border-border-light rounded-xl p-4 space-y-2">
+        <p className="text-sm font-semibold text-text-primary">Fill Details</p>
+        <div className="text-xs font-mono space-y-1">
+          <div className="flex justify-between">
+            <span className="text-text-muted">Fill Price</span>
+            <span className="text-text-primary tabular-nums">${parseFloat(formatUnits(fillPrice, 18)).toFixed(4)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-text-muted">Shares Sold</span>
+            <span className="text-text-primary tabular-nums">{parseFloat(formatUnits(fillAmount, 18)).toFixed(4)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-text-muted">USDC Proceeds</span>
+            <span className="text-text-primary tabular-nums">${parseFloat(formatUnits(proceeds, 6)).toFixed(2)}</span>
+          </div>
+          {/* P&L vs cost basis */}
+          {costBasis && costBasis.avgCostPerShare > 0n && fillPrice > 0n && (() => {
+            const costOfShares = (fillAmount * costBasis.avgCostPerShare) / BigInt(1e18)
+            const pnl = proceeds - costOfShares
+            const pnlPct = Number(costOfShares) > 0 ? Number(pnl) * 100 / Number(costOfShares) : 0
+            return (
+              <div className="flex justify-between pt-1 border-t border-border-light">
+                <span className="text-text-muted">P&amp;L vs Cost</span>
+                <span className={pnl >= 0n ? 'text-color-up' : 'text-color-down'}>
+                  {pnl >= 0n ? '+' : ''}${parseFloat(formatUnits(pnl, 6)).toFixed(2)} ({pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(1)}%)
+                </span>
+              </div>
+            )
+          })()}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
@@ -247,28 +568,55 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
             <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
               <p className="text-text-secondary">No BridgedITP found for this ITP. It may not have been created via BridgeProxy yet.</p>
             </div>
-          ) : step === 'tracking' ? (
-            <div className="space-y-6">
-              <div className="bg-surface-up border border-color-up/30 rounded-xl p-4 text-color-up">
-                <p className="font-medium">Cross-Chain Sell Order Submitted</p>
-                <p className="text-sm mt-1 font-mono">Order ID: {orderId?.toString() ?? 'pending'}</p>
-                <p className="text-xs mt-1 text-color-up/70">
-                  Issuers will sell your shares on L3 and bridge USDC back to Arbitrum.
-                  This may take a few minutes.
-                </p>
-              </div>
-              {arbUsdcBalance > 0n && (
+          ) : micro >= 0 ? (
+            <div className="space-y-4">
+              <TransactionStepper
+                visibleSteps={VISIBLE_STEPS}
+                microSteps={microSteps}
+                currentMicroStep={stepperMicroIndex}
+                isDone={isDone}
+                stepRanges={adjustedRanges}
+                txRefs={txRefs}
+              />
+
+              {renderFillDetails()}
+
+              {isDone && arbUsdcBalance > 0n && (
                 <div className="bg-muted border border-border-light rounded-xl p-4">
                   <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1">Your USDC Balance (Arbitrum)</p>
                   <p className="text-2xl font-bold text-text-primary tabular-nums font-mono">{formatUnits(arbUsdcBalance, 6)} USDC</p>
                 </div>
               )}
-              <button
-                onClick={() => { setStep('input'); setOrderId(null); setAmount('') }}
-                className="w-full py-3 bg-color-down text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
-              >
-                Sell More
-              </button>
+
+              {isDone ? (
+                <button
+                  onClick={handleReset}
+                  className="w-full py-3 bg-color-down text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+                >
+                  Sell More
+                </button>
+              ) : micro <= SellMicro.SUBMIT ? (
+                <button
+                  onClick={handleCancel}
+                  className="w-full text-center text-sm text-text-muted hover:text-text-primary py-2 transition-colors"
+                >
+                  Cancel
+                </button>
+              ) : null}
+
+              {stuckWarning && (
+                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-orange-500 text-sm">
+                  <p className="font-medium">Transaction may be stuck</p>
+                  <p className="text-xs mt-1">Not confirmed after 30s. You can cancel and try again.</p>
+                </div>
+              )}
+
+              {txError && (
+                <div className="bg-surface-down border border-color-down/30 rounded-lg p-4 text-color-down">
+                  <p className="font-medium">Error</p>
+                  <p className="text-sm mt-1 break-all">{txError}</p>
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
@@ -388,7 +736,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                     disabled={!amount || parsedAmount === 0n || insufficientShares || isPending || isConfirming}
                     className="w-full py-4 bg-color-down text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
                   >
-                    {isPending ? 'Waiting for wallet...' : isConfirming ? (step === 'approving' ? 'Approving...' : 'Submitting...') : needsApproval ? 'Approve & Sell' : 'Sell Shares'}
+                    {buttonText}
                   </WalletActionButton>
 
                   {(isPending || isConfirming) && (
