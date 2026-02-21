@@ -63,6 +63,7 @@ export interface NavSnapshot {
   nav_per_share: number
   total_supply: string
   aum_usd: number
+  arb_address: string | null
 }
 
 export interface OracleSnapshot {

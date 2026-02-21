@@ -22,6 +22,7 @@ pub struct NavSnapshot {
     pub nav_per_share: f64,
     pub total_supply: String,
     pub aum_usd: f64,
+    pub arb_address: Option<String>,
 }
 
 #[derive(Clone, Serialize, Default)]

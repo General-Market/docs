@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useAccount, useConnect, useDisconnect, useReadContract, usePublicClient, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount, useConnect, useDisconnect, usePublicClient, useWaitForTransactionReceipt } from 'wagmi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
-import { BRIDGE_PROXY_ABI, BRIDGED_ITP_FACTORY_ABI } from '@/lib/contracts/index-protocol-abi'
+import { BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { formatUnits } from 'viem'
 import { BuyItpModal } from './BuyItpModal'
 import { SellItpModal } from './SellItpModal'
@@ -165,6 +165,7 @@ function navSnapshotsToItpInfos(navList: NavSnapshot[]): ItpInfo[] {
         createdAt: 0, // Not available from SSE
         source: 'index' as const,
         completed: true,
+        arbAddress: nav.arb_address ?? undefined,
         totalValue: BigInt(Math.round(nav.aum_usd * 1e18)),
         totalSupply: BigInt(nav.total_supply),
       }
@@ -428,24 +429,8 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
     address as `0x${string}` | undefined
   )
 
-  // Resolve bridged ERC20 address from BridgedItpFactory
-  // TODO: Migrate to a data-node REST endpoint that returns arbAddress per ITP
-  const { data: resolvedArbAddress } = useReadContract({
-    address: INDEX_PROTOCOL.bridgedItpFactory,
-    abi: BRIDGED_ITP_FACTORY_ABI,
-    functionName: 'deployedItps',
-    args: itp.itpId ? [itp.itpId as `0x${string}`] : undefined,
-    query: {
-      enabled: !!itp.itpId && !itp.arbAddress,
-    },
-  })
-
-  // Use existing arbAddress or the resolved one from factory
-  const effectiveArbAddress = itp.arbAddress ?? (
-    resolvedArbAddress && resolvedArbAddress !== '0x0000000000000000000000000000000000000000'
-      ? resolvedArbAddress
-      : undefined
-  )
+  // arbAddress is now provided via SSE NAV payload (resolved in data-node poll_nav)
+  const effectiveArbAddress = itp.arbAddress ?? undefined
 
   const isActive = itp.source === 'index' || itp.completed
 

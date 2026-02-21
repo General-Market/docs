@@ -85,6 +85,10 @@ async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::Error
     let index_addr = crate::api::deployment_addr(&state.deployment, "Index")?;
     let reader = NavReader::new(index_addr, Arc::clone(&state.l3_provider));
 
+    // Resolve BridgeProxy once for arbAddress lookups
+    let bridge_proxy_addr = crate::api::deployment_addr(&state.deployment, "BridgeProxy")?;
+    let bridge_proxy = BridgeProxyPoller::new(bridge_proxy_addr, Arc::clone(&state.arb_provider));
+
     let count: U256 = reader.get_itp_count().call().await?;
     let mut snapshots = Vec::new();
 
@@ -99,11 +103,18 @@ async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::Error
                 let supply_f64 = total_supply.as_u128() as f64 / 1e18;
                 let aum = nav_f64 * supply_f64;
 
+                // Resolve bridged ERC20 address on Arbitrum
+                let arb_address = match bridge_proxy.get_bridged_itp(id_bytes.into()).call().await {
+                    Ok(addr) if addr != Address::zero() => Some(format!("{:?}", addr)),
+                    _ => None,
+                };
+
                 snapshots.push(NavSnapshot {
                     itp_id: format!("0x{}", hex::encode(id_bytes)),
                     nav_per_share: nav_f64,
                     total_supply: total_supply.to_string(),
                     aum_usd: aum,
+                    arb_address,
                 });
             }
             Err(e) => {
