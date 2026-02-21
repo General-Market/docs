@@ -462,11 +462,21 @@ contract Index is IndexStorage, Initializable, UUPSUpgradeable, ReentrancyGuardU
             uint256 usdcToReturn = (fill.fillAmount * fill.fillPrice) / 1e18;
 
             TypesLib.ITPCore storage itp = _itps[order.itpId];
-            if (itp.totalSupply >= order.amount) {
-                itp.totalSupply -= order.amount;
+            // H3 fix: decrement by fill.fillAmount, not order.amount
+            if (itp.totalSupply >= fill.fillAmount) {
+                itp.totalSupply -= fill.fillAmount;
             }
             if (itp.totalValue >= usdcToReturn) {
                 itp.totalValue -= usdcToReturn;
+            }
+
+            // H1 fix: burn ERC4626 shares (mirrors mint in BUY branch)
+            address vault = itpVaults[order.itpId];
+            if (vault != address(0)) {
+                (bool success,) = vault.call(
+                    abi.encodeWithSignature("burn(address,uint256)", order.user, fill.fillAmount)
+                );
+                if (!success) revert ErrorsLib.E063_MintFailed(vault, order.itpId);
             }
 
             // Transfer USDC back to user (with escrow fallback)
@@ -555,8 +565,14 @@ contract Index is IndexStorage, Initializable, UUPSUpgradeable, ReentrancyGuardU
             }
         }
 
-        // Refund USDC to user
-        usdc.safeTransfer(order.user, order.amount);
+        // Refund based on order side
+        if (order.side == TypesLib.Side.BUY) {
+            usdc.safeTransfer(order.user, order.amount);
+        } else {
+            // SELL: restore escrowed shares
+            _userShares[order.itpId][order.user] += order.amount;
+            _itps[order.itpId].totalSupply += order.amount;
+        }
 
         // M-4 fix: Emit OrderRefunded event
         emit EventsLib.OrderRefunded(orderId, order.user, order.amount);
@@ -715,6 +731,7 @@ contract Index is IndexStorage, Initializable, UUPSUpgradeable, ReentrancyGuardU
     /// @param addAssets New asset addresses to add, can be empty
     /// @param newWeights Weights for the final asset list
     /// @param prices Prices for the final asset list (for inventory computation)
+    /// @param quoteTokens Quote tokens per asset (address(0) = default USDC)
     /// @param blsSignature Aggregated BLS signature from issuers
     function rebalance(
         bytes32 itpId,
@@ -722,6 +739,7 @@ contract Index is IndexStorage, Initializable, UUPSUpgradeable, ReentrancyGuardU
         address[] calldata addAssets,
         uint256[] calldata newWeights,
         uint256[] calldata prices,
+        address[] calldata quoteTokens,
         bytes calldata blsSignature
     ) external {
         if (!_itpExists[itpId]) {
@@ -730,12 +748,12 @@ contract Index is IndexStorage, Initializable, UUPSUpgradeable, ReentrancyGuardU
 
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(this), "rebalance",
-            itpId, removeIndices, addAssets, newWeights, prices
+            itpId, removeIndices, addAssets, newWeights, prices, quoteTokens
         ));
         _verifyBLS(message, blsSignature);
 
         RebalanceLib.rebalance(
-            itpId, removeIndices, addAssets, newWeights, prices,
+            itpId, removeIndices, addAssets, newWeights, prices, quoteTokens,
             _itps, _itpAssets, _itpWeights, _itpInventory, _itpNavs, governance
         );
     }
@@ -996,8 +1014,14 @@ contract Index is IndexStorage, Initializable, UUPSUpgradeable, ReentrancyGuardU
                     }
                 }
 
-                // Refund USDC to user
-                usdc.safeTransfer(order.user, order.amount);
+                // Refund based on order side
+                if (order.side == TypesLib.Side.BUY) {
+                    usdc.safeTransfer(order.user, order.amount);
+                } else {
+                    // SELL: restore escrowed shares
+                    _userShares[order.itpId][order.user] += order.amount;
+                    _itps[order.itpId].totalSupply += order.amount;
+                }
 
                 emit EventsLib.OrderRefunded(orderIds[i], order.user, order.amount);
 
@@ -1055,7 +1079,13 @@ contract Index is IndexStorage, Initializable, UUPSUpgradeable, ReentrancyGuardU
             }
         }
 
-        usdc.safeTransfer(order.user, order.amount);
+        if (order.side == TypesLib.Side.BUY) {
+            usdc.safeTransfer(order.user, order.amount);
+        } else {
+            // SELL: restore escrowed shares
+            _userShares[order.itpId][order.user] += order.amount;
+            _itps[order.itpId].totalSupply += order.amount;
+        }
 
         emit EventsLib.OrderRefunded(orderId, order.user, order.amount);
     }

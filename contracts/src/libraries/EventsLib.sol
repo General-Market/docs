@@ -473,4 +473,12 @@ library EventsLib {
         uint256[] newInventory,
         uint256 nav
     );
+
+    // ============ BRIDGE RECOVERY EVENTS ============
+
+    /// @notice Emitted when reversed bridge lock funds are withdrawn via BLS consensus
+    /// @param nonce The lock nonce
+    /// @param recipient The recipient of the withdrawn funds
+    /// @param amount The amount withdrawn
+    event ReversedFundsWithdrawn(uint256 indexed nonce, address indexed recipient, uint256 amount);
 }

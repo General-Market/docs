@@ -131,6 +131,7 @@ interface IIndex {
         address[] calldata addAssets,
         uint256[] calldata newWeights,
         uint256[] calldata prices,
+        address[] calldata quoteTokens,
         bytes calldata blsSignature
     ) external;
 
