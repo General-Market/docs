@@ -1,8 +1,6 @@
 'use client'
 
-import { useReadContract } from 'wagmi'
-import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
-import { ITP_NAV_ORACLE_ABI } from '@/lib/contracts/morpho-abi'
+import { useSSEOracle } from './useSSE'
 import { OracleInfo, MORPHO_CONSTANTS, formatOraclePrice } from '@/lib/types/morpho'
 
 interface UseOraclePriceReturn {
@@ -22,66 +20,24 @@ interface UseOraclePriceReturn {
   error: Error | null
   /** Full oracle info */
   oracleInfo: OracleInfo | undefined
-  /** Refetch function */
+  /** Refetch function (no-op — SSE pushes updates) */
   refetch: () => void
 }
 
 /**
- * Hook to fetch NAV price from ITPNAVOracle
+ * Hook to fetch NAV price from SSE oracle-prices stream.
  *
  * Returns the current BLS-verified NAV price for ITP tokens.
  * Price is in 36 decimals (Morpho oracle standard).
  *
- * @param oracle - Optional oracle address. Falls back to MORPHO_ADDRESSES.itpOracle.
+ * @param _oracle - Ignored. Kept for call-site compatibility.
  */
-export function useOraclePrice(oracle?: `0x${string}`): UseOraclePriceReturn {
-  const oracleAddress = oracle ?? MORPHO_ADDRESSES.itpOracle
+export function useOraclePrice(_oracle?: `0x${string}`): UseOraclePriceReturn {
+  const oracle = useSSEOracle()
 
-  // Fetch current price
-  const {
-    data: price,
-    isLoading: isPriceLoading,
-    error: priceError,
-    refetch: refetchPrice,
-  } = useReadContract({
-    address: oracleAddress,
-    abi: ITP_NAV_ORACLE_ABI,
-    functionName: 'currentPrice',
-    query: {
-      retry: false,
-      refetchInterval: 15000,
-    },
-  })
-
-  // Fetch last updated timestamp
-  const {
-    data: lastUpdated,
-    isLoading: isLastUpdatedLoading,
-    refetch: refetchLastUpdated,
-  } = useReadContract({
-    address: oracleAddress,
-    abi: ITP_NAV_ORACLE_ABI,
-    functionName: 'lastUpdated',
-    query: {
-      retry: false,
-      refetchInterval: 15000,
-    },
-  })
-
-  // Fetch last cycle number
-  const {
-    data: lastCycleNumber,
-    isLoading: isCycleLoading,
-    refetch: refetchCycle,
-  } = useReadContract({
-    address: oracleAddress,
-    abi: ITP_NAV_ORACLE_ABI,
-    functionName: 'lastCycleNumber',
-    query: {
-      retry: false,
-      refetchInterval: 15000,
-    },
-  })
+  const price = oracle ? BigInt(oracle.price) : undefined
+  const lastUpdated = oracle ? BigInt(oracle.last_updated) : undefined
+  const lastCycleNumber = oracle ? BigInt(oracle.last_cycle) : undefined
 
   // Calculate if price is stale (> 24 hours)
   const now = BigInt(Math.floor(Date.now() / 1000))
@@ -93,20 +49,10 @@ export function useOraclePrice(oracle?: `0x${string}`): UseOraclePriceReturn {
   const priceFormatted = price !== undefined ? formatOraclePrice(price) : undefined
 
   // Build oracle info
-  const oracleInfo: OracleInfo | undefined = price !== undefined && lastUpdated !== undefined && lastCycleNumber !== undefined
-    ? {
-        price,
-        lastUpdated,
-        lastCycleNumber,
-        isStale,
-      }
-    : undefined
-
-  const refetch = () => {
-    refetchPrice()
-    refetchLastUpdated()
-    refetchCycle()
-  }
+  const oracleInfo: OracleInfo | undefined =
+    price !== undefined && lastUpdated !== undefined && lastCycleNumber !== undefined
+      ? { price, lastUpdated, lastCycleNumber, isStale }
+      : undefined
 
   return {
     price,
@@ -114,9 +60,9 @@ export function useOraclePrice(oracle?: `0x${string}`): UseOraclePriceReturn {
     lastUpdated,
     lastCycleNumber,
     isStale,
-    isLoading: isPriceLoading || isLastUpdatedLoading || isCycleLoading,
-    error: priceError as Error | null,
+    isLoading: !oracle,
+    error: null,
     oracleInfo,
-    refetch,
+    refetch: () => {},
   }
 }
