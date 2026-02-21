@@ -1,8 +1,8 @@
 'use client'
 
-import { useAccount, useReadContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
-import { useEffect, useRef } from 'react'
+import { useSSEAllowances } from './useSSE'
 import { erc20Abi } from '@/lib/contracts/abi'
 import { COLLATERAL_TOKEN_ADDRESS, CONTRACT_ADDRESS } from '@/lib/contracts/addresses'
 
@@ -18,30 +18,17 @@ interface UseUsdcApprovalReturn {
 }
 
 /**
- * Hook for managing collateral token ERC20 approval for the AgiArenaCore contract
- * Checks current allowance and requests approval if needed
+ * Hook for managing collateral token ERC20 approval for the Index contract.
+ * Reads allowance from the SSE stream (userAllowances.usdc_l3_to_index).
+ * Write (approve tx) still uses wagmi useWriteContract.
  */
 export function useUsdcApproval(): UseUsdcApprovalReturn {
   const { address, isConnected } = useAccount()
-
-  // Contract address
   const contractAddress = CONTRACT_ADDRESS
 
-  // Read current allowance
-  const {
-    data: currentAllowance,
-    isLoading: isCheckingAllowance,
-    error: allowanceError,
-    refetch: refetchAllowance
-  } = useReadContract({
-    address: COLLATERAL_TOKEN_ADDRESS,
-    abi: erc20Abi,
-    functionName: 'allowance',
-    args: address && contractAddress ? [address, contractAddress] : undefined,
-    query: {
-      enabled: isConnected && !!address && !!contractAddress
-    }
-  })
+  // Read current allowance from SSE
+  const allowances = useSSEAllowances()
+  const currentAllowance = allowances ? BigInt(allowances.usdc_l3_to_index) : undefined
 
   // Write contract for approval
   const {
@@ -61,23 +48,12 @@ export function useUsdcApproval(): UseUsdcApprovalReturn {
     hash: txHash
   })
 
-  // Track previous confirmation state to detect changes
-  const prevIsConfirmed = useRef(false)
-
-  // Refetch allowance after confirmation (in useEffect to avoid side effects during render)
-  useEffect(() => {
-    if (isConfirmed && !prevIsConfirmed.current) {
-      refetchAllowance()
-    }
-    prevIsConfirmed.current = isConfirmed
-  }, [isConfirmed, refetchAllowance])
-
   // Determine current state
   const getState = (): ApprovalState => {
     if (!isConnected || !address || !contractAddress) return 'idle'
-    if (isCheckingAllowance) return 'checking'
+    if (!allowances) return 'checking'
     if (isWritePending || isConfirming) return 'approving'
-    if (allowanceError || writeError || confirmError) return 'error'
+    if (writeError || confirmError) return 'error'
     if (isConfirmed) return 'approved'
     return 'idle'
   }
@@ -102,7 +78,7 @@ export function useUsdcApproval(): UseUsdcApprovalReturn {
   }
 
   // Get first error from any source
-  const error = allowanceError || writeError || confirmError || null
+  const error = writeError || confirmError || null
 
   return {
     state: getState(),
