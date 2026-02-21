@@ -55,6 +55,7 @@ interface IVision {
         uint256 lastClaimedTick;
         uint256 joinTimestamp;
         uint256 totalDeposited;  // cumulative USDC deposited (joinBatch + deposit calls)
+        uint256 totalClaimed;    // cumulative USDC paid out via claimRewards
     }
 
     struct Bot {
@@ -110,9 +111,6 @@ interface IVision {
 
     function getPosition(uint256 batchId, address player) external view returns (PlayerPosition memory);
 
-    // ============ EVENTS (not auto-inherited, declared for ABI generation) ============
-    event BitmapUpdated(uint256 indexed batchId, address indexed player, bytes32 newBitmapHash);
-
     // ============ BOT REGISTRY ============
     function registerBot(string calldata endpoint, bytes32 pubkeyHash) external;
     function deregisterBot() external;
@@ -123,7 +121,8 @@ interface IVision {
 
     // ============ ISSUER OPERATIONS ============
     function pause(uint256 batchId, bytes calldata blsSignature) external;
-    function forceWithdraw(uint256 batchId, address player, uint256 finalBalance, uint256 totalDeposited, bytes calldata blsSignature) external;
+    function unpause(uint256 batchId, bytes calldata blsSignature) external;
+    function forceWithdraw(uint256 batchId, address player, uint256 finalBalance, bytes calldata blsSignature) external;
 }
 ```
 
@@ -189,12 +188,12 @@ contract Vision is IVision, ReentrancyGuard {
     event BatchCreated(uint256 indexed batchId, address indexed creator, uint256 tickDuration);
     event BatchMarketsUpdated(uint256 indexed batchId);
     event BatchPaused(uint256 indexed batchId);
+    event BatchUnpaused(uint256 indexed batchId);
     event PlayerJoined(uint256 indexed batchId, address indexed player, uint256 stakePerTick, bytes32 bitmapHash);
     event PlayerDeposited(uint256 indexed batchId, address indexed player, uint256 amount);
     event RewardsClaimed(uint256 indexed batchId, address indexed player, uint256 amount);
     event PlayerWithdrawn(uint256 indexed batchId, address indexed player, uint256 amount);
     event ForceWithdrawn(uint256 indexed batchId, address indexed player, uint256 amount);
-    event BitmapUpdated(uint256 indexed batchId, address indexed player, bytes32 newBitmapHash);
     event BotRegistered(address indexed bot, string endpoint);
     event BotDeregistered(address indexed bot);
 
@@ -332,7 +331,7 @@ contract VisionTest is Test {
         vm.prank(alice);
         uint256 batchId = vision.createBatch(mIds, rTypes, 600, thresholds);
 
-        // Update
+        // Update — requires BLS signature from issuers
         bytes32[] memory newIds = new bytes32[](2);
         newIds[0] = keccak256("btc_usd_10m");
         newIds[1] = keccak256("sol_usd_10m");
@@ -340,8 +339,16 @@ contract VisionTest is Test {
         newTypes[0] = 0;
         newTypes[1] = 0;
 
+        // Build BLS message hash matching the contract's computation
+        uint256 currentTick = block.timestamp / 600;
+        bytes32 msgHash = keccak256(abi.encodePacked(
+            batchId, keccak256(abi.encodePacked(newIds)),
+            keccak256(abi.encodePacked(newTypes)), currentTick
+        ));
+        bytes memory blsSig = _signBLS(msgHash); // uses bls-tool test fixture
+
         vm.prank(alice);
-        vision.updateBatchMarkets(batchId, newIds, newTypes);
+        vision.updateBatchMarkets(batchId, newIds, newTypes, blsSig);
 
         IVision.Batch memory batch = vision.getBatch(batchId);
         assertEq(batch.marketIds.length, 2);
@@ -359,7 +366,7 @@ contract VisionTest is Test {
 
         vm.prank(bob); // not creator
         vm.expectRevert(Vision.Unauthorized.selector);
-        vision.updateBatchMarkets(batchId, mIds, rTypes);
+        vision.updateBatchMarkets(batchId, mIds, rTypes, bytes(""));
     }
 }
 ```
@@ -437,12 +444,11 @@ function updateBatchMarkets(
     if (marketIds.length != resolutionTypes.length) revert ArrayLengthMismatch();
 
     // BLS-gated: issuers must approve market changes to prevent
-    // mid-tick manipulation. The BLS signature covers (batchId, marketIds,
-    // resolutionTypes, batch.currentTick) ensuring changes only apply
-    // at tick boundaries when issuers have consensus.
+    // mid-tick manipulation. Tick is computed deterministically (no on-chain currentTick).
+    uint256 currentTick = block.timestamp / batch.tickDuration;
     bytes32 msgHash = keccak256(abi.encodePacked(
         batchId, keccak256(abi.encodePacked(marketIds)),
-        keccak256(abi.encodePacked(resolutionTypes)), batch.currentTick
+        keccak256(abi.encodePacked(resolutionTypes)), currentTick
     ));
     if (!issuerRegistry.verifyAggregated(msgHash, blsSig)) revert InvalidBLSSignature();
 
@@ -599,12 +605,8 @@ function joinBatch(
     emit PlayerJoined(batchId, msg.sender, stakePerTick, bitmapHash);
 }
 
-function updateBitmap(uint256 batchId, bytes32 newBitmapHash) external {
-    PlayerPosition storage pos = _positions[batchId][msg.sender];
-    if (pos.joinTimestamp == 0) revert NotJoined();
-    pos.bitmapHash = newBitmapHash;
-    emit BitmapUpdated(batchId, msg.sender, newBitmapHash);
-}
+// NOTE: No updateBitmap function. Bitmap hash is immutable — set once at joinBatch.
+// Players commit to a strategy upfront. To change strategy, withdraw and rejoin.
 
 function deposit(uint256 batchId, uint256 amount) external nonReentrant {
     PlayerPosition storage pos = _positions[batchId][msg.sender];
@@ -644,23 +646,21 @@ function claimRewards(
     ));
     _verifyBLS(message, blsSignature);
 
-    // newBalance is the issuer-attested balance after tick resolution
-    // claimable = profit above current on-chain balance
+    // newBalance is the issuer-attested balance after tick resolution.
+    // Claims are fee-free — fees are collected on withdraw based on lifetime profit.
+    // This avoids overtaxing players who lose then recover (finding 9 fix).
     if (newBalance > pos.balance) {
         uint256 claimable = newBalance - pos.balance;
-        uint256 fee = (claimable * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
-        uint256 payout = claimable - fee;
 
-        // Solvency check — must cover payout + existing fees + this new fee
-        if (USDC.balanceOf(address(this)) < payout + accumulatedFees + fee) revert InsolventPayout();
+        // Solvency check
+        if (USDC.balanceOf(address(this)) < claimable + accumulatedFees) revert InsolventPayout();
 
-        accumulatedFees += fee;
-        // Update on-chain balance to match issuer-attested state
         pos.balance = newBalance;
         pos.lastClaimedTick = toTick;
+        pos.totalClaimed += claimable;
 
-        USDC.safeTransfer(msg.sender, payout);
-        emit RewardsClaimed(batchId, msg.sender, payout);
+        USDC.safeTransfer(msg.sender, claimable);
+        emit RewardsClaimed(batchId, msg.sender, claimable);
     } else {
         // Balance decreased (losses) — update on-chain state without payout
         pos.balance = newBalance;
@@ -687,10 +687,11 @@ function withdraw(
     ));
     _verifyBLS(message, blsSignature);
 
-    // Fee on profit only — uses on-chain totalDeposited (not off-chain param)
+    // Fee on lifetime profit: total extracted (finalBalance + past claims) vs total deposited
+    uint256 totalExtracted = finalBalance + pos.totalClaimed;
     uint256 fee = 0;
-    if (finalBalance > pos.totalDeposited) {
-        uint256 profit = finalBalance - pos.totalDeposited;
+    if (totalExtracted > pos.totalDeposited) {
+        uint256 profit = totalExtracted - pos.totalDeposited;
         fee = (profit * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
     }
     uint256 payout = finalBalance - fee;
@@ -862,25 +863,35 @@ function pause(uint256 batchId, bytes calldata blsSignature) external {
     emit BatchPaused(batchId);
 }
 
+function unpause(uint256 batchId, bytes calldata blsSignature) external {
+    bytes32 message = keccak256(abi.encode(
+        block.chainid, address(this), "UNPAUSE", batchId
+    ));
+    _verifyBLS(message, blsSignature);
+
+    _batches[batchId].paused = false;
+    emit BatchUnpaused(batchId);
+}
+
 function forceWithdraw(
     uint256 batchId,
     address player,
     uint256 finalBalance,
-    uint256 totalDeposited,
     bytes calldata blsSignature
 ) external {
     bytes32 message = keccak256(abi.encode(
-        block.chainid, address(this), "FORCE_WITHDRAW", batchId, player, finalBalance, totalDeposited
+        block.chainid, address(this), "FORCE_WITHDRAW", batchId, player, finalBalance
     ));
     _verifyBLS(message, blsSignature);
 
     PlayerPosition storage pos = _positions[batchId][player];
     if (pos.joinTimestamp == 0) revert NotJoined();
 
-    // Fee on profit only — consistent with withdraw()
+    // Fee on lifetime profit — same model as withdraw()
+    uint256 totalExtracted = finalBalance + pos.totalClaimed;
     uint256 fee = 0;
-    if (finalBalance > totalDeposited) {
-        uint256 profit = finalBalance - totalDeposited;
+    if (totalExtracted > pos.totalDeposited) {
+        uint256 profit = totalExtracted - pos.totalDeposited;
         fee = (profit * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
     }
     uint256 payout = finalBalance - fee;
@@ -902,6 +913,17 @@ function collectFees() external {
     accumulatedFees = 0;
     USDC.safeTransfer(feeCollector, fees);
 }
+
+// NOTE — SOLVENCY TRUST MODEL:
+// The per-payout solvency checks (claimRewards, withdraw, forceWithdraw) ensure
+// individual payouts don't exceed available USDC. However, there is no global invariant
+// enforcing sum(all player balances) + accumulatedFees <= USDC.balanceOf(this).
+// Player balances are BLS-attested by the issuer quorum — the contract trusts issuers
+// to not inflate balances beyond what the pool can cover. This is by design: the issuer
+// quorum is the trust anchor. A compromised quorum could attest inflated balances
+// and drain the pool. Mitigation: threshold BLS (n-of-m) makes this require multiple
+// compromised issuers. The per-payout solvency check is a last-resort defense that
+// reverts individual drains even if attested balances are wrong.
 ```
 
 **Step 3: Run tests**
@@ -1309,10 +1331,17 @@ CREATE TABLE IF NOT EXISTS p2pool_positions (
     last_claimed_tick BIGINT NOT NULL DEFAULT 0,
     join_timestamp BIGINT NOT NULL,
     total_deposited NUMERIC NOT NULL DEFAULT 0,
+    total_claimed NUMERIC NOT NULL DEFAULT 0,
     PRIMARY KEY (batch_id, player)
 );
 
 CREATE INDEX idx_p2pool_positions_balance ON p2pool_positions(batch_id) WHERE balance > 0;
+
+-- Key-value store for indexer state (e.g. last indexed block)
+CREATE TABLE IF NOT EXISTS kv_store (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 
 -- Tick resolution results (written by chain indexer after issuer BLS consensus)
 CREATE TABLE IF NOT EXISTS p2pool_tick_results (
@@ -1828,13 +1857,18 @@ impl P2PoolIndexer {
                 .execute(&self.pool).await?;
         }
 
-        // BitmapUpdated → update bitmap_hash
-        if *topic0 == H256::from(ethers::utils::keccak256("BitmapUpdated(uint256,address,bytes32)")) {
+        // RewardsClaimed → update balance and last_claimed_tick
+        if *topic0 == H256::from(ethers::utils::keccak256("RewardsClaimed(uint256,address,uint256)")) {
             let batch_id = U256::from_big_endian(log.topics[1].as_bytes()).as_i64();
             let player = format!("{:?}", Address::from(log.topics[2]));
-            let new_hash = format!("{:?}", H256::from_slice(&log.data[..32]));
-            sqlx::query!("UPDATE p2pool_positions SET bitmap_hash = $3 WHERE batch_id = $1 AND player = $2", batch_id, player, new_hash)
-                .execute(&self.pool).await?;
+            // After a claim, re-read position from chain to get updated balance
+            let pos = self.vision_contract.getPosition(batch_id as u64, Address::from(log.topics[2])).await?;
+            let balance = pos.balance.to_string();
+            let last_claimed = pos.lastClaimedTick.as_i64();
+            sqlx::query!(
+                "UPDATE p2pool_positions SET balance = $3, last_claimed_tick = $4 WHERE batch_id = $1 AND player = $2",
+                batch_id, player, balance, last_claimed
+            ).execute(&self.pool).await?;
         }
 
         // Save last indexed block
@@ -1928,6 +1962,7 @@ pub struct Batch {
     pub resolution_types: Vec<u8>,
     pub tick_duration: u64,          // seconds
     pub custom_thresholds: Vec<U256>,
+    pub created_at_tick: u64,        // block.timestamp / tickDuration at creation
     pub paused: bool,
 }
 
@@ -1958,22 +1993,26 @@ pub struct TickResult {
     pub batch_id: u64,
     pub tick_id: u64,
     pub market_results: Vec<MarketResult>,
-    pub player_balances: Vec<(Address, U256)>,
-    pub cancelled_markets: Vec<H256>,
+    pub player_balances: Vec<PlayerBalance>,
+    pub voided_players: Vec<Address>,   // non-revealed → stake refunded
+}
+
+/// Player balance after tick resolution
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlayerBalance {
+    pub player: Address,
+    pub old_balance: U256,
+    pub new_balance: U256,
+    pub delta: i128,
 }
 
 /// Resolution for a single market in a tick
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MarketResult {
     pub market_id: H256,
-    pub resolution_type: u8,
-    pub start_value: U256,      // price at tick start (18 dec)
-    pub end_value: U256,        // price at tick end (18 dec)
-    pub pct_change: i64,        // basis points
     pub outcome: MarketOutcome,
-    pub up_total: U256,
-    pub down_total: U256,
-    pub matched: U256,
+    pub pct_change: f64,                        // percentage (not basis points)
+    pub player_results: Vec<PlayerMarketResult>, // per-player side matching results
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -2011,26 +2050,29 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct P2PoolConfig {
-    /// Default commitment mult offset (log10(ticks + offset))
-    pub commitment_offset: u64,  // default 9
-    /// Reveal window duration in seconds
-    pub reveal_window_secs: u64, // default 600 (10 min)
-    /// Data-node URL for price fetching
-    pub data_node_url: String,
-    /// Vision contract address
-    pub vision_contract: String,
-    /// Enable P2Pool module
     pub enabled: bool,
+    pub vision_address: String,
+    pub data_node_url: String,
+    pub rpc_ws_url: String,
+    pub start_block: u64,
+    pub reveal_window_secs: u64,        // default 600 (10 min)
+    pub commitment_offset: u64,          // default 9
+    pub staleness_threshold_secs: u64,   // default 300
+    pub tick_poll_interval_ms: u64,      // default 1000
 }
 
 impl Default for P2PoolConfig {
     fn default() -> Self {
         Self {
-            commitment_offset: 9,
-            reveal_window_secs: 600,
-            data_node_url: "http://localhost:8200".into(),
-            vision_contract: String::new(),
             enabled: false,
+            vision_address: String::new(),
+            data_node_url: "http://localhost:8200".into(),
+            rpc_ws_url: "ws://localhost:8546".into(),
+            start_block: 0,
+            reveal_window_secs: 600,
+            commitment_offset: 9,
+            staleness_threshold_secs: 300,
+            tick_poll_interval_ms: 1000,
         }
     }
 }
@@ -2905,7 +2947,7 @@ impl TickResolver {
         let mut voided_players: Vec<Address> = Vec::new();
 
         for player in &active_players {
-            match self.bitmap_store.get(player.player, batch.id).await {
+            match self.bitmap_store.get(batch.id, player.player).await {
                 Some(stored) if stored.received_at <= reveal_deadline => {
                     revealed_players.push(player);
                 }
@@ -2937,7 +2979,18 @@ impl TickResolver {
         // If no price update since tick opened → cancel that sub-market
         let staleness_threshold = self.config.staleness_threshold_secs;
 
-        // === Step 6: Resolve each market ===
+        // === Step 6: Validate markets against issuer whitelist ===
+        // Reject batches with market IDs not in the active whitelist.
+        // This prevents garbage/malicious market IDs from wasting resolution resources.
+        let active_markets = self.fetch_active_market_ids().await?;
+        for market_id in &batch.market_ids {
+            if !active_markets.contains(market_id) {
+                tracing::warn!("Batch {} has non-whitelisted market {:?}, skipping tick", batch.id, market_id);
+                return Err(ResolverError::NonWhitelistedMarket(*market_id));
+            }
+        }
+
+        // === Step 7: Resolve each market ===
         let mut market_results: Vec<MarketResult> = Vec::new();
         let mut player_balances: HashMap<Address, i128> = HashMap::new(); // delta from this tick
 
@@ -3003,7 +3056,7 @@ impl TickResolver {
             // === Step 7: Decode bitmaps to get per-player sides ===
             let mut market_players: Vec<(Address, Side, U256)> = Vec::new();
             for (addr, effective_stake) in &player_mults {
-                if let Some(stored) = self.bitmap_store.get(*addr, batch.id).await {
+                if let Some(stored) = self.bitmap_store.get(batch.id, *addr).await {
                     // Bitmap format: tick-major. Bit at [tick_offset * num_markets + market_idx]
                     // 1 = UP, 0 = DOWN
                     let tick_offset = (tick_id - players.iter().find(|p| p.player == *addr)
@@ -3205,22 +3258,13 @@ REST endpoints served by the issuer. Follow the same axum pattern used in the ex
 - Create: `issuer/src/p2pool/engine.rs`
 - Modify: `issuer/src/p2pool/mod.rs`
 
-**Step 1: Add P2Pool config**
+**Step 1: Wire P2Pool config into IssuerConfig**
 
-In `issuer/src/config.rs`, add to IssuerConfig:
+In `issuer/src/config.rs`, add a field to `IssuerConfig`:
 ```rust
-#[derive(Debug, Clone, Deserialize)]
-pub struct P2PoolConfig {
-    pub enabled: bool,
-    pub vision_address: String,
-    pub data_node_url: String,
-    pub rpc_ws_url: String,
-    pub start_block: u64,
-    pub reveal_window_secs: u64,   // default 600
-    pub commitment_offset: u64,     // default 9
-    pub staleness_threshold_secs: u64, // default 300
-    pub tick_poll_interval_ms: u64, // how often to check for due ticks, default 1000
-}
+// P2PoolConfig is already defined in issuer/src/p2pool/config.rs (Task 3.1)
+// Just add the field to IssuerConfig:
+pub p2pool: P2PoolConfig,
 ```
 
 **Step 2: Create tick engine loop**
@@ -3370,7 +3414,7 @@ const PLAYER_DEPOSITED_TOPIC: &str = "PlayerDeposited(uint256,address,uint256)";
 const PLAYER_WITHDRAWN_TOPIC: &str = "PlayerWithdrawn(uint256,address,uint256)";
 const FORCE_WITHDRAWN_TOPIC: &str = "ForceWithdrawn(uint256,address,uint256)";
 const BATCH_PAUSED_TOPIC: &str = "BatchPaused(uint256)";
-const BITMAP_UPDATED_TOPIC: &str = "BitmapUpdated(uint256,address,bytes32)";
+const REWARDS_CLAIMED_TOPIC: &str = "RewardsClaimed(uint256,address,uint256)";
 
 impl ChainListener {
     pub fn new(
@@ -3442,7 +3486,14 @@ impl ChainListener {
                 tracing::info!("BatchPaused: id={batch_id}");
                 self.scheduler.on_batch_paused(batch_id).await?;
             }
-            // PlayerDeposited, PlayerWithdrawn, ForceWithdrawn, BitmapUpdated
+            t if *t == H256::from(ethers::utils::keccak256("RewardsClaimed(uint256,address,uint256)")) => {
+                let batch_id = U256::from_big_endian(&log.topics[1].as_bytes()).as_u64();
+                let player = Address::from(log.topics[2]);
+                tracing::info!("RewardsClaimed: batch={batch_id}, player={player:?}");
+                // Re-read player position from chain to update local state
+                self.scheduler.on_rewards_claimed(batch_id, player).await?;
+            }
+            // PlayerDeposited, PlayerWithdrawn, ForceWithdrawn
             // update local balance/bitmap state accordingly
             _ => {
                 tracing::debug!("Unhandled Vision event: {:?}", topic0);
@@ -3485,24 +3536,7 @@ if config.p2pool.enabled {
 }
 ```
 
-**Step 3: Add BitmapUpdated event to Vision.sol interface**
-
-Also add this event to `IVision.sol` (Task 1.1):
-```solidity
-event BitmapUpdated(uint256 indexed batchId, address indexed player, bytes32 newBitmapHash);
-```
-
-And emit it in `updateBitmap()`:
-```solidity
-function updateBitmap(uint256 batchId, bytes32 newBitmapHash) external {
-    PlayerPosition storage pos = _positions[batchId][msg.sender];
-    if (pos.joinTimestamp == 0) revert NotJoined();
-    pos.bitmapHash = newBitmapHash;
-    emit BitmapUpdated(batchId, msg.sender, newBitmapHash);
-}
-```
-
-**Step 4: Build and test**
+**Step 3: Build and test**
 
 Run: `cd issuer && cargo build`
 Expected: Compiles

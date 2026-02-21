@@ -3407,3 +3407,33 @@ The backtester currently supports one rebalance method: **periodic time-based re
 [DECISION] Backtest mock indicator — added `mock: true` flag to BacktestResult when using placeholder data, so frontend can display appropriate warning.
 
 [DECISION] GammaMarket Clone derive — added Clone to derive macro for Polymarket cache sharing.
+
+## 20260221-2200-r4p2 — P2Pool Implementation Plan Review Round 4
+
+[DECISION] updateBatchMarkets uses computed tick — replaced non-existent batch.currentTick with `block.timestamp / batch.tickDuration`. Ticks are deterministic, no on-chain currentTick field.
+
+[DECISION] Test BLS signatures — all tests that call BLS-gated functions must include proper BLS signature arguments.
+
+[DECISION] Rust Batch struct needs created_at_tick — added `created_at_tick: u64` field. Used by TickScheduler and ChainListener for tick time computation.
+
+[DECISION] BitmapStore::get arg order — fixed reversed arguments in resolver. Signature is `get(batch_id, player)`, not `get(player, batch_id)`.
+
+[DECISION] TickResult/MarketResult struct reconciliation — TickResult now uses `voided_players: Vec<Address>` and `player_balances: Vec<PlayerBalance>`. MarketResult simplified to `(market_id, outcome, pct_change: f64, player_results)` matching resolver output.
+
+[DECISION] RewardsClaimed event handling — added handler to both data-node indexer (re-reads position from chain) and issuer chain listener (calls scheduler.on_rewards_claimed). Without this, both local states went stale after claims.
+
+[DECISION] Single P2PoolConfig definition — merged Task 3.1 and Task 3.8 configs into one canonical definition in p2pool/config.rs with all 9 fields. Task 3.8 references it via IssuerConfig.
+
+[DECISION] forceWithdraw uses on-chain totalDeposited — removed totalDeposited parameter from forceWithdraw. Now reads pos.totalDeposited from storage, consistent with withdraw(). Removes trust in issuer-provided param.
+
+[DECISION] Unified fee model — claims are now fee-free (just transfer incremental gains + track totalClaimed). Fees collected only on withdraw/forceWithdraw based on lifetime profit: `totalExtracted = finalBalance + totalClaimed`, `profit = totalExtracted - totalDeposited`. Prevents overtaxing players who lose then recover.
+
+[DECISION] Market whitelist validation in resolver — added check that all batch market_ids are in the active issuer-curated whitelist before resolving. Rejects non-whitelisted markets.
+
+[DECISION] kv_store table in migration — added CREATE TABLE kv_store (key TEXT PK, value TEXT) to Task 2.3c migration. Used by chain indexer for last_indexed_block tracking.
+
+[DECISION] unpause function — added BLS-gated unpause() to complement pause(). Without it, paused batches were permanently frozen with no recovery except per-player forceWithdraw.
+
+[DECISION] Removed updateBitmap — bitmap hash is immutable (set once at joinBatch). No on-chain update function. Players must withdraw and rejoin to change strategy.
+
+[DECISION] Solvency trust model documented — per-payout solvency checks are correct but no global invariant. BLS issuer quorum is the trust anchor. Documented as design note in contract.
