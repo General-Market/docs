@@ -4,5 +4,6 @@
 //! This module handles batch management, bitmap storage, tick settlement,
 //! and player balance tracking.
 
+pub mod bitmap_store;
 pub mod config;
 pub mod types;
