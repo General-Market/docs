@@ -2,6 +2,7 @@ mod api;
 mod backfill;
 mod cg_backfill;
 mod cg_collector;
+pub mod chain_cache;
 mod coingecko;
 mod collector;
 mod config;
@@ -438,18 +439,69 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         });
     }
 
-    // FINRA
+    // SEC EFTS Filing Counts (no auth required)
     {
         let pool_c = pool.clone();
         tokio::spawn(async move {
-            match market_data::sources::finra::FinraMarketSource::from_env() {
+            match market_data::sources::sec_efts::SecEftsMarketSource::from_env() {
                 Ok(source) => {
                     let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
                     engine.run().await;
                 }
-                Err(e) => tracing::error!("FINRA init failed: {e}"),
+                Err(e) => tracing::error!("SEC EFTS init failed: {e}"),
             }
         });
+    }
+
+    // FINRA Daily Short Volume (no auth required, public CDN)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::finra_short_vol::FinraShortVolMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("FINRA Short Volume init failed: {e}"),
+            }
+        });
+    }
+
+    // SEC Form 4 Insider Trading (no auth required)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::sec_insider::SecInsiderMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("SEC Insider init failed: {e}"),
+            }
+        });
+    }
+
+    // FINRA — gated on OAuth credentials
+    if let Some(ref id) = args.finra_client_id {
+        if let Some(ref secret) = args.finra_client_secret {
+            std::env::set_var("FINRA_CLIENT_ID", id);
+            std::env::set_var("FINRA_CLIENT_SECRET", secret);
+            let pool_c = pool.clone();
+            tokio::spawn(async move {
+                match market_data::sources::finra::FinraMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                        engine.run().await;
+                    }
+                    Err(e) => tracing::error!("FINRA init failed: {e}"),
+                }
+            });
+            info!("FINRA short interest provider started");
+        } else {
+            info!("FINRA skipped (FINRA_CLIENT_SECRET not configured)");
+        }
+    } else {
+        info!("FINRA skipped (FINRA_CLIENT_ID not configured)");
     }
 
     // Congress (requires CONGRESS_API_KEY — skip silently if not set)
@@ -480,7 +532,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         });
     }
 
-    info!("Free market data providers started (SEC EDGAR, FINRA, Congress, World Bank)");
+    info!("Free market data providers started (SEC EDGAR, SEC EFTS, SEC Insider, FINRA Short Vol, Congress, World Bank)");
 
     // Create live ticker cache and start fast poller
     let live_cache = Arc::new(LiveTickerCache::new());
