@@ -14,7 +14,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use async_trait::async_trait;
 use ethers::types::{Address, H256, U256};
-use tokio::sync::RwLock;
+use tokio::sync::{Notify, RwLock};
 use tracing::{debug, info, warn};
 
 use common::bls::{BLSKeyPair, Bn254BLSSigner};
@@ -43,13 +43,15 @@ use super::types::{
     AssetTrade, AssetTradesProposal, AssetTradesResult,
     build_emit_asset_trades_hash, build_emit_asset_trades_calldata,
     // NAV push
-    build_set_itp_nav_calldata,
+    build_set_itp_nav_calldata, build_set_itp_nav_hash, SetItpNavResult,
     // Cross-chain sell consensus
     build_sell_bridge_hash, SellBridgeProposal, SellSubmitOrderResult,
     build_complete_sell_order_consensus_hash, CompleteSellProposal, CompleteSellOrderResult,
     // 8-step bridge: RecordCollateralMove + MintBridgedShares
     build_record_collateral_move_hash, RecordCollateralMoveProposal, RecordCollateralMoveResult,
     build_mint_bridged_shares_hash, MintBridgedSharesProposal, MintBridgedSharesResult,
+    // completeBuyOrder BLS consensus
+    build_complete_buy_order_hash, CompleteBuyOrderProposal, CompleteBuyOrderResult,
 };
 
 /// Trait for reading cross-chain order data from Arbitrum
@@ -111,6 +113,8 @@ pub struct BridgeOrchestrator {
     confirmed_releases: RwLock<HashMap<u64, H256>>, // cycle_number -> tx_hash
     /// Order amounts tracking: order_id → amount (for validation) - Story 7.6 code review fix
     order_amounts: RwLock<HashMap<U256, U256>>,
+    /// Order limit prices: order_id → limit_price (for E126 fill price validation)
+    order_limit_prices: RwLock<HashMap<U256, (U256, u8)>>, // (limit_price, side)
     /// Signature collectors for rebalance batch proposals (Story 7-14)
     /// Keyed by cycle_number
     rebalance_batch_signatures: RwLock<HashMap<u64, SignatureCollector>>,
@@ -152,6 +156,15 @@ pub struct BridgeOrchestrator {
     mint_shares_signatures: RwLock<HashMap<u64, SignatureCollector>>,
     /// Confirmed mint bridged shares (for deduplication)
     confirmed_mint_shares: RwLock<HashMap<u64, H256>>,
+    /// Signature collectors for completeBuyOrder proposals
+    complete_buy_signatures: RwLock<HashMap<u64, SignatureCollector>>,
+    /// Confirmed completeBuyOrder (for deduplication)
+    confirmed_complete_buy: RwLock<HashMap<u64, bool>>,
+    /// Notify for completeBuyOrder signature collection
+    pub complete_buy_notify: Arc<Notify>,
+    /// Signature collectors for setItpNav proposals (rebalance NAV consensus)
+    /// Keyed by itp_id
+    nav_signatures: RwLock<HashMap<H256, SignatureCollector>>,
 }
 
 impl BridgeOrchestrator {
@@ -187,6 +200,7 @@ impl BridgeOrchestrator {
             release_signatures: RwLock::new(HashMap::new()),
             confirmed_releases: RwLock::new(HashMap::new()),
             order_amounts: RwLock::new(HashMap::new()),
+            order_limit_prices: RwLock::new(HashMap::new()),
             rebalance_batch_signatures: RwLock::new(HashMap::new()),
             confirmed_rebalance_batches: RwLock::new(HashMap::new()),
             update_weights_signatures: RwLock::new(HashMap::new()),
@@ -207,6 +221,10 @@ impl BridgeOrchestrator {
             confirmed_collateral_moves: RwLock::new(HashMap::new()),
             mint_shares_signatures: RwLock::new(HashMap::new()),
             confirmed_mint_shares: RwLock::new(HashMap::new()),
+            complete_buy_signatures: RwLock::new(HashMap::new()),
+            confirmed_complete_buy: RwLock::new(HashMap::new()),
+            complete_buy_notify: Arc::new(Notify::new()),
+            nav_signatures: RwLock::new(HashMap::new()),
         }
     }
 
@@ -301,6 +319,16 @@ impl BridgeOrchestrator {
         self.order_amounts.read().await.get(order_id).copied()
     }
 
+    /// Store limit price and side for E126 fill price validation
+    pub async fn set_order_limit_price(&self, order_id: U256, limit_price: U256, side: u8) {
+        self.order_limit_prices.write().await.insert(order_id, (limit_price, side));
+    }
+
+    /// Get the stored limit price and side for an order
+    pub async fn get_order_limit_price(&self, order_id: &U256) -> Option<(U256, u8)> {
+        self.order_limit_prices.read().await.get(order_id).copied()
+    }
+
     // ========================================================================
     // Cross-Chain Sell Order Tracking
     // ========================================================================
@@ -365,11 +393,31 @@ impl BridgeOrchestrator {
     /// and are now waiting to be included in a batch confirmation.
     pub async fn get_submitted_bridged_orders(&self) -> Vec<U256> {
         let statuses = self.order_status.read().await;
-        statuses
+        let mut ids: Vec<U256> = statuses
             .iter()
             .filter(|(_, status)| **status == BridgeOrderStatus::SubmittedOnL3)
             .map(|(order_id, _)| *order_id)
-            .collect()
+            .collect();
+        // Sort for deterministic leader election — HashMap iteration is non-deterministic,
+        // so without sorting, different nodes may compute different batch_keys.
+        ids.sort();
+        ids
+    }
+
+    /// Check if any buy order is in a non-terminal bridge status.
+    ///
+    /// Returns true if any order is Pending, BridgedToL3, SubmittedOnL3, or Batched.
+    /// Used by L3-native processing to skip entirely when cross-chain is active,
+    /// preventing the race where L3-native registers the same physical order
+    /// under the L3 order ID while cross-chain tracks it under the Arb order ID.
+    pub async fn has_any_active_bridge_orders(&self) -> bool {
+        let statuses = self.order_status.read().await;
+        statuses.values().any(|status| matches!(status,
+            BridgeOrderStatus::Pending |
+            BridgeOrderStatus::BridgedToL3 |
+            BridgeOrderStatus::SubmittedOnL3 |
+            BridgeOrderStatus::Batched
+        ))
     }
 
     /// Get all L3 order IDs tracked by the bridge pipeline.
@@ -614,10 +662,12 @@ impl BridgeOrchestrator {
             });
         }
 
-        // Sign with this node's BLS key
+        // Sign with this node's BLS key (must use sign_message_hash, not sign_with_keypair,
+        // because expected_hash is already a keccak256 — sign_with_keypair would double-hash)
+        let hash_bytes: [u8; 32] = expected_hash.into();
         let signature = self
             .bls_signer
-            .sign_with_keypair(&self.bls_keypair, expected_hash.as_bytes())
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
             .map_err(|e| BridgeError::BlsSigningError {
                 reason: e.to_string(),
             })?;
@@ -997,19 +1047,22 @@ impl BridgeOrchestrator {
         &self,
         proposal: &SubmitOrderProposal,
     ) -> Result<bool, BridgeError> {
-        // 1. Check not already submitted (fail fast - most common rejection)
+        // 1. Check if mapping exists — this is OK for co-signing since followers
+        // may store a preliminary mapping before the leader's proposal arrives.
+        // The actual dedup protection is on-chain (submitOrder reverts if already submitted).
         if self.order_mappings.read().await.contains_key(&proposal.arb_order_id) {
-            warn!(
+            debug!(
                 arb_order_id = %proposal.arb_order_id,
-                "Order already submitted"
+                "Order mapping already exists, allowing co-sign (idempotent)"
             );
-            return Ok(false);
         }
 
         // 2. Check order status allows submission
         // Leader sets BridgedToL3 after executing the bridge. Followers may
         // still have Pending status (or None if they haven't tracked it yet),
         // which is valid since only the leader executes the bridge transaction.
+        // Followers also advance to SubmittedOnL3 in the main loop (main.rs:1116-1123)
+        // before the leader's submit proposal arrives via P2P, so accept that too.
         let status = self.get_order_status(&proposal.arb_order_id).await;
         match status {
             Some(BridgeOrderStatus::BridgedToL3) => {} // expected on leader
@@ -1019,6 +1072,14 @@ impl BridgeOrchestrator {
                     arb_order_id = %proposal.arb_order_id,
                     status = ?status,
                     "Order not BridgedToL3 locally, allowing submit (follower)"
+                );
+            }
+            Some(BridgeOrderStatus::SubmittedOnL3) => {
+                // Follower's main loop already advanced status before leader's
+                // P2P proposal arrived — co-signing is safe and idempotent
+                debug!(
+                    arb_order_id = %proposal.arb_order_id,
+                    "Order already SubmittedOnL3 locally, allowing co-sign"
                 );
             }
             _ => {
@@ -1110,10 +1171,12 @@ impl BridgeOrchestrator {
             });
         }
 
-        // Sign with this node's BLS key
+        // Sign with this node's BLS key (must use sign_message_hash, not sign_with_keypair,
+        // because expected_hash is already a keccak256 — sign_with_keypair would double-hash)
+        let hash_bytes: [u8; 32] = expected_hash.into();
         let signature = self
             .bls_signer
-            .sign_with_keypair(&self.bls_keypair, expected_hash.as_bytes())
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
             .map_err(|e| BridgeError::BlsSigningError {
                 reason: e.to_string(),
             })?;
@@ -1430,9 +1493,9 @@ impl BridgeOrchestrator {
         // Build the message hash for BLS signing
         let message_hash = build_confirm_batch_hash(
             self.config.l3_chain_id,
+            self.config.index_address,
             cycle_number,
             &order_ids,
-            &prices,
         );
 
         // Sign with leader's BLS key using sign_message_hash (not sign_with_keypair)
@@ -1490,9 +1553,9 @@ impl BridgeOrchestrator {
         // 2. Verify message hash matches
         let expected_hash = build_confirm_batch_hash(
             self.config.l3_chain_id,
+            self.config.index_address,
             proposal.cycle_number,
             &proposal.order_ids,
-            &proposal.prices,
         );
 
         if expected_hash != proposal.message_hash {
@@ -1524,9 +1587,9 @@ impl BridgeOrchestrator {
         // Rebuild the message hash to verify it matches
         let expected_hash = build_confirm_batch_hash(
             self.config.l3_chain_id,
+            self.config.index_address,
             proposal.cycle_number,
             &proposal.order_ids,
-            &proposal.prices,
         );
 
         if expected_hash != proposal.message_hash {
@@ -1541,10 +1604,12 @@ impl BridgeOrchestrator {
             });
         }
 
-        // Sign with this node's BLS key
+        // Sign with this node's BLS key (must use sign_message_hash, not sign_with_keypair,
+        // because expected_hash is already a keccak256 — sign_with_keypair would double-hash)
+        let hash_bytes: [u8; 32] = expected_hash.into();
         let signature = self
             .bls_signer
-            .sign_with_keypair(&self.bls_keypair, expected_hash.as_bytes())
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
             .map_err(|e| BridgeError::BlsSigningError {
                 reason: e.to_string(),
             })?;
@@ -1700,6 +1765,7 @@ impl BridgeOrchestrator {
         // Build the message hash for BLS signing
         let message_hash = build_confirm_fills_hash(
             self.config.l3_chain_id,
+            self.config.index_address,
             cycle_number,
             &fills,
         );
@@ -1747,6 +1813,7 @@ impl BridgeOrchestrator {
         // 1. Verify message hash matches
         let expected_hash = build_confirm_fills_hash(
             self.config.l3_chain_id,
+            self.config.index_address,
             proposal.cycle_number,
             &proposal.fills,
         );
@@ -1803,6 +1870,7 @@ impl BridgeOrchestrator {
         // Rebuild the message hash to verify it matches
         let expected_hash = build_confirm_fills_hash(
             self.config.l3_chain_id,
+            self.config.index_address,
             proposal.cycle_number,
             &proposal.fills,
         );
@@ -1819,10 +1887,12 @@ impl BridgeOrchestrator {
             });
         }
 
-        // Sign with this node's BLS key
+        // Sign with this node's BLS key (must use sign_message_hash, not sign_with_keypair,
+        // because expected_hash is already a keccak256 — sign_with_keypair would double-hash)
+        let hash_bytes: [u8; 32] = expected_hash.into();
         let signature = self
             .bls_signer
-            .sign_with_keypair(&self.bls_keypair, expected_hash.as_bytes())
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
             .map_err(|e| BridgeError::BlsSigningError {
                 reason: e.to_string(),
             })?;
@@ -2422,10 +2492,12 @@ impl BridgeOrchestrator {
             });
         }
 
-        // Sign with this node's BLS key
+        // Sign with this node's BLS key (must use sign_message_hash, not sign_with_keypair,
+        // because computed_hash is already a keccak256 — sign_with_keypair would double-hash)
+        let hash_bytes: [u8; 32] = computed_hash.into();
         let signature = self
             .bls_signer
-            .sign_with_keypair(&self.bls_keypair, computed_hash.as_bytes())
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
             .map_err(|e| BridgeError::BlsSigningError {
                 reason: e.to_string(),
             })?;
@@ -2700,10 +2772,12 @@ impl BridgeOrchestrator {
             });
         }
 
-        // Sign with this node's BLS key
+        // Sign with this node's BLS key (must use sign_message_hash, not sign_with_keypair,
+        // because expected_hash is already a keccak256 — sign_with_keypair would double-hash)
+        let hash_bytes: [u8; 32] = expected_hash.into();
         let signature = self
             .bls_signer
-            .sign_with_keypair(&self.bls_keypair, expected_hash.as_bytes())
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
             .map_err(|e| BridgeError::BlsSigningError {
                 reason: e.to_string(),
             })?;
@@ -3213,10 +3287,12 @@ impl BridgeOrchestrator {
             });
         }
 
-        // Sign with this node's BLS key
+        // Sign with this node's BLS key (must use sign_message_hash, not sign_with_keypair,
+        // because expected_hash is already a keccak256 — sign_with_keypair would double-hash)
+        let hash_bytes: [u8; 32] = expected_hash.into();
         let signature = self
             .bls_signer
-            .sign_with_keypair(&self.bls_keypair, expected_hash.as_bytes())
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
             .map_err(|e| BridgeError::BlsSigningError {
                 reason: e.to_string(),
             })?;
@@ -4098,6 +4174,124 @@ impl BridgeOrchestrator {
         }
     }
 
+    // ========================================================================
+    // setItpNav BLS Consensus (pre-rebalance NAV push)
+    // ========================================================================
+
+    /// Create a setItpNav proposal (leader only) - signs the nav hash
+    pub async fn propose_set_itp_nav(
+        &self,
+        itp_id: H256,
+        nav: U256,
+    ) -> Result<(H256, BLSSignature), BridgeError> {
+        let message_hash = build_set_itp_nav_hash(
+            self.config.l3_chain_id,
+            self.config.index_address,
+            itp_id,
+            nav,
+        );
+
+        let hash_bytes: [u8; 32] = message_hash.into();
+        let leader_signature = self
+            .bls_signer
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
+            .map_err(|e| BridgeError::BlsSigningError {
+                reason: e.to_string(),
+            })?;
+
+        info!(
+            itp_id = ?itp_id,
+            nav = %nav,
+            message_hash = ?message_hash,
+            "setItpNav proposal created"
+        );
+
+        Ok((message_hash, leader_signature))
+    }
+
+    /// Start signature collection for a setItpNav proposal
+    pub async fn start_nav_signature_collection(
+        &self,
+        itp_id: H256,
+        leader_signature: BLSSignature,
+    ) {
+        let mut map = self.nav_signatures.write().await;
+        let mut collector = SignatureCollector::new(U256::from_big_endian(itp_id.as_bytes()));
+        collector.add_signature(self.node_index, leader_signature);
+        map.insert(itp_id, collector);
+    }
+
+    /// Check if setItpNav signature threshold is reached
+    pub async fn check_nav_threshold(&self, itp_id: H256) -> Option<SetItpNavResult> {
+        let map = self.nav_signatures.read().await;
+        if let Some(collector) = map.get(&itp_id) {
+            if collector.has_threshold(self.config.min_signatures) {
+                let signatures: Vec<BLSSignature> = collector
+                    .signatures()
+                    .iter()
+                    .map(|(_, sig)| sig.clone())
+                    .collect();
+
+                let aggregated_signature = self
+                    .bls_signer
+                    .aggregate_signatures(signatures)
+                    .ok()?;
+
+                return Some(SetItpNavResult {
+                    aggregated_signature,
+                    signer_bitmap: collector.signer_bitmap(),
+                    signature_count: collector.signature_count(),
+                });
+            }
+        }
+        None
+    }
+
+    /// Get setItpNav signature count
+    pub async fn get_nav_signature_count(&self, itp_id: &H256) -> Option<usize> {
+        let map = self.nav_signatures.read().await;
+        map.get(itp_id).map(|c| c.signature_count())
+    }
+
+    /// Add a follower signature for a setItpNav proposal
+    pub async fn add_nav_signature(
+        &self,
+        itp_id: H256,
+        signer_index: u8,
+        signature: BLSSignature,
+    ) -> Result<Option<SetItpNavResult>, BridgeError> {
+        let mut map = self.nav_signatures.write().await;
+        if let Some(collector) = map.get_mut(&itp_id) {
+            collector.add_signature(signer_index, signature);
+            if collector.has_threshold(self.config.min_signatures) {
+                let signatures: Vec<BLSSignature> = collector
+                    .signatures()
+                    .iter()
+                    .map(|(_, sig)| sig.clone())
+                    .collect();
+
+                let aggregated_signature = self
+                    .bls_signer
+                    .aggregate_signatures(signatures)
+                    .ok()
+                    .ok_or_else(|| BridgeError::ChainWriterError {
+                        reason: "Failed to aggregate setItpNav signatures".to_string(),
+                    })?;
+
+                return Ok(Some(SetItpNavResult {
+                    aggregated_signature,
+                    signer_bitmap: collector.signer_bitmap(),
+                    signature_count: collector.signature_count(),
+                }));
+            }
+            Ok(None)
+        } else {
+            Err(BridgeError::ChainWriterError {
+                reason: format!("No nav signature collection for ITP {}", itp_id),
+            })
+        }
+    }
+
     /// Execute rebalance() on-chain after BLS consensus (leader only)
     pub async fn execute_rebalance(
         &self,
@@ -4108,6 +4302,7 @@ impl BridgeOrchestrator {
         prices: &[U256],
         aggregated: &RebalanceResult,
         computed_nav: U256,
+        nav_bls_signature: &[u8],
     ) -> Result<H256, BridgeError> {
         // Deduplication check (reuse confirmed_weight_updates map)
         if let Some(existing_tx) = self.confirmed_weight_updates.read().await.get(&itp_id) {
@@ -4123,9 +4318,8 @@ impl BridgeOrchestrator {
 
         // Push computed NAV on-chain BEFORE rebalance so that RebalanceLib
         // reads the real NAV instead of the stale _itpNavs (stuck at 1e18
-        // from createITP). Empty BLS signature works in dev mode (no
-        // issuerRegistry set).
-        let nav_calldata = build_set_itp_nav_calldata(itp_id, computed_nav, &[]);
+        // from createITP). BLS signature obtained via setItpNav consensus.
+        let nav_calldata = build_set_itp_nav_calldata(itp_id, computed_nav, nav_bls_signature);
         match self.l3_writer.send_transaction(
             self.config.index_address,
             nav_calldata,
@@ -4266,9 +4460,12 @@ impl BridgeOrchestrator {
             });
         }
 
+        // Must use sign_message_hash, not sign_with_keypair,
+        // because expected_hash is already a keccak256 — sign_with_keypair would double-hash
+        let hash_bytes: [u8; 32] = expected_hash.into();
         let signature = self
             .bls_signer
-            .sign_with_keypair(&self.bls_keypair, expected_hash.as_bytes())
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
             .map_err(|e| BridgeError::BlsSigningError {
                 reason: e.to_string(),
             })?;
@@ -4470,13 +4667,15 @@ impl BridgeOrchestrator {
 
     /// Get sell orders with SellSubmittedOnL3 status
     pub async fn get_submitted_sell_orders(&self) -> Vec<U256> {
-        self.sell_order_status
+        let mut ids: Vec<U256> = self.sell_order_status
             .read()
             .await
             .iter()
             .filter(|(_, status)| **status == BridgeOrderStatus::SellSubmittedOnL3)
             .map(|(id, _)| *id)
-            .collect()
+            .collect();
+        ids.sort();
+        ids
     }
 
     /// Store sell order mapping (arb → L3)
@@ -5062,9 +5261,12 @@ impl BridgeOrchestrator {
             });
         }
 
+        // Must use sign_message_hash, not sign_with_keypair,
+        // because expected_hash is already a keccak256 — sign_with_keypair would double-hash
+        let hash_bytes: [u8; 32] = expected_hash.into();
         let signature = self
             .bls_signer
-            .sign_with_keypair(&self.bls_keypair, expected_hash.as_bytes())
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
             .map_err(|e| BridgeError::BlsSigningError {
                 reason: e.to_string(),
             })?;
@@ -5305,9 +5507,12 @@ impl BridgeOrchestrator {
             });
         }
 
+        // Must use sign_message_hash, not sign_with_keypair,
+        // because expected_hash is already a keccak256 — sign_with_keypair would double-hash
+        let hash_bytes: [u8; 32] = expected_hash.into();
         let signature = self
             .bls_signer
-            .sign_with_keypair(&self.bls_keypair, expected_hash.as_bytes())
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
             .map_err(|e| BridgeError::BlsSigningError {
                 reason: e.to_string(),
             })?;
@@ -5425,6 +5630,180 @@ impl BridgeOrchestrator {
     /// Get mint shares signature count for diagnostics
     pub async fn get_mint_shares_signature_count(&self, cycle_number: u64) -> Option<usize> {
         let collectors = self.mint_shares_signatures.read().await;
+        collectors.get(&cycle_number).map(|c| c.signature_count())
+    }
+
+    // ========================================================================
+    // completeBuyOrder BLS consensus
+    // ========================================================================
+
+    pub fn propose_complete_buy_order(
+        &self,
+        cycle_number: u64,
+        order_id: U256,
+        vault: Address,
+    ) -> Result<CompleteBuyOrderProposal, BridgeError> {
+        let message_hash = build_complete_buy_order_hash(
+            self.config.arbitrum_chain_id,
+            self.config.arb_custody_address,
+            order_id,
+            vault,
+        );
+
+        let hash_bytes: [u8; 32] = message_hash.into();
+        let leader_signature = self
+            .bls_signer
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
+            .map_err(|e| BridgeError::BlsSigningError {
+                reason: e.to_string(),
+            })?;
+
+        info!(
+            cycle_number,
+            order_id = %order_id,
+            vault = ?vault,
+            message_hash = ?message_hash,
+            "CompleteBuyOrder proposal created"
+        );
+
+        Ok(CompleteBuyOrderProposal {
+            leader_id: self.peer_id,
+            cycle_number,
+            order_id,
+            vault,
+            leader_signature,
+            message_hash,
+        })
+    }
+
+    pub fn sign_complete_buy_order_proposal(
+        &self,
+        proposal: &CompleteBuyOrderProposal,
+    ) -> Result<BLSSignature, BridgeError> {
+        let expected_hash = build_complete_buy_order_hash(
+            self.config.arbitrum_chain_id,
+            self.config.arb_custody_address,
+            proposal.order_id,
+            proposal.vault,
+        );
+
+        if expected_hash != proposal.message_hash {
+            return Err(BridgeError::ProposalMismatch {
+                field: "message_hash".to_string(),
+            });
+        }
+
+        let hash_bytes: [u8; 32] = expected_hash.into();
+        let signature = self
+            .bls_signer
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
+            .map_err(|e| BridgeError::BlsSigningError {
+                reason: e.to_string(),
+            })?;
+
+        Ok(signature)
+    }
+
+    pub async fn start_complete_buy_order_signature_collection(
+        &self,
+        cycle_number: u64,
+        leader_signature: BLSSignature,
+    ) {
+        let mut collectors = self.complete_buy_signatures.write().await;
+        let mut collector = SignatureCollector::new(U256::from(cycle_number));
+        collector.add_signature(self.node_index, leader_signature);
+        collectors.insert(cycle_number, collector);
+        debug!(cycle_number, "Started completeBuyOrder signature collection");
+    }
+
+    pub async fn add_complete_buy_order_signature(
+        &self,
+        cycle_number: u64,
+        signer_index: u8,
+        signature: BLSSignature,
+    ) -> Result<Option<CompleteBuyOrderResult>, BridgeError> {
+        let mut collectors = self.complete_buy_signatures.write().await;
+        let collector = collectors.get_mut(&cycle_number).ok_or_else(|| {
+            BridgeError::CycleNotFound { cycle_number }
+        })?;
+
+        if !collector.add_signature(signer_index, signature) {
+            return Ok(None);
+        }
+
+        info!(
+            cycle_number,
+            signer_index,
+            collected = collector.signature_count(),
+            required = self.config.min_signatures,
+            "Added follower signature for completeBuyOrder"
+        );
+
+        if collector.has_threshold(self.config.min_signatures) {
+            let signatures: Vec<BLSSignature> = collector
+                .signatures()
+                .iter()
+                .map(|(_, sig)| sig.clone())
+                .collect();
+
+            let aggregated_signature = self
+                .bls_signer
+                .aggregate_signatures(signatures)
+                .map_err(|e| BridgeError::BlsSigningError {
+                    reason: e.to_string(),
+                })?;
+
+            self.complete_buy_notify.notify_waiters();
+
+            Ok(Some(CompleteBuyOrderResult {
+                aggregated_signature,
+                signer_bitmap: collector.signer_bitmap(),
+                signature_count: collector.signature_count(),
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub async fn check_complete_buy_order_threshold(
+        &self,
+        cycle_number: u64,
+    ) -> Option<CompleteBuyOrderResult> {
+        let collectors = self.complete_buy_signatures.read().await;
+        let collector = collectors.get(&cycle_number)?;
+
+        if collector.has_threshold(self.config.min_signatures) {
+            let signatures: Vec<BLSSignature> = collector
+                .signatures()
+                .iter()
+                .map(|(_, sig)| sig.clone())
+                .collect();
+
+            let aggregated_signature = self
+                .bls_signer
+                .aggregate_signatures(signatures)
+                .ok()?;
+
+            Some(CompleteBuyOrderResult {
+                aggregated_signature,
+                signer_bitmap: collector.signer_bitmap(),
+                signature_count: collector.signature_count(),
+            })
+        } else {
+            None
+        }
+    }
+
+    pub async fn is_complete_buy_order_confirmed(&self, cycle_number: u64) -> bool {
+        self.confirmed_complete_buy.read().await.contains_key(&cycle_number)
+    }
+
+    pub async fn mark_complete_buy_order_confirmed(&self, cycle_number: u64) {
+        self.confirmed_complete_buy.write().await.insert(cycle_number, true);
+    }
+
+    pub async fn get_complete_buy_order_signature_count(&self, cycle_number: u64) -> Option<usize> {
+        let collectors = self.complete_buy_signatures.read().await;
         collectors.get(&cycle_number).map(|c| c.signature_count())
     }
 

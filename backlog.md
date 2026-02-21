@@ -1,5 +1,100 @@
 # Design Decision Backlog
 
+## Session: 20260221-0714-e2e2
+
+- [FAILED] `validate_submit_order_proposal` rejected follower co-signs with INFRA-007 ("Order already submitted") because my fix from e2e1 stored order mappings on ALL nodes immediately after `run_submit_order_phase` returned (signer_count=0 on followers). When the leader's submit proposal arrived 7s later, `order_mappings.contains_key()` was true → rejected. Fix: changed the contains_key check from hard reject (`Ok(false)`) to debug log that allows co-signing. On-chain dedup protects against actual double-submission.
+- [DECISION] Cross-chain buy pipeline requires leader to be the same node for all phases (bridge → submit → batch → completeBuyOrder → fills → mint). Leader election uses `calculate_bridge_leader(order_id, num_issuers, node_index)` which is deterministic per order ID. Followers return immediately from each phase (signer_count=0) and only participate via background P2P message handler.
+
+## Session: 20260221-0700-e2e1
+
+- [DECISION] Added `ISSUER_BRIDGE_PROXY_ADDRESS` env var export in start.sh as belt-and-suspenders for BridgeConfig. Code already uses `params.bridge_proxy` (CLI arg) first, but env var was never exported as fallback.
+- [DECISION] completeBuyOrder (ArbBridgeCustody) was passing `vec![]` (empty BLS sig) because it lacked a BLS consensus phase. Added full CompleteBuyOrderProposal/Sign P2P messages and consensus phase (7 files changed). Modeled after existing MintBridgedShares consensus.
+- [DECISION] Hash mismatch on mintBridgedShares confirmed: `cast keccak(abi.encode(... Address::zero() ...))` = `0xe4dbfcae...` matches Rust log hash exactly. Root cause: `BridgeConfig.bridge_proxy` was `Address::zero()`. The code at consensus.rs:391 already uses `params.bridge_proxy` CLI arg, but the old binary may have been stale.
+
+## Session: 20260221-0600-bp0x
+
+- [DECISION] Root cause of E020_InvalidBLSSignature on mintBridgedShares: `BridgeConfig.bridge_proxy` was `Address::zero()` because `start.sh` passes `--bridge-proxy` as CLI arg (→ `params.bridge_proxy`), but `build_bridge_config()` in consensus.rs read from `config.effective_bridge_proxy_address()` (env var `ISSUER_BRIDGE_PROXY_ADDRESS`), which was never set. Fixed by having BridgeConfig read `params.bridge_proxy` first, then fall back to config env var. Verified with `cast keccak(abi-encode(... Address::zero() ...))` matching the issuer's logged hash.
+- [DECISION] Protocol.rs follower handler for MintBridgedShares also had `Address::zero()` and `sign_with_keypair` (fixed in previous session but wasn't tested due to zero-address being the upstream root cause).
+
+## Session: 20260221-0500-bls3
+
+- [DECISION] Found and fixed CRITICAL BLS signing mismatch: ALL 10 follower signing functions in orchestrator.rs used `sign_with_keypair()` which calls `hash_to_g1_solidity(message)` = `hash_to_g1(keccak256(message))`, while all leader proposal functions used `sign_message_hash()` which calls `hash_to_g1(message)` directly. This means leader and follower signatures were cryptographically incompatible — they signed different curve points. Aggregated signatures always failed on-chain BLS verification for confirmBatch, confirmFills, and every other BLS-verified operation. Fixed all 10 instances to use `sign_message_hash()`.
+- [DECISION] Widened L3-native guard from checking only SubmittedOnL3 orders to checking ALL non-terminal statuses (Pending, BridgedToL3, SubmittedOnL3, Batched) via new `has_any_active_bridge_orders()`. Previous guard let L3-native run during bridge/submit phase (order in Pending/BridgedToL3), causing it to register the same physical order under the L3 order ID → split-brain leader election.
+
+## Session: 20260221-0200-oid1
+
+- [DECISION] Root cause: cross-chain buy stuck at Collateral step. THREE interrelated bugs:
+  (1) BLS hash mismatch — cross-chain batch used Arb order IDs in BLS hash but contract expects L3 order IDs. ArbBridgeCustody starts at 0, Investment.sol starts at 1, so IDs always differ → confirmBatch always E020.
+  (2) L3-native double-registration — L3-native scanner checks order_status[l3_id] but orchestrator tracks by order_status[arb_id]. Returns None → same order registered twice → get_submitted_bridged_orders() returns [arb_id, l3_id] from HashMap (non-deterministic order) → batch_key varies between nodes → leader election corruption → all nodes am_leader=false.
+  (3) No completeBuyOrder in L3-native — even if L3-native batch+fills the order, it never calls completeBuyOrder on ArbBridgeCustody, so user's USDC collateral never released.
+- [DECISION] Fix 1: Resolve Arb→L3 IDs BEFORE batch/fills BLS hash. Leader uses resolve_l3_order_ids() to convert Arb IDs to L3 IDs, then uses L3 IDs in run_batch_confirm_phase and run_fills_confirm_phase. Followers receive L3 IDs in the P2P proposal and sign those. Contract verifies with L3 IDs. Everyone agrees.
+- [DECISION] Fix 2: Skip L3-native processing when cross-chain orders are in-flight. Guard at top of run_l3_native_order_processing checks get_submitted_bridged_orders(). Prevents dual-ID-namespace collision entirely.
+- [DECISION] Fix 3: Sort get_submitted_bridged_orders() and get_submitted_sell_orders() to ensure deterministic leader election regardless of HashMap iteration order.
+- [FAILED] Considered per-order L3-native filtering (match by amount, check order submitter, share L3 ID via P2P). All too complex or unreliable. "Skip when bridge in-flight" is simpler and correct for single-ITP setup.
+- [DECISION] Fix 4 (critical): ALL nodes must set order_status to SubmittedOnL3 after submit phase. Previously only leader did this (via mark_order_submitted_on_l3 in protocol.rs). Followers kept status=Pending, so get_submitted_bridged_orders() returned empty on followers → L3-native guard didn't protect them → dual-registration still happened. Fix: set_order_status(SubmittedOnL3) in main.rs after run_submit_order_phase succeeds, on ALL nodes.
+
+## Session: 20260220-2130-bls2
+
+- [DECISION] Fixed BLS hash mismatch (E020_InvalidBLSSignature): build_confirm_batch_hash and build_confirm_fills_hash in types.rs produced wrong hashes. Three issues: (1) missing address(this), (2) manual packed encoding instead of abi.encode, (3) batch hash included prices which contract doesn't. Rewrote both to use ethers::abi::encode with Token types matching Solidity's abi.encode(chainid, address(this), cycleNumber, data).
+- [DECISION] Updated all 10 callers across orchestrator.rs (6), protocol.rs (4), plus all tests in types.rs and batch_fill_integration.rs.
+- [DECISION] Fixed confirmFills calldata selector test — was checking 3-field Fill tuple, now matches 5-field (orderId, fillPrice, fillAmount, cycleNumber, txHash).
+- [DECISION] useItpNav: keep isLoading=true for up to 10 attempts (~15s) while data-node syncs ITP snapshots. Previously showed "No asset prices available" warning immediately on first failed fetch even though polling continues.
+- [DECISION] PortfolioSection: always fetch orders when wallet connected (not just when Orders tab is active). Show active orders banner at top of portfolio. Collapsed card shows active count badge.
+- [DECISION] Deleted /frontend directory — frontendV4 is the only frontend now.
+
+## Session: 20260220-2100-rcn1
+
+- [DECISION] Fixed cross-chain buy flow: removed premature BridgeOrderStatus::Filled on followers in main.rs:1120-1123. Followers' run_bridge/run_submit return immediately (dummy signer_count=0) while actual signing is async via P2P handlers. Setting Filled caused validate_submit_order_proposal() to reject the leader's proposal when it arrived seconds later. Fix: keep status=Pending so P2P handlers can process proposals.
+- [FAILED] The Filled shortcut had comment about preventing watchdog infinite retry loops, but it was wrong — it prevented the primary consensus path from working. Watchdog stale detection will handle timeouts correctly.
+- [DECISION] Updated issuer/src/state/reconstruction.rs ABI bindings to match Investment.sol (was Index.sol). Replaced 5 nonexistent functions (currentCycle, lastProcessedOrderId, assetCount, getPrice, nextItpId, orders, getPendingRebalance) with actual contract API (lastProcessedCycleNumber, nextOrderId, getOrder, getItpCount, getITPState returning creator+totalSupply+nav+assets+weights+inventory). Reconstruction was silently failing every startup, falling back to empty state.
+- [DECISION] Removed on-chain price loading step from reconstruction — assetPrices mapping was never written; prices sourced from data-node/Bitget at runtime.
+- [DECISION] Removed calculate_itp_value() helper — ITP total value now computed from NAV*totalSupply returned by getITPState, instead of summing inventory*price per asset.
+- [DECISION] Removed dead query_asset_count() from bootstrap/chain.rs — was already #[allow(dead_code)] and called nonexistent assetCount() function.
+
+## Session: 20260220-1530-mkt1
+
+- [DECISION] Merged 15 AA market-data-lib providers into Index data-node. Dropped AA's CoinGecko, DefiLlama, Zillow (Index is source of truth). Ported trait architecture (MarketDataSource, ScheduledMarketDataSource, SyncEngine, ScheduledSyncEngine, SlidingWindowRateLimiter) as new `data-node/src/market_data/` module (39 files, ~9,700 lines). Added migration 021 (market_assets + market_prices tables).
+- [DECISION] Added admin endpoints: POST /admin/reset-session (truncates itp_snapshots + trades, replaces psql in start.sh) and POST /admin/truncate/:table (granular, allowlisted). Protected tables: klines, coingecko_*, defillama_*, etc.
+- [DECISION] Changed PRICE_HISTORY_DAYS from 7/30 (hardcoded) to 365 (configurable via MARKET_DATA_RETENTION_DAYS env var). AA data sources have no historical API, so every data point is irreplaceable.
+- [DECISION] Added GET /market/batch-history?assets=id1,id2,...&from=&to= endpoint for querying historical prices across multiple assets at once (max 100 per request).
+- [DECISION] Updated start.sh to start data-node first, wait for health, then call /admin/reset-session with psql fallback.
+- [FAILED] Axum 0.7 route syntax: used {param} (Axum 0.8 style) instead of :param — caused 404s on all path-parameter routes. Fixed by switching to :param syntax.
+- [FAILED] Docker cross-compile from macOS: Docker Desktop wasn't running locally. Solved by building on VPS via `docker run rust:latest` with volume-mounted source.
+- [FAILED] Rust 1.83 too old: `time-core 0.1.8` requires edition2024 (Rust 1.85+). Switched from `rust:1.83-bookworm` to `rust:latest`.
+- [DECISION] Deployed to index-maker/prod/be (116.203.156.98). PostgreSQL at postgres://datanode:datanode123@localhost:5432/index_prices. Binary at ~/index-data-node, work dir at ~/index-dn-work.
+
+## Session: 20260220-1730-e2ef
+
+- [DECISION] Rewrote E2EEfficiency.t.sol with per-asset spread decomposition. Replaced single flat fillPrice with per-asset bid/ask NAV computation from Bitget spreads (BTC=0, ETH=1, SOL=12, AVAX=108, LINK=35 deci-bps). NAV computed from on-chain inventory quantities via getITPState(). Removed all usdc.mint(address(index),...) hacks — sells funded from buy deposits only. Added FeeRegistry integration with BLS-signed fee recording. All 3 tests self-funded with USDC conservation assertions.
+
+## Session: 20260220-1545-q8m3
+
+- [DECISION] Ported bilateral resolution VM from AA keeper (bilateral_resolution.rs) into issuer/src/arbitration/resolution.rs. Replaced anyhow with thiserror ResolutionError enum. Removed sqlx::PgPool / fetch_trades_by_merkle_root / TradeData / TradeRow (data-node REST replaces Postgres in Task 5). Kept ALL integer math identical: parse_threshold_to_bps, MethodType::parse, evaluate_trade, compute_outcome. Added regex = "1" to issuer Cargo.toml. Created minimal arbitration/mod.rs + wired pub mod arbitration in lib.rs so tests could run. 15 tests pass.
+
+## Session: 20260220-1500-v3k8
+
+- [DECISION] Imported AA bilateral P2P contracts into src/vision/: CollateralVault.sol (BLS arbitration via Index's BLSLib), BotRegistry.sol (bot staking), KeeperRegistry.sol (BLS key management), ReferralVault.sol (merkle-based referral rewards). Libraries: BettingLib.sol copied to src/libraries/, MerkleProof.sol renamed to VisionMerkleProof.sol (library name changed too) to avoid OpenZeppelin collision. All pragmas updated to ^0.8.24. CollateralVault reuses Index's BLSLib.verifyBLS (same signature) — no AA BLSLib or BLS.sol imported.
+
+## Session: 20260220-1430-m9v2
+
+- [DECISION] Replaced adminCreateBridgedItp (admin bypass removed during BLS unification) with proper requestCreateItp + completeCreateItp BLS-signed flow. Created contracts/script/CreateBridgedItp.s.sol that extends DeployBLSHelper, reads ITP token addresses from env, and signs with blsSign("0,1,2", messageHash). Updated start.sh step 3c to call this Forge script instead of cast send.
+- [DECISION] Deploy scripts (DeployBridgeE2E, DeployCrossChainE2E, DeployItpWhitelist) all migrated from vm.mockCall(address(0x08)) to real BLS signatures via DeployBLSHelper. Each now reads the AssetPairRegistry nonce, computes the exact message hash, and calls blsSign. DeployCrossChainE2E also registers real BLS pubkeys via blsPubkey(i) + blsAggPubkey("0,1,2").
+- [DECISION] Switched start.sh and stop.sh from /frontend to /frontendV4. All deployment.json syncing (step 6), .env.local generation (step 10), npm install/dev server/E2E tests now target frontendV4/. frontendV4 uses the same contract loading pattern (lib/contracts/deployment.json → addresses.ts → INDEX_PROTOCOL). Verified with full start.sh run: 16 E2E tests passed, all services healthy.
+- [DECISION] Fixed "vs Limit" color logic in BuyItpModal.tsx: was using Math.abs(slippage) which showed negative slippage (fill below limit = GOOD for buyer) in red. Changed to: slippage <= 0 always green, positive slippage uses warning/red thresholds. The -4.75% was correct math (limit = NAV * 1.05, fill = NAV → always ~-5%) but was misleadingly colored red.
+- [DECISION] Wired up BridgeProxy.mintBridgedShares (8-step bridge Step 8): (1) Updated build_mint_bridged_shares_calldata in types.rs to match post-BLS-unification signature (bytes32,address,uint256,bytes) — removed signer_bitmap and aggregated_pubkey params. (2) Added ArbitrumChainWriter.mint_bridged_shares() method. (3) After fills confirm in run_cross_chain_processing (main.rs), look up OrderMapping for original_user, compute shares = fillAmount * 1e18 / fillPrice, call run_mint_bridged_shares_phase for BLS consensus, then leader calls arb_writer.mint_bridged_shares(). Applied to both normal and E021-already-batched paths.
+
+## Session: 20260220-1630-b2k9
+
+- [DECISION] Fixed setItpNav empty BLS signature bug in rebalance flow. Added full BLS consensus for setItpNav: new P2P message types (SetItpNavProposal/SetItpNavSign), orchestrator methods (propose_set_itp_nav, start_nav_signature_collection, check_nav_threshold, add_nav_signature), consensus phase (run_set_itp_nav_phase with leader/follower/collect pattern matching existing rebalance phase), and wired up in main.rs rebalance flow. The setItpNav on-chain call requires _verifyBLS so the previous empty signature `&[]` would revert. Now runs proper consensus to collect aggregated BLS signature before calling setItpNav.
+
+## Session: 20260220-1530-p7x4
+
+- [DECISION] Added on-chain limit price enforcement in Index.sol confirmFills (E126_FillPriceViolatesLimit). BUY: fillPrice must be <= limitPrice. SELL: fillPrice must be >= limitPrice. limitPrice=0 means no limit (any price accepted). Belt-and-suspenders defense: issuers already validate, but contract now enforces too. Added 14 comprehensive tests in LimitPriceFill.t.sol. Fixed 2 existing tests (test_confirmFills_differentFillPrice, test_confirmFills_revertsOnZeroShares) that used limitPrice=1e18 but filled at higher prices -- changed them to limitPrice=0 since they test fill mechanics, not limit enforcement.
+
+## Session: 20260220-0010-k3f8
+
+- [DECISION] vm.expectRevert() + BLS signing helper fix: In 20 tests across CollateralRegistry.t.sol (3), FeeRegistry.t.sol (8), AssetPairRegistry.t.sol (9), pre-compute BLS signature BEFORE vm.expectRevert() and call the contract function directly after. The signing helpers (e.g. _signSetFeeRate, _signProposeAsset) call registry.getNonce() as an external staticcall, which gets captured by vm.expectRevert() instead of the intended contract call. Fix pattern: `bytes memory sig = _signFoo(...); vm.expectRevert(...); registry.foo(..., sig);`
+
 ## Session: 20260219-2356-r7q1
 
 - [DECISION] BLS migration batch 4: BridgeProxy.t.sol, E2EOrderToMint.t.sol, E2ERebalanceFlow.t.sol migrated from mocked BLS precompile (vm.mockCall address(0x08)) to real BLS signatures via FFI (bls-tool). setUp now calls registerTestIssuersWithBLS instead of vm.mockCall on getAggregatedPubkey. All _confirmBatch/_confirmFills/_rebalance helpers compute real message hashes and call signWithTestIssuers.
@@ -3139,3 +3234,9 @@ The backtester currently supports one rebalance method: **periodic time-based re
 [DECISION] Threshold rebalance: drift check compares current weight (value/total) vs target weight. Any coin exceeding threshold_pct triggers full rebalance. Safety: force rebalance at least once per 365d.
 
 [DECISION] Dual momentum cash mode: when avg trailing return < 0, return all-zero weights. Main loop detects empty rebalance result and sells all holdings, keeping portfolio_value as cash NAV until next rebalance.
+
+[DECISION] 20260221-0300-bls1: BLS seed mismatch root cause — bls-tool uses vec![idx; 32] but issuer used [seed_idx, 0x42, 0..0]. Fixed issuer to match bls-tool. This was the root cause of E020_InvalidBLSSignature on every non-empty batch since deployment. Never caught because empty batches skip on-chain submission.
+
+
+[DECISION] 20260221-0300-bls2: Fixed InMemoryKeyRegistry::generate_test_registry_with_offset (keys.rs) and registry_sync test helpers — all had old [i, 0x42, 0..0] seed format. Now all BLS seed generation across the entire codebase uses vec![idx; 32] matching bls-tool.
+

@@ -1100,6 +1100,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                 {
                     let orch_write = orchestrator.write().await;
                     orch_write.set_order_amount(order.order_id, order.amount).await;
+                    orch_write.set_order_limit_price(order.order_id, order.limit_price, 0).await; // 0 = BUY
                     orch_write.set_order_status(order.order_id, issuer::BridgeOrderStatus::Pending).await;
                 }
 
@@ -1113,13 +1114,27 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                 info!(order_id = %order.order_id, signer_count = submit_result.signature_count, "Submit order consensus completed");
                                 // Mark as processed so it won't be retried
                                 arb_reader.mark_order_processed(chain_id, order.order_id).await;
-
-                                // Followers: advance orchestrator to terminal status so the stale
-                                // order watchdog doesn't reset and create an infinite retry loop.
-                                // (Leader status is already advanced by execute_bridge/execute_submit.)
-                                if !am_leader {
-                                    let orch_write = orchestrator.write().await;
-                                    orch_write.set_order_status(order.order_id, issuer::BridgeOrderStatus::Filled).await;
+                                // ALL nodes must advance to SubmittedOnL3 so that:
+                                // 1. get_submitted_bridged_orders() returns the order on all nodes
+                                // 2. The L3-native guard sees it and skips (prevents double-registration)
+                                // 3. Batch leader election uses the same batch_key everywhere
+                                // (Leader already set this in protocol.rs, but followers haven't.)
+                                {
+                                    let orch = orchestrator.write().await;
+                                    orch.set_order_status(order.order_id, issuer::BridgeOrderStatus::SubmittedOnL3).await;
+                                    orch.set_order_amount(order.order_id, order.amount).await;
+                                    // Store mapping on ALL nodes (leader already stored via execute_submit_order,
+                                    // but followers need it too for mintBridgedShares user lookup).
+                                    let l3_id = submit_result.l3_order_id.unwrap_or(order.order_id);
+                                    orch.store_order_mapping(issuer::bridge::OrderMapping {
+                                        arb_order_id: order.order_id,
+                                        l3_order_id: l3_id,
+                                        original_user: order.user,
+                                        created_at: std::time::SystemTime::now()
+                                            .duration_since(std::time::UNIX_EPOCH)
+                                            .unwrap_or_default()
+                                            .as_secs(),
+                                    }).await;
                                 }
                             }
                             Err(e) => {
@@ -1146,6 +1161,26 @@ async fn run_cross_chain_processing<P, W, K, PF>(
     };
 
     if !submitted_orders.is_empty() {
+        // Resolve Arb order IDs → L3 order IDs for BLS hash and on-chain calls.
+        // The contract uses L3 IDs, so the BLS hash must match.
+        // On the leader, resolve_l3_order_ids uses stored mappings.
+        // On followers, it falls back to arb IDs (but followers don't create proposals —
+        // they receive L3 IDs from the leader's P2P broadcast and sign those).
+        let l3_order_ids = {
+            let o = orchestrator.read().await;
+            o.resolve_l3_order_ids(&submitted_orders).await
+        };
+        // Reverse lookup: L3 ID → Arb ID (for post-fill operations that need Arb IDs)
+        let l3_to_arb: std::collections::HashMap<ethers::types::U256, ethers::types::U256> =
+            l3_order_ids.iter().zip(submitted_orders.iter()).map(|(l3, arb)| (*l3, *arb)).collect();
+
+        info!(
+            cycle = current_cycle,
+            arb_order_ids = ?submitted_orders.iter().map(|id| id.as_u64()).collect::<Vec<_>>(),
+            l3_order_ids = ?l3_order_ids.iter().map(|id| id.as_u64()).collect::<Vec<_>>(),
+            "Resolved Arb→L3 order IDs for batch/fills"
+        );
+
         // Use order-based leader election (same node as submit leader, which has the arb→L3 mapping)
         let batch_key = submitted_orders.first().map(|id| id.as_u64()).unwrap_or(current_cycle);
         let batch_am_leader = calculate_bridge_leader(batch_key, num_issuers, node_index);
@@ -1153,11 +1188,11 @@ async fn run_cross_chain_processing<P, W, K, PF>(
 
         let nav = fetch_nav(&data_node_url_for_task, &itp_id_for_task, local_nav_fallback).await;
         info!(cycle = current_cycle, nav = %nav, local_nav_fallback = %local_nav_fallback, "NAV for batch confirm fills");
-        let prices: Vec<ethers::types::U256> = submitted_orders.iter()
+        let prices: Vec<ethers::types::U256> = l3_order_ids.iter()
             .map(|_| nav)
             .collect();
 
-        match protocol.run_batch_confirm_phase(current_cycle, submitted_orders.clone(), prices, batch_am_leader).await {
+        match protocol.run_batch_confirm_phase(current_cycle, l3_order_ids.clone(), prices, batch_am_leader).await {
             Ok(batch_result) => {
                 info!(cycle = current_cycle, signer_count = batch_result.signature_count, "Batch confirmation completed");
 
@@ -1188,25 +1223,46 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                     }
                 }
 
-                // completeBuyOrder: ArbBridgeCustody → vault
-                if batch_am_leader {
+                // completeBuyOrder: ArbBridgeCustody → vault (BLS consensus required)
+                {
                     let vault = orchestrator.read().await.config().bitget_vault;
                     for order_id in &submitted_orders {
-                        match arb_writer.complete_buy_order(*order_id, vault, vec![]).await {
-                            Ok(tx_hash) => info!(?tx_hash, order_id = %order_id, "completeBuyOrder submitted"),
-                            Err(e) => warn!(error = %e, order_id = %order_id, "completeBuyOrder failed"),
+                        match protocol.run_complete_buy_order_phase(
+                            current_cycle, *order_id, vault, batch_am_leader,
+                        ).await {
+                            Ok(cbo_result) => {
+                                info!(cycle = current_cycle, order_id = %order_id, signer_count = cbo_result.signature_count, "CompleteBuyOrder consensus completed");
+                                if batch_am_leader && !cbo_result.aggregated_signature.0.is_empty() {
+                                    match arb_writer.complete_buy_order(*order_id, vault, cbo_result.aggregated_signature.0.clone()).await {
+                                        Ok(tx_hash) => info!(?tx_hash, order_id = %order_id, "completeBuyOrder submitted"),
+                                        Err(e) => warn!(error = %e, order_id = %order_id, "completeBuyOrder failed"),
+                                    }
+                                }
+                            }
+                            Err(e) => warn!(error = %e, order_id = %order_id, "CompleteBuyOrder consensus failed"),
                         }
                     }
                 }
 
+                // Build fills with L3 order IDs (for BLS hash + on-chain), amounts from Arb ID lookup
+                // Filter out orders where fill price violates limit (E126 guard)
                 let fills: Vec<Fill> = {
                     let o = orchestrator.read().await;
                     let mut fills = Vec::new();
-                    for order_id in &submitted_orders {
-                        let amount = o.get_order_amount(order_id).await
+                    for (l3_id, arb_id) in l3_order_ids.iter().zip(submitted_orders.iter()) {
+                        let amount = o.get_order_amount(arb_id).await
                             .unwrap_or(ethers::types::U256::exp10(18));
+                        // Check limit price from orchestrator (stored when order was first tracked)
+                        if let Some((limit_price, side)) = o.get_order_limit_price(arb_id).await {
+                            let order_side = common::types::Side::from(side);
+                            if !fill_price_respects_limit(nav, limit_price, order_side) {
+                                warn!(order_id = %arb_id, l3_id = %l3_id, nav = %nav, limit_price = %limit_price,
+                                    "Skipping cross-chain fill: NAV violates limit price (E126 guard)");
+                                continue;
+                            }
+                        }
                         fills.push(Fill {
-                            order_id: *order_id,
+                            order_id: *l3_id, // L3 ID for on-chain confirmFills
                             fill_price: nav,
                             fill_amount: amount,
                         });
@@ -1222,8 +1278,9 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                         if let Ok(itp_h256) = itp_id_for_task.parse::<ethers::types::H256>() {
                             let bridge_proxy = orchestrator.read().await.config().bridge_proxy;
                             for fill in &fills {
-                                // Look up original user from order mapping
-                                let mapping = orchestrator.read().await.get_order_mapping(&fill.order_id).await;
+                                // Look up original user from order mapping (using Arb ID)
+                                let arb_id = l3_to_arb.get(&fill.order_id).copied().unwrap_or(fill.order_id);
+                                let mapping = orchestrator.read().await.get_order_mapping(&arb_id).await;
                                 if let Some(mapping) = mapping {
                                     // shares = fill_amount * 1e18 / fill_price
                                     let shares = if fill.fill_price > ethers::types::U256::zero() {
@@ -1243,7 +1300,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                                     Ok(tx_hash) => {
                                                         info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted on Arb");
                                                         let orch = orchestrator.write().await;
-                                                        orch.mark_orders_shares_bridged(&[fill.order_id]).await;
+                                                        orch.mark_orders_shares_bridged(&[arb_id]).await;
                                                     }
                                                     Err(e) => warn!(error = %e, user = ?mapping.original_user, "mintBridgedShares tx failed"),
                                                 }
@@ -1266,14 +1323,36 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                     // Order was already batched (e.g. by regular consensus). Skip to fills directly.
                     info!(cycle = current_cycle, "Orders already batched (E021), skipping to fills");
 
+                    // E021: completeBuyOrder (may already be done, E125 is benign)
+                    {
+                        let vault = orchestrator.read().await.config().bitget_vault;
+                        for order_id in &submitted_orders {
+                            match protocol.run_complete_buy_order_phase(
+                                current_cycle, *order_id, vault, batch_am_leader,
+                            ).await {
+                                Ok(cbo_result) => {
+                                    info!(cycle = current_cycle, order_id = %order_id, signer_count = cbo_result.signature_count, "CompleteBuyOrder consensus (E021 path)");
+                                    if batch_am_leader && !cbo_result.aggregated_signature.0.is_empty() {
+                                        match arb_writer.complete_buy_order(*order_id, vault, cbo_result.aggregated_signature.0.clone()).await {
+                                            Ok(tx_hash) => info!(?tx_hash, order_id = %order_id, "completeBuyOrder submitted (E021 path)"),
+                                            Err(e) => info!(error = %e, order_id = %order_id, "completeBuyOrder already done or failed (E021 path)"),
+                                        }
+                                    }
+                                }
+                                Err(e) => warn!(error = %e, order_id = %order_id, "CompleteBuyOrder consensus failed (E021 path)"),
+                            }
+                        }
+                    }
+
+                    // E021 fallback: use L3 IDs for fills, Arb IDs for internal tracking
                     let fills: Vec<Fill> = {
                         let o = orchestrator.read().await;
                         let mut fills = Vec::new();
-                        for order_id in &submitted_orders {
-                            let amount = o.get_order_amount(order_id).await
+                        for (l3_id, arb_id) in l3_order_ids.iter().zip(submitted_orders.iter()) {
+                            let amount = o.get_order_amount(arb_id).await
                                 .unwrap_or(ethers::types::U256::exp10(18));
                             fills.push(Fill {
-                                order_id: *order_id,
+                                order_id: *l3_id, // L3 ID for on-chain confirmFills
                                 fill_price: nav,
                                 fill_amount: amount,
                             });
@@ -1295,7 +1374,8 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                             if let Ok(itp_h256) = itp_id_for_task.parse::<ethers::types::H256>() {
                                 let bridge_proxy = orchestrator.read().await.config().bridge_proxy;
                                 for fill in &fills {
-                                    let mapping = orchestrator.read().await.get_order_mapping(&fill.order_id).await;
+                                    let arb_id = l3_to_arb.get(&fill.order_id).copied().unwrap_or(fill.order_id);
+                                    let mapping = orchestrator.read().await.get_order_mapping(&arb_id).await;
                                     if let Some(mapping) = mapping {
                                         let shares = if fill.fill_price > ethers::types::U256::zero() {
                                             (fill.fill_amount * ethers::types::U256::exp10(18)) / fill.fill_price
@@ -1312,7 +1392,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                                         Ok(tx_hash) => {
                                                             info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted (E021 path)");
                                                             let orch = orchestrator.write().await;
-                                                            orch.mark_orders_shares_bridged(&[fill.order_id]).await;
+                                                            orch.mark_orders_shares_bridged(&[arb_id]).await;
                                                         }
                                                         Err(e) => warn!(error = %e, "mintBridgedShares tx failed (E021 path)"),
                                                     }
@@ -1327,11 +1407,49 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                         Err(e) => {
                             let fills_err = format!("{}", e);
                             if fills_err.contains("6e6e29cb") || fills_err.contains("already") {
-                                // Order already filled on-chain. Mark as Filled to stop re-processing.
-                                info!(cycle = current_cycle, "Order already filled on-chain, marking as Filled");
-                                let orch = orchestrator.write().await;
-                                for oid in &submitted_orders {
-                                    orch.set_order_status(*oid, issuer::BridgeOrderStatus::Filled).await;
+                                // Order already filled on-chain. Mark as Filled and proceed to mint.
+                                info!(cycle = current_cycle, "Order already filled on-chain, proceeding to mint");
+                                {
+                                    let orch = orchestrator.write().await;
+                                    for oid in &submitted_orders {
+                                        orch.set_order_status(*oid, issuer::BridgeOrderStatus::Filled).await;
+                                    }
+                                }
+
+                                // Mint BridgedITP shares (already-filled path)
+                                if let Ok(itp_h256) = itp_id_for_task.parse::<ethers::types::H256>() {
+                                    let bridge_proxy = orchestrator.read().await.config().bridge_proxy;
+                                    for fill in &fills {
+                                        let arb_id = l3_to_arb.get(&fill.order_id).copied().unwrap_or(fill.order_id);
+                                        let mapping = orchestrator.read().await.get_order_mapping(&arb_id).await;
+                                        if let Some(mapping) = mapping {
+                                            let shares = if fill.fill_price > ethers::types::U256::zero() {
+                                                (fill.fill_amount * ethers::types::U256::exp10(18)) / fill.fill_price
+                                            } else {
+                                                fill.fill_amount
+                                            };
+
+                                            match protocol.run_mint_bridged_shares_phase(
+                                                current_cycle, itp_h256, mapping.original_user, shares, bridge_proxy, batch_am_leader,
+                                            ).await {
+                                                Ok(mint_result) => {
+                                                    if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
+                                                        match arb_writer.mint_bridged_shares(itp_h256, mapping.original_user, shares, mint_result.aggregated_signature.0.clone()).await {
+                                                            Ok(tx_hash) => {
+                                                                info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted (already-filled path)");
+                                                                let orch = orchestrator.write().await;
+                                                                orch.mark_orders_shares_bridged(&[arb_id]).await;
+                                                            }
+                                                            Err(e) => warn!(error = %e, "mintBridgedShares tx failed (already-filled path)"),
+                                                        }
+                                                    }
+                                                }
+                                                Err(e) => warn!(cycle = current_cycle, error = %e, "MintBridgedShares failed (already-filled path)"),
+                                            }
+                                        } else {
+                                            warn!(order_id = %fill.order_id, "No order mapping found (already-filled path)");
+                                        }
+                                    }
                                 }
                             } else {
                                 warn!(cycle = current_cycle, error = %e, "Fills confirmation also failed after E021");
@@ -2000,6 +2118,22 @@ async fn run_rebalance_processing<P, W, K, PF>(
     }
 }
 
+/// Check if a fill price respects an order's limit price (E126 guard).
+/// Returns true if the fill can proceed, false if it would violate the limit.
+fn fill_price_respects_limit(
+    fill_price: ethers::types::U256,
+    limit_price: ethers::types::U256,
+    side: common::types::Side,
+) -> bool {
+    if limit_price.is_zero() {
+        return true; // No limit set
+    }
+    match side {
+        common::types::Side::Buy => fill_price <= limit_price,
+        common::types::Side::Sell => fill_price >= limit_price,
+    }
+}
+
 /// Auto-process L3-native pending orders (sell orders, direct L3 buys).
 ///
 /// These orders are NOT handled by the bridge pipeline (which only processes
@@ -2024,6 +2158,22 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     K: issuer::KeyRegistry + Send + Sync + 'static,
     PF: issuer::PriceFetcher + Send + Sync + 'static,
 {
+    // Guard: Skip L3-native processing when ANY cross-chain order is active.
+    // Must check ALL non-terminal statuses (Pending, BridgedToL3, SubmittedOnL3, Batched),
+    // not just SubmittedOnL3. Otherwise, during the bridge/submit phase the guard passes
+    // and L3-native picks up the same physical order under the L3 order ID, causing
+    // split-brain leader election (different nodes see different order IDs).
+    {
+        let orch = orchestrator.read().await;
+        if orch.has_any_active_bridge_orders().await {
+            debug!(
+                cycle = current_cycle,
+                "Skipping L3-native: cross-chain orders in-flight (processed by bridge pipeline)"
+            );
+            return;
+        }
+    }
+
     // 1. Fetch all pending orders from L3
     let pending_orders = match chain_reader.get_pending_orders().await {
         Ok(orders) => orders,
@@ -2116,13 +2266,23 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
             }
 
             // 7. Build fills and run confirmFills via BLS consensus
-            let fills: Vec<Fill> = l3_native_orders.iter().map(|order| {
-                Fill {
+            // Filter out orders where fill price would violate limit (E126 guard)
+            let fills: Vec<Fill> = l3_native_orders.iter().filter_map(|order| {
+                if !fill_price_respects_limit(nav, order.limit_price, order.side) {
+                    warn!(order_id = %order.id, nav = %nav, limit_price = %order.limit_price, side = ?order.side,
+                        "Skipping fill: NAV violates order limit price (E126 guard)");
+                    return None;
+                }
+                Some(Fill {
                     order_id: order.id,
                     fill_price: nav,
                     fill_amount: order.amount,
-                }
+                })
             }).collect();
+
+            if fills.is_empty() {
+                warn!(cycle = current_cycle, "All L3-native fills skipped due to limit price violations");
+            }
 
             match protocol.run_fills_confirm_phase(l3_cycle, fills, am_leader).await {
                 Ok(fills_result) => {
@@ -2152,12 +2312,17 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
             if err_str.contains("E021") || err_str.contains("already") {
                 info!(cycle = current_cycle, "Orders already batched, attempting fills only");
 
-                let fills: Vec<Fill> = l3_native_orders.iter().map(|order| {
-                    Fill {
+                let fills: Vec<Fill> = l3_native_orders.iter().filter_map(|order| {
+                    if !fill_price_respects_limit(nav, order.limit_price, order.side) {
+                        warn!(order_id = %order.id, nav = %nav, limit_price = %order.limit_price,
+                            "Skipping fill (E021 retry): NAV violates limit price");
+                        return None;
+                    }
+                    Some(Fill {
                         order_id: order.id,
                         fill_price: nav,
                         fill_amount: order.amount,
-                    }
+                    })
                 }).collect();
 
                 match protocol.run_fills_confirm_phase(l3_cycle, fills, am_leader).await {
@@ -2239,13 +2404,23 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
         warn!("NAV is zero after fetch, using local fallback");
         nav = local_nav_fallback;
     }
-    let fills: Vec<Fill> = l3_batched_orders.iter().map(|order| {
-        Fill {
+    let fills: Vec<Fill> = l3_batched_orders.iter().filter_map(|order| {
+        if !fill_price_respects_limit(nav, order.limit_price, order.side) {
+            warn!(order_id = %order.id, nav = %nav, limit_price = %order.limit_price, side = ?order.side,
+                "Skipping BATCHED fill: NAV violates order limit price (E126 guard)");
+            return None;
+        }
+        Some(Fill {
             order_id: order.id,
             fill_price: nav,
             fill_amount: order.amount,
-        }
+        })
     }).collect();
+
+    if fills.is_empty() {
+        info!(cycle = current_cycle, fills_cycle, "No fillable BATCHED orders (all limit-violated), skipping");
+        return;
+    }
 
     match protocol.run_fills_confirm_phase(fills_cycle, fills, fills_am_leader).await {
         Ok(fills_result) => {
