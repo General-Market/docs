@@ -571,6 +571,21 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         }
     }
 
+    // HackerNews (story scores) — gated on hackernews_enabled flag, no API key needed
+    if args.hackernews_enabled {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::hackernews::HackerNewsSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("HackerNews init failed: {e}"),
+            }
+        });
+        info!("HackerNews story score provider started");
+    }
+
     // Create live ticker cache and start fast poller
     let live_cache = Arc::new(LiveTickerCache::new());
     {

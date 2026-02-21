@@ -171,6 +171,10 @@ pub struct ServeArgs {
     #[arg(long, env = "TWITCH_CLIENT_SECRET")]
     pub twitch_client_secret: Option<String>,
 
+    /// Enable HackerNews story score collector (no key needed)
+    #[arg(long, default_value = "false", env = "HACKERNEWS_ENABLED")]
+    pub hackernews_enabled: bool,
+
     /// P2.8: Allowed CORS origins (repeat for multiple). Empty = allow all.
     #[arg(long, env = "CORS_ORIGIN")]
     pub cors_origin: Vec<String>,

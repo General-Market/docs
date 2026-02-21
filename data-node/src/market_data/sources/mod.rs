@@ -1,4 +1,4 @@
-//! Market data provider implementations (17 providers)
+//! Market data provider implementations (18 providers)
 
 pub mod bls;
 pub mod congress;
@@ -8,6 +8,7 @@ pub mod finnhub;
 pub mod finra;
 pub mod finra_short_vol;
 pub mod fred;
+pub mod hackernews;
 pub mod nasdaq;
 pub mod openmeteo;
 pub mod polymarket;
@@ -27,6 +28,7 @@ pub use finnhub::FinnhubClient as FinnhubMarketSource;
 pub use finra::FinraMarketSource;
 pub use finra_short_vol::FinraShortVolMarketSource;
 pub use fred::FredMarketSource;
+pub use hackernews::HackerNewsSource;
 pub use nasdaq::{BchainMarketSource, CftcMarketSource, ChrisMarketSource, ImfMarketSource, OpecMarketSource};
 pub use openmeteo::OpenMeteoMarketSource;
 pub use polymarket::PolymarketSource;
