@@ -276,38 +276,99 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
 
     // ============ BOT REGISTRY ============
 
-    function registerBot(string calldata endpoint, bytes32 pubkeyHash) external {
-        // TODO: Task 1.5
-        revert("NOT_IMPLEMENTED");
+    function registerBot(string calldata endpoint, bytes32 pubkeyHash) external nonReentrant {
+        if (_bots[msg.sender].isActive || _botIndex[msg.sender] != 0) revert BotAlreadyRegistered();
+
+        WIND.safeTransferFrom(msg.sender, address(this), BOT_MIN_STAKE);
+
+        _bots[msg.sender] = Bot({
+            endpoint: endpoint,
+            pubkeyHash: pubkeyHash,
+            stakedAmount: BOT_MIN_STAKE,
+            registeredAt: block.timestamp,
+            isActive: true
+        });
+
+        _botAddresses.push(msg.sender);
+        _botIndex[msg.sender] = _botAddresses.length; // 1-indexed
+
+        emit BotRegistered(msg.sender, endpoint);
     }
 
-    function deregisterBot() external {
-        // TODO: Task 1.5
-        revert("NOT_IMPLEMENTED");
+    function deregisterBot() external nonReentrant {
+        Bot storage bot = _bots[msg.sender];
+        if (!bot.isActive) revert BotNotRegistered();
+
+        uint256 stakeToReturn = bot.stakedAmount;
+
+        // Swap-and-pop removal from _botAddresses
+        uint256 idx = _botIndex[msg.sender] - 1; // convert to 0-based
+        address lastBot = _botAddresses[_botAddresses.length - 1];
+        _botAddresses[idx] = lastBot;
+        _botIndex[lastBot] = idx + 1; // update moved bot's 1-indexed position
+        _botAddresses.pop();
+        delete _botIndex[msg.sender];
+        delete _bots[msg.sender];
+
+        WIND.safeTransfer(msg.sender, stakeToReturn);
+
+        emit BotDeregistered(msg.sender);
     }
 
     function getAllActiveBots() external view returns (address[] memory, Bot[] memory) {
-        // TODO: Task 1.5
-        revert("NOT_IMPLEMENTED");
+        uint256 len = _botAddresses.length;
+        Bot[] memory bots = new Bot[](len);
+        for (uint256 i = 0; i < len; i++) {
+            bots[i] = _bots[_botAddresses[i]];
+        }
+        return (_botAddresses, bots);
     }
 
     // ============ FEE MANAGEMENT ============
 
-    function collectFees() external {
-        // TODO: Task 1.5
-        revert("NOT_IMPLEMENTED");
+    function collectFees() external nonReentrant {
+        if (msg.sender != feeCollector) revert Unauthorized();
+
+        uint256 fees = accumulatedFees;
+        accumulatedFees = 0;
+
+        USDC.safeTransfer(feeCollector, fees);
     }
 
     // ============ ISSUER OPERATIONS ============
 
     function pause(uint256 batchId, bytes calldata blsSignature) external {
-        // TODO: Task 1.5
-        revert("NOT_IMPLEMENTED");
+        Batch storage batch = _batches[batchId];
+        if (batch.creator == address(0)) revert BatchNotFound();
+
+        bytes32 message = keccak256(abi.encode(
+            block.chainid,
+            address(this),
+            "PAUSE",
+            batchId
+        ));
+        _verifyBLS(message, blsSignature);
+
+        batch.paused = true;
+
+        emit BatchPausedEvent(batchId);
     }
 
     function unpause(uint256 batchId, bytes calldata blsSignature) external {
-        // TODO: Task 1.5
-        revert("NOT_IMPLEMENTED");
+        Batch storage batch = _batches[batchId];
+        if (batch.creator == address(0)) revert BatchNotFound();
+
+        bytes32 message = keccak256(abi.encode(
+            block.chainid,
+            address(this),
+            "UNPAUSE",
+            batchId
+        ));
+        _verifyBLS(message, blsSignature);
+
+        batch.paused = false;
+
+        emit BatchUnpaused(batchId);
     }
 
     function forceWithdraw(
@@ -315,8 +376,36 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         address player,
         uint256 finalBalance,
         bytes calldata blsSignature
-    ) external {
-        // TODO: Task 1.5
-        revert("NOT_IMPLEMENTED");
+    ) external nonReentrant {
+        PlayerPosition storage position = _positions[batchId][player];
+        if (position.stakePerTick == 0) revert NotJoined();
+
+        bytes32 message = keccak256(abi.encode(
+            block.chainid,
+            address(this),
+            "FORCE_WITHDRAW",
+            batchId,
+            player,
+            finalBalance
+        ));
+        _verifyBLS(message, blsSignature);
+
+        // Fee on profit only
+        uint256 totalDeposited = position.totalDeposited;
+        uint256 profit = finalBalance > totalDeposited ? finalBalance - totalDeposited : 0;
+        uint256 fee = (profit * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
+        uint256 payout = finalBalance - fee;
+
+        accumulatedFees += fee;
+
+        // Solvency check
+        if (USDC.balanceOf(address(this)) < payout + accumulatedFees) revert InsolventPayout();
+
+        // Delete position before transfer (CEI pattern)
+        delete _positions[batchId][player];
+
+        USDC.safeTransfer(player, payout);
+
+        emit ForceWithdrawn(batchId, player, payout);
     }
 }

@@ -756,4 +756,381 @@ contract VisionTest is TestHelper {
         assertEq(pos.balance, 0, "Non-existent position balance should be 0");
         assertEq(pos.bitmapHash, bytes32(0), "Non-existent position bitmapHash should be 0");
     }
+
+    // ============ Helper: prepare bot with WIND ============
+
+    function _prepareBot(address bot, uint256 windAmount) internal {
+        wind.mint(bot, windAmount);
+        vm.prank(bot);
+        wind.approve(address(vision), type(uint256).max);
+    }
+
+    // ============ registerBot ============
+
+    function test_registerBot() public {
+        address bot = makeAddr("bot1");
+        _prepareBot(bot, 1e18);
+
+        vm.expectEmit(true, false, false, true);
+        emit Vision.BotRegistered(bot, "http://bot1.example.com");
+
+        vm.prank(bot);
+        vision.registerBot("http://bot1.example.com", keccak256("pubkey1"));
+
+        // Verify bot struct
+        (address[] memory addrs, IVision.Bot[] memory bots) = vision.getAllActiveBots();
+        assertEq(addrs.length, 1, "Should have 1 bot");
+        assertEq(addrs[0], bot, "Bot address should match");
+        assertEq(bots[0].endpoint, "http://bot1.example.com", "Endpoint should match");
+        assertEq(bots[0].pubkeyHash, keccak256("pubkey1"), "PubkeyHash should match");
+        assertEq(bots[0].stakedAmount, 1e18, "Staked amount should be BOT_MIN_STAKE");
+        assertEq(bots[0].registeredAt, block.timestamp, "registeredAt should be current");
+        assertTrue(bots[0].isActive, "Bot should be active");
+
+        // Verify WIND transferred
+        assertEq(wind.balanceOf(address(vision)), 1e18, "Vision should hold WIND stake");
+        assertEq(wind.balanceOf(bot), 0, "Bot should have 0 WIND left");
+    }
+
+    function test_registerBot_revertAlreadyRegistered() public {
+        address bot = makeAddr("bot1");
+        _prepareBot(bot, 2e18);
+
+        vm.prank(bot);
+        vision.registerBot("http://bot1.example.com", keccak256("pubkey1"));
+
+        vm.expectRevert(Vision.BotAlreadyRegistered.selector);
+        vm.prank(bot);
+        vision.registerBot("http://bot1-v2.example.com", keccak256("pubkey1v2"));
+    }
+
+    // ============ deregisterBot ============
+
+    function test_deregisterBot() public {
+        address bot = makeAddr("bot1");
+        _prepareBot(bot, 1e18);
+
+        vm.prank(bot);
+        vision.registerBot("http://bot1.example.com", keccak256("pubkey1"));
+
+        vm.expectEmit(true, false, false, false);
+        emit Vision.BotDeregistered(bot);
+
+        vm.prank(bot);
+        vision.deregisterBot();
+
+        // Verify removed
+        (address[] memory addrs, IVision.Bot[] memory bots) = vision.getAllActiveBots();
+        assertEq(addrs.length, 0, "Should have 0 bots after deregister");
+        assertEq(bots.length, 0, "Bots array should be empty");
+
+        // Verify WIND returned
+        assertEq(wind.balanceOf(bot), 1e18, "Bot should get WIND stake back");
+        assertEq(wind.balanceOf(address(vision)), 0, "Vision should have 0 WIND");
+    }
+
+    function test_deregisterBot_swapAndPop() public {
+        // Register 3 bots
+        address bot1 = makeAddr("bot1");
+        address bot2 = makeAddr("bot2");
+        address bot3 = makeAddr("bot3");
+        _prepareBot(bot1, 1e18);
+        _prepareBot(bot2, 1e18);
+        _prepareBot(bot3, 1e18);
+
+        vm.prank(bot1);
+        vision.registerBot("http://bot1.example.com", keccak256("pk1"));
+        vm.prank(bot2);
+        vision.registerBot("http://bot2.example.com", keccak256("pk2"));
+        vm.prank(bot3);
+        vision.registerBot("http://bot3.example.com", keccak256("pk3"));
+
+        // Deregister middle bot (bot2) — should swap bot3 into its slot
+        vm.prank(bot2);
+        vision.deregisterBot();
+
+        (address[] memory addrs, IVision.Bot[] memory bots) = vision.getAllActiveBots();
+        assertEq(addrs.length, 2, "Should have 2 bots after deregister");
+
+        // After swap-and-pop: bot1 at index 0, bot3 at index 1
+        assertEq(addrs[0], bot1, "First bot should be bot1");
+        assertEq(addrs[1], bot3, "Second bot should be bot3 (swapped)");
+        assertEq(bots[0].endpoint, "http://bot1.example.com", "Bot1 endpoint intact");
+        assertEq(bots[1].endpoint, "http://bot3.example.com", "Bot3 endpoint intact");
+
+        // WIND balances
+        assertEq(wind.balanceOf(bot2), 1e18, "Deregistered bot2 should get WIND back");
+        assertEq(wind.balanceOf(address(vision)), 2e18, "Vision holds 2 remaining stakes");
+    }
+
+    function test_deregisterBot_revertNotRegistered() public {
+        address bot = makeAddr("unregistered");
+
+        vm.expectRevert(Vision.BotNotRegistered.selector);
+        vm.prank(bot);
+        vision.deregisterBot();
+    }
+
+    // ============ getAllActiveBots ============
+
+    function test_getAllActiveBots() public {
+        // Empty initially
+        (address[] memory addrs, IVision.Bot[] memory bots) = vision.getAllActiveBots();
+        assertEq(addrs.length, 0, "Should start empty");
+        assertEq(bots.length, 0, "Should start empty");
+
+        // Add 2 bots
+        address bot1 = makeAddr("bot1");
+        address bot2 = makeAddr("bot2");
+        _prepareBot(bot1, 1e18);
+        _prepareBot(bot2, 1e18);
+
+        vm.prank(bot1);
+        vision.registerBot("http://bot1.example.com", keccak256("pk1"));
+        vm.prank(bot2);
+        vision.registerBot("http://bot2.example.com", keccak256("pk2"));
+
+        (addrs, bots) = vision.getAllActiveBots();
+        assertEq(addrs.length, 2, "Should have 2 bots");
+        assertEq(bots.length, 2, "Should have 2 bot structs");
+        assertEq(addrs[0], bot1);
+        assertEq(addrs[1], bot2);
+        assertTrue(bots[0].isActive);
+        assertTrue(bots[1].isActive);
+    }
+
+    // ============ collectFees ============
+
+    function test_collectFees() public {
+        // Setup: player joins, wins, generates fees
+        uint256 batchId = _createDefaultBatch();
+        address player = makeAddr("player1");
+        _preparePlayer(player, 10e6);
+
+        vm.prank(player);
+        vision.joinBatch(batchId, 10e6, 1e6, keccak256("bitmap"));
+
+        // Give contract extra USDC so it can pay winnings
+        usdc.mint(address(vision), 5e6);
+
+        // Withdraw with profit to generate fees
+        uint256 finalBalance = 14e6;
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(vision), "WITHDRAW", batchId, player, finalBalance
+        ));
+        bytes memory blsSig = signWithTestIssuers(message);
+
+        vm.prank(player);
+        vision.withdraw(batchId, finalBalance, blsSig);
+
+        // fees = (14e6 - 10e6) * 30 / 10000 = 12000
+        uint256 expectedFees = 4e6 * 30 / 10000;
+        assertEq(vision.accumulatedFees(), expectedFees, "Fees should be accumulated");
+
+        // Collect fees (test contract is feeCollector)
+        uint256 collectorBalanceBefore = usdc.balanceOf(address(this));
+        vision.collectFees();
+
+        assertEq(vision.accumulatedFees(), 0, "Fees should be zero after collection");
+        assertEq(usdc.balanceOf(address(this)), collectorBalanceBefore + expectedFees, "Collector should receive fees");
+    }
+
+    function test_collectFees_revertUnauthorized() public {
+        address notCollector = makeAddr("notCollector");
+
+        vm.expectRevert(Vision.Unauthorized.selector);
+        vm.prank(notCollector);
+        vision.collectFees();
+    }
+
+    // ============ pause ============
+
+    function test_pause_happyPath() public {
+        uint256 batchId = _createDefaultBatch();
+
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(vision), "PAUSE", batchId
+        ));
+        bytes memory blsSig = signWithTestIssuers(message);
+
+        vm.expectEmit(true, false, false, false);
+        emit Vision.BatchPausedEvent(batchId);
+
+        vision.pause(batchId, blsSig);
+
+        IVision.Batch memory batch = vision.getBatch(batchId);
+        assertTrue(batch.paused, "Batch should be paused");
+    }
+
+    function test_pause_revertBatchNotFound() public {
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(vision), "PAUSE", uint256(999)
+        ));
+        bytes memory blsSig = signWithTestIssuers(message);
+
+        vm.expectRevert(Vision.BatchNotFound.selector);
+        vision.pause(999, blsSig);
+    }
+
+    function test_pause_revertInvalidBLS() public {
+        uint256 batchId = _createDefaultBatch();
+
+        bytes memory wrongSig = signWithTestIssuers(keccak256("wrong"));
+
+        vm.expectRevert();
+        vision.pause(batchId, wrongSig);
+    }
+
+    // ============ unpause ============
+
+    function test_unpause_happyPath() public {
+        uint256 batchId = _createDefaultBatch();
+
+        // First pause
+        bytes32 pauseMsg = keccak256(abi.encode(
+            block.chainid, address(vision), "PAUSE", batchId
+        ));
+        bytes memory pauseSig = signWithTestIssuers(pauseMsg);
+        vision.pause(batchId, pauseSig);
+
+        assertTrue(vision.getBatch(batchId).paused, "Should be paused");
+
+        // Now unpause
+        bytes32 unpauseMsg = keccak256(abi.encode(
+            block.chainid, address(vision), "UNPAUSE", batchId
+        ));
+        bytes memory unpauseSig = signWithTestIssuers(unpauseMsg);
+
+        vm.expectEmit(true, false, false, false);
+        emit Vision.BatchUnpaused(batchId);
+
+        vision.unpause(batchId, unpauseSig);
+
+        assertFalse(vision.getBatch(batchId).paused, "Should be unpaused");
+    }
+
+    function test_unpause_revertBatchNotFound() public {
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(vision), "UNPAUSE", uint256(999)
+        ));
+        bytes memory blsSig = signWithTestIssuers(message);
+
+        vm.expectRevert(Vision.BatchNotFound.selector);
+        vision.unpause(999, blsSig);
+    }
+
+    function test_unpause_revertInvalidBLS() public {
+        uint256 batchId = _createDefaultBatch();
+
+        bytes memory wrongSig = signWithTestIssuers(keccak256("wrong"));
+
+        vm.expectRevert();
+        vision.unpause(batchId, wrongSig);
+    }
+
+    // ============ forceWithdraw ============
+
+    function test_forceWithdraw_happyPath_withProfit() public {
+        uint256 batchId = _createDefaultBatch();
+        address player = makeAddr("player1");
+        _preparePlayer(player, 10e6);
+
+        vm.prank(player);
+        vision.joinBatch(batchId, 10e6, 1e6, keccak256("bitmap"));
+
+        // Extra USDC in pool to cover winnings
+        usdc.mint(address(vision), 5e6);
+
+        uint256 finalBalance = 14e6; // profit = 4 USDC
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(vision), "FORCE_WITHDRAW", batchId, player, finalBalance
+        ));
+        bytes memory blsSig = signWithTestIssuers(message);
+
+        uint256 expectedFee = 4e6 * 30 / 10000; // 12000
+        uint256 expectedPayout = finalBalance - expectedFee;
+
+        vm.expectEmit(true, true, false, true);
+        emit Vision.ForceWithdrawn(batchId, player, expectedPayout);
+
+        vision.forceWithdraw(batchId, player, finalBalance, blsSig);
+
+        // Position should be deleted
+        IVision.PlayerPosition memory pos = vision.getPosition(batchId, player);
+        assertEq(pos.stakePerTick, 0, "Position should be deleted");
+
+        assertEq(usdc.balanceOf(player), expectedPayout, "Player gets payout");
+        assertEq(vision.accumulatedFees(), expectedFee, "Fees accumulated");
+    }
+
+    function test_forceWithdraw_happyPath_withLoss() public {
+        uint256 batchId = _createDefaultBatch();
+        address player = makeAddr("player1");
+        _preparePlayer(player, 10e6);
+
+        vm.prank(player);
+        vision.joinBatch(batchId, 10e6, 1e6, keccak256("bitmap"));
+
+        uint256 finalBalance = 7e6; // loss, no fee
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(vision), "FORCE_WITHDRAW", batchId, player, finalBalance
+        ));
+        bytes memory blsSig = signWithTestIssuers(message);
+
+        vm.expectEmit(true, true, false, true);
+        emit Vision.ForceWithdrawn(batchId, player, 7e6);
+
+        vision.forceWithdraw(batchId, player, finalBalance, blsSig);
+
+        assertEq(usdc.balanceOf(player), 7e6, "Player gets remaining balance");
+        assertEq(vision.accumulatedFees(), 0, "No fees on loss");
+    }
+
+    function test_forceWithdraw_revertNotJoined() public {
+        uint256 batchId = _createDefaultBatch();
+        address player = makeAddr("player1");
+
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(vision), "FORCE_WITHDRAW", batchId, player, uint256(10e6)
+        ));
+        bytes memory blsSig = signWithTestIssuers(message);
+
+        vm.expectRevert(Vision.NotJoined.selector);
+        vision.forceWithdraw(batchId, player, 10e6, blsSig);
+    }
+
+    function test_forceWithdraw_revertInvalidBLS() public {
+        uint256 batchId = _createDefaultBatch();
+        address player = makeAddr("player1");
+        _preparePlayer(player, 10e6);
+
+        vm.prank(player);
+        vision.joinBatch(batchId, 10e6, 1e6, keccak256("bitmap"));
+
+        bytes memory wrongSig = signWithTestIssuers(keccak256("wrong"));
+
+        vm.expectRevert();
+        vision.forceWithdraw(batchId, player, 10e6, wrongSig);
+    }
+
+    // ============ pause prevents join ============
+
+    function test_joinBatch_revertWhenPaused() public {
+        uint256 batchId = _createDefaultBatch();
+
+        // Pause the batch via BLS
+        bytes32 pauseMsg = keccak256(abi.encode(
+            block.chainid, address(vision), "PAUSE", batchId
+        ));
+        bytes memory pauseSig = signWithTestIssuers(pauseMsg);
+        vision.pause(batchId, pauseSig);
+
+        // Try to join — should revert
+        address player = makeAddr("player1");
+        _preparePlayer(player, 10e6);
+
+        vm.expectRevert(Vision.BatchPaused.selector);
+        vm.prank(player);
+        vision.joinBatch(batchId, 10e6, 1e6, keccak256("bitmap"));
+    }
 }
