@@ -21,6 +21,7 @@ SKIP_DEPLOY=${SKIP_DEPLOY:-false}
 NO_TAIL=${NO_TAIL:-false}
 DEPLOYER_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 TEST_USER_KEY=0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537
+TEST_USER_ADDRESS=${TEST_USER_ADDRESS:-0xC0D3C3ba6c2215b0cBf4375f4c280c0cc6C43850}
 AP_KEY=0x582978b132648fe53de139c6b9297040a2757616cac9a2fd17aa167bdc6fa340
 
 # Bitget credentials (dummy = public endpoints only, sufficient for price reads)
@@ -204,12 +205,12 @@ fi
 
 # ============ STEP 1: Anvil (L3 + Arbitrum) ============
 echo -e "${BLUE}[1/$TOTAL_STEPS] Starting Anvil chains (L3: $CHAIN_ID, Arbitrum: $ARB_CHAIN_ID)...${NC}"
-anvil --chain-id $CHAIN_ID --host 0.0.0.0 --port 8545 --accounts 100 -q --prune-history > /dev/null 2>&1 &
+anvil --chain-id $CHAIN_ID --host 0.0.0.0 --port 8545 --accounts 100 -q > /dev/null 2>&1 &
 ANVIL_L3_PID=$!
 echo $ANVIL_L3_PID >> .pids
 echo "anvil-l3:$ANVIL_L3_PID" >> .pids.info
 
-anvil --chain-id $ARB_CHAIN_ID --host 0.0.0.0 --port 8546 --accounts 100 -q --prune-history > /dev/null 2>&1 &
+anvil --chain-id $ARB_CHAIN_ID --host 0.0.0.0 --port 8546 --accounts 100 -q > /dev/null 2>&1 &
 ANVIL_ARB_PID=$!
 echo $ANVIL_ARB_PID >> .pids
 echo "anvil-arb:$ANVIL_ARB_PID" >> .pids.info
@@ -298,7 +299,7 @@ else
     fi
 
     # Fund test user with native ETH on both chains
-    TEST_USER=$(cast wallet address $TEST_USER_KEY)
+    TEST_USER=$TEST_USER_ADDRESS
     cast send --private-key $DEPLOYER_KEY --value 100ether $TEST_USER --rpc-url $RPC_URL > /dev/null 2>&1
     cast send --private-key $DEPLOYER_KEY --value 100ether $TEST_USER --rpc-url $ARB_RPC_URL > /dev/null 2>&1
     # Impersonate test user on both Anvils so mock wallet can send eth_sendTransaction
@@ -508,7 +509,7 @@ json.dump(deploy, open('deployments/active-deployment.json', 'w'), indent=2)
         echo -e "  ${YELLOW}Warning: BridgedITP creation failed (sell won't work)${NC}"
     fi
 
-    cp deployments/active-deployment.json frontend/lib/contracts/deployment.json
+    cp deployments/active-deployment.json frontendV4/lib/contracts/deployment.json
 
     # ============ STEP 4: All Bitget tokens ============
     echo -e "${BLUE}[4/$TOTAL_STEPS] Deploying Bitget pair tokens (fetching live pairs from API)...${NC}"
@@ -661,16 +662,16 @@ echo -e "${BLUE}[6/$TOTAL_STEPS] Syncing frontend addresses...${NC}"
 
 # Copy deployment JSON directly — frontend imports it as single source of truth
 if [ -f "deployments/active-deployment.json" ]; then
-    cp deployments/active-deployment.json frontend/lib/contracts/deployment.json
-    echo "  Copied deployment.json → frontend/lib/contracts/deployment.json"
+    cp deployments/active-deployment.json frontendV4/lib/contracts/deployment.json
+    echo "  Copied deployment.json → frontendV4/lib/contracts/deployment.json"
 else
     echo "  No deployment file, skipping"
 fi
 
 # Copy morpho deployment if it exists
 if [ -f "deployments/morpho-e2e.json" ]; then
-    cp deployments/morpho-e2e.json frontend/lib/contracts/morpho-deployment.json
-    echo "  Copied morpho-e2e.json → frontend/lib/contracts/morpho-deployment.json"
+    cp deployments/morpho-e2e.json frontendV4/lib/contracts/morpho-deployment.json
+    echo "  Copied morpho-e2e.json → frontendV4/lib/contracts/morpho-deployment.json"
 fi
 
 echo "  Address sync complete"
@@ -744,6 +745,7 @@ for i in $(seq 1 $ISSUER_COUNT); do
     export ISSUER_PRIVATE_KEY_PATH="$ISSUER_KEY_FILE"
     export ISSUER_ARBITRUM_RPC_URL="$ARB_RPC_URL"
     export ISSUER_ARBITRUM_CHAIN_ID="$ARB_CHAIN_ID"
+    export ISSUER_BRIDGE_PROXY_ADDRESS="$BRIDGE_PROXY"
     # Only pass DATA_NODE_URL when PostgreSQL is available (data-node needs it).
     # Without it, issuers use BitgetPriceFetcher for asset prices and compute NAV locally
     # from on-chain inventory + live Bitget prices (no $1 fallback).
@@ -767,10 +769,6 @@ if ! $PG_ISREADY -q 2>/dev/null; then
     echo -e "  ${YELLOW}PostgreSQL not running — skipping data-node${NC}"
     echo -e "  ${YELLOW}Charts won't work. Start PostgreSQL and re-run.${NC}"
 else
-    if [ "$SKIP_DEPLOY" = false ]; then
-        # Clean session-only on-chain data; preserve prices, klines, coingecko
-        $PSQL -d index_prices -c "TRUNCATE itp_snapshots, trades;" 2>/dev/null || true
-    fi
     ./target/release/data-node serve \
         --database-url postgres://localhost/index_prices \
         --symbol-map "$SCRIPT_DIR/data/symbol-map.json" \
@@ -785,6 +783,23 @@ else
     echo "data-node:$PH_PID" >> .pids.info
     echo -e "  data-node on port 8200 (PID: $PH_PID)"
     DATA_NODE_RUNNING=true
+
+    if [ "$SKIP_DEPLOY" = false ]; then
+        # Wait for data-node to be ready, then reset session data via admin endpoint
+        for i in $(seq 1 10); do
+            if curl -sf http://localhost:8200/health > /dev/null 2>&1; then
+                break
+            fi
+            sleep 0.5
+        done
+        if curl -sf -X POST http://localhost:8200/admin/reset-session > /dev/null 2>&1; then
+            echo -e "  ${GREEN}Session data reset via admin endpoint${NC}"
+        else
+            # Fallback to direct psql if admin endpoint unavailable
+            $PSQL -d index_prices -c "TRUNCATE itp_snapshots, trades;" 2>/dev/null || true
+            echo -e "  ${YELLOW}Session data reset via psql fallback${NC}"
+        fi
+    fi
 fi
 
 # ============ STEP 9: Launch AP ============
@@ -840,7 +855,7 @@ sleep 2
 
 # Install frontend deps + Playwright browser
 echo -e "  Installing frontend dependencies..."
-cd frontend
+cd frontendV4
 npm install --prefer-offline --no-audit > ../logs/frontend-install.log 2>&1
 echo -e "  Installing Playwright chromium..."
 npx playwright install chromium > ../logs/playwright-install.log 2>&1
@@ -879,7 +894,7 @@ echo -e ""
 echo -e "  ${BLUE}Running Playwright E2E tests...${NC}"
 echo -e "  Tests: health-check → connect-wallet → buy-itp → lending-cycle → sell-itp"
 echo -e ""
-cd frontend
+cd frontendV4
 npm run e2e 2>&1 | tee ../logs/e2e-results.log
 E2E_EXIT=$?
 cd ..
@@ -895,7 +910,7 @@ else
     echo -e "  ${RED}╚════════════════════════════════╝${NC}"
     echo -e "  ${YELLOW}Exit code: $E2E_EXIT${NC}"
     echo -e "  ${YELLOW}Full log:  logs/e2e-results.log${NC}"
-    echo -e "  ${YELLOW}Debug:     cd frontend && npm run e2e:headed${NC}"
+    echo -e "  ${YELLOW}Debug:     cd frontendV4 && npm run e2e:headed${NC}"
 fi
 echo ""
 
@@ -950,7 +965,7 @@ echo -e "  ${BLUE}Arb Anvil:${NC} http://localhost:8546 (chain $ARB_CHAIN_ID)"
 echo -e "  ${BLUE}Issuers:${NC}   ports 9001-900$ISSUER_COUNT (bitget-vault + arb-custody)"
 echo -e "  ${BLUE}AP:${NC}        port 9100 (real Bitget price proxy)"
 echo -e "  ${BLUE}Frontend:${NC}  http://localhost:3000 (running)"
-echo -e "  ${BLUE}E2E Tests:${NC} cd frontend && npm run e2e:headed"
+echo -e "  ${BLUE}E2E Tests:${NC} cd frontendV4 && npm run e2e:headed"
 echo -e "  ${BLUE}Logs:${NC}      ./logs/"
 echo ""
 echo -e "Run ${YELLOW}./stop.sh${NC} to shut down all services"

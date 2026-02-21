@@ -34,7 +34,7 @@ rmp-serde = "1"  # MessagePack for P2P
 futures = "0.3"
 
 # CLI
-clap = { version = "4", features = ["derive"] }
+clap = { version = "4", features = ["derive", "env"] }
 
 # Logging
 tracing = "0.1"

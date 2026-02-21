@@ -209,7 +209,7 @@ struct Args {
 
     /// Data-node backend URL (e.g., http://localhost:8200).
     /// Required when --api-enabled=true. NAV is fetched from data-node service.
-    #[arg(long)]
+    #[arg(long, env = "DATA_NODE_URL")]
     data_node_url: Option<String>,
 
     /// ITP ID for data-node NAV lookup (default: 0x...01).
