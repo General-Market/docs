@@ -586,6 +586,21 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("HackerNews story score provider started");
     }
 
+    // Weather stations — gated on weather_enabled flag, no API key needed
+    if args.weather_enabled {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::weather::WeatherSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Weather init failed: {e}"),
+            }
+        });
+        info!("Weather station provider started (20 cities, 60 markets)");
+    }
+
     // Create live ticker cache and start fast poller
     let live_cache = Arc::new(LiveTickerCache::new());
     {
