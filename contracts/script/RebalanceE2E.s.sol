@@ -2,14 +2,14 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import "../src/interfaces/IIndex.sol";
+import "../src/interfaces/IInvestment.sol";
 import "../src/libraries/TypesLib.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title RebalanceE2E - Manual E2E test for rebalance flow (V2 - Asset Changes)
 /// @notice Runs full rebalance cycle: requestRebalance (event) → rebalance (BLS)
 contract RebalanceE2E is Script {
-    IIndex index;
+    IInvestment index;
     IERC20 usdc;
 
     // ITP 4: Created in ManualE2E with BTC/ETH 50%/50%
@@ -20,7 +20,7 @@ contract RebalanceE2E is Script {
     uint256 deployerKey;
 
     function run() external {
-        index = IIndex(vm.envAddress("INDEX_ADDRESS"));
+        index = IInvestment(vm.envAddress("INDEX_ADDRESS"));
         usdc = IERC20(vm.envAddress("USDC_ADDRESS"));
         deployer = vm.envAddress("DEPLOYER_ADDRESS");
         deployerKey = vm.envUint("DEPLOYER_KEY");
@@ -97,6 +97,7 @@ contract RebalanceE2E is Script {
 
         uint256[] memory emptyIndices = new uint256[](0);
         address[] memory emptyAddrs = new address[](0);
+        address[] memory emptyQt = new address[](0);
 
         // Empty sig works in testing mode
         bytes memory sig = new bytes(64);
@@ -104,7 +105,7 @@ contract RebalanceE2E is Script {
         console.log("Executing rebalance with BLS signature");
 
         vm.startBroadcast(deployerKey);
-        index.rebalance(itpId, emptyIndices, emptyAddrs, newWeights, prices, sig);
+        index.rebalance(itpId, emptyIndices, emptyAddrs, newWeights, prices, emptyQt, sig);
         vm.stopBroadcast();
 
         console.log("Rebalance executed on-chain");

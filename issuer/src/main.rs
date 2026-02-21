@@ -739,6 +739,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                                     consensus_config.num_issuers,
                                     &price_fetcher_for_task,
                                     &symbol_map_for_task,
+                                    &quote_tokens_for_task,
                                 ).await;
                             }
                         }
@@ -1109,9 +1110,24 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                     Ok(result) => {
                         info!(order_id = %order.order_id, signer_count = result.signature_count, "Bridge Arb→L3 consensus completed");
 
+                        // Only advance to submit phase if BLS consensus actually happened.
+                        // signer_count==0 means no proposal was received (follower raced ahead
+                        // of leader), so advancing would cause status collisions when the
+                        // leader's proposal arrives later.
+                        if result.signature_count == 0 {
+                            debug!(order_id = %order.order_id, "Bridge phase had no signers, skipping submit (will retry next cycle)");
+                            continue;
+                        }
+
                         match protocol.run_submit_order_phase(&order, am_leader).await {
                             Ok(submit_result) => {
                                 info!(order_id = %order.order_id, signer_count = submit_result.signature_count, "Submit order consensus completed");
+
+                                if submit_result.signature_count == 0 {
+                                    debug!(order_id = %order.order_id, "Submit phase had no signers, skipping advancement (will retry next cycle)");
+                                    continue;
+                                }
+
                                 // Mark as processed so it won't be retried
                                 arb_reader.mark_order_processed(chain_id, order.order_id).await;
                                 // ALL nodes must advance to SubmittedOnL3 so that:
@@ -1195,6 +1211,14 @@ async fn run_cross_chain_processing<P, W, K, PF>(
         match protocol.run_batch_confirm_phase(current_cycle, l3_order_ids.clone(), prices, batch_am_leader).await {
             Ok(batch_result) => {
                 info!(cycle = current_cycle, signer_count = batch_result.signature_count, "Batch confirmation completed");
+
+                // Mark orders as Batched using ARB IDs (not L3 IDs) to avoid namespace collisions
+                {
+                    let orch = orchestrator.write().await;
+                    for oid in &submitted_orders {
+                        orch.set_order_status(*oid, issuer::BridgeOrderStatus::Batched).await;
+                    }
+                }
 
                 // Emit per-asset trades for cross-chain buy orders
                 if let Ok(itp_h256) = itp_id_for_task.parse::<ethers::types::H256>() {
@@ -1849,6 +1873,7 @@ async fn run_rebalance_processing<P, W, K, PF>(
     num_issuers: u8,
     price_fetcher: &Arc<dyn PriceFetcher>,
     symbol_map: &issuer::SymbolMap,
+    quote_tokens: &Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -2006,12 +2031,46 @@ async fn run_rebalance_processing<P, W, K, PF>(
             + rebalance.add_assets.len();
         rebalance_prices.truncate(final_asset_count);
 
+        // Build quote_tokens vector matching final asset order (same swap-and-pop + add)
+        let rebalance_quote_tokens: Vec<ethers::types::Address> = {
+            // Start with current assets' quote tokens
+            let mut qt: Vec<ethers::types::Address> = rebalance.current_assets.iter().map(|addr| {
+                quote_tokens.as_ref()
+                    .and_then(|qt_map| qt_map.get(addr).copied())
+                    .unwrap_or_else(ethers::types::Address::zero)
+            }).collect();
+
+            // Apply same swap-and-pop as prices
+            for remove_idx in &rebalance.remove_indices {
+                let idx = remove_idx.as_usize();
+                if idx < qt.len() {
+                    let last = qt.len() - 1;
+                    if idx != last {
+                        qt.swap(idx, last);
+                    }
+                    qt.pop();
+                }
+            }
+
+            // Add quote tokens for added assets
+            for add_addr in &rebalance.add_assets {
+                let qt_addr = quote_tokens.as_ref()
+                    .and_then(|qt_map| qt_map.get(add_addr).copied())
+                    .unwrap_or_else(ethers::types::Address::zero);
+                qt.push(qt_addr);
+            }
+
+            qt.truncate(final_asset_count);
+            qt
+        };
+
         match protocol.run_rebalance_phase(
             itp_h256,
             rebalance.remove_indices.clone(),
             rebalance.add_assets.clone(),
             rebalance.new_weights.clone(),
             rebalance_prices.clone(),
+            rebalance_quote_tokens.clone(),
             am_leader,
         ).await {
             Ok(rebalance_result) => {
@@ -2079,6 +2138,7 @@ async fn run_rebalance_processing<P, W, K, PF>(
                         &rebalance.add_assets,
                         &rebalance.new_weights,
                         &rebalance_prices,
+                        &rebalance_quote_tokens,
                         &rebalance_result,
                         computed_nav,
                         &nav_sig,
@@ -2239,13 +2299,8 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
                 "L3-native batch confirmation completed"
             );
 
-            // Update status to Batched
-            {
-                let orch = orchestrator.write().await;
-                for oid in &order_ids {
-                    orch.set_order_status(*oid, issuer::BridgeOrderStatus::Batched).await;
-                }
-            }
+            // Note: Do NOT set order_status here — L3-native order IDs can collide
+            // with Arb order IDs in the orchestrator's status map.
 
             // 6b. Emit per-asset trades (issuer decomposition + cross-ITP netting)
             let asset_trade_orders: Vec<(ethers::types::H256, u8, ethers::types::U256)> = l3_native_orders.iter()
@@ -2390,12 +2445,12 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
 
     let batched_order_ids: Vec<ethers::types::U256> = l3_batched_orders.iter().map(|o| o.id).collect();
 
-    // Register in orchestrator for BLS tracking
+    // Register amounts in orchestrator for BLS tracking (but NOT status,
+    // since L3 order IDs can collide with Arb order IDs in the status map)
     {
         let orch = orchestrator.write().await;
         for order in &l3_batched_orders {
             orch.set_order_amount(order.id, order.amount).await;
-            orch.set_order_status(order.id, issuer::BridgeOrderStatus::Batched).await;
         }
     }
 
@@ -2800,17 +2855,47 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // --- Arbitration subsystem (optional) ---
     if let Some(arb_cfg) = arb_config {
-        let (arb_msg_tx, arb_msg_rx) = arbitration::arbitration_channel();
-        let subsystem = ArbitrationSubsystem::new(arb_cfg, arb_msg_rx);
-        let arb_shutdown = components.shutdown.clone();
-        tokio::spawn(async move {
-            subsystem.run(arb_shutdown).await;
-        });
-        // Wire the sender into the consensus protocol so ForwardToArbitration messages get delivered
-        if let Some(ref protocol) = components.consensus.protocol {
-            protocol.set_arbitration_sender(arb_msg_tx).await;
+        // Require BLS keypair, P2P transport, and chain writer for arbitration
+        let arb_ready = components.consensus.keys.bls_keypair.is_some()
+            && components.p2p.transport.is_some()
+            && components.chain.writer.is_some();
+
+        if arb_ready {
+            let (arb_msg_tx, arb_msg_rx) = arbitration::arbitration_channel();
+            let arb_p2p: Arc<dyn common::traits::P2PTransport> =
+                components.p2p.transport.clone().unwrap();
+            let arb_writer = components.chain.writer.clone().unwrap();
+            let arb_keypair = components.consensus.keys.bls_keypair.clone().unwrap();
+            let arb_index = components.consensus.keys.node_index;
+            let arb_rpc = components.chain.rpc_url.clone();
+
+            let subsystem = ArbitrationSubsystem::new(
+                arb_cfg,
+                arb_msg_rx,
+                arb_p2p,
+                arb_writer,
+                arb_keypair,
+                arb_index,
+                arb_rpc,
+            );
+            let arb_shutdown = components.shutdown.clone();
+            tokio::spawn(async move {
+                subsystem.run(arb_shutdown).await;
+            });
+            // Wire the sender into the consensus protocol so ForwardToArbitration messages get delivered
+            if let Some(ref protocol) = components.consensus.protocol {
+                protocol.set_arbitration_sender(arb_msg_tx).await;
+            }
+            info!(node_id, "Arbitration subsystem enabled");
+        } else {
+            warn!(
+                node_id,
+                has_bls = components.consensus.keys.bls_keypair.is_some(),
+                has_p2p = components.p2p.transport.is_some(),
+                has_writer = components.chain.writer.is_some(),
+                "Arbitration configured but missing dependencies, skipping"
+            );
         }
-        info!(node_id, "Arbitration subsystem enabled");
     } else {
         info!(node_id, "Arbitration subsystem disabled (not configured)");
     }

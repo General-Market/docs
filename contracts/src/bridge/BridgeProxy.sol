@@ -9,7 +9,7 @@ import {IBridgeProxy} from "../interfaces/IBridgeProxy.sol";
 import {IBridgedItpFactory} from "../interfaces/IBridgedItpFactory.sol";
 import {IBridgedITP} from "../interfaces/IBridgedITP.sol";
 import {IIssuerRegistry} from "../interfaces/IIssuerRegistry.sol";
-import {IIndex} from "../interfaces/IIndex.sol";
+import {IInvestment} from "../interfaces/IInvestment.sol";
 import {BLSLib} from "../libraries/BLSLib.sol";
 import {BLSVerifier} from "../libraries/BLSVerifier.sol";
 import {ErrorsLib} from "../libraries/ErrorsLib.sol";
@@ -46,8 +46,8 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     /// @notice DEPRECATED: was signerThreshold, slot preserved for UUPS layout
     uint256 private _deprecated_signerThreshold;
 
-    /// @notice Index contract on L3 for atomic ITP creation
-    IIndex public indexContract;
+    /// @notice Investment contract on L3 for atomic ITP creation
+    IInvestment public indexContract;
 
     /// @notice L3 itpId => deployer address (set during completeCreateItp)
     mapping(bytes32 => address) public override itpDeployer;
@@ -162,7 +162,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         pending.completed = true;
 
         // orbitItpId was created on L3 by the issuer before calling this function.
-        // Index.sol only exists on L3 — BridgeProxy stores the mapping here on Arb.
+        // Investment.sol only exists on L3 — BridgeProxy stores the mapping here on Arb.
         if (orbitItpId == bytes32(0)) revert ErrorsLib.E072_CreationNotFound(nonce);
 
         // Store deployer for future rebalance/transfer authorization
@@ -211,26 +211,27 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         emit RebalanceRequested(msg.sender, itpId, nonce, removeIndices, addAssets, newWeights, note);
     }
 
-    /// @notice Execute rebalance on L3 Index via cross-chain BLS consensus
-    /// @dev BLS verified on Arbitrum, then calls Index.rebalance on L3
+    /// @notice Execute rebalance on L3 Investment via cross-chain BLS consensus
+    /// @dev BLS verified on Arbitrum, then calls Investment.rebalance on L3
     function rebalance(
         bytes32 itpId,
         uint256[] calldata removeIndices,
         address[] calldata addAssets,
         uint256[] calldata newWeights,
         uint256[] calldata prices,
+        address[] calldata quoteTokens,
         bytes calldata blsSignature
     ) external override whenNotPaused {
-        // Build message hash matching L3 Index.rebalance format
+        // Build message hash matching L3 Investment.rebalance format
         bytes32 messageHash = keccak256(abi.encode(
             block.chainid, address(this), "rebalance",
-            itpId, removeIndices, addAssets, newWeights, prices
+            itpId, removeIndices, addAssets, newWeights, prices, quoteTokens
         ));
 
         // Verify BLS signature via BLSVerifier
         _verifyBLS(messageHash, blsSignature);
 
-        // Index.sol only exists on L3 — issuer relays rebalance to L3 separately
+        // Investment.sol only exists on L3 — issuer relays rebalance to L3 separately
         emit RebalanceCompleted(itpId, 0);
     }
 
@@ -243,7 +244,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         // Update deployer on BridgeProxy
         itpDeployer[itpId] = newDeployer;
 
-        // Index.sol only exists on L3 — issuer relays transferCreator to L3 separately
+        // Investment.sol only exists on L3 — issuer relays transferCreator to L3 separately
         emit DeployerTransferred(itpId, currentDeployer, newDeployer);
     }
 
@@ -395,7 +396,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     }
 
     function setIndexContract(address indexContract_) external override onlyOwner {
-        indexContract = IIndex(indexContract_);
+        indexContract = IInvestment(indexContract_);
     }
 
     function pause() external override onlyOwner {

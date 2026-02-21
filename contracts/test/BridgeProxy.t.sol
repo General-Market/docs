@@ -11,7 +11,7 @@ import {IBridgedItpFactory} from "../src/interfaces/IBridgedItpFactory.sol";
 import "../src/libraries/ErrorsLib.sol";
 import "./helpers/TestHelper.sol";
 import {Governance} from "../src/Governance.sol";
-import {IIndex} from "../src/interfaces/IIndex.sol";
+import {IInvestment} from "../src/interfaces/IInvestment.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title MockIndex
@@ -44,6 +44,7 @@ contract MockIndex {
         address[] calldata,
         uint256[] calldata newWeights,
         uint256[] calldata,
+        address[] calldata,
         bytes calldata
     ) external {
         lastRebalanceItpId = itpId;
@@ -170,11 +171,12 @@ contract BridgeProxyTest is TestHelper {
         uint256[] memory removeIndices,
         address[] memory addAssets,
         uint256[] memory newWeights,
-        uint256[] memory prices
+        uint256[] memory prices,
+        address[] memory quoteTokens
     ) internal returns (bytes memory) {
         bytes32 messageHash = keccak256(abi.encode(
             block.chainid, address(bridgeProxy), "rebalance",
-            itpId, removeIndices, addAssets, newWeights, prices
+            itpId, removeIndices, addAssets, newWeights, prices, quoteTokens
         ));
         return signWithTestIssuers(messageHash);
     }
@@ -861,12 +863,13 @@ contract BridgeProxyTest is TestHelper {
 
         uint256[] memory emptyIndices = new uint256[](0);
         address[] memory emptyAddrs = new address[](0);
+        address[] memory emptyQt = new address[](0);
 
         // Sign with real BLS
-        bytes memory signature = _signRebalance(orbitItpId, emptyIndices, emptyAddrs, newWeights, prices);
+        bytes memory signature = _signRebalance(orbitItpId, emptyIndices, emptyAddrs, newWeights, prices, emptyQt);
 
         bridgeProxy.rebalance(
-            orbitItpId, emptyIndices, emptyAddrs, newWeights, prices, signature
+            orbitItpId, emptyIndices, emptyAddrs, newWeights, prices, emptyQt, signature
         );
 
         // BridgeProxy no longer calls Index.rebalance() directly —
@@ -886,13 +889,14 @@ contract BridgeProxyTest is TestHelper {
 
         uint256[] memory emptyIndices = new uint256[](0);
         address[] memory emptyAddrs = new address[](0);
+        address[] memory emptyQt = new address[](0);
 
         // Use a wrong-message signature to force BLS failure → E020
         bytes memory badSig = signWithTestIssuers(keccak256("wrong message"));
 
         vm.expectRevert(ErrorsLib.E020_InvalidBLSSignature.selector);
         bridgeProxy.rebalance(
-            orbitItpId, emptyIndices, emptyAddrs, newWeights, prices, badSig
+            orbitItpId, emptyIndices, emptyAddrs, newWeights, prices, emptyQt, badSig
         );
     }
 
@@ -912,10 +916,11 @@ contract BridgeProxyTest is TestHelper {
 
         uint256[] memory emptyIndices = new uint256[](0);
         address[] memory emptyAddrs = new address[](0);
+        address[] memory emptyQt = new address[](0);
 
         vm.expectRevert();
         bridgeProxy.rebalance(
-            orbitItpId, emptyIndices, emptyAddrs, newWeights, prices, signWithTestIssuers(keccak256("irrelevant"))
+            orbitItpId, emptyIndices, emptyAddrs, newWeights, prices, emptyQt, signWithTestIssuers(keccak256("irrelevant"))
         );
     }
 
@@ -1137,10 +1142,12 @@ contract BridgeProxyTest is TestHelper {
         prices[0] = 1e18;
         prices[1] = 1e18;
 
+        address[] memory quoteTokens = new address[](0);
+
         // Matches BridgeProxy.rebalance() message hash format
         bytes32 messageHash = keccak256(abi.encode(
             chainId, bridgeProxyAddr, "rebalance",
-            itpId, removeIndices, addAssets, weights, prices
+            itpId, removeIndices, addAssets, weights, prices, quoteTokens
         ));
 
         // Verify non-zero and deterministic
@@ -1148,7 +1155,7 @@ contract BridgeProxyTest is TestHelper {
 
         bytes32 messageHash2 = keccak256(abi.encode(
             chainId, bridgeProxyAddr, "rebalance",
-            itpId, removeIndices, addAssets, weights, prices
+            itpId, removeIndices, addAssets, weights, prices, quoteTokens
         ));
         assertEq(messageHash, messageHash2);
     }

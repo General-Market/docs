@@ -424,6 +424,8 @@ pub enum P2PMessage {
         new_weights: Vec<U256>,
         /// Prices for the final asset list
         prices: Vec<U256>,
+        /// Per-asset quote token for settlement (address(0) = USDC)
+        quote_tokens: Vec<Address>,
         /// Leader's BLS signature on the rebalance hash
         leader_signature: BLSSignature,
     },
@@ -560,6 +562,20 @@ pub enum P2PMessage {
         leader_signature: BLSSignature,
     },
     MintBridgedSharesSign {
+        signer_id: PeerId,
+        signer_index: u8,
+        cycle_number: u64,
+        signature: BLSSignature,
+    },
+    // completeBuyOrder BLS consensus
+    CompleteBuyOrderProposal {
+        leader_id: PeerId,
+        cycle_number: u64,
+        order_id: U256,
+        vault: Address,
+        leader_signature: BLSSignature,
+    },
+    CompleteBuyOrderSign {
         signer_id: PeerId,
         signer_index: u8,
         cycle_number: u64,

@@ -18,18 +18,21 @@ library RebalanceLib {
 
     /// @notice Emit AssetTradeRequest events for inventory deltas between old and new state
     /// @dev Extracted to avoid stack-too-deep in rebalance()
+    /// @param quoteTokens Per-asset quote token for settlement (USDC or USDT); address(0) = default USDC
     function _emitAssetTradeDeltas(
         address[] memory finalAssets,
         uint256[] memory finalInventory,
         uint256[] calldata prices,
         address[] memory oldAssets,
-        uint256[] memory oldInventory
+        uint256[] memory oldInventory,
+        address[] calldata quoteTokens
     ) internal {
         uint256 rebalanceCycle = 3_000_000_000 + block.number;
         uint256 len = finalAssets.length;
         for (uint256 i = 0; i < len;) {
             address asset = finalAssets[i];
             uint256 newQty = finalInventory[i];
+            address qt = i < quoteTokens.length ? quoteTokens[i] : address(0);
             // Find old qty for this asset
             uint256 oldQty = 0;
             for (uint256 j = 0; j < oldAssets.length;) {
@@ -42,12 +45,12 @@ library RebalanceLib {
             if (newQty > oldQty) {
                 uint256 usdcAmount = ((newQty - oldQty) * prices[i]) / 1e18;
                 if (usdcAmount > 0) {
-                    emit EventsLib.AssetTradeRequest(rebalanceCycle, asset, 0, usdcAmount, prices[i], address(0));
+                    emit EventsLib.AssetTradeRequest(rebalanceCycle, asset, 0, usdcAmount, prices[i], qt);
                 }
             } else if (oldQty > newQty) {
                 uint256 usdcAmount = ((oldQty - newQty) * prices[i]) / 1e18;
                 if (usdcAmount > 0) {
-                    emit EventsLib.AssetTradeRequest(rebalanceCycle, asset, 1, usdcAmount, prices[i], address(0));
+                    emit EventsLib.AssetTradeRequest(rebalanceCycle, asset, 1, usdcAmount, prices[i], qt);
                 }
             }
             unchecked { ++i; }
@@ -73,6 +76,7 @@ library RebalanceLib {
         address[] calldata addAssets,
         uint256[] calldata newWeights,
         uint256[] calldata prices,
+        address[] calldata quoteTokens,
         mapping(bytes32 => TypesLib.ITPCore) storage _itps,
         mapping(bytes32 => address[]) storage _itpAssets,
         mapping(bytes32 => uint256[]) storage _itpWeights,
@@ -225,6 +229,6 @@ library RebalanceLib {
         emit EventsLib.Rebalanced(itpId, finalAssets, finalWeights, finalInventory, nav);
 
         // Emit per-asset AssetTradeRequest events for inventory deltas
-        _emitAssetTradeDeltas(finalAssets, finalInventory, prices, oldAssets, oldInventory);
+        _emitAssetTradeDeltas(finalAssets, finalInventory, prices, oldAssets, oldInventory, quoteTokens);
     }
 }

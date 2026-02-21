@@ -472,6 +472,7 @@ impl ConsensusMessageHandler {
                 add_assets,
                 new_weights,
                 prices,
+                quote_tokens,
                 leader_signature,
             } => {
                 debug!(
@@ -488,6 +489,7 @@ impl ConsensusMessageHandler {
                     add_assets,
                     new_weights,
                     prices,
+                    quote_tokens,
                     leader_signature,
                 }
             }
@@ -726,6 +728,49 @@ impl ConsensusMessageHandler {
                     "Received MintBridgedSharesSign"
                 );
                 MessageHandleResult::ProcessMintBridgedSharesSign {
+                    from: signer_id,
+                    signer_index,
+                    cycle_number,
+                    signature,
+                }
+            }
+            // completeBuyOrder BLS consensus messages
+            P2PMessage::CompleteBuyOrderProposal {
+                leader_id,
+                cycle_number,
+                order_id,
+                vault,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    cycle_number,
+                    order_id = %order_id,
+                    "Received CompleteBuyOrderProposal"
+                );
+                MessageHandleResult::ProcessCompleteBuyOrderProposal {
+                    from: leader_id,
+                    cycle_number,
+                    order_id,
+                    vault,
+                    leader_signature,
+                }
+            }
+            P2PMessage::CompleteBuyOrderSign {
+                signer_id,
+                signer_index,
+                cycle_number,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    cycle_number,
+                    "Received CompleteBuyOrderSign"
+                );
+                MessageHandleResult::ProcessCompleteBuyOrderSign {
                     from: signer_id,
                     signer_index,
                     cycle_number,
@@ -1215,6 +1260,7 @@ pub enum MessageHandleResult {
         add_assets: Vec<Address>,
         new_weights: Vec<U256>,
         prices: Vec<U256>,
+        quote_tokens: Vec<Address>,
         leader_signature: P2PBLSSignature,
     },
     /// Process a single-phase rebalance signature from a follower
@@ -1300,6 +1346,20 @@ pub enum MessageHandleResult {
         leader_signature: P2PBLSSignature,
     },
     ProcessMintBridgedSharesSign {
+        from: PeerId,
+        signer_index: u8,
+        cycle_number: u64,
+        signature: P2PBLSSignature,
+    },
+    // completeBuyOrder BLS consensus
+    ProcessCompleteBuyOrderProposal {
+        from: PeerId,
+        cycle_number: u64,
+        order_id: U256,
+        vault: Address,
+        leader_signature: P2PBLSSignature,
+    },
+    ProcessCompleteBuyOrderSign {
         from: PeerId,
         signer_index: u8,
         cycle_number: u64,

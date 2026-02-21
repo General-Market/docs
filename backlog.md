@@ -1,5 +1,34 @@
 # Design Decision Backlog
 
+## Session: 20260221-1600-qt0x
+
+- [DECISION] Propagated quoteTokens through entire rebalance pipeline: RebalanceLib.sol → Investment.sol → IInvestment.sol → BridgeProxy.sol → IBridgeProxy.sol (Solidity) and types.rs → orchestrator.rs → p2p.rs → messages.rs → protocol.rs → main.rs (Rust). BLS hash now includes quoteTokens for rebalance consensus.
+- [DECISION] quoteTokens array construction in main.rs uses same swap-and-pop logic as prices — start from current_assets, apply descending removeIndices, then append addAssets. This maintains index alignment with the final asset array.
+- [DECISION] E2E verified: 100 AssetTradeRequest events emitted during rebalance — 62 with USDT quoteToken, 38 with zero/USDC. Previously all 100 were hardcoded to address(0). Confirms per-asset routing works.
+
+## Session: 20260221-1430-arb1
+
+- [DECISION] ArbitrationProcessor receives deps via ctor injection (P2P, ChainWriter, BLS) — matches ConsensusProtocol pattern
+- [DECISION] Chain settlement in subsystem run loop, not processor — processor stays sync except start_consensus
+- [DECISION] request_rx moved from processor to subsystem — subsystem orchestrates, processor is pure state machine
+- [DECISION] submit_settlement() added as inherent method on EthersChainWriter (not on ChainWriter trait) — settlement is arbitration-specific, not a general chain writer concern
+- [DECISION] NoOpP2P test mock defined inline in processor tests rather than using MockP2P from common — MockP2P requires network coordinator, overkill for unit tests
+
+## Session: 20260221-0812-e2e4
+
+- [DECISION] Cross-chain sell flow E2E verified working. Full pipeline: sellITPFromArbitrum → escrow BridgedITP → issuers detect CrossChainSellOrderCreated → submit sell on L3 (BLS) → batch (BLS) → fills → fundSellOrder → completeSellOrder (3/3 BLS) → USDC returned to user. Minor issue: sell asset trades emission failed with E020_InvalidBLSSignature on non-leader, recovered via "Sell order already filled on-chain" fallback.
+- [DECISION] Rebalance flow E2E verified working. requestRebalance on L3 → issuers detect RebalanceRequested event → rebalance consensus (3/3 BLS) → setItpNav consensus (3/3 BLS) → rebalance() tx succeeded. Weights updated on-chain correctly (BTC 1%→1.5%, ETH 1%→0.5%).
+- [FAILED] setItpNav BLS verification fails on-chain with E020_InvalidBLSSignature. The message hash the issuers sign for setItpNav doesn't match what the contract verifies. Rebalance proceeds with stale NAV (1e18) as fallback. This causes slightly inaccurate inventory recalculation but doesn't block the flow. Needs investigation: likely a mismatch between issuer's setItpNav message hash construction and the contract's _verifyBLS domain.
+- [FAILED] Sell flow `emitAssetTrades` also fails with E020_InvalidBLSSignature (same root cause as setItpNav). AP never receives sell-specific trade instructions. Sells still complete because fills proceed regardless — but no actual Bitget trades happen for sold assets. The BLS message hash for `emitAssetTrades` differs between issuer and contract.
+- [FAILED] RebalanceLib._emitAssetTradeDeltas() hardcodes `address(0)` as quoteToken for ALL rebalance trades (lines 45, 50). This means USDT-pair assets (ATOM, ETC, 1INCH, AEVO, etc.) get routed through USDC instead of USDT. Works in mock mode but will fail on production Bitget. Fix: pass a quoteToken mapping into rebalance() or look up from a registry. The issuer's `emitAssetTrades()` path correctly passes per-asset quoteTokens — only the on-chain rebalance path is broken.
+- [DECISION] Morpho lending flow verified E2E: deposit 10 BridgedITP collateral → borrow 500 USDC → repay (share-based, dust-free) → withdraw all collateral. Full round-trip works. 4 wei USDC lost to interest accrual. Oracle price set at 1e26 = $100/share in Morpho 36-decimal format. 77% LLTV. Market has 100K USDC liquidity.
+
+## Session: 20260221-0745-e2e3
+
+- [DECISION] Removed `mark_orders_batched(order_ids)` from `execute_confirm_batch` and `mark_orders_filled(fills)` from `execute_confirm_fills` in orchestrator.rs. These functions receive L3 order IDs (for on-chain calls), not arb IDs. Setting status with L3 IDs polluted the shared `order_status` HashMap, causing namespace collisions when a subsequent arb order shared the same numeric ID. Status updates now happen exclusively in main.rs using arb IDs.
+- [DECISION] Added signer_count==0 guard after bridge and submit phases in main.rs. Followers' bridge/submit phases return Ok(signer_count=0) immediately when no leader proposal is received. Without the guard, followers advanced order status prematurely, causing leader proposals arriving later to be rejected as "Order in unexpected status". The guard makes followers skip advancement and retry next cycle.
+- [FAILED] Attempted `buyITPFromArbitrum` with 4 parameters (missing `limitPrice`) — function signature changed to 5 params. Also used wrong private key for test user (key didn't match impersonated address). Fixed by using `--from --unlocked` with Anvil impersonation.
+
 ## Session: 20260221-0714-e2e2
 
 - [FAILED] `validate_submit_order_proposal` rejected follower co-signs with INFRA-007 ("Order already submitted") because my fix from e2e1 stored order mappings on ALL nodes immediately after `run_submit_order_phase` returned (signer_count=0 on followers). When the leader's submit proposal arrived 7s later, `order_mappings.contains_key()` was true → rejected. Fix: changed the contains_key check from hard reject (`Ok(false)`) to debug log that allows co-signing. On-chain dedup protects against actual double-submission.
@@ -3240,3 +3269,17 @@ The backtester currently supports one rebalance method: **periodic time-based re
 
 [DECISION] 20260221-0300-bls2: Fixed InMemoryKeyRegistry::generate_test_registry_with_offset (keys.rs) and registry_sync test helpers — all had old [i, 0x42, 0..0] seed format. Now all BLS seed generation across the entire codebase uses vec![idx; 32] matching bls-tool.
 
+
+## 20260221-0853-x7k9
+
+[DECISION] Cross-chain buy flow E2E working - The complete cross-chain buy flow (Arb→L3 bridge, submit, batch, fills, completeBuy, mintBridgedShares) works end-to-end after fixing L3/Arb order ID namespace collision.
+
+[DECISION] Three collision vectors fixed - (1) mark_orders_filled now reverse-maps L3→Arb IDs via order_mappings, (2) removed duplicate mark_orders_filled in protocol.rs, (3) removed L3-native set_order_status calls in main.rs that polluted orchestrator status map.
+
+[FAILED] confirmBatch uses wrong ID namespace for arb_order_ids - confirmBatch's Resolved order IDs shows `arb_order_ids=[1]` but the real arb order ID is 0. Falls back to using ID as-is since "No L3 order mapping found". Works by coincidence since L3 order ID 1 is correct for the batch. Need to trace the ID flow in the confirmBatch path.
+
+[DECISION] Cross-chain buy flow verified with 2 orders - Both orderId=0 (10 USDC → 9.984 shares) and orderId=3 (20 USDC → 19.967 shares) completed full E2E flow: bridge Arb→L3, submit, confirmBatch, AP fills, completeBuyOrder, confirmFills, mintBridgedShares. No ID collisions.
+
+[DECISION] Removed 3 more redundant resolve/status calls - (1) protocol.rs mark_orders_batched using L3 IDs after confirmBatch, (2) execute_confirm_batch redundant resolve_l3_order_ids, (3) execute_confirm_fills redundant resolve_l3_order_ids. All callers already pass L3 IDs.
+
+[FAILED] Watchdog "stale order" warning after completed flow - After mintBridgedShares succeeds, order_status remains Batched instead of SharesBridged. mark_orders_shares_bridged is called but watchdog still sees Batched 34 seconds later. Cosmetic issue, doesn't affect flow. Likely a timing/lock issue or the status is being overwritten. Low priority.

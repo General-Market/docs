@@ -469,6 +469,9 @@ pub enum BridgeError {
 
     #[error("mint bridged shares failed: {reason}")]
     MintBridgedSharesFailed { reason: String },
+
+    #[error("consensus timeout: {phase}")]
+    ConsensusTimeout { phase: String },
 }
 
 /// Build the message hash for bridge Arb→L3 consensus
@@ -1088,6 +1091,25 @@ pub struct MintBridgedSharesResult {
     pub signature_count: usize,
 }
 
+/// Proposal for completeBuyOrder BLS consensus
+#[derive(Debug, Clone)]
+pub struct CompleteBuyOrderProposal {
+    pub leader_id: PeerId,
+    pub cycle_number: u64,
+    pub order_id: U256,
+    pub vault: Address,
+    pub leader_signature: BLSSignature,
+    pub message_hash: H256,
+}
+
+/// Result of completeBuyOrder BLS consensus
+#[derive(Debug, Clone)]
+pub struct CompleteBuyOrderResult {
+    pub aggregated_signature: BLSSignature,
+    pub signer_bitmap: U256,
+    pub signature_count: usize,
+}
+
 // ============================================================================
 // 8-step bridge: Hash Builders
 // ============================================================================
@@ -1197,6 +1219,69 @@ pub fn build_mint_bridged_shares_hash(
     padded[..s.len()].copy_from_slice(s);
     data.extend_from_slice(&padded);
 
+    let hash = H256::from_slice(&ethers::utils::keccak256(&data));
+    tracing::debug!(
+        %chain_id,
+        bridge_proxy = ?bridge_proxy,
+        itp_id = ?itp_id,
+        user = ?user,
+        amount = %amount,
+        hash = ?hash,
+        "build_mint_bridged_shares_hash"
+    );
+    hash
+}
+
+/// Build message hash for completeBuyOrder consensus
+///
+/// Matches: keccak256(abi.encode(chainid, arbCustody, "completeBuyOrder", orderId, vault))
+/// Uses ABI encoding with dynamic string.
+pub fn build_complete_buy_order_hash(
+    chain_id: u64,
+    arb_custody: Address,
+    order_id: U256,
+    vault: Address,
+) -> H256 {
+    // abi.encode(uint256, address, string, uint256, address)
+    // Head: 5 slots (chain_id, address, string_offset, orderId, vault)
+    // Tail: string length + padded data for "completeBuyOrder"
+    let mut data = Vec::with_capacity(224);
+
+    // chain_id as uint256 (32 bytes)
+    let mut chain_id_bytes = [0u8; 32];
+    U256::from(chain_id).to_big_endian(&mut chain_id_bytes);
+    data.extend_from_slice(&chain_id_bytes);
+
+    // arb_custody as address (32 bytes, left-padded)
+    let mut custody_bytes = [0u8; 32];
+    custody_bytes[12..32].copy_from_slice(arb_custody.as_bytes());
+    data.extend_from_slice(&custody_bytes);
+
+    // string offset (160 = 5 * 32, points past the 5 head slots)
+    let mut offset_bytes = [0u8; 32];
+    U256::from(160).to_big_endian(&mut offset_bytes);
+    data.extend_from_slice(&offset_bytes);
+
+    // orderId as uint256 (32 bytes)
+    let mut order_id_bytes = [0u8; 32];
+    order_id.to_big_endian(&mut order_id_bytes);
+    data.extend_from_slice(&order_id_bytes);
+
+    // vault as address (32 bytes, left-padded)
+    let mut vault_bytes = [0u8; 32];
+    vault_bytes[12..32].copy_from_slice(vault.as_bytes());
+    data.extend_from_slice(&vault_bytes);
+
+    // Dynamic string "completeBuyOrder" (16 bytes)
+    let s = b"completeBuyOrder";
+    let mut len_bytes = [0u8; 32];
+    U256::from(s.len()).to_big_endian(&mut len_bytes);
+    data.extend_from_slice(&len_bytes);
+
+    let mut padded = [0u8; 32];
+    padded[..s.len()].copy_from_slice(s);
+    data.extend_from_slice(&padded);
+
     H256::from_slice(&ethers::utils::keccak256(&data))
 }
 
@@ -1254,17 +1339,16 @@ pub fn build_record_collateral_move_calldata(
     data
 }
 
-/// Build calldata for BridgeProxy.mintBridgedShares(itpId, user, amount, blsSig)
+/// Build calldata for BridgeProxy.mintBridgedShares(itpId, user, amount, blsSignature)
+/// Post-BLS-unification: uses BLSVerifier (no signer_bitmap or aggregated_pubkey params)
 pub fn build_mint_bridged_shares_calldata(
     itp_id: H256,
     user: Address,
     amount: U256,
-    signer_bitmap: U256,
-    aggregated_pubkey: &[u8],
     bls_signature: &[u8],
 ) -> Vec<u8> {
-    // mintBridgedShares(bytes32,address,uint256,uint256,bytes,bytes)
-    let selector = &ethers::utils::keccak256("mintBridgedShares(bytes32,address,uint256,uint256,bytes,bytes)")[..4];
+    // mintBridgedShares(bytes32,address,uint256,bytes)
+    let selector = &ethers::utils::keccak256("mintBridgedShares(bytes32,address,uint256,bytes)")[..4];
     let mut data = selector.to_vec();
 
     // itp_id (32 bytes)
@@ -1280,35 +1364,17 @@ pub fn build_mint_bridged_shares_calldata(
     amount.to_big_endian(&mut amount_bytes);
     data.extend_from_slice(&amount_bytes);
 
-    // signer_bitmap (32 bytes)
-    let mut bitmap_bytes = [0u8; 32];
-    signer_bitmap.to_big_endian(&mut bitmap_bytes);
-    data.extend_from_slice(&bitmap_bytes);
+    // blsSignature offset (dynamic: 4 * 32 = 128)
+    let mut sig_offset = [0u8; 32];
+    U256::from(128).to_big_endian(&mut sig_offset);
+    data.extend_from_slice(&sig_offset);
 
-    // aggregated_pubkey offset (dynamic: 6 * 32 = 192)
-    let mut pk_offset = [0u8; 32];
-    U256::from(192).to_big_endian(&mut pk_offset);
-    data.extend_from_slice(&pk_offset);
-
-    // bls_signature offset (dynamic: depends on pubkey length)
-    let pk_padded_len = aggregated_pubkey.len() + ((32 - (aggregated_pubkey.len() % 32)) % 32);
-    let sig_offset = 192 + 32 + pk_padded_len; // offset + pk_len_slot + pk_data
-    let mut sig_offset_bytes = [0u8; 32];
-    U256::from(sig_offset).to_big_endian(&mut sig_offset_bytes);
-    data.extend_from_slice(&sig_offset_bytes);
-
-    // aggregated_pubkey data (length + padded bytes)
-    let mut pk_len = [0u8; 32];
-    U256::from(aggregated_pubkey.len()).to_big_endian(&mut pk_len);
-    data.extend_from_slice(&pk_len);
-    data.extend_from_slice(aggregated_pubkey);
-    let pk_pad = (32 - (aggregated_pubkey.len() % 32)) % 32;
-    data.extend(std::iter::repeat(0u8).take(pk_pad));
-
-    // bls_signature data (length + padded bytes)
+    // blsSignature length
     let mut sig_len = [0u8; 32];
     U256::from(bls_signature.len()).to_big_endian(&mut sig_len);
     data.extend_from_slice(&sig_len);
+
+    // blsSignature data (padded to 32 bytes)
     data.extend_from_slice(bls_signature);
     let sig_pad = (32 - (bls_signature.len() % 32)) % 32;
     data.extend(std::iter::repeat(0u8).take(sig_pad));
@@ -1503,91 +1569,50 @@ pub fn build_bridge_l3_to_arb_hash(
 /// Story 7.4: Batch and Fill Orchestration
 pub fn build_confirm_batch_hash(
     chain_id: u64,
+    contract_address: Address,
     cycle_number: u64,
     order_ids: &[U256],
-    prices: &[U256],
 ) -> H256 {
-    let mut data = Vec::with_capacity(96 + order_ids.len() * 64);
-
-    // chain_id as uint256 (32 bytes, big endian)
-    let mut chain_id_bytes = [0u8; 32];
-    U256::from(chain_id).to_big_endian(&mut chain_id_bytes);
-    data.extend_from_slice(&chain_id_bytes);
-
-    // cycle_number as uint256 (32 bytes, big endian)
-    let mut cycle_bytes = [0u8; 32];
-    U256::from(cycle_number).to_big_endian(&mut cycle_bytes);
-    data.extend_from_slice(&cycle_bytes);
-
-    // order_count as uint256 (32 bytes, big endian)
-    let mut count_bytes = [0u8; 32];
-    U256::from(order_ids.len()).to_big_endian(&mut count_bytes);
-    data.extend_from_slice(&count_bytes);
-
-    // order_ids (each 32 bytes, big endian)
-    for order_id in order_ids {
-        let mut order_bytes = [0u8; 32];
-        order_id.to_big_endian(&mut order_bytes);
-        data.extend_from_slice(&order_bytes);
-    }
-
-    // prices (each 32 bytes, big endian)
-    for price in prices {
-        let mut price_bytes = [0u8; 32];
-        price.to_big_endian(&mut price_bytes);
-        data.extend_from_slice(&price_bytes);
-    }
-
-    H256::from_slice(&ethers::utils::keccak256(&data))
+    // Must match Solidity: keccak256(abi.encode(block.chainid, address(this), cycleNumber, orderIds))
+    use ethers::abi::Token;
+    let tokens = vec![
+        Token::Uint(U256::from(chain_id)),
+        Token::Address(contract_address),
+        Token::Uint(U256::from(cycle_number)),
+        Token::Array(order_ids.iter().map(|&id| Token::Uint(id)).collect()),
+    ];
+    H256::from_slice(&ethers::utils::keccak256(&ethers::abi::encode(&tokens)))
 }
 
 /// Build the message hash for fills confirmation consensus
 ///
-/// Layout (variable size):
-/// - chain_id: 32 bytes
-/// - cycle_number: 32 bytes
-/// - fill_count: 32 bytes
-/// - for each fill: order_id (32) + fill_price (32) + fill_amount (32) = 96 bytes
+/// Must match Solidity: keccak256(abi.encode(block.chainid, address(this), cycleNumber, fills))
+/// where Fill is (uint256 orderId, uint256 fillPrice, uint256 fillAmount, uint256 cycleNumber, bytes32 txHash)
 ///
 /// Story 7.4: Batch and Fill Orchestration
 pub fn build_confirm_fills_hash(
     chain_id: u64,
+    contract_address: Address,
     cycle_number: u64,
     fills: &[Fill],
 ) -> H256 {
-    let mut data = Vec::with_capacity(96 + fills.len() * 96);
-
-    // chain_id as uint256 (32 bytes, big endian)
-    let mut chain_id_bytes = [0u8; 32];
-    U256::from(chain_id).to_big_endian(&mut chain_id_bytes);
-    data.extend_from_slice(&chain_id_bytes);
-
-    // cycle_number as uint256 (32 bytes, big endian)
-    let mut cycle_bytes = [0u8; 32];
-    U256::from(cycle_number).to_big_endian(&mut cycle_bytes);
-    data.extend_from_slice(&cycle_bytes);
-
-    // fill_count as uint256 (32 bytes, big endian)
-    let mut count_bytes = [0u8; 32];
-    U256::from(fills.len()).to_big_endian(&mut count_bytes);
-    data.extend_from_slice(&count_bytes);
-
-    // fills (each 96 bytes: order_id + fill_price + fill_amount)
-    for fill in fills {
-        let mut order_bytes = [0u8; 32];
-        fill.order_id.to_big_endian(&mut order_bytes);
-        data.extend_from_slice(&order_bytes);
-
-        let mut price_bytes = [0u8; 32];
-        fill.fill_price.to_big_endian(&mut price_bytes);
-        data.extend_from_slice(&price_bytes);
-
-        let mut amount_bytes = [0u8; 32];
-        fill.fill_amount.to_big_endian(&mut amount_bytes);
-        data.extend_from_slice(&amount_bytes);
-    }
-
-    H256::from_slice(&ethers::utils::keccak256(&data))
+    use ethers::abi::Token;
+    let fill_tokens: Vec<Token> = fills.iter().map(|f| {
+        Token::Tuple(vec![
+            Token::Uint(f.order_id),
+            Token::Uint(f.fill_price),
+            Token::Uint(f.fill_amount),
+            Token::Uint(U256::from(cycle_number)), // cycleNumber matches function param
+            Token::FixedBytes(vec![0u8; 32]),       // txHash = zero (not validated on-chain)
+        ])
+    }).collect();
+    let tokens = vec![
+        Token::Uint(U256::from(chain_id)),
+        Token::Address(contract_address),
+        Token::Uint(U256::from(cycle_number)),
+        Token::Array(fill_tokens),
+    ];
+    H256::from_slice(&ethers::utils::keccak256(&ethers::abi::encode(&tokens)))
 }
 
 /// Build calldata for Index.confirmBatch()
@@ -2083,6 +2108,17 @@ pub struct RebalanceResult {
     pub signature_count: usize,
 }
 
+/// Result of successful setItpNav BLS consensus
+#[derive(Debug, Clone)]
+pub struct SetItpNavResult {
+    /// Aggregated BLS signature
+    pub aggregated_signature: BLSSignature,
+    /// Bitmap of signers
+    pub signer_bitmap: U256,
+    /// Number of signatures collected
+    pub signature_count: usize,
+}
+
 /// Build message hash for single-phase rebalance() consensus
 ///
 /// Matches Solidity: keccak256(abi.encode(block.chainid, address(this), "rebalance", itpId, removeIndices, addAssets, newWeights, prices))
@@ -2094,53 +2130,50 @@ pub fn build_rebalance_hash(
     add_assets: &[Address],
     new_weights: &[U256],
     prices: &[U256],
+    quote_tokens: &[Address],
 ) -> H256 {
-    // Use abi.encode — dynamic arrays are encoded with offset+length+data
-    let mut tokens = Vec::new();
-
-    // chain_id as uint256
-    tokens.push(ethers::abi::Token::Uint(U256::from(chain_id)));
-    // address(this) as address
-    tokens.push(ethers::abi::Token::Address(index_address));
-    // "rebalance" as string
-    tokens.push(ethers::abi::Token::String("rebalance".to_string()));
-    // itpId as bytes32
-    tokens.push(ethers::abi::Token::FixedBytes(itp_id.as_bytes().to_vec()));
-    // removeIndices as uint256[]
-    tokens.push(ethers::abi::Token::Array(
-        remove_indices.iter().map(|v| ethers::abi::Token::Uint(*v)).collect(),
-    ));
-    // addAssets as address[]
-    tokens.push(ethers::abi::Token::Array(
-        add_assets.iter().map(|a| ethers::abi::Token::Address(*a)).collect(),
-    ));
-    // newWeights as uint256[]
-    tokens.push(ethers::abi::Token::Array(
-        new_weights.iter().map(|v| ethers::abi::Token::Uint(*v)).collect(),
-    ));
-    // prices as uint256[]
-    tokens.push(ethers::abi::Token::Array(
-        prices.iter().map(|v| ethers::abi::Token::Uint(*v)).collect(),
-    ));
+    // Must match: keccak256(abi.encode(chainid, address(this), "rebalance",
+    //   itpId, removeIndices, addAssets, newWeights, prices, quoteTokens))
+    let tokens = vec![
+        ethers::abi::Token::Uint(U256::from(chain_id)),
+        ethers::abi::Token::Address(index_address),
+        ethers::abi::Token::String("rebalance".to_string()),
+        ethers::abi::Token::FixedBytes(itp_id.as_bytes().to_vec()),
+        ethers::abi::Token::Array(
+            remove_indices.iter().map(|v| ethers::abi::Token::Uint(*v)).collect(),
+        ),
+        ethers::abi::Token::Array(
+            add_assets.iter().map(|a| ethers::abi::Token::Address(*a)).collect(),
+        ),
+        ethers::abi::Token::Array(
+            new_weights.iter().map(|v| ethers::abi::Token::Uint(*v)).collect(),
+        ),
+        ethers::abi::Token::Array(
+            prices.iter().map(|v| ethers::abi::Token::Uint(*v)).collect(),
+        ),
+        ethers::abi::Token::Array(
+            quote_tokens.iter().map(|a| ethers::abi::Token::Address(*a)).collect(),
+        ),
+    ];
 
     let encoded = ethers::abi::encode(&tokens);
     H256::from_slice(&ethers::utils::keccak256(&encoded))
 }
 
-/// Build calldata for rebalance(bytes32,uint256[],address[],uint256[],uint256[],bytes)
+/// Build calldata for rebalance(bytes32,uint256[],address[],uint256[],uint256[],address[],bytes)
 pub fn build_rebalance_calldata(
     itp_id: H256,
     remove_indices: &[U256],
     add_assets: &[Address],
     new_weights: &[U256],
     prices: &[U256],
+    quote_tokens: &[Address],
     bls_signature: &[u8],
 ) -> Vec<u8> {
     let selector = &ethers::utils::keccak256(
-        "rebalance(bytes32,uint256[],address[],uint256[],uint256[],bytes)"
+        "rebalance(bytes32,uint256[],address[],uint256[],uint256[],address[],bytes)"
     )[..4];
 
-    // Use ethers ABI encoding for the complex dynamic layout
     let params = vec![
         ethers::abi::Token::FixedBytes(itp_id.as_bytes().to_vec()),
         ethers::abi::Token::Array(
@@ -2154,6 +2187,9 @@ pub fn build_rebalance_calldata(
         ),
         ethers::abi::Token::Array(
             prices.iter().map(|v| ethers::abi::Token::Uint(*v)).collect(),
+        ),
+        ethers::abi::Token::Array(
+            quote_tokens.iter().map(|a| ethers::abi::Token::Address(*a)).collect(),
         ),
         ethers::abi::Token::Bytes(bls_signature.to_vec()),
     ];
@@ -2172,31 +2208,16 @@ pub fn build_set_itp_nav_hash(
     itp_id: H256,
     nav: U256,
 ) -> H256 {
-    let mut data = Vec::with_capacity(160);
-
-    let mut buf = [0u8; 32];
-
-    // chain_id as uint256
-    U256::from(chain_id).to_big_endian(&mut buf);
-    data.extend_from_slice(&buf);
-
-    // index_address (padded to 32 bytes)
-    let mut addr_bytes = [0u8; 32];
-    addr_bytes[12..32].copy_from_slice(index_address.as_bytes());
-    data.extend_from_slice(&addr_bytes);
-
-    // "setItpNav" as bytes32 (keccak256)
-    let set_itp_nav_hash = ethers::utils::keccak256(b"setItpNav");
-    data.extend_from_slice(&set_itp_nav_hash);
-
-    // itpId
-    data.extend_from_slice(itp_id.as_bytes());
-
-    // nav
-    nav.to_big_endian(&mut buf);
-    data.extend_from_slice(&buf);
-
-    H256::from_slice(&ethers::utils::keccak256(&data))
+    // Must match: keccak256(abi.encode(block.chainid, address(this), "setItpNav", itpId, nav))
+    let tokens = vec![
+        ethers::abi::Token::Uint(U256::from(chain_id)),
+        ethers::abi::Token::Address(index_address),
+        ethers::abi::Token::String("setItpNav".to_string()),
+        ethers::abi::Token::FixedBytes(itp_id.as_bytes().to_vec()),
+        ethers::abi::Token::Uint(nav),
+    ];
+    let encoded = ethers::abi::encode(&tokens);
+    H256::from_slice(&ethers::utils::keccak256(&encoded))
 }
 
 /// Build calldata for setItpNav(bytes32,uint256,bytes)
@@ -2288,54 +2309,30 @@ pub fn build_emit_asset_trades_hash(
     cycle_number: u64,
     trades: &[AssetTrade],
 ) -> H256 {
-    let mut data = Vec::new();
+    // Must match: keccak256(abi.encode(block.chainid, address(this), "assetTrades", cycleNumber, trades))
+    // where trades is TypesLib.AssetTrade[] = (address, uint8, uint256, uint256, address)[]
+    let trade_tokens: Vec<ethers::abi::Token> = trades
+        .iter()
+        .map(|t| {
+            ethers::abi::Token::Tuple(vec![
+                ethers::abi::Token::Address(t.asset),
+                ethers::abi::Token::Uint(U256::from(t.side)),
+                ethers::abi::Token::Uint(t.usdc_amount),
+                ethers::abi::Token::Uint(t.price),
+                ethers::abi::Token::Address(t.quote_token),
+            ])
+        })
+        .collect();
 
-    // chain_id (uint256)
-    let mut buf = [0u8; 32];
-    U256::from(chain_id).to_big_endian(&mut buf);
-    data.extend_from_slice(&buf);
-
-    // address(this) — left-padded to 32 bytes
-    let mut addr_buf = [0u8; 32];
-    addr_buf[12..32].copy_from_slice(index_address.as_bytes());
-    data.extend_from_slice(&addr_buf);
-
-    // "assetTrades" — keccak256 of string (abi.encode encodes string as bytes32)
-    let tag_hash = ethers::utils::keccak256(b"assetTrades");
-    data.extend_from_slice(&tag_hash);
-
-    // cycleNumber (uint256)
-    U256::from(cycle_number).to_big_endian(&mut buf);
-    data.extend_from_slice(&buf);
-
-    // trades[] — ABI-encoded as tuple array
-    // Each AssetTrade: (address, uint8, uint256, uint256, address)
-    for trade in trades {
-        // asset (address, left-padded)
-        let mut asset_buf = [0u8; 32];
-        asset_buf[12..32].copy_from_slice(trade.asset.as_bytes());
-        data.extend_from_slice(&asset_buf);
-
-        // side (uint8, padded to 32 bytes)
-        let mut side_buf = [0u8; 32];
-        side_buf[31] = trade.side;
-        data.extend_from_slice(&side_buf);
-
-        // usdcAmount (uint256)
-        trade.usdc_amount.to_big_endian(&mut buf);
-        data.extend_from_slice(&buf);
-
-        // price (uint256)
-        trade.price.to_big_endian(&mut buf);
-        data.extend_from_slice(&buf);
-
-        // quoteToken (address, left-padded)
-        let mut qt_buf = [0u8; 32];
-        qt_buf[12..32].copy_from_slice(trade.quote_token.as_bytes());
-        data.extend_from_slice(&qt_buf);
-    }
-
-    H256::from(ethers::utils::keccak256(&data))
+    let tokens = vec![
+        ethers::abi::Token::Uint(U256::from(chain_id)),
+        ethers::abi::Token::Address(index_address),
+        ethers::abi::Token::String("assetTrades".to_string()),
+        ethers::abi::Token::Uint(U256::from(cycle_number)),
+        ethers::abi::Token::Array(trade_tokens),
+    ];
+    let encoded = ethers::abi::encode(&tokens);
+    H256::from(ethers::utils::keccak256(&encoded))
 }
 
 /// Build calldata for Index.emitAssetTrades(cycleNumber, trades[], blsSignature)
@@ -2885,26 +2882,19 @@ mod tests {
 
     #[test]
     fn test_build_confirm_batch_hash_deterministic() {
+        let addr = Address::zero();
         let hash1 = build_confirm_batch_hash(
-            111222333, // L3 chain ID
+            111222333,
+            addr,
             42,
             &[U256::from(1), U256::from(2), U256::from(3)],
-            &[
-                U256::from(1000000000000000000u64),
-                U256::from(2000000000000000000u64),
-                U256::from(3000000000000000000u64),
-            ],
         );
 
         let hash2 = build_confirm_batch_hash(
             111222333,
+            addr,
             42,
             &[U256::from(1), U256::from(2), U256::from(3)],
-            &[
-                U256::from(1000000000000000000u64),
-                U256::from(2000000000000000000u64),
-                U256::from(3000000000000000000u64),
-            ],
         );
 
         assert_eq!(hash1, hash2);
@@ -2912,50 +2902,25 @@ mod tests {
 
     #[test]
     fn test_build_confirm_batch_hash_different_cycles() {
-        let hash1 = build_confirm_batch_hash(
-            111222333,
-            1,
-            &[U256::from(1)],
-            &[U256::from(1000000000000000000u64)],
-        );
-
-        let hash2 = build_confirm_batch_hash(
-            111222333,
-            2, // Different cycle
-            &[U256::from(1)],
-            &[U256::from(1000000000000000000u64)],
-        );
+        let addr = Address::zero();
+        let hash1 = build_confirm_batch_hash(111222333, addr, 1, &[U256::from(1)]);
+        let hash2 = build_confirm_batch_hash(111222333, addr, 2, &[U256::from(1)]);
 
         assert_ne!(hash1, hash2);
     }
 
     #[test]
     fn test_build_confirm_batch_hash_different_orders() {
-        let hash1 = build_confirm_batch_hash(
-            111222333,
-            1,
-            &[U256::from(1)],
-            &[U256::from(1000000000000000000u64)],
-        );
-
-        let hash2 = build_confirm_batch_hash(
-            111222333,
-            1,
-            &[U256::from(2)], // Different order
-            &[U256::from(1000000000000000000u64)],
-        );
+        let addr = Address::zero();
+        let hash1 = build_confirm_batch_hash(111222333, addr, 1, &[U256::from(1)]);
+        let hash2 = build_confirm_batch_hash(111222333, addr, 1, &[U256::from(2)]);
 
         assert_ne!(hash1, hash2);
     }
 
     #[test]
     fn test_build_confirm_batch_hash_empty() {
-        let hash = build_confirm_batch_hash(
-            111222333,
-            0,
-            &[],
-            &[],
-        );
+        let hash = build_confirm_batch_hash(111222333, Address::zero(), 0, &[]);
 
         // Should be a valid 32-byte hash even with empty arrays
         assert_eq!(hash.as_bytes().len(), 32);
@@ -2976,8 +2941,9 @@ mod tests {
             },
         ];
 
-        let hash1 = build_confirm_fills_hash(111222333, 42, &fills);
-        let hash2 = build_confirm_fills_hash(111222333, 42, &fills);
+        let addr = Address::zero();
+        let hash1 = build_confirm_fills_hash(111222333, addr, 42, &fills);
+        let hash2 = build_confirm_fills_hash(111222333, addr, 42, &fills);
 
         assert_eq!(hash1, hash2);
     }
@@ -2992,8 +2958,9 @@ mod tests {
             },
         ];
 
-        let hash1 = build_confirm_fills_hash(111222333, 1, &fills);
-        let hash2 = build_confirm_fills_hash(111222333, 2, &fills); // Different cycle
+        let addr = Address::zero();
+        let hash1 = build_confirm_fills_hash(111222333, addr, 1, &fills);
+        let hash2 = build_confirm_fills_hash(111222333, addr, 2, &fills); // Different cycle
 
         assert_ne!(hash1, hash2);
     }
@@ -3016,15 +2983,16 @@ mod tests {
             },
         ];
 
-        let hash1 = build_confirm_fills_hash(111222333, 1, &fills1);
-        let hash2 = build_confirm_fills_hash(111222333, 1, &fills2);
+        let addr = Address::zero();
+        let hash1 = build_confirm_fills_hash(111222333, addr, 1, &fills1);
+        let hash2 = build_confirm_fills_hash(111222333, addr, 1, &fills2);
 
         assert_ne!(hash1, hash2);
     }
 
     #[test]
     fn test_build_confirm_fills_hash_empty() {
-        let hash = build_confirm_fills_hash(111222333, 0, &[]);
+        let hash = build_confirm_fills_hash(111222333, Address::zero(), 0, &[]);
 
         // Should be a valid 32-byte hash even with empty fills
         assert_eq!(hash.as_bytes().len(), 32);
@@ -3138,7 +3106,7 @@ mod tests {
         assert!(calldata.len() >= 4 + 32 * 4 + 96 + 32 + 96);
 
         // Verify selector (first 4 bytes)
-        let expected_selector = &ethers::utils::keccak256("confirmFills(uint256,(uint256,uint256,uint256)[],bytes)")[..4];
+        let expected_selector = &ethers::utils::keccak256("confirmFills(uint256,(uint256,uint256,uint256,uint256,bytes32)[],bytes)")[..4];
         assert_eq!(&calldata[0..4], expected_selector);
     }
 

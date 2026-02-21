@@ -153,12 +153,13 @@ interface IBridgeProxy {
         string calldata note
     ) external returns (uint256 nonce);
 
-    /// @notice Execute rebalance on L3 Index via cross-chain BLS consensus
+    /// @notice Execute rebalance on L3 Investment via cross-chain BLS consensus
     /// @param itpId The L3 ITP identifier
     /// @param removeIndices Indices to remove (sorted descending)
     /// @param addAssets New asset addresses to add
     /// @param newWeights Weights for the final asset list
     /// @param prices Prices for inventory computation
+    /// @param quoteTokens Per-asset quote token for settlement (address(0) = USDC)
     /// @param blsSignature Aggregated BLS signature (64 bytes G1)
     function rebalance(
         bytes32 itpId,
@@ -166,6 +167,7 @@ interface IBridgeProxy {
         address[] calldata addAssets,
         uint256[] calldata newWeights,
         uint256[] calldata prices,
+        address[] calldata quoteTokens,
         bytes calldata blsSignature
     ) external;
 
@@ -198,8 +200,8 @@ interface IBridgeProxy {
         bytes calldata blsSignature
     ) external;
 
-    /// @notice Set the Index contract address for atomic ITP creation
-    /// @param indexContract_ Address of the Index contract on L3
+    /// @notice Set the Investment contract address for atomic ITP creation
+    /// @param indexContract_ Address of the Investment contract on L3
     function setIndexContract(address indexContract_) external;
 
     // ============ Admin Functions ============

@@ -2051,9 +2051,24 @@ impl BridgeOrchestrator {
     }
 
     /// Mark orders as filled (status update after fills confirmation)
+    /// Fills use L3 order IDs, but order_status tracks Arb order IDs.
+    /// This method reverse-maps L3→Arb before updating status to avoid ID collisions.
     pub async fn mark_orders_filled(&self, fills: &[Fill]) {
+        // Build reverse map: L3 order ID → Arb order ID
+        let mappings = self.order_mappings.read().await;
+        let l3_to_arb: std::collections::HashMap<U256, U256> = mappings
+            .iter()
+            .filter_map(|(arb_id, m)| Some((m.l3_order_id, *arb_id)))
+            .collect();
+        drop(mappings);
+
         for fill in fills {
-            self.set_order_status(fill.order_id, BridgeOrderStatus::Filled)
+            let status_key = l3_to_arb.get(&fill.order_id).copied().unwrap_or(fill.order_id);
+            if status_key != fill.order_id {
+                info!(l3_order_id = %fill.order_id, arb_order_id = %status_key,
+                    "Resolved L3→Arb order ID for status update");
+            }
+            self.set_order_status(status_key, BridgeOrderStatus::Filled)
                 .await;
         }
 
@@ -2106,8 +2121,7 @@ impl BridgeOrchestrator {
     ///
     /// Calls Index.confirmBatch(cycleNumber, orderIds, blsSignature)
     /// This confirms the batch and allows orders to proceed to fill stage.
-    /// Note: order_ids here are Arb order IDs; they are resolved to L3 order IDs
-    /// for the on-chain call.
+    /// Note: order_ids here are L3 order IDs (already resolved by the caller).
     pub async fn execute_confirm_batch(
         &self,
         cycle_number: u64,
@@ -2124,19 +2138,16 @@ impl BridgeOrchestrator {
             return Err(BridgeError::BatchAlreadyConfirmed { cycle_number });
         }
 
-        // Resolve Arb order IDs to L3 order IDs for on-chain call
-        let l3_order_ids = self.resolve_l3_order_ids(order_ids).await;
         info!(
             cycle_number = cycle_number,
-            arb_order_ids = ?order_ids,
-            l3_order_ids = ?l3_order_ids,
-            "Resolved order IDs for confirmBatch"
+            l3_order_ids = ?order_ids,
+            "Executing confirmBatch with L3 order IDs"
         );
 
         // Build Index.confirmBatch() calldata using L3 order IDs
         let calldata = build_confirm_batch_calldata(
             cycle_number,
-            &l3_order_ids,
+            order_ids,
             &aggregated.aggregated_signature.0,
         );
 
@@ -2159,8 +2170,11 @@ impl BridgeOrchestrator {
             .await
             .insert(cycle_number, tx_hash);
 
-        // Mark orders as batched (using arb IDs for internal status tracking)
-        self.mark_orders_batched(order_ids).await;
+        // NOTE: Do NOT call mark_orders_batched here. The order_ids passed to this
+        // function are L3 IDs (for on-chain calls), not arb IDs. Setting status
+        // with L3 IDs pollutes the order_status HashMap and causes namespace
+        // collisions when a subsequent arb order shares the same numeric ID.
+        // Status updates happen in main.rs using arb IDs (submitted_orders).
 
         info!(
             cycle_number = cycle_number,
@@ -2199,21 +2213,13 @@ impl BridgeOrchestrator {
             return Err(BridgeError::FillsAlreadyConfirmed { cycle_number });
         }
 
-        // Resolve fill order IDs from Arb to L3
-        let arb_ids: Vec<U256> = fills.iter().map(|f| f.order_id).collect();
-        let l3_ids = self.resolve_l3_order_ids(&arb_ids).await;
-        let l3_fills: Vec<Fill> = fills.iter().zip(l3_ids.iter()).map(|(f, l3_id)| {
-            Fill {
-                order_id: *l3_id,
-                fill_price: f.fill_price,
-                fill_amount: f.fill_amount,
-            }
-        }).collect();
+        // Fills already contain L3 order IDs (set by the caller in main.rs).
+        // Use them directly for the on-chain call.
 
         // Build Index.confirmFills() calldata using L3 order IDs
         let calldata = build_confirm_fills_calldata(
             cycle_number,
-            &l3_fills,
+            fills,
             &aggregated.aggregated_signature.0,
         );
 
@@ -2236,8 +2242,9 @@ impl BridgeOrchestrator {
             .await
             .insert(cycle_number, tx_hash);
 
-        // Mark orders as filled
-        self.mark_orders_filled(fills).await;
+        // NOTE: Do NOT call mark_orders_filled here. The fills contain L3 IDs
+        // (for on-chain calls), not arb IDs. Status updates happen in main.rs
+        // using arb IDs to avoid namespace collisions.
 
         info!(
             cycle_number = cycle_number,
@@ -4062,6 +4069,7 @@ impl BridgeOrchestrator {
         add_assets: &[Address],
         new_weights: &[U256],
         prices: &[U256],
+        quote_tokens: &[Address],
     ) -> Result<(H256, BLSSignature), BridgeError> {
         let message_hash = build_rebalance_hash(
             self.config.l3_chain_id,
@@ -4071,6 +4079,7 @@ impl BridgeOrchestrator {
             add_assets,
             new_weights,
             prices,
+            quote_tokens,
         );
 
         let hash_bytes: [u8; 32] = message_hash.into();
@@ -4300,6 +4309,7 @@ impl BridgeOrchestrator {
         add_assets: &[Address],
         new_weights: &[U256],
         prices: &[U256],
+        quote_tokens: &[Address],
         aggregated: &RebalanceResult,
         computed_nav: U256,
         nav_bls_signature: &[u8],
@@ -4335,6 +4345,7 @@ impl BridgeOrchestrator {
             add_assets,
             new_weights,
             prices,
+            quote_tokens,
             &aggregated.aggregated_signature.0,
         );
 

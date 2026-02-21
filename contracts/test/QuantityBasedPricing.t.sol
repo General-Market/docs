@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../src/core/Index.sol";
+import "../src/core/Investment.sol";
 import "../src/core/ITP.sol";
 import "../src/mocks/MockERC20.sol";
 import "./helpers/TestHelper.sol";
@@ -15,7 +15,7 @@ import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
 /// @title QuantityBasedPricing.t.sol - Tests for ITP quantity-based NAV pricing
 /// @notice Verifies: ITP starts at $1, NAV moves with price changes, rebalance preserves NAV
 contract QuantityBasedPricingTest is TestHelper {
-    Index public index;
+    Investment public index;
     MockERC20 public usdc;
     Governance public governance;
 
@@ -35,12 +35,12 @@ contract QuantityBasedPricingTest is TestHelper {
         usdc = new MockERC20("USDC", "USDC", 18);
         governance = deployGovernance(admin);
 
-        Index impl = new Index();
+        Investment impl = new Investment();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(Index.initialize, (address(governance), address(usdc)))
+            abi.encodeCall(Investment.initialize, (address(governance), address(usdc)))
         );
-        index = Index(address(proxy));
+        index = Investment(address(proxy));
 
         // Setup IssuerRegistry with real BLS keys
         IssuerRegistry registry = deployIssuerRegistry(address(governance));
@@ -63,9 +63,10 @@ contract QuantityBasedPricingTest is TestHelper {
         uint256[] memory removeIndices,
         address[] memory addAssets,
         uint256[] memory newWeights,
-        uint256[] memory prices
+        uint256[] memory prices,
+        address[] memory quoteTokens
     ) internal returns (bytes memory) {
-        bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "rebalance", itpId, removeIndices, addAssets, newWeights, prices));
+        bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "rebalance", itpId, removeIndices, addAssets, newWeights, prices, quoteTokens));
         return signWithTestIssuers(msgHash);
     }
 
@@ -262,8 +263,9 @@ contract QuantityBasedPricingTest is TestHelper {
 
         uint256[] memory emptyIndices = new uint256[](0);
         address[] memory emptyAddrs = new address[](0);
+        address[] memory emptyQt = new address[](0);
 
-        index.rebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices, _signRebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices));
+        index.rebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices, emptyQt, _signRebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices, emptyQt));
 
         uint256 navAfter = index.getNAV(itpId);
 
@@ -309,8 +311,9 @@ contract QuantityBasedPricingTest is TestHelper {
 
         uint256[] memory emptyIndices = new uint256[](0);
         address[] memory emptyAddrs = new address[](0);
+        address[] memory emptyQt = new address[](0);
 
-        index.rebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices, _signRebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices));
+        index.rebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices, emptyQt, _signRebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices, emptyQt));
 
         (,,,,, uint256[] memory invAfter) = index.getITPState(itpId);
 

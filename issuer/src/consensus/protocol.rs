@@ -69,6 +69,11 @@ use crate::bridge::{
     build_mint_bridged_shares_hash, MintBridgedSharesProposal, MintBridgedSharesResult,
 };
 
+// completeBuyOrder BLS consensus
+use crate::bridge::{
+    build_complete_buy_order_hash, CompleteBuyOrderResult,
+};
+
 use crate::arbitration::ArbitrationMessageSender;
 use crate::leader::LeaderElector;
 use crate::price::{PriceFetcher, ToleranceValidator};
@@ -1382,6 +1387,7 @@ where
                 add_assets,
                 new_weights,
                 prices,
+                quote_tokens,
                 leader_signature,
             } => {
                 debug!(
@@ -1391,7 +1397,7 @@ where
                     "Received RebalanceProposal - routing to handler"
                 );
                 if let Err(e) = self
-                    .handle_rebalance_proposal(from, itp_id, remove_indices, add_assets, new_weights, prices, leader_signature)
+                    .handle_rebalance_proposal(from, itp_id, remove_indices, add_assets, new_weights, prices, quote_tokens, leader_signature)
                     .await
                 {
                     warn!(
@@ -1741,6 +1747,90 @@ where
                         error = %e,
                         "Failed to handle MintBridgedSharesSign"
                     );
+                }
+            }
+            // completeBuyOrder BLS consensus messages
+            MessageHandleResult::ProcessCompleteBuyOrderProposal {
+                from: leader_id,
+                cycle_number: msg_cycle,
+                order_id,
+                vault,
+                leader_signature,
+            } => {
+                debug!(
+                    ?leader_id,
+                    cycle_number = msg_cycle,
+                    order_id = %order_id,
+                    "Received CompleteBuyOrderProposal - validating and signing"
+                );
+
+                let bridge_orch_guard = self.bridge_orchestrator.read().await;
+                let bridge_orch = match bridge_orch_guard.as_ref() {
+                    Some(orch) => orch,
+                    None => {
+                        warn!(code = "INFRA-008", cycle_number = msg_cycle, "BridgeOrchestrator not configured");
+                        return Ok(());
+                    }
+                };
+
+                let orch = bridge_orch.read().await;
+                let config = orch.config();
+
+                let message_hash = build_complete_buy_order_hash(
+                    config.arbitrum_chain_id,
+                    config.arb_custody_address,
+                    order_id,
+                    vault,
+                );
+
+                let hash_bytes: [u8; 32] = message_hash.into();
+                let signature = self
+                    .bls_signer
+                    .sign_message_hash(&self.bls_keypair, &hash_bytes)
+                    .map_err(|e| Error::BlsVerification(format!("Failed to sign CompleteBuyOrder: {}", e)))?;
+
+                drop(orch);
+                drop(bridge_orch_guard);
+
+                let message = P2PMessage::CompleteBuyOrderSign {
+                    signer_id: self.config.peer_id,
+                    signer_index: self.config.issuer_registry_index,
+                    cycle_number: msg_cycle,
+                    signature,
+                };
+                self.p2p.send_to(leader_id, message).await?;
+            }
+            MessageHandleResult::ProcessCompleteBuyOrderSign {
+                from: signer_id,
+                signer_index,
+                cycle_number: msg_cycle,
+                signature,
+            } => {
+                debug!(
+                    ?signer_id,
+                    signer_index,
+                    cycle_number = msg_cycle,
+                    "Received CompleteBuyOrderSign - adding to collector"
+                );
+
+                let bridge_orch_guard = self.bridge_orchestrator.read().await;
+                if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
+                    let orch = bridge_orch.write().await;
+                    match orch.add_complete_buy_order_signature(
+                        msg_cycle,
+                        signer_index,
+                        BLSSignature(signature.0),
+                    ).await {
+                        Ok(Some(result)) => {
+                            info!(cycle_number = msg_cycle, signature_count = result.signature_count, "CompleteBuyOrder threshold reached");
+                        }
+                        Ok(None) => {
+                            debug!(cycle_number = msg_cycle, signer_index, "CompleteBuyOrder signature added, waiting for more");
+                        }
+                        Err(e) => {
+                            warn!(cycle_number = msg_cycle, error = %e, "Failed to add CompleteBuyOrder signature");
+                        }
+                    }
                 }
             }
             // Rebalance NAV consensus: setItpNav
@@ -3086,7 +3176,9 @@ where
 
         let orch = bridge_orch.write().await;
         let _tx_hash = orch.execute_confirm_batch(cycle_number, &order_ids, &result).await?;
-        orch.mark_orders_batched(&order_ids).await;
+        // NOTE: Do NOT call mark_orders_batched here — order_ids are L3 IDs (not Arb IDs).
+        // Status updates happen in main.rs using Arb IDs (submitted_orders) to avoid
+        // namespace collisions in the order_status map.
 
         info!(cycle_number, "Leader: Batch confirmed on L3");
 
@@ -3460,7 +3552,6 @@ where
 
         let orch = bridge_orch.write().await;
         let _tx_hash = orch.execute_confirm_fills(cycle_number, &fills, &result).await?;
-        orch.mark_orders_filled(&fills).await;
 
         info!(cycle_number, "Leader: Fills confirmed on L3");
 
@@ -4993,9 +5084,9 @@ where
             // Rebuild message hash
             let message_hash = build_confirm_batch_hash(
                 config.l3_chain_id,
+                config.index_address,
                 cycle_number,
                 &order_ids,
-                &prices,
             );
 
             let hash_bytes: [u8; 32] = message_hash.into();
@@ -5047,9 +5138,9 @@ where
                 leader_signature: leader_signature.clone(),
                 message_hash: build_confirm_batch_hash(
                     config.l3_chain_id,
+                    config.index_address,
                     cycle_number,
                     &order_ids,
-                    &prices,
                 ),
             }
         };
@@ -5222,6 +5313,7 @@ where
             // Rebuild message hash using the bridge::Fill type directly
             let message_hash = build_confirm_fills_hash(
                 config.l3_chain_id,
+                config.index_address,
                 cycle_number,
                 &fills,
             );
@@ -5275,6 +5367,7 @@ where
                 leader_signature: leader_signature.clone(),
                 message_hash: build_confirm_fills_hash(
                     config.l3_chain_id,
+                    config.index_address,
                     cycle_number,
                     &fills,
                 ),
@@ -6216,6 +6309,7 @@ where
         add_assets: Vec<Address>,
         new_weights: Vec<U256>,
         prices: Vec<U256>,
+        quote_tokens: Vec<Address>,
         am_leader: bool,
     ) -> Result<RebalanceResult, BridgeError> {
         info!(
@@ -6246,7 +6340,7 @@ where
 
         if am_leader {
             drop(bridge_orch_guard);
-            self.run_rebalance_as_leader(itp_id, remove_indices, add_assets, new_weights, prices).await
+            self.run_rebalance_as_leader(itp_id, remove_indices, add_assets, new_weights, prices, quote_tokens).await
         } else {
             drop(bridge_orch_guard);
             self.run_rebalance_as_follower(itp_id).await
@@ -6261,6 +6355,7 @@ where
         add_assets: Vec<Address>,
         new_weights: Vec<U256>,
         prices: Vec<U256>,
+        quote_tokens: Vec<Address>,
     ) -> Result<RebalanceResult, BridgeError> {
         info!(itp_id = ?itp_id, "Leader: Creating rebalance proposal");
 
@@ -6274,7 +6369,7 @@ where
         // Step 1: Create proposal
         let (_message_hash, leader_signature) = {
             let orch = bridge_orch.read().await;
-            orch.propose_rebalance(itp_id, &remove_indices, &add_assets, &new_weights, &prices).await?
+            orch.propose_rebalance(itp_id, &remove_indices, &add_assets, &new_weights, &prices, &quote_tokens).await?
         };
 
         // Step 2: Start signature collection
@@ -6291,6 +6386,7 @@ where
             add_assets,
             new_weights,
             prices,
+            quote_tokens,
             leader_signature,
         };
 
@@ -6384,6 +6480,7 @@ where
         add_assets: Vec<Address>,
         new_weights: Vec<U256>,
         prices: Vec<U256>,
+        quote_tokens: Vec<Address>,
         leader_signature: BLSSignature,
     ) -> Result<(), Error> {
         info!(itp_id = ?itp_id, "Follower: Received rebalance proposal");
@@ -6410,6 +6507,7 @@ where
                 &add_assets,
                 &new_weights,
                 &prices,
+                &quote_tokens,
             );
 
             let hash_bytes: [u8; 32] = message_hash.into();
@@ -6440,6 +6538,7 @@ where
                 &add_assets,
                 &new_weights,
                 &prices,
+                &quote_tokens,
             );
             let hash_bytes: [u8; 32] = message_hash.into();
             self.bls_signer.sign_message_hash(&self.bls_keypair, &hash_bytes)
@@ -7581,11 +7680,9 @@ where
             let orch = bridge_orch.read().await;
             let config = orch.config();
 
-            // For collateral registry address, we use Address::zero() as placeholder
-            // since follower doesn't necessarily know it yet - trust leader's hash
             let message_hash = build_record_collateral_move_hash(
                 config.l3_chain_id,
-                Address::zero(), // follower trusts leader's hash
+                config.collateral_registry,
                 itp_id,
                 from_chain,
                 to_chain,
@@ -7616,10 +7713,9 @@ where
         let orch = bridge_orch.read().await;
         let config = orch.config();
 
-        // Rebuild hash with zero address (follower doesn't know registry address)
         let message_hash = build_record_collateral_move_hash(
             config.l3_chain_id,
-            Address::zero(),
+            config.collateral_registry,
             itp_id,
             from_chain,
             to_chain,
@@ -7630,7 +7726,7 @@ where
         let hash_bytes: [u8; 32] = message_hash.into();
         let signature = self
             .bls_signer
-            .sign_with_keypair(&self.bls_keypair, &hash_bytes)
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
             .map_err(|e| Error::BlsVerification(format!("Failed to sign RecordCollateralMove: {}", e)))?;
 
         drop(orch);
@@ -7843,11 +7939,9 @@ where
             let orch = bridge_orch.read().await;
             let config = orch.config();
 
-            // Use a placeholder bridge_proxy address — follower trusts leader
-            // In production, this would come from config
             let message_hash = build_mint_bridged_shares_hash(
                 config.arbitrum_chain_id,
-                Address::zero(), // placeholder
+                config.bridge_proxy,
                 itp_id,
                 user,
                 amount,
@@ -7869,7 +7963,7 @@ where
 
         let message_hash = build_mint_bridged_shares_hash(
             config.arbitrum_chain_id,
-            Address::zero(),
+            config.bridge_proxy,
             itp_id,
             user,
             amount,
@@ -7878,7 +7972,7 @@ where
         let hash_bytes: [u8; 32] = message_hash.into();
         let signature = self
             .bls_signer
-            .sign_with_keypair(&self.bls_keypair, &hash_bytes)
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
             .map_err(|e| Error::BlsVerification(format!("Failed to sign MintBridgedShares: {}", e)))?;
 
         drop(orch);
@@ -7924,6 +8018,133 @@ where
         }
 
         Ok(())
+    }
+
+    // ========================================================================
+    // completeBuyOrder BLS consensus
+    // ========================================================================
+
+    pub async fn run_complete_buy_order_phase(
+        &self,
+        cycle_number: u64,
+        order_id: U256,
+        vault: Address,
+        am_leader: bool,
+    ) -> Result<CompleteBuyOrderResult, BridgeError> {
+        info!(
+            cycle_number,
+            order_id = %order_id,
+            vault = ?vault,
+            am_leader,
+            "Starting CompleteBuyOrder consensus"
+        );
+
+        let bridge_orch_guard = self.bridge_orchestrator.read().await;
+        let _bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
+            BridgeError::ChainWriterError {
+                reason: "BridgeOrchestrator not configured".to_string(),
+            }
+        })?;
+
+        if am_leader {
+            drop(bridge_orch_guard);
+            self.run_complete_buy_order_as_leader(cycle_number, order_id, vault).await
+        } else {
+            drop(bridge_orch_guard);
+            Ok(CompleteBuyOrderResult {
+                aggregated_signature: BLSSignature(vec![]),
+                signer_bitmap: U256::zero(),
+                signature_count: 0,
+            })
+        }
+    }
+
+    async fn run_complete_buy_order_as_leader(
+        &self,
+        cycle_number: u64,
+        order_id: U256,
+        vault: Address,
+    ) -> Result<CompleteBuyOrderResult, BridgeError> {
+        info!(cycle_number, order_id = %order_id, "Leader: Creating CompleteBuyOrder proposal");
+
+        let bridge_orch_guard = self.bridge_orchestrator.read().await;
+        let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
+            BridgeError::ChainWriterError {
+                reason: "BridgeOrchestrator not configured".to_string(),
+            }
+        })?;
+
+        let proposal = {
+            let orch = bridge_orch.read().await;
+            orch.propose_complete_buy_order(cycle_number, order_id, vault)?
+        };
+        let leader_signature = proposal.leader_signature.clone();
+
+        {
+            let orch = bridge_orch.write().await;
+            orch.start_complete_buy_order_signature_collection(cycle_number, leader_signature).await;
+        }
+
+        let message = P2PMessage::CompleteBuyOrderProposal {
+            leader_id: self.config.peer_id,
+            cycle_number,
+            order_id,
+            vault,
+            leader_signature: proposal.leader_signature.clone(),
+        };
+
+        let config = {
+            let orch = bridge_orch.read().await;
+            orch.config().clone()
+        };
+        drop(bridge_orch_guard);
+
+        self.p2p.broadcast(message).await.map_err(|e| BridgeError::ChainWriterError {
+            reason: format!("Failed to broadcast CompleteBuyOrder proposal: {}", e),
+        })?;
+
+        // Collect signatures with timeout
+        let timeout_ms = config.sign_timeout_ms;
+        let result = self.collect_complete_buy_order_signatures(
+            cycle_number, timeout_ms,
+        ).await?;
+
+        info!(cycle_number, signer_count = result.signature_count, "Leader: CompleteBuyOrder threshold reached");
+
+        let bridge_orch_guard = self.bridge_orchestrator.read().await;
+        if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
+            let orch = bridge_orch.write().await;
+            orch.mark_complete_buy_order_confirmed(cycle_number).await;
+        }
+
+        Ok(result)
+    }
+
+    async fn collect_complete_buy_order_signatures(
+        &self,
+        cycle_number: u64,
+        timeout_ms: u64,
+    ) -> Result<CompleteBuyOrderResult, BridgeError> {
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms);
+
+        loop {
+            let bridge_orch_guard = self.bridge_orchestrator.read().await;
+            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
+                let orch = bridge_orch.read().await;
+                if let Some(result) = orch.check_complete_buy_order_threshold(cycle_number).await {
+                    return Ok(result);
+                }
+
+                if tokio::time::Instant::now() >= deadline {
+                    let received = orch.get_complete_buy_order_signature_count(cycle_number).await.unwrap_or(0);
+                    return Err(BridgeError::SigningTimeout { received, timeout_ms });
+                }
+            } else if tokio::time::Instant::now() >= deadline {
+                return Err(BridgeError::SigningTimeout { received: 0, timeout_ms });
+            }
+            drop(bridge_orch_guard);
+            sleep(std::time::Duration::from_millis(10)).await;
+        }
     }
 }
 
