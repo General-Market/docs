@@ -32,6 +32,7 @@ pub struct AppState {
     pub logos_dir: std::path::PathBuf,
     /// Global simulation data cache — loaded at startup, can be reloaded via /sim/reload-cache.
     pub sim_cache: Arc<RwLock<Arc<simulation::SimDataCache>>>,
+    pub chain_cache: Arc<crate::chain_cache::ChainCache>,
 }
 
 /// In-memory TTL cache for hot endpoints.
@@ -130,14 +131,19 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/sim/reload-cache", get(sim_reload_cache))
         .route("/fng/latest", get(fng_latest))
         // Market data endpoints
-        .route("/market/prices/{source}", get(market_prices))
-        .route("/market/prices/{source}/{asset_id}", get(market_asset_price))
-        .route("/market/prices/{source}/{asset_id}/history", get(market_price_history))
-        .route("/market/assets/{source}", get(market_assets))
-        .route("/market/stats/{source}", get(market_stats))
+        .route("/market/prices/:source", get(market_prices))
+        .route("/market/prices/:source/:asset_id", get(market_asset_price))
+        .route("/market/prices/:source/:asset_id/history", get(market_price_history))
+        .route("/market/assets/:source", get(market_assets))
+        .route("/market/stats/:source", get(market_stats))
+        .route("/market/batch-history", get(market_batch_history))
+        // Vision snapshot endpoints
+        .route("/snapshot", get(snapshot))
+        .route("/snapshot/meta", get(snapshot_meta))
         // Admin endpoints
-        .route("/admin/truncate/{table}", axum::routing::post(admin_truncate))
+        .route("/admin/truncate/:table", axum::routing::post(admin_truncate))
         .route("/admin/reset-session", axum::routing::post(admin_reset_session))
+        .route("/sse/system-status", get(sse_system_status))
         .layer(cors)
         .with_state(state)
 }
@@ -2272,8 +2278,17 @@ abigen!(
     IndexReader,
     r#"[
         function getOrder(uint256 orderId) external view returns ((uint256 id, address user, bytes32 pairId, uint8 side, uint256 amount, uint256 limitPrice, uint256 slippageTier, uint256 deadline, bytes32 itpId, uint256 timestamp, uint8 status) order)
+        function nextOrderId() external view returns (uint256)
+        function pendingOrderCount() external view returns (uint256)
+        function lastProcessedCycleNumber() external view returns (uint256)
+        event OrderSubmitted(uint256 indexed orderId, address indexed user, bytes32 indexed itpId, bytes32 pairId, uint8 side, uint256 amount, uint256 limitPrice, uint256 slippageTier, uint256 deadline)
         event FillConfirmed(uint256 indexed orderId, uint256 indexed cycleNumber, uint256 fillPrice, uint256 fillAmount)
     ]"#
+);
+
+abigen!(
+    IssuerRegistryReader,
+    r#"[{"type":"function","name":"getIssuers","inputs":[],"outputs":[{"name":"","type":"tuple[]","components":[{"name":"addr","type":"address"},{"name":"ip","type":"bytes32"},{"name":"blsPubkey","type":"bytes"},{"name":"status","type":"uint8"},{"name":"registeredAt","type":"uint256"}]}],"stateMutability":"view"},{"type":"function","name":"activeIssuerCount","inputs":[],"outputs":[{"name":"","type":"uint256"}],"stateMutability":"view"}]"#
 );
 
 abigen!(
@@ -2285,7 +2300,7 @@ abigen!(
 );
 
 // Helper: get address from deployment JSON
-fn deployment_addr(deployment: &serde_json::Value, key: &str) -> Result<Address, String> {
+pub(crate) fn deployment_addr(deployment: &serde_json::Value, key: &str) -> Result<Address, String> {
     deployment["contracts"][key]
         .as_str()
         .ok_or_else(|| format!("Missing contracts.{} in deployment", key))
@@ -4009,6 +4024,309 @@ async fn market_stats(
     }
 }
 
+// ---- /market/batch-history ----
+
+#[derive(Deserialize)]
+struct BatchHistoryQuery {
+    /// Comma-separated asset IDs (e.g. "finnhub_AAPL,finnhub_MSFT,wb_usa_ny_gdp_mktp_cd")
+    assets: String,
+    from: Option<String>,
+    to: Option<String>,
+}
+
+async fn market_batch_history(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<BatchHistoryQuery>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let asset_ids: Vec<String> = params
+        .assets
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect();
+
+    if asset_ids.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: "No asset IDs provided. Use ?assets=id1,id2,...".to_string(),
+            }),
+        ));
+    }
+
+    if asset_ids.len() > 100 {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: "Maximum 100 assets per batch request".to_string(),
+            }),
+        ));
+    }
+
+    let now = Utc::now();
+    let from = params
+        .from
+        .as_deref()
+        .and_then(|s| s.parse::<DateTime<Utc>>().ok())
+        .unwrap_or(now - chrono::Duration::days(30));
+    let to = params
+        .to
+        .as_deref()
+        .and_then(|s| s.parse::<DateTime<Utc>>().ok())
+        .unwrap_or(now);
+
+    match crate::market_data::queries::get_batch_market_price_history(
+        &state.pool,
+        &asset_ids,
+        from,
+        to,
+    )
+    .await
+    {
+        Ok(all_prices) => {
+            // Group by asset_id
+            let mut grouped: std::collections::HashMap<String, Vec<&crate::market_data::models::MarketPriceRecord>> =
+                std::collections::HashMap::new();
+            for price in &all_prices {
+                grouped.entry(price.asset_id.clone()).or_default().push(price);
+            }
+
+            Ok(Json(serde_json::json!({
+                "from": from,
+                "to": to,
+                "assets_requested": asset_ids.len(),
+                "assets_found": grouped.len(),
+                "total_records": all_prices.len(),
+                "data": grouped,
+            })))
+        }
+        Err(e) => Err(internal_error(e)),
+    }
+}
+
+// ---- /snapshot ----
+
+/// Known source metadata (hardcoded from source implementations).
+/// Used to build the SourceSchedule list without runtime references.
+const SOURCE_META: &[(&str, &str, u64)] = &[
+    ("finnhub", "Finnhub Stocks", 600),
+    ("fred", "Federal Reserve (FRED)", 86400),
+    ("bls", "Bureau of Labor Statistics", 86400),
+    ("worldbank", "World Bank", 604800),
+    ("eia", "US Energy (EIA)", 86400),
+    ("ecb", "ECB Euro Rates", 86400),
+    ("openmeteo", "Weather (Open-Meteo)", 3600),
+    ("sec_edgar", "SEC EDGAR 13F", 21600),
+    ("sec_efts", "SEC EFTS Filing Counts", 14400),
+    ("sec_insider", "SEC Insider Trading", 14400),
+    ("finra_short_vol", "FINRA Daily Short Volume", 86400),
+    ("finra", "FINRA Short Interest", 86400),
+    ("congress", "Congressional Trading", 86400),
+    ("nasdaq_cftc", "CFTC Commitments", 604800),
+    ("nasdaq_chris", "Continuous Futures", 86400),
+    ("nasdaq_bchain", "Bitcoin On-Chain", 86400),
+    ("nasdaq_opec", "OPEC", 2592000),
+    ("nasdaq_imf", "IMF Indicators", 2592000),
+    ("treasury", "US Treasury Yields", 86400),
+];
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SourceSchedule {
+    source_id: String,
+    display_name: String,
+    enabled: bool,
+    sync_interval_secs: u64,
+    last_sync: Option<DateTime<Utc>>,
+    next_sync: Option<DateTime<Utc>>,
+    estimated_next_update: Option<DateTime<Utc>>,
+    status: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SnapshotMetaResponse {
+    generated_at: DateTime<Utc>,
+    total_assets: i64,
+    sources: Vec<SourceSchedule>,
+    asset_counts: HashMap<String, i64>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SnapshotFullResponse {
+    generated_at: DateTime<Utc>,
+    max_age_secs: u64,
+    total_assets: i64,
+    sources: Vec<SourceSchedule>,
+    prices: Vec<MarketPriceSummary>,
+}
+
+use crate::market_data::models::MarketPriceSummary;
+
+/// Build source schedule list from DB stats + hardcoded metadata
+async fn build_source_schedules(pool: &PgPool) -> Result<Vec<SourceSchedule>, anyhow::Error> {
+    // Get per-source stats from DB
+    let rows: Vec<(String, i64, Option<DateTime<Utc>>)> = sqlx::query_as(
+        r#"
+        SELECT source, COUNT(DISTINCT asset_id) as cnt, MAX(fetched_at) as last_sync
+        FROM market_prices
+        GROUP BY source
+        "#,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let db_stats: HashMap<String, (i64, Option<DateTime<Utc>>)> = rows
+        .into_iter()
+        .map(|(src, cnt, last)| (src, (cnt, last)))
+        .collect();
+
+    let now = Utc::now();
+    let mut schedules = Vec::new();
+
+    // Add known sources
+    for (id, name, interval) in SOURCE_META {
+        let (count, last_sync) = db_stats
+            .get(*id)
+            .cloned()
+            .unwrap_or((0, None));
+
+        let status = if count == 0 {
+            "pending"
+        } else if let Some(last) = last_sync {
+            let age = (now - last).num_seconds() as u64;
+            if age < *interval * 3 {
+                "healthy"
+            } else {
+                "stale"
+            }
+        } else {
+            "pending"
+        };
+
+        let estimated_next = last_sync.map(|ls| ls + chrono::Duration::seconds(*interval as i64));
+
+        schedules.push(SourceSchedule {
+            source_id: id.to_string(),
+            display_name: name.to_string(),
+            enabled: count > 0,
+            sync_interval_secs: *interval,
+            last_sync,
+            next_sync: estimated_next,
+            estimated_next_update: estimated_next,
+            status: status.to_string(),
+        });
+    }
+
+    // Add any DB sources not in the hardcoded list
+    for (src, (count, last_sync)) in &db_stats {
+        if !SOURCE_META.iter().any(|(id, _, _)| id == src) {
+            let status = if *count == 0 {
+                "pending"
+            } else if let Some(last) = last_sync {
+                let age = (now - *last).num_seconds() as u64;
+                if age < 86400 * 3 { "healthy" } else { "stale" }
+            } else {
+                "pending"
+            };
+
+            schedules.push(SourceSchedule {
+                source_id: src.clone(),
+                display_name: src.replace('_', " "),
+                enabled: *count > 0,
+                sync_interval_secs: 86400,
+                last_sync: *last_sync,
+                next_sync: None,
+                estimated_next_update: None,
+                status: status.to_string(),
+            });
+        }
+    }
+
+    Ok(schedules)
+}
+
+/// GET /snapshot/meta — lightweight: source schedules + per-source counts (~1KB)
+async fn snapshot_meta(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<SnapshotMetaResponse>, (StatusCode, Json<ErrorResponse>)> {
+    let schedules = build_source_schedules(&state.pool)
+        .await
+        .map_err(internal_error)?;
+
+    // Per-source active asset counts
+    let count_rows: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT source, COUNT(*) FROM market_assets WHERE is_active = true GROUP BY source",
+    )
+    .fetch_all(&state.pool)
+    .await
+    .map_err(internal_error)?;
+
+    let asset_counts: HashMap<String, i64> = count_rows.into_iter().collect();
+    let total_assets: i64 = asset_counts.values().sum();
+
+    Ok(Json(SnapshotMetaResponse {
+        generated_at: Utc::now(),
+        total_assets,
+        sources: schedules,
+        asset_counts,
+    }))
+}
+
+/// GET /snapshot — full snapshot with all latest prices across all sources
+async fn snapshot(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<SnapshotFullResponse>, (StatusCode, Json<ErrorResponse>)> {
+    let schedules = build_source_schedules(&state.pool)
+        .await
+        .map_err(internal_error)?;
+
+    // Fetch latest price per (source, asset_id) across ALL sources
+    let rows: Vec<(
+        String, String, String, String, Option<String>,
+        rust_decimal::Decimal, Option<rust_decimal::Decimal>, Option<rust_decimal::Decimal>,
+        Option<rust_decimal::Decimal>, Option<rust_decimal::Decimal>,
+        DateTime<Utc>, Option<String>,
+    )> = sqlx::query_as(
+        r#"
+        SELECT DISTINCT ON (a.source, a.asset_id)
+            a.asset_id, a.source, a.symbol, a.name, a.category,
+            p.value, p.prev_close, p.change_pct,
+            p.volume_24h, p.market_cap, p.fetched_at,
+            a.metadata->>'image_url' as image_url
+        FROM market_assets a
+        JOIN market_prices p ON a.source = p.source AND a.asset_id = p.asset_id
+        WHERE a.is_active = true
+        ORDER BY a.source, a.asset_id, p.fetched_at DESC
+        "#,
+    )
+    .fetch_all(&state.pool)
+    .await
+    .map_err(internal_error)?;
+
+    let prices: Vec<MarketPriceSummary> = rows
+        .into_iter()
+        .map(|(asset_id, source, symbol, name, category, value, prev_close, pct, vol, mcap, fetched_at, image_url)| {
+            MarketPriceSummary {
+                asset_id, source, symbol, name, category,
+                value, prev_close, change_pct: pct, volume_24h: vol,
+                market_cap: mcap, fetched_at, image_url,
+            }
+        })
+        .collect();
+
+    let total_assets = prices.len() as i64;
+
+    Ok(Json(SnapshotFullResponse {
+        generated_at: Utc::now(),
+        max_age_secs: 30,
+        total_assets,
+        sources: schedules,
+        prices,
+    }))
+}
+
 // ---- /admin/truncate/{table} ----
 
 const TRUNCATABLE_TABLES: &[&str] = &[
@@ -4064,5 +4382,324 @@ async fn admin_reset_session(
             "truncated": ["itp_snapshots", "trades"],
         }))),
         Err(e) => Err(internal_error(format!("TRUNCATE failed: {}", e))),
+    }
+}
+
+// ---- SSE /sse/system-status ----
+
+/// Streams system status snapshots every 5 seconds.
+/// Each event is a JSON object with issuers, orders, fill times, and vault data.
+async fn sse_system_status(
+    State(state): State<Arc<AppState>>,
+) -> Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>> {
+    let (tx, rx) = tokio::sync::mpsc::channel::<Result<Event, std::convert::Infallible>>(4);
+
+    tokio::spawn(async move {
+        loop {
+            let snapshot = build_system_snapshot(&state).await;
+            let json = serde_json::to_string(&snapshot).unwrap_or_default();
+            let event = Event::default().event("system-status").data(json);
+            if tx.send(Ok(event)).await.is_err() {
+                break; // client disconnected
+            }
+            tokio::time::sleep(Duration::from_secs(5)).await;
+        }
+    });
+
+    Sse::new(ReceiverStream::new(rx))
+        .keep_alive(axum::response::sse::KeepAlive::default())
+}
+
+#[derive(Serialize)]
+struct SystemSnapshot {
+    is_healthy: bool,
+    active_issuers: u64,
+    total_issuers: u64,
+    total_orders: u64,
+    last_cycle_number: u64,
+    pending_orders: u64,
+    l3_block_number: u64,
+    avg_fill_time_seconds: f64,
+    nodes: Vec<IssuerNodeInfo>,
+    recent_orders: Vec<RecentOrderInfo>,
+    vault_assets: Vec<VaultAssetInfo>,
+    vault_usd_total: f64,
+}
+
+#[derive(Serialize)]
+struct IssuerNodeInfo {
+    id: u64,
+    addr: String,
+    ip: String,
+    bls_pubkey_short: String,
+    status: u8,
+    registered_at: u64,
+}
+
+#[derive(Serialize)]
+struct RecentOrderInfo {
+    order_id: u64,
+    user: String,
+    itp_id: String,
+    side: u8,
+    amount: String,
+    block_number: u64,
+    block_timestamp: u64,
+    status: String, // "pending" or "filled"
+    fill_time_seconds: Option<f64>,
+    fill_cycle: Option<u64>,
+}
+
+#[derive(Serialize)]
+struct VaultAssetInfo {
+    symbol: String,
+    usd_value: f64,
+}
+
+fn decode_ip_bytes32(ip_bytes: [u8; 32]) -> String {
+    let end = ip_bytes.iter().position(|&b| b == 0).unwrap_or(32);
+    String::from_utf8_lossy(&ip_bytes[..end]).to_string()
+}
+
+fn truncate_hex(hex: &str, prefix_len: usize, suffix_len: usize) -> String {
+    if hex.len() <= prefix_len + suffix_len + 2 {
+        return hex.to_string();
+    }
+    format!("{}…{}", &hex[..prefix_len], &hex[hex.len() - suffix_len..])
+}
+
+async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
+    let l3 = &state.l3_provider;
+    let arb = &state.arb_provider;
+
+    // Resolve contract addresses
+    let index_addr = match deployment_addr(&state.deployment, "Index") {
+        Ok(a) => a,
+        Err(_) => return empty_snapshot(),
+    };
+    let registry_addr = match deployment_addr(&state.deployment, "IssuerRegistry") {
+        Ok(a) => a,
+        Err(_) => return empty_snapshot(),
+    };
+
+    let index = IndexReader::new(index_addr, Arc::clone(l3));
+    let registry = IssuerRegistryReader::new(registry_addr, Arc::clone(l3));
+
+    // Bind contract call builders first to extend their lifetime
+    let c_issuers = registry.get_issuers();
+    let c_active = registry.active_issuer_count();
+    let c_next_order = index.next_order_id();
+    let c_last_cycle = index.last_processed_cycle_number();
+    let c_pending = index.pending_order_count();
+
+    let (issuers_res, active_count_res, next_order_res, last_cycle_res, pending_res, block_res) = tokio::join!(
+        c_issuers.call(),
+        c_active.call(),
+        c_next_order.call(),
+        c_last_cycle.call(),
+        c_pending.call(),
+        l3.get_block_number(),
+    );
+
+    let issuers_raw = issuers_res.unwrap_or_default();
+    let active_issuers = active_count_res.map(|v| v.as_u64()).unwrap_or(0);
+    let total_issuers = issuers_raw.len() as u64;
+    let next_order_id = next_order_res.map(|v| v.as_u64()).unwrap_or(0);
+    let total_orders = if next_order_id > 0 { next_order_id - 1 } else { 0 };
+    let last_cycle_number = last_cycle_res.map(|v| v.as_u64()).unwrap_or(0);
+    let pending_orders = pending_res.map(|v| v.as_u64()).unwrap_or(0);
+    let l3_block_number = block_res.map(|v| v.as_u64()).unwrap_or(0);
+
+    // Parse issuer nodes
+    // Tuple fields: (addr: H160, ip: [u8;32], blsPubkey: Bytes, status: u8, registeredAt: U256)
+    let nodes: Vec<IssuerNodeInfo> = issuers_raw.iter().enumerate().map(|(idx, iss)| {
+        let ip_bytes: [u8; 32] = iss.1;
+        let pubkey_hex = format!("0x{}", hex::encode(&iss.2));
+        IssuerNodeInfo {
+            id: (idx + 1) as u64,
+            addr: format!("{:?}", iss.0),
+            ip: decode_ip_bytes32(ip_bytes),
+            bls_pubkey_short: truncate_hex(&pubkey_hex, 10, 4),
+            status: iss.3,
+            registered_at: iss.4.as_u64(),
+        }
+    }).collect();
+
+    // Query OrderSubmitted events (all)
+    let order_filter = index.order_submitted_filter().from_block(0u64);
+    let order_logs = order_filter.query_with_meta().await.unwrap_or_default();
+
+    // Query FillConfirmed events (all)
+    let fill_filter = index.fill_confirmed_filter().from_block(0u64);
+    let fill_logs = fill_filter.query_with_meta().await.unwrap_or_default();
+
+    // Build fill map: orderId -> (block_number, cycle_number)
+    let mut fill_map: HashMap<u64, (u64, u64)> = HashMap::new();
+    for (fill, meta) in &fill_logs {
+        fill_map.insert(
+            fill.order_id.as_u64(),
+            (meta.block_number.as_u64(), fill.cycle_number.as_u64()),
+        );
+    }
+
+    // Collect all block numbers for timestamp lookup
+    let mut block_nums: std::collections::HashSet<u64> = std::collections::HashSet::new();
+    for (_, meta) in &order_logs {
+        block_nums.insert(meta.block_number.as_u64());
+    }
+    for (_, meta) in &fill_logs {
+        block_nums.insert(meta.block_number.as_u64());
+    }
+
+    // Fetch block timestamps
+    let mut block_ts_map: HashMap<u64, u64> = HashMap::new();
+    let block_futs: Vec<_> = block_nums.iter().map(|bn| {
+        let provider = Arc::clone(l3);
+        let bn = *bn;
+        async move {
+            match provider.get_block(bn).await {
+                Ok(Some(b)) => Some((bn, b.timestamp.as_u64())),
+                _ => None,
+            }
+        }
+    }).collect();
+    let results = futures::future::join_all(block_futs).await;
+    for r in results.into_iter().flatten() {
+        block_ts_map.insert(r.0, r.1);
+    }
+
+    // Build recent orders (last 20, newest first)
+    let start = if order_logs.len() > 20 { order_logs.len() - 20 } else { 0 };
+    let recent_order_logs: Vec<_> = order_logs[start..].iter().rev().collect();
+
+    let mut recent_orders: Vec<RecentOrderInfo> = Vec::new();
+    for (evt, meta) in &recent_order_logs {
+        let oid = evt.order_id.as_u64();
+        let submit_ts = block_ts_map.get(&meta.block_number.as_u64()).copied().unwrap_or(0);
+        let fill = fill_map.get(&oid);
+        let fill_time = fill.and_then(|(fill_bn, _)| {
+            let fill_ts = block_ts_map.get(fill_bn).copied().unwrap_or(0);
+            if fill_ts > 0 && submit_ts > 0 { Some((fill_ts - submit_ts) as f64) } else { None }
+        });
+
+        recent_orders.push(RecentOrderInfo {
+            order_id: oid,
+            user: format!("{:?}", evt.user),
+            itp_id: format!("0x{}", hex::encode(evt.itp_id)),
+            side: evt.side,
+            amount: evt.amount.to_string(),
+            block_number: meta.block_number.as_u64(),
+            block_timestamp: submit_ts,
+            status: if fill.is_some() { "filled".into() } else { "pending".into() },
+            fill_time_seconds: fill_time,
+            fill_cycle: fill.map(|(_, c)| *c),
+        });
+    }
+
+    // Compute average fill time
+    let mut fill_sum = 0.0f64;
+    let mut fill_count = 0u64;
+    for (evt, meta) in &order_logs {
+        if let Some((fill_bn, _)) = fill_map.get(&evt.order_id.as_u64()) {
+            let submit_ts = block_ts_map.get(&meta.block_number.as_u64()).copied().unwrap_or(0);
+            let fill_ts = block_ts_map.get(fill_bn).copied().unwrap_or(0);
+            if fill_ts > 0 && submit_ts > 0 {
+                fill_sum += (fill_ts - submit_ts) as f64;
+                fill_count += 1;
+            }
+        }
+    }
+    let avg_fill_time_seconds = if fill_count > 0 { fill_sum / fill_count as f64 } else { 0.0 };
+
+    // Vault assets
+    let (vault_assets, vault_usd_total) = build_vault_snapshot(state, arb).await;
+
+    let is_healthy = active_issuers > 0 && last_cycle_number > 0;
+
+    SystemSnapshot {
+        is_healthy,
+        active_issuers,
+        total_issuers,
+        total_orders,
+        last_cycle_number,
+        pending_orders,
+        l3_block_number,
+        avg_fill_time_seconds,
+        nodes,
+        recent_orders,
+        vault_assets,
+        vault_usd_total,
+    }
+}
+
+async fn build_vault_snapshot(state: &AppState, arb: &Arc<Provider<Http>>) -> (Vec<VaultAssetInfo>, f64) {
+    let vault_addr = match deployment_addr(&state.deployment, "MockBitgetVault") {
+        Ok(a) => a,
+        Err(_) => return (vec![], 0.0),
+    };
+    let vault = MockBitgetVaultReader::new(vault_addr, Arc::clone(arb));
+
+    let token_addrs: Vec<Address> = state.symbol_map.keys()
+        .filter_map(|addr_str| addr_str.parse::<Address>().ok())
+        .collect();
+
+    let mut assets: Vec<VaultAssetInfo> = Vec::new();
+    let mut total_usd = 0.0;
+
+    for token_addr in &token_addrs {
+        let balance = match vault.get_balance(*token_addr).call().await {
+            Ok(b) if b > U256::zero() => b,
+            _ => continue,
+        };
+
+        let symbol = state.symbol_map
+            .get(&format!("{:?}", token_addr).to_lowercase())
+            .map(|pair| pair.trim_end_matches("USDT").trim_end_matches("USDC").to_string())
+            .unwrap_or_else(|| format!("{:?}", token_addr)[..10].to_string());
+
+        let pair = state.symbol_map.get(&format!("{:?}", token_addr).to_lowercase());
+        let price_f64 = if let Some(pair) = pair {
+            let symbol_refs = vec![pair.as_str()];
+            let tickers = state.live_cache.get_prices(&symbol_refs).await;
+            if let Some(ticker) = tickers.get(pair.as_str()) {
+                ticker.last_price.parse::<f64>().unwrap_or(0.0)
+            } else {
+                match db::query_latest_prices_batch(&state.pool, &[pair.as_str()]).await {
+                    Ok(rows) => rows.first().and_then(|r| r.price.parse::<f64>().ok()).unwrap_or(0.0),
+                    Err(_) => 0.0,
+                }
+            }
+        } else {
+            0.0
+        };
+
+        let balance_f64: f64 = balance.to_string().parse().unwrap_or(0.0);
+        let usd_value = balance_f64 * price_f64 / 1e18;
+
+        total_usd += usd_value;
+        assets.push(VaultAssetInfo { symbol, usd_value });
+    }
+
+    // Sort by USD value descending, keep top 10
+    assets.sort_by(|a, b| b.usd_value.partial_cmp(&a.usd_value).unwrap_or(std::cmp::Ordering::Equal));
+    assets.truncate(10);
+
+    (assets, total_usd)
+}
+
+fn empty_snapshot() -> SystemSnapshot {
+    SystemSnapshot {
+        is_healthy: false,
+        active_issuers: 0,
+        total_issuers: 0,
+        total_orders: 0,
+        last_cycle_number: 0,
+        pending_orders: 0,
+        l3_block_number: 0,
+        avg_fill_time_seconds: 0.0,
+        nodes: vec![],
+        recent_orders: vec![],
+        vault_assets: vec![],
+        vault_usd_total: 0.0,
     }
 }

@@ -3,6 +3,7 @@ mod backfill;
 mod cg_backfill;
 mod cg_collector;
 pub mod chain_cache;
+mod chain_pollers;
 mod coingecko;
 mod collector;
 mod config;
@@ -579,6 +580,9 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     };
     info!("Deployment files loaded");
 
+    // Chain cache for SSE pollers
+    let chain_cache = Arc::new(chain_cache::ChainCache::new());
+
     // HTTP server
     let app_state = Arc::new(AppState {
         pool,
@@ -592,7 +596,13 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         morpho_deployment,
         logos_dir,
         sim_cache,
+        chain_cache,
     });
+
+    // Spawn chain pollers (NAV=1s, Oracle=2s)
+    tokio::spawn(chain_pollers::poll_nav(Arc::clone(&app_state)));
+    tokio::spawn(chain_pollers::poll_oracle(Arc::clone(&app_state)));
+    info!("Chain pollers started (NAV=1s, Oracle=2s)");
 
     let app = api::router(app_state);
     let addr = SocketAddr::from(([0, 0, 0, 0], args.port));
