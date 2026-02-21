@@ -144,19 +144,46 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         uint256 depositAmount,
         uint256 stakePerTick,
         bytes32 bitmapHash
-    ) external {
-        // TODO: Task 1.3
-        revert("NOT_IMPLEMENTED");
+    ) external nonReentrant {
+        Batch storage batch = _batches[batchId];
+        if (batch.creator == address(0)) revert BatchNotFound();
+        if (batch.paused) revert BatchPaused();
+        if (_positions[batchId][msg.sender].stakePerTick != 0) revert AlreadyJoined();
+        if (stakePerTick < MIN_STAKE_PER_TICK) revert StakeBelowMinimum();
+        if (depositAmount < stakePerTick) revert InsufficientDeposit();
+
+        USDC.safeTransferFrom(msg.sender, address(this), depositAmount);
+
+        uint256 currentTick = block.timestamp / batch.tickDuration;
+        _positions[batchId][msg.sender] = PlayerPosition({
+            bitmapHash: bitmapHash,
+            stakePerTick: stakePerTick,
+            startTick: currentTick,
+            balance: depositAmount,
+            lastClaimedTick: 0,
+            joinTimestamp: block.timestamp,
+            totalDeposited: depositAmount,
+            totalClaimed: 0
+        });
+
+        emit PlayerJoined(batchId, msg.sender, stakePerTick, bitmapHash);
     }
 
     function updateBitmap(uint256 batchId, bytes32 newBitmapHash) external {
-        // TODO: Task 1.3
-        revert("NOT_IMPLEMENTED");
+        if (_positions[batchId][msg.sender].stakePerTick == 0) revert NotJoined();
+        _positions[batchId][msg.sender].bitmapHash = newBitmapHash;
     }
 
-    function deposit(uint256 batchId, uint256 amount) external {
-        // TODO: Task 1.3
-        revert("NOT_IMPLEMENTED");
+    function deposit(uint256 batchId, uint256 amount) external nonReentrant {
+        PlayerPosition storage position = _positions[batchId][msg.sender];
+        if (position.stakePerTick == 0) revert NotJoined();
+
+        USDC.safeTransferFrom(msg.sender, address(this), amount);
+
+        position.balance += amount;
+        position.totalDeposited += amount;
+
+        emit PlayerDeposited(batchId, msg.sender, amount);
     }
 
     function claimRewards(
@@ -165,18 +192,82 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         uint256 toTick,
         uint256 newBalance,
         bytes calldata blsSignature
-    ) external {
-        // TODO: Task 1.4
-        revert("NOT_IMPLEMENTED");
+    ) external nonReentrant {
+        PlayerPosition storage position = _positions[batchId][msg.sender];
+        if (position.stakePerTick == 0) revert NotJoined();
+        if (fromTick <= position.lastClaimedTick && position.lastClaimedTick != 0) revert TickAlreadyClaimed();
+        if (toTick < fromTick) revert InvalidTickRange();
+
+        // BLS verify: issuers sign the new balance for this player over this tick range
+        bytes32 message = keccak256(abi.encode(
+            block.chainid,
+            address(this),
+            "CLAIM",
+            batchId,
+            msg.sender,
+            fromTick,
+            toTick,
+            newBalance
+        ));
+        _verifyBLS(message, blsSignature);
+
+        uint256 oldBalance = position.balance;
+        position.balance = newBalance;
+        position.lastClaimedTick = toTick;
+
+        if (newBalance > oldBalance) {
+            uint256 winnings = newBalance - oldBalance;
+            uint256 fee = (winnings * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
+            accumulatedFees += fee;
+            uint256 payout = winnings - fee;
+
+            // Solvency check
+            if (USDC.balanceOf(address(this)) < payout + accumulatedFees) revert InsolventPayout();
+
+            USDC.safeTransfer(msg.sender, payout);
+            position.totalClaimed += payout;
+
+            emit RewardsClaimed(batchId, msg.sender, payout);
+        }
+        // If newBalance <= oldBalance, losses are recorded (balance decreased), no payout
     }
 
     function withdraw(
         uint256 batchId,
         uint256 finalBalance,
         bytes calldata blsSignature
-    ) external {
-        // TODO: Task 1.4
-        revert("NOT_IMPLEMENTED");
+    ) external nonReentrant {
+        PlayerPosition storage position = _positions[batchId][msg.sender];
+        if (position.stakePerTick == 0) revert NotJoined();
+
+        // BLS verify: issuers sign the final balance for withdrawal
+        bytes32 message = keccak256(abi.encode(
+            block.chainid,
+            address(this),
+            "WITHDRAW",
+            batchId,
+            msg.sender,
+            finalBalance
+        ));
+        _verifyBLS(message, blsSignature);
+
+        // Fee on profit only
+        uint256 totalDeposited = position.totalDeposited;
+        uint256 profit = finalBalance > totalDeposited ? finalBalance - totalDeposited : 0;
+        uint256 fee = (profit * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
+        uint256 payout = finalBalance - fee;
+
+        accumulatedFees += fee;
+
+        // Solvency check
+        if (USDC.balanceOf(address(this)) < payout + accumulatedFees) revert InsolventPayout();
+
+        USDC.safeTransfer(msg.sender, payout);
+
+        // Delete position
+        delete _positions[batchId][msg.sender];
+
+        emit PlayerWithdrawn(batchId, msg.sender, payout);
     }
 
     function getPosition(uint256 batchId, address player) external view returns (PlayerPosition memory) {
