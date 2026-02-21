@@ -1,4 +1,4 @@
-//! Market data provider implementations (16 providers)
+//! Market data provider implementations (17 providers)
 
 pub mod bls;
 pub mod congress;
@@ -16,6 +16,7 @@ pub mod sec_efts;
 pub mod sec_insider;
 pub mod tracked_tickers;
 pub mod treasury;
+pub mod twitch;
 pub mod worldbank;
 
 pub use bls::BlsMarketSource;
@@ -33,4 +34,5 @@ pub use sec_edgar::SecEdgarMarketSource;
 pub use sec_efts::SecEftsMarketSource;
 pub use sec_insider::SecInsiderMarketSource;
 pub use treasury::TreasuryMarketSource;
+pub use twitch::TwitchSource;
 pub use worldbank::WorldBankMarketSource;

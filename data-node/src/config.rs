@@ -163,6 +163,14 @@ pub struct ServeArgs {
     #[arg(long, default_value = "false", env = "POLYMARKET_ENABLED")]
     pub polymarket_enabled: bool,
 
+    /// Twitch Client-ID (enables Twitch viewer count collector)
+    #[arg(long, env = "TWITCH_CLIENT_ID")]
+    pub twitch_client_id: Option<String>,
+
+    /// Twitch Client Secret (required with twitch_client_id)
+    #[arg(long, env = "TWITCH_CLIENT_SECRET")]
+    pub twitch_client_secret: Option<String>,
+
     /// P2.8: Allowed CORS origins (repeat for multiple). Empty = allow all.
     #[arg(long, env = "CORS_ORIGIN")]
     pub cors_origin: Vec<String>,

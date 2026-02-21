@@ -550,6 +550,27 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("Polymarket prediction market provider started");
     }
 
+    // Twitch (viewer counts) — gated on client credentials
+    if let Some(ref id) = args.twitch_client_id {
+        if let Some(ref secret) = args.twitch_client_secret {
+            std::env::set_var("TWITCH_CLIENT_ID", id);
+            std::env::set_var("TWITCH_CLIENT_SECRET", secret);
+            let pool_c = pool.clone();
+            tokio::spawn(async move {
+                match market_data::sources::twitch::TwitchSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                        engine.run().await;
+                    }
+                    Err(e) => tracing::error!("Twitch init failed: {e}"),
+                }
+            });
+            info!("Twitch viewer count provider started");
+        } else {
+            info!("Twitch skipped (TWITCH_CLIENT_SECRET not configured)");
+        }
+    }
+
     // Create live ticker cache and start fast poller
     let live_cache = Arc::new(LiveTickerCache::new());
     {
