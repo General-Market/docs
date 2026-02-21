@@ -39,7 +39,11 @@ interface IVision {
         uint8[] resolutionTypes;
         uint256 tickDuration;
         uint256[] customThresholds;
-        uint256 createdAtTick;
+        uint256 createdAtTick;     // immutable — when batch was created (block.timestamp / tickDuration)
+        // NOTE: No on-chain currentTick. Ticks are deterministic: tick_n = createdAtTick + n.
+        // The issuer tracks tick progression off-chain and attests via BLS signatures
+        // that include (fromTick, toTick) ranges. The contract enforces monotonic tick
+        // claims via lastClaimedTick without needing on-chain tick advancement.
         bool paused;
     }
 
@@ -99,8 +103,14 @@ interface IVision {
     function withdraw(
         uint256 batchId,
         uint256 finalBalance,
+        uint256 totalDeposited,
         bytes calldata blsSignature
     ) external;
+
+    function getPosition(uint256 batchId, address player) external view returns (PlayerPosition memory);
+
+    // ============ EVENTS (not auto-inherited, declared for ABI generation) ============
+    event BitmapUpdated(uint256 indexed batchId, address indexed player, bytes32 newBitmapHash);
 
     // ============ BOT REGISTRY ============
     function registerBot(string calldata endpoint, bytes32 pubkeyHash) external;
@@ -148,9 +158,10 @@ contract Vision is IVision, ReentrancyGuard {
     uint256 public accumulatedFees;
     address public feeCollector;
 
-    // Bot registry state
+    // Bot registry state — indexed for O(1) lookup/removal
     mapping(address => Bot) internal _bots;
     address[] internal _botAddresses;
+    mapping(address => uint256) internal _botIndex; // address → index in _botAddresses (1-indexed, 0 = not present)
 
     // ============ ERRORS ============
     error InvalidBLSSignature();
@@ -162,6 +173,10 @@ contract Vision is IVision, ReentrancyGuard {
     error ArrayLengthMismatch();
     error AlreadyJoined();
     error NotJoined();
+    error TickAlreadyClaimed();
+    error InvalidTickRange();
+    error InvalidTickDuration();
+    error InsolventPayout();
     error BotAlreadyRegistered();
     error BotNotRegistered();
     error InsufficientBotStake();
@@ -277,6 +292,30 @@ contract VisionTest is Test {
         vision.createBatch(marketIds, resTypes, 600, thresholds);
     }
 
+    function test_createBatch_revertZeroTickDuration() public {
+        bytes32[] memory marketIds = new bytes32[](1);
+        marketIds[0] = keccak256("btc_usd_10m");
+        uint8[] memory resTypes = new uint8[](1);
+        resTypes[0] = 0;
+        uint256[] memory thresholds = new uint256[](0);
+
+        vm.prank(alice);
+        vm.expectRevert(Vision.InvalidTickDuration.selector);
+        vision.createBatch(marketIds, resTypes, 0, thresholds);
+    }
+
+    function test_createBatch_revertExcessiveTickDuration() public {
+        bytes32[] memory marketIds = new bytes32[](1);
+        marketIds[0] = keccak256("btc_usd_10m");
+        uint8[] memory resTypes = new uint8[](1);
+        resTypes[0] = 0;
+        uint256[] memory thresholds = new uint256[](0);
+
+        vm.prank(alice);
+        vm.expectRevert(Vision.InvalidTickDuration.selector);
+        vision.createBatch(marketIds, resTypes, 31 days, thresholds);
+    }
+
     function test_updateBatchMarkets() public {
         // Create first
         bytes32[] memory mIds = new bytes32[](1);
@@ -362,6 +401,7 @@ function createBatch(
     uint256[] calldata customThresholds
 ) external returns (uint256 batchId) {
     if (marketIds.length != resolutionTypes.length) revert ArrayLengthMismatch();
+    if (tickDuration == 0 || tickDuration > 30 days) revert InvalidTickDuration();
 
     batchId = nextBatchId++;
 
@@ -568,6 +608,10 @@ function claimRewards(
     PlayerPosition storage pos = _positions[batchId][msg.sender];
     if (pos.joinTimestamp == 0) revert NotJoined();
 
+    // Monotonic tick enforcement — prevents replay of old BLS signatures
+    if (fromTick <= pos.lastClaimedTick) revert TickAlreadyClaimed();
+    if (toTick < fromTick) revert InvalidTickRange();
+
     // Verify BLS signature — issuers attest newBalance is correct after resolution
     bytes32 message = keccak256(abi.encode(
         block.chainid,
@@ -587,6 +631,10 @@ function claimRewards(
         uint256 claimable = newBalance - pos.balance;
         uint256 fee = (claimable * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
         uint256 payout = claimable - fee;
+
+        // Solvency check — contract must hold enough USDC for this payout
+        if (USDC.balanceOf(address(this)) < payout + accumulatedFees) revert InsolventPayout();
+
         accumulatedFees += fee;
         // Update on-chain balance to match issuer-attested state
         pos.balance = newBalance;
@@ -594,29 +642,43 @@ function claimRewards(
 
         USDC.safeTransfer(msg.sender, payout);
         emit RewardsClaimed(batchId, msg.sender, payout);
+    } else {
+        // Balance decreased (losses) — update on-chain state without payout
+        pos.balance = newBalance;
+        pos.lastClaimedTick = toTick;
     }
 }
 
 function withdraw(
     uint256 batchId,
     uint256 finalBalance,
+    uint256 totalDeposited,
     bytes calldata blsSignature
 ) external nonReentrant {
     PlayerPosition storage pos = _positions[batchId][msg.sender];
     if (pos.joinTimestamp == 0) revert NotJoined();
 
-    // Verify BLS signature
+    // Verify BLS signature — includes totalDeposited to prevent manipulation
     bytes32 message = keccak256(abi.encode(
         block.chainid,
         address(this),
         "WITHDRAW",
         batchId,
         msg.sender,
-        finalBalance
+        finalBalance,
+        totalDeposited
     ));
     _verifyBLS(message, blsSignature);
 
-    uint256 fee = (finalBalance * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
+    // Solvency check — contract must hold enough USDC
+    if (USDC.balanceOf(address(this)) < finalBalance + accumulatedFees) revert InsolventPayout();
+
+    // Fee on profit only, never on principal
+    uint256 fee = 0;
+    if (finalBalance > totalDeposited) {
+        uint256 profit = finalBalance - totalDeposited;
+        fee = (profit * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
+    }
     uint256 payout = finalBalance - fee;
     accumulatedFees += fee;
 
@@ -729,6 +791,7 @@ function registerBot(string calldata endpoint, bytes32 pubkeyHash) external nonR
         isActive: true
     });
     _botAddresses.push(msg.sender);
+    _botIndex[msg.sender] = _botAddresses.length; // 1-indexed
 
     emit BotRegistered(msg.sender, endpoint);
 }
@@ -741,13 +804,17 @@ function deregisterBot() external nonReentrant {
     bot.isActive = false;
     bot.stakedAmount = 0;
 
-    // Remove from active list
-    for (uint256 i = 0; i < _botAddresses.length; i++) {
-        if (_botAddresses[i] == msg.sender) {
-            _botAddresses[i] = _botAddresses[_botAddresses.length - 1];
-            _botAddresses.pop();
-            break;
+    // O(1) removal using index mapping — swap with last, pop
+    uint256 idx = _botIndex[msg.sender];
+    if (idx > 0) {
+        uint256 lastIdx = _botAddresses.length;
+        if (idx != lastIdx) {
+            address lastAddr = _botAddresses[lastIdx - 1];
+            _botAddresses[idx - 1] = lastAddr;
+            _botIndex[lastAddr] = idx;
         }
+        _botAddresses.pop();
+        delete _botIndex[msg.sender];
     }
 
     WIND.safeTransfer(msg.sender, stake);
@@ -755,20 +822,13 @@ function deregisterBot() external nonReentrant {
 }
 
 function getAllActiveBots() external view returns (address[] memory, Bot[] memory) {
-    uint256 count = 0;
-    for (uint256 i = 0; i < _botAddresses.length; i++) {
-        if (_bots[_botAddresses[i]].isActive) count++;
-    }
-
-    address[] memory addrs = new address[](count);
-    Bot[] memory bots = new Bot[](count);
-    uint256 idx = 0;
-    for (uint256 i = 0; i < _botAddresses.length; i++) {
-        if (_bots[_botAddresses[i]].isActive) {
-            addrs[idx] = _botAddresses[i];
-            bots[idx] = _bots[_botAddresses[i]];
-            idx++;
-        }
+    // Array now only contains active bots (deregister removes from array)
+    uint256 len = _botAddresses.length;
+    address[] memory addrs = new address[](len);
+    Bot[] memory bots = new Bot[](len);
+    for (uint256 i = 0; i < len; i++) {
+        addrs[i] = _botAddresses[i];
+        bots[i] = _bots[_botAddresses[i]];
     }
     return (addrs, bots);
 }
@@ -802,6 +862,10 @@ function forceWithdraw(
     // finalBalance is the issuer-attested balance including winnings
     uint256 fee = (finalBalance * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
     uint256 payout = finalBalance - fee;
+
+    // Solvency check
+    if (USDC.balanceOf(address(this)) < payout + accumulatedFees) revert InsolventPayout();
+
     accumulatedFees += fee;
 
     delete _positions[batchId][player];
@@ -878,6 +942,9 @@ struct GammaMarket {
 pub struct PolymarketSource {
     client: Client,
     sync_interval_secs: u64,
+    /// Cache last fetched markets to avoid double-fetching the same endpoint
+    /// in fetch_assets() and fetch_prices() (30 req/min rate limit).
+    cached_markets: tokio::sync::RwLock<Option<(std::time::Instant, Vec<GammaMarket>)>>,
 }
 
 impl PolymarketSource {
@@ -888,6 +955,7 @@ impl PolymarketSource {
                 .build()
                 .expect("Failed to create HTTP client"),
             sync_interval_secs,
+            cached_markets: tokio::sync::RwLock::new(None),
         }
     }
 
@@ -896,6 +964,31 @@ impl PolymarketSource {
             .unwrap_or_else(|_| "120".into())
             .parse()?;
         Ok(Self::new(interval))
+    }
+
+    /// Fetch markets from Gamma API, using cache if < 60s old.
+    async fn get_markets(&self) -> anyhow::Result<Vec<GammaMarket>> {
+        // Check cache
+        {
+            let cache = self.cached_markets.read().await;
+            if let Some((ts, markets)) = cache.as_ref() {
+                if ts.elapsed() < Duration::from_secs(60) {
+                    return Ok(markets.clone());
+                }
+            }
+        }
+
+        // Fetch fresh
+        let url = format!("{}/markets?closed=false&limit=500", GAMMA_API);
+        let markets: Vec<GammaMarket> = self.client.get(&url).send().await?.json().await?;
+
+        // Update cache
+        {
+            let mut cache = self.cached_markets.write().await;
+            *cache = Some((std::time::Instant::now(), markets.clone()));
+        }
+
+        Ok(markets)
     }
 }
 
@@ -910,8 +1003,7 @@ impl MarketDataSource for PolymarketSource {
     }
 
     async fn fetch_assets(&self) -> anyhow::Result<Vec<AssetUpdate>> {
-        let url = format!("{}/markets?closed=false&limit=500", GAMMA_API);
-        let markets: Vec<GammaMarket> = self.client.get(&url).send().await?.json().await?;
+        let markets = self.get_markets().await?;
 
         Ok(markets
             .into_iter()
@@ -930,8 +1022,7 @@ impl MarketDataSource for PolymarketSource {
     }
 
     async fn fetch_prices(&self, asset_ids: &[String]) -> anyhow::Result<Vec<PriceUpdate>> {
-        let url = format!("{}/markets?closed=false&limit=500", GAMMA_API);
-        let markets: Vec<GammaMarket> = self.client.get(&url).send().await?.json().await?;
+        let markets = self.get_markets().await?;
 
         let now = Utc::now();
         let mut updates = Vec::new();
@@ -1011,13 +1102,47 @@ git commit -m "feat(data-node): add Polymarket collector"
 - Modify: `data-node/src/main.rs`
 - Modify: `data-node/src/config.rs`
 
-Follow same pattern as Task 2.1 but for Twitch API:
-- Use Twitch Helix API (`https://api.twitch.tv/helix/streams`)
-- Track top live streams by viewer count
-- Asset ID format: `twitch_{channel_login}`
-- Value = viewer_count (integer)
-- Requires `TWITCH_CLIENT_ID` + `TWITCH_CLIENT_SECRET` env vars for OAuth app token
-- Add `--twitch-client-id` and `--twitch-client-secret` to ServeArgs in config.rs
+**Key differences from Polymarket pattern:**
+
+1. **OAuth token refresh** — Twitch Helix requires a Client Credentials token (`POST https://id.twitch.tv/oauth2/token`). The token expires (typically ~60 days). The client must:
+   - Store the token + expiry in-memory
+   - Check expiry before each API call
+   - Auto-refresh when expired or on 401 response
+   ```rust
+   struct TwitchAuth {
+       token: RwLock<Option<(String, Instant)>>,
+       client_id: String,
+       client_secret: String,
+   }
+   impl TwitchAuth {
+       async fn get_token(&self, client: &Client) -> anyhow::Result<String> {
+           let guard = self.token.read().await;
+           if let Some((token, expiry)) = guard.as_ref() {
+               if Instant::now() < *expiry { return Ok(token.clone()); }
+           }
+           drop(guard);
+           // Refresh
+           let resp = client.post("https://id.twitch.tv/oauth2/token")
+               .form(&[("client_id", &self.client_id), ("client_secret", &self.client_secret),
+                        ("grant_type", &"client_credentials".to_string())])
+               .send().await?.json::<TokenResponse>().await?;
+           let mut guard = self.token.write().await;
+           let expiry = Instant::now() + Duration::from_secs(resp.expires_in - 300); // 5min buffer
+           *guard = Some((resp.access_token.clone(), expiry));
+           Ok(resp.access_token)
+       }
+   }
+   ```
+
+2. **API specifics:**
+   - Endpoint: `GET https://api.twitch.tv/helix/streams?first=100` (max 100 per page, paginate with `after` cursor)
+   - Headers: `Authorization: Bearer {token}`, `Client-Id: {client_id}`
+   - Asset ID format: `twitch_{user_login}` (lowercase channel name)
+   - Value = `viewer_count` (integer)
+   - Rate limit: 800 req/min (generous), but respect `Ratelimit-Remaining` header
+   - Poll interval: 60s default (streams change frequently)
+
+3. **Config:** Add `--twitch-client-id` and `--twitch-client-secret` to ServeArgs in config.rs. Skip spawning if not provided.
 
 **Commit message:** `feat(data-node): add Twitch collector`
 
@@ -1031,13 +1156,41 @@ Follow same pattern as Task 2.1 but for Twitch API:
 - Modify: `data-node/src/market_data/sources/mod.rs`
 - Modify: `data-node/src/main.rs`
 
-Follow same pattern:
-- Use HN Firebase API (`https://hacker-news.firebaseio.com/v0/`)
-- Track top 50 stories by score
-- Asset ID format: `hn_{story_id}`
-- Value = story score (integer)
-- No auth required
-- Poll interval: 120s default
+**Key differences from Polymarket pattern:**
+
+1. **No bulk endpoint** — HN has no single endpoint returning all stories with scores. The flow is:
+   - `GET /v0/topstories.json` → returns array of up to 500 story IDs
+   - Take first 50 IDs
+   - For each: `GET /v0/item/{id}.json` → returns `{ id, score, title, url, ... }`
+   - That's 51 HTTP requests per sync cycle (1 + 50 individual stories)
+
+2. **Implementation approach:**
+   ```rust
+   async fn fetch_prices(&self, asset_ids: &[String]) -> anyhow::Result<Vec<PriceUpdate>> {
+       let top_ids: Vec<u64> = self.client.get(format!("{}/v0/topstories.json", HN_API))
+           .send().await?.json().await?;
+
+       // Fetch stories concurrently (bounded to avoid overwhelming HN)
+       let mut handles = Vec::new();
+       for id in top_ids.iter().take(50) {
+           let client = self.client.clone();
+           let id = *id;
+           handles.push(tokio::spawn(async move {
+               let url = format!("{}/v0/item/{}.json", HN_API, id);
+               client.get(&url).send().await?.json::<HNStory>().await
+           }));
+       }
+       // Join all, filter errors, map to PriceUpdate
+   }
+   ```
+
+3. **Specifics:**
+   - No auth required
+   - No rate limit (but be respectful — 50 concurrent is fine)
+   - Asset ID format: `hn_{story_id}` (numeric)
+   - Value = story score (integer, can decrease)
+   - Stories rotate out of top 50 — mark old ones inactive
+   - Poll interval: 120s default
 
 **Commit message:** `feat(data-node): add HackerNews collector`
 
@@ -1046,28 +1199,117 @@ Follow same pattern:
 ### Task 2.3b: Add Weather collector
 
 **Files:**
-- Create: `data-node/src/market_data/sources/weather/mod.rs`
-- Create: `data-node/src/market_data/sources/weather/client.rs`
+- Modify: `data-node/src/market_data/sources/openmeteo/` (extend existing module)
+- OR Create: `data-node/src/market_data/sources/weather/mod.rs` + `client.rs` if openmeteo module doesn't fit
 - Modify: `data-node/src/market_data/sources/mod.rs`
 - Modify: `data-node/src/main.rs`
 
-**Note:** The data-node already has an OpenMeteo source at `data-node/src/market_data/sources/openmeteo/`. Reuse or extend that existing module rather than building from scratch. Check if it already implements the common collector trait — if so, just wire it into the P2Pool market registry.
+**Key differences from other collectors:**
 
-Follow same pattern as other collectors:
-- Use Open-Meteo API (`https://api.open-meteo.com/v1/forecast`)
-- Track configurable list of weather stations (city coordinates)
-- Metrics: temperature, humidity, wind speed, precipitation
-- Asset ID format: `weather_{station}_{metric}` (e.g., `weather_nyc_temp`, `weather_london_humidity`)
-- Value = metric reading (float)
-- No auth required (Open-Meteo is free)
-- Poll interval: 300s default (weather doesn't change fast)
+1. **Multi-metric per station** — One weather station produces N separate markets:
+   ```
+   weather_nyc_temp       → 72.5 (°F)
+   weather_nyc_humidity   → 65.0 (%)
+   weather_nyc_wind       → 12.3 (mph)
+   weather_nyc_precip     → 0.0 (mm)
+   ```
+   Each is a separate asset with its own price history. In `fetch_assets()`, generate one `AssetUpdate` per (station, metric) pair.
 
-If extending existing `openmeteo/` module:
-- Add P2Pool-compatible asset ID format
-- Ensure it stores `(market_id, timestamp, value)` tuples for resolution
-- Register in market catalog with `source: "weather"`
+2. **Open-Meteo API specifics:**
+   - Endpoint: `GET https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation`
+   - Returns current values for all requested metrics in one call per station
+   - Can batch multiple stations by comma-separating coords: `latitude=40.71,-33.87&longitude=-74.01,151.21`
+   - Max ~10 stations per request recommended
+
+3. **Station config** — Hardcode initial list (can be made configurable later):
+   ```rust
+   const STATIONS: &[(&str, f64, f64)] = &[
+       ("nyc", 40.7128, -74.0060),
+       ("london", 51.5074, -0.1278),
+       ("tokyo", 35.6762, 139.6503),
+       ("sydney", -33.8688, 151.2093),
+       ("dubai", 25.2048, 55.2708),
+   ];
+   const METRICS: &[&str] = &["temp", "humidity", "wind", "precip"];
+   ```
+
+4. **Existing openmeteo module** — Check `data-node/src/market_data/sources/openmeteo/` first. If it already implements `MarketDataSource` trait, extend it to produce P2Pool-compatible asset IDs. If it's structured differently, create a new `weather/` module that wraps or reuses the HTTP client.
+
+5. **Specifics:**
+   - No auth required (Open-Meteo is free, 10k req/day)
+   - Asset ID format: `weather_{station}_{metric}`
+   - Value = metric reading (float)
+   - Poll interval: 300s default (weather is slow-moving)
+   - Resolution works the same: `% change = (end - start) / start × 100`
+   - Edge case: temperature can be 0°F — use Kelvin internally if `% change` formula is problematic near zero
 
 **Commit message:** `feat(data-node): add weather collector for P2Pool`
+
+---
+
+### Task 2.3c: Create P2Pool database migrations
+
+**Files:**
+- Create: `data-node/migrations/YYYYMMDD_create_p2pool_tables.sql`
+
+The P2Pool API endpoints (Task 2.4) query several tables that don't exist yet. Create them before implementing the endpoints.
+
+**Step 1: Write the migration**
+
+```sql
+-- P2Pool batch state (indexed from Vision.sol events)
+CREATE TABLE IF NOT EXISTS p2pool_batches (
+    batch_id BIGINT PRIMARY KEY,
+    creator TEXT NOT NULL,
+    market_ids TEXT[] NOT NULL,
+    resolution_types SMALLINT[] NOT NULL,
+    tick_duration BIGINT NOT NULL,
+    custom_thresholds TEXT[] NOT NULL DEFAULT '{}',
+    current_tick BIGINT NOT NULL DEFAULT 0,
+    paused BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Player positions (indexed from Vision.sol events)
+CREATE TABLE IF NOT EXISTS p2pool_positions (
+    batch_id BIGINT NOT NULL REFERENCES p2pool_batches(batch_id),
+    player TEXT NOT NULL,
+    bitmap_hash TEXT NOT NULL,
+    stake_per_tick NUMERIC NOT NULL,
+    start_tick BIGINT NOT NULL,
+    balance NUMERIC NOT NULL,
+    last_claimed_tick BIGINT NOT NULL DEFAULT 0,
+    join_timestamp BIGINT NOT NULL,
+    total_deposited NUMERIC NOT NULL DEFAULT 0,
+    PRIMARY KEY (batch_id, player)
+);
+
+CREATE INDEX idx_p2pool_positions_balance ON p2pool_positions(batch_id) WHERE balance > 0;
+
+-- Tick resolution results (written by chain indexer after issuer BLS consensus)
+CREATE TABLE IF NOT EXISTS p2pool_tick_results (
+    batch_id BIGINT NOT NULL REFERENCES p2pool_batches(batch_id),
+    tick_id BIGINT NOT NULL,
+    resolved_at BIGINT NOT NULL,
+    market_outcomes JSONB NOT NULL,
+    total_pool TEXT NOT NULL,
+    winner_count BIGINT NOT NULL DEFAULT 0,
+    loser_count BIGINT NOT NULL DEFAULT 0,
+    PRIMARY KEY (batch_id, tick_id)
+);
+```
+
+**Step 2: Run the migration**
+
+Run: `cd data-node && sqlx migrate run` (or apply manually via `psql`)
+Expected: Tables created
+
+**Step 3: Commit**
+
+```bash
+git add data-node/migrations/
+git commit -m "feat(data-node): add P2Pool database migration tables"
+```
 
 ---
 
@@ -1369,6 +1611,196 @@ Expected: Compiles
 ```bash
 git add data-node/src/p2pool_api.rs data-node/src/api.rs data-node/src/main.rs
 git commit -m "feat(data-node): add P2Pool snapshot, markets, and backtest endpoints"
+```
+
+---
+
+### Task 2.5: Add chain indexer for data-node (Vision.sol events → Postgres)
+
+**Files:**
+- Create: `data-node/src/p2pool_indexer.rs`
+- Modify: `data-node/src/main.rs`
+- Modify: `data-node/src/config.rs`
+
+The P2Pool API endpoints (Task 2.4) serve batch/position data from Postgres, but nothing populates those tables. This task adds a chain event indexer that watches Vision.sol events and writes to the `p2pool_batches`, `p2pool_positions`, and `p2pool_tick_results` tables created in Task 2.3c.
+
+**Note:** This is separate from the issuer's chain listener (Task 3.9), which feeds the tick scheduler. The data-node indexer populates Postgres for the REST API.
+
+**Step 1: Add config**
+
+Add to `data-node/src/config.rs`:
+```rust
+/// P2Pool indexer config
+#[derive(Debug, Clone)]
+pub struct P2PoolIndexerConfig {
+    pub enabled: bool,
+    pub rpc_ws_url: String,
+    pub vision_address: String,
+    pub start_block: u64,
+    pub poll_interval_secs: u64,
+}
+```
+
+Add CLI args: `--p2pool-enabled`, `--p2pool-vision-address`, `--p2pool-rpc-ws`, `--p2pool-start-block`.
+
+**Step 2: Implement the indexer**
+
+Create `data-node/src/p2pool_indexer.rs`:
+
+```rust
+use ethers::prelude::*;
+use ethers::types::{Address, Filter, Log, H256, U256};
+use sqlx::PgPool;
+use std::sync::Arc;
+
+pub struct P2PoolIndexer {
+    provider: Arc<Provider<Ws>>,
+    vision_address: Address,
+    pool: PgPool,
+    start_block: u64,
+}
+
+impl P2PoolIndexer {
+    pub fn new(
+        provider: Arc<Provider<Ws>>,
+        vision_address: Address,
+        pool: PgPool,
+        start_block: u64,
+    ) -> Self {
+        Self { provider, vision_address, pool, start_block }
+    }
+
+    pub async fn run(&self) -> eyre::Result<()> {
+        // 1. Get last indexed block from DB (or use start_block)
+        let last_block = self.get_last_indexed_block().await?.unwrap_or(self.start_block);
+
+        // 2. Replay missed events
+        let filter = Filter::new()
+            .address(self.vision_address)
+            .from_block(last_block);
+        let logs = self.provider.get_logs(&filter).await?;
+        for log in logs {
+            self.process_log(&log).await?;
+        }
+
+        // 3. Subscribe to new events
+        let sub = self.provider.subscribe_logs(
+            &Filter::new().address(self.vision_address)
+        ).await?;
+        let mut stream = sub.into_stream();
+
+        while let Some(log) = stream.next().await {
+            if let Err(e) = self.process_log(&log).await {
+                tracing::error!("Failed to index P2Pool event: {e}");
+            }
+        }
+        Ok(())
+    }
+
+    async fn process_log(&self, log: &Log) -> eyre::Result<()> {
+        let topic0 = log.topics.first().ok_or_else(|| eyre::eyre!("No topic0"))?;
+
+        // BatchCreated(uint256 indexed batchId, address indexed creator, uint256 tickDuration)
+        if *topic0 == H256::from(ethers::utils::keccak256("BatchCreated(uint256,address,uint256)")) {
+            let batch_id = U256::from_big_endian(log.topics[1].as_bytes()).as_i64();
+            let creator = format!("{:?}", Address::from(log.topics[2]));
+            let tick_duration = U256::from_big_endian(&log.data[..32]).as_i64();
+
+            // Fetch full batch config via eth_call to getBatch()
+            // Insert into p2pool_batches
+            sqlx::query!(
+                "INSERT INTO p2pool_batches (batch_id, creator, market_ids, resolution_types, tick_duration)
+                 VALUES ($1, $2, $3, $4, $5)
+                 ON CONFLICT (batch_id) DO NOTHING",
+                batch_id, creator,
+                &[] as &[String], // populated by getBatch() call
+                &[] as &[i16],
+                tick_duration
+            )
+            .execute(&self.pool)
+            .await?;
+        }
+
+        // PlayerJoined(uint256 indexed batchId, address indexed player, uint256 stakePerTick, bytes32 bitmapHash)
+        if *topic0 == H256::from(ethers::utils::keccak256("PlayerJoined(uint256,address,uint256,bytes32)")) {
+            let batch_id = U256::from_big_endian(log.topics[1].as_bytes()).as_i64();
+            let player = format!("{:?}", Address::from(log.topics[2]));
+
+            // Fetch position via getPosition() call or decode from event data
+            sqlx::query!(
+                "INSERT INTO p2pool_positions (batch_id, player, bitmap_hash, stake_per_tick, start_tick, balance, join_timestamp)
+                 VALUES ($1, $2, '', 0, 0, 0, 0)
+                 ON CONFLICT (batch_id, player) DO NOTHING",
+                batch_id, player
+            )
+            .execute(&self.pool)
+            .await?;
+        }
+
+        // PlayerDeposited, PlayerWithdrawn, ForceWithdrawn → update balance
+        // BatchPaused → update paused flag
+        // RewardsClaimed → update balance
+        // BitmapUpdated → update bitmap_hash
+
+        // Save last indexed block
+        if let Some(block_number) = log.block_number {
+            self.save_last_indexed_block(block_number.as_u64()).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn get_last_indexed_block(&self) -> eyre::Result<Option<u64>> {
+        let row = sqlx::query_scalar!(
+            "SELECT value::bigint FROM kv_store WHERE key = 'p2pool_last_indexed_block'"
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(row.flatten().map(|v| v as u64))
+    }
+
+    async fn save_last_indexed_block(&self, block: u64) -> eyre::Result<()> {
+        sqlx::query!(
+            "INSERT INTO kv_store (key, value) VALUES ('p2pool_last_indexed_block', $1::text)
+             ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+            (block as i64).to_string()
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+}
+```
+
+**Step 3: Spawn in main.rs**
+
+```rust
+// P2Pool chain indexer
+if config.p2pool.enabled {
+    let pool_c = pool.clone();
+    let ws = Provider::<Ws>::connect(&config.p2pool.rpc_ws_url).await?;
+    let vision_addr: Address = config.p2pool.vision_address.parse()?;
+    let indexer = p2pool_indexer::P2PoolIndexer::new(
+        Arc::new(ws), vision_addr, pool_c, config.p2pool.start_block
+    );
+    tokio::spawn(async move {
+        if let Err(e) = indexer.run().await {
+            tracing::error!("P2Pool indexer failed: {e}");
+        }
+    });
+}
+```
+
+**Step 4: Build and test**
+
+Run: `cd data-node && cargo build`
+Expected: Compiles
+
+**Step 5: Commit**
+
+```bash
+git add data-node/src/p2pool_indexer.rs data-node/src/main.rs data-node/src/config.rs
+git commit -m "feat(data-node): add Vision.sol chain indexer for P2Pool tables"
 ```
 
 ---
@@ -1907,11 +2339,26 @@ pub fn resolve_market(
                 })
                 .collect()
         }
-        MarketOutcome::Up | MarketOutcome::Down | MarketOutcome::Flat => {
+        MarketOutcome::Flat => {
+            // Flat = threshold not met in either direction → refund everyone
+            players
+                .iter()
+                .map(|(addr, side, stake)| PlayerMarketResult {
+                    player: *addr,
+                    side: *side,
+                    effective_stake: *stake,
+                    matched_stake: U256::zero(),
+                    refund: *stake,
+                    payout: *stake,
+                    net_pnl: 0,
+                })
+                .collect()
+        }
+        MarketOutcome::Up | MarketOutcome::Down => {
             let winning_side = match outcome {
                 MarketOutcome::Up => Side::Up,
                 MarketOutcome::Down => Side::Down,
-                _ => return vec![], // Flat shouldn't use this path directly
+                _ => unreachable!(),
             };
 
             let up_total: U256 = players
@@ -2122,9 +2569,23 @@ pub struct BatchTickState {
 
 impl TickScheduler {
     pub fn new() -> Self;
+
+    // Core scheduling
     pub async fn register_batch(&self, batch: Batch);
     pub async fn get_due_batches(&self, now: u64) -> Vec<u64>; // returns batch_ids due for resolution
     pub async fn mark_resolved(&self, batch_id: u64, tick: u64);
+
+    // Chain event handlers (called by Task 3.9 chain listener)
+    pub async fn on_batch_created(&self, batch_id: u64) -> eyre::Result<()>;
+    // Fetches batch config from chain via getBatch() and calls register_batch()
+    pub async fn on_player_joined(&self, batch_id: u64, player: Address) -> eyre::Result<()>;
+    // Updates internal player tracking for the batch
+    pub async fn on_batch_paused(&self, batch_id: u64) -> eyre::Result<()>;
+    // Marks batch as paused, removes from due scheduling
+    pub async fn on_player_withdrawn(&self, batch_id: u64, player: Address) -> eyre::Result<()>;
+    // Removes player from active tracking
+    pub async fn on_bitmap_updated(&self, batch_id: u64, player: Address, new_hash: H256) -> eyre::Result<()>;
+    // Updates player's bitmap hash in local state
 }
 ```
 
@@ -2756,59 +3217,97 @@ pub async fn backtest(
     let tick_secs = params.tick_duration;
     let num_ticks = params.ticks;
 
-    // Fetch historical prices for each market
-    let mut market_prices: HashMap<String, Vec<(i64, f64)>> = HashMap::new();
+    // Fetch historical prices for each market, sampled at tick boundaries.
+    // Use time-bucket aggregation (closest price to each tick boundary)
+    // instead of assuming 1 price/minute — works for all sources.
+    let mut market_ticks: HashMap<String, Vec<(i64, f64, f64)>> = HashMap::new(); // (tick_start_ts, start_price, end_price)
     for market_id in &market_ids {
         let rows = sqlx::query!(
             r#"
-            SELECT fetched_at, value::float8 as "value!"
-            FROM market_prices
-            WHERE asset_id = $1
-            ORDER BY fetched_at DESC
-            LIMIT $2
+            WITH tick_boundaries AS (
+                SELECT generate_series(
+                    (SELECT MAX(fetched_at) FROM market_prices WHERE asset_id = $1) - ($2::bigint * $3::bigint),
+                    (SELECT MAX(fetched_at) FROM market_prices WHERE asset_id = $1),
+                    $2::bigint
+                ) AS tick_start
+            ),
+            tick_prices AS (
+                SELECT DISTINCT ON (tb.tick_start)
+                    tb.tick_start,
+                    mp.value::float8 AS start_price,
+                    LEAD(mp.value::float8) OVER (ORDER BY tb.tick_start) AS end_price
+                FROM tick_boundaries tb
+                LEFT JOIN LATERAL (
+                    SELECT value FROM market_prices
+                    WHERE asset_id = $1 AND fetched_at <= tb.tick_start
+                    ORDER BY fetched_at DESC LIMIT 1
+                ) mp ON true
+                ORDER BY tb.tick_start
+            )
+            SELECT tick_start as "tick_start!", start_price as "start_price!", end_price as "end_price"
+            FROM tick_prices
+            WHERE end_price IS NOT NULL
+            ORDER BY tick_start ASC
+            LIMIT $3
             "#,
             market_id.trim(),
-            (num_ticks + 1) * (tick_secs / 60).max(1) // enough data points
+            tick_secs,
+            num_ticks
         )
         .fetch_all(&state.pool)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-        market_prices.insert(
+        market_ticks.insert(
             market_id.to_string(),
-            rows.into_iter().map(|r| (r.fetched_at, r.value)).collect()
+            rows.into_iter()
+                .filter_map(|r| r.end_price.map(|ep| (r.tick_start, r.start_price, ep)))
+                .collect()
         );
     }
 
-    // Simulate ticks
+    // Simulate ticks — strategy decides BEFORE seeing outcome (no lookahead)
     let mut per_tick_results = Vec::new();
     let mut total_wins = 0i64;
     let mut total_losses = 0i64;
     let mut cumulative_pnl = 0.0f64;
+    // Track previous tick's outcome per market for momentum strategy
+    let mut prev_outcomes: HashMap<String, f64> = HashMap::new();
 
     for tick in 0..num_ticks {
         let mut wins = 0i32;
         let mut losses = 0i32;
 
         for (idx, market_id) in market_ids.iter().enumerate() {
-            let prices = match market_prices.get(*market_id) {
-                Some(p) if p.len() > (tick as usize + 1) => p,
+            let ticks = match market_ticks.get(*market_id) {
+                Some(t) if t.len() > tick as usize => t,
                 _ => continue,
             };
 
-            let start_price = prices[tick as usize + 1].1;
-            let end_price = prices[tick as usize].1;
+            let (_, start_price, end_price) = ticks[tick as usize];
+            if start_price == 0.0 { continue; }
             let pct_change = (end_price - start_price) / start_price * 100.0;
 
-            // Apply strategy: determine if player bet UP or DOWN
+            // Strategy decides based on PRIOR information only (no lookahead)
             let bet_up = match params.strategy.as_str() {
-                "momentum" => pct_change > 0.0, // bet with trend (prev tick)
-                "bear" => true,                  // always DOWN (contrarian name)
-                _ => idx % 2 == 0,               // alternating default
+                "momentum" => {
+                    // Bet based on PREVIOUS tick's direction (not current)
+                    prev_outcomes.get(*market_id).map_or(true, |prev| *prev > 0.0)
+                }
+                "contrarian" => {
+                    // Bet against previous tick's direction
+                    prev_outcomes.get(*market_id).map_or(false, |prev| *prev <= 0.0)
+                }
+                "all_up" => true,
+                "all_down" => false,
+                _ => idx % 2 == 0, // alternating default
             };
 
             let went_up = pct_change > 0.0;
             if bet_up == went_up { wins += 1; } else { losses += 1; }
+
+            // Record this tick's outcome for next tick's strategy decision
+            prev_outcomes.insert(market_id.to_string(), pct_change);
         }
 
         let tick_pnl = (wins as f64 - losses as f64) * 100.0; // simplified
@@ -2856,25 +3355,25 @@ git commit -m "feat(data-node): implement real backtest endpoint with historical
 ## Task Dependency Graph
 
 ```
-Phase 1 (Contract)     Phase 2 (Data Node)     Phase 3 (Issuer)       Phase 4 (Frontend)
-═══════════════════    ═══════════════════     ═══════════════════    ═══════════════════
-1.1 skeleton           2.1 Polymarket          3.1 skeleton
-  ↓                    2.2 Twitch              3.2 bitmap store
-1.2 batches            2.3 HackerNews            ↓
-  ↓                    2.3b Weather            3.3 multiplier
-1.3 player ops         2.4 P2Pool API          3.4 side matching      4.1 page skeleton
-  ↓                      ↓                      ↓                      ↓
-1.4 bots + issuer ops    │                    3.5 tick scheduler     4.2 expanded view
-                         │                      ↓                      ↓
-                         └────────────────→   3.6 resolver           4.3 Python editor
-                                                ↓                      ↓
-                                              3.7 API endpoints      4.4 bitmap submit
-                                                ↓                      ↓
-                                              3.8 main integration   4.5 create batch
-                                                ↓                      ↓
-                                              3.9 chain listener     4.6 deposit/withdraw
-                                                                       ↓
-                                                                     4.7 card headers
+Phase 1 (Contract)     Phase 2 (Data Node)        Phase 3 (Issuer)       Phase 4 (Frontend)
+═══════════════════    ═══════════════════════    ═══════════════════    ═══════════════════
+1.1 skeleton           2.1 Polymarket             3.1 skeleton
+  ↓                    2.2 Twitch                 3.2 bitmap store
+1.2 batches            2.3 HackerNews               ↓
+  ↓                    2.3b Weather               3.3 multiplier
+1.3 player ops         2.3c DB migrations ←──┐    3.4 side matching      4.1 page skeleton
+  ↓                      ↓                   │      ↓                      ↓
+1.4 bots + issuer ops  2.4 P2Pool API        │    3.5 tick scheduler     4.2 expanded view
+                         ↓                   │      ↓                      ↓
+                       2.5 chain indexer ─────┘    3.6 resolver           4.3 Python editor
+                         ↓                           ↓                      ↓
+                         └─────────────────────→   3.7 API endpoints      4.4 bitmap submit
+                                                     ↓                      ↓
+                                                   3.8 main integration   4.5 create batch
+                                                     ↓                      ↓
+                                                   3.9 chain listener     4.6 deposit/withdraw
+                                                                            ↓
+                                                                          4.7 card headers
 
 Phase 5 (Cleanup) — after all above complete
 5.1 delete old code
@@ -2882,4 +3381,4 @@ Phase 5 (Cleanup) — after all above complete
 5.3 real backtest endpoint
 ```
 
-**Phases 1, 2, 3 can run in parallel.** Phase 4 depends on Phase 1 (contract ABI) and Phase 2 (data endpoints). Phase 5 runs last.
+**Phases 1, 2, 3 can run in parallel.** Phase 4 depends on Phase 1 (contract ABI) and Phase 2 (data endpoints). Task 2.5 (chain indexer) depends on Task 2.3c (DB migrations). Phase 5 runs last.
