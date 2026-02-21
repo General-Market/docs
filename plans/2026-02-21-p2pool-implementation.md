@@ -79,9 +79,12 @@ interface IVision {
     // ============ PLAYER OPERATIONS ============
     function joinBatch(
         uint256 batchId,
+        uint256 depositAmount,
         uint256 stakePerTick,
         bytes32 bitmapHash
     ) external;
+
+    function updateBitmap(uint256 batchId, bytes32 newBitmapHash) external;
 
     function deposit(uint256 batchId, uint256 amount) external;
 
@@ -106,7 +109,7 @@ interface IVision {
 
     // ============ ISSUER OPERATIONS ============
     function pause(uint256 batchId, bytes calldata blsSignature) external;
-    function forceWithdraw(uint256 batchId, address player, bytes calldata blsSignature) external;
+    function forceWithdraw(uint256 batchId, address player, uint256 finalBalance, bytes calldata blsSignature) external;
 }
 ```
 
@@ -447,13 +450,18 @@ function test_joinBatch() public {
     usdc.mint(alice, depositAmount);
     vm.startPrank(alice);
     usdc.approve(address(vision), depositAmount);
-    vision.joinBatch(batchId, stakePerTick, bitmapHash);
+    vision.joinBatch(batchId, depositAmount, stakePerTick, bitmapHash);
     vm.stopPrank();
 
     // Verify USDC transferred
     assertEq(usdc.balanceOf(address(vision)), depositAmount);
+    assertEq(usdc.balanceOf(alice), 0);
 
-    // Verify position stored — use getPosition if we add it, or test via withdraw
+    // Verify position stored
+    IVision.PlayerPosition memory pos = vision.getPosition(batchId, alice);
+    assertEq(pos.balance, depositAmount);
+    assertEq(pos.stakePerTick, stakePerTick);
+    assertEq(pos.bitmapHash, bitmapHash);
 }
 
 function test_joinBatch_revertBelowMinStake() public {
@@ -463,8 +471,24 @@ function test_joinBatch_revertBelowMinStake() public {
     vm.startPrank(alice);
     usdc.approve(address(vision), 1e6);
     vm.expectRevert(Vision.StakeBelowMinimum.selector);
-    vision.joinBatch(batchId, 1e4, keccak256("bitmap")); // 0.01 USDC < 0.1 min
+    vision.joinBatch(batchId, 1e6, 1e4, keccak256("bitmap")); // 0.01 USDC < 0.1 min
     vm.stopPrank();
+}
+
+function test_updateBitmap() public {
+    uint256 batchId = _createDefaultBatch();
+    usdc.mint(alice, 100e6);
+
+    vm.startPrank(alice);
+    usdc.approve(address(vision), 100e6);
+    vision.joinBatch(batchId, 100e6, 1e6, keccak256("bitmap_v1"));
+
+    bytes32 newHash = keccak256("bitmap_v2");
+    vision.updateBitmap(batchId, newHash);
+    vm.stopPrank();
+
+    IVision.PlayerPosition memory pos = vision.getPosition(batchId, alice);
+    assertEq(pos.bitmapHash, newHash);
 }
 
 function test_deposit() public {
@@ -473,43 +497,11 @@ function test_deposit() public {
     usdc.mint(alice, 200e6);
     vm.startPrank(alice);
     usdc.approve(address(vision), 200e6);
-    vision.joinBatch(batchId, 1e6, keccak256("bitmap"));
+    vision.joinBatch(batchId, 100e6, 1e6, keccak256("bitmap"));
     vision.deposit(batchId, 100e6);
     vm.stopPrank();
 
     assertEq(usdc.balanceOf(address(vision)), 200e6);
-}
-
-function test_withdraw_withBLSSignature() public {
-    // This test needs a mock IssuerRegistry for BLS verification.
-    // We'll use vm.mockCall to simulate BLS verification passing.
-    uint256 batchId = _createDefaultBatch();
-    uint256 depositAmount = 100e6;
-
-    usdc.mint(alice, depositAmount);
-    vm.startPrank(alice);
-    usdc.approve(address(vision), depositAmount);
-    vision.joinBatch(batchId, 1e6, keccak256("bitmap"));
-    vm.stopPrank();
-
-    // Mock BLS verification on IssuerRegistry
-    // The contract calls BLSLib.verifyBLS internally with the aggregated pubkey
-    // We need to mock the issuerRegistry to return a known pubkey
-    // For now, test the flow with a simplified BLS check
-
-    // Build the expected message hash
-    uint256 finalBalance = 95e6; // 95 USDC after some ticks
-    bytes32 message = keccak256(abi.encode(
-        block.chainid,
-        address(vision),
-        "WITHDRAW",
-        batchId,
-        alice,
-        finalBalance
-    ));
-
-    // We'll need real BLS fixtures for this — placeholder for now
-    // This test verifies the structure, actual BLS tested in integration
 }
 ```
 
@@ -525,10 +517,12 @@ Add to `contracts/src/vision/Vision.sol`:
 ```solidity
 function joinBatch(
     uint256 batchId,
+    uint256 depositAmount,
     uint256 stakePerTick,
     bytes32 bitmapHash
 ) external nonReentrant {
     if (stakePerTick < MIN_STAKE_PER_TICK) revert StakeBelowMinimum();
+    if (depositAmount == 0) revert InsufficientDeposit();
     Batch storage batch = _batches[batchId];
     if (batch.creator == address(0)) revert BatchNotFound();
     if (batch.paused) revert BatchPaused();
@@ -536,25 +530,22 @@ function joinBatch(
     PlayerPosition storage pos = _positions[batchId][msg.sender];
     if (pos.joinTimestamp != 0) revert AlreadyJoined();
 
-    // Transfer USDC deposit — user must have approved
-    uint256 depositAmount = USDC.balanceOf(msg.sender);
-    if (depositAmount == 0) revert InsufficientDeposit();
-
-    // Use allowance as deposit amount (user approves exactly what they want to deposit)
-    uint256 allowance = USDC.allowance(msg.sender, address(this));
-    if (allowance == 0) revert InsufficientDeposit();
-    uint256 amount = allowance < depositAmount ? allowance : depositAmount;
-
-    USDC.safeTransferFrom(msg.sender, address(this), amount);
+    USDC.safeTransferFrom(msg.sender, address(this), depositAmount);
 
     pos.bitmapHash = bitmapHash;
     pos.stakePerTick = stakePerTick;
     pos.startTick = block.timestamp / batch.tickDuration;
-    pos.balance = amount;
+    pos.balance = depositAmount;
     pos.lastClaimedTick = pos.startTick;
     pos.joinTimestamp = block.timestamp;
 
     emit PlayerJoined(batchId, msg.sender, stakePerTick, bitmapHash);
+}
+
+function updateBitmap(uint256 batchId, bytes32 newBitmapHash) external {
+    PlayerPosition storage pos = _positions[batchId][msg.sender];
+    if (pos.joinTimestamp == 0) revert NotJoined();
+    pos.bitmapHash = newBitmapHash;
 }
 
 function deposit(uint256 batchId, uint256 amount) external nonReentrant {
@@ -577,7 +568,7 @@ function claimRewards(
     PlayerPosition storage pos = _positions[batchId][msg.sender];
     if (pos.joinTimestamp == 0) revert NotJoined();
 
-    // Verify BLS signature from issuers
+    // Verify BLS signature — issuers attest newBalance is correct after resolution
     bytes32 message = keccak256(abi.encode(
         block.chainid,
         address(this),
@@ -590,12 +581,15 @@ function claimRewards(
     ));
     _verifyBLS(message, blsSignature);
 
-    uint256 claimable = newBalance > pos.balance ? newBalance - pos.balance : 0;
-    if (claimable > 0) {
+    // newBalance is the issuer-attested balance after tick resolution
+    // claimable = profit above current on-chain balance
+    if (newBalance > pos.balance) {
+        uint256 claimable = newBalance - pos.balance;
         uint256 fee = (claimable * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
         uint256 payout = claimable - fee;
         accumulatedFees += fee;
-        pos.balance = newBalance - claimable;
+        // Update on-chain balance to match issuer-attested state
+        pos.balance = newBalance;
         pos.lastClaimedTick = toTick;
 
         USDC.safeTransfer(msg.sender, payout);
@@ -656,7 +650,7 @@ function _verifyBLS(bytes32 message, bytes calldata blsSignature) internal view 
 **Step 4: Run tests**
 
 Run: `cd contracts && forge test --match-contract VisionTest -v`
-Expected: join + deposit tests PASS. BLS tests may need fixtures.
+Expected: join + deposit + updateBitmap tests PASS. BLS-gated functions (claimRewards, withdraw, forceWithdraw, pause) MUST use precomputed BLS test fixtures generated with `bls-tool` binary (see `scripts/bls-tool/`). Set up a mock IssuerRegistry in the test that returns a known aggregated pubkey, then sign messages with the corresponding test secret key. **No BLS bypass paths — per CLAUDE.md rules.**
 
 **Step 5: Commit**
 
@@ -794,19 +788,20 @@ function pause(uint256 batchId, bytes calldata blsSignature) external {
 function forceWithdraw(
     uint256 batchId,
     address player,
+    uint256 finalBalance,
     bytes calldata blsSignature
 ) external {
     bytes32 message = keccak256(abi.encode(
-        block.chainid, address(this), "FORCE_WITHDRAW", batchId, player
+        block.chainid, address(this), "FORCE_WITHDRAW", batchId, player, finalBalance
     ));
     _verifyBLS(message, blsSignature);
 
     PlayerPosition storage pos = _positions[batchId][player];
     if (pos.joinTimestamp == 0) revert NotJoined();
 
-    uint256 balance = pos.balance;
-    uint256 fee = (balance * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
-    uint256 payout = balance - fee;
+    // finalBalance is the issuer-attested balance including winnings
+    uint256 fee = (finalBalance * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
+    uint256 payout = finalBalance - fee;
     accumulatedFees += fee;
 
     delete _positions[batchId][player];
@@ -1048,6 +1043,34 @@ Follow same pattern:
 
 ---
 
+### Task 2.3b: Add Weather collector
+
+**Files:**
+- Create: `data-node/src/market_data/sources/weather/mod.rs`
+- Create: `data-node/src/market_data/sources/weather/client.rs`
+- Modify: `data-node/src/market_data/sources/mod.rs`
+- Modify: `data-node/src/main.rs`
+
+**Note:** The data-node already has an OpenMeteo source at `data-node/src/market_data/sources/openmeteo/`. Reuse or extend that existing module rather than building from scratch. Check if it already implements the common collector trait — if so, just wire it into the P2Pool market registry.
+
+Follow same pattern as other collectors:
+- Use Open-Meteo API (`https://api.open-meteo.com/v1/forecast`)
+- Track configurable list of weather stations (city coordinates)
+- Metrics: temperature, humidity, wind speed, precipitation
+- Asset ID format: `weather_{station}_{metric}` (e.g., `weather_nyc_temp`, `weather_london_humidity`)
+- Value = metric reading (float)
+- No auth required (Open-Meteo is free)
+- Poll interval: 300s default (weather doesn't change fast)
+
+If extending existing `openmeteo/` module:
+- Add P2Pool-compatible asset ID format
+- Ensure it stores `(market_id, timestamp, value)` tuples for resolution
+- Register in market catalog with `source: "weather"`
+
+**Commit message:** `feat(data-node): add weather collector for P2Pool`
+
+---
+
 ### Task 2.4: Add P2Pool API endpoints
 
 **Files:**
@@ -1144,6 +1167,144 @@ pub async fn active_markets(
     })).await
 }
 
+/// Batch listing — reads Vision.sol events via cached chain state.
+/// The data-node indexes BatchCreated/PlayerJoined events from the chain
+/// and serves them here so the frontend doesn't need direct RPC access.
+#[derive(Serialize)]
+pub struct BatchListEntry {
+    pub id: u64,
+    pub creator: String,
+    pub market_ids: Vec<String>,
+    pub resolution_types: Vec<u8>,
+    pub tick_duration: u64,
+    pub player_count: u64,
+    pub tvl: String,
+    pub current_tick: u64,
+    pub paused: bool,
+}
+
+pub async fn list_batches(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Vec<BatchListEntry>>, StatusCode> {
+    let rows = sqlx::query_as!(
+        BatchListEntry,
+        r#"
+        SELECT
+            b.batch_id as "id!",
+            b.creator as "creator!",
+            b.market_ids as "market_ids!: Vec<String>",
+            b.resolution_types as "resolution_types!: Vec<u8>",
+            b.tick_duration as "tick_duration!",
+            COALESCE(p.player_count, 0) as "player_count!",
+            COALESCE(p.tvl, '0') as "tvl!",
+            b.current_tick as "current_tick!",
+            b.paused as "paused!"
+        FROM p2pool_batches b
+        LEFT JOIN (
+            SELECT batch_id, COUNT(*) as player_count, SUM(balance)::text as tvl
+            FROM p2pool_positions WHERE balance > 0
+            GROUP BY batch_id
+        ) p ON b.batch_id = p.batch_id
+        ORDER BY b.batch_id DESC
+        "#
+    )
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(rows))
+}
+
+/// Batch state — config, current tick, player count, TVL for a single batch.
+#[derive(Serialize)]
+pub struct BatchState {
+    pub id: u64,
+    pub creator: String,
+    pub market_ids: Vec<String>,
+    pub resolution_types: Vec<u8>,
+    pub tick_duration: u64,
+    pub custom_thresholds: Vec<String>,
+    pub player_count: u64,
+    pub tvl: String,
+    pub current_tick: u64,
+    pub paused: bool,
+}
+
+pub async fn batch_state(
+    State(state): State<Arc<AppState>>,
+    Path(batch_id): Path<u64>,
+) -> Result<Json<BatchState>, StatusCode> {
+    let batch = sqlx::query_as!(
+        BatchState,
+        r#"
+        SELECT
+            b.batch_id as "id!",
+            b.creator as "creator!",
+            b.market_ids as "market_ids!: Vec<String>",
+            b.resolution_types as "resolution_types!: Vec<u8>",
+            b.tick_duration as "tick_duration!",
+            b.custom_thresholds as "custom_thresholds!: Vec<String>",
+            COALESCE(p.player_count, 0) as "player_count!",
+            COALESCE(p.tvl, '0') as "tvl!",
+            b.current_tick as "current_tick!",
+            b.paused as "paused!"
+        FROM p2pool_batches b
+        LEFT JOIN (
+            SELECT batch_id, COUNT(*) as player_count, SUM(balance)::text as tvl
+            FROM p2pool_positions WHERE balance > 0
+            GROUP BY batch_id
+        ) p ON b.batch_id = p.batch_id
+        WHERE b.batch_id = $1
+        "#,
+        batch_id as i64
+    )
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .ok_or(StatusCode::NOT_FOUND)?;
+
+    Ok(Json(batch))
+}
+
+/// Batch history — tick results and player performance over time.
+#[derive(Serialize)]
+pub struct BatchHistoryEntry {
+    pub tick_id: u64,
+    pub resolved_at: i64,
+    pub market_outcomes: serde_json::Value, // JSON array of per-market outcomes
+    pub total_pool: String,
+    pub winner_count: u64,
+    pub loser_count: u64,
+}
+
+pub async fn batch_history(
+    State(state): State<Arc<AppState>>,
+    Path(batch_id): Path<u64>,
+) -> Result<Json<Vec<BatchHistoryEntry>>, StatusCode> {
+    let rows = sqlx::query_as!(
+        BatchHistoryEntry,
+        r#"
+        SELECT
+            tick_id as "tick_id!",
+            resolved_at as "resolved_at!",
+            market_outcomes as "market_outcomes!",
+            total_pool as "total_pool!",
+            winner_count as "winner_count!",
+            loser_count as "loser_count!"
+        FROM p2pool_tick_results
+        WHERE batch_id = $1
+        ORDER BY tick_id DESC
+        LIMIT 100
+        "#,
+        batch_id as i64
+    )
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(rows))
+}
+
 #[derive(Deserialize)]
 pub struct BacktestParams {
     pub market_ids: String,   // comma-separated
@@ -1190,6 +1351,9 @@ Add to the router in `data-node/src/api.rs`:
 ```rust
 .route("/p2pool/snapshot", get(crate::p2pool_api::snapshot))
 .route("/p2pool/markets/active", get(crate::p2pool_api::active_markets))
+.route("/p2pool/batches", get(crate::p2pool_api::list_batches))
+.route("/p2pool/batch/:id/state", get(crate::p2pool_api::batch_state))
+.route("/p2pool/batch/:id/history", get(crate::p2pool_api::batch_history))
 .route("/p2pool/backtest", get(crate::p2pool_api::backtest))
 ```
 
@@ -1818,7 +1982,8 @@ pub fn resolve_market(
                         U256::zero() // loser
                     };
 
-                    let net_pnl = payout.as_u128() as i128 - stake.as_u128() as i128;
+                    let total_back = payout + refund;
+                    let net_pnl = total_back.as_u128() as i128 - stake.as_u128() as i128;
 
                     PlayerMarketResult {
                         player: *addr,
@@ -1826,7 +1991,7 @@ pub fn resolve_market(
                         effective_stake: *stake,
                         matched_stake,
                         refund,
-                        payout: payout + refund, // total back = payout + refund
+                        payout: total_back, // total back = payout + refund
                         net_pnl,
                     }
                 })
@@ -2055,6 +2220,187 @@ if config.p2pool.enabled {
 ```
 
 **Commit message:** `feat(issuer): integrate P2Pool tick engine into main loop`
+
+---
+
+### Task 3.9: Add Vision.sol chain event listener
+
+**Files:**
+- Create: `issuer/src/p2pool/chain_listener.rs`
+- Modify: `issuer/src/p2pool/mod.rs`
+
+The tick scheduler needs to know about batches and player positions. This task adds a chain event listener that watches Vision.sol for `BatchCreated`, `PlayerJoined`, `PlayerDeposited`, `PlayerWithdrawn`, `BatchPaused`, etc. and feeds them into the tick scheduler's state.
+
+**Step 1: Create chain listener module**
+
+Create `issuer/src/p2pool/chain_listener.rs`:
+
+```rust
+use ethers::prelude::*;
+use ethers::types::{Address, H256, U256, Filter, Log};
+use std::sync::Arc;
+use tokio::sync::watch;
+
+use crate::p2pool::types::{Batch, PlayerPosition};
+use crate::p2pool::tick_scheduler::TickScheduler;
+
+/// Listens to Vision.sol events and updates the tick scheduler state.
+pub struct ChainListener {
+    provider: Arc<Provider<Ws>>,
+    vision_address: Address,
+    scheduler: Arc<TickScheduler>,
+}
+
+// Event signatures (keccak256 of event signature)
+const BATCH_CREATED_TOPIC: &str = "BatchCreated(uint256,address,uint256)";
+const PLAYER_JOINED_TOPIC: &str = "PlayerJoined(uint256,address,uint256,bytes32)";
+const PLAYER_DEPOSITED_TOPIC: &str = "PlayerDeposited(uint256,address,uint256)";
+const PLAYER_WITHDRAWN_TOPIC: &str = "PlayerWithdrawn(uint256,address,uint256)";
+const FORCE_WITHDRAWN_TOPIC: &str = "ForceWithdrawn(uint256,address,uint256)";
+const BATCH_PAUSED_TOPIC: &str = "BatchPaused(uint256)";
+const BITMAP_UPDATED_TOPIC: &str = "BitmapUpdated(uint256,address,bytes32)";
+
+impl ChainListener {
+    pub fn new(
+        provider: Arc<Provider<Ws>>,
+        vision_address: Address,
+        scheduler: Arc<TickScheduler>,
+    ) -> Self {
+        Self { provider, vision_address, scheduler }
+    }
+
+    /// Start listening from a given block number. Replays missed events then subscribes live.
+    pub async fn run(
+        &self,
+        from_block: u64,
+        mut shutdown: watch::Receiver<bool>,
+    ) -> eyre::Result<()> {
+        // 1. Replay historical events from `from_block` to latest
+        let filter = Filter::new()
+            .address(self.vision_address)
+            .from_block(from_block);
+
+        let logs = self.provider.get_logs(&filter).await?;
+        for log in logs {
+            self.process_log(log).await?;
+        }
+
+        // 2. Subscribe to new events
+        let sub = self.provider.subscribe_logs(&Filter::new()
+            .address(self.vision_address)
+        ).await?;
+
+        let mut stream = sub.into_stream();
+        loop {
+            tokio::select! {
+                Some(log) = stream.next() => {
+                    if let Err(e) = self.process_log(log).await {
+                        tracing::error!("Failed to process Vision event: {e}");
+                    }
+                }
+                _ = shutdown.changed() => {
+                    tracing::info!("Chain listener shutting down");
+                    break;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    async fn process_log(&self, log: Log) -> eyre::Result<()> {
+        let topic0 = log.topics.get(0).ok_or_else(|| eyre::eyre!("No topic0"))?;
+
+        // Dispatch based on event topic
+        match topic0 {
+            t if *t == H256::from(ethers::utils::keccak256(BATCH_CREATED_TOPIC)) => {
+                let batch_id = U256::from_big_endian(&log.topics[1].as_bytes()).as_u64();
+                let creator = Address::from(log.topics[2]);
+                tracing::info!("BatchCreated: id={batch_id}, creator={creator:?}");
+                // Fetch full batch config from chain via getBatch() call
+                self.scheduler.on_batch_created(batch_id).await?;
+            }
+            t if *t == H256::from(ethers::utils::keccak256(PLAYER_JOINED_TOPIC)) => {
+                let batch_id = U256::from_big_endian(&log.topics[1].as_bytes()).as_u64();
+                let player = Address::from(log.topics[2]);
+                tracing::info!("PlayerJoined: batch={batch_id}, player={player:?}");
+                self.scheduler.on_player_joined(batch_id, player).await?;
+            }
+            t if *t == H256::from(ethers::utils::keccak256(BATCH_PAUSED_TOPIC)) => {
+                let batch_id = U256::from_big_endian(&log.topics[1].as_bytes()).as_u64();
+                tracing::info!("BatchPaused: id={batch_id}");
+                self.scheduler.on_batch_paused(batch_id).await?;
+            }
+            // PlayerDeposited, PlayerWithdrawn, ForceWithdrawn, BitmapUpdated
+            // update local balance/bitmap state accordingly
+            _ => {
+                tracing::debug!("Unhandled Vision event: {:?}", topic0);
+            }
+        }
+
+        Ok(())
+    }
+}
+```
+
+**Step 2: Wire into main loop**
+
+Update Task 3.8's integration in `main.rs`:
+
+```rust
+// In main.rs, after existing cycle engine setup:
+if config.p2pool.enabled {
+    let tick_scheduler = Arc::new(TickScheduler::new());
+    let bitmap_store = Arc::new(BitmapStore::new());
+    let resolver = Arc::new(TickResolver::new(bitmap_store.clone(), config.p2pool.clone()));
+
+    // Spawn chain event listener (feeds scheduler with on-chain state)
+    let chain_listener = ChainListener::new(
+        ws_provider.clone(),
+        config.p2pool.vision_address,
+        tick_scheduler.clone(),
+    );
+    let shutdown_rx = shutdown.subscribe();
+    tokio::spawn(async move {
+        if let Err(e) = chain_listener.run(config.p2pool.start_block, shutdown_rx).await {
+            tracing::error!("Chain listener failed: {e}");
+        }
+    });
+
+    // Spawn tick engine
+    tokio::spawn(async move {
+        p2pool::engine::run(tick_scheduler, resolver, consensus, shutdown).await;
+    });
+}
+```
+
+**Step 3: Add BitmapUpdated event to Vision.sol interface**
+
+Also add this event to `IVision.sol` (Task 1.1):
+```solidity
+event BitmapUpdated(uint256 indexed batchId, address indexed player, bytes32 newBitmapHash);
+```
+
+And emit it in `updateBitmap()`:
+```solidity
+function updateBitmap(uint256 batchId, bytes32 newBitmapHash) external {
+    PlayerPosition storage pos = _positions[batchId][msg.sender];
+    if (pos.joinTimestamp == 0) revert NotJoined();
+    pos.bitmapHash = newBitmapHash;
+    emit BitmapUpdated(batchId, msg.sender, newBitmapHash);
+}
+```
+
+**Step 4: Build and test**
+
+Run: `cd issuer && cargo build`
+Expected: Compiles
+
+**Step 5: Commit**
+
+```bash
+git add issuer/src/p2pool/chain_listener.rs issuer/src/p2pool/mod.rs
+git commit -m "feat(issuer): add Vision.sol chain event listener for tick scheduler"
+```
 
 ---
 
@@ -2364,8 +2710,11 @@ Implement the four header types that auto-select based on market count:
 - Delete: `frontend/components/domain/vision/VisionPage.tsx`
 - Delete: `frontend/hooks/vision/useLeaderboard.ts`
 - Delete: `frontend/hooks/vision/useLeaderboardSSE.ts`
+- Delete: `frontend/hooks/vision/useMarketSnapshot.ts`
+- Delete: `frontend/hooks/vision/useMediaQueries.ts`
+- Delete: `frontend/hooks/vision/useRankChangeAnimation.ts`
 
-Verify no remaining imports reference deleted files.
+Verify no remaining imports reference deleted files. Run `grep -r "from.*vision/" frontend/` to catch any stale imports.
 
 Run: `cd contracts && forge build` and `cd frontend && npm run build`
 
@@ -2385,6 +2734,125 @@ Add Vision.sol to deployment alongside existing contracts. Register Vision contr
 
 ---
 
+### Task 5.3: Implement real backtest endpoint
+
+**Files:**
+- Modify: `data-node/src/p2pool_api.rs`
+
+The backtest handler from Task 2.4 returns a mock result. This task replaces it with a real implementation that:
+
+1. Parses `market_ids` and fetches historical price data from `market_prices` table
+2. Simulates tick resolution using the same `% change = (end - start) / start × 100` formula
+3. Applies the given strategy (bitmap pattern) to determine UP/DOWN calls per market per tick
+4. Computes win/loss per tick and cumulative PnL curve
+5. Returns `BacktestResult` with real `win_rate`, `total_pnl`, and per-tick breakdown
+
+```rust
+pub async fn backtest(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<BacktestParams>,
+) -> Result<Json<BacktestResult>, StatusCode> {
+    let market_ids: Vec<&str> = params.market_ids.split(',').collect();
+    let tick_secs = params.tick_duration;
+    let num_ticks = params.ticks;
+
+    // Fetch historical prices for each market
+    let mut market_prices: HashMap<String, Vec<(i64, f64)>> = HashMap::new();
+    for market_id in &market_ids {
+        let rows = sqlx::query!(
+            r#"
+            SELECT fetched_at, value::float8 as "value!"
+            FROM market_prices
+            WHERE asset_id = $1
+            ORDER BY fetched_at DESC
+            LIMIT $2
+            "#,
+            market_id.trim(),
+            (num_ticks + 1) * (tick_secs / 60).max(1) // enough data points
+        )
+        .fetch_all(&state.pool)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+        market_prices.insert(
+            market_id.to_string(),
+            rows.into_iter().map(|r| (r.fetched_at, r.value)).collect()
+        );
+    }
+
+    // Simulate ticks
+    let mut per_tick_results = Vec::new();
+    let mut total_wins = 0i64;
+    let mut total_losses = 0i64;
+    let mut cumulative_pnl = 0.0f64;
+
+    for tick in 0..num_ticks {
+        let mut wins = 0i32;
+        let mut losses = 0i32;
+
+        for (idx, market_id) in market_ids.iter().enumerate() {
+            let prices = match market_prices.get(*market_id) {
+                Some(p) if p.len() > (tick as usize + 1) => p,
+                _ => continue,
+            };
+
+            let start_price = prices[tick as usize + 1].1;
+            let end_price = prices[tick as usize].1;
+            let pct_change = (end_price - start_price) / start_price * 100.0;
+
+            // Apply strategy: determine if player bet UP or DOWN
+            let bet_up = match params.strategy.as_str() {
+                "momentum" => pct_change > 0.0, // bet with trend (prev tick)
+                "bear" => true,                  // always DOWN (contrarian name)
+                _ => idx % 2 == 0,               // alternating default
+            };
+
+            let went_up = pct_change > 0.0;
+            if bet_up == went_up { wins += 1; } else { losses += 1; }
+        }
+
+        let tick_pnl = (wins as f64 - losses as f64) * 100.0; // simplified
+        cumulative_pnl += tick_pnl;
+        total_wins += wins as i64;
+        total_losses += losses as i64;
+
+        per_tick_results.push(TickResult {
+            tick,
+            wins,
+            losses,
+            pnl: cumulative_pnl,
+        });
+    }
+
+    let total_bets = total_wins + total_losses;
+    let win_rate = if total_bets > 0 { total_wins as f64 / total_bets as f64 } else { 0.0 };
+
+    Ok(Json(BacktestResult {
+        win_rate,
+        total_pnl: cumulative_pnl,
+        ticks_simulated: num_ticks,
+        per_tick_results,
+    }))
+}
+```
+
+**Step 2: Build and test**
+
+Run: `cd data-node && cargo build`
+Expected: Compiles
+
+Test manually: `curl "http://localhost:8200/p2pool/backtest?market_ids=btc_usd&ticks=10&tick_duration=600&strategy=momentum"`
+Expected: JSON with real win_rate and per_tick_results (non-empty if price data exists)
+
+**Step 3: Commit**
+
+```bash
+git add data-node/src/p2pool_api.rs
+git commit -m "feat(data-node): implement real backtest endpoint with historical price simulation"
+```
+
+---
+
 ## Task Dependency Graph
 
 ```
@@ -2393,9 +2861,9 @@ Phase 1 (Contract)     Phase 2 (Data Node)     Phase 3 (Issuer)       Phase 4 (F
 1.1 skeleton           2.1 Polymarket          3.1 skeleton
   ↓                    2.2 Twitch              3.2 bitmap store
 1.2 batches            2.3 HackerNews            ↓
-  ↓                    2.4 P2Pool API          3.3 multiplier
-1.3 player ops           ↓                    3.4 side matching      4.1 page skeleton
-  ↓                      │                      ↓                      ↓
+  ↓                    2.3b Weather            3.3 multiplier
+1.3 player ops         2.4 P2Pool API          3.4 side matching      4.1 page skeleton
+  ↓                      ↓                      ↓                      ↓
 1.4 bots + issuer ops    │                    3.5 tick scheduler     4.2 expanded view
                          │                      ↓                      ↓
                          └────────────────→   3.6 resolver           4.3 Python editor
@@ -2403,14 +2871,15 @@ Phase 1 (Contract)     Phase 2 (Data Node)     Phase 3 (Issuer)       Phase 4 (F
                                               3.7 API endpoints      4.4 bitmap submit
                                                 ↓                      ↓
                                               3.8 main integration   4.5 create batch
-                                                                       ↓
-                                                                     4.6 deposit/withdraw
+                                                ↓                      ↓
+                                              3.9 chain listener     4.6 deposit/withdraw
                                                                        ↓
                                                                      4.7 card headers
 
 Phase 5 (Cleanup) — after all above complete
 5.1 delete old code
 5.2 update deploys
+5.3 real backtest endpoint
 ```
 
 **Phases 1, 2, 3 can run in parallel.** Phase 4 depends on Phase 1 (contract ABI) and Phase 2 (data endpoints). Phase 5 runs last.
