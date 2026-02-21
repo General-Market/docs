@@ -602,7 +602,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Spawn chain pollers (NAV=1s, Oracle=2s)
     tokio::spawn(chain_pollers::poll_nav(Arc::clone(&app_state)));
     tokio::spawn(chain_pollers::poll_oracle(Arc::clone(&app_state)));
-    info!("Chain pollers started (NAV=1s, Oracle=2s)");
+    // Per-user pollers (balances=1s, allowances=3s, orders=1s)
+    tokio::spawn(chain_pollers::poll_user_balances(Arc::clone(&app_state)));
+    tokio::spawn(chain_pollers::poll_user_allowances(Arc::clone(&app_state)));
+    tokio::spawn(chain_pollers::poll_user_orders(Arc::clone(&app_state)));
+    info!("Chain pollers started (NAV=1s, Oracle=2s, Balances=1s, Allowances=3s, Orders=1s)");
 
     let app = api::router(app_state);
     let addr = SocketAddr::from(([0, 0, 0, 0], args.port));
