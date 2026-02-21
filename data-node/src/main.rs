@@ -535,6 +535,21 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
 
     info!("Free market data providers started (SEC EDGAR, SEC EFTS, SEC Insider, FINRA Short Vol, Congress, World Bank)");
 
+    // Polymarket (prediction markets) — gated on polymarket_enabled flag, no API key needed
+    if args.polymarket_enabled {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::polymarket::PolymarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Polymarket init failed: {e}"),
+            }
+        });
+        info!("Polymarket prediction market provider started");
+    }
+
     // Create live ticker cache and start fast poller
     let live_cache = Arc::new(LiveTickerCache::new());
     {

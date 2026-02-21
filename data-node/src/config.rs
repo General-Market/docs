@@ -159,6 +159,10 @@ pub struct ServeArgs {
     #[arg(long, env = "ADMIN_TOKEN")]
     pub admin_token: Option<String>,
 
+    /// Enable Polymarket prediction market data (no key needed)
+    #[arg(long, default_value = "false", env = "POLYMARKET_ENABLED")]
+    pub polymarket_enabled: bool,
+
     /// P2.8: Allowed CORS origins (repeat for multiple). Empty = allow all.
     #[arg(long, env = "CORS_ORIGIN")]
     pub cors_origin: Vec<String>,
