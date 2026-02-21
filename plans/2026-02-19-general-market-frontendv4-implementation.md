@@ -1,8 +1,8 @@
-# General Market frontendV4 Implementation Plan
+# General Market frontend Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Create `/frontendV4` by copying `/frontend` and restyling it with an institutional Blackrock aesthetic, rebranding to "General Market", and switching from accordion to tab-based navigation.
+**Goal:** Create `/frontend` by copying `/frontend` and restyling it with an institutional Blackrock aesthetic, rebranding to "General Market", and switching from accordion to tab-based navigation.
 
 **Architecture:** Copy all functional code from `/frontend` (60+ hooks, 80+ components, all lib/contracts). Replace the design system (tailwind tokens, globals.css, fonts). Restructure `page.tsx` from collapsible accordion to tab-based single page. Restyle every component from dark-terminal (black + red) to institutional (dark page + white cards + neutral palette). Rebrand all copy from AgiArena/Index to General Market.
 
@@ -46,45 +46,45 @@ rounded-lg (cards)                → rounded-xl
 ### Task 1: Project Scaffolding
 
 **Files:**
-- Copy: `frontend/` → `frontendV4/`
-- Copy: `/Users/maxguillabert/Downloads/Vector.svg` → `frontendV4/public/logo.svg`
+- Copy: `frontend/` → `frontend/`
+- Copy: `/Users/maxguillabert/Downloads/Vector.svg` → `frontend/public/logo.svg`
 
-**Step 1: Copy frontend to frontendV4**
+**Step 1: Copy frontend to frontend**
 
 ```bash
-cp -r frontend frontendV4
+cp -r frontend frontend
 ```
 
 **Step 2: Remove node_modules and build artifacts from copy**
 
 ```bash
-rm -rf frontendV4/node_modules frontendV4/.next frontendV4/test-results
+rm -rf frontend/node_modules frontend/.next frontend/test-results
 ```
 
 **Step 3: Copy the new logo**
 
 ```bash
-cp /Users/maxguillabert/Downloads/Vector.svg frontendV4/public/logo.svg
+cp /Users/maxguillabert/Downloads/Vector.svg frontend/public/logo.svg
 ```
 
 **Step 4: Install dependencies**
 
 ```bash
-cd frontendV4 && bun install
+cd frontend && bun install
 ```
 
 **Step 5: Verify it builds**
 
 ```bash
-cd frontendV4 && bun run build
+cd frontend && bun run build
 ```
 Expected: Build succeeds (same code as frontend).
 
 **Step 6: Commit**
 
 ```bash
-git add frontendV4/
-git commit -m "chore: copy frontend to frontendV4 scaffold"
+git add frontend/
+git commit -m "chore: copy frontend to frontend scaffold"
 ```
 
 ---
@@ -92,7 +92,7 @@ git commit -m "chore: copy frontend to frontendV4 scaffold"
 ### Task 2: Design System — Tailwind Config
 
 **Files:**
-- Modify: `frontendV4/tailwind.config.js`
+- Modify: `frontend/tailwind.config.js`
 
 **Step 1: Replace tailwind.config.js with full token system**
 
@@ -155,13 +155,13 @@ module.exports = {
 **Step 2: Verify no build errors**
 
 ```bash
-cd frontendV4 && bun run build
+cd frontend && bun run build
 ```
 
 **Step 3: Commit**
 
 ```bash
-git add frontendV4/tailwind.config.js
+git add frontend/tailwind.config.js
 git commit -m "feat(v4): replace design system tokens in tailwind config"
 ```
 
@@ -170,8 +170,8 @@ git commit -m "feat(v4): replace design system tokens in tailwind config"
 ### Task 3: Design System — Globals CSS + Layout
 
 **Files:**
-- Modify: `frontendV4/app/globals.css`
-- Modify: `frontendV4/app/layout.tsx`
+- Modify: `frontend/app/globals.css`
+- Modify: `frontend/app/layout.tsx`
 
 **Step 1: Replace globals.css**
 
@@ -346,13 +346,13 @@ description: "The institutional-grade protocol for on-chain index products."
 **Step 3: Verify build**
 
 ```bash
-cd frontendV4 && bun run build
+cd frontend && bun run build
 ```
 
 **Step 4: Commit**
 
 ```bash
-git add frontendV4/app/globals.css frontendV4/app/layout.tsx
+git add frontend/app/globals.css frontend/app/layout.tsx
 git commit -m "feat(v4): institutional design system — globals.css + layout.tsx"
 ```
 
@@ -361,9 +361,9 @@ git commit -m "feat(v4): institutional design system — globals.css + layout.ts
 ### Task 4: Page Shell — Tab Layout + Header + Footer
 
 **Files:**
-- Modify: `frontendV4/app/page.tsx`
-- Modify: `frontendV4/components/layout/Header.tsx`
-- Modify: `frontendV4/components/layout/Footer.tsx`
+- Modify: `frontend/app/page.tsx`
+- Modify: `frontend/components/layout/Header.tsx`
+- Modify: `frontend/components/layout/Footer.tsx`
 
 **Step 1: Rewrite page.tsx with tab-based layout**
 
@@ -606,7 +606,7 @@ export function Footer() {
 **Step 4: Verify build**
 
 ```bash
-cd frontendV4 && bun run build
+cd frontend && bun run build
 ```
 
 Note: Build may have TypeScript errors due to changed props (Header now takes activeTab/onTabChange, VaultModal inline prop). Fix these before proceeding.
@@ -614,7 +614,7 @@ Note: Build may have TypeScript errors due to changed props (Header now takes ac
 **Step 5: Commit**
 
 ```bash
-git add frontendV4/app/page.tsx frontendV4/components/layout/
+git add frontend/app/page.tsx frontend/components/layout/
 git commit -m "feat(v4): tab-based page layout + institutional header/footer"
 ```
 
@@ -623,21 +623,21 @@ git commit -m "feat(v4): tab-based page layout + institutional header/footer"
 ### Task 5: UI Primitives — Restyle All 15 Components
 
 **Files:**
-- Modify: `frontendV4/components/ui/Button.tsx`
-- Modify: `frontendV4/components/ui/Card.tsx`
-- Modify: `frontendV4/components/ui/Input.tsx`
-- Modify: `frontendV4/components/ui/Table.tsx`
-- Modify: `frontendV4/components/ui/Skeleton.tsx`
-- Modify: `frontendV4/components/ui/Toast.tsx`
-- Modify: `frontendV4/components/ui/Tooltip.tsx`
-- Modify: `frontendV4/components/ui/StatusBadge.tsx`
-- Modify: `frontendV4/components/ui/AnimatedNumber.tsx`
-- Modify: `frontendV4/components/ui/CopyButton.tsx`
-- Modify: `frontendV4/components/ui/EmptyState.tsx`
-- Modify: `frontendV4/components/ui/ErrorBoundary.tsx`
-- Modify: `frontendV4/components/ui/ConnectionStatus.tsx`
-- Modify: `frontendV4/components/ui/ConnectionStatusIndicator.tsx`
-- Modify: `frontendV4/components/ui/WalletActionButton.tsx`
+- Modify: `frontend/components/ui/Button.tsx`
+- Modify: `frontend/components/ui/Card.tsx`
+- Modify: `frontend/components/ui/Input.tsx`
+- Modify: `frontend/components/ui/Table.tsx`
+- Modify: `frontend/components/ui/Skeleton.tsx`
+- Modify: `frontend/components/ui/Toast.tsx`
+- Modify: `frontend/components/ui/Tooltip.tsx`
+- Modify: `frontend/components/ui/StatusBadge.tsx`
+- Modify: `frontend/components/ui/AnimatedNumber.tsx`
+- Modify: `frontend/components/ui/CopyButton.tsx`
+- Modify: `frontend/components/ui/EmptyState.tsx`
+- Modify: `frontend/components/ui/ErrorBoundary.tsx`
+- Modify: `frontend/components/ui/ConnectionStatus.tsx`
+- Modify: `frontend/components/ui/ConnectionStatusIndicator.tsx`
+- Modify: `frontend/components/ui/WalletActionButton.tsx`
 
 **Step 1: Restyle Button.tsx**
 
@@ -677,13 +677,13 @@ For Toast: left accent bar colors should use `border-l-color-up` (success), `bor
 **Step 6: Verify build**
 
 ```bash
-cd frontendV4 && bun run build
+cd frontend && bun run build
 ```
 
 **Step 7: Commit**
 
 ```bash
-git add frontendV4/components/ui/
+git add frontend/components/ui/
 git commit -m "feat(v4): restyle all UI primitives — institutional theme"
 ```
 
@@ -692,14 +692,14 @@ git commit -m "feat(v4): restyle all UI primitives — institutional theme"
 ### Task 6: Markets Tab — ItpListing + Modals
 
 **Files:**
-- Modify: `frontendV4/components/domain/ItpListing.tsx` (includes ItpCard)
-- Modify: `frontendV4/components/domain/BuyItpModal.tsx`
-- Modify: `frontendV4/components/domain/SellItpModal.tsx`
-- Modify: `frontendV4/components/domain/ChartModal.tsx`
-- Modify: `frontendV4/components/domain/RebalanceModal.tsx`
-- Modify: `frontendV4/components/domain/LendItpModal.tsx`
-- Modify: `frontendV4/components/domain/CostBasisCard.tsx`
-- Modify: `frontendV4/components/domain/OrderStatusTracker.tsx`
+- Modify: `frontend/components/domain/ItpListing.tsx` (includes ItpCard)
+- Modify: `frontend/components/domain/BuyItpModal.tsx`
+- Modify: `frontend/components/domain/SellItpModal.tsx`
+- Modify: `frontend/components/domain/ChartModal.tsx`
+- Modify: `frontend/components/domain/RebalanceModal.tsx`
+- Modify: `frontend/components/domain/LendItpModal.tsx`
+- Modify: `frontend/components/domain/CostBasisCard.tsx`
+- Modify: `frontend/components/domain/OrderStatusTracker.tsx`
 
 **Step 1: Restyle ItpListing + ItpCard**
 
@@ -748,13 +748,13 @@ OrderStatusTracker: Step circles `bg-zinc-900` completed, `bg-border-light` pend
 **Step 7: Verify build**
 
 ```bash
-cd frontendV4 && bun run build
+cd frontend && bun run build
 ```
 
 **Step 8: Commit**
 
 ```bash
-git add frontendV4/components/domain/ItpListing.tsx frontendV4/components/domain/BuyItpModal.tsx frontendV4/components/domain/SellItpModal.tsx frontendV4/components/domain/ChartModal.tsx frontendV4/components/domain/RebalanceModal.tsx frontendV4/components/domain/LendItpModal.tsx frontendV4/components/domain/CostBasisCard.tsx frontendV4/components/domain/OrderStatusTracker.tsx
+git add frontend/components/domain/ItpListing.tsx frontend/components/domain/BuyItpModal.tsx frontend/components/domain/SellItpModal.tsx frontend/components/domain/ChartModal.tsx frontend/components/domain/RebalanceModal.tsx frontend/components/domain/LendItpModal.tsx frontend/components/domain/CostBasisCard.tsx frontend/components/domain/OrderStatusTracker.tsx
 git commit -m "feat(v4): restyle Markets tab — ITP cards + modals"
 ```
 
@@ -763,7 +763,7 @@ git commit -m "feat(v4): restyle Markets tab — ITP cards + modals"
 ### Task 7: Portfolio Tab
 
 **Files:**
-- Modify: `frontendV4/components/domain/PortfolioSection.tsx`
+- Modify: `frontend/components/domain/PortfolioSection.tsx`
 
 **Step 1: Restyle PortfolioSection**
 
@@ -788,13 +788,13 @@ git commit -m "feat(v4): restyle Markets tab — ITP cards + modals"
 **Step 2: Verify build**
 
 ```bash
-cd frontendV4 && bun run build
+cd frontend && bun run build
 ```
 
 **Step 3: Commit**
 
 ```bash
-git add frontendV4/components/domain/PortfolioSection.tsx
+git add frontend/components/domain/PortfolioSection.tsx
 git commit -m "feat(v4): restyle Portfolio tab — stat cards + underline tabs"
 ```
 
@@ -803,7 +803,7 @@ git commit -m "feat(v4): restyle Portfolio tab — stat cards + underline tabs"
 ### Task 8: Create Tab
 
 **Files:**
-- Modify: `frontendV4/components/domain/CreateItpSection.tsx`
+- Modify: `frontend/components/domain/CreateItpSection.tsx`
 
 **Step 1: Restyle CreateItpSection**
 
@@ -819,8 +819,8 @@ git commit -m "feat(v4): restyle Portfolio tab — stat cards + underline tabs"
 **Step 2: Verify build + Commit**
 
 ```bash
-cd frontendV4 && bun run build
-git add frontendV4/components/domain/CreateItpSection.tsx
+cd frontend && bun run build
+git add frontend/components/domain/CreateItpSection.tsx
 git commit -m "feat(v4): restyle Create tab — institutional form"
 ```
 
@@ -829,17 +829,17 @@ git commit -m "feat(v4): restyle Create tab — institutional form"
 ### Task 9: Lend Tab
 
 **Files:**
-- Modify: `frontendV4/components/domain/VaultModal.tsx`
-- Modify: `frontendV4/components/lending/VaultStats.tsx`
-- Modify: `frontendV4/components/lending/VaultDeposit.tsx`
-- Modify: `frontendV4/components/lending/VaultPosition.tsx`
-- Modify: `frontendV4/components/lending/PositionCard.tsx`
-- Modify: `frontendV4/components/lending/MarketsTable.tsx`
-- Modify: `frontendV4/components/lending/BorrowUsdc.tsx`
-- Modify: `frontendV4/components/lending/DepositCollateral.tsx`
-- Modify: `frontendV4/components/lending/RepayDebt.tsx`
-- Modify: `frontendV4/components/lending/WithdrawCollateral.tsx`
-- Modify: `frontendV4/components/lending/LendingHistory.tsx`
+- Modify: `frontend/components/domain/VaultModal.tsx`
+- Modify: `frontend/components/lending/VaultStats.tsx`
+- Modify: `frontend/components/lending/VaultDeposit.tsx`
+- Modify: `frontend/components/lending/VaultPosition.tsx`
+- Modify: `frontend/components/lending/PositionCard.tsx`
+- Modify: `frontend/components/lending/MarketsTable.tsx`
+- Modify: `frontend/components/lending/BorrowUsdc.tsx`
+- Modify: `frontend/components/lending/DepositCollateral.tsx`
+- Modify: `frontend/components/lending/RepayDebt.tsx`
+- Modify: `frontend/components/lending/WithdrawCollateral.tsx`
+- Modify: `frontend/components/lending/LendingHistory.tsx`
 
 **Step 1: Add `inline` prop to VaultModal**
 
@@ -852,8 +852,8 @@ Apply transformation map: white card backgrounds, dark text, neutral buttons. St
 **Step 3: Verify build + Commit**
 
 ```bash
-cd frontendV4 && bun run build
-git add frontendV4/components/domain/VaultModal.tsx frontendV4/components/lending/
+cd frontend && bun run build
+git add frontend/components/domain/VaultModal.tsx frontend/components/lending/
 git commit -m "feat(v4): restyle Lend tab — vault + lending components"
 ```
 
@@ -862,14 +862,14 @@ git commit -m "feat(v4): restyle Lend tab — vault + lending components"
 ### Task 10: Backtest Tab
 
 **Files:**
-- Modify: `frontendV4/components/domain/simulation/BacktestSection.tsx`
-- Modify: `frontendV4/components/domain/simulation/SimFilterPanel.tsx`
-- Modify: `frontendV4/components/domain/simulation/SimStatsGrid.tsx`
-- Modify: `frontendV4/components/domain/simulation/SimPerformanceChart.tsx`
-- Modify: `frontendV4/components/domain/simulation/SimHoldingsTable.tsx`
-- Modify: `frontendV4/components/domain/simulation/SimProgressBar.tsx`
-- Modify: `frontendV4/components/domain/simulation/SimSweepStatsTable.tsx`
-- Modify: `frontendV4/components/domain/simulation/SimVariantLegend.tsx`
+- Modify: `frontend/components/domain/simulation/BacktestSection.tsx`
+- Modify: `frontend/components/domain/simulation/SimFilterPanel.tsx`
+- Modify: `frontend/components/domain/simulation/SimStatsGrid.tsx`
+- Modify: `frontend/components/domain/simulation/SimPerformanceChart.tsx`
+- Modify: `frontend/components/domain/simulation/SimHoldingsTable.tsx`
+- Modify: `frontend/components/domain/simulation/SimProgressBar.tsx`
+- Modify: `frontend/components/domain/simulation/SimSweepStatsTable.tsx`
+- Modify: `frontend/components/domain/simulation/SimVariantLegend.tsx`
 
 **Step 1: Restyle BacktestSection**
 
@@ -888,8 +888,8 @@ Apply transformation map to all 8 files. Key: progress bar should use `bg-zinc-9
 **Step 3: Verify build + Commit**
 
 ```bash
-cd frontendV4 && bun run build
-git add frontendV4/components/domain/simulation/
+cd frontend && bun run build
+git add frontend/components/domain/simulation/
 git commit -m "feat(v4): restyle Backtest tab — simulation components"
 ```
 
@@ -898,11 +898,11 @@ git commit -m "feat(v4): restyle Backtest tab — simulation components"
 ### Task 11: System Tab
 
 **Files:**
-- Modify: `frontendV4/components/domain/SystemStatusSection.tsx`
-- Modify: `frontendV4/components/domain/APBalanceCard.tsx`
-- Modify: `frontendV4/components/domain/FillSpeedChart.tsx`
-- Modify: `frontendV4/components/domain/InventoryBumpChart.tsx`
-- Modify: `frontendV4/components/domain/PerformanceSection.tsx`
+- Modify: `frontend/components/domain/SystemStatusSection.tsx`
+- Modify: `frontend/components/domain/APBalanceCard.tsx`
+- Modify: `frontend/components/domain/FillSpeedChart.tsx`
+- Modify: `frontend/components/domain/InventoryBumpChart.tsx`
+- Modify: `frontend/components/domain/PerformanceSection.tsx`
 
 **Step 1: Restyle SystemStatusSection**
 
@@ -920,8 +920,8 @@ Apply transformation map. Charts: white card containers, neutral axis colors. Va
 **Step 3: Verify build + Commit**
 
 ```bash
-cd frontendV4 && bun run build
-git add frontendV4/components/domain/SystemStatusSection.tsx frontendV4/components/domain/APBalanceCard.tsx frontendV4/components/domain/FillSpeedChart.tsx frontendV4/components/domain/InventoryBumpChart.tsx frontendV4/components/domain/PerformanceSection.tsx
+cd frontend && bun run build
+git add frontend/components/domain/SystemStatusSection.tsx frontend/components/domain/APBalanceCard.tsx frontend/components/domain/FillSpeedChart.tsx frontend/components/domain/InventoryBumpChart.tsx frontend/components/domain/PerformanceSection.tsx
 git commit -m "feat(v4): restyle System tab — AP status + performance charts"
 ```
 
@@ -929,7 +929,7 @@ git commit -m "feat(v4): restyle System tab — AP status + performance charts"
 
 ### Task 12: Remaining Domain Components
 
-**Files:** All remaining components in `frontendV4/components/domain/` not yet restyled.
+**Files:** All remaining components in `frontend/components/domain/` not yet restyled.
 
 This includes: WalletConnectButton, ChainGuard, LeaderboardTable, RecentBetsFeed, BetCard, BilateralBetCard, AnimatedLeaderboardRow, AnimatedBetFeedItem, PerformanceGraph, USDCBalanceCard, and all other domain components.
 
@@ -953,8 +953,8 @@ Update all brand references: "AgiArena" → "General Market", update URLs.
 **Step 4: Verify build + Commit**
 
 ```bash
-cd frontendV4 && bun run build
-git add frontendV4/components/
+cd frontend && bun run build
+git add frontend/components/
 git commit -m "feat(v4): restyle remaining domain components"
 ```
 
@@ -962,7 +962,7 @@ git commit -m "feat(v4): restyle remaining domain components"
 
 ### Task 13: Global Brand Search & Replace
 
-**Files:** All files in `frontendV4/`
+**Files:** All files in `frontend/`
 
 **Step 1: Search and replace brand references**
 
@@ -987,13 +987,13 @@ Ensure all SEO metadata says "General Market".
 
 **Step 3: Update OG image generation**
 
-Modify `frontendV4/app/api/og/` and `frontendV4/app/opengraph-image.tsx` / `twitter-image.tsx` to use "General Market" branding.
+Modify `frontend/app/api/og/` and `frontend/app/opengraph-image.tsx` / `twitter-image.tsx` to use "General Market" branding.
 
 **Step 4: Verify build + Commit**
 
 ```bash
-cd frontendV4 && bun run build
-git add frontendV4/
+cd frontend && bun run build
+git add frontend/
 git commit -m "feat(v4): rebrand to General Market — search/replace all references"
 ```
 
@@ -1004,7 +1004,7 @@ git commit -m "feat(v4): rebrand to General Market — search/replace all refere
 **Step 1: Start dev server**
 
 ```bash
-cd frontendV4 && bun run dev
+cd frontend && bun run dev
 ```
 
 **Step 2: Verify each tab visually**
@@ -1027,7 +1027,7 @@ Address broken layouts, missing colors, wrong fonts, etc.
 **Step 4: Final commit**
 
 ```bash
-git add frontendV4/
+git add frontend/
 git commit -m "fix(v4): visual polish and layout fixes"
 ```
 
