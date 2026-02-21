@@ -4,7 +4,6 @@
  * Based on:
  * - Morpho Blue (contracts/lib/morpho-blue/src/Morpho.sol)
  * - MetaMorpho (contracts/lib/metamorpho/src/MetaMorpho.sol)
- * - ITPNAVOracle (contracts/src/oracle/ITPNAVOracle.sol)
  */
 
 /**
@@ -232,76 +231,6 @@ export const MORPHO_ABI = [
 ] as const
 
 /**
- * ITP NAV Oracle ABI
- * Provides BLS-verified NAV prices for ITP collateral
- */
-export const ITP_NAV_ORACLE_ABI = [
-  // ============ Price Query (Morpho IOracle interface) ============
-  {
-    inputs: [],
-    name: 'price',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-
-  // ============ Oracle State ============
-  {
-    inputs: [],
-    name: 'currentPrice',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'lastUpdated',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'lastCycleNumber',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-
-  // ============ Constants ============
-  {
-    inputs: [],
-    name: 'PRICE_DECIMALS',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'MAX_STALENESS',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-
-  // ============ Immutables ============
-  {
-    inputs: [],
-    name: 'itpAddress',
-    outputs: [{ name: '', type: 'address' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'mirrorRegistry',
-    outputs: [{ name: '', type: 'address' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-] as const
-
-/**
  * MetaMorpho Vault ABI (ERC4626)
  * For USDC lenders to deposit and earn yield
  */
@@ -464,71 +393,3 @@ export const METAMORPHO_VAULT_ABI = [
   },
 ] as const
 
-/**
- * Adaptive Interest Rate Model ABI
- * For fetching current borrow rate
- */
-export const ADAPTIVE_IRM_ABI = [
-  {
-    inputs: [
-      {
-        name: 'marketParams',
-        type: 'tuple',
-        components: [
-          { name: 'loanToken', type: 'address' },
-          { name: 'collateralToken', type: 'address' },
-          { name: 'oracle', type: 'address' },
-          { name: 'irm', type: 'address' },
-          { name: 'lltv', type: 'uint256' },
-        ],
-      },
-      {
-        name: 'market',
-        type: 'tuple',
-        components: [
-          { name: 'totalSupplyAssets', type: 'uint128' },
-          { name: 'totalSupplyShares', type: 'uint128' },
-          { name: 'totalBorrowAssets', type: 'uint128' },
-          { name: 'totalBorrowShares', type: 'uint128' },
-          { name: 'lastUpdate', type: 'uint128' },
-          { name: 'fee', type: 'uint128' },
-        ],
-      },
-    ],
-    name: 'borrowRate',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        name: 'marketParams',
-        type: 'tuple',
-        components: [
-          { name: 'loanToken', type: 'address' },
-          { name: 'collateralToken', type: 'address' },
-          { name: 'oracle', type: 'address' },
-          { name: 'irm', type: 'address' },
-          { name: 'lltv', type: 'uint256' },
-        ],
-      },
-      {
-        name: 'market',
-        type: 'tuple',
-        components: [
-          { name: 'totalSupplyAssets', type: 'uint128' },
-          { name: 'totalSupplyShares', type: 'uint128' },
-          { name: 'totalBorrowAssets', type: 'uint128' },
-          { name: 'totalBorrowShares', type: 'uint128' },
-          { name: 'lastUpdate', type: 'uint128' },
-          { name: 'fee', type: 'uint128' },
-        ],
-      },
-    ],
-    name: 'borrowRateView',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-] as const

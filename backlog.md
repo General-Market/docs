@@ -1,5 +1,11 @@
 # Design Decision Backlog
 
+## Session: 20260221-2300-c14x
+
+- [DECISION] Task 14 cleanup: deleted 4 dead files — useFillDetails.ts, useOrderStatus.ts (only imported by useFillDetails), ActiveOrdersSection.tsx (merged into PortfolioSection), useSystemStatusSSE.ts (types inlined into useSSE.tsx, function never called)
+- [DECISION] Removed 4 dead ABI exports: MOCK_BITGET_VAULT_ABI, ISSUER_REGISTRY_ABI (index-protocol-abi.ts), ITP_NAV_ORACLE_ABI, ADAPTIVE_IRM_ABI (morpho-abi.ts) — verified zero imports via grep
+- [DECISION] Kept chain reads in: PortfolioSection (orders tab reads nextOrderId/getOrder), BuyItpModal/SellItpModal (getBlock for deadline, write-path ABIs), ItpListing (getLogs for ItpCreated event lookup, useReadContract for nonces/counts/resolvedArbAddress), APBalanceCard (AP collateral balance), VaultDeposit (USDC balance for lending), MarketsTable (ITP token name/symbol), useItpMetadata (contract metadata), useMetaMorphoVault/useNonceCheck/useItpFees (deliberately kept with TODOs)
+
 ## Session: 20260221-2230-t13m
 
 - [DECISION] ItpListing: replaced heavy getItpCount + getITP loop + bridge getPendingCreation loop + getLogs(ItpCreated) + totalSupply reads with SSE useSSENav(). NavSnapshot[] provides itp_id, nav_per_share, total_supply, aum_usd. ITP names derived from ITP number (ITP #N) since SSE doesn't carry name/symbol/creator metadata — per-card useItpMetadata hook fills in richer details.

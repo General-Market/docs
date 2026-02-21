@@ -12,10 +12,49 @@ import {
 } from 'react'
 import { DATA_NODE_URL } from '@/lib/config'
 
-// Re-export SystemSnapshot from the existing SSE hook so consumers can import
-// all SSE-related types from a single module.
-export type { SystemSnapshot } from '@/hooks/useSystemStatusSSE'
-import type { SystemSnapshot } from '@/hooks/useSystemStatusSSE'
+// ── System status types (previously in useSystemStatusSSE.ts) ──
+
+export interface IssuerNodeSSE {
+  id: number
+  addr: string
+  ip: string
+  bls_pubkey_short: string
+  status: number
+  registered_at: number
+}
+
+export interface RecentOrderSSE {
+  order_id: number
+  user: string
+  itp_id: string
+  side: number
+  amount: string
+  block_number: number
+  block_timestamp: number
+  status: 'pending' | 'filled'
+  fill_time_seconds: number | null
+  fill_cycle: number | null
+}
+
+export interface VaultAssetSSE {
+  symbol: string
+  usd_value: number
+}
+
+export interface SystemSnapshot {
+  is_healthy: boolean
+  active_issuers: number
+  total_issuers: number
+  total_orders: number
+  last_cycle_number: number
+  pending_orders: number
+  l3_block_number: number
+  avg_fill_time_seconds: number
+  nodes: IssuerNodeSSE[]
+  recent_orders: RecentOrderSSE[]
+  vault_assets: VaultAssetSSE[]
+  vault_usd_total: number
+}
 
 // ── Type definitions matching data-node chain_cache.rs ──
 
