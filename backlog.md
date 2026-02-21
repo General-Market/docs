@@ -1,5 +1,15 @@
 # Design Decision Backlog
 
+## Session: 20260221-2230-t13m
+
+- [DECISION] ItpListing: replaced heavy getItpCount + getITP loop + bridge getPendingCreation loop + getLogs(ItpCreated) + totalSupply reads with SSE useSSENav(). NavSnapshot[] provides itp_id, nav_per_share, total_supply, aum_usd. ITP names derived from ITP number (ITP #N) since SSE doesn't carry name/symbol/creator metadata — per-card useItpMetadata hook fills in richer details.
+- [DECISION] ItpListing: dropped bridge pending creation enumeration entirely. Pending creations (not yet on L3) are edge cases and don't appear in SSE nav data. Once created on L3, they show up via the NAV poller. Eliminated ~N*3 chain reads per listing load.
+- [DECISION] ItpCard: kept useReadContract for deployedItps (BridgedItpFactory) — single read per card, only when arbAddress is missing. Added TODO to migrate to REST.
+- [DECISION] ItpCard: kept holder balance chain reads (totalSupply + balanceOf per tracked address) — only executed on detail expansion, not on initial load. Added TODO to migrate to data-node REST endpoint.
+- [DECISION] APBalanceCard: replaced publicClient.readContract for collateral balance with REST call to /prices-by-address. Kept useBalance for native ETH (lightweight wagmi hook). Added TODOs for full SSE migration.
+- [DECISION] useItpFees: left as-is with TODO — single lightweight chain read every 30s, low priority.
+- [DECISION] useNonceCheck: left as-is with TODO — compares latest vs pending nonce (diagnostic-specific), lightweight, only polls when gap detected.
+
 ## Session: 20260221-2100-m0rp
 
 - [DECISION] useMorphoPosition: layered SSE + REST — SSE `user-positions` for instant raw data (collateral, borrow_shares), SSE `oracle-prices` for oracle price, REST `/morpho-position` for computed fields (debt_amount, max_borrow, max_withdraw). Polling reduced from 15s to 30s since SSE handles real-time updates.

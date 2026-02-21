@@ -44,6 +44,10 @@ interface UseItpFeesReturn {
 /**
  * Reads cumulative fees from FeeRegistry for an ITP.
  * Returns null if FeeRegistry is not deployed (E2E mode).
+ *
+ * TODO: Migrate to SSE or REST endpoint. This is a single lightweight chain read
+ * every 30s — low priority but should eventually move to the data-node to
+ * eliminate the last direct RPC dependency.
  */
 export function useItpFees(itpId: string | null): UseItpFeesReturn {
   const publicClient = usePublicClient()

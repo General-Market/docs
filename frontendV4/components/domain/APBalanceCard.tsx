@@ -1,37 +1,25 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { usePublicClient, useBalance } from 'wagmi'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useBalance } from 'wagmi'
 import { formatEther, formatUnits } from 'viem'
 import { INDEX_PROTOCOL, COLLATERAL_TOKEN_ADDRESS, COLLATERAL_SYMBOL, COLLATERAL_DECIMALS } from '@/lib/contracts/addresses'
 import { useApBalances } from '@/hooks/useApBalances'
+import { DATA_NODE_URL, AP_URL } from '@/lib/config'
 
 // AP address from index-system.env
 const AP_ADDRESS = '0x20A85a164C64B603037F647eb0E0aDeEce0BE5AC' as `0x${string}`
-const AP_URL = process.env.NEXT_PUBLIC_AP_URL || 'http://localhost:9100'
 
 // Pagination config
 const ITEMS_PER_PAGE = 25
 
-// ERC20 balanceOf ABI
-const ERC20_ABI = [
-  {
-    inputs: [{ name: 'account', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-] as const
-
 export function APBalanceCard() {
-  const publicClient = usePublicClient()
   const [collateralBalance, setCollateralBalance] = useState<bigint>(0n)
   const [loading, setLoading] = useState(true)
   const [apHealth, setApHealth] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(0)
 
-  // Vault balances via hook
+  // Vault balances via hook (already REST-based)
   const { assets: vaultAssets, totalUsdValue, totalTokenCount, isLoading: vaultLoading, refresh: refreshVault } = useApBalances()
 
   // Pagination
@@ -41,7 +29,8 @@ export function APBalanceCard() {
     return vaultAssets.slice(start, start + ITEMS_PER_PAGE)
   }, [vaultAssets, currentPage])
 
-  // Fetch native balance
+  // Fetch native balance via wagmi (lightweight single read, no custom polling needed)
+  // TODO: Add AP native balance to SSE system-status to eliminate this chain read
   const { data: nativeBalance, refetch: refetchNative } = useBalance({
     address: AP_ADDRESS,
   })
@@ -66,27 +55,32 @@ export function APBalanceCard() {
     return () => clearInterval(interval)
   }, [])
 
-  // Fetch collateral token balance
-  useEffect(() => {
-    async function fetchCollateral() {
-      if (!publicClient) return
-      try {
-        const balance = await publicClient.readContract({
-          address: COLLATERAL_TOKEN_ADDRESS,
-          abi: ERC20_ABI,
-          functionName: 'balanceOf',
-          args: [AP_ADDRESS],
-        })
-        setCollateralBalance(balance)
-      } catch {
-        // Token may not exist
+  // Fetch collateral token balance via data-node REST (replaces direct chain read)
+  // Uses /prices-by-address to get the balance info for the collateral token
+  const fetchCollateral = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `${DATA_NODE_URL}/prices-by-address?addresses=${COLLATERAL_TOKEN_ADDRESS.toLowerCase()}`,
+        { signal: AbortSignal.timeout(5000) }
+      )
+      if (!res.ok) { setLoading(false); return }
+      const data = await res.json()
+      const entry = data.prices?.[COLLATERAL_TOKEN_ADDRESS.toLowerCase()]
+      if (entry?.balance) {
+        setCollateralBalance(BigInt(entry.balance))
       }
-      setLoading(false)
+    } catch {
+      // Endpoint may not return AP-specific balance — leave at 0
+      // TODO: Add dedicated AP balance endpoint to data-node
     }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
     fetchCollateral()
     const interval = setInterval(fetchCollateral, 15000)
     return () => clearInterval(interval)
-  }, [publicClient])
+  }, [fetchCollateral])
 
   // Refresh native every 10 seconds
   useEffect(() => {

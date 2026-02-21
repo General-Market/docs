@@ -4,6 +4,11 @@
  * This hook compares the wallet's expected nonce with the on-chain nonce.
  * If they don't match, it means there are pending transactions that haven't been mined,
  * which will cause new transactions to get stuck.
+ *
+ * TODO: The SSE stream includes itp_nonce in UserBalances, but this hook compares
+ * latest vs pending nonce to detect stuck transactions — a diagnostic that requires
+ * both blockTags. This is a lightweight check (only polls every 5s when a gap is
+ * detected). Leave as direct chain read for now.
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react'
