@@ -1,5 +1,22 @@
 # Design Decision Backlog
 
+## Session: 20260221-1530-f8k2 (Security Audit Fixes)
+
+- [DECISION] H1+H3: Combined fix in SELL branch of _processFill. H3: totalSupply decremented by fill.fillAmount instead of order.amount. H1: Added vault.burn() mirroring BUY branch mint.
+- [DECISION] H2: All 3 refund paths (cancelStalePendingOrders, refundExpiredOrder, refundTimedOutBatchedOrder) now check order.side — BUY gets USDC, SELL gets shares restored.
+- [DECISION] H5: CollateralVault.setKeeperRegistry gains owner check, one-time guard removed so owner can update.
+- [DECISION] H6: Added withdrawReversedFunds() to L3BridgeCustody — BLS-verified recovery since PendingLock has no sender field. Zeroes amount to prevent double withdrawal.
+- [DECISION] H7: removeIssuerByVote implemented using BLSLib.verifyBLS directly (no BLSVerifier inheritance needed — IssuerRegistry already stores _aggregatedPubkey).
+- [DECISION] Pre-existing: Fixed BridgeProxy.sol IInvestment->IIndex rename, added quoteTokens param to Index.rebalance to match RebalanceLib signature.
+- [DECISION] H8+H9: Issuer arb RPC/chain ID return Result instead of defaulting to mainnet. Callers in bootstrap gracefully return None with warning.
+- [DECISION] H13: CrossChainOrchestratorConfig gets src_chain_id field, wired from effective_arbitrum_chain_id().
+- [DECISION] H15+H16: AP arb RPC/chain ID return Result instead of falling back to L3 values.
+- [DECISION] H18: AP index_contract zero address changed from warn to hard startup error.
+- [DECISION] H23: order_id_map persisted to data/order_id_map.json with serde_json, loaded on startup.
+- [DECISION] H24: cycle_number passed as parameter through APClient trait instead of hardcoded zero.
+- [DECISION] H31: Removed TRACKED_HOLDERS array and Minted Balances UI from ItpListing — hardcoded test accounts don't belong in production.
+- [DECISION] H30: morphoBundler falls back to empty string, useBundlerExec throws explicitly instead of silently using Morpho core address.
+
 ## Session: 20260221-2330-s3au
 
 - [DECISION] H10: TLS now loads from config paths (ISSUER_TLS_CERT_PATH/KEY/CA) in else branch instead of silently falling through to None. Hard error if paths configured but files invalid.
