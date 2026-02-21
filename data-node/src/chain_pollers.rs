@@ -56,6 +56,13 @@ abigen!(
 );
 
 abigen!(
+    IrmReader,
+    r#"[
+        function rates(bytes32 marketId) external view returns (uint256)
+    ]"#
+);
+
+abigen!(
     EventScanner,
     r#"[
         event OrderSubmitted(uint256 indexed orderId, address indexed user, bytes32 indexed itpId, bytes32 pairId, uint8 side, uint256 amount, uint256 limitPrice, uint256 slippageTier, uint256 deadline)
@@ -130,11 +137,35 @@ async fn poll_oracle_once(state: &AppState) -> Result<(), Box<dyn std::error::Er
     let updated = reader.last_updated().call().await?;
     let cycle = reader.last_cycle_number().call().await?;
 
+    // Read borrow rate from CuratorRateIRM (falls back to "0" if not deployed)
+    let irm_addr_str = state.morpho_deployment["contracts"].get("CURATOR_RATE_IRM")
+        .or_else(|| state.morpho_deployment["contracts"].get("ADAPTIVE_IRM"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("0x0000000000000000000000000000000000000000");
+    let irm_addr: Address = irm_addr_str.parse().unwrap_or_default();
+
+    let market_id_str = state.morpho_deployment["contracts"]["MARKET_ID"]
+        .as_str()
+        .unwrap_or("0x0000000000000000000000000000000000000000000000000000000000000000");
+    let market_id_hex = market_id_str.strip_prefix("0x").unwrap_or(market_id_str);
+    let market_id_bytes = hex::decode(market_id_hex).unwrap_or_else(|_| vec![0u8; 32]);
+    let mut market_id_arr = [0u8; 32];
+    let len = market_id_bytes.len().min(32);
+    market_id_arr[..len].copy_from_slice(&market_id_bytes[..len]);
+
+    let borrow_rate_ray = if irm_addr != Address::zero() {
+        let irm = IrmReader::new(irm_addr, Arc::clone(&state.arb_provider));
+        irm.rates(market_id_arr).call().await.unwrap_or_default().to_string()
+    } else {
+        "0".to_string()
+    };
+
     let mut oracle = state.chain_cache.oracle.write().await;
     *oracle = crate::chain_cache::OracleSnapshot {
         price: price.to_string(),
         last_updated: updated.as_u64(),
         last_cycle: cycle.as_u64(),
+        borrow_rate_ray,
     };
     state.chain_cache.oracle_gen.bump();
     Ok(())

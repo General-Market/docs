@@ -29,6 +29,7 @@ pub struct OracleSnapshot {
     pub price: String,
     pub last_updated: u64,
     pub last_cycle: u64,
+    pub borrow_rate_ray: String,
 }
 
 // ── Per-user data ──
