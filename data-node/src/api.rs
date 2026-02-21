@@ -144,6 +144,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/admin/truncate/:table", axum::routing::post(admin_truncate))
         .route("/admin/reset-session", axum::routing::post(admin_reset_session))
         .route("/sse/system-status", get(sse_system_status))
+        .route("/sse/stream", get(sse_stream))
         .layer(cors)
         .with_state(state)
 }
@@ -4702,4 +4703,136 @@ fn empty_snapshot() -> SystemSnapshot {
         vault_assets: vec![],
         vault_usd_total: 0.0,
     }
+}
+
+// ---- SSE /sse/stream (multiplexed) ----
+
+#[derive(Deserialize)]
+struct StreamQuery {
+    topics: String,           // comma-separated: "system,nav,balances,orders"
+    address: Option<String>,  // required for user topics
+}
+
+async fn sse_stream(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<StreamQuery>,
+) -> Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>> {
+    let topics: Vec<String> = params.topics.split(',').map(|s| s.trim().to_string()).collect();
+    let address = params.address.map(|a| a.to_lowercase());
+
+    // Register user in cache if address-dependent topics requested
+    let user_cache = if let Some(ref addr) = address {
+        let has_user_topic = topics.iter().any(|t|
+            matches!(t.as_str(), "balances" | "allowances" | "orders" | "positions" | "cost-basis")
+        );
+        if has_user_topic {
+            Some(state.chain_cache.get_or_create_user(addr).await)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    let (tx, rx) = tokio::sync::mpsc::channel::<Result<Event, std::convert::Infallible>>(16);
+
+    tokio::spawn(async move {
+        // Track last-sent generation per topic
+        let mut last_nav_gen: u64 = 0;
+        let mut last_oracle_gen: u64 = 0;
+        let mut last_bal_gen: u64 = 0;
+        let mut last_allow_gen: u64 = 0;
+        let mut last_orders_gen: u64 = 0;
+        let mut last_pos_gen: u64 = 0;
+        let mut last_cb_gen: u64 = 0;
+        let mut last_system_send = std::time::Instant::now();
+
+        loop {
+            let cache = &state.chain_cache;
+
+            // Global topics
+            if topics.contains(&"nav".to_string()) {
+                let gen = cache.nav_gen.get();
+                if gen != last_nav_gen {
+                    let data = cache.nav.read().await;
+                    let json = serde_json::to_string(&*data).unwrap_or_default();
+                    if tx.send(Ok(Event::default().event("itp-nav").data(json))).await.is_err() { break; }
+                    last_nav_gen = gen;
+                }
+            }
+
+            if topics.contains(&"oracle".to_string()) {
+                let gen = cache.oracle_gen.get();
+                if gen != last_oracle_gen {
+                    let data = cache.oracle.read().await;
+                    let json = serde_json::to_string(&*data).unwrap_or_default();
+                    if tx.send(Ok(Event::default().event("oracle-prices").data(json))).await.is_err() { break; }
+                    last_oracle_gen = gen;
+                }
+            }
+
+            if topics.contains(&"system".to_string()) && last_system_send.elapsed() >= Duration::from_secs(2) {
+                let snapshot = build_system_snapshot(&state).await;
+                let json = serde_json::to_string(&snapshot).unwrap_or_default();
+                if tx.send(Ok(Event::default().event("system-status").data(json))).await.is_err() { break; }
+                last_system_send = std::time::Instant::now();
+            }
+
+            // User topics — only if we have a user cache
+            if let Some(ref uc) = user_cache {
+                let u = uc.read().await;
+
+                if topics.contains(&"balances".to_string()) {
+                    let gen = u.balances_gen.get();
+                    if gen != last_bal_gen {
+                        let json = serde_json::to_string(&u.balances).unwrap_or_default();
+                        if tx.send(Ok(Event::default().event("user-balances").data(json))).await.is_err() { break; }
+                        last_bal_gen = gen;
+                    }
+                }
+
+                if topics.contains(&"allowances".to_string()) {
+                    let gen = u.allowances_gen.get();
+                    if gen != last_allow_gen {
+                        let json = serde_json::to_string(&u.allowances).unwrap_or_default();
+                        if tx.send(Ok(Event::default().event("user-allowances").data(json))).await.is_err() { break; }
+                        last_allow_gen = gen;
+                    }
+                }
+
+                if topics.contains(&"orders".to_string()) {
+                    let gen = u.orders_gen.get();
+                    if gen != last_orders_gen {
+                        let json = serde_json::to_string(&u.orders).unwrap_or_default();
+                        if tx.send(Ok(Event::default().event("user-orders").data(json))).await.is_err() { break; }
+                        last_orders_gen = gen;
+                    }
+                }
+
+                if topics.contains(&"positions".to_string()) {
+                    let gen = u.positions_gen.get();
+                    if gen != last_pos_gen {
+                        let json = serde_json::to_string(&u.positions).unwrap_or_default();
+                        if tx.send(Ok(Event::default().event("user-positions").data(json))).await.is_err() { break; }
+                        last_pos_gen = gen;
+                    }
+                }
+
+                if topics.contains(&"cost-basis".to_string()) {
+                    let gen = u.cost_basis_gen.get();
+                    if gen != last_cb_gen {
+                        let json = serde_json::to_string(&u.cost_basis).unwrap_or_default();
+                        if tx.send(Ok(Event::default().event("user-cost-basis").data(json))).await.is_err() { break; }
+                        last_cb_gen = gen;
+                    }
+                }
+            }
+
+            // Dispatch loop: 250ms tick
+            tokio::time::sleep(Duration::from_millis(250)).await;
+        }
+    });
+
+    Sse::new(ReceiverStream::new(rx))
+        .keep_alive(axum::response::sse::KeepAlive::default())
 }
