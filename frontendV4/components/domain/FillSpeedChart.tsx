@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-// TODO: re-enable when /fill-speed endpoint is available
-// import { DATA_NODE_URL } from '@/lib/config'
+import { DATA_NODE_URL } from '@/lib/config'
 import {
   AreaChart,
   Area,
@@ -24,30 +23,25 @@ interface OrderDataPoint {
   fillTime?: number // seconds
 }
 
-// TODO: re-enable when /fill-speed endpoint is available
-// interface TradeEntry {
-//   order_id: number
-//   itp_id: string
-//   side: string
-//   amount: string
-//   fill_price: string | null
-//   shares: string | null
-//   status: string
-//   timestamp: string
-// }
+interface FillSpeedEntry {
+  order_id: number
+  side: number
+  amount: string
+  submit_time: string
+  fill_time: string | null
+  fill_latency_secs: number | null
+  fill_price: string | null
+  fill_amount: string | null
+}
 
 /**
- * Displays order flow chart using data-node REST endpoint.
+ * Displays order flow chart using the /fill-speed data-node endpoint.
  *
  * Previously this scanned ALL OrderSubmitted + FillConfirmed events via getLogs
  * from block 0 every 5 seconds -- extremely heavy on-chain read.
  *
- * Now fetches from /portfolio/trades. Since the current endpoint is per-user
- * and doesn't expose fill timestamps, we show order amounts over time but
- * cannot compute fill latency yet.
- *
- * TODO: Add a dedicated /fill-speed endpoint to the data-node that returns
- * global fill latency data (submit_timestamp, fill_timestamp per order).
+ * Now fetches from /fill-speed which returns global order flow data with
+ * submit + fill timestamps, enabling fill latency computation.
  */
 export function FillSpeedChart() {
   const [data, setData] = useState<OrderDataPoint[]>([])
@@ -57,14 +51,31 @@ export function FillSpeedChart() {
 
   const fetchData = useCallback(async () => {
     try {
-      // TODO: Replace with a dedicated /fill-speed endpoint that returns
-      // global order flow data with submit + fill timestamps.
-      // The current /portfolio/trades endpoint is per-user and doesn't
-      // expose the fill timestamps needed to compute fill latency.
-      // For now, we use an empty dataset to eliminate the heavy getLogs scan.
-      const points: OrderDataPoint[] = []
+      const res = await fetch(`${DATA_NODE_URL}/fill-speed`)
+      if (!res.ok) throw new Error(`Fill-speed fetch failed: ${res.status}`)
+      const entries: FillSpeedEntry[] = await res.json()
+
+      const points: OrderDataPoint[] = entries.map((e) => {
+        const unixTime = Math.floor(new Date(e.submit_time).getTime() / 1000)
+        return {
+          time: unixTime,
+          timeLabel: formatTime(unixTime),
+          buyAmount: e.side === 0 ? parseFloat(e.amount) / 1e6 : null,
+          sellAmount: e.side === 1 ? parseFloat(e.amount) / 1e18 : null,
+          orderId: e.order_id,
+          filled: e.fill_time !== null,
+          fillTime: e.fill_latency_secs ?? undefined,
+        }
+      })
+
+      const filledPoints = points.filter((p) => p.fillTime !== undefined)
+      const avg =
+        filledPoints.length > 0
+          ? filledPoints.reduce((sum, p) => sum + p.fillTime!, 0) / filledPoints.length
+          : 0
+
       setData(points)
-      setAvgFillTime(0)
+      setAvgFillTime(avg)
       setError(null)
     } catch (e: any) {
       setError(e.message || 'Failed to fetch data')
@@ -135,7 +146,7 @@ export function FillSpeedChart() {
         </div>
       ) : data.length === 0 ? (
         <div className="h-64 flex items-center justify-center text-text-secondary">
-          No order data yet. Awaiting fill-speed endpoint.
+          No order data yet.
         </div>
       ) : (
         <div className="h-64">
@@ -262,7 +273,6 @@ export function FillSpeedChart() {
   )
 }
 
-// TODO: re-enable when /fill-speed endpoint populates data
 function formatTime(unixTimestamp: number): string {
   const d = new Date(unixTimestamp * 1000)
   return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
