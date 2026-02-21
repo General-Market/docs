@@ -30,7 +30,10 @@
 
 use common::types::{LimitOrder, Side};
 use ethers::types::{Address, H256, I256, U256};
+use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
+use tokio::sync::RwLock;
 
 /// Well-known USDT addresses on various chains
 pub mod usdt_addresses {
@@ -324,7 +327,7 @@ pub fn usdt_netting(
 /// # Returns
 ///
 /// `UsdtNettingResult` with net flows or market-rate swaps if depegged
-pub fn usdt_netting_with_registry<R: PairQuoteLookup>(
+pub fn usdt_netting_with_registry<R: PairQuoteLookup + ?Sized>(
     orders: &[LimitOrder],
     usdc_usdt_rate: f64,
     depeg_state: &mut DepegState,
@@ -384,7 +387,7 @@ pub fn usdt_netting_with_registry<R: PairQuoteLookup>(
 ///
 /// 1. If registry provided: lookup pair and check if quoteToken is USDT
 /// 2. Fallback (dev/test): first byte >= 0x80 means USDT (placeholder heuristic)
-fn is_usdt_pair<R: PairQuoteLookup>(pair_id: H256, registry: Option<&R>) -> bool {
+fn is_usdt_pair<R: PairQuoteLookup + ?Sized>(pair_id: H256, registry: Option<&R>) -> bool {
     // Try registry lookup first
     if let Some(reg) = registry {
         if let Some(quote_token) = reg.get_quote_token(pair_id) {
@@ -427,7 +430,7 @@ fn calculate_net_flows(orders: &[LimitOrder]) -> (I256, I256) {
 ///
 /// * `orders` - Orders to analyze
 /// * `registry` - Optional pair registry for production lookup
-fn calculate_net_flows_with_registry<R: PairQuoteLookup>(
+fn calculate_net_flows_with_registry<R: PairQuoteLookup + ?Sized>(
     orders: &[LimitOrder],
     registry: Option<&R>,
 ) -> (I256, I256) {
@@ -459,7 +462,7 @@ fn extract_stablecoin_swaps(orders: &[LimitOrder]) -> Vec<StablecoinSwap> {
 }
 
 /// Extract stablecoin swaps from orders with optional registry lookup
-fn extract_stablecoin_swaps_with_registry<R: PairQuoteLookup>(
+fn extract_stablecoin_swaps_with_registry<R: PairQuoteLookup + ?Sized>(
     orders: &[LimitOrder],
     registry: Option<&R>,
 ) -> Vec<StablecoinSwap> {
@@ -478,6 +481,103 @@ fn extract_stablecoin_swaps_with_registry<R: PairQuoteLookup>(
             }
         })
         .collect()
+}
+
+// ============ ChainPairRegistry ============
+
+/// On-chain pair registry reader that caches pair→quoteToken mappings.
+///
+/// Reads from AssetPairRegistry contract (`getActivePairs()` + `getPair(pairId)`).
+/// Cache is populated via `refresh()` at startup and periodically.
+/// Implements `PairQuoteLookup` for synchronous cache reads.
+pub struct ChainPairRegistry {
+    /// pairId → quoteToken address
+    cache: Arc<RwLock<HashMap<H256, Address>>>,
+    /// RPC provider
+    provider: Arc<ethers::providers::Provider<ethers::providers::Http>>,
+    /// AssetPairRegistry contract address
+    registry_address: Address,
+}
+
+ethers::contract::abigen!(
+    AssetPairRegistryReader,
+    r#"[
+        function getActivePairs() external view returns (bytes32[] memory)
+        function getPair(bytes32 pairId) external view returns (address asset, bytes32 source, address quoteToken, uint256 chainId, uint8 status, uint256 proposedAt, uint256 activatedAt)
+    ]"#
+);
+
+impl ChainPairRegistry {
+    pub fn new(
+        provider: Arc<ethers::providers::Provider<ethers::providers::Http>>,
+        registry_address: Address,
+    ) -> Self {
+        Self {
+            cache: Arc::new(RwLock::new(HashMap::new())),
+            provider,
+            registry_address,
+        }
+    }
+
+    /// Refresh cache by reading all active pairs from on-chain registry.
+    /// Returns the number of pairs loaded.
+    pub async fn refresh(&self) -> Result<usize, Box<dyn std::error::Error + Send + Sync>> {
+        let contract = AssetPairRegistryReader::new(
+            self.registry_address,
+            self.provider.clone(),
+        );
+
+        let active_pair_ids = contract.get_active_pairs().call().await?;
+        let mut new_cache = HashMap::with_capacity(active_pair_ids.len());
+
+        for pair_id in &active_pair_ids {
+            match contract.get_pair(*pair_id).call().await {
+                Ok((_asset, _source, quote_token, _chain_id, _status, _proposed_at, _activated_at)) => {
+                    // Store as H256 key
+                    let key = H256::from(pair_id.clone());
+                    new_cache.insert(key, quote_token);
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        pair_id = ?pair_id,
+                        error = %e,
+                        "Failed to fetch pair info, skipping"
+                    );
+                }
+            }
+        }
+
+        let count = new_cache.len();
+        let mut cache = self.cache.write().await;
+        *cache = new_cache;
+
+        tracing::info!(
+            pair_count = count,
+            registry = ?self.registry_address,
+            "ChainPairRegistry refreshed"
+        );
+
+        Ok(count)
+    }
+
+    /// Get the inner cache arc for spawning periodic refresh tasks.
+    pub fn cache_arc(&self) -> Arc<RwLock<HashMap<H256, Address>>> {
+        self.cache.clone()
+    }
+}
+
+impl PairQuoteLookup for ChainPairRegistry {
+    fn get_quote_token(&self, pair_id: H256) -> Option<Address> {
+        // Synchronous read via try_read — non-blocking
+        match self.cache.try_read() {
+            Ok(cache) => cache.get(&pair_id).copied(),
+            Err(_) => {
+                // Cache is being refreshed, return None to trigger heuristic fallback
+                tracing::debug!(pair_id = ?pair_id, "ChainPairRegistry cache locked during refresh");
+                None
+            }
+        }
+    }
 }
 
 #[cfg(test)]

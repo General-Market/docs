@@ -58,8 +58,8 @@ pub use rebalance::{
 pub use asset_decompose::{decompose_and_net_orders, decompose_and_net_orders_checked, DecompositionResult, ItpDecompState, ZeroNavOrder};
 pub use types::MergedOrder;
 pub use usdt::{
-    usdt_addresses, usdt_netting, usdt_netting_with_registry, DepegState, NoPairRegistry,
-    PairQuoteLookup, UsdtNettingResult,
+    usdt_addresses, usdt_netting, usdt_netting_with_registry, ChainPairRegistry, DepegState,
+    NoPairRegistry, PairQuoteLookup, UsdtNettingResult,
 };
 
 use crate::slippage::filter_merged_order;
@@ -68,20 +68,46 @@ use common::types::LimitOrder;
 use ethers::types::{H256, U256};
 use rust_decimal::Decimal;
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Instant;
 
 /// Main Netting Engine that orchestrates all netting operations
-#[derive(Debug, Default)]
 pub struct NettingEngine {
     /// Current depeg state for USDT netting
     depeg_state: DepegState,
+    /// Pair registry for USDT/USDC quote token lookup
+    pair_registry: Arc<dyn PairQuoteLookup>,
+}
+
+impl Default for NettingEngine {
+    fn default() -> Self {
+        Self {
+            depeg_state: DepegState::default(),
+            pair_registry: Arc::new(NoPairRegistry),
+        }
+    }
+}
+
+impl std::fmt::Debug for NettingEngine {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("NettingEngine")
+            .field("depeg_state", &self.depeg_state)
+            .field("pair_registry", &"<dyn PairQuoteLookup>")
+            .finish()
+    }
 }
 
 impl NettingEngine {
-    /// Create a new NettingEngine instance
+    /// Create a new NettingEngine instance (uses NoPairRegistry heuristic fallback)
     pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Create a NettingEngine with an on-chain pair registry
+    pub fn with_registry(pair_registry: Arc<dyn PairQuoteLookup>) -> Self {
         Self {
             depeg_state: DepegState::default(),
+            pair_registry,
         }
     }
 
@@ -151,7 +177,7 @@ impl NettingEngine {
     ) -> NettingResult {
         // Step 1: USDT netting (net stablecoin swaps, respecting depeg)
         // Run first since it needs reference to orders
-        let usdt_result = usdt_netting(&orders, usdc_usdt_rate, &mut self.depeg_state);
+        let usdt_result = usdt_netting_with_registry(&orders, usdc_usdt_rate, &mut self.depeg_state, &*self.pair_registry);
 
         // Step 2: Fee allocation (before consuming orders)
         let fee_allocations = if !orders.is_empty() && !total_fee.is_zero() {
@@ -278,7 +304,7 @@ impl NettingEngine {
         );
 
         // Step 1: USDT netting (net stablecoin swaps, respecting depeg)
-        let usdt_result = usdt_netting(&orders, usdc_usdt_rate, &mut self.depeg_state);
+        let usdt_result = usdt_netting_with_registry(&orders, usdc_usdt_rate, &mut self.depeg_state, &*self.pair_registry);
 
         // Step 2: Fee allocation (before consuming orders)
         let fee_allocations = if !orders.is_empty() && !total_fee.is_zero() {
@@ -349,7 +375,7 @@ impl NettingEngine {
 
         // Step 1: USDT netting
         let t = Instant::now();
-        let usdt_result = usdt_netting(&orders, usdc_usdt_rate, &mut self.depeg_state);
+        let usdt_result = usdt_netting_with_registry(&orders, usdc_usdt_rate, &mut self.depeg_state, &*self.pair_registry);
         metrics.usdt_netting_ms = t.elapsed().as_millis() as u64;
 
         // Step 2: Fee allocation

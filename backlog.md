@@ -1,5 +1,12 @@
 # Design Decision Backlog
 
+## Session: 20260221-1700-b2b3
+
+- [DECISION] B2: Removed MockNavCalculator fallback — data-node-url is now required when NAV API is enabled. Panic with descriptive message instead of silent mock.
+- [DECISION] B3: Created ChainPairRegistry in netting/usdt.rs — reads AssetPairRegistry on-chain (getActivePairs + getPair), caches pairId→quoteToken in RwLock<HashMap>. Implements PairQuoteLookup with non-blocking try_read() for sync access.
+- [DECISION] B3: NettingEngine now holds Arc<dyn PairQuoteLookup>, defaults to NoPairRegistry for backward compat. All three usdt_netting() calls switched to usdt_netting_with_registry(). Added ?Sized bounds on generic functions to support trait objects.
+- [DECISION] B3: AssetPairRegistry not deployed by DeployFullSystemE2E.s.sol (only DeployL3.s.sol). ChainPairRegistry gracefully degrades — refresh() fails, cache stays empty, is_usdt_pair falls back to heuristic.
+
 ## Session: 20260221-1600-qt0x
 
 - [DECISION] Propagated quoteTokens through entire rebalance pipeline: RebalanceLib.sol → Investment.sol → IInvestment.sol → BridgeProxy.sol → IBridgeProxy.sol (Solidity) and types.rs → orchestrator.rs → p2p.rs → messages.rs → protocol.rs → main.rs (Rust). BLS hash now includes quoteTokens for rebalance consensus.

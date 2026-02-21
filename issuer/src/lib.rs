@@ -37,10 +37,10 @@ pub use netting::{
     allocate_rebalance_fills, bridge_netting, calculate_net_deltas, compute_rebalance_progress,
     fee_allocation, finalize_rebalance, generate_rebalance_trades, pair_netting, usdt_netting,
     BridgeRequest, DepegState, FeeAllocation, FeeType, InternalTransfer, MergedOrder,
-    NettedBridgeTransfers, NettingEngine, NettingPipelineMetrics, NettingResult,
+    ChainPairRegistry, NettedBridgeTransfers, NettingEngine, NettingPipelineMetrics, NettingResult,
     NettingResultWithRebalance, NetDeltaResult, PrioritySlots, RebalanceCompleteData,
     RebalanceFillAllocation, RebalanceProposal, RebalanceQueue, RebalanceTrade,
-    UsdtNettingResult, ZeroNavOrder,
+    PairQuoteLookup, UsdtNettingResult, ZeroNavOrder,
 };
 pub use price::{
     tolerance, BackendPriceFetcher, BatchRejectReason, BatchValidationResult, BitgetPriceFetcher,

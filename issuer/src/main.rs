@@ -8,7 +8,7 @@ use issuer::bridge::Fill;
 use issuer::p2p::TcpP2PTransport;
 use issuer::{
     handle_nav_sign_request, BackendNavCalculator, ConfigBuilder, ConsensusResult,
-    MockNavCalculator, NavCalculator, NavSignHandler, PriceFetcher,
+    NavCalculator, NavSignHandler, PriceFetcher,
     RegistrySyncCache, RegistrySyncConfig, RegistrySyncHandler, StubItpRegistryReader,
     MIN_CYCLE_DURATION_MS,
 };
@@ -208,7 +208,7 @@ struct Args {
     asset_count: Option<u64>,
 
     /// Data-node backend URL (e.g., http://localhost:8200).
-    /// When set, NAV is fetched from the data-node service instead of MockNavCalculator.
+    /// Required when --api-enabled=true. NAV is fetched from data-node service.
     #[arg(long)]
     data_node_url: Option<String>,
 
@@ -810,13 +810,12 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     // Uses StubItpRegistryReader for now - in production, wire up EthersItpRegistryReader
     let nav_sign_handler: Option<Arc<IssuerNavSignHandler>> =
         if api_enabled && components.consensus.keys.bls_keypair.is_some() {
-            let nav_calculator: Box<dyn NavCalculator> = if let Some(ref url) = data_node_url {
-                info!(url = %url, itp_id = %itp_id, "Using BackendNavCalculator (data-node)");
-                Box::new(BackendNavCalculator::new(url.clone(), itp_id.clone()))
-            } else {
-                info!("Using MockNavCalculator (NAV = 1.0)");
-                Box::new(MockNavCalculator::one())
-            };
+            let url = data_node_url.as_ref().unwrap_or_else(|| {
+                panic!("--data-node-url is required when NAV API is enabled (--api-enabled=true)")
+            });
+            info!(url = %url, itp_id = %itp_id, "Using BackendNavCalculator (data-node)");
+            let nav_calculator: Box<dyn NavCalculator> =
+                Box::new(BackendNavCalculator::new(url.clone(), itp_id.clone()));
             let handler = NavSignHandler::new(
                 nav_calculator,
                 StubItpRegistryReader::new(),
