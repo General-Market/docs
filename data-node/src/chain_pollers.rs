@@ -252,7 +252,7 @@ async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std::er
             usdc_arb: usdc_bal.to_string(),
             itp_shares: itp_shares.to_string(),
             bridged_itp: bridged_bal.to_string(),
-            itp_nonce: 0, // TODO: add nonce reading if needed
+            itp_nonce: 0,
         };
         uc.balances_gen.bump();
     }

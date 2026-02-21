@@ -21,8 +21,7 @@ import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { indexL3 } from '@/lib/wagmi'
 import { useSSENav, type NavSnapshot } from '@/hooks/useSSE'
 
-// ERC20 ABI for balance queries — used by ItpCard detail expansion
-// TODO: Migrate holder balance reads to a data-node REST endpoint
+// ERC20 ABI for balance queries — used by ItpCard detail expansion (low priority migration)
 const ERC20_ABI = [
   {
     inputs: [{ name: 'account', type: 'address' }],
@@ -440,8 +439,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
   const shortenAddress = (addr: string) =>
     addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : 'N/A'
 
-  // Fetch minted balances when details are expanded and we have an arbAddress
-  // TODO: Migrate holder balance reads to a data-node REST endpoint
+  // Fetch minted balances when details are expanded (low priority migration to REST)
   useEffect(() => {
     // Skip if conditions not met
     if (!showDetails || !effectiveArbAddress) return
