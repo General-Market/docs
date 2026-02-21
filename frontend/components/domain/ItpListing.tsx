@@ -39,16 +39,6 @@ const ERC20_ABI = [
   },
 ] as const
 
-// Known addresses to track for minted balances
-const TRACKED_HOLDERS = [
-  { label: 'AP (Keeper)', address: '0x20A85a164C64B603037F647eb0E0aDeEce0BE5AC' as `0x${string}` },
-  { label: 'Deployer', address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' as `0x${string}` },
-  { label: 'User 1', address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' as `0x${string}` },
-  { label: 'User 2', address: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC' as `0x${string}` },
-  { label: 'Test User', address: '0xC0D3C3ba6c2215b0cBf4375f4c280c0cc6C43850' as `0x${string}` },
-  { label: 'MockBitgetVault', address: INDEX_PROTOCOL.mockBitgetVault as `0x${string}` },
-]
-
 interface ItpInfo {
   id: string
   itpId?: string
@@ -459,13 +449,6 @@ export function ItpListing({ onCreateClick, onLendingClick }: ItpListingProps) {
   )
 }
 
-interface TokenHolder {
-  address: `0x${string}`
-  label: string
-  balance: bigint
-  percentage: number
-}
-
 interface ItpCardProps {
   itp: ItpInfo
   onBuy: () => void
@@ -477,12 +460,7 @@ interface ItpCardProps {
 
 function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardProps) {
   const { address } = useAccount()
-  const publicClient = usePublicClient()
   const [showDetails, setShowDetails] = useState(false)
-  const [totalSupply, setTotalSupply] = useState<bigint>(0n)
-  const [holders, setHolders] = useState<TokenHolder[]>([])
-  const [loadingHolders, setLoadingHolders] = useState(false)
-  const [holderError, setHolderError] = useState(false)
   const [showEditMeta, setShowEditMeta] = useState(false)
   const [editDesc, setEditDesc] = useState('')
   const [editUrl, setEditUrl] = useState('')
@@ -557,90 +535,6 @@ function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardPr
 
   const shortenAddress = (addr: string) =>
     addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : 'N/A'
-
-  // Fetch minted balances when details are expanded and we have an arbAddress
-  useEffect(() => {
-    // Skip if conditions not met
-    if (!showDetails || !effectiveArbAddress) return
-
-    let cancelled = false
-
-    async function fetchHolders() {
-      // Ensure publicClient is ready
-      if (!publicClient) {
-        setHolderError(true)
-        return
-      }
-
-      setLoadingHolders(true)
-      setHolderError(false)
-
-      try {
-        const tokenAddr = effectiveArbAddress as `0x${string}`
-
-        // Get total supply with error handling
-        let supply: bigint
-        try {
-          supply = await publicClient.readContract({
-            address: tokenAddr,
-            abi: ERC20_ABI,
-            functionName: 'totalSupply',
-          })
-        } catch {
-          if (!cancelled) {
-            setHolderError(true)
-            setLoadingHolders(false)
-          }
-          return
-        }
-
-        if (cancelled) return
-        if (supply === 0n) {
-          setLoadingHolders(false)
-          return
-        }
-
-        setTotalSupply(supply)
-
-        // Get balances for tracked addresses
-        const holderData: TokenHolder[] = []
-        for (const tracked of TRACKED_HOLDERS) {
-          if (cancelled) return
-          try {
-            const balance = await publicClient.readContract({
-              address: tokenAddr,
-              abi: ERC20_ABI,
-              functionName: 'balanceOf',
-              args: [tracked.address],
-            })
-            if (balance > 0n) {
-              holderData.push({
-                address: tracked.address,
-                label: tracked.label,
-                balance,
-                percentage: supply > 0n ? Number((balance * 10000n) / supply) / 100 : 0,
-              })
-            }
-          } catch {
-            // Skip if can't read balance
-          }
-        }
-        if (!cancelled) {
-          setHolders(holderData.sort((a, b) => Number(b.balance - a.balance)))
-        }
-      } catch {
-        if (!cancelled) {
-          setHolderError(true)
-        }
-      }
-      if (!cancelled) {
-        setLoadingHolders(false)
-      }
-    }
-
-    fetchHolders()
-    return () => { cancelled = true }
-  }, [showDetails, publicClient, effectiveArbAddress])
 
   return (
     <div className="bg-terminal-dark border border-white/10 rounded-lg overflow-hidden hover:border-accent/50 transition-colors">
@@ -796,60 +690,6 @@ function ItpCard({ itp, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardPr
           {/* Cost Basis / Position */}
           {itp.itpId && isActive && (
             <CostBasisCard itpId={itp.itpId} />
-          )}
-
-          {/* Minted Balances Section */}
-          {effectiveArbAddress && (
-            <div className="bg-black/20 rounded p-3">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-xs text-white/60 font-bold">Minted Supply</span>
-                <span className="text-xs text-accent font-mono">
-                  {parseFloat(formatUnits(totalSupply, 18)).toFixed(4)} {itp.symbol}
-                </span>
-              </div>
-              {loadingHolders ? (
-                <div className="text-xs text-white/40 text-center py-2">Loading holders...</div>
-              ) : holderError ? (
-                <div className="text-xs text-white/40 text-center py-2">Unable to fetch holders</div>
-              ) : holders.length === 0 ? (
-                <div className="text-xs text-white/40 text-center py-2">No tracked holders</div>
-              ) : (
-                <div className="space-y-1">
-                  {holders.map(holder => (
-                    <div key={holder.address} className="flex justify-between items-center text-xs">
-                      <span className="text-white/70">{holder.label}</span>
-                      <div className="flex gap-2">
-                        <span className="text-white/50 font-mono">
-                          {parseFloat(formatUnits(holder.balance, 18)).toFixed(2)}
-                        </span>
-                        <span className="text-accent w-12 text-right">{holder.percentage.toFixed(1)}%</span>
-                      </div>
-                    </div>
-                  ))}
-                  {/* Unaccounted balance */}
-                  {(() => {
-                    const accountedBalance = holders.reduce((sum, h) => sum + h.balance, 0n)
-                    const unaccounted = totalSupply - accountedBalance
-                    if (unaccounted > 0n && totalSupply > 0n) {
-                      return (
-                        <div className="flex justify-between items-center text-xs pt-1 border-t border-white/10 mt-1">
-                          <span className="text-yellow-400">Other Holders</span>
-                          <div className="flex gap-2">
-                            <span className="text-yellow-400/70 font-mono">
-                              {parseFloat(formatUnits(unaccounted, 18)).toFixed(2)}
-                            </span>
-                            <span className="text-yellow-400 w-12 text-right">
-                              {(Number((unaccounted * 10000n) / totalSupply) / 100).toFixed(1)}%
-                            </span>
-                          </div>
-                        </div>
-                      )
-                    }
-                    return null
-                  })()}
-                </div>
-              )}
-            </div>
           )}
 
           {/* Technical Details */}

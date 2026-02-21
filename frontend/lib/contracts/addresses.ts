@@ -58,7 +58,7 @@ const activeNetwork: NetworkConfig = {
   chainName: 'Index L3',
   contracts: { agiArenaCore: CONTRACT_ADDRESS, resolutionDAO: RESOLUTION_CONTRACT_ADDRESS },
   collateralToken: { address: COLLATERAL_TOKEN_ADDRESS, symbol: COLLATERAL_SYMBOL, decimals: COLLATERAL_DECIMALS },
-  rpcUrl: process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8545',
+  rpcUrl: process.env.NEXT_PUBLIC_L3_RPC_URL || process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8545',
 }
 
 export function getActiveNetwork(): NetworkConfig { return activeNetwork }

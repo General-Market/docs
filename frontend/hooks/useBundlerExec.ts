@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
 import { useChainSendTransaction } from '@/hooks/useChainWrite'
+import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import type { QuoteResponse } from '@/lib/types/lending-quote'
 
 interface UseBundlerExecReturn {
@@ -48,6 +49,12 @@ export function useBundlerExec(): UseBundlerExecReturn {
 
   const execute = useCallback((quote: QuoteResponse) => {
     if (!address) return
+
+    // Guard: ensure Morpho bundler address is configured (not empty, not falling back to core Morpho)
+    const morphoBundler = MORPHO_ADDRESSES.morphoBundler
+    if (!morphoBundler || morphoBundler === '') {
+      throw new Error('Morpho bundler address not configured')
+    }
 
     sendTransaction({
       to: quote.bundler.to as `0x${string}`,
