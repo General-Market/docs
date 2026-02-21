@@ -7,4 +7,6 @@
 pub mod bitmap_store;
 pub mod config;
 pub mod multiplier;
+pub mod side_matching;
+pub mod tick_scheduler;
 pub mod types;
