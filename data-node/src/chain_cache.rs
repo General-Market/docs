@@ -103,6 +103,7 @@ pub struct UserCache {
     pub positions_gen: Generation,
     pub cost_basis: UserCostBasis,
     pub cost_basis_gen: Generation,
+    pub last_scanned_block: u64, // for incremental event scanning (cost basis)
 }
 
 pub struct ChainCache {

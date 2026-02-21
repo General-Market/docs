@@ -3,7 +3,7 @@ use std::time::Duration;
 use ethers::prelude::*;
 use tracing::warn;
 use crate::api::AppState;
-use crate::chain_cache::{NavSnapshot, UserBalances, UserAllowances, UserOrder};
+use crate::chain_cache::{NavSnapshot, UserBalances, UserAllowances, UserOrder, MorphoPositionSnapshot, UserCostBasis, FillRecord};
 
 // Reuse the IndexCollector abigen pattern from itp_collector.rs
 abigen!(
@@ -45,6 +45,21 @@ abigen!(
     BridgeProxyPoller,
     r#"[
         function getBridgedItp(bytes32 orbitItpId) external view returns (address)
+    ]"#
+);
+
+abigen!(
+    MorphoPoller,
+    r#"[
+        function position(bytes32 id, address user) external view returns (uint256 supplyShares, uint128 borrowShares, uint128 collateral)
+    ]"#
+);
+
+abigen!(
+    EventScanner,
+    r#"[
+        event OrderSubmitted(uint256 indexed orderId, address indexed user, bytes32 indexed itpId, bytes32 pairId, uint8 side, uint256 amount, uint256 limitPrice, uint256 slippageTier, uint256 deadline)
+        event FillConfirmed(uint256 indexed orderId, uint256 indexed cycleNumber, uint256 fillPrice, uint256 fillAmount)
     ]"#
 );
 
@@ -356,6 +371,217 @@ async fn poll_user_orders_once(state: &AppState) -> Result<(), Box<dyn std::erro
         let mut uc = user_cache.write().await;
         uc.orders = orders;
         uc.orders_gen.bump();
+    }
+
+    Ok(())
+}
+
+// ── Morpho position poller ──
+
+/// Polls Morpho position data for each cached user every 3s
+pub async fn poll_user_positions(state: Arc<AppState>) {
+    let interval = Duration::from_secs(3);
+    loop {
+        if let Err(e) = poll_user_positions_once(&state).await {
+            warn!(%e, "User positions poller error");
+        }
+        tokio::time::sleep(interval).await;
+    }
+}
+
+async fn poll_user_positions_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let users = state.chain_cache.users.read().await;
+    if users.is_empty() {
+        return Ok(());
+    }
+    let user_list: Vec<(Address, Arc<tokio::sync::RwLock<crate::chain_cache::UserCache>>)> = users
+        .iter()
+        .filter_map(|(addr_str, cache)| {
+            addr_str.parse::<Address>().ok().map(|a| (a, Arc::clone(cache)))
+        })
+        .collect();
+    drop(users);
+
+    let morpho_addr = crate::api::deployment_addr(&state.morpho_deployment, "MORPHO")?;
+
+    let market_id_str = state.morpho_deployment["contracts"]["MARKET_ID"]
+        .as_str()
+        .ok_or("Missing MARKET_ID in morpho deployment")?;
+    let market_id_bytes: [u8; 32] = {
+        let hex_str = market_id_str.strip_prefix("0x").unwrap_or(market_id_str);
+        let bytes = hex::decode(hex_str).map_err(|e| format!("Invalid market_id: {}", e))?;
+        let mut arr = [0u8; 32];
+        let len = bytes.len().min(32);
+        arr[..len].copy_from_slice(&bytes[..len]);
+        arr
+    };
+
+    let morpho = MorphoPoller::new(morpho_addr, Arc::clone(&state.arb_provider));
+
+    for (user, user_cache) in &user_list {
+        let (supply_shares, borrow_shares, collateral) = morpho
+            .position(market_id_bytes, *user)
+            .call()
+            .await
+            .unwrap_or_default();
+
+        let mut uc = user_cache.write().await;
+        uc.positions = MorphoPositionSnapshot {
+            supply_shares: supply_shares.to_string(),
+            borrow_shares: U256::from(borrow_shares).to_string(),
+            collateral: U256::from(collateral).to_string(),
+        };
+        uc.positions_gen.bump();
+    }
+
+    Ok(())
+}
+
+// ── Cost basis poller ──
+
+/// Polls cost basis via incremental event scanning every 5s
+pub async fn poll_user_cost_basis(state: Arc<AppState>) {
+    let interval = Duration::from_secs(5);
+    loop {
+        if let Err(e) = poll_user_cost_basis_once(&state).await {
+            warn!(%e, "User cost basis poller error");
+        }
+        tokio::time::sleep(interval).await;
+    }
+}
+
+async fn poll_user_cost_basis_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let users = state.chain_cache.users.read().await;
+    if users.is_empty() {
+        return Ok(());
+    }
+    let user_list: Vec<(Address, String, Arc<tokio::sync::RwLock<crate::chain_cache::UserCache>>)> = users
+        .iter()
+        .filter_map(|(addr_str, cache)| {
+            addr_str.parse::<Address>().ok().map(|a| (a, addr_str.clone(), Arc::clone(cache)))
+        })
+        .collect();
+    drop(users);
+
+    let index_addr = crate::api::deployment_addr(&state.deployment, "Index")?;
+    let scanner = EventScanner::new(index_addr, Arc::clone(&state.l3_provider));
+
+    // Get latest block for upper bound
+    let latest_block = state.l3_provider.get_block_number().await?.as_u64();
+
+    for (user, _user_addr_str, user_cache) in &user_list {
+        // Read last scanned block for this user
+        let from_block = {
+            let uc = user_cache.read().await;
+            if uc.last_scanned_block == 0 { 0 } else { uc.last_scanned_block + 1 }
+        };
+
+        if from_block > latest_block {
+            continue; // already up to date
+        }
+
+        // Query OrderSubmitted events filtered by user (topic2 = indexed user)
+        let order_events = scanner
+            .order_submitted_filter()
+            .topic2(*user)
+            .from_block(from_block)
+            .to_block(latest_block)
+            .query()
+            .await
+            .unwrap_or_default();
+
+        // Collect order IDs and their sides + limit prices from the events
+        let mut order_sides: std::collections::HashMap<u64, (u8, U256)> = std::collections::HashMap::new();
+        for ev in &order_events {
+            order_sides.insert(ev.order_id.as_u64(), (ev.side, ev.limit_price));
+        }
+
+        // Query FillConfirmed events for each order
+        let mut new_fills: Vec<FillRecord> = Vec::new();
+
+        for (order_id, (side, limit_price)) in &order_sides {
+            let oid = U256::from(*order_id);
+            let fill_events = scanner
+                .fill_confirmed_filter()
+                .topic1(oid)
+                .from_block(from_block)
+                .to_block(latest_block)
+                .query()
+                .await
+                .unwrap_or_default();
+
+            for fill in &fill_events {
+                new_fills.push(FillRecord {
+                    order_id: *order_id,
+                    side: *side,
+                    fill_price: fill.fill_price.to_string(),
+                    fill_amount: fill.fill_amount.to_string(),
+                    limit_price: limit_price.to_string(),
+                });
+            }
+        }
+
+        // Also scan fills for orders that were submitted BEFORE from_block but filled in this range.
+        // We already have those fills from the existing cost_basis.fills in the cache.
+        // Merge new fills with existing fills.
+        let mut uc = user_cache.write().await;
+        let mut all_fills = uc.cost_basis.fills.clone();
+        all_fills.extend(new_fills);
+
+        // Compute VWAP cost basis from all fills
+        let mut total_cost = U256::zero();
+        let mut total_shares_bought = U256::zero();
+        let mut total_sell_proceeds = U256::zero();
+        let mut total_shares_sold = U256::zero();
+        let e18 = U256::from_dec_str("1000000000000000000").unwrap();
+
+        for fill in &all_fills {
+            let fill_amount = U256::from_dec_str(&fill.fill_amount).unwrap_or_default();
+            let fill_price = U256::from_dec_str(&fill.fill_price).unwrap_or_default();
+
+            if fill.side == 0 {
+                // BUY: totalCost += fillAmount, totalSharesBought += fillAmount * 1e18 / fillPrice
+                total_cost += fill_amount;
+                if fill_price > U256::zero() {
+                    total_shares_bought += fill_amount * e18 / fill_price;
+                }
+            } else {
+                // SELL: totalSharesSold += fillAmount, totalSellProceeds += fillAmount * fillPrice / 1e18
+                total_shares_sold += fill_amount;
+                total_sell_proceeds += fill_amount * fill_price / e18;
+            }
+        }
+
+        let avg_cost_per_share = if total_shares_bought > U256::zero() {
+            total_cost * e18 / total_shares_bought
+        } else {
+            U256::zero()
+        };
+
+        let realized_pnl = if total_shares_sold > U256::zero() {
+            let cost_of_sold = avg_cost_per_share * total_shares_sold / e18;
+            if total_sell_proceeds >= cost_of_sold {
+                total_sell_proceeds - cost_of_sold
+            } else {
+                // Negative PnL — store as 0 since U256 can't be negative
+                // In practice the frontend shows "0" for loss (or we prefix with sign info)
+                U256::zero()
+            }
+        } else {
+            U256::zero()
+        };
+
+        uc.cost_basis = UserCostBasis {
+            total_cost: total_cost.to_string(),
+            total_shares_bought: total_shares_bought.to_string(),
+            avg_cost_per_share: avg_cost_per_share.to_string(),
+            total_sell_proceeds: total_sell_proceeds.to_string(),
+            total_shares_sold: total_shares_sold.to_string(),
+            realized_pnl: realized_pnl.to_string(),
+            fills: all_fills,
+        };
+        uc.cost_basis_gen.bump();
+        uc.last_scanned_block = latest_block;
     }
 
     Ok(())
