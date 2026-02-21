@@ -1,5 +1,12 @@
 # Design Decision Backlog
 
+## Session: 20260221-2100-m0rp
+
+- [DECISION] useMorphoPosition: layered SSE + REST — SSE `user-positions` for instant raw data (collateral, borrow_shares), SSE `oracle-prices` for oracle price, REST `/morpho-position` for computed fields (debt_amount, max_borrow, max_withdraw). Polling reduced from 15s to 30s since SSE handles real-time updates.
+- [DECISION] useMorphoMarkets: replaced 3 wagmi useReadContract calls (market(), rates(), oracle) with SSE oracle price + REST `/morpho-position` market field. CuratorRateIRM rate not available server-side yet — using utilization-based APY estimate with TODO.
+- [DECISION] useMetaMorphoVault: left wagmi reads in place with TODOs. Vault-level data (totalAssets, totalSupply, balanceOf, name, symbol, decimals) not in SSE or REST yet. These are lightweight single-call reads, low priority vs heavy getLogs.
+- [DECISION] useMorphoHistory: eliminated getLogs scan of 4 Morpho events from block 0 — was the heaviest RPC call in the frontend. Returns empty array until data-node indexes these events server-side.
+
 ## Session: 20260221-1700-b2b3
 
 - [DECISION] B2: Removed MockNavCalculator fallback — data-node-url is now required when NAV API is enabled. Panic with descriptive message instead of silent mock.
