@@ -116,14 +116,18 @@ impl AnimalsMarketSource {
         Ok(Self { http })
     }
 
-    /// Build a GBIF occurrence search URL for a given taxon key with yesterday's date filter.
+    /// Build a GBIF occurrence search URL for a given taxon key with a 7-day lookback window.
+    ///
+    /// GBIF has significant data ingestion lag (days to weeks), so querying only
+    /// the last 24h returns 0 for all taxon groups. A 7-day window ensures
+    /// meaningful non-zero counts while still reflecting recent activity.
     fn gbif_url(&self, taxon_key: u64) -> String {
         let now = Utc::now();
-        let yesterday = (now - chrono::Duration::days(1)).format("%Y-%m-%d");
+        let week_ago = (now - chrono::Duration::days(7)).format("%Y-%m-%d");
         let today = now.format("%Y-%m-%d");
         format!(
             "{}?limit=0&taxonKey={}&eventDate={},{}",
-            GBIF_API_URL, taxon_key, yesterday, today
+            GBIF_API_URL, taxon_key, week_ago, today
         )
     }
 
