@@ -165,6 +165,10 @@ pub fn router(state: Arc<AppState>) -> Router {
         // Admin endpoints
         .route("/admin/truncate/:table", axum::routing::post(admin_truncate))
         .route("/admin/reset-session", axum::routing::post(admin_reset_session))
+        // Source monitoring endpoints
+        .route("/admin/sources/health", get(admin_sources_health))
+        .route("/admin/sources/:source_id/assets", get(admin_source_assets))
+        .route("/admin/sources/:source_id/history", get(admin_source_history))
         .route("/sse/system-status", get(sse_system_status))
         .route("/sse/stream", get(sse_stream))
         .layer(cors)
@@ -5168,4 +5172,513 @@ async fn sse_stream(
 
     Sse::new(ReceiverStream::new(rx))
         .keep_alive(axum::response::sse::KeepAlive::default())
+}
+
+// ===========================================================================
+// Source Monitoring Dashboard endpoints
+// ===========================================================================
+
+// ---- /admin/sources/health ----
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SourceHealthResponse {
+    generated_at: DateTime<Utc>,
+    sources: Vec<SourceHealthEntry>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SourceHealthEntry {
+    source_id: String,
+    display_name: String,
+    sync_interval_secs: u64,
+    status: String,
+    total_assets: i64,
+    active_assets: i64,
+    total_price_records: i64,
+    oldest_record: Option<DateTime<Utc>>,
+    newest_record: Option<DateTime<Utc>>,
+    last_sync_age_secs: i64,
+    records_last_1h: i64,
+    records_last_24h: i64,
+    records_last_7d: i64,
+    zero_value_assets: i64,
+    stale_assets: i64,
+    avg_change_pct: f64,
+    assets_with_no_change_24h: i64,
+    sync_gap_max_secs: i64,
+    estimated_daily_records: i64,
+}
+
+async fn admin_sources_health(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<SourceHealthResponse>, (StatusCode, Json<ErrorResponse>)> {
+    let pool = &state.pool;
+    let now = Utc::now();
+
+    // Query 1: Per-source asset counts
+    let asset_counts: Vec<(String, i64, i64)> = sqlx::query_as(
+        r#"
+        SELECT source,
+               COUNT(*)::bigint as total,
+               COUNT(*) FILTER (WHERE is_active)::bigint as active
+        FROM market_assets
+        GROUP BY source
+        "#,
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| internal_error(format!("asset counts query: {}", e)))?;
+
+    let mut asset_count_map: HashMap<String, (i64, i64)> = HashMap::new();
+    for (source, total, active) in asset_counts {
+        asset_count_map.insert(source, (total, active));
+    }
+
+    // Query 2: Per-source price record counts + oldest/newest
+    let record_counts: Vec<(String, i64, Option<DateTime<Utc>>, Option<DateTime<Utc>>, i64, i64, i64)> =
+        sqlx::query_as(
+            r#"
+            SELECT source,
+                   COUNT(*)::bigint as total_records,
+                   MIN(fetched_at) as oldest,
+                   MAX(fetched_at) as newest,
+                   COUNT(*) FILTER (WHERE fetched_at > NOW() - INTERVAL '1 hour')::bigint as last_1h,
+                   COUNT(*) FILTER (WHERE fetched_at > NOW() - INTERVAL '24 hours')::bigint as last_24h,
+                   COUNT(*) FILTER (WHERE fetched_at > NOW() - INTERVAL '7 days')::bigint as last_7d
+            FROM market_prices
+            GROUP BY source
+            "#,
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(|e| internal_error(format!("record counts query: {}", e)))?;
+
+    let mut record_map: HashMap<String, (i64, Option<DateTime<Utc>>, Option<DateTime<Utc>>, i64, i64, i64)> =
+        HashMap::new();
+    for (source, total, oldest, newest, last_1h, last_24h, last_7d) in record_counts {
+        record_map.insert(source, (total, oldest, newest, last_1h, last_24h, last_7d));
+    }
+
+    // Query 3: Per-source zero-value and stale asset counts
+    let zero_stale: Vec<(String, i64, i64)> = sqlx::query_as(
+        r#"
+        SELECT mp.source,
+               COUNT(DISTINCT mp.asset_id) FILTER (WHERE mp.value = 0)::bigint as zero_value,
+               COUNT(DISTINCT mp.asset_id) FILTER (
+                   WHERE mp.fetched_at < NOW() - INTERVAL '1 hour'
+               )::bigint as stale
+        FROM (
+            SELECT DISTINCT ON (source, asset_id) source, asset_id, value, fetched_at
+            FROM market_prices ORDER BY source, asset_id, fetched_at DESC
+        ) mp
+        GROUP BY mp.source
+        "#,
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| internal_error(format!("zero/stale query: {}", e)))?;
+
+    let mut zero_stale_map: HashMap<String, (i64, i64)> = HashMap::new();
+    for (source, zero_val, stale) in zero_stale {
+        zero_stale_map.insert(source, (zero_val, stale));
+    }
+
+    // Query 4: Per-source avg absolute change_pct and no-change count
+    let change_stats: Vec<(String, Option<f64>, i64)> = sqlx::query_as(
+        r#"
+        SELECT source,
+               AVG(ABS(change_pct)) FILTER (WHERE change_pct IS NOT NULL) as avg_change,
+               COUNT(DISTINCT asset_id) FILTER (
+                   WHERE change_pct IS NOT NULL AND ABS(change_pct) < 0.001
+               )::bigint as no_change_count
+        FROM (
+            SELECT DISTINCT ON (source, asset_id) source, asset_id, change_pct
+            FROM market_prices
+            WHERE fetched_at > NOW() - INTERVAL '24 hours'
+            ORDER BY source, asset_id, fetched_at DESC
+        ) latest
+        GROUP BY source
+        "#,
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| internal_error(format!("change stats query: {}", e)))?;
+
+    let mut change_map: HashMap<String, (f64, i64)> = HashMap::new();
+    for (source, avg_change, no_change) in change_stats {
+        change_map.insert(source, (avg_change.unwrap_or(0.0), no_change));
+    }
+
+    // Query 5: Max sync gap per source (last 6 hours only)
+    let gap_stats: Vec<(String, Option<f64>)> = sqlx::query_as(
+        r#"
+        SELECT source,
+               MAX(gap_secs) as max_gap_secs
+        FROM (
+            SELECT source, asset_id,
+                EXTRACT(EPOCH FROM (fetched_at - LAG(fetched_at) OVER (
+                    PARTITION BY source, asset_id ORDER BY fetched_at
+                ))) as gap_secs
+            FROM market_prices
+            WHERE fetched_at > NOW() - INTERVAL '6 hours'
+        ) gaps
+        WHERE gap_secs IS NOT NULL
+        GROUP BY source
+        "#,
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| internal_error(format!("gap stats query: {}", e)))?;
+
+    let mut gap_map: HashMap<String, i64> = HashMap::new();
+    for (source, max_gap) in gap_stats {
+        gap_map.insert(source, max_gap.unwrap_or(0.0) as i64);
+    }
+
+    // Assemble results for all known sources
+    let mut sources = Vec::new();
+    for (id, name, interval) in SOURCE_META {
+        let (total_assets, active_assets) = asset_count_map
+            .get(*id)
+            .copied()
+            .unwrap_or((0, 0));
+        let (total_records, oldest, newest, last_1h, last_24h, last_7d) = record_map
+            .get(*id)
+            .cloned()
+            .unwrap_or((0, None, None, 0, 0, 0));
+        let (zero_value, stale) = zero_stale_map
+            .get(*id)
+            .copied()
+            .unwrap_or((0, 0));
+        let (avg_change, no_change) = change_map
+            .get(*id)
+            .copied()
+            .unwrap_or((0.0, 0));
+        let max_gap = gap_map.get(*id).copied().unwrap_or(0);
+
+        let last_sync_age_secs = newest
+            .map(|n| (now - n).num_seconds().max(0))
+            .unwrap_or(0);
+
+        // Compute status: healthy / stale / dead
+        let status = if total_records == 0 {
+            "dead".to_string()
+        } else {
+            let threshold_stale = (*interval as i64) * 3;
+            let threshold_dead = (*interval as i64) * 10;
+            if last_sync_age_secs < threshold_stale {
+                "healthy".to_string()
+            } else if last_sync_age_secs < threshold_dead {
+                "stale".to_string()
+            } else {
+                "dead".to_string()
+            }
+        };
+
+        // Estimated daily records = records_last_24h (direct measure)
+        let estimated_daily_records = last_24h;
+
+        sources.push(SourceHealthEntry {
+            source_id: id.to_string(),
+            display_name: name.to_string(),
+            sync_interval_secs: *interval,
+            status,
+            total_assets,
+            active_assets,
+            total_price_records: total_records,
+            oldest_record: oldest,
+            newest_record: newest,
+            last_sync_age_secs,
+            records_last_1h: last_1h,
+            records_last_24h: last_24h,
+            records_last_7d: last_7d,
+            zero_value_assets: zero_value,
+            stale_assets: stale,
+            avg_change_pct: (avg_change * 100.0).round() / 100.0, // 2 decimal places
+            assets_with_no_change_24h: no_change,
+            sync_gap_max_secs: max_gap,
+            estimated_daily_records,
+        });
+    }
+
+    // Also include any DB sources not in SOURCE_META
+    let known_ids: std::collections::HashSet<&str> =
+        SOURCE_META.iter().map(|(id, _, _)| *id).collect();
+    for (source, (total_records, oldest, newest, last_1h, last_24h, last_7d)) in &record_map {
+        if known_ids.contains(source.as_str()) {
+            continue;
+        }
+        let (total_assets, active_assets) = asset_count_map
+            .get(source)
+            .copied()
+            .unwrap_or((0, 0));
+        let (zero_value, stale_count) = zero_stale_map
+            .get(source)
+            .copied()
+            .unwrap_or((0, 0));
+        let (avg_change, no_change) = change_map
+            .get(source)
+            .copied()
+            .unwrap_or((0.0, 0));
+        let max_gap = gap_map.get(source).copied().unwrap_or(0);
+
+        let last_sync_age_secs = newest
+            .as_ref()
+            .map(|n| (now - *n).num_seconds().max(0))
+            .unwrap_or(0);
+
+        // Unknown sources default to 600s interval for status
+        let default_interval: u64 = 600;
+        let status = if *total_records == 0 {
+            "dead".to_string()
+        } else {
+            let threshold_stale = (default_interval as i64) * 3;
+            let threshold_dead = (default_interval as i64) * 10;
+            if last_sync_age_secs < threshold_stale {
+                "healthy".to_string()
+            } else if last_sync_age_secs < threshold_dead {
+                "stale".to_string()
+            } else {
+                "dead".to_string()
+            }
+        };
+
+        sources.push(SourceHealthEntry {
+            source_id: source.clone(),
+            display_name: source.clone(),
+            sync_interval_secs: default_interval,
+            status,
+            total_assets,
+            active_assets,
+            total_price_records: *total_records,
+            oldest_record: *oldest,
+            newest_record: *newest,
+            last_sync_age_secs,
+            records_last_1h: *last_1h,
+            records_last_24h: *last_24h,
+            records_last_7d: *last_7d,
+            zero_value_assets: zero_value,
+            stale_assets: stale_count,
+            avg_change_pct: (avg_change * 100.0).round() / 100.0,
+            assets_with_no_change_24h: no_change,
+            sync_gap_max_secs: max_gap,
+            estimated_daily_records: *last_24h,
+        });
+    }
+
+    Ok(Json(SourceHealthResponse {
+        generated_at: now,
+        sources,
+    }))
+}
+
+// ---- /admin/sources/:source_id/assets ----
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SourceAssetsResponse {
+    source_id: String,
+    assets: Vec<SourceAssetEntry>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SourceAssetEntry {
+    asset_id: String,
+    symbol: String,
+    name: String,
+    is_active: bool,
+    latest_value: Option<f64>,
+    latest_fetched_at: Option<DateTime<Utc>>,
+    age_secs: i64,
+    total_records: i64,
+    oldest_record: Option<DateTime<Utc>>,
+    value_changed_in_24h: bool,
+    change_pct: Option<f64>,
+    is_zero: bool,
+    is_stale: bool,
+}
+
+async fn admin_source_assets(
+    State(state): State<Arc<AppState>>,
+    AxumPath(source_id): AxumPath<String>,
+) -> Result<Json<SourceAssetsResponse>, (StatusCode, Json<ErrorResponse>)> {
+    let pool = &state.pool;
+    let now = Utc::now();
+
+    // Find the sync interval for this source (for stale detection)
+    let sync_interval = SOURCE_META
+        .iter()
+        .find(|(id, _, _)| *id == source_id)
+        .map(|(_, _, interval)| *interval)
+        .unwrap_or(600);
+
+    let rows: Vec<(
+        String,                // asset_id
+        String,                // symbol
+        String,                // name
+        bool,                  // is_active
+        Option<f64>,           // latest value
+        Option<DateTime<Utc>>, // latest fetched_at
+        Option<f64>,           // change_pct
+        Option<i64>,           // total_records
+        Option<DateTime<Utc>>, // oldest_record
+        Option<f64>,           // prev_value (24h ago)
+    )> = sqlx::query_as(
+        r#"
+        SELECT
+            ma.asset_id,
+            ma.symbol,
+            ma.name,
+            ma.is_active,
+            latest.value,
+            latest.fetched_at,
+            latest.change_pct,
+            counts.total_records,
+            counts.oldest_record,
+            prev.value as prev_value
+        FROM market_assets ma
+        LEFT JOIN LATERAL (
+            SELECT value, fetched_at, change_pct
+            FROM market_prices mp
+            WHERE mp.source = ma.source AND mp.asset_id = ma.asset_id
+            ORDER BY fetched_at DESC LIMIT 1
+        ) latest ON true
+        LEFT JOIN LATERAL (
+            SELECT value
+            FROM market_prices mp
+            WHERE mp.source = ma.source AND mp.asset_id = ma.asset_id
+                AND mp.fetched_at < NOW() - INTERVAL '24 hours'
+            ORDER BY fetched_at DESC LIMIT 1
+        ) prev ON true
+        LEFT JOIN LATERAL (
+            SELECT COUNT(*)::bigint as total_records, MIN(fetched_at) as oldest_record
+            FROM market_prices mp
+            WHERE mp.source = ma.source AND mp.asset_id = ma.asset_id
+        ) counts ON true
+        WHERE ma.source = $1
+        ORDER BY ma.symbol
+        "#,
+    )
+    .bind(&source_id)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| internal_error(format!("source assets query: {}", e)))?;
+
+    let stale_threshold_secs = (sync_interval as i64) * 3;
+
+    let assets: Vec<SourceAssetEntry> = rows
+        .into_iter()
+        .map(|(asset_id, symbol, name, is_active, latest_value, latest_fetched_at, change_pct, total_records, oldest_record, prev_value)| {
+            let age_secs = latest_fetched_at
+                .map(|t| (now - t).num_seconds().max(0))
+                .unwrap_or(0);
+
+            let is_zero = latest_value.map(|v| v == 0.0).unwrap_or(false);
+            let is_stale = age_secs > stale_threshold_secs;
+
+            // value_changed_in_24h: compare latest vs prev (24h ago)
+            let value_changed_in_24h = match (latest_value, prev_value) {
+                (Some(curr), Some(prev)) => (curr - prev).abs() > 1e-12,
+                _ => true, // if no prev, assume changed (can't prove otherwise)
+            };
+
+            SourceAssetEntry {
+                asset_id,
+                symbol,
+                name,
+                is_active,
+                latest_value,
+                latest_fetched_at,
+                age_secs,
+                total_records: total_records.unwrap_or(0),
+                oldest_record,
+                value_changed_in_24h,
+                change_pct,
+                is_zero,
+                is_stale,
+            }
+        })
+        .collect();
+
+    Ok(Json(SourceAssetsResponse {
+        source_id,
+        assets,
+    }))
+}
+
+// ---- /admin/sources/:source_id/history ----
+
+#[derive(Deserialize)]
+struct SourceHistoryQuery {
+    hours: Option<i64>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SourceHistoryResponse {
+    source_id: String,
+    hours: i64,
+    buckets: Vec<SourceHistoryBucket>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SourceHistoryBucket {
+    hour: DateTime<Utc>,
+    record_count: i64,
+    unique_assets: i64,
+    avg_value: f64,
+    zero_count: i64,
+}
+
+async fn admin_source_history(
+    State(state): State<Arc<AppState>>,
+    AxumPath(source_id): AxumPath<String>,
+    Query(params): Query<SourceHistoryQuery>,
+) -> Result<Json<SourceHistoryResponse>, (StatusCode, Json<ErrorResponse>)> {
+    let pool = &state.pool;
+    let hours = params.hours.unwrap_or(24).max(1).min(168); // clamp to 1..168h (1 week max)
+
+    let rows: Vec<(DateTime<Utc>, i64, i64, Option<f64>, i64)> = sqlx::query_as(
+        r#"
+        SELECT
+            date_trunc('hour', fetched_at) as hour,
+            COUNT(*)::bigint as record_count,
+            COUNT(DISTINCT asset_id)::bigint as unique_assets,
+            AVG(value) as avg_value,
+            COUNT(*) FILTER (WHERE value = 0)::bigint as zero_count
+        FROM market_prices
+        WHERE source = $1
+          AND fetched_at > NOW() - make_interval(hours => $2)
+        GROUP BY date_trunc('hour', fetched_at)
+        ORDER BY hour
+        "#,
+    )
+    .bind(&source_id)
+    .bind(hours as i32)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| internal_error(format!("source history query: {}", e)))?;
+
+    let buckets: Vec<SourceHistoryBucket> = rows
+        .into_iter()
+        .map(|(hour, record_count, unique_assets, avg_value, zero_count)| {
+            SourceHistoryBucket {
+                hour,
+                record_count,
+                unique_assets,
+                avg_value: avg_value.unwrap_or(0.0),
+                zero_count,
+            }
+        })
+        .collect();
+
+    Ok(Json(SourceHistoryResponse {
+        source_id,
+        hours,
+        buckets,
+    }))
 }
