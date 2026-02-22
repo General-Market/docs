@@ -4,7 +4,8 @@ import createNextIntlPlugin from "next-intl/plugin";
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3001";
-const P2POOL_API_URL = process.env.NEXT_PUBLIC_P2POOL_API_URL || "http://localhost:10001";
+const VISION_API_URL = process.env.NEXT_PUBLIC_VISION_API_URL || "http://localhost:10001";
+const DOCS_URL = process.env.DOCS_URL || "https://generalmarket.mintlify.dev";
 const isDev = process.env.NODE_ENV !== "production";
 
 const nextConfig: NextConfig = {
@@ -124,8 +125,8 @@ const nextConfig: NextConfig = {
         destination: "http://localhost:8200/snapshot",
       },
       {
-        source: "/api/p2pool/:path*",
-        destination: `${P2POOL_API_URL}/p2pool/:path*`,
+        source: "/api/vision/:path*",
+        destination: `${VISION_API_URL}/vision/:path*`,
       },
       {
         source: "/health",
@@ -134,11 +135,11 @@ const nextConfig: NextConfig = {
       // Mintlify docs proxy
       {
         source: "/docs",
-        destination: "https://generalmarket.mintlify.dev/docs",
+        destination: `${DOCS_URL}/docs`,
       },
       {
         source: "/docs/:path*",
-        destination: "https://generalmarket.mintlify.dev/docs/:path*",
+        destination: `${DOCS_URL}/docs/:path*`,
       },
     ];
   },

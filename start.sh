@@ -23,7 +23,9 @@ DEPLOYER_KEY=${DEPLOYER_KEY:-0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efca
 TEST_USER_KEY=${TEST_USER_KEY:-0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537}
 TEST_USER_ADDRESS=${TEST_USER_ADDRESS:-0xC0D3C3ba6c2215b0cBf4375f4c280c0cc6C43850}
 AP_KEY=${AP_KEY:-0x582978b132648fe53de139c6b9297040a2757616cac9a2fd17aa167bdc6fa340}
-VISION_BOT_ADDRESS=${VISION_BOT_ADDRESS:-0x1111111111111111111111111111111111111111}
+# Vision bots use real private keys (no impersonation)
+VISION_BOT_KEY=${VISION_BOT_KEY:-0x701b615bbdfb9de65240bc28bd21bbc0d996645a3dd57e7b12bc2bdf6f192c82}
+VISION_BOT2_KEY=${VISION_BOT2_KEY:-0x47c99abed3324a2707c28affff1267e45918ec8c3f20b8aa892f8b25f3f12a69}
 
 # Bitget credentials (dummy = public endpoints only, sufficient for price reads)
 export BITGET_API_KEY=${BITGET_API_KEY:-dummy}
@@ -57,7 +59,7 @@ if ! command -v anvil &>/dev/null && [ -d "$HOME/.foundry/bin" ]; then
     export PATH="$HOME/.foundry/bin:$PATH"
 fi
 
-TOTAL_STEPS=13
+TOTAL_STEPS=14
 
 print_banner() {
     echo -e "${CYAN}"
@@ -161,6 +163,12 @@ if ! command -v psql &>/dev/null; then
 fi
 
 echo -e "${GREEN}Prerequisites OK${NC}"
+
+# Derive Vision bot addresses from private keys
+VISION_BOT_ADDRESS=$(cast wallet address "$VISION_BOT_KEY")
+VISION_BOT2_ADDRESS=$(cast wallet address "$VISION_BOT2_KEY")
+echo -e "  Vision bot 1: $VISION_BOT_ADDRESS"
+echo -e "  Vision bot 2: $VISION_BOT2_ADDRESS"
 echo ""
 
 mkdir -p logs deployments data
@@ -322,11 +330,13 @@ else
     cast send --private-key $DEPLOYER_KEY $ARB_USDC "mint(address,uint256)" $TEST_USER 50000000000 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
     echo -e "  ${GREEN}Test user funded with 50k L3_WUSDC (L3) + 50k ARB_USDC (both chains)${NC}"
 
-    # Fund Vision bot (Player 2 for E2E P2Pool tests)
-    cast send --private-key $DEPLOYER_KEY --value 100ether $VISION_BOT_ADDRESS --rpc-url $RPC_URL > /dev/null 2>&1
-    cast send --private-key $DEPLOYER_KEY $L3_WUSDC "mint(address,uint256)" $VISION_BOT_ADDRESS 50000000000000000000000 --rpc-url $RPC_URL > /dev/null 2>&1
-    cast rpc anvil_impersonateAccount $VISION_BOT_ADDRESS --rpc-url $RPC_URL > /dev/null 2>&1
-    echo -e "  ${GREEN}Vision bot $VISION_BOT_ADDRESS funded with 100 ETH + 50k L3_WUSDC (L3)${NC}"
+    # Fund Vision bots (Players for Vision) — Vision lives on Arbitrum
+    cast send --private-key $DEPLOYER_KEY --value 100ether $VISION_BOT_ADDRESS --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+    cast send --private-key $DEPLOYER_KEY $ARB_USDC "mint(address,uint256)" $VISION_BOT_ADDRESS 50000000000 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+    echo -e "  ${GREEN}Vision bot 1 $VISION_BOT_ADDRESS funded with 100 ETH + 50k ARB_USDC (Arb)${NC}"
+    cast send --private-key $DEPLOYER_KEY --value 100ether $VISION_BOT2_ADDRESS --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+    cast send --private-key $DEPLOYER_KEY $ARB_USDC "mint(address,uint256)" $VISION_BOT2_ADDRESS 50000000000 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+    echo -e "  ${GREEN}Vision bot 2 $VISION_BOT2_ADDRESS funded with 100 ETH + 50k ARB_USDC (Arb)${NC}"
 
     # ============ STEP 3: 100-asset ITP ============
     echo -e "${BLUE}[3/$TOTAL_STEPS] Deploying 100-asset ITP...${NC}"
@@ -607,6 +617,29 @@ json.dump(assets, open('assets.json', 'w'), indent=2)
 print(f'  Generated assets.json with {len(assets)} symbols from symbol-map')
 "
 
+    # Regenerate frontend deployed-assets.json from symbol-map (after ITP merge so addresses are current)
+    python3 -c "
+import json
+sm = json.load(open('data/symbol-map.json'))
+seen = set()
+assets = []
+for addr, info in sorted(sm.items()):
+    if not isinstance(info, dict) or 'pair' not in info:
+        continue
+    pair = info['pair']
+    # Extract symbol from pair (e.g. BTCUSDC -> BTC, ETHUSDT -> ETH)
+    for suffix in ['USDC', 'USDT']:
+        if pair.endswith(suffix):
+            sym = pair[:-len(suffix)]
+            break
+    else:
+        sym = pair
+    assets.append({'address': addr, 'symbol': sym})
+assets.sort(key=lambda x: x['symbol'])
+json.dump(assets, open('frontend/public/deployed-assets.json', 'w'), indent=2)
+print(f'  Regenerated frontend/public/deployed-assets.json with {len(assets)} assets')
+"
+
     # ============ STEP 5: Morpho lending ============
     echo -e "${BLUE}[5/$TOTAL_STEPS] Deploying Morpho Blue lending system...${NC}"
 
@@ -663,18 +696,18 @@ print(f'  Generated assets.json with {len(assets)} symbols from symbol-map')
     set -e
     cd ..
 
-    # ============ STEP 6: Vision (P2Pool) ============
-    echo -e "${BLUE}[6/$TOTAL_STEPS] Deploying Vision (P2Pool) contract...${NC}"
+    # ============ STEP 6: Vision on Arbitrum ============
+    echo -e "${BLUE}[6/$TOTAL_STEPS] Deploying Vision contract on Arbitrum...${NC}"
 
     ISSUER_REG_ADDR=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['IssuerRegistry'])")
-    L3_WUSDC_ADDR=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['L3_WUSDC'])")
+    ARB_USDC_ADDR=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['ARB_USDC'])")
 
     cd contracts
     set +e
     ISSUER_REGISTRY=$ISSUER_REG_ADDR \
-    USDC_ADDRESS=$L3_WUSDC_ADDR \
+    USDC_ADDRESS=$ARB_USDC_ADDR \
     forge script script/DeployVision.s.sol:DeployVision \
-        --broadcast --slow --rpc-url $RPC_URL > ../logs/deploy-vision.log 2>&1
+        --broadcast --slow --rpc-url $ARB_RPC_URL > ../logs/deploy-vision.log 2>&1
 
     if [ $? -eq 0 ]; then
         echo -e "  ${GREEN}Vision contract deployed${NC}"
@@ -689,13 +722,13 @@ json.dump(deploy, open('../deployments/active-deployment.json', 'w'), indent=2)
 "
         echo -e "  ${GREEN}Vision addresses merged into active-deployment.json${NC}"
 
-        # Run P2Pool database migrations (issuer chain listener needs these tables)
+        # Run Vision database migrations (issuer chain listener needs these tables)
         if $PG_ISREADY -q 2>/dev/null; then
-            $PSQL -d index_prices -f ../issuer/migrations/001_create_p2pool_tables.sql > /dev/null 2>&1 || true
+            $PSQL -d index_prices -f ../issuer/migrations/001_create_vision_tables.sql > /dev/null 2>&1 || true
             # Reset chain listener bookmark (Anvil restarts from block 0 each session)
-            $PSQL -d index_prices -c "UPDATE p2pool_kv_store SET value = '0' WHERE key = 'chain_listener_last_block';" > /dev/null 2>&1 || true
-            $PSQL -d index_prices -c "TRUNCATE p2pool_batches, p2pool_positions, p2pool_tick_results;" > /dev/null 2>&1 || true
-            echo -e "  ${GREEN}P2Pool database tables created (bookmark reset)${NC}"
+            $PSQL -d index_prices -c "UPDATE vision_kv_store SET value = '0' WHERE key = 'chain_listener_last_block';" > /dev/null 2>&1 || true
+            $PSQL -d index_prices -c "TRUNCATE vision_batches, vision_positions, vision_tick_results;" > /dev/null 2>&1 || true
+            echo -e "  ${GREEN}Vision database tables created (bookmark reset)${NC}"
         fi
     else
         echo -e "${YELLOW}  Warning: Vision deployment failed (check logs/deploy-vision.log)${NC}"
@@ -810,14 +843,16 @@ for i in $(seq 1 $ISSUER_COUNT); do
         export DATA_NODE_URL="http://localhost:8200"
     fi
 
-    # P2Pool subsystem — enable if Vision contract was deployed (pass via CLI flags)
+    # Vision subsystem — enable if Vision contract was deployed (pass via CLI flags)
     VISION_ADDR_CHECK=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts'].get('Vision',''))" 2>/dev/null || echo "")
     if [ -n "$VISION_ADDR_CHECK" ] && [ "$VISION_ADDR_CHECK" != "" ] && $PG_ISREADY -q 2>/dev/null; then
-        ISSUER_ARGS="$ISSUER_ARGS --p2pool-enabled"
-        ISSUER_ARGS="$ISSUER_ARGS --p2pool-vision-address $VISION_ADDR_CHECK"
-        ISSUER_ARGS="$ISSUER_ARGS --p2pool-database-url postgres://localhost/index_prices"
-        ISSUER_ARGS="$ISSUER_ARGS --p2pool-data-node-url http://localhost:8200"
-        ISSUER_ARGS="$ISSUER_ARGS --p2pool-rpc-ws-url $RPC_URL"
+        ISSUER_ARGS="$ISSUER_ARGS --vision-enabled"
+        ISSUER_ARGS="$ISSUER_ARGS --vision-address $VISION_ADDR_CHECK"
+        ISSUER_ARGS="$ISSUER_ARGS --vision-database-url postgres://localhost/index_prices"
+        ISSUER_ARGS="$ISSUER_ARGS --vision-data-node-url http://localhost:8200"
+        ISSUER_ARGS="$ISSUER_ARGS --vision-rpc-ws-url $ARB_RPC_URL"
+        ISSUER_ARGS="$ISSUER_ARGS --vision-reveal-window-secs 0"
+        ISSUER_ARGS="$ISSUER_ARGS --vision-tick-poll-interval-ms 500"
     fi
     ./target/release/issuer $ISSUER_ARGS > logs/issuer-$i.log 2>&1 &
     ISSUER_PID=$!
@@ -846,6 +881,9 @@ else
         --deployment-file deployments/active-deployment.json \
         --morpho-deployment-file deployments/morpho-e2e.json \
         ${INDEX_ADDRESS:+--index-address $INDEX_ADDRESS} \
+        --movebank-user "Bobobo" \
+        --movebank-password "u23@9R8m4BDezE_" \
+        --ebird-api-key "lbo0nq9d1hd0" \
         > logs/data-node.log 2>&1 &
     PH_PID=$!
     echo $PH_PID >> .pids
@@ -901,28 +939,59 @@ echo -e "  AP on port 9100 (PID: $AP_PID)"
 # Wait for services to start
 sleep 3
 
-# Launch Vision bot if Vision was deployed
+# Launch 2 Vision bots if Vision was deployed
 VISION_ADDR_BOT=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts'].get('Vision',''))" 2>/dev/null || echo "")
 if [ -n "$VISION_ADDR_BOT" ] && [ "$VISION_ADDR_BOT" != "" ] && [ -f "$SCRIPT_DIR/vision-bot/bot.py" ]; then
-    echo -e "${BLUE}  Starting Vision bot...${NC}"
+    echo -e "${BLUE}  Starting 2 Vision bots...${NC}"
     # Install deps if needed
     if [ ! -d "$SCRIPT_DIR/vision-bot/.venv" ]; then
         python3 -m venv "$SCRIPT_DIR/vision-bot/.venv" 2>/dev/null || true
     fi
+    source "$SCRIPT_DIR/vision-bot/.venv/bin/activate" 2>/dev/null || true
+    pip install -q -r "$SCRIPT_DIR/vision-bot/requirements.txt" 2>/dev/null || true
+
+    # Bot 1: poll mode (joins batches as they appear)
     (
-        source "$SCRIPT_DIR/vision-bot/.venv/bin/activate" 2>/dev/null || true
-        pip install -q -r "$SCRIPT_DIR/vision-bot/requirements.txt" 2>/dev/null || true
         cd "$SCRIPT_DIR"
-        L3_RPC_URL="$RPC_URL" \
-        P2POOL_API_URL="http://localhost:10001" \
+        L3_RPC_URL="$ARB_RPC_URL" \
+        VISION_API_URL="http://localhost:10001" \
         DATA_NODE_URL="http://localhost:8200" \
         BOT_ADDRESS="$VISION_BOT_ADDRESS" \
-        python3 vision-bot/bot.py --once > logs/vision-bot.log 2>&1
+        BOT_PRIVATE_KEY="$VISION_BOT_KEY" \
+        POLL_INTERVAL=5 \
+        python3 vision-bot/bot.py > logs/vision-bot-1.log 2>&1
     ) &
-    VBOT_PID=$!
-    echo $VBOT_PID >> .pids
-    echo "vision-bot:$VBOT_PID" >> .pids.info
-    echo -e "  ${GREEN}Vision bot started (PID: $VBOT_PID)${NC}"
+    VBOT1_PID=$!
+    echo $VBOT1_PID >> .pids
+    echo "vision-bot-1:$VBOT1_PID" >> .pids.info
+    echo -e "  ${GREEN}Vision bot 1 started (PID: $VBOT1_PID)${NC}"
+
+    # Bot 2: poll mode (joins batches as they appear)
+    (
+        cd "$SCRIPT_DIR"
+        L3_RPC_URL="$ARB_RPC_URL" \
+        VISION_API_URL="http://localhost:10001" \
+        DATA_NODE_URL="http://localhost:8200" \
+        BOT_ADDRESS="$VISION_BOT2_ADDRESS" \
+        BOT_PRIVATE_KEY="$VISION_BOT2_KEY" \
+        POLL_INTERVAL=5 \
+        python3 vision-bot/bot.py > logs/vision-bot-2.log 2>&1
+    ) &
+    VBOT2_PID=$!
+    echo $VBOT2_PID >> .pids
+    echo "vision-bot-2:$VBOT2_PID" >> .pids.info
+    echo -e "  ${GREEN}Vision bot 2 started (PID: $VBOT2_PID)${NC}"
+fi
+
+# ============ Docs (optional — run Mintlify dev server) ============
+if [ "$DOCS" = "1" ]; then
+    echo -e "${BLUE}Starting Mintlify docs dev server on port 3030...${NC}"
+    (cd "$SCRIPT_DIR/docs" && npx @mintlify/cli@latest dev --port 3030) > "$SCRIPT_DIR/logs/docs.log" 2>&1 &
+    DOCS_DEV_PID=$!
+    echo $DOCS_DEV_PID >> .pids
+    echo "mintlify-docs:$DOCS_DEV_PID" >> .pids.info
+    export DOCS_URL="http://localhost:3030"
+    echo -e "  ${GREEN}Docs: http://localhost:3030${NC}"
 fi
 
 # ============ STEP 11: Frontend E2E Browser Tests ============
@@ -959,7 +1028,7 @@ if [ "$CREATE_DEFAULT_BATCH" = true ]; then
     HN_MARKETS=""
     HN_COUNT=0
     for attempt in $(seq 1 30); do
-        HN_MARKETS=$(curl -sf "http://localhost:8200/p2pool/markets/active?source=hackernews" 2>/dev/null || echo "")
+        HN_MARKETS=$(curl -sf "http://localhost:8200/vision/markets/active?source=hackernews" 2>/dev/null || echo "")
         HN_COUNT=$(echo "$HN_MARKETS" | python3 -c "import sys,json; print(json.loads(sys.stdin.read()).get('count',0))" 2>/dev/null || echo "0")
         if [ "$HN_COUNT" -gt 0 ] 2>/dev/null; then
             break
@@ -971,13 +1040,17 @@ if [ "$CREATE_DEFAULT_BATCH" = true ]; then
         BATCH_DATA=$(echo "$HN_MARKETS" | python3 -c "
 import sys, json, subprocess
 data = json.loads(sys.stdin.read())
-snapshots = data.get('snapshots', [])[:10]
+snapshots = data.get('snapshots', [])
 if not snapshots:
     sys.exit(1)
 market_ids = []
 for s in snapshots:
     aid = s.get('assetId') or s.get('asset_id', '')
+    if not aid:
+        continue
     utf8 = subprocess.run(['cast', '--from-utf8', aid], capture_output=True, text=True).stdout.strip()
+    if not utf8:
+        continue
     kh = subprocess.run(['cast', 'keccak', utf8], capture_output=True, text=True).stdout.strip()
     market_ids.append(kh)
 n = len(market_ids)
@@ -989,10 +1062,10 @@ print('[' + ','.join(market_ids) + ']|[' + ','.join(['0']*n) + ']|[' + ','.join(
             set +e
             BATCH_TX=$(cast send --private-key $DEPLOYER_KEY "$VISION_ADDR" \
                 "createBatch(bytes32[],uint8[],uint256,uint256[])" \
-                "$MARKET_IDS_ARR" "$RES_TYPES_ARR" 3600 "$THRESHOLDS_ARR" \
-                --rpc-url $RPC_URL 2>&1)
+                "$MARKET_IDS_ARR" "$RES_TYPES_ARR" 30 "$THRESHOLDS_ARR" \
+                --rpc-url $ARB_RPC_URL 2>&1)
             if [ $? -eq 0 ]; then
-                echo -e "  ${GREEN}Default HackerNews batch created ($MARKET_N markets, 1h ticks)${NC}"
+                echo -e "  ${GREEN}Default HackerNews batch created ($MARKET_N markets, 30s ticks)${NC}"
             else
                 echo -e "  ${YELLOW}Warning: Default batch creation failed${NC}"
             fi
@@ -1022,7 +1095,7 @@ NEXT_PUBLIC_RPC_URL=http://localhost:8546
 NEXT_PUBLIC_AP_URL=http://localhost:9100
 NEXT_PUBLIC_DATA_NODE_URL=http://localhost:8200
 NEXT_PUBLIC_VISION_ADDRESS=${VISION_ADDR}
-NEXT_PUBLIC_P2POOL_API_URL=http://localhost:10001
+NEXT_PUBLIC_VISION_API_URL=http://localhost:10001
 NEXT_PUBLIC_ISSUER_URLS=http://localhost:10001,http://localhost:10002,http://localhost:10003
 ENVEOF
 
@@ -1048,7 +1121,9 @@ done
 
 # ============ STEP 12: Mintlify Docs ============
 echo -e "${BLUE}[12/$TOTAL_STEPS] Starting Mintlify docs server...${NC}"
-if [ -f "$SCRIPT_DIR/docs/mint.json" ]; then
+if [ "$DOCS" = "1" ]; then
+    echo -e "  ${GREEN}Already started via DOCS=1 (port 3030)${NC}"
+elif [ -f "$SCRIPT_DIR/docs/mint.json" ]; then
     cd "$SCRIPT_DIR/docs"
     npx @mintlify/cli@latest dev --port 3333 > "$SCRIPT_DIR/logs/docs.log" 2>&1 &
     DOCS_PID=$!
@@ -1087,6 +1162,182 @@ echo ""
 
 set -e
 
+# ============ STEP 12b: Vision 2-Bot Trading Verification ============
+VISION_ADDR_VERIFY=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts'].get('Vision',''))" 2>/dev/null || echo "")
+if [ -n "$VISION_ADDR_VERIFY" ] && [ "$VISION_ADDR_VERIFY" != "" ] && [ "$DATA_NODE_RUNNING" = true ]; then
+    echo -e "${BLUE}[12b/$TOTAL_STEPS] Vision 2-Bot Trading Verification...${NC}"
+
+    # Wait for both bots to join the batch
+    echo -e "  Waiting for both bots to join batch 0..."
+    BOTH_JOINED=false
+    for attempt in $(seq 1 60); do
+        BATCH_STATE=$(curl -sf "http://localhost:10001/vision/batch/0/state" 2>/dev/null || echo "")
+        if [ -n "$BATCH_STATE" ]; then
+            PLAYER_COUNT=$(echo "$BATCH_STATE" | python3 -c "import sys,json; print(json.loads(sys.stdin.read()).get('player_count',0))" 2>/dev/null || echo "0")
+            if [ "$PLAYER_COUNT" -ge 2 ] 2>/dev/null; then
+                echo -e "  ${GREEN}Both bots joined! ($PLAYER_COUNT players in batch 0, ${attempt}s)${NC}"
+                BOTH_JOINED=true
+                break
+            fi
+        fi
+        sleep 1
+    done
+
+    if [ "$BOTH_JOINED" != true ]; then
+        echo -e "  ${YELLOW}Warning: Only $PLAYER_COUNT player(s) joined after 60s${NC}"
+        echo -e "  ${YELLOW}Bot 1 log tail:${NC}"
+        tail -5 logs/vision-bot-1.log 2>/dev/null || true
+        echo -e "  ${YELLOW}Bot 2 log tail:${NC}"
+        tail -5 logs/vision-bot-2.log 2>/dev/null || true
+    fi
+
+    if [ "$BOTH_JOINED" = true ]; then
+        # Simulate HN score changes by updating market_prices in Postgres.
+        # For half the assets, increase the score by 50% (UP); for the other half,
+        # decrease by 30% (DOWN). This ensures clear winners/losers.
+        echo -e "  Simulating HN score changes for tick resolution..."
+        $PSQL -d index_prices -c "
+            WITH ranked AS (
+                SELECT DISTINCT ON (asset_id)
+                    id, asset_id, value,
+                    ROW_NUMBER() OVER (PARTITION BY 1 ORDER BY asset_id) as rn,
+                    COUNT(*) OVER () as total
+                FROM market_prices
+                WHERE source = 'hackernews'
+                ORDER BY asset_id, fetched_at DESC
+            )
+            UPDATE market_prices mp
+            SET value = CASE
+                WHEN r.rn <= r.total / 2 THEN r.value * 1.5
+                ELSE r.value * 0.7
+            END,
+            fetched_at = NOW()
+            FROM ranked r
+            WHERE mp.id = r.id;
+        " > /dev/null 2>&1 || true
+        echo -e "  ${GREEN}HN scores modified (half UP +50%, half DOWN -30%)${NC}"
+
+        # Fast-forward Anvil time past tick 0 end (30s tick + 0s reveal window)
+        echo -e "  Fast-forwarding Anvil time for tick 0 resolution..."
+        cast rpc evm_increaseTime 35 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+        cast rpc evm_mine --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+        # Also advance L3 to keep in sync
+        cast rpc evm_increaseTime 35 --rpc-url $RPC_URL > /dev/null 2>&1
+        cast rpc evm_mine --rpc-url $RPC_URL > /dev/null 2>&1
+
+        echo -e "  Waiting for tick 0 resolution..."
+        TICK0_RESOLVED=false
+        for attempt in $(seq 1 30); do
+            # Check issuer log for tick resolution
+            if grep -q "Tick resolved.*tick_id=0" logs/issuer-1.log 2>/dev/null; then
+                TICK0_RESOLVED=true
+                echo -e "  ${GREEN}Tick 0 resolved! (${attempt}s)${NC}"
+                # Show the resolution details
+                grep "Player balance update.*tick_id=0" logs/issuer-1.log 2>/dev/null | tail -5
+                break
+            fi
+            sleep 1
+        done
+
+        if [ "$TICK0_RESOLVED" != true ]; then
+            echo -e "  ${YELLOW}Tick 0 not resolved after 30s${NC}"
+            echo -e "  ${YELLOW}Issuer 1 Vision logs:${NC}"
+            grep -i "vision\|tick\|due\|market.*price" logs/issuer-1.log 2>/dev/null | tail -20
+        fi
+
+        # Fast-forward time for tick 1
+        if [ "$TICK0_RESOLVED" = true ]; then
+            # Modify scores again (reverse the changes to create more variation)
+            $PSQL -d index_prices -c "
+                WITH ranked AS (
+                    SELECT DISTINCT ON (asset_id)
+                        id, asset_id, value,
+                        ROW_NUMBER() OVER (PARTITION BY 1 ORDER BY asset_id) as rn,
+                        COUNT(*) OVER () as total
+                    FROM market_prices
+                    WHERE source = 'hackernews'
+                    ORDER BY asset_id, fetched_at DESC
+                )
+                UPDATE market_prices mp
+                SET value = CASE
+                    WHEN r.rn <= r.total / 2 THEN r.value * 0.6
+                    ELSE r.value * 1.8
+                END,
+                fetched_at = NOW()
+                FROM ranked r
+                WHERE mp.id = r.id;
+            " > /dev/null 2>&1 || true
+            echo -e "  ${GREEN}HN scores modified for tick 1 (reversed pattern)${NC}"
+
+            echo -e "  Fast-forwarding Anvil time for tick 1 resolution..."
+            cast rpc evm_increaseTime 35 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+            cast rpc evm_mine --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+            cast rpc evm_increaseTime 35 --rpc-url $RPC_URL > /dev/null 2>&1
+            cast rpc evm_mine --rpc-url $RPC_URL > /dev/null 2>&1
+
+            echo -e "  Waiting for tick 1 resolution..."
+            TICK1_RESOLVED=false
+            for attempt in $(seq 1 30); do
+                if grep -q "Tick resolved.*tick_id=1" logs/issuer-1.log 2>/dev/null; then
+                    TICK1_RESOLVED=true
+                    echo -e "  ${GREEN}Tick 1 resolved! (${attempt}s)${NC}"
+                    grep "Player balance update.*tick_id=1" logs/issuer-1.log 2>/dev/null | tail -5
+                    break
+                fi
+                sleep 1
+            done
+
+            if [ "$TICK1_RESOLVED" != true ]; then
+                echo -e "  ${YELLOW}Tick 1 not resolved after 30s${NC}"
+                grep -i "vision\|tick\|due\|market.*price" logs/issuer-1.log 2>/dev/null | tail -20
+            fi
+        fi
+
+        # Final Vision verification: check who won
+        echo ""
+        echo -e "  ${CYAN}═══ Vision Trading Results ═══${NC}"
+        python3 -c "
+import re, sys
+
+log_file = 'logs/issuer-1.log'
+try:
+    with open(log_file) as f:
+        lines = f.readlines()
+except FileNotFoundError:
+    print('  Could not read issuer log')
+    sys.exit(0)
+
+# Parse balance updates
+player_deltas = {}
+for line in lines:
+    m = re.search(r'Player balance update.*player=([0-9a-fA-Fx]+).*delta=([+-]?\d+)', line)
+    if m:
+        player = m.group(1)
+        delta = int(m.group(2))
+        player_deltas.setdefault(player, []).append(delta)
+
+if not player_deltas:
+    print('  No balance updates found in logs')
+    sys.exit(0)
+
+for player, deltas in player_deltas.items():
+    total = sum(deltas)
+    status = 'WINNER' if total > 0 else ('LOSER' if total < 0 else 'BREAK-EVEN')
+    emoji = '✅' if total > 0 else ('❌' if total < 0 else '➖')
+    print(f'  {player[:18]}... total delta: {total:+d} [{status}]')
+
+winners = sum(1 for d in player_deltas.values() if sum(d) > 0)
+losers = sum(1 for d in player_deltas.values() if sum(d) < 0)
+print()
+if winners > 0 and losers > 0:
+    print(f'  ✅ SUCCESS: {winners} winner(s), {losers} loser(s)')
+else:
+    print(f'  ⚠️  Expected divergent outcomes: {winners} winner(s), {losers} loser(s)')
+" 2>/dev/null || true
+        echo ""
+    fi
+fi
+
 # ============ STEP 13: Verification ============
 echo ""
 echo -e "${YELLOW}Verifying services...${NC}"
@@ -1110,12 +1361,12 @@ for i in $(seq 1 $ISSUER_COUNT); do
     fi
 done
 
-# P2Pool API health
-P2POOL_API_PORT=10001
-if curl -sf "http://localhost:$P2POOL_API_PORT/p2pool/batches" > /dev/null 2>&1; then
-    echo -e "  P2Pool API: ${GREEN}healthy${NC} (port $P2POOL_API_PORT)"
+# Vision API health
+VISION_API_PORT=10001
+if curl -sf "http://localhost:$VISION_API_PORT/vision/batches" > /dev/null 2>&1; then
+    echo -e "  Vision API: ${GREEN}healthy${NC} (port $VISION_API_PORT)"
 else
-    echo -e "  P2Pool API: ${YELLOW}starting...${NC} (port $P2POOL_API_PORT, check logs/issuer-1.log)"
+    echo -e "  Vision API: ${YELLOW}starting...${NC} (port $VISION_API_PORT, check logs/issuer-1.log)"
 fi
 
 # Contract summary
@@ -1143,7 +1394,7 @@ echo -e "  ${BLUE}L3 Anvil:${NC}  http://localhost:8545 (chain $CHAIN_ID)"
 echo -e "  ${BLUE}Arb Anvil:${NC} http://localhost:8546 (chain $ARB_CHAIN_ID)"
 echo -e "  ${BLUE}Issuers:${NC}   ports 9001-900$ISSUER_COUNT (bitget-vault + arb-custody)"
 echo -e "  ${BLUE}AP:${NC}        port 9100 (real Bitget price proxy)"
-echo -e "  ${BLUE}P2Pool:${NC}   http://localhost:10101 (issuer 1 API)"
+echo -e "  ${BLUE}Vision:${NC}   http://localhost:10101 (issuer 1 API)"
 echo -e "  ${BLUE}Frontend:${NC}  http://localhost:3000 (running)"
 echo -e "  ${BLUE}Docs:${NC}      http://localhost:3333 (Mintlify)"
 echo -e "  ${BLUE}E2E Tests:${NC} cd frontend && npm run e2e:headed"
