@@ -36,8 +36,8 @@ const SystemStatusSection = dynamic(
   { ssr: false, loading: SectionSkeleton }
 )
 
-const VisionPage = dynamic(
-  () => import('@/components/domain/vision/VisionPage').then(mod => ({ default: mod.VisionPage })),
+const P2PoolPage = dynamic(
+  () => import('@/components/domain/p2pool/P2PoolPage').then(mod => ({ default: mod.P2PoolPage })),
   { ssr: false, loading: SectionSkeleton }
 )
 
@@ -143,7 +143,7 @@ export default function Home() {
           </>
         )}
 
-        {activePage === 'vision' && <VisionPage />}
+        {activePage === 'vision' && <P2PoolPage />}
       </div>
 
       <Footer />
