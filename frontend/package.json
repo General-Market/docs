@@ -35,7 +35,8 @@
     "e2e": "npx playwright test --config=e2e/playwright.config.ts",
     "e2e:headed": "npx playwright test --config=e2e/playwright.config.ts --headed",
     "e2e:debug": "npx playwright test --config=e2e/playwright.config.ts --debug",
-    "e2e:ui": "npx playwright test --config=e2e/playwright.config.ts --ui"
+    "e2e:ui": "npx playwright test --config=e2e/playwright.config.ts --ui",
+    "check-translations": "npx tsx scripts/check-translations.ts"
   },
   "dependencies": {
     "@metamask/sdk": "^0.33.1",
