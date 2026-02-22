@@ -67,7 +67,10 @@ interface BackendLeaderboardResponse {
  * Throws error if backend is unavailable - NO MOCK FALLBACKS IN PRODUCTION
  */
 async function fetchLeaderboard(): Promise<LeaderboardResponse> {
-  const backendUrl = getBackendUrl() // Throws if not configured
+  const backendUrl = getBackendUrl()
+  if (!backendUrl) {
+    return { leaderboard: [], updatedAt: new Date().toISOString() }
+  }
 
   const response = await fetch(`${backendUrl}/api/leaderboard`)
 

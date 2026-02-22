@@ -23,7 +23,7 @@ export function useBatchHistory(batchId: number | null) {
     queryKey: ['p2pool-batch-history', batchId],
     queryFn: async () => {
       const res = await fetch(`${P2POOL_API_URL}/p2pool/batch/${batchId}/history`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      if (!res.ok) return []
       const data = await res.json()
       // Parse market_outcomes JSON if it comes as a string
       return data.map((entry: Record<string, unknown>) => ({

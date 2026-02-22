@@ -215,6 +215,49 @@ export const VISION_ABI = [
     type: 'function',
   },
 
+  // ============ METADATA ============
+  {
+    inputs: [
+      { name: 'batchId', type: 'uint256' },
+      { name: 'name', type: 'string' },
+      { name: 'description', type: 'string' },
+      { name: 'websiteUrl', type: 'string' },
+      { name: 'videoUrl', type: 'string' },
+      { name: 'imageUrl', type: 'string' },
+    ],
+    name: 'setBatchMetadata',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: 'batchId', type: 'uint256' }],
+    name: 'getBatchMetadata',
+    outputs: [
+      { name: '', type: 'string' },
+      { name: '', type: 'string' },
+      { name: '', type: 'string' },
+      { name: '', type: 'string' },
+      { name: '', type: 'string' },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: 'name', type: 'string' }],
+    name: 'setDeployerName',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: 'deployer', type: 'address' }],
+    name: 'getDeployerName',
+    outputs: [{ name: '', type: 'string' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+
   // ============ CONSTANTS / STATE ============
   {
     inputs: [],
@@ -338,6 +381,24 @@ export const VISION_ABI = [
     anonymous: false,
     inputs: [{ indexed: true, name: 'bot', type: 'address' }],
     name: 'BotDeregistered',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'batchId', type: 'uint256' },
+      { indexed: true, name: 'creator', type: 'address' },
+    ],
+    name: 'BatchMetadataUpdated',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'deployer', type: 'address' },
+      { indexed: false, name: 'name', type: 'string' },
+    ],
+    name: 'DeployerNameUpdated',
     type: 'event',
   },
 ] as const

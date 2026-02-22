@@ -1,7 +1,7 @@
 {
   "chainId": 421611337,
   "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-  "timestamp": 1771707534,
+  "timestamp": 1771781598,
   "contracts": {
     "MORPHO": "0xB92257D74B8815EC711071889cB506C8d66A6a06",
     "ADAPTIVE_IRM": "0x737b8F095E3c575a6Ae5FE1711AdB8F271E20269",

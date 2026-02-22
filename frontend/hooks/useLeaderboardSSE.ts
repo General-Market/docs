@@ -173,6 +173,11 @@ export function useLeaderboardSSE(): UseLeaderboardSSEReturn {
       setIsEnabled(false)
       return
     }
+    if (!backendUrl) {
+      setState('disabled')
+      setIsEnabled(false)
+      return
+    }
 
     const maxReconnectDelay = 30000 // 30 seconds max
     const baseDelay = 1000 // 1 second initial delay
