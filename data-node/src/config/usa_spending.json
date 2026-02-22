@@ -1,0 +1,14 @@
+[
+  {"asset_id": "usgov_dod_contracts_mtd", "symbol": "GOV/DOD_CONTRACTS", "name": "DoD Contracts Awarded (Month)", "category": "government", "subcategory": "defense", "api_ref": "award_count:contracts", "active": true},
+  {"asset_id": "usgov_dod_grants_mtd", "symbol": "GOV/DOD_GRANTS", "name": "DoD Grants Awarded (Month)", "category": "government", "subcategory": "defense", "api_ref": "award_count:grants", "active": true},
+  {"asset_id": "usgov_dod_total_awards_mtd", "symbol": "GOV/DOD_AWARDS", "name": "DoD Total Awards (Month)", "category": "government", "subcategory": "defense", "api_ref": "award_count:total", "active": true},
+  {"asset_id": "usgov_dod_top_contract_value", "symbol": "GOV/DOD_TOP_CONTRACT", "name": "DoD Largest Contract This Month ($)", "category": "government", "subcategory": "defense", "api_ref": "top_contract:amount", "active": true},
+  {"asset_id": "usgov_dod_obligated_fy", "symbol": "GOV/DOD_OBLIGATED", "name": "DoD Total Obligated FY ($B)", "category": "government", "subcategory": "defense", "api_ref": "budget:obligated", "active": true},
+  {"asset_id": "usgov_dod_outlayed_fy", "symbol": "GOV/DOD_OUTLAYED", "name": "DoD Total Outlayed FY ($B)", "category": "government", "subcategory": "defense", "api_ref": "budget:outlayed", "active": true},
+  {"asset_id": "usgov_dod_budget_fy", "symbol": "GOV/DOD_BUDGET", "name": "DoD Budgetary Resources FY ($B)", "category": "government", "subcategory": "defense", "api_ref": "budget:resources", "active": true},
+  {"asset_id": "usgov_army_contracts_mtd", "symbol": "GOV/ARMY_CONTRACTS", "name": "Army Contracts Awarded (Month)", "category": "government", "subcategory": "defense", "api_ref": "subagency_count:Department of the Army:contracts", "active": true},
+  {"asset_id": "usgov_navy_contracts_mtd", "symbol": "GOV/NAVY_CONTRACTS", "name": "Navy Contracts Awarded (Month)", "category": "government", "subcategory": "defense", "api_ref": "subagency_count:Department of the Navy:contracts", "active": true},
+  {"asset_id": "usgov_airforce_contracts_mtd", "symbol": "GOV/USAF_CONTRACTS", "name": "Air Force Contracts Awarded (Month)", "category": "government", "subcategory": "defense", "api_ref": "subagency_count:Department of the Air Force:contracts", "active": true},
+  {"asset_id": "usgov_disa_contracts_mtd", "symbol": "GOV/DISA_CONTRACTS", "name": "DISA Contracts Awarded (Month)", "category": "government", "subcategory": "defense", "api_ref": "subagency_count:Defense Information Systems Agency:contracts", "active": true},
+  {"asset_id": "usgov_dla_contracts_mtd", "symbol": "GOV/DLA_CONTRACTS", "name": "DLA Contracts Awarded (Month)", "category": "government", "subcategory": "defense", "api_ref": "subagency_count:Defense Logistics Agency:contracts", "active": true}
+]

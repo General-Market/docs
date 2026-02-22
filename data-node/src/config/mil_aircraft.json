@@ -1,0 +1,83 @@
+[
+  {
+    "asset_id": "mil_us_active_total",
+    "symbol": "MIL/US_ACTIVE",
+    "name": "US Military Aircraft Broadcasting",
+    "category": "defense",
+    "subcategory": "aviation",
+    "api_ref": "count:total",
+    "active": true
+  },
+  {
+    "asset_id": "mil_us_airborne",
+    "symbol": "MIL/US_AIRBORNE",
+    "name": "US Military Aircraft Airborne",
+    "category": "defense",
+    "subcategory": "aviation",
+    "api_ref": "count:airborne",
+    "active": true
+  },
+  {
+    "asset_id": "mil_us_ground",
+    "symbol": "MIL/US_GROUND",
+    "name": "US Military Aircraft On Ground",
+    "category": "defense",
+    "subcategory": "aviation",
+    "api_ref": "count:ground",
+    "active": true
+  },
+  {
+    "asset_id": "mil_us_europe",
+    "symbol": "MIL/US_EUROPE",
+    "name": "US Military Aircraft in Europe",
+    "category": "defense",
+    "subcategory": "aviation",
+    "api_ref": "count:europe",
+    "active": true
+  },
+  {
+    "asset_id": "mil_us_mideast",
+    "symbol": "MIL/US_MIDEAST",
+    "name": "US Military Aircraft in Middle East",
+    "category": "defense",
+    "subcategory": "aviation",
+    "api_ref": "count:mideast",
+    "active": true
+  },
+  {
+    "asset_id": "mil_us_pacific",
+    "symbol": "MIL/US_PACIFIC",
+    "name": "US Military Aircraft in Pacific",
+    "category": "defense",
+    "subcategory": "aviation",
+    "api_ref": "count:pacific",
+    "active": true
+  },
+  {
+    "asset_id": "mil_us_conus",
+    "symbol": "MIL/US_CONUS",
+    "name": "US Military Aircraft in CONUS",
+    "category": "defense",
+    "subcategory": "aviation",
+    "api_ref": "count:conus",
+    "active": true
+  },
+  {
+    "asset_id": "mil_us_avg_altitude",
+    "symbol": "MIL/US_AVG_ALT",
+    "name": "US Military Avg Altitude (m)",
+    "category": "defense",
+    "subcategory": "aviation",
+    "api_ref": "avg:altitude",
+    "active": true
+  },
+  {
+    "asset_id": "mil_us_avg_speed",
+    "symbol": "MIL/US_AVG_SPEED",
+    "name": "US Military Avg Speed (m/s)",
+    "category": "defense",
+    "subcategory": "aviation",
+    "api_ref": "avg:speed",
+    "active": true
+  }
+]

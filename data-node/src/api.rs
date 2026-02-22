@@ -4326,6 +4326,7 @@ const SOURCE_META: &[(&str, &str, u64)] = &[
     ("spaceweather", "NOAA Space Weather", 600),
     ("wildfire", "NASA FIRMS Wildfires", 1800),
     ("flights", "OpenSky Flights", 600),
+    ("mil_aircraft", "Military Aircraft", 600),
     ("maritime", "AIS Maritime", 600),
     ("epidemic", "disease.sh Epidemics", 1800),
     ("sports", "ESPN Live Scores", 600),
@@ -4336,6 +4337,7 @@ const SOURCE_META: &[(&str, &str, u64)] = &[
     ("ebird", "eBird Observations", 600),
     ("aisstream", "AIS Ship Tracking", 60),
     ("gtfs_transit", "GTFS Transit", 120),
+    ("usa_spending", "US Defense Spending", 3600),
 ];
 
 #[derive(Serialize)]

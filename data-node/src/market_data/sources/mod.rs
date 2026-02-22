@@ -53,6 +53,8 @@ pub mod animals;
 pub mod movebank;
 pub mod ebird;
 pub mod aisstream;
+pub mod mil_aircraft;
+pub mod usa_spending;
 
 // Index-only sources (3) + shared ticker list
 pub mod tracked_tickers;
@@ -109,6 +111,8 @@ pub use movebank::MovebankMarketSource;
 pub use ebird::EbirdMarketSource;
 pub use gtfs_rt::GtfsRtMarketSource;
 pub use aisstream::AisStreamMarketSource;
+pub use mil_aircraft::MilAircraftMarketSource;
+pub use usa_spending::UsaSpendingMarketSource;
 
 // Re-exports — Index-only sources
 pub use finra_short_vol::FinraShortVolMarketSource;

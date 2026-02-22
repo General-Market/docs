@@ -872,6 +872,20 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         });
     }
 
+    // Military Aircraft — OpenSky (no key, same API as flights)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::mil_aircraft::MilAircraftMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("MilAircraft init failed: {e}"),
+            }
+        });
+    }
+
     // Maritime — AIS Stream (gated on API key)
     if let Some(ref key) = args.aisstream_api_key {
         std::env::set_var("AISSTREAM_API_KEY", key);
@@ -1016,6 +1030,21 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             engine.run().await;
         });
         info!("GTFS-RT transit provider started");
+    }
+
+    // USASpending.gov — US federal defense spending (no key needed)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::usa_spending::UsaSpendingMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("USASpending init failed: {e}"),
+            }
+        });
+        info!("USASpending.gov defense spending provider started");
     }
 
     // Create live ticker cache and start fast poller
