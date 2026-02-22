@@ -1,5 +1,14 @@
 # Design Decision Backlog
 
+## Session: 20260222-1400-c9v3 (Task 3.9: Chain Listener)
+
+- [DECISION] Unified chain listener uses HTTP polling (Provider<Http> + get_logs) instead of WebSocket subscriptions — matches existing ArbitrationListener pattern in codebase, proven reliability over WS reconnect complexity.
+- [DECISION] Chain listener creates its own HTTP provider from L3 RPC URL rather than sharing the main chain reader — avoids coupling to the existing ChainReader trait and allows independent polling cadence.
+- [DECISION] Raw ABI log parsing instead of abigen! macro for Vision.sol events — lighter dependency, avoids need for full contract ABI JSON, only decode what we need from topics + data fields.
+- [DECISION] For BatchCreated handler, make getBatch() contract call to get full batch state (marketIds, resolutionTypes, customThresholds, createdAtTick) since event only emits (batchId, creator, tickDuration). Fallback to block timestamp computation if call fails.
+- [DECISION] For PlayerDeposited/RewardsClaimed, fetch current balance via getPosition() call rather than computing from event amounts — avoids out-of-sync balance tracking when events are replayed.
+- [DECISION] Bookmark tracking via p2pool_kv_store table (key-value) with UPSERT — simple, no migration needed beyond table creation, same pattern as typical indexer bookmarks.
+
 ## Session: 20260221-2300-r2fx (P2Pool Plan Review Round 2)
 
 - [DECISION] Replay attack fix: monotonic tick enforcement in claimRewards (fromTick > lastClaimedTick). BLS sigs include tick range, contract rejects stale ranges.

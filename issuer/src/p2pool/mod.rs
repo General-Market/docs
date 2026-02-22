@@ -6,6 +6,7 @@
 
 pub mod api;
 pub mod bitmap_store;
+pub mod chain_listener;
 pub mod config;
 pub mod engine;
 pub mod multiplier;

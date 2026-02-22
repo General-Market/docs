@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, Suspense } from 'react'
-import { useBatches } from '@/hooks/p2pool/useBatches'
+import { useBatches, type BatchInfo } from '@/hooks/p2pool/useBatches'
 import { BatchCard } from './BatchCard'
+import { ExpandedBatch } from './ExpandedBatch'
 import { LeaderboardSection } from '@/components/domain/vision/LeaderboardSection'
 import { LeaderboardSkeleton } from '@/components/domain/vision/LeaderboardSkeleton'
 import { VisionMarketsGrid } from '@/components/domain/vision/VisionMarketsGrid'
@@ -41,7 +42,7 @@ export function P2PoolPage() {
               </div>
             ) : batches && batches.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {batches.map(batch => (
+                {batches.map((batch: BatchInfo) => (
                   <div key={batch.id}>
                     <BatchCard
                       batch={batch}
@@ -51,8 +52,7 @@ export function P2PoolPage() {
                     />
                     {expandedBatchId === batch.id && (
                       <div className="mt-2 p-4 bg-surface border border-border-medium rounded-card">
-                        {/* Expanded view -- implemented in Task 4.2 */}
-                        <p className="text-text-muted text-sm font-mono">Expanded view coming...</p>
+                        <ExpandedBatch batchId={batch.id} batch={batch} />
                       </div>
                     )}
                   </div>

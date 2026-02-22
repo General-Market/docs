@@ -2993,9 +2993,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ).await;
             });
 
-            // Initialize Postgres pool and API routes
+            // Initialize Postgres pool, chain listener, and API routes
             match sqlx::PgPool::connect(&p2pool_cfg.database_url).await {
                 Ok(pool) => {
+                    // Spawn chain listener (unified event indexer: scheduler + Postgres)
+                    let vision_address: ethers::types::Address = p2pool_cfg.vision_address
+                        .parse()
+                        .expect("valid Vision contract address");
+                    let l3_rpc_url = components.chain.rpc_url.clone();
+                    let cl_provider = Arc::new(
+                        ethers::providers::Provider::<ethers::providers::Http>::try_from(&l3_rpc_url)
+                            .expect("valid L3 RPC URL for chain listener")
+                    );
+                    let chain_listener = issuer::p2pool::chain_listener::ChainListener::new(
+                        cl_provider,
+                        vision_address,
+                        scheduler.clone(),
+                        pool.clone(),
+                        p2pool_cfg.start_block,
+                    );
+                    let cl_shutdown = components.shutdown.clone();
+                    tokio::spawn(async move {
+                        chain_listener.run(cl_shutdown).await;
+                    });
+
                     let p2pool_state = Arc::new(issuer::p2pool::api::P2PoolState {
                         pool,
                         scheduler: scheduler.clone(),
