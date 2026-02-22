@@ -2,9 +2,9 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Replace Vision's bilateral betting with a sealed parimutuel P2Pool prediction market — single Vision.sol contract, issuer tick engine, extended data-node, new frontend.
+**Goal:** Replace Vision's bilateral betting with a sealed parimutuel P2Pool prediction market — single Vision.sol contract, issuer tick engine + chain indexer + batch API, data-node for raw price data only, new frontend.
 
-**Architecture:** Single `Vision.sol` monolith contract (batches + pool vault + bot registry) on Orbit L3. Issuer gets new `p2pool/` module for tick-based resolution with BLS consensus. Data-node extended with new collectors (Polymarket, Twitch, HackerNews) and P2Pool endpoints. Frontend replaces Vision tab with cards grid + inline expansion + Pyodide Python strategy editor.
+**Architecture:** Single `Vision.sol` monolith contract (batches + pool vault + bot registry) on Orbit L3. Issuer gets new `p2pool/` module for tick-based resolution with BLS consensus, a unified chain indexer (Vision.sol events → Postgres), and batch/history/backtest REST API. Data-node extended with new collectors (Polymarket, Twitch, HackerNews, Weather) and serves only raw market catalog + price snapshot. Frontend replaces Vision tab with cards grid + inline expansion + Pyodide Python strategy editor.
 
 **Tech Stack:** Solidity 0.8.24 (Foundry), Rust (tokio + axum), Next.js 15 + React 19, Tailwind, wagmi v3 + viem, Pyodide (WASM Python)
 
@@ -940,7 +940,7 @@ git commit -m "feat(contracts): implement bot registry and issuer ops in Vision.
 
 ---
 
-## Phase 2: Data Node — New Collectors + P2Pool Endpoints
+## Phase 2: Data Node — New Collectors + Market Catalog
 
 ### Task 2.1: Add Polymarket collector
 
@@ -1297,84 +1297,15 @@ git commit -m "feat(data-node): add Polymarket collector"
 
 ---
 
-### Task 2.3c: Create P2Pool database migrations
-
-**Files:**
-- Create: `data-node/migrations/YYYYMMDD_create_p2pool_tables.sql`
-
-The P2Pool API endpoints (Task 2.4) query several tables that don't exist yet. Create them before implementing the endpoints.
-
-**Step 1: Write the migration**
-
-```sql
--- P2Pool batch state (indexed from Vision.sol events)
-CREATE TABLE IF NOT EXISTS p2pool_batches (
-    batch_id BIGINT PRIMARY KEY,
-    creator TEXT NOT NULL,
-    market_ids TEXT[] NOT NULL,
-    resolution_types SMALLINT[] NOT NULL,
-    tick_duration BIGINT NOT NULL,
-    custom_thresholds TEXT[] NOT NULL DEFAULT '{}',
-    current_tick BIGINT NOT NULL DEFAULT 0,
-    paused BOOLEAN NOT NULL DEFAULT false,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- Player positions (indexed from Vision.sol events)
-CREATE TABLE IF NOT EXISTS p2pool_positions (
-    batch_id BIGINT NOT NULL REFERENCES p2pool_batches(batch_id),
-    player TEXT NOT NULL,
-    bitmap_hash TEXT NOT NULL,
-    stake_per_tick NUMERIC NOT NULL,
-    start_tick BIGINT NOT NULL,
-    balance NUMERIC NOT NULL,
-    last_claimed_tick BIGINT NOT NULL DEFAULT 0,
-    join_timestamp BIGINT NOT NULL,
-    total_deposited NUMERIC NOT NULL DEFAULT 0,
-    total_claimed NUMERIC NOT NULL DEFAULT 0,
-    PRIMARY KEY (batch_id, player)
-);
-
-CREATE INDEX idx_p2pool_positions_balance ON p2pool_positions(batch_id) WHERE balance > 0;
-
--- Key-value store for indexer state (e.g. last indexed block)
-CREATE TABLE IF NOT EXISTS kv_store (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-);
-
--- Tick resolution results (written by chain indexer after issuer BLS consensus)
-CREATE TABLE IF NOT EXISTS p2pool_tick_results (
-    batch_id BIGINT NOT NULL REFERENCES p2pool_batches(batch_id),
-    tick_id BIGINT NOT NULL,
-    resolved_at BIGINT NOT NULL,
-    market_outcomes JSONB NOT NULL,
-    total_pool TEXT NOT NULL,
-    winner_count BIGINT NOT NULL DEFAULT 0,
-    loser_count BIGINT NOT NULL DEFAULT 0,
-    PRIMARY KEY (batch_id, tick_id)
-);
-```
-
-**Step 2: Run the migration**
-
-Run: `cd data-node && sqlx migrate run` (or apply manually via `psql`)
-Expected: Tables created
-
-**Step 3: Commit**
-
-```bash
-git add data-node/migrations/
-git commit -m "feat(data-node): add P2Pool database migration tables"
-```
-
 ---
 
-### Task 2.4: Add P2Pool API endpoints
+### Task 2.4: Add P2Pool price data endpoints
 
 **Files:**
 - Modify: `data-node/src/api.rs`
 - Create: `data-node/src/p2pool_api.rs`
+
+The data-node serves only raw market/price data for P2Pool. Batch state, history, and backtest endpoints live on the issuer (Task 3.7).
 
 **Step 1: Create P2Pool API module**
 
@@ -1382,7 +1313,7 @@ Create `data-node/src/p2pool_api.rs`:
 
 ```rust
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Query, State},
     http::StatusCode,
     Json,
 };
@@ -1466,188 +1397,6 @@ pub async fn active_markets(
         limit: Some(50000),
     })).await
 }
-
-/// Batch listing — reads Vision.sol events via cached chain state.
-/// The data-node indexes BatchCreated/PlayerJoined events from the chain
-/// and serves them here so the frontend doesn't need direct RPC access.
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct BatchListEntry {
-    pub id: u64,
-    pub creator: String,
-    pub market_ids: Vec<String>,
-    pub resolution_types: Vec<u8>,
-    pub tick_duration: u64,
-    pub player_count: u64,
-    pub tvl: String,
-    pub current_tick: u64,
-    pub paused: bool,
-}
-
-pub async fn list_batches(
-    State(state): State<Arc<AppState>>,
-) -> Result<Json<Vec<BatchListEntry>>, StatusCode> {
-    let rows = sqlx::query_as!(
-        BatchListEntry,
-        r#"
-        SELECT
-            b.batch_id as "id!",
-            b.creator as "creator!",
-            b.market_ids as "market_ids!: Vec<String>",
-            b.resolution_types as "resolution_types!: Vec<u8>",
-            b.tick_duration as "tick_duration!",
-            COALESCE(p.player_count, 0) as "player_count!",
-            COALESCE(p.tvl, '0') as "tvl!",
-            b.current_tick as "current_tick!",
-            b.paused as "paused!"
-        FROM p2pool_batches b
-        LEFT JOIN (
-            SELECT batch_id, COUNT(*) as player_count, SUM(balance)::text as tvl
-            FROM p2pool_positions WHERE balance > 0
-            GROUP BY batch_id
-        ) p ON b.batch_id = p.batch_id
-        ORDER BY b.batch_id DESC
-        "#
-    )
-    .fetch_all(&state.pool)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    Ok(Json(rows))
-}
-
-/// Batch state — config, current tick, player count, TVL for a single batch.
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct BatchState {
-    pub id: u64,
-    pub creator: String,
-    pub market_ids: Vec<String>,
-    pub resolution_types: Vec<u8>,
-    pub tick_duration: u64,
-    pub custom_thresholds: Vec<String>,
-    pub player_count: u64,
-    pub tvl: String,
-    pub current_tick: u64,
-    pub paused: bool,
-}
-
-pub async fn batch_state(
-    State(state): State<Arc<AppState>>,
-    Path(batch_id): Path<u64>,
-) -> Result<Json<BatchState>, StatusCode> {
-    let batch = sqlx::query_as!(
-        BatchState,
-        r#"
-        SELECT
-            b.batch_id as "id!",
-            b.creator as "creator!",
-            b.market_ids as "market_ids!: Vec<String>",
-            b.resolution_types as "resolution_types!: Vec<u8>",
-            b.tick_duration as "tick_duration!",
-            b.custom_thresholds as "custom_thresholds!: Vec<String>",
-            COALESCE(p.player_count, 0) as "player_count!",
-            COALESCE(p.tvl, '0') as "tvl!",
-            b.current_tick as "current_tick!",
-            b.paused as "paused!"
-        FROM p2pool_batches b
-        LEFT JOIN (
-            SELECT batch_id, COUNT(*) as player_count, SUM(balance)::text as tvl
-            FROM p2pool_positions WHERE balance > 0
-            GROUP BY batch_id
-        ) p ON b.batch_id = p.batch_id
-        WHERE b.batch_id = $1
-        "#,
-        batch_id as i64
-    )
-    .fetch_optional(&state.pool)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-    .ok_or(StatusCode::NOT_FOUND)?;
-
-    Ok(Json(batch))
-}
-
-/// Batch history — tick results and player performance over time.
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct BatchHistoryEntry {
-    pub tick_id: u64,
-    pub resolved_at: i64,
-    pub market_outcomes: serde_json::Value, // JSON array of per-market outcomes
-    pub total_pool: String,
-    pub winner_count: u64,
-    pub loser_count: u64,
-}
-
-pub async fn batch_history(
-    State(state): State<Arc<AppState>>,
-    Path(batch_id): Path<u64>,
-) -> Result<Json<Vec<BatchHistoryEntry>>, StatusCode> {
-    let rows = sqlx::query_as!(
-        BatchHistoryEntry,
-        r#"
-        SELECT
-            tick_id as "tick_id!",
-            resolved_at as "resolved_at!",
-            market_outcomes as "market_outcomes!",
-            total_pool as "total_pool!",
-            winner_count as "winner_count!",
-            loser_count as "loser_count!"
-        FROM p2pool_tick_results
-        WHERE batch_id = $1
-        ORDER BY tick_id DESC
-        LIMIT 100
-        "#,
-        batch_id as i64
-    )
-    .fetch_all(&state.pool)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    Ok(Json(rows))
-}
-
-#[derive(Deserialize)]
-pub struct BacktestParams {
-    pub market_ids: String,   // comma-separated
-    pub ticks: i64,           // number of historical ticks to simulate
-    pub tick_duration: i64,   // seconds per tick
-    pub strategy: String,     // "momentum", "bear", "random", or custom bitmap
-}
-
-#[derive(Serialize)]
-pub struct BacktestResult {
-    pub win_rate: f64,
-    pub total_pnl: f64,
-    pub ticks_simulated: i64,
-    pub per_tick_results: Vec<TickResult>,
-    #[serde(default)]
-    pub mock: bool, // true when returning placeholder data (Task 2.4), false in real impl (Task 5.3)
-}
-
-#[derive(Serialize)]
-pub struct TickResult {
-    pub tick: i64,
-    pub wins: i32,
-    pub losses: i32,
-    pub pnl: f64,
-}
-
-pub async fn backtest(
-    State(state): State<Arc<AppState>>,
-    Query(params): Query<BacktestParams>,
-) -> Result<Json<BacktestResult>, StatusCode> {
-    // Placeholder — full implementation in Task 5.3.
-    // Returns mock=true flag so frontend can show "mock data" indicator.
-    Ok(Json(BacktestResult {
-        win_rate: 0.5,
-        total_pnl: 0.0,
-        ticks_simulated: params.ticks,
-        per_tick_results: vec![],
-        mock: true, // Frontend checks this to show "mock data" warning
-    }))
-}
 ```
 
 **Step 2: Register routes in api.rs**
@@ -1657,10 +1406,6 @@ Add to the router in `data-node/src/api.rs`:
 ```rust
 .route("/p2pool/snapshot", get(crate::p2pool_api::snapshot))
 .route("/p2pool/markets/active", get(crate::p2pool_api::active_markets))
-.route("/p2pool/batches", get(crate::p2pool_api::list_batches))
-.route("/p2pool/batch/:id/state", get(crate::p2pool_api::batch_state))
-.route("/p2pool/batch/:id/history", get(crate::p2pool_api::batch_history))
-.route("/p2pool/backtest", get(crate::p2pool_api::backtest))
 ```
 
 And add `mod p2pool_api;` in `main.rs`.
@@ -1674,263 +1419,10 @@ Expected: Compiles
 
 ```bash
 git add data-node/src/p2pool_api.rs data-node/src/api.rs data-node/src/main.rs
-git commit -m "feat(data-node): add P2Pool snapshot, markets, and backtest endpoints"
+git commit -m "feat(data-node): add P2Pool snapshot and market catalog endpoints"
 ```
 
 ---
-
-### Task 2.5: Add chain indexer for data-node (Vision.sol events → Postgres)
-
-**Files:**
-- Create: `data-node/src/p2pool_indexer.rs`
-- Modify: `data-node/src/main.rs`
-- Modify: `data-node/src/config.rs`
-
-The P2Pool API endpoints (Task 2.4) serve batch/position data from Postgres, but nothing populates those tables. This task adds a chain event indexer that watches Vision.sol events and writes to the `p2pool_batches`, `p2pool_positions`, and `p2pool_tick_results` tables created in Task 2.3c.
-
-**Note:** This is separate from the issuer's chain listener (Task 3.9), which feeds the tick scheduler. The data-node indexer populates Postgres for the REST API.
-
-**Consistency with Task 3.9 indexer:** Both indexers watch the same Vision.sol events but serve different purposes (data-node → Postgres for REST API, issuer → tick scheduler state). To prevent divergence:
-- Both MUST use the same `vision_address` and start from the same `start_block` (the Vision.sol deployment block)
-- Both MUST handle chain reorgs: on reorg, delete data from the reorged block onward and re-index
-- The data-node indexer is the source of truth for historical data (Postgres). The issuer indexer is ephemeral (in-memory state for tick scheduling). On issuer restart, it rebuilds from `start_block`.
-- If the data-node indexer falls behind, REST API serves stale data but the system is still safe (issuers still resolve ticks correctly). If the issuer indexer falls behind, ticks are delayed until it catches up.
-
-**Step 1: Add config**
-
-Add to `data-node/src/config.rs`:
-```rust
-/// P2Pool indexer config
-#[derive(Debug, Clone)]
-pub struct P2PoolIndexerConfig {
-    pub enabled: bool,
-    pub rpc_ws_url: String,
-    pub vision_address: String,
-    pub start_block: u64,
-    pub poll_interval_secs: u64,
-}
-```
-
-Add CLI args: `--p2pool-enabled`, `--p2pool-vision-address`, `--p2pool-rpc-ws`, `--p2pool-start-block`.
-
-**Step 2: Implement the indexer**
-
-Create `data-node/src/p2pool_indexer.rs`:
-
-```rust
-use ethers::prelude::*;
-use ethers::types::{Address, Filter, Log, H256, U256};
-use sqlx::PgPool;
-use std::sync::Arc;
-
-// Generate contract bindings: abigen!(VisionContract, "contracts/out/Vision.sol/Vision.json");
-pub struct P2PoolIndexer {
-    provider: Arc<Provider<Ws>>,
-    vision_contract: VisionContract<Provider<Ws>>, // ethers abigen binding for eth_call
-    pool: PgPool,
-    start_block: u64,
-}
-
-impl P2PoolIndexer {
-    pub fn new(
-        provider: Arc<Provider<Ws>>,
-        vision_address: Address,
-        pool: PgPool,
-        start_block: u64,
-    ) -> Self {
-        Self { provider, vision_address, pool, start_block }
-    }
-
-    pub async fn run(&self) -> eyre::Result<()> {
-        // 1. Get last indexed block from DB (or use start_block)
-        let last_block = self.get_last_indexed_block().await?.unwrap_or(self.start_block);
-
-        // 2. Replay missed events
-        let filter = Filter::new()
-            .address(self.vision_address)
-            .from_block(last_block);
-        let logs = self.provider.get_logs(&filter).await?;
-        for log in logs {
-            self.process_log(&log).await?;
-        }
-
-        // 3. Subscribe to new events
-        let sub = self.provider.subscribe_logs(
-            &Filter::new().address(self.vision_address)
-        ).await?;
-        let mut stream = sub.into_stream();
-
-        while let Some(log) = stream.next().await {
-            if let Err(e) = self.process_log(&log).await {
-                tracing::error!("Failed to index P2Pool event: {e}");
-            }
-        }
-        Ok(())
-    }
-
-    async fn process_log(&self, log: &Log) -> eyre::Result<()> {
-        let topic0 = log.topics.first().ok_or_else(|| eyre::eyre!("No topic0"))?;
-
-        // BatchCreated(uint256 indexed batchId, address indexed creator, uint256 tickDuration)
-        if *topic0 == H256::from(ethers::utils::keccak256("BatchCreated(uint256,address,uint256)")) {
-            let batch_id = U256::from_big_endian(log.topics[1].as_bytes()).as_i64();
-            let creator = format!("{:?}", Address::from(log.topics[2]));
-
-            // Fetch full batch config from chain via getBatch(batchId)
-            let batch = self.vision_contract.get_batch(U256::from(batch_id)).call().await?;
-            let market_ids: Vec<String> = batch.market_ids.iter().map(|h| format!("{:?}", h)).collect();
-            let res_types: Vec<i16> = batch.resolution_types.iter().map(|r| *r as i16).collect();
-
-            sqlx::query!(
-                "INSERT INTO p2pool_batches (batch_id, creator, market_ids, resolution_types, tick_duration)
-                 VALUES ($1, $2, $3, $4, $5)
-                 ON CONFLICT (batch_id) DO UPDATE SET
-                    market_ids = EXCLUDED.market_ids,
-                    resolution_types = EXCLUDED.resolution_types",
-                batch_id, creator,
-                &market_ids,
-                &res_types,
-                batch.tick_duration.as_u64() as i64
-            )
-            .execute(&self.pool)
-            .await?;
-        }
-
-        // PlayerJoined(uint256 indexed batchId, address indexed player, uint256 stakePerTick, bytes32 bitmapHash)
-        if *topic0 == H256::from(ethers::utils::keccak256("PlayerJoined(uint256,address,uint256,bytes32)")) {
-            let batch_id = U256::from_big_endian(log.topics[1].as_bytes()).as_i64();
-            let player_addr = Address::from(log.topics[2]);
-            let player = format!("{:?}", player_addr);
-
-            // Decode event data: stakePerTick (bytes 0-31), bitmapHash (bytes 32-63)
-            let stake_per_tick = U256::from_big_endian(&log.data[..32]);
-            let bitmap_hash = H256::from_slice(&log.data[32..64]);
-
-            // Fetch full position from chain for balance/timestamp
-            let pos = self.vision_contract.get_position(
-                U256::from(batch_id), player_addr
-            ).call().await?;
-
-            sqlx::query!(
-                "INSERT INTO p2pool_positions (batch_id, player, bitmap_hash, stake_per_tick, start_tick, balance, join_timestamp, total_deposited)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                 ON CONFLICT (batch_id, player) DO UPDATE SET
-                    bitmap_hash = EXCLUDED.bitmap_hash,
-                    balance = EXCLUDED.balance",
-                batch_id, player,
-                format!("{:?}", bitmap_hash),
-                stake_per_tick.as_u128() as f64 / 1e6, // USDC 6 decimals
-                pos.start_tick.as_u64() as i64,
-                pos.balance.as_u128() as f64 / 1e6,
-                pos.join_timestamp.as_u64() as i64,
-                pos.balance.as_u128() as f64 / 1e6 // initial deposit = balance at join
-            )
-            .execute(&self.pool)
-            .await?;
-        }
-
-        // PlayerDeposited → update balance + total_deposited
-        if *topic0 == H256::from(ethers::utils::keccak256("PlayerDeposited(uint256,address,uint256)")) {
-            let batch_id = U256::from_big_endian(log.topics[1].as_bytes()).as_i64();
-            let player = format!("{:?}", Address::from(log.topics[2]));
-            let amount = U256::from_big_endian(&log.data[..32]).as_u128() as f64 / 1e6;
-            sqlx::query!(
-                "UPDATE p2pool_positions SET balance = balance + $3, total_deposited = total_deposited + $3 WHERE batch_id = $1 AND player = $2",
-                batch_id, player, amount
-            ).execute(&self.pool).await?;
-        }
-
-        // PlayerWithdrawn / ForceWithdrawn → delete position
-        if *topic0 == H256::from(ethers::utils::keccak256("PlayerWithdrawn(uint256,address,uint256)"))
-            || *topic0 == H256::from(ethers::utils::keccak256("ForceWithdrawn(uint256,address,uint256)"))
-        {
-            let batch_id = U256::from_big_endian(log.topics[1].as_bytes()).as_i64();
-            let player = format!("{:?}", Address::from(log.topics[2]));
-            sqlx::query!("DELETE FROM p2pool_positions WHERE batch_id = $1 AND player = $2", batch_id, player)
-                .execute(&self.pool).await?;
-        }
-
-        // BatchPaused → update paused flag
-        if *topic0 == H256::from(ethers::utils::keccak256("BatchPaused(uint256)")) {
-            let batch_id = U256::from_big_endian(log.topics[1].as_bytes()).as_i64();
-            sqlx::query!("UPDATE p2pool_batches SET paused = true WHERE batch_id = $1", batch_id)
-                .execute(&self.pool).await?;
-        }
-
-        // RewardsClaimed → update balance and last_claimed_tick
-        if *topic0 == H256::from(ethers::utils::keccak256("RewardsClaimed(uint256,address,uint256)")) {
-            let batch_id = U256::from_big_endian(log.topics[1].as_bytes()).as_i64();
-            let player = format!("{:?}", Address::from(log.topics[2]));
-            // After a claim, re-read position from chain to get updated balance
-            let pos = self.vision_contract.getPosition(batch_id as u64, Address::from(log.topics[2])).await?;
-            let balance = pos.balance.to_string();
-            let last_claimed = pos.lastClaimedTick.as_i64();
-            sqlx::query!(
-                "UPDATE p2pool_positions SET balance = $3, last_claimed_tick = $4 WHERE batch_id = $1 AND player = $2",
-                batch_id, player, balance, last_claimed
-            ).execute(&self.pool).await?;
-        }
-
-        // Save last indexed block
-        if let Some(block_number) = log.block_number {
-            self.save_last_indexed_block(block_number.as_u64()).await?;
-        }
-
-        Ok(())
-    }
-
-    async fn get_last_indexed_block(&self) -> eyre::Result<Option<u64>> {
-        let row = sqlx::query_scalar!(
-            "SELECT value::bigint FROM kv_store WHERE key = 'p2pool_last_indexed_block'"
-        )
-        .fetch_optional(&self.pool)
-        .await?;
-        Ok(row.flatten().map(|v| v as u64))
-    }
-
-    async fn save_last_indexed_block(&self, block: u64) -> eyre::Result<()> {
-        sqlx::query!(
-            "INSERT INTO kv_store (key, value) VALUES ('p2pool_last_indexed_block', $1::text)
-             ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
-            (block as i64).to_string()
-        )
-        .execute(&self.pool)
-        .await?;
-        Ok(())
-    }
-}
-```
-
-**Step 3: Spawn in main.rs**
-
-```rust
-// P2Pool chain indexer
-if config.p2pool.enabled {
-    let pool_c = pool.clone();
-    let ws = Provider::<Ws>::connect(&config.p2pool.rpc_ws_url).await?;
-    let vision_addr: Address = config.p2pool.vision_address.parse()?;
-    let indexer = p2pool_indexer::P2PoolIndexer::new(
-        Arc::new(ws), vision_addr, pool_c, config.p2pool.start_block
-    );
-    tokio::spawn(async move {
-        if let Err(e) = indexer.run().await {
-            tracing::error!("P2Pool indexer failed: {e}");
-        }
-    });
-}
-```
-
-**Step 4: Build and test**
-
-Run: `cd data-node && cargo build`
-Expected: Compiles
-
-**Step 5: Commit**
-
-```bash
-git add data-node/src/p2pool_indexer.rs data-node/src/main.rs data-node/src/config.rs
-git commit -m "feat(data-node): add Vision.sol chain indexer for P2Pool tables"
-```
 
 ---
 
@@ -2053,6 +1545,7 @@ pub struct P2PoolConfig {
     pub enabled: bool,
     pub vision_address: String,
     pub data_node_url: String,
+    pub database_url: String,            // Postgres for chain-indexed state (batches, positions, tick results)
     pub rpc_ws_url: String,
     pub start_block: u64,
     pub reveal_window_secs: u64,        // default 600 (10 min)
@@ -2067,6 +1560,7 @@ impl Default for P2PoolConfig {
             enabled: false,
             vision_address: String::new(),
             data_node_url: "http://localhost:8200".into(),
+            database_url: "postgres://localhost:5432/p2pool".into(),
             rpc_ws_url: "ws://localhost:8546".into(),
             start_block: 0,
             reveal_window_secs: 600,
@@ -2107,6 +1601,79 @@ Expected: Compiles
 ```bash
 git add issuer/src/p2pool/ issuer/src/lib.rs
 git commit -m "feat(issuer): add p2pool module skeleton with types and config"
+```
+
+---
+
+### Task 3.1b: Create P2Pool database migrations
+
+**Files:**
+- Create: `issuer/migrations/YYYYMMDD_create_p2pool_tables.sql`
+
+The P2Pool API endpoints (Task 3.7) and chain listener (Task 3.9) read/write several Postgres tables. Create them before implementing those tasks.
+
+**Step 1: Write the migration**
+
+```sql
+-- P2Pool batch state (indexed from Vision.sol events by the issuer's chain listener)
+CREATE TABLE IF NOT EXISTS p2pool_batches (
+    batch_id BIGINT PRIMARY KEY,
+    creator TEXT NOT NULL,
+    market_ids TEXT[] NOT NULL,
+    resolution_types SMALLINT[] NOT NULL,
+    tick_duration BIGINT NOT NULL,
+    custom_thresholds TEXT[] NOT NULL DEFAULT '{}',
+    current_tick BIGINT NOT NULL DEFAULT 0,
+    paused BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Player positions (indexed from Vision.sol events)
+CREATE TABLE IF NOT EXISTS p2pool_positions (
+    batch_id BIGINT NOT NULL REFERENCES p2pool_batches(batch_id),
+    player TEXT NOT NULL,
+    bitmap_hash TEXT NOT NULL,
+    stake_per_tick NUMERIC NOT NULL,
+    start_tick BIGINT NOT NULL,
+    balance NUMERIC NOT NULL,
+    last_claimed_tick BIGINT NOT NULL DEFAULT 0,
+    join_timestamp BIGINT NOT NULL,
+    total_deposited NUMERIC NOT NULL DEFAULT 0,
+    total_claimed NUMERIC NOT NULL DEFAULT 0,
+    PRIMARY KEY (batch_id, player)
+);
+
+CREATE INDEX idx_p2pool_positions_balance ON p2pool_positions(batch_id) WHERE balance > 0;
+
+-- Key-value store for indexer state (e.g. last indexed block)
+CREATE TABLE IF NOT EXISTS kv_store (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+-- Tick resolution results (written by chain listener after issuer BLS consensus)
+CREATE TABLE IF NOT EXISTS p2pool_tick_results (
+    batch_id BIGINT NOT NULL REFERENCES p2pool_batches(batch_id),
+    tick_id BIGINT NOT NULL,
+    resolved_at BIGINT NOT NULL,
+    market_outcomes JSONB NOT NULL,
+    total_pool TEXT NOT NULL,
+    winner_count BIGINT NOT NULL DEFAULT 0,
+    loser_count BIGINT NOT NULL DEFAULT 0,
+    PRIMARY KEY (batch_id, tick_id)
+);
+```
+
+**Step 2: Run the migration**
+
+Run: `cd issuer && sqlx migrate run` (or apply manually via `psql`)
+Expected: Tables created
+
+**Step 3: Commit**
+
+```bash
+git add issuer/migrations/
+git commit -m "feat(issuer): add P2Pool database migration tables"
 ```
 
 ---
@@ -3170,9 +2737,187 @@ Write tests using the example from the brief (Tick 5 multi-market resolution).
 
 REST endpoints served by the issuer. Follow the same axum pattern used in the existing issuer API.
 
+The issuer now serves ALL P2Pool state endpoints (batches, batch state, history, backtest) in addition to bitmap/balance/reveal. The data-node only serves raw market data (`/p2pool/snapshot`, `/p2pool/markets/active`).
+
+`P2PoolState` includes a `pool: PgPool` for querying the Postgres tables populated by the chain listener (Task 3.9).
+
 **Endpoints:**
 
-1. **`POST /p2pool/bitmap`** — Player submits bitmap for a batch.
+1. **`GET /p2pool/batches`** — List all active batches with player count and TVL.
+   ```rust
+   #[derive(Serialize)]
+   #[serde(rename_all = "camelCase")]
+   pub struct BatchListEntry {
+       pub id: u64,
+       pub creator: String,
+       pub market_ids: Vec<String>,
+       pub resolution_types: Vec<u8>,
+       pub tick_duration: u64,
+       pub player_count: u64,
+       pub tvl: String,
+       pub current_tick: u64,
+       pub paused: bool,
+   }
+
+   pub async fn list_batches(
+       State(state): State<Arc<P2PoolState>>,
+   ) -> Result<Json<Vec<BatchListEntry>>, StatusCode> {
+       let rows = sqlx::query_as!(
+           BatchListEntry,
+           r#"
+           SELECT
+               b.batch_id as "id!", b.creator as "creator!",
+               b.market_ids as "market_ids!: Vec<String>",
+               b.resolution_types as "resolution_types!: Vec<u8>",
+               b.tick_duration as "tick_duration!",
+               COALESCE(p.player_count, 0) as "player_count!",
+               COALESCE(p.tvl, '0') as "tvl!",
+               b.current_tick as "current_tick!",
+               b.paused as "paused!"
+           FROM p2pool_batches b
+           LEFT JOIN (
+               SELECT batch_id, COUNT(*) as player_count, SUM(balance)::text as tvl
+               FROM p2pool_positions WHERE balance > 0 GROUP BY batch_id
+           ) p ON b.batch_id = p.batch_id
+           ORDER BY b.batch_id DESC
+           "#
+       )
+       .fetch_all(&state.pool)
+       .await
+       .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+       Ok(Json(rows))
+   }
+   ```
+
+2. **`GET /p2pool/batch/{id}/state`** — Batch config, current tick, player count, TVL.
+   ```rust
+   #[derive(Serialize)]
+   #[serde(rename_all = "camelCase")]
+   pub struct BatchState {
+       pub id: u64,
+       pub creator: String,
+       pub market_ids: Vec<String>,
+       pub resolution_types: Vec<u8>,
+       pub tick_duration: u64,
+       pub custom_thresholds: Vec<String>,
+       pub player_count: u64,
+       pub tvl: String,
+       pub current_tick: u64,
+       pub paused: bool,
+   }
+
+   pub async fn batch_state(
+       State(state): State<Arc<P2PoolState>>,
+       Path(batch_id): Path<u64>,
+   ) -> Result<Json<BatchState>, StatusCode> {
+       let batch = sqlx::query_as!(
+           BatchState,
+           r#"
+           SELECT
+               b.batch_id as "id!", b.creator as "creator!",
+               b.market_ids as "market_ids!: Vec<String>",
+               b.resolution_types as "resolution_types!: Vec<u8>",
+               b.tick_duration as "tick_duration!",
+               b.custom_thresholds as "custom_thresholds!: Vec<String>",
+               COALESCE(p.player_count, 0) as "player_count!",
+               COALESCE(p.tvl, '0') as "tvl!",
+               b.current_tick as "current_tick!",
+               b.paused as "paused!"
+           FROM p2pool_batches b
+           LEFT JOIN (
+               SELECT batch_id, COUNT(*) as player_count, SUM(balance)::text as tvl
+               FROM p2pool_positions WHERE balance > 0 GROUP BY batch_id
+           ) p ON b.batch_id = p.batch_id
+           WHERE b.batch_id = $1
+           "#,
+           batch_id as i64
+       )
+       .fetch_optional(&state.pool)
+       .await
+       .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+       .ok_or(StatusCode::NOT_FOUND)?;
+       Ok(Json(batch))
+   }
+   ```
+
+3. **`GET /p2pool/batch/{id}/history`** — Tick results and player performance over time.
+   ```rust
+   #[derive(Serialize)]
+   #[serde(rename_all = "camelCase")]
+   pub struct BatchHistoryEntry {
+       pub tick_id: u64,
+       pub resolved_at: i64,
+       pub market_outcomes: serde_json::Value,
+       pub total_pool: String,
+       pub winner_count: u64,
+       pub loser_count: u64,
+   }
+
+   pub async fn batch_history(
+       State(state): State<Arc<P2PoolState>>,
+       Path(batch_id): Path<u64>,
+   ) -> Result<Json<Vec<BatchHistoryEntry>>, StatusCode> {
+       let rows = sqlx::query_as!(
+           BatchHistoryEntry,
+           r#"
+           SELECT tick_id as "tick_id!", resolved_at as "resolved_at!",
+               market_outcomes as "market_outcomes!", total_pool as "total_pool!",
+               winner_count as "winner_count!", loser_count as "loser_count!"
+           FROM p2pool_tick_results WHERE batch_id = $1
+           ORDER BY tick_id DESC LIMIT 100
+           "#,
+           batch_id as i64
+       )
+       .fetch_all(&state.pool)
+       .await
+       .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+       Ok(Json(rows))
+   }
+   ```
+
+4. **`GET /p2pool/backtest`** — Run strategy against historical data (real implementation).
+   Uses the issuer's own resolution functions — no mock flag needed since the issuer
+   has direct access to its Postgres price data and resolution logic.
+   ```rust
+   #[derive(Deserialize)]
+   pub struct BacktestParams {
+       pub market_ids: String,   // comma-separated
+       pub ticks: i64,
+       pub tick_duration: i64,
+       pub strategy: String,     // "momentum", "contrarian", "all_up", "all_down"
+   }
+
+   #[derive(Serialize)]
+   pub struct BacktestResult {
+       pub win_rate: f64,
+       pub total_pnl: f64,
+       pub ticks_simulated: i64,
+       pub per_tick_results: Vec<TickResult>,
+   }
+
+   #[derive(Serialize)]
+   pub struct TickResult {
+       pub tick: i64,
+       pub wins: i32,
+       pub losses: i32,
+       pub pnl: f64,
+   }
+
+   pub async fn backtest(
+       State(state): State<Arc<P2PoolState>>,
+       Query(params): Query<BacktestParams>,
+   ) -> Result<Json<BacktestResult>, StatusCode> {
+       // Fetch historical prices from data-node's market_prices table
+       // (issuer connects to same Postgres or proxies to data-node for price data)
+       // Simulate tick resolution using % change formula
+       // Apply strategy bitmap to determine UP/DOWN calls
+       // Compute win/loss per tick and cumulative PnL
+       // Return real BacktestResult
+       todo!("Full implementation with issuer's resolution functions")
+   }
+   ```
+
+5. **`POST /p2pool/bitmap`** — Player submits bitmap for a batch.
    ```rust
    #[derive(Deserialize)]
    pub struct BitmapSubmission {
@@ -3242,10 +2987,23 @@ REST endpoints served by the issuer. Follow the same axum pattern used in the ex
    }
    ```
 
-4. **`GET /p2pool/markets`** — Issuer-curated market whitelist.
+8. **`GET /p2pool/markets`** — Issuer-curated market whitelist.
    Returns the BLS-signed JSON of active markets from the hybrid registry.
 
-**Commit message:** `feat(issuer): implement P2Pool REST API endpoints`
+**Route registration:**
+
+```rust
+.route("/p2pool/batches", get(api::list_batches))
+.route("/p2pool/batch/:id/state", get(api::batch_state))
+.route("/p2pool/batch/:id/history", get(api::batch_history))
+.route("/p2pool/backtest", get(api::backtest))
+.route("/p2pool/bitmap", post(api::submit_bitmap))
+.route("/p2pool/balance/:batch_id/:player", get(api::get_balance))
+.route("/p2pool/reveal/:batch_id/:tick_id", get(api::get_reveals))
+.route("/p2pool/markets", get(api::markets))
+```
+
+**Commit message:** `feat(issuer): implement P2Pool REST API endpoints (batch, history, backtest, bitmap, balance)`
 
 ---
 
@@ -3255,10 +3013,19 @@ REST endpoints served by the issuer. Follow the same axum pattern used in the ex
 - Modify: `issuer/src/main.rs`
 - Modify: `issuer/src/bootstrap/mod.rs`
 - Modify: `issuer/src/config.rs`
+- Modify: `issuer/Cargo.toml`
 - Create: `issuer/src/p2pool/engine.rs`
 - Modify: `issuer/src/p2pool/mod.rs`
 
-**Step 1: Wire P2Pool config into IssuerConfig**
+**Step 1: Add sqlx dependency**
+
+In `issuer/Cargo.toml`:
+```toml
+[dependencies]
+sqlx = { version = "0.7", features = ["runtime-tokio", "postgres", "macros"] }
+```
+
+**Step 2: Wire P2Pool config into IssuerConfig**
 
 In `issuer/src/config.rs`, add a field to `IssuerConfig`:
 ```rust
@@ -3344,6 +3111,10 @@ pub async fn run(
 ```rust
 // In main.rs, after existing cycle engine setup:
 if config.p2pool.enabled {
+    // Create Postgres pool for P2Pool state persistence
+    let p2pool_pool = sqlx::PgPool::connect(&config.p2pool.database_url).await
+        .expect("Failed to connect to P2Pool database");
+
     let vision_contract = Arc::new(/* abigen binding */);
     let tick_scheduler = Arc::new(TickScheduler::new(vision_contract.clone()));
     let bitmap_store = Arc::new(BitmapStore::new());
@@ -3363,10 +3134,13 @@ if config.p2pool.enabled {
         scheduler: tick_scheduler.clone(),
         bitmap_store: bitmap_store.clone(),
         resolver: resolver.clone(),
+        pool: p2pool_pool.clone(), // Postgres pool for batch/history queries
         config: config.p2pool.clone(),
         bls_signer: bls_signer.clone(),
     });
     // router = router.merge(p2pool::api::routes(p2pool_state));
+
+    // Pass pool to chain listener (Task 3.9) for Postgres writes
 }
 ```
 
@@ -3379,32 +3153,40 @@ Expected: Compiles. Full integration test requires running chain + data-node.
 
 ---
 
-### Task 3.9: Add Vision.sol chain event listener
+### Task 3.9: Unified Vision.sol chain listener + indexer
 
 **Files:**
 - Create: `issuer/src/p2pool/chain_listener.rs`
 - Modify: `issuer/src/p2pool/mod.rs`
 
-The tick scheduler needs to know about batches and player positions. This task adds a chain event listener that watches Vision.sol for `BatchCreated`, `PlayerJoined`, `PlayerDeposited`, `PlayerWithdrawn`, `BatchPaused`, etc. and feeds them into the tick scheduler's state.
+The issuer is the single indexer for Vision.sol events. Each event handler does BOTH:
+1. **In-memory scheduler update** — feeds the tick scheduler for resolution
+2. **Postgres write** — persists batch/position/tick state for the REST API (Task 3.7)
 
-**Step 1: Create chain listener module**
+This replaces what was previously two separate indexers (data-node + issuer). Single indexer eliminates consistency issues.
+
+**Step 1: Create unified chain listener module**
 
 Create `issuer/src/p2pool/chain_listener.rs`:
 
 ```rust
 use ethers::prelude::*;
 use ethers::types::{Address, H256, U256, Filter, Log};
+use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::sync::watch;
 
 use crate::p2pool::types::{Batch, PlayerPosition};
 use crate::p2pool::tick_scheduler::TickScheduler;
 
-/// Listens to Vision.sol events and updates the tick scheduler state.
+/// Unified chain listener: watches Vision.sol events, updates BOTH the in-memory
+/// tick scheduler AND Postgres tables (p2pool_batches, p2pool_positions, etc.).
 pub struct ChainListener {
     provider: Arc<Provider<Ws>>,
+    vision_contract: VisionContract<Provider<Ws>>, // ethers abigen binding for eth_call
     vision_address: Address,
     scheduler: Arc<TickScheduler>,
+    pool: PgPool,
 }
 
 // Event signatures (keccak256 of event signature)
@@ -3419,18 +3201,24 @@ const REWARDS_CLAIMED_TOPIC: &str = "RewardsClaimed(uint256,address,uint256)";
 impl ChainListener {
     pub fn new(
         provider: Arc<Provider<Ws>>,
+        vision_contract: VisionContract<Provider<Ws>>,
         vision_address: Address,
         scheduler: Arc<TickScheduler>,
+        pool: PgPool,
     ) -> Self {
-        Self { provider, vision_address, scheduler }
+        Self { provider, vision_contract, vision_address, scheduler, pool }
     }
 
     /// Start listening from a given block number. Replays missed events then subscribes live.
+    /// Uses kv_store bookmark to resume from last indexed block on restart.
     pub async fn run(
         &self,
-        from_block: u64,
+        default_start_block: u64,
         mut shutdown: watch::Receiver<bool>,
     ) -> eyre::Result<()> {
+        // Resume from last indexed block (bookmark) or use default
+        let from_block = self.get_last_indexed_block().await?.unwrap_or(default_start_block);
+
         // 1. Replay historical events from `from_block` to latest
         let filter = Filter::new()
             .address(self.vision_address)
@@ -3438,7 +3226,7 @@ impl ChainListener {
 
         let logs = self.provider.get_logs(&filter).await?;
         for log in logs {
-            self.process_log(log).await?;
+            self.process_log(&log).await?;
         }
 
         // 2. Subscribe to new events
@@ -3450,7 +3238,7 @@ impl ChainListener {
         loop {
             tokio::select! {
                 Some(log) = stream.next() => {
-                    if let Err(e) = self.process_log(log).await {
+                    if let Err(e) = self.process_log(&log).await {
                         tracing::error!("Failed to process Vision event: {e}");
                     }
                 }
@@ -3463,43 +3251,153 @@ impl ChainListener {
         Ok(())
     }
 
-    async fn process_log(&self, log: Log) -> eyre::Result<()> {
-        let topic0 = log.topics.get(0).ok_or_else(|| eyre::eyre!("No topic0"))?;
+    async fn process_log(&self, log: &Log) -> eyre::Result<()> {
+        let topic0 = log.topics.first().ok_or_else(|| eyre::eyre!("No topic0"))?;
 
-        // Dispatch based on event topic
+        // Each handler does BOTH: scheduler update (in-memory) + Postgres write
         match topic0 {
             t if *t == H256::from(ethers::utils::keccak256(BATCH_CREATED_TOPIC)) => {
-                let batch_id = U256::from_big_endian(&log.topics[1].as_bytes()).as_u64();
+                let batch_id = U256::from_big_endian(log.topics[1].as_bytes()).as_u64();
                 let creator = Address::from(log.topics[2]);
                 tracing::info!("BatchCreated: id={batch_id}, creator={creator:?}");
-                // Fetch full batch config from chain via getBatch() call
+
+                // In-memory: feed tick scheduler
                 self.scheduler.on_batch_created(batch_id).await?;
+
+                // Postgres: fetch full config from chain and persist
+                let batch = self.vision_contract.get_batch(U256::from(batch_id)).call().await?;
+                let market_ids: Vec<String> = batch.market_ids.iter().map(|h| format!("{:?}", h)).collect();
+                let res_types: Vec<i16> = batch.resolution_types.iter().map(|r| *r as i16).collect();
+                let creator_str = format!("{:?}", creator);
+                sqlx::query!(
+                    "INSERT INTO p2pool_batches (batch_id, creator, market_ids, resolution_types, tick_duration)
+                     VALUES ($1, $2, $3, $4, $5)
+                     ON CONFLICT (batch_id) DO UPDATE SET
+                        market_ids = EXCLUDED.market_ids,
+                        resolution_types = EXCLUDED.resolution_types",
+                    batch_id as i64, creator_str,
+                    &market_ids, &res_types,
+                    batch.tick_duration.as_u64() as i64
+                ).execute(&self.pool).await?;
             }
+
             t if *t == H256::from(ethers::utils::keccak256(PLAYER_JOINED_TOPIC)) => {
-                let batch_id = U256::from_big_endian(&log.topics[1].as_bytes()).as_u64();
-                let player = Address::from(log.topics[2]);
-                tracing::info!("PlayerJoined: batch={batch_id}, player={player:?}");
-                self.scheduler.on_player_joined(batch_id, player).await?;
+                let batch_id = U256::from_big_endian(log.topics[1].as_bytes()).as_u64();
+                let player_addr = Address::from(log.topics[2]);
+                let player = format!("{:?}", player_addr);
+                tracing::info!("PlayerJoined: batch={batch_id}, player={player_addr:?}");
+
+                // In-memory
+                self.scheduler.on_player_joined(batch_id, player_addr).await?;
+
+                // Postgres: decode event data + fetch full position
+                let stake_per_tick = U256::from_big_endian(&log.data[..32]);
+                let bitmap_hash = H256::from_slice(&log.data[32..64]);
+                let pos = self.vision_contract.get_position(
+                    U256::from(batch_id), player_addr
+                ).call().await?;
+                sqlx::query!(
+                    "INSERT INTO p2pool_positions (batch_id, player, bitmap_hash, stake_per_tick, start_tick, balance, join_timestamp, total_deposited)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                     ON CONFLICT (batch_id, player) DO UPDATE SET
+                        bitmap_hash = EXCLUDED.bitmap_hash, balance = EXCLUDED.balance",
+                    batch_id as i64, player,
+                    format!("{:?}", bitmap_hash),
+                    stake_per_tick.as_u128() as f64 / 1e6,
+                    pos.start_tick.as_u64() as i64,
+                    pos.balance.as_u128() as f64 / 1e6,
+                    pos.join_timestamp.as_u64() as i64,
+                    pos.balance.as_u128() as f64 / 1e6
+                ).execute(&self.pool).await?;
             }
+
+            t if *t == H256::from(ethers::utils::keccak256(PLAYER_DEPOSITED_TOPIC)) => {
+                let batch_id = U256::from_big_endian(log.topics[1].as_bytes()).as_u64();
+                let player = format!("{:?}", Address::from(log.topics[2]));
+                let amount = U256::from_big_endian(&log.data[..32]).as_u128() as f64 / 1e6;
+
+                // Postgres
+                sqlx::query!(
+                    "UPDATE p2pool_positions SET balance = balance + $3, total_deposited = total_deposited + $3 WHERE batch_id = $1 AND player = $2",
+                    batch_id as i64, player, amount
+                ).execute(&self.pool).await?;
+            }
+
+            t if *t == H256::from(ethers::utils::keccak256(PLAYER_WITHDRAWN_TOPIC))
+                || *t == H256::from(ethers::utils::keccak256(FORCE_WITHDRAWN_TOPIC)) => {
+                let batch_id = U256::from_big_endian(log.topics[1].as_bytes()).as_u64();
+                let player = format!("{:?}", Address::from(log.topics[2]));
+
+                // Postgres
+                sqlx::query!("DELETE FROM p2pool_positions WHERE batch_id = $1 AND player = $2",
+                    batch_id as i64, player
+                ).execute(&self.pool).await?;
+            }
+
             t if *t == H256::from(ethers::utils::keccak256(BATCH_PAUSED_TOPIC)) => {
-                let batch_id = U256::from_big_endian(&log.topics[1].as_bytes()).as_u64();
+                let batch_id = U256::from_big_endian(log.topics[1].as_bytes()).as_u64();
                 tracing::info!("BatchPaused: id={batch_id}");
+
+                // In-memory
                 self.scheduler.on_batch_paused(batch_id).await?;
+
+                // Postgres
+                sqlx::query!("UPDATE p2pool_batches SET paused = true WHERE batch_id = $1",
+                    batch_id as i64
+                ).execute(&self.pool).await?;
             }
-            t if *t == H256::from(ethers::utils::keccak256("RewardsClaimed(uint256,address,uint256)")) => {
-                let batch_id = U256::from_big_endian(&log.topics[1].as_bytes()).as_u64();
-                let player = Address::from(log.topics[2]);
-                tracing::info!("RewardsClaimed: batch={batch_id}, player={player:?}");
-                // Re-read player position from chain to update local state
-                self.scheduler.on_rewards_claimed(batch_id, player).await?;
+
+            t if *t == H256::from(ethers::utils::keccak256(REWARDS_CLAIMED_TOPIC)) => {
+                let batch_id = U256::from_big_endian(log.topics[1].as_bytes()).as_u64();
+                let player_addr = Address::from(log.topics[2]);
+                let player = format!("{:?}", player_addr);
+                tracing::info!("RewardsClaimed: batch={batch_id}, player={player_addr:?}");
+
+                // In-memory
+                self.scheduler.on_rewards_claimed(batch_id, player_addr).await?;
+
+                // Postgres: re-read position from chain
+                let pos = self.vision_contract.get_position(
+                    U256::from(batch_id), player_addr
+                ).call().await?;
+                sqlx::query!(
+                    "UPDATE p2pool_positions SET balance = $3, last_claimed_tick = $4 WHERE batch_id = $1 AND player = $2",
+                    batch_id as i64, player,
+                    pos.balance.as_u128() as f64 / 1e6,
+                    pos.last_claimed_tick.as_u64() as i64
+                ).execute(&self.pool).await?;
             }
-            // PlayerDeposited, PlayerWithdrawn, ForceWithdrawn
-            // update local balance/bitmap state accordingly
+
             _ => {
                 tracing::debug!("Unhandled Vision event: {:?}", topic0);
             }
         }
 
+        // Save bookmark: last indexed block
+        if let Some(block_number) = log.block_number {
+            self.save_last_indexed_block(block_number.as_u64()).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn get_last_indexed_block(&self) -> eyre::Result<Option<u64>> {
+        let row = sqlx::query_scalar!(
+            "SELECT value::bigint FROM kv_store WHERE key = 'p2pool_last_indexed_block'"
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(row.flatten().map(|v| v as u64))
+    }
+
+    async fn save_last_indexed_block(&self, block: u64) -> eyre::Result<()> {
+        sqlx::query!(
+            "INSERT INTO kv_store (key, value) VALUES ('p2pool_last_indexed_block', $1::text)
+             ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+            (block as i64).to_string()
+        )
+        .execute(&self.pool)
+        .await?;
         Ok(())
     }
 }
@@ -3512,15 +3410,19 @@ Update Task 3.8's integration in `main.rs`:
 ```rust
 // In main.rs, after existing cycle engine setup:
 if config.p2pool.enabled {
+    let p2pool_pool = PgPool::connect(&config.p2pool.database_url).await?;
     let tick_scheduler = Arc::new(TickScheduler::new());
     let bitmap_store = Arc::new(BitmapStore::new());
     let resolver = Arc::new(TickResolver::new(bitmap_store.clone(), config.p2pool.clone()));
 
-    // Spawn chain event listener (feeds scheduler with on-chain state)
+    // Spawn unified chain listener (feeds scheduler + writes Postgres)
+    let vision_contract = VisionContract::new(config.p2pool.vision_address, ws_provider.clone());
     let chain_listener = ChainListener::new(
         ws_provider.clone(),
+        vision_contract,
         config.p2pool.vision_address,
         tick_scheduler.clone(),
+        p2pool_pool.clone(),
     );
     let shutdown_rx = shutdown.subscribe();
     tokio::spawn(async move {
@@ -3541,11 +3443,11 @@ if config.p2pool.enabled {
 Run: `cd issuer && cargo build`
 Expected: Compiles
 
-**Step 5: Commit**
+**Step 4: Commit**
 
 ```bash
 git add issuer/src/p2pool/chain_listener.rs issuer/src/p2pool/mod.rs
-git commit -m "feat(issuer): add Vision.sol chain event listener for tick scheduler"
+git commit -m "feat(issuer): unified Vision.sol chain listener with scheduler + Postgres indexer"
 ```
 
 ---
@@ -3567,7 +3469,7 @@ Create `frontend/hooks/p2pool/useBatches.ts`:
 ```typescript
 import { useQuery } from '@tanstack/react-query'
 
-const DATA_NODE_URL = process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200'
+const ISSUER_URL = process.env.NEXT_PUBLIC_ISSUER_URL || 'http://localhost:8100'
 
 export interface BatchInfo {
   id: number
@@ -3585,7 +3487,7 @@ export function useBatches() {
   return useQuery<BatchInfo[]>({
     queryKey: ['p2pool-batches'],
     queryFn: async () => {
-      const res = await fetch(`${DATA_NODE_URL}/p2pool/batches`)
+      const res = await fetch(`${ISSUER_URL}/p2pool/batches`)
       if (!res.ok) return []
       return res.json()
     },
@@ -3757,7 +3659,7 @@ Implement:
 - Monaco/CodeMirror editor for Python
 - Template picker (Momentum, Bear All, Random, Custom)
 - `[RUN PREVIEW]` button that executes strategy via Pyodide, shows bitmap preview
-- `[BACKTEST]` button that calls data-node `/p2pool/backtest` endpoint
+- `[BACKTEST]` button that calls issuer `/p2pool/backtest` endpoint (`ISSUER_URL`)
 - Backtest result chart (win rate curve) using recharts
 
 **Commit message:** `feat(frontend): implement Python strategy editor with Pyodide and backtest`
@@ -3790,11 +3692,12 @@ Implement:
 - Create: `frontend/hooks/p2pool/useMarketRegistry.ts`
 
 Implement:
-- Market picker from active registry (`/p2pool/markets/active`)
+- Market picker from active registry (`DATA_NODE_URL/p2pool/markets/active`)
 - Resolution type selector per market
 - Tick duration input
 - Custom threshold inputs for _x types
 - Preview → `createBatch()` contract call
+- Note: market catalog from data-node, batch state from issuer
 
 **Commit message:** `feat(frontend): implement batch creation flow`
 
@@ -3811,8 +3714,9 @@ Implement:
 
 Implement:
 - Deposit: approve + `deposit()` call
-- Withdraw: fetch BLS-signed balance from issuer → `withdraw()` call with proof
-- Claim: fetch BLS-signed balance for tick range → `claimRewards()` call
+- Withdraw: fetch BLS-signed balance from issuer (`ISSUER_URL`) → `withdraw()` call with proof
+- Claim: fetch BLS-signed balance for tick range from issuer (`ISSUER_URL`) → `claimRewards()` call
+- Batch history for UI: `ISSUER_URL/p2pool/batch/{id}/history`
 
 **Commit message:** `feat(frontend): implement deposit, withdraw, and claim flows`
 
@@ -3880,190 +3784,34 @@ Add Vision.sol to deployment alongside existing contracts. Register Vision contr
 
 ---
 
-### Task 5.3: Implement real backtest endpoint
-
-**Files:**
-- Modify: `data-node/src/p2pool_api.rs`
-
-The backtest handler from Task 2.4 returns a mock result. This task replaces it with a real implementation that:
-
-1. Parses `market_ids` and fetches historical price data from `market_prices` table
-2. Simulates tick resolution using the same `% change = (end - start) / start × 100` formula
-3. Applies the given strategy (bitmap pattern) to determine UP/DOWN calls per market per tick
-4. Computes win/loss per tick and cumulative PnL curve
-5. Returns `BacktestResult` with real `win_rate`, `total_pnl`, and per-tick breakdown
-
-```rust
-pub async fn backtest(
-    State(state): State<Arc<AppState>>,
-    Query(params): Query<BacktestParams>,
-) -> Result<Json<BacktestResult>, StatusCode> {
-    let market_ids: Vec<&str> = params.market_ids.split(',').collect();
-    let tick_secs = params.tick_duration;
-    let num_ticks = params.ticks;
-
-    // Fetch historical prices for each market, sampled at tick boundaries.
-    // Use time-bucket aggregation (closest price to each tick boundary)
-    // instead of assuming 1 price/minute — works for all sources.
-    let mut market_ticks: HashMap<String, Vec<(i64, f64, f64)>> = HashMap::new(); // (tick_start_ts, start_price, end_price)
-    for market_id in &market_ids {
-        let rows = sqlx::query!(
-            r#"
-            WITH tick_boundaries AS (
-                SELECT generate_series(
-                    (SELECT MAX(fetched_at) FROM market_prices WHERE asset_id = $1) - ($2::bigint * $3::bigint),
-                    (SELECT MAX(fetched_at) FROM market_prices WHERE asset_id = $1),
-                    $2::bigint
-                ) AS tick_start
-            ),
-            tick_prices AS (
-                SELECT DISTINCT ON (tb.tick_start)
-                    tb.tick_start,
-                    mp.value::float8 AS start_price,
-                    LEAD(mp.value::float8) OVER (ORDER BY tb.tick_start) AS end_price
-                FROM tick_boundaries tb
-                LEFT JOIN LATERAL (
-                    SELECT value FROM market_prices
-                    WHERE asset_id = $1 AND fetched_at <= tb.tick_start
-                    ORDER BY fetched_at DESC LIMIT 1
-                ) mp ON true
-                ORDER BY tb.tick_start
-            )
-            SELECT tick_start as "tick_start!", start_price as "start_price!", end_price as "end_price"
-            FROM tick_prices
-            WHERE end_price IS NOT NULL
-            ORDER BY tick_start ASC
-            LIMIT $3
-            "#,
-            market_id.trim(),
-            tick_secs,
-            num_ticks
-        )
-        .fetch_all(&state.pool)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-        market_ticks.insert(
-            market_id.to_string(),
-            rows.into_iter()
-                .filter_map(|r| r.end_price.map(|ep| (r.tick_start, r.start_price, ep)))
-                .collect()
-        );
-    }
-
-    // Simulate ticks — strategy decides BEFORE seeing outcome (no lookahead)
-    let mut per_tick_results = Vec::new();
-    let mut total_wins = 0i64;
-    let mut total_losses = 0i64;
-    let mut cumulative_pnl = 0.0f64;
-    // Track previous tick's outcome per market for momentum strategy
-    let mut prev_outcomes: HashMap<String, f64> = HashMap::new();
-
-    for tick in 0..num_ticks {
-        let mut wins = 0i32;
-        let mut losses = 0i32;
-
-        for (idx, market_id) in market_ids.iter().enumerate() {
-            let ticks = match market_ticks.get(*market_id) {
-                Some(t) if t.len() > tick as usize => t,
-                _ => continue,
-            };
-
-            let (_, start_price, end_price) = ticks[tick as usize];
-            if start_price == 0.0 { continue; }
-            let pct_change = (end_price - start_price) / start_price * 100.0;
-
-            // Strategy decides based on PRIOR information only (no lookahead)
-            let bet_up = match params.strategy.as_str() {
-                "momentum" => {
-                    // Bet based on PREVIOUS tick's direction (not current)
-                    prev_outcomes.get(*market_id).map_or(true, |prev| *prev > 0.0)
-                }
-                "contrarian" => {
-                    // Bet against previous tick's direction
-                    prev_outcomes.get(*market_id).map_or(false, |prev| *prev <= 0.0)
-                }
-                "all_up" => true,
-                "all_down" => false,
-                _ => idx % 2 == 0, // alternating default
-            };
-
-            let went_up = pct_change > 0.0;
-            if bet_up == went_up { wins += 1; } else { losses += 1; }
-
-            // Record this tick's outcome for next tick's strategy decision
-            prev_outcomes.insert(market_id.to_string(), pct_change);
-        }
-
-        let tick_pnl = (wins as f64 - losses as f64) * 100.0; // simplified
-        cumulative_pnl += tick_pnl;
-        total_wins += wins as i64;
-        total_losses += losses as i64;
-
-        per_tick_results.push(TickResult {
-            tick,
-            wins,
-            losses,
-            pnl: cumulative_pnl,
-        });
-    }
-
-    let total_bets = total_wins + total_losses;
-    let win_rate = if total_bets > 0 { total_wins as f64 / total_bets as f64 } else { 0.0 };
-
-    Ok(Json(BacktestResult {
-        win_rate,
-        total_pnl: cumulative_pnl,
-        ticks_simulated: num_ticks,
-        per_tick_results,
-    }))
-}
-```
-
-**Step 2: Build and test**
-
-Run: `cd data-node && cargo build`
-Expected: Compiles
-
-Test manually: `curl "http://localhost:8200/p2pool/backtest?market_ids=btc_usd&ticks=10&tick_duration=600&strategy=momentum"`
-Expected: JSON with real win_rate and per_tick_results (non-empty if price data exists)
-
-**Step 3: Commit**
-
-```bash
-git add data-node/src/p2pool_api.rs
-git commit -m "feat(data-node): implement real backtest endpoint with historical price simulation"
-```
-
----
 
 ## Task Dependency Graph
 
 ```
-Phase 1 (Contract)     Phase 2 (Data Node)        Phase 3 (Issuer)       Phase 4 (Frontend)
-═══════════════════    ═══════════════════════    ═══════════════════    ═══════════════════
+Phase 1 (Contract)     Phase 2 (Data Node)        Phase 3 (Issuer)           Phase 4 (Frontend)
+═══════════════════    ═══════════════════════    ═════════════════════════  ═══════════════════
 1.1 skeleton           2.1 Polymarket             3.1 skeleton
-  ↓                    2.2 Twitch                 3.2 bitmap store
-1.2 batches            2.3 HackerNews               ↓
-  ↓                    2.3b Weather               3.3 multiplier
-1.3 player ops         2.3c DB migrations ←──┐    3.4 side matching      4.1 page skeleton
-  ↓                      ↓                   │      ↓                      ↓
-1.4 bots + issuer ops  2.4 P2Pool API        │    3.5 tick scheduler     4.2 expanded view
-                         ↓                   │      ↓                      ↓
-                       2.5 chain indexer ─────┘    3.6 resolver           4.3 Python editor
-                         ↓                           ↓                      ↓
-                         └─────────────────────→   3.7 API endpoints      4.4 bitmap submit
-                                                     ↓                      ↓
-                                                   3.8 main integration   4.5 create batch
-                                                     ↓                      ↓
-                                                   3.9 chain listener     4.6 deposit/withdraw
-                                                                            ↓
-                                                                          4.7 card headers
+  ↓                    2.2 Twitch                   ↓
+1.2 batches            2.3 HackerNews             3.1b DB migrations
+  ↓                    2.3b Weather                  ↓
+1.3 player ops         2.4 snapshot + markets      3.2 bitmap store           4.1 page skeleton
+  ↓                                                  ↓                          ↓
+1.4 bots + issuer ops                              3.3 multiplier             4.2 expanded view
+                                                   3.4 side matching            ↓
+                                                     ↓                        4.3 Python editor
+                                                   3.5 tick scheduler            ↓
+                                                     ↓                        4.4 bitmap submit
+                                                   3.6 resolver                  ↓
+                                                     ↓                        4.5 create batch
+                                                   3.7 API + batch endpoints     ↓
+                                                     ↓                        4.6 deposit/withdraw
+                                                   3.8 main integration          ↓
+                                                     ↓                        4.7 card headers
+                                                   3.9 chain listener + indexer
 
 Phase 5 (Cleanup) — after all above complete
 5.1 delete old code
 5.2 update deploys
-5.3 real backtest endpoint
 ```
 
-**Phases 1, 2, 3 can run in parallel.** Phase 4 depends on Phase 1 (contract ABI) and Phase 2 (data endpoints). Task 2.5 (chain indexer) depends on Task 2.3c (DB migrations). Phase 5 runs last.
+**Phases 1, 2, 3 can run in parallel.** Phase 4 depends on Phase 1 (contract ABI) and Phase 3 (batch/history/backtest endpoints on issuer). Phase 2 provides market catalog only. Task 3.1b (DB migrations) must complete before Tasks 3.7 and 3.9. Phase 5 runs last.
