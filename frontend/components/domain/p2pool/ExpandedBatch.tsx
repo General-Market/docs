@@ -6,6 +6,8 @@ import { useBatchHistory } from '@/hooks/p2pool/useBatchHistory'
 import { VisualTab } from './VisualTab'
 import { CompactVisualTab } from './CompactVisualTab'
 import { ScriptTab } from './ScriptTab'
+import { DepositModal } from './DepositModal'
+import { WithdrawModal } from './WithdrawModal'
 
 type TabType = 'VISUAL' | 'SCRIPT'
 
@@ -27,6 +29,8 @@ export function ExpandedBatch({ batchId, batch }: ExpandedBatchProps) {
   const marketCount = batch.marketIds.length
   const defaultTab: TabType = marketCount > 100 ? 'SCRIPT' : 'VISUAL'
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab)
+  const [showDepositModal, setShowDepositModal] = useState(false)
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false)
 
   // Fetch tick history for this batch
   const { data: history, isLoading: historyLoading } = useBatchHistory(batchId)
@@ -182,12 +186,14 @@ export function ExpandedBatch({ batchId, batch }: ExpandedBatchProps) {
           ALL {'\u25BC'}
         </button>
         <button
+          onClick={() => setShowDepositModal(true)}
           className="bg-muted text-text-secondary px-3 py-2 rounded-card text-xs font-bold
                      hover:bg-surface transition-colors border border-border-light"
         >
           DEPOSIT
         </button>
         <button
+          onClick={() => setShowWithdrawModal(true)}
           className="bg-muted text-text-secondary px-3 py-2 rounded-card text-xs font-bold
                      hover:bg-surface transition-colors border border-border-light"
         >
@@ -201,6 +207,20 @@ export function ExpandedBatch({ batchId, batch }: ExpandedBatchProps) {
           SUBMIT
         </button>
       </div>
+
+      {/* Modals */}
+      {showDepositModal && (
+        <DepositModal
+          batchId={batchId}
+          onClose={() => setShowDepositModal(false)}
+        />
+      )}
+      {showWithdrawModal && (
+        <WithdrawModal
+          batchId={batchId}
+          onClose={() => setShowWithdrawModal(false)}
+        />
+      )}
     </div>
   )
 }
