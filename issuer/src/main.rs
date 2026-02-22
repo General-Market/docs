@@ -236,6 +236,40 @@ struct Args {
     /// Data-node URL for arbitration price queries
     #[arg(long)]
     arbitration_data_node_url: Option<String>,
+
+    // --- P2Pool subsystem ---
+    /// Enable the P2Pool prediction market subsystem.
+    /// When enabled, the tick engine, scheduler, and API routes run alongside ITP consensus.
+    #[arg(long)]
+    p2pool_enabled: bool,
+
+    /// Vision contract address on L3 for P2Pool.
+    #[arg(long)]
+    p2pool_vision_address: Option<String>,
+
+    /// PostgreSQL connection string for P2Pool state storage.
+    #[arg(long)]
+    p2pool_database_url: Option<String>,
+
+    /// Data-node URL for P2Pool price feeds (defaults to --data-node-url if set).
+    #[arg(long)]
+    p2pool_data_node_url: Option<String>,
+
+    /// WebSocket RPC URL for P2Pool chain event subscriptions.
+    #[arg(long)]
+    p2pool_rpc_ws_url: Option<String>,
+
+    /// Block number to start syncing P2Pool events from.
+    #[arg(long)]
+    p2pool_start_block: Option<u64>,
+
+    /// Reveal window in seconds for P2Pool bitmap commits (default: 600).
+    #[arg(long)]
+    p2pool_reveal_window_secs: Option<u64>,
+
+    /// Tick poll interval in milliseconds for P2Pool engine (default: 1000).
+    #[arg(long)]
+    p2pool_tick_poll_interval_ms: Option<u64>,
 }
 
 fn setup_logging(config: &issuer::IssuerConfig) -> Result<(), Box<dyn std::error::Error>> {
@@ -2658,6 +2692,38 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             args.arbitration_threshold,
             args.arbitration_data_node_url.clone(),
         )
+        .with_p2pool(if args.p2pool_enabled {
+            let mut p2pool_cfg = issuer::p2pool::config::P2PoolConfig {
+                enabled: true,
+                ..Default::default()
+            };
+            if let Some(ref addr) = args.p2pool_vision_address {
+                p2pool_cfg.vision_address = addr.clone();
+            }
+            if let Some(ref url) = args.p2pool_database_url {
+                p2pool_cfg.database_url = url.clone();
+            }
+            if let Some(ref url) = args.p2pool_data_node_url {
+                p2pool_cfg.data_node_url = url.clone();
+            } else if let Some(ref url) = args.data_node_url {
+                p2pool_cfg.data_node_url = url.clone();
+            }
+            if let Some(ref url) = args.p2pool_rpc_ws_url {
+                p2pool_cfg.rpc_ws_url = url.clone();
+            }
+            if let Some(block) = args.p2pool_start_block {
+                p2pool_cfg.start_block = block;
+            }
+            if let Some(secs) = args.p2pool_reveal_window_secs {
+                p2pool_cfg.reveal_window_secs = secs;
+            }
+            if let Some(ms) = args.p2pool_tick_poll_interval_ms {
+                p2pool_cfg.tick_poll_interval_ms = ms;
+            }
+            Some(p2pool_cfg)
+        } else {
+            None
+        })
         .build()
         .map_err(|e| { eprintln!("Configuration error: {}", e); e })?;
 
@@ -2753,6 +2819,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Save arbitration config before config is consumed
     let arb_config = ArbitrationConfig::from_issuer_config(&config);
+
+    // Save P2Pool config before config is consumed
+    let p2pool_config = config.p2pool.clone();
 
     let bootstrap = IssuerBootstrap::new(config, params);
     let mut components = bootstrap.build(shutdown).await.map_err(|e| {
@@ -2897,6 +2966,90 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     } else {
         info!(node_id, "Arbitration subsystem disabled (not configured)");
+    }
+
+    // --- P2Pool subsystem (optional) ---
+    if let Some(p2pool_cfg) = p2pool_config {
+        if p2pool_cfg.enabled {
+            // Initialize P2Pool components
+            let bitmap_store = Arc::new(issuer::p2pool::bitmap_store::BitmapStore::new());
+            let scheduler = Arc::new(issuer::p2pool::tick_scheduler::TickScheduler::new());
+            let resolver = Arc::new(issuer::p2pool::resolver::TickResolver::new(
+                bitmap_store.clone(),
+                p2pool_cfg.clone(),
+            ));
+
+            // Spawn tick engine
+            let engine_scheduler = scheduler.clone();
+            let engine_resolver = resolver.clone();
+            let engine_config = p2pool_cfg.clone();
+            let engine_shutdown = components.shutdown.clone();
+            tokio::spawn(async move {
+                issuer::p2pool::engine::run(
+                    engine_scheduler,
+                    engine_resolver,
+                    engine_config,
+                    engine_shutdown,
+                ).await;
+            });
+
+            // Initialize Postgres pool and API routes
+            match sqlx::PgPool::connect(&p2pool_cfg.database_url).await {
+                Ok(pool) => {
+                    let p2pool_state = Arc::new(issuer::p2pool::api::P2PoolState {
+                        pool,
+                        scheduler: scheduler.clone(),
+                        bitmap_store: bitmap_store.clone(),
+                        config: p2pool_cfg.clone(),
+                    });
+
+                    // Spawn the P2Pool API server on a separate port (main health port + 100)
+                    let p2pool_port = components.p2p.health_port + 100;
+                    let p2pool_router = issuer::p2pool::api::routes(p2pool_state);
+                    let p2pool_listener = match tokio::net::TcpListener::bind(
+                        format!("0.0.0.0:{}", p2pool_port)
+                    ).await {
+                        Ok(l) => l,
+                        Err(e) => {
+                            error!(node_id, port = p2pool_port, error = %e, "Failed to bind P2Pool API port");
+                            // Continue without API — tick engine still runs
+                            info!(node_id, "P2Pool tick engine running (API unavailable)");
+                            // Skip to run_main_loop
+                            if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr).await {
+                                error!(code = "E008", error = %e, "Issuer node error");
+                                std::process::exit(1);
+                            }
+                            return Ok(());
+                        }
+                    };
+
+                    tokio::spawn(async move {
+                        if let Err(e) = axum::serve(p2pool_listener, p2pool_router).await {
+                            tracing::error!(error = %e, "P2Pool API server error");
+                        }
+                    });
+
+                    info!(
+                        node_id,
+                        port = p2pool_port,
+                        vision_address = %p2pool_cfg.vision_address,
+                        "P2Pool subsystem enabled (tick engine + API)"
+                    );
+                }
+                Err(e) => {
+                    warn!(
+                        node_id,
+                        error = %e,
+                        db_url = %p2pool_cfg.database_url,
+                        "P2Pool Postgres connection failed — tick engine running without API"
+                    );
+                }
+            }
+        } else {
+            info!(node_id, "P2Pool subsystem disabled (enabled=false)");
+        }
+    } else {
+        debug!(node_id, "P2Pool subsystem not configured");
     }
 
     if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr).await {
