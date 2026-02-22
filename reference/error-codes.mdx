@@ -1,0 +1,106 @@
+---
+title: "Error Codes"
+description: "Smart contract error codes reference"
+---
+
+# Smart Contract Error Codes
+
+The General Market protocol uses custom Solidity errors for gas-efficient reverts. Error codes follow the format `E001` through `E069+` and are defined in `ErrorsLib.sol`.
+
+<Note>
+  This page documents a representative subset of error codes. For the complete list, see
+  [`ErrorsLib.sol`](https://github.com/example/index/blob/main/contracts/libraries/ErrorsLib.sol) in the contracts source.
+</Note>
+
+## Order Errors (E001 - E010)
+
+Errors raised during order creation, validation, and lifecycle management.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E001` | Invalid order amount | The order amount is zero or negative. |
+| `E002` | Insufficient collateral balance | The caller does not have enough collateral escrowed to cover the order amount. |
+| `E003` | Order already exists | An order with the specified ID has already been submitted. |
+| `E004` | Order not found | The referenced order ID does not exist in storage. |
+| `E005` | Order already batched | The referenced order has already been included in a batch and cannot be modified. |
+| `E006` | Order already filled | The referenced order has already been fully executed. |
+| `E007` | Order timeout | The referenced order exceeded the time-to-live window and has expired. |
+| `E008` | Invalid ITP ID | The target ITP does not exist or the ID is malformed. |
+| `E009` | Order amount below minimum | The order amount is below the protocol-defined minimum threshold. |
+| `E010` | Invalid order type | The order type flag is not a recognized value (e.g., not buy or sell). |
+
+## Batch Errors (E011 - E020)
+
+Errors raised during batch construction, signature verification, and confirmation.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E011` | Invalid batch | The batch structure is malformed or contains no orders. |
+| `E012` | Batch already confirmed | The referenced batch has already been confirmed on-chain and cannot be resubmitted. |
+| `E013` | Invalid BLS signature | The aggregated BLS signature failed verification against the registered public key. |
+| `E014` | Insufficient signatures | The number of issuer signatures does not meet the required quorum. |
+| `E015` | Batch contains invalid orders | One or more orders in the batch failed individual validation checks. |
+
+## ITP Errors (E021 - E030)
+
+Errors raised during ITP creation, configuration, and weight management.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E021` | ITP not found | The specified ITP ID does not correspond to any registered Index Tracking Product. |
+| `E022` | ITP paused | The specified ITP is currently paused and not accepting orders. |
+| `E023` | Invalid ITP weights | ITP asset weights must sum to exactly 100% (1e18 in fixed-point). |
+| `E024` | Too many assets | A single ITP cannot contain more than 100 underlying assets. |
+| `E025` | Invalid asset address | One of the provided asset addresses is the zero address or not a valid token. |
+| `E026` | Duplicate asset in ITP | The same asset address appears more than once in the asset list. |
+
+## Fill Errors (E031 - E040)
+
+Errors raised when Authorized Participants (APs) report trade fills.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E031` | Fill price out of tolerance | The reported fill price deviates more than 0.1% from the oracle reference price. |
+| `E032` | Fill amount exceeds order | The fill amount is greater than the remaining unfilled quantity on the order. |
+| `E033` | Invalid fill reporter | The caller is not a registered AP in the AP registry. |
+
+## Registry Errors (E041 - E050)
+
+Errors raised by the issuer, collateral, and asset registry contracts.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E041` | Issuer not registered | The signing address is not registered in `IssuerRegistry`. |
+| `E042` | Invalid BLS public key | The provided BLS public key is malformed or does not lie on the BN254 curve. |
+| `E043` | Collateral not whitelisted | The token address is not in the `CollateralRegistry` whitelist. |
+| `E044` | Asset pair not registered | The asset/collateral trading pair is not registered for AP execution. |
+
+## Governance Errors (E051 - E060)
+
+Errors raised by administrative and governance operations.
+
+| Code | Name | Description |
+|------|------|-------------|
+| `E051` | Not authorized | The caller does not have the required role or permission. |
+| `E052` | Contract paused | The target contract is paused and the called function is unavailable. |
+| `E053` | Invalid pause target | The specified contract address is not a valid pausable target. |
+
+## Decoding Errors in the Frontend
+
+Custom errors are decoded using the contract ABI. The frontend maps error codes to user-friendly messages:
+
+```typescript
+import { decodeErrorResult } from "viem";
+import { indexAbi } from "@/lib/contracts/abi";
+
+try {
+  await writeContract(/* ... */);
+} catch (err) {
+  const decoded = decodeErrorResult({
+    abi: indexAbi,
+    data: err.data,
+  });
+  // decoded.errorName → "E002"
+  // Map to user message: "Insufficient collateral balance"
+}
+```

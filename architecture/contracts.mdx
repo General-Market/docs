@@ -1,0 +1,110 @@
+---
+title: "Smart Contracts"
+description: "On-chain contract architecture for the Index protocol"
+---
+
+# On-Chain Contract Architecture
+
+The Index protocol's on-chain layer is built in Solidity (~7.3K LOC) and deployed on an Arbitrum Orbit L3 (Chain ID `111222333`). Contracts follow a UUPS proxy pattern (OpenZeppelin 5.x) and enforce BLS signature verification on all critical paths -- no test modes, no owner overrides.
+
+## ITP Core Contracts
+
+| Contract | Description |
+|---|---|
+| **Index.sol** | Central entry point for order submission, batch/fill confirmation, and Index Tracking Product (ITP) management. Houses `createITP` (converts weights to fixed per-share quantities), `_getCurrentPrice` (computes NAV from inventory), and `updateWeights` (rebalance that preserves NAV). |
+| **ITP.sol** | ERC-4626 vault wrapping each ITP's share token. Handles minting on buy, burning on sell, and exposes standard vault accounting. |
+| **BridgeProxy.sol** | Cross-chain order routing between Arbitrum L1/L2 and the L3. Relays user orders submitted on Arbitrum down to the Index contract on L3. |
+| **BridgedItpFactory.sol** | Factory that creates ERC-20 representations of ITP shares on Arbitrum, enabling L1/L2 composability without requiring users to interact with L3 directly. |
+| **Governance.sol** | Administrative controls including global pause, per-ITP pause, and role management. |
+| **BLSCustody.sol** | Executes custody operations (deposits, withdrawals) gated by BLS-signed consensus from issuer nodes. |
+
+## Registry Contracts
+
+| Contract | Description |
+|---|---|
+| **IssuerRegistry.sol** | Stores issuer node BLS public keys, manages the aggregated public key, and handles key rotation. New issuer nodes must register in IssuerRegistry before participating in consensus. |
+| **CollateralRegistry.sol** | Maintains the whitelist of accepted collateral tokens (currently USDC). Controls which tokens can back ITP creation and order settlement. |
+| **AssetPairRegistry.sol** | Configures trading pairs available on the protocol -- maps asset identifiers to on-chain and off-chain parameters. |
+| **FeeRegistry.sol** | Defines fee tiers for different operations and manages deployer fee claiming. Protocol fees are accrued in FeeRegistry and claimable by authorized addresses. |
+
+## Shared Libraries
+
+| Library | Purpose |
+|---|---|
+| **TypesLib.sol** | Shared struct definitions used across the protocol: `LimitOrder`, `Fill`, `ITP`, batch metadata, and more. |
+| **ErrorsLib.sol** | Custom error definitions ranging from `E001` through `E069+`. Every revert in the protocol uses a typed error from ErrorsLib. |
+| **EventsLib.sol** | Event definitions emitted by core contracts -- `OrderSubmitted`, `BatchConfirmed`, `FillExecuted`, `ITPCreated`, `WeightsUpdated`, etc. |
+| **BLSLib.sol** | BLS signature verification using EVM precompiles on the BN254 curve. Called by every path that validates issuer node consensus. |
+
+## Storage Layout
+
+<Info>
+  **IndexStorage.sol** holds `_itpInventory[itpId]`, the mapping that stores fixed per-share quantities for each asset in an ITP. The per-share quantities are set at ITP creation and only change on rebalance -- buy/sell operations mint or burn shares proportionally without modifying the inventory.
+</Info>
+
+All upgradeable contracts use the **UUPS proxy pattern** from OpenZeppelin 5.x. Storage slots are carefully managed to avoid collisions across upgrades.
+
+## ITP NAV Pricing Model
+
+ITPs follow an ETF-like pricing model. At creation, each ITP starts at \$1 (`1e18` in fixed-point):
+
+```solidity
+// At creation (or rebalance), weights become fixed quantities:
+qty[i] = (weight[i] * 1e18) / price[i]
+
+// NAV is always computed from quantities and current prices:
+NAV = sum(qty[i] * price[i]) / 1e18
+```
+
+**Key invariants:**
+- Per-share quantities are stored on-chain in `_itpInventory` and **only change on rebalance**
+- Buy and sell operations mint/burn proportional shares -- buy/sell never modify per-share quantities
+- Rebalance recalculates quantities to preserve NAV: `qty_new[i] = (w_new[i] * currentNAV) / price[i]`
+- NAV drifts from \$1 over time as underlying asset prices move -- price drift is the intended behavior
+
+## BLS Signature Security
+
+<Warning>
+  BLS verification is **never bypassed**. There are no test modes, no `onlyOwner` admin overrides, no `aggregatedPubkey.length == 0` short-circuit paths. Every batch confirmation requires a valid aggregated BLS signature from issuer nodes.
+</Warning>
+
+- **Curve:** BN254 (alt_bn128), compatible with Ethereum precompiles at addresses `0x06`, `0x07`, `0x08`
+- **Threshold:** Requires signatures from at least `ceil(2n/3)` registered issuer nodes
+- **Key management:** Aggregated public key stored in `IssuerRegistry.sol`, updated on issuer node join/leave/rotation
+- **Verification flow:** `BLSLib.verify(message, signature, aggregatedPubkey)` is called in `confirmBatch()` before any state changes are applied
+
+## ITP Order Lifecycle
+
+```text
+User submits order (L3 or via BridgeProxy)
+        │
+        ▼
+  Index.sol stores pending order
+        │
+        ▼
+  Issuer nodes batch orders off-chain
+        │
+        ▼
+  confirmBatch() called with BLS signature
+        │
+        ▼
+  BLSLib verifies aggregated signature
+        │
+        ▼
+  Batch confirmed → TradeRequest events emitted
+        │
+        ▼
+  Authorized Participant (AP) executes fills → confirmFills() with BLS signature
+        │
+        ▼
+  ITP shares minted/burned, collateral settled
+```
+
+## Vision Prediction Market Contracts
+
+Vision is a parimutuel prediction market where users and bots place directional bets on real-world outcomes.
+
+| Contract | Description |
+|---|---|
+| **Vision.sol** | Parimutuel prediction market contract. Manages batch creation, bet placement, outcome resolution, and payout distribution. Each batch defines a set of outcomes; users deposit USDC to back a chosen outcome, and winning bettors split the total pool proportionally. |
+| **BotRegistry.sol** | Manages automated bot registration for Vision. Bots register with a wallet address and can participate in Vision batches programmatically. BotRegistry tracks bot metadata and enforces registration requirements. |

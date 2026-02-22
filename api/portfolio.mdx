@@ -1,0 +1,224 @@
+---
+title: "Portfolio Endpoints"
+description: "User portfolio tracking and trade history"
+---
+
+# Portfolio Endpoints
+
+Track user portfolios including current positions, historical value, and complete trade history. All endpoints require the user's wallet address.
+
+---
+
+## Get Portfolio Summary
+
+<ParamField query="address" type="string" required>
+  User wallet address (e.g., `0x...`).
+</ParamField>
+
+Returns the portfolio summary for the specified wallet address, including all ITP positions, total value, and profit/loss.
+
+<CodeGroup>
+```bash cURL
+curl "https://generalmarket.io/api/portfolio?address=0xYourWalletAddress"
+```
+
+```javascript JavaScript
+const res = await fetch(
+  "https://generalmarket.io/api/portfolio?address=0xYourWalletAddress"
+);
+const portfolio = await res.json();
+```
+
+```python Python
+import requests
+
+resp = requests.get(
+    "https://generalmarket.io/api/portfolio",
+    params={"address": "0xYourWalletAddress"}
+)
+portfolio = resp.json()
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+{
+  "address": "0xYourWalletAddress",
+  "total_value_usd": 12540.80,
+  "total_pnl_usd": 1240.50,
+  "total_pnl_pct": 10.98,
+  "positions": [
+    {
+      "itp_id": "0xabc123...",
+      "name": "Top 100 Crypto Index",
+      "symbol": "T100",
+      "shares": "5000000000000000000000",
+      "nav_per_share": 1.045,
+      "value_usd": 5225.00,
+      "cost_basis_usd": 5000.00,
+      "pnl_usd": 225.00,
+      "pnl_pct": 4.50
+    },
+    {
+      "itp_id": "0xdef456...",
+      "name": "DeFi Blue Chips",
+      "symbol": "DEFI",
+      "shares": "6500000000000000000000",
+      "nav_per_share": 1.128,
+      "value_usd": 7332.00,
+      "cost_basis_usd": 6317.20,
+      "pnl_usd": 1014.80,
+      "pnl_pct": 16.07
+    }
+  ]
+}
+```
+</Expandable>
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `address` | string | User wallet address |
+| `total_value_usd` | number | Total portfolio value in USD |
+| `total_pnl_usd` | number | Total profit/loss in USD |
+| `total_pnl_pct` | number | Total profit/loss as a percentage |
+| `positions` | array | Array of ITP positions held by the user |
+
+**Position fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `itp_id` | string | ITP identifier |
+| `name` | string | ITP name |
+| `symbol` | string | ITP ticker symbol |
+| `shares` | string | Number of shares held in wei |
+| `nav_per_share` | number | Current NAV per share |
+| `value_usd` | number | Current position value in USD |
+| `cost_basis_usd` | number | Total cost basis in USD |
+| `pnl_usd` | number | Unrealized profit/loss in USD |
+| `pnl_pct` | number | Unrealized profit/loss as a percentage |
+
+---
+
+## Get Portfolio History
+
+<ParamField query="address" type="string" required>
+  User wallet address (e.g., `0x...`).
+</ParamField>
+
+Returns the portfolio value over time for the specified wallet address, useful for rendering portfolio performance charts.
+
+<CodeGroup>
+```bash cURL
+curl "https://generalmarket.io/api/portfolio/history?address=0xYourWalletAddress"
+```
+
+```javascript JavaScript
+const res = await fetch(
+  "https://generalmarket.io/api/portfolio/history?address=0xYourWalletAddress"
+);
+const history = await res.json();
+```
+
+```python Python
+import requests
+
+resp = requests.get(
+    "https://generalmarket.io/api/portfolio/history",
+    params={"address": "0xYourWalletAddress"}
+)
+history = resp.json()
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+[
+  { "timestamp": 1708000000, "value_usd": 10000.00 },
+  { "timestamp": 1708086400, "value_usd": 10250.30 },
+  { "timestamp": 1708172800, "value_usd": 10480.15 },
+  { "timestamp": 1708259200, "value_usd": 10120.90 },
+  { "timestamp": 1708345600, "value_usd": 10890.45 },
+  { "timestamp": 1708432000, "value_usd": 11340.20 },
+  { "timestamp": 1708518400, "value_usd": 12540.80 }
+]
+```
+</Expandable>
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `timestamp` | number | Unix timestamp of the data point |
+| `value_usd` | number | Total portfolio value in USD at that point in time |
+
+---
+
+## Get Trade History
+
+<ParamField query="address" type="string" required>
+  User wallet address (e.g., `0x...`).
+</ParamField>
+
+Returns the complete trade history for the specified wallet address, including buys, sells, and fill details.
+
+<CodeGroup>
+```bash cURL
+curl "https://generalmarket.io/api/portfolio/trades?address=0xYourWalletAddress"
+```
+
+```javascript JavaScript
+const res = await fetch(
+  "https://generalmarket.io/api/portfolio/trades?address=0xYourWalletAddress"
+);
+const trades = await res.json();
+```
+
+```python Python
+import requests
+
+resp = requests.get(
+    "https://generalmarket.io/api/portfolio/trades",
+    params={"address": "0xYourWalletAddress"}
+)
+trades = resp.json()
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+[
+  {
+    "tx_hash": "0xabc123...",
+    "timestamp": 1708518400,
+    "type": "buy",
+    "itp_id": "0xabc123...",
+    "itp_symbol": "T100",
+    "shares": "1000000000000000000000",
+    "price_per_share": 1.042,
+    "total_usd": 1042.00,
+    "fee_usd": 5.21
+  },
+  {
+    "tx_hash": "0xdef456...",
+    "timestamp": 1708432000,
+    "type": "sell",
+    "itp_id": "0xdef456...",
+    "itp_symbol": "DEFI",
+    "shares": "500000000000000000000",
+    "price_per_share": 1.115,
+    "total_usd": 557.50,
+    "fee_usd": 2.79
+  }
+]
+```
+</Expandable>
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `tx_hash` | string | Transaction hash on-chain |
+| `timestamp` | number | Unix timestamp of the trade |
+| `type` | string | Trade type: `buy` or `sell` |
+| `itp_id` | string | ITP identifier |
+| `itp_symbol` | string | ITP ticker symbol |
+| `shares` | string | Number of shares traded in wei |
+| `price_per_share` | number | Execution price per share in USD |
+| `total_usd` | number | Total trade value in USD |
+| `fee_usd` | number | Fee charged in USD |

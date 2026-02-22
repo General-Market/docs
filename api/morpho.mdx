@@ -1,0 +1,168 @@
+---
+title: "Morpho Endpoints"
+description: "Lending position and history data"
+---
+
+# Morpho Endpoints
+
+Retrieve lending position data and operation history for users interacting with the Morpho-based lending market. Users can deposit ITP shares as collateral to borrow USDC.
+
+---
+
+## Get Lending Position
+
+<ParamField query="address" type="string" required>
+  User wallet address (e.g., `0x...`).
+</ParamField>
+
+Returns the lending position for the specified wallet address, including supplied collateral, borrowed USDC amount, and health factor.
+
+<CodeGroup>
+```bash cURL
+curl "https://generalmarket.io/api/morpho-position?address=0xYourWalletAddress"
+```
+
+```javascript JavaScript
+const res = await fetch(
+  "https://generalmarket.io/api/morpho-position?address=0xYourWalletAddress"
+);
+const position = await res.json();
+```
+
+```python Python
+import requests
+
+resp = requests.get(
+    "https://generalmarket.io/api/morpho-position",
+    params={"address": "0xYourWalletAddress"}
+)
+position = resp.json()
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+{
+  "address": "0xYourWalletAddress",
+  "collateral": {
+    "itp_id": "0xabc123...",
+    "itp_symbol": "T100",
+    "shares": "10000000000000000000000",
+    "value_usd": 10450.00
+  },
+  "borrowed_usdc": 5000.00,
+  "health_factor": 1.82,
+  "liquidation_threshold": 0.80,
+  "max_borrow_usd": 8360.00,
+  "available_to_borrow_usd": 3360.00
+}
+```
+</Expandable>
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `address` | string | User wallet address |
+| `collateral` | object | Deposited collateral details |
+| `collateral.itp_id` | string | ITP used as collateral |
+| `collateral.itp_symbol` | string | ITP ticker symbol |
+| `collateral.shares` | string | Number of ITP shares deposited in wei |
+| `collateral.value_usd` | number | Current USD value of collateral |
+| `borrowed_usdc` | number | Amount of USDC currently borrowed |
+| `health_factor` | number | Position health factor (liquidation below 1.0) |
+| `liquidation_threshold` | number | Loan-to-value ratio at which liquidation occurs |
+| `max_borrow_usd` | number | Maximum borrowable amount based on collateral |
+| `available_to_borrow_usd` | number | Additional USDC available to borrow |
+
+<Warning>
+  A health factor below **1.0** means the lending position is eligible for liquidation. Monitor the health factor closely when holding leveraged positions.
+</Warning>
+
+---
+
+## Get Lending History
+
+<ParamField query="address" type="string" required>
+  User wallet address (e.g., `0x...`).
+</ParamField>
+
+Returns the complete lending operation history for the specified wallet address, including collateral deposits, USDC borrows, repayments, and collateral withdrawals.
+
+<CodeGroup>
+```bash cURL
+curl "https://generalmarket.io/api/morpho-history?address=0xYourWalletAddress"
+```
+
+```javascript JavaScript
+const res = await fetch(
+  "https://generalmarket.io/api/morpho-history?address=0xYourWalletAddress"
+);
+const history = await res.json();
+```
+
+```python Python
+import requests
+
+resp = requests.get(
+    "https://generalmarket.io/api/morpho-history",
+    params={"address": "0xYourWalletAddress"}
+)
+history = resp.json()
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+[
+  {
+    "tx_hash": "0xaaa111...",
+    "timestamp": 1708518400,
+    "type": "deposit_collateral",
+    "itp_id": "0xabc123...",
+    "itp_symbol": "T100",
+    "shares": "10000000000000000000000",
+    "value_usd": 10420.00
+  },
+  {
+    "tx_hash": "0xbbb222...",
+    "timestamp": 1708518500,
+    "type": "borrow",
+    "amount_usdc": 5000.00
+  },
+  {
+    "tx_hash": "0xccc333...",
+    "timestamp": 1708604800,
+    "type": "repay",
+    "amount_usdc": 2000.00
+  },
+  {
+    "tx_hash": "0xddd444...",
+    "timestamp": 1708691200,
+    "type": "withdraw_collateral",
+    "itp_id": "0xabc123...",
+    "itp_symbol": "T100",
+    "shares": "2000000000000000000000",
+    "value_usd": 2104.00
+  }
+]
+```
+</Expandable>
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `tx_hash` | string | Transaction hash on-chain |
+| `timestamp` | number | Unix timestamp of the operation |
+| `type` | string | Operation type (see below) |
+| `itp_id` | string | ITP identifier (for collateral operations) |
+| `itp_symbol` | string | ITP ticker symbol (for collateral operations) |
+| `shares` | string | ITP shares involved in wei (for collateral operations) |
+| `value_usd` | number | USD value at time of operation (for collateral operations) |
+| `amount_usdc` | number | USDC amount (for borrow/repay operations) |
+
+**Operation types:**
+
+| Type | Description |
+|------|-------------|
+| `deposit_collateral` | User deposited ITP shares as collateral |
+| `withdraw_collateral` | User withdrew ITP shares from collateral |
+| `borrow` | User borrowed USDC against collateral |
+| `repay` | User repaid borrowed USDC |

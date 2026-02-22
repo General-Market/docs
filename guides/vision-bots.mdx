@@ -1,0 +1,350 @@
+---
+title: "Build a Vision Bot"
+description: "Automate Vision trading with a Python or TypeScript bot"
+---
+
+# Build a Vision Bot
+
+Vision supports automated trading bots that join batches, place bets, and claim rewards programmatically. Bot registration is free — no collateral required.
+
+## Reference Implementation
+
+The repository includes a Python reference bot at `vision-bot/bot.py` that demonstrates the full lifecycle: register → poll batches → encode bitmap → join batch → submit bitmap → claim rewards.
+
+## Architecture
+
+A Vision bot follows this loop:
+
+```
+Register bot (one-time)
+    │
+    ▼
+Poll /p2pool/batches for active batches
+    │
+    ▼
+For each new batch:
+    ├── Generate bets (UP/DOWN per market)
+    ├── Encode bitmap (big-endian, 1 bit per market)
+    ├── Compute keccak256(bitmap) hash
+    ├── Approve USDC to Vision contract
+    ├── Call joinBatch(batchId, deposit, stakePerTick, bitmapHash)
+    └── POST bitmap to all issuer nodes
+    │
+    ▼
+Periodically claim rewards via BLS balance proofs
+```
+
+## Step 1: Register the Bot
+
+Register the bot on-chain so issuer nodes can identify automated participants:
+
+<CodeGroup>
+
+```python Python (Web3.py)
+from web3 import Web3
+
+w3 = Web3(Web3.HTTPProvider("https://index.rpc.zeeve.net"))
+vision = w3.eth.contract(address=VISION_ADDRESS, abi=VISION_ABI)
+
+# Registration is free — no collateral required
+tx = vision.functions.registerBot(
+    "https://my-bot.example.com/webhook",  # bot endpoint
+    Web3.keccak(text="my-bot-public-key")  # pubkey hash
+).build_transaction({
+    "from": bot_address,
+    "nonce": w3.eth.get_transaction_count(bot_address),
+})
+signed = w3.eth.account.sign_transaction(tx, private_key)
+w3.eth.send_raw_transaction(signed.raw_transaction)
+```
+
+```typescript TypeScript (viem)
+import { createWalletClient, http, keccak256, toBytes } from 'viem';
+
+const client = createWalletClient({
+  chain: indexL3,
+  transport: http('https://index.rpc.zeeve.net'),
+});
+
+// Registration is free — no collateral required
+await client.writeContract({
+  address: VISION_ADDRESS,
+  abi: visionAbi,
+  functionName: 'registerBot',
+  args: [
+    'https://my-bot.example.com/webhook',
+    keccak256(toBytes('my-bot-public-key')),
+  ],
+  account: botAccount,
+});
+```
+
+</CodeGroup>
+
+## Step 2: Poll Active Batches
+
+Fetch active batches from the P2Pool API:
+
+<CodeGroup>
+
+```python Python
+import requests
+
+P2POOL_API = "http://localhost:10001"
+
+response = requests.get(f"{P2POOL_API}/p2pool/batches")
+batches = response.json()["batches"]
+
+for batch in batches:
+    print(f"Batch {batch['id']}: {batch['market_count']} markets, "
+          f"{batch['tick_duration']}s ticks, {batch['player_count']} players")
+```
+
+```typescript TypeScript
+const P2POOL_API = 'http://localhost:10001';
+
+const res = await fetch(`${P2POOL_API}/p2pool/batches`);
+const { batches } = await res.json();
+
+for (const batch of batches) {
+  console.log(`Batch ${batch.id}: ${batch.market_count} markets, ` +
+    `${batch.tick_duration}s ticks, ${batch.player_count} players`);
+}
+```
+
+</CodeGroup>
+
+Each batch object contains:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | number | Batch ID |
+| `creator` | address | Batch creator address |
+| `market_ids` | string[] | Asset identifiers |
+| `resolution_types` | number[] | Resolution type per market (0–7) |
+| `tick_duration` | number | Seconds between ticks |
+| `market_count` | number | Number of markets |
+| `player_count` | number | Active players |
+| `tvl` | string | Total value locked (USDC) |
+| `paused` | boolean | Whether the batch is paused |
+
+## Step 3: Encode Bitmap and Join
+
+Generate bets, encode the bitmap, and join the batch on-chain:
+
+<CodeGroup>
+
+```python Python
+from web3 import Web3
+
+def encode_bitmap(bets: list[str], market_count: int) -> bytes:
+    """Encode UP/DOWN bets into a packed bitmap (big-endian bit order)."""
+    byte_count = (market_count + 7) // 8
+    bitmap = bytearray(byte_count)
+    for i in range(market_count):
+        if i < len(bets) and bets[i] == "UP":
+            byte_idx = i // 8
+            bit_idx = 7 - (i % 8)  # big-endian
+            bitmap[byte_idx] |= 1 << bit_idx
+    return bytes(bitmap)
+
+# Generate bets (your strategy here)
+bets = ["UP" if should_bet_up(market) else "DOWN" for market in batch["market_ids"]]
+
+# Encode and hash
+bitmap = encode_bitmap(bets, batch["market_count"])
+bitmap_hash = Web3.keccak(bitmap)
+
+# Approve USDC
+deposit = Web3.to_wei(10, "ether")  # 10 USDC (18 decimals on L3)
+stake = Web3.to_wei(1, "ether")     # 1 USDC per tick
+
+usdc = w3.eth.contract(address=USDC_ADDRESS, abi=ERC20_ABI)
+usdc.functions.approve(VISION_ADDRESS, deposit).transact({"from": bot_address})
+
+# Join batch with sealed bitmap commitment
+vision.functions.joinBatch(
+    batch["id"],
+    deposit,
+    stake,
+    bitmap_hash
+).transact({"from": bot_address})
+```
+
+```typescript TypeScript
+import { keccak256 } from 'viem';
+
+function encodeBitmap(bets: ('UP' | 'DOWN')[], marketCount: number): Uint8Array {
+  const byteCount = Math.ceil(marketCount / 8);
+  const bitmap = new Uint8Array(byteCount);
+  for (let i = 0; i < marketCount; i++) {
+    if (bets[i] === 'UP') {
+      const byteIdx = Math.floor(i / 8);
+      const bitIdx = 7 - (i % 8); // big-endian
+      bitmap[byteIdx] |= 1 << bitIdx;
+    }
+  }
+  return bitmap;
+}
+
+// Generate bets (your strategy here)
+const bets = batch.market_ids.map(m => shouldBetUp(m) ? 'UP' : 'DOWN');
+
+// Encode and hash
+const bitmap = encodeBitmap(bets, batch.market_count);
+const bitmapHash = keccak256(bitmap);
+
+// Approve USDC
+await walletClient.writeContract({
+  address: USDC_ADDRESS,
+  abi: erc20Abi,
+  functionName: 'approve',
+  args: [VISION_ADDRESS, parseEther('10')],
+  account: botAccount,
+});
+
+// Join batch
+await walletClient.writeContract({
+  address: VISION_ADDRESS,
+  abi: visionAbi,
+  functionName: 'joinBatch',
+  args: [batch.id, parseEther('10'), parseEther('1'), bitmapHash],
+  account: botAccount,
+});
+```
+
+</CodeGroup>
+
+## Step 4: Submit Bitmap to Issuers
+
+After the on-chain `joinBatch` transaction confirms, reveal the bitmap to all issuer nodes:
+
+<CodeGroup>
+
+```python Python
+ISSUER_URLS = [
+    "http://localhost:10001",
+    "http://localhost:10002",
+    "http://localhost:10003",
+]
+
+bitmap_hex = "0x" + bitmap.hex()
+expected_hash = bitmap_hash.hex()
+
+accepted = 0
+for url in ISSUER_URLS:
+    try:
+        resp = requests.post(f"{url}/p2pool/bitmap", json={
+            "player": bot_address,
+            "batch_id": batch["id"],
+            "bitmap_hex": bitmap_hex,
+            "expected_hash": expected_hash,
+        })
+        if resp.status_code == 200:
+            accepted += 1
+    except Exception as e:
+        print(f"Issuer {url} failed: {e}")
+
+print(f"Bitmap accepted by {accepted}/{len(ISSUER_URLS)} issuers")
+```
+
+```typescript TypeScript
+const ISSUER_URLS = [
+  'http://localhost:10001',
+  'http://localhost:10002',
+  'http://localhost:10003',
+];
+
+const bitmapHex = `0x${Buffer.from(bitmap).toString('hex')}`;
+
+let accepted = 0;
+await Promise.all(ISSUER_URLS.map(async (url) => {
+  try {
+    const res = await fetch(`${url}/p2pool/bitmap`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        player: botAddress,
+        batch_id: batch.id,
+        bitmap_hex: bitmapHex,
+        expected_hash: bitmapHash,
+      }),
+    });
+    if (res.ok) accepted++;
+  } catch (e) {
+    console.error(`Issuer ${url} failed:`, e);
+  }
+}));
+
+console.log(`Bitmap accepted by ${accepted}/${ISSUER_URLS.length} issuers`);
+```
+
+</CodeGroup>
+
+## Step 5: Claim Rewards
+
+Periodically fetch BLS-signed balance proofs and claim on-chain:
+
+<CodeGroup>
+
+```python Python
+def claim_rewards(batch_id: int, from_tick: int, to_tick: int):
+    # Fetch BLS-signed balance proof from issuer
+    resp = requests.get(
+        f"{P2POOL_API}/p2pool/balance/{batch_id}/{bot_address}",
+        params={"fromTick": from_tick, "toTick": to_tick}
+    )
+    proof = resp.json()
+
+    # Submit claim on-chain with BLS signature
+    vision.functions.claimRewards(
+        batch_id,
+        from_tick,
+        to_tick,
+        int(proof["balance"]),
+        bytes.fromhex(proof["bls_sig"][2:])  # strip 0x prefix
+    ).transact({"from": bot_address})
+```
+
+```typescript TypeScript
+async function claimRewards(batchId: number, fromTick: number, toTick: number) {
+  // Fetch BLS-signed balance proof from issuer
+  const res = await fetch(
+    `${P2POOL_API}/p2pool/balance/${batchId}/${botAddress}` +
+    `?fromTick=${fromTick}&toTick=${toTick}`
+  );
+  const proof = await res.json();
+
+  // Submit claim on-chain with BLS signature
+  await walletClient.writeContract({
+    address: VISION_ADDRESS,
+    abi: visionAbi,
+    functionName: 'claimRewards',
+    args: [batchId, fromTick, toTick, BigInt(proof.balance), proof.bls_sig],
+    account: botAccount,
+  });
+}
+```
+
+</CodeGroup>
+
+## Running the Reference Bot
+
+```bash
+cd vision-bot
+
+# Configure environment
+export L3_RPC_URL="https://index.rpc.zeeve.net"
+export P2POOL_API_URL="http://localhost:10001"
+export DATA_NODE_URL="http://localhost:8200"
+export BOT_PRIVATE_KEY="0x..."
+export DEPOSIT_AMOUNT="10"      # USDC per batch
+export STAKE_PER_TICK="1"       # USDC per tick
+export POLL_INTERVAL="30"       # seconds
+
+# Run in polling mode
+python3 bot.py
+
+# Or run once and exit
+python3 bot.py --once
+```

@@ -1,0 +1,153 @@
+---
+title: "Data Node"
+description: "Backend service providing market data, NAV computation, and analytics"
+---
+
+# Data Node
+
+The Data Node is a Rust backend service that provides real-time market data, NAV computation, portfolio analytics, and backtesting capabilities. The Data Node serves as the primary data layer for the Index protocol's frontend and issuer nodes.
+
+## Data Node Configuration
+
+| Property | Detail |
+|---|---|
+| **Language** | Rust with Tokio async runtime |
+| **Database** | PostgreSQL (price history, portfolio snapshots) |
+| **Default Port** | 8200 |
+| **Transport** | REST API + Server-Sent Events (SSE) for real-time streaming |
+
+## Data Node Capabilities
+
+### Price Feeds
+
+The Data Node aggregates prices for **100+ crypto assets** from multiple sources with automatic fallback:
+
+| Source | Type | Notes |
+|---|---|---|
+| **CoinGecko** | REST API | Primary source for broad coverage |
+| **Binance** | WebSocket + REST | High-frequency updates for major pairs |
+| **Exchange APIs** | REST | Additional coverage for mid/long-tail assets |
+| **1inch DEX** | On-chain quotes | Fallback for assets without CEX listings |
+
+Each asset is configured with a priority-ordered list of sources. If the primary source fails or returns stale data, the Data Node pipeline automatically falls back to the next source.
+
+### NAV Computation
+
+<Info>
+  NAV computation follows the same formula used on-chain in `Index.sol._getCurrentPrice()`. The Data Node reads `_itpInventory` directly from the L3 chain to ensure consistency.
+</Info>
+
+For each ITP, the NAV is computed as:
+
+```text
+NAV = sum(qty[i] * price[i]) / 1e18
+```
+
+Where:
+- `qty[i]` — per-share quantity for asset `i`, read from `_itpInventory[itpId]` on-chain
+- `price[i]` — latest validated price for asset `i` from the data pipeline
+
+The Data Node continuously recomputes NAV as new prices arrive and streams updates to connected frontends via SSE.
+
+### Historical Data & Backtesting
+
+- All price data is persisted to PostgreSQL with timestamps
+- Supports historical NAV reconstruction for any ITP configuration
+- Backtesting engine simulates ITP performance against historical data
+- Used by the frontend's backtest section to show projected returns for custom portfolios
+
+### Portfolio Tracking
+
+- Tracks per-user-address holdings across all ITPs
+- Computes unrealized P&L based on entry price vs current NAV
+- Streams portfolio value updates in real-time
+
+## Data Pipeline
+
+```text
+  Price Sources                  Data Node                    Consumers
+  ┌───────────┐            ┌─────────────────┐           ┌───────────┐
+  │ CoinGecko │──┐         │                 │──REST──►  │ Frontend  │
+  │ Binance   │──┤────►    │  Validation &   │           │           │
+  │ Exchanges │──┤         │  Normalization   │──SSE───►  │ Frontend  │
+  │ 1inch     │──┘         │       │         │           │ (realtime)│
+  │           │            │       ▼         │           └───────────┘
+  │           │            │  PostgreSQL     │           ┌───────────┐
+  │           │            │  (persistence)  │──REST──►  │  Issuer   │
+  │           │            │       │         │           │  Nodes    │
+  │           │            │       ▼         │           └───────────┘
+  │           │            │  NAV Engine     │
+  └───────────┘            └─────────────────┘
+```
+
+**Pipeline stages:**
+
+1. **Ingestion** — Price data fetched from configured sources on a per-asset schedule
+2. **Validation** — Outlier detection, staleness checks, cross-source consistency
+3. **Storage** — Validated prices written to PostgreSQL with source metadata
+4. **Computation** — NAV engine reads latest prices + on-chain inventory to compute NAV
+5. **Distribution** — Results served via REST endpoints and pushed through SSE streams
+
+## SSE Streaming Endpoints
+
+The Data Node uses Server-Sent Events for real-time frontend updates:
+
+| Endpoint | Payload | Use Case |
+|---|---|---|
+| **NAV snapshots** | Current NAV for each ITP, updated on every price tick | Dashboard cards, portfolio value |
+| **Order updates** | Order status changes (pending, confirmed, filled) | Transaction tracking, order history |
+| **Balance changes** | User collateral and share balance updates | Wallet display, post-trade confirmation |
+
+<Info>
+  SSE was chosen over WebSockets for SSE's simplicity, automatic reconnection semantics, and compatibility with HTTP/2 multiplexing. The frontend hooks `useLeaderboardSSE.ts` and related hooks consume the SSE streams.
+</Info>
+
+## NAV Calculation Detail
+
+The Data Node NAV calculation mirrors the on-chain implementation exactly:
+
+```rust
+/// Computes NAV for an ITP using on-chain inventory and latest prices.
+/// This is the same formula as Index.sol._getCurrentPrice().
+fn calculate_nav(inventory: &[AssetQuantity], prices: &PriceMap) -> U256 {
+    let mut nav = U256::zero();
+    for asset in inventory {
+        let price = prices.get(&asset.id)
+            .expect("price must exist for all inventory assets");
+        nav += asset.quantity * price;
+    }
+    nav / U256::from(1e18 as u64)
+}
+```
+
+**Inventory-first approach:**
+- The Data Node calls `getITPState()` on `Index.sol` to read `_itpInventory`
+- Per-share quantities from inventory are multiplied by latest prices
+- The inventory-first approach matches the on-chain NAV exactly, avoiding drift between frontend display and contract state
+
+<Warning>
+  The frontend (`useItpNav.ts`) uses an inventory-first approach with a weight-based fallback only for legacy ITPs that predate the inventory system. All new ITPs must use inventory-based NAV.
+</Warning>
+
+## Deployment
+
+The production Data Node runs on the backend VPS:
+
+| Property | Detail |
+|---|---|
+| **Binary** | `~/index-data-node` |
+| **Working directory** | `~/index-dn-work/` |
+| **Database** | PostgreSQL on Docker — `datanode:datanode123@localhost:5432/index_prices` |
+| **Port** | 8200 |
+| **Logs** | `~/index-data-node.log` |
+
+```bash
+# Start the data node
+cd ~/index-dn-work && ~/index-data-node
+
+# Check logs
+tail -f ~/index-data-node.log
+
+# Verify health
+curl http://localhost:8200/health
+```

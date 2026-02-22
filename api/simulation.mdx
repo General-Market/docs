@@ -1,0 +1,271 @@
+---
+title: "Simulation Endpoints"
+description: "Backtest simulation API"
+---
+
+# Simulation Endpoints
+
+Run backtest simulations against historical data to evaluate index strategies. Configure category filters, weighting schemes, rebalance frequency, and fee structures.
+
+---
+
+## Run Backtest
+
+Runs a backtest simulation with the specified parameters and returns the full results.
+
+**Method:** `POST`
+
+<ParamField body="category_id" type="string" required>
+  Category to select assets from (see `/sim/categories`).
+</ParamField>
+
+<ParamField body="top_n" type="number" required>
+  Number of top assets to include in the index.
+</ParamField>
+
+<ParamField body="weighting" type="string" required>
+  Weighting scheme. Options: `equal`, `market_cap`, `sqrt_market_cap`.
+</ParamField>
+
+<ParamField body="rebalance_days" type="number" required>
+  Number of days between rebalances (e.g., `30` for monthly).
+</ParamField>
+
+<ParamField body="base_fee_pct" type="number" required>
+  Base fee percentage applied on each rebalance (e.g., `0.5` for 0.5%).
+</ParamField>
+
+<ParamField body="spread_multiplier" type="number" required>
+  Spread cost multiplier applied during rebalance trades.
+</ParamField>
+
+<ParamField body="start_date" type="string">
+  Optional. ISO 8601 start date for the backtest (e.g., `2024-01-01`). Defaults to earliest available data.
+</ParamField>
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://generalmarket.io/api/sim/run" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "category_id": "layer-1",
+    "top_n": 20,
+    "weighting": "market_cap",
+    "rebalance_days": 30,
+    "base_fee_pct": 0.5,
+    "spread_multiplier": 1.0
+  }'
+```
+
+```javascript JavaScript
+const res = await fetch("https://generalmarket.io/api/sim/run", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    category_id: "layer-1",
+    top_n: 20,
+    weighting: "market_cap",
+    rebalance_days: 30,
+    base_fee_pct: 0.5,
+    spread_multiplier: 1.0,
+  }),
+});
+const results = await res.json();
+```
+
+```python Python
+import requests
+
+resp = requests.post(
+    "https://generalmarket.io/api/sim/run",
+    json={
+        "category_id": "layer-1",
+        "top_n": 20,
+        "weighting": "market_cap",
+        "rebalance_days": 30,
+        "base_fee_pct": 0.5,
+        "spread_multiplier": 1.0,
+    }
+)
+results = resp.json()
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+{
+  "returns": 0.4523,
+  "drawdown": -0.1842,
+  "sharpe": 1.87,
+  "series": [
+    { "timestamp": 1704067200, "value": 1.0 },
+    { "timestamp": 1704153600, "value": 1.012 },
+    { "timestamp": 1704240000, "value": 1.008 },
+    { "timestamp": 1706745600, "value": 1.245 },
+    { "timestamp": 1708560000, "value": 1.452 }
+  ]
+}
+```
+</Expandable>
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `returns` | number | Total return over the backtest period (e.g., `0.4523` = 45.23%) |
+| `drawdown` | number | Maximum drawdown (e.g., `-0.1842` = -18.42%) |
+| `sharpe` | number | Sharpe ratio of the strategy |
+| `series` | array | Time series of portfolio value, starting at 1.0 |
+
+---
+
+## Run Backtest (Streaming)
+
+Accepts the same parameters as `/sim/run` but returns results as a Server-Sent Events (SSE) stream. Use `/sim/run-stream` for long-running backtests where progress updates should be displayed to the caller.
+
+**Method:** `POST`
+
+The `/sim/run-stream` request body accepts the same parameters as `/sim/run`.
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://generalmarket.io/api/sim/run-stream" \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  -d '{
+    "category_id": "layer-1",
+    "top_n": 20,
+    "weighting": "market_cap",
+    "rebalance_days": 30,
+    "base_fee_pct": 0.5,
+    "spread_multiplier": 1.0
+  }'
+```
+
+```javascript JavaScript
+const res = await fetch("https://generalmarket.io/api/sim/run-stream", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    category_id: "layer-1",
+    top_n: 20,
+    weighting: "market_cap",
+    rebalance_days: 30,
+    base_fee_pct: 0.5,
+    spread_multiplier: 1.0,
+  }),
+});
+
+const reader = res.body.getReader();
+const decoder = new TextDecoder();
+
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  const text = decoder.decode(value);
+  console.log(text); // SSE event data
+}
+```
+
+```python Python
+import requests
+
+resp = requests.post(
+    "https://generalmarket.io/api/sim/run-stream",
+    json={
+        "category_id": "layer-1",
+        "top_n": 20,
+        "weighting": "market_cap",
+        "rebalance_days": 30,
+        "base_fee_pct": 0.5,
+        "spread_multiplier": 1.0,
+    },
+    stream=True,
+)
+
+for line in resp.iter_lines():
+    if line:
+        print(line.decode())
+```
+</CodeGroup>
+
+<Expandable title="SSE Event Stream">
+```
+data: {"type": "progress", "pct": 10, "message": "Loading historical data..."}
+
+data: {"type": "progress", "pct": 35, "message": "Running simulation..."}
+
+data: {"type": "progress", "pct": 70, "message": "Computing metrics..."}
+
+data: {"type": "result", "returns": 0.4523, "drawdown": -0.1842, "sharpe": 1.87, "series": [...]}
+```
+</Expandable>
+
+**Event types:**
+
+| Type | Description |
+|------|-------------|
+| `progress` | Intermediate progress update with percentage and message |
+| `result` | Final result, same shape as the `/sim/run` response |
+
+---
+
+## Get Categories
+
+Returns the list of available asset categories that can be used in backtests.
+
+**Method:** `GET`
+
+<CodeGroup>
+```bash cURL
+curl "https://generalmarket.io/api/sim/categories"
+```
+
+```javascript JavaScript
+const res = await fetch("https://generalmarket.io/api/sim/categories");
+const categories = await res.json();
+```
+
+```python Python
+import requests
+
+resp = requests.get("https://generalmarket.io/api/sim/categories")
+categories = resp.json()
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+[
+  {
+    "id": "layer-1",
+    "name": "Layer 1",
+    "description": "Layer 1 blockchain protocols",
+    "asset_count": 45
+  },
+  {
+    "id": "defi",
+    "name": "DeFi",
+    "description": "Decentralized finance protocols",
+    "asset_count": 82
+  },
+  {
+    "id": "meme",
+    "name": "Meme Coins",
+    "description": "Meme and community-driven tokens",
+    "asset_count": 120
+  },
+  {
+    "id": "ai",
+    "name": "AI & Big Data",
+    "description": "Artificial intelligence and data tokens",
+    "asset_count": 38
+  }
+]
+```
+</Expandable>
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Category identifier used in backtest parameters |
+| `name` | string | Human-readable category name |
+| `description` | string | Brief description of the category |
+| `asset_count` | number | Number of assets in this category |

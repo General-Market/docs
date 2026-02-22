@@ -1,0 +1,173 @@
+---
+title: "Lending Guide"
+description: "Step-by-step guide to lending and borrowing on General Market"
+---
+
+General Market integrates with Morpho to offer lending and borrowing against Index Tracking Product (ITP) shares. Lenders can deposit USDC to earn yield, or borrowers can use ITP shares as collateral to borrow USDC without selling the ITP position.
+
+---
+
+## Depositing USDC to Earn Yield
+
+Supply USDC to the lending pool and earn interest from borrowers.
+
+<Steps>
+  <Step title="Navigate to Lend">
+    Open the **Lend** section from the main menu. The Lend page displays the current supply APY and total deposited amount.
+  </Step>
+
+  <Step title="Enter USDC Amount">
+    Type the amount of USDC to deposit. The available USDC balance is shown above the input field.
+  </Step>
+
+  <Step title="Approve and Deposit">
+    The wallet will prompt for:
+    1. **Approve** the USDC spend allowance for the Morpho vault (first time only)
+    2. **Confirm** the deposit transaction
+
+    Once confirmed, the USDC is deposited into the Morpho vault and immediately begins earning yield.
+  </Step>
+
+  <Step title="Track Earnings">
+    The deposited balance and accrued interest are displayed in real time on the Lend page. Yield accrues continuously -- the Morpho vault has no lock-up period.
+  </Step>
+</Steps>
+
+<Info>
+Yield comes from borrowers who pay interest on their USDC loans. The APY fluctuates based on supply and demand in the lending pool.
+</Info>
+
+---
+
+## Borrowing Against ITP Shares
+
+Borrowers can use ITP shares as collateral to borrow USDC. Borrowing provides liquidity without selling the index position.
+
+### Check Market Availability
+
+Not all ITPs have an active Morpho lending market. On the ITP's detail page or the Lend section, check whether a Morpho borrowing market exists for the ITP.
+
+<Warning>
+If no Morpho lending market exists for a particular ITP, the ITP's shares cannot be used as collateral. Morpho lending markets are created based on demand and liquidity criteria.
+</Warning>
+
+### Deposit Collateral
+
+<Steps>
+  <Step title="Select ITP">
+    In the **Borrow** section, select the ITP whose shares will serve as collateral.
+  </Step>
+
+  <Step title="Deposit Shares">
+    Enter the number of ITP shares to deposit. The wallet will prompt for:
+    1. **Approve** the share transfer to the Morpho market
+    2. **Confirm** the collateral deposit transaction
+
+    The ITP shares are now locked as collateral in the Morpho market.
+  </Step>
+</Steps>
+
+### Borrow USDC
+
+<Steps>
+  <Step title="Choose Borrow Amount">
+    Enter the amount of USDC to borrow. The interface displays:
+    - **Collateral value** -- current USD value of the deposited ITP shares
+    - **Health factor** -- ratio of collateral value to debt (see risk management below)
+    - **Maximum borrow** -- the maximum USDC available at the current collateral value
+  </Step>
+
+  <Step title="Confirm Borrow">
+    Confirm the borrow transaction. USDC is transferred directly to the borrower's wallet.
+  </Step>
+</Steps>
+
+---
+
+## Health Factor and Risk Management
+
+The **health factor** measures how safe the Morpho loan is:
+
+| Health Factor | Status | Action |
+|---------------|--------|--------|
+| > 2.0 | Safe | Comfortable buffer |
+| 1.5 -- 2.0 | Moderate | Monitor regularly |
+| 1.0 -- 1.5 | At Risk | Consider repaying or adding collateral |
+| < 1.0 | Liquidatable | The collateral may be liquidated |
+
+<Warning>
+If the NAV of the collateral ITP drops enough to push the health factor below 1.0, the borrow position can be liquidated. A liquidator repays part of the borrower's debt and claims a portion of the ITP collateral at a discount.
+</Warning>
+
+### Tips to Stay Safe
+
+- **Do not borrow the maximum amount.** Leave a buffer so that normal price fluctuations do not push the position into liquidation risk.
+- **Monitor the health factor** regularly, especially during volatile markets.
+- **Diversified ITPs** (many assets, broad category) tend to have more stable NAVs and are safer as collateral.
+- **Add more collateral** if the health factor is declining -- deposit additional ITP shares to increase the safety buffer.
+
+---
+
+## Repaying Debt
+
+<Steps>
+  <Step title="Navigate to Your Position">
+    Open the **Borrow** section. Active Morpho loans are listed with the current debt amount (principal + accrued interest).
+  </Step>
+
+  <Step title="Enter Repayment Amount">
+    Enter the amount of USDC to repay. Partial repayment is supported, or click **Max** to repay the full outstanding debt including accrued interest.
+  </Step>
+
+  <Step title="Confirm Repayment">
+    Approve and confirm the repayment transaction. The debt balance decreases and the health factor improves.
+  </Step>
+</Steps>
+
+---
+
+## Withdrawing Collateral
+
+After repaying some or all of the debt, borrowers can withdraw ITP shares from the Morpho collateral pool.
+
+<Steps>
+  <Step title="Check Available Collateral">
+    The Borrow section shows how many shares can be withdrawn without dropping the health factor below the safe threshold.
+  </Step>
+
+  <Step title="Enter Withdrawal Amount">
+    Enter the number of ITP shares to withdraw. The interface prevents withdrawing an amount that would put the borrow position at liquidation risk.
+  </Step>
+
+  <Step title="Confirm Withdrawal">
+    Confirm the withdrawal transaction. The ITP shares are returned to the borrower's wallet.
+  </Step>
+</Steps>
+
+<Tip>
+To close a borrow position entirely, first repay the full debt (including all accrued interest), then withdraw all of the ITP collateral.
+</Tip>
+
+---
+
+## Withdrawing Deposited USDC
+
+Lenders who deposited USDC can withdraw at any time (subject to available liquidity in the Morpho pool).
+
+<Steps>
+  <Step title="Go to the Lend Section">
+    The deposited USDC balance and earned yield are shown at the top of the page.
+  </Step>
+
+  <Step title="Enter Withdrawal Amount">
+    Enter the amount of USDC to withdraw. Lenders can withdraw up to the full balance (deposited amount plus accrued yield).
+  </Step>
+
+  <Step title="Confirm Withdrawal">
+    Confirm the transaction. USDC is transferred back to the lender's wallet.
+  </Step>
+</Steps>
+
+<Note>
+If the Morpho pool's utilization rate is very high (most USDC is currently borrowed), only a partial withdrawal may be available. The remaining balance continues to earn yield and can be withdrawn as borrowers repay.
+</Note>

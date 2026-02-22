@@ -1,0 +1,128 @@
+---
+title: "Glossary"
+description: "Key terms and definitions"
+---
+
+# Glossary
+
+Key terms and definitions used throughout the General Market protocol documentation.
+
+<dl>
+
+### AP (Authorized Participant)
+
+An entity registered with the protocol that executes trades on centralized exchanges (CEX) on behalf of the protocol. APs report fill prices back on-chain and are subject to price tolerance checks (max 0.1% deviation). APs provide liquidity and enable the creation/redemption mechanism for ITPs.
+
+### Balance Proof
+
+A BLS-signed message from the issuer network that attests to a player's current USDC balance in a Vision batch. Balance proofs are required to claim rewards or withdraw funds from Vision. The player submits the proof on-chain, and the Vision contract verifies the BLS signature before updating the player's balance.
+
+### Batch (Vision)
+
+A group of markets in Vision that share a common pool, tick duration, and resolution configuration. Any user can create a batch by selecting markets, a tick duration (5 min to 1 day), and a resolution type per market. Players join batches by depositing USDC and submitting bitmap commitments.
+
+### Bitmap
+
+A packed binary representation of a player's bets across all markets in a Vision batch. Each market gets exactly 1 bit: 1 = UP (price increases), 0 = DOWN (price decreases). Bitmaps use big-endian bit ordering. The bitmap is committed on-chain as a `keccak256` hash (sealed commitment) and later revealed to issuer nodes.
+
+### Bot Registry
+
+An on-chain registry in the Vision contract where automated trading bots register their endpoint URL and public key hash. Bot registration is free — no collateral is required. Registered bots are discoverable by issuer nodes via `getAllActiveBots()`.
+
+### AUM (Assets Under Management)
+
+The total value of all underlying assets held within an ITP, calculated as the sum of each asset's quantity multiplied by its current price. AUM grows or shrinks as underlying asset prices change and as shares are minted or burned.
+
+### BLS (Boneh-Lynn-Shacham)
+
+A cryptographic signature scheme that enables efficient signature aggregation. Multiple issuer signatures can be combined into a single aggregated signature, which is verified on-chain against the aggregated public key stored in `IssuerRegistry`. This provides consensus without the gas cost of verifying each signature individually.
+
+### BN254
+
+The elliptic curve (also known as alt-bn128) used for BLS signature operations. BN254 is compatible with Ethereum's `ecAdd`, `ecMul`, and `ecPairing` precompiles at addresses `0x06`, `0x07`, and `0x08`, enabling efficient on-chain BLS verification.
+
+### Collateral
+
+USDC tokens that are escrowed by the protocol during the order lifecycle. When a user places a buy order, collateral is locked until the order is filled. Collateral ensures that all orders are fully backed. On the Index L3 chain, USDC uses 18 decimals; on Arbitrum L2 it uses the standard 6 decimals.
+
+### ERC-4626
+
+A tokenized vault standard used for ITP share tokens. Each ITP's share token implements ERC-4626, providing a standardized interface for deposits, withdrawals, and share/asset accounting. This enables composability with other DeFi protocols such as Morpho lending.
+
+### Health Factor
+
+A ratio representing the safety of a lending position, calculated as the value of deposited collateral divided by the outstanding debt. A health factor above 1.0 means the position is solvent. When it drops below 1.0, the position becomes eligible for liquidation.
+
+### Issuer
+
+A consensus node in the General Market network that batches pending orders, produces BLS signatures, and submits confirmed batches on-chain. Multiple issuers form the consensus layer. Their BLS public keys are registered in `IssuerRegistry`, and a quorum of signatures is required to confirm any batch.
+
+### ITP (Index Tracking Product)
+
+A tokenized basket of up to 100 crypto assets, conceptually similar to an ETF. Each ITP has a fixed set of per-share asset quantities that determine its NAV. Users buy and sell ITP shares; quantities only change during a rebalance operation. ITPs start at a price of $1 per share and drift as underlying prices move.
+
+### L3 (Layer 3)
+
+The Arbitrum Orbit chain (Chain ID: `111222333`) where the General Market protocol operates. Built on top of Arbitrum L2, the L3 provides low-cost transactions and custom execution logic while inheriting Ethereum's security guarantees through the rollup stack.
+
+### Liquidation
+
+The forced sale of collateral when a lending position's health factor drops below 1.0. Liquidators repay part of the borrower's debt and receive the corresponding collateral at a discount. This mechanism ensures the lending protocol remains solvent.
+
+### Morpho
+
+A DeFi lending protocol integrated with General Market that enables users to borrow USDC against their ITP shares as collateral. Morpho markets are created for each ITP, allowing holders to leverage their positions or access liquidity without selling.
+
+### NAV (Net Asset Value)
+
+The total value of an ITP's underlying assets per share, computed as:
+
+```
+NAV = sum(qty[i] * price[i]) / 1e18
+```
+
+where `qty[i]` is the fixed per-share quantity of asset `i` and `price[i]` is its current market price. NAV is the canonical pricing mechanism for all ITP buy and sell operations.
+
+### Netting
+
+The process of combining offsetting buy and sell orders within a batch to reduce the total volume that APs need to execute on external markets. For example, if a batch contains $10,000 in buy orders and $7,000 in sell orders for the same ITP, only $3,000 net needs to be executed externally.
+
+### Resolution Type
+
+A configuration parameter for each market in a Vision batch that defines the price movement threshold for determining the winning outcome. There are 8 resolution types: UP_0 (any increase), UP_30 (≥0.30% increase), UP_X (≥custom increase), DOWN_0 (any decrease), DOWN_30 (≥0.30% decrease), DOWN_X (≥custom decrease), FLAT_0 (no change), FLAT_X (within custom range). See [Resolution Types](/reference/resolution-types) for the full reference.
+
+### Rebalance
+
+The operation of updating an ITP's per-share asset quantities to match new target weights while preserving the current NAV. New quantities are calculated as:
+
+```
+qty_new[i] = (w_new[i] * currentNAV) / price[i]
+```
+
+This changes the portfolio composition without affecting the share price at the moment of rebalance.
+
+### Sealed Commitment
+
+A `keccak256` hash of a player's bitmap submitted on-chain before the actual bitmap bytes are revealed. The sealed commitment prevents front-running: other players cannot see bet directions until after the commitment deadline. The bitmap is later revealed to issuer nodes, who verify the hash matches the on-chain commitment.
+
+### Slippage
+
+The difference between the expected execution price of an order and the actual fill price reported by the AP. The protocol enforces a maximum slippage tolerance of 0.1% (error `E031`) to protect users from excessive price deviation.
+
+### USDC
+
+USD Coin, the primary collateral and settlement token in the protocol. USDC uses **18 decimals** on the Index L3 chain (bridged representation) and **6 decimals** on Arbitrum L2 (native). The bridge handles decimal conversion automatically.
+
+### Tick
+
+A single resolution interval within a Vision batch. At the end of each tick, issuer nodes fetch closing prices, resolve each market to a binary outcome, compare each player's bitmap against outcomes, and distribute the tick pool to winners. Tick durations range from 5 minutes to 1 day and are immutable once the batch is created.
+
+### UUPS (Universal Upgradeable Proxy Standard)
+
+The proxy pattern (EIP-1822) used for all upgradeable protocol contracts. Under UUPS, the upgrade logic lives in the implementation contract rather than the proxy, reducing gas costs and simplifying the proxy contract. All user-facing addresses remain stable across upgrades.
+
+### Vision
+
+The sealed parimutuel prediction market built on the General Market L3 chain. Traders bet on whether asset prices move UP or DOWN over fixed time intervals (ticks). All bets within a tick share a common pool — winners split the losers' stakes, minus a 0.3% protocol fee on profits. The internal technical name is "P2Pool." See [Vision Concepts](/concepts/vision) for the full reference.
+
+</dl>

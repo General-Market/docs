@@ -1,0 +1,99 @@
+---
+title: "Resolution Types"
+description: "Complete reference for Vision batch resolution types"
+---
+
+# Resolution Types
+
+Each market in a Vision batch has a resolution type that determines how price movement is evaluated at the end of each tick. The resolution type defines the threshold a price must cross for the UP outcome to win.
+
+## Type Reference
+
+| Enum Value | Name | Threshold | UP Wins When | DOWN Wins When |
+|-----------|------|-----------|--------------|----------------|
+| 0 | **UP_0** | 0% | Price increases by any amount (> 0%) | Price stays flat or decreases |
+| 1 | **UP_30** | 0.30% | Price increases by at least 30 basis points (≥ 0.30%) | Price increases less than 30 bps, stays flat, or decreases |
+| 2 | **UP_X** | Custom | Price increases by at least X basis points | Price increases less than X bps, stays flat, or decreases |
+| 3 | **DOWN_0** | 0% | Price decreases by any amount (< 0%) | Price stays flat or increases |
+| 4 | **DOWN_30** | 0.30% | Price decreases by at least 30 basis points (≥ 0.30% drop) | Price decreases less than 30 bps, stays flat, or increases |
+| 5 | **DOWN_X** | Custom | Price decreases by at least X basis points | Price decreases less than X bps, stays flat, or increases |
+| 6 | **FLAT_0** | 0% | Price does not change (exactly 0% movement) | Price changes by any amount |
+| 7 | **FLAT_X** | Custom | Price stays within X basis points of the opening price | Price moves more than X bps in either direction |
+
+## Custom Thresholds
+
+Resolution types ending in `_X` (UP_X, DOWN_X, FLAT_X) accept a custom threshold in basis points. The threshold is set per market when creating the batch via the `customThresholds` array in `createBatch()`.
+
+**1 basis point = 0.01%**
+
+Examples:
+- Threshold of 50 = 0.50%
+- Threshold of 100 = 1.00%
+- Threshold of 10 = 0.10%
+
+For non-custom types (UP_0, UP_30, DOWN_0, DOWN_30, FLAT_0), the threshold value in `customThresholds` is ignored (pass `0`).
+
+## Resolution Logic
+
+At the end of each tick, the issuer network computes the price change percentage for each market:
+
+```
+priceChange = (closePrice - openPrice) / openPrice * 10000  // in basis points
+```
+
+The outcome for each market is then determined by the resolution type:
+
+| Resolution Type | UP Outcome (bitmap bit = 1) | DOWN Outcome (bitmap bit = 0) |
+|----------------|---------------------------|-------------------------------|
+| UP_0 | `priceChange > 0` | `priceChange <= 0` |
+| UP_30 | `priceChange >= 30` | `priceChange < 30` |
+| UP_X | `priceChange >= X` | `priceChange < X` |
+| DOWN_0 | `priceChange < 0` | `priceChange >= 0` |
+| DOWN_30 | `priceChange <= -30` | `priceChange > -30` |
+| DOWN_X | `priceChange <= -X` | `priceChange > -X` |
+| FLAT_0 | `priceChange == 0` | `priceChange != 0` |
+| FLAT_X | `abs(priceChange) <= X` | `abs(priceChange) > X` |
+
+## Solidity Enum
+
+The resolution types are defined in `IVision.sol`:
+
+```solidity
+enum ResolutionType {
+    UP_0,     // 0
+    UP_30,    // 1
+    UP_X,     // 2
+    DOWN_0,   // 3
+    DOWN_30,  // 4
+    DOWN_X,   // 5
+    FLAT_0,   // 6
+    FLAT_X    // 7
+}
+```
+
+## Choosing a Resolution Type
+
+| Use Case | Recommended Type | Why |
+|----------|-----------------|-----|
+| Bet on any price increase | UP_0 | Lowest threshold — any upward movement wins |
+| Filter out noise | UP_30 or DOWN_30 | 30 bps threshold filters micro-movements |
+| High-conviction directional bets | UP_X or DOWN_X with large threshold | Only large moves win — higher risk, higher reward concentration |
+| Range-bound markets | FLAT_X | Bet that the price stays within a band |
+| Exact stagnation bets | FLAT_0 | Extremely rare — price must not move at all |
+
+## Example Batch Configuration
+
+A batch with 3 markets using different resolution types:
+
+```json
+{
+  "marketIds": ["BTC", "ETH", "DOGE"],
+  "resolutionTypes": [1, 0, 2],
+  "tickDuration": 3600,
+  "customThresholds": [0, 0, 100]
+}
+```
+
+- **BTC** uses UP_30 (enum 1): UP wins if BTC price increases by at least 0.30%
+- **ETH** uses UP_0 (enum 0): UP wins if ETH price increases by any amount
+- **DOGE** uses UP_X (enum 2) with threshold 100: UP wins if DOGE price increases by at least 1.00%

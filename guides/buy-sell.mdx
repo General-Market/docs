@@ -1,0 +1,120 @@
+---
+title: "Buy & Sell ITPs"
+description: "How to buy and sell index tracking products on General Market"
+---
+
+## Prerequisites
+
+Before you can trade ITPs, make sure you have:
+
+- A Web3 wallet (e.g. MetaMask) connected to General Market
+- USDC in your wallet on a supported network (Arbitrum, Base, or the Index L3)
+- Sufficient USDC balance to cover the purchase amount plus gas fees
+
+<Snippet file="chain-info.mdx" />
+
+<Tip>
+Traders do not need to be on the Index L3 to trade. General Market automatically bridges USDC from Arbitrum or Base to the L3 and back as part of the order flow.
+</Tip>
+
+---
+
+## Buying an ITP
+
+Navigate to the **Markets** page and select the ITP to buy. Click **Buy** to open the order modal.
+
+<Steps>
+  <Step title="Enter Amount">
+    Type the USDC amount to invest. The estimated number of Index Tracking Product (ITP) shares is shown below the input, calculated from the current NAV.
+  </Step>
+
+  <Step title="Configure Slippage">
+    Choose a slippage tolerance to protect against price movement during order execution. See the [slippage settings](#slippage-settings) section below for guidance.
+  </Step>
+
+  <Step title="Submit Order">
+    The wallet will prompt for:
+    1. **Approve** the USDC spend allowance (first time only, or if the amount exceeds the previous approval)
+    2. **Confirm** the buy transaction, which locks the USDC into the BridgeProxy contract
+
+    Once confirmed, the buy order enters the processing pipeline.
+  </Step>
+</Steps>
+
+### Order Processing Pipeline
+
+After submission, the order moves through three visible stages:
+
+| Stage | What Happens | Status |
+|-------|-------------|--------|
+| **Submit** | USDC spend approved and order submitted to BridgeProxy on L1/L2 | Wallet confirmation |
+| **Process** | USDC bridges to L3, order is relayed, batched by issuer nodes via BLS consensus, and the Authorized Participant (AP) fills the underlying assets on exchanges | Automatic -- takes 1-5 minutes |
+| **Deliver** | Collateral recorded on-chain, bridged back to origin chain, bridge finalized, and ITP shares minted to the buyer's wallet | Automatic -- takes 1-3 minutes |
+
+<Info>
+Order processing is fully automatic after submission. The modal can be closed and the order will continue to process. Use the **Portfolio** page to track order progress in real time.
+</Info>
+
+### Real-Time Order Tracking
+
+General Market streams live order status updates via Server-Sent Events (SSE). As the order progresses through each stage, the UI updates automatically with:
+
+- Current processing step and stage
+- Estimated time remaining
+- Transaction hashes for on-chain steps
+
+---
+
+## Selling an ITP
+
+To sell shares of a held ITP, go to the **Portfolio** page or the ITP's market page and click **Sell**.
+
+<Steps>
+  <Step title="Enter Share Amount">
+    Enter the number of ITP shares to sell, or click **Max** to sell the entire position. The estimated USDC proceeds are calculated from the current NAV.
+  </Step>
+
+  <Step title="Configure Slippage">
+    Set the slippage tolerance, same as for buy orders. The slippage tolerance protects against asset price movement while the sell order is being processed.
+  </Step>
+
+  <Step title="Submit Sell Order">
+    The wallet will prompt for:
+    1. **Approve** the ITP share transfer (first time only per ITP)
+    2. **Confirm** the sell transaction
+
+    The sell order enters the same three-stage pipeline (Submit, Process, Deliver). At the end, USDC is returned to the seller's wallet.
+  </Step>
+</Steps>
+
+<Warning>
+Sell orders go through the same bridge and settlement pipeline as buy orders. USDC proceeds arrive after processing completes, typically within a few minutes.
+</Warning>
+
+---
+
+## Slippage Settings
+
+Slippage tolerance defines the maximum price deviation accepted between the quoted price and the execution price. General Market offers three presets:
+
+| Setting | Tolerance | Best For |
+|---------|-----------|----------|
+| **Tight** | 0.3% | Stable, high-liquidity ITPs |
+| **Normal** | 1.0% | Most orders (default) |
+| **Relaxed** | 3.0% | Volatile or low-liquidity ITPs, large orders |
+
+<Tip>
+If an order fails due to slippage, the escrowed USDC is returned automatically. Retry the order with a higher tolerance or wait for calmer market conditions.
+</Tip>
+
+---
+
+## Price History Chart
+
+Each ITP has a price history chart on the ITP's market page showing NAV over time. Use the chart to evaluate performance before buying, or to time a sell.
+
+The NAV is computed from the ITP's fixed per-share asset quantities and live prices:
+
+<Snippet file="nav-formula.mdx" />
+
+The chart supports multiple time ranges (24h, 7d, 30d, 90d, 1y, All) and updates in real time as new price data arrives.

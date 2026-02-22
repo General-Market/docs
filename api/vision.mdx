@@ -1,0 +1,375 @@
+---
+title: "Vision API"
+description: "P2Pool prediction market API endpoints"
+---
+
+# Vision API
+
+The Vision API is served by the P2Pool issuer nodes (default port `10001`). Market data endpoints are served by the data node (default port `8200`).
+
+Base URLs:
+- **P2Pool API**: `https://generalmarket.io/p2pool` (proxied to issuer node)
+- **Data Node API**: `https://generalmarket.io/api` (proxied to data node)
+
+## Get Active Batches
+
+Returns all active Vision batches.
+
+<Tabs>
+
+<Tab title="cURL">
+```bash
+curl https://generalmarket.io/p2pool/batches
+```
+</Tab>
+
+<Tab title="JavaScript">
+```javascript
+const response = await fetch('https://generalmarket.io/p2pool/batches');
+const { batches } = await response.json();
+```
+</Tab>
+
+<Tab title="Python">
+```python
+import requests
+response = requests.get("https://generalmarket.io/p2pool/batches")
+batches = response.json()["batches"]
+```
+</Tab>
+
+</Tabs>
+
+### Response
+
+```json
+{
+  "batches": [
+    {
+      "id": 1,
+      "creator": "0xabc...def",
+      "market_ids": ["BTC", "ETH", "SOL"],
+      "resolution_types": [1, 1, 0],
+      "tick_duration": 3600,
+      "market_count": 3,
+      "player_count": 12,
+      "tvl": "5400000000000000000000",
+      "paused": false
+    }
+  ]
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | number | Unique batch identifier |
+| `creator` | string | Ethereum address of the batch creator |
+| `market_ids` | string[] | Asset identifiers for each market in the batch |
+| `resolution_types` | number[] | Resolution type per market (0=UP_0, 1=UP_30, ..., 7=FLAT_X) |
+| `tick_duration` | number | Seconds between tick resolutions |
+| `market_count` | number | Number of markets in the batch |
+| `player_count` | number | Number of active players |
+| `tvl` | string | Total value locked in USDC (18-decimal wei string) |
+| `paused` | boolean | Whether the batch is currently paused by issuers |
+
+---
+
+## Get Batch State
+
+Returns detailed state for a specific batch including player positions.
+
+<Tabs>
+
+<Tab title="cURL">
+```bash
+curl https://generalmarket.io/p2pool/batch/1/state
+```
+</Tab>
+
+<Tab title="JavaScript">
+```javascript
+const response = await fetch('https://generalmarket.io/p2pool/batch/1/state');
+const batchState = await response.json();
+```
+</Tab>
+
+<Tab title="Python">
+```python
+response = requests.get("https://generalmarket.io/p2pool/batch/1/state")
+batch_state = response.json()
+```
+</Tab>
+
+</Tabs>
+
+### Response
+
+```json
+{
+  "id": 1,
+  "market_ids": ["BTC", "ETH", "SOL"],
+  "tick_duration": 3600,
+  "player_count": 12,
+  "players": [
+    {
+      "address": "0xabc...def",
+      "stake_per_tick": "1000000000000000000",
+      "balance": "15000000000000000000",
+      "has_bitmap": true
+    }
+  ]
+}
+```
+
+---
+
+## Get Batch Tick History
+
+Returns resolution history for past ticks in a batch.
+
+<Tabs>
+
+<Tab title="cURL">
+```bash
+curl https://generalmarket.io/p2pool/batch/1/history
+```
+</Tab>
+
+<Tab title="JavaScript">
+```javascript
+const response = await fetch('https://generalmarket.io/p2pool/batch/1/history');
+const history = await response.json();
+```
+</Tab>
+
+<Tab title="Python">
+```python
+response = requests.get("https://generalmarket.io/p2pool/batch/1/history")
+history = response.json()
+```
+</Tab>
+
+</Tabs>
+
+### Response
+
+```json
+[
+  {
+    "tickId": 5,
+    "resolvedAt": "2026-01-15T12:00:00Z",
+    "marketOutcomes": [true, false, true],
+    "totalPool": "12000000000000000000",
+    "winnerCount": 7,
+    "loserCount": 5
+  }
+]
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `tickId` | number | Sequential tick number within the batch |
+| `resolvedAt` | string | ISO 8601 timestamp when the tick resolved |
+| `marketOutcomes` | boolean[] | Outcome per market — `true` = UP won, `false` = DOWN won |
+| `totalPool` | string | Total USDC pool for the tick (all players' stakePerTick) |
+| `winnerCount` | number | Number of players who scored above the median |
+| `loserCount` | number | Number of players who scored below the median |
+
+---
+
+## Submit Bitmap
+
+Submit the revealed bitmap to an issuer node after committing the hash on-chain. The bitmap must be submitted to each issuer node individually.
+
+<Tabs>
+
+<Tab title="cURL">
+```bash
+curl -X POST https://generalmarket.io/p2pool/bitmap \
+  -H "Content-Type: application/json" \
+  -d '{
+    "player": "0xabc...def",
+    "batch_id": 1,
+    "bitmap_hex": "0xff00",
+    "expected_hash": "0x1234...abcd"
+  }'
+```
+</Tab>
+
+<Tab title="JavaScript">
+```javascript
+const response = await fetch('https://generalmarket.io/p2pool/bitmap', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    player: '0xabc...def',
+    batch_id: 1,
+    bitmap_hex: '0xff00',
+    expected_hash: '0x1234...abcd',
+  }),
+});
+```
+</Tab>
+
+<Tab title="Python">
+```python
+response = requests.post("https://generalmarket.io/p2pool/bitmap", json={
+    "player": "0xabc...def",
+    "batch_id": 1,
+    "bitmap_hex": "0xff00",
+    "expected_hash": "0x1234...abcd",
+})
+```
+</Tab>
+
+</Tabs>
+
+### Request Body
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `player` | string | Player's Ethereum address |
+| `batch_id` | number | Batch ID the bitmap belongs to |
+| `bitmap_hex` | string | Hex-encoded bitmap bytes (e.g., `"0xff00"`) |
+| `expected_hash` | string | `keccak256(bitmap)` — must match the on-chain commitment |
+
+### Response
+
+Returns `200 OK` if the issuer accepts the bitmap. Returns `400` if the hash does not match the on-chain commitment.
+
+---
+
+## Get Balance Proof
+
+Fetch a BLS-signed balance proof for a player in a batch. The proof is required to claim rewards or withdraw funds on-chain.
+
+<Tabs>
+
+<Tab title="cURL">
+```bash
+# Final balance (for withdraw)
+curl https://generalmarket.io/p2pool/balance/1/0xabc...def
+
+# Tick range balance (for claim)
+curl "https://generalmarket.io/p2pool/balance/1/0xabc...def?fromTick=1&toTick=10"
+```
+</Tab>
+
+<Tab title="JavaScript">
+```javascript
+// Final balance (for withdraw)
+const response = await fetch(
+  'https://generalmarket.io/p2pool/balance/1/0xabc...def'
+);
+const proof = await response.json();
+
+// Tick range balance (for claim)
+const claimResponse = await fetch(
+  'https://generalmarket.io/p2pool/balance/1/0xabc...def?fromTick=1&toTick=10'
+);
+const claimProof = await claimResponse.json();
+```
+</Tab>
+
+<Tab title="Python">
+```python
+# Final balance (for withdraw)
+response = requests.get("https://generalmarket.io/p2pool/balance/1/0xabc...def")
+proof = response.json()
+
+# Tick range balance (for claim)
+response = requests.get(
+    "https://generalmarket.io/p2pool/balance/1/0xabc...def",
+    params={"fromTick": 1, "toTick": 10}
+)
+claim_proof = response.json()
+```
+</Tab>
+
+</Tabs>
+
+### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `fromTick` | number | No | First tick in the claim range |
+| `toTick` | number | No | Last tick in the claim range (inclusive) |
+
+When `fromTick` and `toTick` are omitted, the endpoint returns the player's final cumulative balance (used for full withdrawal).
+
+### Response
+
+```json
+{
+  "balance": "15300000000000000000",
+  "bls_sig": "0xabcdef..."
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `balance` | string | Player's USDC balance (18-decimal wei string) |
+| `bls_sig` | string | Aggregated BLS signature from issuer nodes |
+
+---
+
+## Get Active Markets
+
+Returns available markets from the data node. Markets listed here can be used when creating new batches.
+
+<Tabs>
+
+<Tab title="cURL">
+```bash
+curl https://generalmarket.io/api/p2pool/markets/active
+```
+</Tab>
+
+<Tab title="JavaScript">
+```javascript
+const response = await fetch('https://generalmarket.io/api/p2pool/markets/active');
+const markets = await response.json();
+```
+</Tab>
+
+<Tab title="Python">
+```python
+response = requests.get("https://generalmarket.io/api/p2pool/markets/active")
+markets = response.json()
+```
+</Tab>
+
+</Tabs>
+
+### Response
+
+```json
+[
+  {
+    "id": "BTC",
+    "source": "crypto",
+    "name": "Bitcoin",
+    "value": 98500.25,
+    "change24h": 2.3
+  },
+  {
+    "id": "ETH",
+    "source": "crypto",
+    "name": "Ethereum",
+    "value": 3200.10,
+    "change24h": -0.8
+  }
+]
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Market identifier (used in batch creation) |
+| `source` | string | Data source category (e.g., `crypto`, `stocks`, `weather`) |
+| `name` | string | Human-readable market name |
+| `value` | number | Current market value/price |
+| `change24h` | number | 24-hour percentage change |
