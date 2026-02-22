@@ -37,6 +37,7 @@ ISSUER_REG=$(jq -r '.contracts.IssuerRegistry' "$DEPLOYMENT_FILE")
 BRIDGE_PROXY=$(jq -r '.contracts.BridgeProxy' "$DEPLOYMENT_FILE")
 BITGET_VAULT=$(jq -r '.contracts.MockBitgetVault' "$DEPLOYMENT_FILE")
 MOCK_USDT=$(jq -r '.contracts.MOCK_USDT // .contracts.MockUSDT // empty' "$DEPLOYMENT_FILE")
+VISION=$(jq -r '.contracts.Vision // empty' "$DEPLOYMENT_FILE")
 CHAIN_ID=$(jq -r '.chainId' "$DEPLOYMENT_FILE")
 
 # Issuer private keys
@@ -67,6 +68,7 @@ export ISSUER_ISSUER_REGISTRY_ADDRESS="$ISSUER_REG"
 export ISSUER_BRIDGE_PROXY_ADDRESS="$BRIDGE_PROXY"
 export ISSUER_BITGET_VAULT="$BITGET_VAULT"
 export ISSUER_MOCK_USDT="$MOCK_USDT"
+export ISSUER_P2POOL_VISION_ADDRESS="$VISION"
 export ISSUER_ARBITRUM_CHAIN_ID="$CHAIN_ID"
 export ISSUER_ARBITRUM_RPC_URL="$RPC"
 export ISSUER_DEPLOYMENT_FILE="$DEPLOYMENT_FILE"

@@ -56,7 +56,7 @@ if ! command -v anvil &>/dev/null && [ -d "$HOME/.foundry/bin" ]; then
     export PATH="$HOME/.foundry/bin:$PATH"
 fi
 
-TOTAL_STEPS=11
+TOTAL_STEPS=12
 
 print_banner() {
     echo -e "${CYAN}"
@@ -250,7 +250,7 @@ else
 fi
 
 if [ "$SKIP_DEPLOY" = true ]; then
-    echo -e "${BLUE}[2-5/$TOTAL_STEPS] Skipping contract deployment (--skip-deploy)${NC}"
+    echo -e "${BLUE}[2-6/$TOTAL_STEPS] Skipping contract deployment (--skip-deploy)${NC}"
     # Load existing addresses
     if [ ! -f deployments/active-deployment.json ]; then
         echo -e "${RED}Error: deployments/active-deployment.json not found${NC}"; exit 1
@@ -655,10 +655,42 @@ print(f'  Generated assets.json with {len(assets)} symbols from symbol-map')
 
     set -e
     cd ..
+
+    # ============ STEP 6: Vision (P2Pool) ============
+    echo -e "${BLUE}[6/$TOTAL_STEPS] Deploying Vision (P2Pool) contract...${NC}"
+
+    ISSUER_REG_ADDR=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['IssuerRegistry'])")
+    L3_WUSDC_ADDR=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['L3_WUSDC'])")
+
+    cd contracts
+    set +e
+    ISSUER_REGISTRY=$ISSUER_REG_ADDR \
+    USDC_ADDRESS=$L3_WUSDC_ADDR \
+    forge script script/DeployVision.s.sol:DeployVision \
+        --broadcast --slow --rpc-url $RPC_URL > ../logs/deploy-vision.log 2>&1
+
+    if [ $? -eq 0 ]; then
+        echo -e "  ${GREEN}Vision contract deployed${NC}"
+
+        # Merge Vision addresses into active deployment
+        python3 -c "
+import json
+deploy = json.load(open('../deployments/active-deployment.json'))
+vision = json.load(open('../deployments/vision-deployment.json'))
+deploy['contracts']['Vision'] = vision['contracts']['Vision']
+deploy['contracts']['WIND'] = vision['contracts']['WIND']
+json.dump(deploy, open('../deployments/active-deployment.json', 'w'), indent=2)
+"
+        echo -e "  ${GREEN}Vision addresses merged into active-deployment.json${NC}"
+    else
+        echo -e "${YELLOW}  Warning: Vision deployment failed (check logs/deploy-vision.log)${NC}"
+    fi
+    set -e
+    cd ..
 fi
 
-# ============ STEP 6: Sync frontend addresses ============
-echo -e "${BLUE}[6/$TOTAL_STEPS] Syncing frontend addresses...${NC}"
+# ============ STEP 7: Sync frontend addresses ============
+echo -e "${BLUE}[7/$TOTAL_STEPS] Syncing frontend addresses...${NC}"
 
 # Copy deployment JSON directly — frontend imports it as single source of truth
 if [ -f "deployments/active-deployment.json" ]; then
@@ -690,8 +722,8 @@ echo $MINER_PID >> .pids
 echo "block-miner:$MINER_PID" >> .pids.info
 echo -e "  ${GREEN}Background block miner started (1s interval, PID: $MINER_PID)${NC}"
 
-# ============ STEP 7: Launch Issuers ============
-echo -e "${BLUE}[7/$TOTAL_STEPS] Starting $ISSUER_COUNT issuer nodes (with Bitget price proxy)...${NC}"
+# ============ STEP 8: Launch Issuers ============
+echo -e "${BLUE}[8/$TOTAL_STEPS] Starting $ISSUER_COUNT issuer nodes (with Bitget price proxy)...${NC}"
 
 # Extract addresses for issuers
 BRIDGE_PROXY=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['BridgeProxy'])" 2>/dev/null || echo "")
@@ -759,8 +791,8 @@ for i in $(seq 1 $ISSUER_COUNT); do
     echo -e "  Issuer $i on port $PORT (PID: $ISSUER_PID)"
 done
 
-# ============ STEP 8: Data-node ============
-echo -e "${BLUE}[8/$TOTAL_STEPS] Starting data-node service...${NC}"
+# ============ STEP 9: Data-node ============
+echo -e "${BLUE}[9/$TOTAL_STEPS] Starting data-node service...${NC}"
 
 INDEX_ADDRESS=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['Index'])" 2>/dev/null || echo "")
 DATA_NODE_RUNNING=false
@@ -802,8 +834,8 @@ else
     fi
 fi
 
-# ============ STEP 9: Launch AP ============
-echo -e "${BLUE}[9/$TOTAL_STEPS] Starting AP with real Bitget price proxy...${NC}"
+# ============ STEP 10: Launch AP ============
+echo -e "${BLUE}[10/$TOTAL_STEPS] Starting AP with real Bitget price proxy...${NC}"
 
 AP_ARGS="--port 9100 --rpc $RPC_URL --mock-bitget"
 AP_ARGS="$AP_ARGS --arb-rpc $ARB_RPC_URL --arb-chain-id $ARB_CHAIN_ID"
@@ -824,8 +856,8 @@ echo -e "  AP on port 9100 (PID: $AP_PID)"
 # Wait for services to start
 sleep 3
 
-# ============ STEP 10: Frontend E2E Browser Tests ============
-echo -e "${BLUE}[10/$TOTAL_STEPS] Starting frontend & running E2E browser tests...${NC}"
+# ============ STEP 11: Frontend E2E Browser Tests ============
+echo -e "${BLUE}[11/$TOTAL_STEPS] Starting frontend & running E2E browser tests...${NC}"
 
 set +e  # Don't exit on E2E test failures
 
@@ -862,11 +894,13 @@ npx playwright install chromium > ../logs/playwright-install.log 2>&1
 echo -e "  ${GREEN}Dependencies ready${NC}"
 
 # Write local dev .env.local (overrides any prod SSH tunnel config)
-cat > .env.local <<'ENVEOF'
+VISION_ADDR=$(python3 -c "import json; print(json.load(open('../deployments/active-deployment.json'))['contracts'].get('Vision',''))" 2>/dev/null || echo "")
+cat > .env.local <<ENVEOF
 NEXT_PUBLIC_CHAIN_ID=421611337
 NEXT_PUBLIC_RPC_URL=http://localhost:8546
 NEXT_PUBLIC_AP_URL=http://localhost:9100
 NEXT_PUBLIC_DATA_NODE_URL=http://localhost:8200
+NEXT_PUBLIC_VISION_ADDRESS=${VISION_ADDR}
 ENVEOF
 
 # Start Next.js dev server
@@ -916,7 +950,7 @@ echo ""
 
 set -e
 
-# ============ STEP 11: Verification ============
+# ============ STEP 12: Verification ============
 echo ""
 echo -e "${YELLOW}Verifying services...${NC}"
 
