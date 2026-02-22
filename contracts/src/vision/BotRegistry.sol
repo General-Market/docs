@@ -1,22 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /// @title BotRegistry
-/// @notice Registry for P2P trading bots with stake-based registration
-/// @dev Bots register with WIND token stake to enable peer discovery
+/// @notice Registry for P2P trading bots with free registration
+/// @dev Bots register freely to enable peer discovery
 contract BotRegistry is ReentrancyGuard {
-    using SafeERC20 for IERC20;
-
     // ============ Custom Errors ============
 
     error AlreadyRegistered();
     error NotRegistered();
-    error InsufficientStake(uint256 required, uint256 provided);
-    error ZeroAddress();
     error EmptyEndpoint();
     error ZeroPubkeyHash();
 
@@ -26,18 +20,9 @@ contract BotRegistry is ReentrancyGuard {
     struct Bot {
         string endpoint;      // P2P HTTP endpoint URL (e.g., "https://bot1.example.com:8080")
         bytes32 pubkeyHash;   // keccak256 of bot's signing public key
-        uint256 stakedAmount; // Amount of WIND staked (always MIN_STAKE for v1)
         uint256 registeredAt; // Block timestamp of registration
         bool isActive;        // True if bot is registered and active
     }
-
-    // ============ Constants ============
-
-    /// @notice Minimum stake required to register a bot (1 WIND with 18 decimals)
-    uint256 public constant MIN_STAKE = 1 * 10 ** 18;
-
-    /// @notice The WIND token used for staking
-    IERC20 public immutable WIND_TOKEN;
 
     // ============ State Variables ============
 
@@ -52,26 +37,21 @@ contract BotRegistry is ReentrancyGuard {
     // ============ Events ============
 
     /// @notice Emitted when a bot is registered
-    event BotRegistered(address indexed bot, string endpoint, bytes32 pubkeyHash, uint256 stake);
+    event BotRegistered(address indexed bot, string endpoint, bytes32 pubkeyHash);
 
     /// @notice Emitted when a bot's endpoint is updated
     event BotUpdated(address indexed bot, string newEndpoint);
 
-    /// @notice Emitted when a bot is deregistered and stake returned
-    event BotDeregistered(address indexed bot, uint256 stakeReturned);
+    /// @notice Emitted when a bot is deregistered
+    event BotDeregistered(address indexed bot);
 
     // ============ Constructor ============
 
-    /// @notice Deploy the BotRegistry with WIND token address
-    /// @param _windToken Address of the WIND ERC20 token
-    constructor(address _windToken) {
-        if (_windToken == address(0)) revert ZeroAddress();
-        WIND_TOKEN = IERC20(_windToken);
-    }
+    constructor() {}
 
     // ============ External Functions ============
 
-    /// @notice Register a bot with stake and endpoint
+    /// @notice Register a bot with endpoint
     /// @param endpoint The P2P HTTP endpoint URL for the bot
     /// @param pubkeyHash The keccak256 hash of the bot's signing public key
     function registerBot(string calldata endpoint, bytes32 pubkeyHash) external nonReentrant {
@@ -79,21 +59,17 @@ contract BotRegistry is ReentrancyGuard {
         if (pubkeyHash == bytes32(0)) revert ZeroPubkeyHash();
         if (bots[msg.sender].isActive) revert AlreadyRegistered();
 
-        // Transfer stake from bot operator
-        WIND_TOKEN.safeTransferFrom(msg.sender, address(this), MIN_STAKE);
-
         // Register bot
         bots[msg.sender] = Bot({
             endpoint: endpoint,
             pubkeyHash: pubkeyHash,
-            stakedAmount: MIN_STAKE,
             registeredAt: block.timestamp,
             isActive: true
         });
 
         botAddresses.push(msg.sender);
 
-        emit BotRegistered(msg.sender, endpoint, pubkeyHash, MIN_STAKE);
+        emit BotRegistered(msg.sender, endpoint, pubkeyHash);
     }
 
     /// @notice Update the endpoint for a registered bot
@@ -107,21 +83,15 @@ contract BotRegistry is ReentrancyGuard {
         emit BotUpdated(msg.sender, newEndpoint);
     }
 
-    /// @notice Deregister a bot and return the staked amount
+    /// @notice Deregister a bot
     function deregisterBot() external nonReentrant {
         Bot storage bot = bots[msg.sender];
         if (!bot.isActive) revert NotRegistered();
 
-        uint256 stakeToReturn = bot.stakedAmount;
-
         // Mark as inactive (keep history)
         bot.isActive = false;
-        bot.stakedAmount = 0;
 
-        // Return stake
-        WIND_TOKEN.safeTransfer(msg.sender, stakeToReturn);
-
-        emit BotDeregistered(msg.sender, stakeToReturn);
+        emit BotDeregistered(msg.sender);
     }
 
     // ============ View Functions ============

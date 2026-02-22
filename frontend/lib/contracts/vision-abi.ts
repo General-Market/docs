@@ -163,7 +163,6 @@ export const VISION_ABI = [
         components: [
           { name: 'endpoint', type: 'string' },
           { name: 'pubkeyHash', type: 'bytes32' },
-          { name: 'stakedAmount', type: 'uint256' },
           { name: 'registeredAt', type: 'uint256' },
           { name: 'isActive', type: 'bool' },
         ],
@@ -220,13 +219,6 @@ export const VISION_ABI = [
   {
     inputs: [],
     name: 'USDC',
-    outputs: [{ name: '', type: 'address' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'WIND',
     outputs: [{ name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',

@@ -13,7 +13,6 @@ import "./helpers/TestHelper.sol";
 contract VisionTest is TestHelper {
     Vision public vision;
     MockERC20 public usdc;
-    MockERC20 public wind;
     IssuerRegistry public issuerRegistry;
     Governance public governance;
 
@@ -26,7 +25,6 @@ contract VisionTest is TestHelper {
 
         // Deploy mock tokens
         usdc = new MockERC20("USDC", "USDC", 6);
-        wind = new MockERC20("WIND", "WIND", 18);
 
         // Deploy governance and issuer registry for BLS verification
         governance = deployGovernance(address(this));
@@ -38,7 +36,6 @@ contract VisionTest is TestHelper {
         // Deploy Vision
         vision = new Vision(
             address(usdc),
-            address(wind),
             address(issuerRegistry),
             address(this) // feeCollector
         );
@@ -757,19 +754,17 @@ contract VisionTest is TestHelper {
         assertEq(pos.bitmapHash, bytes32(0), "Non-existent position bitmapHash should be 0");
     }
 
-    // ============ Helper: prepare bot with WIND ============
+    // ============ Helper: prepare bot ============
 
-    function _prepareBot(address bot, uint256 windAmount) internal {
-        wind.mint(bot, windAmount);
-        vm.prank(bot);
-        wind.approve(address(vision), type(uint256).max);
+    function _prepareBot(address bot) internal pure {
+        // No-op: bot registration is free (no staking required)
+        bot; // silence unused warning
     }
 
     // ============ registerBot ============
 
     function test_registerBot() public {
         address bot = makeAddr("bot1");
-        _prepareBot(bot, 1e18);
 
         vm.expectEmit(true, false, false, true);
         emit Vision.BotRegistered(bot, "http://bot1.example.com");
@@ -783,18 +778,12 @@ contract VisionTest is TestHelper {
         assertEq(addrs[0], bot, "Bot address should match");
         assertEq(bots[0].endpoint, "http://bot1.example.com", "Endpoint should match");
         assertEq(bots[0].pubkeyHash, keccak256("pubkey1"), "PubkeyHash should match");
-        assertEq(bots[0].stakedAmount, 1e18, "Staked amount should be BOT_MIN_STAKE");
         assertEq(bots[0].registeredAt, block.timestamp, "registeredAt should be current");
         assertTrue(bots[0].isActive, "Bot should be active");
-
-        // Verify WIND transferred
-        assertEq(wind.balanceOf(address(vision)), 1e18, "Vision should hold WIND stake");
-        assertEq(wind.balanceOf(bot), 0, "Bot should have 0 WIND left");
     }
 
     function test_registerBot_revertAlreadyRegistered() public {
         address bot = makeAddr("bot1");
-        _prepareBot(bot, 2e18);
 
         vm.prank(bot);
         vision.registerBot("http://bot1.example.com", keccak256("pubkey1"));
@@ -808,7 +797,6 @@ contract VisionTest is TestHelper {
 
     function test_deregisterBot() public {
         address bot = makeAddr("bot1");
-        _prepareBot(bot, 1e18);
 
         vm.prank(bot);
         vision.registerBot("http://bot1.example.com", keccak256("pubkey1"));
@@ -823,10 +811,6 @@ contract VisionTest is TestHelper {
         (address[] memory addrs, IVision.Bot[] memory bots) = vision.getAllActiveBots();
         assertEq(addrs.length, 0, "Should have 0 bots after deregister");
         assertEq(bots.length, 0, "Bots array should be empty");
-
-        // Verify WIND returned
-        assertEq(wind.balanceOf(bot), 1e18, "Bot should get WIND stake back");
-        assertEq(wind.balanceOf(address(vision)), 0, "Vision should have 0 WIND");
     }
 
     function test_deregisterBot_swapAndPop() public {
@@ -834,9 +818,6 @@ contract VisionTest is TestHelper {
         address bot1 = makeAddr("bot1");
         address bot2 = makeAddr("bot2");
         address bot3 = makeAddr("bot3");
-        _prepareBot(bot1, 1e18);
-        _prepareBot(bot2, 1e18);
-        _prepareBot(bot3, 1e18);
 
         vm.prank(bot1);
         vision.registerBot("http://bot1.example.com", keccak256("pk1"));
@@ -857,10 +838,6 @@ contract VisionTest is TestHelper {
         assertEq(addrs[1], bot3, "Second bot should be bot3 (swapped)");
         assertEq(bots[0].endpoint, "http://bot1.example.com", "Bot1 endpoint intact");
         assertEq(bots[1].endpoint, "http://bot3.example.com", "Bot3 endpoint intact");
-
-        // WIND balances
-        assertEq(wind.balanceOf(bot2), 1e18, "Deregistered bot2 should get WIND back");
-        assertEq(wind.balanceOf(address(vision)), 2e18, "Vision holds 2 remaining stakes");
     }
 
     function test_deregisterBot_revertNotRegistered() public {
@@ -882,8 +859,6 @@ contract VisionTest is TestHelper {
         // Add 2 bots
         address bot1 = makeAddr("bot1");
         address bot2 = makeAddr("bot2");
-        _prepareBot(bot1, 1e18);
-        _prepareBot(bot2, 1e18);
 
         vm.prank(bot1);
         vision.registerBot("http://bot1.example.com", keccak256("pk1"));

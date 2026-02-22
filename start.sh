@@ -678,15 +678,9 @@ import json
 deploy = json.load(open('../deployments/active-deployment.json'))
 vision = json.load(open('../deployments/vision-deployment.json'))
 deploy['contracts']['Vision'] = vision['contracts']['Vision']
-deploy['contracts']['WIND'] = vision['contracts']['WIND']
 json.dump(deploy, open('../deployments/active-deployment.json', 'w'), indent=2)
 "
         echo -e "  ${GREEN}Vision addresses merged into active-deployment.json${NC}"
-
-        # Fund test user with WIND tokens (for bot registration testing)
-        WIND_ADDR=$(python3 -c "import json; print(json.load(open('../deployments/active-deployment.json'))['contracts']['WIND'])")
-        cast send --private-key $DEPLOYER_KEY $WIND_ADDR "mint(address,uint256)" $TEST_USER 1000000000000000000000 --rpc-url $RPC_URL > /dev/null 2>&1
-        echo -e "  ${GREEN}Test user funded with 1000 WIND${NC}"
 
         # Run P2Pool database migrations (issuer chain listener needs these tables)
         if $PG_ISREADY -q 2>/dev/null; then

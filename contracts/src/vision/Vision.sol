@@ -15,13 +15,11 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     // ============ CONSTANTS ============
     uint256 public constant PROTOCOL_FEE_BPS = 30; // 0.3%
     uint256 public constant MIN_STAKE_PER_TICK = 1e5; // 0.1 USDC (6 decimals)
-    uint256 public constant BOT_MIN_STAKE = 1e18; // 1 WIND (18 decimals)
     uint256 public constant BPS_DENOMINATOR = 10000;
     uint256 public constant MAX_TICK_DURATION = 30 days;
 
     // ============ IMMUTABLES ============
     IERC20 public immutable USDC;
-    IERC20 public immutable WIND;
     address public immutable issuerRegistry;
 
     // ============ STATE ============
@@ -52,8 +50,6 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     error InsolventPayout();
     error BotAlreadyRegistered();
     error BotNotRegistered();
-    error InsufficientBotStake();
-
     // ============ EVENTS ============
     event BatchCreated(uint256 indexed batchId, address indexed creator, uint256 tickDuration);
     event BatchMarketsUpdated(uint256 indexed batchId);
@@ -67,9 +63,8 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     event BotRegistered(address indexed bot, string endpoint);
     event BotDeregistered(address indexed bot);
 
-    constructor(address _usdc, address _wind, address _issuerRegistry, address _feeCollector) {
+    constructor(address _usdc, address _issuerRegistry, address _feeCollector) {
         USDC = IERC20(_usdc);
-        WIND = IERC20(_wind);
         issuerRegistry = _issuerRegistry;
         feeCollector = _feeCollector;
         __BLSVerifier_init(_issuerRegistry);
@@ -279,12 +274,9 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     function registerBot(string calldata endpoint, bytes32 pubkeyHash) external nonReentrant {
         if (_bots[msg.sender].isActive || _botIndex[msg.sender] != 0) revert BotAlreadyRegistered();
 
-        WIND.safeTransferFrom(msg.sender, address(this), BOT_MIN_STAKE);
-
         _bots[msg.sender] = Bot({
             endpoint: endpoint,
             pubkeyHash: pubkeyHash,
-            stakedAmount: BOT_MIN_STAKE,
             registeredAt: block.timestamp,
             isActive: true
         });
@@ -299,8 +291,6 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         Bot storage bot = _bots[msg.sender];
         if (!bot.isActive) revert BotNotRegistered();
 
-        uint256 stakeToReturn = bot.stakedAmount;
-
         // Swap-and-pop removal from _botAddresses
         uint256 idx = _botIndex[msg.sender] - 1; // convert to 0-based
         address lastBot = _botAddresses[_botAddresses.length - 1];
@@ -309,8 +299,6 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         _botAddresses.pop();
         delete _botIndex[msg.sender];
         delete _bots[msg.sender];
-
-        WIND.safeTransfer(msg.sender, stakeToReturn);
 
         emit BotDeregistered(msg.sender);
     }

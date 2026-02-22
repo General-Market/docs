@@ -32,7 +32,7 @@ export interface Bet {
   creator: string
   betHash: string
   jsonStorageRef?: string
-  creatorStake: string        // WIND amount (18 decimals as string)
+  creatorStake: string        // USDC amount (18 decimals as string)
   oddsBps: number             // Basis points: 10000 = 1.00x
   status: 'pending' | 'matched' | 'settling' | 'settled'
   createdAt: string

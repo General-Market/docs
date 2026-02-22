@@ -3,7 +3,7 @@ import {
   getStatusDisplay,
   getStatusColor,
   isBetTerminal,
-  formatWINDAmount,
+  formatUSDCAmount,
   truncateAddress,
   canRequestArbitration,
   getResolutionTypeDisplay,
@@ -61,21 +61,21 @@ describe('bilateral-bet type helpers', () => {
     })
   })
 
-  describe('formatWINDAmount', () => {
+  describe('formatUSDCAmount', () => {
     test('formats amounts correctly', () => {
-      expect(formatWINDAmount('100.123456789')).toBe('100.12')
-      expect(formatWINDAmount('1000000')).toBe('1,000,000.00')
-      expect(formatWINDAmount('0')).toBe('0.00')
+      expect(formatUSDCAmount('100.123456789')).toBe('100.12')
+      expect(formatUSDCAmount('1000000')).toBe('1,000,000.00')
+      expect(formatUSDCAmount('0')).toBe('0.00')
     })
 
     test('handles invalid input', () => {
-      expect(formatWINDAmount('invalid')).toBe('0.00')
-      expect(formatWINDAmount('')).toBe('0.00')
+      expect(formatUSDCAmount('invalid')).toBe('0.00')
+      expect(formatUSDCAmount('')).toBe('0.00')
     })
 
     test('respects decimal precision parameter', () => {
-      expect(formatWINDAmount('100.123456', 4)).toBe('100.1235')
-      expect(formatWINDAmount('100', 0)).toBe('100')
+      expect(formatUSDCAmount('100.123456', 4)).toBe('100.1235')
+      expect(formatUSDCAmount('100', 0)).toBe('100')
     })
   })
 

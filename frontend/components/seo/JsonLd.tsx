@@ -111,7 +111,7 @@ export function FAQJsonLd() {
         name: "What do I need to get started?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "You need a Web3 wallet (like MetaMask) connected to the Index L3 network, and WIND tokens for gas fees. You can then browse the Markets tab to buy existing ITPs or create your own custom index.",
+          text: "You need a Web3 wallet (like MetaMask) connected to the Index L3 network, and USDC tokens. You can then browse the Markets tab to buy existing ITPs or create your own custom index.",
         },
       },
     ],

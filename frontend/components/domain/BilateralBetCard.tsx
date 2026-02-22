@@ -6,7 +6,7 @@ import {
   getStatusDisplay,
   getStatusColor,
   getStatusBgColor,
-  formatWINDAmount,
+  formatUSDCAmount,
   truncateAddress,
   isBetTerminal,
   canRequestArbitration,
@@ -105,14 +105,14 @@ export function BilateralBetCard({
           <div className="text-text-muted text-xs uppercase font-mono mb-1">Creator</div>
           <div className="font-mono text-text-primary">{truncateAddress(bet.creator, 6)}</div>
           <div className="text-xs text-green-600 font-mono mt-0.5">
-            {formatWINDAmount(bet.creatorAmount)} WIND
+            {formatUSDCAmount(bet.creatorAmount)} USDC
           </div>
         </div>
         <div>
           <div className="text-text-muted text-xs uppercase font-mono mb-1">Filler</div>
           <div className="font-mono text-text-primary">{truncateAddress(bet.filler, 6)}</div>
           <div className="text-xs text-green-600 font-mono mt-0.5">
-            {formatWINDAmount(bet.fillerAmount)} WIND
+            {formatUSDCAmount(bet.fillerAmount)} USDC
           </div>
         </div>
       </div>
@@ -122,7 +122,7 @@ export function BilateralBetCard({
         <div>
           <div className="text-text-muted text-xs uppercase font-mono mb-1">Total Locked</div>
           <div className="font-mono text-text-primary font-bold">
-            {formatWINDAmount(bet.totalAmount)} WIND
+            {formatUSDCAmount(bet.totalAmount)} USDC
           </div>
         </div>
         <div>
@@ -160,13 +160,13 @@ export function BilateralBetCard({
                 {bet.creatorPayout && (
                   <div className="flex justify-between font-mono">
                     <span className="text-text-muted">Creator Payout:</span>
-                    <span className="text-color-info">{formatWINDAmount(bet.creatorPayout)} WIND</span>
+                    <span className="text-color-info">{formatUSDCAmount(bet.creatorPayout)} USDC</span>
                   </div>
                 )}
                 {bet.fillerPayout && (
                   <div className="flex justify-between font-mono">
                     <span className="text-text-muted">Filler Payout:</span>
-                    <span className="text-color-info">{formatWINDAmount(bet.fillerPayout)} WIND</span>
+                    <span className="text-color-info">{formatUSDCAmount(bet.fillerPayout)} USDC</span>
                   </div>
                 )}
               </>

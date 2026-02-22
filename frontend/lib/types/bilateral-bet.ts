@@ -26,7 +26,7 @@ export type ResolutionType = 'agreement' | 'arbitration' | 'custom'
 
 /**
  * Bilateral bet from CollateralVault contract
- * Amounts are stored as decimal strings (WIND, 18 decimals)
+ * Amounts are stored as decimal strings (USDC, 18 decimals)
  */
 export interface BilateralBet {
   /** On-chain bet ID from CollateralVault */
@@ -37,9 +37,9 @@ export interface BilateralBet {
   filler: string
   /** Merkle root of trades for verification (bytes32 hex) */
   tradesRoot: string
-  /** Creator's locked stake (WIND amount as decimal string) */
+  /** Creator's locked stake (USDC amount as decimal string) */
   creatorAmount: string
-  /** Filler's locked stake (WIND amount as decimal string) */
+  /** Filler's locked stake (USDC amount as decimal string) */
   fillerAmount: string
   /** Total locked amount (creator + filler) */
   totalAmount: string
@@ -191,9 +191,9 @@ export function canRequestArbitration(bet: BilateralBet): boolean {
 }
 
 /**
- * Format WIND amount for display (18 decimals to human-readable)
+ * Format USDC amount for display (human-readable)
  */
-export function formatWINDAmount(amount: string, decimals: number = 2): string {
+export function formatUSDCAmount(amount: string, decimals: number = 2): string {
   try {
     const value = parseFloat(amount)
     if (isNaN(value)) return '0.00'

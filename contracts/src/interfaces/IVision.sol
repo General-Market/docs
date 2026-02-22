@@ -30,7 +30,6 @@ interface IVision {
     struct Bot {
         string endpoint;
         bytes32 pubkeyHash;
-        uint256 stakedAmount;
         uint256 registeredAt;
         bool isActive;
     }

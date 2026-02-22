@@ -13,7 +13,7 @@ const mockBet: Bet = {
   betId: '123',
   creator: '0x1234567890123456789012345678901234567890',
   betHash: '0xabcdef1234567890',
-  creatorStake: '100000000000000000000', // 100 WIND (18 decimals)
+  creatorStake: '100000000000000000000', // 100 USDC (18 decimals)
   oddsBps: 20000, // 2.00x odds
   status: 'pending',
   createdAt: '2026-01-24T00:00:00Z',
@@ -252,7 +252,7 @@ describe('Edge cases', () => {
   it('handles very large amounts', () => {
     const largeBet = {
       ...mockBet,
-      creatorStake: '1000000000000000000000000', // 1M WIND (18 decimals)
+      creatorStake: '1000000000000000000000000', // 1M USDC (18 decimals)
     }
     const odds = calculateOddsDisplay(largeBet)
     expect(odds.creatorRisk).toContain('$')
@@ -261,7 +261,7 @@ describe('Edge cases', () => {
   it('handles very small amounts', () => {
     const smallBet = {
       ...mockBet,
-      creatorStake: '1000000000000000', // 0.001 WIND (18 decimals)
+      creatorStake: '1000000000000000', // 0.001 USDC (18 decimals)
     }
     const odds = calculateOddsDisplay(smallBet)
     expect(odds.creatorRisk).toBe('$0.00')

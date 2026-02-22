@@ -22,7 +22,7 @@ export interface RecentBetEvent {
   eventType: BetEventType
   /** Number of markets in portfolio */
   portfolioSize: number
-  /** Bet amount in WIND (creator stake) */
+  /** Bet amount in USDC (creator stake) */
   amount: string // Decimal as string from API
   /** Odds in basis points: 10000 = 1.00x, 20000 = 2.00x */
   oddsBps?: number
