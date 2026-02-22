@@ -53,6 +53,7 @@ struct AlertFeature {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct AlertProperties {
     event: Option<String>,
     severity: Option<String>,
@@ -60,6 +61,85 @@ struct AlertProperties {
     urgency: Option<String>,
     #[allow(dead_code)]
     certainty: Option<String>,
+    area_desc: Option<String>,
+}
+
+// ============================================================================
+// REGION MAPPING
+// ============================================================================
+
+/// US regions mapped from state names found in NWS areaDesc field.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum UsRegion {
+    Northeast,
+    Southeast,
+    Midwest,
+    Southwest,
+    Northwest,
+}
+
+/// Map a state name to its US region. Returns None if not a recognized US state.
+fn state_to_region(state: &str) -> Option<UsRegion> {
+    match state {
+        // Northeast
+        "Connecticut" | "CT" | "Delaware" | "DE" | "Maine" | "ME" | "Maryland" | "MD"
+        | "Massachusetts" | "MA" | "New Hampshire" | "NH" | "New Jersey" | "NJ" | "New York"
+        | "NY" | "Pennsylvania" | "PA" | "Rhode Island" | "RI" | "Vermont" | "VT" => {
+            Some(UsRegion::Northeast)
+        }
+        // Southeast
+        "Alabama" | "AL" | "Arkansas" | "AR" | "Florida" | "FL" | "Georgia" | "GA"
+        | "Kentucky" | "KY" | "Louisiana" | "LA" | "Mississippi" | "MS" | "North Carolina"
+        | "NC" | "South Carolina" | "SC" | "Tennessee" | "TN" | "Virginia" | "VA"
+        | "West Virginia" | "WV" => Some(UsRegion::Southeast),
+        // Midwest
+        "Illinois" | "IL" | "Indiana" | "IN" | "Iowa" | "IA" | "Kansas" | "KS" | "Michigan"
+        | "MI" | "Minnesota" | "MN" | "Missouri" | "MO" | "Nebraska" | "NE" | "North Dakota"
+        | "ND" | "Ohio" | "OH" | "South Dakota" | "SD" | "Wisconsin" | "WI" => {
+            Some(UsRegion::Midwest)
+        }
+        // Southwest
+        "Arizona" | "AZ" | "New Mexico" | "NM" | "Oklahoma" | "OK" | "Texas" | "TX" => {
+            Some(UsRegion::Southwest)
+        }
+        // Northwest
+        "Alaska" | "AK" | "Colorado" | "CO" | "Hawaii" | "HI" | "Idaho" | "ID" | "Montana"
+        | "MT" | "Nevada" | "NV" | "Oregon" | "OR" | "Utah" | "UT" | "Washington" | "WA"
+        | "Wyoming" | "WY" | "California" | "CA" => Some(UsRegion::Northwest),
+        _ => None,
+    }
+}
+
+/// Extract state names from an NWS areaDesc string.
+/// The areaDesc field contains descriptions like "Los Angeles, CA; San Francisco, CA"
+/// or "Cook County, IL; Lake County, IN". We look for two-letter state abbreviations
+/// and full state names.
+fn extract_regions_from_area_desc(area_desc: &str) -> Vec<UsRegion> {
+    let mut regions = Vec::new();
+
+    // Split by semicolons and commas, then check each token
+    for part in area_desc.split(';') {
+        let part = part.trim();
+        // Try to find a two-letter state abbreviation at the end
+        // NWS often uses "County, ST" format
+        let tokens: Vec<&str> = part.split(',').collect();
+        for token in &tokens {
+            let token = token.trim();
+            // Check if the token is a state abbreviation (2 uppercase letters)
+            if token.len() == 2 && token.chars().all(|c| c.is_ascii_uppercase()) {
+                if let Some(region) = state_to_region(token) {
+                    regions.push(region);
+                }
+            }
+            // Also check full state names
+            if let Some(region) = state_to_region(token) {
+                regions.push(region);
+            }
+        }
+    }
+
+    regions.dedup();
+    regions
 }
 
 // ============================================================================
@@ -143,8 +223,9 @@ impl MarketDataSource for WeatherAlertsMarketSource {
             }
         };
 
-        // Count alerts by event type
+        // Count alerts by event type and by region
         let mut event_counts: HashMap<String, u32> = HashMap::new();
+        let mut region_counts: HashMap<UsRegion, u32> = HashMap::new();
         let mut max_severity: u32 = 0;
 
         for alert in &alerts {
@@ -155,6 +236,13 @@ impl MarketDataSource for WeatherAlertsMarketSource {
                 let sev_num = severity_to_numeric(severity);
                 if sev_num > max_severity {
                     max_severity = sev_num;
+                }
+            }
+            // Count by region from areaDesc
+            if let Some(area_desc) = &alert.properties.area_desc {
+                let regions = extract_regions_from_area_desc(area_desc);
+                for region in regions {
+                    *region_counts.entry(region).or_insert(0) += 1;
                 }
             }
         }
@@ -171,6 +259,21 @@ impl MarketDataSource for WeatherAlertsMarketSource {
             let value = match api_ref.as_str() {
                 "_total" => Decimal::from(total_alerts),
                 "_max_severity" => Decimal::from(max_severity),
+                "_region_northeast" => {
+                    Decimal::from(region_counts.get(&UsRegion::Northeast).copied().unwrap_or(0))
+                }
+                "_region_southeast" => {
+                    Decimal::from(region_counts.get(&UsRegion::Southeast).copied().unwrap_or(0))
+                }
+                "_region_midwest" => {
+                    Decimal::from(region_counts.get(&UsRegion::Midwest).copied().unwrap_or(0))
+                }
+                "_region_southwest" => {
+                    Decimal::from(region_counts.get(&UsRegion::Southwest).copied().unwrap_or(0))
+                }
+                "_region_northwest" => {
+                    Decimal::from(region_counts.get(&UsRegion::Northwest).copied().unwrap_or(0))
+                }
                 event_type => {
                     let count = event_counts.get(event_type).copied().unwrap_or(0);
                     Decimal::from(count)
@@ -225,7 +328,7 @@ mod tests {
     #[test]
     fn test_config_loads() {
         let entries = load_all_asset_entries(ASSET_JSON).unwrap();
-        assert_eq!(entries.len(), 15, "Expected 15 weather alert types");
+        assert_eq!(entries.len(), 20, "Expected 20 weather alert types");
     }
 
     #[test]
@@ -242,6 +345,11 @@ mod tests {
         assert_eq!(get_api_ref("nws_tornado_warning"), "Tornado Warning");
         assert_eq!(get_api_ref("nws_total_active"), "_total");
         assert_eq!(get_api_ref("nws_max_severity"), "_max_severity");
+        assert_eq!(get_api_ref("nws_region_northeast"), "_region_northeast");
+        assert_eq!(get_api_ref("nws_region_southeast"), "_region_southeast");
+        assert_eq!(get_api_ref("nws_region_midwest"), "_region_midwest");
+        assert_eq!(get_api_ref("nws_region_southwest"), "_region_southwest");
+        assert_eq!(get_api_ref("nws_region_northwest"), "_region_northwest");
     }
 
     #[test]
@@ -251,5 +359,40 @@ mod tests {
             assert_eq!(entry.category, "environment");
             assert_eq!(entry.subcategory, "weather_alerts");
         }
+    }
+
+    #[test]
+    fn test_state_to_region() {
+        assert_eq!(state_to_region("NY"), Some(UsRegion::Northeast));
+        assert_eq!(state_to_region("New York"), Some(UsRegion::Northeast));
+        assert_eq!(state_to_region("FL"), Some(UsRegion::Southeast));
+        assert_eq!(state_to_region("Florida"), Some(UsRegion::Southeast));
+        assert_eq!(state_to_region("IL"), Some(UsRegion::Midwest));
+        assert_eq!(state_to_region("Illinois"), Some(UsRegion::Midwest));
+        assert_eq!(state_to_region("TX"), Some(UsRegion::Southwest));
+        assert_eq!(state_to_region("Texas"), Some(UsRegion::Southwest));
+        assert_eq!(state_to_region("WA"), Some(UsRegion::Northwest));
+        assert_eq!(state_to_region("Washington"), Some(UsRegion::Northwest));
+        assert_eq!(state_to_region("California"), Some(UsRegion::Northwest));
+        assert_eq!(state_to_region("XX"), None);
+    }
+
+    #[test]
+    fn test_extract_regions_from_area_desc() {
+        // Typical NWS format: "Cook County, IL; Lake County, IN"
+        let regions = extract_regions_from_area_desc("Cook County, IL; Lake County, IN");
+        assert!(regions.contains(&UsRegion::Midwest));
+
+        // "Los Angeles, CA"
+        let regions = extract_regions_from_area_desc("Los Angeles, CA");
+        assert!(regions.contains(&UsRegion::Northwest));
+
+        // "Miami-Dade, FL; Broward, FL"
+        let regions = extract_regions_from_area_desc("Miami-Dade, FL; Broward, FL");
+        assert!(regions.contains(&UsRegion::Southeast));
+
+        // Empty string
+        let regions = extract_regions_from_area_desc("");
+        assert!(regions.is_empty());
     }
 }

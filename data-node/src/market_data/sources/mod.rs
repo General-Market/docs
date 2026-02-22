@@ -37,7 +37,7 @@ pub mod twse;
 pub mod worldbank;
 pub mod zillow;
 
-// Bet on Everything sources (10)
+// Bet on Everything sources (11)
 pub mod volcano;
 pub mod earthquake;
 pub mod spaceweather;
@@ -48,6 +48,7 @@ pub mod epidemic;
 pub mod sports;
 pub mod iss;
 pub mod weather_alerts;
+pub mod animals;
 
 // Index-only sources (3) + shared ticker list
 pub mod tracked_tickers;
@@ -99,6 +100,7 @@ pub use epidemic::EpidemicMarketSource;
 pub use sports::SportsMarketSource;
 pub use iss::IssMarketSource;
 pub use weather_alerts::WeatherAlertsMarketSource;
+pub use animals::AnimalsMarketSource;
 
 // Re-exports — Index-only sources
 pub use finra_short_vol::FinraShortVolMarketSource;

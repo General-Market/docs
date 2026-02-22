@@ -4331,6 +4331,7 @@ const SOURCE_META: &[(&str, &str, u64)] = &[
     ("sports", "ESPN Live Scores", 600),
     ("iss", "ISS Position", 600),
     ("weather_alerts", "NWS Severe Weather", 300),
+    ("animals", "Wildlife Observations", 600),
 ];
 
 #[derive(Serialize)]

@@ -944,7 +944,21 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         });
     }
 
-    info!("Bet on Everything sources started (volcano, earthquake, spaceweather, flights, epidemic, sports, iss, weather_alerts + key-gated: wildfire, maritime)");
+    // Animals — GBIF + iNaturalist (no key)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::animals::AnimalsMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Animals init failed: {e}"),
+            }
+        });
+    }
+
+    info!("Bet on Everything sources started (volcano, earthquake, spaceweather, flights, epidemic, sports, iss, weather_alerts, animals + key-gated: wildfire, maritime)");
 
     // Create live ticker cache and start fast poller
     let live_cache = Arc::new(LiveTickerCache::new());

@@ -4,13 +4,18 @@
 //! - Kp geomagnetic index (0-9)
 //! - Solar wind speed and density
 //! - NOAA G/S/R storm scales (0-5 each)
+//! - Daily sunspot number and 10.7cm solar flux (F10.7)
+//! - >10 MeV proton flux and >2 MeV electron flux
 //!
-//! Assets are static — defined in config/spaceweather.json (6 metrics).
+//! Assets are static — defined in config/spaceweather.json (10 metrics).
 //!
 //! APIs:
 //! - https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json
 //! - https://services.swpc.noaa.gov/products/solar-wind/plasma-7-day.json
 //! - https://services.swpc.noaa.gov/products/noaa-scales.json
+//! - https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json
+//! - https://services.swpc.noaa.gov/json/goes/primary/integral-protons-1-day.json
+//! - https://services.swpc.noaa.gov/json/goes/primary/integral-electrons-1-day.json
 //!
 //! Auth: None
 //! Rate limit: 30 req/min (government API, generous)
@@ -40,6 +45,16 @@ const SOLAR_WIND_PLASMA_URL: &str =
     "https://services.swpc.noaa.gov/products/solar-wind/plasma-7-day.json";
 const NOAA_SCALES_URL: &str = "https://services.swpc.noaa.gov/products/noaa-scales.json";
 
+/// Solar cycle observed indices (sunspot number + F10.7 solar flux)
+const SOLAR_CYCLE_URL: &str =
+    "https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json";
+/// GOES integral proton flux (>10 MeV, 1-day)
+const PROTON_FLUX_URL: &str =
+    "https://services.swpc.noaa.gov/json/goes/primary/integral-protons-1-day.json";
+/// GOES integral electron flux (>2 MeV, 1-day)
+const ELECTRON_FLUX_URL: &str =
+    "https://services.swpc.noaa.gov/json/goes/primary/integral-electrons-1-day.json";
+
 // ============================================================================
 // PARSED SPACE WEATHER DATA
 // ============================================================================
@@ -53,6 +68,10 @@ struct SpaceWeatherMetrics {
     g_scale: Option<Decimal>,
     s_scale: Option<Decimal>,
     r_scale: Option<Decimal>,
+    sunspot_number: Option<Decimal>,
+    solar_flux: Option<Decimal>,
+    proton_flux: Option<Decimal>,
+    electron_flux: Option<Decimal>,
 }
 
 /// Parse the NOAA array-of-arrays format and extract the last data row.
@@ -89,7 +108,7 @@ fn parse_decimal(s: &str) -> Option<Decimal> {
 
 /// NOAA Space Weather market data source.
 ///
-/// Tracks 6 space weather metrics from NOAA SWPC.
+/// Tracks 10 space weather metrics from NOAA SWPC.
 /// Source ID is `"spaceweather"`.
 pub struct SpaceweatherMarketSource {
     http: SourceHttpClient,
@@ -167,6 +186,138 @@ impl SpaceweatherMarketSource {
             Err(e) => {
                 warn!("Error fetching solar wind data: {:?}", e);
                 (None, None)
+            }
+        }
+    }
+
+    /// Fetch solar cycle indices (sunspot number and F10.7 solar flux).
+    /// Returns (sunspot_number, solar_flux) from the last entry.
+    async fn fetch_solar_cycle(&self) -> (Option<Decimal>, Option<Decimal>) {
+        match self
+            .http
+            .get_json::<serde_json::Value>(SOLAR_CYCLE_URL)
+            .await
+        {
+            Ok(json) => {
+                let arr = match json.as_array() {
+                    Some(a) if !a.is_empty() => a,
+                    _ => {
+                        warn!("Solar cycle: empty or invalid response");
+                        return (None, None);
+                    }
+                };
+
+                let last = &arr[arr.len() - 1];
+                let ssn = last
+                    .get("ssn")
+                    .and_then(|v| {
+                        if v.is_number() {
+                            v.as_f64().and_then(|f| Decimal::try_from(f).ok())
+                        } else {
+                            v.as_str().and_then(|s| Decimal::from_str(s).ok())
+                        }
+                    });
+                let flux = last
+                    .get("f10.7")
+                    .and_then(|v| {
+                        if v.is_number() {
+                            v.as_f64().and_then(|f| Decimal::try_from(f).ok())
+                        } else {
+                            v.as_str().and_then(|s| Decimal::from_str(s).ok())
+                        }
+                    });
+
+                debug!("Solar cycle: ssn={:?}, f10.7={:?}", ssn, flux);
+                (ssn, flux)
+            }
+            Err(e) => {
+                warn!("Error fetching solar cycle data: {:?}", e);
+                (None, None)
+            }
+        }
+    }
+
+    /// Fetch >10 MeV proton flux from GOES integral protons endpoint.
+    /// Returns the flux value from the last entry with energy >= 10 MeV.
+    async fn fetch_proton_flux(&self) -> Option<Decimal> {
+        match self
+            .http
+            .get_json::<serde_json::Value>(PROTON_FLUX_URL)
+            .await
+        {
+            Ok(json) => {
+                let arr = match json.as_array() {
+                    Some(a) if !a.is_empty() => a,
+                    _ => {
+                        warn!("Proton flux: empty or invalid response");
+                        return None;
+                    }
+                };
+
+                // Find last entry with energy >= 10 MeV
+                let entry = arr.iter().rev().find(|e| {
+                    e.get("energy")
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.contains("10"))
+                        .unwrap_or(false)
+                });
+
+                let flux = entry.and_then(|e| {
+                    e.get("flux")
+                        .and_then(|v| {
+                            if v.is_number() {
+                                v.as_f64().and_then(|f| Decimal::try_from(f).ok())
+                            } else {
+                                v.as_str().and_then(|s| Decimal::from_str(s).ok())
+                            }
+                        })
+                });
+
+                debug!("Proton flux (>10 MeV): {:?}", flux);
+                flux
+            }
+            Err(e) => {
+                warn!("Error fetching proton flux: {:?}", e);
+                None
+            }
+        }
+    }
+
+    /// Fetch >2 MeV electron flux from GOES integral electrons endpoint.
+    /// Returns the flux value from the last entry.
+    async fn fetch_electron_flux(&self) -> Option<Decimal> {
+        match self
+            .http
+            .get_json::<serde_json::Value>(ELECTRON_FLUX_URL)
+            .await
+        {
+            Ok(json) => {
+                let arr = match json.as_array() {
+                    Some(a) if !a.is_empty() => a,
+                    _ => {
+                        warn!("Electron flux: empty or invalid response");
+                        return None;
+                    }
+                };
+
+                // Last entry has the most recent measurement
+                let last = &arr[arr.len() - 1];
+                let flux = last
+                    .get("flux")
+                    .and_then(|v| {
+                        if v.is_number() {
+                            v.as_f64().and_then(|f| Decimal::try_from(f).ok())
+                        } else {
+                            v.as_str().and_then(|s| Decimal::from_str(s).ok())
+                        }
+                    });
+
+                debug!("Electron flux (>2 MeV): {:?}", flux);
+                flux
+            }
+            Err(e) => {
+                warn!("Error fetching electron flux: {:?}", e);
+                None
             }
         }
     }
@@ -277,10 +428,13 @@ impl MarketDataSource for SpaceweatherMarketSource {
 
         let now = Utc::now();
 
-        // Fetch all 3 endpoints independently — if one fails, still return the others
+        // Fetch all endpoints independently — if one fails, still return the others
         let kp_index = self.fetch_kp_index().await;
         let (solar_wind_density, solar_wind_speed) = self.fetch_solar_wind().await;
         let (g_scale, s_scale, r_scale) = self.fetch_noaa_scales().await;
+        let (sunspot_number, solar_flux) = self.fetch_solar_cycle().await;
+        let proton_flux = self.fetch_proton_flux().await;
+        let electron_flux = self.fetch_electron_flux().await;
 
         let metrics = SpaceWeatherMetrics {
             kp_index,
@@ -289,6 +443,10 @@ impl MarketDataSource for SpaceweatherMarketSource {
             g_scale,
             s_scale,
             r_scale,
+            sunspot_number,
+            solar_flux,
+            proton_flux,
+            electron_flux,
         };
 
         let mut results = Vec::with_capacity(asset_ids.len());
@@ -301,6 +459,10 @@ impl MarketDataSource for SpaceweatherMarketSource {
                 "sw_g_scale" => metrics.g_scale,
                 "sw_s_scale" => metrics.s_scale,
                 "sw_r_scale" => metrics.r_scale,
+                "sw_sunspot_number" => metrics.sunspot_number,
+                "sw_solar_flux" => metrics.solar_flux,
+                "sw_proton_flux" => metrics.proton_flux,
+                "sw_electron_flux" => metrics.electron_flux,
                 _ => {
                     warn!("Unknown spaceweather asset_id: {}", asset_id);
                     None
@@ -328,12 +490,13 @@ impl MarketDataSource for SpaceweatherMarketSource {
         }
 
         info!(
-            "Fetched {}/{} space weather metrics (kp={:?}, wind_speed={:?}, G={:?})",
+            "Fetched {}/{} space weather metrics (kp={:?}, wind_speed={:?}, G={:?}, ssn={:?})",
             results.len(),
             asset_ids.len(),
             metrics.kp_index,
             metrics.solar_wind_speed,
             metrics.g_scale,
+            metrics.sunspot_number,
         );
 
         Ok(results)
@@ -354,8 +517,8 @@ mod tests {
         let entries = load_all_asset_entries(ASSET_JSON).unwrap();
         assert_eq!(
             entries.len(),
-            6,
-            "Expected exactly 6 spaceweather entries, got {}",
+            10,
+            "Expected exactly 10 spaceweather entries, got {}",
             entries.len()
         );
     }
@@ -363,7 +526,7 @@ mod tests {
     #[test]
     fn test_config_loads_as_assets() {
         let assets = load_assets_from_json(ASSET_JSON).unwrap();
-        assert_eq!(assets.len(), 6);
+        assert_eq!(assets.len(), 10);
     }
 
     #[test]
@@ -492,11 +655,77 @@ mod tests {
             "sw_g_scale",
             "sw_s_scale",
             "sw_r_scale",
+            "sw_sunspot_number",
+            "sw_solar_flux",
+            "sw_proton_flux",
+            "sw_electron_flux",
         ];
         let ids: Vec<&str> = entries.iter().map(|e| e.asset_id.as_str()).collect();
         for exp in &expected {
             assert!(ids.contains(exp), "Missing expected asset_id: {}", exp);
         }
+    }
+
+    #[test]
+    fn test_parse_solar_cycle_format() {
+        // Simulate the solar cycle JSON (array of objects)
+        let json: serde_json::Value = serde_json::from_str(
+            r#"[
+                {"time-tag": "2024-01", "ssn": 120.5, "smoothed_ssn": 115.2, "observed_swpc_ssn": 120, "smoothed_swpc_ssn": 115, "f10.7": 165.3, "smoothed_f10.7": 160.1},
+                {"time-tag": "2024-02", "ssn": 130.2, "smoothed_ssn": 118.0, "observed_swpc_ssn": 130, "smoothed_swpc_ssn": 118, "f10.7": 172.8, "smoothed_f10.7": 163.5}
+            ]"#,
+        )
+        .unwrap();
+
+        let arr = json.as_array().unwrap();
+        let last = &arr[arr.len() - 1];
+        let ssn = last.get("ssn").and_then(|v| v.as_f64());
+        let flux = last.get("f10.7").and_then(|v| v.as_f64());
+
+        assert!((ssn.unwrap() - 130.2).abs() < 0.01);
+        assert!((flux.unwrap() - 172.8).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_parse_proton_flux_format() {
+        let json: serde_json::Value = serde_json::from_str(
+            r#"[
+                {"time_tag": "2024-01-01T00:00:00Z", "flux": 0.35, "energy": ">=10 MeV"},
+                {"time_tag": "2024-01-01T00:05:00Z", "flux": 0.42, "energy": ">=10 MeV"},
+                {"time_tag": "2024-01-01T00:00:00Z", "flux": 105.2, "energy": ">=50 MeV"},
+                {"time_tag": "2024-01-01T00:05:00Z", "flux": 110.5, "energy": ">=50 MeV"}
+            ]"#,
+        )
+        .unwrap();
+
+        let arr = json.as_array().unwrap();
+        // Find last entry with energy containing "10"
+        let entry = arr.iter().rev().find(|e| {
+            e.get("energy")
+                .and_then(|v| v.as_str())
+                .map(|s| s.contains("10"))
+                .unwrap_or(false)
+        });
+
+        assert!(entry.is_some());
+        let flux = entry.unwrap().get("flux").and_then(|v| v.as_f64());
+        assert!((flux.unwrap() - 0.42).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_parse_electron_flux_format() {
+        let json: serde_json::Value = serde_json::from_str(
+            r#"[
+                {"time_tag": "2024-01-01T00:00:00Z", "flux": 250.5, "energy": ">=2 MeV"},
+                {"time_tag": "2024-01-01T00:05:00Z", "flux": 275.3, "energy": ">=2 MeV"}
+            ]"#,
+        )
+        .unwrap();
+
+        let arr = json.as_array().unwrap();
+        let last = &arr[arr.len() - 1];
+        let flux = last.get("flux").and_then(|v| v.as_f64());
+        assert!((flux.unwrap() - 275.3).abs() < 0.01);
     }
 
     #[test]

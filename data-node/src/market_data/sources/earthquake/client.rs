@@ -1,11 +1,11 @@
 //! USGS Earthquakes client implementing MarketDataSource
 //!
 //! Tracks earthquake metrics from the USGS Earthquake Hazards Program.
-//! Fetches from 3 GeoJSON feeds (all_hour, 4.5_day, significant_month)
-//! and computes 10 derived metrics: counts, max magnitude, regional filters,
-//! and total seismic energy.
+//! Fetches from 4 GeoJSON feeds (all_hour, 4.5_day, 4.5_month, significant_month)
+//! and computes 20 derived metrics: counts, max magnitude, regional filters,
+//! total seismic energy, and average depth.
 //!
-//! Assets are static — defined in config/earthquake.json (10 metrics).
+//! Assets are static — defined in config/earthquake.json (20 metrics).
 //!
 //! API: https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/
 //! Auth: None
@@ -33,6 +33,8 @@ const FEED_ALL_HOUR: &str =
     "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson";
 const FEED_M45_DAY: &str =
     "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson";
+const FEED_M45_MONTH: &str =
+    "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_month.geojson";
 const FEED_SIGNIFICANT_MONTH: &str =
     "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_month.geojson";
 
@@ -46,6 +48,7 @@ struct Quake {
     mag: f64,
     lon: f64,
     lat: f64,
+    depth: f64,
 }
 
 /// Parse GeoJSON feed response into a list of quakes
@@ -67,16 +70,22 @@ fn parse_geojson_features(json: &serde_json::Value) -> Vec<Quake> {
             .pointer("/geometry/coordinates")
             .and_then(|v| v.as_array());
 
-        let (lon, lat) = match coords {
+        let (lon, lat, depth) = match coords {
+            Some(c) if c.len() >= 3 => {
+                let lon = c[0].as_f64().unwrap_or(0.0);
+                let lat = c[1].as_f64().unwrap_or(0.0);
+                let depth = c[2].as_f64().unwrap_or(0.0);
+                (lon, lat, depth)
+            }
             Some(c) if c.len() >= 2 => {
                 let lon = c[0].as_f64().unwrap_or(0.0);
                 let lat = c[1].as_f64().unwrap_or(0.0);
-                (lon, lat)
+                (lon, lat, 0.0)
             }
-            _ => (0.0, 0.0),
+            _ => (0.0, 0.0, 0.0),
         };
 
-        quakes.push(Quake { mag, lon, lat });
+        quakes.push(Quake { mag, lon, lat, depth });
     }
 
     quakes
@@ -113,6 +122,36 @@ fn is_mediterranean(lon: f64, lat: f64) -> bool {
     lon >= -10.0 && lon <= 40.0 && lat >= 30.0 && lat <= 47.0
 }
 
+/// Check if a quake is in the Indonesia region
+fn is_indonesia(lon: f64, lat: f64) -> bool {
+    lon >= 95.0 && lon <= 141.0 && lat >= -11.0 && lat <= 6.0
+}
+
+/// Check if a quake is in the Chile/Peru region
+fn is_chile(lon: f64, lat: f64) -> bool {
+    lon >= -82.0 && lon <= -66.0 && lat >= -56.0 && lat <= -4.0
+}
+
+/// Check if a quake is in the Alaska region
+fn is_alaska(lon: f64, lat: f64) -> bool {
+    lon >= -180.0 && lon <= -130.0 && lat >= 51.0 && lat <= 72.0
+}
+
+/// Check if a quake is in the New Zealand region
+fn is_new_zealand(lon: f64, lat: f64) -> bool {
+    lon >= 165.0 && lon <= 179.0 && lat >= -48.0 && lat <= -34.0
+}
+
+/// Check if a quake is in the Turkey/Eastern Mediterranean region
+fn is_turkey(lon: f64, lat: f64) -> bool {
+    lon >= 26.0 && lon <= 45.0 && lat >= 36.0 && lat <= 42.0
+}
+
+/// Check if a quake is in the Iceland region
+fn is_iceland(lon: f64, lat: f64) -> bool {
+    lon >= -25.0 && lon <= -13.0 && lat >= 63.0 && lat <= 67.0
+}
+
 /// Compute total seismic energy: sum(10^(1.5*mag)) for all quakes.
 /// Returns as a Decimal string to avoid overflow.
 fn compute_total_energy(quakes: &[Quake]) -> Decimal {
@@ -125,13 +164,23 @@ fn compute_total_energy(quakes: &[Quake]) -> Decimal {
     Decimal::from_str(&format!("{:.0}", total)).unwrap_or(Decimal::ZERO)
 }
 
+/// Compute average depth (km) of quakes. Returns 0 if no quakes.
+fn compute_avg_depth(quakes: &[Quake]) -> Decimal {
+    if quakes.is_empty() {
+        return Decimal::ZERO;
+    }
+    let total_depth: f64 = quakes.iter().map(|q| q.depth).sum();
+    let avg = total_depth / quakes.len() as f64;
+    Decimal::from_str(&format!("{:.1}", avg)).unwrap_or(Decimal::ZERO)
+}
+
 // ============================================================================
 // SOURCE IMPLEMENTATION
 // ============================================================================
 
 /// USGS Earthquakes market data source.
 ///
-/// Tracks 10 earthquake metrics derived from 3 USGS GeoJSON feeds.
+/// Tracks 20 earthquake metrics derived from 4 USGS GeoJSON feeds.
 /// Source ID is `"earthquake"`.
 pub struct EarthquakeMarketSource {
     http: SourceHttpClient,
@@ -212,12 +261,13 @@ impl MarketDataSource for EarthquakeMarketSource {
 
         let now = Utc::now();
 
-        // Fetch all 3 feeds
+        // Fetch all 4 feeds
         let all_hour = self.fetch_feed(FEED_ALL_HOUR).await;
         let m45_day = self.fetch_feed(FEED_M45_DAY).await;
+        let m45_month = self.fetch_feed(FEED_M45_MONTH).await;
         let significant_month = self.fetch_feed(FEED_SIGNIFICANT_MONTH).await;
 
-        // Compute metrics
+        // ---- Original 10 metrics ----
         let count_all_1h = Decimal::from(all_hour.len() as u64);
 
         let count_m25_1h = Decimal::from(
@@ -265,6 +315,63 @@ impl MarketDataSource for EarthquakeMarketSource {
 
         let total_energy = compute_total_energy(&m45_day);
 
+        // ---- New 10 metrics ----
+        let count_m30_1h = Decimal::from(
+            all_hour.iter().filter(|q| q.mag >= 3.0).count() as u64,
+        );
+
+        let count_m50_24h = Decimal::from(
+            m45_day.iter().filter(|q| q.mag >= 5.0).count() as u64,
+        );
+
+        let count_m60_month = Decimal::from(
+            m45_month.iter().filter(|q| q.mag >= 6.0).count() as u64,
+        );
+
+        let indonesia_count = Decimal::from(
+            all_hour
+                .iter()
+                .filter(|q| is_indonesia(q.lon, q.lat))
+                .count() as u64,
+        );
+
+        let chile_count = Decimal::from(
+            all_hour
+                .iter()
+                .filter(|q| is_chile(q.lon, q.lat))
+                .count() as u64,
+        );
+
+        let alaska_count = Decimal::from(
+            all_hour
+                .iter()
+                .filter(|q| is_alaska(q.lon, q.lat))
+                .count() as u64,
+        );
+
+        let new_zealand_count = Decimal::from(
+            all_hour
+                .iter()
+                .filter(|q| is_new_zealand(q.lon, q.lat))
+                .count() as u64,
+        );
+
+        let turkey_count = Decimal::from(
+            all_hour
+                .iter()
+                .filter(|q| is_turkey(q.lon, q.lat))
+                .count() as u64,
+        );
+
+        let iceland_count = Decimal::from(
+            all_hour
+                .iter()
+                .filter(|q| is_iceland(q.lon, q.lat))
+                .count() as u64,
+        );
+
+        let avg_depth_24h = compute_avg_depth(&m45_day);
+
         // Build results
         let mut results = Vec::with_capacity(asset_ids.len());
 
@@ -280,6 +387,16 @@ impl MarketDataSource for EarthquakeMarketSource {
                 "eq_japan" => Some(japan_count),
                 "eq_mediterranean" => Some(mediterranean_count),
                 "eq_total_energy_24h" => Some(total_energy),
+                "eq_count_m30_1h" => Some(count_m30_1h),
+                "eq_count_m50_24h" => Some(count_m50_24h),
+                "eq_count_m60_month" => Some(count_m60_month),
+                "eq_indonesia" => Some(indonesia_count),
+                "eq_chile" => Some(chile_count),
+                "eq_alaska" => Some(alaska_count),
+                "eq_new_zealand" => Some(new_zealand_count),
+                "eq_turkey" => Some(turkey_count),
+                "eq_iceland" => Some(iceland_count),
+                "eq_avg_depth_24h" => Some(avg_depth_24h),
                 _ => {
                     warn!("Unknown earthquake asset_id: {}", asset_id);
                     None
@@ -301,11 +418,12 @@ impl MarketDataSource for EarthquakeMarketSource {
         }
 
         info!(
-            "Fetched {}/{} earthquake metrics (all_hour={}, m45_day={}, significant={})",
+            "Fetched {}/{} earthquake metrics (all_hour={}, m45_day={}, m45_month={}, significant={})",
             results.len(),
             asset_ids.len(),
             all_hour.len(),
             m45_day.len(),
+            m45_month.len(),
             significant_month.len()
         );
 
@@ -327,8 +445,8 @@ mod tests {
         let entries = load_all_asset_entries(ASSET_JSON).unwrap();
         assert_eq!(
             entries.len(),
-            10,
-            "Expected exactly 10 earthquake entries, got {}",
+            20,
+            "Expected exactly 20 earthquake entries, got {}",
             entries.len()
         );
     }
@@ -336,7 +454,7 @@ mod tests {
     #[test]
     fn test_config_loads_as_assets() {
         let assets = load_assets_from_json(ASSET_JSON).unwrap();
-        assert_eq!(assets.len(), 10);
+        assert_eq!(assets.len(), 20);
     }
 
     #[test]
@@ -421,7 +539,9 @@ mod tests {
         assert!((quakes[0].mag - 5.2).abs() < 0.01);
         assert!((quakes[0].lon - 139.7).abs() < 0.01);
         assert!((quakes[0].lat - 35.7).abs() < 0.01);
+        assert!((quakes[0].depth - 10.0).abs() < 0.01);
         assert!((quakes[1].mag - 3.1).abs() < 0.01);
+        assert!((quakes[1].depth - 5.0).abs() < 0.01);
     }
 
     #[test]
@@ -458,8 +578,8 @@ mod tests {
     #[test]
     fn test_compute_total_energy() {
         let quakes = vec![
-            Quake { mag: 5.0, lon: 0.0, lat: 0.0 },
-            Quake { mag: 6.0, lon: 0.0, lat: 0.0 },
+            Quake { mag: 5.0, lon: 0.0, lat: 0.0, depth: 10.0 },
+            Quake { mag: 6.0, lon: 0.0, lat: 0.0, depth: 20.0 },
         ];
         let energy = compute_total_energy(&quakes);
         // 10^(1.5*5) + 10^(1.5*6) = 10^7.5 + 10^9 = ~31622776 + ~1000000000
@@ -472,6 +592,83 @@ mod tests {
         let quakes: Vec<Quake> = vec![];
         let energy = compute_total_energy(&quakes);
         assert_eq!(energy, Decimal::ZERO);
+    }
+
+    #[test]
+    fn test_compute_avg_depth() {
+        let quakes = vec![
+            Quake { mag: 5.0, lon: 0.0, lat: 0.0, depth: 10.0 },
+            Quake { mag: 6.0, lon: 0.0, lat: 0.0, depth: 30.0 },
+        ];
+        let avg = compute_avg_depth(&quakes);
+        assert_eq!(avg, Decimal::from_str("20.0").unwrap());
+    }
+
+    #[test]
+    fn test_compute_avg_depth_empty() {
+        let quakes: Vec<Quake> = vec![];
+        let avg = compute_avg_depth(&quakes);
+        assert_eq!(avg, Decimal::ZERO);
+    }
+
+    #[test]
+    fn test_region_indonesia() {
+        // Jakarta: lon=106.8, lat=-6.2
+        assert!(is_indonesia(106.8, -6.2));
+        // Sumatra: lon=100.4, lat=0.5
+        assert!(is_indonesia(100.4, 0.5));
+        // Tokyo: outside
+        assert!(!is_indonesia(139.7, 35.7));
+    }
+
+    #[test]
+    fn test_region_chile() {
+        // Santiago: lon=-70.6, lat=-33.4
+        assert!(is_chile(-70.6, -33.4));
+        // Lima: lon=-77.0, lat=-12.0
+        assert!(is_chile(-77.0, -12.0));
+        // Buenos Aires: outside (lon=-58.4)
+        assert!(!is_chile(-58.4, -34.6));
+    }
+
+    #[test]
+    fn test_region_alaska() {
+        // Anchorage: lon=-149.9, lat=61.2
+        assert!(is_alaska(-149.9, 61.2));
+        // Juneau: lon=-134.4, lat=58.3
+        assert!(is_alaska(-134.4, 58.3));
+        // Seattle: outside (lat=47.6)
+        assert!(!is_alaska(-122.3, 47.6));
+    }
+
+    #[test]
+    fn test_region_new_zealand() {
+        // Wellington: lon=174.8, lat=-41.3
+        assert!(is_new_zealand(174.8, -41.3));
+        // Christchurch: lon=172.6, lat=-43.5
+        assert!(is_new_zealand(172.6, -43.5));
+        // Sydney: outside (lon=151.2)
+        assert!(!is_new_zealand(151.2, -33.9));
+    }
+
+    #[test]
+    fn test_region_turkey() {
+        // Istanbul: lon=28.98, lat=41.01
+        assert!(is_turkey(28.98, 41.01));
+        // Ankara: lon=32.87, lat=39.93
+        assert!(is_turkey(32.87, 39.93));
+        // Athens: outside (lon=23.7, lat=37.98) — lon < 26
+        assert!(!is_turkey(23.7, 37.98));
+    }
+
+    #[test]
+    fn test_region_iceland() {
+        // Reykjavik: lon=-21.9, lat=64.1
+        assert!(is_iceland(-21.9, 64.1));
+        // Akureyri: lon=-18.1, lat=65.7
+        assert!(is_iceland(-18.1, 65.7));
+        // Oslo: outside (lon=10.75, lat=59.91)
+        assert!(!is_iceland(10.75, 59.91));
     }
 
     #[test]
@@ -488,6 +685,16 @@ mod tests {
             "eq_japan",
             "eq_mediterranean",
             "eq_total_energy_24h",
+            "eq_count_m30_1h",
+            "eq_count_m50_24h",
+            "eq_count_m60_month",
+            "eq_indonesia",
+            "eq_chile",
+            "eq_alaska",
+            "eq_new_zealand",
+            "eq_turkey",
+            "eq_iceland",
+            "eq_avg_depth_24h",
         ];
         let ids: Vec<&str> = entries.iter().map(|e| e.asset_id.as_str()).collect();
         for exp in &expected {

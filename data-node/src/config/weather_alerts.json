@@ -13,5 +13,10 @@
   {"asset_id": "nws_dense_fog", "symbol": "NWS/FOG", "name": "Active Dense Fog Advisories", "category": "environment", "subcategory": "weather_alerts", "api_ref": "Dense Fog Advisory", "active": true},
   {"asset_id": "nws_ice_storm", "symbol": "NWS/ICE", "name": "Active Ice Storm Warnings", "category": "environment", "subcategory": "weather_alerts", "api_ref": "Ice Storm Warning", "active": true},
   {"asset_id": "nws_total_active", "symbol": "NWS/TOTAL", "name": "Total Active Weather Alerts", "category": "environment", "subcategory": "weather_alerts", "api_ref": "_total", "active": true},
-  {"asset_id": "nws_max_severity", "symbol": "NWS/SEVERITY", "name": "Maximum Alert Severity Level", "category": "environment", "subcategory": "weather_alerts", "api_ref": "_max_severity", "active": true}
+  {"asset_id": "nws_max_severity", "symbol": "NWS/SEVERITY", "name": "Maximum Alert Severity Level", "category": "environment", "subcategory": "weather_alerts", "api_ref": "_max_severity", "active": true},
+  {"asset_id": "nws_region_northeast", "symbol": "NWS/REGION_NE", "name": "Total Alerts in Northeast US", "category": "environment", "subcategory": "weather_alerts", "api_ref": "_region_northeast", "active": true},
+  {"asset_id": "nws_region_southeast", "symbol": "NWS/REGION_SE", "name": "Total Alerts in Southeast US", "category": "environment", "subcategory": "weather_alerts", "api_ref": "_region_southeast", "active": true},
+  {"asset_id": "nws_region_midwest", "symbol": "NWS/REGION_MW", "name": "Total Alerts in Midwest US", "category": "environment", "subcategory": "weather_alerts", "api_ref": "_region_midwest", "active": true},
+  {"asset_id": "nws_region_southwest", "symbol": "NWS/REGION_SW", "name": "Total Alerts in Southwest US", "category": "environment", "subcategory": "weather_alerts", "api_ref": "_region_southwest", "active": true},
+  {"asset_id": "nws_region_northwest", "symbol": "NWS/REGION_NW", "name": "Total Alerts in Northwest US", "category": "environment", "subcategory": "weather_alerts", "api_ref": "_region_northwest", "active": true}
 ]

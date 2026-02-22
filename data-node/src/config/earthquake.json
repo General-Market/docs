@@ -8,5 +8,15 @@
   {"asset_id": "eq_us_west", "symbol": "EQ/US_WEST", "name": "US West Coast Earthquakes (Last Hour)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "us_west", "active": true},
   {"asset_id": "eq_japan", "symbol": "EQ/JAPAN", "name": "Japan Region Earthquakes (Last Hour)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "japan", "active": true},
   {"asset_id": "eq_mediterranean", "symbol": "EQ/MEDITERRANEAN", "name": "Mediterranean Earthquakes (Last Hour)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "mediterranean", "active": true},
-  {"asset_id": "eq_total_energy_24h", "symbol": "EQ/TOTAL_ENERGY_24H", "name": "Total Seismic Energy (Last 24h)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "total_energy_24h", "active": true}
+  {"asset_id": "eq_total_energy_24h", "symbol": "EQ/TOTAL_ENERGY_24H", "name": "Total Seismic Energy (Last 24h)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "total_energy_24h", "active": true},
+  {"asset_id": "eq_count_m30_1h", "symbol": "EQ/COUNT_M30_1H", "name": "M3.0+ Earthquakes (Last Hour)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "count_m30_1h", "active": true},
+  {"asset_id": "eq_count_m50_24h", "symbol": "EQ/COUNT_M50_24H", "name": "M5.0+ Earthquakes (Last 24h)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "count_m50_24h", "active": true},
+  {"asset_id": "eq_count_m60_month", "symbol": "EQ/COUNT_M60_MONTH", "name": "M6.0+ Earthquakes (This Month)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "count_m60_month", "active": true},
+  {"asset_id": "eq_indonesia", "symbol": "EQ/INDONESIA", "name": "Indonesia Region Earthquakes (Last Hour)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "indonesia", "active": true},
+  {"asset_id": "eq_chile", "symbol": "EQ/CHILE", "name": "Chile/Peru Region Earthquakes (Last Hour)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "chile", "active": true},
+  {"asset_id": "eq_alaska", "symbol": "EQ/ALASKA", "name": "Alaska Region Earthquakes (Last Hour)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "alaska", "active": true},
+  {"asset_id": "eq_new_zealand", "symbol": "EQ/NEW_ZEALAND", "name": "New Zealand Region Earthquakes (Last Hour)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "new_zealand", "active": true},
+  {"asset_id": "eq_turkey", "symbol": "EQ/TURKEY", "name": "Turkey/Eastern Med Earthquakes (Last Hour)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "turkey", "active": true},
+  {"asset_id": "eq_iceland", "symbol": "EQ/ICELAND", "name": "Iceland Region Earthquakes (Last Hour)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "iceland", "active": true},
+  {"asset_id": "eq_avg_depth_24h", "symbol": "EQ/AVG_DEPTH_24H", "name": "Average Depth of M4.5+ Quakes (Last 24h)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "avg_depth_24h", "active": true}
 ]

@@ -4,5 +4,9 @@
   {"asset_id": "sw_solar_wind_density", "symbol": "SW/SOLAR_WIND_DENSITY", "name": "Solar Wind Density (protons/cm3)", "category": "space", "subcategory": "spaceweather", "api_ref": "solar_wind_density", "active": true},
   {"asset_id": "sw_g_scale", "symbol": "SW/G_SCALE", "name": "Geomagnetic Storm Scale (G0-G5)", "category": "space", "subcategory": "spaceweather", "api_ref": "g_scale", "active": true},
   {"asset_id": "sw_s_scale", "symbol": "SW/S_SCALE", "name": "Solar Radiation Storm Scale (S0-S5)", "category": "space", "subcategory": "spaceweather", "api_ref": "s_scale", "active": true},
-  {"asset_id": "sw_r_scale", "symbol": "SW/R_SCALE", "name": "Radio Blackout Scale (R0-R5)", "category": "space", "subcategory": "spaceweather", "api_ref": "r_scale", "active": true}
+  {"asset_id": "sw_r_scale", "symbol": "SW/R_SCALE", "name": "Radio Blackout Scale (R0-R5)", "category": "space", "subcategory": "spaceweather", "api_ref": "r_scale", "active": true},
+  {"asset_id": "sw_sunspot_number", "symbol": "SW/SUNSPOT_NUMBER", "name": "Daily Sunspot Number", "category": "space", "subcategory": "spaceweather", "api_ref": "sunspot_number", "active": true},
+  {"asset_id": "sw_solar_flux", "symbol": "SW/SOLAR_FLUX", "name": "10.7cm Solar Radio Flux (F10.7)", "category": "space", "subcategory": "spaceweather", "api_ref": "solar_flux", "active": true},
+  {"asset_id": "sw_proton_flux", "symbol": "SW/PROTON_FLUX", "name": ">10 MeV Proton Flux", "category": "space", "subcategory": "spaceweather", "api_ref": "proton_flux", "active": true},
+  {"asset_id": "sw_electron_flux", "symbol": "SW/ELECTRON_FLUX", "name": ">2 MeV Electron Flux", "category": "space", "subcategory": "spaceweather", "api_ref": "electron_flux", "active": true}
 ]
