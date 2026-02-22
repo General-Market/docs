@@ -1,0 +1,167 @@
+{
+  "heading": {
+    "label": "Morpho 볼트",
+    "title": "대출",
+    "description": "USDC를 예치하여 수익을 얻거나 ITP 포지션을 담보로 대출받으세요."
+  },
+  "stats": {
+    "vault_tvl": "볼트 TVL (총예치금액)",
+    "supply_apy": "예치 APY (연수익률)",
+    "borrow_apy": "대출 APY (연수익률)",
+    "utilization": "이용률"
+  },
+  "supply_panel": {
+    "title": "예치 — USDC 볼트",
+    "your_deposits": "내 예치금",
+    "accrued_interest": "발생 이자",
+    "current_apy": "현재 APY (연수익률)"
+  },
+  "borrow_panel": {
+    "title": "대출 — ITP 담보",
+    "collateral_value": "담보 (ITP 가치)",
+    "outstanding_debt": "미상환 부채",
+    "max_borrow": "최대 대출 ({lltv}% LTV)"
+  },
+  "actions": {
+    "deposit": "예치",
+    "withdraw": "출금",
+    "borrow_usdc": "USDC 대출",
+    "repay": "상환",
+    "borrow": "대출",
+    "cancel": "취소",
+    "max": "MAX"
+  },
+  "vault_deposit": {
+    "section_title": "예치",
+    "section_subtitle": "볼트에 USDC 공급",
+    "amount_label": "금액 (USDC)",
+    "balance_label": "잔액: {amount}",
+    "insufficient_balance": "USDC 잔액 부족",
+    "button": {
+      "approving": "USDC 승인 중...",
+      "confirm_wallet": "지갑에서 확인하세요...",
+      "depositing": "예치 중...",
+      "deposited": "예치 완료!",
+      "approve_and_deposit": "승인 및 예치",
+      "deposit_usdc": "USDC 예치"
+    }
+  },
+  "vault_position": {
+    "section_title": "포지션",
+    "section_subtitle": "내 볼트 예치 현황",
+    "vault_shares": "볼트 지분",
+    "current_value": "현재 가치",
+    "button": {
+      "confirm_wallet": "지갑에서 확인하세요...",
+      "withdrawing": "출금 중...",
+      "withdrawn": "출금 완료!",
+      "withdraw_all": "전액 출금"
+    }
+  },
+  "borrow_usdc": {
+    "title": "USDC 대출",
+    "description": "ITP 담보를 이용하여 USDC를 대출합니다",
+    "amount_label": "금액 (USDC)",
+    "max_borrow_label": "최대 대출: {amount} USDC",
+    "projected_health_factor": "예상 건전성 지수",
+    "cannot_borrow_health": "대출 불가: 건전성 지수가 1.0 미만이 됩니다",
+    "low_health_warning": "경고: 낮은 건전성 지수는 청산 위험을 증가시킵니다",
+    "button": {
+      "confirm_wallet": "지갑에서 확인하세요...",
+      "borrowing": "대출 중...",
+      "borrowed": "대출 완료!",
+      "borrow_usdc": "USDC 대출"
+    },
+    "quote": {
+      "title": "견적 조건",
+      "borrow_apr": "대출 APR",
+      "health_factor": "건전성 지수",
+      "liquidation_price": "청산 가격",
+      "max_borrow": "최대 대출",
+      "bundle_label": "번들:",
+      "expired": "견적 만료 --",
+      "refresh": "새로고침",
+      "execute_bundle": "번들 실행",
+      "confirm_wallet": "지갑에서 확인하세요...",
+      "executing_bundle": "번들 실행 중...",
+      "borrowed": "대출 완료!"
+    }
+  },
+  "deposit_collateral": {
+    "title": "담보 예치",
+    "description": "USDC를 대출받기 위해 ITP 토큰을 담보로 예치합니다",
+    "amount_label": "금액 (ITP)",
+    "balance_label": "잔액: {amount} ITP",
+    "insufficient_balance": "ITP 잔액 부족",
+    "button": {
+      "approving_itp": "ITP 승인 중...",
+      "confirm_wallet": "지갑에서 확인하세요...",
+      "depositing": "예치 중...",
+      "deposited": "예치 완료!",
+      "approve_and_deposit": "승인 및 예치",
+      "deposit_collateral": "담보 예치"
+    }
+  },
+  "repay_debt": {
+    "title": "부채 상환",
+    "description": "건전성 지수를 개선하기 위해 USDC 부채를 상환합니다",
+    "amount_label": "금액 (USDC)",
+    "debt_label": "부채: {amount}",
+    "balance_label": "잔액: {amount}",
+    "insufficient_balance": "USDC 잔액 부족",
+    "button": {
+      "confirm_approval": "승인 확인 중...",
+      "approving_usdc": "USDC 승인 중...",
+      "confirm_wallet": "지갑에서 확인하세요...",
+      "repaying": "상환 중...",
+      "repaid": "상환 완료!",
+      "approve_and_repay": "승인 및 상환",
+      "repay_debt": "부채 상환"
+    }
+  },
+  "withdraw_collateral": {
+    "title": "담보 출금",
+    "description_no_debt": "ITP 담보를 출금합니다",
+    "description_with_debt": "이용 가능한 담보를 출금합니다 (부채에 의해 제한됨)",
+    "amount_label": "금액 (ITP)",
+    "deposited_label": "예치됨: {amount}",
+    "max_withdraw_label": "최대 출금: {amount}",
+    "projected_health_factor": "예상 건전성 지수",
+    "cannot_withdraw_health": "출금 불가: 건전성 지수가 1.0 미만이 됩니다",
+    "close_position_notice": "이 작업은 포지션을 종료하고 모든 ITP를 지갑으로 반환합니다.",
+    "button": {
+      "confirm_wallet": "지갑에서 확인하세요...",
+      "withdrawing": "출금 중...",
+      "withdrawn": "출금 완료!",
+      "withdraw_collateral": "담보 출금"
+    }
+  },
+  "markets_table": {
+    "section_label": "Morpho 마켓",
+    "section_title": "이용 가능한 대출 마켓",
+    "header": {
+      "market": "마켓",
+      "my_balance": "내 잔액",
+      "borrow_apy": "대출 APY (연수익률)",
+      "tvl": "TVL (총예치금액)",
+      "lltv": "LLTV"
+    },
+    "loading": "마켓 로딩 중...",
+    "no_markets": "이용 가능한 마켓이 없습니다",
+    "market_pair": "{name} / USDC"
+  },
+  "common": {
+    "something_went_wrong": "문제가 발생했습니다",
+    "please_refresh": "페이지를 새로고침해 주세요.",
+    "transaction_rejected": "트랜잭션 거부됨",
+    "transaction_failed": "트랜잭션 실패",
+    "withdrawal_failed": "출금 실패",
+    "tx_stuck_title": "트랜잭션이 지연되고 있을 수 있습니다",
+    "tx_stuck_description": "30초 후에도 확인되지 않았습니다. 취소 후 다시 시도할 수 있습니다.",
+    "market_frozen": "긴급 상황으로 마켓이 동결되었습니다",
+    "rate_limited": "요청 제한, {seconds}초 후 재시도"
+  },
+  "error": {
+    "title": "오류"
+  }
+}

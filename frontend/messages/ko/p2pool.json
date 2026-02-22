@@ -1,0 +1,129 @@
+{
+  "heading": {
+    "label": "예측 시장",
+    "title": "VISION",
+    "description": "{count}개 라이브 · 밀봉형 패리뮤추얼 예측 시장"
+  },
+  "actions": {
+    "create_batch": "+ 배치 생성"
+  },
+  "empty": {
+    "no_active_batches": "활성 배치 없음",
+    "create_to_start": "배치를 생성하여 시작하세요"
+  },
+  "batch_card": {
+    "batch_number": "배치 #{id}",
+    "markets_count": "{count}개 마켓",
+    "tick_duration": "{minutes}분",
+    "players_count": "{count}명 참여자",
+    "tvl_usdc": "${amount} USDC"
+  },
+  "leaderboard": {
+    "label": "AI 에이전트",
+    "title": "리더보드",
+    "description": "자율 에이전트 순위 — 손익, 승률, 포트폴리오 복잡도 및 실시간 성과입니다."
+  },
+  "create_modal": {
+    "title": "배치 생성",
+    "steps": {
+      "markets": "마켓 선택",
+      "configure": "설정",
+      "preview": "미리보기",
+      "confirm": "확인"
+    },
+    "connect_wallet": "배치를 생성하려면 지갑을 연결하세요",
+    "step_markets": {
+      "source_label": "소스",
+      "all_sources": "전체 소스",
+      "search_label": "검색",
+      "search_placeholder": "이름 또는 ID로 검색...",
+      "select_all": "전체 선택",
+      "unselect_all": "전체 해제",
+      "selected_count": "{selected}개 선택됨",
+      "selected_shown": "{selected}개 선택 / {shown}개 표시",
+      "loading_markets": "마켓 로딩 중...",
+      "no_active_markets": "이용 가능한 활성 마켓이 없습니다",
+      "no_markets_match": "필터와 일치하는 마켓이 없습니다"
+    },
+    "step_configure": {
+      "tick_duration_label": "틱 기간",
+      "resolution_type_label": "마켓별 결정 유형",
+      "resolution_types": {
+        "up_0": "상승 (0% 임계값)",
+        "up_30": "상승 (30 bps)",
+        "up_x": "상승 (사용자 지정)",
+        "down_0": "하락 (0% 임계값)",
+        "down_30": "하락 (30 bps)",
+        "down_x": "하락 (사용자 지정)",
+        "flat_0": "보합 (0% 임계값)",
+        "flat_x": "보합 (사용자 지정)"
+      },
+      "tick_durations": {
+        "5min": "5분",
+        "10min": "10분",
+        "30min": "30분",
+        "1h": "1시간",
+        "4h": "4시간",
+        "1d": "1일"
+      },
+      "bps_label": "bps",
+      "bps_placeholder": "bps"
+    },
+    "step_preview": {
+      "batch_summary": "배치 요약",
+      "markets_label": "마켓",
+      "tick_duration_label": "틱 기간",
+      "table": {
+        "market": "마켓",
+        "resolution": "결정",
+        "threshold": "임계값",
+        "price": "가격"
+      }
+    },
+    "step_confirm": {
+      "creating_batch": "{count}개 마켓으로 배치를 생성합니다",
+      "tick_duration": "틱 기간: {duration}",
+      "confirm_wallet": "지갑에서 트랜잭션을 확인하세요...",
+      "tx_submitted": "트랜잭션이 제출되었습니다. 확인을 기다리는 중...",
+      "tx_hash": "Tx: {hash}",
+      "button": {
+        "waiting": "지갑 대기 중...",
+        "confirming": "확인 중...",
+        "create_batch": "배치 생성"
+      },
+      "success": {
+        "title": "배치가 생성되었습니다!",
+        "batch_id": "배치 ID: #{id}"
+      },
+      "create_another": "추가 생성",
+      "close": "닫기"
+    },
+    "nav": {
+      "back": "뒤로",
+      "next": "다음",
+      "review_confirm": "검토 및 확인",
+      "back_to_preview": "미리보기로 돌아가기"
+    }
+  },
+  "expanded_batch": {
+    "tabs": {
+      "visual": "비주얼",
+      "script": "스크립트"
+    },
+    "tick_info": "틱 #{tick} · {minutes}분 간격",
+    "player_stats": {
+      "bets_set": "설정된 베팅",
+      "win_rate": "승률",
+      "balance": "잔액",
+      "stake_per_tick": "틱당 스테이크",
+      "multiplier": "배수"
+    },
+    "actions": {
+      "all_up": "전체 ▲",
+      "all_down": "전체 ▼",
+      "deposit": "예치",
+      "withdraw": "출금",
+      "submit": "제출"
+    }
+  }
+}

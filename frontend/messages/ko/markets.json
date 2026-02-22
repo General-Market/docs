@@ -1,0 +1,109 @@
+{
+  "heading": "추적 중인 마켓",
+  "hero": {
+    "label": "인덱스 추적 상품",
+    "title": "마켓",
+    "description": "탈중앙화 인덱스 상품을 탐색하세요. 각 ITP는 실시간 NAV (순자산가치) 가격 책정과 온체인 결제로 암호화폐 자산 바스켓을 추적합니다."
+  },
+  "summary": {
+    "types_count": "{count}개 유형",
+    "categories_count": "{count}개 카테고리"
+  },
+  "types": {
+    "crypto": {
+      "name": "암호화폐",
+      "description": "BTC, ETH, SOL 및 100개 이상의 토큰",
+      "update_freq": "5분"
+    },
+    "stocks": {
+      "name": "미국 주식",
+      "description": "S&P 500, NASDAQ, 주요 지수",
+      "update_freq": "15분 (장중)"
+    },
+    "weather": {
+      "name": "날씨",
+      "description": "기온, 강수량, 바람",
+      "update_freq": "30분"
+    },
+    "economic": {
+      "name": "경제 지표",
+      "description": "연준 금리, CPI, 실업률",
+      "update_freq": "일별/월별"
+    },
+    "fx": {
+      "name": "외환",
+      "description": "EUR/USD, 주요 통화쌍",
+      "update_freq": "일별"
+    },
+    "treasury": {
+      "name": "국채 금리",
+      "description": "미국 국채 수익률",
+      "update_freq": "일별"
+    },
+    "defi": {
+      "name": "DeFi TVL (총예치금액)",
+      "description": "프로토콜 TVL (총예치금액) 순위",
+      "update_freq": "1시간"
+    }
+  },
+  "labels": {
+    "updates": "업데이트:",
+    "categories": "카테고리:",
+    "sample_assets": "샘플 자산:",
+    "loading_prices": "가격 로딩 중..."
+  },
+  "footer": {
+    "data_sources": "데이터 출처: CoinGecko, Finnhub, Open-Meteo, FRED, ECB, Treasury, DefiLlama",
+    "resolution_note": "모든 베팅은 온체인 키퍼 합의를 통해 결정됩니다"
+  },
+  "filters": {
+    "label": "필터",
+    "all": "전체 ({count})",
+    "active": "활성 ({count})",
+    "pending": "대기 ({count})",
+    "search_placeholder": "펀드명 또는 티커로 검색...",
+    "sort_aum_desc": "정렬: AUM 높은순",
+    "sort_aum_asc": "정렬: AUM 낮은순",
+    "sort_newest": "정렬: 최신순",
+    "sort_name_az": "정렬: 이름 A-Z"
+  },
+  "section_bar": {
+    "title": "데이터 뷰",
+    "subtitle": "펀드 개요 — 실시간 NAV (순자산가치)",
+    "showing_partial": "{total}개 중 {shown}개 상품 표시",
+    "showing_all": "전체 {total}개 상품 표시"
+  },
+  "itp_card": {
+    "loading": "ITP 로딩 중...",
+    "no_itps": "아직 생성된 ITP가 없습니다",
+    "nav_per_share": "NAV (순자산가치) / 주",
+    "assets": "자산",
+    "balance": "잔액",
+    "by": "{name} 제작",
+    "pending_fill": "체결 대기 중",
+    "buy": "매수",
+    "sell": "매도",
+    "chart": "차트",
+    "rebalance": "리밸런스",
+    "borrow": "대출",
+    "edit_itp_info": "ITP 정보 편집",
+    "description_placeholder": "설명 (최대 280자 / 약 50단어)",
+    "website_placeholder": "웹사이트 URL (최대 128)",
+    "video_placeholder": "YouTube URL (최대 256)",
+    "arb_erc20": "Arbitrum ERC20:",
+    "itp_id": "ITP ID:",
+    "minted_supply": "발행 수량",
+    "loading_holders": "보유자 로딩 중...",
+    "unable_fetch_holders": "보유자 정보를 불러올 수 없습니다",
+    "no_tracked_holders": "추적된 보유자 없음",
+    "other_holders": "기타 보유자",
+    "source_index": "Index.sol (L3)",
+    "source_bridge": "BridgeProxy",
+    "nonce": "논스:",
+    "source": "소스:",
+    "admin": "관리자:",
+    "created": "생성일:",
+    "arb_address": "Arb 주소:",
+    "request_number": "요청 #{number}"
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "heading": {
+    "label": "보유 내역",
+    "title": "포트폴리오",
+    "collapsed_title": "포트폴리오",
+    "collapsed_description": "보유 포지션 및 성과",
+    "subtitle_with_data": "{count}개 포지션 · ${value} 가치",
+    "subtitle_empty": "포지션, 거래 및 주문을 추적하세요"
+  },
+  "stats": {
+    "total_value": "총 가치",
+    "total_invested": "총 투자금",
+    "positions": "포지션",
+    "pnl": "손익",
+    "usdc_available": "USDC 잔액",
+    "change_24h": "24시간 변동",
+    "unrealized_pnl": "미실현 손익"
+  },
+  "tabs": {
+    "positions": "포지션",
+    "trades": "거래",
+    "orders": "주문"
+  },
+  "orders_banner": {
+    "active_orders": "진행 중인 주문 {count}건"
+  },
+  "section_bar": {
+    "title": "포지션",
+    "subtitle": "활성 보유 내역"
+  },
+  "positions_table": {
+    "itp": "ITP",
+    "shares": "주식 수",
+    "avg_cost": "평균 매입가",
+    "nav": "NAV (순자산가치)",
+    "value": "가치",
+    "pnl": "손익",
+    "pnl_pct": "손익%"
+  },
+  "trades_table": {
+    "date": "날짜",
+    "itp": "ITP",
+    "side": "매매 구분",
+    "amount": "금액",
+    "price": "가격",
+    "shares": "주식 수",
+    "status": "상태"
+  },
+  "orders_table": {
+    "id": "ID",
+    "side": "매매 구분",
+    "amount": "금액",
+    "limit_price": "지정가",
+    "status": "상태",
+    "time": "시간"
+  },
+  "empty": {
+    "no_positions_title": "아직 포지션이 없습니다",
+    "no_positions_description": "위에서 인덱스 상품을 탐색하고 첫 ITP를 구매하여 여기에서 성과를 추적하세요.",
+    "explore_indexes": "인덱스 탐색",
+    "no_trades_title": "아직 거래 내역이 없습니다",
+    "no_trades_description": "첫 거래를 완료하면 매수 및 매도 내역이 여기에 표시됩니다.",
+    "no_orders_title": "주문 없음",
+    "no_orders_description": "인덱스 상품을 매수 또는 매도하면 활성 및 최근 주문이 여기에 표시됩니다.",
+    "loading_orders": "주문 로딩 중..."
+  },
+  "chart": {
+    "current_value": "현재 가치",
+    "chart_pending": "더 많은 데이터가 수집되면 차트가 표시됩니다"
+  },
+  "tooltip": {
+    "value_label": "가치:",
+    "pnl_label": "손익:"
+  },
+  "skeleton": {
+    "fund": "펀드",
+    "ticker": "티커",
+    "nav_per_share": "NAV (순자산가치) / 주",
+    "avg_cost": "평균 매입가",
+    "change_24h": "24시간"
+  },
+  "cost_basis": {
+    "title": "내 포지션",
+    "shares": "주식 수",
+    "avg_cost": "평균 매입가",
+    "total_cost": "총 매입 비용",
+    "current_value": "현재 가치",
+    "unrealized_pnl": "미실현 손익",
+    "realized_pnl": "실현 손익",
+    "loading": "비용 데이터 로딩 중...",
+    "fees_title": "지불한 수수료",
+    "fee_trading": "거래",
+    "fee_management": "관리",
+    "fee_bridge": "브릿지",
+    "fee_gas": "가스",
+    "fee_total": "총 수수료"
+  },
+  "side": {
+    "buy": "매수",
+    "sell": "매도"
+  }
+}

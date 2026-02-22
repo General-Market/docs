@@ -1,0 +1,63 @@
+{
+  "title": "{name} 매도",
+  "itp_id_label": "ITP ID:",
+  "your_shares_label": "보유 BridgedITP 주식",
+  "no_shares": "매도할 BridgedITP 주식이 없습니다",
+  "no_bridged_itp": "이 ITP에 대한 BridgedITP를 찾을 수 없습니다. BridgeProxy를 통해 아직 생성되지 않았을 수 있습니다.",
+  "shares_to_sell_label": "매도할 주식 수",
+  "min_price_label": "최소 가격 (USDC/주)",
+  "nav_label": "NAV (순자산가치): ${nav} ({priced}/{total} 가격 반영)",
+  "slippage_label": "슬리피지",
+  "insufficient_shares": "BridgedITP 주식 부족",
+  "computing_price": "가격 계산 중...",
+  "set_min_price": "최소 가격 설정",
+  "no_limit": "0 (제한 없음)",
+  "usdc_balance_label": "USDC 잔액 (Arbitrum)",
+  "sell_more": "추가 매도",
+  "estimated_pnl": {
+    "title": "예상 손익",
+    "avg_cost_basis": "평균 매입가",
+    "current_nav": "현재 NAV (순자산가치)",
+    "est_proceeds": "예상 수익금",
+    "est_pnl": "예상 손익"
+  },
+  "button": {
+    "pending": "지갑 대기 중...",
+    "approving": "승인 중...",
+    "submitting": "제출 중...",
+    "approve_and_sell": "승인 및 매도",
+    "sell_shares": "주식 매도"
+  },
+  "steps": {
+    "submit": "제출",
+    "process": "처리",
+    "deliver": "전달",
+    "done": "완료"
+  },
+  "micro_steps": {
+    "approve_pending": "지갑에서 BridgedITP 승인을 확인하세요...",
+    "approve_confirming": "주식 승인 중...",
+    "submit_pending": "지갑에서 매도 주문을 확인하세요...",
+    "submit_confirming": "매도 주문 제출 중...",
+    "relay": "L3로 매도 전달 중...",
+    "batch": "주문 배치 중...",
+    "fill": "거래 체결 중...",
+    "record_collateral": "담보 기록 중...",
+    "bridge_to_arb": "USDC를 Arbitrum으로 브릿지 중...",
+    "complete_sell": "매도 주문 완료 중...",
+    "usdc_received": "USDC가 수령되었습니다!"
+  },
+  "fill_details": {
+    "title": "체결 상세",
+    "fill_price": "체결 가격",
+    "shares_sold": "매도된 주식 수",
+    "usdc_proceeds": "USDC 수익금",
+    "pnl_vs_cost": "매입가 대비 손익"
+  },
+  "toast": {
+    "sell_filled": "매도 체결 — {proceeds} 수령"
+  },
+  "error": {
+    "title": "오류"
+  }
+}

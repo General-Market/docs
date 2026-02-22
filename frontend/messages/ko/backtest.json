@@ -1,0 +1,16 @@
+{
+  "heading": {
+    "label": "전략 시뮬레이션",
+    "title": "백테스트",
+    "description": "자본을 투입하기 전에 과거 데이터를 기반으로 인덱스 전략을 테스트하세요."
+  },
+  "fullscreen": {
+    "label": "인덱스 백테스터",
+    "title": "시뮬레이션 결과",
+    "exit": "ESC",
+    "enter": "전체화면"
+  },
+  "holdings": {
+    "title": "보유 내역 (최근 리밸런스)"
+  }
+}

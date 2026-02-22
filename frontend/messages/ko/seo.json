@@ -1,0 +1,67 @@
+{
+  "metadata": {
+    "title": "General Market",
+    "title_template": "%s | General Market",
+    "description": "온체인 인덱스 상품을 위한 기관급 프로토콜입니다.",
+    "keywords": "인덱스 펀드, ETF, 기관, 온체인, 암호화폐 거래, DeFi, 자율 자본 시장, Base L2"
+  },
+  "og": {
+    "site_name": "General Market",
+    "title": "General Market",
+    "description": "온체인 인덱스 상품을 위한 기관급 프로토콜입니다."
+  },
+  "twitter": {
+    "title": "General Market",
+    "description": "온체인 인덱스 상품을 위한 기관급 프로토콜입니다."
+  },
+  "sr_only": {
+    "h1": "General Market — 온체인 인덱스 상품",
+    "markets": {
+      "title": "인덱스 추적 상품 (ITP)",
+      "description": "탈중앙화 인덱스 상품을 탐색하세요. 각 ITP는 Arbitrum Orbit L3에서 실시간 NAV (순자산가치) 가격 책정과 온체인 결제로 암호화폐 자산 바스켓을 추적합니다."
+    },
+    "portfolio": {
+      "title": "포트폴리오 추적",
+      "description": "ITP 보유 내역을 추적하고, 실시간 손익, 매입 비용 및 거래 내역을 확인하세요. 지갑을 연결하여 모든 인덱스 상품의 포트폴리오 성과를 확인하세요."
+    },
+    "create": {
+      "title": "나만의 ITP 만들기",
+      "description": "100개 이상의 암호화폐 자산에서 선택하고 비중을 할당하여 맞춤형 인덱스 상품을 설계하세요. 단일 트랜잭션으로 배포합니다. ITP는 $1 NAV (순자산가치)에서 시작하며 기초 자산 가격에 따라 변동합니다."
+    },
+    "lending": {
+      "title": "대출 및 차입",
+      "description": "Morpho 대출 마켓을 통해 USDC를 예치하여 수익을 얻으세요. 또는 ITP 주식을 담보로 사용하여 포지션 대비 USDC를 대출받으세요."
+    },
+    "backtesting": {
+      "title": "전략 백테스트",
+      "description": "실제 자본을 투입하기 전에 과거 가격 데이터로 포트폴리오 성과를 시뮬레이션하세요. 수익률, 낙폭 및 샤프 비율을 확인하세요. 성공적인 전략을 ITP로 직접 배포하세요."
+    },
+    "itp_article": {
+      "nav_per_share": "주당 NAV (순자산가치): ${nav}",
+      "aum": "운용 자산: ${aum}",
+      "holdings": "보유 자산: {count}개",
+      "view_details": "{name} 상세정보 보기"
+    }
+  },
+  "json_ld": {
+    "org_description": "온체인 인덱스 상품을 위한 기관급 프로토콜입니다.",
+    "website_description": "온체인 인덱스 상품을 위한 기관급 프로토콜입니다. 토큰화된 인덱스 상품을 온체인에서 생성, 거래 및 관리하세요.",
+    "app_description": "온체인 인덱스 상품을 위한 기관급 프로토콜입니다. 토큰화된 인덱스 상품을 생성, 거래 및 관리하세요.",
+    "faq": {
+      "q1": "General Market이란 무엇인가요?",
+      "a1": "General Market은 온체인 인덱스 상품을 위한 기관급 프로토콜입니다. 전통 금융의 ETF와 유사하게, 암호화폐 자산 바스켓을 추적하는 토큰화된 인덱스 추적 상품(ITP)을 생성, 거래 및 관리할 수 있습니다.",
+      "q2": "인덱스 추적 상품(ITP)이란 무엇인가요?",
+      "a2": "ITP는 정해진 비중으로 암호화폐 자산의 고정 바스켓을 보유하는 토큰화된 인덱스 상품입니다. ETF와 마찬가지로 NAV (순자산가치)가 기초 자산 가격에 따라 변동합니다. 맞춤형 ITP를 생성하거나 기존 ITP를 거래할 수 있습니다.",
+      "q3": "General Market에서 대출은 어떻게 작동하나요?",
+      "a3": "General Market은 Morpho 대출 마켓과 통합됩니다. USDC를 예치하여 수익을 얻거나, ITP 주식을 담보로 사용하여 포지션 대비 대출을 받을 수 있습니다.",
+      "q4": "시작하려면 무엇이 필요한가요?",
+      "a4": "Index L3 네트워크에 연결된 Web3 지갑(MetaMask 등)과 USDC 토큰이 필요합니다. 이후 마켓 탭에서 기존 ITP를 구매하거나 나만의 맞춤 인덱스를 생성할 수 있습니다."
+    },
+    "itp_description": "{name} — {count}개의 암호화폐 자산을 보유한 온체인 인덱스 추적 상품입니다. NAV (순자산가치): ${nav}."
+  },
+  "breadcrumbs": {
+    "home": "홈",
+    "markets": "마켓",
+    "documentation": "문서"
+  }
+}

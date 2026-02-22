@@ -1,0 +1,67 @@
+{
+  "title": "{name} 매수",
+  "itp_id_label": "ITP ID:",
+  "amount_label": "금액 (USDC)",
+  "balance_label": "잔액: {amount} USDC",
+  "max_price_label": "최대 가격 (USDC/주)",
+  "nav_label": "NAV (순자산가치): ${nav} ({priced}/{total} 가격 반영)",
+  "slippage_label": "슬리피지",
+  "slippage_tight": "타이트",
+  "slippage_normal": "보통",
+  "slippage_relaxed": "완화",
+  "insufficient_usdc": "USDC 잔액 부족",
+  "no_prices_warning": "자산 가격 정보가 없습니다. 지정가를 수동으로 설정하거나 제한 없이 0을 사용하세요.",
+  "computing_price": "가격 계산 중...",
+  "set_limit_price": "지정가 설정",
+  "no_limit": "0 (제한 없음)",
+  "mint_test_usdc": "테스트 USDC 10,000개 발행",
+  "minting": "발행 중...",
+  "minted": "발행 완료!",
+  "mint_failed": "발행 실패",
+  "your_itp_shares": "내 ITP 주식",
+  "buy_more": "추가 매수",
+  "button": {
+    "approve_pending": "지갑에서 승인을 확인하세요...",
+    "approve_confirming": "USDC 승인 중...",
+    "buy_pending": "지갑에서 매수를 확인하세요...",
+    "buy_confirming": "주문 제출 중...",
+    "approve_and_buy": "승인 및 매수",
+    "buy_itp": "ITP 매수"
+  },
+  "steps": {
+    "submit": "제출",
+    "process": "처리",
+    "deliver": "전달",
+    "done": "완료",
+    "complete": "완료!"
+  },
+  "micro_steps": {
+    "approve_pending": "지갑에서 USDC 승인을 확인하세요...",
+    "approve_confirming": "USDC 지출 승인 중...",
+    "submit_pending": "지갑에서 매수 주문을 확인하세요...",
+    "submit_confirming": "매수 주문 제출 중...",
+    "bridge_to_l3": "USDC를 L3로 브릿지 중...",
+    "relay": "L3로 주문 전달 중...",
+    "batch": "주문 배치 중...",
+    "fill": "거래 체결 중...",
+    "record_collateral": "담보 기록 중...",
+    "bridge_to_arb": "USDC를 Arbitrum으로 브릿지 중...",
+    "complete_bridge": "브릿지 완료 중...",
+    "mint_shares": "BridgedITP 발행 중...",
+    "shares_received": "주식이 수령되었습니다!"
+  },
+  "fill_details": {
+    "title": "체결 상세",
+    "fill_price": "체결 가격",
+    "amount_filled": "체결 금액",
+    "shares": "주식 수",
+    "vs_limit": "지정가 대비"
+  },
+  "toast": {
+    "buy_filled_shares": "매수 체결 — {name} 주식 {shares}주 수령",
+    "buy_filled": "매수 체결 — {name} 주식 수령"
+  },
+  "error": {
+    "title": "오류"
+  }
+}

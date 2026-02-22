@@ -1,0 +1,65 @@
+{
+  "heading": {
+    "label": "인프라",
+    "title": "시스템",
+    "description": "실시간 운영 데이터 — AP 키퍼 잔액, 체결 속도, 합의 상태 및 재고 현황입니다."
+  },
+  "stats": {
+    "consensus_status": "합의 상태",
+    "active_issuers": "활성 발행자",
+    "avg_fill_speed": "평균 체결 속도",
+    "orders_total": "총 주문 수",
+    "l3_block": "L3 블록"
+  },
+  "consensus_values": {
+    "checking": "● 확인 중…",
+    "healthy": "● 정상",
+    "offline": "● 오프라인"
+  },
+  "issuer_network": {
+    "section_title": "발행자 네트워크",
+    "section_subtitle": "BLS 합의 노드",
+    "issuer_label": "발행자 {name}",
+    "node_details": {
+      "address": "주소",
+      "bls_pubkey": "BLS 공개키",
+      "registered": "등록일",
+      "status": "상태",
+      "ap_vault": "AP 볼트"
+    },
+    "status_active": "활성"
+  },
+  "fill_speed": {
+    "section_title": "체결 속도",
+    "section_subtitle": "주문당 체결 시간",
+    "tooltip_label": "체결 시간"
+  },
+  "inventory": {
+    "section_title": "재고",
+    "section_subtitle": "USD 기준 상위 보유 자산",
+    "tooltip_label": "가치"
+  },
+  "recent_activity": {
+    "section_title": "최근 활동",
+    "section_subtitle": "키퍼 BLS 서명",
+    "table": {
+      "time": "시간",
+      "order_id": "주문 ID",
+      "fund": "펀드",
+      "type": "유형",
+      "amount": "금액",
+      "fill_time": "체결 시간",
+      "signers": "서명자",
+      "status": "상태"
+    },
+    "side_buy": "매수",
+    "side_sell": "매도",
+    "status_confirmed": "✓ 확인됨",
+    "status_pending": "⌛ 대기 중"
+  },
+  "connection": {
+    "live": "라이브",
+    "polling": "폴링",
+    "offline": "오프라인"
+  }
+}
