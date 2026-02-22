@@ -1,0 +1,665 @@
+---
+title: "Bot Lifecycle"
+description: "Complete step-by-step lifecycle of a Vision bot from registration to withdrawal"
+---
+
+# Bot Lifecycle
+
+This page documents every step a Vision bot performs, from initial registration through reward claiming and withdrawal. Each step includes the exact function call or API request, expected behavior, and error handling.
+
+## Lifecycle Diagram
+
+```
+┌──────────────────┐
+│  1. Register Bot │ ← One-time setup
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐     ┌─────────────────────┐
+│  2. Poll Batches │────►│  No batches? Sleep   │
+│     (every 30s)  │     │  POLL_INTERVAL, retry│
+└────────┬─────────┘     └─────────────────────┘
+         │ Found batch
+         ▼
+┌──────────────────┐
+│  3. Generate     │
+│     Predictions  │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  4. Encode       │
+│     Bitmap       │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  5. Approve USDC │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  6. Join Batch   │  ← On-chain: joinBatch()
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  7. Wait 6s      │  ← Chain indexer lag
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  8. Submit Bitmap│  ← Off-chain: POST /vision/bitmap
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────────────────────┐
+│  9. Update Bitmap (optional)     │  ← On-chain: updateBitmap()
+│     + resubmit to issuers        │    + POST /vision/bitmap
+└────────┬─────────────────────────┘
+         │
+         ▼
+┌──────────────────┐
+│ 10. Claim Rewards│  ← On-chain: claimRewards() with BLS proof
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ 11. Withdraw     │  ← On-chain: withdraw() with BLS proof
+└──────────────────┘
+```
+
+---
+
+## Step 1: Register Bot
+
+Register your bot on the Vision contract. This is a one-time operation.
+
+```python
+def register_bot(vision_contract, account, w3):
+    endpoint = "https://my-bot.example.com"
+    pubkey_hash = w3.keccak(text=f"bot-{account.address}")
+
+    tx = vision_contract.functions.registerBot(
+        endpoint, pubkey_hash
+    ).build_transaction({
+        "from": account.address,
+        "gas": 200_000,
+        "gasPrice": w3.eth.gas_price,
+        "nonce": w3.eth.get_transaction_count(account.address),
+    })
+    signed = account.sign_transaction(tx)
+    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+    w3.eth.wait_for_transaction_receipt(tx_hash)
+```
+
+**Contract function:**
+
+```solidity
+function registerBot(string calldata endpoint, bytes32 pubkeyHash) external;
+```
+
+**On-chain effect:** Creates a `Bot` struct stored at `_bots[msg.sender]` with `isActive = true`.
+
+**Errors:**
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `BotAlreadyRegistered` | This address already has an active registration | Skip registration or call `deregisterBot()` first |
+| Out of gas | Gas limit too low | Increase gas to 200,000+ |
+
+<Tip>
+Check if your bot is already registered before calling `registerBot()`. You can read `getAllActiveBots()` or catch the `BotAlreadyRegistered` revert.
+</Tip>
+
+---
+
+## Step 2: Poll Batches
+
+Poll the issuer API for active batches on a loop.
+
+```python
+import requests
+import time
+
+def poll_batches(api_url: str, poll_interval: int = 30) -> list[dict]:
+    while True:
+        try:
+            resp = requests.get(f"{api_url}/vision/batches", timeout=10)
+            if resp.ok:
+                batches = resp.json().get("batches", [])
+                active = [b for b in batches if not b.get("paused")]
+                if active:
+                    return active
+        except requests.RequestException as e:
+            print(f"Poll error: {e}")
+
+        time.sleep(poll_interval)
+```
+
+**API endpoint:**
+
+```
+GET /vision/batches
+```
+
+**Response fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `u64` | Batch ID |
+| `creator` | `string` | Batch creator address |
+| `market_ids` | `string[]` | Market identifiers |
+| `market_count` | `usize` | Number of markets |
+| `tick_duration` | `u64` | Seconds per tick |
+| `player_count` | `usize` | Current number of players |
+| `tvl` | `string` | Total value locked (raw USDC units) |
+| `paused` | `bool` | Whether the batch is paused |
+
+**Errors:**
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| HTTP 500 | Database error on issuer | Retry after backoff |
+| Timeout | Issuer unreachable | Check `VISION_API_URL`, retry |
+| Empty `batches` array | No active batches exist | Sleep and retry |
+
+---
+
+## Step 3: Generate Predictions
+
+For each market in the batch, decide UP or DOWN. See [Example Strategies](/vision/bots/strategies) for algorithms.
+
+```python
+import random
+
+def generate_predictions(market_count: int) -> list[str]:
+    """Random baseline. Replace with your strategy."""
+    return [random.choice(["UP", "DOWN"]) for _ in range(market_count)]
+
+batch = active_batches[0]
+bets = generate_predictions(batch["market_count"])
+```
+
+**Key constraint:** The returned list must have exactly `market_count` elements. Missing entries default to DOWN when encoded.
+
+---
+
+## Step 4: Encode Bitmap
+
+Pack predictions into a big-endian bitmap and hash it. See [Bitmap Encoding](/vision/bots/bitmap-encoding) for the full spec.
+
+```python
+from web3 import Web3
+
+def encode_bitmap(bets: list[str], market_count: int) -> bytes:
+    byte_count = (market_count + 7) // 8
+    bitmap = bytearray(byte_count)
+    for i in range(market_count):
+        if i < len(bets) and bets[i] == "UP":
+            bitmap[i // 8] |= 1 << (7 - i % 8)
+    return bytes(bitmap)
+
+bitmap = encode_bitmap(bets, batch["market_count"])
+bitmap_hash = Web3.keccak(bitmap)    # bytes32 commitment
+bitmap_hex = "0x" + bitmap.hex()     # for API submission
+```
+
+**Verification invariant:**
+```
+keccak256(bitmap_bytes) == bitmapHash passed to joinBatch()
+```
+
+---
+
+## Step 5: Approve USDC
+
+Approve the Vision contract to spend your USDC.
+
+```python
+def approve_usdc(usdc_contract, vision_address, amount, account, w3):
+    tx = usdc_contract.functions.approve(
+        vision_address, amount
+    ).build_transaction({
+        "from": account.address,
+        "gas": 100_000,
+        "gasPrice": w3.eth.gas_price,
+        "nonce": w3.eth.get_transaction_count(account.address),
+    })
+    signed = account.sign_transaction(tx)
+    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+    w3.eth.wait_for_transaction_receipt(tx_hash)
+
+DEPOSIT = 10 * 10**6   # 10 USDC (6 decimals!)
+approve_usdc(usdc, VISION_ADDRESS, DEPOSIT, account, w3)
+```
+
+<Warning>
+**USDC uses 6 decimals.** `10 USDC = 10_000_000`. Passing `10 * 10**18` will attempt to approve 10 trillion USDC and likely exceed your balance.
+</Warning>
+
+**Errors:**
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| Insufficient balance | Wallet has less USDC than approval amount | Fund wallet first |
+| Approval already set | Previous approval covers the amount | Skip this step (optional optimization) |
+
+---
+
+## Step 6: Join Batch
+
+Call `joinBatch` on the Vision contract to enter the batch with your sealed commitment.
+
+```python
+def join_batch(vision_contract, batch_id, deposit, stake, bitmap_hash, account, w3):
+    tx = vision_contract.functions.joinBatch(
+        batch_id, deposit, stake, bitmap_hash
+    ).build_transaction({
+        "from": account.address,
+        "gas": 500_000,
+        "gasPrice": w3.eth.gas_price,
+        "nonce": w3.eth.get_transaction_count(account.address),
+    })
+    signed = account.sign_transaction(tx)
+    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    return receipt
+
+STAKE = 1 * 10**6   # 1 USDC per tick
+receipt = join_batch(vision, batch_id, DEPOSIT, STAKE, bitmap_hash, account, w3)
+```
+
+**Contract function:**
+
+```solidity
+function joinBatch(
+    uint256 batchId,
+    uint256 depositAmount,
+    uint256 stakePerTick,
+    bytes32 bitmapHash
+) external;
+```
+
+**On-chain effect:** Creates a `PlayerPosition` with your deposit, stake, and sealed bitmap hash. USDC is transferred from your wallet to the Vision contract.
+
+**Errors:**
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `BatchNotFound` | Invalid batch ID | Re-fetch batches from API |
+| `BatchPaused` | Batch has been paused | Skip this batch |
+| `AlreadyJoined` | Already have a position in this batch | Skip or use `deposit()` to add more |
+| `StakeBelowMinimum` | `stakePerTick < 0.1 USDC` (100,000 raw) | Increase stake |
+| `InsufficientDeposit` | `depositAmount < stakePerTick` | Increase deposit |
+| ERC20 transfer failed | USDC approval insufficient or balance too low | Check approval and balance |
+
+---
+
+## Step 7: Wait for Indexer
+
+The issuer's chain listener needs time to detect the `PlayerJoined` event before it will accept your bitmap submission.
+
+```python
+import time
+
+# Wait for chain indexer to detect the PlayerJoined event
+time.sleep(6)
+```
+
+**Why 6 seconds?** The issuer's chain listener polls for new events on a ~3-5 second interval. A 6-second wait gives comfortable margin.
+
+<Info>
+If you submit the bitmap too early, the issuer responds with HTTP 404: "Player not found in batch." Retry after a few seconds.
+</Info>
+
+---
+
+## Step 8: Submit Bitmap to Issuers
+
+Submit the actual bitmap bytes to the issuer API. The issuer verifies `keccak256(bitmap) == on-chain bitmapHash`.
+
+```python
+def submit_bitmap(api_url, player, batch_id, bitmap_hex, expected_hash, retries=3):
+    for attempt in range(retries):
+        try:
+            resp = requests.post(
+                f"{api_url}/vision/bitmap",
+                json={
+                    "player": player,
+                    "batch_id": batch_id,
+                    "bitmap_hex": bitmap_hex,
+                    "expected_hash": expected_hash,
+                },
+                timeout=10,
+            )
+            if resp.ok:
+                return resp.json()
+            print(f"Bitmap rejected ({resp.status_code}): {resp.text}")
+        except requests.RequestException as e:
+            print(f"Submit error: {e}")
+
+        time.sleep(3)
+
+    raise RuntimeError(f"Bitmap submission failed after {retries} retries")
+
+result = submit_bitmap(
+    API_URL,
+    account.address,
+    batch_id,
+    bitmap_hex,
+    "0x" + bitmap_hash.hex(),
+)
+```
+
+**API endpoint:**
+
+```
+POST /vision/bitmap
+```
+
+**Request body:**
+
+```json
+{
+  "player": "0xYourAddress",
+  "batch_id": 42,
+  "bitmap_hex": "0xB280",
+  "expected_hash": "0xabc123..."
+}
+```
+
+**Response (success):**
+
+```json
+{
+  "accepted": true,
+  "batch_id": 42,
+  "player": "0xYourAddress"
+}
+```
+
+**Errors:**
+
+| HTTP Status | Error | Cause | Fix |
+|-------------|-------|-------|-----|
+| 400 | Invalid player address | Malformed address string | Check hex format |
+| 400 | Invalid bitmap hex | Not valid hex | Ensure `0x` prefix and even length |
+| 400 | Hash mismatch | `keccak256(bitmap) != expected_hash` | Recompute hash |
+| 400 | expected_hash != on-chain | Hash doesn't match `PlayerPosition.bitmapHash` | Ensure you submitted the same hash in `joinBatch` |
+| 404 | Player not found | Indexer hasn't seen `PlayerJoined` yet | Wait longer (step 7) and retry |
+
+---
+
+## Step 9: Update Bitmap (Optional)
+
+You can change your predictions mid-batch by updating the on-chain hash and resubmitting the bitmap.
+
+```python
+def update_bitmap(vision_contract, batch_id, new_bitmap_hash, account, w3):
+    """Update sealed commitment on-chain."""
+    tx = vision_contract.functions.updateBitmap(
+        batch_id, new_bitmap_hash
+    ).build_transaction({
+        "from": account.address,
+        "gas": 100_000,
+        "gasPrice": w3.eth.gas_price,
+        "nonce": w3.eth.get_transaction_count(account.address),
+    })
+    signed = account.sign_transaction(tx)
+    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+    w3.eth.wait_for_transaction_receipt(tx_hash)
+
+# Generate new predictions
+new_bets = generate_predictions(market_count)
+new_bitmap = encode_bitmap(new_bets, market_count)
+new_hash = Web3.keccak(new_bitmap)
+
+# Update on-chain, then resubmit to issuers
+update_bitmap(vision, batch_id, new_hash, account, w3)
+time.sleep(6)
+submit_bitmap(API_URL, account.address, batch_id,
+              "0x" + new_bitmap.hex(), "0x" + new_hash.hex())
+```
+
+**Contract function:**
+
+```solidity
+function updateBitmap(uint256 batchId, bytes32 newBitmapHash) external;
+```
+
+**On-chain effect:** Overwrites `PlayerPosition.bitmapHash` with the new hash. The old bitmap is discarded by issuers when the new one is submitted.
+
+**Errors:**
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `NotJoined` | No position in this batch | Join first with `joinBatch()` |
+
+<Tip>
+Updating your bitmap mid-batch lets you adapt to changing market conditions. However, the update only takes effect for the next tick -- the current tick uses the previously submitted bitmap.
+</Tip>
+
+---
+
+## Step 10: Claim Rewards
+
+Periodically claim rewards using BLS-signed balance proofs from issuers.
+
+```python
+def claim_rewards(vision_contract, batch_id, from_tick, to_tick,
+                  new_balance, bls_signature, account, w3):
+    tx = vision_contract.functions.claimRewards(
+        batch_id, from_tick, to_tick, new_balance, bls_signature
+    ).build_transaction({
+        "from": account.address,
+        "gas": 500_000,
+        "gasPrice": w3.eth.gas_price,
+        "nonce": w3.eth.get_transaction_count(account.address),
+    })
+    signed = account.sign_transaction(tx)
+    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    return receipt
+```
+
+**Getting the balance proof:**
+
+```python
+def get_balance_proof(api_url, batch_id, player):
+    resp = requests.get(
+        f"{api_url}/vision/balance/{batch_id}/{player}",
+        timeout=10,
+    )
+    if not resp.ok:
+        raise RuntimeError(f"Balance query failed: {resp.text}")
+    return resp.json()
+
+proof = get_balance_proof(API_URL, batch_id, account.address)
+# proof = { batch_id, player, balance, stake_per_tick, bls_signature }
+```
+
+**Contract function:**
+
+```solidity
+function claimRewards(
+    uint256 batchId,
+    uint256 fromTick,
+    uint256 toTick,
+    uint256 newBalance,
+    bytes calldata blsSignature
+) external;
+```
+
+**On-chain effect:**
+- BLS signature is verified against the issuer registry's aggregated public key.
+- If `newBalance > oldBalance`, the difference (minus 0.3% fee on profit) is transferred to the player.
+- If `newBalance <= oldBalance`, losses are recorded (balance decreases, no payout).
+- `lastClaimedTick` is updated to `toTick`.
+
+**Errors:**
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `NotJoined` | No position in this batch | Cannot claim without joining |
+| `TickAlreadyClaimed` | `fromTick <= lastClaimedTick` | Use a later `fromTick` |
+| `InvalidTickRange` | `toTick < fromTick` | Fix tick ordering |
+| `InvalidBLSSignature` | Bad or insufficient BLS signatures | Re-fetch proof from issuers |
+| `InsolventPayout` | Contract USDC balance too low | Wait for other deposits or contact operators |
+
+---
+
+## Step 11: Withdraw
+
+Exit a batch entirely and recover your remaining balance.
+
+```python
+def withdraw(vision_contract, batch_id, final_balance,
+             bls_signature, account, w3):
+    tx = vision_contract.functions.withdraw(
+        batch_id, final_balance, bls_signature
+    ).build_transaction({
+        "from": account.address,
+        "gas": 500_000,
+        "gasPrice": w3.eth.gas_price,
+        "nonce": w3.eth.get_transaction_count(account.address),
+    })
+    signed = account.sign_transaction(tx)
+    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    return receipt
+
+# Get final balance proof, then withdraw
+proof = get_balance_proof(API_URL, batch_id, account.address)
+withdraw(vision, batch_id, int(proof["balance"]),
+         bytes.fromhex(proof["bls_signature"][2:]), account, w3)
+```
+
+**Contract function:**
+
+```solidity
+function withdraw(
+    uint256 batchId,
+    uint256 finalBalance,
+    bytes calldata blsSignature
+) external;
+```
+
+**On-chain effect:**
+- BLS signature verified.
+- Fee (0.3%) charged on profit only: if `finalBalance > totalDeposited`, fee is on the difference.
+- Remaining balance (after fee) transferred to player.
+- Position is deleted (`delete _positions[batchId][player]`).
+
+**Errors:**
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `NotJoined` | No position | Already withdrawn or never joined |
+| `InvalidBLSSignature` | Bad signature | Re-fetch proof |
+| `InsolventPayout` | Insufficient contract balance | Wait or contact operators |
+
+---
+
+## Complete Bot Loop
+
+Here is the full lifecycle assembled into a single polling loop:
+
+```python
+import time
+
+class VisionBot:
+    def __init__(self):
+        # ... initialize web3, contracts, account ...
+        self.joined_batches = set()
+
+    def run(self):
+        # One-time registration
+        self.register_bot()
+
+        while True:
+            try:
+                batches = self.fetch_batches()
+                for batch in batches:
+                    batch_id = batch["id"]
+                    if batch_id in self.joined_batches:
+                        continue
+                    if batch.get("paused"):
+                        continue
+
+                    # Check if already joined on-chain
+                    position = self.get_position(batch_id)
+                    if position["balance"] > 0:
+                        self.joined_batches.add(batch_id)
+                        continue
+
+                    # Full join flow
+                    bets = self.generate_predictions(batch["market_count"])
+                    bitmap = encode_bitmap(bets, batch["market_count"])
+                    bitmap_hash = Web3.keccak(bitmap)
+
+                    self.approve_usdc(DEPOSIT)
+                    self.join_batch(batch_id, DEPOSIT, STAKE, bitmap_hash)
+                    time.sleep(6)
+                    self.submit_bitmap(batch_id, bitmap, bitmap_hash)
+                    self.joined_batches.add(batch_id)
+
+                # Periodically claim rewards for all joined batches
+                for batch_id in list(self.joined_batches):
+                    try:
+                        self.claim_if_profitable(batch_id)
+                    except Exception as e:
+                        print(f"Claim error for batch {batch_id}: {e}")
+
+            except Exception as e:
+                print(f"Loop error: {e}")
+
+            time.sleep(POLL_INTERVAL)
+```
+
+<Info>
+The bot maintains a local `joined_batches` set to avoid duplicate joins. On restart, it checks on-chain positions via `getPosition()` to rebuild this set.
+</Info>
+
+## Deposit Additional USDC
+
+You can add more USDC to an active position without changing your bitmap:
+
+```python
+def deposit_more(vision_contract, batch_id, amount, account, w3):
+    # Approve first
+    approve_usdc(usdc, VISION_ADDRESS, amount, account, w3)
+
+    tx = vision_contract.functions.deposit(
+        batch_id, amount
+    ).build_transaction({
+        "from": account.address,
+        "gas": 200_000,
+        "gasPrice": w3.eth.gas_price,
+        "nonce": w3.eth.get_transaction_count(account.address),
+    })
+    signed = account.sign_transaction(tx)
+    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+    w3.eth.wait_for_transaction_receipt(tx_hash)
+```
+
+**Contract function:**
+
+```solidity
+function deposit(uint256 batchId, uint256 amount) external;
+```
+
+---
+
+## Error Handling Summary
+
+| Step | Common Failure | Recovery |
+|------|---------------|----------|
+| Register | `BotAlreadyRegistered` | Skip (idempotent) |
+| Poll | Network timeout | Retry with backoff |
+| Join | `AlreadyJoined` | Skip batch, track in `joined_batches` |
+| Join | `InsufficientDeposit` | Fund wallet, retry |
+| Submit bitmap | 404 Player not found | Wait longer, retry |
+| Submit bitmap | 400 Hash mismatch | Recompute bitmap and hash |
+| Claim | `InvalidBLSSignature` | Re-fetch proof from issuers |
+| Withdraw | `InsolventPayout` | Wait for contract to be funded |

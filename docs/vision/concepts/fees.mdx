@@ -1,0 +1,152 @@
+---
+title: "Fees"
+description: "How Vision's fee structure works -- 0.3% on profits only"
+---
+
+Vision charges a **0.3% fee on profits only**. If you lose, you pay nothing. If you win, the protocol takes 0.3% of your winnings before paying you out.
+
+## Fee Constants
+
+```solidity
+uint256 public constant PROTOCOL_FEE_BPS = 30;      // 0.3% in basis points
+uint256 public constant BPS_DENOMINATOR = 10000;     // Basis point denominator
+```
+
+| Parameter | Value |
+|-----------|-------|
+| Fee rate | 0.3% (30 basis points) |
+| Denominator | 10,000 |
+| Applied to | Profits only (winnings above your deposit) |
+| Losers pay | Nothing |
+
+## Fee Formula
+
+When a player claims rewards and their new balance exceeds their old balance:
+
+```
+winnings = newBalance - oldBalance
+fee = (winnings * 30) / 10000
+payout = winnings - fee
+```
+
+### Worked Example
+
+A player has a current balance of 100 USDC and wins 20 USDC across several ticks:
+
+```
+oldBalance = 100,000,000  (100 USDC, 6 decimals)
+newBalance = 120,000,000  (120 USDC)
+
+winnings   = 120,000,000 - 100,000,000 = 20,000,000  (20 USDC)
+fee        = (20,000,000 * 30) / 10,000 = 60,000      (0.06 USDC)
+payout     = 20,000,000 - 60,000 = 19,940,000          (19.94 USDC)
+```
+
+The player receives **19.94 USDC** in profit. The protocol accumulates **0.06 USDC** in fees.
+
+<Info>
+Fees are calculated in USDC with 6 decimal places. The integer division means sub-cent amounts are truncated (rounded down), slightly favoring the player.
+</Info>
+
+## When Fees Apply
+
+### On Claim
+
+When a player calls `claimRewards`, the fee is computed on the difference between the old and new balance:
+
+```solidity
+if (newBalance > oldBalance) {
+    uint256 winnings = newBalance - oldBalance;
+    uint256 fee = (winnings * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
+    accumulatedFees += fee;
+    uint256 payout = winnings - fee;
+    USDC.safeTransfer(msg.sender, payout);
+}
+```
+
+If `newBalance <= oldBalance`, the player lost money over the claim period. No fee is charged, and no USDC is transferred.
+
+### On Withdrawal
+
+When a player calls `withdraw` to exit a batch, the fee is computed on **total profit** over the lifetime of the position:
+
+```solidity
+uint256 totalDeposited = position.totalDeposited;
+uint256 profit = finalBalance > totalDeposited ? finalBalance - totalDeposited : 0;
+uint256 fee = (profit * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
+uint256 payout = finalBalance - fee;
+```
+
+This means the fee on withdrawal considers the entire history, not just the latest claim window.
+
+### Withdrawal Example
+
+A player deposited 500 USDC total over time. Their final balance is 650 USDC:
+
+```
+totalDeposited = 500,000,000  (500 USDC)
+finalBalance   = 650,000,000  (650 USDC)
+
+profit  = 650,000,000 - 500,000,000 = 150,000,000  (150 USDC)
+fee     = (150,000,000 * 30) / 10,000 = 450,000      (0.45 USDC)
+payout  = 650,000,000 - 450,000 = 649,550,000          (649.55 USDC)
+```
+
+## Losers Pay Nothing
+
+If a player's balance decreases over a tick (or over their entire position lifetime), **no fee is charged**. The fee only applies to positive winnings.
+
+- If you deposit 100 USDC and your balance drops to 80 USDC, you withdraw 80 USDC with no fee.
+- If you deposit 100 USDC, it goes to 50 USDC, then recovers to 110 USDC, you only pay fees on the 10 USDC profit when you claim or withdraw.
+
+<Tip>
+Fees are never applied to your deposited principal, only to gains above it. This makes Vision risk-friendly for players since there is no cost to losing.
+</Tip>
+
+## Minimum Stake
+
+To join a batch, the player's `stakePerTick` must be at least `MIN_STAKE_PER_TICK`:
+
+```solidity
+uint256 public constant MIN_STAKE_PER_TICK = 1e5; // 0.1 USDC (6 decimals)
+```
+
+| Parameter | Value |
+|-----------|-------|
+| Minimum stake per tick | 100,000 (0.1 USDC) |
+| USDC decimals | 6 |
+| Minimum deposit | Must be >= stakePerTick |
+
+This minimum prevents dust attacks and ensures each player has a meaningful stake in the game.
+
+<Warning>
+If `stakePerTick` is less than `MIN_STAKE_PER_TICK`, the `joinBatch` call reverts with `StakeBelowMinimum`. If the initial deposit is less than `stakePerTick`, it reverts with `InsufficientDeposit`.
+</Warning>
+
+## Fee Collection
+
+Accumulated fees are held in the Vision contract until the designated `feeCollector` address calls `collectFees`:
+
+```solidity
+function collectFees() external {
+    if (msg.sender != feeCollector) revert Unauthorized();
+
+    uint256 fees = accumulatedFees;
+    accumulatedFees = 0;
+
+    USDC.safeTransfer(feeCollector, fees);
+}
+```
+
+- Only the `feeCollector` (set at contract deployment) can withdraw accumulated fees.
+- Fees are transferred as a lump sum, resetting the `accumulatedFees` counter to zero.
+
+## Solvency Check
+
+Every claim and withdrawal includes a solvency check to ensure the contract can cover the payout plus any accumulated fees:
+
+```solidity
+if (USDC.balanceOf(address(this)) < payout + accumulatedFees) revert InsolventPayout();
+```
+
+This prevents a scenario where payouts exceed the contract's actual USDC holdings, ensuring fee reserves are always protected.
