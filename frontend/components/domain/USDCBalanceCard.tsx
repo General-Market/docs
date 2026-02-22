@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { useAccount } from 'wagmi'
 import { useUsdcBalance } from '@/hooks/useUsdcBalance'
 import { useEscrowedAmount } from '@/hooks/useEscrowedAmount'
@@ -17,6 +18,8 @@ import { COLLATERAL_SYMBOL, CHAIN_ID } from '@/lib/contracts/addresses'
  * Supports USDC collateral token on Index L3 (Orbit)
  */
 export function USDCBalanceCard() {
+  const t = useTranslations('portfolio')
+  const tc = useTranslations('common')
   const [mounted, setMounted] = useState(false)
   const { address, isConnected } = useAccount()
 
@@ -41,7 +44,7 @@ export function USDCBalanceCard() {
     return (
       <Card className="border-border-medium">
         <CardContent className="p-6 flex items-center justify-center min-h-[120px]">
-          <p className="text-text-muted text-center">Connect wallet to view balance</p>
+          <p className="text-text-muted text-center">{tc('connect_wallet_to_view')}</p>
         </CardContent>
       </Card>
     )
@@ -52,7 +55,7 @@ export function USDCBalanceCard() {
     return (
       <Card className="border-border-medium">
         <CardContent className="p-6 flex items-center justify-center min-h-[120px]">
-          <p className="text-text-muted text-center">Connect wallet to view balance</p>
+          <p className="text-text-muted text-center">{tc('connect_wallet_to_view')}</p>
         </CardContent>
       </Card>
     )
@@ -79,10 +82,10 @@ export function USDCBalanceCard() {
     return (
       <Card className="border-border-medium">
         <CardHeader>
-          <CardTitle>{COLLATERAL_SYMBOL} Balance</CardTitle>
+          <CardTitle>{t('usdc_balance.title', { symbol: COLLATERAL_SYMBOL })}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-color-down text-sm">Failed to load balance. Retrying...</p>
+          <p className="text-color-down text-sm">{tc('failed_to_load_balance')}</p>
         </CardContent>
       </Card>
     )
@@ -94,12 +97,12 @@ export function USDCBalanceCard() {
   return (
     <Card className="border-border-medium">
       <CardHeader>
-        <CardTitle>{COLLATERAL_SYMBOL} Balance</CardTitle>
+        <CardTitle>{t('usdc_balance.title', { symbol: COLLATERAL_SYMBOL })}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Total Balance - Hero */}
         <div>
-          <p className="text-text-muted text-xs mb-1">Total Balance</p>
+          <p className="text-text-muted text-xs mb-1">{t('usdc_balance.total_balance')}</p>
           <p className="text-text-primary text-3xl font-mono font-bold">
             {showDollarPrefix ? '$' : ''}{totalFormatted}{!showDollarPrefix ? ` ${COLLATERAL_SYMBOL}` : ''}
           </p>
@@ -107,7 +110,7 @@ export function USDCBalanceCard() {
 
         {/* Available for Betting */}
         <div>
-          <p className="text-text-muted text-xs mb-1">Available for Betting</p>
+          <p className="text-text-muted text-xs mb-1">{t('usdc_balance.available_betting')}</p>
           <p className="text-text-primary text-xl font-mono">
             {showDollarPrefix ? '$' : ''}{availableFormatted}{!showDollarPrefix ? ` ${COLLATERAL_SYMBOL}` : ''}
           </p>
@@ -115,7 +118,7 @@ export function USDCBalanceCard() {
 
         {/* Escrowed in Bets */}
         <div>
-          <p className="text-text-muted text-xs mb-1">Escrowed in Bets</p>
+          <p className="text-text-muted text-xs mb-1">{t('usdc_balance.escrowed_bets')}</p>
           <p className="text-text-primary text-xl font-mono">
             {showDollarPrefix ? '$' : ''}{escrowedFormatted}{!showDollarPrefix ? ` ${COLLATERAL_SYMBOL}` : ''}
           </p>
@@ -131,7 +134,7 @@ export function USDCBalanceCard() {
             rel="noopener noreferrer"
             className="text-text-muted text-xs hover:text-text-primary underline transition-colors"
           >
-            View on Explorer
+            {tc('view_on_explorer')}
           </a>
         </CardFooter>
       )}

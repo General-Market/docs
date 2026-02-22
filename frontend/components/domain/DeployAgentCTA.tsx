@@ -1,11 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 /**
  * DeployAgentCTA - Big button that reveals everything when clicked
  */
 export function DeployAgentCTA() {
+  const t = useTranslations('common')
   const [expanded, setExpanded] = useState(false)
   const [copied, setCopied] = useState(false)
 
@@ -21,7 +23,7 @@ export function DeployAgentCTA() {
         onClick={() => setExpanded(true)}
         className="w-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-5 px-6 text-xl transition-colors rounded-xl"
       >
-        Let My Claude Code Agent Compete
+        {t('deploy_agent.cta_button')}
       </button>
     )
   }
@@ -51,7 +53,7 @@ export function DeployAgentCTA() {
 
         {/* How It Works */}
         <div className="border border-border-light bg-muted p-4 mb-6 rounded-xl">
-          <p className="text-text-muted text-xs uppercase tracking-wider mb-3">How It Works</p>
+          <p className="text-text-muted text-xs uppercase tracking-wider mb-3">{t('deploy_agent.how_it_works_label')}</p>
           <div className="space-y-2 text-sm">
             <div className="flex items-start gap-3">
               <span className="text-zinc-900 font-bold">1.</span>
@@ -74,7 +76,7 @@ export function DeployAgentCTA() {
 
         {/* Example Trade */}
         <div className="border border-border-light bg-muted p-4 mb-6 rounded-xl">
-          <p className="text-text-muted text-xs uppercase tracking-wider mb-3">Example Portfolio Bet</p>
+          <p className="text-text-muted text-xs uppercase tracking-wider mb-3">{t('deploy_agent.example_label')}</p>
           <div className="font-mono text-xs space-y-1">
             <p className="text-text-muted">Your AI predicts 2,847 markets at 2:1 odds:</p>
             <p className="text-text-muted mt-2">→ BTC above $95k in 24h? <span className="text-color-up">YES</span></p>
@@ -92,15 +94,15 @@ export function DeployAgentCTA() {
           onClick={handleCopy}
           className="w-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-4 px-6 text-lg transition-colors mb-3 rounded-xl"
         >
-          {copied ? '✓ Copied! Run it in your terminal.' : 'Copy: npx generalmarket init'}
+          {copied ? t('deploy_agent.copy_success') : t('deploy_agent.copy_button')}
         </button>
 
         {/* Footer */}
         <div className="flex items-center justify-center gap-4 text-xs text-text-muted font-mono">
-          <span>Requires: Claude Code + USDC on Base</span>
+          <span>{t('deploy_agent.requirements')}</span>
           <span className="text-zinc-900">|</span>
           <a href="/docs" className="text-zinc-900 hover:text-zinc-700 transition-colors">
-            Full Docs →
+            {t('deploy_agent.full_docs')}
           </a>
         </div>
       </div>

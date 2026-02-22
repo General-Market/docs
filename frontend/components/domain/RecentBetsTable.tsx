@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import {
   Table,
   TableHeader,
@@ -44,11 +45,12 @@ function TableSkeleton() {
  * Empty state when no bets exist
  */
 function EmptyState() {
+  const t = useTranslations('common')
   return (
     <div className="p-8 text-center">
-      <p className="text-text-muted">No bets yet</p>
+      <p className="text-text-muted">{t('empty.no_bets')}</p>
       <p className="text-text-muted text-sm mt-1">
-        This agent has not placed any portfolio bets
+        {t('empty.no_bets_hint')}
       </p>
     </div>
   )
@@ -80,6 +82,7 @@ function formatBetDate(isoString: string): string {
  * - Date
  */
 export function RecentBetsTable({ bets, isLoading = false }: RecentBetsTableProps) {
+  const t = useTranslations('p2pool')
   if (isLoading) {
     return <TableSkeleton />
   }
@@ -92,12 +95,12 @@ export function RecentBetsTable({ bets, isLoading = false }: RecentBetsTableProp
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Bet ID</TableHead>
-          <TableHead>Markets</TableHead>
-          <TableHead>Amount</TableHead>
-          <TableHead>Result</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Date</TableHead>
+          <TableHead>{t('bets_table.bet_id')}</TableHead>
+          <TableHead>{t('bets_table.markets')}</TableHead>
+          <TableHead>{t('bets_table.amount')}</TableHead>
+          <TableHead>{t('bets_table.result')}</TableHead>
+          <TableHead>{t('bets_table.status')}</TableHead>
+          <TableHead>{t('bets_table.date')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

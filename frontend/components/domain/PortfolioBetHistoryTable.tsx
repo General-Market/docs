@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useCallback, useEffect, memo } from 'react'
+import { useTranslations } from 'next-intl'
 import { useAccount } from 'wagmi'
 import { useBetHistory, BetRecord } from '@/hooks/useBetHistory'
 import { BetDetailsExpanded } from '@/components/domain/BetDetailsExpanded'
@@ -139,12 +140,13 @@ function LoadingSkeleton() {
  * Empty state component
  */
 function EmptyState() {
+  const t = useTranslations('common')
   return (
     <tr>
       <td colSpan={6} className="px-4 py-12 text-center">
-        <p className="text-text-muted">No bets found</p>
+        <p className="text-text-muted">{t('empty.no_bets_found')}</p>
         <p className="text-text-muted text-sm mt-1">
-          Place your first bet to see it here
+          {t('empty.no_bets_found_hint')}
         </p>
       </td>
     </tr>
@@ -162,6 +164,7 @@ interface PaginationProps {
 }
 
 function Pagination({ currentPage, totalPages, onPrev, onNext }: PaginationProps) {
+  const tc = useTranslations('common')
   if (totalPages <= 1) return null
 
   return (
@@ -171,17 +174,17 @@ function Pagination({ currentPage, totalPages, onPrev, onNext }: PaginationProps
         disabled={currentPage === 1}
         className="px-3 py-1 border border-border-medium text-text-muted text-sm font-mono hover:text-text-primary hover:border-zinc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded"
       >
-        Previous
+        {tc('pagination.previous')}
       </button>
       <span className="text-text-muted text-sm font-mono">
-        Page {currentPage} of {totalPages}
+        {tc('pagination.page_of', { current: currentPage, total: totalPages })}
       </span>
       <button
         onClick={onNext}
         disabled={currentPage === totalPages}
         className="px-3 py-1 border border-border-medium text-text-muted text-sm font-mono hover:text-text-primary hover:border-zinc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded"
       >
-        Next
+        {tc('pagination.next')}
       </button>
     </div>
   )
@@ -192,6 +195,8 @@ function Pagination({ currentPage, totalPages, onPrev, onNext }: PaginationProps
  * Displays user's bet history with expandable rows, pagination, and auto-refresh
  */
 export function PortfolioBetHistoryTable() {
+  const t = useTranslations('portfolio')
+  const tc = useTranslations('common')
   const { address, isConnected } = useAccount()
   const { bets, isLoading, isError, error } = useBetHistory({ address })
 
@@ -228,7 +233,7 @@ export function PortfolioBetHistoryTable() {
   if (!isConnected) {
     return (
       <div className="border border-border-medium rounded-xl p-6 text-center">
-        <p className="text-text-muted">Connect your wallet to view bet history</p>
+        <p className="text-text-muted">{t('bet_history.connect_to_view')}</p>
       </div>
     )
   }
@@ -237,7 +242,7 @@ export function PortfolioBetHistoryTable() {
   if (isError) {
     return (
       <div className="border border-color-down/50 rounded-xl p-6 text-center">
-        <p className="text-color-down">Error loading bet history</p>
+        <p className="text-color-down">{t('bet_history.error_loading')}</p>
         <p className="text-text-muted text-sm mt-1">{error?.message}</p>
       </div>
     )
@@ -247,9 +252,9 @@ export function PortfolioBetHistoryTable() {
     <div className="border border-border-light rounded-xl shadow-card">
       {/* Table Header */}
       <div className="bg-muted px-4 py-3 border-b border-border-medium rounded-t-xl">
-        <h3 className="text-lg font-bold text-text-primary">Bet History</h3>
+        <h3 className="text-lg font-bold text-text-primary">{t('bet_history.title')}</h3>
         <p className="text-sm text-text-muted">
-          {isLoading ? 'Loading...' : `${formatNumber(bets.length)} total bets`}
+          {isLoading ? tc('actions.loading') : t('bet_history.total_bets', { count: formatNumber(bets.length) })}
         </p>
       </div>
 
@@ -258,11 +263,11 @@ export function PortfolioBetHistoryTable() {
         <table className="w-full">
           <thead>
             <tr className="bg-muted text-xs font-medium uppercase tracking-wider text-text-muted border-b border-border-medium">
-              <th className="px-4 py-2 text-left">Portfolio Size</th>
-              <th className="px-4 py-2 text-left">Amount</th>
-              <th className="px-4 py-2 text-left">Status</th>
-              <th className="px-4 py-2 text-left">Created</th>
-              <th className="px-4 py-2 text-left">Tx Hash</th>
+              <th className="px-4 py-2 text-left">{t('bet_history.portfolio_size')}</th>
+              <th className="px-4 py-2 text-left">{t('bet_history.amount')}</th>
+              <th className="px-4 py-2 text-left">{t('bet_history.status')}</th>
+              <th className="px-4 py-2 text-left">{t('bet_history.created')}</th>
+              <th className="px-4 py-2 text-left">{t('bet_history.tx_hash')}</th>
               <th className="px-4 py-2 w-8"></th>
             </tr>
           </thead>

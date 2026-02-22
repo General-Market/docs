@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useAccount } from 'wagmi'
 import { formatUnits } from 'viem'
 import { useItpCostBasis } from '@/hooks/useItpCostBasis'
@@ -12,6 +13,7 @@ interface CostBasisCardProps {
 }
 
 export function CostBasisCard({ itpId }: CostBasisCardProps) {
+  const t = useTranslations('portfolio')
   const { address } = useAccount()
   const { costBasis, isLoading: isCostLoading } = useItpCostBasis(itpId, address ?? null)
   const { fees } = useItpFees(itpId)
@@ -48,34 +50,34 @@ export function CostBasisCard({ itpId }: CostBasisCardProps) {
 
   return (
     <div className="bg-card rounded-xl shadow-card border border-border-light p-4 space-y-3">
-      <h4 className="text-xs font-medium uppercase tracking-wider text-text-muted">Your Position</h4>
+      <h4 className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('cost_basis.title')}</h4>
 
       <div className="space-y-1 text-xs font-mono">
         <div className="flex justify-between">
-          <span className="text-text-muted">Shares</span>
+          <span className="text-text-muted">{t('cost_basis.shares')}</span>
           <span className="text-text-primary tabular-nums">{parseFloat(formatUnits(shares, 18)).toFixed(4)}</span>
         </div>
         {avgCost > 0n && (
           <div className="flex justify-between">
-            <span className="text-text-muted">Avg Cost</span>
+            <span className="text-text-muted">{t('cost_basis.avg_cost')}</span>
             <span className="text-text-primary tabular-nums">{fmtUsd(avgCost)}/share</span>
           </div>
         )}
         {totalCost > 0n && (
           <div className="flex justify-between">
-            <span className="text-text-muted">Total Cost</span>
+            <span className="text-text-muted">{t('cost_basis.total_cost')}</span>
             <span className="text-text-primary tabular-nums">{fmtUsd(totalCost)}</span>
           </div>
         )}
         {currentValue > 0n && (
           <div className="flex justify-between">
-            <span className="text-text-muted">Current Value</span>
+            <span className="text-text-muted">{t('cost_basis.current_value')}</span>
             <span className="text-text-primary tabular-nums">{fmtUsd(currentValue)}</span>
           </div>
         )}
         {remainingCostBasis > 0n && (
           <div className="flex justify-between">
-            <span className="text-text-muted">Unrealized P&amp;L</span>
+            <span className="text-text-muted">{t('cost_basis.unrealized_pnl')}</span>
             <span className={unrealizedPnL >= 0n ? 'text-color-up' : 'text-color-down'}>
               {unrealizedPnL >= 0n ? '+' : ''}{fmtUsd(unrealizedPnL)} ({unrealizedPnLPct >= 0 ? '+' : ''}{unrealizedPnLPct.toFixed(1)}%)
             </span>
@@ -83,7 +85,7 @@ export function CostBasisCard({ itpId }: CostBasisCardProps) {
         )}
         {realizedPnL !== 0n && (
           <div className="flex justify-between">
-            <span className="text-text-muted">Realized P&amp;L</span>
+            <span className="text-text-muted">{t('cost_basis.realized_pnl')}</span>
             <span className={realizedPnL >= 0n ? 'text-color-up' : 'text-color-down'}>
               {realizedPnL >= 0n ? '+' : ''}{fmtUsd(realizedPnL)}
             </span>
@@ -94,34 +96,34 @@ export function CostBasisCard({ itpId }: CostBasisCardProps) {
       {fees && (
         <>
           <div className="border-t border-border-light pt-2">
-            <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1">Fees Paid</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1">{t('cost_basis.fees_title')}</p>
             <div className="space-y-1 text-xs font-mono">
               {fees.tradingFees > 0n && (
                 <div className="flex justify-between">
-                  <span className="text-text-muted">Trading</span>
+                  <span className="text-text-muted">{t('cost_basis.fee_trading')}</span>
                   <span className="text-text-secondary tabular-nums">{fmtUsd(fees.tradingFees)}</span>
                 </div>
               )}
               {fees.managementFees > 0n && (
                 <div className="flex justify-between">
-                  <span className="text-text-muted">Management</span>
+                  <span className="text-text-muted">{t('cost_basis.fee_management')}</span>
                   <span className="text-text-secondary tabular-nums">{fmtUsd(fees.managementFees)}</span>
                 </div>
               )}
               {fees.bridgeFees > 0n && (
                 <div className="flex justify-between">
-                  <span className="text-text-muted">Bridge</span>
+                  <span className="text-text-muted">{t('cost_basis.fee_bridge')}</span>
                   <span className="text-text-secondary tabular-nums">{fmtUsd(fees.bridgeFees)}</span>
                 </div>
               )}
               {fees.gasFees > 0n && (
                 <div className="flex justify-between">
-                  <span className="text-text-muted">Gas</span>
+                  <span className="text-text-muted">{t('cost_basis.fee_gas')}</span>
                   <span className="text-text-secondary tabular-nums">{fmtUsd(fees.gasFees)}</span>
                 </div>
               )}
               <div className="flex justify-between pt-1 border-t border-border-light">
-                <span className="text-text-muted">Total Fees</span>
+                <span className="text-text-muted">{t('cost_basis.fee_total')}</span>
                 <span className="text-text-primary tabular-nums">{fmtUsd(fees.totalFees)}</span>
               </div>
             </div>
@@ -130,7 +132,7 @@ export function CostBasisCard({ itpId }: CostBasisCardProps) {
       )}
 
       {isCostLoading && (
-        <p className="text-xs text-text-muted text-center">Loading cost data...</p>
+        <p className="text-xs text-text-muted text-center">{t('cost_basis.loading')}</p>
       )}
     </div>
   )

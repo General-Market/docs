@@ -10,6 +10,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { QRCodeSVG } from 'qrcode.react'
 
 import { BACKEND_URL } from '@/lib/contracts/addresses'
@@ -49,6 +50,7 @@ async function fetchTelegramStatus(walletAddress: string): Promise<TelegramStatu
  * - Step-by-step instructions
  */
 export function TelegramConnect({ walletAddress }: TelegramConnectProps) {
+  const t = useTranslations('common')
   const [status, setStatus] = useState<TelegramStatus | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -78,20 +80,20 @@ export function TelegramConnect({ walletAddress }: TelegramConnectProps) {
     <div className="border border-border-medium bg-card rounded-xl shadow-card mb-8">
       <div className="flex justify-between items-center p-4 border-b border-border-medium">
         <h2 className="text-lg font-bold text-text-primary">
-          Telegram Notifications
+          {t('telegram.title')}
         </h2>
         {/* Connection Status Badge */}
         {isLoading ? (
-          <span className="text-text-muted text-sm">Checking...</span>
+          <span className="text-text-muted text-sm">{t('telegram.checking')}</span>
         ) : status?.connected ? (
           <span className="text-text-primary text-sm flex items-center gap-2">
             <span className="w-2 h-2 bg-color-up rounded-full" />
-            Connected
+            {t('telegram.connected')}
           </span>
         ) : (
           <span className="text-[#C40000] text-sm flex items-center gap-2">
             <span className="w-2 h-2 bg-[#C40000] rounded-full" />
-            Not Connected
+            {t('telegram.not_connected')}
           </span>
         )}
       </div>
@@ -102,10 +104,10 @@ export function TelegramConnect({ walletAddress }: TelegramConnectProps) {
           <div className="text-center">
             <div className="text-4xl mb-4">✅</div>
             <p className="text-text-primary mb-2">
-              Notifications Enabled
+              {t('telegram.enabled')}
             </p>
             <p className="text-text-muted text-sm">
-              You'll receive Telegram notifications for bet matches, settlements, and rank changes.
+              {t('telegram.enabled_description')}
             </p>
             <a
               href={telegramUrl}
@@ -113,7 +115,7 @@ export function TelegramConnect({ walletAddress }: TelegramConnectProps) {
               rel="noopener noreferrer"
               className="inline-block mt-4 px-4 py-2 border border-border-medium text-text-muted hover:text-text-primary hover:bg-card-hover text-sm transition-colors rounded-lg"
             >
-              Open Bot →
+              {t('telegram.open_bot')}
             </a>
           </div>
         ) : (
@@ -134,13 +136,13 @@ export function TelegramConnect({ walletAddress }: TelegramConnectProps) {
             {/* Instructions */}
             <div className="flex-1 text-center md:text-left">
               <p className="text-text-primary mb-4">
-                Get notified on Telegram
+                {t('telegram.get_notified')}
               </p>
               <ol className="text-text-muted text-sm space-y-2 list-decimal list-inside">
-                <li>Open Telegram on your phone</li>
-                <li>Scan the QR code or <a href={telegramUrl} target="_blank" rel="noopener noreferrer" className="text-text-primary underline hover:no-underline">click here</a></li>
-                <li>Send <code className="bg-muted px-1 rounded">/start</code> to the bot</li>
-                <li>Follow the link to verify your wallet</li>
+                <li>{t('telegram.step1')}</li>
+                <li>{t('telegram.step2_prefix')} <a href={telegramUrl} target="_blank" rel="noopener noreferrer" className="text-text-primary underline hover:no-underline">{t('telegram.step2_link')}</a></li>
+                <li>{t('telegram.step3')}</li>
+                <li>{t('telegram.step4')}</li>
               </ol>
               <a
                 href={telegramUrl}

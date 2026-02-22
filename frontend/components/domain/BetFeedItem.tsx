@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { Tooltip } from '@/components/ui/Tooltip'
 import type { RecentBetEvent, BetEventType } from '@/hooks/useRecentBets'
@@ -130,6 +131,8 @@ function MegaPortfolioBadge() {
  * AC7: Mega Portfolio badge for portfolioSize > 20000
  */
 export function BetFeedItem({ event }: BetFeedItemProps) {
+  const t = useTranslations('p2pool')
+  const tc = useTranslations('common')
   const { textColor } = getEventStyles(event.eventType)
   const description = getEventDescription(event)
   const isMegaPortfolio = event.portfolioSize >= 20000
@@ -181,7 +184,7 @@ export function BetFeedItem({ event }: BetFeedItemProps) {
 
           {/* Portfolio size */}
           <span className="flex items-center gap-1">
-            {formatPortfolioSize(event.portfolioSize)} markets
+            {formatPortfolioSize(event.portfolioSize)} {t('bet_feed.markets')}
             {isMegaPortfolio && <MegaPortfolioBadge />}
           </span>
 
@@ -194,7 +197,7 @@ export function BetFeedItem({ event }: BetFeedItemProps) {
           href={`/bet/${event.betId}`}
           className="text-text-muted hover:text-text-primary transition-colors"
         >
-          View Details
+          {tc('view_details')}
         </Link>
       </div>
     </div>

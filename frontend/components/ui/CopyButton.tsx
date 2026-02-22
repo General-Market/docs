@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 
 interface CopyButtonProps {
   text: string
@@ -20,6 +21,7 @@ interface CopyButtonProps {
  * - Green checkmark icon when copied
  */
 export function CopyButton({ text, className = '', onCopy, size = 16 }: CopyButtonProps) {
+  const t = useTranslations('common')
   const [copied, setCopied] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
 
@@ -47,8 +49,8 @@ export function CopyButton({ text, className = '', onCopy, size = 16 }: CopyButt
         className={`inline-flex items-center justify-center p-1 rounded hover:bg-muted transition-colors ${
           copied ? 'text-color-up' : 'text-text-muted hover:text-text-secondary'
         } ${className}`}
-        title={copied ? 'Copied!' : 'Copy to clipboard'}
-        aria-label={copied ? 'Copied!' : 'Copy to clipboard'}
+        title={copied ? t('actions.copied') : t('actions.copy_to_clipboard')}
+        aria-label={copied ? t('actions.copied') : t('actions.copy_to_clipboard')}
       >
         {copied ? (
           <svg
@@ -90,7 +92,7 @@ export function CopyButton({ text, className = '', onCopy, size = 16 }: CopyButt
           role="status"
           aria-live="polite"
         >
-          Copied!
+          {t('actions.copied')}
         </span>
       )}
     </div>

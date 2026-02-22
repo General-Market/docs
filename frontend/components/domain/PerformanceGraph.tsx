@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   LineChart,
   Line,
@@ -93,15 +94,16 @@ function PerformanceGraphSkeleton({ height }: { height: number }) {
  * Empty state when agent has no performance data
  */
 function EmptyState({ height }: { height: number }) {
+  const t = useTranslations('common')
   return (
     <div
       className="bg-card border border-border-light rounded-xl shadow-card flex items-center justify-center"
       style={{ height }}
     >
       <div className="text-center">
-        <p className="text-text-muted">No performance data</p>
+        <p className="text-text-muted">{t('empty.no_data')}</p>
         <p className="text-text-muted text-sm mt-1">
-          Data will appear once the agent has settled bets
+          {t('empty.no_data_hint')}
         </p>
       </div>
     </div>
@@ -120,6 +122,7 @@ export function PerformanceGraph({
   showTooltip = true,
   range = '30d'
 }: PerformanceGraphProps) {
+  const t = useTranslations('common')
   const { data, isLoading, isError, error } = useAgentPerformance(walletAddress, range)
 
   // Determine line color based on ending P&L (green if positive, red if negative)
@@ -144,7 +147,7 @@ export function PerformanceGraph({
         style={{ height }}
       >
         <div className="text-center">
-          <p className="text-color-down">Error loading performance data</p>
+          <p className="text-color-down">{t('empty.error_loading_performance')}</p>
           <p className="text-text-muted text-sm mt-1">{error?.message}</p>
         </div>
       </div>

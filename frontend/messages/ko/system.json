@@ -61,5 +61,70 @@
     "live": "라이브",
     "polling": "폴링",
     "offline": "오프라인"
+  },
+  "ap_section": {
+    "title": "AP (Keeper) Status",
+    "description": "View AP balances, vault holdings, and health status",
+    "address_label": "Address:",
+    "native_gas": "Native (Gas)",
+    "vault_holdings": "MockBitgetVault Holdings",
+    "tokens_count": "({count} tokens)",
+    "vault_label": "Vault:",
+    "loading_vault": "Loading vault balances...",
+    "no_assets": "No assets in vault",
+    "asset": "Asset",
+    "balance": "Balance",
+    "price": "Price",
+    "usd_value": "USD Value",
+    "page_of": "Page {current} of {total} ({count} assets)"
+  },
+  "performance": {
+    "title": "Performance Dashboard",
+    "description": "Order fill speed and system metrics",
+    "label": "Performance",
+    "consensus_threshold": "Consensus Threshold",
+    "bls_required": "BLS signatures required",
+    "active_issuers": "Active Issuers",
+    "processing_orders": "Processing orders",
+    "network": "Network",
+    "orbit_chain": "Orbit chain"
+  },
+  "order_flow": {
+    "title": "Order Flow",
+    "description": "Outstanding buy/sell amounts over time",
+    "avg_fill_time": "avg fill time",
+    "total_orders": "Total Orders",
+    "active_buys": "Active Buys",
+    "active_sells": "Active Sells",
+    "filled": "Filled",
+    "loading": "Loading order data...",
+    "no_data": "No order data yet.",
+    "legend_buy": "BUY",
+    "legend_sell": "SELL",
+    "legend_filled": "Filled (0)",
+    "orders_count": "{count} orders"
+  },
+  "aum_ranking": {
+    "title": "AUM Ranking",
+    "description": "Asset rankings by AUM across all ITPs",
+    "total_aum": "total AUM",
+    "loading": "Loading ranking data...",
+    "need_events": "Need 2+ events (ITP creations, rebalances, or fills) to display ranking chart.",
+    "showing_event": "Currently showing 1 event.",
+    "snapshots_count": "{count} snapshots"
+  },
+  "keeper_signatures": {
+    "no_keepers": "No keepers registered",
+    "header": "Resolution Signatures ({signed}/{total})",
+    "signed": "{count} signed",
+    "pending_count": "{count} pending",
+    "failed": "{count} failed"
+  },
+  "signature_progress": {
+    "loading": "Loading signatures...",
+    "awaiting": "Awaiting resolution...",
+    "label": "Resolution Signatures",
+    "keepers_signed": "{signed}/{total} keepers signed",
+    "need_count": "Need {count} (51%)"
   }
 }

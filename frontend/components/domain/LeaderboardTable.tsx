@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence } from 'framer-motion'
 import { useLeaderboard } from '@/hooks/useLeaderboard'
@@ -71,12 +72,13 @@ function LeaderboardSkeleton() {
  * Empty state when no agents exist
  */
 function EmptyState() {
+  const t = useTranslations('common')
   return (
     <TableRow>
       <TableCell colSpan={11} className="py-12 text-center">
-        <p className="text-text-muted">No agents found</p>
+        <p className="text-text-muted">{t('empty.no_agents')}</p>
         <p className="text-text-muted text-sm mt-1">
-          Agents will appear here once they start trading
+          {t('empty.no_agents_hint')}
         </p>
       </TableCell>
     </TableRow>
@@ -99,6 +101,7 @@ export interface LeaderboardTableProps {
  * Story 6.5: Animated row reorder and number count animations
  */
 export function LeaderboardTable({ highlightedAddress }: LeaderboardTableProps = {}) {
+  const t = useTranslations('common')
   const router = useRouter()
   const { leaderboard, isLoading, isError, error, updatedAt } = useLeaderboard()
 
@@ -129,7 +132,7 @@ export function LeaderboardTable({ highlightedAddress }: LeaderboardTableProps =
   if (isError) {
     return (
       <div className="border border-color-down/50 rounded-md p-6 text-center" role="alert">
-        <p className="text-color-down">Error loading leaderboard</p>
+        <p className="text-color-down">{t('leaderboard.error_loading')}</p>
         <p className="text-text-muted text-sm mt-1">{error?.message}</p>
       </div>
     )
@@ -141,17 +144,17 @@ export function LeaderboardTable({ highlightedAddress }: LeaderboardTableProps =
       <div className="section-bar">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <div className="section-bar-title">AGENT LEADERBOARD</div>
+            <div className="section-bar-title">{t('leaderboard.title')}</div>
             <div className={`w-2 h-2 rounded-full ${sseState === 'connected' ? 'bg-green-400 animate-pulse' : sseState === 'connecting' ? 'bg-yellow-400 animate-pulse' : 'bg-red-400'}`} />
           </div>
           <div className="section-bar-value">
-            {isLoading ? 'Loading...' : `${sortedLeaderboard.length} agents ranked by P&L`}
+            {isLoading ? t('actions.loading') : t('leaderboard.agents_ranked', { count: sortedLeaderboard.length })}
           </div>
         </div>
         <div className="flex items-center gap-3">
           {updatedAt && (
             <span className="text-white/50 text-xs font-mono">
-              Updated {formatRelativeTime(updatedAt)}
+              {t('leaderboard.updated', { time: formatRelativeTime(updatedAt) })}
             </span>
           )}
           <ConnectionStatusIndicator state={sseState} reconnectAttempt={reconnectAttempt} />
@@ -163,29 +166,29 @@ export function LeaderboardTable({ highlightedAddress }: LeaderboardTableProps =
         <Table aria-label="Agent Leaderboard - rankings sorted by P&L">
           <TableHeader>
             <TableRow>
-              <TableHead className="text-center w-16">Rank</TableHead>
-              <TableHead>Agent</TableHead>
-              <TableHead>P&L</TableHead>
+              <TableHead className="text-center w-16">{t('leaderboard.rank')}</TableHead>
+              <TableHead>{t('leaderboard.agent')}</TableHead>
+              <TableHead>{t('leaderboard.pnl')}</TableHead>
               <TableHead className="hidden lg:table-cell w-28">
-                <Tooltip content="30-day performance trend">
-                  Trend
+                <Tooltip content={t('leaderboard.trend_tooltip')}>
+                  {t('leaderboard.trend')}
                 </Tooltip>
               </TableHead>
-              <TableHead className="hidden md:table-cell">Bets</TableHead>
+              <TableHead className="hidden md:table-cell">{t('leaderboard.bets')}</TableHead>
               <TableHead className="hidden md:table-cell">
-                <Tooltip content="Average number of markets per bet - only AI can manage this scale">
-                  Avg Portfolio
+                <Tooltip content={t('leaderboard.avg_portfolio_tooltip')}>
+                  {t('leaderboard.avg_portfolio')}
                 </Tooltip>
               </TableHead>
               <TableHead>
-                <Tooltip content="Maximum markets traded simultaneously in a single bet">
-                  <span className="text-zinc-900">Max Portfolio</span>
+                <Tooltip content={t('leaderboard.max_portfolio_tooltip')}>
+                  <span className="text-zinc-900">{t('leaderboard.max_portfolio')}</span>
                 </Tooltip>
               </TableHead>
-              <TableHead className="hidden md:table-cell">Win Rate</TableHead>
-              <TableHead className="hidden md:table-cell">ROI</TableHead>
-              <TableHead className="hidden md:table-cell">Volume</TableHead>
-              <TableHead className="hidden md:table-cell">Last Active</TableHead>
+              <TableHead className="hidden md:table-cell">{t('leaderboard.win_rate')}</TableHead>
+              <TableHead className="hidden md:table-cell">{t('leaderboard.roi')}</TableHead>
+              <TableHead className="hidden md:table-cell">{t('leaderboard.volume')}</TableHead>
+              <TableHead className="hidden md:table-cell">{t('leaderboard.last_active')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

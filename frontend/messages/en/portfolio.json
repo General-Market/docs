@@ -98,5 +98,67 @@
   "side": {
     "buy": "BUY",
     "sell": "SELL"
+  },
+  "usdc_balance": {
+    "title": "{symbol} Balance",
+    "total_balance": "Total Balance",
+    "available_betting": "Available for Betting",
+    "escrowed_bets": "Escrowed in Bets"
+  },
+  "resolution": {
+    "no_data": "No resolution data available yet",
+    "not_resolved": "Bet has not been resolved",
+    "trades_won": "Trades Won",
+    "list_size": "List Size",
+    "bet_amount": "Bet Amount",
+    "outcome": "Outcome",
+    "won_amount": "Won {amount}",
+    "lost_amount": "Lost {amount}",
+    "resolved_date": "Resolved {date}",
+    "resolved_by": "Resolved by",
+    "tie_refund": "Tie - Both parties refunded",
+    "settlement_title": "Settlement Details",
+    "total_pot": "Total Pot",
+    "platform_fee": "Platform Fee (0.1%)",
+    "winner_payout": "Winner Payout",
+    "loser_loss": "Loser Loss",
+    "winner": "Winner:",
+    "loser": "Loser:",
+    "creator": "Creator",
+    "matcher": "Matcher",
+    "view_settlement_tx": "View Settlement Transaction \u2197",
+    "trade_outcomes": "Trade Outcomes",
+    "loading_trades": "Loading trades..."
+  },
+  "bet_history": {
+    "title": "Bet History",
+    "total_bets": "{count} total bets",
+    "portfolio_size": "Portfolio Size",
+    "amount": "Amount",
+    "status": "Status",
+    "created": "Created",
+    "tx_hash": "Tx Hash",
+    "connect_to_view": "Connect your wallet to view bet history",
+    "error_loading": "Error loading bet history"
+  },
+  "bet_details": {
+    "category": "Category:",
+    "list_size": "List Size:",
+    "horizon": "Horizon:",
+    "snapshot": "Snapshot:",
+    "bet_hash": "Bet Hash:",
+    "filler": "Filler:",
+    "filler_stake": "Filler Stake:",
+    "early_exit_title": "\u2297 Early Exit Executed",
+    "early_exit_description": "Both parties agreed to settle early via mutual EIP-712 signed agreement.",
+    "creator_received": "Creator received:",
+    "filler_received": "Filler received:",
+    "portfolio": "Portfolio:",
+    "positions_count": "{count} positions",
+    "portfolio_hint": "Click \"View Full Portfolio\" below to see all trades with virtual scroll.",
+    "view_full_portfolio": "View Full Portfolio",
+    "view_on_basescan": "View on BaseScan",
+    "signature_collection": "Signature Collection",
+    "resolution": "Resolution"
   }
 }

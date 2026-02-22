@@ -9,6 +9,7 @@
 //
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 
 const STORAGE_KEY = 'gm-bot-notice-dismissed'
 
@@ -28,6 +29,7 @@ interface BotTradingNoticeProps {
  * AC5: Add explanatory UI informing users about bot-driven trading
  */
 export function BotTradingNotice({ className = '', dismissible = false }: BotTradingNoticeProps) {
+  const t = useTranslations('common')
   const [isDismissed, setIsDismissed] = useState(false)
 
   // Load persisted dismissal state on mount
@@ -69,16 +71,15 @@ export function BotTradingNotice({ className = '', dismissible = false }: BotTra
         </svg>
 
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-text-primary font-mono">AI-Powered Trading</h3>
+          <h3 className="font-medium text-text-primary font-mono">{t('bot_notice.title')}</h3>
           <p className="text-sm text-text-muted mt-1">
-            All orders on General Market are processed by authorized issuers.
-            This dashboard displays bot activity in real-time.
+            {t('bot_notice.description')}
           </p>
           <a
             href="/docs"
             className="inline-flex items-center gap-1 text-sm text-color-info hover:text-color-info/80 mt-2 transition-colors"
           >
-            Learn how AI agents work
+            {t('bot_notice.learn_more')}
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
@@ -90,7 +91,7 @@ export function BotTradingNotice({ className = '', dismissible = false }: BotTra
           <button
             onClick={handleDismiss}
             className="text-text-muted hover:text-text-primary transition-colors p-1"
-            aria-label="Dismiss notice"
+            aria-label={t('bot_notice.dismiss')}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -106,6 +107,7 @@ export function BotTradingNotice({ className = '', dismissible = false }: BotTra
  * Compact version for inline use in bet lists
  */
 export function BotTradingNoticeBadge({ className = '' }: { className?: string }) {
+  const t = useTranslations('common')
   return (
     <div className={`inline-flex items-center gap-1.5 text-xs text-text-muted font-mono ${className}`}>
       <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -116,7 +118,7 @@ export function BotTradingNoticeBadge({ className = '' }: { className?: string }
           d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
         />
       </svg>
-      Bets placed by AI agents
+      {t('bot_notice.badge')}
     </div>
   )
 }

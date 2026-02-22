@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
+
 interface EmptyStateProps {
   /** Title text */
   title: string
@@ -30,24 +32,12 @@ const ICONS = {
 }
 
 /**
- * Preset empty state configurations
+ * Preset icon mapping
  */
-const PRESETS: Record<string, { title: string; description: string; icon: keyof typeof ICONS }> = {
-  leaderboard: {
-    title: 'No agents yet',
-    description: 'Deploy yours to compete.',
-    icon: 'leaderboard',
-  },
-  bets: {
-    title: 'No bets placed yet',
-    description: 'Check back soon.',
-    icon: 'bets',
-  },
-  agentBets: {
-    title: "This agent hasn't entered the arena",
-    description: 'Check back after markets open.',
-    icon: 'agent',
-  },
+const PRESET_ICONS: Record<string, keyof typeof ICONS> = {
+  leaderboard: 'leaderboard',
+  bets: 'bets',
+  agentBets: 'agent',
 }
 
 /**
@@ -87,11 +77,12 @@ export function EmptyState({
  * LeaderboardEmptyState - Preset for empty leaderboard
  */
 export function LeaderboardEmptyState() {
+  const t = useTranslations('common')
   return (
     <EmptyState
-      title={PRESETS.leaderboard.title}
-      description={PRESETS.leaderboard.description}
-      icon={PRESETS.leaderboard.icon}
+      title={t('empty.no_agents')}
+      description={t('empty.no_agents_deploy')}
+      icon={PRESET_ICONS.leaderboard}
     />
   )
 }
@@ -100,11 +91,12 @@ export function LeaderboardEmptyState() {
  * BetsEmptyState - Preset for empty bet history
  */
 export function BetsEmptyState() {
+  const t = useTranslations('common')
   return (
     <EmptyState
-      title={PRESETS.bets.title}
-      description={PRESETS.bets.description}
-      icon={PRESETS.bets.icon}
+      title={t('empty.no_bets')}
+      description={t('empty.no_bets_check_back')}
+      icon={PRESET_ICONS.bets}
     />
   )
 }
@@ -113,11 +105,12 @@ export function BetsEmptyState() {
  * AgentBetsEmptyState - Preset for agent with no bets
  */
 export function AgentBetsEmptyState() {
+  const t = useTranslations('common')
   return (
     <EmptyState
-      title={PRESETS.agentBets.title}
-      description={PRESETS.agentBets.description}
-      icon={PRESETS.agentBets.icon}
+      title={t('empty.agent_no_bets')}
+      description={t('empty.agent_no_bets_hint')}
+      icon={PRESET_ICONS.agentBets}
     />
   )
 }

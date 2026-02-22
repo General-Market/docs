@@ -11,6 +11,17 @@
     "enter": "全画面表示"
   },
   "holdings": {
-    "title": "保有銘柄（最新リバランス）"
+    "title": "保有銘柄（最新リバランス）",
+    "loading": "Loading holdings...",
+    "error": "Error: {message}",
+    "no_data": "No holdings data",
+    "header": {
+      "rank": "#",
+      "coin": "Coin",
+      "symbol": "Symbol",
+      "weight": "Weight",
+      "price": "Price",
+      "value": "Value"
+    }
   }
 }

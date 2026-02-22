@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useAccount } from 'wagmi'
 import type { BetRecord } from '@/hooks/useBetHistory'
 import { useResolution, formatWinRate, getWinRateColorClass, formatResolutionOutcome } from '@/hooks/useResolution'
@@ -37,27 +38,28 @@ function SettlementDetails({
   loserAddress,
   creatorWins
 }: SettlementDetailsProps) {
+  const t = useTranslations('portfolio')
   const loserLoss = parseFloat(totalPot) - parseFloat(winnerPayout)
 
   return (
     <div className="border border-border-medium rounded-xl p-4 space-y-3">
-      <h4 className="text-sm font-bold text-text-primary">Settlement Details</h4>
+      <h4 className="text-sm font-bold text-text-primary">{t('resolution.settlement_title')}</h4>
 
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-text-muted">Total Pot</span>
+          <span className="text-text-muted">{t('resolution.total_pot')}</span>
           <span className="font-mono text-text-primary">{formatUsdcString(totalPot)}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-text-muted">Platform Fee (0.1%)</span>
+          <span className="text-text-muted">{t('resolution.platform_fee')}</span>
           <span className="font-mono text-text-secondary">{formatUsdcString(platformFee)}</span>
         </div>
         <div className="flex justify-between text-sm border-t border-border-light pt-2">
-          <span className="text-text-primary font-bold">Winner Payout</span>
+          <span className="text-text-primary font-bold">{t('resolution.winner_payout')}</span>
           <span className="font-mono text-text-primary font-bold">{formatUsdcString(winnerPayout)}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-text-muted">Loser Loss</span>
+          <span className="text-text-muted">{t('resolution.loser_loss')}</span>
           <span className="font-mono text-color-down">{formatUsdcString(loserLoss.toFixed(6))}</span>
         </div>
       </div>
@@ -66,7 +68,7 @@ function SettlementDetails({
       {winnerAddress && (
         <div className="pt-2 space-y-1">
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-text-muted">Winner:</span>
+            <span className="text-text-muted">{t('resolution.winner')}</span>
             <a
               href={getAddressUrl(winnerAddress)}
               target="_blank"
@@ -76,12 +78,12 @@ function SettlementDetails({
               {truncateAddress(winnerAddress)}
             </a>
             <span className="text-text-muted font-mono">
-              ({creatorWins ? 'Creator' : 'Matcher'})
+              ({creatorWins ? t('resolution.creator') : t('resolution.matcher')})
             </span>
           </div>
           {loserAddress && (
             <div className="flex items-center gap-2 text-xs">
-              <span className="text-text-muted">Loser:</span>
+              <span className="text-text-muted">{t('resolution.loser')}</span>
               <a
                 href={getAddressUrl(loserAddress)}
                 target="_blank"
@@ -104,7 +106,7 @@ function SettlementDetails({
             rel="noopener noreferrer"
             className="text-xs font-mono text-text-muted hover:text-text-primary transition-colors"
           >
-            View Settlement Transaction ↗
+            {t('resolution.view_settlement_tx')}
           </a>
         </div>
       )}
@@ -120,12 +122,13 @@ interface TradesBreakdownProps {
 }
 
 function TradesBreakdown({ betId }: TradesBreakdownProps) {
+  const t = useTranslations('portfolio')
   const { trades, isLoading } = useBetTrades({ betId: parseInt(betId) })
 
   if (isLoading) {
     return (
       <div className="text-center py-4">
-        <span className="text-xs text-text-muted">Loading trades...</span>
+        <span className="text-xs text-text-muted">{t('resolution.loading_trades')}</span>
       </div>
     )
   }
@@ -136,7 +139,7 @@ function TradesBreakdown({ betId }: TradesBreakdownProps) {
 
   return (
     <div className="border border-border-light rounded-xl p-3 space-y-2">
-      <h4 className="text-sm font-bold text-text-primary">Trade Outcomes</h4>
+      <h4 className="text-sm font-bold text-text-primary">{t('resolution.trade_outcomes')}</h4>
       <div className="max-h-60 overflow-y-auto space-y-1">
         {trades.map((trade, idx) => (
           <div
@@ -199,6 +202,7 @@ function LoadingSkeleton() {
  * Displays win count/rate, trade outcomes, and settlement details
  */
 export function PortfolioResolution({ betId, bet }: PortfolioResolutionProps) {
+  const t = useTranslations('portfolio')
   const { address } = useAccount()
   const { resolution, isLoading } = useResolution({ betId })
   const category = useCategoryById(bet.categoryId)
@@ -211,9 +215,9 @@ export function PortfolioResolution({ betId, bet }: PortfolioResolutionProps) {
   if (!resolution) {
     return (
       <div className="border border-border-light rounded-xl p-4 text-center">
-        <p className="text-sm text-text-muted">No resolution data available yet</p>
+        <p className="text-sm text-text-muted">{t('resolution.no_data')}</p>
         <p className="text-xs text-text-muted mt-1">
-          Bet has not been resolved
+          {t('resolution.not_resolved')}
         </p>
       </div>
     )
@@ -225,7 +229,7 @@ export function PortfolioResolution({ betId, bet }: PortfolioResolutionProps) {
       <div className="text-center space-y-2">
         <div>
           <span className="text-xs text-text-muted block mb-1">
-            Trades Won
+            {t('resolution.trades_won')}
           </span>
           <span className={`text-4xl font-mono font-bold ${getWinRateColorClass(resolution.winsCount, resolution.validTrades)}`}>
             {resolution.winsCount}/{resolution.validTrades}
@@ -263,27 +267,27 @@ export function PortfolioResolution({ betId, bet }: PortfolioResolutionProps) {
       {/* Bet Summary */}
       <div className="flex justify-center gap-6 py-3 border-t border-b border-border-light">
         <div className="text-center">
-          <span className="text-xs text-text-muted block">List Size</span>
+          <span className="text-xs text-text-muted block">{t('resolution.list_size')}</span>
           <span className="text-sm font-mono text-text-primary font-bold">
             {bet.tradeCount || bet.portfolioSize || bet.listSize || '--'} trades
           </span>
         </div>
         <div className="text-center">
-          <span className="text-xs text-text-muted block">Bet Amount</span>
+          <span className="text-xs text-text-muted block">{t('resolution.bet_amount')}</span>
           <span className="text-sm font-mono text-text-primary font-bold">
             {formatUsdcString(bet.amount)}
           </span>
         </div>
         {resolution.status === 'resolved' && resolution.winnerAddress && (
           <div className="text-center">
-            <span className="text-xs text-text-muted block">Outcome</span>
+            <span className="text-xs text-text-muted block">{t('resolution.outcome')}</span>
             {address && resolution.winnerAddress.toLowerCase() === address.toLowerCase() ? (
               <span className="text-sm font-mono text-color-up font-bold">
-                Won {formatUsdcString(resolution.winnerPayout)}
+                {t('resolution.won_amount', { amount: formatUsdcString(resolution.winnerPayout) })}
               </span>
             ) : (
               <span className="text-sm font-mono text-color-down font-bold">
-                Lost {formatUsdcString(bet.amount)}
+                {t('resolution.lost_amount', { amount: formatUsdcString(bet.amount) })}
               </span>
             )}
           </div>
@@ -295,7 +299,7 @@ export function PortfolioResolution({ betId, bet }: PortfolioResolutionProps) {
         <StatusBadge status={resolution.status} />
         {resolution.resolvedAt && (
           <span className="text-xs text-text-muted font-mono">
-            Resolved {new Date(resolution.resolvedAt).toLocaleDateString()}
+            {t('resolution.resolved_date', { date: new Date(resolution.resolvedAt).toLocaleDateString() })}
           </span>
         )}
       </div>
@@ -320,7 +324,7 @@ export function PortfolioResolution({ betId, bet }: PortfolioResolutionProps) {
       {resolution.isTie && (
         <div className="border border-color-warning/30 rounded-xl p-3 text-center">
           <span className="text-sm font-mono text-color-warning">
-            Tie - Both parties refunded
+            {t('resolution.tie_refund')}
           </span>
         </div>
       )}
@@ -337,7 +341,7 @@ export function PortfolioResolution({ betId, bet }: PortfolioResolutionProps) {
       {resolution.resolvedBy && (
         <div className="text-center">
           <span className="text-xs text-text-muted font-mono">
-            Resolved by{' '}
+            {t('resolution.resolved_by')}{' '}
             <a
               href={getAddressUrl(resolution.resolvedBy)}
               target="_blank"

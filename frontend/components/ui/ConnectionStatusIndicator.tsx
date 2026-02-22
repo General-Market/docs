@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { SSEState } from '@/hooks/useLeaderboardSSE'
 
 /**
@@ -13,16 +14,15 @@ interface ConnectionStatusIndicatorProps {
 }
 
 /**
- * Connection status configuration per state
- * Institutional style: semantic colors (green up / red down / warning)
+ * Color configuration per state (colors don't need i18n)
  */
-const stateConfig: Record<SSEState, { color: string; text: string | ((attempt: number) => string) }> = {
-  connected: { color: 'bg-color-up', text: 'Live' },
-  connecting: { color: 'bg-color-warning animate-pulse', text: (attempt) => attempt > 0 ? `Reconnecting (${attempt})...` : 'Connecting...' },
-  error: { color: 'bg-color-warning animate-pulse', text: (attempt) => `Reconnecting (${attempt})...` },
-  disconnected: { color: 'bg-color-down', text: 'Offline' },
-  disabled: { color: 'bg-text-muted', text: 'Disabled' },
-  polling: { color: 'bg-color-warning', text: 'Polling' }
+const stateColors: Record<SSEState, string> = {
+  connected: 'bg-color-up',
+  connecting: 'bg-color-warning animate-pulse',
+  error: 'bg-color-warning animate-pulse',
+  disconnected: 'bg-color-down',
+  disabled: 'bg-text-muted',
+  polling: 'bg-color-warning',
 }
 
 /**
@@ -39,16 +39,38 @@ export function ConnectionStatusIndicator({
   state,
   reconnectAttempt
 }: ConnectionStatusIndicatorProps) {
-  const config = stateConfig[state]
-  const text = typeof config.text === 'function' ? config.text(reconnectAttempt) : config.text
+  const t = useTranslations('common')
+
+  const color = stateColors[state]
+
+  const getText = (): string => {
+    switch (state) {
+      case 'connected':
+        return t('connection.live')
+      case 'connecting':
+        return reconnectAttempt > 0
+          ? t('connection.reconnecting', { attempt: reconnectAttempt })
+          : t('connection.connecting')
+      case 'error':
+        return t('connection.reconnecting', { attempt: reconnectAttempt })
+      case 'disconnected':
+        return t('connection.offline')
+      case 'disabled':
+        return t('connection.disabled')
+      case 'polling':
+        return t('connection.polling')
+      default:
+        return t('connection.offline')
+    }
+  }
 
   return (
     <div className="flex items-center gap-1.5" role="status" aria-live="polite">
       <span
-        className={`w-2 h-2 rounded-full ${config.color}`}
+        className={`w-2 h-2 rounded-full ${color}`}
         aria-hidden="true"
       />
-      <span className="text-xs text-text-muted">{text}</span>
+      <span className="text-xs text-text-muted">{getText()}</span>
     </div>
   )
 }

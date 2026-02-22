@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import type { BilateralBet } from '@/lib/types/bilateral-bet'
 import {
   getStatusDisplay,
@@ -64,6 +65,7 @@ export function BilateralBetCard({
   className = '',
   currentUserAddress,
 }: BilateralBetCardProps) {
+  const t = useTranslations('p2pool')
   const userRole = getUserRole(bet, currentUserAddress)
   const isTerminal = isBetTerminal(bet.status)
   const canDispute = canRequestArbitration(bet)
@@ -79,7 +81,7 @@ export function BilateralBetCard({
       {/* Header with bet ID and status */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-mono text-text-primary">Bet #{bet.betId}</span>
+          <span className="text-sm font-mono text-text-primary">{t('bilateral.bet_id', { id: bet.betId })}</span>
           {userRole && (
             <span
               className={`px-2 py-0.5 rounded text-xs font-mono ${
@@ -88,7 +90,7 @@ export function BilateralBetCard({
                   : 'bg-purple-100 text-purple-700'
               }`}
             >
-              {userRole === 'creator' ? 'Creator' : 'Filler'}
+              {userRole === 'creator' ? t('bilateral.creator') : t('bilateral.filler')}
             </span>
           )}
         </div>
@@ -102,14 +104,14 @@ export function BilateralBetCard({
       {/* Parties */}
       <div className="grid grid-cols-2 gap-4 text-sm mb-4">
         <div>
-          <div className="text-text-muted text-xs uppercase font-mono mb-1">Creator</div>
+          <div className="text-text-muted text-xs uppercase font-mono mb-1">{t('bilateral.creator')}</div>
           <div className="font-mono text-text-primary">{truncateAddress(bet.creator, 6)}</div>
           <div className="text-xs text-green-600 font-mono mt-0.5">
             {formatUSDCAmount(bet.creatorAmount)} USDC
           </div>
         </div>
         <div>
-          <div className="text-text-muted text-xs uppercase font-mono mb-1">Filler</div>
+          <div className="text-text-muted text-xs uppercase font-mono mb-1">{t('bilateral.filler')}</div>
           <div className="font-mono text-text-primary">{truncateAddress(bet.filler, 6)}</div>
           <div className="text-xs text-green-600 font-mono mt-0.5">
             {formatUSDCAmount(bet.fillerAmount)} USDC
@@ -120,13 +122,13 @@ export function BilateralBetCard({
       {/* Total pot and deadline */}
       <div className="grid grid-cols-2 gap-4 text-sm mb-4">
         <div>
-          <div className="text-text-muted text-xs uppercase font-mono mb-1">Total Locked</div>
+          <div className="text-text-muted text-xs uppercase font-mono mb-1">{t('bilateral.total_locked')}</div>
           <div className="font-mono text-text-primary font-bold">
             {formatUSDCAmount(bet.totalAmount)} USDC
           </div>
         </div>
         <div>
-          <div className="text-text-muted text-xs uppercase font-mono mb-1">Deadline</div>
+          <div className="text-text-muted text-xs uppercase font-mono mb-1">{t('bilateral.deadline')}</div>
           <div className="font-mono text-text-primary">{formatDeadline(bet.deadline)}</div>
         </div>
       </div>
@@ -141,17 +143,17 @@ export function BilateralBetCard({
       {/* Settlement info (if settled) */}
       {isTerminal && (
         <div className="bg-muted p-3 rounded-lg border border-border-light mb-4">
-          <div className="text-text-muted text-xs uppercase font-mono mb-2">Settlement</div>
+          <div className="text-text-muted text-xs uppercase font-mono mb-2">{t('bilateral.settlement')}</div>
           <div className="space-y-2 text-sm">
             {bet.winner && (
               <div className="flex justify-between font-mono">
-                <span className="text-text-muted">Winner:</span>
+                <span className="text-text-muted">{t('bilateral.winner')}</span>
                 <span className="text-green-600">{truncateAddress(bet.winner, 6)}</span>
               </div>
             )}
             {bet.resolutionType && (
               <div className="flex justify-between font-mono">
-                <span className="text-text-muted">Resolution:</span>
+                <span className="text-text-muted">{t('bilateral.resolution')}</span>
                 <span className="text-text-primary">{getResolutionTypeDisplay(bet.resolutionType)}</span>
               </div>
             )}
@@ -159,13 +161,13 @@ export function BilateralBetCard({
               <>
                 {bet.creatorPayout && (
                   <div className="flex justify-between font-mono">
-                    <span className="text-text-muted">Creator Payout:</span>
+                    <span className="text-text-muted">{t('bilateral.creator_payout')}</span>
                     <span className="text-color-info">{formatUSDCAmount(bet.creatorPayout)} USDC</span>
                   </div>
                 )}
                 {bet.fillerPayout && (
                   <div className="flex justify-between font-mono">
-                    <span className="text-text-muted">Filler Payout:</span>
+                    <span className="text-text-muted">{t('bilateral.filler_payout')}</span>
                     <span className="text-color-info">{formatUSDCAmount(bet.fillerPayout)} USDC</span>
                   </div>
                 )}
@@ -173,7 +175,7 @@ export function BilateralBetCard({
             )}
             {bet.keeperCount !== undefined && bet.keeperCount > 0 && (
               <div className="flex justify-between font-mono">
-                <span className="text-text-muted">Keeper Votes:</span>
+                <span className="text-text-muted">{t('bilateral.keeper_votes')}</span>
                 <span className="text-text-primary">{bet.keeperCount}</span>
               </div>
             )}
@@ -184,9 +186,9 @@ export function BilateralBetCard({
       {/* Timestamps */}
       <div className="text-xs text-text-muted font-mono mb-3 space-y-1">
         {bet.committedAt && (
-          <div>Committed: {new Date(bet.committedAt).toLocaleString()}</div>
+          <div>{t('bilateral.committed', { date: new Date(bet.committedAt).toLocaleString() })}</div>
         )}
-        {bet.settledAt && <div>Settled: {new Date(bet.settledAt).toLocaleString()}</div>}
+        {bet.settledAt && <div>{t('bilateral.settled', { date: new Date(bet.settledAt).toLocaleString() })}</div>}
       </div>
 
       {/* View details link */}
@@ -195,13 +197,13 @@ export function BilateralBetCard({
           href={`/bilateral-bet/${bet.betId}`}
           className="text-color-info hover:text-color-info/80 text-xs font-mono transition-colors"
         >
-          View Details \u2192
+          {t('bet_card.view_details')}
         </Link>
 
         {/* Status indicators */}
         <div className="flex items-center gap-2">
           {canDispute && (
-            <span className="text-[10px] text-orange-600 font-mono">Can dispute</span>
+            <span className="text-[10px] text-orange-600 font-mono">{t('bilateral.can_dispute')}</span>
           )}
           {bet.txHash && (
             <a

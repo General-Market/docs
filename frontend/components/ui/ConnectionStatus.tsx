@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
+
 /**
  * Props for ConnectionStatus component
  */
@@ -23,7 +25,8 @@ export interface ConnectionStatusProps {
  * in components that only need basic isConnected/isPolling state.
  */
 export function ConnectionStatus({ isConnected, isPolling }: ConnectionStatusProps) {
-  const statusText = isConnected ? 'Live' : (isPolling ? 'Polling' : 'Offline')
+  const t = useTranslations('common')
+  const statusText = isConnected ? t('connection.live') : (isPolling ? t('connection.polling') : t('connection.offline'))
   const statusColor = isConnected ? 'text-color-up' : (isPolling ? 'text-color-warning' : 'text-text-muted')
   const dotColor = isConnected ? 'bg-color-up' : (isPolling ? 'bg-color-warning' : 'bg-text-muted')
 

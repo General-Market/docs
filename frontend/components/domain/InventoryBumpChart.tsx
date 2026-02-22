@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import { useInventoryRanking, RankingSnapshot, RankedAsset } from '@/hooks/useInventoryRanking'
 
 // 15-color palette — muted institutional tones for white backgrounds
@@ -58,6 +59,7 @@ function eventLabel(eventType: string): string {
 }
 
 export function InventoryBumpChart() {
+  const t = useTranslations('system')
   const { snapshots, allAssets, maxRank, isLoading, error } = useInventoryRanking()
   const [hoveredAsset, setHoveredAsset] = useState<string | null>(null)
   const [hoveredCol, setHoveredCol] = useState<number | null>(null)
@@ -183,7 +185,7 @@ export function InventoryBumpChart() {
   if (error) {
     return (
       <div className="bg-white rounded-xl shadow-card p-6">
-        <h2 className="text-xl font-bold text-text-primary mb-2">AUM Ranking</h2>
+        <h2 className="text-xl font-bold text-text-primary mb-2">{t('aum_ranking.title')}</h2>
         <div className="text-color-down text-sm">{error}</div>
       </div>
     )
@@ -192,9 +194,9 @@ export function InventoryBumpChart() {
   if (isLoading) {
     return (
       <div className="bg-white rounded-xl shadow-card p-6">
-        <h2 className="text-xl font-bold text-text-primary mb-4">AUM Ranking</h2>
+        <h2 className="text-xl font-bold text-text-primary mb-4">{t('aum_ranking.title')}</h2>
         <div className="h-64 flex items-center justify-center text-text-secondary">
-          Loading ranking data...
+          {t('aum_ranking.loading')}
         </div>
       </div>
     )
@@ -203,13 +205,13 @@ export function InventoryBumpChart() {
   if (snapshots.length < 2) {
     return (
       <div className="bg-white rounded-xl shadow-card p-6">
-        <h2 className="text-xl font-bold text-text-primary mb-2">AUM Ranking</h2>
+        <h2 className="text-xl font-bold text-text-primary mb-2">{t('aum_ranking.title')}</h2>
         <p className="text-sm text-text-secondary mb-4">
-          Asset rankings by AUM across all ITPs
+          {t('aum_ranking.description')}
         </p>
         <div className="h-48 flex items-center justify-center text-text-secondary border border-border-light rounded-lg">
-          Need 2+ events (ITP creations, rebalances, or fills) to display ranking chart.
-          {snapshots.length === 1 && ' Currently showing 1 event.'}
+          {t('aum_ranking.need_events')}
+          {snapshots.length === 1 && ` ${t('aum_ranking.showing_event')}`}
         </div>
       </div>
     )
@@ -219,14 +221,14 @@ export function InventoryBumpChart() {
     <div className="bg-white rounded-xl shadow-card p-6">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h2 className="text-xl font-bold text-text-primary">AUM Ranking</h2>
+          <h2 className="text-xl font-bold text-text-primary">{t('aum_ranking.title')}</h2>
           <p className="text-sm text-text-secondary">
-            Asset rankings by AUM across all ITPs
+            {t('aum_ranking.description')}
           </p>
         </div>
         <div className="text-right">
           <p className="text-2xl font-bold text-zinc-900 font-mono tabular-nums">{formatAum(latestTotalAum)}</p>
-          <p className="text-xs text-text-secondary">total AUM</p>
+          <p className="text-xs text-text-secondary">{t('aum_ranking.total_aum')}</p>
         </div>
       </div>
 
@@ -480,7 +482,7 @@ export function InventoryBumpChart() {
               </span>
             </div>
           ))}
-        <span className="ml-auto font-mono tabular-nums">{snapshots.length} snapshots</span>
+        <span className="ml-auto font-mono tabular-nums">{t('aum_ranking.snapshots_count', { count: snapshots.length })}</span>
       </div>
     </div>
   )

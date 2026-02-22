@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain } from 'wagmi'
 import { truncateAddress } from '@/lib/utils/address'
 import { indexL3 } from '@/lib/wagmi'
 
 export function WalletConnectButton() {
+  const t = useTranslations('common')
   const [mounted, setMounted] = useState(false)
   const { address, isConnected, isConnecting, isReconnecting } = useAccount()
   const { connect, connectors, isPending } = useConnect()
@@ -42,7 +44,7 @@ export function WalletConnectButton() {
         disabled
         className="px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg opacity-50 cursor-not-allowed"
       >
-        Login on Base
+        {t('wallet.login')}
       </button>
     )
   }
@@ -98,7 +100,7 @@ export function WalletConnectButton() {
         disabled={isSwitching}
         className="px-4 py-2 bg-surface-warning border border-color-warning/30 text-color-warning text-sm font-medium rounded-lg hover:bg-color-warning hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isSwitching ? 'Switching...' : 'Switch to Index Arbitrum'}
+        {isSwitching ? t('wallet.switching') : t('wallet.switch_network')}
       </button>
     )
   }
@@ -111,7 +113,7 @@ export function WalletConnectButton() {
         className="group px-3 py-2 bg-muted border border-border-medium text-text-primary text-sm font-mono rounded-lg transition-all hover:bg-red-950/20 hover:border-red-400/30 hover:text-red-400"
       >
         <span className="group-hover:hidden">{truncateAddress(address)}</span>
-        <span className="hidden group-hover:inline">Disconnect</span>
+        <span className="hidden group-hover:inline">{t('actions.disconnect')}</span>
       </button>
     )
   }
@@ -125,7 +127,7 @@ export function WalletConnectButton() {
         rel="noopener noreferrer"
         className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors"
       >
-        Install MetaMask
+        {t('wallet.install_metamask')}
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M17 7H7M17 7v10" />
         </svg>
@@ -140,7 +142,7 @@ export function WalletConnectButton() {
       disabled={isLoading}
       className="px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      {isLoading ? 'Connecting...' : 'Login on Base'}
+      {isLoading ? t('wallet.connecting') : t('wallet.login')}
     </button>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { OddsBadge } from './OddsBadge'
 import { SignatureProgress } from './SignatureProgress'
@@ -109,6 +110,7 @@ function getStatusColor(status: string): string {
  * AC6: Read-only notice - no action buttons
  */
 export function BetCard({ bet, className = '' }: BetCardProps) {
+  const t = useTranslations('p2pool')
   const [showAdvanced, setShowAdvanced] = useState(false)
   const odds = calculateOddsDisplay(bet)
   const category = useCategoryById(bet.categoryId)
@@ -152,11 +154,11 @@ export function BetCard({ bet, className = '' }: BetCardProps) {
       {/* Stake information (AC2) */}
       <div className="grid grid-cols-2 gap-4 text-sm mb-4">
         <div>
-          <div className="text-text-muted text-xs uppercase font-mono mb-1">Creator Staked</div>
+          <div className="text-text-muted text-xs uppercase font-mono mb-1">{t('bet_card.creator_staked')}</div>
           <div className="font-mono text-text-primary">{odds.creatorRisk}</div>
         </div>
         <div>
-          <div className="text-text-muted text-xs uppercase font-mono mb-1">Filler Stake</div>
+          <div className="text-text-muted text-xs uppercase font-mono mb-1">{t('bet_card.filler_stake')}</div>
           <div className="font-mono text-text-primary">{odds.matcherRisk}</div>
         </div>
       </div>
@@ -164,29 +166,29 @@ export function BetCard({ bet, className = '' }: BetCardProps) {
       {/* Match status indicator */}
       <div className="mb-4 text-xs font-mono text-text-muted">
         {odds.isMatched ? (
-          <span className="text-green-600">Matched</span>
+          <span className="text-green-600">{t('bet_card.matched')}</span>
         ) : (
-          <span className="text-yellow-600">Awaiting match</span>
+          <span className="text-yellow-600">{t('bet_card.awaiting_match')}</span>
         )}
       </div>
 
       {/* Payout info (AC4) */}
       <div className="bg-muted p-3 rounded-lg border border-border-light mb-4">
-        <div className="text-text-muted text-xs uppercase font-mono mb-2">Payout Info</div>
+        <div className="text-text-muted text-xs uppercase font-mono mb-2">{t('bet_card.payout_info')}</div>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between font-mono">
-            <span className="text-text-muted">Total Pot:</span>
+            <span className="text-text-muted">{t('bet_card.total_pot')}</span>
             <span className="text-text-primary">{odds.totalPot}</span>
           </div>
           <div className="flex justify-between font-mono">
             <Tooltip content="Return multiplier if creator wins">
-              <span className="text-text-muted cursor-help">Creator Return:</span>
+              <span className="text-text-muted cursor-help">{t('bet_card.creator_return')}</span>
             </Tooltip>
             <span className="text-green-600">{odds.creatorReturn}</span>
           </div>
           <div className="flex justify-between font-mono">
             <Tooltip content="Return multiplier if matcher wins">
-              <span className="text-text-muted cursor-help">Matcher Return:</span>
+              <span className="text-text-muted cursor-help">{t('bet_card.matcher_return')}</span>
             </Tooltip>
             <span className="text-green-600">{odds.matcherReturn}</span>
           </div>
@@ -198,20 +200,20 @@ export function BetCard({ bet, className = '' }: BetCardProps) {
         onClick={() => setShowAdvanced(!showAdvanced)}
         className="w-full text-xs text-text-muted hover:text-text-primary transition-colors mb-3 font-mono"
       >
-        {showAdvanced ? '▼ Hide' : '▶ Show'} implied probability
+        {showAdvanced ? `▼ ${t('bet_card.hide_probability')}` : `▶ ${t('bet_card.show_probability')}`}
       </button>
 
       {showAdvanced && (
         <div className="bg-muted p-3 rounded-lg border border-border-light mb-4 text-sm">
           <div className="flex justify-between font-mono">
             <Tooltip content="Probability implied by the odds that creator wins">
-              <span className="text-text-muted cursor-help">Creator implied:</span>
+              <span className="text-text-muted cursor-help">{t('bet_card.creator_implied')}</span>
             </Tooltip>
             <span className="text-text-primary">{formatImpliedProbability(odds.impliedProbability)}</span>
           </div>
           <div className="flex justify-between font-mono mt-1">
             <Tooltip content="Probability implied by the odds that matcher wins">
-              <span className="text-text-muted cursor-help">Matcher implied:</span>
+              <span className="text-text-muted cursor-help">{t('bet_card.matcher_implied')}</span>
             </Tooltip>
             <span className="text-text-primary">{formatImpliedProbability(1 - odds.impliedProbability)}</span>
           </div>
@@ -246,12 +248,12 @@ export function BetCard({ bet, className = '' }: BetCardProps) {
           href={`/bet/${bet.betId}`}
           className="text-color-info hover:text-color-info/80 text-xs font-mono transition-colors"
         >
-          View Details →
+          {t('bet_card.view_details')}
         </Link>
 
         {/* Read-only notice (AC6) */}
         <span className="text-[10px] text-text-muted italic">
-          Bets placed by AI agents
+          {t('bet_card.bot_notice')}
         </span>
       </div>
     </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { DATA_NODE_URL } from '@/lib/config'
 import {
   AreaChart,
@@ -44,6 +45,7 @@ interface FillSpeedEntry {
  * submit + fill timestamps, enabling fill latency computation.
  */
 export function FillSpeedChart() {
+  const t = useTranslations('system')
   const [data, setData] = useState<OrderDataPoint[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -99,7 +101,7 @@ export function FillSpeedChart() {
   if (error) {
     return (
       <div className="bg-white rounded-xl shadow-card p-6">
-        <h2 className="text-xl font-bold text-text-primary mb-4">Order Flow</h2>
+        <h2 className="text-xl font-bold text-text-primary mb-4">{t('order_flow.title')}</h2>
         <div className="text-color-down text-sm">{error}</div>
       </div>
     )
@@ -109,13 +111,13 @@ export function FillSpeedChart() {
     <div className="bg-white rounded-xl shadow-card p-6">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h2 className="text-xl font-bold text-text-primary">Order Flow</h2>
-          <p className="text-sm text-text-secondary">Outstanding buy/sell amounts over time</p>
+          <h2 className="text-xl font-bold text-text-primary">{t('order_flow.title')}</h2>
+          <p className="text-sm text-text-secondary">{t('order_flow.description')}</p>
         </div>
         {avgFillTime > 0 && (
           <div className="text-right">
             <p className="text-2xl font-bold text-zinc-900 font-mono tabular-nums">{avgFillTime.toFixed(1)}s</p>
-            <p className="text-xs text-text-secondary">avg fill time</p>
+            <p className="text-xs text-text-secondary">{t('order_flow.avg_fill_time')}</p>
           </div>
         )}
       </div>
@@ -124,29 +126,29 @@ export function FillSpeedChart() {
       <div className="grid grid-cols-4 gap-3 mb-4">
         <div className="bg-muted rounded-lg p-2.5 text-center">
           <p className="text-lg font-bold text-text-primary font-mono tabular-nums">{totalOrders}</p>
-          <p className="text-xs text-text-muted">Total Orders</p>
+          <p className="text-xs text-text-muted">{t('order_flow.total_orders')}</p>
         </div>
         <div className="bg-surface-up rounded-lg p-2.5 text-center">
           <p className="text-lg font-bold text-color-up font-mono tabular-nums">{activeBuys}</p>
-          <p className="text-xs text-text-muted">Active Buys</p>
+          <p className="text-xs text-text-muted">{t('order_flow.active_buys')}</p>
         </div>
         <div className="bg-surface-down rounded-lg p-2.5 text-center">
           <p className="text-lg font-bold text-color-down font-mono tabular-nums">{activeSells}</p>
-          <p className="text-xs text-text-muted">Active Sells</p>
+          <p className="text-xs text-text-muted">{t('order_flow.active_sells')}</p>
         </div>
         <div className="bg-muted rounded-lg p-2.5 text-center">
           <p className="text-lg font-bold text-zinc-900 font-mono tabular-nums">{filledOrders}</p>
-          <p className="text-xs text-text-muted">Filled</p>
+          <p className="text-xs text-text-muted">{t('order_flow.filled')}</p>
         </div>
       </div>
 
       {isLoading ? (
         <div className="h-64 flex items-center justify-center text-text-secondary">
-          Loading order data...
+          {t('order_flow.loading')}
         </div>
       ) : data.length === 0 ? (
         <div className="h-64 flex items-center justify-center text-text-secondary">
-          No order data yet.
+          {t('order_flow.no_data')}
         </div>
       ) : (
         <div className="h-64">
@@ -256,17 +258,17 @@ export function FillSpeedChart() {
         <div className="flex items-center gap-6 mt-4 pt-4 border-t border-border-light text-xs text-text-secondary">
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-color-up"></span>
-            <span>BUY</span>
+            <span>{t('order_flow.legend_buy')}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-color-down"></span>
-            <span>SELL</span>
+            <span>{t('order_flow.legend_sell')}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-border-medium"></span>
-            <span>Filled (0)</span>
+            <span>{t('order_flow.legend_filled')}</span>
           </div>
-          <span className="ml-auto font-mono tabular-nums">{totalOrders} orders</span>
+          <span className="ml-auto font-mono tabular-nums">{t('order_flow.orders_count', { count: totalOrders })}</span>
         </div>
       )}
     </div>

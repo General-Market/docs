@@ -11,6 +11,17 @@
     "enter": "全屏"
   },
   "holdings": {
-    "title": "持仓 (最近一次再平衡)"
+    "title": "持仓 (最近一次再平衡)",
+    "loading": "Loading holdings...",
+    "error": "Error: {message}",
+    "no_data": "No holdings data",
+    "header": {
+      "rank": "#",
+      "coin": "Coin",
+      "symbol": "Symbol",
+      "weight": "Weight",
+      "price": "Price",
+      "value": "Value"
+    }
   }
 }

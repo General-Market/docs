@@ -1,6 +1,7 @@
 'use client'
 
 import { formatUnits } from 'viem'
+import { useTranslations } from 'next-intl'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { useSystemStatus } from '@/hooks/useSystemStatus'
 import type { DeployedItpRef } from '@/components/domain/ItpListing'
@@ -41,6 +42,7 @@ interface SystemStatusSectionProps {
 }
 
 export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) {
+  const t = useTranslations('system')
   const sys = useSystemStatus()
 
   // Build ITP name lookup: itpId → display name
@@ -56,19 +58,19 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
 
   const stats = [
     {
-      label: 'Consensus Status',
-      value: sys.isLoading ? '● checking…' : sys.isHealthy ? '● Healthy' : '● Offline',
+      label: t('stats.consensus_status'),
+      value: sys.isLoading ? t('consensus_values.checking') : sys.isHealthy ? t('consensus_values.healthy') : t('consensus_values.offline'),
       color: sys.isLoading ? 'text-text-muted' : sys.isHealthy ? 'text-color-up' : 'text-color-down',
       fontSize: 'text-[18px]',
     },
-    { label: 'Active Issuers', value: `${sys.activeIssuers} / ${sys.totalIssuers}` },
+    { label: t('stats.active_issuers'), value: `${sys.activeIssuers} / ${sys.totalIssuers}` },
     {
-      label: 'Avg Fill Speed',
+      label: t('stats.avg_fill_speed'),
       value: sys.avgFillTimeSeconds > 0 ? `${sys.avgFillTimeSeconds.toFixed(1)}s` : '—',
     },
-    { label: 'Orders (total)', value: sys.totalOrders.toLocaleString() },
+    { label: t('stats.orders_total'), value: sys.totalOrders.toLocaleString() },
     {
-      label: 'L3 Block',
+      label: t('stats.l3_block'),
       value: sys.l3BlockNumber > 0n ? `#${sys.l3BlockNumber.toLocaleString()}` : '—',
       fontSize: 'text-[16px]',
     },
@@ -78,9 +80,9 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
     <div>
       {/* Section header */}
       <div className="pt-10 pb-0">
-        <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">Infrastructure</p>
-        <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">System</h2>
-        <p className="text-[14px] text-text-secondary mt-1.5">Live operational data — AP keeper balances, fill speed, consensus health, and inventory.</p>
+        <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">{t('heading.label')}</p>
+        <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">{t('heading.title')}</h2>
+        <p className="text-[14px] text-text-secondary mt-1.5">{t('heading.description')}</p>
       </div>
 
       {/* Stats Row */}
@@ -104,8 +106,8 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
         {/* ISSUER NETWORK — BLS Consensus Nodes */}
         <div className="section-bar">
           <div>
-            <div className="section-bar-title">Issuer Network</div>
-            <div className="section-bar-value">BLS Consensus Nodes</div>
+            <div className="section-bar-title">{t('issuer_network.section_title')}</div>
+            <div className="section-bar-value">{t('issuer_network.section_subtitle')}</div>
           </div>
         </div>
 
@@ -117,15 +119,15 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
           {activeNodes.map((node, idx) => (
             <div key={node.id} className={`px-5 py-4 ${idx < activeNodes.length - 1 ? 'border-r border-border-light' : ''}`}>
               <div className="text-[13px] font-extrabold text-black mb-2">
-                <span className="text-color-up">●</span> Issuer {NODE_NAMES[idx] || node.id}
+                <span className="text-color-up">●</span> {t('issuer_network.issuer_label', { name: NODE_NAMES[idx] || node.id })}
               </div>
               <div>
                 {[
-                  { label: 'Address', value: truncateAddr(node.addr) },
-                  { label: 'BLS Pubkey', value: node.blsPubkeyShort },
-                  { label: 'Registered', value: formatTimestamp(node.registeredAt) },
-                  { label: 'Status', value: 'Active', color: 'text-color-up' },
-                  { label: 'AP Vault', value: formatUsdCompact(sys.vaultUsdValue), color: 'text-color-up' },
+                  { label: t('issuer_network.node_details.address'), value: truncateAddr(node.addr) },
+                  { label: t('issuer_network.node_details.bls_pubkey'), value: node.blsPubkeyShort },
+                  { label: t('issuer_network.node_details.registered'), value: formatTimestamp(node.registeredAt) },
+                  { label: t('issuer_network.node_details.status'), value: t('issuer_network.status_active'), color: 'text-color-up' },
+                  { label: t('issuer_network.node_details.ap_vault'), value: formatUsdCompact(sys.vaultUsdValue), color: 'text-color-up' },
                 ].map(row => (
                   <div key={row.label} className="flex justify-between items-center py-[3px]">
                     <span className="text-[11px] text-text-muted font-medium">{row.label}</span>
@@ -143,8 +145,8 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
           <div>
             <div className="section-bar">
               <div>
-                <div className="section-bar-title">Fill Speed</div>
-                <div className="section-bar-value">Fill time per order</div>
+                <div className="section-bar-title">{t('fill_speed.section_title')}</div>
+                <div className="section-bar-value">{t('fill_speed.section_subtitle')}</div>
               </div>
             </div>
             <div className="border border-border-light border-t-0 bg-surface h-[220px] flex items-center justify-center overflow-hidden">
@@ -157,7 +159,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
                     <YAxis tick={{ fontSize: 10, fill: '#888' }} tickLine={false} axisLine={false} unit="s" width={36} />
                     <Tooltip
                       contentStyle={{ fontSize: 12, border: '1px solid #e5e5e5', borderRadius: 4 }}
-                      formatter={(v: number) => [`${v.toFixed(1)}s`, 'Fill time']}
+                      formatter={(v: number) => [`${v.toFixed(1)}s`, t('fill_speed.tooltip_label')]}
                     />
                     <Bar dataKey="seconds" radius={[3, 3, 0, 0]} maxBarSize={32}>
                       {sys.fillTimeBuckets.map((_, i) => (
@@ -174,8 +176,8 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
           <div>
             <div className="section-bar">
               <div>
-                <div className="section-bar-title">Inventory</div>
-                <div className="section-bar-value">Top holdings by USD</div>
+                <div className="section-bar-title">{t('inventory.section_title')}</div>
+                <div className="section-bar-value">{t('inventory.section_subtitle')}</div>
               </div>
             </div>
             <div className="border border-border-light border-t-0 bg-surface h-[220px] flex items-center justify-center overflow-hidden">
@@ -201,7 +203,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
                     />
                     <Tooltip
                       contentStyle={{ fontSize: 12, border: '1px solid #e5e5e5', borderRadius: 4 }}
-                      formatter={(v: number) => [formatUsdCompact(v), 'Value']}
+                      formatter={(v: number) => [formatUsdCompact(v), t('inventory.tooltip_label')]}
                     />
                     <Bar dataKey="usdValue" radius={[0, 3, 3, 0]} maxBarSize={18}>
                       {sys.topVaultAssets.map((_, i) => (
@@ -218,8 +220,8 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
         {/* RECENT ACTIVITY — Keeper BLS Signatures */}
         <div className="section-bar">
           <div>
-            <div className="section-bar-title">Recent Activity</div>
-            <div className="section-bar-value">Keeper BLS Signatures</div>
+            <div className="section-bar-title">{t('recent_activity.section_title')}</div>
+            <div className="section-bar-value">{t('recent_activity.section_subtitle')}</div>
           </div>
         </div>
 
@@ -228,7 +230,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
         <table className="w-full border-collapse text-[13px] min-w-[640px]">
           <thead>
             <tr>
-              {['Time', 'Order ID', 'Fund', 'Type', 'Amount', 'Fill Time', 'Signers', 'Status'].map((h, i) => (
+              {[t('recent_activity.table.time'), t('recent_activity.table.order_id'), t('recent_activity.table.fund'), t('recent_activity.table.type'), t('recent_activity.table.amount'), t('recent_activity.table.fill_time'), t('recent_activity.table.signers'), t('recent_activity.table.status')].map((h, i) => (
                 <th
                   key={h}
                   className={`text-left text-[11px] font-bold uppercase tracking-[0.06em] text-text-secondary px-4 py-3 border-b-[3px] border-black whitespace-nowrap ${
@@ -258,7 +260,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
                     {itpNameMap.get(order.itpId.toLowerCase()) || truncateItpId(order.itpId)}
                   </td>
                   <td className="px-4 py-3 border-b border-border-light text-text-secondary">
-                    {order.side === 0 ? 'Buy' : 'Sell'}
+                    {order.side === 0 ? t('recent_activity.side_buy') : t('recent_activity.side_sell')}
                   </td>
                   <td className="px-4 py-3 border-b border-border-light text-right font-mono tabular-nums text-[12px] text-text-secondary">
                     {amountFormatted}
@@ -270,7 +272,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
                     {order.status === 'filled' ? `${sys.activeIssuers}/${sys.totalIssuers}` : '—'}
                   </td>
                   <td className={`px-4 py-3 border-b border-border-light font-bold ${order.status === 'filled' ? 'text-color-up' : 'text-color-warning'}`}>
-                    {order.status === 'filled' ? '✓ Confirmed' : '⏳ Pending'}
+                    {order.status === 'filled' ? t('recent_activity.status_confirmed') : t('recent_activity.status_pending')}
                   </td>
                 </tr>
               )

@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, memo, CSSProperties, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { List, ListImperativeAPI, RowComponentProps } from 'react-window'
 import { VirtualTrade, useTradesPaginated } from '@/hooks/useTradesPaginated'
 
@@ -199,6 +200,7 @@ function RowRenderer(props: RowComponentProps<RowData>) {
  * AC #6: Trade display
  */
 export function VirtualTradeList({ betId, height = 400, isSettled = false }: VirtualTradeListProps) {
+  const t = useTranslations('common')
   const listRef = useRef<ListImperativeAPI>(null)
 
   // Debounce timer ref (FIX #5)
@@ -297,7 +299,7 @@ export function VirtualTradeList({ betId, height = 400, isSettled = false }: Vir
   if (error) {
     return (
       <div className="p-4 text-center">
-        <p className="text-color-down text-sm">Failed to load trades</p>
+        <p className="text-color-down text-sm">{t('virtual_trades.failed_to_load')}</p>
         <p className="text-text-muted text-xs mt-1">{error.message}</p>
       </div>
     )
@@ -307,7 +309,7 @@ export function VirtualTradeList({ betId, height = 400, isSettled = false }: Vir
   if (total === 0) {
     return (
       <div className="p-8 text-center">
-        <p className="text-text-muted text-sm">No trades found</p>
+        <p className="text-text-muted text-sm">{t('virtual_trades.no_trades')}</p>
       </div>
     )
   }
@@ -324,17 +326,17 @@ export function VirtualTradeList({ betId, height = 400, isSettled = false }: Vir
       {/* Column headers */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border-medium bg-muted text-xs font-medium uppercase tracking-wider text-text-muted sticky top-0 z-10">
         <span className="w-10">#</span>
-        <span className="w-28">Ticker</span>
-        <span className="w-16">Source</span>
-        <span className="w-14 text-center">Pos</span>
-        <span className="w-20 text-right">Entry</span>
-        {isSettled && <span className="w-20 text-right">Exit</span>}
-        {isSettled && <span className="w-12 text-center">Result</span>}
+        <span className="w-28">{t('virtual_trades.ticker')}</span>
+        <span className="w-16">{t('virtual_trades.source')}</span>
+        <span className="w-14 text-center">{t('virtual_trades.pos')}</span>
+        <span className="w-20 text-right">{t('virtual_trades.entry')}</span>
+        {isSettled && <span className="w-20 text-right">{t('virtual_trades.exit')}</span>}
+        {isSettled && <span className="w-12 text-center">{t('virtual_trades.result')}</span>}
       </div>
 
       {/* Total count */}
       <div className="px-3 py-1 text-xs text-text-muted font-mono border-b border-border-light">
-        Total: {total.toLocaleString()} trades
+        {t('virtual_trades.total_trades', { count: total.toLocaleString() })}
         {loadingPages.size > 0 && (
           <span className="ml-2 text-color-info animate-pulse">
             (loading...)

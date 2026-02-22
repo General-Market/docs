@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { useBilateralBets, useUserBilateralBets } from '@/hooks/useBilateralBets'
 import { useBilateralBetsSSE } from '@/hooks/useBilateralBetsSSE'
 import { BilateralBetCard } from './BilateralBetCard'
@@ -23,24 +24,14 @@ interface BilateralBetsListProps {
 }
 
 /**
- * Status filter options
+ * Status filter option values
  */
-const STATUS_OPTIONS: { value: BilateralBetStatus | 'all'; label: string }[] = [
-  { value: 'all', label: 'All Statuses' },
-  { value: 'active', label: 'Active' },
-  { value: 'in_arbitration', label: 'Disputed' },
-  { value: 'settled', label: 'Settled' },
-  { value: 'custom_payout', label: 'Custom Split' },
-]
+const STATUS_VALUES: (BilateralBetStatus | 'all')[] = ['all', 'active', 'in_arbitration', 'settled', 'custom_payout']
 
 /**
- * Sort options
+ * Sort option values
  */
-const SORT_OPTIONS: { value: SortField; label: string }[] = [
-  { value: 'created', label: 'Created Date' },
-  { value: 'deadline', label: 'Deadline' },
-  { value: 'amount', label: 'Amount' },
-]
+const SORT_VALUES: SortField[] = ['created', 'deadline', 'amount']
 
 /**
  * BilateralBetsList component
@@ -54,6 +45,24 @@ export function BilateralBetsList({
   pageSize = 10,
   className = '',
 }: BilateralBetsListProps) {
+  const t = useTranslations('p2pool')
+  const tc = useTranslations('common')
+
+  // Translation maps for select options
+  const statusLabels: Record<string, string> = {
+    all: t('bilateral.all_statuses'),
+    active: tc('status.active'),
+    in_arbitration: t('bilateral.disputed'),
+    settled: tc('status.confirmed'),
+    custom_payout: t('bilateral.custom_split'),
+  }
+
+  const sortLabels: Record<string, string> = {
+    created: t('bilateral.created_date'),
+    deadline: t('bilateral.deadline'),
+    amount: t('bilateral.amount'),
+  }
+
   // Filter and sort state
   const [statusFilter, setStatusFilter] = useState<BilateralBetStatus | 'all'>(initialStatus)
   const [sortField, setSortField] = useState<SortField>('created')
@@ -128,7 +137,7 @@ export function BilateralBetsList({
       <div className="flex flex-wrap gap-4 items-center justify-between">
         {/* Status Filter */}
         <div className="flex items-center gap-2">
-          <label className="text-xs font-mono text-text-muted">Status:</label>
+          <label className="text-xs font-mono text-text-muted">{t('bets_table.status')}:</label>
           <select
             value={statusFilter}
             onChange={(e) => {
@@ -137,9 +146,9 @@ export function BilateralBetsList({
             }}
             className="bg-muted border border-border-light rounded-lg px-3 py-1.5 text-sm font-mono text-text-primary focus:border-border-medium focus:outline-none"
           >
-            {STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
+            {STATUS_VALUES.map((value) => (
+              <option key={value} value={value}>
+                {statusLabels[value]}
               </option>
             ))}
           </select>
@@ -147,15 +156,15 @@ export function BilateralBetsList({
 
         {/* Sort Controls */}
         <div className="flex items-center gap-2">
-          <label className="text-xs font-mono text-text-muted">Sort by:</label>
+          <label className="text-xs font-mono text-text-muted">{t('bilateral.sort_by')}</label>
           <select
             value={sortField}
             onChange={(e) => setSortField(e.target.value as SortField)}
             className="bg-muted border border-border-light rounded-lg px-3 py-1.5 text-sm font-mono text-text-primary focus:border-border-medium focus:outline-none"
           >
-            {SORT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
+            {SORT_VALUES.map((value) => (
+              <option key={value} value={value}>
+                {sortLabels[value]}
               </option>
             ))}
           </select>
@@ -177,7 +186,7 @@ export function BilateralBetsList({
             title={sseConnected ? 'Real-time updates active' : 'Real-time updates disconnected'}
           />
           <span className="text-xs font-mono text-text-muted">
-            {sseConnected ? 'Live' : 'Polling'}
+            {sseConnected ? tc('connection.live') : tc('connection.polling')}
           </span>
         </div>
       </div>
@@ -193,13 +202,13 @@ export function BilateralBetsList({
       {isError && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
           <p className="text-red-600 font-mono text-sm">
-            Failed to load bilateral bets: {(error as Error)?.message || 'Unknown error'}
+            {t('bilateral.failed_to_load', { error: (error as Error)?.message || 'Unknown error' })}
           </p>
           <button
             onClick={() => refetch()}
             className="mt-2 px-4 py-1 bg-red-100 border border-red-200 rounded-lg text-sm font-mono text-red-700 hover:bg-red-200 transition-colors"
           >
-            Retry
+            {tc('retry')}
           </button>
         </div>
       )}
@@ -207,10 +216,10 @@ export function BilateralBetsList({
       {/* Empty State */}
       {!isLoading && !isError && sortedBets.length === 0 && (
         <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
-          <p className="text-text-muted font-mono text-sm">No bilateral bets found</p>
+          <p className="text-text-muted font-mono text-sm">{tc('empty.no_bilateral_bets')}</p>
           {statusFilter !== 'all' && (
             <p className="text-text-muted text-xs mt-2">
-              Try changing the status filter or{' '}
+              {tc('empty.no_bilateral_bets_hint')}{' '}
               <button
                 onClick={() => {
                   setStatusFilter('all')
@@ -218,7 +227,7 @@ export function BilateralBetsList({
                 }}
                 className="text-color-info hover:text-color-info/80"
               >
-                view all statuses
+                {t('bilateral.view_all_statuses')}
               </button>
             </p>
           )}
@@ -246,17 +255,17 @@ export function BilateralBetsList({
             disabled={page <= 1}
             className="px-3 py-1.5 border border-border-light rounded-lg text-sm font-mono text-text-primary hover:border-border-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Previous
+            {tc('pagination.previous')}
           </button>
           <span className="text-sm font-mono text-text-muted px-4">
-            Page {page} of {totalPages}
+            {tc('pagination.page_of', { current: page, total: totalPages })}
           </span>
           <button
             onClick={() => handlePageChange(page + 1)}
             disabled={page >= totalPages}
             className="px-3 py-1.5 border border-border-light rounded-lg text-sm font-mono text-text-primary hover:border-border-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Next
+            {tc('pagination.next')}
           </button>
         </div>
       )}
@@ -264,7 +273,7 @@ export function BilateralBetsList({
       {/* Total count */}
       {data && (
         <div className="text-center text-xs font-mono text-text-muted">
-          Showing {sortedBets.length} of {data.total} bilateral bet{data.total !== 1 ? 's' : ''}
+          {tc('showing_of', { shown: sortedBets.length, total: data.total })}
         </div>
       )}
     </div>

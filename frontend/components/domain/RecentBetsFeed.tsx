@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { AnimatePresence } from 'framer-motion'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { ConnectionStatus } from '@/components/ui/ConnectionStatus'
@@ -38,11 +39,12 @@ function FeedSkeleton() {
  * Empty state when no bets exist
  */
 function EmptyState() {
+  const t = useTranslations('common')
   return (
     <div className="p-8 text-center">
-      <p className="text-text-muted">No recent bets</p>
+      <p className="text-text-muted">{t('empty.no_recent_bets')}</p>
       <p className="text-text-muted text-sm mt-1">
-        Portfolio bets will appear here as they are placed
+        {t('empty.no_recent_bets_hint')}
       </p>
     </div>
   )
@@ -71,6 +73,7 @@ function LoadingSpinner() {
  * AC10: SSE updates TanStack Query cache via useBetsSSE hook
  */
 export function RecentBetsFeed() {
+  const t = useTranslations('common')
   const { events, isLoading, isError } = useRecentBets(20)
   const { isConnected, isPolling } = useBetsSSE()
   const prefersReducedMotion = usePrefersReducedMotion()
@@ -192,7 +195,7 @@ export function RecentBetsFeed() {
     <Card className="border-border-light">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle>Recent Portfolio Bets</CardTitle>
+          <CardTitle>{t('leaderboard.recent_bets')}</CardTitle>
           <ConnectionStatus isConnected={isConnected} isPolling={isPolling} />
         </div>
       </CardHeader>
@@ -233,7 +236,7 @@ export function RecentBetsFeed() {
               {/* End of data indicator */}
               {!hasMore && displayEvents.length > 0 && (
                 <div className="py-3 text-center text-xs text-text-muted font-mono">
-                  End of feed
+                  {t('empty.end_of_feed')}
                 </div>
               )}
             </>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import type { BetRecord } from '@/hooks/useBetHistory'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { PortfolioModal, PortfolioPosition } from '@/components/domain/PortfolioModal'
@@ -31,6 +32,7 @@ function shouldShowResolution(status: BetRecord['status']): boolean {
  * Expanded row content showing bet details
  */
 export function BetDetailsExpanded({ bet }: BetDetailsExpandedProps) {
+  const t = useTranslations('portfolio')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const category = useCategoryById(bet.categoryId)
 
@@ -78,7 +80,7 @@ export function BetDetailsExpanded({ bet }: BetDetailsExpandedProps) {
         <div className="flex flex-wrap gap-3 pb-2 border-b border-border-light">
           {category && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-text-muted font-sans">Category:</span>
+              <span className="text-xs text-text-muted font-sans">{t('bet_details.category')}</span>
               <span className="px-2 py-1 bg-muted rounded text-xs text-text-secondary">
                 {formatCategoryDisplay(category)}
               </span>
@@ -86,14 +88,14 @@ export function BetDetailsExpanded({ bet }: BetDetailsExpandedProps) {
           )}
           {bet.listSize && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-text-muted font-sans">List Size:</span>
+              <span className="text-xs text-text-muted font-sans">{t('bet_details.list_size')}</span>
               <span className="text-xs font-mono text-text-primary">{bet.listSize}</span>
             </div>
           )}
           {/* Epic 9: Trade Horizon */}
           {bet.horizon && bet.horizon !== 'short' && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-text-muted font-sans">Horizon:</span>
+              <span className="text-xs text-text-muted font-sans">{t('bet_details.horizon')}</span>
               <span className={`px-2 py-1 rounded text-xs ${
                 bet.horizon === 'monthly' || bet.horizon === 'quarterly'
                   ? 'bg-orange-800/30 text-orange-300'
@@ -105,7 +107,7 @@ export function BetDetailsExpanded({ bet }: BetDetailsExpandedProps) {
           )}
           {bet.snapshotId && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-text-muted font-sans">Snapshot:</span>
+              <span className="text-xs text-text-muted font-sans">{t('bet_details.snapshot')}</span>
               <span className="text-xs font-mono text-text-secondary">{bet.snapshotId}</span>
             </div>
           )}
@@ -115,7 +117,7 @@ export function BetDetailsExpanded({ bet }: BetDetailsExpandedProps) {
       {/* Bet Hash */}
       {bet.betHash && (
         <div className="flex items-center gap-2">
-          <span className="text-xs text-text-muted font-sans">Bet Hash:</span>
+          <span className="text-xs text-text-muted font-sans">{t('bet_details.bet_hash')}</span>
           <span className="text-xs font-mono text-text-primary">
             {bet.betHash.slice(0, 10)}...{bet.betHash.slice(-8)}
           </span>
@@ -127,7 +129,7 @@ export function BetDetailsExpanded({ bet }: BetDetailsExpandedProps) {
       {bet.fillerAddress && (
         <div className="flex gap-6">
           <div>
-            <span className="text-xs text-text-muted font-sans block">Filler:</span>
+            <span className="text-xs text-text-muted font-sans block">{t('bet_details.filler')}</span>
             <a
               href={getAddressUrl(bet.fillerAddress)}
               target="_blank"
@@ -139,7 +141,7 @@ export function BetDetailsExpanded({ bet }: BetDetailsExpandedProps) {
           </div>
           {bet.fillerStake && (
             <div>
-              <span className="text-xs text-text-muted font-sans block">Filler Stake:</span>
+              <span className="text-xs text-text-muted font-sans block">{t('bet_details.filler_stake')}</span>
               <span className="text-sm font-mono text-text-primary">{formatUSD(toBaseUnits(bet.fillerStake))}</span>
             </div>
           )}
@@ -150,19 +152,19 @@ export function BetDetailsExpanded({ bet }: BetDetailsExpandedProps) {
       {bet.earlyExit && (
         <div className="border border-cyan-500/30 bg-cyan-950/20 rounded-xl p-3">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-cyan-400 text-sm font-bold">⊗ Early Exit Executed</span>
+            <span className="text-cyan-400 text-sm font-bold">{t('bet_details.early_exit_title')}</span>
           </div>
           <div className="text-xs text-text-secondary">
-            Both parties agreed to settle early via mutual EIP-712 signed agreement.
+            {t('bet_details.early_exit_description')}
           </div>
           {bet.creatorStake && bet.fillerStake && (
             <div className="mt-2 pt-2 border-t border-cyan-500/20 flex gap-4">
               <div>
-                <span className="text-xs text-text-muted block">Creator received:</span>
+                <span className="text-xs text-text-muted block">{t('bet_details.creator_received')}</span>
                 <span className="text-sm font-mono text-cyan-300">{formatUSD(toBaseUnits(bet.creatorStake))}</span>
               </div>
               <div>
-                <span className="text-xs text-text-muted block">Filler received:</span>
+                <span className="text-xs text-text-muted block">{t('bet_details.filler_received')}</span>
                 <span className="text-sm font-mono text-cyan-300">{formatUSD(toBaseUnits(bet.fillerStake))}</span>
               </div>
             </div>
@@ -174,13 +176,13 @@ export function BetDetailsExpanded({ bet }: BetDetailsExpandedProps) {
       {portfolioPositions.length > 0 && (
         <div className="border border-border-light rounded-xl p-3 bg-muted">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-text-muted font-sans">Portfolio:</span>
+            <span className="text-xs text-text-muted font-sans">{t('bet_details.portfolio')}</span>
             <span className="text-sm font-mono text-text-primary font-bold">
-              {portfolioPositions.length.toLocaleString()} positions
+              {t('bet_details.positions_count', { count: portfolioPositions.length.toLocaleString() })}
             </span>
           </div>
           <p className="text-xs text-text-muted">
-            Click "View Full Portfolio" below to see all trades with virtual scroll.
+            {t('bet_details.portfolio_hint')}
           </p>
         </div>
       )}
@@ -192,7 +194,7 @@ export function BetDetailsExpanded({ bet }: BetDetailsExpandedProps) {
             onClick={() => setIsModalOpen(true)}
             className="px-3 py-1.5 bg-zinc-900 text-white text-sm hover:bg-zinc-800 transition-colors rounded-lg"
           >
-            View Full Portfolio
+            {t('bet_details.view_full_portfolio')}
           </button>
         )}
 
@@ -203,7 +205,7 @@ export function BetDetailsExpanded({ bet }: BetDetailsExpandedProps) {
           rel="noopener noreferrer"
           className="px-3 py-1.5 border border-border-medium text-text-muted text-sm hover:text-text-primary hover:border-zinc-900 transition-colors rounded-lg"
         >
-          View on BaseScan
+          {t('bet_details.view_on_basescan')}
         </a>
       </div>
 
@@ -218,7 +220,7 @@ export function BetDetailsExpanded({ bet }: BetDetailsExpandedProps) {
       {/* Story 14.3: Signature collection progress for matched/settling bets */}
       {showSignatures && (
         <div className="pt-4 border-t border-border-light">
-          <h3 className="text-sm font-bold text-text-primary mb-3">Signature Collection</h3>
+          <h3 className="text-sm font-bold text-text-primary mb-3">{t('bet_details.signature_collection')}</h3>
           <SignatureProgress
             betId={parseInt(bet.betId, 10)}
             compact={false}
@@ -235,7 +237,7 @@ export function BetDetailsExpanded({ bet }: BetDetailsExpandedProps) {
       {/* Resolution Section - shown for matched/settling/settled bets */}
       {shouldShowResolution(bet.status) && (
         <div className="pt-4 border-t border-border-light">
-          <h3 className="text-sm font-bold text-text-primary mb-3">Resolution</h3>
+          <h3 className="text-sm font-bold text-text-primary mb-3">{t('bet_details.resolution')}</h3>
           <PortfolioResolution betId={bet.betId} bet={bet} />
         </div>
       )}

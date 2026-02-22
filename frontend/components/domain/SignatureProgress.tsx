@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { useResolutionSignatures } from '@/hooks/useResolutionSignatures'
 import {
   calculateSignatureProgress,
@@ -97,6 +98,7 @@ export function SignatureProgress({
   compact = false,
   enabled = true,
 }: SignatureProgressProps) {
+  const t = useTranslations('system')
   const { data, isLoading, error } = useResolutionSignatures(betId, enabled)
 
   // Calculate progress values
@@ -132,7 +134,7 @@ export function SignatureProgress({
   if (isLoading && !data) {
     return (
       <div className={`font-mono ${compact ? 'text-xs' : 'text-sm'}`}>
-        <span className="text-text-muted">Loading signatures...</span>
+        <span className="text-text-muted">{t('signature_progress.loading')}</span>
       </div>
     )
   }
@@ -146,7 +148,7 @@ export function SignatureProgress({
   if (!data) {
     return (
       <div className={`font-mono ${compact ? 'text-xs' : 'text-sm'}`}>
-        <span className="text-text-muted">Awaiting resolution...</span>
+        <span className="text-text-muted">{t('signature_progress.awaiting')}</span>
       </div>
     )
   }
@@ -181,7 +183,7 @@ export function SignatureProgress({
     <div className="border border-border-light rounded-xl p-3 bg-white shadow-card font-mono">
       {/* Header with status badge */}
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-text-muted uppercase">Resolution Signatures</span>
+        <span className="text-xs text-text-muted uppercase">{t('signature_progress.label')}</span>
         <span className={`px-2 py-1 rounded text-xs ${statusBadge.bgColor} ${statusBadge.textColor}`}>
           {statusBadge.label}
         </span>
@@ -200,10 +202,10 @@ export function SignatureProgress({
       {/* Progress text */}
       <div className="flex items-center justify-between text-xs">
         <span className="text-text-primary">
-          {progress.signedCount}/{progress.totalKeepers} keepers signed
+          {t('signature_progress.keepers_signed', { signed: progress.signedCount, total: progress.totalKeepers })}
         </span>
         <span className={progress.thresholdMet ? 'text-green-600' : 'text-text-muted'}>
-          Need {progress.requiredCount} (51%)
+          {t('signature_progress.need_count', { count: progress.requiredCount })}
         </span>
       </div>
 

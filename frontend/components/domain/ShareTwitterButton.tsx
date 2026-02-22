@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { AgentShareData, openTwitterShare } from '@/lib/utils/socialShare'
 
 /**
@@ -39,6 +40,7 @@ function XIcon({ className = '' }: { className?: string }) {
  * @param className - Optional additional CSS classes
  */
 export function ShareTwitterButton({ agent, className = '' }: ShareTwitterButtonProps) {
+  const t = useTranslations('common')
   const handleClick = () => {
     openTwitterShare(agent)
   }
@@ -48,10 +50,10 @@ export function ShareTwitterButton({ agent, className = '' }: ShareTwitterButton
       type="button"
       onClick={handleClick}
       className={`inline-flex items-center gap-2 px-4 py-2 bg-muted hover:bg-border-light text-text-primary font-mono border border-border-light hover:border-border-medium transition-colors rounded-lg ${className}`}
-      aria-label="Share agent performance on Twitter"
+      aria-label={t('share.share_aria')}
     >
       <XIcon />
-      Share on X
+      {t('share.share_on_x')}
     </button>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useCallback, useState, useMemo, useRef, ChangeEvent, memo } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   parseMarketId,
   getMarketUrl,
@@ -309,6 +310,7 @@ function PositionBreakdown({ positions }: { positions: PortfolioPosition[] }) {
 const SEARCH_DEBOUNCE_MS = 300
 
 export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: PortfolioModalProps) {
+  const t = useTranslations('common')
   const [searchInput, setSearchInput] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -406,18 +408,18 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-medium">
           <div>
             <h2 id="portfolio-modal-title" className="text-xl font-bold text-text-primary">
-              Full Portfolio
+              {t('portfolio_modal.title')}
             </h2>
             <p className="text-sm text-text-muted">
               {filteredPositions.length === positions.length
-                ? `${portfolioSize.toLocaleString()} market positions`
-                : `${filteredPositions.length.toLocaleString()} of ${portfolioSize.toLocaleString()} positions`}
+                ? t('portfolio_modal.positions_count', { count: portfolioSize.toLocaleString() })
+                : t('portfolio_modal.positions_filtered', { filtered: filteredPositions.length.toLocaleString(), total: portfolioSize.toLocaleString() })}
             </p>
           </div>
           <button
             onClick={onClose}
             className="text-text-muted hover:text-text-primary transition-colors p-2"
-            aria-label="Close modal"
+            aria-label={t('aria.close_modal')}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -444,7 +446,7 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
               type="text"
               value={searchInput}
               onChange={handleSearchChange}
-              placeholder="Search by market ID or title..."
+              placeholder={t('portfolio_modal.search_placeholder')}
               className="w-full px-4 py-2 bg-card border border-border-medium text-text-primary font-mono text-sm focus:outline-none focus:border-zinc-900 placeholder-text-muted rounded-lg"
             />
             {searchInput && (
@@ -477,20 +479,20 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
               onClick={handleExport}
               className="px-3 py-1 border border-border-medium text-text-muted text-xs font-mono hover:text-text-primary hover:border-zinc-900 transition-colors rounded"
             >
-              Export to CSV
+              {t('portfolio_modal.export_csv')}
             </button>
           </div>
         </div>
 
         {/* Column headers */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-border-medium bg-muted text-xs font-medium uppercase tracking-wider text-text-muted">
-          <span className="flex-1">Market</span>
+          <span className="flex-1">{t('portfolio_modal.market')}</span>
           <div className="flex items-center gap-3">
-            <span className="w-12">Position</span>
-            <span className="w-14 text-right">Entry</span>
-            <span className="w-14 text-right">Current</span>
-            <span className="w-14 text-right">Change</span>
-            <span className="w-10 text-right">Conf</span>
+            <span className="w-12">{t('portfolio_modal.position')}</span>
+            <span className="w-14 text-right">{t('portfolio_modal.entry')}</span>
+            <span className="w-14 text-right">{t('portfolio_modal.current')}</span>
+            <span className="w-14 text-right">{t('portfolio_modal.change')}</span>
+            <span className="w-10 text-right">{t('portfolio_modal.conf')}</span>
           </div>
         </div>
 
@@ -498,7 +500,7 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
         <div className="flex-1 overflow-hidden">
           {filteredPositions.length === 0 ? (
             <div className="flex items-center justify-center h-full">
-              <p className="text-text-muted">No positions match your search</p>
+              <p className="text-text-muted">{t('empty.no_positions_match')}</p>
             </div>
           ) : (
             <VirtualizedList positions={filteredPositions} />
@@ -511,7 +513,7 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
             onClick={onClose}
             className="w-full px-4 py-2 bg-zinc-900 text-white hover:bg-zinc-800 transition-colors rounded-lg"
           >
-            Close
+            {t('actions.close')}
           </button>
         </div>
       </div>

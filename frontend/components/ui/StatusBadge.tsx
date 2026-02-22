@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import type { BetStatus } from '@/hooks/useBetHistory'
 import type { ResolutionStatus } from '@/hooks/useResolution'
 
@@ -19,23 +20,35 @@ export type AgentBetOutcome = 'won' | 'lost'
 export type BadgeStatus = BetStatus | ResolutionStatus | AgentBetStatus | AgentBetOutcome
 
 /**
- * Status configuration for action-oriented labels (Story 11-1, AC6)
+ * Status icon and color configuration (no i18n needed for these)
  */
-const STATUS_CONFIG: Record<string, { icon: string; label: string; color: string }> = {
-  // Bet statuses - action-oriented labels (Story 14-1: single-filler model)
-  pending: { icon: '○', label: 'Awaiting match', color: 'text-text-muted' },
-  matched: { icon: '●', label: 'Position active', color: 'text-text-primary' },
-  settling: { icon: '◐', label: 'Keepers voting', color: 'text-color-warning' },
-  settled: { icon: '●', label: 'Settled', color: 'text-text-muted' },
-  // Story 14-1: Early exit status
-  early_exit: { icon: '⊗', label: 'Early exit', color: 'text-color-info' },
-  // Resolution statuses (Epic 8: majority-wins)
-  resolved: { icon: '✓', label: 'Resolved', color: 'text-color-up' },
-  resolving: { icon: '◐', label: 'Keepers voting', color: 'text-color-warning' },
-  tie: { icon: '≈', label: 'Tie', color: 'text-color-warning' },
-  // Agent bet outcomes (AC6) - include P&L inline when available
-  won: { icon: '✓', label: 'Won', color: 'text-color-up' },
-  lost: { icon: '✗', label: 'Lost', color: 'text-color-down' },
+const STATUS_STYLE: Record<string, { icon: string; color: string }> = {
+  pending: { icon: '○', color: 'text-text-muted' },
+  matched: { icon: '●', color: 'text-text-primary' },
+  settling: { icon: '◐', color: 'text-color-warning' },
+  settled: { icon: '●', color: 'text-text-muted' },
+  early_exit: { icon: '⊗', color: 'text-color-info' },
+  resolved: { icon: '✓', color: 'text-color-up' },
+  resolving: { icon: '◐', color: 'text-color-warning' },
+  tie: { icon: '≈', color: 'text-color-warning' },
+  won: { icon: '✓', color: 'text-color-up' },
+  lost: { icon: '✗', color: 'text-color-down' },
+}
+
+/**
+ * Status label translation keys
+ */
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  pending: 'status_badge.awaiting_match',
+  matched: 'status_badge.position_active',
+  settling: 'status_badge.keepers_voting',
+  settled: 'status_badge.settled',
+  early_exit: 'status_badge.early_exit',
+  resolved: 'status_badge.resolved',
+  resolving: 'status_badge.keepers_voting',
+  tie: 'status_badge.tie',
+  won: 'status_badge.won',
+  lost: 'status_badge.lost',
 }
 
 interface StatusBadgeProps {
@@ -57,7 +70,10 @@ interface StatusBadgeProps {
  * - Won/Lost includes P&L inline when provided
  */
 export function StatusBadge({ status, pnl, size = 'md' }: StatusBadgeProps) {
-  const config = STATUS_CONFIG[status] || { icon: '?', label: status, color: 'text-text-muted' }
+  const t = useTranslations('common')
+  const style = STATUS_STYLE[status] || { icon: '?', color: 'text-text-muted' }
+  const labelKey = STATUS_LABEL_KEYS[status]
+  const label = labelKey ? t(labelKey) : status
 
   // Format P&L for won/lost statuses
   const formatPnL = (amount: number): string => {
@@ -66,9 +82,9 @@ export function StatusBadge({ status, pnl, size = 'md' }: StatusBadgeProps) {
   }
 
   // Include P&L inline for won/lost
-  let displayLabel = config.label
+  let displayLabel = label
   if (pnl !== undefined && (status === 'won' || status === 'lost')) {
-    displayLabel = `${config.label} ${formatPnL(pnl)}`
+    displayLabel = `${label} ${formatPnL(pnl)}`
   }
 
   const sizeClasses = size === 'sm'
@@ -77,9 +93,9 @@ export function StatusBadge({ status, pnl, size = 'md' }: StatusBadgeProps) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1 font-medium ${config.color} ${sizeClasses}`}
+      className={`inline-flex items-center gap-1 font-medium ${style.color} ${sizeClasses}`}
     >
-      <span aria-hidden="true">{config.icon}</span>
+      <span aria-hidden="true">{style.icon}</span>
       <span>{displayLabel}</span>
     </span>
   )
@@ -90,6 +106,8 @@ export function StatusBadge({ status, pnl, size = 'md' }: StatusBadgeProps) {
  * Kept for backward compatibility
  */
 export function StatusBadgeOld({ status }: { status: BadgeStatus }) {
+  const t = useTranslations('common')
+
   const getStatusStyles = (): string => {
     switch (status) {
       case 'pending':
@@ -112,34 +130,14 @@ export function StatusBadgeOld({ status }: { status: BadgeStatus }) {
     }
   }
 
-  const getStatusLabel = (): string => {
-    switch (status) {
-      case 'pending':
-        return 'Pending'
-      case 'matched':
-        return 'Matched'
-      case 'settling':
-        return 'Settling'
-      case 'settled':
-        return 'Settled'
-      case 'resolved':
-        return 'Resolved'
-      case 'tie':
-        return 'Tie'
-      case 'won':
-        return 'Won'
-      case 'lost':
-        return 'Lost'
-      default:
-        return status
-    }
-  }
+  const labelKey = STATUS_LABEL_KEYS[status]
+  const label = labelKey ? t(labelKey) : status
 
   return (
     <span
       className={`px-2 py-1 text-xs font-bold rounded ${getStatusStyles()}`}
     >
-      {getStatusLabel()}
+      {label}
     </span>
   )
 }

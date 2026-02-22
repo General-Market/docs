@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 
 // Use env vars with fallback to hardcoded values
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '0xE44c20fbac58Eb1ca4115AC7890F28271aD94364'
@@ -9,28 +10,9 @@ const EXPLORER_URL = `${EXPLORER_BASE}/${CONTRACT_ADDRESS}`
 const STORAGE_KEY = 'gm-how-it-works-collapsed'
 
 /**
- * Step configuration
+ * Step keys for translation lookup
  */
-const STEPS = [
-  {
-    number: 1,
-    title: 'BET',
-    subtitle: 'Agent places position',
-    description: 'AI agents analyze thousands of markets and place bets based on their worldview model.',
-  },
-  {
-    number: 2,
-    title: 'MATCH',
-    subtitle: 'P2P matching on-chain',
-    description: 'Bets are matched peer-to-peer. No house edge - just agents betting against each other.',
-  },
-  {
-    number: 3,
-    title: 'RESOLVE',
-    subtitle: '3-of-5 keeper consensus',
-    description: 'Decentralized keepers vote on outcomes. Majority consensus determines winners.',
-  },
-]
+const STEP_KEYS = [1, 2, 3] as const
 
 /**
  * HowItWorks component (Story 11-1, AC7)
@@ -42,6 +24,7 @@ const STEPS = [
  * - Collapsed by default, remembers state in localStorage
  */
 export function HowItWorks() {
+  const t = useTranslations('common')
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [isHydrated, setIsHydrated] = useState(false)
 
@@ -74,7 +57,7 @@ export function HowItWorks() {
           disabled
         >
           <h2 id="how-it-works-heading" className="text-lg font-bold text-text-primary">
-            HOW AGIARENA WORKS
+            {t('how_it_works.title')}
           </h2>
           <span className="text-text-muted">▾</span>
         </button>
@@ -112,20 +95,20 @@ export function HowItWorks() {
         >
           {/* Three-step flow */}
           <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8 mb-8">
-            {STEPS.map((step, index) => (
-              <div key={step.number} className="flex items-center">
+            {STEP_KEYS.map((num, index) => (
+              <div key={num} className="flex items-center">
                 {/* Step card */}
                 <div className="text-center w-40">
                   <div className="border border-border-medium rounded-xl p-4 mb-2">
-                    <div className="text-3xl text-zinc-900 font-bold mb-1">{step.number}</div>
-                    <div className="text-lg font-bold text-text-primary">{step.title}</div>
+                    <div className="text-3xl text-zinc-900 font-bold mb-1">{num}</div>
+                    <div className="text-lg font-bold text-text-primary">{t(`how_it_works.step${num}_title`)}</div>
                   </div>
-                  <div className="text-sm text-text-muted">{step.subtitle}</div>
-                  <div className="text-xs text-text-muted mt-1 hidden md:block">{step.description}</div>
+                  <div className="text-sm text-text-muted">{t(`how_it_works.step${num}_subtitle`)}</div>
+                  <div className="text-xs text-text-muted mt-1 hidden md:block">{t(`how_it_works.step${num}_description`)}</div>
                 </div>
 
                 {/* Arrow between steps (not after last) */}
-                {index < STEPS.length - 1 && (
+                {index < STEP_KEYS.length - 1 && (
                   <div className="text-border-medium text-2xl mx-2 hidden md:block" aria-hidden="true">→</div>
                 )}
               </div>
@@ -134,9 +117,9 @@ export function HowItWorks() {
 
           {/* Mobile descriptions */}
           <div className="md:hidden space-y-3 mb-6">
-            {STEPS.map((step) => (
-              <div key={step.number} className="text-xs text-text-muted">
-                <span className="text-zinc-900">{step.number}.</span> {step.description}
+            {STEP_KEYS.map((num) => (
+              <div key={num} className="text-xs text-text-muted">
+                <span className="text-zinc-900">{num}.</span> {t(`how_it_works.step${num}_description`)}
               </div>
             ))}
           </div>
@@ -144,7 +127,7 @@ export function HowItWorks() {
           {/* Trust statement */}
           <div className="text-center border-t border-border-light pt-6">
             <p className="text-sm text-text-muted mb-2">
-              All funds held in smart contract • Never custodial
+              {t('how_it_works.trust_statement')}
             </p>
             <a
               href={EXPLORER_URL}
@@ -152,7 +135,7 @@ export function HowItWorks() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text-secondary transition-colors"
             >
-              View contract on explorer
+              {t('how_it_works.view_contract')}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="12"

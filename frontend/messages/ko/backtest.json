@@ -11,6 +11,17 @@
     "enter": "전체화면"
   },
   "holdings": {
-    "title": "보유 내역 (최근 리밸런스)"
+    "title": "보유 내역 (최근 리밸런스)",
+    "loading": "Loading holdings...",
+    "error": "Error: {message}",
+    "no_data": "No holdings data",
+    "header": {
+      "rank": "#",
+      "coin": "Coin",
+      "symbol": "Symbol",
+      "weight": "Weight",
+      "price": "Price",
+      "value": "Value"
+    }
   }
 }

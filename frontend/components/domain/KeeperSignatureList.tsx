@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { truncateAddress } from '@/lib/utils/address'
 import { getAddressUrl } from '@/lib/utils/basescan'
 import {
@@ -75,6 +76,7 @@ export function KeeperSignatureList({
   keepers,
   className = '',
 }: KeeperSignatureListProps) {
+  const t = useTranslations('system')
   // Sort keepers: signed first, then pending, then failed/timeout
   const sortedKeepers = useMemo(() => {
     const statusOrder: Record<KeeperSignatureStatus, number> = {
@@ -116,7 +118,7 @@ export function KeeperSignatureList({
   if (keepers.length === 0) {
     return (
       <div className={`font-mono text-sm text-text-muted ${className}`}>
-        No keepers registered
+        {t('keeper_signatures.no_keepers')}
       </div>
     )
   }
@@ -125,16 +127,16 @@ export function KeeperSignatureList({
     <div className={`font-mono ${className}`}>
       {/* Header with counts */}
       <div className="flex items-center justify-between mb-3 text-xs text-text-muted">
-        <span>Resolution Signatures ({statusCounts.signed}/{keepers.length})</span>
+        <span>{t('keeper_signatures.header', { signed: statusCounts.signed, total: keepers.length })}</span>
         <div className="flex gap-2">
           {statusCounts.signed > 0 && (
-            <span className="text-green-600">{statusCounts.signed} signed</span>
+            <span className="text-green-600">{t('keeper_signatures.signed', { count: statusCounts.signed })}</span>
           )}
           {statusCounts.pending > 0 && (
-            <span className="text-yellow-600">{statusCounts.pending} pending</span>
+            <span className="text-yellow-600">{t('keeper_signatures.pending_count', { count: statusCounts.pending })}</span>
           )}
           {(statusCounts.failed + statusCounts.timeout) > 0 && (
-            <span className="text-red-600">{statusCounts.failed + statusCounts.timeout} failed</span>
+            <span className="text-red-600">{t('keeper_signatures.failed', { count: statusCounts.failed + statusCounts.timeout })}</span>
           )}
         </div>
       </div>
