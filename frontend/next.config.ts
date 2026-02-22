@@ -14,6 +14,12 @@ const nextConfig: NextConfig = {
     config.resolve.fallback = {
       ...config.resolve.fallback,
       "pino-pretty": false,
+      "@solana/kit": false,
+      "axios": false,
+      "zod": false,
+      "@react-native-async-storage/async-storage": false,
+      "@coinbase/wallet-sdk": false,
+      "@gemini-wallet/core": false,
     };
     return config;
   },
