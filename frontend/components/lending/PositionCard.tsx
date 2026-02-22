@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { formatUnits } from 'viem'
 import { useMorphoPosition } from '@/hooks/useMorphoPosition'
 import { useOraclePrice } from '@/hooks/useOraclePrice'
@@ -27,6 +28,7 @@ interface PositionCardProps {
  * Auto-refreshes every 15 seconds.
  */
 export function PositionCard({ market, crisisLevel }: PositionCardProps) {
+  const t = useTranslations('lending')
   const { position, isLoading, refetch } = useMorphoPosition(market)
   const { priceFormatted, lastUpdated, isStale } = useOraclePrice(market?.oracle)
 
@@ -78,7 +80,7 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
     <div className={`border rounded-xl p-6 ${healthBg}`}>
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-bold text-text-primary">Your Position</h2>
+          <h2 className="text-lg font-bold text-text-primary">{t('position_card.title')}</h2>
           {crisisLevel && crisisLevel !== 'Normal' && (
             <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
               crisisLevel === 'Emergency' ? 'bg-surface-down text-color-down border border-red-300' :
@@ -90,14 +92,14 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
           )}
         </div>
         <div className={`px-3 py-1 rounded-full text-sm font-mono tabular-nums ${healthColor} ${healthBg}`}>
-          Health: {healthFactor === Infinity ? '∞' : healthFactor.toFixed(2)}
+          {t('position_card.health_label', { value: healthFactor === Infinity ? '∞' : healthFactor.toFixed(2) })}
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-4">
         {/* Collateral */}
         <div className="bg-white/60 rounded-xl p-4">
-          <p className="text-text-muted text-xs mb-1">Collateral</p>
+          <p className="text-text-muted text-xs mb-1">{t('position_card.collateral')}</p>
           <p className="text-text-primary font-bold text-xl font-mono tabular-nums">
             {parseFloat(collateralFormatted).toFixed(4)}
           </p>
@@ -106,7 +108,7 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
 
         {/* Debt */}
         <div className="bg-white/60 rounded-xl p-4">
-          <p className="text-text-muted text-xs mb-1">Debt</p>
+          <p className="text-text-muted text-xs mb-1">{t('position_card.debt')}</p>
           <p className="text-text-primary font-bold text-xl font-mono tabular-nums">
             {parseFloat(debtFormatted).toFixed(2)}
           </p>
@@ -118,7 +120,7 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
         {/* Liquidation Price */}
         {position.debtAmount > 0n && (
           <div className="flex justify-between items-center">
-            <span className="text-text-secondary text-sm">Liquidation Price</span>
+            <span className="text-text-secondary text-sm">{t('position_card.liquidation_price')}</span>
             <span className="text-text-primary font-mono tabular-nums">
               ${liquidationPrice.toFixed(4)}
             </span>
@@ -127,25 +129,25 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
 
         {/* Current NAV Price */}
         <div className="flex justify-between items-center">
-          <span className="text-text-secondary text-sm">Current NAV</span>
+          <span className="text-text-secondary text-sm">{t('position_card.current_nav')}</span>
           <div className="flex items-center gap-2">
             <span className="text-text-primary font-mono tabular-nums">
               ${priceFormatted?.toFixed(4) ?? '...'}
             </span>
             {isStale && (
-              <span className="text-color-down text-xs">(stale)</span>
+              <span className="text-color-down text-xs">{t('position_card.stale')}</span>
             )}
           </div>
         </div>
 
         {/* Oracle Update Time */}
         <div className="flex justify-between items-center">
-          <span className="text-text-secondary text-sm">Price Updated</span>
+          <span className="text-text-secondary text-sm">{t('position_card.price_updated')}</span>
           <span className="text-text-muted text-xs font-mono tabular-nums">
             {timeSinceUpdate !== null
               ? timeSinceUpdate === 0
-                ? 'Just now'
-                : `${timeSinceUpdate} min ago`
+                ? t('position_card.just_now')
+                : t('position_card.min_ago', { minutes: timeSinceUpdate })
               : '...'}
           </span>
         </div>
@@ -153,7 +155,7 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
         {/* Max Borrow */}
         {position.maxBorrow > 0n && (
           <div className="flex justify-between items-center">
-            <span className="text-text-secondary text-sm">Available to Borrow</span>
+            <span className="text-text-secondary text-sm">{t('position_card.available_to_borrow')}</span>
             <span className="text-color-up font-mono tabular-nums">
               {formatUnits(position.maxBorrow, 6)} USDC
             </span>
@@ -163,7 +165,7 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
         {/* Max Withdraw */}
         {position.maxWithdraw > 0n && (
           <div className="flex justify-between items-center">
-            <span className="text-text-secondary text-sm">Available to Withdraw</span>
+            <span className="text-text-secondary text-sm">{t('position_card.available_to_withdraw')}</span>
             <span className="text-color-up font-mono tabular-nums">
               {parseFloat(formatUnits(position.maxWithdraw, 18)).toFixed(4)} ITP
             </span>
@@ -175,7 +177,7 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
       {healthFactor < 1.5 && healthFactor >= 1.0 && (
         <div className="mt-4 p-3 bg-surface-warning border border-yellow-200 rounded-xl">
           <p className="text-color-warning text-sm">
-            Your position is at risk of liquidation. Consider repaying debt or adding collateral.
+            {t('position_card.health_warning')}
           </p>
         </div>
       )}
@@ -183,7 +185,7 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
       {healthFactor < 1.0 && (
         <div className="mt-4 p-3 bg-surface-down border border-red-200 rounded-xl">
           <p className="text-color-down text-sm font-bold">
-            Your position is eligible for liquidation! Repay debt immediately.
+            {t('position_card.health_danger')}
           </p>
         </div>
       )}

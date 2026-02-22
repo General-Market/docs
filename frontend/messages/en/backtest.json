@@ -11,6 +11,17 @@
     "enter": "Fullscreen"
   },
   "holdings": {
-    "title": "Holdings (Latest Rebalance)"
+    "title": "Holdings (Latest Rebalance)",
+    "loading": "Loading holdings...",
+    "error": "Error: {message}",
+    "no_data": "No holdings data",
+    "header": {
+      "rank": "#",
+      "coin": "Coin",
+      "symbol": "Symbol",
+      "weight": "Weight",
+      "price": "Price",
+      "value": "Value"
+    }
   }
 }

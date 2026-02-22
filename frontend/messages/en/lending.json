@@ -174,5 +174,49 @@
   },
   "error": {
     "title": "Error"
+  },
+  "position_card": {
+    "title": "Your Position",
+    "collateral": "Collateral",
+    "debt": "Debt",
+    "health_label": "Health: {value}",
+    "liquidation_price": "Liquidation Price",
+    "current_nav": "Current NAV",
+    "stale": "(stale)",
+    "price_updated": "Price Updated",
+    "just_now": "Just now",
+    "min_ago": "{minutes} min ago",
+    "available_to_borrow": "Available to Borrow",
+    "available_to_withdraw": "Available to Withdraw",
+    "health_warning": "Your position is at risk of liquidation. Consider repaying debt or adding collateral.",
+    "health_danger": "Your position is eligible for liquidation! Repay debt immediately."
+  },
+  "vault_stats": {
+    "supply_apy": "Supply APY",
+    "total_deposits": "Total Deposits",
+    "utilization": "Utilization",
+    "vault": "Vault"
+  },
+  "lending_history": {
+    "title": "Transaction History",
+    "loading": "Loading...",
+    "type_deposit": "Deposit",
+    "type_withdraw": "Withdraw",
+    "type_borrow": "Borrow",
+    "type_repay": "Repay"
+  },
+  "markets_detail": {
+    "itp_markets": "ITP Markets",
+    "collateral": "Collateral",
+    "nav_price": "NAV Price",
+    "ltv": "LTV",
+    "utilization": "Utilization",
+    "borrow_apy": "Borrow APY",
+    "unavailable": "Unavailable",
+    "loan_asset": "Loan Asset",
+    "max_ltv": "Max LTV",
+    "borrow_rate_serm": "Borrow Rate (SERM)",
+    "protocol": "Protocol",
+    "live_data_unavailable": "Live market data unavailable -- showing config parameters"
   }
 }

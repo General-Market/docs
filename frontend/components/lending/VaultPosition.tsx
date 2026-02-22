@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import { useAccount } from 'wagmi'
 import { formatUnits } from 'viem'
 import { useMetaMorphoVault } from '@/hooks/useMetaMorphoVault'
 import { useVaultDeposit } from '@/hooks/useVaultDeposit'
 
 export function VaultPosition() {
+  const t = useTranslations('lending')
   useAccount()
   const [txError, setTxError] = useState<string | null>(null)
 
@@ -60,8 +62,8 @@ export function VaultPosition() {
     <div>
       <div className="section-bar">
         <div>
-          <div className="section-bar-title">Position</div>
-          <div className="section-bar-value">Your Vault Deposits</div>
+          <div className="section-bar-title">{t('vault_position.section_title')}</div>
+          <div className="section-bar-value">{t('vault_position.section_subtitle')}</div>
         </div>
       </div>
 
@@ -69,14 +71,14 @@ export function VaultPosition() {
         {/* Position stats */}
         <div className="grid grid-cols-2 border-b border-border-light">
           <div className="px-5 py-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Vault Shares</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('vault_position.vault_shares')}</p>
             <p className="text-[20px] font-extrabold font-mono tabular-nums text-black">
               {parseFloat(sharesFormatted).toFixed(4)}
             </p>
             <p className="text-[11px] text-text-muted">{vaultInfo?.symbol ?? 'shares'}</p>
           </div>
           <div className="px-5 py-4 border-l border-border-light">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Current Value</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('vault_position.current_value')}</p>
             <p className="text-[20px] font-extrabold font-mono tabular-nums text-color-up">
               ${parseFloat(valueFormatted).toFixed(2)}
             </p>
@@ -96,18 +98,18 @@ export function VaultPosition() {
             }`}
           >
             {isPending
-              ? 'Confirm in wallet...'
+              ? t('vault_position.button.confirm_wallet')
               : isConfirming
-              ? 'Withdrawing...'
+              ? t('vault_position.button.withdrawing')
               : isSuccess
-              ? 'Withdrawn!'
-              : 'Withdraw All'}
+              ? t('vault_position.button.withdrawn')
+              : t('vault_position.button.withdraw_all')}
           </button>
 
           {txError && (
             <div className="mt-3 bg-color-down/10 border border-color-down/30 p-3 text-color-down text-[12px]">
               {txError.includes('User rejected') || txError.includes('denied')
-                ? 'Transaction rejected'
+                ? t('common.transaction_rejected')
                 : txError.length > 100
                 ? txError.slice(0, 100) + '...'
                 : txError}

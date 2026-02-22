@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
@@ -24,6 +25,7 @@ interface RepayDebtProps {
  * Handles USDC approval flow if not approved for Morpho.
  */
 export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
+  const t = useTranslations('lending')
   const { address } = useAccount()
   const [amount, setAmount] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
@@ -101,6 +103,7 @@ export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
       refetchPosition()
       refetchBalance()
       onSuccess?.()
+      window.dispatchEvent(new Event('lending-refresh'))
       setTimeout(() => {
         setStep('input')
         setAmount('')
@@ -196,34 +199,34 @@ export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
   const isProcessing = isPending || isConfirming || isApprovalPending || isApprovalConfirming
 
   const buttonText = isApprovalPending
-    ? 'Confirm approval...'
+    ? t('repay_debt.button.confirm_approval')
     : isApprovalConfirming
-    ? 'Approving USDC...'
+    ? t('repay_debt.button.approving_usdc')
     : isPending
-    ? 'Confirm in wallet...'
+    ? t('repay_debt.button.confirm_wallet')
     : isConfirming
-    ? 'Repaying...'
+    ? t('repay_debt.button.repaying')
     : step === 'success'
-    ? 'Repaid!'
+    ? t('repay_debt.button.repaid')
     : needsApproval
-    ? 'Approve & Repay'
-    : 'Repay Debt'
+    ? t('repay_debt.button.approve_and_repay')
+    : t('repay_debt.button.repay_debt')
 
   return (
     <div className="bg-white rounded-xl shadow-card border border-border-light p-6">
-      <h2 className="text-lg font-bold text-text-primary mb-4">Repay Debt</h2>
+      <h2 className="text-lg font-bold text-text-primary mb-4">{t('repay_debt.title')}</h2>
       <p className="text-text-secondary text-sm mb-4">
-        Repay your USDC debt to improve your health factor
+        {t('repay_debt.description')}
       </p>
 
       <div className="space-y-4">
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="text-sm text-text-secondary">Amount (USDC)</label>
+            <label className="text-sm text-text-secondary">{t('repay_debt.amount_label')}</label>
             <div className="text-xs text-text-muted space-x-2">
-              <span>Debt: {parseFloat(formattedDebt).toFixed(2)}</span>
+              <span>{t('repay_debt.debt_label', { amount: parseFloat(formattedDebt).toFixed(2) })}</span>
               <span>|</span>
-              <span>Balance: {parseFloat(formattedBalance).toFixed(2)}</span>
+              <span>{t('repay_debt.balance_label', { amount: parseFloat(formattedBalance).toFixed(2) })}</span>
             </div>
           </div>
           <div className="relative">
@@ -246,7 +249,7 @@ export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
             </button>
           </div>
           {amount && parsedAmount > usdcBalance && (
-            <p className="text-color-down text-xs mt-1">Insufficient USDC balance</p>
+            <p className="text-color-down text-xs mt-1">{t('repay_debt.insufficient_balance')}</p>
           )}
         </div>
 
@@ -267,21 +270,21 @@ export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
             onClick={handleCancel}
             className="w-full text-center text-sm text-text-muted hover:text-text-secondary py-2 transition-colors"
           >
-            Cancel
+            {t('actions.cancel')}
           </button>
         )}
 
         {stuckWarning && (
           <div className="bg-surface-warning border border-orange-300 rounded-xl p-3 text-orange-700 text-sm">
-            <p className="font-bold">Transaction may be stuck</p>
-            <p className="text-xs mt-1">Not confirmed after 30s. You can cancel and try again.</p>
+            <p className="font-bold">{t('common.tx_stuck_title')}</p>
+            <p className="text-xs mt-1">{t('common.tx_stuck_description')}</p>
           </div>
         )}
 
         {txError && (
           <div className="bg-surface-down border border-red-300 rounded-xl p-3 text-color-down text-sm">
             {txError.includes('User rejected') || txError.includes('denied')
-              ? 'Transaction rejected'
+              ? t('common.transaction_rejected')
               : <span className="break-all">{txError}</span>}
           </div>
         )}

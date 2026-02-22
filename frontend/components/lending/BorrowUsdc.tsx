@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import { parseUnits, formatUnits } from 'viem'
 import { useMorphoPosition } from '@/hooks/useMorphoPosition'
 import { useMorphoActions } from '@/hooks/useMorphoActions'
@@ -22,6 +23,7 @@ interface BorrowUsdcProps {
  * Shows projected health factor and prevents borrowing if health factor < 1.0.
  */
 export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
+  const t = useTranslations('lending')
   const [amount, setAmount] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
   const [step, setStep] = useState<'input' | 'borrowing' | 'success'>('input')
@@ -83,6 +85,7 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
       setStep('success')
       refetchPosition()
       onSuccess?.()
+      window.dispatchEvent(new Event('lending-refresh'))
       setTimeout(() => {
         setStep('input')
         setAmount('')
@@ -111,28 +114,28 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
   const isProcessing = isPending || isConfirming
 
   const buttonText = isPending
-    ? 'Confirm in wallet...'
+    ? t('borrow_usdc.button.confirm_wallet')
     : isConfirming
-    ? 'Borrowing...'
+    ? t('borrow_usdc.button.borrowing')
     : step === 'success'
-    ? 'Borrowed!'
-    : 'Borrow USDC'
+    ? t('borrow_usdc.button.borrowed')
+    : t('borrow_usdc.button.borrow_usdc')
 
   const formatMaxBorrow = maxBorrow ? formatUnits(maxBorrow, 6) : '0'
 
   return (
     <div className="bg-white rounded-xl shadow-card border border-border-light p-6">
-      <h2 className="text-lg font-bold text-text-primary mb-4">Borrow USDC</h2>
+      <h2 className="text-lg font-bold text-text-primary mb-4">{t('borrow_usdc.title')}</h2>
       <p className="text-text-secondary text-sm mb-4">
-        Borrow USDC against your ITP collateral
+        {t('borrow_usdc.description')}
       </p>
 
       <div className="space-y-4">
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="text-sm text-text-secondary">Amount (USDC)</label>
+            <label className="text-sm text-text-secondary">{t('borrow_usdc.amount_label')}</label>
             <span className="text-xs text-text-muted">
-              Max borrow: {parseFloat(formatMaxBorrow).toFixed(2)} USDC
+              {t('borrow_usdc.max_borrow_label', { amount: parseFloat(formatMaxBorrow).toFixed(2) })}
             </span>
           </div>
           <div className="relative">
@@ -160,7 +163,7 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
         {amount && parsedAmount > 0n && (
           <div className="bg-muted rounded-xl p-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-text-secondary">Projected Health Factor</span>
+              <span className="text-sm text-text-secondary">{t('borrow_usdc.projected_health_factor')}</span>
               <span className={`font-mono tabular-nums font-bold ${
                 projectedHealthFactor >= 1.5 ? 'text-color-up' :
                 projectedHealthFactor >= 1.0 ? 'text-color-warning' :
@@ -171,12 +174,12 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
             </div>
             {projectedHealthFactor < 1.0 && (
               <p className="text-color-down text-xs mt-2">
-                Cannot borrow: health factor would be below 1.0
+                {t('borrow_usdc.cannot_borrow_health')}
               </p>
             )}
             {projectedHealthFactor >= 1.0 && projectedHealthFactor < 1.5 && (
               <p className="text-color-warning text-xs mt-2">
-                Warning: Low health factor increases liquidation risk
+                {t('borrow_usdc.low_health_warning')}
               </p>
             )}
           </div>
@@ -185,13 +188,13 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
         {/* Quote API Terms (when in quote mode) */}
         {useQuoteMode && quote && !isExpired && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 space-y-2">
-            <div className="text-xs text-blue-700 font-bold uppercase tracking-wider">Quote Terms</div>
+            <div className="text-xs text-blue-700 font-bold uppercase tracking-wider">{t('borrow_usdc.quote.title')}</div>
             <div className="flex justify-between text-sm">
-              <span className="text-text-secondary">Borrow APR</span>
+              <span className="text-text-secondary">{t('borrow_usdc.quote.borrow_apr')}</span>
               <span className="text-text-primary font-mono tabular-nums">{quote.terms.borrowRate}%</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-text-secondary">Health Factor</span>
+              <span className="text-text-secondary">{t('borrow_usdc.quote.health_factor')}</span>
               <span className={`font-mono tabular-nums font-bold ${
                 parseFloat(quote.terms.healthFactor) >= 1.5 ? 'text-color-up' :
                 parseFloat(quote.terms.healthFactor) >= 1.0 ? 'text-color-warning' :
@@ -199,11 +202,11 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
               }`}>{quote.terms.healthFactor}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-text-secondary">Liquidation Price</span>
+              <span className="text-text-secondary">{t('borrow_usdc.quote.liquidation_price')}</span>
               <span className="text-text-primary font-mono tabular-nums">${quote.terms.liquidationPrice}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-text-secondary">Max Borrow</span>
+              <span className="text-text-secondary">{t('borrow_usdc.quote.max_borrow')}</span>
               <span className="text-text-primary font-mono tabular-nums">{quote.terms.maxBorrow} USDC</span>
             </div>
             <div className="text-xs text-text-muted">
@@ -214,7 +217,7 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
 
         {useQuoteMode && isExpired && (
           <div className="bg-surface-warning border border-orange-300 rounded-xl p-2 text-orange-700 text-xs text-center">
-            Quote expired -- <button onClick={fetchQuote} className="underline">refresh</button>
+            {t('borrow_usdc.quote.expired')} <button onClick={fetchQuote} className="underline">{t('borrow_usdc.quote.refresh')}</button>
           </div>
         )}
 
@@ -225,10 +228,10 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
             disabled={isBundlerPending || isBundlerConfirming}
             className="w-full py-3 font-bold rounded-lg transition-colors bg-zinc-900 text-white hover:bg-zinc-800 disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed"
           >
-            {isBundlerPending ? 'Confirm in wallet...' :
-             isBundlerConfirming ? 'Executing bundle...' :
-             isBundlerSuccess ? 'Borrowed!' :
-             'Execute Bundle'}
+            {isBundlerPending ? t('borrow_usdc.quote.confirm_wallet') :
+             isBundlerConfirming ? t('borrow_usdc.quote.executing_bundle') :
+             isBundlerSuccess ? t('borrow_usdc.quote.borrowed') :
+             t('borrow_usdc.quote.execute_bundle')}
           </button>
         ) : (
           <WalletActionButton
@@ -250,9 +253,9 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
           <div className="bg-surface-down border border-red-300 rounded-xl p-3 text-color-down text-sm">
             {(() => {
               const msg = txError || quoteError?.message || bundlerError?.message || 'Unknown error'
-              if (msg.includes('User rejected') || msg.includes('denied')) return 'Transaction rejected'
-              if (quoteError?.isMarketFrozen) return 'Market is frozen during emergency'
-              if (quoteError?.isRateLimited) return `Rate limited, retry in ${quoteError.retryAfter}s`
+              if (msg.includes('User rejected') || msg.includes('denied')) return t('common.transaction_rejected')
+              if (quoteError?.isMarketFrozen) return t('common.market_frozen')
+              if (quoteError?.isRateLimited) return t('common.rate_limited', { seconds: quoteError.retryAfter ?? 0 })
               return <span className="break-all">{msg}</span>
             })()}
           </div>

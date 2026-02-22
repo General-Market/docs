@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import { useAccount, useReadContract } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
@@ -9,6 +10,7 @@ import { useVaultDeposit } from '@/hooks/useVaultDeposit'
 import { useMetaMorphoVault } from '@/hooks/useMetaMorphoVault'
 
 export function VaultDeposit() {
+  const t = useTranslations('lending')
   const { address } = useAccount()
   const [amount, setAmount] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
@@ -133,32 +135,32 @@ export function VaultDeposit() {
   const isProcessing = isPending || isConfirming || step === 'approving'
 
   const buttonText = step === 'approving'
-    ? 'Approving USDC...'
+    ? t('vault_deposit.button.approving')
     : isPending
-    ? 'Confirm in wallet...'
+    ? t('vault_deposit.button.confirm_wallet')
     : isConfirming
-    ? 'Depositing...'
+    ? t('vault_deposit.button.depositing')
     : step === 'success'
-    ? 'Deposited!'
+    ? t('vault_deposit.button.deposited')
     : needsApproval
-    ? 'Approve & Deposit'
-    : 'Deposit USDC'
+    ? t('vault_deposit.button.approve_and_deposit')
+    : t('vault_deposit.button.deposit_usdc')
 
   return (
     <div className="py-5">
       <div className="section-bar">
         <div>
-          <div className="section-bar-title">Deposit</div>
-          <div className="section-bar-value">Supply USDC to Vault</div>
+          <div className="section-bar-title">{t('vault_deposit.section_title')}</div>
+          <div className="section-bar-value">{t('vault_deposit.section_subtitle')}</div>
         </div>
       </div>
 
       <div className="border border-border-light border-t-0 p-5 space-y-4">
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted">Amount (USDC)</label>
+            <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted">{t('vault_deposit.amount_label')}</label>
             <span className="text-[11px] text-text-muted font-mono tabular-nums">
-              Balance: {parseFloat(formattedBalance).toFixed(2)}
+              {t('vault_deposit.balance_label', { amount: parseFloat(formattedBalance).toFixed(2) })}
             </span>
           </div>
           <div className="relative">
@@ -181,7 +183,7 @@ export function VaultDeposit() {
             </button>
           </div>
           {amount && parsedAmount > (usdcBalance as bigint ?? 0n) && (
-            <p className="text-color-down text-[11px] mt-1">Insufficient USDC balance</p>
+            <p className="text-color-down text-[11px] mt-1">{t('vault_deposit.insufficient_balance')}</p>
           )}
         </div>
 
@@ -202,21 +204,21 @@ export function VaultDeposit() {
             onClick={handleCancel}
             className="w-full text-center text-[11px] text-text-muted hover:text-text-secondary py-1 transition-colors"
           >
-            Cancel
+            {t('actions.cancel')}
           </button>
         )}
 
         {stuckWarning && (
           <div className="bg-orange-500/10 border border-orange-300 p-3 text-orange-700 text-[12px]">
-            <p className="font-bold">Transaction may be stuck</p>
-            <p className="text-[11px] mt-1">Not confirmed after 30s. You can cancel and try again.</p>
+            <p className="font-bold">{t('common.tx_stuck_title')}</p>
+            <p className="text-[11px] mt-1">{t('common.tx_stuck_description')}</p>
           </div>
         )}
 
         {txError && (
           <div className="bg-color-down/10 border border-color-down/30 p-3 text-color-down text-[12px]">
             {txError.includes('User rejected') || txError.includes('denied')
-              ? 'Transaction rejected'
+              ? t('common.transaction_rejected')
               : txError.length > 100
               ? txError.slice(0, 100) + '...'
               : txError}

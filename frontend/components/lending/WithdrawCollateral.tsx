@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import { formatUnits } from 'viem'
 import { useMorphoPosition } from '@/hooks/useMorphoPosition'
 import { useMorphoActions } from '@/hooks/useMorphoActions'
@@ -20,6 +21,7 @@ interface WithdrawCollateralProps {
  * - If debt exists, limits withdrawal to maintain health factor > 1.0
  */
 export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProps) {
+  const t = useTranslations('lending')
   const [amount, setAmount] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
   const [step, setStep] = useState<'input' | 'withdrawing' | 'success'>('input')
@@ -81,6 +83,7 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
       setStep('success')
       refetchPosition()
       onSuccess?.()
+      window.dispatchEvent(new Event('lending-refresh'))
       setTimeout(() => {
         setStep('input')
         setAmount('')
@@ -139,12 +142,12 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
   const isProcessing = isPending || isConfirming
 
   const buttonText = isPending
-    ? 'Confirm in wallet...'
+    ? t('withdraw_collateral.button.confirm_wallet')
     : isConfirming
-    ? 'Withdrawing...'
+    ? t('withdraw_collateral.button.withdrawing')
     : step === 'success'
-    ? 'Withdrawn!'
-    : 'Withdraw Collateral'
+    ? t('withdraw_collateral.button.withdrawn')
+    : t('withdraw_collateral.button.withdraw_collateral')
 
   const formattedCollateral = formatUnits(collateralAmount, 18)
   const formattedMaxWithdraw = formatUnits(maxWithdraw, 18)
@@ -154,21 +157,21 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
 
   return (
     <div className="bg-white rounded-xl shadow-card border border-border-light p-6">
-      <h2 className="text-lg font-bold text-text-primary mb-4">Withdraw Collateral</h2>
+      <h2 className="text-lg font-bold text-text-primary mb-4">{t('withdraw_collateral.title')}</h2>
       <p className="text-text-secondary text-sm mb-4">
         {debtAmount === 0n
-          ? 'Withdraw your ITP collateral'
-          : 'Withdraw available collateral (limited by debt)'}
+          ? t('withdraw_collateral.description_no_debt')
+          : t('withdraw_collateral.description_with_debt')}
       </p>
 
       <div className="space-y-4">
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="text-sm text-text-secondary">Amount (ITP)</label>
+            <label className="text-sm text-text-secondary">{t('withdraw_collateral.amount_label')}</label>
             <span className="text-xs text-text-muted">
               {debtAmount === 0n
-                ? `Deposited: ${parseFloat(formattedCollateral).toFixed(4)}`
-                : `Max withdraw: ${parseFloat(formattedMaxWithdraw).toFixed(4)}`}
+                ? t('withdraw_collateral.deposited_label', { amount: parseFloat(formattedCollateral).toFixed(4) })
+                : t('withdraw_collateral.max_withdraw_label', { amount: parseFloat(formattedMaxWithdraw).toFixed(4) })}
             </span>
           </div>
           <div className="relative">
@@ -196,7 +199,7 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
         {debtAmount > 0n && amount && parsedAmount > 0n && (
           <div className="bg-muted rounded-xl p-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-text-secondary">Projected Health Factor</span>
+              <span className="text-sm text-text-secondary">{t('withdraw_collateral.projected_health_factor')}</span>
               <span className={`font-mono tabular-nums font-bold ${
                 projectedHealthFactor >= 1.5 ? 'text-color-up' :
                 projectedHealthFactor >= 1.0 ? 'text-color-warning' :
@@ -207,7 +210,7 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
             </div>
             {projectedHealthFactor < 1.0 && (
               <p className="text-color-down text-xs mt-2">
-                Cannot withdraw: health factor would be below 1.0
+                {t('withdraw_collateral.cannot_withdraw_health')}
               </p>
             )}
           </div>
@@ -217,7 +220,7 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
         {willClosePosition && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
             <p className="text-blue-700 text-sm">
-              This will close your position and return all ITP to your wallet.
+              {t('withdraw_collateral.close_position_notice')}
             </p>
           </div>
         )}
@@ -239,21 +242,21 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
             onClick={handleCancel}
             className="w-full text-center text-sm text-text-muted hover:text-text-secondary py-2 transition-colors"
           >
-            Cancel
+            {t('actions.cancel')}
           </button>
         )}
 
         {stuckWarning && (
           <div className="bg-surface-warning border border-orange-300 rounded-xl p-3 text-orange-700 text-sm">
-            <p className="font-bold">Transaction may be stuck</p>
-            <p className="text-xs mt-1">Not confirmed after 30s. You can cancel and try again.</p>
+            <p className="font-bold">{t('common.tx_stuck_title')}</p>
+            <p className="text-xs mt-1">{t('common.tx_stuck_description')}</p>
           </div>
         )}
 
         {txError && (
           <div className="bg-surface-down border border-red-300 rounded-xl p-3 text-color-down text-sm">
             {txError.includes('User rejected') || txError.includes('denied')
-              ? 'Transaction rejected'
+              ? t('common.transaction_rejected')
               : <span className="break-all">{txError}</span>}
           </div>
         )}

@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { formatUnits } from 'viem'
 import { useMetaMorphoVault } from '@/hooks/useMetaMorphoVault'
 
@@ -8,22 +9,23 @@ function Bone({ w = 'w-20', h = 'h-4' }: { w?: string; h?: string }) {
 }
 
 export function VaultStats() {
+  const t = useTranslations('lending')
   const { vaultInfo, isLoading, error } = useMetaMorphoVault()
 
   const stats = [
     {
-      label: 'Supply APY',
+      label: t('vault_stats.supply_apy'),
       value: vaultInfo ? `${vaultInfo.apy.toFixed(2)}%` : null,
       color: 'text-color-up',
     },
     {
-      label: 'Total Deposits',
+      label: t('vault_stats.total_deposits'),
       value: vaultInfo
         ? `$${parseFloat(formatUnits(vaultInfo.totalAssets, 6)).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
         : null,
     },
     {
-      label: 'Utilization',
+      label: t('vault_stats.utilization'),
       value: vaultInfo ? `${vaultInfo.utilization.toFixed(1)}%` : null,
       color: vaultInfo
         ? vaultInfo.utilization > 90 ? 'text-color-down'
@@ -32,7 +34,7 @@ export function VaultStats() {
         : undefined,
     },
     {
-      label: 'Vault',
+      label: t('vault_stats.vault'),
       value: vaultInfo ? vaultInfo.name : null,
       fontSize: 'text-[16px]',
     },

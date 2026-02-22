@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { useAccount, useReadContract } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
 import { useDeposit } from '@/hooks/p2pool/useDeposit'
@@ -24,6 +25,7 @@ interface DepositModalProps {
  * Follows the same approve + contract call pattern as BuyItpModal.
  */
 export function DepositModal({ batchId, currentBalance, onClose }: DepositModalProps) {
+  const t = useTranslations('p2pool')
   const { address, isConnected } = useAccount()
   const [amount, setAmount] = useState('')
 
@@ -82,9 +84,9 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
   })()
 
   const buttonText = (() => {
-    if (step === 'approving') return isPending ? 'Confirm in wallet...' : 'Approving...'
-    if (step === 'depositing') return isPending ? 'Confirm in wallet...' : 'Depositing...'
-    return 'Deposit USDC'
+    if (step === 'approving') return isPending ? t('deposit_modal.button_confirm') : t('deposit_modal.button_approving')
+    if (step === 'depositing') return isPending ? t('deposit_modal.button_confirm') : t('deposit_modal.button_depositing')
+    return t('deposit_modal.button_deposit')
   })()
 
   return (
@@ -93,20 +95,20 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-text-primary">Deposit to Batch #{batchId}</h2>
+            <h2 className="text-lg font-semibold text-text-primary">{t('deposit_modal.title', { id: batchId })}</h2>
             <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
           </div>
 
           {!isConnected ? (
             <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
-              <p className="text-text-secondary">Connect your wallet to deposit</p>
+              <p className="text-text-secondary">{t('deposit_modal.connect_wallet')}</p>
             </div>
           ) : step === 'done' ? (
             <div className="space-y-4">
               <div className="bg-surface-up border border-color-up/30 rounded-xl p-6 text-center">
-                <p className="text-color-up font-semibold text-lg mb-1">Deposit Successful</p>
+                <p className="text-color-up font-semibold text-lg mb-1">{t('deposit_modal.success_title')}</p>
                 <p className="text-text-secondary text-sm">
-                  {amount} USDC deposited to batch #{batchId}
+                  {t('deposit_modal.success_description', { amount, id: batchId })}
                 </p>
                 {depositHash && (
                   <p className="text-xs text-text-muted font-mono mt-2 break-all">
@@ -118,13 +120,13 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
                 onClick={handleReset}
                 className="w-full py-3 bg-color-up text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
               >
-                Deposit More
+                {t('deposit_modal.deposit_more')}
               </button>
               <button
                 onClick={onClose}
                 className="w-full text-center text-sm text-text-muted hover:text-text-primary py-2 transition-colors"
               >
-                Close
+                {t('deposit_modal.close')}
               </button>
             </div>
           ) : (
@@ -132,7 +134,7 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
               {/* Current batch balance */}
               {currentBalance && (
                 <div className="bg-muted border border-border-light rounded-xl p-4 flex justify-between items-center">
-                  <span className="text-xs font-medium uppercase tracking-wider text-text-muted">Batch Balance</span>
+                  <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('deposit_modal.batch_balance')}</span>
                   <span className="text-lg font-bold text-text-primary tabular-nums font-mono">
                     {parseFloat(formatUnits(BigInt(currentBalance), 6)).toFixed(2)} USDC
                   </span>
@@ -142,9 +144,9 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
               {/* Amount input */}
               <div className="bg-muted border border-border-light rounded-xl p-4">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted">Amount (USDC)</label>
+                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('deposit_modal.amount_label')}</label>
                   <span className="text-xs text-text-muted font-mono">
-                    Balance: {balance > 0n ? parseFloat(formatUnits(balance, 6)).toFixed(2) : '0.00'} USDC
+                    {t('deposit_modal.balance_label', { amount: balance > 0n ? parseFloat(formatUnits(balance, 6)).toFixed(2) : '0.00' })}
                   </span>
                 </div>
                 <input
@@ -158,7 +160,7 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
                   className="w-full bg-card border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg font-mono tabular-nums focus:border-zinc-600 focus:outline-none disabled:opacity-50"
                 />
                 {insufficientBalance && (
-                  <p className="text-color-down text-xs mt-1">Insufficient USDC balance</p>
+                  <p className="text-color-down text-xs mt-1">{t('deposit_modal.insufficient_balance')}</p>
                 )}
               </div>
 
@@ -180,7 +182,7 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
               {/* Error */}
               {error && (
                 <div className="bg-surface-down border border-color-down/30 rounded-lg p-4 text-color-down">
-                  <p className="font-medium">Error</p>
+                  <p className="font-medium">{t('deposit_modal.error_title')}</p>
                   <p className="text-sm mt-1 break-all">{error}</p>
                 </div>
               )}
@@ -200,7 +202,7 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
                   onClick={() => { reset(); }}
                   className="w-full text-center text-sm text-text-muted hover:text-text-primary py-2 transition-colors"
                 >
-                  Cancel
+                  {t('deposit_modal.cancel')}
                 </button>
               )}
             </div>

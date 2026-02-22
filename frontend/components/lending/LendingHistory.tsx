@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useMorphoHistory, type MorphoTx } from '@/hooks/useMorphoHistory'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
 
@@ -7,11 +8,11 @@ interface LendingHistoryProps {
   market: MorphoMarketEntry
 }
 
-const TYPE_LABELS: Record<MorphoTx['type'], string> = {
-  deposit: 'Deposit',
-  withdraw: 'Withdraw',
-  borrow: 'Borrow',
-  repay: 'Repay',
+const TYPE_LABEL_KEYS: Record<MorphoTx['type'], string> = {
+  deposit: 'lending_history.type_deposit',
+  withdraw: 'lending_history.type_withdraw',
+  borrow: 'lending_history.type_borrow',
+  repay: 'lending_history.type_repay',
 }
 
 const TYPE_COLORS: Record<MorphoTx['type'], string> = {
@@ -42,13 +43,14 @@ function formatTime(timestamp: number): string {
 }
 
 export function LendingHistory({ market }: LendingHistoryProps) {
+  const t = useTranslations('lending')
   const { txs, isLoading } = useMorphoHistory(market)
 
   if (isLoading && txs.length === 0) {
     return (
       <div className="bg-white rounded-xl shadow-card border border-border-light p-4">
-        <h3 className="text-sm font-bold text-text-secondary mb-2">Transaction History</h3>
-        <div className="text-center py-3 text-text-muted text-xs">Loading...</div>
+        <h3 className="text-sm font-bold text-text-secondary mb-2">{t('lending_history.title')}</h3>
+        <div className="text-center py-3 text-text-muted text-xs">{t('lending_history.loading')}</div>
       </div>
     )
   }
@@ -57,13 +59,13 @@ export function LendingHistory({ market }: LendingHistoryProps) {
 
   return (
     <div className="bg-white rounded-xl shadow-card border border-border-light p-4">
-      <h3 className="text-sm font-bold text-text-secondary mb-3">Transaction History</h3>
+      <h3 className="text-sm font-bold text-text-secondary mb-3">{t('lending_history.title')}</h3>
       <div className="space-y-2 max-h-[200px] overflow-y-auto">
         {txs.map((tx, i) => (
           <div key={`${tx.txHash}-${i}`} className="flex justify-between items-center text-xs py-1.5 border-b border-border-light last:border-0">
             <div className="flex items-center gap-2">
               <span className={`font-bold ${TYPE_COLORS[tx.type]}`}>
-                {TYPE_LABELS[tx.type]}
+                {t(TYPE_LABEL_KEYS[tx.type])}
               </span>
               <span className="text-text-secondary font-mono tabular-nums">
                 {parseFloat(tx.amount).toFixed(tx.token === 'USDC' ? 2 : 4)} {tx.token}

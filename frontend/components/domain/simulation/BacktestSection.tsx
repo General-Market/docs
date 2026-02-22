@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import { SimFilterPanel, SimFilterState } from './SimFilterPanel'
 import { SimProgressBar } from './SimProgressBar'
 import { SimStatsGrid } from './SimStatsGrid'
@@ -26,6 +27,7 @@ interface BacktestSectionProps {
 }
 
 export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItps, onRebalanceItp }: BacktestSectionProps) {
+  const t = useTranslations('backtest')
   const [filters, setFilters] = useState<SimFilterState>({
     category_id: 'made-in-china',
     top_n: 5,
@@ -107,13 +109,31 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
 
   const isLoading = isSweep ? sweep.status === 'loading' : sim.status === 'loading'
 
-  // Auto-run simulation on first mount with default params
+  // Auto-run simulation on first mount — waits for data-node to be reachable
   const hasAutoRun = useRef(false)
   useEffect(() => {
-    if (!hasAutoRun.current && sim.status === 'idle' && !isSweep && filters.category_id) {
+    if (hasAutoRun.current || isSweep || !filters.category_id) return
+    if (sim.status !== 'idle') return
+
+    let cancelled = false
+    const tryRun = async () => {
+      // Ping data-node health before firing SSE stream
+      for (let attempt = 0; attempt < 15; attempt++) {
+        if (cancelled) return
+        try {
+          const res = await fetch(`${DATA_NODE_URL}/health`, { signal: AbortSignal.timeout(2000) })
+          if (res.ok) break
+        } catch {
+          // not ready yet
+        }
+        await new Promise(r => setTimeout(r, 2000))
+      }
+      if (cancelled) return
       hasAutoRun.current = true
       sim.run()
     }
+    tryRun()
+    return () => { cancelled = true }
   }, [sim.status, sim.run, isSweep, filters.category_id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRun = useCallback(() => {
@@ -185,7 +205,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
           )}
           {sim.result?.run_id && (
             <div className="mt-6">
-              <h3 className="text-xs font-medium uppercase tracking-widest text-text-muted mb-3">Holdings (Latest Rebalance)</h3>
+              <h3 className="text-xs font-medium uppercase tracking-widest text-text-muted mb-3">{t('holdings.title')}</h3>
               <SimHoldingsTable runId={sim.result.run_id} />
             </div>
           )}
@@ -237,15 +257,15 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
         <div className="fixed inset-0 z-50 bg-page overflow-y-auto p-6">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-1">Index Backtester</p>
-              <h2 className="text-lg font-bold text-text-primary">Simulation Results</h2>
+              <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-1">{t('fullscreen.label')}</p>
+              <h2 className="text-lg font-bold text-text-primary">{t('fullscreen.title')}</h2>
             </div>
             <button
               onClick={() => setIsFullscreen(false)}
               className="text-text-muted hover:text-text-primary text-sm px-3 py-1 border border-border-light rounded-lg transition-colors"
               title="Exit fullscreen"
             >
-              ESC
+              {t('fullscreen.exit')}
             </button>
           </div>
           {resultsContent}
@@ -255,9 +275,9 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
       <div className="space-y-3 pb-10">
         {/* Section Header */}
         <div className="pt-10">
-          <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">Strategy Simulation</p>
-          <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">Backtest</h2>
-          <p className="text-[14px] text-text-secondary mt-1.5">Test index strategies against historical data before deploying capital.</p>
+          <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">{t('heading.label')}</p>
+          <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">{t('heading.title')}</h2>
+          <p className="text-[14px] text-text-secondary mt-1.5">{t('heading.description')}</p>
         </div>
 
         {/* Filter Panel */}
@@ -277,7 +297,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
               onClick={() => setIsFullscreen(true)}
               className="text-xs text-text-muted hover:text-text-primary px-3 py-1.5 border border-border-light rounded-lg hover:border-border-medium transition-colors"
             >
-              Fullscreen
+              {t('fullscreen.enter')}
             </button>
           </div>
         )}

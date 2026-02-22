@@ -1,9 +1,12 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { useAccount } from 'wagmi'
 import { useMarketRegistry, type MarketInfo } from '@/hooks/p2pool/useMarketRegistry'
 import { useCreateBatch } from '@/hooks/p2pool/useCreateBatch'
+import { useSetBatchMetadata } from '@/hooks/p2pool/useSetBatchMetadata'
+import { useSetDeployerName } from '@/hooks/p2pool/useSetDeployerName'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 
 // Maps to IVision.ResolutionType enum
@@ -46,11 +49,160 @@ interface MarketConfig {
   customThreshold: string // basis points as string for input
 }
 
+interface MetadataFormProps {
+  batchId: bigint
+  metaName: string; setMetaName: (v: string) => void
+  metaDescription: string; setMetaDescription: (v: string) => void
+  metaWebsite: string; setMetaWebsite: (v: string) => void
+  metaVideo: string; setMetaVideo: (v: string) => void
+  metaImage: string; setMetaImage: (v: string) => void
+  metaDeployerName: string; setMetaDeployerName: (v: string) => void
+  metaStep: 'form' | 'saving-meta' | 'saving-name' | 'done'
+  setMetaStep: (v: 'form' | 'saving-meta' | 'saving-name' | 'done') => void
+  setBatchMetadata: (params: any) => void
+  setDeployerName: (name: string) => void
+  metaPending: boolean; metaConfirming: boolean; metaSuccess: boolean; metaError: string | null
+  namePending: boolean; nameConfirming: boolean; nameSuccess: boolean; nameError: string | null
+  onClose: () => void
+  handleReset: () => void
+}
+
+function MetadataForm({
+  batchId,
+  metaName, setMetaName,
+  metaDescription, setMetaDescription,
+  metaWebsite, setMetaWebsite,
+  metaVideo, setMetaVideo,
+  metaImage, setMetaImage,
+  metaDeployerName, setMetaDeployerName,
+  metaStep, setMetaStep,
+  setBatchMetadata, setDeployerName,
+  metaPending, metaConfirming, metaSuccess, metaError,
+  namePending, nameConfirming, nameSuccess, nameError,
+  onClose, handleReset,
+}: MetadataFormProps) {
+  const hasAnyMeta = metaName || metaDescription || metaWebsite || metaVideo || metaImage
+
+  // Progress through the two-tx flow
+  if (metaStep === 'saving-meta' && metaSuccess && metaDeployerName) {
+    // First tx done, fire second
+    setMetaStep('saving-name')
+    setDeployerName(metaDeployerName)
+  } else if (metaStep === 'saving-meta' && metaSuccess && !metaDeployerName) {
+    setMetaStep('done')
+  } else if (metaStep === 'saving-name' && nameSuccess) {
+    setMetaStep('done')
+  }
+
+  const handleSave = () => {
+    if (hasAnyMeta) {
+      setMetaStep('saving-meta')
+      setBatchMetadata({
+        batchId,
+        name: metaName,
+        description: metaDescription,
+        websiteUrl: metaWebsite,
+        videoUrl: metaVideo,
+        imageUrl: metaImage,
+      })
+    } else if (metaDeployerName) {
+      setMetaStep('saving-name')
+      setDeployerName(metaDeployerName)
+    }
+  }
+
+  const inputClass = 'w-full bg-card border border-border-medium rounded-lg px-4 py-2 text-text-primary text-sm font-mono focus:border-zinc-600 focus:outline-none'
+
+  if (metaStep === 'done') {
+    return (
+      <div className="space-y-4">
+        <div className="bg-surface-up border border-color-up/30 rounded-lg p-4 text-color-up text-center">
+          <p className="font-medium">Details Saved!</p>
+        </div>
+        <div className="flex gap-3">
+          <button onClick={handleReset} className="flex-1 py-3 bg-terminal text-text-inverse font-medium rounded-lg text-sm hover:opacity-90 transition-opacity">
+            Create Another
+          </button>
+          <button onClick={onClose} className="flex-1 py-3 border border-border-medium text-text-secondary font-medium rounded-lg text-sm hover:border-zinc-500 hover:text-text-primary transition-colors">
+            Close
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const isSaving = metaPending || metaConfirming || namePending || nameConfirming
+  const activeError = metaError || nameError
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs font-medium uppercase tracking-wider text-text-muted">Add Batch Details (optional)</p>
+
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs text-text-muted block mb-1">Name (max 64 chars)</label>
+          <input value={metaName} onChange={e => setMetaName(e.target.value)} maxLength={64} placeholder="My Trading Strategy" className={inputClass} />
+        </div>
+        <div>
+          <label className="text-xs text-text-muted block mb-1">Description (max 280 chars)</label>
+          <textarea value={metaDescription} onChange={e => setMetaDescription(e.target.value)} maxLength={280} placeholder="A brief description..." rows={2} className={inputClass + ' resize-none'} />
+        </div>
+        <div>
+          <label className="text-xs text-text-muted block mb-1">Website URL</label>
+          <input value={metaWebsite} onChange={e => setMetaWebsite(e.target.value)} maxLength={128} placeholder="https://..." className={inputClass} />
+        </div>
+        <div>
+          <label className="text-xs text-text-muted block mb-1">Video URL (YouTube)</label>
+          <input value={metaVideo} onChange={e => setMetaVideo(e.target.value)} maxLength={256} placeholder="https://youtube.com/watch?v=..." className={inputClass} />
+        </div>
+        <div>
+          <label className="text-xs text-text-muted block mb-1">Image URL</label>
+          <input value={metaImage} onChange={e => setMetaImage(e.target.value)} maxLength={256} placeholder="https://..." className={inputClass} />
+        </div>
+        <div className="border-t border-border-light pt-3">
+          <label className="text-xs text-text-muted block mb-1">Your Display Name (max 64 chars)</label>
+          <input value={metaDeployerName} onChange={e => setMetaDeployerName(e.target.value)} maxLength={64} placeholder="Your name or alias" className={inputClass} />
+        </div>
+      </div>
+
+      {activeError && (
+        <div className="bg-surface-down border border-color-down/30 rounded-lg p-3 text-color-down text-sm break-all">
+          {activeError}
+        </div>
+      )}
+
+      {isSaving && (
+        <div className="bg-color-info/10 border border-color-info/30 rounded-lg p-3 text-color-info text-sm">
+          {metaPending || namePending ? 'Confirm in your wallet...' : 'Waiting for confirmation...'}
+        </div>
+      )}
+
+      <div className="flex gap-3">
+        <button
+          onClick={handleSave}
+          disabled={isSaving || (!hasAnyMeta && !metaDeployerName)}
+          className="flex-1 py-3 bg-terminal text-text-inverse font-medium rounded-lg text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {isSaving ? 'Saving...' : 'Save Details'}
+        </button>
+        <button
+          onClick={onClose}
+          disabled={isSaving}
+          className="flex-1 py-3 border border-border-medium text-text-secondary font-medium rounded-lg text-sm hover:border-zinc-500 hover:text-text-primary transition-colors disabled:opacity-40"
+        >
+          Skip
+        </button>
+      </div>
+    </div>
+  )
+}
+
 interface CreateBatchModalProps {
   onClose: () => void
 }
 
 export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
+  const t = useTranslations('p2pool')
   const { isConnected } = useAccount()
   const { markets, isLoading: marketsLoading } = useMarketRegistry()
   const {
@@ -64,23 +216,60 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
     reset: resetTx,
   } = useCreateBatch()
 
+  const {
+    setBatchMetadata,
+    isPending: metaPending,
+    isConfirming: metaConfirming,
+    isSuccess: metaSuccess,
+    error: metaError,
+  } = useSetBatchMetadata()
+
+  const {
+    setDeployerName,
+    isPending: namePending,
+    isConfirming: nameConfirming,
+    isSuccess: nameSuccess,
+    error: nameError,
+  } = useSetDeployerName()
+
+  // Metadata form state
+  const [showMetaForm, setShowMetaForm] = useState(false)
+  const [metaName, setMetaName] = useState('')
+  const [metaDescription, setMetaDescription] = useState('')
+  const [metaWebsite, setMetaWebsite] = useState('')
+  const [metaVideo, setMetaVideo] = useState('')
+  const [metaImage, setMetaImage] = useState('')
+  const [metaDeployerName, setMetaDeployerName] = useState('')
+  const [metaStep, setMetaStep] = useState<'form' | 'saving-meta' | 'saving-name' | 'done'>('form')
+
   const [step, setStep] = useState<Step>('markets')
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedSource, setSelectedSource] = useState<string>('')
   const [selectedMarketIds, setSelectedMarketIds] = useState<Set<string>>(new Set())
   const [marketConfigs, setMarketConfigs] = useState<Map<string, { resolutionType: number; customThreshold: string }>>(new Map())
   const [tickDuration, setTickDuration] = useState(3600) // default 1 hour
 
-  // Filtered markets for search
+  // Extract unique sources from markets
+  const sources = useMemo(() => {
+    return [...new Set(markets.map(m => m.source))].sort()
+  }, [markets])
+
+  // Filtered markets by source + search
   const filteredMarkets = useMemo(() => {
-    if (!searchQuery) return markets
-    const q = searchQuery.toLowerCase()
-    return markets.filter(
-      (m) =>
-        m.name.toLowerCase().includes(q) ||
-        m.id.toLowerCase().includes(q) ||
-        m.source.toLowerCase().includes(q)
-    )
-  }, [markets, searchQuery])
+    let result = markets
+    if (selectedSource) {
+      result = result.filter(m => m.source === selectedSource)
+    }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      result = result.filter(
+        (m) =>
+          m.name.toLowerCase().includes(q) ||
+          m.id.toLowerCase().includes(q)
+      )
+    }
+    return result
+  }, [markets, selectedSource, searchQuery])
 
   // Build selected market configs for display
   const selectedConfigs = useMemo((): MarketConfig[] => {
@@ -103,6 +292,22 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
       return next
     })
   }, [])
+
+  const selectAllVisible = useCallback(() => {
+    setSelectedMarketIds((prev) => {
+      const next = new Set(prev)
+      filteredMarkets.forEach(m => next.add(m.id))
+      return next
+    })
+  }, [filteredMarkets])
+
+  const unselectAllVisible = useCallback(() => {
+    setSelectedMarketIds((prev) => {
+      const next = new Set(prev)
+      filteredMarkets.forEach(m => next.delete(m.id))
+      return next
+    })
+  }, [filteredMarkets])
 
   const updateMarketConfig = useCallback((marketId: string, field: 'resolutionType' | 'customThreshold', value: string | number) => {
     setMarketConfigs((prev) => {
@@ -165,6 +370,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
     setMarketConfigs(new Map())
     setTickDuration(3600)
     setSearchQuery('')
+    setSelectedSource('')
   }, [resetTx])
 
   const stepIndex = STEPS.indexOf(step)
@@ -184,7 +390,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-text-primary">Create Batch</h2>
+            <h2 className="text-lg font-semibold text-text-primary">{t('create_modal.title')}</h2>
             <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">
               &times;
             </button>
@@ -215,31 +421,68 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
 
           {!isConnected ? (
             <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
-              <p className="text-text-secondary">Connect your wallet to create a batch</p>
+              <p className="text-text-secondary">{t('create_modal.connect_wallet')}</p>
             </div>
           ) : (
             <>
               {/* Step 1: Pick Markets */}
               {step === 'markets' && (
                 <div className="space-y-4">
-                  <div className="bg-muted border border-border-light rounded-xl p-4">
-                    <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-2 block">
-                      Search Markets
-                    </label>
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search by name, ID, or source..."
-                      className="w-full bg-card border border-border-medium rounded-lg px-4 py-2 text-text-primary text-sm font-mono focus:border-zinc-600 focus:outline-none"
-                    />
+                  {/* Source dropdown */}
+                  <div className="bg-muted border border-border-light rounded-xl p-4 space-y-3">
+                    <div>
+                      <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-2 block">
+                        Source
+                      </label>
+                      <select
+                        value={selectedSource}
+                        onChange={(e) => setSelectedSource(e.target.value)}
+                        className="w-full bg-card border border-border-medium rounded-lg px-4 py-2 text-text-primary text-sm font-mono focus:border-zinc-600 focus:outline-none appearance-none"
+                      >
+                        <option value="">All Sources</option>
+                        {sources.map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-2 block">
+                        Search
+                      </label>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search by name or ID..."
+                        className="w-full bg-card border border-border-medium rounded-lg px-4 py-2 text-text-primary text-sm font-mono focus:border-zinc-600 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Select All / Unselect All + count */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={selectAllVisible}
+                      className="px-3 py-1.5 border border-border-medium text-text-secondary text-xs font-medium rounded-lg hover:border-zinc-500 hover:text-text-primary transition-colors"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      onClick={unselectAllVisible}
+                      className="px-3 py-1.5 border border-border-medium text-text-secondary text-xs font-medium rounded-lg hover:border-zinc-500 hover:text-text-primary transition-colors"
+                    >
+                      Unselect All
+                    </button>
+                    <span className="text-xs text-text-muted ml-auto">
+                      {selectedMarketIds.size} selected{filteredMarkets.length !== markets.length ? ` / ${filteredMarkets.length} shown` : ''}
+                    </span>
                   </div>
 
                   {marketsLoading ? (
                     <div className="py-8 text-center text-text-muted text-sm">Loading markets...</div>
                   ) : filteredMarkets.length === 0 ? (
                     <div className="py-8 text-center text-text-muted text-sm">
-                      {markets.length === 0 ? 'No active markets available' : 'No markets match your search'}
+                      {markets.length === 0 ? 'No active markets available' : 'No markets match your filter'}
                     </div>
                   ) : (
                     <div className="max-h-[360px] overflow-y-auto border border-border-light rounded-lg">
@@ -286,12 +529,6 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                         )
                       })}
                     </div>
-                  )}
-
-                  {selectedMarketIds.size > 0 && (
-                    <p className="text-xs text-text-secondary">
-                      {selectedMarketIds.size} market{selectedMarketIds.size !== 1 ? 's' : ''} selected
-                    </p>
                   )}
                 </div>
               )}
@@ -442,7 +679,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
 
                       {isPending && (
                         <div className="bg-color-info/10 border border-color-info/30 rounded-lg p-3 text-color-info text-sm">
-                          Confirm the transaction in your wallet...
+                          {t('create_modal.step_confirm.confirm_wallet')}
                         </div>
                       )}
 
@@ -467,16 +704,16 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                         className="w-full py-3 bg-terminal text-text-inverse font-medium rounded-lg text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         {isPending
-                          ? 'Waiting for wallet...'
+                          ? t('create_modal.step_confirm.button.waiting')
                           : isConfirming
-                            ? 'Confirming...'
-                            : 'Create Batch'}
+                            ? t('create_modal.step_confirm.button.confirming')
+                            : t('create_modal.step_confirm.button.create_batch')}
                       </WalletActionButton>
                     </>
-                  ) : (
+                  ) : !showMetaForm ? (
                     <>
                       <div className="bg-surface-up border border-color-up/30 rounded-lg p-4 text-color-up text-center">
-                        <p className="font-medium text-lg mb-1">Batch Created!</p>
+                        <p className="font-medium text-lg mb-1">{t('create_modal.step_confirm.success.title')}</p>
                         {batchId !== null && (
                           <p className="text-sm font-mono">Batch ID: #{batchId.toString()}</p>
                         )}
@@ -487,19 +724,36 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
 
                       <div className="flex gap-3">
                         <button
-                          onClick={handleReset}
+                          onClick={() => setShowMetaForm(true)}
                           className="flex-1 py-3 bg-terminal text-text-inverse font-medium rounded-lg text-sm hover:opacity-90 transition-opacity"
                         >
-                          Create Another
+                          Add Details
                         </button>
                         <button
                           onClick={onClose}
                           className="flex-1 py-3 border border-border-medium text-text-secondary font-medium rounded-lg text-sm hover:border-zinc-500 hover:text-text-primary transition-colors"
                         >
-                          Close
+                          Skip
                         </button>
                       </div>
                     </>
+                  ) : (
+                    <MetadataForm
+                      batchId={batchId!}
+                      metaName={metaName} setMetaName={setMetaName}
+                      metaDescription={metaDescription} setMetaDescription={setMetaDescription}
+                      metaWebsite={metaWebsite} setMetaWebsite={setMetaWebsite}
+                      metaVideo={metaVideo} setMetaVideo={setMetaVideo}
+                      metaImage={metaImage} setMetaImage={setMetaImage}
+                      metaDeployerName={metaDeployerName} setMetaDeployerName={setMetaDeployerName}
+                      metaStep={metaStep} setMetaStep={setMetaStep}
+                      setBatchMetadata={setBatchMetadata}
+                      setDeployerName={setDeployerName}
+                      metaPending={metaPending} metaConfirming={metaConfirming} metaSuccess={metaSuccess} metaError={metaError}
+                      namePending={namePending} nameConfirming={nameConfirming} nameSuccess={nameSuccess} nameError={nameError}
+                      onClose={onClose}
+                      handleReset={handleReset}
+                    />
                   )}
                 </div>
               )}
@@ -520,7 +774,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                     disabled={!canAdvance}
                     className="flex-1 py-2.5 bg-terminal text-text-inverse font-medium rounded-lg text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    {stepIndex === STEPS.length - 2 ? 'Review & Confirm' : 'Next'}
+                    {stepIndex === STEPS.length - 2 ? t('create_modal.nav.review_confirm') : t('create_modal.nav.next')}
                   </button>
                 </div>
               )}
@@ -531,7 +785,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                   onClick={goBack}
                   className="w-full text-center text-sm text-text-muted hover:text-text-primary py-2 mt-2 transition-colors"
                 >
-                  Back to Preview
+                  {t('create_modal.nav.back_to_preview')}
                 </button>
               )}
             </>

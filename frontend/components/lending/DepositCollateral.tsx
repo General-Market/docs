@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import { useAccount } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
@@ -22,6 +23,7 @@ interface DepositCollateralProps {
  * Handles approval flow if ITP is not approved for Morpho.
  */
 export function DepositCollateral({ market, itpId, onSuccess }: DepositCollateralProps) {
+  const t = useTranslations('lending')
   const { address } = useAccount()
   const [amount, setAmount] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
@@ -91,6 +93,7 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
       refetchBalance()
       refetchAllowance()
       onSuccess?.()
+      window.dispatchEvent(new Event('lending-refresh'))
       // Reset after showing success
       setTimeout(() => {
         setStep('input')
@@ -157,30 +160,30 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
   const isProcessing = isPending || isConfirming || approvalState === 'approving'
 
   const buttonText = approvalState === 'approving'
-    ? 'Approving ITP...'
+    ? t('deposit_collateral.button.approving_itp')
     : isPending
-    ? 'Confirm in wallet...'
+    ? t('deposit_collateral.button.confirm_wallet')
     : isConfirming
-    ? 'Depositing...'
+    ? t('deposit_collateral.button.depositing')
     : step === 'success'
-    ? 'Deposited!'
+    ? t('deposit_collateral.button.deposited')
     : needsApproval
-    ? 'Approve & Deposit'
-    : 'Deposit Collateral'
+    ? t('deposit_collateral.button.approve_and_deposit')
+    : t('deposit_collateral.button.deposit_collateral')
 
   return (
     <div className="bg-white rounded-xl shadow-card border border-border-light p-6">
-      <h2 className="text-lg font-bold text-text-primary mb-4">Deposit Collateral</h2>
+      <h2 className="text-lg font-bold text-text-primary mb-4">{t('deposit_collateral.title')}</h2>
       <p className="text-text-secondary text-sm mb-4">
-        Deposit ITP tokens as collateral to borrow USDC
+        {t('deposit_collateral.description')}
       </p>
 
       <div className="space-y-4">
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="text-sm text-text-secondary">Amount (ITP)</label>
+            <label className="text-sm text-text-secondary">{t('deposit_collateral.amount_label')}</label>
             <span className="text-xs text-text-muted">
-              Balance: {parseFloat(formattedBalance).toFixed(4)} ITP
+              {t('deposit_collateral.balance_label', { amount: parseFloat(formattedBalance).toFixed(4) })}
             </span>
           </div>
           <div className="relative">
@@ -203,7 +206,7 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
             </button>
           </div>
           {amount && parsedAmount > itpBalance && (
-            <p className="text-color-down text-xs mt-1">Insufficient ITP balance</p>
+            <p className="text-color-down text-xs mt-1">{t('deposit_collateral.insufficient_balance')}</p>
           )}
         </div>
 
@@ -224,21 +227,21 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
             onClick={handleCancel}
             className="w-full text-center text-sm text-text-muted hover:text-text-secondary py-2 transition-colors"
           >
-            Cancel
+            {t('actions.cancel')}
           </button>
         )}
 
         {stuckWarning && (
           <div className="bg-surface-warning border border-orange-300 rounded-xl p-3 text-orange-700 text-sm">
-            <p className="font-bold">Transaction may be stuck</p>
-            <p className="text-xs mt-1">Not confirmed after 30s. You can cancel and try again.</p>
+            <p className="font-bold">{t('common.tx_stuck_title')}</p>
+            <p className="text-xs mt-1">{t('common.tx_stuck_description')}</p>
           </div>
         )}
 
         {txError && (
           <div className="bg-surface-down border border-red-300 rounded-xl p-3 text-color-down text-sm">
             {txError.includes('User rejected') || txError.includes('denied')
-              ? 'Transaction rejected'
+              ? t('common.transaction_rejected')
               : <span className="break-all">{txError}</span>}
           </div>
         )}

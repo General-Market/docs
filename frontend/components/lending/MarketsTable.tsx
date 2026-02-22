@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { usePublicClient } from 'wagmi'
 import { useMorphoMarkets } from '@/hooks/useMorphoMarkets'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
@@ -19,6 +20,7 @@ interface MarketsTableProps {
  * Falls back to static config data when on-chain reads fail.
  */
 export function MarketsTable({ market }: MarketsTableProps) {
+  const t = useTranslations('lending')
   const { markets, isLoading, error } = useMorphoMarkets(market)
   const publicClient = usePublicClient()
   const [itpName, setItpName] = useState<string>('ITP')
@@ -63,7 +65,7 @@ export function MarketsTable({ market }: MarketsTableProps) {
   if (isLoading) {
     return (
       <div className="bg-white rounded-xl shadow-card border border-border-light p-6">
-        <h2 className="text-lg font-bold text-text-primary mb-4">ITP Markets</h2>
+        <h2 className="text-lg font-bold text-text-primary mb-4">{t('markets_detail.itp_markets')}</h2>
         <div className="animate-pulse space-y-3">
           <div className="h-4 bg-muted rounded w-full" />
           <div className="h-10 bg-muted rounded w-full" />
@@ -76,17 +78,17 @@ export function MarketsTable({ market }: MarketsTableProps) {
   if (!error && markets.length > 0) {
     return (
       <div className="bg-white rounded-xl shadow-card border border-border-light p-6">
-        <h2 className="text-lg font-bold text-text-primary mb-4">ITP Markets</h2>
+        <h2 className="text-lg font-bold text-text-primary mb-4">{t('markets_detail.itp_markets')}</h2>
 
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="bg-muted text-xs font-medium uppercase tracking-wider text-text-muted border-b border-border-light">
-                <th className="text-left pb-3 pt-2 px-2">Collateral</th>
-                <th className="text-right pb-3 pt-2 px-2">NAV Price</th>
-                <th className="text-right pb-3 pt-2 px-2">LTV</th>
-                <th className="text-right pb-3 pt-2 px-2">Utilization</th>
-                <th className="text-right pb-3 pt-2 px-2">Borrow APY</th>
+                <th className="text-left pb-3 pt-2 px-2">{t('markets_detail.collateral')}</th>
+                <th className="text-right pb-3 pt-2 px-2">{t('markets_detail.nav_price')}</th>
+                <th className="text-right pb-3 pt-2 px-2">{t('markets_detail.ltv')}</th>
+                <th className="text-right pb-3 pt-2 px-2">{t('markets_detail.utilization')}</th>
+                <th className="text-right pb-3 pt-2 px-2">{t('markets_detail.borrow_apy')}</th>
               </tr>
             </thead>
             <tbody>
@@ -138,15 +140,15 @@ export function MarketsTable({ market }: MarketsTableProps) {
         {/* Key metrics summary */}
         <div className="mt-4 pt-4 border-t border-border-light grid grid-cols-3 gap-4">
           <div className="text-center">
-            <p className="text-xs font-medium uppercase tracking-wider text-text-muted">Loan Asset</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('markets_detail.loan_asset')}</p>
             <p className="text-sm text-text-primary font-mono tabular-nums">USDC</p>
           </div>
           <div className="text-center">
-            <p className="text-xs font-medium uppercase tracking-wider text-text-muted">Max LTV</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('markets_detail.max_ltv')}</p>
             <p className="text-sm text-zinc-900 font-mono tabular-nums font-bold">{markets[0].lltvPercent.toFixed(0)}%</p>
           </div>
           <div className="text-center">
-            <p className="text-xs font-medium uppercase tracking-wider text-text-muted">Borrow Rate (SERM)</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('markets_detail.borrow_rate_serm')}</p>
             <p className="text-sm text-text-primary font-mono tabular-nums">{markets[0].borrowApy.toFixed(2)}% APR</p>
           </div>
         </div>
@@ -163,10 +165,10 @@ export function MarketsTable({ market }: MarketsTableProps) {
         <table className="w-full">
           <thead>
             <tr className="bg-muted text-xs font-medium uppercase tracking-wider text-text-muted border-b border-border-light">
-              <th className="text-left pb-3 pt-2 px-2">Collateral</th>
-              <th className="text-right pb-3 pt-2 px-2">NAV Price</th>
-              <th className="text-right pb-3 pt-2 px-2">LTV</th>
-              <th className="text-right pb-3 pt-2 px-2">Borrow APY</th>
+              <th className="text-left pb-3 pt-2 px-2">{t('markets_detail.collateral')}</th>
+              <th className="text-right pb-3 pt-2 px-2">{t('markets_detail.nav_price')}</th>
+              <th className="text-right pb-3 pt-2 px-2">{t('markets_detail.ltv')}</th>
+              <th className="text-right pb-3 pt-2 px-2">{t('markets_detail.borrow_apy')}</th>
             </tr>
           </thead>
           <tbody>
@@ -185,7 +187,7 @@ export function MarketsTable({ market }: MarketsTableProps) {
                 </div>
               </td>
               <td className="py-4 px-2 text-right">
-                <span className="text-text-muted font-mono text-sm">Unavailable</span>
+                <span className="text-text-muted font-mono text-sm">{t('markets_detail.unavailable')}</span>
               </td>
               <td className="py-4 px-2 text-right">
                 <span className="text-zinc-900 font-mono tabular-nums font-bold">
@@ -203,21 +205,21 @@ export function MarketsTable({ market }: MarketsTableProps) {
       {/* Always show key metrics from config */}
       <div className="mt-4 pt-4 border-t border-border-light grid grid-cols-3 gap-4">
         <div className="text-center">
-          <p className="text-xs font-medium uppercase tracking-wider text-text-muted">Loan Asset</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('markets_detail.loan_asset')}</p>
           <p className="text-sm text-text-primary font-mono tabular-nums">USDC</p>
         </div>
         <div className="text-center">
-          <p className="text-xs font-medium uppercase tracking-wider text-text-muted">Max LTV</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('markets_detail.max_ltv')}</p>
           <p className="text-sm text-zinc-900 font-mono tabular-nums font-bold">{STATIC_LTV.toFixed(0)}%</p>
         </div>
         <div className="text-center">
-          <p className="text-xs font-medium uppercase tracking-wider text-text-muted">Protocol</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('markets_detail.protocol')}</p>
           <p className="text-sm text-text-primary font-mono tabular-nums">Morpho Blue</p>
         </div>
       </div>
 
       {error && (
-        <p className="text-text-muted text-xs mt-3 text-center">Live market data unavailable -- showing config parameters</p>
+        <p className="text-text-muted text-xs mt-3 text-center">{t('markets_detail.live_data_unavailable')}</p>
       )}
     </div>
   )

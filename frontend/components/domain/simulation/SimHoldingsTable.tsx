@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useSimHoldings } from '@/hooks/useSimHoldings'
 
 interface SimHoldingsTableProps {
@@ -8,6 +9,7 @@ interface SimHoldingsTableProps {
 }
 
 export function SimHoldingsTable({ runId, date }: SimHoldingsTableProps) {
+  const t = useTranslations('backtest')
   const { holdings, isLoading, error } = useSimHoldings(runId, date)
 
   if (!runId) return null
@@ -15,7 +17,7 @@ export function SimHoldingsTable({ runId, date }: SimHoldingsTableProps) {
   if (isLoading) {
     return (
       <div className="text-text-muted text-xs py-4 text-center">
-        Loading holdings...
+        {t('holdings.loading')}
       </div>
     )
   }
@@ -23,7 +25,7 @@ export function SimHoldingsTable({ runId, date }: SimHoldingsTableProps) {
   if (error) {
     return (
       <div className="text-color-down text-xs py-4 text-center">
-        Error: {error}
+        {t('holdings.error', { message: error })}
       </div>
     )
   }
@@ -31,7 +33,7 @@ export function SimHoldingsTable({ runId, date }: SimHoldingsTableProps) {
   if (!holdings.length) {
     return (
       <div className="text-text-muted text-xs py-4 text-center">
-        No holdings data
+        {t('holdings.no_data')}
       </div>
     )
   }
@@ -41,12 +43,12 @@ export function SimHoldingsTable({ runId, date }: SimHoldingsTableProps) {
       <table className="w-full">
         <thead>
           <tr className="text-xs font-medium uppercase tracking-wider text-text-muted border-b border-border-light bg-muted">
-            <th className="text-left pb-2 pt-2 pr-2 px-3">#</th>
-            <th className="text-left pb-2 pt-2 pr-2 px-3">Coin</th>
-            <th className="text-left pb-2 pt-2 pr-2 px-3">Symbol</th>
-            <th className="text-right pb-2 pt-2 pr-2 px-3">Weight</th>
-            <th className="text-right pb-2 pt-2 pr-2 px-3">Price</th>
-            <th className="text-right pb-2 pt-2 px-3">Value</th>
+            <th className="text-left pb-2 pt-2 pr-2 px-3">{t('holdings.header.rank')}</th>
+            <th className="text-left pb-2 pt-2 pr-2 px-3">{t('holdings.header.coin')}</th>
+            <th className="text-left pb-2 pt-2 pr-2 px-3">{t('holdings.header.symbol')}</th>
+            <th className="text-right pb-2 pt-2 pr-2 px-3">{t('holdings.header.weight')}</th>
+            <th className="text-right pb-2 pt-2 pr-2 px-3">{t('holdings.header.price')}</th>
+            <th className="text-right pb-2 pt-2 px-3">{t('holdings.header.value')}</th>
           </tr>
         </thead>
         <tbody>
