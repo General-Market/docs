@@ -1,0 +1,63 @@
+{
+  "title": "Sell {name}",
+  "itp_id_label": "ITP ID:",
+  "your_shares_label": "Your BridgedITP Shares",
+  "no_shares": "You don't have any BridgedITP shares to sell",
+  "no_bridged_itp": "No BridgedITP found for this ITP. It may not have been created via BridgeProxy yet.",
+  "shares_to_sell_label": "Shares to Sell",
+  "min_price_label": "Min Price (USDC/share)",
+  "nav_label": "NAV: ${nav} ({priced}/{total} priced)",
+  "slippage_label": "Slippage",
+  "insufficient_shares": "Insufficient BridgedITP shares",
+  "computing_price": "Computing price...",
+  "set_min_price": "Set min price",
+  "no_limit": "0 (no limit)",
+  "usdc_balance_label": "Your USDC Balance (Arbitrum)",
+  "sell_more": "Sell More",
+  "estimated_pnl": {
+    "title": "Estimated P&L",
+    "avg_cost_basis": "Avg Cost Basis",
+    "current_nav": "Current NAV",
+    "est_proceeds": "Est. Proceeds",
+    "est_pnl": "Est. P&L"
+  },
+  "button": {
+    "pending": "Waiting for wallet...",
+    "approving": "Approving...",
+    "submitting": "Submitting...",
+    "approve_and_sell": "Approve & Sell",
+    "sell_shares": "Sell Shares"
+  },
+  "steps": {
+    "submit": "Submit",
+    "process": "Process",
+    "deliver": "Deliver",
+    "done": "Done"
+  },
+  "micro_steps": {
+    "approve_pending": "Confirm BridgedITP approval in wallet...",
+    "approve_confirming": "Approving shares...",
+    "submit_pending": "Confirm sell order in wallet...",
+    "submit_confirming": "Submitting sell order...",
+    "relay": "Relaying sell to L3...",
+    "batch": "Batching order...",
+    "fill": "Executing trades...",
+    "record_collateral": "Recording collateral...",
+    "bridge_to_arb": "Bridging USDC to Arbitrum...",
+    "complete_sell": "Completing sell order...",
+    "usdc_received": "USDC received!"
+  },
+  "fill_details": {
+    "title": "Fill Details",
+    "fill_price": "Fill Price",
+    "shares_sold": "Shares Sold",
+    "usdc_proceeds": "USDC Proceeds",
+    "pnl_vs_cost": "P&L vs Cost"
+  },
+  "toast": {
+    "sell_filled": "Sell filled \u2014 {proceeds} received"
+  },
+  "error": {
+    "title": "Error"
+  }
+}

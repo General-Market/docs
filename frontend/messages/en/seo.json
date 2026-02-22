@@ -1,0 +1,67 @@
+{
+  "metadata": {
+    "title": "General Market",
+    "title_template": "%s | General Market",
+    "description": "The institutional-grade protocol for on-chain index products.",
+    "keywords": "index funds, ETF, institutional, on-chain, crypto trading, DeFi, autonomous capital markets, Base L2"
+  },
+  "og": {
+    "site_name": "General Market",
+    "title": "General Market",
+    "description": "The institutional-grade protocol for on-chain index products."
+  },
+  "twitter": {
+    "title": "General Market",
+    "description": "The institutional-grade protocol for on-chain index products."
+  },
+  "sr_only": {
+    "h1": "General Market \u2014 On-Chain Index Products",
+    "markets": {
+      "title": "Index Tracking Products (ITPs)",
+      "description": "Explore decentralized index products. Each ITP tracks a basket of crypto assets with live NAV pricing and on-chain settlement on Arbitrum Orbit L3."
+    },
+    "portfolio": {
+      "title": "Portfolio Tracking",
+      "description": "Track your ITP holdings, view real-time P&L, cost basis, and trade history. Connect your wallet to see your portfolio performance across all index products."
+    },
+    "create": {
+      "title": "Create Your Own ITP",
+      "description": "Design custom index products by selecting from 100+ crypto assets and assigning weights. Deploy in a single transaction. Your ITP starts at $1 NAV and floats with underlying prices."
+    },
+    "lending": {
+      "title": "Lend & Borrow",
+      "description": "Deposit USDC to earn yield through Morpho lending markets. Or use your ITP shares as collateral to borrow USDC against your positions."
+    },
+    "backtesting": {
+      "title": "Backtest Strategies",
+      "description": "Simulate portfolio performance with historical price data before deploying real capital. View returns, drawdowns, and Sharpe ratios. Deploy winning strategies directly as ITPs."
+    },
+    "itp_article": {
+      "nav_per_share": "NAV per share: ${nav}",
+      "aum": "Assets under management: ${aum}",
+      "holdings": "Holdings: {count} assets",
+      "view_details": "View {name} details"
+    }
+  },
+  "json_ld": {
+    "org_description": "The institutional-grade protocol for on-chain index products.",
+    "website_description": "The institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index products on-chain.",
+    "app_description": "The institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index products.",
+    "faq": {
+      "q1": "What is General Market?",
+      "a1": "General Market is an institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index tracking products (ITPs) that track baskets of crypto assets, similar to how ETFs work in traditional finance.",
+      "q2": "What are Index Tracking Products (ITPs)?",
+      "a2": "ITPs are tokenized index products that hold a fixed basket of crypto assets with defined weights. Their NAV (Net Asset Value) floats with the underlying asset prices, just like an ETF. You can create custom ITPs or trade existing ones.",
+      "q3": "How does lending work on General Market?",
+      "a3": "General Market integrates with Morpho lending markets. You can deposit USDC to earn yield, or use your ITP shares as collateral to borrow against your positions.",
+      "q4": "What do I need to get started?",
+      "a4": "You need a Web3 wallet (like MetaMask) connected to the Index L3 network, and USDC tokens. You can then browse the Markets tab to buy existing ITPs or create your own custom index."
+    },
+    "itp_description": "{name} \u2014 on-chain index tracking product with {count} crypto assets. NAV: ${nav}."
+  },
+  "breadcrumbs": {
+    "home": "Home",
+    "markets": "Markets",
+    "documentation": "Documentation"
+  }
+}

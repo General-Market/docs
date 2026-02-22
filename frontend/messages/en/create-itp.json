@@ -1,0 +1,60 @@
+{
+  "heading": {
+    "label": "Deploy New Product",
+    "title": "Create",
+    "description": "Build a custom index product. Select assets, set weights, and deploy on-chain."
+  },
+  "collapsed": {
+    "description": "Create an Index Tracking Product with custom weights"
+  },
+  "select_assets": {
+    "title": "Select Assets ({count}/100)",
+    "available": "{count} available",
+    "skeleton_title": "Select Assets (0/100)"
+  },
+  "configure_weights": {
+    "title": "Configure Weights ({count} assets)",
+    "skeleton_title": "Configure Weights",
+    "empty": "Select assets to configure weights",
+    "total": "Total: {value}%",
+    "equal": "Equal",
+    "mcap": "MCap",
+    "mcap_loading": "Loading...",
+    "must_be_100": "(must be 100%)",
+    "continue": "Continue \u2192"
+  },
+  "finalize": {
+    "title": "Finalize ITP",
+    "assets_selected": "{count} assets selected",
+    "name_label": "Name (max 32)",
+    "name_placeholder": "e.g., DeFi Blue Chips",
+    "symbol_label": "Symbol (max 10)",
+    "symbol_placeholder": "e.g., DEFI",
+    "issuer_name_label": "Issuer Name (max 64)",
+    "issuer_name_placeholder": "e.g., Vanguard Labs",
+    "description_label": "Description (optional)",
+    "description_placeholder": "Brief description shown on ITP cards",
+    "website_label": "Website (optional)",
+    "website_placeholder": "https://yoursite.io",
+    "video_label": "Video (optional)",
+    "video_placeholder": "https://youtube.com/watch?v=...",
+    "char_count": "{count}/280",
+    "submit_fetching": "Fetching prices...",
+    "submit_pending": "Waiting for wallet...",
+    "submit_confirming": "Confirming...",
+    "submit_deploy": "Finalize & Deploy",
+    "tx_stuck": "Transaction may be stuck."
+  },
+  "skeleton": {
+    "itp_name": "ITP Name (max 32)",
+    "symbol": "Symbol (max 10)"
+  },
+  "success": {
+    "title": "ITP Request Created!",
+    "description": "Waiting for issuer consensus..."
+  },
+  "errors": {
+    "fill_all_fields": "Please fill in all fields and ensure weights sum to 100%",
+    "failed_prices": "Failed to fetch prices: {message}"
+  }
+}

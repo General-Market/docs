@@ -1,0 +1,65 @@
+{
+  "heading": {
+    "label": "Infrastructure",
+    "title": "System",
+    "description": "Live operational data \u2014 AP keeper balances, fill speed, consensus health, and inventory."
+  },
+  "stats": {
+    "consensus_status": "Consensus Status",
+    "active_issuers": "Active Issuers",
+    "avg_fill_speed": "Avg Fill Speed",
+    "orders_total": "Orders (total)",
+    "l3_block": "L3 Block"
+  },
+  "consensus_values": {
+    "checking": "\u25cf checking\u2026",
+    "healthy": "\u25cf Healthy",
+    "offline": "\u25cf Offline"
+  },
+  "issuer_network": {
+    "section_title": "Issuer Network",
+    "section_subtitle": "BLS Consensus Nodes",
+    "issuer_label": "Issuer {name}",
+    "node_details": {
+      "address": "Address",
+      "bls_pubkey": "BLS Pubkey",
+      "registered": "Registered",
+      "status": "Status",
+      "ap_vault": "AP Vault"
+    },
+    "status_active": "Active"
+  },
+  "fill_speed": {
+    "section_title": "Fill Speed",
+    "section_subtitle": "Fill time per order",
+    "tooltip_label": "Fill time"
+  },
+  "inventory": {
+    "section_title": "Inventory",
+    "section_subtitle": "Top holdings by USD",
+    "tooltip_label": "Value"
+  },
+  "recent_activity": {
+    "section_title": "Recent Activity",
+    "section_subtitle": "Keeper BLS Signatures",
+    "table": {
+      "time": "Time",
+      "order_id": "Order ID",
+      "fund": "Fund",
+      "type": "Type",
+      "amount": "Amount",
+      "fill_time": "Fill Time",
+      "signers": "Signers",
+      "status": "Status"
+    },
+    "side_buy": "Buy",
+    "side_sell": "Sell",
+    "status_confirmed": "\u2713 Confirmed",
+    "status_pending": "\u231b Pending"
+  },
+  "connection": {
+    "live": "Live",
+    "polling": "Polling",
+    "offline": "Offline"
+  }
+}

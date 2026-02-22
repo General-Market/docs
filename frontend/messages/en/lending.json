@@ -1,0 +1,167 @@
+{
+  "heading": {
+    "label": "Morpho Vaults",
+    "title": "Lend",
+    "description": "Deposit USDC to earn yield or borrow against your ITP positions."
+  },
+  "stats": {
+    "vault_tvl": "Vault TVL",
+    "supply_apy": "Supply APY",
+    "borrow_apy": "Borrow APY",
+    "utilization": "Utilization"
+  },
+  "supply_panel": {
+    "title": "Supply \u2014 USDC Vault",
+    "your_deposits": "Your Deposits",
+    "accrued_interest": "Accrued Interest",
+    "current_apy": "Current APY"
+  },
+  "borrow_panel": {
+    "title": "Borrow \u2014 Against ITP",
+    "collateral_value": "Collateral (ITP value)",
+    "outstanding_debt": "Outstanding Debt",
+    "max_borrow": "Max Borrow ({lltv}% LTV)"
+  },
+  "actions": {
+    "deposit": "Deposit",
+    "withdraw": "Withdraw",
+    "borrow_usdc": "Borrow USDC",
+    "repay": "Repay",
+    "borrow": "Borrow",
+    "cancel": "Cancel",
+    "max": "MAX"
+  },
+  "vault_deposit": {
+    "section_title": "Deposit",
+    "section_subtitle": "Supply USDC to Vault",
+    "amount_label": "Amount (USDC)",
+    "balance_label": "Balance: {amount}",
+    "insufficient_balance": "Insufficient USDC balance",
+    "button": {
+      "approving": "Approving USDC...",
+      "confirm_wallet": "Confirm in wallet...",
+      "depositing": "Depositing...",
+      "deposited": "Deposited!",
+      "approve_and_deposit": "Approve & Deposit",
+      "deposit_usdc": "Deposit USDC"
+    }
+  },
+  "vault_position": {
+    "section_title": "Position",
+    "section_subtitle": "Your Vault Deposits",
+    "vault_shares": "Vault Shares",
+    "current_value": "Current Value",
+    "button": {
+      "confirm_wallet": "Confirm in wallet...",
+      "withdrawing": "Withdrawing...",
+      "withdrawn": "Withdrawn!",
+      "withdraw_all": "Withdraw All"
+    }
+  },
+  "borrow_usdc": {
+    "title": "Borrow USDC",
+    "description": "Borrow USDC against your ITP collateral",
+    "amount_label": "Amount (USDC)",
+    "max_borrow_label": "Max borrow: {amount} USDC",
+    "projected_health_factor": "Projected Health Factor",
+    "cannot_borrow_health": "Cannot borrow: health factor would be below 1.0",
+    "low_health_warning": "Warning: Low health factor increases liquidation risk",
+    "button": {
+      "confirm_wallet": "Confirm in wallet...",
+      "borrowing": "Borrowing...",
+      "borrowed": "Borrowed!",
+      "borrow_usdc": "Borrow USDC"
+    },
+    "quote": {
+      "title": "Quote Terms",
+      "borrow_apr": "Borrow APR",
+      "health_factor": "Health Factor",
+      "liquidation_price": "Liquidation Price",
+      "max_borrow": "Max Borrow",
+      "bundle_label": "Bundle:",
+      "expired": "Quote expired --",
+      "refresh": "refresh",
+      "execute_bundle": "Execute Bundle",
+      "confirm_wallet": "Confirm in wallet...",
+      "executing_bundle": "Executing bundle...",
+      "borrowed": "Borrowed!"
+    }
+  },
+  "deposit_collateral": {
+    "title": "Deposit Collateral",
+    "description": "Deposit ITP tokens as collateral to borrow USDC",
+    "amount_label": "Amount (ITP)",
+    "balance_label": "Balance: {amount} ITP",
+    "insufficient_balance": "Insufficient ITP balance",
+    "button": {
+      "approving_itp": "Approving ITP...",
+      "confirm_wallet": "Confirm in wallet...",
+      "depositing": "Depositing...",
+      "deposited": "Deposited!",
+      "approve_and_deposit": "Approve & Deposit",
+      "deposit_collateral": "Deposit Collateral"
+    }
+  },
+  "repay_debt": {
+    "title": "Repay Debt",
+    "description": "Repay your USDC debt to improve your health factor",
+    "amount_label": "Amount (USDC)",
+    "debt_label": "Debt: {amount}",
+    "balance_label": "Balance: {amount}",
+    "insufficient_balance": "Insufficient USDC balance",
+    "button": {
+      "confirm_approval": "Confirm approval...",
+      "approving_usdc": "Approving USDC...",
+      "confirm_wallet": "Confirm in wallet...",
+      "repaying": "Repaying...",
+      "repaid": "Repaid!",
+      "approve_and_repay": "Approve & Repay",
+      "repay_debt": "Repay Debt"
+    }
+  },
+  "withdraw_collateral": {
+    "title": "Withdraw Collateral",
+    "description_no_debt": "Withdraw your ITP collateral",
+    "description_with_debt": "Withdraw available collateral (limited by debt)",
+    "amount_label": "Amount (ITP)",
+    "deposited_label": "Deposited: {amount}",
+    "max_withdraw_label": "Max withdraw: {amount}",
+    "projected_health_factor": "Projected Health Factor",
+    "cannot_withdraw_health": "Cannot withdraw: health factor would be below 1.0",
+    "close_position_notice": "This will close your position and return all ITP to your wallet.",
+    "button": {
+      "confirm_wallet": "Confirm in wallet...",
+      "withdrawing": "Withdrawing...",
+      "withdrawn": "Withdrawn!",
+      "withdraw_collateral": "Withdraw Collateral"
+    }
+  },
+  "markets_table": {
+    "section_label": "Morpho Markets",
+    "section_title": "Available Lending Markets",
+    "header": {
+      "market": "Market",
+      "my_balance": "My Balance",
+      "borrow_apy": "Borrow APY",
+      "tvl": "TVL",
+      "lltv": "LLTV"
+    },
+    "loading": "Loading markets...",
+    "no_markets": "No markets available",
+    "market_pair": "{name} / USDC"
+  },
+  "common": {
+    "something_went_wrong": "Something went wrong",
+    "please_refresh": "Please refresh the page.",
+    "transaction_rejected": "Transaction rejected",
+    "transaction_failed": "Transaction failed",
+    "withdrawal_failed": "Withdrawal failed",
+    "tx_stuck_title": "Transaction may be stuck",
+    "tx_stuck_description": "Not confirmed after 30s. You can cancel and try again.",
+    "market_frozen": "Market is frozen during emergency",
+    "rate_limited": "Rate limited, retry in {seconds}s"
+  },
+  "error": {
+    "title": "Error"
+  }
+}

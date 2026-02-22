@@ -1,0 +1,67 @@
+{
+  "title": "Buy {name}",
+  "itp_id_label": "ITP ID:",
+  "amount_label": "Amount (USDC)",
+  "balance_label": "Balance: {amount} USDC",
+  "max_price_label": "Max Price (USDC/share)",
+  "nav_label": "NAV: ${nav} ({priced}/{total} priced)",
+  "slippage_label": "Slippage",
+  "slippage_tight": "Tight",
+  "slippage_normal": "Normal",
+  "slippage_relaxed": "Relaxed",
+  "insufficient_usdc": "Insufficient USDC balance",
+  "no_prices_warning": "No asset prices available. Set a limit price manually or use 0 for no limit.",
+  "computing_price": "Computing price...",
+  "set_limit_price": "Set limit price",
+  "no_limit": "0 (no limit)",
+  "mint_test_usdc": "Mint 10,000 Test USDC",
+  "minting": "Minting...",
+  "minted": "Minted!",
+  "mint_failed": "Mint failed",
+  "your_itp_shares": "Your ITP Shares",
+  "buy_more": "Buy More",
+  "button": {
+    "approve_pending": "Confirm approval in wallet...",
+    "approve_confirming": "Approving USDC...",
+    "buy_pending": "Confirm buy in wallet...",
+    "buy_confirming": "Submitting order...",
+    "approve_and_buy": "Approve & Buy",
+    "buy_itp": "Buy ITP"
+  },
+  "steps": {
+    "submit": "Submit",
+    "process": "Process",
+    "deliver": "Deliver",
+    "done": "Done",
+    "complete": "Complete!"
+  },
+  "micro_steps": {
+    "approve_pending": "Confirm USDC approval in wallet...",
+    "approve_confirming": "Approving USDC spend...",
+    "submit_pending": "Confirm buy order in wallet...",
+    "submit_confirming": "Submitting buy order...",
+    "bridge_to_l3": "Bridging USDC to L3...",
+    "relay": "Relaying order to L3...",
+    "batch": "Batching order...",
+    "fill": "Executing trades...",
+    "record_collateral": "Recording collateral...",
+    "bridge_to_arb": "Bridging USDC to Arbitrum...",
+    "complete_bridge": "Completing bridge...",
+    "mint_shares": "Minting BridgedITP...",
+    "shares_received": "Shares received!"
+  },
+  "fill_details": {
+    "title": "Fill Details",
+    "fill_price": "Fill Price",
+    "amount_filled": "Amount Filled",
+    "shares": "Shares",
+    "vs_limit": "vs Limit"
+  },
+  "toast": {
+    "buy_filled_shares": "Buy filled \u2014 {shares} {name} shares received",
+    "buy_filled": "Buy filled \u2014 {name} shares received"
+  },
+  "error": {
+    "title": "Error"
+  }
+}

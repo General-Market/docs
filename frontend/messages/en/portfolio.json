@@ -1,0 +1,102 @@
+{
+  "heading": {
+    "label": "Your Holdings",
+    "title": "Portfolio",
+    "collapsed_title": "Portfolio",
+    "collapsed_description": "Your positions & performance",
+    "subtitle_with_data": "{count} position{plural} \u00b7 ${value} value",
+    "subtitle_empty": "Track your positions, trades & orders"
+  },
+  "stats": {
+    "total_value": "Total Value",
+    "total_invested": "Total Invested",
+    "positions": "Positions",
+    "pnl": "P&L",
+    "usdc_available": "USDC Available",
+    "change_24h": "24h Change",
+    "unrealized_pnl": "Unrealized P&L"
+  },
+  "tabs": {
+    "positions": "Positions",
+    "trades": "Trades",
+    "orders": "Orders"
+  },
+  "orders_banner": {
+    "active_orders": "{count} active order{plural} in progress"
+  },
+  "section_bar": {
+    "title": "Positions",
+    "subtitle": "Active Holdings"
+  },
+  "positions_table": {
+    "itp": "ITP",
+    "shares": "Shares",
+    "avg_cost": "Avg Cost",
+    "nav": "NAV",
+    "value": "Value",
+    "pnl": "PnL",
+    "pnl_pct": "PnL%"
+  },
+  "trades_table": {
+    "date": "Date",
+    "itp": "ITP",
+    "side": "Side",
+    "amount": "Amount",
+    "price": "Price",
+    "shares": "Shares",
+    "status": "Status"
+  },
+  "orders_table": {
+    "id": "ID",
+    "side": "Side",
+    "amount": "Amount",
+    "limit_price": "Limit Price",
+    "status": "Status",
+    "time": "Time"
+  },
+  "empty": {
+    "no_positions_title": "No positions yet",
+    "no_positions_description": "Browse index products above and buy your first ITP to start tracking performance here.",
+    "explore_indexes": "Explore Indexes",
+    "no_trades_title": "No trades yet",
+    "no_trades_description": "Your buy and sell history will appear here once you make your first trade.",
+    "no_orders_title": "No orders",
+    "no_orders_description": "Active and recent orders will appear here when you buy or sell an index product.",
+    "loading_orders": "Loading orders..."
+  },
+  "chart": {
+    "current_value": "Current Value",
+    "chart_pending": "Chart will populate as more data becomes available"
+  },
+  "tooltip": {
+    "value_label": "Value:",
+    "pnl_label": "PnL:"
+  },
+  "skeleton": {
+    "fund": "Fund",
+    "ticker": "Ticker",
+    "nav_per_share": "NAV / Share",
+    "avg_cost": "Avg Cost",
+    "change_24h": "24h"
+  },
+  "cost_basis": {
+    "title": "Your Position",
+    "shares": "Shares",
+    "avg_cost": "Avg Cost",
+    "total_cost": "Total Cost",
+    "current_value": "Current Value",
+    "unrealized_pnl": "Unrealized P&L",
+    "realized_pnl": "Realized P&L",
+    "loading": "Loading cost data...",
+    "fees_title": "Fees Paid",
+    "fee_trading": "Trading",
+    "fee_management": "Management",
+    "fee_bridge": "Bridge",
+    "fee_gas": "Gas",
+    "fee_total": "Total Fees"
+  },
+  "side": {
+    "buy": "BUY",
+    "sell": "SELL"
+  }
+}

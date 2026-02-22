@@ -1,0 +1,16 @@
+{
+  "heading": {
+    "label": "Strategy Simulation",
+    "title": "Backtest",
+    "description": "Test index strategies against historical data before deploying capital."
+  },
+  "fullscreen": {
+    "label": "Index Backtester",
+    "title": "Simulation Results",
+    "exit": "ESC",
+    "enter": "Fullscreen"
+  },
+  "holdings": {
+    "title": "Holdings (Latest Rebalance)"
+  }
+}

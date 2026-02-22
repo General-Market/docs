@@ -1,0 +1,109 @@
+{
+  "heading": "TRACKED MARKETS",
+  "hero": {
+    "label": "Index Tracking Products",
+    "title": "Markets",
+    "description": "Explore decentralized index products. Each ITP tracks a basket of crypto assets with live NAV pricing and on-chain settlement."
+  },
+  "summary": {
+    "types_count": "{count} types",
+    "categories_count": "{count} categories"
+  },
+  "types": {
+    "crypto": {
+      "name": "Cryptocurrency",
+      "description": "BTC, ETH, SOL and 100+ tokens",
+      "update_freq": "5 min"
+    },
+    "stocks": {
+      "name": "US Stocks",
+      "description": "S&P 500, NASDAQ, major indices",
+      "update_freq": "15 min (market hours)"
+    },
+    "weather": {
+      "name": "Weather",
+      "description": "Temperature, precipitation, wind",
+      "update_freq": "30 min"
+    },
+    "economic": {
+      "name": "Economic Indicators",
+      "description": "Fed rates, CPI, unemployment",
+      "update_freq": "Daily/Monthly"
+    },
+    "fx": {
+      "name": "Foreign Exchange",
+      "description": "EUR/USD, major currency pairs",
+      "update_freq": "Daily"
+    },
+    "treasury": {
+      "name": "Treasury Rates",
+      "description": "US Treasury yields",
+      "update_freq": "Daily"
+    },
+    "defi": {
+      "name": "DeFi TVL",
+      "description": "Protocol TVL rankings",
+      "update_freq": "1 hour"
+    }
+  },
+  "labels": {
+    "updates": "Updates:",
+    "categories": "Categories:",
+    "sample_assets": "Sample assets:",
+    "loading_prices": "Loading prices..."
+  },
+  "footer": {
+    "data_sources": "Data sourced from CoinGecko, Finnhub, Open-Meteo, FRED, ECB, Treasury, DefiLlama",
+    "resolution_note": "All bets resolved using on-chain keeper consensus"
+  },
+  "filters": {
+    "label": "Filters",
+    "all": "All ({count})",
+    "active": "Active ({count})",
+    "pending": "Pending ({count})",
+    "search_placeholder": "Search funds by name or ticker...",
+    "sort_aum_desc": "Sort: AUM High \u2192 Low",
+    "sort_aum_asc": "Sort: AUM Low \u2192 High",
+    "sort_newest": "Sort: Newest",
+    "sort_name_az": "Sort: Name A-Z"
+  },
+  "section_bar": {
+    "title": "Data View",
+    "subtitle": "Fund Overview \u2014 Live NAV",
+    "showing_partial": "Showing {shown} of {total} products",
+    "showing_all": "Showing all {total} products"
+  },
+  "itp_card": {
+    "loading": "Loading ITPs...",
+    "no_itps": "No ITPs created yet",
+    "nav_per_share": "NAV / Share",
+    "assets": "Assets",
+    "balance": "Balance",
+    "by": "by {name}",
+    "pending_fill": "Pending Fill",
+    "buy": "Buy",
+    "sell": "Sell",
+    "chart": "Chart",
+    "rebalance": "Rebalance",
+    "borrow": "Borrow",
+    "edit_itp_info": "Edit ITP Info",
+    "description_placeholder": "Description (max 280 chars / ~50 words)",
+    "website_placeholder": "Website URL (max 128)",
+    "video_placeholder": "YouTube URL (max 256)",
+    "arb_erc20": "Arbitrum ERC20:",
+    "itp_id": "ITP ID:",
+    "minted_supply": "Minted Supply",
+    "loading_holders": "Loading holders...",
+    "unable_fetch_holders": "Unable to fetch holders",
+    "no_tracked_holders": "No tracked holders",
+    "other_holders": "Other Holders",
+    "source_index": "Index.sol (L3)",
+    "source_bridge": "BridgeProxy",
+    "nonce": "Nonce:",
+    "source": "Source:",
+    "admin": "Admin:",
+    "created": "Created:",
+    "arb_address": "Arb Address:",
+    "request_number": "Request #{number}"
+  }
+}

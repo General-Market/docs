@@ -1,0 +1,121 @@
+{
+  "brand": {
+    "name": "General Market",
+    "logo_text": "General Market.",
+    "tagline": "Decentralized Index Products",
+    "topbar": "General Market — Decentralized Index Products",
+    "description": "Institutional-grade index products for the digital asset economy."
+  },
+  "nav": {
+    "investment": "Investment",
+    "vision": "Vision",
+    "docs": "Docs",
+    "support": "Support",
+    "markets": "Markets",
+    "portfolio": "Portfolio",
+    "create": "Create",
+    "lend": "Lend",
+    "backtest": "Backtest",
+    "system": "System",
+    "p2pool": "P2Pool",
+    "leaderboard": "Leaderboard",
+    "markets_data": "Markets"
+  },
+  "footer": {
+    "product": "Product",
+    "resources": "Resources",
+    "indexes": "Indexes",
+    "simulation": "Simulation",
+    "lending": "Lending",
+    "create_itp": "Create ITP",
+    "docs": "Docs",
+    "discord": "Discord",
+    "privacy_policy": "Privacy Policy",
+    "terms_of_service": "Terms of Service",
+    "copyright": "\u00a9 2026 General Market. All rights reserved.",
+    "disclaimer": "Index products involve risk. Past performance does not guarantee future results. This platform does not provide financial advice."
+  },
+  "aria": {
+    "toggle_menu": "Toggle menu",
+    "discord": "Discord",
+    "twitter": "X (Twitter)",
+    "collapse": "Collapse"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "ko": "\ud55c\uad6d\uc5b4",
+    "ja": "\u65e5\u672c\u8a9e",
+    "zh": "\u4e2d\u6587"
+  },
+  "actions": {
+    "connect_wallet": "Connect Wallet",
+    "disconnect": "Disconnect",
+    "close": "Close",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "submit": "Submit",
+    "loading": "Loading...",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "share": "Share",
+    "back": "Back",
+    "next": "Next",
+    "save": "Save",
+    "saving": "Saving...",
+    "max": "MAX",
+    "search": "Search...",
+    "details": "Details",
+    "hide_details": "Hide Details",
+    "show_all": "Show All {count} Funds",
+    "fullscreen": "Fullscreen",
+    "esc": "ESC"
+  },
+  "wallet": {
+    "login": "Login on Base",
+    "connecting": "Connecting...",
+    "switching": "Switching...",
+    "switch_network": "Switch to Index Arbitrum",
+    "install_metamask": "Install MetaMask",
+    "connect_to_buy": "Connect your wallet to buy ITP shares",
+    "connect_to_sell": "Connect your wallet to sell ITP shares",
+    "connect_to_create": "Connect your wallet to create a batch"
+  },
+  "status": {
+    "pending": "Pending",
+    "batched": "Batched",
+    "filled": "Filled",
+    "cancelled": "Cancelled",
+    "expired": "Expired",
+    "active": "Active",
+    "completed": "Completed",
+    "unknown": "Unknown",
+    "confirmed": "Confirmed",
+    "live": "Live",
+    "polling": "Polling",
+    "offline": "Offline"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "wallet_not_connected": "Please connect your wallet first.",
+    "wrong_chain": "Please switch to the correct network.",
+    "transaction_failed": "Transaction failed",
+    "transaction_rejected": "Transaction rejected",
+    "confirmation_failed": "Confirmation failed",
+    "insufficient_balance": "Insufficient balance",
+    "failed_to_fetch": "Failed to fetch data"
+  },
+  "warnings": {
+    "tx_stuck_title": "Transaction may be stuck",
+    "tx_stuck_description": "Not confirmed after 30s. You can cancel and try again.",
+    "pending_tx_title": "Pending Transactions Detected",
+    "pending_tx_description": "You have {count} pending transaction(s). New transactions may get stuck."
+  },
+  "time": {
+    "just_now": "just now",
+    "seconds_ago": "{count}s ago",
+    "minutes_ago": "{count}m ago",
+    "hours_ago": "{count}h ago",
+    "days_ago": "{count}d ago"
+  }
+}
