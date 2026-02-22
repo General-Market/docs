@@ -5265,10 +5265,10 @@ async fn admin_sources_health(
     let zero_stale: Vec<(String, i64, i64)> = sqlx::query_as(
         r#"
         SELECT mp.source,
-               COUNT(DISTINCT mp.asset_id) FILTER (WHERE mp.value = 0)::bigint as zero_value,
-               COUNT(DISTINCT mp.asset_id) FILTER (
+               (COUNT(DISTINCT mp.asset_id) FILTER (WHERE mp.value = 0))::bigint as zero_value,
+               (COUNT(DISTINCT mp.asset_id) FILTER (
                    WHERE mp.fetched_at < NOW() - INTERVAL '1 hour'
-               )::bigint as stale
+               ))::bigint as stale
         FROM (
             SELECT DISTINCT ON (source, asset_id) source, asset_id, value, fetched_at
             FROM market_prices ORDER BY source, asset_id, fetched_at DESC
@@ -5289,10 +5289,10 @@ async fn admin_sources_health(
     let change_stats: Vec<(String, Option<f64>, i64)> = sqlx::query_as(
         r#"
         SELECT source,
-               AVG(ABS(change_pct)) FILTER (WHERE change_pct IS NOT NULL) as avg_change,
-               COUNT(DISTINCT asset_id) FILTER (
+               (AVG(ABS(change_pct)) FILTER (WHERE change_pct IS NOT NULL))::float8 as avg_change,
+               (COUNT(DISTINCT asset_id) FILTER (
                    WHERE change_pct IS NOT NULL AND ABS(change_pct) < 0.001
-               )::bigint as no_change_count
+               ))::bigint as no_change_count
         FROM (
             SELECT DISTINCT ON (source, asset_id) source, asset_id, change_pct
             FROM market_prices
@@ -5315,7 +5315,7 @@ async fn admin_sources_health(
     let gap_stats: Vec<(String, Option<f64>)> = sqlx::query_as(
         r#"
         SELECT source,
-               MAX(gap_secs) as max_gap_secs
+               MAX(gap_secs)::float8 as max_gap_secs
         FROM (
             SELECT source, asset_id,
                 EXTRACT(EPOCH FROM (fetched_at - LAG(fetched_at) OVER (
@@ -5533,12 +5533,12 @@ async fn admin_source_assets(
             ma.symbol,
             ma.name,
             ma.is_active,
-            latest.value,
+            latest.value::float8,
             latest.fetched_at,
-            latest.change_pct,
+            latest.change_pct::float8,
             counts.total_records,
             counts.oldest_record,
-            prev.value as prev_value
+            prev.value::float8 as prev_value
         FROM market_assets ma
         LEFT JOIN LATERAL (
             SELECT value, fetched_at, change_pct
@@ -5648,8 +5648,8 @@ async fn admin_source_history(
             date_trunc('hour', fetched_at) as hour,
             COUNT(*)::bigint as record_count,
             COUNT(DISTINCT asset_id)::bigint as unique_assets,
-            AVG(value) as avg_value,
-            COUNT(*) FILTER (WHERE value = 0)::bigint as zero_count
+            AVG(value)::float8 as avg_value,
+            (COUNT(*) FILTER (WHERE value = 0))::bigint as zero_count
         FROM market_prices
         WHERE source = $1
           AND fetched_at > NOW() - make_interval(hours => $2)
