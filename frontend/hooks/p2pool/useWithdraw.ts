@@ -9,14 +9,7 @@ const VISION_ADDRESS = (
   process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000'
 ) as `0x${string}`
 
-/**
- * Issuer node URLs for fetching BLS-signed balance proofs.
- * We only need one successful response (any issuer can sign).
- */
-const ISSUER_URLS = (
-  process.env.NEXT_PUBLIC_ISSUER_URLS ||
-  'http://localhost:9001,http://localhost:9002,http://localhost:9003'
-).split(',').map(u => u.trim()).filter(Boolean)
+import { P2POOL_P2POOL_ISSUER_URLS } from '@/lib/config'
 
 export type WithdrawStep = 'idle' | 'fetching-proof' | 'withdrawing' | 'done' | 'error'
 
@@ -54,7 +47,7 @@ async function fetchBalanceProof(
 ): Promise<BalanceProof> {
   const errors: string[] = []
 
-  for (const url of ISSUER_URLS) {
+  for (const url of P2POOL_ISSUER_URLS) {
     try {
       const res = await fetch(`${url}/p2pool/balance/${batchId}/${player}`)
       if (res.ok) {

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { DATA_NODE_URL } from '@/lib/config'
+import { P2POOL_API_URL } from '@/lib/config'
 
 export interface BatchInfo {
   id: number
@@ -17,7 +17,7 @@ export function useBatches() {
   return useQuery<BatchInfo[]>({
     queryKey: ['p2pool-batches'],
     queryFn: async () => {
-      const res = await fetch(`${DATA_NODE_URL}/p2pool/batches`)
+      const res = await fetch(`${P2POOL_API_URL}/p2pool/batches`)
       if (!res.ok) return []
       return res.json()
     },

@@ -2,20 +2,8 @@
 
 import { useState, useCallback } from 'react'
 import { useAccount } from 'wagmi'
-import { DATA_NODE_URL } from '@/lib/config'
+import { P2POOL_P2POOL_ISSUER_URLS } from '@/lib/config'
 import { bitmapToHex, hashBitmap, encodeBitmap, type BetDirection } from '@/lib/p2pool/bitmap'
-
-/**
- * Issuer node URLs for bitmap submission.
- *
- * Bitmaps must be submitted to ALL issuer nodes so each has a copy for
- * tick resolution. In production, this should be configured via env vars.
- * The data-node can also proxy these requests in future.
- */
-const ISSUER_URLS = (
-  process.env.NEXT_PUBLIC_ISSUER_URLS ||
-  'http://localhost:9001,http://localhost:9002,http://localhost:9003'
-).split(',').map(u => u.trim()).filter(Boolean)
 
 export interface SubmitBitmapParams {
   batchId: number
@@ -81,7 +69,7 @@ export function useSubmitBitmap(): UseSubmitBitmapReturn {
 
     // Submit to all issuers in parallel
     const results = await Promise.all(
-      ISSUER_URLS.map(async (url) => {
+      P2POOL_ISSUER_URLS.map(async (url) => {
         try {
           const res = await fetch(`${url}/p2pool/bitmap`, {
             method: 'POST',

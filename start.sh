@@ -682,6 +682,17 @@ deploy['contracts']['WIND'] = vision['contracts']['WIND']
 json.dump(deploy, open('../deployments/active-deployment.json', 'w'), indent=2)
 "
         echo -e "  ${GREEN}Vision addresses merged into active-deployment.json${NC}"
+
+        # Fund test user with WIND tokens (for bot registration testing)
+        WIND_ADDR=$(python3 -c "import json; print(json.load(open('../deployments/active-deployment.json'))['contracts']['WIND'])")
+        cast send --private-key $DEPLOYER_KEY $WIND_ADDR "mint(address,uint256)" $TEST_USER 1000000000000000000000 --rpc-url $RPC_URL > /dev/null 2>&1
+        echo -e "  ${GREEN}Test user funded with 1000 WIND${NC}"
+
+        # Run P2Pool database migrations (issuer chain listener needs these tables)
+        if $PG_ISREADY -q 2>/dev/null; then
+            $PSQL -d index_prices -f ../issuer/migrations/001_create_p2pool_tables.sql > /dev/null 2>&1 || true
+            echo -e "  ${GREEN}P2Pool database tables created${NC}"
+        fi
     else
         echo -e "${YELLOW}  Warning: Vision deployment failed (check logs/deploy-vision.log)${NC}"
     fi
@@ -783,6 +794,16 @@ for i in $(seq 1 $ISSUER_COUNT); do
     # from on-chain inventory + live Bitget prices (no $1 fallback).
     if $PG_ISREADY -q 2>/dev/null; then
         export DATA_NODE_URL="http://localhost:8200"
+    fi
+
+    # P2Pool subsystem — enable if Vision contract was deployed
+    VISION_ADDR_CHECK=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts'].get('Vision',''))" 2>/dev/null || echo "")
+    if [ -n "$VISION_ADDR_CHECK" ] && [ "$VISION_ADDR_CHECK" != "" ] && $PG_ISREADY -q 2>/dev/null; then
+        export ISSUER_P2POOL_ENABLED=true
+        export ISSUER_P2POOL_VISION_ADDRESS="$VISION_ADDR_CHECK"
+        export ISSUER_P2POOL_DATABASE_URL="postgres://localhost/index_prices"
+        export ISSUER_P2POOL_DATA_NODE_URL="http://localhost:8200"
+        export ISSUER_P2POOL_RPC_WS_URL="$RPC_URL"
     fi
     ./target/release/issuer $ISSUER_ARGS > logs/issuer-$i.log 2>&1 &
     ISSUER_PID=$!
@@ -901,6 +922,8 @@ NEXT_PUBLIC_RPC_URL=http://localhost:8546
 NEXT_PUBLIC_AP_URL=http://localhost:9100
 NEXT_PUBLIC_DATA_NODE_URL=http://localhost:8200
 NEXT_PUBLIC_VISION_ADDRESS=${VISION_ADDR}
+NEXT_PUBLIC_P2POOL_API_URL=http://localhost:10101
+NEXT_PUBLIC_ISSUER_URLS=http://localhost:10101,http://localhost:10102,http://localhost:10103
 ENVEOF
 
 # Start Next.js dev server
@@ -973,6 +996,14 @@ for i in $(seq 1 $ISSUER_COUNT); do
     fi
 done
 
+# P2Pool API health
+P2POOL_API_PORT=10101
+if curl -sf "http://localhost:$P2POOL_API_PORT/p2pool/batches" > /dev/null 2>&1; then
+    echo -e "  P2Pool API: ${GREEN}healthy${NC} (port $P2POOL_API_PORT)"
+else
+    echo -e "  P2Pool API: ${YELLOW}starting...${NC} (port $P2POOL_API_PORT, check logs/issuer-1.log)"
+fi
+
 # Contract summary
 echo ""
 echo -e "${YELLOW}Deployed Contracts:${NC}"
@@ -998,6 +1029,7 @@ echo -e "  ${BLUE}L3 Anvil:${NC}  http://localhost:8545 (chain $CHAIN_ID)"
 echo -e "  ${BLUE}Arb Anvil:${NC} http://localhost:8546 (chain $ARB_CHAIN_ID)"
 echo -e "  ${BLUE}Issuers:${NC}   ports 9001-900$ISSUER_COUNT (bitget-vault + arb-custody)"
 echo -e "  ${BLUE}AP:${NC}        port 9100 (real Bitget price proxy)"
+echo -e "  ${BLUE}P2Pool:${NC}   http://localhost:10101 (issuer 1 API)"
 echo -e "  ${BLUE}Frontend:${NC}  http://localhost:3000 (running)"
 echo -e "  ${BLUE}E2E Tests:${NC} cd frontend && npm run e2e:headed"
 echo -e "  ${BLUE}Logs:${NC}      ./logs/"

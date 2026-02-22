@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query'
-import { DATA_NODE_URL } from '@/lib/config'
+import { P2POOL_API_URL } from '@/lib/config'
 
 export interface BacktestParams {
   batchId: number
@@ -25,7 +25,7 @@ export interface BacktestResult {
 export function useBacktest() {
   return useMutation<BacktestResult, Error, BacktestParams>({
     mutationFn: async (params: BacktestParams) => {
-      const res = await fetch(`${DATA_NODE_URL}/p2pool/backtest`, {
+      const res = await fetch(`${P2POOL_API_URL}/p2pool/backtest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
