@@ -14,7 +14,7 @@ export default function middleware(request: NextRequest) {
   if (!cookieLocale) {
     const country =
       request.headers.get('cf-ipcountry') ||
-      request.geo?.country ||
+      (request as NextRequest & { geo?: { country?: string } }).geo?.country ||
       ''
 
     const geoLocale = COUNTRY_TO_LOCALE[country]

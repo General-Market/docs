@@ -27,46 +27,13 @@ export const viewport: Viewport = {
   themeColor: "#09090B",
 };
 
+// Locale-specific metadata (title, description, OG, twitter) is in [locale]/layout.tsx.
+// Root layout keeps only locale-independent metadata.
 export const metadata: Metadata = {
-  title: {
-    default: "General Market",
-    template: "%s | General Market",
-  },
-  description:
-    "The institutional-grade protocol for on-chain index products.",
-  keywords: [
-    "index funds",
-    "ETF",
-    "institutional",
-    "on-chain",
-    "crypto trading",
-    "DeFi",
-    "autonomous capital markets",
-    "Base L2",
-  ],
+  metadataBase: new URL("https://generalmarket.io"),
   authors: [{ name: "General Market", url: "https://x.com/otc_max" }],
   creator: "General Market",
   publisher: "General Market",
-  metadataBase: new URL("https://generalmarket.io"),
-  alternates: {
-    canonical: "/",
-  },
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: "https://generalmarket.io",
-    siteName: "General Market",
-    title: "General Market",
-    description:
-      "The institutional-grade protocol for on-chain index products.",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "General Market",
-    description:
-      "The institutional-grade protocol for on-chain index products.",
-    creator: "@otc_max",
-  },
   robots: {
     index: true,
     follow: true,

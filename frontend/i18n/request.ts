@@ -17,10 +17,10 @@ export default getRequestConfig(async ({ requestLocale }) => {
   const messages: Record<string, Record<string, unknown>> = {}
   for (const ns of namespaces) {
     try {
-      messages[ns] = (await import(`../../messages/${locale}/${ns}.json`)).default
+      messages[ns] = (await import(`../messages/${locale}/${ns}.json`)).default
     } catch {
       // Fallback to English if translation file missing
-      messages[ns] = (await import(`../../messages/en/${ns}.json`)).default
+      messages[ns] = (await import(`../messages/en/${ns}.json`)).default
     }
   }
 
