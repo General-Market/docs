@@ -4,15 +4,14 @@
 //! US transit agencies that provide open GTFS-RT feeds (no API key required).
 //!
 //! Currently supported agencies:
-//! - **NYC MTA Subway** — 8 feeds covering all subway lines (primarily TripUpdate data)
+//! - **NYC MTA Subway** — 8 feeds covering all subway lines (TripUpdate + VehiclePosition data)
 //! - **BART (San Francisco)** — trip updates for Bay Area Rapid Transit
 //!
-//! The MTA subway feeds are primarily TripUpdate feeds (arrival predictions),
-//! not VehiclePosition feeds. We count active trips per line group as the
-//! primary metric. If any feed contains VehiclePosition entities, we also
-//! report those counts.
-//!
-//! Assets are static — defined in `config/gtfs_rt.json`.
+//! Assets:
+//! - **Static aggregates** (13): total trips, per-line trips, vehicle counts, avg speed
+//!   — defined in `config/gtfs_rt.json`
+//! - **Dynamic per-vehicle GPS** (up to 1000): individual vehicle lat/lon from VehiclePosition
+//!   entities — discovered at runtime and cached in a Mutex (same pattern as mil_aircraft)
 //!
 //! Auth: None
 //! Rate limit: 30 req/min (self-imposed, MTA has no documented limit)
@@ -21,7 +20,8 @@ use anyhow::{Context, Result};
 use chrono::Utc;
 use prost::Message;
 use rust_decimal::Decimal;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::sync::Mutex;
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
@@ -32,6 +32,25 @@ use super::proto::FeedMessage;
 
 /// Asset configuration JSON (embedded at compile time).
 const ASSET_JSON: &str = include_str!("../../../config/gtfs_rt.json");
+
+/// Maximum number of individual vehicles to track (prevents DB bloat).
+const MAX_VEHICLES: usize = 500;
+
+// ============================================================================
+// CACHED VEHICLE STATE (for dynamic per-vehicle assets)
+// ============================================================================
+
+/// Cached state for a single vehicle reporting a GPS position.
+#[derive(Debug, Clone)]
+pub struct CachedVehicle {
+    pub vehicle_id: String,
+    pub route_id: String,
+    pub lat: f32,
+    pub lon: f32,
+    /// Speed in m/s (reserved for future per-vehicle speed assets).
+    #[allow(dead_code)]
+    pub speed: Option<f32>,
+}
 
 // ============================================================================
 // FEED CONFIGURATION
@@ -126,6 +145,8 @@ struct FeedMetrics {
     speed_count: u32,
     /// Per-route trip counts (route_id -> count).
     route_trip_counts: HashMap<String, u32>,
+    /// Individual vehicle positions extracted from VehiclePosition entities.
+    individual_vehicles: Vec<CachedVehicle>,
 }
 
 /// Extract metrics from a decoded GTFS-RT FeedMessage.
@@ -145,7 +166,7 @@ fn extract_metrics(feed: &FeedMessage) -> FeedMetrics {
             }
         }
 
-        // Count vehicle positions
+        // Count vehicle positions and collect individual GPS data
         if let Some(ref vp) = entity.vehicle {
             metrics.vehicle_position_count += 1;
 
@@ -155,6 +176,31 @@ fn extract_metrics(feed: &FeedMessage) -> FeedMetrics {
                     if speed >= 0.0 {
                         metrics.speed_sum += speed;
                         metrics.speed_count += 1;
+                    }
+                }
+
+                // Extract individual vehicle position for dynamic tracking
+                // Need a vehicle ID (from descriptor id or label) and a valid position
+                let vehicle_id = vp
+                    .vehicle
+                    .as_ref()
+                    .and_then(|v| v.id.clone().or_else(|| v.label.clone()));
+
+                if let Some(vid) = vehicle_id {
+                    if !vid.is_empty() && (pos.latitude != 0.0 || pos.longitude != 0.0) {
+                        let route_id = vp
+                            .trip
+                            .as_ref()
+                            .and_then(|t| t.route_id.clone())
+                            .unwrap_or_else(|| "UNK".to_string());
+
+                        metrics.individual_vehicles.push(CachedVehicle {
+                            vehicle_id: vid,
+                            route_id,
+                            lat: pos.latitude,
+                            lon: pos.longitude,
+                            speed: pos.speed,
+                        });
                     }
                 }
             }
@@ -193,8 +239,13 @@ struct AgencyMetrics {
 ///
 /// Tracks real-time transit metrics (active trips, vehicle positions) from
 /// US transit agencies. Source ID is `"gtfs_transit"`.
+///
+/// Dynamic per-vehicle GPS assets are generated from VehiclePosition entities
+/// and cached in `cached_vehicles` (same pattern as MilAircraftMarketSource).
 pub struct GtfsRtMarketSource {
     http: reqwest::Client,
+    /// Cached vehicle states from last fetch (used by fetch_assets for dynamic assets).
+    cached_vehicles: Mutex<Vec<CachedVehicle>>,
 }
 
 impl GtfsRtMarketSource {
@@ -208,7 +259,10 @@ impl GtfsRtMarketSource {
 
         info!("GTFS-RT transit source initialized ({} feeds configured)", FEEDS.len());
 
-        Self { http }
+        Self {
+            http,
+            cached_vehicles: Mutex::new(Vec::new()),
+        }
     }
 
     /// Fetch and decode a single GTFS-RT protobuf feed.
@@ -251,8 +305,10 @@ impl GtfsRtMarketSource {
     }
 
     /// Fetch all feeds and aggregate metrics per agency.
+    /// Also collects individual vehicle positions into `cached_vehicles`.
     async fn fetch_all_metrics(&self) -> HashMap<String, AgencyMetrics> {
         let mut agency_metrics: HashMap<String, AgencyMetrics> = HashMap::new();
+        let mut all_vehicles: Vec<CachedVehicle> = Vec::new();
 
         for feed in FEEDS {
             match self.fetch_feed(feed).await {
@@ -260,9 +316,15 @@ impl GtfsRtMarketSource {
                     let metrics = extract_metrics(&feed_msg);
 
                     debug!(
-                        "{}: {} trip_updates, {} vehicle_positions",
-                        feed.label, metrics.trip_update_count, metrics.vehicle_position_count
+                        "{}: {} trip_updates, {} vehicle_positions, {} individual vehicles",
+                        feed.label,
+                        metrics.trip_update_count,
+                        metrics.vehicle_position_count,
+                        metrics.individual_vehicles.len()
                     );
+
+                    // Collect individual vehicle positions
+                    all_vehicles.extend(metrics.individual_vehicles);
 
                     let agency = agency_metrics
                         .entry(feed.agency.to_string())
@@ -289,6 +351,14 @@ impl GtfsRtMarketSource {
                     warn!("Failed to fetch feed {}: {:#}", feed.label, e);
                 }
             }
+        }
+
+        // Cap at MAX_VEHICLES and update cached state
+        all_vehicles.truncate(MAX_VEHICLES);
+        {
+            let mut cached = self.cached_vehicles.lock().unwrap();
+            *cached = all_vehicles;
+            debug!("GTFS-RT: cached {} individual vehicle positions", cached.len());
         }
 
         agency_metrics
@@ -323,11 +393,27 @@ impl MarketDataSource for GtfsRtMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        let assets = load_assets_from_json(ASSET_JSON)?;
-        info!(
-            "GTFS-RT fetch_assets: {} assets loaded from config",
-            assets.len()
-        );
+        // Static assets from config JSON
+        let mut assets = load_assets_from_json(ASSET_JSON)?;
+        let static_count = assets.len();
+
+        // Dynamic assets from cached vehicle positions
+        let cached = self.cached_vehicles.lock().unwrap().clone();
+        if !cached.is_empty() {
+            let dynamic = build_dynamic_assets(&cached);
+            info!(
+                "GTFS-RT fetch_assets: {} static + {} dynamic vehicle assets",
+                static_count,
+                dynamic.len()
+            );
+            assets.extend(dynamic);
+        } else {
+            info!(
+                "GTFS-RT fetch_assets: {} static assets (no cached vehicles yet)",
+                static_count
+            );
+        }
+
         Ok(assets)
     }
 
@@ -341,7 +427,13 @@ impl MarketDataSource for GtfsRtMarketSource {
 
         let mut results = Vec::with_capacity(asset_ids.len());
 
+        // Process static aggregate assets
         for asset_id in asset_ids {
+            if asset_id.starts_with("transit_veh_") {
+                // Dynamic vehicle assets are handled below
+                continue;
+            }
+
             let value = resolve_asset_value(asset_id, &agency_metrics);
 
             results.push(PriceUpdate {
@@ -356,6 +448,13 @@ impl MarketDataSource for GtfsRtMarketSource {
             });
         }
 
+        // Process dynamic per-vehicle asset requests
+        let cached = self.cached_vehicles.lock().unwrap().clone();
+        let dynamic_prices = build_dynamic_prices(&cached, asset_ids, now);
+        let dynamic_count = dynamic_prices.len();
+        let cached_count = cached.len();
+        results.extend(dynamic_prices);
+
         // Log summary
         for (agency, metrics) in &agency_metrics {
             info!(
@@ -365,9 +464,12 @@ impl MarketDataSource for GtfsRtMarketSource {
         }
 
         info!(
-            "Fetched {}/{} GTFS-RT transit metrics",
+            "GTFS-RT: fetched {}/{} prices ({} static, {} dynamic, {} vehicles cached)",
             results.len(),
-            asset_ids.len()
+            asset_ids.len(),
+            results.len() - dynamic_count,
+            dynamic_count,
+            cached_count
         );
 
         Ok(results)
@@ -453,6 +555,126 @@ fn asset_id_to_symbol(asset_id: &str) -> String {
     } else {
         upper
     }
+}
+
+// ============================================================================
+// DYNAMIC VEHICLE HELPERS (pub for testing)
+// ============================================================================
+
+/// Sanitize a vehicle ID for use in asset_id: replace non-alphanumeric chars with underscore.
+pub fn sanitize_vehicle_id(raw: &str) -> String {
+    raw.chars()
+        .map(|c| if c.is_alphanumeric() { c } else { '_' })
+        .collect()
+}
+
+/// Sanitize a route ID for use in asset_id/symbol: keep only alphanumeric chars.
+pub fn sanitize_route_id(raw: &str) -> String {
+    raw.chars().filter(|c| c.is_alphanumeric()).collect()
+}
+
+/// Convert f32 to Decimal, rounding to 6 decimal places.
+fn decimal_from_f32(v: f32) -> Decimal {
+    Decimal::from_f32_retain(v)
+        .unwrap_or(Decimal::ZERO)
+        .round_dp(6)
+}
+
+/// Build dynamic asset updates for individual vehicle GPS data.
+pub fn build_dynamic_assets(vehicles: &[CachedVehicle]) -> Vec<AssetUpdate> {
+    let mut assets = Vec::new();
+
+    for v in vehicles {
+        let safe_vid = sanitize_vehicle_id(&v.vehicle_id);
+        let safe_route = sanitize_route_id(&v.route_id);
+        let base_id = format!("transit_veh_{}_{}", safe_vid, safe_route);
+
+        // Latitude asset
+        assets.push(AssetUpdate {
+            asset_id: format!("{}_lat", base_id),
+            symbol: format!("TRANSIT/{}_{}_LAT", safe_route.to_uppercase(), safe_vid),
+            name: format!("MTA {} Train {} Latitude", v.route_id, v.vehicle_id),
+            category: Some("transport".to_string()),
+            metadata: serde_json::json!({
+                "api_ref": format!("gps:{}:{}:lat", v.route_id, v.vehicle_id),
+                "subcategory": "transit",
+                "active": true,
+                "extra": {
+                    "vehicle_id": v.vehicle_id,
+                    "route_id": v.route_id,
+                    "metric": "latitude",
+                },
+            }),
+        });
+
+        // Longitude asset
+        assets.push(AssetUpdate {
+            asset_id: format!("{}_lon", base_id),
+            symbol: format!("TRANSIT/{}_{}_LON", safe_route.to_uppercase(), safe_vid),
+            name: format!("MTA {} Train {} Longitude", v.route_id, v.vehicle_id),
+            category: Some("transport".to_string()),
+            metadata: serde_json::json!({
+                "api_ref": format!("gps:{}:{}:lon", v.route_id, v.vehicle_id),
+                "subcategory": "transit",
+                "active": true,
+                "extra": {
+                    "vehicle_id": v.vehicle_id,
+                    "route_id": v.route_id,
+                    "metric": "longitude",
+                },
+            }),
+        });
+    }
+
+    assets
+}
+
+/// Build dynamic price updates for individual vehicle GPS data.
+fn build_dynamic_prices(
+    vehicles: &[CachedVehicle],
+    asset_ids: &[String],
+    now: chrono::DateTime<Utc>,
+) -> Vec<PriceUpdate> {
+    let mut results = Vec::new();
+    let requested: HashSet<&str> = asset_ids.iter().map(|s| s.as_str()).collect();
+
+    for v in vehicles {
+        let safe_vid = sanitize_vehicle_id(&v.vehicle_id);
+        let safe_route = sanitize_route_id(&v.route_id);
+        let base_id = format!("transit_veh_{}_{}", safe_vid, safe_route);
+
+        // Latitude
+        let lat_id = format!("{}_lat", base_id);
+        if requested.contains(lat_id.as_str()) {
+            results.push(PriceUpdate {
+                asset_id: lat_id,
+                symbol: format!("TRANSIT/{}_{}_LAT", safe_route.to_uppercase(), safe_vid),
+                value: decimal_from_f32(v.lat),
+                prev_close: None,
+                change_pct: None,
+                volume_24h: None,
+                market_cap: None,
+                fetched_at: now,
+            });
+        }
+
+        // Longitude
+        let lon_id = format!("{}_lon", base_id);
+        if requested.contains(lon_id.as_str()) {
+            results.push(PriceUpdate {
+                asset_id: lon_id,
+                symbol: format!("TRANSIT/{}_{}_LON", safe_route.to_uppercase(), safe_vid),
+                value: decimal_from_f32(v.lon),
+                prev_close: None,
+                change_pct: None,
+                volume_24h: None,
+                market_cap: None,
+                fetched_at: now,
+            });
+        }
+    }
+
+    results
 }
 
 // ============================================================================
@@ -778,5 +1000,300 @@ mod tests {
         // Check BART feed exists
         let bart_feeds: Vec<_> = FEEDS.iter().filter(|f| f.agency == "bart").collect();
         assert_eq!(bart_feeds.len(), 1, "Expected 1 BART feed");
+    }
+
+    // ========================================================================
+    // Dynamic vehicle asset generation tests
+    // ========================================================================
+
+    #[test]
+    fn test_dynamic_vehicle_asset_generation() {
+        let vehicles = vec![
+            CachedVehicle {
+                vehicle_id: "0A".to_string(),
+                route_id: "A".to_string(),
+                lat: 40.7128,
+                lon: -74.006,
+                speed: Some(10.0),
+            },
+            CachedVehicle {
+                vehicle_id: "1B".to_string(),
+                route_id: "L".to_string(),
+                lat: 40.7500,
+                lon: -73.950,
+                speed: None,
+            },
+        ];
+
+        let assets = build_dynamic_assets(&vehicles);
+
+        // 2 vehicles * 2 assets each (lat + lon) = 4
+        assert_eq!(assets.len(), 4, "Expected 4 dynamic assets for 2 vehicles");
+
+        // Verify first vehicle lat
+        assert_eq!(assets[0].asset_id, "transit_veh_0A_A_lat");
+        assert_eq!(assets[0].symbol, "TRANSIT/A_0A_LAT");
+        assert_eq!(assets[0].name, "MTA A Train 0A Latitude");
+        assert_eq!(assets[0].category, Some("transport".to_string()));
+
+        // Verify first vehicle lon
+        assert_eq!(assets[1].asset_id, "transit_veh_0A_A_lon");
+        assert_eq!(assets[1].symbol, "TRANSIT/A_0A_LON");
+        assert_eq!(assets[1].name, "MTA A Train 0A Longitude");
+
+        // Verify second vehicle lat
+        assert_eq!(assets[2].asset_id, "transit_veh_1B_L_lat");
+        assert_eq!(assets[2].symbol, "TRANSIT/L_1B_LAT");
+        assert_eq!(assets[2].name, "MTA L Train 1B Latitude");
+
+        // Verify second vehicle lon
+        assert_eq!(assets[3].asset_id, "transit_veh_1B_L_lon");
+        assert_eq!(assets[3].symbol, "TRANSIT/L_1B_LON");
+    }
+
+    #[test]
+    fn test_dynamic_vehicle_price_resolution() {
+        let vehicles = vec![
+            CachedVehicle {
+                vehicle_id: "T42".to_string(),
+                route_id: "7".to_string(),
+                lat: 40.7500,
+                lon: -73.9000,
+                speed: Some(12.5),
+            },
+        ];
+
+        let now = Utc::now();
+        let asset_ids = vec![
+            "transit_veh_T42_7_lat".to_string(),
+            "transit_veh_T42_7_lon".to_string(),
+            "transit_mta_active_trips".to_string(), // static, should be skipped
+        ];
+
+        let prices = build_dynamic_prices(&vehicles, &asset_ids, now);
+
+        assert_eq!(prices.len(), 2, "Expected 2 prices (lat + lon)");
+
+        // Verify latitude price
+        let lat_price = prices.iter().find(|p| p.asset_id == "transit_veh_T42_7_lat").unwrap();
+        assert_eq!(lat_price.symbol, "TRANSIT/7_T42_LAT");
+        let lat_val: f64 = lat_price.value.try_into().unwrap();
+        assert!((lat_val - 40.75).abs() < 0.001, "Latitude should be ~40.75, got {}", lat_val);
+
+        // Verify longitude price
+        let lon_price = prices.iter().find(|p| p.asset_id == "transit_veh_T42_7_lon").unwrap();
+        assert_eq!(lon_price.symbol, "TRANSIT/7_T42_LON");
+        let lon_val: f64 = lon_price.value.try_into().unwrap();
+        assert!((lon_val - (-73.9)).abs() < 0.001, "Longitude should be ~-73.9, got {}", lon_val);
+    }
+
+    #[test]
+    fn test_vehicle_id_sanitization() {
+        // Dashes, dots, slashes should become underscores
+        assert_eq!(sanitize_vehicle_id("train-42.1/A"), "train_42_1_A");
+        // Pure alphanumeric should pass through
+        assert_eq!(sanitize_vehicle_id("ABC123"), "ABC123");
+        // Empty string
+        assert_eq!(sanitize_vehicle_id(""), "");
+        // All special chars
+        assert_eq!(sanitize_vehicle_id("!@#$%"), "_____");
+
+        // Route sanitization strips non-alphanumeric entirely
+        assert_eq!(sanitize_route_id("A-Express"), "AExpress");
+        assert_eq!(sanitize_route_id("7X"), "7X");
+        assert_eq!(sanitize_route_id(""), "");
+    }
+
+    #[test]
+    fn test_max_vehicle_cap() {
+        // Create 600 vehicles (above MAX_VEHICLES=500)
+        let mut vehicles: Vec<CachedVehicle> = Vec::new();
+        for i in 0..600 {
+            vehicles.push(CachedVehicle {
+                vehicle_id: format!("V{}", i),
+                route_id: "A".to_string(),
+                lat: 40.0 + (i as f32) * 0.001,
+                lon: -74.0 + (i as f32) * 0.001,
+                speed: None,
+            });
+        }
+
+        // Simulate what fetch_all_metrics does
+        vehicles.truncate(MAX_VEHICLES);
+        assert_eq!(vehicles.len(), 500, "Should be capped at 500 vehicles");
+
+        // Verify assets are generated only for the capped set
+        let assets = build_dynamic_assets(&vehicles);
+        assert_eq!(assets.len(), 1000, "500 vehicles * 2 (lat+lon) = 1000 assets");
+    }
+
+    #[test]
+    fn test_extract_metrics_collects_individual_vehicles() {
+        use super::super::proto::*;
+
+        let feed = FeedMessage {
+            header: Some(FeedHeader {
+                gtfs_realtime_version: "2.0".to_string(),
+                timestamp: Some(1700000000),
+            }),
+            entity: vec![
+                // Vehicle with full data
+                FeedEntity {
+                    id: "vp1".to_string(),
+                    is_deleted: None,
+                    trip_update: None,
+                    vehicle: Some(VehiclePosition {
+                        trip: Some(TripDescriptor {
+                            trip_id: Some("trip_1".to_string()),
+                            route_id: Some("L".to_string()),
+                            direction_id: None,
+                            start_time: None,
+                            start_date: None,
+                        }),
+                        position: Some(Position {
+                            latitude: 40.7128,
+                            longitude: -74.006,
+                            bearing: None,
+                            speed: Some(10.0),
+                        }),
+                        vehicle: Some(VehicleDescriptor {
+                            id: Some("VEH001".to_string()),
+                            label: Some("Train 42".to_string()),
+                            license_plate: None,
+                        }),
+                        timestamp: None,
+                    }),
+                },
+                // Vehicle without descriptor (should not be collected)
+                FeedEntity {
+                    id: "vp2".to_string(),
+                    is_deleted: None,
+                    trip_update: None,
+                    vehicle: Some(VehiclePosition {
+                        trip: None,
+                        position: Some(Position {
+                            latitude: 40.0,
+                            longitude: -74.0,
+                            bearing: None,
+                            speed: None,
+                        }),
+                        vehicle: None,
+                        timestamp: None,
+                    }),
+                },
+                // Vehicle with label only (no id) — should use label
+                FeedEntity {
+                    id: "vp3".to_string(),
+                    is_deleted: None,
+                    trip_update: None,
+                    vehicle: Some(VehiclePosition {
+                        trip: Some(TripDescriptor {
+                            trip_id: None,
+                            route_id: Some("7".to_string()),
+                            direction_id: None,
+                            start_time: None,
+                            start_date: None,
+                        }),
+                        position: Some(Position {
+                            latitude: 40.75,
+                            longitude: -73.95,
+                            bearing: None,
+                            speed: None,
+                        }),
+                        vehicle: Some(VehicleDescriptor {
+                            id: None,
+                            label: Some("Express99".to_string()),
+                            license_plate: None,
+                        }),
+                        timestamp: None,
+                    }),
+                },
+                // Vehicle without route (should default to UNK)
+                FeedEntity {
+                    id: "vp4".to_string(),
+                    is_deleted: None,
+                    trip_update: None,
+                    vehicle: Some(VehiclePosition {
+                        trip: None,
+                        position: Some(Position {
+                            latitude: 40.8,
+                            longitude: -73.9,
+                            bearing: None,
+                            speed: Some(5.0),
+                        }),
+                        vehicle: Some(VehicleDescriptor {
+                            id: Some("VEH999".to_string()),
+                            label: None,
+                            license_plate: None,
+                        }),
+                        timestamp: None,
+                    }),
+                },
+            ],
+        };
+
+        let metrics = extract_metrics(&feed);
+
+        // All 4 entities have vehicle positions
+        assert_eq!(metrics.vehicle_position_count, 4);
+
+        // But only 3 have vehicle descriptors with IDs
+        assert_eq!(
+            metrics.individual_vehicles.len(),
+            3,
+            "Should collect 3 vehicles (1 without descriptor is skipped)"
+        );
+
+        // Verify first vehicle
+        assert_eq!(metrics.individual_vehicles[0].vehicle_id, "VEH001");
+        assert_eq!(metrics.individual_vehicles[0].route_id, "L");
+        assert!((metrics.individual_vehicles[0].lat - 40.7128).abs() < 0.001);
+
+        // Verify label-only vehicle
+        assert_eq!(metrics.individual_vehicles[1].vehicle_id, "Express99");
+        assert_eq!(metrics.individual_vehicles[1].route_id, "7");
+
+        // Verify no-route vehicle defaults to UNK
+        assert_eq!(metrics.individual_vehicles[2].vehicle_id, "VEH999");
+        assert_eq!(metrics.individual_vehicles[2].route_id, "UNK");
+    }
+
+    #[test]
+    fn test_dynamic_assets_empty_vehicles() {
+        let vehicles: Vec<CachedVehicle> = vec![];
+        let assets = build_dynamic_assets(&vehicles);
+        assert!(assets.is_empty(), "No vehicles should produce no assets");
+    }
+
+    #[test]
+    fn test_dynamic_prices_unrequested_assets() {
+        let vehicles = vec![CachedVehicle {
+            vehicle_id: "T1".to_string(),
+            route_id: "A".to_string(),
+            lat: 40.0,
+            lon: -74.0,
+            speed: None,
+        }];
+
+        let now = Utc::now();
+        // Request only static assets, no dynamic ones
+        let asset_ids = vec!["transit_mta_active_trips".to_string()];
+        let prices = build_dynamic_prices(&vehicles, &asset_ids, now);
+        assert!(prices.is_empty(), "Should not return prices for unrequested dynamic assets");
+    }
+
+    #[test]
+    fn test_decimal_from_f32_precision() {
+        let val = decimal_from_f32(40.712776);
+        // f32 has ~7 significant digits, so we expect approximately 40.712776
+        let f: f64 = val.try_into().unwrap();
+        assert!((f - 40.712776).abs() < 0.001, "Expected ~40.712776, got {}", f);
+
+        let neg = decimal_from_f32(-74.005974);
+        let f2: f64 = neg.try_into().unwrap();
+        assert!((f2 - (-74.005974)).abs() < 0.001, "Expected ~-74.005974, got {}", f2);
+
+        let zero = decimal_from_f32(0.0);
+        assert_eq!(zero, Decimal::ZERO);
     }
 }
