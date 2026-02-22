@@ -49,11 +49,12 @@ pub use types::{
     // Issuer-driven per-asset settlement
     AssetTrade, AssetTradesProposal, AssetTradesResult,
     build_emit_asset_trades_hash, build_emit_asset_trades_calldata,
+    // Cross-chain buy completion
+    build_complete_buy_order_hash, CompleteBuyOrderResult,
+    CompleteBuyOrderProposal,
     // 8-step bridge: RecordCollateralMove + MintBridgedShares
     build_record_collateral_move_hash, build_record_collateral_move_calldata,
     RecordCollateralMoveProposal, RecordCollateralMoveResult,
     build_mint_bridged_shares_hash, build_mint_bridged_shares_calldata,
     MintBridgedSharesProposal, MintBridgedSharesResult,
-    // completeBuyOrder BLS consensus
-    build_complete_buy_order_hash, CompleteBuyOrderProposal, CompleteBuyOrderResult,
 };

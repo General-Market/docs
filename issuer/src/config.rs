@@ -231,6 +231,12 @@ pub struct IssuerConfig {
     pub arbitration_poll_interval: Option<u64>,
     /// Data-node URL for price queries (default: http://localhost:8200)
     pub arbitration_data_node_url: Option<String>,
+
+    // --- P2Pool subsystem fields ---
+    /// P2Pool prediction market configuration.
+    /// When present and `enabled == true`, the P2Pool tick engine, scheduler, and API
+    /// routes are initialized alongside the existing ITP consensus loop.
+    pub p2pool: Option<crate::p2pool::config::P2PoolConfig>,
 }
 
 impl IssuerConfig {
@@ -341,6 +347,28 @@ impl IssuerConfig {
             arbitration_threshold: parse_env_var("ISSUER_ARBITRATION_THRESHOLD"),
             arbitration_poll_interval: parse_env_var("ISSUER_ARBITRATION_POLL_INTERVAL"),
             arbitration_data_node_url: std::env::var("ISSUER_ARBITRATION_DATA_NODE_URL").ok(),
+            p2pool: {
+                let enabled: Option<bool> = parse_env_var("ISSUER_P2POOL_ENABLED");
+                if enabled == Some(true) {
+                    Some(crate::p2pool::config::P2PoolConfig {
+                        enabled: true,
+                        vision_address: std::env::var("ISSUER_P2POOL_VISION_ADDRESS").unwrap_or_default(),
+                        data_node_url: std::env::var("ISSUER_P2POOL_DATA_NODE_URL")
+                            .unwrap_or_else(|_| "http://localhost:8200".into()),
+                        database_url: std::env::var("ISSUER_P2POOL_DATABASE_URL")
+                            .unwrap_or_else(|_| "postgres://localhost:5432/p2pool".into()),
+                        rpc_ws_url: std::env::var("ISSUER_P2POOL_RPC_WS_URL")
+                            .unwrap_or_else(|_| "ws://localhost:8546".into()),
+                        start_block: parse_env_var("ISSUER_P2POOL_START_BLOCK").unwrap_or(0),
+                        reveal_window_secs: parse_env_var("ISSUER_P2POOL_REVEAL_WINDOW_SECS").unwrap_or(600),
+                        commitment_offset: parse_env_var("ISSUER_P2POOL_COMMITMENT_OFFSET").unwrap_or(9),
+                        staleness_threshold_secs: parse_env_var("ISSUER_P2POOL_STALENESS_THRESHOLD_SECS").unwrap_or(300),
+                        tick_poll_interval_ms: parse_env_var("ISSUER_P2POOL_TICK_POLL_INTERVAL_MS").unwrap_or(1000),
+                    })
+                } else {
+                    None
+                }
+            },
         }
     }
 
@@ -482,6 +510,9 @@ impl IssuerConfig {
         }
         if other.arbitration_data_node_url.is_some() {
             self.arbitration_data_node_url = other.arbitration_data_node_url.clone();
+        }
+        if other.p2pool.is_some() {
+            self.p2pool = other.p2pool.clone();
         }
     }
 
@@ -1094,6 +1125,17 @@ impl ConfigBuilder {
         }
         if let Some(ref v) = data_node_url {
             self.cli_config.arbitration_data_node_url = Some(v.clone());
+        }
+        self
+    }
+
+    /// Set P2Pool subsystem configuration from CLI args.
+    ///
+    /// When `enabled` is `Some(true)`, the P2Pool tick engine, scheduler, bitmap store,
+    /// resolver, and API routes will be initialized alongside the existing ITP loop.
+    pub fn with_p2pool(mut self, config: Option<crate::p2pool::config::P2PoolConfig>) -> Self {
+        if let Some(cfg) = config {
+            self.cli_config.p2pool = Some(cfg);
         }
         self
     }

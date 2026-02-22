@@ -185,6 +185,18 @@ pub struct ServeArgs {
     #[arg(long, env = "ADMIN_TOKEN")]
     pub admin_token: Option<String>,
 
+    /// Enable Polymarket prediction market data (no key needed)
+    #[arg(long, default_value = "false", env = "POLYMARKET_ENABLED")]
+    pub polymarket_enabled: bool,
+
+    /// Enable HackerNews story score collector (no key needed)
+    #[arg(long, default_value = "false", env = "HACKERNEWS_ENABLED")]
+    pub hackernews_enabled: bool,
+
+    /// Enable Weather station collector (no key needed, Open-Meteo API)
+    #[arg(long, default_value = "false", env = "WEATHER_ENABLED")]
+    pub weather_enabled: bool,
+
     /// P2.8: Allowed CORS origins (repeat for multiple). Empty = allow all.
     #[arg(long, env = "CORS_ORIGIN")]
     pub cors_origin: Vec<String>,

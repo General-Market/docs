@@ -15,6 +15,7 @@ const INVESTMENT_NAV = [
 ]
 
 const VISION_NAV = [
+  { id: 'p2pool', label: 'P2Pool' },
   { id: 'leaderboard', label: 'Leaderboard' },
   { id: 'markets-data', label: 'Markets' },
 ]

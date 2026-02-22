@@ -159,6 +159,9 @@ pub fn router(state: Arc<AppState>) -> Router {
         // Vision snapshot endpoints
         .route("/snapshot", get(snapshot))
         .route("/snapshot/meta", get(snapshot_meta))
+        // P2Pool market data endpoints
+        .route("/p2pool/snapshot", get(crate::p2pool_api::snapshot))
+        .route("/p2pool/markets/active", get(crate::p2pool_api::active_markets))
         // Admin endpoints
         .route("/admin/truncate/:table", axum::routing::post(admin_truncate))
         .route("/admin/reset-session", axum::routing::post(admin_reset_session))
