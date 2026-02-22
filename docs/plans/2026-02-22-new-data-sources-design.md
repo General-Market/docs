@@ -130,6 +130,62 @@ The Index data-node currently has 32 market data sources covering crypto, stocks
 - **Note:** Fundamentally different from Open-Meteo (which provides forecasts/measurements). NWS provides official _warnings_ — discrete events with severity, urgency, and certainty.
 - **Bet ideas:** "Tornado warning in Oklahoma today?", "Total active alerts >100?", "Hurricane warning issued this week?"
 
+## Prerequisite: Asset Discovery Pipeline
+
+### Problem
+
+The prod AA system has a `refresh-assets` CLI binary that discovers new assets from upstream APIs and merges them into the static JSON config files. This was **not ported** to the Index data-node. Currently:
+
+- 34 JSON config files exist in `data-node/src/config/` — compiled via `include_str!` at build time
+- 12 sources implement `discover_upstream_assets()` — but nothing calls it
+- The sync engine only uses `fetch_assets()` (reads from compiled JSON) and `fetch_prices()`
+- No process exists to update the JSON configs when upstream APIs add/remove assets
+
+### Solution: Port refresh-assets + Auto-Discovery
+
+**Step 0a: Add `refresh-assets` subcommand** — Port `refresh_assets.rs` from AA as a new `data-node refresh-assets --source <id>` subcommand. It:
+1. Reads existing `config/{source}.json` from disk (not compiled)
+2. Calls `source.discover_upstream_assets()`
+3. Merges: add new → active, missing upstream → deactivated, never deleted
+4. Writes updated JSON back, sorted by asset_id for stable diffs
+5. Supports `--dry-run` and `--output` flags
+
+**Step 0b: Wire auto-discovery into sync engine** — On startup (after initial asset sync), if the source implements `discover_upstream_assets()`, call it and merge any new assets into `market_assets` DB table. This means:
+- Static JSON configs remain the **seed** (compiled into binary)
+- Runtime discovery **extends** the DB with new assets found upstream
+- `refresh-assets` CLI is used periodically to update the JSON seed files (manual or cron)
+
+**Step 0c: Implement `discover_upstream_assets()` for new sources** — Each of the 10 new sources should implement discovery where applicable (earthquake feeds, volcano catalogs, flight regions are mostly static; but ESPN teams, disease countries, etc. can be discovered).
+
+### Discoverable Sources (existing + new)
+
+| Source | Has `discover_upstream_assets()` | Discovery Method |
+|--------|--------------------------------|------------------|
+| crypto (CoinGecko) | Yes | Top N coins by market cap |
+| defi (DefiLlama) | Yes | All protocols with TVL > 0 |
+| polymarket | Yes | Active markets |
+| steam | Yes | Top 500 games by player count |
+| npm | Yes | Top 250 packages by downloads |
+| pypi | Yes | Top 250 packages |
+| crates_io | Yes | Top 250 crates |
+| github | Yes | Trending repos |
+| twitch | Yes | Top streams |
+| twse | Yes | All listed stocks |
+| anilist | Yes | Top anime/manga |
+| cloudflare | Yes | Radar categories |
+| backpacktf | Yes | All priced items |
+| tmdb | Yes | Top movies/shows |
+| **volcano** (new) | Yes | USGS elevated + GVP catalog |
+| **earthquake** (new) | No | Static regions/magnitude bands |
+| **spaceweather** (new) | No | Static metrics list |
+| **wildfire** (new) | No | Static region bounding boxes |
+| **flights** (new) | No | Static airport/region boxes |
+| **maritime** (new) | Yes | AIS port vessel counts |
+| **epidemic** (new) | Yes | disease.sh country list |
+| **sports** (new) | Yes | ESPN team/league discovery |
+| **iss** (new) | No | Static (5 metrics) |
+| **weather_alerts** (new) | No | Static alert types |
+
 ## Architecture
 
 All 10 sources follow the existing `MarketDataSource` trait pattern:
@@ -138,11 +194,12 @@ All 10 sources follow the existing `MarketDataSource` trait pattern:
 - `sync_interval()` — poll frequency
 - `fetch_assets()` — return asset catalog
 - `fetch_prices()` — return latest values per asset
+- `discover_upstream_assets()` — optional: discover new assets from API
 
 Each source gets:
 - `data-node/src/market_data/sources/{name}/client.rs` — API client + MarketDataSource impl
 - `data-node/src/market_data/sources/{name}/mod.rs` — module re-export
-- `data-node/src/config/{name}.json` — asset catalog
+- `data-node/src/config/{name}.json` — asset catalog (seed)
 
 Wiring: spawn in `main.rs` via `SyncEngine` (always-on sources) or `ScheduledSyncEngine` (market-hours sources).
 
