@@ -161,6 +161,17 @@
     "market_frozen": "긴급 상황으로 마켓이 동결되었습니다",
     "rate_limited": "요청 제한, {seconds}초 후 재시도"
   },
+  "lend_modal": {
+    "title": "{name} 담보 대출",
+    "description": "Morpho를 통해 {symbol} 담보로 USDC를 대출합니다",
+    "connect_wallet": "대출에 접근하려면 지갑을 연결하세요",
+    "tab_borrow": "대출",
+    "tab_repay": "상환",
+    "no_position": "상환하거나 출금할 활성 포지션이 없습니다",
+    "open_position_hint": "대출 탭으로 전환하여 포지션을 개설하세요",
+    "something_went_wrong": "문제가 발생했습니다",
+    "please_reopen": "모달을 닫고 다시 열어주세요."
+  },
   "error": {
     "title": "오류"
   }

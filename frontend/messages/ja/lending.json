@@ -161,6 +161,17 @@
     "market_frozen": "緊急時のためマーケットは凍結されています",
     "rate_limited": "レート制限中です。{seconds}秒後に再試行してください"
   },
+  "lend_modal": {
+    "title": "{name}を担保に借入",
+    "description": "Morpho経由で{symbol}担保にUSDCを借入",
+    "connect_wallet": "レンディングにアクセスするにはウォレットを接続してください",
+    "tab_borrow": "借入",
+    "tab_repay": "返済",
+    "no_position": "返済または引出可能なアクティブポジションはありません",
+    "open_position_hint": "借入タブに切り替えてポジションを開設してください",
+    "something_went_wrong": "エラーが発生しました",
+    "please_reopen": "モーダルを閉じて再度開いてください。"
+  },
   "error": {
     "title": "エラー"
   }

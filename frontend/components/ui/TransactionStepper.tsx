@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 export interface MicroStep {
   label: string
@@ -44,6 +45,7 @@ export function TransactionStepper({
   txRefs,
   error,
 }: TransactionStepperProps) {
+  const tc = useTranslations('common')
   const [displayedLabel, setDisplayedLabel] = useState('')
   const [isTransitioning, setIsTransitioning] = useState(false)
   const prevMicroRef = useRef(currentMicroStep)
@@ -83,13 +85,10 @@ export function TransactionStepper({
 
   // Calculate connector fill ratio: how far through the current visible step's micro-steps we are
   const getConnectorFill = (connectorIndex: number): number => {
-    // connectorIndex 0 = between step 0 and step 1, etc.
-    // Connector N is "done" if visible step N is complete (activeVisibleStep > N)
     if (isDone) return 1
     if (activeVisibleStep > connectorIndex) return 1
     if (activeVisibleStep < connectorIndex) return 0
 
-    // We're inside this step — calculate proportional fill
     const [start, end] = stepRanges[connectorIndex] ?? [0, 1]
     const total = end - start
     if (total <= 0) return 0
@@ -97,17 +96,17 @@ export function TransactionStepper({
     return Math.min(1, Math.max(0, progress / total))
   }
 
-  // Collect completed tx hashes for display
+  // Collect completed tx hashes for display — include current step's tx too
   const completedTxLinks = microSteps
-    .filter((ms, i) => i < currentMicroStep && ms.txHash && ms.explorerUrl)
+    .filter((ms, i) => i <= currentMicroStep && ms.txHash && ms.explorerUrl)
     .map(ms => ({ label: ms.label, hash: ms.txHash!, explorerUrl: ms.explorerUrl!, chain: ms.chain }))
 
-  const nodes = [...visibleSteps.map((s, i) => ({ label: s.label, index: i })), { label: 'Done', index: visibleSteps.length }]
+  const nodes = [...visibleSteps.map((s, i) => ({ label: s.label, index: i })), { label: tc('stepper.done'), index: visibleSteps.length }]
 
   return (
     <div className="bg-muted border border-border-light rounded-xl p-5">
-      {/* Step circles + connectors */}
-      <div className="flex items-start">
+      {/* Step circles + connectors — centered layout */}
+      <div className="flex items-center">
         {nodes.map((node, i) => {
           const isLast = i === nodes.length - 1
           const isDoneNode = isLast
@@ -116,8 +115,9 @@ export function TransactionStepper({
           const stepDoneNode = isDone && isDoneNode
 
           return (
-            <div key={i} className="flex items-start flex-1">
-              <div className="flex flex-col items-center flex-1 min-w-0">
+            <div key={i} className={`flex items-center ${isLast ? '' : 'flex-1'}`}>
+              {/* Node: circle + label stacked */}
+              <div className="flex flex-col items-center" style={{ width: 48 }}>
                 {/* Circle */}
                 <div className="relative">
                   <div
@@ -126,19 +126,13 @@ export function TransactionStepper({
                         ? 'bg-zinc-900 text-white'
                         : stepCurrent
                         ? 'bg-zinc-900 text-white ring-2 ring-zinc-400'
-                        : 'bg-muted text-text-muted border border-border-light'
+                        : 'bg-white text-text-muted border-2 border-border-light'
                     }`}
                   >
                     {isDoneNode ? (
-                      stepDoneNode ? (
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      ) : (
-                        <svg className="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      )
+                      <svg className={`w-4 h-4 ${stepDoneNode ? '' : 'text-text-muted'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
                     ) : stepDone ? (
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -149,17 +143,14 @@ export function TransactionStepper({
                       i + 1
                     )}
                   </div>
-                  {/* Pulse ring on active step */}
                   {stepCurrent && (
                     <span className="absolute inset-0 rounded-full animate-ping bg-zinc-600/20" />
                   )}
                 </div>
                 {/* Label */}
                 <span
-                  className={`text-[10px] mt-1.5 text-center leading-tight font-medium ${
-                    stepDone || stepDoneNode
-                      ? 'text-text-primary'
-                      : stepCurrent
+                  className={`text-[10px] mt-1.5 text-center leading-tight font-medium whitespace-nowrap ${
+                    stepDone || stepDoneNode || stepCurrent
                       ? 'text-text-primary'
                       : 'text-text-muted'
                   }`}
@@ -168,12 +159,10 @@ export function TransactionStepper({
                 </span>
               </div>
 
-              {/* Connector line with proportional fill */}
+              {/* Connector line between circles */}
               {!isLast && (
-                <div className="relative h-0.5 flex-shrink-0 w-full mt-[18px] mx-1">
-                  {/* Background track */}
+                <div className="relative h-0.5 flex-1 -mx-0.5" style={{ marginTop: -12 }}>
                   <div className="absolute inset-0 bg-border-light rounded-full" />
-                  {/* Filled portion */}
                   <div
                     className="absolute inset-y-0 left-0 bg-zinc-900 rounded-full transition-all duration-500 ease-out"
                     style={{ width: `${getConnectorFill(i) * 100}%` }}
@@ -189,7 +178,7 @@ export function TransactionStepper({
       <div className="mt-4 pt-3 border-t border-border-light min-h-[28px] flex items-center justify-center">
         {isDone ? (
           <p className="text-sm font-medium text-color-up text-center">
-            {displayedLabel || 'Complete!'}
+            {displayedLabel || tc('stepper.complete')}
           </p>
         ) : (
           <p

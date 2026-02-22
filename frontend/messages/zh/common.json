@@ -111,6 +111,10 @@
     "pending_tx_title": "检测到待处理交易",
     "pending_tx_description": "您有 {count} 笔待处理交易。新交易可能会被阻塞。"
   },
+  "stepper": {
+    "done": "完成",
+    "complete": "已完成!"
+  },
   "time": {
     "just_now": "刚刚",
     "seconds_ago": "{count}秒前",

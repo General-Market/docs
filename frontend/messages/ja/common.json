@@ -111,6 +111,10 @@
     "pending_tx_title": "保留中のトランザクションを検出",
     "pending_tx_description": "{count}件の保留中のトランザクションがあります。新しいトランザクションが停止する可能性があります。"
   },
+  "stepper": {
+    "done": "完了",
+    "complete": "完了しました！"
+  },
   "time": {
     "just_now": "たった今",
     "seconds_ago": "{count}秒前",

@@ -161,6 +161,17 @@
     "market_frozen": "紧急情况下市场已冻结",
     "rate_limited": "请求频率受限，请在 {seconds} 秒后重试"
   },
+  "lend_modal": {
+    "title": "以 {name} 抵押借款",
+    "description": "通过 Morpho 以 {symbol} 抵押品借入 USDC",
+    "connect_wallet": "连接钱包以访问借贷功能",
+    "tab_borrow": "借款",
+    "tab_repay": "还款",
+    "no_position": "没有活跃的仓位可还款或提取",
+    "open_position_hint": "切换到借款标签以开设仓位",
+    "something_went_wrong": "出现错误",
+    "please_reopen": "请关闭并重新打开弹窗。"
+  },
   "error": {
     "title": "错误"
   }

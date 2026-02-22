@@ -105,5 +105,44 @@
     "created": "创建时间:",
     "arb_address": "Arb 地址:",
     "request_number": "请求 #{number}"
+  },
+  "rebalance": {
+    "title": "再平衡 {name}",
+    "itp_id_label": "ITP ID:",
+    "loading": "加载 ITP 状态中...",
+    "add_asset_label": "添加资产 (篮子中 {count} 个, 可用 {available} 个)",
+    "search_placeholder": "搜索要添加的资产...",
+    "equal_weights": "等权重",
+    "weight_sum": "权重总和",
+    "table": {
+      "asset": "资产",
+      "current_pct": "当前 %",
+      "new_pct": "新 %",
+      "new_tag": "新增"
+    },
+    "status": {
+      "step1_wallet": "步骤 1/2: 请在钱包中确认...",
+      "step1_confirming": "步骤 1/2: 链上确认中...",
+      "step2_executing": "步骤 2/2: 在 L3 上执行再平衡 (发行者共识)...",
+      "tx_label": "Tx:"
+    },
+    "success": {
+      "title": "再平衡完成!",
+      "l3_tx": "L3 Tx:"
+    },
+    "button": {
+      "waiting_wallet": "等待钱包确认...",
+      "confirming": "确认中...",
+      "executing": "在 L3 上执行中...",
+      "rebalanced": "再平衡完成!",
+      "rebalance": "再平衡"
+    },
+    "support": "支持"
+  },
+  "chart": {
+    "nav_ohlc": "NAV OHLC",
+    "loading": "加载 NAV 数据中...",
+    "error": "加载图表数据失败",
+    "no_data": "此时间段暂无 NAV 数据"
   }
 }

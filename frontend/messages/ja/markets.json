@@ -105,5 +105,44 @@
     "created": "作成日：",
     "arb_address": "Arbアドレス：",
     "request_number": "リクエスト #{number}"
+  },
+  "rebalance": {
+    "title": "{name}をリバランス",
+    "itp_id_label": "ITP ID：",
+    "loading": "ITPステートを読み込み中...",
+    "add_asset_label": "資産を追加（バスケット{count}件、利用可能{available}件）",
+    "search_placeholder": "追加する資産を検索...",
+    "equal_weights": "均等ウェイト",
+    "weight_sum": "ウェイト合計",
+    "table": {
+      "asset": "資産",
+      "current_pct": "現在の%",
+      "new_pct": "新しい%",
+      "new_tag": "NEW"
+    },
+    "status": {
+      "step1_wallet": "ステップ1/2：ウォレットで確認してください...",
+      "step1_confirming": "ステップ1/2：オンチェーンで確認中...",
+      "step2_executing": "ステップ2/2：L3でリバランスを実行中（イシュアーコンセンサス）...",
+      "tx_label": "Tx："
+    },
+    "success": {
+      "title": "リバランス完了！",
+      "l3_tx": "L3 Tx："
+    },
+    "button": {
+      "waiting_wallet": "ウォレットを確認中...",
+      "confirming": "確認中...",
+      "executing": "L3で実行中...",
+      "rebalanced": "リバランス完了！",
+      "rebalance": "リバランス"
+    },
+    "support": "サポート"
+  },
+  "chart": {
+    "nav_ohlc": "NAV OHLC",
+    "loading": "NAVデータを読み込み中...",
+    "error": "チャートデータの読み込みに失敗しました",
+    "no_data": "この期間のNAVデータはありません"
   }
 }

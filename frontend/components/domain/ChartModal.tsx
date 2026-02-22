@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import type { IChartApi, ISeriesApi, CandlestickData, Time } from 'lightweight-charts'
 import { useItpNavSeries, useBtcPriceSeries, NavTimeframe } from '@/hooks/useItpNavSeries'
 import { DATA_NODE_URL } from '@/lib/config'
+import { useTranslations } from 'next-intl'
 
 const TIMEFRAME_SECONDS: Record<NavTimeframe, number> = {
   '5m': 300,
@@ -30,6 +31,7 @@ interface ChartModalProps {
 }
 
 export function ChartModal({ itpId, itpName, createdAt, onClose }: ChartModalProps) {
+  const t = useTranslations('markets')
   const [timeframe, setTimeframe] = useState<NavTimeframe>('5m')
   const [showBtc, setShowBtc] = useState(false)
   const { data, isLoading, error } = useItpNavSeries(itpId, timeframe, createdAt)
@@ -265,7 +267,7 @@ export function ChartModal({ itpId, itpName, createdAt, onClose }: ChartModalPro
         <div className="p-4 border-b border-border-light flex justify-between items-center">
           <div>
             <h2 className="text-lg font-semibold text-text-primary">{itpName}</h2>
-            <p className="text-xs text-text-muted">NAV OHLC</p>
+            <p className="text-xs text-text-muted">{t('chart.nav_ohlc')}</p>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex gap-1">
@@ -303,21 +305,21 @@ export function ChartModal({ itpId, itpName, createdAt, onClose }: ChartModalPro
             <div className="absolute inset-0 flex items-center justify-center bg-card">
               <div className="text-center">
                 <div className="inline-block w-6 h-6 border-2 border-zinc-900 border-t-transparent rounded-full animate-spin mb-2" />
-                <p className="text-sm text-text-muted">Loading NAV data...</p>
+                <p className="text-sm text-text-muted">{t('chart.loading')}</p>
               </div>
             </div>
           )}
           {error && (
             <div className="absolute inset-0 flex items-center justify-center bg-card">
               <div className="text-center">
-                <p className="text-sm text-color-down mb-1">Failed to load chart data</p>
+                <p className="text-sm text-color-down mb-1">{t('chart.error')}</p>
                 <p className="text-xs text-text-muted">{error}</p>
               </div>
             </div>
           )}
           {!isLoading && !error && data.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center bg-card">
-              <p className="text-sm text-text-muted">No NAV data available for this timeframe</p>
+              <p className="text-sm text-text-muted">{t('chart.no_data')}</p>
             </div>
           )}
         </div>

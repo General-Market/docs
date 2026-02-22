@@ -111,6 +111,10 @@
     "pending_tx_title": "Pending Transactions Detected",
     "pending_tx_description": "You have {count} pending transaction(s). New transactions may get stuck."
   },
+  "stepper": {
+    "done": "Done",
+    "complete": "Complete!"
+  },
   "time": {
     "just_now": "just now",
     "seconds_ago": "{count}s ago",

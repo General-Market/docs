@@ -16,6 +16,7 @@ import { useItpNav } from '@/hooks/useItpNav'
 import { useSSEOrders, useSSEBalances, type UserOrder } from '@/hooks/useSSE'
 import { useToast } from '@/lib/contexts/ToastContext'
 import { YouTubeLite, extractYouTubeId } from '@/components/ui/YouTubeLite'
+import { useTranslations } from 'next-intl'
 
 /**
  * Buy flow micro-steps — 10 steps mapped to 3 visible steps + Done:
@@ -39,37 +40,11 @@ enum BuyMicro {
   DONE = 10,
 }
 
-const VISIBLE_STEPS: VisibleStep[] = [
-  { label: 'Submit' },
-  { label: 'Process' },
-  { label: 'Deliver' },
-]
-
 // Maps visible step index → [startMicro, endMicro) range
 const STEP_RANGES: [number, number][] = [
   [BuyMicro.APPROVE, BuyMicro.BRIDGE_TO_L3],       // Submit: 0-1
   [BuyMicro.BRIDGE_TO_L3, BuyMicro.RECORD_COLLATERAL], // Process: 2-5
   [BuyMicro.RECORD_COLLATERAL, BuyMicro.DONE],      // Deliver: 6-9
-]
-
-const MICRO_LABELS: Record<number, string | ((ctx: { isPending: boolean }) => string)> = {
-  [BuyMicro.APPROVE]: (ctx) => ctx.isPending ? 'Confirm USDC approval in wallet...' : 'Approving USDC spend...',
-  [BuyMicro.SUBMIT]: (ctx) => ctx.isPending ? 'Confirm buy order in wallet...' : 'Submitting buy order...',
-  [BuyMicro.BRIDGE_TO_L3]: () => 'Bridging USDC to L3...',
-  [BuyMicro.RELAY]: () => 'Relaying order to L3...',
-  [BuyMicro.BATCH]: () => 'Batching order...',
-  [BuyMicro.FILL]: () => 'Executing trades...',
-  [BuyMicro.RECORD_COLLATERAL]: () => 'Recording collateral...',
-  [BuyMicro.BRIDGE_TO_ARB]: () => 'Bridging USDC to Arbitrum...',
-  [BuyMicro.COMPLETE_BRIDGE]: () => 'Completing bridge...',
-  [BuyMicro.MINT_SHARES]: () => 'Minting BridgedITP...',
-  [BuyMicro.DONE]: () => 'Shares received!',
-}
-
-const SLIPPAGE_TIERS = [
-  { value: 0, label: '0.3%', description: 'Tight' },
-  { value: 1, label: '1%', description: 'Normal' },
-  { value: 2, label: '3%', description: 'Relaxed' },
 ]
 
 const MINT_ABI = [
@@ -92,9 +67,37 @@ interface BuyItpModalProps {
 }
 
 export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
+  const t = useTranslations('buy-modal')
+  const tc = useTranslations('common')
   const { address, isConnected } = useAccount()
   const publicClient = usePublicClient()
   const { showSuccess } = useToast()
+
+  const VISIBLE_STEPS: VisibleStep[] = [
+    { label: t('steps.submit') },
+    { label: t('steps.process') },
+    { label: t('steps.deliver') },
+  ]
+
+  const MICRO_LABELS: Record<number, string | ((ctx: { isPending: boolean }) => string)> = {
+    [BuyMicro.APPROVE]: (ctx) => ctx.isPending ? t('micro_steps.approve_pending') : t('micro_steps.approve_confirming'),
+    [BuyMicro.SUBMIT]: (ctx) => ctx.isPending ? t('micro_steps.submit_pending') : t('micro_steps.submit_confirming'),
+    [BuyMicro.BRIDGE_TO_L3]: () => t('micro_steps.bridge_to_l3'),
+    [BuyMicro.RELAY]: () => t('micro_steps.relay'),
+    [BuyMicro.BATCH]: () => t('micro_steps.batch'),
+    [BuyMicro.FILL]: () => t('micro_steps.fill'),
+    [BuyMicro.RECORD_COLLATERAL]: () => t('micro_steps.record_collateral'),
+    [BuyMicro.BRIDGE_TO_ARB]: () => t('micro_steps.bridge_to_arb'),
+    [BuyMicro.COMPLETE_BRIDGE]: () => t('micro_steps.complete_bridge'),
+    [BuyMicro.MINT_SHARES]: () => t('micro_steps.mint_shares'),
+    [BuyMicro.DONE]: () => t('micro_steps.shares_received'),
+  }
+
+  const SLIPPAGE_TIERS = [
+    { value: 0, label: '0.3%', description: t('slippage_tight') },
+    { value: 1, label: '1%', description: t('slippage_normal') },
+    { value: 2, label: '3%', description: t('slippage_relaxed') },
+  ]
 
   // SSE-driven order & balance tracking (replaces L3 polling)
   const sseOrders = useSSEOrders()
@@ -304,6 +307,8 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
       setMicro(BuyMicro.BRIDGE_TO_L3) // Cross-chain: start bridging
     }
     resetBuy()
+    // Signal portfolio to refetch orders immediately
+    window.dispatchEvent(new Event('portfolio-refresh'))
   }, [isBuySuccess, buyReceipt, resetBuy])
 
   // BRIDGE_TO_L3: timer-based advance (bridge takes ~3s after submit)
@@ -412,8 +417,8 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
         ? parseFloat(formatUnits((fillAmount * BigInt(1e18)) / fillPrice, 18)).toFixed(2)
         : null
       const msg = shares
-        ? `Buy filled — ${shares} ${itpName} shares received`
-        : `Buy filled — ${itpName} shares received`
+        ? t('toast.buy_filled_shares', { shares, name: itpName })
+        : t('toast.buy_filled', { name: itpName })
       showSuccess(msg)
     }
     if (micro === -1) toastFired.current = false
@@ -488,16 +493,16 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const isDone = micro === BuyMicro.DONE
 
   const buttonText = isApprovePending
-    ? 'Confirm approval in wallet...'
+    ? t('button.approve_pending')
     : isApproveConfirming
-    ? 'Approving USDC...'
+    ? t('button.approve_confirming')
     : isBuyPending
-    ? 'Confirm buy in wallet...'
+    ? t('button.buy_pending')
     : isBuyConfirming
-    ? 'Submitting order...'
+    ? t('button.buy_confirming')
     : needsApproval
-    ? 'Approve & Buy'
-    : 'Buy ITP'
+    ? t('button.approve_and_buy')
+    : t('button.buy_itp')
 
   // --- Stepper data ---
 
@@ -619,19 +624,19 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     if (!fillPrice || !fillAmount) return null
     return (
       <div className="bg-muted border border-border-light rounded-xl p-4 space-y-2">
-        <p className="text-sm font-semibold text-text-primary">Fill Details</p>
+        <p className="text-sm font-semibold text-text-primary">{t('fill_details.title')}</p>
         <div className="text-xs font-mono space-y-1">
           <div className="flex justify-between">
-            <span className="text-text-muted">Fill Price</span>
+            <span className="text-text-muted">{t('fill_details.fill_price')}</span>
             <span className="text-text-primary tabular-nums">${parseFloat(formatUnits(fillPrice, 18)).toFixed(4)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-text-muted">Amount Filled</span>
+            <span className="text-text-muted">{t('fill_details.amount_filled')}</span>
             <span className="text-text-primary tabular-nums">{parseFloat(formatUnits(fillAmount, 18)).toFixed(4)} USDC</span>
           </div>
           {fillPrice > 0n && (
             <div className="flex justify-between">
-              <span className="text-text-muted">Shares</span>
+              <span className="text-text-muted">{t('fill_details.shares')}</span>
               <span className="text-text-primary tabular-nums">
                 {parseFloat(formatUnits((fillAmount * BigInt(1e18)) / fillPrice, 18)).toFixed(4)}
               </span>
@@ -642,7 +647,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
             const slippage = Number(fillPrice - limitBn) * 100 / Number(limitBn)
             return (
               <div className="flex justify-between">
-                <span className="text-text-muted">vs Limit</span>
+                <span className="text-text-muted">{t('fill_details.vs_limit')}</span>
                 <span className={slippage <= 0 ? 'text-color-up' : slippage < 1 ? 'text-color-up' : slippage < 3 ? 'text-color-warning' : 'text-color-down'}>
                   {slippage > 0 ? '+' : ''}{slippage.toFixed(2)}%
                 </span>
@@ -659,11 +664,11 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
       <div className="bg-card border border-border-light rounded-xl shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-text-primary">Buy {itpName}</h2>
+            <h2 className="text-lg font-semibold text-text-primary">{t('title', { name: itpName })}</h2>
             <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
           </div>
           {itpSymbol && <p className="text-text-secondary mb-1 font-mono">${itpSymbol}</p>}
-          <p className="text-xs text-text-muted font-mono mb-4 break-all">ITP ID: {itpId}</p>
+          <p className="text-xs text-text-muted font-mono mb-4 break-all">{t('itp_id_label')} {itpId}</p>
 
           {videoUrl && (() => {
             const vid = extractYouTubeId(videoUrl)
@@ -677,7 +682,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
           {!isConnected ? (
             <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
-              <p className="text-text-secondary">Connect your wallet to buy ITP shares</p>
+              <p className="text-text-secondary">{tc('wallet.connect_to_buy')}</p>
             </div>
           ) : micro >= 0 ? (
             <div className="space-y-4">
@@ -693,7 +698,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
               {userShares > 0n && (
                 <div className="bg-muted border border-border-light rounded-xl p-4">
-                  <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1">Your ITP Shares</p>
+                  <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1">{t('your_itp_shares')}</p>
                   <p className="text-2xl font-bold text-text-primary tabular-nums font-mono">{parseFloat(formatUnits(userShares, 18)).toFixed(4)}</p>
                 </div>
               )}
@@ -703,27 +708,27 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                   onClick={handleReset}
                   className="w-full py-3 bg-color-up text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
                 >
-                  Buy More
+                  {t('buy_more')}
                 </button>
               ) : (micro <= BuyMicro.SUBMIT) ? (
                 <button
                   onClick={handleCancel}
                   className="w-full text-center text-sm text-text-muted hover:text-text-primary py-2 transition-colors"
                 >
-                  Cancel
+                  {tc('actions.cancel')}
                 </button>
               ) : null}
 
               {stuckWarning && (
                 <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-orange-500 text-sm">
-                  <p className="font-medium">Transaction may be stuck</p>
-                  <p className="text-xs mt-1">Not confirmed after 30s. You can cancel and try again.</p>
+                  <p className="font-medium">{tc('warnings.tx_stuck_title')}</p>
+                  <p className="text-xs mt-1">{tc('warnings.tx_stuck_description')}</p>
                 </div>
               )}
 
               {txError && (
                 <div className="bg-surface-down border border-color-down/30 rounded-lg p-4 text-color-down">
-                  <p className="font-medium">Error</p>
+                  <p className="font-medium">{t('error.title')}</p>
                   <p className="text-sm mt-1 break-all">{txError}</p>
                 </div>
               )}
@@ -733,8 +738,8 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
               <div className="bg-muted border border-border-light rounded-xl p-4 space-y-4">
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <label className="text-xs font-medium uppercase tracking-wider text-text-muted">Amount (USDC)</label>
-                    <span className="text-xs text-text-muted font-mono">Balance: {parseFloat(formattedBalance).toFixed(2)} USDC</span>
+                    <label className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('amount_label')}</label>
+                    <span className="text-xs text-text-muted font-mono">{t('balance_label', { amount: parseFloat(formattedBalance).toFixed(2) })}</span>
                   </div>
                   <input
                     type="number"
@@ -746,7 +751,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                     className="w-full bg-card border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg font-mono tabular-nums focus:border-zinc-600 focus:outline-none"
                   />
                   {amount && parsedAmount > (usdcBalance ?? 0n) && (
-                    <p className="text-color-down text-xs mt-1">Insufficient USDC balance</p>
+                    <p className="text-color-down text-xs mt-1">{t('insufficient_usdc')}</p>
                   )}
                 </div>
                 {(usdcBalance ?? 0n) === 0n && (
@@ -756,20 +761,20 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                       disabled={isMintPending}
                       className="px-3 py-1.5 text-xs bg-muted text-text-secondary border border-border-medium rounded hover:border-zinc-500 disabled:opacity-50 transition-colors"
                     >
-                      {isMintPending ? 'Minting...' : 'Mint 10,000 Test USDC'}
+                      {isMintPending ? t('minting') : t('mint_test_usdc')}
                     </button>
-                    {isMintSuccess && <span className="text-xs text-color-up">Minted!</span>}
-                    {mintError && <span className="text-xs text-color-down">Mint failed</span>}
+                    {isMintSuccess && <span className="text-xs text-color-up">{t('minted')}</span>}
+                    {mintError && <span className="text-xs text-color-down">{t('mint_failed')}</span>}
                   </div>
                 )}
               </div>
 
               <div className="bg-muted border border-border-light rounded-xl p-4">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted">Max Price (USDC/share)</label>
+                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('max_price_label')}</label>
                   {navPerShare > 0 && (
                     <span className="text-xs text-text-secondary font-mono">
-                      NAV: ${navPerShare.toFixed(6)} ({pricedAssetCount}/{totalAssetCount} priced)
+                      {t('nav_label', { nav: navPerShare.toFixed(6), priced: pricedAssetCount, total: totalAssetCount })}
                     </span>
                   )}
                 </div>
@@ -777,20 +782,20 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                   type="number"
                   value={limitPrice}
                   onChange={(e) => setLimitPrice(e.target.value)}
-                  placeholder={isNavLoading ? 'Computing price...' : navPerShare === 0 ? 'Set limit price' : '0 (no limit)'}
+                  placeholder={isNavLoading ? t('computing_price') : navPerShare === 0 ? t('set_limit_price') : t('no_limit')}
                   min="0"
                   step="0.01"
                   className="w-full bg-card border border-border-medium rounded-lg px-4 py-2 text-text-primary font-mono tabular-nums focus:border-zinc-600 focus:outline-none"
                 />
                 {!isNavLoading && navPerShare === 0 && (
                   <p className="text-color-warning text-xs mt-2">
-                    No asset prices available. Set a limit price manually or use 0 for no limit.
+                    {t('no_prices_warning')}
                   </p>
                 )}
               </div>
 
               <div className="bg-muted border border-border-light rounded-xl p-4">
-                <label className="block text-xs font-medium uppercase tracking-wider text-text-muted mb-3">Slippage</label>
+                <label className="block text-xs font-medium uppercase tracking-wider text-text-muted mb-3">{t('slippage_label')}</label>
                 <div className="flex gap-2">
                   {SLIPPAGE_TIERS.map(tier => (
                     <button
@@ -810,8 +815,8 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
               {hasNonceGap && (
                 <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-orange-500 text-sm">
-                  <p className="font-medium">Pending Transactions Detected</p>
-                  <p className="text-xs mt-1">You have {pendingCount} pending transaction(s). New transactions may get stuck.</p>
+                  <p className="font-medium">{tc('warnings.pending_tx_title')}</p>
+                  <p className="text-xs mt-1">{tc('warnings.pending_tx_description', { count: pendingCount })}</p>
                 </div>
               )}
 
@@ -828,20 +833,20 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                   onClick={handleCancel}
                   className="w-full text-center text-sm text-text-muted hover:text-text-primary py-2 transition-colors"
                 >
-                  Cancel
+                  {tc('actions.cancel')}
                 </button>
               )}
 
               {stuckWarning && (
                 <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-orange-500 text-sm">
-                  <p className="font-medium">Transaction may be stuck</p>
-                  <p className="text-xs mt-1">Not confirmed after 30s. You can cancel and try again.</p>
+                  <p className="font-medium">{tc('warnings.tx_stuck_title')}</p>
+                  <p className="text-xs mt-1">{tc('warnings.tx_stuck_description')}</p>
                 </div>
               )}
 
               {txError && (
                 <div className="bg-surface-down border border-color-down/30 rounded-lg p-4 text-color-down">
-                  <p className="font-medium">Error</p>
+                  <p className="font-medium">{t('error.title')}</p>
                   <p className="text-sm mt-1 break-all">{txError}</p>
                 </div>
               )}

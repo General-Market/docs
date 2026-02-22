@@ -9,6 +9,7 @@ import { activeChainId } from '@/lib/wagmi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getCoinGeckoUrl } from '@/lib/coingecko'
+import { useTranslations } from 'next-intl'
 import { DATA_NODE_URL, ARB_RPC_URL as ARB_RPC, L3_RPC_URL as L3_RPC } from '@/lib/config'
 const L3_INDEX = '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6'
 const DEPLOYER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
@@ -84,6 +85,7 @@ async function waitForArbReceipt(hash: string, timeoutMs = 20_000): Promise<any>
 }
 
 export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps) {
+  const t = useTranslations('markets')
   const { address } = useAccount()
   const [assets, setAssets] = useState<AssetRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -372,13 +374,13 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-text-primary">Rebalance {itpName}</h2>
+            <h2 className="text-lg font-semibold text-text-primary">{t('rebalance.title', { name: itpName })}</h2>
             <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
           </div>
-          <p className="text-xs text-text-muted font-mono mb-4 break-all">ITP ID: {itpId}</p>
+          <p className="text-xs text-text-muted font-mono mb-4 break-all">{t('rebalance.itp_id_label')} {itpId}</p>
 
           {loading ? (
-            <div className="text-center py-8 text-text-muted">Loading ITP state...</div>
+            <div className="text-center py-8 text-text-muted">{t('rebalance.loading')}</div>
           ) : status === 'error' && assets.length === 0 ? (
             <div className="bg-surface-down border border-color-down/30 rounded-lg p-3 text-color-down text-sm">
               {errorMsg}
@@ -388,13 +390,13 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
               {/* Add asset search bar */}
               <div className="bg-muted border border-border-light rounded-lg p-3 mb-4">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-text-secondary">Add Asset ({assets.length} in basket, {availableAssets.length} available)</span>
+                  <span className="text-sm text-text-secondary">{t('rebalance.add_asset_label', { count: assets.length, available: availableAssets.length })}</span>
                 </div>
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search asset to add..."
+                  placeholder={t('rebalance.search_placeholder')}
                   className="w-full bg-card border border-border-medium rounded-lg px-3 py-1.5 text-sm text-text-primary focus:border-zinc-600 focus:outline-none mb-2"
                   disabled={isWorking || status === 'success'}
                 />
@@ -430,7 +432,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
                   onClick={setEqualWeights}
                   className="px-3 py-1 text-xs border border-border-medium rounded text-text-secondary hover:border-zinc-500 hover:text-text-primary transition-colors"
                 >
-                  Equal Weights
+                  {t('rebalance.equal_weights')}
                 </button>
               </div>
 
@@ -440,7 +442,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
                   ? 'bg-surface-up border border-color-up/30 text-color-up'
                   : 'bg-surface-down border border-color-down/30 text-color-down'
               }`}>
-                <span>Weight Sum</span>
+                <span>{t('rebalance.weight_sum')}</span>
                 <span>{weightSum.toFixed(2)}%</span>
               </div>
 
@@ -449,9 +451,9 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-muted">
                     <tr className="text-text-muted text-xs">
-                      <th className="text-left p-2">Asset</th>
-                      <th className="text-right p-2">Current %</th>
-                      <th className="text-right p-2">New %</th>
+                      <th className="text-left p-2">{t('rebalance.table.asset')}</th>
+                      <th className="text-right p-2">{t('rebalance.table.current_pct')}</th>
+                      <th className="text-right p-2">{t('rebalance.table.new_pct')}</th>
                       <th className="p-2 w-8"></th>
                     </tr>
                   </thead>
@@ -469,7 +471,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
                           >
                             &nearr;
                           </a>
-                          {asset.isNew && <span className="ml-1 text-color-up text-xs">NEW</span>}
+                          {asset.isNew && <span className="ml-1 text-color-up text-xs">{t('rebalance.table.new_tag')}</span>}
                         </td>
                         <td className="p-2 text-right text-text-muted font-mono">
                           {asset.isNew ? '—' : `${(Number(asset.currentWeight) / 1e16).toFixed(2)}%`}
@@ -503,20 +505,20 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
               {/* Status messages */}
               {status === 'requesting' && (
                 <div className="mt-4 bg-color-info/10 border border-color-info/30 rounded-lg p-3 text-color-info text-sm">
-                  Step 1/2: Confirm in your wallet...
+                  {t('rebalance.status.step1_wallet')}
                 </div>
               )}
 
               {status === 'confirming' && (
                 <div className="mt-4 bg-color-info/10 border border-color-info/30 rounded-lg p-3 text-color-info text-sm">
-                  Step 1/2: Confirming on-chain...
-                  {requestHash && <p className="text-xs font-mono mt-1 text-color-info/60 break-all">Tx: {requestHash}</p>}
+                  {t('rebalance.status.step1_confirming')}
+                  {requestHash && <p className="text-xs font-mono mt-1 text-color-info/60 break-all">{t('rebalance.status.tx_label')} {requestHash}</p>}
                 </div>
               )}
 
               {status === 'executing' && (
                 <div className="mt-4 bg-color-info/10 border border-color-info/30 rounded-lg p-3 text-color-info text-sm">
-                  Step 2/2: Executing rebalance on L3 (issuer consensus)...
+                  {t('rebalance.status.step2_executing')}
                 </div>
               )}
 
@@ -528,8 +530,8 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
 
               {status === 'success' && (
                 <div className="mt-4 bg-surface-up border border-color-up/30 rounded-lg p-3 text-color-up text-sm">
-                  <p className="font-medium mb-1">Rebalanced!</p>
-                  <p className="text-xs font-mono break-all text-color-up/70">L3 Tx: {txHash}</p>
+                  <p className="font-medium mb-1">{t('rebalance.success.title')}</p>
+                  <p className="text-xs font-mono break-all text-color-up/70">{t('rebalance.success.l3_tx')} {txHash}</p>
                 </div>
               )}
 
@@ -540,11 +542,11 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
                   disabled={!isValid || isWorking || status === 'success'}
                   className="flex-1 py-3 bg-zinc-900 text-white font-medium rounded-lg text-sm hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {status === 'requesting' ? 'Waiting for wallet...'
-                    : status === 'confirming' ? 'Confirming...'
-                    : status === 'executing' ? 'Executing on L3...'
-                    : status === 'success' ? 'Rebalanced!'
-                    : 'Rebalance'}
+                  {status === 'requesting' ? t('rebalance.button.waiting_wallet')
+                    : status === 'confirming' ? t('rebalance.button.confirming')
+                    : status === 'executing' ? t('rebalance.button.executing')
+                    : status === 'success' ? t('rebalance.button.rebalanced')
+                    : t('rebalance.button.rebalance')}
                 </WalletActionButton>
                 <a
                   href="https://discord.gg/xsfgzwR6"
@@ -552,7 +554,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
                   rel="noopener noreferrer"
                   className="px-3 py-3 bg-zinc-900 text-white font-medium rounded-lg text-sm hover:bg-zinc-800 transition-colors flex items-center"
                 >
-                  Support
+                  {t('rebalance.support')}
                 </a>
               </div>
             </>

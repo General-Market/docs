@@ -105,5 +105,44 @@
     "created": "생성일:",
     "arb_address": "Arb 주소:",
     "request_number": "요청 #{number}"
+  },
+  "rebalance": {
+    "title": "{name} 리밸런스",
+    "itp_id_label": "ITP ID:",
+    "loading": "ITP 상태 로딩 중...",
+    "add_asset_label": "자산 추가 (바스켓 {count}개, 사용 가능 {available}개)",
+    "search_placeholder": "추가할 자산 검색...",
+    "equal_weights": "동일 비중",
+    "weight_sum": "비중 합계",
+    "table": {
+      "asset": "자산",
+      "current_pct": "현재 %",
+      "new_pct": "새 %",
+      "new_tag": "NEW"
+    },
+    "status": {
+      "step1_wallet": "1/2단계: 지갑에서 확인하세요...",
+      "step1_confirming": "1/2단계: 온체인 확인 중...",
+      "step2_executing": "2/2단계: L3에서 리밸런스 실행 중 (발행자 합의)...",
+      "tx_label": "Tx:"
+    },
+    "success": {
+      "title": "리밸런스 완료!",
+      "l3_tx": "L3 Tx:"
+    },
+    "button": {
+      "waiting_wallet": "지갑 대기 중...",
+      "confirming": "확인 중...",
+      "executing": "L3에서 실행 중...",
+      "rebalanced": "리밸런스 완료!",
+      "rebalance": "리밸런스"
+    },
+    "support": "지원"
+  },
+  "chart": {
+    "nav_ohlc": "NAV OHLC",
+    "loading": "NAV 데이터 로딩 중...",
+    "error": "차트 데이터를 불러오지 못했습니다",
+    "no_data": "이 시간대에 사용 가능한 NAV 데이터가 없습니다"
   }
 }

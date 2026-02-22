@@ -16,12 +16,9 @@ import { useItpNav } from '@/hooks/useItpNav'
 import { useSSEOrders, useSSEBalances, type UserOrder } from '@/hooks/useSSE'
 import { useToast } from '@/lib/contexts/ToastContext'
 import { YouTubeLite, extractYouTubeId } from '@/components/ui/YouTubeLite'
+import { useTranslations } from 'next-intl'
 
-const SLIPPAGE_TIERS = [
-  { value: 0, label: '0.3%', description: 'Tight' },
-  { value: 1, label: '1%', description: 'Normal' },
-  { value: 2, label: '3%', description: 'Relaxed' },
-]
+// SLIPPAGE_TIERS moved inside component for i18n
 
 const ARB_CUSTODY_SELL_ABI = [
   {
@@ -80,29 +77,11 @@ enum SellMicro {
   DONE = 8,
 }
 
-const VISIBLE_STEPS: VisibleStep[] = [
-  { label: 'Submit' },
-  { label: 'Process' },
-  { label: 'Deliver' },
-]
-
 const STEP_RANGES: [number, number][] = [
   [SellMicro.APPROVE, SellMicro.RELAY],           // Submit: 0-1
   [SellMicro.RELAY, SellMicro.RECORD_COLLATERAL], // Process: 2-4
   [SellMicro.RECORD_COLLATERAL, SellMicro.DONE],  // Deliver: 5-7
 ]
-
-const MICRO_LABELS: Record<number, string | ((ctx: { isPending: boolean }) => string)> = {
-  [SellMicro.APPROVE]: (ctx) => ctx.isPending ? 'Confirm BridgedITP approval in wallet...' : 'Approving shares...',
-  [SellMicro.SUBMIT]: (ctx) => ctx.isPending ? 'Confirm sell order in wallet...' : 'Submitting sell order...',
-  [SellMicro.RELAY]: () => 'Relaying sell to L3...',
-  [SellMicro.BATCH]: () => 'Batching order...',
-  [SellMicro.FILL]: () => 'Executing trades...',
-  [SellMicro.RECORD_COLLATERAL]: () => 'Recording collateral...',
-  [SellMicro.BRIDGE_TO_ARB]: () => 'Bridging USDC to Arbitrum...',
-  [SellMicro.COMPLETE_SELL]: () => 'Completing sell order...',
-  [SellMicro.DONE]: () => 'USDC received!',
-}
 
 interface SellItpModalProps {
   itpId: string
@@ -111,9 +90,35 @@ interface SellItpModalProps {
 }
 
 export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
+  const t = useTranslations('sell-modal')
+  const tc = useTranslations('common')
   const { address, isConnected } = useAccount()
   const publicClient = usePublicClient()
   const { showSuccess } = useToast()
+
+  const VISIBLE_STEPS: VisibleStep[] = [
+    { label: t('steps.submit') },
+    { label: t('steps.process') },
+    { label: t('steps.deliver') },
+  ]
+
+  const MICRO_LABELS: Record<number, string | ((ctx: { isPending: boolean }) => string)> = {
+    [SellMicro.APPROVE]: (ctx) => ctx.isPending ? t('micro_steps.approve_pending') : t('micro_steps.approve_confirming'),
+    [SellMicro.SUBMIT]: (ctx) => ctx.isPending ? t('micro_steps.submit_pending') : t('micro_steps.submit_confirming'),
+    [SellMicro.RELAY]: () => t('micro_steps.relay'),
+    [SellMicro.BATCH]: () => t('micro_steps.batch'),
+    [SellMicro.FILL]: () => t('micro_steps.fill'),
+    [SellMicro.RECORD_COLLATERAL]: () => t('micro_steps.record_collateral'),
+    [SellMicro.BRIDGE_TO_ARB]: () => t('micro_steps.bridge_to_arb'),
+    [SellMicro.COMPLETE_SELL]: () => t('micro_steps.complete_sell'),
+    [SellMicro.DONE]: () => t('micro_steps.usdc_received'),
+  }
+
+  const SLIPPAGE_TIERS = [
+    { value: 0, label: '0.3%', description: t('slippage_label') },
+    { value: 1, label: '1%', description: t('slippage_label') },
+    { value: 2, label: '3%', description: t('slippage_label') },
+  ]
 
   // SSE-driven order & balance tracking (replaces L3 polling)
   const sseOrders = useSSEOrders()
@@ -254,6 +259,8 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     if (micro === SellMicro.SUBMIT && !sellHandled.current) {
       sellHandled.current = true
       if (hash) setSavedSellHash(hash)
+      // Signal portfolio to refetch orders immediately
+      window.dispatchEvent(new Event('portfolio-refresh'))
 
       for (const log of receipt.logs) {
         if (log.address.toLowerCase() !== INDEX_PROTOCOL.arbCustody.toLowerCase()) continue
@@ -387,7 +394,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
       const proceeds = usdcProceeds
         ? `$${parseFloat(formatUnits(usdcProceeds, 6)).toFixed(2)} USDC`
         : 'USDC'
-      showSuccess(`Sell filled — ${proceeds} received`)
+      showSuccess(t('toast.sell_filled', { proceeds }))
     }
     if (micro === -1) toastFired.current = false
   }, [micro, usdcProceeds, showSuccess])
@@ -527,12 +534,12 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   }, [orderId, l3OrderId])
 
   const buttonText = isPending
-    ? 'Waiting for wallet...'
+    ? t('button.pending')
     : isConfirming
-    ? (micro === SellMicro.APPROVE ? 'Approving...' : 'Submitting...')
+    ? (micro === SellMicro.APPROVE ? t('button.approving') : t('button.submitting'))
     : needsApproval
-    ? 'Approve & Sell'
-    : 'Sell Shares'
+    ? t('button.approve_and_sell')
+    : t('button.sell_shares')
 
   const renderFillDetails = () => {
     if (!fillPrice || !fillAmount) return null
@@ -541,18 +548,18 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
 
     return (
       <div className="bg-muted border border-border-light rounded-xl p-4 space-y-2">
-        <p className="text-sm font-semibold text-text-primary">Fill Details</p>
+        <p className="text-sm font-semibold text-text-primary">{t('fill_details.title')}</p>
         <div className="text-xs font-mono space-y-1">
           <div className="flex justify-between">
-            <span className="text-text-muted">Fill Price</span>
+            <span className="text-text-muted">{t('fill_details.fill_price')}</span>
             <span className="text-text-primary tabular-nums">${parseFloat(formatUnits(fillPrice, 18)).toFixed(4)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-text-muted">Shares Sold</span>
+            <span className="text-text-muted">{t('fill_details.shares_sold')}</span>
             <span className="text-text-primary tabular-nums">{parseFloat(formatUnits(fillAmount, 18)).toFixed(4)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-text-muted">USDC Proceeds</span>
+            <span className="text-text-muted">{t('fill_details.usdc_proceeds')}</span>
             <span className="text-text-primary tabular-nums">${parseFloat(formatUnits(proceeds, 6)).toFixed(2)}</span>
           </div>
           {/* P&L vs cost basis */}
@@ -562,7 +569,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
             const pnlPct = Number(costOfShares) > 0 ? Number(pnl) * 100 / Number(costOfShares) : 0
             return (
               <div className="flex justify-between pt-1 border-t border-border-light">
-                <span className="text-text-muted">P&amp;L vs Cost</span>
+                <span className="text-text-muted">{t('fill_details.pnl_vs_cost')}</span>
                 <span className={pnl >= 0n ? 'text-color-up' : 'text-color-down'}>
                   {pnl >= 0n ? '+' : ''}${parseFloat(formatUnits(pnl, 6)).toFixed(2)} ({pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(1)}%)
                 </span>
@@ -579,11 +586,11 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
       <div className="bg-card border border-border-light rounded-xl shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-text-primary">Sell {itpName}</h2>
+            <h2 className="text-lg font-semibold text-text-primary">{t('title', { name: itpName })}</h2>
             <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
           </div>
           {itpSymbol && <p className="text-text-secondary mb-1 font-mono">${itpSymbol}</p>}
-          <p className="text-xs text-text-muted font-mono mb-4 break-all">ITP ID: {itpId}</p>
+          <p className="text-xs text-text-muted font-mono mb-4 break-all">{t('itp_id_label')} {itpId}</p>
 
           {videoUrl && (() => {
             const vid = extractYouTubeId(videoUrl)
@@ -597,11 +604,11 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
 
           {!isConnected ? (
             <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
-              <p className="text-text-secondary">Connect your wallet to sell ITP shares</p>
+              <p className="text-text-secondary">{tc('wallet.connect_to_sell')}</p>
             </div>
           ) : !bridgedItpAddress ? (
             <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
-              <p className="text-text-secondary">No BridgedITP found for this ITP. It may not have been created via BridgeProxy yet.</p>
+              <p className="text-text-secondary">{t('no_bridged_itp')}</p>
             </div>
           ) : micro >= 0 ? (
             <div className="space-y-4">
@@ -618,7 +625,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
 
               {isDone && arbUsdcBalance > 0n && (
                 <div className="bg-muted border border-border-light rounded-xl p-4">
-                  <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1">Your USDC Balance (Arbitrum)</p>
+                  <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1">{t('usdc_balance_label')}</p>
                   <p className="text-2xl font-bold text-text-primary tabular-nums font-mono">{formatUnits(arbUsdcBalance, 6)} USDC</p>
                 </div>
               )}
@@ -628,27 +635,27 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                   onClick={handleReset}
                   className="w-full py-3 bg-color-down text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
                 >
-                  Sell More
+                  {t('sell_more')}
                 </button>
               ) : micro <= SellMicro.SUBMIT ? (
                 <button
                   onClick={handleCancel}
                   className="w-full text-center text-sm text-text-muted hover:text-text-primary py-2 transition-colors"
                 >
-                  Cancel
+                  {tc('actions.cancel')}
                 </button>
               ) : null}
 
               {stuckWarning && (
                 <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-orange-500 text-sm">
-                  <p className="font-medium">Transaction may be stuck</p>
-                  <p className="text-xs mt-1">Not confirmed after 30s. You can cancel and try again.</p>
+                  <p className="font-medium">{tc('warnings.tx_stuck_title')}</p>
+                  <p className="text-xs mt-1">{tc('warnings.tx_stuck_description')}</p>
                 </div>
               )}
 
               {txError && (
                 <div className="bg-surface-down border border-color-down/30 rounded-lg p-4 text-color-down">
-                  <p className="font-medium">Error</p>
+                  <p className="font-medium">{t('error.title')}</p>
                   <p className="text-sm mt-1 break-all">{txError}</p>
                 </div>
               )}
@@ -656,24 +663,24 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
           ) : (
             <div className="space-y-4">
               <div className="bg-muted border border-border-light rounded-xl p-4 flex justify-between items-center">
-                <span className="text-xs font-medium uppercase tracking-wider text-text-muted">Your BridgedITP Shares</span>
+                <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('your_shares_label')}</span>
                 <span className="text-2xl font-bold text-text-primary tabular-nums font-mono">{parseFloat(formatUnits(userShares, 18)).toFixed(4)}</span>
               </div>
 
               {userShares === 0n ? (
                 <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
-                  <p className="text-text-secondary">You don&apos;t have any BridgedITP shares to sell</p>
+                  <p className="text-text-secondary">{t('no_shares')}</p>
                 </div>
               ) : (
                 <>
                   <div className="bg-muted border border-border-light rounded-xl p-4">
                     <div className="flex justify-between items-center mb-2">
-                      <label className="text-xs font-medium uppercase tracking-wider text-text-muted">Shares to Sell</label>
+                      <label className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('shares_to_sell_label')}</label>
                       <button
                         onClick={() => setAmount(formatUnits(userShares, 18))}
                         className="text-xs text-zinc-700 hover:text-zinc-900"
                       >
-                        Max
+                        {tc('actions.max')}
                       </button>
                     </div>
                     <input
@@ -686,16 +693,16 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                       className="w-full bg-card border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg font-mono tabular-nums focus:border-zinc-600 focus:outline-none"
                     />
                     {insufficientShares && (
-                      <p className="text-color-down text-xs mt-1">Insufficient BridgedITP shares</p>
+                      <p className="text-color-down text-xs mt-1">{t('insufficient_shares')}</p>
                     )}
                   </div>
 
                   <div className="bg-muted border border-border-light rounded-xl p-4">
                     <div className="flex justify-between items-center mb-2">
-                      <label className="text-xs font-medium uppercase tracking-wider text-text-muted">Min Price (USDC/share)</label>
+                      <label className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('min_price_label')}</label>
                       {navPerShare > 0 && (
                         <span className="text-xs text-text-secondary font-mono">
-                          NAV: ${navPerShare.toFixed(6)} ({pricedAssetCount}/{totalAssetCount} priced)
+                          {t('nav_label', { nav: navPerShare.toFixed(6), priced: pricedAssetCount, total: totalAssetCount })}
                         </span>
                       )}
                     </div>
@@ -703,7 +710,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                       type="number"
                       value={limitPrice}
                       onChange={(e) => setLimitPrice(e.target.value)}
-                      placeholder={isNavLoading ? 'Computing price...' : navPerShare === 0 ? 'Set min price' : '0 (no limit)'}
+                      placeholder={isNavLoading ? t('computing_price') : navPerShare === 0 ? t('set_min_price') : t('no_limit')}
                       min="0"
                       step="0.01"
                       className="w-full bg-card border border-border-medium rounded-lg px-4 py-2 text-text-primary font-mono tabular-nums focus:border-zinc-600 focus:outline-none"
@@ -711,7 +718,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                   </div>
 
                   <div className="bg-muted border border-border-light rounded-xl p-4">
-                    <label className="block text-xs font-medium uppercase tracking-wider text-text-muted mb-3">Slippage</label>
+                    <label className="block text-xs font-medium uppercase tracking-wider text-text-muted mb-3">{t('slippage_label')}</label>
                     <div className="flex gap-2">
                       {SLIPPAGE_TIERS.map(tier => (
                         <button
@@ -732,10 +739,10 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                   {/* P&L Preview */}
                   {parsedAmount > 0n && costBasis && costBasis.avgCostPerShare > 0n && (
                     <div className="bg-muted border border-border-light rounded-xl p-4 space-y-1">
-                      <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-2">Estimated P&amp;L</p>
+                      <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-2">{t('estimated_pnl.title')}</p>
                       <div className="text-xs font-mono space-y-1">
                         <div className="flex justify-between">
-                          <span className="text-text-muted">Avg Cost Basis</span>
+                          <span className="text-text-muted">{t('estimated_pnl.avg_cost_basis')}</span>
                           <span className="text-text-primary tabular-nums">${parseFloat(formatUnits(costBasis.avgCostPerShare, 18)).toFixed(4)}/share</span>
                         </div>
                         {navPerShareBn > 0n && (() => {
@@ -746,15 +753,15 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                           return (
                             <>
                               <div className="flex justify-between">
-                                <span className="text-text-muted">Current NAV</span>
+                                <span className="text-text-muted">{t('estimated_pnl.current_nav')}</span>
                                 <span className="text-text-primary tabular-nums">${navPerShare.toFixed(6)}/share</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-text-muted">Est. Proceeds</span>
+                                <span className="text-text-muted">{t('estimated_pnl.est_proceeds')}</span>
                                 <span className="text-text-primary tabular-nums">${parseFloat(formatUnits(estimatedProceeds, 18)).toFixed(2)}</span>
                               </div>
                               <div className="flex justify-between pt-1 border-t border-border-light">
-                                <span className="text-text-muted">Est. P&amp;L</span>
+                                <span className="text-text-muted">{t('estimated_pnl.est_pnl')}</span>
                                 <span className={estimatedPnL >= 0n ? 'text-color-up' : 'text-color-down'}>
                                   {estimatedPnL >= 0n ? '+' : ''}${parseFloat(formatUnits(estimatedPnL, 18)).toFixed(2)} ({pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(1)}%)
                                 </span>
@@ -792,7 +799,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
 
                   {txError && (
                     <div className="bg-surface-down border border-color-down/30 rounded-lg p-4 text-color-down">
-                      <p className="font-medium">Error</p>
+                      <p className="font-medium">{t('error.title')}</p>
                       <p className="text-sm mt-1 break-all">{txError}</p>
                     </div>
                   )}

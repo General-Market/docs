@@ -161,6 +161,17 @@
     "market_frozen": "Market is frozen during emergency",
     "rate_limited": "Rate limited, retry in {seconds}s"
   },
+  "lend_modal": {
+    "title": "Borrow against {name}",
+    "description": "Borrow USDC against your {symbol} collateral via Morpho",
+    "connect_wallet": "Connect your wallet to access lending",
+    "tab_borrow": "Borrow",
+    "tab_repay": "Repay",
+    "no_position": "No active position to repay or withdraw",
+    "open_position_hint": "Switch to the Borrow tab to open a position",
+    "something_went_wrong": "Something went wrong",
+    "please_reopen": "Please close and reopen the modal."
+  },
   "error": {
     "title": "Error"
   }

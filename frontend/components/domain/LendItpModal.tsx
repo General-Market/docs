@@ -13,6 +13,7 @@ import { LendingHistory } from '@/components/lending/LendingHistory'
 import { useMorphoPosition } from '@/hooks/useMorphoPosition'
 import { useLendingQuote } from '@/hooks/useLendingQuote'
 import type { CrisisLevel } from '@/lib/types/lending-quote'
+import { useTranslations } from 'next-intl'
 
 interface ItpInfo {
   id: string
@@ -44,6 +45,7 @@ const LendingErrorFallback = (
 )
 
 export function LendItpModal({ itpInfo, isOpen, onClose }: LendItpModalProps) {
+  const t = useTranslations('lending')
   const { isConnected } = useAccount()
   const [activeTab, setActiveTab] = useState<Tab>('borrow')
 
@@ -74,17 +76,17 @@ export function LendItpModal({ itpInfo, isOpen, onClose }: LendItpModalProps) {
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-text-primary">Borrow against {itpInfo.name || 'ITP'}</h2>
+            <h2 className="text-lg font-semibold text-text-primary">{t('lend_modal.title', { name: itpInfo.name || 'ITP' })}</h2>
             <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
           </div>
           {itpInfo.symbol && <p className="text-text-secondary mb-1 font-mono">${itpInfo.symbol}</p>}
           <p className="text-xs text-text-muted mb-6">
-            Borrow USDC against your {itpInfo.symbol || 'ITP'} collateral via Morpho
+            {t('lend_modal.description', { symbol: itpInfo.symbol || 'ITP' })}
           </p>
 
           {!isConnected ? (
             <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
-              <p className="text-text-secondary">Connect your wallet to access lending</p>
+              <p className="text-text-secondary">{t('lend_modal.connect_wallet')}</p>
             </div>
           ) : (
             <ErrorBoundary fallback={LendingErrorFallback}>
@@ -99,7 +101,7 @@ export function LendItpModal({ itpInfo, isOpen, onClose }: LendItpModalProps) {
                         : 'text-text-secondary border-transparent hover:text-text-primary'
                     }`}
                   >
-                    Borrow
+                    {t('lend_modal.tab_borrow')}
                   </button>
                   <button
                     onClick={() => setActiveTab('repay')}
@@ -109,7 +111,7 @@ export function LendItpModal({ itpInfo, isOpen, onClose }: LendItpModalProps) {
                         : 'text-text-secondary border-transparent hover:text-text-primary'
                     }`}
                   >
-                    Repay
+                    {t('lend_modal.tab_repay')}
                   </button>
                 </div>
 
@@ -134,8 +136,8 @@ export function LendItpModal({ itpInfo, isOpen, onClose }: LendItpModalProps) {
                     )}
                     {(!position || (position.debtAmount === 0n && position.collateralAmount === 0n)) && (
                       <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
-                        <p className="text-text-muted">No active position to repay or withdraw</p>
-                        <p className="text-text-muted text-sm mt-2">Switch to the Borrow tab to open a position</p>
+                        <p className="text-text-muted">{t('lend_modal.no_position')}</p>
+                        <p className="text-text-muted text-sm mt-2">{t('lend_modal.open_position_hint')}</p>
                       </div>
                     )}
                   </div>

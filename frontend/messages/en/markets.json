@@ -105,5 +105,44 @@
     "created": "Created:",
     "arb_address": "Arb Address:",
     "request_number": "Request #{number}"
+  },
+  "rebalance": {
+    "title": "Rebalance {name}",
+    "itp_id_label": "ITP ID:",
+    "loading": "Loading ITP state...",
+    "add_asset_label": "Add Asset ({count} in basket, {available} available)",
+    "search_placeholder": "Search asset to add...",
+    "equal_weights": "Equal Weights",
+    "weight_sum": "Weight Sum",
+    "table": {
+      "asset": "Asset",
+      "current_pct": "Current %",
+      "new_pct": "New %",
+      "new_tag": "NEW"
+    },
+    "status": {
+      "step1_wallet": "Step 1/2: Confirm in your wallet...",
+      "step1_confirming": "Step 1/2: Confirming on-chain...",
+      "step2_executing": "Step 2/2: Executing rebalance on L3 (issuer consensus)...",
+      "tx_label": "Tx:"
+    },
+    "success": {
+      "title": "Rebalanced!",
+      "l3_tx": "L3 Tx:"
+    },
+    "button": {
+      "waiting_wallet": "Waiting for wallet...",
+      "confirming": "Confirming...",
+      "executing": "Executing on L3...",
+      "rebalanced": "Rebalanced!",
+      "rebalance": "Rebalance"
+    },
+    "support": "Support"
+  },
+  "chart": {
+    "nav_ohlc": "NAV OHLC",
+    "loading": "Loading NAV data...",
+    "error": "Failed to load chart data",
+    "no_data": "No NAV data available for this timeframe"
   }
 }
