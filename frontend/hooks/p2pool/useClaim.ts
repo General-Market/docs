@@ -9,7 +9,7 @@ const VISION_ADDRESS = (
   process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000'
 ) as `0x${string}`
 
-import { P2POOL_P2POOL_ISSUER_URLS } from '@/lib/config'
+import { P2POOL_ISSUER_URLS } from '@/lib/config'
 
 export type ClaimStep = 'idle' | 'fetching-proof' | 'claiming' | 'done' | 'error'
 

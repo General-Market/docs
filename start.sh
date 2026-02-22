@@ -922,8 +922,8 @@ NEXT_PUBLIC_RPC_URL=http://localhost:8546
 NEXT_PUBLIC_AP_URL=http://localhost:9100
 NEXT_PUBLIC_DATA_NODE_URL=http://localhost:8200
 NEXT_PUBLIC_VISION_ADDRESS=${VISION_ADDR}
-NEXT_PUBLIC_P2POOL_API_URL=http://localhost:10101
-NEXT_PUBLIC_ISSUER_URLS=http://localhost:10101,http://localhost:10102,http://localhost:10103
+NEXT_PUBLIC_P2POOL_API_URL=http://localhost:10001
+NEXT_PUBLIC_ISSUER_URLS=http://localhost:10001,http://localhost:10002,http://localhost:10003
 ENVEOF
 
 # Start Next.js dev server
@@ -997,7 +997,7 @@ for i in $(seq 1 $ISSUER_COUNT); do
 done
 
 # P2Pool API health
-P2POOL_API_PORT=10101
+P2POOL_API_PORT=10001
 if curl -sf "http://localhost:$P2POOL_API_PORT/p2pool/batches" > /dev/null 2>&1; then
     echo -e "  P2Pool API: ${GREEN}healthy${NC} (port $P2POOL_API_PORT)"
 else

@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useAccount } from 'wagmi'
-import { P2POOL_P2POOL_ISSUER_URLS } from '@/lib/config'
+import { P2POOL_ISSUER_URLS } from '@/lib/config'
 import { bitmapToHex, hashBitmap, encodeBitmap, type BetDirection } from '@/lib/p2pool/bitmap'
 
 export interface SubmitBitmapParams {

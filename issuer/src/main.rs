@@ -19,7 +19,6 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 use tokio::signal;
 use tracing::{debug, info, warn, error};
@@ -287,148 +286,160 @@ fn setup_logging(config: &issuer::IssuerConfig) -> Result<(), Box<dyn std::error
 /// Type alias for the NAV sign handler used in the issuer node
 type IssuerNavSignHandler = NavSignHandler<Box<dyn NavCalculator>, StubItpRegistryReader>;
 
-async fn handle_health_check(
-    mut socket: tokio::net::TcpStream,
+/// Shared state for the issuer HTTP API (health, nav-sign, registry-sync).
+/// All issuer endpoints and optional P2Pool endpoints share one axum server.
+struct IssuerApiState {
     node_id: u32,
     p2p_transport: Option<Arc<TcpP2PTransport>>,
     metrics: Arc<IssuerMetrics>,
     registry_sync_cache: Option<RegistrySyncCache>,
     nav_sign_handler: Option<Arc<IssuerNavSignHandler>>,
-) {
-    let mut buf = [0u8; 1024];
-    if let Ok(n) = socket.read(&mut buf).await {
-        if n > 0 {
-            let request = String::from_utf8_lossy(&buf[..n]);
+}
 
-            // Handle GET /api/nav-sign endpoint (Story 8.3)
-            // Returns BLS-signed NAV price for an ITP
-            if request.contains("GET /api/nav-sign") {
-                let response = if let Some(ref handler) = nav_sign_handler {
-                    // Extract query string from request line: GET /api/nav-sign?itp=0x... HTTP/1.1
-                    let query_string = request
-                        .lines()
-                        .next()
-                        .and_then(|line| line.split('?').nth(1))
-                        .and_then(|rest| rest.split_whitespace().next())
-                        .unwrap_or("");
+/// GET /health — issuer health check with metrics
+async fn axum_health_handler(
+    axum::extract::State(state): axum::extract::State<Arc<IssuerApiState>>,
+) -> axum::response::Response {
+    use axum::http::{header, StatusCode};
+    use axum::response::IntoResponse;
 
-                    let (status, content_type, body) =
-                        handle_nav_sign_request(handler.as_ref(), query_string).await;
+    let (p2p_mode, connected_peers) = if let Some(ref transport) = state.p2p_transport {
+        let count = transport.connected_peer_count().await;
+        ("tcp", count)
+    } else {
+        ("mock", 0)
+    };
 
-                    format!(
-                        "HTTP/1.1 {} {}\r\nContent-Type: {}\r\n\r\n{}",
-                        status,
-                        match status {
-                            200 => "OK",
-                            400 => "Bad Request",
-                            404 => "Not Found",
-                            503 => "Service Unavailable",
-                            _ => "Internal Server Error",
-                        },
-                        content_type,
-                        body
-                    )
-                } else {
-                    "HTTP/1.1 503 Service Unavailable\r\nContent-Type: application/json\r\n\r\n{\"error\":\"NAV sign API not enabled\"}".to_string()
-                };
-                let _ = socket.write_all(response.as_bytes()).await;
-                return;
-            }
+    let m = &state.metrics;
+    let is_leader = m.is_leader.load(Ordering::Relaxed);
+    let elections_count = m.elections_count.load(Ordering::Relaxed);
+    let tenure_cycles = m.tenure_cycles.load(Ordering::Relaxed);
+    let consensus_rounds = m.consensus_rounds_total.load(Ordering::Relaxed);
+    let consensus_success = m.consensus_success_total.load(Ordering::Relaxed);
+    let consensus_failed = m.consensus_failed_total.load(Ordering::Relaxed);
+    let signatures_collected = m.signatures_collected_total.load(Ordering::Relaxed);
+    let last_consensus_ms = m.last_consensus_time_ms.load(Ordering::Relaxed);
+    let consensus_in_progress = m.consensus_in_progress.load(Ordering::Relaxed);
 
-            // Handle GET /api/registry-sync endpoint (Story 8.4, AC #1, #2, #4)
-            if request.contains("GET /api/registry-sync") {
-                let response = if let Some(ref cache) = registry_sync_cache {
-                    let guard = cache.read().await;
-                    if let Some(ref state) = *guard {
-                        let json = state.to_json_response();
-                        format!(
-                            "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{}",
-                            json
-                        )
-                    } else {
-                        "HTTP/1.1 404 Not Found\r\nContent-Type: application/json\r\n\r\n{\"error\":\"No sync data available\"}".to_string()
-                    }
-                } else {
-                    "HTTP/1.1 404 Not Found\r\nContent-Type: application/json\r\n\r\n{\"error\":\"Registry sync not enabled\"}".to_string()
-                };
-                let _ = socket.write_all(response.as_bytes()).await;
-                return;
-            }
-
-            // Handle health check endpoint
-            if request.contains("GET /health") || request.contains("GET / ") {
-                let (p2p_mode, connected_peers) = if let Some(ref transport) = p2p_transport {
-                    let count = transport.connected_peer_count().await;
-                    ("tcp", count)
-                } else {
-                    ("mock", 0)
-                };
-
-                let is_leader = metrics.is_leader.load(Ordering::Relaxed);
-                let elections_count = metrics.elections_count.load(Ordering::Relaxed);
-                let tenure_cycles = metrics.tenure_cycles.load(Ordering::Relaxed);
-                let consensus_rounds = metrics.consensus_rounds_total.load(Ordering::Relaxed);
-                let consensus_success = metrics.consensus_success_total.load(Ordering::Relaxed);
-                let consensus_failed = metrics.consensus_failed_total.load(Ordering::Relaxed);
-                let signatures_collected = metrics.signatures_collected_total.load(Ordering::Relaxed);
-                let last_consensus_ms = metrics.last_consensus_time_ms.load(Ordering::Relaxed);
-                let consensus_in_progress = metrics.consensus_in_progress.load(Ordering::Relaxed);
-
-                let heartbeat_json = if let Ok(guard) = metrics.heartbeat_metrics.read() {
-                    if let Some(ref hb_metrics) = *guard {
-                        format!(
-                            ",\"heartbeat\":{{\"sent_total\":{},\"received_total\":{},\"peers_healthy\":{},\"peers_unhealthy\":{},\"kick_proposals\":{}}}",
-                            hb_metrics.get_heartbeats_sent(),
-                            hb_metrics.get_heartbeats_received(),
-                            hb_metrics.get_peers_healthy(),
-                            hb_metrics.get_peers_unhealthy(),
-                            hb_metrics.get_kick_votes_proposed(),
-                        )
-                    } else {
-                        String::new()
-                    }
-                } else {
-                    String::new()
-                };
-
-                let (health_status, http_status) = metrics.health_status(connected_peers);
-                let last_cycle_duration_ms = metrics.last_cycle_duration_ms.load(Ordering::Relaxed);
-                let orders_processed = metrics.orders_processed_last_60s.load(Ordering::Relaxed);
-                let pending_orders = metrics.pending_order_count.load(Ordering::Relaxed);
-
-                let response = format!(
-                    "HTTP/1.1 {} {}\r\nContent-Type: application/json\r\n\r\n\
-                    {{\"status\":\"{}\",\"node_id\":{},\"p2p_mode\":\"{}\",\"connected_peers\":{},\
-                    \"is_leader\":{},\"leader_elections_count\":{},\"leader_tenure_cycles\":{},\
-                    \"consensus\":{{\"rounds_total\":{},\"success_total\":{},\"failed_total\":{},\
-                    \"signatures_collected\":{},\"last_time_ms\":{},\"in_progress\":{}}},\
-                    \"orders_processed_last_60s\":{},\"last_cycle_duration_ms\":{},\"pending_order_count\":{}{}\
-                    ,\"timestamp\":\"{}\"}}",
-                    http_status,
-                    if http_status == 200 { "OK" } else { "Service Unavailable" },
-                    health_status,
-                    node_id, p2p_mode, connected_peers, is_leader, elections_count, tenure_cycles,
-                    consensus_rounds, consensus_success, consensus_failed, signatures_collected,
-                    last_consensus_ms, consensus_in_progress,
-                    orders_processed, last_cycle_duration_ms, pending_orders,
-                    heartbeat_json, Utc::now().to_rfc3339()
-                );
-                let _ = socket.write_all(response.as_bytes()).await;
-            } else {
-                let response = "HTTP/1.1 404 Not Found\r\n\r\n";
-                let _ = socket.write_all(response.as_bytes()).await;
-            }
+    let mut heartbeat = serde_json::Map::new();
+    if let Ok(guard) = m.heartbeat_metrics.read() {
+        if let Some(ref hb) = *guard {
+            heartbeat.insert("sent_total".into(), hb.get_heartbeats_sent().into());
+            heartbeat.insert("received_total".into(), hb.get_heartbeats_received().into());
+            heartbeat.insert("peers_healthy".into(), hb.get_peers_healthy().into());
+            heartbeat.insert("peers_unhealthy".into(), hb.get_peers_unhealthy().into());
+            heartbeat.insert("kick_proposals".into(), hb.get_kick_votes_proposed().into());
         }
+    }
+
+    let (health_status, http_status) = m.health_status(connected_peers);
+    let last_cycle_duration_ms = m.last_cycle_duration_ms.load(Ordering::Relaxed);
+    let orders_processed = m.orders_processed_last_60s.load(Ordering::Relaxed);
+    let pending_orders = m.pending_order_count.load(Ordering::Relaxed);
+
+    let mut body = serde_json::json!({
+        "status": health_status,
+        "node_id": state.node_id,
+        "p2p_mode": p2p_mode,
+        "connected_peers": connected_peers,
+        "is_leader": is_leader,
+        "leader_elections_count": elections_count,
+        "leader_tenure_cycles": tenure_cycles,
+        "consensus": {
+            "rounds_total": consensus_rounds,
+            "success_total": consensus_success,
+            "failed_total": consensus_failed,
+            "signatures_collected": signatures_collected,
+            "last_time_ms": last_consensus_ms,
+            "in_progress": consensus_in_progress,
+        },
+        "orders_processed_last_60s": orders_processed,
+        "last_cycle_duration_ms": last_cycle_duration_ms,
+        "pending_order_count": pending_orders,
+        "timestamp": Utc::now().to_rfc3339(),
+    });
+    if !heartbeat.is_empty() {
+        body.as_object_mut().unwrap().insert("heartbeat".into(), serde_json::Value::Object(heartbeat));
+    }
+
+    let status = if http_status == 200 { StatusCode::OK } else { StatusCode::SERVICE_UNAVAILABLE };
+    (status, [(header::CONTENT_TYPE, "application/json")], body.to_string()).into_response()
+}
+
+/// GET /api/nav-sign — BLS-signed NAV price for an ITP
+async fn axum_nav_sign_handler(
+    axum::extract::State(state): axum::extract::State<Arc<IssuerApiState>>,
+    axum::extract::RawQuery(query): axum::extract::RawQuery,
+) -> axum::response::Response {
+    use axum::http::{header, StatusCode};
+    use axum::response::IntoResponse;
+
+    let Some(ref handler) = state.nav_sign_handler else {
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            [(header::CONTENT_TYPE, "application/json")],
+            r#"{"error":"NAV sign API not enabled"}"#.to_string(),
+        ).into_response();
+    };
+
+    let query_str = query.as_deref().unwrap_or("");
+    let (status, content_type, body) = handle_nav_sign_request(handler.as_ref(), query_str).await;
+    let sc = StatusCode::from_u16(status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+    (sc, [(header::CONTENT_TYPE, content_type)], body).into_response()
+}
+
+/// GET /api/registry-sync — registry sync state
+async fn axum_registry_sync_handler(
+    axum::extract::State(state): axum::extract::State<Arc<IssuerApiState>>,
+) -> axum::response::Response {
+    use axum::http::{header, StatusCode};
+    use axum::response::IntoResponse;
+
+    let Some(ref cache) = state.registry_sync_cache else {
+        return (
+            StatusCode::NOT_FOUND,
+            [(header::CONTENT_TYPE, "application/json")],
+            r#"{"error":"Registry sync not enabled"}"#.to_string(),
+        ).into_response();
+    };
+
+    let guard = cache.read().await;
+    if let Some(ref sync_state) = *guard {
+        let json = sync_state.to_json_response();
+        (StatusCode::OK, [(header::CONTENT_TYPE, "application/json")], json.to_string()).into_response()
+    } else {
+        (
+            StatusCode::NOT_FOUND,
+            [(header::CONTENT_TYPE, "application/json")],
+            r#"{"error":"No sync data available"}"#.to_string(),
+        ).into_response()
     }
 }
 
-async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data_node_url: Option<String>, itp_id: String, mock_usdt_addr: Option<ethers::types::Address>) -> Result<(), Box<dyn std::error::Error>> {
+/// GET / — alias for health check
+async fn axum_root_health_handler(
+    state: axum::extract::State<Arc<IssuerApiState>>,
+) -> axum::response::Response {
+    axum_health_handler(state).await
+}
+
+/// Build the core issuer API router (health, nav-sign, registry-sync).
+fn issuer_api_routes(state: Arc<IssuerApiState>) -> axum::Router {
+    axum::Router::new()
+        .route("/health", axum::routing::get(axum_health_handler))
+        .route("/", axum::routing::get(axum_root_health_handler))
+        .route("/api/nav-sign", axum::routing::get(axum_nav_sign_handler))
+        .route("/api/registry-sync", axum::routing::get(axum_registry_sync_handler))
+        .with_state(state)
+}
+
+async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data_node_url: Option<String>, itp_id: String, mock_usdt_addr: Option<ethers::types::Address>, p2pool_router: Option<axum::Router>) -> Result<(), Box<dyn std::error::Error>> {
     let node_id = components.node_id;
     let shutdown = components.shutdown.clone();
 
-    // Bind health check listener
+    // Bind HTTP API listener (health + nav-sign + registry-sync + optional P2Pool)
     let listener = TcpListener::bind(format!("0.0.0.0:{}", components.p2p.health_port)).await?;
-    info!(node_id, health_port = components.p2p.health_port, "Health check listening");
+    info!(node_id, health_port = components.p2p.health_port, "HTTP API listening");
 
     info!(node_id, "Issuer node initialized, entering main loop");
 
@@ -894,32 +905,22 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         None
     };
 
-    // Spawn health check listener (Story 8.4, Task 7.4: Pass sync state cache to HTTP handler)
-    let health_shutdown = shutdown.clone();
-    let health_p2p = components.p2p.transport.clone();
-    let health_metrics = components.consensus.metrics.clone();
-    let health_nav_handler = nav_sign_handler.clone();
-    let health_registry_sync_cache = components.registry_sync_cache.clone();
+    // Build unified HTTP API server (health + nav-sign + registry-sync + optional P2Pool)
+    let issuer_state = Arc::new(IssuerApiState {
+        node_id,
+        p2p_transport: components.p2p.transport.clone(),
+        metrics: components.consensus.metrics.clone(),
+        registry_sync_cache: components.registry_sync_cache.clone(),
+        nav_sign_handler: nav_sign_handler.clone(),
+    });
+    let mut api_router = issuer_api_routes(issuer_state);
+    if let Some(p2pool) = p2pool_router {
+        api_router = api_router.merge(p2pool);
+        info!(node_id, "P2Pool API routes merged into health port");
+    }
     let health_handle = tokio::spawn(async move {
-        loop {
-            if health_shutdown.load(Ordering::Relaxed) {
-                break;
-            }
-            tokio::select! {
-                accept_result = listener.accept() => {
-                    if let Ok((socket, _addr)) = accept_result {
-                        let nid = node_id;
-                        let p2p = health_p2p.clone();
-                        let metrics = health_metrics.clone();
-                        let sync_cache = health_registry_sync_cache.clone();
-                        let nav_handler = health_nav_handler.clone();
-                        tokio::spawn(async move {
-                            handle_health_check(socket, nid, p2p, metrics, sync_cache, nav_handler).await;
-                        });
-                    }
-                }
-                _ = tokio::time::sleep(tokio::time::Duration::from_millis(100)) => {}
-            }
+        if let Err(e) = axum::serve(listener, api_router).await {
+            error!(error = %e, "HTTP API server error");
         }
     });
 
@@ -2969,6 +2970,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // --- P2Pool subsystem (optional) ---
+    let mut p2pool_api_router: Option<axum::Router> = None;
     if let Some(p2pool_cfg) = p2pool_config {
         if p2pool_cfg.enabled {
             // Initialize P2Pool components
@@ -3024,37 +3026,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         config: p2pool_cfg.clone(),
                     });
 
-                    // Spawn the P2Pool API server on a separate port (main health port + 100)
-                    let p2pool_port = components.p2p.health_port + 100;
-                    let p2pool_router = issuer::p2pool::api::routes(p2pool_state);
-                    let p2pool_listener = match tokio::net::TcpListener::bind(
-                        format!("0.0.0.0:{}", p2pool_port)
-                    ).await {
-                        Ok(l) => l,
-                        Err(e) => {
-                            error!(node_id, port = p2pool_port, error = %e, "Failed to bind P2Pool API port");
-                            // Continue without API — tick engine still runs
-                            info!(node_id, "P2Pool tick engine running (API unavailable)");
-                            // Skip to run_main_loop
-                            if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr).await {
-                                error!(code = "E008", error = %e, "Issuer node error");
-                                std::process::exit(1);
-                            }
-                            return Ok(());
-                        }
-                    };
-
-                    tokio::spawn(async move {
-                        if let Err(e) = axum::serve(p2pool_listener, p2pool_router).await {
-                            tracing::error!(error = %e, "P2Pool API server error");
-                        }
-                    });
+                    // Build the P2Pool router (merged into health port in run_main_loop)
+                    p2pool_api_router = Some(issuer::p2pool::api::routes(p2pool_state));
 
                     info!(
                         node_id,
-                        port = p2pool_port,
                         vision_address = %p2pool_cfg.vision_address,
-                        "P2Pool subsystem enabled (tick engine + API)"
+                        "P2Pool subsystem enabled (tick engine + API on health port)"
                     );
                 }
                 Err(e) => {
@@ -3073,7 +3051,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         debug!(node_id, "P2Pool subsystem not configured");
     }
 
-    if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr).await {
+    if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr, p2pool_api_router).await {
         error!(code = "E008", error = %e, "Issuer node error");
         std::process::exit(1);
     }
