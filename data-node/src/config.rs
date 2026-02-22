@@ -197,6 +197,16 @@ pub struct ServeArgs {
     #[arg(long, default_value = "false", env = "WEATHER_ENABLED")]
     pub weather_enabled: bool,
 
+    // === Bet on Everything sources ===
+
+    /// NASA FIRMS MAP key (enables wildfire hotspot tracking)
+    #[arg(long, env = "NASA_FIRMS_MAP_KEY")]
+    pub nasa_firms_key: Option<String>,
+
+    /// AIS Stream API key (enables maritime vessel tracking)
+    #[arg(long, env = "AISSTREAM_API_KEY")]
+    pub aisstream_api_key: Option<String>,
+
     /// P2.8: Allowed CORS origins (repeat for multiple). Empty = allow all.
     #[arg(long, env = "CORS_ORIGIN")]
     pub cors_origin: Vec<String>,

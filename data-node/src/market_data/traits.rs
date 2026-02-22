@@ -30,10 +30,17 @@ pub mod categories {
     pub const ONCHAIN: &str = "onchain";
     pub const SENTIMENT: &str = "sentiment";
     pub const REGULATORY: &str = "regulatory";
+    pub const GEOPHYSICAL: &str = "geophysical";
+    pub const SPACE: &str = "space";
+    pub const ENVIRONMENT: &str = "environment";
+    pub const TRANSPORT: &str = "transport";
+    pub const HEALTH: &str = "health";
+    pub const SPORTS: &str = "sports";
 
     /// All valid categories
     pub const ALL: &[&str] = &[
         STOCKS, CRYPTO, DEFI, MACRO, COMMODITIES, WEATHER, ONCHAIN, SENTIMENT, REGULATORY,
+        GEOPHYSICAL, SPACE, ENVIRONMENT, TRANSPORT, HEALTH, SPORTS,
     ];
 
     /// Check if a category string is valid
@@ -533,7 +540,7 @@ mod tests {
 
     #[test]
     fn test_category_count() {
-        assert_eq!(categories::ALL.len(), 9);
+        assert_eq!(categories::ALL.len(), 15);
     }
 
     // ========================================================================

@@ -4320,6 +4320,17 @@ const SOURCE_META: &[(&str, &str, u64)] = &[
     ("twitch", "Twitch Live Streaming", 60),               // twitch
     ("twse", "Taiwan Stock Exchange", 600),                // twse
     ("zillow", "Zillow Real Estate", 86400),               // zillow
+    // ── Bet on Everything sources (10) ────────────────────────────────────
+    ("volcano", "USGS Volcanoes", 600),
+    ("earthquake", "USGS Earthquakes", 300),
+    ("spaceweather", "NOAA Space Weather", 600),
+    ("wildfire", "NASA FIRMS Wildfires", 1800),
+    ("flights", "OpenSky Flights", 600),
+    ("maritime", "AIS Maritime", 600),
+    ("epidemic", "disease.sh Epidemics", 1800),
+    ("sports", "ESPN Live Scores", 600),
+    ("iss", "ISS Position", 600),
+    ("weather_alerts", "NWS Severe Weather", 300),
 ];
 
 #[derive(Serialize)]

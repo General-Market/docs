@@ -798,6 +798,154 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("CoinGecko market source (crypto prices) started");
     }
 
+    // ── Bet on Everything sources (10) ────────────────────────────────────
+
+    // Volcano — USGS (no key)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::volcano::VolcanoMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Volcano init failed: {e}"),
+            }
+        });
+    }
+
+    // Earthquake — USGS (no key)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::earthquake::EarthquakeMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Earthquake init failed: {e}"),
+            }
+        });
+    }
+
+    // Space Weather — NOAA (no key)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::spaceweather::SpaceweatherMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Space Weather init failed: {e}"),
+            }
+        });
+    }
+
+    // Wildfire — NASA FIRMS (gated on API key)
+    if let Some(ref key) = args.nasa_firms_key {
+        std::env::set_var("NASA_FIRMS_MAP_KEY", key);
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::wildfire::WildfireMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Wildfire init failed: {e}"),
+            }
+        });
+        info!("NASA FIRMS wildfire provider started");
+    }
+
+    // Flights — OpenSky (no key)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::flights::FlightsMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Flights init failed: {e}"),
+            }
+        });
+    }
+
+    // Maritime — AIS Stream (gated on API key)
+    if let Some(ref key) = args.aisstream_api_key {
+        std::env::set_var("AISSTREAM_API_KEY", key);
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::maritime::MaritimeMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Maritime init failed: {e}"),
+            }
+        });
+        info!("AIS maritime vessel provider started");
+    }
+
+    // Epidemic — disease.sh (no key)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::epidemic::EpidemicMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Epidemic init failed: {e}"),
+            }
+        });
+    }
+
+    // Sports — ESPN (no key)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::sports::SportsMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Sports init failed: {e}"),
+            }
+        });
+    }
+
+    // ISS Position — Open Notify (no key)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::iss::IssMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("ISS init failed: {e}"),
+            }
+        });
+    }
+
+    // Weather Alerts — NWS (no key, User-Agent only)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::weather_alerts::WeatherAlertsMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Weather Alerts init failed: {e}"),
+            }
+        });
+    }
+
+    info!("Bet on Everything sources started (volcano, earthquake, spaceweather, flights, epidemic, sports, iss, weather_alerts + key-gated: wildfire, maritime)");
+
     // Create live ticker cache and start fast poller
     let live_cache = Arc::new(LiveTickerCache::new());
     {

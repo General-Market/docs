@@ -1,40 +1,6 @@
-//! Market data source implementations (32 providers)
+//! Market data source implementations (42 providers)
 //!
 //! Contains implementations for all supported data sources.
-//!
-//! Available sources:
-//! - **BLS** - Bureau of Labor Statistics (NFP, CPI, PPI, etc.)
-//! - **CoinGecko** - Cryptocurrency prices
-//! - **DefiLlama** - DeFi TVL and protocol data
-//! - **ECB** - European Central Bank rates
-//! - **Finnhub** - Stock prices
-//! - **FRED** - Federal Reserve economic data
-//! - **OpenMeteo** - Weather data
-//! - **Treasury** - US Treasury yields (via Nasdaq)
-//! - **Nasdaq** - Multiple sources (CFTC, CHRIS, BCHAIN, OPEC, IMF)
-//! - **EIA** - Energy Information Administration
-//! - **SEC EDGAR** - 13F fund holdings
-//! - **FINRA** - Short interest data
-//! - **FINRA Short Vol** - Daily short volume (Index-only)
-//! - **SEC EFTS** - Full-text search filings (Index-only)
-//! - **SEC Insider** - Insider trading (Index-only)
-//! - **Congress** - Legislative activity tracking
-//! - **World Bank** - Global economic indicators
-//! - **Zillow** - Real estate (stub - requires Bridge API)
-//! - **Polymarket** - Prediction markets
-//! - **backpack.tf** - TF2 item community pricing
-//! - **GitHub** - Repository star counts
-//! - **npm** - Package download counts
-//! - **PyPI** - Python package download counts
-//! - **crates.io** - Rust crate download counts
-//! - **Cloudflare Radar** - Internet traffic, domains, quality metrics
-//! - **4chan** - Board activity metrics (thread creation, reply velocity, greentext)
-//! - **TWSE** - Taiwan Stock Exchange prices
-//! - **AniList** - Anime & manga popularity scores
-//! - **Steam** - Game player counts
-//! - **TMDB** - Movie/TV popularity scores
-//! - **Twitch** - Stream viewer counts
-//! - **Hacker News** - Story scores and engagement
 
 // Shared utilities
 pub mod error;
@@ -70,6 +36,18 @@ pub mod twitch;
 pub mod twse;
 pub mod worldbank;
 pub mod zillow;
+
+// Bet on Everything sources (10)
+pub mod volcano;
+pub mod earthquake;
+pub mod spaceweather;
+pub mod wildfire;
+pub mod flights;
+pub mod maritime;
+pub mod epidemic;
+pub mod sports;
+pub mod iss;
+pub mod weather_alerts;
 
 // Index-only sources (3) + shared ticker list
 pub mod tracked_tickers;
@@ -109,6 +87,18 @@ pub use twitch::TwitchMarketSource;
 pub use twse::TwseMarketSource;
 pub use worldbank::WorldBankMarketSource;
 pub use zillow::ZillowMarketSource;
+
+// Re-exports — Bet on Everything sources
+pub use volcano::VolcanoMarketSource;
+pub use earthquake::EarthquakeMarketSource;
+pub use spaceweather::SpaceweatherMarketSource;
+pub use wildfire::WildfireMarketSource;
+pub use flights::FlightsMarketSource;
+pub use maritime::MaritimeMarketSource;
+pub use epidemic::EpidemicMarketSource;
+pub use sports::SportsMarketSource;
+pub use iss::IssMarketSource;
+pub use weather_alerts::WeatherAlertsMarketSource;
 
 // Re-exports — Index-only sources
 pub use finra_short_vol::FinraShortVolMarketSource;

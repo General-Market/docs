@@ -1,0 +1,7 @@
+[
+  {"asset_id": "iss_latitude", "symbol": "ISS/LAT", "name": "ISS Latitude", "category": "space", "subcategory": "iss", "api_ref": "latitude", "active": true},
+  {"asset_id": "iss_longitude", "symbol": "ISS/LON", "name": "ISS Longitude", "category": "space", "subcategory": "iss", "api_ref": "longitude", "active": true},
+  {"asset_id": "iss_speed", "symbol": "ISS/SPEED", "name": "ISS Ground Speed (km/h)", "category": "space", "subcategory": "iss", "api_ref": "speed", "active": true},
+  {"asset_id": "iss_altitude", "symbol": "ISS/ALT", "name": "ISS Altitude (km)", "category": "space", "subcategory": "iss", "api_ref": "altitude", "active": true},
+  {"asset_id": "people_in_space", "symbol": "ISS/PEOPLE", "name": "People in Space", "category": "space", "subcategory": "iss", "api_ref": "people", "active": true}
+]

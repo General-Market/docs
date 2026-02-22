@@ -1,0 +1,12 @@
+[
+  {"asset_id": "eq_count_all_1h", "symbol": "EQ/COUNT_ALL_1H", "name": "All Earthquakes (Last Hour)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "count_all_1h", "active": true},
+  {"asset_id": "eq_count_m25_1h", "symbol": "EQ/COUNT_M25_1H", "name": "M2.5+ Earthquakes (Last Hour)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "count_m25_1h", "active": true},
+  {"asset_id": "eq_count_m45_24h", "symbol": "EQ/COUNT_M45_24H", "name": "M4.5+ Earthquakes (Last 24h)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "count_m45_24h", "active": true},
+  {"asset_id": "eq_max_mag_24h", "symbol": "EQ/MAX_MAG_24H", "name": "Max Magnitude (Last 24h)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "max_mag_24h", "active": true},
+  {"asset_id": "eq_significant_month", "symbol": "EQ/SIGNIFICANT_MONTH", "name": "Significant Earthquakes (This Month)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "significant_month", "active": true},
+  {"asset_id": "eq_ring_of_fire", "symbol": "EQ/RING_OF_FIRE", "name": "Pacific Ring of Fire M4.5+ (Last 24h)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "ring_of_fire", "active": true},
+  {"asset_id": "eq_us_west", "symbol": "EQ/US_WEST", "name": "US West Coast Earthquakes (Last Hour)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "us_west", "active": true},
+  {"asset_id": "eq_japan", "symbol": "EQ/JAPAN", "name": "Japan Region Earthquakes (Last Hour)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "japan", "active": true},
+  {"asset_id": "eq_mediterranean", "symbol": "EQ/MEDITERRANEAN", "name": "Mediterranean Earthquakes (Last Hour)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "mediterranean", "active": true},
+  {"asset_id": "eq_total_energy_24h", "symbol": "EQ/TOTAL_ENERGY_24H", "name": "Total Seismic Energy (Last 24h)", "category": "geophysical", "subcategory": "earthquake", "api_ref": "total_energy_24h", "active": true}
+]

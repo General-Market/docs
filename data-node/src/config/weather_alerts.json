@@ -1,0 +1,17 @@
+[
+  {"asset_id": "nws_tornado_warning", "symbol": "NWS/TORNADO", "name": "Active Tornado Warnings", "category": "environment", "subcategory": "weather_alerts", "api_ref": "Tornado Warning", "active": true},
+  {"asset_id": "nws_hurricane_warning", "symbol": "NWS/HURRICANE", "name": "Active Hurricane Warnings", "category": "environment", "subcategory": "weather_alerts", "api_ref": "Hurricane Warning", "active": true},
+  {"asset_id": "nws_flood_warning", "symbol": "NWS/FLOOD", "name": "Active Flood Warnings", "category": "environment", "subcategory": "weather_alerts", "api_ref": "Flood Warning", "active": true},
+  {"asset_id": "nws_blizzard_warning", "symbol": "NWS/BLIZZARD", "name": "Active Blizzard Warnings", "category": "environment", "subcategory": "weather_alerts", "api_ref": "Blizzard Warning", "active": true},
+  {"asset_id": "nws_severe_thunderstorm", "symbol": "NWS/TSTORM", "name": "Active Severe Thunderstorm Warnings", "category": "environment", "subcategory": "weather_alerts", "api_ref": "Severe Thunderstorm Warning", "active": true},
+  {"asset_id": "nws_winter_storm", "symbol": "NWS/WINTER", "name": "Active Winter Storm Warnings", "category": "environment", "subcategory": "weather_alerts", "api_ref": "Winter Storm Warning", "active": true},
+  {"asset_id": "nws_extreme_heat", "symbol": "NWS/HEAT", "name": "Active Excessive Heat Warnings", "category": "environment", "subcategory": "weather_alerts", "api_ref": "Excessive Heat Warning", "active": true},
+  {"asset_id": "nws_fire_weather", "symbol": "NWS/FIRE", "name": "Active Fire Weather Watches", "category": "environment", "subcategory": "weather_alerts", "api_ref": "Fire Weather Watch", "active": true},
+  {"asset_id": "nws_tsunami", "symbol": "NWS/TSUNAMI", "name": "Active Tsunami Warnings", "category": "environment", "subcategory": "weather_alerts", "api_ref": "Tsunami Warning", "active": true},
+  {"asset_id": "nws_wind_advisory", "symbol": "NWS/WIND", "name": "Active Wind Advisories", "category": "environment", "subcategory": "weather_alerts", "api_ref": "Wind Advisory", "active": true},
+  {"asset_id": "nws_freeze_warning", "symbol": "NWS/FREEZE", "name": "Active Freeze Warnings", "category": "environment", "subcategory": "weather_alerts", "api_ref": "Freeze Warning", "active": true},
+  {"asset_id": "nws_dense_fog", "symbol": "NWS/FOG", "name": "Active Dense Fog Advisories", "category": "environment", "subcategory": "weather_alerts", "api_ref": "Dense Fog Advisory", "active": true},
+  {"asset_id": "nws_ice_storm", "symbol": "NWS/ICE", "name": "Active Ice Storm Warnings", "category": "environment", "subcategory": "weather_alerts", "api_ref": "Ice Storm Warning", "active": true},
+  {"asset_id": "nws_total_active", "symbol": "NWS/TOTAL", "name": "Total Active Weather Alerts", "category": "environment", "subcategory": "weather_alerts", "api_ref": "_total", "active": true},
+  {"asset_id": "nws_max_severity", "symbol": "NWS/SEVERITY", "name": "Maximum Alert Severity Level", "category": "environment", "subcategory": "weather_alerts", "api_ref": "_max_severity", "active": true}
+]

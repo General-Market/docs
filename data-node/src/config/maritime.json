@@ -1,0 +1,227 @@
+[
+  {
+    "asset_id": "port_singapore",
+    "symbol": "AIS/SINGAPORE",
+    "name": "Port of Singapore",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "103.5,1.0,104.2,1.5",
+    "active": true
+  },
+  {
+    "asset_id": "port_rotterdam",
+    "symbol": "AIS/ROTTERDAM",
+    "name": "Port of Rotterdam",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "3.8,51.8,4.5,52.1",
+    "active": true
+  },
+  {
+    "asset_id": "port_shanghai",
+    "symbol": "AIS/SHANGHAI",
+    "name": "Port of Shanghai",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "121.3,30.9,122.0,31.6",
+    "active": true
+  },
+  {
+    "asset_id": "port_shenzhen",
+    "symbol": "AIS/SHENZHEN",
+    "name": "Port of Shenzhen",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "113.7,22.3,114.4,22.7",
+    "active": true
+  },
+  {
+    "asset_id": "port_busan",
+    "symbol": "AIS/BUSAN",
+    "name": "Port of Busan",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "128.9,34.9,129.2,35.2",
+    "active": true
+  },
+  {
+    "asset_id": "port_hong_kong",
+    "symbol": "AIS/HONG_KONG",
+    "name": "Port of Hong Kong",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "114.0,22.2,114.4,22.5",
+    "active": true
+  },
+  {
+    "asset_id": "port_los_angeles",
+    "symbol": "AIS/LOS_ANGELES",
+    "name": "Port of LA/Long Beach",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "-118.4,33.6,-118.0,33.9",
+    "active": true
+  },
+  {
+    "asset_id": "port_dubai",
+    "symbol": "AIS/DUBAI",
+    "name": "Port of Dubai/Jebel Ali",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "54.9,24.9,55.4,25.2",
+    "active": true
+  },
+  {
+    "asset_id": "port_hamburg",
+    "symbol": "AIS/HAMBURG",
+    "name": "Port of Hamburg",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "9.8,53.4,10.1,53.6",
+    "active": true
+  },
+  {
+    "asset_id": "port_antwerp",
+    "symbol": "AIS/ANTWERP",
+    "name": "Port of Antwerp",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "4.2,51.2,4.5,51.4",
+    "active": true
+  },
+  {
+    "asset_id": "port_tokyo",
+    "symbol": "AIS/TOKYO",
+    "name": "Port of Tokyo",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "139.6,35.5,139.9,35.7",
+    "active": true
+  },
+  {
+    "asset_id": "port_mumbai",
+    "symbol": "AIS/MUMBAI",
+    "name": "Port of Mumbai",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "72.7,18.8,73.0,19.1",
+    "active": true
+  },
+  {
+    "asset_id": "port_santos",
+    "symbol": "AIS/SANTOS",
+    "name": "Port of Santos",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "-46.4,-24.0,-46.2,-23.8",
+    "active": true
+  },
+  {
+    "asset_id": "port_piraeus",
+    "symbol": "AIS/PIRAEUS",
+    "name": "Port of Piraeus",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "23.5,37.9,23.7,38.0",
+    "active": true
+  },
+  {
+    "asset_id": "port_vancouver",
+    "symbol": "AIS/VANCOUVER",
+    "name": "Port of Vancouver",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "-123.3,49.1,-123.0,49.4",
+    "active": true
+  },
+  {
+    "asset_id": "lane_suez",
+    "symbol": "AIS/SUEZ",
+    "name": "Suez Canal",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "32.2,29.8,32.6,31.3",
+    "active": true
+  },
+  {
+    "asset_id": "lane_panama",
+    "symbol": "AIS/PANAMA",
+    "name": "Panama Canal",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "-80.0,8.8,-79.4,9.5",
+    "active": true
+  },
+  {
+    "asset_id": "lane_gibraltar",
+    "symbol": "AIS/GIBRALTAR",
+    "name": "Strait of Gibraltar",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "-6.0,35.7,-5.2,36.2",
+    "active": true
+  },
+  {
+    "asset_id": "lane_malacca",
+    "symbol": "AIS/MALACCA",
+    "name": "Strait of Malacca",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "99.5,1.0,104.5,4.5",
+    "active": true
+  },
+  {
+    "asset_id": "lane_hormuz",
+    "symbol": "AIS/HORMUZ",
+    "name": "Strait of Hormuz",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "55.5,25.5,57.0,27.0",
+    "active": true
+  },
+  {
+    "asset_id": "lane_english_channel",
+    "symbol": "AIS/ENGLISH_CHANNEL",
+    "name": "English Channel",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "-2.0,49.5,2.0,51.2",
+    "active": true
+  },
+  {
+    "asset_id": "lane_bosphorus",
+    "symbol": "AIS/BOSPHORUS",
+    "name": "Bosphorus Strait",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "28.9,40.9,29.2,41.3",
+    "active": true
+  },
+  {
+    "asset_id": "lane_taiwan",
+    "symbol": "AIS/TAIWAN",
+    "name": "Taiwan Strait",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "117.0,22.0,120.0,26.0",
+    "active": true
+  },
+  {
+    "asset_id": "lane_cape_of_good_hope",
+    "symbol": "AIS/CAPE_GOOD_HOPE",
+    "name": "Cape of Good Hope",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "17.5,-35.0,19.0,-33.5",
+    "active": true
+  },
+  {
+    "asset_id": "lane_bering",
+    "symbol": "AIS/BERING",
+    "name": "Bering Strait",
+    "category": "transport",
+    "subcategory": "maritime",
+    "api_ref": "-170.0,64.0,-167.0,67.0",
+    "active": true
+  }
+]

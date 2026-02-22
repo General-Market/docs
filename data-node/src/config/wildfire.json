@@ -1,0 +1,182 @@
+[
+  {
+    "asset_id": "fire_us_west",
+    "symbol": "FIRE/US_WEST",
+    "name": "US West Coast",
+    "category": "environment",
+    "subcategory": "wildfire",
+    "api_ref": "-125,32,-104,49",
+    "active": true
+  },
+  {
+    "asset_id": "fire_us_east",
+    "symbol": "FIRE/US_EAST",
+    "name": "US East Coast",
+    "category": "environment",
+    "subcategory": "wildfire",
+    "api_ref": "-104,25,-67,49",
+    "active": true
+  },
+  {
+    "asset_id": "fire_amazon",
+    "symbol": "FIRE/AMAZON",
+    "name": "Amazon Basin",
+    "category": "environment",
+    "subcategory": "wildfire",
+    "api_ref": "-75,-20,-44,5",
+    "active": true
+  },
+  {
+    "asset_id": "fire_australia",
+    "symbol": "FIRE/AUSTRALIA",
+    "name": "Australia",
+    "category": "environment",
+    "subcategory": "wildfire",
+    "api_ref": "113,-44,154,-10",
+    "active": true
+  },
+  {
+    "asset_id": "fire_siberia",
+    "symbol": "FIRE/SIBERIA",
+    "name": "Siberia",
+    "category": "environment",
+    "subcategory": "wildfire",
+    "api_ref": "60,50,180,75",
+    "active": true
+  },
+  {
+    "asset_id": "fire_central_africa",
+    "symbol": "FIRE/CENTRAL_AFRICA",
+    "name": "Central Africa",
+    "category": "environment",
+    "subcategory": "wildfire",
+    "api_ref": "8,-15,35,15",
+    "active": true
+  },
+  {
+    "asset_id": "fire_se_asia",
+    "symbol": "FIRE/SE_ASIA",
+    "name": "Southeast Asia",
+    "category": "environment",
+    "subcategory": "wildfire",
+    "api_ref": "95,-10,140,25",
+    "active": true
+  },
+  {
+    "asset_id": "fire_mediterranean",
+    "symbol": "FIRE/MEDITERRANEAN",
+    "name": "Mediterranean",
+    "category": "environment",
+    "subcategory": "wildfire",
+    "api_ref": "-10,30,40,47",
+    "active": true
+  },
+  {
+    "asset_id": "fire_canada_west",
+    "symbol": "FIRE/CANADA_WEST",
+    "name": "Western Canada",
+    "category": "environment",
+    "subcategory": "wildfire",
+    "api_ref": "-141,48,-100,70",
+    "active": true
+  },
+  {
+    "asset_id": "fire_canada_east",
+    "symbol": "FIRE/CANADA_EAST",
+    "name": "Eastern Canada",
+    "category": "environment",
+    "subcategory": "wildfire",
+    "api_ref": "-100,43,-52,63",
+    "active": true
+  },
+  {
+    "asset_id": "fire_india",
+    "symbol": "FIRE/INDIA",
+    "name": "India",
+    "category": "environment",
+    "subcategory": "wildfire",
+    "api_ref": "68,6,98,37",
+    "active": true
+  },
+  {
+    "asset_id": "fire_indonesia",
+    "symbol": "FIRE/INDONESIA",
+    "name": "Indonesia",
+    "category": "environment",
+    "subcategory": "wildfire",
+    "api_ref": "95,-11,141,6",
+    "active": true
+  },
+  {
+    "asset_id": "fire_south_africa",
+    "symbol": "FIRE/SOUTH_AFRICA",
+    "name": "Southern Africa",
+    "category": "environment",
+    "subcategory": "wildfire",
+    "api_ref": "16,-35,41,-22",
+    "active": true
+  },
+  {
+    "asset_id": "fire_west_africa",
+    "symbol": "FIRE/WEST_AFRICA",
+    "name": "West Africa",
+    "category": "environment",
+    "subcategory": "wildfire",
+    "api_ref": "-18,4,16,15",
+    "active": true
+  },
+  {
+    "asset_id": "fire_central_america",
+    "symbol": "FIRE/CENTRAL_AMERICA",
+    "name": "Central America",
+    "category": "environment",
+    "subcategory": "wildfire",
+    "api_ref": "-118,7,-77,33",
+    "active": true
+  },
+  {
+    "asset_id": "fire_south_america",
+    "symbol": "FIRE/SOUTH_AMERICA",
+    "name": "South America (South)",
+    "category": "environment",
+    "subcategory": "wildfire",
+    "api_ref": "-75,-56,-34,-20",
+    "active": true
+  },
+  {
+    "asset_id": "fire_middle_east",
+    "symbol": "FIRE/MIDDLE_EAST",
+    "name": "Middle East",
+    "category": "environment",
+    "subcategory": "wildfire",
+    "api_ref": "35,12,63,42",
+    "active": true
+  },
+  {
+    "asset_id": "fire_china",
+    "symbol": "FIRE/CHINA",
+    "name": "China",
+    "category": "environment",
+    "subcategory": "wildfire",
+    "api_ref": "73,18,135,54",
+    "active": true
+  },
+  {
+    "asset_id": "fire_russia_europe",
+    "symbol": "FIRE/RUSSIA_EUROPE",
+    "name": "European Russia",
+    "category": "environment",
+    "subcategory": "wildfire",
+    "api_ref": "30,45,60,70",
+    "active": true
+  },
+  {
+    "asset_id": "fire_global",
+    "symbol": "FIRE/GLOBAL",
+    "name": "Global Summary",
+    "category": "environment",
+    "subcategory": "wildfire",
+    "api_ref": "-180,-90,180,90",
+    "active": true
+  }
+]
