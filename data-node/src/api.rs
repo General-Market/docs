@@ -4334,6 +4334,8 @@ const SOURCE_META: &[(&str, &str, u64)] = &[
     ("animals", "Wildlife Observations", 600),
     ("movebank", "Movebank Animal GPS", 1800),
     ("ebird", "eBird Observations", 600),
+    ("aisstream", "AIS Ship Tracking", 60),
+    ("gtfs_transit", "GTFS Transit", 120),
 ];
 
 #[derive(Serialize)]

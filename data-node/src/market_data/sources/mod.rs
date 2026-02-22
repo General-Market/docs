@@ -37,7 +37,8 @@ pub mod twse;
 pub mod worldbank;
 pub mod zillow;
 
-// Bet on Everything sources (13)
+// Bet on Everything sources (14)
+pub mod gtfs_rt;
 pub mod volcano;
 pub mod earthquake;
 pub mod spaceweather;
@@ -51,6 +52,7 @@ pub mod weather_alerts;
 pub mod animals;
 pub mod movebank;
 pub mod ebird;
+pub mod aisstream;
 
 // Index-only sources (3) + shared ticker list
 pub mod tracked_tickers;
@@ -105,6 +107,8 @@ pub use weather_alerts::WeatherAlertsMarketSource;
 pub use animals::AnimalsMarketSource;
 pub use movebank::MovebankMarketSource;
 pub use ebird::EbirdMarketSource;
+pub use gtfs_rt::GtfsRtMarketSource;
+pub use aisstream::AisStreamMarketSource;
 
 // Re-exports — Index-only sources
 pub use finra_short_vol::FinraShortVolMarketSource;

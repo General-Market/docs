@@ -49,6 +49,12 @@ reqwest = { version = "0.12", features = ["json"] }
 hex = "0.4"
 base64 = "0.22"
 
+# Protobuf (GTFS-RT)
+prost = "0.13"
+
+# WebSocket (AISstream)
+tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
+
 # XML parsing (SEC 13F)
 quick-xml = { version = "0.37", features = ["serialize"] }
 

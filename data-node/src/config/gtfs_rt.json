@@ -1,0 +1,15 @@
+[
+  {"asset_id": "transit_mta_active_trips", "symbol": "TRANSIT/MTA_ACTIVE_TRIPS", "name": "NYC MTA Subway Active Trips", "category": "transport", "subcategory": "transit", "api_ref": "mta:all:trips", "active": true},
+  {"asset_id": "transit_mta_total_vehicles", "symbol": "TRANSIT/MTA_TOTAL_VEHICLES", "name": "NYC MTA Subway Vehicles Reporting Position", "category": "transport", "subcategory": "transit", "api_ref": "mta:all:vehicles", "active": true},
+  {"asset_id": "transit_mta_avg_speed", "symbol": "TRANSIT/MTA_AVG_SPEED", "name": "NYC MTA Subway Average Speed (km/h)", "category": "transport", "subcategory": "transit", "api_ref": "mta:all:avg_speed", "active": true},
+  {"asset_id": "transit_mta_line_123_trips", "symbol": "TRANSIT/MTA_LINE_123_TRIPS", "name": "NYC MTA 1/2/3 Line Active Trips", "category": "transport", "subcategory": "transit", "api_ref": "mta:123:trips", "active": true},
+  {"asset_id": "transit_mta_line_4567_trips", "symbol": "TRANSIT/MTA_LINE_4567_TRIPS", "name": "NYC MTA 4/5/6/7 Line Active Trips", "category": "transport", "subcategory": "transit", "api_ref": "mta:4567:trips", "active": true},
+  {"asset_id": "transit_mta_line_ace_trips", "symbol": "TRANSIT/MTA_LINE_ACE_TRIPS", "name": "NYC MTA A/C/E Line Active Trips", "category": "transport", "subcategory": "transit", "api_ref": "mta:ace:trips", "active": true},
+  {"asset_id": "transit_mta_line_bdfm_trips", "symbol": "TRANSIT/MTA_LINE_BDFM_TRIPS", "name": "NYC MTA B/D/F/M Line Active Trips", "category": "transport", "subcategory": "transit", "api_ref": "mta:bdfm:trips", "active": true},
+  {"asset_id": "transit_mta_line_g_trips", "symbol": "TRANSIT/MTA_LINE_G_TRIPS", "name": "NYC MTA G Line Active Trips", "category": "transport", "subcategory": "transit", "api_ref": "mta:g:trips", "active": true},
+  {"asset_id": "transit_mta_line_jz_trips", "symbol": "TRANSIT/MTA_LINE_JZ_TRIPS", "name": "NYC MTA J/Z Line Active Trips", "category": "transport", "subcategory": "transit", "api_ref": "mta:jz:trips", "active": true},
+  {"asset_id": "transit_mta_line_nqrw_trips", "symbol": "TRANSIT/MTA_LINE_NQRW_TRIPS", "name": "NYC MTA N/Q/R/W Line Active Trips", "category": "transport", "subcategory": "transit", "api_ref": "mta:nqrw:trips", "active": true},
+  {"asset_id": "transit_mta_line_l_trips", "symbol": "TRANSIT/MTA_LINE_L_TRIPS", "name": "NYC MTA L Line Active Trips", "category": "transport", "subcategory": "transit", "api_ref": "mta:l:trips", "active": true},
+  {"asset_id": "transit_mta_line_si_trips", "symbol": "TRANSIT/MTA_LINE_SI_TRIPS", "name": "NYC MTA SI (Staten Island) Line Active Trips", "category": "transport", "subcategory": "transit", "api_ref": "mta:si:trips", "active": true},
+  {"asset_id": "transit_bart_active_trips", "symbol": "TRANSIT/BART_ACTIVE_TRIPS", "name": "BART (San Francisco) Active Trips", "category": "transport", "subcategory": "transit", "api_ref": "bart:all:trips", "active": true}
+]

@@ -886,6 +886,16 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             }
         });
         info!("AIS maritime vessel provider started");
+
+        // AISstream WebSocket ship tracking (reuses same API key)
+        let aisstream_key = key.clone();
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            let source = market_data::sources::aisstream::AisStreamMarketSource::new(aisstream_key);
+            let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+            engine.run().await;
+        });
+        info!("AISstream ship tracking provider started");
     }
 
     // Epidemic — disease.sh (no key)
@@ -996,6 +1006,17 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     }
 
     info!("Bet on Everything sources started (volcano, earthquake, spaceweather, flights, epidemic, sports, iss, weather_alerts, animals + key-gated: wildfire, maritime, movebank, ebird)");
+
+    // GTFS-RT Transit (NYC MTA Subway, BART — no API key needed)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            let source = market_data::sources::gtfs_rt::GtfsRtMarketSource::new();
+            let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+            engine.run().await;
+        });
+        info!("GTFS-RT transit provider started");
+    }
 
     // Create live ticker cache and start fast poller
     let live_cache = Arc::new(LiveTickerCache::new());
