@@ -1,0 +1,16 @@
+strategy = "random"
+deposit = 10
+stake = 1
+max_batches = 5
+max_exposure = 100
+poll_interval = 30
+auto_claim = true
+auto_withdraw = true
+claim_above = 5
+withdraw_below = 2
+rpc_url = "http://localhost:8546"
+vision_api = "http://localhost:10001"
+data_node = "http://localhost:8200"
+issuer_discovery = "static"
+issuer_urls = ["http://localhost:10001", "http://localhost:10002", "http://localhost:10003"]
+pnl_file = "pnl.json"

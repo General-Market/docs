@@ -7,6 +7,7 @@ and dynamic strategy loading.
 
 from abc import ABC, abstractmethod
 import importlib
+import os
 import pkgutil
 
 from web3 import Web3
@@ -110,3 +111,62 @@ def load_strategy(name: str) -> Strategy:
             ):
                 return cls()
     raise ValueError(f"Unknown strategy: {name}")
+
+
+# ── Config loader ─────────────────────────────────────────────
+
+
+def load_config(path=None):
+    """Load config.toml, merge with env var overrides. Returns flat dict."""
+    defaults = {
+        "strategy": "random",
+        "deposit": 10,
+        "stake": 1,
+        "max_batches": 5,
+        "max_exposure": 100,
+        "poll_interval": 30,
+        "auto_claim": True,
+        "auto_withdraw": True,
+        "claim_above": 5,
+        "withdraw_below": 2,
+        "rpc_url": "http://localhost:8546",
+        "vision_api": "http://localhost:10001",
+        "data_node": "http://localhost:8200",
+        "issuer_discovery": "static",
+        "issuer_urls": ["http://localhost:10001", "http://localhost:10002", "http://localhost:10003"],
+        "pnl_file": "pnl.json",
+    }
+    # Try TOML parsing
+    for p in [path, "config.toml", "../config.toml"]:
+        if p and os.path.exists(p):
+            try:
+                import tomli
+                with open(p, "rb") as f:
+                    defaults.update(tomli.load(f))
+            except ImportError:
+                pass  # no TOML parser, rely on defaults + env vars
+            break
+    # Env var overrides
+    env_map = {
+        "STRATEGY": "strategy",
+        "DEPOSIT_AMOUNT": "deposit",
+        "STAKE_PER_TICK": "stake",
+        "MAX_BATCHES": "max_batches",
+        "MAX_EXPOSURE": "max_exposure",
+        "POLL_INTERVAL": "poll_interval",
+        "L3_RPC_URL": "rpc_url",
+        "VISION_API_URL": "vision_api",
+        "DATA_NODE_URL": "data_node",
+        "PNL_FILE": "pnl_file",
+    }
+    for env_key, conf_key in env_map.items():
+        if env_key in os.environ:
+            val = os.environ[env_key]
+            default_type = type(defaults[conf_key])
+            if default_type == bool:
+                defaults[conf_key] = val.lower() in ("true", "1", "yes")
+            elif default_type == int:
+                defaults[conf_key] = int(val)
+            else:
+                defaults[conf_key] = val
+    return defaults
