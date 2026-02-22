@@ -4332,6 +4332,8 @@ const SOURCE_META: &[(&str, &str, u64)] = &[
     ("iss", "ISS Position", 600),
     ("weather_alerts", "NWS Severe Weather", 300),
     ("animals", "Wildlife Observations", 600),
+    ("movebank", "Movebank Animal GPS", 1800),
+    ("ebird", "eBird Observations", 600),
 ];
 
 #[derive(Serialize)]

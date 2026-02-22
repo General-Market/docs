@@ -958,7 +958,44 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         });
     }
 
-    info!("Bet on Everything sources started (volcano, earthquake, spaceweather, flights, epidemic, sports, iss, weather_alerts, animals + key-gated: wildfire, maritime)");
+    // Movebank GPS Animal Tracking — gated on username + password
+    if let Some(ref mb_user) = args.movebank_user {
+        if let Some(ref mb_pass) = args.movebank_password {
+            let mb_user_c = mb_user.clone();
+            let mb_pass_c = mb_pass.clone();
+            let pool_c = pool.clone();
+            tokio::spawn(async move {
+                match market_data::sources::movebank::MovebankMarketSource::new(mb_user_c, mb_pass_c) {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                        engine.run().await;
+                    }
+                    Err(e) => tracing::error!("Movebank init failed: {e}"),
+                }
+            });
+            info!("Movebank GPS animal tracking provider started");
+        } else {
+            info!("Movebank skipped (MOVEBANK_PASSWORD not configured)");
+        }
+    }
+
+    // eBird — gated on API key
+    if let Some(ref key) = args.ebird_api_key {
+        std::env::set_var("EBIRD_API_KEY", key);
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::ebird::EbirdMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("eBird init failed: {e}"),
+            }
+        });
+        info!("eBird bird observation provider started");
+    }
+
+    info!("Bet on Everything sources started (volcano, earthquake, spaceweather, flights, epidemic, sports, iss, weather_alerts, animals + key-gated: wildfire, maritime, movebank, ebird)");
 
     // Create live ticker cache and start fast poller
     let live_cache = Arc::new(LiveTickerCache::new());

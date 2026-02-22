@@ -1,4 +1,4 @@
-//! Market data source implementations (42 providers)
+//! Market data source implementations (44 providers)
 //!
 //! Contains implementations for all supported data sources.
 
@@ -37,7 +37,7 @@ pub mod twse;
 pub mod worldbank;
 pub mod zillow;
 
-// Bet on Everything sources (11)
+// Bet on Everything sources (13)
 pub mod volcano;
 pub mod earthquake;
 pub mod spaceweather;
@@ -49,6 +49,8 @@ pub mod sports;
 pub mod iss;
 pub mod weather_alerts;
 pub mod animals;
+pub mod movebank;
+pub mod ebird;
 
 // Index-only sources (3) + shared ticker list
 pub mod tracked_tickers;
@@ -101,6 +103,8 @@ pub use sports::SportsMarketSource;
 pub use iss::IssMarketSource;
 pub use weather_alerts::WeatherAlertsMarketSource;
 pub use animals::AnimalsMarketSource;
+pub use movebank::MovebankMarketSource;
+pub use ebird::EbirdMarketSource;
 
 // Re-exports — Index-only sources
 pub use finra_short_vol::FinraShortVolMarketSource;

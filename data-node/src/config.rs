@@ -207,6 +207,18 @@ pub struct ServeArgs {
     #[arg(long, env = "AISSTREAM_API_KEY")]
     pub aisstream_api_key: Option<String>,
 
+    /// Movebank username (enables GPS animal tracking from Movebank)
+    #[arg(long, env = "MOVEBANK_USER")]
+    pub movebank_user: Option<String>,
+
+    /// Movebank password
+    #[arg(long, env = "MOVEBANK_PASSWORD")]
+    pub movebank_password: Option<String>,
+
+    /// eBird API key (enables bird observation tracking)
+    #[arg(long, env = "EBIRD_API_KEY")]
+    pub ebird_api_key: Option<String>,
+
     /// P2.8: Allowed CORS origins (repeat for multiple). Empty = allow all.
     #[arg(long, env = "CORS_ORIGIN")]
     pub cors_origin: Vec<String>,
