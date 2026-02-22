@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
+
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3001";
+const P2POOL_API_URL = process.env.NEXT_PUBLIC_P2POOL_API_URL || "http://localhost:10001";
 const isDev = process.env.NODE_ENV !== "production";
 
 const nextConfig: NextConfig = {
@@ -45,7 +49,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://index.rpc.zeeve.net wss://relay.walletconnect.com https://*.walletconnect.com${isDev ? " http://localhost:* ws://localhost:*" : ""}; frame-src https://www.youtube-nocookie.com https://www.youtube.com; frame-ancestors 'none'`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://cdn.jsdelivr.net https://index.rpc.zeeve.net wss://relay.walletconnect.com https://*.walletconnect.com${isDev ? " http://localhost:* ws://localhost:*" : ""}; frame-src https://www.youtube-nocookie.com https://www.youtube.com; frame-ancestors 'none'`,
           },
         ],
       },
@@ -114,6 +118,10 @@ const nextConfig: NextConfig = {
         destination: "http://localhost:8200/snapshot",
       },
       {
+        source: "/api/p2pool/:path*",
+        destination: `${P2POOL_API_URL}/p2pool/:path*`,
+      },
+      {
         source: "/health",
         destination: `${BACKEND_URL}/health`,
       },
@@ -121,4 +129,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);
