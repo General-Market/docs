@@ -131,6 +131,15 @@ const nextConfig: NextConfig = {
         source: "/health",
         destination: `${BACKEND_URL}/health`,
       },
+      // Mintlify docs proxy
+      {
+        source: "/docs",
+        destination: "https://generalmarket.mintlify.dev/docs",
+      },
+      {
+        source: "/docs/:path*",
+        destination: "https://generalmarket.mintlify.dev/docs/:path*",
+      },
     ];
   },
 };
