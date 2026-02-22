@@ -179,12 +179,22 @@ fn extract_metrics(feed: &FeedMessage) -> FeedMetrics {
                     }
                 }
 
-                // Extract individual vehicle position for dynamic tracking
-                // Need a vehicle ID (from descriptor id or label) and a valid position
+                // Extract individual vehicle position for dynamic tracking.
+                // Try multiple ID sources: VehicleDescriptor > entity ID > trip_id
+                // Note: MTA subway feeds have VehiclePosition entities but with
+                // has_pos=false (no GPS). Dynamic tracking only works for agencies
+                // that populate the Position field (e.g. bus feeds, non-MTA).
                 let vehicle_id = vp
                     .vehicle
                     .as_ref()
-                    .and_then(|v| v.id.clone().or_else(|| v.label.clone()));
+                    .and_then(|v| v.id.clone().or_else(|| v.label.clone()))
+                    .or_else(|| {
+                        let eid = &entity.id;
+                        if !eid.is_empty() { Some(eid.clone()) } else { None }
+                    })
+                    .or_else(|| {
+                        vp.trip.as_ref().and_then(|t| t.trip_id.clone())
+                    });
 
                 if let Some(vid) = vehicle_id {
                     if !vid.is_empty() && (pos.latitude != 0.0 || pos.longitude != 0.0) {
