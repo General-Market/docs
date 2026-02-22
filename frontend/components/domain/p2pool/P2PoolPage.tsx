@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react'
 import { useBatches, type BatchInfo } from '@/hooks/p2pool/useBatches'
 import { BatchCard } from './BatchCard'
 import { ExpandedBatch } from './ExpandedBatch'
+import { CreateBatchModal } from './CreateBatchModal'
 import { LeaderboardSection } from '@/components/domain/vision/LeaderboardSection'
 import { LeaderboardSkeleton } from '@/components/domain/vision/LeaderboardSkeleton'
 import { VisionMarketsGrid } from '@/components/domain/vision/VisionMarketsGrid'
@@ -11,6 +12,7 @@ import { VisionMarketsGrid } from '@/components/domain/vision/VisionMarketsGrid'
 export function P2PoolPage() {
   const { data: batches, isLoading } = useBatches()
   const [expandedBatchId, setExpandedBatchId] = useState<number | null>(null)
+  const [showCreateModal, setShowCreateModal] = useState(false)
 
   return (
     <div className="flex-1">
@@ -27,8 +29,11 @@ export function P2PoolPage() {
                   {batches?.length || 0} live &middot; sealed parimutuel prediction markets
                 </p>
               </div>
-              <button className="bg-terminal text-text-inverse px-4 py-2 rounded-card text-sm font-bold
-                                 hover:opacity-90 transition-opacity">
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="bg-terminal text-text-inverse px-4 py-2 rounded-card text-sm font-bold
+                                 hover:opacity-90 transition-opacity"
+              >
                 + CREATE BATCH
               </button>
             </div>
@@ -103,6 +108,11 @@ export function P2PoolPage() {
           </div>
         </div>
       </section>
+
+      {/* Create Batch Modal */}
+      {showCreateModal && (
+        <CreateBatchModal onClose={() => setShowCreateModal(false)} />
+      )}
     </div>
   )
 }
