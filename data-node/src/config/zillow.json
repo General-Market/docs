@@ -1,0 +1,12 @@
+[
+  {"asset_id": "zillow_zhvi_national", "symbol": "ZHVI_US", "name": "National Home Value Index", "category": "macro", "subcategory": "housing", "api_ref": "national:zhvi", "active": true},
+  {"asset_id": "zillow_zori_national", "symbol": "ZORI_US", "name": "National Rent Index", "category": "macro", "subcategory": "housing", "api_ref": "national:zori", "active": true},
+  {"asset_id": "zillow_zhvi_nyc", "symbol": "ZHVI_NYC", "name": "NYC Home Value Index", "category": "macro", "subcategory": "housing", "api_ref": "nyc:zhvi", "active": true},
+  {"asset_id": "zillow_zhvi_la", "symbol": "ZHVI_LA", "name": "LA Home Value Index", "category": "macro", "subcategory": "housing", "api_ref": "la:zhvi", "active": true},
+  {"asset_id": "zillow_zhvi_sf", "symbol": "ZHVI_SF", "name": "SF Home Value Index", "category": "macro", "subcategory": "housing", "api_ref": "sf:zhvi", "active": true},
+  {"asset_id": "zillow_zhvi_miami", "symbol": "ZHVI_MIAMI", "name": "Miami Home Value Index", "category": "macro", "subcategory": "housing", "api_ref": "miami:zhvi", "active": true},
+  {"asset_id": "zillow_zhvi_austin", "symbol": "ZHVI_AUSTIN", "name": "Austin Home Value Index", "category": "macro", "subcategory": "housing", "api_ref": "austin:zhvi", "active": true},
+  {"asset_id": "zillow_inventory_national", "symbol": "INVENTORY_US", "name": "National For-Sale Inventory", "category": "macro", "subcategory": "housing", "api_ref": "national:inventory", "active": true},
+  {"asset_id": "zillow_dom_national", "symbol": "DOM_US", "name": "National Days on Market", "category": "macro", "subcategory": "housing", "api_ref": "national:dom", "active": true},
+  {"asset_id": "zillow_price_cuts_national", "symbol": "PRICECUTS_US", "name": "% Listings with Price Cut", "category": "macro", "subcategory": "housing", "api_ref": "national:price_cuts", "active": true}
+]

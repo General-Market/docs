@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS market_assets (
     asset_id VARCHAR(100) NOT NULL,
     source VARCHAR(50) NOT NULL,
-    symbol VARCHAR(20) NOT NULL,
+    symbol VARCHAR(100) NOT NULL,
     name VARCHAR(200) NOT NULL,
     category VARCHAR(100),
     is_active BOOLEAN DEFAULT TRUE,
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS market_prices (
     id BIGSERIAL PRIMARY KEY,
     asset_id VARCHAR(100) NOT NULL,
     source VARCHAR(50) NOT NULL,
-    symbol VARCHAR(20) NOT NULL,
+    symbol VARCHAR(100) NOT NULL,
     value DECIMAL(30,10) NOT NULL,
     prev_close DECIMAL(30,10),
     change_pct DECIMAL(10,4),

@@ -19,10 +19,10 @@ NC='\033[0m'
 ISSUER_COUNT=${ISSUER_COUNT:-3}
 SKIP_DEPLOY=${SKIP_DEPLOY:-false}
 NO_TAIL=${NO_TAIL:-false}
-DEPLOYER_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-TEST_USER_KEY=0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537
+DEPLOYER_KEY=${DEPLOYER_KEY:-0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80}
+TEST_USER_KEY=${TEST_USER_KEY:-0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537}
 TEST_USER_ADDRESS=${TEST_USER_ADDRESS:-0xC0D3C3ba6c2215b0cBf4375f4c280c0cc6C43850}
-AP_KEY=0x582978b132648fe53de139c6b9297040a2757616cac9a2fd17aa167bdc6fa340
+AP_KEY=${AP_KEY:-0x582978b132648fe53de139c6b9297040a2757616cac9a2fd17aa167bdc6fa340}
 
 # Bitget credentials (dummy = public endpoints only, sufficient for price reads)
 export BITGET_API_KEY=${BITGET_API_KEY:-dummy}
@@ -738,11 +738,21 @@ for i in $(seq 1 $ISSUER_COUNT); do
     ISSUER_ARGS="$ISSUER_ARGS --deployment-file deployments/active-deployment.json"
     [ -f "$SCRIPT_DIR/data/symbol-map.json" ] && ISSUER_ARGS="$ISSUER_ARGS --symbol-map-file $SCRIPT_DIR/data/symbol-map.json"
 
+    # Build peer list (all other issuers)
+    PEER_LIST=""
+    for j in $(seq 1 $ISSUER_COUNT); do
+        if [ $j -ne $i ]; then
+            [ -n "$PEER_LIST" ] && PEER_LIST="$PEER_LIST,"
+            PEER_LIST="${PEER_LIST}127.0.0.1:$((9000 + j))"
+        fi
+    done
+
     ISSUER_KEY=${ISSUER_KEYS[$i]:-""}
     # Write key to temp file (eval+inline env mangles hex keys)
     ISSUER_KEY_FILE="/tmp/issuer-key-$i.txt"
     echo -n "$ISSUER_KEY" > "$ISSUER_KEY_FILE"
     export ISSUER_PRIVATE_KEY_PATH="$ISSUER_KEY_FILE"
+    export ISSUER_PEERS="$PEER_LIST"
     export ISSUER_ARBITRUM_RPC_URL="$ARB_RPC_URL"
     export ISSUER_ARBITRUM_CHAIN_ID="$ARB_CHAIN_ID"
     export ISSUER_BRIDGE_PROXY_ADDRESS="$BRIDGE_PROXY"
@@ -760,6 +770,8 @@ for i in $(seq 1 $ISSUER_COUNT); do
 done
 
 # ============ STEP 8: Data-node ============
+# Data-node serves a REST API on port 8200 for asset prices, ITP NAV, and chart data.
+# Requires PostgreSQL. If unavailable, issuers fall back to Bitget direct price feeds.
 echo -e "${BLUE}[8/$TOTAL_STEPS] Starting data-node service...${NC}"
 
 INDEX_ADDRESS=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['Index'])" 2>/dev/null || echo "")

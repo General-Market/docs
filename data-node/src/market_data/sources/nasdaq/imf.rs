@@ -15,40 +15,13 @@ use tracing::{debug, info};
 
 use super::client::NasdaqClient;
 use crate::market_data::traits::{
-    AssetUpdate, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
+    load_all_asset_entries, load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate,
+    ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
-/// IMF WEO indicators
-/// (code, name, unit, category)
-const IMF_INDICATORS: &[(&str, &str, &str, &str)] = &[
-    ("NGDP_RPCH", "Real GDP Growth", "percent_yoy", "growth"),
-    ("PCPIPCH", "Inflation Rate", "percent_yoy", "inflation"),
-    ("LUR", "Unemployment Rate", "percent", "employment"),
-    (
-        "BCA_NGDPD",
-        "Current Account Balance",
-        "percent_gdp",
-        "trade",
-    ),
-    ("GGXWDG_NGDP", "Government Debt", "percent_gdp", "fiscal"),
-    ("NGDPD", "Nominal GDP", "billion_usd", "growth"),
-];
-
-/// Countries to track (ISO 3-letter codes)
-/// (code, name)
-const IMF_COUNTRIES: &[(&str, &str)] = &[
-    ("USA", "United States"),
-    ("CHN", "China"),
-    ("JPN", "Japan"),
-    ("DEU", "Germany"),
-    ("GBR", "United Kingdom"),
-    ("FRA", "France"),
-    ("IND", "India"),
-    ("ITA", "Italy"),
-    ("BRA", "Brazil"),
-    ("CAN", "Canada"),
-];
+/// Asset configuration loaded from JSON at compile time
+const ASSET_JSON: &str = include_str!("../../../config/imf.json");
 
 /// Nasdaq dataset response structure
 #[derive(Debug, Deserialize)]
@@ -72,23 +45,17 @@ impl ImfMarketSource {
     /// Create from environment variable
     pub fn from_env() -> Result<Self> {
         let client = NasdaqClient::from_env()?;
-        let total_assets = IMF_INDICATORS.len() * IMF_COUNTRIES.len();
-        info!(
-            "IMF client initialized with {} series ({} indicators × {} countries)",
-            total_assets,
-            IMF_INDICATORS.len(),
-            IMF_COUNTRIES.len()
-        );
+        let asset_count = load_assets_from_json(ASSET_JSON)
+            .map(|a| a.len())
+            .unwrap_or(0);
+        info!("IMF client initialized with {} series", asset_count);
         Ok(Self { client })
     }
 
-    /// Generate asset ID from country and indicator
-    fn make_asset_id(country: &str, indicator: &str) -> String {
-        format!(
-            "imf_{}_{}",
-            country.to_lowercase(),
-            indicator.to_lowercase()
-        )
+    /// Parse country and indicator from api_ref (format: "COUNTRY_INDICATOR")
+    fn parse_api_ref(api_ref: &str) -> Option<(&str, &str)> {
+        let idx = api_ref.find('_')?;
+        Some((&api_ref[..idx], &api_ref[idx + 1..]))
     }
 
     /// Fetch a single series
@@ -165,70 +132,53 @@ impl MarketDataSource for ImfMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        let mut assets = Vec::new();
-
-        for (country_code, country_name) in IMF_COUNTRIES {
-            for (indicator_code, indicator_name, unit, category) in IMF_INDICATORS {
-                let asset_id = Self::make_asset_id(country_code, indicator_code);
-                let name = format!("{} - {}", country_name, indicator_name);
-
-                assets.push(AssetUpdate {
-                    asset_id,
-                    symbol: format!("{}_{}", country_code, indicator_code),
-                    name,
-                    category: Some(category.to_string()),
-                    metadata: serde_json::json!({
-                        "source": "imf",
-                        "database": "ODA",
-                        "country": country_code,
-                        "country_name": country_name,
-                        "indicator": indicator_code,
-                        "indicator_name": indicator_name,
-                        "unit": unit,
-                        "update_frequency": "semi-annual",
-                    }),
-                });
-            }
-        }
-
-        Ok(assets)
+        load_assets_from_json(ASSET_JSON)
     }
 
     async fn fetch_prices(&self, _asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
         let now = Utc::now();
         let mut results = Vec::new();
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap_or_default();
 
-        for (country_code, _country_name) in IMF_COUNTRIES {
-            for (indicator_code, _indicator_name, _unit, _category) in IMF_INDICATORS {
-                // Small delay between requests
-                tokio::time::sleep(Duration::from_millis(100)).await;
+        for entry in &entries {
+            if !entry.active {
+                continue;
+            }
 
-                let asset_id = Self::make_asset_id(country_code, indicator_code);
+            let (country_code, indicator_code) = match Self::parse_api_ref(&entry.api_ref) {
+                Some(pair) => pair,
+                None => {
+                    debug!("Invalid api_ref format: {}", entry.api_ref);
+                    continue;
+                }
+            };
 
-                match self.fetch_series(country_code, indicator_code).await {
-                    Ok(Some((_date, value))) => {
-                        if let Ok(decimal_value) = Decimal::from_str(&value.to_string()) {
-                            results.push(PriceUpdate {
-                                asset_id,
-                                symbol: format!("{}_{}", country_code, indicator_code),
-                                value: decimal_value,
-                                prev_close: None,
-                                change_pct: None,
-                                volume_24h: None,
-                                market_cap: None,
-                                fetched_at: now,
-                            });
-                        }
+            // Small delay between requests
+            tokio::time::sleep(Duration::from_millis(100)).await;
+
+            match self.fetch_series(country_code, indicator_code).await {
+                Ok(Some((_date, value))) => {
+                    if let Ok(decimal_value) = Decimal::from_str(&value.to_string()) {
+                        results.push(PriceUpdate {
+                            asset_id: entry.asset_id.clone(),
+                            symbol: entry.symbol.clone(),
+                            value: decimal_value,
+                            prev_close: None,
+                            change_pct: None,
+                            volume_24h: None,
+                            market_cap: None,
+                            fetched_at: now,
+                        });
                     }
-                    Ok(None) => {
-                        // Many country/indicator combos may not exist
-                    }
-                    Err(e) => {
-                        debug!(
-                            "Error fetching IMF {} {}: {:?}",
-                            country_code, indicator_code, e
-                        );
-                    }
+                }
+                Ok(None) => {
+                    // Many country/indicator combos may not exist
+                }
+                Err(e) => {
+                    debug!(
+                        "Error fetching IMF {} {}: {:?}",
+                        country_code, indicator_code, e
+                    );
                 }
             }
         }
@@ -279,26 +229,36 @@ impl ScheduledMarketDataSource for ImfMarketSource {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::market_data::traits::load_all_asset_entries;
 
     #[test]
     fn test_asset_count() {
-        let total = IMF_INDICATORS.len() * IMF_COUNTRIES.len();
-        assert_eq!(total, 60);
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        assert_eq!(entries.len(), 60, "Expected 60 IMF assets (6 indicators × 10 countries)");
     }
 
     #[test]
-    fn test_make_asset_id() {
-        assert_eq!(
-            ImfMarketSource::make_asset_id("USA", "NGDP_RPCH"),
-            "imf_usa_ngdp_rpch"
-        );
+    fn test_fetch_assets_filters_active() {
+        let assets = load_assets_from_json(ASSET_JSON).unwrap();
+        assert!(!assets.is_empty());
+        for asset in &assets {
+            assert_eq!(asset.category, Some("macro".to_string()));
+        }
     }
 
     #[test]
-    fn test_countries() {
-        let countries: Vec<_> = IMF_COUNTRIES.iter().map(|(c, _)| *c).collect();
-        assert!(countries.contains(&"USA"));
-        assert!(countries.contains(&"CHN"));
-        assert!(countries.contains(&"DEU"));
+    fn test_parse_api_ref() {
+        let (country, indicator) = ImfMarketSource::parse_api_ref("USA_NGDP_RPCH").unwrap();
+        assert_eq!(country, "USA");
+        assert_eq!(indicator, "NGDP_RPCH");
+    }
+
+    #[test]
+    fn test_api_ref_contains_country() {
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        let api_refs: Vec<&str> = entries.iter().map(|e| e.api_ref.as_str()).collect();
+        assert!(api_refs.iter().any(|r| r.starts_with("USA_")));
+        assert!(api_refs.iter().any(|r| r.starts_with("CHN_")));
+        assert!(api_refs.iter().any(|r| r.starts_with("DEU_")));
     }
 }

@@ -98,7 +98,7 @@ export default function RootLayout({
         <SoftwareApplicationJsonLd />
         <FAQJsonLd />
       </head>
-      <body className="bg-page text-text-inverse font-sans antialiased">
+      <body className="bg-page text-text-primary font-sans antialiased">
         <ClientProviders>
           {children}
         </ClientProviders>

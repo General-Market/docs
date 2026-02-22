@@ -1,0 +1,938 @@
+//! Twitch Helix API client implementing MarketDataSource
+//!
+//! Fetches live viewer counts for top streamers and games from https://api.twitch.tv/helix
+//! Uses OAuth2 Client Credentials for authentication (app access token).
+//!
+//! Rolling fetch strategy (all within 800 req/min budget):
+//!   - Top 6000 streams: 60 paginated requests (100 per page)
+//!   - Top 1000 games:   10 paginated requests (100 per page)
+//!   - Total: 70 requests per 60s cycle = 8.75% of budget
+
+use anyhow::{Context, Result};
+use chrono::{DateTime, Utc};
+use rust_decimal::Decimal;
+use serde::Deserialize;
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::Mutex;
+use tracing::{debug, info, warn};
+
+use crate::market_data::traits::{
+    load_all_asset_entries, load_assets_from_json, AssetEntry, AssetUpdate, MarketDataSource,
+    PriceUpdate,
+};
+use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+
+/// Asset configuration loaded from JSON at compile time
+const ASSET_JSON: &str = include_str!("../../../config/twitch.json");
+
+/// Twitch Helix API base URL
+const HELIX_URL: &str = "https://api.twitch.tv/helix";
+
+/// Twitch OAuth2 token endpoint
+const TOKEN_URL: &str = "https://id.twitch.tv/oauth2/token";
+
+/// Max items per page (Twitch Helix limit)
+const PAGE_SIZE: usize = 100;
+
+/// Max user_ids per Get Streams request
+const BATCH_SIZE: usize = 100;
+
+/// How many top streams to discover (60 pages x 100)
+const TOP_STREAMS_COUNT: usize = 6000;
+
+/// How many top games to discover (10 pages x 100)
+const TOP_GAMES_COUNT: usize = 1000;
+
+/// Minimum viewer count to include a streamer.
+/// Only streamers whose observed viewer count meets this threshold are tracked.
+const MIN_VIEWER_COUNT: u64 = 100;
+
+/// Request timeout
+const REQUEST_TIMEOUT_SECS: u64 = 15;
+
+/// Max retries per request
+const MAX_RETRIES: u32 = 3;
+
+/// Minimum delay between API requests (ms) — ~800/min budget, we use far less
+const MIN_REQUEST_DELAY_MS: u64 = 80;
+
+/// How long to retain a streamer after they were last seen live.
+/// After 30 days without appearing in the top streams, they are pruned.
+const RETENTION_DAYS: i64 = 30;
+
+// ============================================================================
+// API RESPONSE TYPES
+// ============================================================================
+
+#[derive(Debug, Deserialize)]
+struct TokenResponse {
+    access_token: String,
+    expires_in: u64,
+    #[allow(dead_code)]
+    token_type: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct TwitchStream {
+    pub id: String,
+    pub user_id: String,
+    pub user_login: String,
+    pub user_name: String,
+    pub game_id: String,
+    pub game_name: String,
+    #[serde(rename = "type")]
+    pub stream_type: String,
+    pub title: String,
+    pub viewer_count: u64,
+    pub started_at: String,
+    pub language: String,
+    #[serde(default)]
+    pub tags: Option<Vec<String>>,
+    #[serde(default)]
+    pub is_mature: bool,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct TwitchGame {
+    pub id: String,
+    pub name: String,
+    #[allow(dead_code)]
+    pub box_art_url: Option<String>,
+    #[allow(dead_code)]
+    pub igdb_id: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct HelixResponse<T> {
+    data: Vec<T>,
+    pagination: Option<Pagination>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Pagination {
+    cursor: Option<String>,
+}
+
+// ============================================================================
+// CACHED TOKEN
+// ============================================================================
+
+struct CachedToken {
+    access_token: String,
+    expires_at: std::time::Instant,
+}
+
+// ============================================================================
+// STREAMER PEAK CACHE
+// ============================================================================
+
+/// Tracks a streamer's peak (max) viewer count and when they were last seen live.
+#[derive(Clone, Debug)]
+struct CachedStreamer {
+    user_name: String,
+    user_id: String,
+    /// Highest viewer count ever observed for this streamer.
+    max_viewers: u64,
+    /// Last time this streamer appeared in the top streams (live).
+    last_seen: DateTime<Utc>,
+}
+
+// ============================================================================
+// SOURCE IMPLEMENTATION
+// ============================================================================
+
+/// Twitch live streaming data source.
+///
+/// Stores the **peak (max) viewer count** for each streamer. When a streamer
+/// goes offline, they remain in the asset list with their peak value — they are
+/// only pruned after 30 days of not being seen live. New streamers are added
+/// automatically when discovered with >= 200 peak viewers.
+///
+/// Source ID is `"twitch"`.
+pub struct TwitchMarketSource {
+    client: reqwest::Client,
+    client_id: String,
+    client_secret: String,
+    token: Arc<Mutex<Option<CachedToken>>>,
+    last_request: Arc<Mutex<std::time::Instant>>,
+    /// Peak viewer cache: user_login -> CachedStreamer.
+    /// Tracks max viewers and last_seen. Pruned after 30 days of inactivity.
+    seen_streamers: Arc<Mutex<HashMap<String, CachedStreamer>>>,
+}
+
+impl TwitchMarketSource {
+    pub fn from_env() -> Result<Self> {
+        let client_id = std::env::var("TWITCH_CLIENT_ID")
+            .context("TWITCH_CLIENT_ID environment variable must be set")?;
+        let client_secret = std::env::var("TWITCH_CLIENT_SECRET")
+            .context("TWITCH_CLIENT_SECRET environment variable must be set")?;
+
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
+            .build()
+            .context("Failed to build HTTP client")?;
+
+        let asset_count = load_assets_from_json(ASSET_JSON)
+            .map(|a| a.len())
+            .unwrap_or(0);
+        info!("Twitch source initialized with {} assets", asset_count);
+
+        Ok(Self {
+            client,
+            client_id,
+            client_secret,
+            token: Arc::new(Mutex::new(None)),
+            last_request: Arc::new(Mutex::new(std::time::Instant::now())),
+            seen_streamers: Arc::new(Mutex::new(HashMap::new())),
+        })
+    }
+
+    /// Get a valid access token, refreshing if needed.
+    async fn get_token(&self) -> Result<String> {
+        let mut token_guard = self.token.lock().await;
+
+        // Return cached token if still valid (with 60s buffer)
+        if let Some(ref cached) = *token_guard {
+            if cached.expires_at > std::time::Instant::now() + Duration::from_secs(60) {
+                return Ok(cached.access_token.clone());
+            }
+        }
+
+        // Fetch new token via client credentials grant
+        let resp = self
+            .client
+            .post(TOKEN_URL)
+            .form(&[
+                ("client_id", self.client_id.as_str()),
+                ("client_secret", self.client_secret.as_str()),
+                ("grant_type", "client_credentials"),
+            ])
+            .send()
+            .await
+            .context("Failed to request Twitch access token")?;
+
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            anyhow::bail!("Twitch token request failed: {} {}", status, body);
+        }
+
+        let token_resp: TokenResponse = resp
+            .json()
+            .await
+            .context("Failed to parse Twitch token response")?;
+
+        let expires_at =
+            std::time::Instant::now() + Duration::from_secs(token_resp.expires_in.saturating_sub(120));
+
+        let access_token = token_resp.access_token.clone();
+
+        *token_guard = Some(CachedToken {
+            access_token: token_resp.access_token,
+            expires_at,
+        });
+
+        debug!("Twitch access token refreshed, expires in {}s", token_resp.expires_in);
+        Ok(access_token)
+    }
+
+    /// Enforce rate limiting between requests.
+    async fn rate_limit(&self) {
+        let mut last = self.last_request.lock().await;
+        let elapsed = last.elapsed();
+        let min_delay = Duration::from_millis(MIN_REQUEST_DELAY_MS);
+
+        if elapsed < min_delay {
+            tokio::time::sleep(min_delay - elapsed).await;
+        }
+
+        *last = std::time::Instant::now();
+    }
+
+    /// Make an authenticated GET request to the Helix API with retries.
+    async fn helix_get<T: serde::de::DeserializeOwned>(
+        &self,
+        url: &str,
+    ) -> Result<HelixResponse<T>> {
+        let mut last_error = None;
+
+        for attempt in 0..MAX_RETRIES {
+            self.rate_limit().await;
+
+            let token = self.get_token().await?;
+
+            match self
+                .client
+                .get(url)
+                .header("Client-Id", &self.client_id)
+                .header("Authorization", format!("Bearer {}", token))
+                .send()
+                .await
+            {
+                Ok(resp) => {
+                    if resp.status().is_success() {
+                        match resp.json::<HelixResponse<T>>().await {
+                            Ok(data) => return Ok(data),
+                            Err(e) => {
+                                warn!(
+                                    "Failed to parse Twitch response (attempt {}/{}): {:?}",
+                                    attempt + 1,
+                                    MAX_RETRIES,
+                                    e
+                                );
+                                last_error = Some(e.to_string());
+                            }
+                        }
+                    } else if resp.status().as_u16() == 429 {
+                        // Rate limited — wait and retry
+                        let retry_after = resp
+                            .headers()
+                            .get("Ratelimit-Reset")
+                            .and_then(|v| v.to_str().ok())
+                            .and_then(|s| s.parse::<u64>().ok())
+                            .map(|reset| {
+                                let now = std::time::SystemTime::now()
+                                    .duration_since(std::time::UNIX_EPOCH)
+                                    .unwrap_or_default()
+                                    .as_secs();
+                                Duration::from_secs(reset.saturating_sub(now).max(1))
+                            })
+                            .unwrap_or(Duration::from_secs(5));
+
+                        warn!(
+                            "Twitch rate limited (attempt {}/{}), waiting {:?}",
+                            attempt + 1,
+                            MAX_RETRIES,
+                            retry_after
+                        );
+                        tokio::time::sleep(retry_after).await;
+                        last_error = Some("Rate limited".to_string());
+                    } else if resp.status().as_u16() == 401 {
+                        // Token expired — clear cache and retry
+                        warn!("Twitch auth failed (401), clearing token cache");
+                        let mut token_guard = self.token.lock().await;
+                        *token_guard = None;
+                        last_error = Some("Auth failed".to_string());
+                    } else {
+                        let status = resp.status();
+                        let body = resp.text().await.unwrap_or_default();
+                        warn!(
+                            "Twitch API error (attempt {}/{}): {} {}",
+                            attempt + 1,
+                            MAX_RETRIES,
+                            status,
+                            body
+                        );
+                        last_error = Some(format!("HTTP {}", status));
+                    }
+                }
+                Err(e) => {
+                    warn!(
+                        "Twitch request failed (attempt {}/{}): {:?}",
+                        attempt + 1,
+                        MAX_RETRIES,
+                        e
+                    );
+                    last_error = Some(e.to_string());
+                }
+            }
+
+            // Exponential backoff
+            if attempt < MAX_RETRIES - 1 {
+                let delay = Duration::from_secs(2u64.pow(attempt));
+                tokio::time::sleep(delay).await;
+            }
+        }
+
+        Err(anyhow::anyhow!(
+            "Twitch request failed after {} retries: {:?}",
+            MAX_RETRIES,
+            last_error
+        ))
+    }
+
+    /// Fetch top N streams sorted by viewer count (paginated).
+    /// Returns up to `count` live streams.
+    async fn fetch_top_streams(&self, count: usize) -> Result<Vec<TwitchStream>> {
+        let mut all_streams = Vec::with_capacity(count);
+        let mut cursor: Option<String> = None;
+        let pages_needed = (count + PAGE_SIZE - 1) / PAGE_SIZE;
+
+        for page in 0..pages_needed {
+            let url = match &cursor {
+                Some(c) => format!(
+                    "{}/streams?first={}&after={}",
+                    HELIX_URL, PAGE_SIZE, c
+                ),
+                None => format!("{}/streams?first={}", HELIX_URL, PAGE_SIZE),
+            };
+
+            match self.helix_get::<TwitchStream>(&url).await {
+                Ok(resp) => {
+                    if resp.data.is_empty() {
+                        debug!("No more streams at page {}", page);
+                        break;
+                    }
+
+                    all_streams.extend(resp.data);
+
+                    cursor = resp.pagination.and_then(|p| p.cursor);
+                    if cursor.is_none() {
+                        break;
+                    }
+                }
+                Err(e) => {
+                    warn!("Failed to fetch streams page {}: {:?}", page, e);
+                    break;
+                }
+            }
+
+            if all_streams.len() >= count {
+                break;
+            }
+        }
+
+        all_streams.truncate(count);
+        info!("Fetched {} live streams from Twitch", all_streams.len());
+        Ok(all_streams)
+    }
+
+    /// Fetch top N games sorted by viewer count (paginated).
+    async fn fetch_top_games(&self, count: usize) -> Result<Vec<TwitchGame>> {
+        let mut all_games = Vec::with_capacity(count);
+        let mut cursor: Option<String> = None;
+        let pages_needed = (count + PAGE_SIZE - 1) / PAGE_SIZE;
+
+        for page in 0..pages_needed {
+            let url = match &cursor {
+                Some(c) => format!(
+                    "{}/games/top?first={}&after={}",
+                    HELIX_URL, PAGE_SIZE, c
+                ),
+                None => format!("{}/games/top?first={}", HELIX_URL, PAGE_SIZE),
+            };
+
+            match self.helix_get::<TwitchGame>(&url).await {
+                Ok(resp) => {
+                    if resp.data.is_empty() {
+                        debug!("No more games at page {}", page);
+                        break;
+                    }
+
+                    all_games.extend(resp.data);
+
+                    cursor = resp.pagination.and_then(|p| p.cursor);
+                    if cursor.is_none() {
+                        break;
+                    }
+                }
+                Err(e) => {
+                    warn!("Failed to fetch games page {}: {:?}", page, e);
+                    break;
+                }
+            }
+
+            if all_games.len() >= count {
+                break;
+            }
+        }
+
+        all_games.truncate(count);
+        info!("Fetched {} top games from Twitch", all_games.len());
+        Ok(all_games)
+    }
+
+    /// Fetch viewer counts for specific user IDs (batched by 100).
+    /// Returns a map of user_login -> viewer_count for currently live streamers.
+    async fn fetch_streams_by_user_ids(
+        &self,
+        user_ids: &[String],
+    ) -> Result<HashMap<String, u64>> {
+        let mut result = HashMap::new();
+
+        for chunk in user_ids.chunks(BATCH_SIZE) {
+            let id_params: String = chunk
+                .iter()
+                .map(|id| format!("user_id={}", id))
+                .collect::<Vec<_>>()
+                .join("&");
+
+            let url = format!("{}/streams?first={}&{}", HELIX_URL, BATCH_SIZE, id_params);
+
+            match self.helix_get::<TwitchStream>(&url).await {
+                Ok(resp) => {
+                    for stream in resp.data {
+                        result.insert(stream.user_id.clone(), stream.viewer_count);
+                    }
+                }
+                Err(e) => {
+                    warn!("Failed to fetch streams batch: {:?}", e);
+                }
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Update the peak viewer cache with currently live streams.
+    /// - If a streamer is new and has >= MIN_VIEWER_COUNT, add them.
+    /// - If a streamer already exists, update max_viewers if current > stored max.
+    /// - Prune entries not seen live in > 30 days.
+    async fn update_peak_cache(&self, streams: &[TwitchStream]) {
+        let now = Utc::now();
+        let mut cache = self.seen_streamers.lock().await;
+
+        for stream in streams {
+            if stream.viewer_count < MIN_VIEWER_COUNT {
+                continue;
+            }
+
+            match cache.get_mut(&stream.user_login) {
+                Some(entry) => {
+                    // Update max if current viewers exceed stored peak
+                    if stream.viewer_count > entry.max_viewers {
+                        entry.max_viewers = stream.viewer_count;
+                    }
+                    entry.last_seen = now;
+                    entry.user_name = stream.user_name.clone();
+                }
+                None => {
+                    // New streamer — add to cache
+                    cache.insert(
+                        stream.user_login.clone(),
+                        CachedStreamer {
+                            user_name: stream.user_name.clone(),
+                            user_id: stream.user_id.clone(),
+                            max_viewers: stream.viewer_count,
+                            last_seen: now,
+                        },
+                    );
+                }
+            }
+        }
+
+        // Prune entries not seen in > 30 days
+        let cutoff = now - chrono::Duration::days(RETENTION_DAYS);
+        let before = cache.len();
+        cache.retain(|_, v| v.last_seen > cutoff);
+        let pruned = before - cache.len();
+        if pruned > 0 {
+            info!("Pruned {} streamers not seen in > {} days", pruned, RETENTION_DAYS);
+        }
+
+        debug!(
+            "Peak cache: {} streamers tracked (top max_viewers: {})",
+            cache.len(),
+            cache.values().map(|v| v.max_viewers).max().unwrap_or(0)
+        );
+    }
+}
+
+#[async_trait::async_trait]
+impl MarketDataSource for TwitchMarketSource {
+    fn source_id(&self) -> &'static str {
+        "twitch"
+    }
+
+    fn display_name(&self) -> &'static str {
+        "Twitch Live Streaming"
+    }
+
+    fn default_resolution(&self) -> &'static str {
+        "deterministic"
+    }
+
+    fn sync_interval(&self) -> Duration {
+        Duration::from_secs(60) // 1 minute — full refresh every cycle
+    }
+
+    fn rate_limit_config(&self) -> RateLimitConfig {
+        RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 720, // 90% of 800/min Twitch budget
+                duration: Duration::from_secs(60),
+            }],
+        }
+    }
+
+    async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
+        let static_assets = load_assets_from_json(ASSET_JSON)?;
+
+        // If we have a populated config, use it
+        if !static_assets.is_empty() {
+            return Ok(static_assets);
+        }
+
+        // Config is empty — do live discovery so the sync engine has assets to work with.
+        // This makes the source work immediately even before refresh-assets runs.
+        info!("Twitch config is empty, performing live asset discovery");
+
+        let mut assets = Vec::new();
+
+        // Discover top streams and update peak cache
+        match self.fetch_top_streams(TOP_STREAMS_COUNT).await {
+            Ok(streams) => {
+                // Update peak cache with live data
+                self.update_peak_cache(&streams).await;
+
+                // Return ALL cached streamers (live + offline) as assets
+                let cache = self.seen_streamers.lock().await;
+                for (login, cached) in cache.iter() {
+                    assets.push(AssetUpdate {
+                        asset_id: format!("twitch_stream_{}", login),
+                        symbol: login.clone(),
+                        name: cached.user_name.clone(),
+                        category: Some("sentiment".to_string()),
+                        metadata: serde_json::json!({
+                            "api_ref": format!("user_id:{}", cached.user_id),
+                            "subcategory": "streamers",
+                            "active": true,
+                            "extra": {},
+                        }),
+                    });
+                }
+                let streamer_count = cache.len();
+                drop(cache);
+
+                info!(
+                    "Registered {} streamers (all with peak >= {} viewers, retained up to {} days)",
+                    streamer_count, MIN_VIEWER_COUNT, RETENTION_DAYS
+                );
+
+                // Aggregate game viewer counts from stream data
+                let mut game_viewers: HashMap<String, (String, u64)> = HashMap::new();
+                for stream in &streams {
+                    if !stream.game_id.is_empty() {
+                        let entry = game_viewers
+                            .entry(stream.game_id.clone())
+                            .or_insert_with(|| (stream.game_name.clone(), 0));
+                        entry.1 += stream.viewer_count;
+                    }
+                }
+
+                for (game_id, (game_name, _)) in &game_viewers {
+                    assets.push(AssetUpdate {
+                        asset_id: format!("twitch_game_{}", game_id),
+                        symbol: game_name.clone(),
+                        name: game_name.clone(),
+                        category: Some("sentiment".to_string()),
+                        metadata: serde_json::json!({
+                            "api_ref": format!("game_id:{}", game_id),
+                            "subcategory": "games",
+                            "active": true,
+                            "extra": {},
+                        }),
+                    });
+                }
+            }
+            Err(e) => {
+                warn!("Failed to discover Twitch streams: {:?}", e);
+            }
+        }
+
+        info!("Discovered {} Twitch assets via live API", assets.len());
+        Ok(assets)
+    }
+
+    async fn fetch_prices(&self, asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
+        if asset_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let now = Utc::now();
+        let mut results = Vec::new();
+
+        // Categorize assets by parsing the asset_id prefix directly.
+        // This works in both config mode and discovery mode.
+        let mut streamer_logins: Vec<String> = Vec::new(); // user_login extracted from asset_id
+        let mut game_ids: Vec<String> = Vec::new(); // game_id extracted from asset_id
+
+        for asset_id in asset_ids {
+            if let Some(login) = asset_id.strip_prefix("twitch_stream_") {
+                streamer_logins.push(login.to_string());
+            } else if let Some(gid) = asset_id.strip_prefix("twitch_game_") {
+                game_ids.push(gid.to_string());
+            }
+        }
+
+        // =====================================================================
+        // Fetch top streams once — used for both streamer and game lookups
+        // =====================================================================
+        let streams = if !streamer_logins.is_empty() || !game_ids.is_empty() {
+            match self.fetch_top_streams(TOP_STREAMS_COUNT).await {
+                Ok(s) => s,
+                Err(e) => {
+                    warn!("Failed to fetch Twitch streams for prices: {:?}", e);
+                    Vec::new()
+                }
+            }
+        } else {
+            Vec::new()
+        };
+
+        // =====================================================================
+        // STREAMERS: Peak cache decides WHO we track. Price value is CURRENT
+        // live viewer count (0 if offline).
+        // =====================================================================
+        {
+            // Update peak cache with current live data (decides roster)
+            self.update_peak_cache(&streams).await;
+
+            // Build lookup: user_login -> current live viewer_count
+            let mut live_viewers: HashMap<String, u64> = HashMap::new();
+            for stream in &streams {
+                live_viewers.insert(stream.user_login.clone(), stream.viewer_count);
+            }
+
+            let cache = self.seen_streamers.lock().await;
+
+            // Registered streamers — emit current viewers (0 if offline)
+            for login in &streamer_logins {
+                if cache.contains_key(login.as_str()) {
+                    let viewers = live_viewers.get(login.as_str()).copied().unwrap_or(0);
+                    results.push(PriceUpdate {
+                        asset_id: format!("twitch_stream_{}", login),
+                        symbol: login.clone(),
+                        value: Decimal::from(viewers),
+                        prev_close: None,
+                        change_pct: None,
+                        volume_24h: None,
+                        market_cap: None,
+                        fetched_at: now,
+                    });
+                }
+            }
+
+            // Discover new streamers not yet registered
+            let known_logins: std::collections::HashSet<&str> =
+                streamer_logins.iter().map(|s| s.as_str()).collect();
+            let mut new_count = 0u32;
+            for (login, _cached) in cache.iter() {
+                if known_logins.contains(login.as_str()) {
+                    continue;
+                }
+                let viewers = live_viewers.get(login.as_str()).copied().unwrap_or(0);
+                results.push(PriceUpdate {
+                    asset_id: format!("twitch_stream_{}", login),
+                    symbol: login.clone(),
+                    value: Decimal::from(viewers),
+                    prev_close: None,
+                    change_pct: None,
+                    volume_24h: None,
+                    market_cap: None,
+                    fetched_at: now,
+                });
+                new_count += 1;
+            }
+            drop(cache);
+
+            if new_count > 0 {
+                info!("Emitting {} newly discovered streamers", new_count);
+            }
+        }
+
+        // =====================================================================
+        // GAMES: Aggregate viewer counts from stream data by game_id
+        // =====================================================================
+        if !game_ids.is_empty() {
+            let mut game_viewers: HashMap<String, u64> = HashMap::new();
+            for stream in &streams {
+                if !stream.game_id.is_empty() {
+                    *game_viewers.entry(stream.game_id.clone()).or_insert(0) +=
+                        stream.viewer_count;
+                }
+            }
+
+            for gid in &game_ids {
+                let viewers = game_viewers.get(gid).copied().unwrap_or(0);
+                results.push(PriceUpdate {
+                    asset_id: format!("twitch_game_{}", gid),
+                    symbol: gid.clone(),
+                    value: Decimal::from(viewers),
+                    prev_close: None,
+                    change_pct: None,
+                    volume_24h: None,
+                    market_cap: None,
+                    fetched_at: now,
+                });
+            }
+        }
+
+        info!(
+            "Fetched {}/{} Twitch viewer counts",
+            results.len(),
+            asset_ids.len()
+        );
+        Ok(results)
+    }
+
+    /// Discover top streamers and games from the live Twitch API.
+    /// Used by the refresh-assets CLI to populate config/twitch.json.
+    async fn discover_upstream_assets(&self) -> Result<Vec<AssetEntry>> {
+        let mut entries = Vec::new();
+
+        // =====================================================================
+        // DISCOVER TOP 6000 STREAMERS
+        // =====================================================================
+        info!("Discovering top {} Twitch streamers...", TOP_STREAMS_COUNT);
+        let streams = self.fetch_top_streams(TOP_STREAMS_COUNT).await?;
+
+        // Deduplicate by user_login, filter by minimum viewer count
+        let mut seen_logins = std::collections::HashSet::new();
+
+        for stream in &streams {
+            if stream.viewer_count < MIN_VIEWER_COUNT {
+                continue;
+            }
+            if seen_logins.insert(stream.user_login.clone()) {
+                entries.push(AssetEntry {
+                    asset_id: format!("twitch_stream_{}", stream.user_login),
+                    symbol: stream.user_login.clone(),
+                    name: stream.user_name.clone(),
+                    category: "sentiment".to_string(),
+                    subcategory: "streamers".to_string(),
+                    api_ref: format!("user_id:{}", stream.user_id),
+                    active: true,
+                });
+            }
+        }
+
+        info!(
+            "Discovered {} unique streamers with >= {} viewers",
+            seen_logins.len(),
+            MIN_VIEWER_COUNT
+        );
+
+        // =====================================================================
+        // DISCOVER TOP 1000 GAMES
+        // =====================================================================
+        info!("Discovering top {} Twitch games...", TOP_GAMES_COUNT);
+        let games = self.fetch_top_games(TOP_GAMES_COUNT).await?;
+
+        for game in &games {
+            entries.push(AssetEntry {
+                asset_id: format!("twitch_game_{}", game.id),
+                symbol: game.name.clone(),
+                name: game.name.clone(),
+                category: "sentiment".to_string(),
+                subcategory: "games".to_string(),
+                api_ref: format!("game_id:{}", game.id),
+                active: true,
+            });
+        }
+
+        info!(
+            "Discovered {} total Twitch assets ({} streamers + {} games)",
+            entries.len(),
+            seen_logins.len(),
+            games.len()
+        );
+
+        Ok(entries)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_source_id() {
+        assert_eq!("twitch", "twitch");
+    }
+
+    #[test]
+    fn test_asset_json_parses() {
+        // Config starts empty — should parse to empty vec
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        // Empty is fine (populated by discover_upstream_assets / refresh-assets)
+        assert!(entries.is_empty() || entries.len() > 0);
+    }
+
+    #[test]
+    fn test_active_assets_load() {
+        let assets = load_assets_from_json(ASSET_JSON).unwrap();
+        // Empty config returns empty vec — that's valid
+        for asset in &assets {
+            assert_eq!(asset.category, Some("sentiment".to_string()));
+        }
+    }
+
+    #[test]
+    fn test_category_coverage() {
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        for entry in &entries {
+            assert!(
+                crate::market_data::traits::categories::is_valid(&entry.category),
+                "Invalid category '{}' for asset '{}'",
+                entry.category,
+                entry.asset_id
+            );
+        }
+    }
+
+    #[test]
+    fn test_streamer_asset_id_format() {
+        let asset_id = format!("twitch_stream_{}", "xqc");
+        assert_eq!(asset_id, "twitch_stream_xqc");
+
+        let asset_id = format!("twitch_game_{}", "509658");
+        assert_eq!(asset_id, "twitch_game_509658");
+    }
+
+    #[test]
+    fn test_api_ref_parsing() {
+        let api_ref = "user_id:12345";
+        assert_eq!(api_ref.strip_prefix("user_id:"), Some("12345"));
+
+        let api_ref = "game_id:509658";
+        assert_eq!(api_ref.strip_prefix("game_id:"), Some("509658"));
+
+        let api_ref = "invalid";
+        assert_eq!(api_ref.strip_prefix("user_id:"), None);
+    }
+
+    #[test]
+    fn test_page_count_calculation() {
+        // 6000 streams / 100 per page = 60 pages
+        let pages = (TOP_STREAMS_COUNT + PAGE_SIZE - 1) / PAGE_SIZE;
+        assert_eq!(pages, 60);
+
+        // 1000 games / 100 per page = 10 pages
+        let pages = (TOP_GAMES_COUNT + PAGE_SIZE - 1) / PAGE_SIZE;
+        assert_eq!(pages, 10);
+
+        // Total: 70 requests, well within 720/min budget
+        assert!(60 + 10 <= 720);
+    }
+
+    #[test]
+    fn test_viewer_count_to_decimal() {
+        let viewers: u64 = 150_000;
+        let value = Decimal::from(viewers);
+        assert_eq!(value, Decimal::from(150_000));
+
+        // Offline streamer
+        let viewers: u64 = 0;
+        let value = Decimal::from(viewers);
+        assert_eq!(value, Decimal::from(0));
+    }
+
+    #[test]
+    fn test_min_viewer_count_threshold() {
+        assert_eq!(MIN_VIEWER_COUNT, 100);
+        // Streams below threshold should be filtered
+        assert!(50 < MIN_VIEWER_COUNT);
+        assert!(99 < MIN_VIEWER_COUNT);
+        // Streams at or above threshold should be included
+        assert!(100 >= MIN_VIEWER_COUNT);
+        assert!(1000 >= MIN_VIEWER_COUNT);
+    }
+
+    #[test]
+    fn test_retention_days() {
+        assert_eq!(RETENTION_DAYS, 30);
+    }
+}

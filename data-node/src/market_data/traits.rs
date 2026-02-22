@@ -8,10 +8,119 @@ use anyhow::Result;
 use chrono::{DateTime, Datelike, NaiveDate, NaiveTime, TimeZone, Utc, Weekday};
 use chrono_tz::{Europe::Berlin, US::Eastern};
 use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::time::Duration;
 
 use crate::market_data::rate_limiter::RateLimitConfig;
+
+// ============================================================================
+// CATEGORY CONSTANTS
+// ============================================================================
+
+/// Valid asset categories for the platform.
+/// All sources must use one of these categories.
+pub mod categories {
+    pub const STOCKS: &str = "stocks";
+    pub const CRYPTO: &str = "crypto";
+    pub const DEFI: &str = "defi";
+    pub const MACRO: &str = "macro";
+    pub const COMMODITIES: &str = "commodities";
+    pub const WEATHER: &str = "weather";
+    pub const ONCHAIN: &str = "onchain";
+    pub const SENTIMENT: &str = "sentiment";
+    pub const REGULATORY: &str = "regulatory";
+
+    /// All valid categories
+    pub const ALL: &[&str] = &[
+        STOCKS, CRYPTO, DEFI, MACRO, COMMODITIES, WEATHER, ONCHAIN, SENTIMENT, REGULATORY,
+    ];
+
+    /// Check if a category string is valid
+    pub fn is_valid(cat: &str) -> bool {
+        ALL.contains(&cat)
+    }
+}
+
+// ============================================================================
+// JSON CONFIG TYPES
+// ============================================================================
+
+/// Asset entry as stored in config/{source_id}.json files.
+/// This is the standard schema for all asset configuration.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AssetEntry {
+    /// Unique identifier within this source
+    pub asset_id: String,
+    /// Trading symbol or ticker
+    pub symbol: String,
+    /// Human-readable display name
+    pub name: String,
+    /// Top-level category (must be one of `categories::ALL`)
+    pub category: String,
+    /// Subcategory within the category
+    pub subcategory: String,
+    /// API-specific reference (series ID, endpoint slug, etc.)
+    pub api_ref: String,
+    /// Whether this asset is active and should be synced
+    pub active: bool,
+}
+
+/// Load assets from a JSON string (typically from `include_str!`).
+///
+/// This is the standard way to load assets from embedded JSON config files.
+/// It parses the JSON, validates categories, filters to only active assets,
+/// and converts to `AssetUpdate` with standardized metadata.
+///
+/// # Arguments
+/// * `json_str` - JSON string containing an array of `AssetEntry` objects
+///
+/// # Returns
+/// * `Ok(Vec<AssetUpdate>)` - Only assets where `active: true`
+/// * `Err` - If JSON parsing fails or category validation fails
+///
+/// # Panics
+/// Panics if any asset has an invalid category. This is intentional since
+/// JSON is embedded at compile time via `include_str!` and should be validated.
+pub fn load_assets_from_json(json_str: &str) -> Result<Vec<AssetUpdate>> {
+    let entries: Vec<AssetEntry> = serde_json::from_str(json_str)?;
+
+    // Validate all categories (panic on invalid since JSON is embedded at compile time)
+    for entry in &entries {
+        if !categories::is_valid(&entry.category) {
+            panic!(
+                "Invalid category '{}' for asset '{}'. Valid categories: {:?}",
+                entry.category,
+                entry.asset_id,
+                categories::ALL
+            );
+        }
+    }
+
+    Ok(entries
+        .into_iter()
+        .filter(|a| a.active)
+        .map(|a| AssetUpdate {
+            asset_id: a.asset_id.clone(),
+            symbol: a.symbol.clone(),
+            name: a.name.clone(),
+            category: Some(a.category.clone()),
+            metadata: serde_json::json!({
+                "api_ref": a.api_ref,
+                "subcategory": a.subcategory,
+                "active": a.active,
+                "extra": {},
+            }),
+        })
+        .collect())
+}
+
+/// Load all asset entries from JSON (including inactive ones).
+/// Used by the refresh-assets CLI to merge with upstream data.
+pub fn load_all_asset_entries(json_str: &str) -> Result<Vec<AssetEntry>> {
+    let entries: Vec<AssetEntry> = serde_json::from_str(json_str)?;
+    Ok(entries)
+}
 
 /// Trait that every market data source must implement.
 ///
@@ -42,6 +151,19 @@ pub trait MarketDataSource: Send + Sync {
     /// Fetch current prices for the given asset IDs.
     /// The sync engine batches these according to rate limits.
     async fn fetch_prices(&self, asset_ids: &[String]) -> Result<Vec<PriceUpdate>>;
+
+    /// Discover assets from upstream API for the refresh-assets CLI.
+    ///
+    /// Override this for sources that can discover new assets from their API
+    /// (CoinGecko, DefiLlama, Polymarket, etc.). The default returns an empty
+    /// vec, meaning the source doesn't support dynamic asset discovery.
+    ///
+    /// The returned `AssetEntry` objects are merged with the existing JSON
+    /// config file. The merge logic never deletes — only adds new entries
+    /// or reactivates previously deactivated ones.
+    async fn discover_upstream_assets(&self) -> Result<Vec<AssetEntry>> {
+        Ok(vec![])
+    }
 }
 
 /// Asset metadata update returned by `fetch_assets()`
@@ -382,5 +504,145 @@ mod tests {
         // Monday Jan 27, 2025 at noon UTC
         let mon = Utc.with_ymd_and_hms(2025, 1, 27, 12, 0, 0).unwrap();
         assert!(!is_us_weekend(mon));
+    }
+
+    // ========================================================================
+    // CATEGORY TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_categories_all_valid() {
+        assert!(categories::is_valid("stocks"));
+        assert!(categories::is_valid("crypto"));
+        assert!(categories::is_valid("defi"));
+        assert!(categories::is_valid("macro"));
+        assert!(categories::is_valid("commodities"));
+        assert!(categories::is_valid("weather"));
+        assert!(categories::is_valid("onchain"));
+        assert!(categories::is_valid("sentiment"));
+        assert!(categories::is_valid("regulatory"));
+    }
+
+    #[test]
+    fn test_categories_invalid() {
+        assert!(!categories::is_valid("invalid"));
+        assert!(!categories::is_valid("STOCKS"));
+        assert!(!categories::is_valid(""));
+        assert!(!categories::is_valid("cryptoLargeCap")); // Old format
+    }
+
+    #[test]
+    fn test_category_count() {
+        assert_eq!(categories::ALL.len(), 9);
+    }
+
+    // ========================================================================
+    // JSON LOADING TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_load_assets_from_json_basic() {
+        let json = r#"[
+            {
+                "asset_id": "DFF",
+                "symbol": "DFF",
+                "name": "Fed Funds Rate",
+                "category": "macro",
+                "subcategory": "interest_rates",
+                "api_ref": "DFF",
+                "active": true
+            },
+            {
+                "asset_id": "INACTIVE",
+                "symbol": "INACTIVE",
+                "name": "Inactive Asset",
+                "category": "macro",
+                "subcategory": "test",
+                "api_ref": "INACTIVE",
+                "active": false
+            }
+        ]"#;
+
+        let assets = load_assets_from_json(json).unwrap();
+
+        // Only active assets should be returned
+        assert_eq!(assets.len(), 1);
+        assert_eq!(assets[0].asset_id, "DFF");
+        assert_eq!(assets[0].category, Some("macro".to_string()));
+
+        // Check metadata
+        let meta = &assets[0].metadata;
+        assert_eq!(meta["api_ref"], "DFF");
+        assert_eq!(meta["subcategory"], "interest_rates");
+        assert_eq!(meta["active"], true);
+    }
+
+    #[test]
+    fn test_load_all_asset_entries() {
+        let json = r#"[
+            {
+                "asset_id": "ACTIVE",
+                "symbol": "ACTIVE",
+                "name": "Active Asset",
+                "category": "macro",
+                "subcategory": "test",
+                "api_ref": "ACTIVE",
+                "active": true
+            },
+            {
+                "asset_id": "INACTIVE",
+                "symbol": "INACTIVE",
+                "name": "Inactive Asset",
+                "category": "macro",
+                "subcategory": "test",
+                "api_ref": "INACTIVE",
+                "active": false
+            }
+        ]"#;
+
+        let entries = load_all_asset_entries(json).unwrap();
+
+        // All entries should be returned
+        assert_eq!(entries.len(), 2);
+        assert!(entries[0].active);
+        assert!(!entries[1].active);
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid category")]
+    fn test_load_assets_from_json_invalid_category() {
+        let json = r#"[
+            {
+                "asset_id": "TEST",
+                "symbol": "TEST",
+                "name": "Test Asset",
+                "category": "invalid_category",
+                "subcategory": "test",
+                "api_ref": "TEST",
+                "active": true
+            }
+        ]"#;
+
+        let _ = load_assets_from_json(json);
+    }
+
+    #[test]
+    fn test_asset_entry_serde() {
+        let entry = AssetEntry {
+            asset_id: "BTC".to_string(),
+            symbol: "BTC".to_string(),
+            name: "Bitcoin".to_string(),
+            category: "crypto".to_string(),
+            subcategory: "layer1".to_string(),
+            api_ref: "bitcoin".to_string(),
+            active: true,
+        };
+
+        let json = serde_json::to_string(&entry).unwrap();
+        let parsed: AssetEntry = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(parsed.asset_id, "BTC");
+        assert_eq!(parsed.category, "crypto");
+        assert!(parsed.active);
     }
 }

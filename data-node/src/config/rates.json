@@ -1,0 +1,173 @@
+[
+  {
+    "asset_id": "DFF",
+    "symbol": "DFF",
+    "name": "Fed Funds Rate (Effective)",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "DFF",
+    "active": true
+  },
+  {
+    "asset_id": "FEDFUNDS",
+    "symbol": "FEDFUNDS",
+    "name": "Fed Funds Target Rate",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "FEDFUNDS",
+    "active": true
+  },
+  {
+    "asset_id": "DGS1MO",
+    "symbol": "DGS1MO",
+    "name": "1-Month Treasury Yield",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "DGS1MO",
+    "active": true
+  },
+  {
+    "asset_id": "DGS3MO",
+    "symbol": "DGS3MO",
+    "name": "3-Month Treasury Yield",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "DGS3MO",
+    "active": true
+  },
+  {
+    "asset_id": "DGS6MO",
+    "symbol": "DGS6MO",
+    "name": "6-Month Treasury Yield",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "DGS6MO",
+    "active": true
+  },
+  {
+    "asset_id": "DGS1",
+    "symbol": "DGS1",
+    "name": "1-Year Treasury Yield",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "DGS1",
+    "active": true
+  },
+  {
+    "asset_id": "DGS2",
+    "symbol": "DGS2",
+    "name": "2-Year Treasury Yield",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "DGS2",
+    "active": true
+  },
+  {
+    "asset_id": "DGS5",
+    "symbol": "DGS5",
+    "name": "5-Year Treasury Yield",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "DGS5",
+    "active": true
+  },
+  {
+    "asset_id": "DGS7",
+    "symbol": "DGS7",
+    "name": "7-Year Treasury Yield",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "DGS7",
+    "active": true
+  },
+  {
+    "asset_id": "DGS10",
+    "symbol": "DGS10",
+    "name": "10-Year Treasury Yield",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "DGS10",
+    "active": true
+  },
+  {
+    "asset_id": "DGS20",
+    "symbol": "DGS20",
+    "name": "20-Year Treasury Yield",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "DGS20",
+    "active": true
+  },
+  {
+    "asset_id": "DGS30",
+    "symbol": "DGS30",
+    "name": "30-Year Treasury Yield",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "DGS30",
+    "active": true
+  },
+  {
+    "asset_id": "T10Y2Y",
+    "symbol": "T10Y2Y",
+    "name": "10Y-2Y Treasury Spread",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "T10Y2Y",
+    "active": true
+  },
+  {
+    "asset_id": "T10Y3M",
+    "symbol": "T10Y3M",
+    "name": "10Y-3M Treasury Spread",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "T10Y3M",
+    "active": true
+  },
+  {
+    "asset_id": "T5YIE",
+    "symbol": "T5YIE",
+    "name": "5-Year Breakeven Inflation",
+    "category": "macro",
+    "subcategory": "inflation",
+    "api_ref": "T5YIE",
+    "active": true
+  },
+  {
+    "asset_id": "T10YIE",
+    "symbol": "T10YIE",
+    "name": "10-Year Breakeven Inflation",
+    "category": "macro",
+    "subcategory": "inflation",
+    "api_ref": "T10YIE",
+    "active": true
+  },
+  {
+    "asset_id": "DFII10",
+    "symbol": "DFII10",
+    "name": "10-Year Real Interest Rate",
+    "category": "macro",
+    "subcategory": "inflation",
+    "api_ref": "DFII10",
+    "active": true
+  },
+  {
+    "asset_id": "MORTGAGE30US",
+    "symbol": "MORTGAGE30US",
+    "name": "30-Year Mortgage Rate",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "MORTGAGE30US",
+    "active": true
+  },
+  {
+    "asset_id": "MORTGAGE15US",
+    "symbol": "MORTGAGE15US",
+    "name": "15-Year Mortgage Rate",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "MORTGAGE15US",
+    "active": true
+  }
+]

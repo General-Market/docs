@@ -1,0 +1,7022 @@
+[
+  {
+    "asset_id": "A",
+    "symbol": "A",
+    "name": "A",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "A",
+    "active": true
+  },
+  {
+    "asset_id": "AAL",
+    "symbol": "AAL",
+    "name": "American Airlines",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "AAL",
+    "active": true
+  },
+  {
+    "asset_id": "AAPL",
+    "symbol": "AAPL",
+    "name": "AAPL",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "AAPL",
+    "active": true
+  },
+  {
+    "asset_id": "ABBV",
+    "symbol": "ABBV",
+    "name": "ABBV",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "ABBV",
+    "active": true
+  },
+  {
+    "asset_id": "ABEV",
+    "symbol": "ABEV",
+    "name": "ABEV",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "ABEV",
+    "active": true
+  },
+  {
+    "asset_id": "ABNB",
+    "symbol": "ABNB",
+    "name": "Airbnb",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "ABNB",
+    "active": true
+  },
+  {
+    "asset_id": "ABT",
+    "symbol": "ABT",
+    "name": "ABT",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "ABT",
+    "active": true
+  },
+  {
+    "asset_id": "ABX",
+    "symbol": "ABX",
+    "name": "ABX",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "ABX",
+    "active": true
+  },
+  {
+    "asset_id": "ACN",
+    "symbol": "ACN",
+    "name": "ACN",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "ACN",
+    "active": true
+  },
+  {
+    "asset_id": "ADBE",
+    "symbol": "ADBE",
+    "name": "ADBE",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "ADBE",
+    "active": true
+  },
+  {
+    "asset_id": "ADDYY",
+    "symbol": "ADDYY",
+    "name": "ADDYY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "ADDYY",
+    "active": true
+  },
+  {
+    "asset_id": "ADI",
+    "symbol": "ADI",
+    "name": "ADI",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "ADI",
+    "active": true
+  },
+  {
+    "asset_id": "ADM",
+    "symbol": "ADM",
+    "name": "Archer-Daniels-Midland",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "ADM",
+    "active": true
+  },
+  {
+    "asset_id": "ADP",
+    "symbol": "ADP",
+    "name": "ADP",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "ADP",
+    "active": true
+  },
+  {
+    "asset_id": "ADSK",
+    "symbol": "ADSK",
+    "name": "Autodesk",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "ADSK",
+    "active": true
+  },
+  {
+    "asset_id": "AEE",
+    "symbol": "AEE",
+    "name": "Ameren",
+    "category": "stocks",
+    "subcategory": "utilities",
+    "api_ref": "AEE",
+    "active": true
+  },
+  {
+    "asset_id": "AEHR",
+    "symbol": "AEHR",
+    "name": "AEHR",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "AEHR",
+    "active": true
+  },
+  {
+    "asset_id": "AEP",
+    "symbol": "AEP",
+    "name": "AEP",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "AEP",
+    "active": true
+  },
+  {
+    "asset_id": "AER",
+    "symbol": "AER",
+    "name": "AER",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "AER",
+    "active": true
+  },
+  {
+    "asset_id": "AES",
+    "symbol": "AES",
+    "name": "AES Corp",
+    "category": "stocks",
+    "subcategory": "utilities",
+    "api_ref": "AES",
+    "active": true
+  },
+  {
+    "asset_id": "AFL",
+    "symbol": "AFL",
+    "name": "AFL",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "AFL",
+    "active": true
+  },
+  {
+    "asset_id": "AFRM",
+    "symbol": "AFRM",
+    "name": "Affirm Holdings",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "AFRM",
+    "active": true
+  },
+  {
+    "asset_id": "AI",
+    "symbol": "AI",
+    "name": "C3.ai",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "AI",
+    "active": true
+  },
+  {
+    "asset_id": "AIG",
+    "symbol": "AIG",
+    "name": "AIG",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "AIG",
+    "active": true
+  },
+  {
+    "asset_id": "AIV",
+    "symbol": "AIV",
+    "name": "AIV",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "AIV",
+    "active": true
+  },
+  {
+    "asset_id": "AIZ",
+    "symbol": "AIZ",
+    "name": "Assurant",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "AIZ",
+    "active": true
+  },
+  {
+    "asset_id": "AJG",
+    "symbol": "AJG",
+    "name": "AJG",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "AJG",
+    "active": true
+  },
+  {
+    "asset_id": "AKAM",
+    "symbol": "AKAM",
+    "name": "AKAM",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "AKAM",
+    "active": true
+  },
+  {
+    "asset_id": "ALB",
+    "symbol": "ALB",
+    "name": "ALB",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "ALB",
+    "active": true
+  },
+  {
+    "asset_id": "ALGN",
+    "symbol": "ALGN",
+    "name": "ALGN",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "ALGN",
+    "active": true
+  },
+  {
+    "asset_id": "ALK",
+    "symbol": "ALK",
+    "name": "Alaska Air",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "ALK",
+    "active": true
+  },
+  {
+    "asset_id": "ALKT",
+    "symbol": "ALKT",
+    "name": "Alkami Technology",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "ALKT",
+    "active": true
+  },
+  {
+    "asset_id": "ALL",
+    "symbol": "ALL",
+    "name": "ALL",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "ALL",
+    "active": true
+  },
+  {
+    "asset_id": "ALLY",
+    "symbol": "ALLY",
+    "name": "Ally Financial",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "ALLY",
+    "active": true
+  },
+  {
+    "asset_id": "ALNY",
+    "symbol": "ALNY",
+    "name": "ALNY",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "ALNY",
+    "active": true
+  },
+  {
+    "asset_id": "AM",
+    "symbol": "AM",
+    "name": "AM",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "AM",
+    "active": true
+  },
+  {
+    "asset_id": "AMAT",
+    "symbol": "AMAT",
+    "name": "AMAT",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "AMAT",
+    "active": true
+  },
+  {
+    "asset_id": "AMD",
+    "symbol": "AMD",
+    "name": "AMD",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "AMD",
+    "active": true
+  },
+  {
+    "asset_id": "AME",
+    "symbol": "AME",
+    "name": "AME",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "AME",
+    "active": true
+  },
+  {
+    "asset_id": "AMGN",
+    "symbol": "AMGN",
+    "name": "AMGN",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "AMGN",
+    "active": true
+  },
+  {
+    "asset_id": "AMP",
+    "symbol": "AMP",
+    "name": "AMP",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "AMP",
+    "active": true
+  },
+  {
+    "asset_id": "AMT",
+    "symbol": "AMT",
+    "name": "AMT",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "AMT",
+    "active": true
+  },
+  {
+    "asset_id": "AMX",
+    "symbol": "AMX",
+    "name": "AMX",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "AMX",
+    "active": true
+  },
+  {
+    "asset_id": "AMZN",
+    "symbol": "AMZN",
+    "name": "AMZN",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "AMZN",
+    "active": true
+  },
+  {
+    "asset_id": "ANET",
+    "symbol": "ANET",
+    "name": "Arista Networks",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "ANET",
+    "active": true
+  },
+  {
+    "asset_id": "ANGI",
+    "symbol": "ANGI",
+    "name": "Angi Inc",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "ANGI",
+    "active": true
+  },
+  {
+    "asset_id": "ANSS",
+    "symbol": "ANSS",
+    "name": "ANSYS",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "ANSS",
+    "active": true
+  },
+  {
+    "asset_id": "AON",
+    "symbol": "AON",
+    "name": "AON",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "AON",
+    "active": true
+  },
+  {
+    "asset_id": "APA",
+    "symbol": "APA",
+    "name": "APA",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "APA",
+    "active": true
+  },
+  {
+    "asset_id": "APD",
+    "symbol": "APD",
+    "name": "APD",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "APD",
+    "active": true
+  },
+  {
+    "asset_id": "APP",
+    "symbol": "APP",
+    "name": "AppLovin",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "APP",
+    "active": true
+  },
+  {
+    "asset_id": "APPF",
+    "symbol": "APPF",
+    "name": "AppFolio",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "APPF",
+    "active": true
+  },
+  {
+    "asset_id": "APPN",
+    "symbol": "APPN",
+    "name": "Appian",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "APPN",
+    "active": true
+  },
+  {
+    "asset_id": "APTV",
+    "symbol": "APTV",
+    "name": "Aptiv",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "APTV",
+    "active": true
+  },
+  {
+    "asset_id": "AR",
+    "symbol": "AR",
+    "name": "AR",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "AR",
+    "active": true
+  },
+  {
+    "asset_id": "ARE",
+    "symbol": "ARE",
+    "name": "ARE",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "ARE",
+    "active": true
+  },
+  {
+    "asset_id": "ARM",
+    "symbol": "ARM",
+    "name": "ARM Holdings",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "ARM",
+    "active": true
+  },
+  {
+    "asset_id": "ASML",
+    "symbol": "ASML",
+    "name": "ASML",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "ASML",
+    "active": true
+  },
+  {
+    "asset_id": "ASR",
+    "symbol": "ASR",
+    "name": "ASR",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "ASR",
+    "active": true
+  },
+  {
+    "asset_id": "ASX",
+    "symbol": "ASX",
+    "name": "ASX",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "ASX",
+    "active": true
+  },
+  {
+    "asset_id": "ATHM",
+    "symbol": "ATHM",
+    "name": "ATHM",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "ATHM",
+    "active": true
+  },
+  {
+    "asset_id": "ATO",
+    "symbol": "ATO",
+    "name": "Atmos Energy",
+    "category": "stocks",
+    "subcategory": "utilities",
+    "api_ref": "ATO",
+    "active": true
+  },
+  {
+    "asset_id": "ATUS",
+    "symbol": "ATUS",
+    "name": "Altice USA",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "ATUS",
+    "active": true
+  },
+  {
+    "asset_id": "AU",
+    "symbol": "AU",
+    "name": "AU",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "AU",
+    "active": true
+  },
+  {
+    "asset_id": "AVB",
+    "symbol": "AVB",
+    "name": "AVB",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "AVB",
+    "active": true
+  },
+  {
+    "asset_id": "AVGO",
+    "symbol": "AVGO",
+    "name": "AVGO",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "AVGO",
+    "active": true
+  },
+  {
+    "asset_id": "AXON",
+    "symbol": "AXON",
+    "name": "AXON",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "AXON",
+    "active": true
+  },
+  {
+    "asset_id": "AXP",
+    "symbol": "AXP",
+    "name": "AXP",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "AXP",
+    "active": true
+  },
+  {
+    "asset_id": "AZN",
+    "symbol": "AZN",
+    "name": "AZN",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "AZN",
+    "active": true
+  },
+  {
+    "asset_id": "AZO",
+    "symbol": "AZO",
+    "name": "AZO",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "AZO",
+    "active": true
+  },
+  {
+    "asset_id": "BA",
+    "symbol": "BA",
+    "name": "BA",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "BA",
+    "active": true
+  },
+  {
+    "asset_id": "BABA",
+    "symbol": "BABA",
+    "name": "BABA",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "BABA",
+    "active": true
+  },
+  {
+    "asset_id": "BAC",
+    "symbol": "BAC",
+    "name": "BAC",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "BAC",
+    "active": true
+  },
+  {
+    "asset_id": "BALL",
+    "symbol": "BALL",
+    "name": "Ball Corp",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "BALL",
+    "active": true
+  },
+  {
+    "asset_id": "BASFY",
+    "symbol": "BASFY",
+    "name": "BASFY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "BASFY",
+    "active": true
+  },
+  {
+    "asset_id": "BAX",
+    "symbol": "BAX",
+    "name": "Baxter International",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "BAX",
+    "active": true
+  },
+  {
+    "asset_id": "BAYRY",
+    "symbol": "BAYRY",
+    "name": "BAYRY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "BAYRY",
+    "active": true
+  },
+  {
+    "asset_id": "BBD",
+    "symbol": "BBD",
+    "name": "BBD",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "BBD",
+    "active": true
+  },
+  {
+    "asset_id": "BBVA",
+    "symbol": "BBVA",
+    "name": "BBVA",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "BBVA",
+    "active": true
+  },
+  {
+    "asset_id": "BBY",
+    "symbol": "BBY",
+    "name": "BBY",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "BBY",
+    "active": true
+  },
+  {
+    "asset_id": "BCE",
+    "symbol": "BCE",
+    "name": "BCE",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "BCE",
+    "active": true
+  },
+  {
+    "asset_id": "BCS",
+    "symbol": "BCS",
+    "name": "BCS",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "BCS",
+    "active": true
+  },
+  {
+    "asset_id": "BDX",
+    "symbol": "BDX",
+    "name": "Becton Dickinson",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "BDX",
+    "active": true
+  },
+  {
+    "asset_id": "BEKE",
+    "symbol": "BEKE",
+    "name": "BEKE",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "BEKE",
+    "active": true
+  },
+  {
+    "asset_id": "BEN",
+    "symbol": "BEN",
+    "name": "BEN",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "BEN",
+    "active": true
+  },
+  {
+    "asset_id": "BHP",
+    "symbol": "BHP",
+    "name": "BHP",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "BHP",
+    "active": true
+  },
+  {
+    "asset_id": "BIDU",
+    "symbol": "BIDU",
+    "name": "BIDU",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "BIDU",
+    "active": true
+  },
+  {
+    "asset_id": "BIIB",
+    "symbol": "BIIB",
+    "name": "BIIB",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "BIIB",
+    "active": true
+  },
+  {
+    "asset_id": "BILI",
+    "symbol": "BILI",
+    "name": "BILI",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "BILI",
+    "active": true
+  },
+  {
+    "asset_id": "BILL",
+    "symbol": "BILL",
+    "name": "BILL Holdings",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "BILL",
+    "active": true
+  },
+  {
+    "asset_id": "BIO",
+    "symbol": "BIO",
+    "name": "BIO",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "BIO",
+    "active": true
+  },
+  {
+    "asset_id": "BIRK",
+    "symbol": "BIRK",
+    "name": "Birkenstock",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "BIRK",
+    "active": true
+  },
+  {
+    "asset_id": "BK",
+    "symbol": "BK",
+    "name": "BK",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "BK",
+    "active": true
+  },
+  {
+    "asset_id": "BKR",
+    "symbol": "BKR",
+    "name": "BKR",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "BKR",
+    "active": true
+  },
+  {
+    "asset_id": "BLDR",
+    "symbol": "BLDR",
+    "name": "Builders FirstSource",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "BLDR",
+    "active": true
+  },
+  {
+    "asset_id": "BLK",
+    "symbol": "BLK",
+    "name": "BLK",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "BLK",
+    "active": true
+  },
+  {
+    "asset_id": "BMA",
+    "symbol": "BMA",
+    "name": "BMA",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "BMA",
+    "active": true
+  },
+  {
+    "asset_id": "BMBL",
+    "symbol": "BMBL",
+    "name": "Bumble",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "BMBL",
+    "active": true
+  },
+  {
+    "asset_id": "BMO",
+    "symbol": "BMO",
+    "name": "BMO",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "BMO",
+    "active": true
+  },
+  {
+    "asset_id": "BMRN",
+    "symbol": "BMRN",
+    "name": "BMRN",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "BMRN",
+    "active": true
+  },
+  {
+    "asset_id": "BMY",
+    "symbol": "BMY",
+    "name": "BMY",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "BMY",
+    "active": true
+  },
+  {
+    "asset_id": "BNS",
+    "symbol": "BNS",
+    "name": "BNS",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "BNS",
+    "active": true
+  },
+  {
+    "asset_id": "BNTX",
+    "symbol": "BNTX",
+    "name": "BNTX",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "BNTX",
+    "active": true
+  },
+  {
+    "asset_id": "BOX",
+    "symbol": "BOX",
+    "name": "Box Inc",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "BOX",
+    "active": true
+  },
+  {
+    "asset_id": "BP",
+    "symbol": "BP",
+    "name": "BP",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "BP",
+    "active": true
+  },
+  {
+    "asset_id": "BR",
+    "symbol": "BR",
+    "name": "Broadridge Financial",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "BR",
+    "active": true
+  },
+  {
+    "asset_id": "BRK.B",
+    "symbol": "BRK.B",
+    "name": "Berkshire Hathaway B",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "BRK.B",
+    "active": true
+  },
+  {
+    "asset_id": "BRO",
+    "symbol": "BRO",
+    "name": "Brown & Brown",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "BRO",
+    "active": true
+  },
+  {
+    "asset_id": "BSX",
+    "symbol": "BSX",
+    "name": "BSX",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "BSX",
+    "active": true
+  },
+  {
+    "asset_id": "BTG",
+    "symbol": "BTG",
+    "name": "BTG",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "BTG",
+    "active": true
+  },
+  {
+    "asset_id": "BTI",
+    "symbol": "BTI",
+    "name": "BTI",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "BTI",
+    "active": true
+  },
+  {
+    "asset_id": "BURL",
+    "symbol": "BURL",
+    "name": "BURL",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "BURL",
+    "active": true
+  },
+  {
+    "asset_id": "BVN",
+    "symbol": "BVN",
+    "name": "BVN",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "BVN",
+    "active": true
+  },
+  {
+    "asset_id": "BWA",
+    "symbol": "BWA",
+    "name": "BorgWarner",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "BWA",
+    "active": true
+  },
+  {
+    "asset_id": "BXP",
+    "symbol": "BXP",
+    "name": "BXP",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "BXP",
+    "active": true
+  },
+  {
+    "asset_id": "C",
+    "symbol": "C",
+    "name": "C",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "C",
+    "active": true
+  },
+  {
+    "asset_id": "CACC",
+    "symbol": "CACC",
+    "name": "Credit Acceptance",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "CACC",
+    "active": true
+  },
+  {
+    "asset_id": "CAG",
+    "symbol": "CAG",
+    "name": "CAG",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "CAG",
+    "active": true
+  },
+  {
+    "asset_id": "CAMT",
+    "symbol": "CAMT",
+    "name": "CAMT",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "CAMT",
+    "active": true
+  },
+  {
+    "asset_id": "CART",
+    "symbol": "CART",
+    "name": "Instacart",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "CART",
+    "active": true
+  },
+  {
+    "asset_id": "CAT",
+    "symbol": "CAT",
+    "name": "CAT",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "CAT",
+    "active": true
+  },
+  {
+    "asset_id": "CAVA",
+    "symbol": "CAVA",
+    "name": "CAVA Group",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "CAVA",
+    "active": true
+  },
+  {
+    "asset_id": "CB",
+    "symbol": "CB",
+    "name": "CB",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "CB",
+    "active": true
+  },
+  {
+    "asset_id": "CBRE",
+    "symbol": "CBRE",
+    "name": "CBRE Group",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "CBRE",
+    "active": true
+  },
+  {
+    "asset_id": "CCI",
+    "symbol": "CCI",
+    "name": "CCI",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "CCI",
+    "active": true
+  },
+  {
+    "asset_id": "CCL",
+    "symbol": "CCL",
+    "name": "Carnival Corp",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "CCL",
+    "active": true
+  },
+  {
+    "asset_id": "CDNS",
+    "symbol": "CDNS",
+    "name": "CDNS",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "CDNS",
+    "active": true
+  },
+  {
+    "asset_id": "CDW",
+    "symbol": "CDW",
+    "name": "CDW Corp",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "CDW",
+    "active": true
+  },
+  {
+    "asset_id": "CE",
+    "symbol": "CE",
+    "name": "CE",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "CE",
+    "active": true
+  },
+  {
+    "asset_id": "CELH",
+    "symbol": "CELH",
+    "name": "Celsius Holdings",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "CELH",
+    "active": true
+  },
+  {
+    "asset_id": "CEPU",
+    "symbol": "CEPU",
+    "name": "CEPU",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "CEPU",
+    "active": true
+  },
+  {
+    "asset_id": "CF",
+    "symbol": "CF",
+    "name": "CF Industries",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "CF",
+    "active": true
+  },
+  {
+    "asset_id": "CFG",
+    "symbol": "CFG",
+    "name": "CFG",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "CFG",
+    "active": true
+  },
+  {
+    "asset_id": "CFLT",
+    "symbol": "CFLT",
+    "name": "Confluent",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "CFLT",
+    "active": true
+  },
+  {
+    "asset_id": "CHD",
+    "symbol": "CHD",
+    "name": "CHD",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "CHD",
+    "active": true
+  },
+  {
+    "asset_id": "CHKP",
+    "symbol": "CHKP",
+    "name": "CHKP",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "CHKP",
+    "active": true
+  },
+  {
+    "asset_id": "CHRD",
+    "symbol": "CHRD",
+    "name": "CHRD",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "CHRD",
+    "active": true
+  },
+  {
+    "asset_id": "CHRW",
+    "symbol": "CHRW",
+    "name": "CHRW",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "CHRW",
+    "active": true
+  },
+  {
+    "asset_id": "CHT",
+    "symbol": "CHT",
+    "name": "CHT",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "CHT",
+    "active": true
+  },
+  {
+    "asset_id": "CHTR",
+    "symbol": "CHTR",
+    "name": "CHTR",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "CHTR",
+    "active": true
+  },
+  {
+    "asset_id": "CHWY",
+    "symbol": "CHWY",
+    "name": "CHWY",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "CHWY",
+    "active": true
+  },
+  {
+    "asset_id": "CI",
+    "symbol": "CI",
+    "name": "CI",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "CI",
+    "active": true
+  },
+  {
+    "asset_id": "CINF",
+    "symbol": "CINF",
+    "name": "CINF",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "CINF",
+    "active": true
+  },
+  {
+    "asset_id": "CL",
+    "symbol": "CL",
+    "name": "CL",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "CL",
+    "active": true
+  },
+  {
+    "asset_id": "CLX",
+    "symbol": "CLX",
+    "name": "CLX",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "CLX",
+    "active": true
+  },
+  {
+    "asset_id": "CMA",
+    "symbol": "CMA",
+    "name": "CMA",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "CMA",
+    "active": true
+  },
+  {
+    "asset_id": "CMCSA",
+    "symbol": "CMCSA",
+    "name": "CMCSA",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "CMCSA",
+    "active": true
+  },
+  {
+    "asset_id": "CME",
+    "symbol": "CME",
+    "name": "CME",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "CME",
+    "active": true
+  },
+  {
+    "asset_id": "CMG",
+    "symbol": "CMG",
+    "name": "CMG",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "CMG",
+    "active": true
+  },
+  {
+    "asset_id": "CMI",
+    "symbol": "CMI",
+    "name": "CMI",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "CMI",
+    "active": true
+  },
+  {
+    "asset_id": "CMS",
+    "symbol": "CMS",
+    "name": "CMS Energy",
+    "category": "stocks",
+    "subcategory": "utilities",
+    "api_ref": "CMS",
+    "active": true
+  },
+  {
+    "asset_id": "CNC",
+    "symbol": "CNC",
+    "name": "Centene",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "CNC",
+    "active": true
+  },
+  {
+    "asset_id": "CNI",
+    "symbol": "CNI",
+    "name": "CNI",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "CNI",
+    "active": true
+  },
+  {
+    "asset_id": "CNP",
+    "symbol": "CNP",
+    "name": "CenterPoint Energy",
+    "category": "stocks",
+    "subcategory": "utilities",
+    "api_ref": "CNP",
+    "active": true
+  },
+  {
+    "asset_id": "CNQ",
+    "symbol": "CNQ",
+    "name": "CNQ",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "CNQ",
+    "active": true
+  },
+  {
+    "asset_id": "COF",
+    "symbol": "COF",
+    "name": "COF",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "COF",
+    "active": true
+  },
+  {
+    "asset_id": "COIN",
+    "symbol": "COIN",
+    "name": "COIN",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "COIN",
+    "active": true
+  },
+  {
+    "asset_id": "COMP",
+    "symbol": "COMP",
+    "name": "Compass",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "COMP",
+    "active": true
+  },
+  {
+    "asset_id": "COO",
+    "symbol": "COO",
+    "name": "Cooper Companies",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "COO",
+    "active": true
+  },
+  {
+    "asset_id": "COP",
+    "symbol": "COP",
+    "name": "COP",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "COP",
+    "active": true
+  },
+  {
+    "asset_id": "COST",
+    "symbol": "COST",
+    "name": "COST",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "COST",
+    "active": true
+  },
+  {
+    "asset_id": "COUP",
+    "symbol": "COUP",
+    "name": "Coupa Software",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "COUP",
+    "active": true
+  },
+  {
+    "asset_id": "CP",
+    "symbol": "CP",
+    "name": "CP",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "CP",
+    "active": true
+  },
+  {
+    "asset_id": "CPB",
+    "symbol": "CPB",
+    "name": "CPB",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "CPB",
+    "active": true
+  },
+  {
+    "asset_id": "CPNG",
+    "symbol": "CPNG",
+    "name": "CPNG",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "CPNG",
+    "active": true
+  },
+  {
+    "asset_id": "CPRT",
+    "symbol": "CPRT",
+    "name": "CPRT",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "CPRT",
+    "active": true
+  },
+  {
+    "asset_id": "CPT",
+    "symbol": "CPT",
+    "name": "CPT",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "CPT",
+    "active": true
+  },
+  {
+    "asset_id": "CRDO",
+    "symbol": "CRDO",
+    "name": "Credo Technology",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "CRDO",
+    "active": true
+  },
+  {
+    "asset_id": "CRH",
+    "symbol": "CRH",
+    "name": "CRH",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "CRH",
+    "active": true
+  },
+  {
+    "asset_id": "CRL",
+    "symbol": "CRL",
+    "name": "Charles River Labs",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "CRL",
+    "active": true
+  },
+  {
+    "asset_id": "CRM",
+    "symbol": "CRM",
+    "name": "CRM",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "CRM",
+    "active": true
+  },
+  {
+    "asset_id": "CRWD",
+    "symbol": "CRWD",
+    "name": "CRWD",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "CRWD",
+    "active": true
+  },
+  {
+    "asset_id": "CSCO",
+    "symbol": "CSCO",
+    "name": "CSCO",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "CSCO",
+    "active": true
+  },
+  {
+    "asset_id": "CSGP",
+    "symbol": "CSGP",
+    "name": "CoStar Group",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "CSGP",
+    "active": true
+  },
+  {
+    "asset_id": "CSX",
+    "symbol": "CSX",
+    "name": "CSX",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "CSX",
+    "active": true
+  },
+  {
+    "asset_id": "CTAS",
+    "symbol": "CTAS",
+    "name": "CTAS",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "CTAS",
+    "active": true
+  },
+  {
+    "asset_id": "CTRA",
+    "symbol": "CTRA",
+    "name": "CTRA",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "CTRA",
+    "active": true
+  },
+  {
+    "asset_id": "CTVA",
+    "symbol": "CTVA",
+    "name": "CTVA",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "CTVA",
+    "active": true
+  },
+  {
+    "asset_id": "CVS",
+    "symbol": "CVS",
+    "name": "CVS",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "CVS",
+    "active": true
+  },
+  {
+    "asset_id": "CVX",
+    "symbol": "CVX",
+    "name": "CVX",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "CVX",
+    "active": true
+  },
+  {
+    "asset_id": "CWAN",
+    "symbol": "CWAN",
+    "name": "Clearwater Analytics",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "CWAN",
+    "active": true
+  },
+  {
+    "asset_id": "CX",
+    "symbol": "CX",
+    "name": "CX",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "CX",
+    "active": true
+  },
+  {
+    "asset_id": "CYBR",
+    "symbol": "CYBR",
+    "name": "CyberArk",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "CYBR",
+    "active": true
+  },
+  {
+    "asset_id": "D",
+    "symbol": "D",
+    "name": "D",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "D",
+    "active": true
+  },
+  {
+    "asset_id": "DAL",
+    "symbol": "DAL",
+    "name": "Delta Air Lines",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "DAL",
+    "active": true
+  },
+  {
+    "asset_id": "DANOY",
+    "symbol": "DANOY",
+    "name": "DANOY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "DANOY",
+    "active": true
+  },
+  {
+    "asset_id": "DASH",
+    "symbol": "DASH",
+    "name": "DoorDash",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "DASH",
+    "active": true
+  },
+  {
+    "asset_id": "DB",
+    "symbol": "DB",
+    "name": "DB",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "DB",
+    "active": true
+  },
+  {
+    "asset_id": "DD",
+    "symbol": "DD",
+    "name": "DD",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "DD",
+    "active": true
+  },
+  {
+    "asset_id": "DDOG",
+    "symbol": "DDOG",
+    "name": "DDOG",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "DDOG",
+    "active": true
+  },
+  {
+    "asset_id": "DE",
+    "symbol": "DE",
+    "name": "DE",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "DE",
+    "active": true
+  },
+  {
+    "asset_id": "DECK",
+    "symbol": "DECK",
+    "name": "DECK",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "DECK",
+    "active": true
+  },
+  {
+    "asset_id": "DELL",
+    "symbol": "DELL",
+    "name": "DELL",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "DELL",
+    "active": true
+  },
+  {
+    "asset_id": "DEO",
+    "symbol": "DEO",
+    "name": "DEO",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "DEO",
+    "active": true
+  },
+  {
+    "asset_id": "DFS",
+    "symbol": "DFS",
+    "name": "Discover Financial",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "DFS",
+    "active": true
+  },
+  {
+    "asset_id": "DG",
+    "symbol": "DG",
+    "name": "DG",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "DG",
+    "active": true
+  },
+  {
+    "asset_id": "DGX",
+    "symbol": "DGX",
+    "name": "Quest Diagnostics",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "DGX",
+    "active": true
+  },
+  {
+    "asset_id": "DHI",
+    "symbol": "DHI",
+    "name": "D.R. Horton",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "DHI",
+    "active": true
+  },
+  {
+    "asset_id": "DHR",
+    "symbol": "DHR",
+    "name": "DHR",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "DHR",
+    "active": true
+  },
+  {
+    "asset_id": "DIS",
+    "symbol": "DIS",
+    "name": "DIS",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "DIS",
+    "active": true
+  },
+  {
+    "asset_id": "DISH",
+    "symbol": "DISH",
+    "name": "DISH Network",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "DISH",
+    "active": true
+  },
+  {
+    "asset_id": "DKNG",
+    "symbol": "DKNG",
+    "name": "DraftKings",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "DKNG",
+    "active": true
+  },
+  {
+    "asset_id": "DLO",
+    "symbol": "DLO",
+    "name": "DLocal",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "DLO",
+    "active": true
+  },
+  {
+    "asset_id": "DLR",
+    "symbol": "DLR",
+    "name": "DLR",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "DLR",
+    "active": true
+  },
+  {
+    "asset_id": "DLTR",
+    "symbol": "DLTR",
+    "name": "DLTR",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "DLTR",
+    "active": true
+  },
+  {
+    "asset_id": "DOCN",
+    "symbol": "DOCN",
+    "name": "DigitalOcean",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "DOCN",
+    "active": true
+  },
+  {
+    "asset_id": "DOCU",
+    "symbol": "DOCU",
+    "name": "DOCU",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "DOCU",
+    "active": true
+  },
+  {
+    "asset_id": "DOMO",
+    "symbol": "DOMO",
+    "name": "Domo Inc",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "DOMO",
+    "active": true
+  },
+  {
+    "asset_id": "DOUG",
+    "symbol": "DOUG",
+    "name": "Douglas Elliman",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "DOUG",
+    "active": true
+  },
+  {
+    "asset_id": "DOV",
+    "symbol": "DOV",
+    "name": "DOV",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "DOV",
+    "active": true
+  },
+  {
+    "asset_id": "DOW",
+    "symbol": "DOW",
+    "name": "DOW",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "DOW",
+    "active": true
+  },
+  {
+    "asset_id": "DPZ",
+    "symbol": "DPZ",
+    "name": "DPZ",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "DPZ",
+    "active": true
+  },
+  {
+    "asset_id": "DRI",
+    "symbol": "DRI",
+    "name": "Darden Restaurants",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "DRI",
+    "active": true
+  },
+  {
+    "asset_id": "DSCSY",
+    "symbol": "DSCSY",
+    "name": "DSCSY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "DSCSY",
+    "active": true
+  },
+  {
+    "asset_id": "DTE",
+    "symbol": "DTE",
+    "name": "DTE Energy",
+    "category": "stocks",
+    "subcategory": "utilities",
+    "api_ref": "DTE",
+    "active": true
+  },
+  {
+    "asset_id": "DTM",
+    "symbol": "DTM",
+    "name": "DTM",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "DTM",
+    "active": true
+  },
+  {
+    "asset_id": "DUK",
+    "symbol": "DUK",
+    "name": "DUK",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "DUK",
+    "active": true
+  },
+  {
+    "asset_id": "DUOL",
+    "symbol": "DUOL",
+    "name": "Duolingo",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "DUOL",
+    "active": true
+  },
+  {
+    "asset_id": "DVN",
+    "symbol": "DVN",
+    "name": "DVN",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "DVN",
+    "active": true
+  },
+  {
+    "asset_id": "DXCM",
+    "symbol": "DXCM",
+    "name": "DXCM",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "DXCM",
+    "active": true
+  },
+  {
+    "asset_id": "E",
+    "symbol": "E",
+    "name": "E",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "E",
+    "active": true
+  },
+  {
+    "asset_id": "EA",
+    "symbol": "EA",
+    "name": "EA",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "EA",
+    "active": true
+  },
+  {
+    "asset_id": "EBAY",
+    "symbol": "EBAY",
+    "name": "EBAY",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "EBAY",
+    "active": true
+  },
+  {
+    "asset_id": "ECL",
+    "symbol": "ECL",
+    "name": "ECL",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "ECL",
+    "active": true
+  },
+  {
+    "asset_id": "ED",
+    "symbol": "ED",
+    "name": "Consolidated Edison",
+    "category": "stocks",
+    "subcategory": "utilities",
+    "api_ref": "ED",
+    "active": true
+  },
+  {
+    "asset_id": "EDU",
+    "symbol": "EDU",
+    "name": "EDU",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "EDU",
+    "active": true
+  },
+  {
+    "asset_id": "EFX",
+    "symbol": "EFX",
+    "name": "Equifax",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "EFX",
+    "active": true
+  },
+  {
+    "asset_id": "EIX",
+    "symbol": "EIX",
+    "name": "Edison International",
+    "category": "stocks",
+    "subcategory": "utilities",
+    "api_ref": "EIX",
+    "active": true
+  },
+  {
+    "asset_id": "EL",
+    "symbol": "EL",
+    "name": "EL",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "EL",
+    "active": true
+  },
+  {
+    "asset_id": "ELV",
+    "symbol": "ELV",
+    "name": "ELV",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "ELV",
+    "active": true
+  },
+  {
+    "asset_id": "EMN",
+    "symbol": "EMN",
+    "name": "EMN",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "EMN",
+    "active": true
+  },
+  {
+    "asset_id": "EMR",
+    "symbol": "EMR",
+    "name": "EMR",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "EMR",
+    "active": true
+  },
+  {
+    "asset_id": "ENB",
+    "symbol": "ENB",
+    "name": "ENB",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "ENB",
+    "active": true
+  },
+  {
+    "asset_id": "ENPH",
+    "symbol": "ENPH",
+    "name": "Enphase Energy",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "ENPH",
+    "active": true
+  },
+  {
+    "asset_id": "ENV",
+    "symbol": "ENV",
+    "name": "Envestnet",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "ENV",
+    "active": true
+  },
+  {
+    "asset_id": "ENVA",
+    "symbol": "ENVA",
+    "name": "Enova International",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "ENVA",
+    "active": true
+  },
+  {
+    "asset_id": "EOG",
+    "symbol": "EOG",
+    "name": "EOG",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "EOG",
+    "active": true
+  },
+  {
+    "asset_id": "EPAM",
+    "symbol": "EPAM",
+    "name": "EPAM",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "EPAM",
+    "active": true
+  },
+  {
+    "asset_id": "EQIX",
+    "symbol": "EQIX",
+    "name": "EQIX",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "EQIX",
+    "active": true
+  },
+  {
+    "asset_id": "EQR",
+    "symbol": "EQR",
+    "name": "EQR",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "EQR",
+    "active": true
+  },
+  {
+    "asset_id": "EQT",
+    "symbol": "EQT",
+    "name": "EQT",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "EQT",
+    "active": true
+  },
+  {
+    "asset_id": "ERIC",
+    "symbol": "ERIC",
+    "name": "ERIC",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "ERIC",
+    "active": true
+  },
+  {
+    "asset_id": "ERJ",
+    "symbol": "ERJ",
+    "name": "ERJ",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "ERJ",
+    "active": true
+  },
+  {
+    "asset_id": "ES",
+    "symbol": "ES",
+    "name": "Eversource Energy",
+    "category": "stocks",
+    "subcategory": "utilities",
+    "api_ref": "ES",
+    "active": true
+  },
+  {
+    "asset_id": "ESS",
+    "symbol": "ESS",
+    "name": "ESS",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "ESS",
+    "active": true
+  },
+  {
+    "asset_id": "ESTC",
+    "symbol": "ESTC",
+    "name": "Elastic NV",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "ESTC",
+    "active": true
+  },
+  {
+    "asset_id": "ETN",
+    "symbol": "ETN",
+    "name": "ETN",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "ETN",
+    "active": true
+  },
+  {
+    "asset_id": "ETR",
+    "symbol": "ETR",
+    "name": "Entergy",
+    "category": "stocks",
+    "subcategory": "utilities",
+    "api_ref": "ETR",
+    "active": true
+  },
+  {
+    "asset_id": "ETSY",
+    "symbol": "ETSY",
+    "name": "ETSY",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "ETSY",
+    "active": true
+  },
+  {
+    "asset_id": "EW",
+    "symbol": "EW",
+    "name": "Edwards Lifesciences",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "EW",
+    "active": true
+  },
+  {
+    "asset_id": "EWBC",
+    "symbol": "EWBC",
+    "name": "EWBC",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "EWBC",
+    "active": true
+  },
+  {
+    "asset_id": "EXAS",
+    "symbol": "EXAS",
+    "name": "EXAS",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "EXAS",
+    "active": true
+  },
+  {
+    "asset_id": "EXC",
+    "symbol": "EXC",
+    "name": "Exelon",
+    "category": "stocks",
+    "subcategory": "utilities",
+    "api_ref": "EXC",
+    "active": true
+  },
+  {
+    "asset_id": "EXPD",
+    "symbol": "EXPD",
+    "name": "EXPD",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "EXPD",
+    "active": true
+  },
+  {
+    "asset_id": "EXPE",
+    "symbol": "EXPE",
+    "name": "Expedia",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "EXPE",
+    "active": true
+  },
+  {
+    "asset_id": "EXPI",
+    "symbol": "EXPI",
+    "name": "eXp World Holdings",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "EXPI",
+    "active": true
+  },
+  {
+    "asset_id": "F",
+    "symbol": "F",
+    "name": "Ford Motor",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "F",
+    "active": true
+  },
+  {
+    "asset_id": "FANG",
+    "symbol": "FANG",
+    "name": "FANG",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "FANG",
+    "active": true
+  },
+  {
+    "asset_id": "FANUY",
+    "symbol": "FANUY",
+    "name": "FANUY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "FANUY",
+    "active": true
+  },
+  {
+    "asset_id": "FAST",
+    "symbol": "FAST",
+    "name": "FAST",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "FAST",
+    "active": true
+  },
+  {
+    "asset_id": "FCX",
+    "symbol": "FCX",
+    "name": "FCX",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "FCX",
+    "active": true
+  },
+  {
+    "asset_id": "FDX",
+    "symbol": "FDX",
+    "name": "FDX",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "FDX",
+    "active": true
+  },
+  {
+    "asset_id": "FE",
+    "symbol": "FE",
+    "name": "FirstEnergy",
+    "category": "stocks",
+    "subcategory": "utilities",
+    "api_ref": "FE",
+    "active": true
+  },
+  {
+    "asset_id": "FFIV",
+    "symbol": "FFIV",
+    "name": "FFIV",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "FFIV",
+    "active": true
+  },
+  {
+    "asset_id": "FI",
+    "symbol": "FI",
+    "name": "Fiserv",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "FI",
+    "active": true
+  },
+  {
+    "asset_id": "FICO",
+    "symbol": "FICO",
+    "name": "Fair Isaac Corp",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "FICO",
+    "active": true
+  },
+  {
+    "asset_id": "FIS",
+    "symbol": "FIS",
+    "name": "Fidelity National Info",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "FIS",
+    "active": true
+  },
+  {
+    "asset_id": "FISV",
+    "symbol": "FISV",
+    "name": "Fiserv",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "FISV",
+    "active": true
+  },
+  {
+    "asset_id": "FITB",
+    "symbol": "FITB",
+    "name": "FITB",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "FITB",
+    "active": true
+  },
+  {
+    "asset_id": "FIVE",
+    "symbol": "FIVE",
+    "name": "FIVE",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "FIVE",
+    "active": true
+  },
+  {
+    "asset_id": "FIVN",
+    "symbol": "FIVN",
+    "name": "Five9 Inc",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "FIVN",
+    "active": true
+  },
+  {
+    "asset_id": "FLXS",
+    "symbol": "FLXS",
+    "name": "FLXS",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "FLXS",
+    "active": true
+  },
+  {
+    "asset_id": "FMC",
+    "symbol": "FMC",
+    "name": "FMC Corp",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "FMC",
+    "active": true
+  },
+  {
+    "asset_id": "FMX",
+    "symbol": "FMX",
+    "name": "FMX",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "FMX",
+    "active": true
+  },
+  {
+    "asset_id": "FNV",
+    "symbol": "FNV",
+    "name": "FNV",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "FNV",
+    "active": true
+  },
+  {
+    "asset_id": "FOUR",
+    "symbol": "FOUR",
+    "name": "Shift4 Payments",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "FOUR",
+    "active": true
+  },
+  {
+    "asset_id": "FOX",
+    "symbol": "FOX",
+    "name": "FOX",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "FOX",
+    "active": true
+  },
+  {
+    "asset_id": "FOXA",
+    "symbol": "FOXA",
+    "name": "FOXA",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "FOXA",
+    "active": true
+  },
+  {
+    "asset_id": "FTNT",
+    "symbol": "FTNT",
+    "name": "FTNT",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "FTNT",
+    "active": true
+  },
+  {
+    "asset_id": "FTV",
+    "symbol": "FTV",
+    "name": "Fortive",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "FTV",
+    "active": true
+  },
+  {
+    "asset_id": "FUJIY",
+    "symbol": "FUJIY",
+    "name": "FUJIY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "FUJIY",
+    "active": true
+  },
+  {
+    "asset_id": "FUTU",
+    "symbol": "FUTU",
+    "name": "FUTU",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "FUTU",
+    "active": true
+  },
+  {
+    "asset_id": "FYBR",
+    "symbol": "FYBR",
+    "name": "Frontier Communications",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "FYBR",
+    "active": true
+  },
+  {
+    "asset_id": "GD",
+    "symbol": "GD",
+    "name": "GD",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "GD",
+    "active": true
+  },
+  {
+    "asset_id": "GDDY",
+    "symbol": "GDDY",
+    "name": "GDDY",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "GDDY",
+    "active": true
+  },
+  {
+    "asset_id": "GDS",
+    "symbol": "GDS",
+    "name": "GDS",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "GDS",
+    "active": true
+  },
+  {
+    "asset_id": "GE",
+    "symbol": "GE",
+    "name": "GE",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "GE",
+    "active": true
+  },
+  {
+    "asset_id": "GEHC",
+    "symbol": "GEHC",
+    "name": "GE HealthCare",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "GEHC",
+    "active": true
+  },
+  {
+    "asset_id": "GGAL",
+    "symbol": "GGAL",
+    "name": "GGAL",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "GGAL",
+    "active": true
+  },
+  {
+    "asset_id": "GGB",
+    "symbol": "GGB",
+    "name": "GGB",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "GGB",
+    "active": true
+  },
+  {
+    "asset_id": "GIB",
+    "symbol": "GIB",
+    "name": "GIB",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "GIB",
+    "active": true
+  },
+  {
+    "asset_id": "GILD",
+    "symbol": "GILD",
+    "name": "GILD",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "GILD",
+    "active": true
+  },
+  {
+    "asset_id": "GIS",
+    "symbol": "GIS",
+    "name": "GIS",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "GIS",
+    "active": true
+  },
+  {
+    "asset_id": "GKOS",
+    "symbol": "GKOS",
+    "name": "Glaukos",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "GKOS",
+    "active": true
+  },
+  {
+    "asset_id": "GLOB",
+    "symbol": "GLOB",
+    "name": "GLOB",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "GLOB",
+    "active": true
+  },
+  {
+    "asset_id": "GLW",
+    "symbol": "GLW",
+    "name": "Corning",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "GLW",
+    "active": true
+  },
+  {
+    "asset_id": "GM",
+    "symbol": "GM",
+    "name": "General Motors",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "GM",
+    "active": true
+  },
+  {
+    "asset_id": "GNRC",
+    "symbol": "GNRC",
+    "name": "GNRC",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "GNRC",
+    "active": true
+  },
+  {
+    "asset_id": "GOLD",
+    "symbol": "GOLD",
+    "name": "GOLD",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "GOLD",
+    "active": true
+  },
+  {
+    "asset_id": "GOOG",
+    "symbol": "GOOG",
+    "name": "GOOG",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "GOOG",
+    "active": true
+  },
+  {
+    "asset_id": "GOOGL",
+    "symbol": "GOOGL",
+    "name": "GOOGL",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "GOOGL",
+    "active": true
+  },
+  {
+    "asset_id": "GPC",
+    "symbol": "GPC",
+    "name": "Genuine Parts",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "GPC",
+    "active": true
+  },
+  {
+    "asset_id": "GPN",
+    "symbol": "GPN",
+    "name": "Global Payments",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "GPN",
+    "active": true
+  },
+  {
+    "asset_id": "GRAB",
+    "symbol": "GRAB",
+    "name": "GRAB",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "GRAB",
+    "active": true
+  },
+  {
+    "asset_id": "GRMN",
+    "symbol": "GRMN",
+    "name": "Garmin",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "GRMN",
+    "active": true
+  },
+  {
+    "asset_id": "GS",
+    "symbol": "GS",
+    "name": "GS",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "GS",
+    "active": true
+  },
+  {
+    "asset_id": "GSK",
+    "symbol": "GSK",
+    "name": "GSK",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "GSK",
+    "active": true
+  },
+  {
+    "asset_id": "GTLB",
+    "symbol": "GTLB",
+    "name": "GitLab",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "GTLB",
+    "active": true
+  },
+  {
+    "asset_id": "GWRE",
+    "symbol": "GWRE",
+    "name": "Guidewire Software",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "GWRE",
+    "active": true
+  },
+  {
+    "asset_id": "GWW",
+    "symbol": "GWW",
+    "name": "W.W. Grainger",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "GWW",
+    "active": true
+  },
+  {
+    "asset_id": "HAL",
+    "symbol": "HAL",
+    "name": "HAL",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "HAL",
+    "active": true
+  },
+  {
+    "asset_id": "HAS",
+    "symbol": "HAS",
+    "name": "Hasbro",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "HAS",
+    "active": true
+  },
+  {
+    "asset_id": "HBAN",
+    "symbol": "HBAN",
+    "name": "HBAN",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "HBAN",
+    "active": true
+  },
+  {
+    "asset_id": "HCA",
+    "symbol": "HCA",
+    "name": "HCA",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "HCA",
+    "active": true
+  },
+  {
+    "asset_id": "HD",
+    "symbol": "HD",
+    "name": "HD",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "HD",
+    "active": true
+  },
+  {
+    "asset_id": "HDB",
+    "symbol": "HDB",
+    "name": "HDB",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "HDB",
+    "active": true
+  },
+  {
+    "asset_id": "HIG",
+    "symbol": "HIG",
+    "name": "HIG",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "HIG",
+    "active": true
+  },
+  {
+    "asset_id": "HII",
+    "symbol": "HII",
+    "name": "HII",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "HII",
+    "active": true
+  },
+  {
+    "asset_id": "HIMX",
+    "symbol": "HIMX",
+    "name": "HIMX",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "HIMX",
+    "active": true
+  },
+  {
+    "asset_id": "HLT",
+    "symbol": "HLT",
+    "name": "Hilton Worldwide",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "HLT",
+    "active": true
+  },
+  {
+    "asset_id": "HMC",
+    "symbol": "HMC",
+    "name": "HMC",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "HMC",
+    "active": true
+  },
+  {
+    "asset_id": "HMY",
+    "symbol": "HMY",
+    "name": "HMY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "HMY",
+    "active": true
+  },
+  {
+    "asset_id": "HOLX",
+    "symbol": "HOLX",
+    "name": "HOLX",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "HOLX",
+    "active": true
+  },
+  {
+    "asset_id": "HON",
+    "symbol": "HON",
+    "name": "HON",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "HON",
+    "active": true
+  },
+  {
+    "asset_id": "HOOD",
+    "symbol": "HOOD",
+    "name": "Robinhood Markets",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "HOOD",
+    "active": true
+  },
+  {
+    "asset_id": "HOUS",
+    "symbol": "HOUS",
+    "name": "Anywhere Real Estate",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "HOUS",
+    "active": true
+  },
+  {
+    "asset_id": "HPE",
+    "symbol": "HPE",
+    "name": "HPE",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "HPE",
+    "active": true
+  },
+  {
+    "asset_id": "HPQ",
+    "symbol": "HPQ",
+    "name": "HPQ",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "HPQ",
+    "active": true
+  },
+  {
+    "asset_id": "HRL",
+    "symbol": "HRL",
+    "name": "HRL",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "HRL",
+    "active": true
+  },
+  {
+    "asset_id": "HSBC",
+    "symbol": "HSBC",
+    "name": "HSBC",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "HSBC",
+    "active": true
+  },
+  {
+    "asset_id": "HST",
+    "symbol": "HST",
+    "name": "HST",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "HST",
+    "active": true
+  },
+  {
+    "asset_id": "HSY",
+    "symbol": "HSY",
+    "name": "HSY",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "HSY",
+    "active": true
+  },
+  {
+    "asset_id": "HTHIY",
+    "symbol": "HTHIY",
+    "name": "HTHIY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "HTHIY",
+    "active": true
+  },
+  {
+    "asset_id": "HUBS",
+    "symbol": "HUBS",
+    "name": "HubSpot",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "HUBS",
+    "active": true
+  },
+  {
+    "asset_id": "HUM",
+    "symbol": "HUM",
+    "name": "Humana",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "HUM",
+    "active": true
+  },
+  {
+    "asset_id": "HUN",
+    "symbol": "HUN",
+    "name": "HUN",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "HUN",
+    "active": true
+  },
+  {
+    "asset_id": "HWM",
+    "symbol": "HWM",
+    "name": "HWM",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "HWM",
+    "active": true
+  },
+  {
+    "asset_id": "IAC",
+    "symbol": "IAC",
+    "name": "IAC Inc",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "IAC",
+    "active": true
+  },
+  {
+    "asset_id": "IBM",
+    "symbol": "IBM",
+    "name": "IBM",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "IBM",
+    "active": true
+  },
+  {
+    "asset_id": "IBN",
+    "symbol": "IBN",
+    "name": "IBN",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "IBN",
+    "active": true
+  },
+  {
+    "asset_id": "ICE",
+    "symbol": "ICE",
+    "name": "ICE",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "ICE",
+    "active": true
+  },
+  {
+    "asset_id": "IDXX",
+    "symbol": "IDXX",
+    "name": "IDXX",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "IDXX",
+    "active": true
+  },
+  {
+    "asset_id": "IEX",
+    "symbol": "IEX",
+    "name": "IDEX",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "IEX",
+    "active": true
+  },
+  {
+    "asset_id": "IFF",
+    "symbol": "IFF",
+    "name": "Intl Flavors & Fragrances",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "IFF",
+    "active": true
+  },
+  {
+    "asset_id": "IHRT",
+    "symbol": "IHRT",
+    "name": "iHeartMedia",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "IHRT",
+    "active": true
+  },
+  {
+    "asset_id": "ILMN",
+    "symbol": "ILMN",
+    "name": "ILMN",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "ILMN",
+    "active": true
+  },
+  {
+    "asset_id": "INCY",
+    "symbol": "INCY",
+    "name": "INCY",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "INCY",
+    "active": true
+  },
+  {
+    "asset_id": "INFY",
+    "symbol": "INFY",
+    "name": "INFY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "INFY",
+    "active": true
+  },
+  {
+    "asset_id": "ING",
+    "symbol": "ING",
+    "name": "ING",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "ING",
+    "active": true
+  },
+  {
+    "asset_id": "INTC",
+    "symbol": "INTC",
+    "name": "INTC",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "INTC",
+    "active": true
+  },
+  {
+    "asset_id": "INTU",
+    "symbol": "INTU",
+    "name": "INTU",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "INTU",
+    "active": true
+  },
+  {
+    "asset_id": "INVH",
+    "symbol": "INVH",
+    "name": "INVH",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "INVH",
+    "active": true
+  },
+  {
+    "asset_id": "IONQ",
+    "symbol": "IONQ",
+    "name": "IonQ",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "IONQ",
+    "active": true
+  },
+  {
+    "asset_id": "IONS",
+    "symbol": "IONS",
+    "name": "IONS",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "IONS",
+    "active": true
+  },
+  {
+    "asset_id": "IP",
+    "symbol": "IP",
+    "name": "International Paper",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "IP",
+    "active": true
+  },
+  {
+    "asset_id": "IQV",
+    "symbol": "IQV",
+    "name": "IQV",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "IQV",
+    "active": true
+  },
+  {
+    "asset_id": "IR",
+    "symbol": "IR",
+    "name": "IR",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "IR",
+    "active": true
+  },
+  {
+    "asset_id": "ISRG",
+    "symbol": "ISRG",
+    "name": "ISRG",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "ISRG",
+    "active": true
+  },
+  {
+    "asset_id": "IT",
+    "symbol": "IT",
+    "name": "Gartner",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "IT",
+    "active": true
+  },
+  {
+    "asset_id": "ITUB",
+    "symbol": "ITUB",
+    "name": "ITUB",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "ITUB",
+    "active": true
+  },
+  {
+    "asset_id": "ITW",
+    "symbol": "ITW",
+    "name": "ITW",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "ITW",
+    "active": true
+  },
+  {
+    "asset_id": "IVZ",
+    "symbol": "IVZ",
+    "name": "IVZ",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "IVZ",
+    "active": true
+  },
+  {
+    "asset_id": "J",
+    "symbol": "J",
+    "name": "Jacobs Solutions",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "J",
+    "active": true
+  },
+  {
+    "asset_id": "JAZZ",
+    "symbol": "JAZZ",
+    "name": "JAZZ",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "JAZZ",
+    "active": true
+  },
+  {
+    "asset_id": "JBHT",
+    "symbol": "JBHT",
+    "name": "JBHT",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "JBHT",
+    "active": true
+  },
+  {
+    "asset_id": "JCI",
+    "symbol": "JCI",
+    "name": "Johnson Controls",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "JCI",
+    "active": true
+  },
+  {
+    "asset_id": "JD",
+    "symbol": "JD",
+    "name": "JD",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "JD",
+    "active": true
+  },
+  {
+    "asset_id": "JHX",
+    "symbol": "JHX",
+    "name": "JHX",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "JHX",
+    "active": true
+  },
+  {
+    "asset_id": "JNJ",
+    "symbol": "JNJ",
+    "name": "JNJ",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "JNJ",
+    "active": true
+  },
+  {
+    "asset_id": "JNPR",
+    "symbol": "JNPR",
+    "name": "JNPR",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "JNPR",
+    "active": true
+  },
+  {
+    "asset_id": "JPM",
+    "symbol": "JPM",
+    "name": "JPM",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "JPM",
+    "active": true
+  },
+  {
+    "asset_id": "K",
+    "symbol": "K",
+    "name": "K",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "K",
+    "active": true
+  },
+  {
+    "asset_id": "KB",
+    "symbol": "KB",
+    "name": "KB",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "KB",
+    "active": true
+  },
+  {
+    "asset_id": "KC",
+    "symbol": "KC",
+    "name": "KC",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "KC",
+    "active": true
+  },
+  {
+    "asset_id": "KDP",
+    "symbol": "KDP",
+    "name": "Keurig Dr Pepper",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "KDP",
+    "active": true
+  },
+  {
+    "asset_id": "KEY",
+    "symbol": "KEY",
+    "name": "KEY",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "KEY",
+    "active": true
+  },
+  {
+    "asset_id": "KEYS",
+    "symbol": "KEYS",
+    "name": "KEYS",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "KEYS",
+    "active": true
+  },
+  {
+    "asset_id": "KGC",
+    "symbol": "KGC",
+    "name": "KGC",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "KGC",
+    "active": true
+  },
+  {
+    "asset_id": "KHC",
+    "symbol": "KHC",
+    "name": "KHC",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "KHC",
+    "active": true
+  },
+  {
+    "asset_id": "KIM",
+    "symbol": "KIM",
+    "name": "Kimco Realty",
+    "category": "stocks",
+    "subcategory": "reits",
+    "api_ref": "KIM",
+    "active": true
+  },
+  {
+    "asset_id": "KLAC",
+    "symbol": "KLAC",
+    "name": "KLAC",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "KLAC",
+    "active": true
+  },
+  {
+    "asset_id": "KMB",
+    "symbol": "KMB",
+    "name": "KMB",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "KMB",
+    "active": true
+  },
+  {
+    "asset_id": "KMI",
+    "symbol": "KMI",
+    "name": "KMI",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "KMI",
+    "active": true
+  },
+  {
+    "asset_id": "KMTUY",
+    "symbol": "KMTUY",
+    "name": "KMTUY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "KMTUY",
+    "active": true
+  },
+  {
+    "asset_id": "KO",
+    "symbol": "KO",
+    "name": "KO",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "KO",
+    "active": true
+  },
+  {
+    "asset_id": "KOF",
+    "symbol": "KOF",
+    "name": "KOF",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "KOF",
+    "active": true
+  },
+  {
+    "asset_id": "KR",
+    "symbol": "KR",
+    "name": "KR",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "KR",
+    "active": true
+  },
+  {
+    "asset_id": "KT",
+    "symbol": "KT",
+    "name": "KT",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "KT",
+    "active": true
+  },
+  {
+    "asset_id": "KYOCY",
+    "symbol": "KYOCY",
+    "name": "KYOCY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "KYOCY",
+    "active": true
+  },
+  {
+    "asset_id": "LBRDA",
+    "symbol": "LBRDA",
+    "name": "Liberty Broadband A",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "LBRDA",
+    "active": true
+  },
+  {
+    "asset_id": "LBRDK",
+    "symbol": "LBRDK",
+    "name": "Liberty Broadband C",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "LBRDK",
+    "active": true
+  },
+  {
+    "asset_id": "LC",
+    "symbol": "LC",
+    "name": "LendingClub",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "LC",
+    "active": true
+  },
+  {
+    "asset_id": "LCID",
+    "symbol": "LCID",
+    "name": "Lucid Group",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "LCID",
+    "active": true
+  },
+  {
+    "asset_id": "LDOS",
+    "symbol": "LDOS",
+    "name": "Leidos Holdings",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "LDOS",
+    "active": true
+  },
+  {
+    "asset_id": "LEGN",
+    "symbol": "LEGN",
+    "name": "LEGN",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "LEGN",
+    "active": true
+  },
+  {
+    "asset_id": "LEN",
+    "symbol": "LEN",
+    "name": "Lennar",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "LEN",
+    "active": true
+  },
+  {
+    "asset_id": "LH",
+    "symbol": "LH",
+    "name": "Labcorp Holdings",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "LH",
+    "active": true
+  },
+  {
+    "asset_id": "LHX",
+    "symbol": "LHX",
+    "name": "LHX",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "LHX",
+    "active": true
+  },
+  {
+    "asset_id": "LI",
+    "symbol": "LI",
+    "name": "LI",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "LI",
+    "active": true
+  },
+  {
+    "asset_id": "LILA",
+    "symbol": "LILA",
+    "name": "Liberty Latin America A",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "LILA",
+    "active": true
+  },
+  {
+    "asset_id": "LILAK",
+    "symbol": "LILAK",
+    "name": "Liberty Latin America C",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "LILAK",
+    "active": true
+  },
+  {
+    "asset_id": "LIN",
+    "symbol": "LIN",
+    "name": "LIN",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "LIN",
+    "active": true
+  },
+  {
+    "asset_id": "LLY",
+    "symbol": "LLY",
+    "name": "LLY",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "LLY",
+    "active": true
+  },
+  {
+    "asset_id": "LMT",
+    "symbol": "LMT",
+    "name": "LMT",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "LMT",
+    "active": true
+  },
+  {
+    "asset_id": "LNG",
+    "symbol": "LNG",
+    "name": "LNG",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "LNG",
+    "active": true
+  },
+  {
+    "asset_id": "LNVGY",
+    "symbol": "LNVGY",
+    "name": "LNVGY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "LNVGY",
+    "active": true
+  },
+  {
+    "asset_id": "LOGI",
+    "symbol": "LOGI",
+    "name": "LOGI",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "LOGI",
+    "active": true
+  },
+  {
+    "asset_id": "LOW",
+    "symbol": "LOW",
+    "name": "LOW",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "LOW",
+    "active": true
+  },
+  {
+    "asset_id": "LPL",
+    "symbol": "LPL",
+    "name": "LPL",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "LPL",
+    "active": true
+  },
+  {
+    "asset_id": "LRCX",
+    "symbol": "LRCX",
+    "name": "LRCX",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "LRCX",
+    "active": true
+  },
+  {
+    "asset_id": "LUMN",
+    "symbol": "LUMN",
+    "name": "Lumen Technologies",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "LUMN",
+    "active": true
+  },
+  {
+    "asset_id": "LUNR",
+    "symbol": "LUNR",
+    "name": "Intuitive Machines",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "LUNR",
+    "active": true
+  },
+  {
+    "asset_id": "LUV",
+    "symbol": "LUV",
+    "name": "Southwest Airlines",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "LUV",
+    "active": true
+  },
+  {
+    "asset_id": "LVMUY",
+    "symbol": "LVMUY",
+    "name": "LVMUY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "LVMUY",
+    "active": true
+  },
+  {
+    "asset_id": "LVS",
+    "symbol": "LVS",
+    "name": "Las Vegas Sands",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "LVS",
+    "active": true
+  },
+  {
+    "asset_id": "LYB",
+    "symbol": "LYB",
+    "name": "LYB",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "LYB",
+    "active": true
+  },
+  {
+    "asset_id": "LYFT",
+    "symbol": "LYFT",
+    "name": "Lyft",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "LYFT",
+    "active": true
+  },
+  {
+    "asset_id": "LYG",
+    "symbol": "LYG",
+    "name": "LYG",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "LYG",
+    "active": true
+  },
+  {
+    "asset_id": "LYV",
+    "symbol": "LYV",
+    "name": "LYV",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "LYV",
+    "active": true
+  },
+  {
+    "asset_id": "MA",
+    "symbol": "MA",
+    "name": "MA",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "MA",
+    "active": true
+  },
+  {
+    "asset_id": "MAA",
+    "symbol": "MAA",
+    "name": "MAA",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "MAA",
+    "active": true
+  },
+  {
+    "asset_id": "MANH",
+    "symbol": "MANH",
+    "name": "MANH",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "MANH",
+    "active": true
+  },
+  {
+    "asset_id": "MAR",
+    "symbol": "MAR",
+    "name": "Marriott International",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "MAR",
+    "active": true
+  },
+  {
+    "asset_id": "MARA",
+    "symbol": "MARA",
+    "name": "Marathon Digital",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "MARA",
+    "active": true
+  },
+  {
+    "asset_id": "MCD",
+    "symbol": "MCD",
+    "name": "MCD",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "MCD",
+    "active": true
+  },
+  {
+    "asset_id": "MCHP",
+    "symbol": "MCHP",
+    "name": "MCHP",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "MCHP",
+    "active": true
+  },
+  {
+    "asset_id": "MCK",
+    "symbol": "MCK",
+    "name": "MCK",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "MCK",
+    "active": true
+  },
+  {
+    "asset_id": "MCO",
+    "symbol": "MCO",
+    "name": "MCO",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "MCO",
+    "active": true
+  },
+  {
+    "asset_id": "MDB",
+    "symbol": "MDB",
+    "name": "MDB",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "MDB",
+    "active": true
+  },
+  {
+    "asset_id": "MDLZ",
+    "symbol": "MDLZ",
+    "name": "MDLZ",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "MDLZ",
+    "active": true
+  },
+  {
+    "asset_id": "MDT",
+    "symbol": "MDT",
+    "name": "MDT",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "MDT",
+    "active": true
+  },
+  {
+    "asset_id": "MELI",
+    "symbol": "MELI",
+    "name": "MELI",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "MELI",
+    "active": true
+  },
+  {
+    "asset_id": "MET",
+    "symbol": "MET",
+    "name": "MET",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "MET",
+    "active": true
+  },
+  {
+    "asset_id": "META",
+    "symbol": "META",
+    "name": "META",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "META",
+    "active": true
+  },
+  {
+    "asset_id": "MFC",
+    "symbol": "MFC",
+    "name": "MFC",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "MFC",
+    "active": true
+  },
+  {
+    "asset_id": "MFG",
+    "symbol": "MFG",
+    "name": "MFG",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "MFG",
+    "active": true
+  },
+  {
+    "asset_id": "MGM",
+    "symbol": "MGM",
+    "name": "MGM Resorts",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "MGM",
+    "active": true
+  },
+  {
+    "asset_id": "MGY",
+    "symbol": "MGY",
+    "name": "MGY",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "MGY",
+    "active": true
+  },
+  {
+    "asset_id": "MITUY",
+    "symbol": "MITUY",
+    "name": "MITUY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "MITUY",
+    "active": true
+  },
+  {
+    "asset_id": "MKC",
+    "symbol": "MKC",
+    "name": "MKC",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "MKC",
+    "active": true
+  },
+  {
+    "asset_id": "MLM",
+    "symbol": "MLM",
+    "name": "MLM",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "MLM",
+    "active": true
+  },
+  {
+    "asset_id": "MMC",
+    "symbol": "MMC",
+    "name": "MMC",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "MMC",
+    "active": true
+  },
+  {
+    "asset_id": "MMM",
+    "symbol": "MMM",
+    "name": "MMM",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "MMM",
+    "active": true
+  },
+  {
+    "asset_id": "MMYT",
+    "symbol": "MMYT",
+    "name": "MMYT",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "MMYT",
+    "active": true
+  },
+  {
+    "asset_id": "MNSO",
+    "symbol": "MNSO",
+    "name": "MNSO",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "MNSO",
+    "active": true
+  },
+  {
+    "asset_id": "MNST",
+    "symbol": "MNST",
+    "name": "Monster Beverage",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "MNST",
+    "active": true
+  },
+  {
+    "asset_id": "MO",
+    "symbol": "MO",
+    "name": "Altria Group",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "MO",
+    "active": true
+  },
+  {
+    "asset_id": "MOH",
+    "symbol": "MOH",
+    "name": "MOH",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "MOH",
+    "active": true
+  },
+  {
+    "asset_id": "MPC",
+    "symbol": "MPC",
+    "name": "MPC",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "MPC",
+    "active": true
+  },
+  {
+    "asset_id": "MPWR",
+    "symbol": "MPWR",
+    "name": "Monolithic Power Systems",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "MPWR",
+    "active": true
+  },
+  {
+    "asset_id": "MRK",
+    "symbol": "MRK",
+    "name": "MRK",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "MRK",
+    "active": true
+  },
+  {
+    "asset_id": "MRNA",
+    "symbol": "MRNA",
+    "name": "MRNA",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "MRNA",
+    "active": true
+  },
+  {
+    "asset_id": "MRO",
+    "symbol": "MRO",
+    "name": "Marathon Oil",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "MRO",
+    "active": true
+  },
+  {
+    "asset_id": "MRVL",
+    "symbol": "MRVL",
+    "name": "MRVL",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "MRVL",
+    "active": true
+  },
+  {
+    "asset_id": "MS",
+    "symbol": "MS",
+    "name": "MS",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "MS",
+    "active": true
+  },
+  {
+    "asset_id": "MSCI",
+    "symbol": "MSCI",
+    "name": "MSCI Inc",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "MSCI",
+    "active": true
+  },
+  {
+    "asset_id": "MSFT",
+    "symbol": "MSFT",
+    "name": "MSFT",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "MSFT",
+    "active": true
+  },
+  {
+    "asset_id": "MSI",
+    "symbol": "MSI",
+    "name": "Motorola Solutions",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "MSI",
+    "active": true
+  },
+  {
+    "asset_id": "MSTR",
+    "symbol": "MSTR",
+    "name": "MicroStrategy",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "MSTR",
+    "active": true
+  },
+  {
+    "asset_id": "MTB",
+    "symbol": "MTB",
+    "name": "MTB",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "MTB",
+    "active": true
+  },
+  {
+    "asset_id": "MTCH",
+    "symbol": "MTCH",
+    "name": "Match Group",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "MTCH",
+    "active": true
+  },
+  {
+    "asset_id": "MTD",
+    "symbol": "MTD",
+    "name": "MTD",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "MTD",
+    "active": true
+  },
+  {
+    "asset_id": "MTDR",
+    "symbol": "MTDR",
+    "name": "MTDR",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "MTDR",
+    "active": true
+  },
+  {
+    "asset_id": "MU",
+    "symbol": "MU",
+    "name": "MU",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "MU",
+    "active": true
+  },
+  {
+    "asset_id": "MUFG",
+    "symbol": "MUFG",
+    "name": "MUFG",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "MUFG",
+    "active": true
+  },
+  {
+    "asset_id": "MXL",
+    "symbol": "MXL",
+    "name": "MXL",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "MXL",
+    "active": true
+  },
+  {
+    "asset_id": "NAVI",
+    "symbol": "NAVI",
+    "name": "Navient",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "NAVI",
+    "active": true
+  },
+  {
+    "asset_id": "NBIX",
+    "symbol": "NBIX",
+    "name": "NBIX",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "NBIX",
+    "active": true
+  },
+  {
+    "asset_id": "NCLH",
+    "symbol": "NCLH",
+    "name": "Norwegian Cruise Line",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "NCLH",
+    "active": true
+  },
+  {
+    "asset_id": "NCNO",
+    "symbol": "NCNO",
+    "name": "nCino",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "NCNO",
+    "active": true
+  },
+  {
+    "asset_id": "NDSN",
+    "symbol": "NDSN",
+    "name": "NDSN",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "NDSN",
+    "active": true
+  },
+  {
+    "asset_id": "NEE",
+    "symbol": "NEE",
+    "name": "NEE",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "NEE",
+    "active": true
+  },
+  {
+    "asset_id": "NEM",
+    "symbol": "NEM",
+    "name": "NEM",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "NEM",
+    "active": true
+  },
+  {
+    "asset_id": "NET",
+    "symbol": "NET",
+    "name": "NET",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "NET",
+    "active": true
+  },
+  {
+    "asset_id": "NEWR",
+    "symbol": "NEWR",
+    "name": "New Relic",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "NEWR",
+    "active": true
+  },
+  {
+    "asset_id": "NFLX",
+    "symbol": "NFLX",
+    "name": "NFLX",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "NFLX",
+    "active": true
+  },
+  {
+    "asset_id": "NHYDY",
+    "symbol": "NHYDY",
+    "name": "NHYDY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "NHYDY",
+    "active": true
+  },
+  {
+    "asset_id": "NICE",
+    "symbol": "NICE",
+    "name": "NICE",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "NICE",
+    "active": true
+  },
+  {
+    "asset_id": "NIO",
+    "symbol": "NIO",
+    "name": "NIO",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "NIO",
+    "active": true
+  },
+  {
+    "asset_id": "NKE",
+    "symbol": "NKE",
+    "name": "NKE",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "NKE",
+    "active": true
+  },
+  {
+    "asset_id": "NMR",
+    "symbol": "NMR",
+    "name": "NMR",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "NMR",
+    "active": true
+  },
+  {
+    "asset_id": "NOC",
+    "symbol": "NOC",
+    "name": "NOC",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "NOC",
+    "active": true
+  },
+  {
+    "asset_id": "NOK",
+    "symbol": "NOK",
+    "name": "NOK",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "NOK",
+    "active": true
+  },
+  {
+    "asset_id": "NOW",
+    "symbol": "NOW",
+    "name": "NOW",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "NOW",
+    "active": true
+  },
+  {
+    "asset_id": "NRG",
+    "symbol": "NRG",
+    "name": "NRG Energy",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "NRG",
+    "active": true
+  },
+  {
+    "asset_id": "NSC",
+    "symbol": "NSC",
+    "name": "NSC",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "NSC",
+    "active": true
+  },
+  {
+    "asset_id": "NTAP",
+    "symbol": "NTAP",
+    "name": "NTAP",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "NTAP",
+    "active": true
+  },
+  {
+    "asset_id": "NTDOY",
+    "symbol": "NTDOY",
+    "name": "NTDOY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "NTDOY",
+    "active": true
+  },
+  {
+    "asset_id": "NTR",
+    "symbol": "NTR",
+    "name": "NTR",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "NTR",
+    "active": true
+  },
+  {
+    "asset_id": "NTRS",
+    "symbol": "NTRS",
+    "name": "NTRS",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "NTRS",
+    "active": true
+  },
+  {
+    "asset_id": "NU",
+    "symbol": "NU",
+    "name": "NU",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "NU",
+    "active": true
+  },
+  {
+    "asset_id": "NUE",
+    "symbol": "NUE",
+    "name": "NUE",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "NUE",
+    "active": true
+  },
+  {
+    "asset_id": "NVDA",
+    "symbol": "NVDA",
+    "name": "NVDA",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "NVDA",
+    "active": true
+  },
+  {
+    "asset_id": "NVO",
+    "symbol": "NVO",
+    "name": "NVO",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "NVO",
+    "active": true
+  },
+  {
+    "asset_id": "NVR",
+    "symbol": "NVR",
+    "name": "NVR Inc",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "NVR",
+    "active": true
+  },
+  {
+    "asset_id": "NVS",
+    "symbol": "NVS",
+    "name": "NVS",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "NVS",
+    "active": true
+  },
+  {
+    "asset_id": "NWG",
+    "symbol": "NWG",
+    "name": "NWG",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "NWG",
+    "active": true
+  },
+  {
+    "asset_id": "NWS",
+    "symbol": "NWS",
+    "name": "NWS",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "NWS",
+    "active": true
+  },
+  {
+    "asset_id": "NWSA",
+    "symbol": "NWSA",
+    "name": "NWSA",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "NWSA",
+    "active": true
+  },
+  {
+    "asset_id": "NXP",
+    "symbol": "NXP",
+    "name": "NXP",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "NXP",
+    "active": true
+  },
+  {
+    "asset_id": "NXPI",
+    "symbol": "NXPI",
+    "name": "NXPI",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "NXPI",
+    "active": true
+  },
+  {
+    "asset_id": "O",
+    "symbol": "O",
+    "name": "O",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "O",
+    "active": true
+  },
+  {
+    "asset_id": "ODFL",
+    "symbol": "ODFL",
+    "name": "ODFL",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "ODFL",
+    "active": true
+  },
+  {
+    "asset_id": "OKE",
+    "symbol": "OKE",
+    "name": "OKE",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "OKE",
+    "active": true
+  },
+  {
+    "asset_id": "OKLO",
+    "symbol": "OKLO",
+    "name": "Oklo Inc",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "OKLO",
+    "active": true
+  },
+  {
+    "asset_id": "OKTA",
+    "symbol": "OKTA",
+    "name": "OKTA",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "OKTA",
+    "active": true
+  },
+  {
+    "asset_id": "OLN",
+    "symbol": "OLN",
+    "name": "OLN",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "OLN",
+    "active": true
+  },
+  {
+    "asset_id": "OMAB",
+    "symbol": "OMAB",
+    "name": "OMAB",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "OMAB",
+    "active": true
+  },
+  {
+    "asset_id": "OMC",
+    "symbol": "OMC",
+    "name": "Omnicom Group",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "OMC",
+    "active": true
+  },
+  {
+    "asset_id": "OMF",
+    "symbol": "OMF",
+    "name": "OneMain Financial",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "OMF",
+    "active": true
+  },
+  {
+    "asset_id": "ON",
+    "symbol": "ON",
+    "name": "ON",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "ON",
+    "active": true
+  },
+  {
+    "asset_id": "ONON",
+    "symbol": "ONON",
+    "name": "On Holding",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "ONON",
+    "active": true
+  },
+  {
+    "asset_id": "OPEN",
+    "symbol": "OPEN",
+    "name": "Opendoor",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "OPEN",
+    "active": true
+  },
+  {
+    "asset_id": "ORCL",
+    "symbol": "ORCL",
+    "name": "ORCL",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "ORCL",
+    "active": true
+  },
+  {
+    "asset_id": "ORLY",
+    "symbol": "ORLY",
+    "name": "ORLY",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "ORLY",
+    "active": true
+  },
+  {
+    "asset_id": "OTIS",
+    "symbol": "OTIS",
+    "name": "Otis Worldwide",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "OTIS",
+    "active": true
+  },
+  {
+    "asset_id": "OVV",
+    "symbol": "OVV",
+    "name": "OVV",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "OVV",
+    "active": true
+  },
+  {
+    "asset_id": "OXY",
+    "symbol": "OXY",
+    "name": "OXY",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "OXY",
+    "active": true
+  },
+  {
+    "asset_id": "PAC",
+    "symbol": "PAC",
+    "name": "PAC",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "PAC",
+    "active": true
+  },
+  {
+    "asset_id": "PAGS",
+    "symbol": "PAGS",
+    "name": "PAGS",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "PAGS",
+    "active": true
+  },
+  {
+    "asset_id": "PAM",
+    "symbol": "PAM",
+    "name": "PAM",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "PAM",
+    "active": true
+  },
+  {
+    "asset_id": "PANW",
+    "symbol": "PANW",
+    "name": "PANW",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "PANW",
+    "active": true
+  },
+  {
+    "asset_id": "PARA",
+    "symbol": "PARA",
+    "name": "Paramount Global",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "PARA",
+    "active": true
+  },
+  {
+    "asset_id": "PATH",
+    "symbol": "PATH",
+    "name": "UiPath",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "PATH",
+    "active": true
+  },
+  {
+    "asset_id": "PAYC",
+    "symbol": "PAYC",
+    "name": "Paycom Software",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "PAYC",
+    "active": true
+  },
+  {
+    "asset_id": "PAYX",
+    "symbol": "PAYX",
+    "name": "PAYX",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "PAYX",
+    "active": true
+  },
+  {
+    "asset_id": "PBR",
+    "symbol": "PBR",
+    "name": "PBR",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "PBR",
+    "active": true
+  },
+  {
+    "asset_id": "PCAR",
+    "symbol": "PCAR",
+    "name": "PCAR",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "PCAR",
+    "active": true
+  },
+  {
+    "asset_id": "PCTY",
+    "symbol": "PCTY",
+    "name": "Paylocity",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "PCTY",
+    "active": true
+  },
+  {
+    "asset_id": "PDD",
+    "symbol": "PDD",
+    "name": "PDD",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "PDD",
+    "active": true
+  },
+  {
+    "asset_id": "PEAK",
+    "symbol": "PEAK",
+    "name": "Healthpeak Properties",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "PEAK",
+    "active": true
+  },
+  {
+    "asset_id": "PEG",
+    "symbol": "PEG",
+    "name": "PSEG",
+    "category": "stocks",
+    "subcategory": "utilities",
+    "api_ref": "PEG",
+    "active": true
+  },
+  {
+    "asset_id": "PENN",
+    "symbol": "PENN",
+    "name": "Penn Entertainment",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "PENN",
+    "active": true
+  },
+  {
+    "asset_id": "PEP",
+    "symbol": "PEP",
+    "name": "PEP",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "PEP",
+    "active": true
+  },
+  {
+    "asset_id": "PFE",
+    "symbol": "PFE",
+    "name": "PFE",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "PFE",
+    "active": true
+  },
+  {
+    "asset_id": "PG",
+    "symbol": "PG",
+    "name": "PG",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "PG",
+    "active": true
+  },
+  {
+    "asset_id": "PGR",
+    "symbol": "PGR",
+    "name": "PGR",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "PGR",
+    "active": true
+  },
+  {
+    "asset_id": "PH",
+    "symbol": "PH",
+    "name": "PH",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "PH",
+    "active": true
+  },
+  {
+    "asset_id": "PHG",
+    "symbol": "PHG",
+    "name": "PHG",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "PHG",
+    "active": true
+  },
+  {
+    "asset_id": "PHM",
+    "symbol": "PHM",
+    "name": "PulteGroup",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "PHM",
+    "active": true
+  },
+  {
+    "asset_id": "PING",
+    "symbol": "PING",
+    "name": "Ping Identity",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "PING",
+    "active": true
+  },
+  {
+    "asset_id": "PINS",
+    "symbol": "PINS",
+    "name": "PINS",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "PINS",
+    "active": true
+  },
+  {
+    "asset_id": "PK",
+    "symbol": "PK",
+    "name": "PK",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "PK",
+    "active": true
+  },
+  {
+    "asset_id": "PKI",
+    "symbol": "PKI",
+    "name": "PerkinElmer",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "PKI",
+    "active": true
+  },
+  {
+    "asset_id": "PKX",
+    "symbol": "PKX",
+    "name": "PKX",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "PKX",
+    "active": true
+  },
+  {
+    "asset_id": "PLD",
+    "symbol": "PLD",
+    "name": "PLD",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "PLD",
+    "active": true
+  },
+  {
+    "asset_id": "PLTR",
+    "symbol": "PLTR",
+    "name": "PLTR",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "PLTR",
+    "active": true
+  },
+  {
+    "asset_id": "PM",
+    "symbol": "PM",
+    "name": "Philip Morris",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "PM",
+    "active": true
+  },
+  {
+    "asset_id": "PNC",
+    "symbol": "PNC",
+    "name": "PNC",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "PNC",
+    "active": true
+  },
+  {
+    "asset_id": "PNR",
+    "symbol": "PNR",
+    "name": "Pentair",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "PNR",
+    "active": true
+  },
+  {
+    "asset_id": "PODD",
+    "symbol": "PODD",
+    "name": "PODD",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "PODD",
+    "active": true
+  },
+  {
+    "asset_id": "POOL",
+    "symbol": "POOL",
+    "name": "POOL",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "POOL",
+    "active": true
+  },
+  {
+    "asset_id": "PPG",
+    "symbol": "PPG",
+    "name": "PPG",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "PPG",
+    "active": true
+  },
+  {
+    "asset_id": "PPL",
+    "symbol": "PPL",
+    "name": "PPL Corp",
+    "category": "stocks",
+    "subcategory": "utilities",
+    "api_ref": "PPL",
+    "active": true
+  },
+  {
+    "asset_id": "PR",
+    "symbol": "PR",
+    "name": "PR",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "PR",
+    "active": true
+  },
+  {
+    "asset_id": "PRU",
+    "symbol": "PRU",
+    "name": "PRU",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "PRU",
+    "active": true
+  },
+  {
+    "asset_id": "PSA",
+    "symbol": "PSA",
+    "name": "PSA",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "PSA",
+    "active": true
+  },
+  {
+    "asset_id": "PSX",
+    "symbol": "PSX",
+    "name": "PSX",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "PSX",
+    "active": true
+  },
+  {
+    "asset_id": "PTC",
+    "symbol": "PTC",
+    "name": "PTC Inc",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "PTC",
+    "active": true
+  },
+  {
+    "asset_id": "PWR",
+    "symbol": "PWR",
+    "name": "Quanta Services",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "PWR",
+    "active": true
+  },
+  {
+    "asset_id": "PXD",
+    "symbol": "PXD",
+    "name": "Pioneer Natural Resources",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "PXD",
+    "active": true
+  },
+  {
+    "asset_id": "PYPL",
+    "symbol": "PYPL",
+    "name": "PYPL",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "PYPL",
+    "active": true
+  },
+  {
+    "asset_id": "QCOM",
+    "symbol": "QCOM",
+    "name": "QCOM",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "QCOM",
+    "active": true
+  },
+  {
+    "asset_id": "QFIN",
+    "symbol": "QFIN",
+    "name": "QFIN",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "QFIN",
+    "active": true
+  },
+  {
+    "asset_id": "QLYS",
+    "symbol": "QLYS",
+    "name": "Qualys",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "QLYS",
+    "active": true
+  },
+  {
+    "asset_id": "QSR",
+    "symbol": "QSR",
+    "name": "QSR",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "QSR",
+    "active": true
+  },
+  {
+    "asset_id": "QTWO",
+    "symbol": "QTWO",
+    "name": "Q2 Holdings",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "QTWO",
+    "active": true
+  },
+  {
+    "asset_id": "QUBT",
+    "symbol": "QUBT",
+    "name": "Quantum Computing",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "QUBT",
+    "active": true
+  },
+  {
+    "asset_id": "RACE",
+    "symbol": "RACE",
+    "name": "RACE",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "RACE",
+    "active": true
+  },
+  {
+    "asset_id": "RARE",
+    "symbol": "RARE",
+    "name": "RARE",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "RARE",
+    "active": true
+  },
+  {
+    "asset_id": "RBLX",
+    "symbol": "RBLX",
+    "name": "RBLX",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "RBLX",
+    "active": true
+  },
+  {
+    "asset_id": "RCL",
+    "symbol": "RCL",
+    "name": "Royal Caribbean",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "RCL",
+    "active": true
+  },
+  {
+    "asset_id": "RDDT",
+    "symbol": "RDDT",
+    "name": "Reddit",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "RDDT",
+    "active": true
+  },
+  {
+    "asset_id": "RDFN",
+    "symbol": "RDFN",
+    "name": "Redfin",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "RDFN",
+    "active": true
+  },
+  {
+    "asset_id": "RDNT",
+    "symbol": "RDNT",
+    "name": "RadNet",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "RDNT",
+    "active": true
+  },
+  {
+    "asset_id": "RDY",
+    "symbol": "RDY",
+    "name": "RDY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "RDY",
+    "active": true
+  },
+  {
+    "asset_id": "REAL",
+    "symbol": "REAL",
+    "name": "RealReal",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "REAL",
+    "active": true
+  },
+  {
+    "asset_id": "REG",
+    "symbol": "REG",
+    "name": "Regency Centers",
+    "category": "stocks",
+    "subcategory": "reits",
+    "api_ref": "REG",
+    "active": true
+  },
+  {
+    "asset_id": "REGN",
+    "symbol": "REGN",
+    "name": "REGN",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "REGN",
+    "active": true
+  },
+  {
+    "asset_id": "RELX",
+    "symbol": "RELX",
+    "name": "RELX",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "RELX",
+    "active": true
+  },
+  {
+    "asset_id": "RF",
+    "symbol": "RF",
+    "name": "RF",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "RF",
+    "active": true
+  },
+  {
+    "asset_id": "RH",
+    "symbol": "RH",
+    "name": "RH",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "RH",
+    "active": true
+  },
+  {
+    "asset_id": "RHP",
+    "symbol": "RHP",
+    "name": "RHP",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "RHP",
+    "active": true
+  },
+  {
+    "asset_id": "RIO",
+    "symbol": "RIO",
+    "name": "RIO",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "RIO",
+    "active": true
+  },
+  {
+    "asset_id": "RIO",
+    "symbol": "RIO",
+    "name": "RIO",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "RIO",
+    "active": true
+  },
+  {
+    "asset_id": "RIOT",
+    "symbol": "RIOT",
+    "name": "Riot Platforms",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "RIOT",
+    "active": true
+  },
+  {
+    "asset_id": "RIVN",
+    "symbol": "RIVN",
+    "name": "Rivian Automotive",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "RIVN",
+    "active": true
+  },
+  {
+    "asset_id": "RJF",
+    "symbol": "RJF",
+    "name": "Raymond James",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "RJF",
+    "active": true
+  },
+  {
+    "asset_id": "RKLB",
+    "symbol": "RKLB",
+    "name": "Rocket Lab",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "RKLB",
+    "active": true
+  },
+  {
+    "asset_id": "RMAX",
+    "symbol": "RMAX",
+    "name": "RE/MAX",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "RMAX",
+    "active": true
+  },
+  {
+    "asset_id": "RMD",
+    "symbol": "RMD",
+    "name": "ResMed",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "RMD",
+    "active": true
+  },
+  {
+    "asset_id": "ROK",
+    "symbol": "ROK",
+    "name": "ROK",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "ROK",
+    "active": true
+  },
+  {
+    "asset_id": "ROKU",
+    "symbol": "ROKU",
+    "name": "ROKU",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "ROKU",
+    "active": true
+  },
+  {
+    "asset_id": "ROP",
+    "symbol": "ROP",
+    "name": "ROP",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "ROP",
+    "active": true
+  },
+  {
+    "asset_id": "ROST",
+    "symbol": "ROST",
+    "name": "ROST",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "ROST",
+    "active": true
+  },
+  {
+    "asset_id": "RPD",
+    "symbol": "RPD",
+    "name": "Rapid7",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "RPD",
+    "active": true
+  },
+  {
+    "asset_id": "RRC",
+    "symbol": "RRC",
+    "name": "RRC",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "RRC",
+    "active": true
+  },
+  {
+    "asset_id": "RSG",
+    "symbol": "RSG",
+    "name": "RSG",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "RSG",
+    "active": true
+  },
+  {
+    "asset_id": "RTX",
+    "symbol": "RTX",
+    "name": "RTX",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "RTX",
+    "active": true
+  },
+  {
+    "asset_id": "RVMD",
+    "symbol": "RVMD",
+    "name": "Revolution Medicines",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "RVMD",
+    "active": true
+  },
+  {
+    "asset_id": "RY",
+    "symbol": "RY",
+    "name": "RY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "RY",
+    "active": true
+  },
+  {
+    "asset_id": "S",
+    "symbol": "S",
+    "name": "SentinelOne",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "S",
+    "active": true
+  },
+  {
+    "asset_id": "SAN",
+    "symbol": "SAN",
+    "name": "SAN",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "SAN",
+    "active": true
+  },
+  {
+    "asset_id": "SAP",
+    "symbol": "SAP",
+    "name": "SAP",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "SAP",
+    "active": true
+  },
+  {
+    "asset_id": "SBAC",
+    "symbol": "SBAC",
+    "name": "SBA Communications",
+    "category": "stocks",
+    "subcategory": "reits",
+    "api_ref": "SBAC",
+    "active": true
+  },
+  {
+    "asset_id": "SBS",
+    "symbol": "SBS",
+    "name": "SBS",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "SBS",
+    "active": true
+  },
+  {
+    "asset_id": "SBUX",
+    "symbol": "SBUX",
+    "name": "SBUX",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "SBUX",
+    "active": true
+  },
+  {
+    "asset_id": "SCHW",
+    "symbol": "SCHW",
+    "name": "SCHW",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "SCHW",
+    "active": true
+  },
+  {
+    "asset_id": "SE",
+    "symbol": "SE",
+    "name": "SE",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "SE",
+    "active": true
+  },
+  {
+    "asset_id": "SHEL",
+    "symbol": "SHEL",
+    "name": "SHEL",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "SHEL",
+    "active": true
+  },
+  {
+    "asset_id": "SHEN",
+    "symbol": "SHEN",
+    "name": "Shenandoah Telecom",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "SHEN",
+    "active": true
+  },
+  {
+    "asset_id": "SHG",
+    "symbol": "SHG",
+    "name": "SHG",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "SHG",
+    "active": true
+  },
+  {
+    "asset_id": "SHOP",
+    "symbol": "SHOP",
+    "name": "SHOP",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "SHOP",
+    "active": true
+  },
+  {
+    "asset_id": "SHOP",
+    "symbol": "SHOP",
+    "name": "SHOP",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "SHOP",
+    "active": true
+  },
+  {
+    "asset_id": "SHW",
+    "symbol": "SHW",
+    "name": "SHW",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "SHW",
+    "active": true
+  },
+  {
+    "asset_id": "SIFY",
+    "symbol": "SIFY",
+    "name": "SIFY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "SIFY",
+    "active": true
+  },
+  {
+    "asset_id": "SILC",
+    "symbol": "SILC",
+    "name": "SILC",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "SILC",
+    "active": true
+  },
+  {
+    "asset_id": "SIRI",
+    "symbol": "SIRI",
+    "name": "Sirius XM",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "SIRI",
+    "active": true
+  },
+  {
+    "asset_id": "SJM",
+    "symbol": "SJM",
+    "name": "SJM",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "SJM",
+    "active": true
+  },
+  {
+    "asset_id": "SKM",
+    "symbol": "SKM",
+    "name": "SKM",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "SKM",
+    "active": true
+  },
+  {
+    "asset_id": "SLB",
+    "symbol": "SLB",
+    "name": "SLB",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "SLB",
+    "active": true
+  },
+  {
+    "asset_id": "SLF",
+    "symbol": "SLF",
+    "name": "SLF",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "SLF",
+    "active": true
+  },
+  {
+    "asset_id": "SLG",
+    "symbol": "SLG",
+    "name": "SLG",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "SLG",
+    "active": true
+  },
+  {
+    "asset_id": "SLM",
+    "symbol": "SLM",
+    "name": "SLM Corp",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "SLM",
+    "active": true
+  },
+  {
+    "asset_id": "SMCI",
+    "symbol": "SMCI",
+    "name": "SMCI",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "SMCI",
+    "active": true
+  },
+  {
+    "asset_id": "SMFG",
+    "symbol": "SMFG",
+    "name": "SMFG",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "SMFG",
+    "active": true
+  },
+  {
+    "asset_id": "SMMT",
+    "symbol": "SMMT",
+    "name": "Summit Therapeutics",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "SMMT",
+    "active": true
+  },
+  {
+    "asset_id": "SNA",
+    "symbol": "SNA",
+    "name": "SNA",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "SNA",
+    "active": true
+  },
+  {
+    "asset_id": "SNAP",
+    "symbol": "SNAP",
+    "name": "Snap Inc",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "SNAP",
+    "active": true
+  },
+  {
+    "asset_id": "SNOW",
+    "symbol": "SNOW",
+    "name": "SNOW",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "SNOW",
+    "active": true
+  },
+  {
+    "asset_id": "SNPS",
+    "symbol": "SNPS",
+    "name": "SNPS",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "SNPS",
+    "active": true
+  },
+  {
+    "asset_id": "SNY",
+    "symbol": "SNY",
+    "name": "SNY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "SNY",
+    "active": true
+  },
+  {
+    "asset_id": "SO",
+    "symbol": "SO",
+    "name": "SO",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "SO",
+    "active": true
+  },
+  {
+    "asset_id": "SOFI",
+    "symbol": "SOFI",
+    "name": "SoFi Technologies",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "SOFI",
+    "active": true
+  },
+  {
+    "asset_id": "SONY",
+    "symbol": "SONY",
+    "name": "SONY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "SONY",
+    "active": true
+  },
+  {
+    "asset_id": "SOUN",
+    "symbol": "SOUN",
+    "name": "SoundHound AI",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "SOUN",
+    "active": true
+  },
+  {
+    "asset_id": "SPG",
+    "symbol": "SPG",
+    "name": "SPG",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "SPG",
+    "active": true
+  },
+  {
+    "asset_id": "SPGI",
+    "symbol": "SPGI",
+    "name": "SPGI",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "SPGI",
+    "active": true
+  },
+  {
+    "asset_id": "SPLK",
+    "symbol": "SPLK",
+    "name": "Splunk",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "SPLK",
+    "active": true
+  },
+  {
+    "asset_id": "SPOT",
+    "symbol": "SPOT",
+    "name": "Spotify",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "SPOT",
+    "active": true
+  },
+  {
+    "asset_id": "SPSC",
+    "symbol": "SPSC",
+    "name": "SPS Commerce",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "SPSC",
+    "active": true
+  },
+  {
+    "asset_id": "SQ",
+    "symbol": "SQ",
+    "name": "Block Inc",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "SQ",
+    "active": true
+  },
+  {
+    "asset_id": "SQM",
+    "symbol": "SQM",
+    "name": "SQM",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "SQM",
+    "active": true
+  },
+  {
+    "asset_id": "SRE",
+    "symbol": "SRE",
+    "name": "Sempra",
+    "category": "stocks",
+    "subcategory": "utilities",
+    "api_ref": "SRE",
+    "active": true
+  },
+  {
+    "asset_id": "SRPT",
+    "symbol": "SRPT",
+    "name": "SRPT",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "SRPT",
+    "active": true
+  },
+  {
+    "asset_id": "STE",
+    "symbol": "STE",
+    "name": "Steris",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "STE",
+    "active": true
+  },
+  {
+    "asset_id": "STLA",
+    "symbol": "STLA",
+    "name": "STLA",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "STLA",
+    "active": true
+  },
+  {
+    "asset_id": "STNE",
+    "symbol": "STNE",
+    "name": "STNE",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "STNE",
+    "active": true
+  },
+  {
+    "asset_id": "STT",
+    "symbol": "STT",
+    "name": "STT",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "STT",
+    "active": true
+  },
+  {
+    "asset_id": "STX",
+    "symbol": "STX",
+    "name": "STX",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "STX",
+    "active": true
+  },
+  {
+    "asset_id": "STZ",
+    "symbol": "STZ",
+    "name": "Constellation Brands",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "STZ",
+    "active": true
+  },
+  {
+    "asset_id": "SU",
+    "symbol": "SU",
+    "name": "SU",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "SU",
+    "active": true
+  },
+  {
+    "asset_id": "SUI",
+    "symbol": "SUI",
+    "name": "SUI",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "SUI",
+    "active": true
+  },
+  {
+    "asset_id": "SUMO",
+    "symbol": "SUMO",
+    "name": "Sumo Logic",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "SUMO",
+    "active": true
+  },
+  {
+    "asset_id": "SWK",
+    "symbol": "SWK",
+    "name": "SWK",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "SWK",
+    "active": true
+  },
+  {
+    "asset_id": "SWKS",
+    "symbol": "SWKS",
+    "name": "Skyworks Solutions",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "SWKS",
+    "active": true
+  },
+  {
+    "asset_id": "SYF",
+    "symbol": "SYF",
+    "name": "Synchrony Financial",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "SYF",
+    "active": true
+  },
+  {
+    "asset_id": "SYK",
+    "symbol": "SYK",
+    "name": "SYK",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "SYK",
+    "active": true
+  },
+  {
+    "asset_id": "SYY",
+    "symbol": "SYY",
+    "name": "SYY",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "SYY",
+    "active": true
+  },
+  {
+    "asset_id": "T",
+    "symbol": "T",
+    "name": "T",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "T",
+    "active": true
+  },
+  {
+    "asset_id": "TAL",
+    "symbol": "TAL",
+    "name": "TAL",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "TAL",
+    "active": true
+  },
+  {
+    "asset_id": "TD",
+    "symbol": "TD",
+    "name": "TD",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "TD",
+    "active": true
+  },
+  {
+    "asset_id": "TDG",
+    "symbol": "TDG",
+    "name": "TDG",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "TDG",
+    "active": true
+  },
+  {
+    "asset_id": "TDY",
+    "symbol": "TDY",
+    "name": "Teledyne Technologies",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "TDY",
+    "active": true
+  },
+  {
+    "asset_id": "TEAM",
+    "symbol": "TEAM",
+    "name": "TEAM",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "TEAM",
+    "active": true
+  },
+  {
+    "asset_id": "TECH",
+    "symbol": "TECH",
+    "name": "TECH",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "TECH",
+    "active": true
+  },
+  {
+    "asset_id": "TEF",
+    "symbol": "TEF",
+    "name": "TEF",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "TEF",
+    "active": true
+  },
+  {
+    "asset_id": "TEL",
+    "symbol": "TEL",
+    "name": "TE Connectivity",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "TEL",
+    "active": true
+  },
+  {
+    "asset_id": "TENB",
+    "symbol": "TENB",
+    "name": "Tenable",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "TENB",
+    "active": true
+  },
+  {
+    "asset_id": "TEO",
+    "symbol": "TEO",
+    "name": "TEO",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "TEO",
+    "active": true
+  },
+  {
+    "asset_id": "TER",
+    "symbol": "TER",
+    "name": "Teradyne",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "TER",
+    "active": true
+  },
+  {
+    "asset_id": "TFC",
+    "symbol": "TFC",
+    "name": "TFC",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "TFC",
+    "active": true
+  },
+  {
+    "asset_id": "TGS",
+    "symbol": "TGS",
+    "name": "TGS",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "TGS",
+    "active": true
+  },
+  {
+    "asset_id": "TGT",
+    "symbol": "TGT",
+    "name": "TGT",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "TGT",
+    "active": true
+  },
+  {
+    "asset_id": "TIGR",
+    "symbol": "TIGR",
+    "name": "TIGR",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "TIGR",
+    "active": true
+  },
+  {
+    "asset_id": "TJX",
+    "symbol": "TJX",
+    "name": "TJX",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "TJX",
+    "active": true
+  },
+  {
+    "asset_id": "TM",
+    "symbol": "TM",
+    "name": "TM",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "TM",
+    "active": true
+  },
+  {
+    "asset_id": "TME",
+    "symbol": "TME",
+    "name": "Tencent Music",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "TME",
+    "active": true
+  },
+  {
+    "asset_id": "TMO",
+    "symbol": "TMO",
+    "name": "TMO",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "TMO",
+    "active": true
+  },
+  {
+    "asset_id": "TMUS",
+    "symbol": "TMUS",
+    "name": "TMUS",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "TMUS",
+    "active": true
+  },
+  {
+    "asset_id": "TOST",
+    "symbol": "TOST",
+    "name": "Toast",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "TOST",
+    "active": true
+  },
+  {
+    "asset_id": "TPL",
+    "symbol": "TPL",
+    "name": "Texas Pacific Land",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "TPL",
+    "active": true
+  },
+  {
+    "asset_id": "TPR",
+    "symbol": "TPR",
+    "name": "Tapestry",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "TPR",
+    "active": true
+  },
+  {
+    "asset_id": "TREE",
+    "symbol": "TREE",
+    "name": "LendingTree",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "TREE",
+    "active": true
+  },
+  {
+    "asset_id": "TRGP",
+    "symbol": "TRGP",
+    "name": "TRGP",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "TRGP",
+    "active": true
+  },
+  {
+    "asset_id": "TRMB",
+    "symbol": "TRMB",
+    "name": "Trimble",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "TRMB",
+    "active": true
+  },
+  {
+    "asset_id": "TROW",
+    "symbol": "TROW",
+    "name": "TROW",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "TROW",
+    "active": true
+  },
+  {
+    "asset_id": "TRP",
+    "symbol": "TRP",
+    "name": "TRP",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "TRP",
+    "active": true
+  },
+  {
+    "asset_id": "TRV",
+    "symbol": "TRV",
+    "name": "TRV",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "TRV",
+    "active": true
+  },
+  {
+    "asset_id": "TSLA",
+    "symbol": "TSLA",
+    "name": "TSLA",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "TSLA",
+    "active": true
+  },
+  {
+    "asset_id": "TSM",
+    "symbol": "TSM",
+    "name": "TSM",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "TSM",
+    "active": true
+  },
+  {
+    "asset_id": "TSN",
+    "symbol": "TSN",
+    "name": "TSN",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "TSN",
+    "active": true
+  },
+  {
+    "asset_id": "TTD",
+    "symbol": "TTD",
+    "name": "The Trade Desk",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "TTD",
+    "active": true
+  },
+  {
+    "asset_id": "TTE",
+    "symbol": "TTE",
+    "name": "TTE",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "TTE",
+    "active": true
+  },
+  {
+    "asset_id": "TTWO",
+    "symbol": "TTWO",
+    "name": "TTWO",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "TTWO",
+    "active": true
+  },
+  {
+    "asset_id": "TV",
+    "symbol": "TV",
+    "name": "TV",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "TV",
+    "active": true
+  },
+  {
+    "asset_id": "TWLO",
+    "symbol": "TWLO",
+    "name": "Twilio",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "TWLO",
+    "active": true
+  },
+  {
+    "asset_id": "TXN",
+    "symbol": "TXN",
+    "name": "TXN",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "TXN",
+    "active": true
+  },
+  {
+    "asset_id": "TXT",
+    "symbol": "TXT",
+    "name": "TXT",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "TXT",
+    "active": true
+  },
+  {
+    "asset_id": "TYL",
+    "symbol": "TYL",
+    "name": "Tyler Technologies",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "TYL",
+    "active": true
+  },
+  {
+    "asset_id": "U",
+    "symbol": "U",
+    "name": "Unity Software",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "U",
+    "active": true
+  },
+  {
+    "asset_id": "UAL",
+    "symbol": "UAL",
+    "name": "United Airlines",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "UAL",
+    "active": true
+  },
+  {
+    "asset_id": "UBER",
+    "symbol": "UBER",
+    "name": "Uber Technologies",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "UBER",
+    "active": true
+  },
+  {
+    "asset_id": "UBS",
+    "symbol": "UBS",
+    "name": "UBS",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "UBS",
+    "active": true
+  },
+  {
+    "asset_id": "UDR",
+    "symbol": "UDR",
+    "name": "UDR",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "UDR",
+    "active": true
+  },
+  {
+    "asset_id": "UL",
+    "symbol": "UL",
+    "name": "UL",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "UL",
+    "active": true
+  },
+  {
+    "asset_id": "ULTA",
+    "symbol": "ULTA",
+    "name": "ULTA",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "ULTA",
+    "active": true
+  },
+  {
+    "asset_id": "UMC",
+    "symbol": "UMC",
+    "name": "UMC",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "UMC",
+    "active": true
+  },
+  {
+    "asset_id": "UNH",
+    "symbol": "UNH",
+    "name": "UNH",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "UNH",
+    "active": true
+  },
+  {
+    "asset_id": "UNP",
+    "symbol": "UNP",
+    "name": "UNP",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "UNP",
+    "active": true
+  },
+  {
+    "asset_id": "UPS",
+    "symbol": "UPS",
+    "name": "UPS",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "UPS",
+    "active": true
+  },
+  {
+    "asset_id": "UPST",
+    "symbol": "UPST",
+    "name": "Upstart Holdings",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "UPST",
+    "active": true
+  },
+  {
+    "asset_id": "URI",
+    "symbol": "URI",
+    "name": "United Rentals",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "URI",
+    "active": true
+  },
+  {
+    "asset_id": "USB",
+    "symbol": "USB",
+    "name": "USB",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "USB",
+    "active": true
+  },
+  {
+    "asset_id": "USM",
+    "symbol": "USM",
+    "name": "US Cellular",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "USM",
+    "active": true
+  },
+  {
+    "asset_id": "UTHR",
+    "symbol": "UTHR",
+    "name": "UTHR",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "UTHR",
+    "active": true
+  },
+  {
+    "asset_id": "V",
+    "symbol": "V",
+    "name": "V",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "V",
+    "active": true
+  },
+  {
+    "asset_id": "VALE",
+    "symbol": "VALE",
+    "name": "VALE",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "VALE",
+    "active": true
+  },
+  {
+    "asset_id": "VEEV",
+    "symbol": "VEEV",
+    "name": "VEEV",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "VEEV",
+    "active": true
+  },
+  {
+    "asset_id": "VICI",
+    "symbol": "VICI",
+    "name": "VICI Properties",
+    "category": "stocks",
+    "subcategory": "reits",
+    "api_ref": "VICI",
+    "active": true
+  },
+  {
+    "asset_id": "VIPS",
+    "symbol": "VIPS",
+    "name": "VIPS",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "VIPS",
+    "active": true
+  },
+  {
+    "asset_id": "VIST",
+    "symbol": "VIST",
+    "name": "VIST",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "VIST",
+    "active": true
+  },
+  {
+    "asset_id": "VLO",
+    "symbol": "VLO",
+    "name": "VLO",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "VLO",
+    "active": true
+  },
+  {
+    "asset_id": "VMC",
+    "symbol": "VMC",
+    "name": "VMC",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "VMC",
+    "active": true
+  },
+  {
+    "asset_id": "VRNS",
+    "symbol": "VRNS",
+    "name": "Varonis Systems",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "VRNS",
+    "active": true
+  },
+  {
+    "asset_id": "VRSK",
+    "symbol": "VRSK",
+    "name": "VRSK",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "VRSK",
+    "active": true
+  },
+  {
+    "asset_id": "VRTX",
+    "symbol": "VRTX",
+    "name": "VRTX",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "VRTX",
+    "active": true
+  },
+  {
+    "asset_id": "VST",
+    "symbol": "VST",
+    "name": "Vistra",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "VST",
+    "active": true
+  },
+  {
+    "asset_id": "VTR",
+    "symbol": "VTR",
+    "name": "VTR",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "VTR",
+    "active": true
+  },
+  {
+    "asset_id": "VTRS",
+    "symbol": "VTRS",
+    "name": "VTRS",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "VTRS",
+    "active": true
+  },
+  {
+    "asset_id": "VWAGY",
+    "symbol": "VWAGY",
+    "name": "VWAGY",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "VWAGY",
+    "active": true
+  },
+  {
+    "asset_id": "VZ",
+    "symbol": "VZ",
+    "name": "VZ",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "VZ",
+    "active": true
+  },
+  {
+    "asset_id": "W",
+    "symbol": "W",
+    "name": "W",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "W",
+    "active": true
+  },
+  {
+    "asset_id": "WAB",
+    "symbol": "WAB",
+    "name": "WAB",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "WAB",
+    "active": true
+  },
+  {
+    "asset_id": "WAL",
+    "symbol": "WAL",
+    "name": "WAL",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "WAL",
+    "active": true
+  },
+  {
+    "asset_id": "WAT",
+    "symbol": "WAT",
+    "name": "WAT",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "WAT",
+    "active": true
+  },
+  {
+    "asset_id": "WB",
+    "symbol": "WB",
+    "name": "WB",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "WB",
+    "active": true
+  },
+  {
+    "asset_id": "WBD",
+    "symbol": "WBD",
+    "name": "WBD",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "WBD",
+    "active": true
+  },
+  {
+    "asset_id": "WDAY",
+    "symbol": "WDAY",
+    "name": "WDAY",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "WDAY",
+    "active": true
+  },
+  {
+    "asset_id": "WDC",
+    "symbol": "WDC",
+    "name": "WDC",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "WDC",
+    "active": true
+  },
+  {
+    "asset_id": "WDS",
+    "symbol": "WDS",
+    "name": "WDS",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "WDS",
+    "active": true
+  },
+  {
+    "asset_id": "WEC",
+    "symbol": "WEC",
+    "name": "WEC Energy",
+    "category": "stocks",
+    "subcategory": "utilities",
+    "api_ref": "WEC",
+    "active": true
+  },
+  {
+    "asset_id": "WELL",
+    "symbol": "WELL",
+    "name": "WELL",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "WELL",
+    "active": true
+  },
+  {
+    "asset_id": "WEX",
+    "symbol": "WEX",
+    "name": "WEX Inc",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "WEX",
+    "active": true
+  },
+  {
+    "asset_id": "WF",
+    "symbol": "WF",
+    "name": "WF",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "WF",
+    "active": true
+  },
+  {
+    "asset_id": "WFC",
+    "symbol": "WFC",
+    "name": "WFC",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "WFC",
+    "active": true
+  },
+  {
+    "asset_id": "WIT",
+    "symbol": "WIT",
+    "name": "WIT",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "WIT",
+    "active": true
+  },
+  {
+    "asset_id": "WK",
+    "symbol": "WK",
+    "name": "Workiva",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "WK",
+    "active": true
+  },
+  {
+    "asset_id": "WLK",
+    "symbol": "WLK",
+    "name": "WLK",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "WLK",
+    "active": true
+  },
+  {
+    "asset_id": "WM",
+    "symbol": "WM",
+    "name": "WM",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "WM",
+    "active": true
+  },
+  {
+    "asset_id": "WMB",
+    "symbol": "WMB",
+    "name": "WMB",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "WMB",
+    "active": true
+  },
+  {
+    "asset_id": "WMT",
+    "symbol": "WMT",
+    "name": "WMT",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "WMT",
+    "active": true
+  },
+  {
+    "asset_id": "WPM",
+    "symbol": "WPM",
+    "name": "WPM",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "WPM",
+    "active": true
+  },
+  {
+    "asset_id": "WPP",
+    "symbol": "WPP",
+    "name": "WPP",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "WPP",
+    "active": true
+  },
+  {
+    "asset_id": "WRB",
+    "symbol": "WRB",
+    "name": "WRB",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "WRB",
+    "active": true
+  },
+  {
+    "asset_id": "WSM",
+    "symbol": "WSM",
+    "name": "WSM",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "WSM",
+    "active": true
+  },
+  {
+    "asset_id": "WST",
+    "symbol": "WST",
+    "name": "West Pharmaceutical",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "WST",
+    "active": true
+  },
+  {
+    "asset_id": "WTW",
+    "symbol": "WTW",
+    "name": "Willis Towers Watson",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "WTW",
+    "active": true
+  },
+  {
+    "asset_id": "WYNN",
+    "symbol": "WYNN",
+    "name": "Wynn Resorts",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "WYNN",
+    "active": true
+  },
+  {
+    "asset_id": "XEL",
+    "symbol": "XEL",
+    "name": "Xcel Energy",
+    "category": "stocks",
+    "subcategory": "utilities",
+    "api_ref": "XEL",
+    "active": true
+  },
+  {
+    "asset_id": "XOM",
+    "symbol": "XOM",
+    "name": "XOM",
+    "category": "stocks",
+    "subcategory": "energy",
+    "api_ref": "XOM",
+    "active": true
+  },
+  {
+    "asset_id": "XP",
+    "symbol": "XP",
+    "name": "XP",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "XP",
+    "active": true
+  },
+  {
+    "asset_id": "XPEV",
+    "symbol": "XPEV",
+    "name": "XPEV",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "XPEV",
+    "active": true
+  },
+  {
+    "asset_id": "XPO",
+    "symbol": "XPO",
+    "name": "XPO Inc",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "XPO",
+    "active": true
+  },
+  {
+    "asset_id": "XYL",
+    "symbol": "XYL",
+    "name": "XYL",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "XYL",
+    "active": true
+  },
+  {
+    "asset_id": "YMM",
+    "symbol": "YMM",
+    "name": "YMM",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "YMM",
+    "active": true
+  },
+  {
+    "asset_id": "YPF",
+    "symbol": "YPF",
+    "name": "YPF",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "YPF",
+    "active": true
+  },
+  {
+    "asset_id": "YUM",
+    "symbol": "YUM",
+    "name": "YUM",
+    "category": "stocks",
+    "subcategory": "consumer",
+    "api_ref": "YUM",
+    "active": true
+  },
+  {
+    "asset_id": "YUMC",
+    "symbol": "YUMC",
+    "name": "YUMC",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "YUMC",
+    "active": true
+  },
+  {
+    "asset_id": "Z",
+    "symbol": "Z",
+    "name": "Zillow C",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "Z",
+    "active": true
+  },
+  {
+    "asset_id": "ZBH",
+    "symbol": "ZBH",
+    "name": "Zimmer Biomet",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "ZBH",
+    "active": true
+  },
+  {
+    "asset_id": "ZBRA",
+    "symbol": "ZBRA",
+    "name": "ZBRA",
+    "category": "stocks",
+    "subcategory": "industrials",
+    "api_ref": "ZBRA",
+    "active": true
+  },
+  {
+    "asset_id": "ZG",
+    "symbol": "ZG",
+    "name": "Zillow A",
+    "category": "stocks",
+    "subcategory": "communication",
+    "api_ref": "ZG",
+    "active": true
+  },
+  {
+    "asset_id": "ZI",
+    "symbol": "ZI",
+    "name": "ZoomInfo",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "ZI",
+    "active": true
+  },
+  {
+    "asset_id": "ZION",
+    "symbol": "ZION",
+    "name": "ZION",
+    "category": "stocks",
+    "subcategory": "financials",
+    "api_ref": "ZION",
+    "active": true
+  },
+  {
+    "asset_id": "ZLAB",
+    "symbol": "ZLAB",
+    "name": "ZLAB",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "ZLAB",
+    "active": true
+  },
+  {
+    "asset_id": "ZM",
+    "symbol": "ZM",
+    "name": "ZM",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "ZM",
+    "active": true
+  },
+  {
+    "asset_id": "ZS",
+    "symbol": "ZS",
+    "name": "ZS",
+    "category": "stocks",
+    "subcategory": "tech",
+    "api_ref": "ZS",
+    "active": true
+  },
+  {
+    "asset_id": "ZTO",
+    "symbol": "ZTO",
+    "name": "ZTO",
+    "category": "stocks",
+    "subcategory": "large_cap",
+    "api_ref": "ZTO",
+    "active": true
+  },
+  {
+    "asset_id": "ZTS",
+    "symbol": "ZTS",
+    "name": "ZTS",
+    "category": "stocks",
+    "subcategory": "healthcare",
+    "api_ref": "ZTS",
+    "active": true
+  }
+]

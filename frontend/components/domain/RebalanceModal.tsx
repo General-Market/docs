@@ -233,10 +233,11 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
           args: [
             itpId as `0x${string}`,
             params.removedIndices,
-            params.newAssetAddresses,
+            params.newAssetAddresses as readonly `0x${string}`[],
             params.newWeights,
             prices,
-            '0x', // empty BLS signature (bypassed in dev)
+            [] as readonly `0x${string}`[], // quoteTokens (unused in dev)
+            '0x' as `0x${string}`, // empty BLS signature (bypassed in dev)
           ],
         })
 

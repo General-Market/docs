@@ -1,0 +1,92 @@
+[
+  {
+    "asset_id": "ecb_main_refi",
+    "symbol": "ecb_main_refi",
+    "name": "ECB Main Refinancing Rate",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "FM.B.U2.EUR.4F.KR.MRR_FR.LEV",
+    "active": true
+  },
+  {
+    "asset_id": "ecb_deposit",
+    "symbol": "ecb_deposit",
+    "name": "ECB Deposit Facility Rate",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "FM.B.U2.EUR.4F.KR.DFR.LEV",
+    "active": true
+  },
+  {
+    "asset_id": "ecb_marginal",
+    "symbol": "ecb_marginal",
+    "name": "ECB Marginal Lending Rate",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "FM.B.U2.EUR.4F.KR.MLFR.LEV",
+    "active": true
+  },
+  {
+    "asset_id": "ecb_m3",
+    "symbol": "ecb_m3",
+    "name": "Euro Area M3 Money Supply",
+    "category": "macro",
+    "subcategory": "money_supply",
+    "api_ref": "BSI.M.U2.Y.V.M30.X.1.U2.2300.Z01.A",
+    "active": true
+  },
+  {
+    "asset_id": "ecb_hicp",
+    "symbol": "ecb_hicp",
+    "name": "Euro Area HICP Inflation",
+    "category": "macro",
+    "subcategory": "inflation",
+    "api_ref": "ICP.M.U2.N.000000.4.ANR",
+    "active": true
+  },
+  {
+    "asset_id": "ecb_core_hicp",
+    "symbol": "ecb_core_hicp",
+    "name": "Euro Area Core HICP (Ex Energy & Food)",
+    "category": "macro",
+    "subcategory": "inflation",
+    "api_ref": "ICP.M.U2.N.XEF000.4.ANR",
+    "active": true
+  },
+  {
+    "asset_id": "ecb_gdp",
+    "symbol": "ecb_gdp",
+    "name": "Euro Area GDP Growth Rate",
+    "category": "macro",
+    "subcategory": "gdp",
+    "api_ref": "MNA.Q.Y.I8.W2.S1.S1.B.B1GQ._Z._Z._Z.EUR.LR.GY",
+    "active": true
+  },
+  {
+    "asset_id": "ecb_unemployment",
+    "symbol": "ecb_unemployment",
+    "name": "Euro Area Unemployment Rate",
+    "category": "macro",
+    "subcategory": "employment",
+    "api_ref": "STS.M.I8.S.UNEH.RTT000.4.000",
+    "active": true
+  },
+  {
+    "asset_id": "ecb_lending_corps",
+    "symbol": "ecb_lending_corps",
+    "name": "Euro Area Lending to Corporations",
+    "category": "macro",
+    "subcategory": "credit",
+    "api_ref": "BSI.M.U2.Y.U.A20.A.1.U2.2240.Z01.A",
+    "active": true
+  },
+  {
+    "asset_id": "ecb_lending_households",
+    "symbol": "ecb_lending_households",
+    "name": "Euro Area Lending to Households",
+    "category": "macro",
+    "subcategory": "credit",
+    "api_ref": "BSI.M.U2.Y.U.A20.A.1.U2.2250.Z01.A",
+    "active": true
+  }
+]

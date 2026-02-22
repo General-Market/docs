@@ -14,10 +14,13 @@ use tracing::{debug, info, warn};
 
 use super::client::NasdaqClient;
 use crate::market_data::traits::{
-    next_us_trading_day, today_at_eastern, AssetUpdate, MarketDataSource, PriceUpdate,
-    ScheduledMarketDataSource,
+    load_all_asset_entries, load_assets_from_json, next_us_trading_day, today_at_eastern,
+    AssetUpdate, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+
+/// Asset configuration loaded from JSON at compile time
+const ASSET_JSON: &str = include_str!("../../../config/opec.json");
 
 /// Nasdaq dataset response structure
 #[derive(Debug, Deserialize)]
@@ -114,29 +117,26 @@ impl MarketDataSource for OpecMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        Ok(vec![AssetUpdate {
-            asset_id: "opec_basket".to_string(),
-            symbol: "ORB".to_string(),
-            name: "OPEC Reference Basket Price".to_string(),
-            category: Some("energy".to_string()),
-            metadata: serde_json::json!({
-                "source": "opec",
-                "unit": "usd_per_barrel",
-                "description": "Weighted average of oil prices from OPEC member countries",
-            }),
-        }])
+        load_assets_from_json(ASSET_JSON)
     }
 
     async fn fetch_prices(&self, _asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
         let now = Utc::now();
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap_or_default();
+        let entry = entries.first();
 
         match self.fetch_basket().await {
             Ok(Some((_date, value))) => {
                 if let Ok(decimal_value) = Decimal::from_str(&value.to_string()) {
                     info!("Fetched OPEC basket price: ${:.2}", value);
+                    let (asset_id, symbol) = if let Some(e) = entry {
+                        (e.asset_id.clone(), e.symbol.clone())
+                    } else {
+                        ("opec_basket".to_string(), "ORB".to_string())
+                    };
                     return Ok(vec![PriceUpdate {
-                        asset_id: "opec_basket".to_string(),
-                        symbol: "ORB".to_string(),
+                        asset_id,
+                        symbol,
                         value: decimal_value,
                         prev_close: None,
                         change_pct: None,
@@ -199,11 +199,20 @@ impl ScheduledMarketDataSource for OpecMarketSource {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::market_data::traits::load_all_asset_entries;
+
     #[test]
-    fn test_asset_id() {
-        // Verify the OPEC basket asset ID format
-        let expected_id = "opec_basket";
-        assert_eq!(expected_id.len(), 11);
-        assert!(expected_id.starts_with("opec"));
+    fn test_asset_count() {
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        assert_eq!(entries.len(), 1, "Expected 1 OPEC asset");
+    }
+
+    #[test]
+    fn test_fetch_assets() {
+        let assets = load_assets_from_json(ASSET_JSON).unwrap();
+        assert_eq!(assets.len(), 1);
+        assert_eq!(assets[0].asset_id, "opec_basket");
+        assert_eq!(assets[0].category, Some("commodities".to_string()));
     }
 }

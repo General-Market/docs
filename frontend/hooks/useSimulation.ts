@@ -78,6 +78,8 @@ interface UseSimulationResult {
 
 export function useSimulation(params: UseSimulationParams | null): UseSimulationResult {
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
+  const statusRef = useRef(status)
+  statusRef.current = status
   const [progress, setProgress] = useState<SimProgress | null>(null)
   const [result, setResult] = useState<SimRunResult | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -155,13 +157,13 @@ export function useSimulation(params: UseSimulationParams | null): UseSimulation
     }
 
     es.onerror = () => {
-      if (status === 'loading') {
+      if (statusRef.current === 'loading') {
         setError('Connection lost')
         setStatus('error')
       }
       cleanup()
     }
-  }, [params, cleanup, status])
+  }, [params, cleanup])
 
   // Cleanup on unmount
   useEffect(() => cleanup, [cleanup])

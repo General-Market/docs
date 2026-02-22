@@ -1,0 +1,83 @@
+[
+  {
+    "asset_id": "eia_crude_stocks",
+    "symbol": "WCESTUS1",
+    "name": "U.S. Crude Oil Inventories",
+    "category": "commodities",
+    "subcategory": "energy",
+    "api_ref": "WCESTUS1",
+    "active": true
+  },
+  {
+    "asset_id": "eia_spr",
+    "symbol": "WCSSTUS1",
+    "name": "Strategic Petroleum Reserve",
+    "category": "commodities",
+    "subcategory": "energy",
+    "api_ref": "WCSSTUS1",
+    "active": true
+  },
+  {
+    "asset_id": "eia_gasoline_stocks",
+    "symbol": "WGTSTUS1",
+    "name": "U.S. Gasoline Inventories",
+    "category": "commodities",
+    "subcategory": "energy",
+    "api_ref": "WGTSTUS1",
+    "active": true
+  },
+  {
+    "asset_id": "eia_distillate_stocks",
+    "symbol": "WDISTUS1",
+    "name": "U.S. Distillate Inventories",
+    "category": "commodities",
+    "subcategory": "energy",
+    "api_ref": "WDISTUS1",
+    "active": true
+  },
+  {
+    "asset_id": "eia_crude_production",
+    "symbol": "WCRFPUS2",
+    "name": "U.S. Crude Oil Production",
+    "category": "commodities",
+    "subcategory": "energy",
+    "api_ref": "WCRFPUS2",
+    "active": true
+  },
+  {
+    "asset_id": "eia_refinery_util",
+    "symbol": "WPULEUS3",
+    "name": "U.S. Refinery Utilization",
+    "category": "commodities",
+    "subcategory": "energy",
+    "api_ref": "WPULEUS3",
+    "active": true
+  },
+  {
+    "asset_id": "eia_crude_imports",
+    "symbol": "WCRIMUS2",
+    "name": "U.S. Crude Oil Imports",
+    "category": "commodities",
+    "subcategory": "energy",
+    "api_ref": "WCRIMUS2",
+    "active": true
+  },
+  {
+    "asset_id": "eia_days_supply",
+    "symbol": "WRPUPUS2",
+    "name": "Days of Crude Oil Supply",
+    "category": "commodities",
+    "subcategory": "energy",
+    "api_ref": "WRPUPUS2",
+    "active": true
+  },
+  {
+    "asset_id": "eia_natgas_storage",
+    "symbol": "natgas_storage",
+    "name": "U.S. Natural Gas Storage",
+    "category": "commodities",
+    "subcategory": "energy",
+    "api_ref": "natgas_storage",
+    "active": true
+  }
+]

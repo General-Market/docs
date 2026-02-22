@@ -17,283 +17,13 @@ use tracing::{debug, info, warn};
 
 use super::client::NasdaqClient;
 use crate::market_data::traits::{
-    is_us_market_closed, next_us_trading_day, today_at_eastern, AssetUpdate, MarketDataSource,
-    PriceUpdate, ScheduledMarketDataSource,
+    is_us_market_closed, load_all_asset_entries, load_assets_from_json, next_us_trading_day,
+    today_at_eastern, AssetUpdate, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
-/// CHRIS continuous contract definitions
-/// (code, asset_id, name, category, unit)
-const CHRIS_CONTRACTS: &[(&str, &str, &str, &str, &str)] = &[
-    // Equity Indices
-    ("CME_ES1", "chris_es", "S&P 500 E-mini", "indices", "points"),
-    (
-        "CME_NQ1",
-        "chris_nq",
-        "Nasdaq 100 E-mini",
-        "indices",
-        "points",
-    ),
-    (
-        "CME_YM1",
-        "chris_ym",
-        "Dow Jones E-mini",
-        "indices",
-        "points",
-    ),
-    (
-        "CME_RTY1",
-        "chris_rty",
-        "Russell 2000 E-mini",
-        "indices",
-        "points",
-    ),
-    (
-        "EUREX_FESX1",
-        "chris_fesx",
-        "Euro Stoxx 50",
-        "indices",
-        "points",
-    ),
-    ("EUREX_FDAX1", "chris_fdax", "DAX", "indices", "points"),
-    // Energy
-    (
-        "CME_CL1",
-        "chris_cl",
-        "WTI Crude Oil",
-        "energy",
-        "usd_per_barrel",
-    ),
-    (
-        "CME_NG1",
-        "chris_ng",
-        "Natural Gas",
-        "energy",
-        "usd_per_mmbtu",
-    ),
-    (
-        "CME_RB1",
-        "chris_rb",
-        "RBOB Gasoline",
-        "energy",
-        "usd_per_gallon",
-    ),
-    (
-        "CME_HO1",
-        "chris_ho",
-        "Heating Oil",
-        "energy",
-        "usd_per_gallon",
-    ),
-    (
-        "ICE_B1",
-        "chris_brent",
-        "Brent Crude Oil",
-        "energy",
-        "usd_per_barrel",
-    ),
-    // Metals
-    ("CME_GC1", "chris_gc", "Gold", "metals", "usd_per_oz"),
-    ("CME_SI1", "chris_si", "Silver", "metals", "usd_per_oz"),
-    ("CME_HG1", "chris_hg", "Copper", "metals", "usd_per_lb"),
-    ("CME_PL1", "chris_pl", "Platinum", "metals", "usd_per_oz"),
-    ("CME_PA1", "chris_pa", "Palladium", "metals", "usd_per_oz"),
-    // Agriculture
-    (
-        "CBOT_ZC1",
-        "chris_zc",
-        "Corn",
-        "agriculture",
-        "cents_per_bushel",
-    ),
-    (
-        "CBOT_ZS1",
-        "chris_zs",
-        "Soybeans",
-        "agriculture",
-        "cents_per_bushel",
-    ),
-    (
-        "CBOT_ZW1",
-        "chris_zw",
-        "Wheat",
-        "agriculture",
-        "cents_per_bushel",
-    ),
-    (
-        "CBOT_ZM1",
-        "chris_zm",
-        "Soybean Meal",
-        "agriculture",
-        "usd_per_ton",
-    ),
-    (
-        "CBOT_ZL1",
-        "chris_zl",
-        "Soybean Oil",
-        "agriculture",
-        "cents_per_lb",
-    ),
-    (
-        "ICE_KC1",
-        "chris_kc",
-        "Coffee",
-        "agriculture",
-        "cents_per_lb",
-    ),
-    (
-        "ICE_SB1",
-        "chris_sb",
-        "Sugar #11",
-        "agriculture",
-        "cents_per_lb",
-    ),
-    ("ICE_CC1", "chris_cc", "Cocoa", "agriculture", "usd_per_ton"),
-    (
-        "ICE_CT1",
-        "chris_ct",
-        "Cotton",
-        "agriculture",
-        "cents_per_lb",
-    ),
-    (
-        "CME_LE1",
-        "chris_le",
-        "Live Cattle",
-        "agriculture",
-        "cents_per_lb",
-    ),
-    (
-        "CME_HE1",
-        "chris_he",
-        "Lean Hogs",
-        "agriculture",
-        "cents_per_lb",
-    ),
-    // Interest Rates
-    ("CBOT_ZB1", "chris_zb", "30-Year T-Bond", "rates", "points"),
-    ("CBOT_ZN1", "chris_zn", "10-Year T-Note", "rates", "points"),
-    ("CBOT_ZF1", "chris_zf", "5-Year T-Note", "rates", "points"),
-    ("CBOT_ZT1", "chris_zt", "2-Year T-Note", "rates", "points"),
-    ("CME_GE1", "chris_ge", "Eurodollar", "rates", "points"),
-    ("EUREX_FGBL1", "chris_bund", "Euro Bund", "rates", "points"),
-    // Currencies
-    (
-        "CME_EC1",
-        "chris_ec",
-        "Euro FX",
-        "currencies",
-        "usd_per_eur",
-    ),
-    (
-        "CME_JY1",
-        "chris_jy",
-        "Japanese Yen",
-        "currencies",
-        "usd_per_jpy",
-    ),
-    (
-        "CME_BP1",
-        "chris_bp",
-        "British Pound",
-        "currencies",
-        "usd_per_gbp",
-    ),
-    (
-        "CME_SF1",
-        "chris_sf",
-        "Swiss Franc",
-        "currencies",
-        "usd_per_chf",
-    ),
-    (
-        "CME_CD1",
-        "chris_cd",
-        "Canadian Dollar",
-        "currencies",
-        "usd_per_cad",
-    ),
-    (
-        "CME_AD1",
-        "chris_ad",
-        "Australian Dollar",
-        "currencies",
-        "usd_per_aud",
-    ),
-    (
-        "ICE_DX1",
-        "chris_dx",
-        "US Dollar Index",
-        "currencies",
-        "index",
-    ),
-    // Volatility
-    ("CBOE_VX1", "chris_vx", "VIX Futures", "volatility", "index"),
-    // Additional contracts to reach 50
-    (
-        "CME_NIY1",
-        "chris_niy",
-        "Nikkei 225 (Yen)",
-        "indices",
-        "points",
-    ),
-    (
-        "SGX_NK1",
-        "chris_nk",
-        "Nikkei 225 (SGX)",
-        "indices",
-        "points",
-    ),
-    (
-        "HKEX_HSI1",
-        "chris_hsi",
-        "Hang Seng Index",
-        "indices",
-        "points",
-    ),
-    (
-        "CME_NZ1",
-        "chris_nz",
-        "New Zealand Dollar",
-        "currencies",
-        "usd_per_nzd",
-    ),
-    (
-        "CME_MP1",
-        "chris_mp",
-        "Mexican Peso",
-        "currencies",
-        "usd_per_mxn",
-    ),
-    (
-        "CME_BR1",
-        "chris_br",
-        "Brazilian Real",
-        "currencies",
-        "usd_per_brl",
-    ),
-    (
-        "CME_RU1",
-        "chris_ru",
-        "Russian Ruble",
-        "currencies",
-        "usd_per_rub",
-    ),
-    (
-        "CBOT_ZO1",
-        "chris_zo",
-        "Oats",
-        "agriculture",
-        "cents_per_bushel",
-    ),
-    (
-        "CBOT_ZR1",
-        "chris_zr",
-        "Rough Rice",
-        "agriculture",
-        "cents_per_cwt",
-    ),
-];
+/// Asset configuration loaded from JSON at compile time
+const ASSET_JSON: &str = include_str!("../../../config/futures.json");
 
 /// Nasdaq dataset response structure
 #[derive(Debug, Deserialize)]
@@ -316,10 +46,10 @@ impl ChrisMarketSource {
     /// Create from environment variable
     pub fn from_env() -> Result<Self> {
         let client = NasdaqClient::from_env()?;
-        info!(
-            "CHRIS client initialized with {} contracts",
-            CHRIS_CONTRACTS.len()
-        );
+        let asset_count = load_assets_from_json(ASSET_JSON)
+            .map(|a| a.len())
+            .unwrap_or(0);
+        info!("CHRIS client initialized with {} contracts", asset_count);
         Ok(Self { client })
     }
 
@@ -428,32 +158,25 @@ impl MarketDataSource for ChrisMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        Ok(CHRIS_CONTRACTS
-            .iter()
-            .map(|(code, asset_id, name, category, unit)| AssetUpdate {
-                asset_id: asset_id.to_string(),
-                symbol: code.to_string(),
-                name: name.to_string(),
-                category: Some(category.to_string()),
-                metadata: serde_json::json!({
-                    "source": "chris",
-                    "contract_code": code,
-                    "unit": unit,
-                    "continuous": true,
-                }),
-            })
-            .collect())
+        load_assets_from_json(ASSET_JSON)
     }
 
     async fn fetch_prices(&self, _asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
         let now = Utc::now();
         let mut results = Vec::new();
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap_or_default();
 
-        for (code, asset_id, _name, _category, _unit) in CHRIS_CONTRACTS {
+        for entry in &entries {
+            if !entry.active {
+                continue;
+            }
+
+            let contract_code = &entry.api_ref;
+
             // Small delay between requests
             tokio::time::sleep(Duration::from_millis(100)).await;
 
-            match self.fetch_contract(code).await {
+            match self.fetch_contract(contract_code).await {
                 Ok(Some(price)) => {
                     if let Ok(value) = Decimal::from_str(&price.settle.to_string()) {
                         let prev_close = price
@@ -472,8 +195,8 @@ impl MarketDataSource for ChrisMarketSource {
                             .and_then(|v| Decimal::from_str(&v.to_string()).ok());
 
                         results.push(PriceUpdate {
-                            asset_id: asset_id.to_string(),
-                            symbol: code.to_string(),
+                            asset_id: entry.asset_id.clone(),
+                            symbol: entry.symbol.clone(),
                             value,
                             prev_close,
                             change_pct,
@@ -484,10 +207,10 @@ impl MarketDataSource for ChrisMarketSource {
                     }
                 }
                 Ok(None) => {
-                    debug!("No CHRIS data for {}", code);
+                    debug!("No CHRIS data for {}", contract_code);
                 }
                 Err(e) => {
-                    warn!("Error fetching CHRIS contract {}: {:?}", code, e);
+                    warn!("Error fetching CHRIS contract {}: {:?}", contract_code, e);
                 }
             }
         }
@@ -548,21 +271,29 @@ impl ScheduledMarketDataSource for ChrisMarketSource {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::market_data::traits::load_all_asset_entries;
 
     #[test]
     fn test_contract_count() {
-        assert_eq!(CHRIS_CONTRACTS.len(), 50, "Expected exactly 50 CHRIS contracts");
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        assert_eq!(entries.len(), 50, "Expected exactly 50 CHRIS contracts");
     }
 
     #[test]
-    fn test_categories() {
-        let categories: Vec<_> = CHRIS_CONTRACTS.iter().map(|c| c.3).collect();
-        assert!(categories.contains(&"indices"));
-        assert!(categories.contains(&"energy"));
-        assert!(categories.contains(&"metals"));
-        assert!(categories.contains(&"agriculture"));
-        assert!(categories.contains(&"rates"));
-        assert!(categories.contains(&"currencies"));
-        assert!(categories.contains(&"volatility"));
+    fn test_fetch_assets_filters_active() {
+        let assets = load_assets_from_json(ASSET_JSON).unwrap();
+        assert!(!assets.is_empty());
+        for asset in &assets {
+            assert_eq!(asset.category, Some("commodities".to_string()));
+        }
+    }
+
+    #[test]
+    fn test_subcategories() {
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        let subcats: Vec<&str> = entries.iter().map(|e| e.subcategory.as_str()).collect();
+        assert!(subcats.contains(&"energy"));
+        assert!(subcats.contains(&"metals"));
+        assert!(subcats.contains(&"agriculture"));
     }
 }

@@ -16,41 +16,13 @@ use tracing::{debug, info, warn};
 
 use super::client::NasdaqClient;
 use crate::market_data::traits::{
-    today_at_eastern, AssetUpdate, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
+    load_all_asset_entries, load_assets_from_json, today_at_eastern, AssetUpdate,
+    MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
-/// CFTC market definitions
-/// (market_code, name, category)
-const CFTC_MARKETS: &[(&str, &str, &str)] = &[
-    // Equity Indices
-    ("13874A", "E-mini S&P 500", "equity_indices"),
-    ("209742", "E-mini Nasdaq 100", "equity_indices"),
-    ("124603", "E-mini Dow Jones", "equity_indices"),
-    ("1170E1", "VIX Futures", "volatility"),
-    // Energy
-    ("067651", "WTI Crude Oil", "energy"),
-    ("023651", "Natural Gas", "energy"),
-    ("06765A", "Brent Crude Oil", "energy"),
-    // Metals
-    ("088691", "Gold", "metals"),
-    ("084691", "Silver", "metals"),
-    ("085692", "Copper", "metals"),
-    // Currencies
-    ("099741", "Euro FX", "currencies"),
-    ("096742", "Japanese Yen", "currencies"),
-    ("092741", "British Pound", "currencies"),
-    ("090741", "Swiss Franc", "currencies"),
-    // Interest Rates
-    ("043602", "10-Year T-Note", "rates"),
-    ("042601", "2-Year T-Note", "rates"),
-    ("044601", "5-Year T-Note", "rates"),
-    ("020601", "30-Year T-Bond", "rates"),
-    // Agriculture
-    ("002602", "Corn", "agriculture"),
-    ("005602", "Soybeans", "agriculture"),
-    ("001602", "Wheat", "agriculture"),
-];
+/// Asset configuration loaded from JSON at compile time
+const ASSET_JSON: &str = include_str!("../../../config/cftc.json");
 
 /// Nasdaq dataset response structure for CFTC
 #[derive(Debug, Deserialize)]
@@ -73,12 +45,24 @@ impl CftcMarketSource {
     /// Create from environment variable
     pub fn from_env() -> Result<Self> {
         let client = NasdaqClient::from_env()?;
-        info!(
-            "CFTC client initialized with {} markets ({} assets)",
-            CFTC_MARKETS.len(),
-            CFTC_MARKETS.len() * 2
-        );
+        let asset_count = load_assets_from_json(ASSET_JSON)
+            .map(|a| a.len())
+            .unwrap_or(0);
+        info!("CFTC client initialized with {} assets", asset_count);
         Ok(Self { client })
+    }
+
+    /// Extract unique market codes from the JSON entries.
+    /// api_ref format: "CODE:position_type"
+    fn market_codes() -> Vec<String> {
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap_or_default();
+        let mut codes: Vec<String> = entries
+            .iter()
+            .filter_map(|e| e.api_ref.split(':').next().map(|s| s.to_string()))
+            .collect();
+        codes.sort();
+        codes.dedup();
+        codes
     }
 
     /// Fetch CFTC data for a market code
@@ -187,46 +171,15 @@ impl MarketDataSource for CftcMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        let mut assets = Vec::new();
-
-        for (code, name, category) in CFTC_MARKETS {
-            // Net speculative (non-commercial) position
-            assets.push(AssetUpdate {
-                asset_id: format!("cftc_{}_net_spec", code.to_lowercase()),
-                symbol: format!("{}_SPEC", code),
-                name: format!("{} - Net Speculative", name),
-                category: Some(category.to_string()),
-                metadata: serde_json::json!({
-                    "source": "cftc",
-                    "market_code": code,
-                    "position_type": "net_speculative",
-                    "report_type": "combined",
-                }),
-            });
-
-            // Net commercial position
-            assets.push(AssetUpdate {
-                asset_id: format!("cftc_{}_net_comm", code.to_lowercase()),
-                symbol: format!("{}_COMM", code),
-                name: format!("{} - Net Commercial", name),
-                category: Some(category.to_string()),
-                metadata: serde_json::json!({
-                    "source": "cftc",
-                    "market_code": code,
-                    "position_type": "net_commercial",
-                    "report_type": "combined",
-                }),
-            });
-        }
-
-        Ok(assets)
+        load_assets_from_json(ASSET_JSON)
     }
 
     async fn fetch_prices(&self, _asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
         let now = Utc::now();
         let mut results = Vec::new();
+        let market_codes = Self::market_codes();
 
-        for (code, _name, _category) in CFTC_MARKETS {
+        for code in &market_codes {
             // Small delay between requests
             tokio::time::sleep(Duration::from_millis(100)).await;
 
@@ -345,30 +298,44 @@ impl ScheduledMarketDataSource for CftcMarketSource {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::market_data::traits::load_all_asset_entries;
 
     #[test]
-    fn test_market_count() {
-        assert!(
-            CFTC_MARKETS.len() >= 20,
-            "Expected at least 20 CFTC markets"
-        );
+    fn test_asset_count() {
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        assert_eq!(entries.len(), 42, "Expected 42 CFTC assets (21 markets × 2)");
     }
 
     #[test]
-    fn test_asset_generation() {
-        // Each market generates 2 assets (net_spec, net_comm)
-        let total_assets = CFTC_MARKETS.len() * 2;
-        assert_eq!(total_assets, 42); // 21 markets × 2
+    fn test_fetch_assets_filters_active() {
+        let assets = load_assets_from_json(ASSET_JSON).unwrap();
+        assert!(!assets.is_empty());
+        // All active entries should have regulatory category
+        for asset in &assets {
+            assert_eq!(asset.category, Some("regulatory".to_string()));
+        }
     }
 
     #[test]
-    fn test_categories_present() {
-        let categories: Vec<_> = CFTC_MARKETS.iter().map(|m| m.2).collect();
-        assert!(categories.contains(&"equity_indices"));
-        assert!(categories.contains(&"energy"));
-        assert!(categories.contains(&"metals"));
-        assert!(categories.contains(&"currencies"));
-        assert!(categories.contains(&"rates"));
-        assert!(categories.contains(&"agriculture"));
+    fn test_market_codes_extraction() {
+        let codes = CftcMarketSource::market_codes();
+        assert!(codes.len() >= 20, "Expected at least 20 unique market codes");
+        // Verify deduplication worked
+        let mut sorted = codes.clone();
+        sorted.sort();
+        sorted.dedup();
+        assert_eq!(codes.len(), sorted.len());
+    }
+
+    #[test]
+    fn test_api_ref_format() {
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        for entry in &entries {
+            assert!(
+                entry.api_ref.contains(':'),
+                "api_ref '{}' should contain ':' separator",
+                entry.api_ref
+            );
+        }
     }
 }

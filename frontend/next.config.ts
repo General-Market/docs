@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3001";
+const isDev = process.env.NODE_ENV !== "production";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -44,7 +45,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://index.rpc.zeeve.net wss://relay.walletconnect.com https://*.walletconnect.com; frame-ancestors 'none'",
+            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://index.rpc.zeeve.net wss://relay.walletconnect.com https://*.walletconnect.com${isDev ? " http://localhost:* ws://localhost:*" : ""}; frame-src https://www.youtube-nocookie.com https://www.youtube.com; frame-ancestors 'none'`,
           },
         ],
       },
@@ -103,6 +104,14 @@ const nextConfig: NextConfig = {
       {
         source: "/api/snapshots/:path*",
         destination: `${BACKEND_URL}/api/snapshots/:path*`,
+      },
+      {
+        source: "/api/vision/snapshot/meta",
+        destination: "http://localhost:8200/snapshot/meta",
+      },
+      {
+        source: "/api/vision/snapshot",
+        destination: "http://localhost:8200/snapshot",
       },
       {
         source: "/health",

@@ -59,7 +59,7 @@ export function useItpFees(itpId: string | null): UseItpFeesReturn {
     if (!publicClient || !itpId) return
 
     // Skip if FeeRegistry address not configured
-    if (!INDEX_PROTOCOL.feeRegistry || INDEX_PROTOCOL.feeRegistry === '' || INDEX_PROTOCOL.feeRegistry === '0x') {
+    if (!INDEX_PROTOCOL.feeRegistry || (INDEX_PROTOCOL.feeRegistry as string) === '' || (INDEX_PROTOCOL.feeRegistry as string) === '0x') {
       setFees(null)
       return
     }

@@ -56,6 +56,8 @@ interface UseSimSweepResult {
 
 export function useSimSweep(params: UseSimSweepParams | null): UseSimSweepResult {
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
+  const statusRef = useRef(status)
+  statusRef.current = status
   const [progress, setProgress] = useState<SweepProgress | null>(null)
   const [completedVariants, setCompletedVariants] = useState<SweepVariantResult[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -153,13 +155,13 @@ export function useSimSweep(params: UseSimSweepParams | null): UseSimSweepResult
     }
 
     es.onerror = () => {
-      if (status === 'loading') {
+      if (statusRef.current === 'loading') {
         setError('Connection lost')
         setStatus('error')
       }
       cleanup()
     }
-  }, [params, cleanup, status])
+  }, [params, cleanup])
 
   useEffect(() => cleanup, [cleanup])
 

@@ -1,0 +1,22 @@
+[
+  {"asset_id": "wb_usa_ny_gdp_mktp_cd", "symbol": "USA_GDP", "name": "United States - GDP (Current USD)", "category": "macro", "subcategory": "global_indicators", "api_ref": "USA:NY.GDP.MKTP.CD", "active": true},
+  {"asset_id": "wb_usa_ny_gdp_mktp_kd_zg", "symbol": "USA_GDP_GROWTH", "name": "United States - GDP Growth (Annual %)", "category": "macro", "subcategory": "global_indicators", "api_ref": "USA:NY.GDP.MKTP.KD.ZG", "active": true},
+  {"asset_id": "wb_usa_fp_cpi_totl_zg", "symbol": "USA_CPI", "name": "United States - Inflation (CPI)", "category": "macro", "subcategory": "global_indicators", "api_ref": "USA:FP.CPI.TOTL.ZG", "active": true},
+  {"asset_id": "wb_usa_sl_uem_totl_zs", "symbol": "USA_UNEMP", "name": "United States - Unemployment Rate", "category": "macro", "subcategory": "global_indicators", "api_ref": "USA:SL.UEM.TOTL.ZS", "active": true},
+  {"asset_id": "wb_chn_ny_gdp_mktp_cd", "symbol": "CHN_GDP", "name": "China - GDP (Current USD)", "category": "macro", "subcategory": "global_indicators", "api_ref": "CHN:NY.GDP.MKTP.CD", "active": true},
+  {"asset_id": "wb_chn_ny_gdp_mktp_kd_zg", "symbol": "CHN_GDP_GROWTH", "name": "China - GDP Growth (Annual %)", "category": "macro", "subcategory": "global_indicators", "api_ref": "CHN:NY.GDP.MKTP.KD.ZG", "active": true},
+  {"asset_id": "wb_chn_fp_cpi_totl_zg", "symbol": "CHN_CPI", "name": "China - Inflation (CPI)", "category": "macro", "subcategory": "global_indicators", "api_ref": "CHN:FP.CPI.TOTL.ZG", "active": true},
+  {"asset_id": "wb_jpn_ny_gdp_mktp_cd", "symbol": "JPN_GDP", "name": "Japan - GDP (Current USD)", "category": "macro", "subcategory": "global_indicators", "api_ref": "JPN:NY.GDP.MKTP.CD", "active": true},
+  {"asset_id": "wb_jpn_ny_gdp_mktp_kd_zg", "symbol": "JPN_GDP_GROWTH", "name": "Japan - GDP Growth (Annual %)", "category": "macro", "subcategory": "global_indicators", "api_ref": "JPN:NY.GDP.MKTP.KD.ZG", "active": true},
+  {"asset_id": "wb_deu_ny_gdp_mktp_cd", "symbol": "DEU_GDP", "name": "Germany - GDP (Current USD)", "category": "macro", "subcategory": "global_indicators", "api_ref": "DEU:NY.GDP.MKTP.CD", "active": true},
+  {"asset_id": "wb_deu_ny_gdp_mktp_kd_zg", "symbol": "DEU_GDP_GROWTH", "name": "Germany - GDP Growth (Annual %)", "category": "macro", "subcategory": "global_indicators", "api_ref": "DEU:NY.GDP.MKTP.KD.ZG", "active": true},
+  {"asset_id": "wb_gbr_ny_gdp_mktp_cd", "symbol": "GBR_GDP", "name": "United Kingdom - GDP (Current USD)", "category": "macro", "subcategory": "global_indicators", "api_ref": "GBR:NY.GDP.MKTP.CD", "active": true},
+  {"asset_id": "wb_gbr_ny_gdp_mktp_kd_zg", "symbol": "GBR_GDP_GROWTH", "name": "United Kingdom - GDP Growth (Annual %)", "category": "macro", "subcategory": "global_indicators", "api_ref": "GBR:NY.GDP.MKTP.KD.ZG", "active": true},
+  {"asset_id": "wb_ind_ny_gdp_mktp_cd", "symbol": "IND_GDP", "name": "India - GDP (Current USD)", "category": "macro", "subcategory": "global_indicators", "api_ref": "IND:NY.GDP.MKTP.CD", "active": true},
+  {"asset_id": "wb_ind_ny_gdp_mktp_kd_zg", "symbol": "IND_GDP_GROWTH", "name": "India - GDP Growth (Annual %)", "category": "macro", "subcategory": "global_indicators", "api_ref": "IND:NY.GDP.MKTP.KD.ZG", "active": true},
+  {"asset_id": "wb_bra_ny_gdp_mktp_cd", "symbol": "BRA_GDP", "name": "Brazil - GDP (Current USD)", "category": "macro", "subcategory": "global_indicators", "api_ref": "BRA:NY.GDP.MKTP.CD", "active": true},
+  {"asset_id": "wb_bra_ny_gdp_mktp_kd_zg", "symbol": "BRA_GDP_GROWTH", "name": "Brazil - GDP Growth (Annual %)", "category": "macro", "subcategory": "global_indicators", "api_ref": "BRA:NY.GDP.MKTP.KD.ZG", "active": true},
+  {"asset_id": "wb_fra_ny_gdp_mktp_cd", "symbol": "FRA_GDP", "name": "France - GDP (Current USD)", "category": "macro", "subcategory": "global_indicators", "api_ref": "FRA:NY.GDP.MKTP.CD", "active": true},
+  {"asset_id": "wb_ita_ny_gdp_mktp_cd", "symbol": "ITA_GDP", "name": "Italy - GDP (Current USD)", "category": "macro", "subcategory": "global_indicators", "api_ref": "ITA:NY.GDP.MKTP.CD", "active": true},
+  {"asset_id": "wb_can_ny_gdp_mktp_cd", "symbol": "CAN_GDP", "name": "Canada - GDP (Current USD)", "category": "macro", "subcategory": "global_indicators", "api_ref": "CAN:NY.GDP.MKTP.CD", "active": true}
+]

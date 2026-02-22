@@ -4276,26 +4276,47 @@ async fn market_batch_history(
 
 /// Known source metadata (hardcoded from source implementations).
 /// Used to build the SourceSchedule list without runtime references.
+/// Source metadata: (source_id, display_name, sync_interval_secs)
+/// source_id MUST match the value returned by each source's `source_id()` trait method.
 const SOURCE_META: &[(&str, &str, u64)] = &[
-    ("finnhub", "Finnhub Stocks", 600),
-    ("fred", "Federal Reserve (FRED)", 86400),
-    ("bls", "Bureau of Labor Statistics", 86400),
-    ("worldbank", "World Bank", 604800),
-    ("eia", "US Energy (EIA)", 86400),
-    ("ecb", "ECB Euro Rates", 86400),
-    ("openmeteo", "Weather (Open-Meteo)", 3600),
-    ("sec_edgar", "SEC EDGAR 13F", 21600),
-    ("sec_efts", "SEC EFTS Filing Counts", 14400),
-    ("sec_insider", "SEC Insider Trading", 14400),
-    ("finra_short_vol", "FINRA Daily Short Volume", 86400),
-    ("finra", "FINRA Short Interest", 86400),
-    ("congress", "Congressional Trading", 86400),
-    ("nasdaq_cftc", "CFTC Commitments", 604800),
-    ("nasdaq_chris", "Continuous Futures", 86400),
-    ("nasdaq_bchain", "Bitcoin On-Chain", 86400),
-    ("nasdaq_opec", "OPEC", 2592000),
-    ("nasdaq_imf", "IMF Indicators", 2592000),
-    ("treasury", "US Treasury Yields", 86400),
+    // ── Original sources (21, all via MarketDataSource trait) ──────────────
+    ("crypto", "CoinGecko Crypto", 60),                   // coingecko: source_id="crypto"
+    ("defi", "DefiLlama DeFi", 120),                      // defillama: source_id="defi"
+    ("stocks", "Stocks (Finnhub)", 600),                   // finnhub
+    ("rates", "Federal Reserve (FRED)", 86400),            // fred
+    ("bls", "Bureau of Labor Statistics", 86400),          // bls
+    ("worldbank", "World Bank", 604800),                   // worldbank
+    ("eia", "US Energy (EIA)", 86400),                     // eia
+    ("ecb", "ECB Euro Rates", 86400),                      // ecb
+    ("weather", "Weather (Open-Meteo)", 3600),             // openmeteo
+    ("sec_13f", "SEC EDGAR 13F", 21600),                   // sec_edgar
+    ("sec_efts", "SEC EFTS Filing Counts", 14400),         // sec_efts
+    ("sec_insider", "SEC Insider Trading", 14400),         // sec_insider
+    ("finra_short_vol", "FINRA Daily Short Volume", 86400),// finra_short_vol
+    ("finra", "FINRA Short Interest", 86400),              // finra
+    ("congress", "Congressional Trading", 86400),          // congress
+    ("cftc", "CFTC Commitments", 604800),                  // nasdaq/cftc
+    ("futures", "Continuous Futures", 86400),               // nasdaq/chris
+    ("bchain", "Bitcoin On-Chain", 86400),                 // nasdaq/bchain
+    ("opec", "OPEC", 2592000),                             // nasdaq/opec
+    ("imf", "IMF Indicators", 2592000),                    // nasdaq/imf
+    ("bonds", "US Treasury Yields", 86400),                // treasury
+    // ── New sources (15 additional) ─────────────────────────────────────────
+    ("anilist", "AniList Anime & Manga", 600),             // anilist
+    ("backpacktf", "backpack.tf TF2 Items", 600),          // backpacktf
+    ("cloudflare", "Cloudflare Radar", 600),               // cloudflare
+    ("crates_io", "crates.io Rust Packages", 600),         // crates_io
+    ("fourchan", "4chan", 600),                             // fourchan
+    ("github", "GitHub Repositories", 600),                // github
+    ("hackernews", "Hacker News", 300),                    // hackernews
+    ("npm", "npm Package Downloads", 600),                 // npm
+    ("polymarket", "Polymarket Predictions", 300),         // polymarket
+    ("pypi", "PyPI Python Packages", 600),                 // pypi
+    ("steam", "Steam Games", 600),                         // steam
+    ("tmdb", "TMDb Movies & TV", 300),                     // tmdb
+    ("twitch", "Twitch Live Streaming", 60),               // twitch
+    ("twse", "Taiwan Stock Exchange", 600),                // twse
+    ("zillow", "Zillow Real Estate", 86400),               // zillow
 ];
 
 #[derive(Serialize)]
@@ -4332,14 +4353,31 @@ struct SnapshotFullResponse {
 
 use crate::market_data::models::MarketPriceSummary;
 
-/// Build source schedule list from DB stats + hardcoded metadata
+/// Build source schedule list from DB stats + hardcoded metadata (36 entries: 21 original + 15 new)
 async fn build_source_schedules(pool: &PgPool) -> Result<Vec<SourceSchedule>, anyhow::Error> {
-    // Get per-source stats from DB
+    // Get per-source stats from market_prices.
+    // NOTE: CoinGecko (source_id="crypto") and DeFiLlama (source_id="defi") now implement
+    // MarketDataSource and write to market_prices, so the old UNION with coingecko_market_caps
+    // and defillama_protocols is no longer needed. If the new pipeline is running, their stats
+    // will appear in the market_prices GROUP BY. The old UNION ALL fallback is kept below
+    // in case the legacy collectors are still active and no market_prices rows exist yet.
+    // TODO: Remove the UNION ALL fallback once the old cg_collector/dl_collector pipelines
+    // are fully decommissioned and all crypto/defi data flows through MarketDataSource.
     let rows: Vec<(String, i64, Option<DateTime<Utc>>)> = sqlx::query_as(
         r#"
         SELECT source, COUNT(DISTINCT asset_id) as cnt, MAX(fetched_at) as last_sync
         FROM market_prices
         GROUP BY source
+        UNION ALL
+        SELECT 'crypto'::text, COUNT(DISTINCT coin_id), MAX(fetched_at)
+        FROM coingecko_market_caps
+        WHERE snapshot_date = (SELECT MAX(snapshot_date) FROM coingecko_market_caps)
+          AND NOT EXISTS (SELECT 1 FROM market_prices WHERE source = 'crypto' LIMIT 1)
+        UNION ALL
+        SELECT 'defi'::text, COUNT(*), MAX(updated_at)
+        FROM defillama_protocols
+        WHERE tvl IS NOT NULL AND tvl > 0
+          AND NOT EXISTS (SELECT 1 FROM market_prices WHERE source = 'defi' LIMIT 1)
         "#,
     )
     .fetch_all(pool)
@@ -4378,7 +4416,7 @@ async fn build_source_schedules(pool: &PgPool) -> Result<Vec<SourceSchedule>, an
         schedules.push(SourceSchedule {
             source_id: id.to_string(),
             display_name: name.to_string(),
-            enabled: count > 0,
+            enabled: true,
             sync_interval_secs: *interval,
             last_sync,
             next_sync: estimated_next,
@@ -4423,9 +4461,22 @@ async fn snapshot_meta(
         .await
         .map_err(internal_error)?;
 
-    // Per-source active asset counts
+    // Per-source active asset counts from market_assets.
+    // TODO: Remove the UNION ALL fallback for crypto/defi once old collectors are decommissioned.
     let count_rows: Vec<(String, i64)> = sqlx::query_as(
-        "SELECT source, COUNT(*) FROM market_assets WHERE is_active = true GROUP BY source",
+        r#"
+        SELECT source, COUNT(*) FROM market_assets WHERE is_active = true GROUP BY source
+        UNION ALL
+        SELECT 'crypto'::text, COUNT(DISTINCT coin_id)
+        FROM coingecko_market_caps
+        WHERE snapshot_date = (SELECT MAX(snapshot_date) FROM coingecko_market_caps)
+          AND NOT EXISTS (SELECT 1 FROM market_assets WHERE source = 'crypto' AND is_active = true LIMIT 1)
+        UNION ALL
+        SELECT 'defi'::text, COUNT(*)
+        FROM defillama_protocols
+        WHERE tvl IS NOT NULL AND tvl > 0
+          AND NOT EXISTS (SELECT 1 FROM market_assets WHERE source = 'defi' AND is_active = true LIMIT 1)
+        "#,
     )
     .fetch_all(&state.pool)
     .await
@@ -4450,7 +4501,11 @@ async fn snapshot(
         .await
         .map_err(internal_error)?;
 
-    // Fetch latest price per (source, asset_id) across ALL sources
+    // Fetch latest price per (source, asset_id) across ALL sources.
+    // CoinGecko (crypto) and DeFiLlama (defi) now write to market_assets/market_prices
+    // via MarketDataSource. The UNION ALL fallback to legacy tables is kept until the old
+    // cg_collector/dl_collector pipelines are fully decommissioned.
+    // TODO: Remove the UNION ALL fallback once old collectors are decommissioned.
     let rows: Vec<(
         String, String, String, String, Option<String>,
         rust_decimal::Decimal, Option<rust_decimal::Decimal>, Option<rust_decimal::Decimal>,
@@ -4458,15 +4513,61 @@ async fn snapshot(
         DateTime<Utc>, Option<String>,
     )> = sqlx::query_as(
         r#"
-        SELECT DISTINCT ON (a.source, a.asset_id)
-            a.asset_id, a.source, a.symbol, a.name, a.category,
-            p.value, p.prev_close, p.change_pct,
-            p.volume_24h, p.market_cap, p.fetched_at,
-            a.metadata->>'image_url' as image_url
-        FROM market_assets a
-        JOIN market_prices p ON a.source = p.source AND a.asset_id = p.asset_id
-        WHERE a.is_active = true
-        ORDER BY a.source, a.asset_id, p.fetched_at DESC
+        SELECT DISTINCT ON (source, asset_id) asset_id, source, symbol, name, category,
+               value, prev_close, change_pct, volume_24h, market_cap, fetched_at, image_url
+        FROM (
+            -- All market data sources (including new crypto/defi via MarketDataSource)
+            SELECT
+                a.asset_id, a.source, a.symbol, a.name, a.category,
+                p.value, p.prev_close, p.change_pct,
+                p.volume_24h, p.market_cap, p.fetched_at,
+                a.metadata->>'image_url' as image_url
+            FROM market_assets a
+            JOIN market_prices p ON a.source = p.source AND a.asset_id = p.asset_id
+            WHERE a.is_active = true
+
+            UNION ALL
+
+            -- Legacy CoinGecko fallback (only if no market_prices rows exist for source='crypto')
+            SELECT
+                c.coin_id as asset_id,
+                'crypto'::text as source,
+                COALESCE(c.symbol, c.coin_id) as symbol,
+                COALESCE(c.name, c.coin_id) as name,
+                'cryptocurrency'::text as category,
+                c.price_usd::decimal(30,10) as value,
+                NULL::decimal(30,10) as prev_close,
+                NULL::decimal(10,4) as change_pct,
+                c.total_volume_usd::decimal(30,2) as volume_24h,
+                c.market_cap_usd::decimal(30,2) as market_cap,
+                c.fetched_at,
+                NULL::text as image_url
+            FROM coingecko_market_caps c
+            WHERE c.snapshot_date = (SELECT MAX(snapshot_date) FROM coingecko_market_caps)
+              AND c.price_usd IS NOT NULL
+              AND NOT EXISTS (SELECT 1 FROM market_prices WHERE source = 'crypto' LIMIT 1)
+
+            UNION ALL
+
+            -- Legacy DeFiLlama fallback (only if no market_prices rows exist for source='defi')
+            SELECT
+                d.slug as asset_id,
+                'defi'::text as source,
+                COALESCE(d.symbol, d.slug) as symbol,
+                d.name,
+                COALESCE(d.category, 'DeFi') as category,
+                d.tvl::decimal(30,10) as value,
+                NULL::decimal(30,10) as prev_close,
+                d.tvl_change_1d::decimal(10,4) as change_pct,
+                NULL::decimal(30,2) as volume_24h,
+                d.mcap::decimal(30,2) as market_cap,
+                d.updated_at as fetched_at,
+                NULL::text as image_url
+            FROM defillama_protocols d
+            WHERE d.tvl IS NOT NULL AND d.tvl > 0
+              AND NOT EXISTS (SELECT 1 FROM market_prices WHERE source = 'defi' LIMIT 1)
+        ) combined
+        ORDER BY source, asset_id, fetched_at DESC
         "#,
     )
     .fetch_all(&state.pool)
@@ -4882,6 +4983,11 @@ async fn build_vault_snapshot(state: &AppState, arb: &Arc<Provider<Http>>) -> (V
 
         let balance_f64: f64 = balance.to_string().parse().unwrap_or(0.0);
         let usd_value = balance_f64 * price_f64 / 1e18;
+
+        // Sanity cap: skip assets with unrealistic test-chain balances (>$100M)
+        if usd_value > 100_000_000.0 {
+            continue;
+        }
 
         total_usd += usd_value;
         assets.push(VaultAssetInfo { symbol, usd_value });

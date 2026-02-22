@@ -12,87 +12,16 @@ use std::time::Duration;
 use tracing::{debug, info, warn};
 
 use crate::market_data::traits::{
-    AssetUpdate, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
+    load_all_asset_entries, load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate,
+    ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
 /// Congress.gov API base URL
 const CONGRESS_API_URL: &str = "https://api.congress.gov/v3";
 
-/// Legislative metrics to track
-/// (asset_id, name, endpoint_suffix, category, unit)
-const CONGRESS_METRICS: &[(&str, &str, &str, &str, &str)] = &[
-    (
-        "congress_bills_introduced_house",
-        "Bills Introduced (House)",
-        "bill?chamber=house",
-        "house",
-        "count",
-    ),
-    (
-        "congress_bills_introduced_senate",
-        "Bills Introduced (Senate)",
-        "bill?chamber=senate",
-        "senate",
-        "count",
-    ),
-    (
-        "congress_bills_passed_house",
-        "Bills Passed House",
-        "bill?billStatus=passedHouse",
-        "house",
-        "count",
-    ),
-    (
-        "congress_bills_passed_senate",
-        "Bills Passed Senate",
-        "bill?billStatus=passedSenate",
-        "senate",
-        "count",
-    ),
-    (
-        "congress_bills_became_law",
-        "Bills Became Law",
-        "bill?billStatus=becameLaw",
-        "enacted",
-        "count",
-    ),
-    (
-        "congress_nominations_pending",
-        "Pending Nominations",
-        "nomination?status=pending",
-        "nominations",
-        "count",
-    ),
-    (
-        "congress_nominations_confirmed",
-        "Confirmed Nominations",
-        "nomination?status=confirmed",
-        "nominations",
-        "count",
-    ),
-    (
-        "congress_bills_vetoed",
-        "Vetoed Bills",
-        "bill?billStatus=vetoed",
-        "enacted",
-        "count",
-    ),
-    (
-        "congress_resolutions_passed",
-        "Joint Resolutions Passed",
-        "bill?billType=sjres&billStatus=passSenate",
-        "resolutions",
-        "count",
-    ),
-    (
-        "congress_committee_hearings",
-        "Committee Hearings",
-        "committee-meeting",
-        "hearings",
-        "count",
-    ),
-];
+/// Asset configuration loaded from JSON at compile time
+const ASSET_JSON: &str = include_str!("../../../config/congress.json");
 
 /// Congress.gov API response structure
 #[derive(Debug, Deserialize)]
@@ -121,10 +50,10 @@ impl CongressMarketSource {
             .build()
             .context("Failed to build reqwest client")?;
 
-        info!(
-            "Congress client initialized with {} metrics",
-            CONGRESS_METRICS.len()
-        );
+        let asset_count = load_assets_from_json(ASSET_JSON)
+            .map(|a| a.len())
+            .unwrap_or(0);
+        info!("Congress client initialized with {} metrics", asset_count);
 
         Ok(Self { client, api_key })
     }
@@ -184,36 +113,24 @@ impl MarketDataSource for CongressMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        Ok(CONGRESS_METRICS
-            .iter()
-            .map(|(asset_id, name, endpoint, category, unit)| AssetUpdate {
-                asset_id: asset_id.to_string(),
-                symbol: asset_id.to_string(),
-                name: name.to_string(),
-                category: Some(category.to_string()),
-                metadata: serde_json::json!({
-                    "source": "congress",
-                    "endpoint": endpoint,
-                    "unit": unit,
-                    "update_frequency": "daily",
-                }),
-            })
-            .collect())
+        load_assets_from_json(ASSET_JSON)
     }
 
     async fn fetch_prices(&self, _asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
         let now = Utc::now();
         let mut results = Vec::new();
 
-        for (asset_id, _name, endpoint, _category, _unit) in CONGRESS_METRICS {
+        let entries = load_all_asset_entries(ASSET_JSON)?;
+
+        for entry in &entries {
             tokio::time::sleep(Duration::from_millis(200)).await;
 
-            match self.fetch_metric(endpoint).await {
+            match self.fetch_metric(&entry.api_ref).await {
                 Ok(Some(count)) => {
                     if let Ok(value) = Decimal::from_str(&count.to_string()) {
                         results.push(PriceUpdate {
-                            asset_id: asset_id.to_string(),
-                            symbol: asset_id.to_string(),
+                            asset_id: entry.asset_id.clone(),
+                            symbol: entry.symbol.clone(),
                             value,
                             prev_close: None,
                             change_pct: None,
@@ -224,10 +141,10 @@ impl MarketDataSource for CongressMarketSource {
                     }
                 }
                 Ok(None) => {
-                    debug!("No Congress data for {}", asset_id);
+                    debug!("No Congress data for {}", entry.asset_id);
                 }
                 Err(e) => {
-                    warn!("Error fetching Congress data for {}: {:?}", asset_id, e);
+                    warn!("Error fetching Congress data for {}: {:?}", entry.asset_id, e);
                 }
             }
         }
@@ -265,18 +182,14 @@ mod tests {
 
     #[test]
     fn test_metric_count() {
-        assert!(
-            CONGRESS_METRICS.len() >= 10,
-            "Expected at least 10 Congress metrics"
-        );
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        assert!(entries.len() >= 10, "Expected at least 10 Congress metrics");
     }
 
     #[test]
     fn test_categories() {
-        let categories: Vec<_> = CONGRESS_METRICS.iter().map(|m| m.3).collect();
-        assert!(categories.contains(&"house"));
-        assert!(categories.contains(&"senate"));
-        assert!(categories.contains(&"enacted"));
-        assert!(categories.contains(&"nominations"));
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        assert!(entries.iter().all(|e| e.category == "regulatory"));
+        assert!(entries.iter().all(|e| e.subcategory == "legislative"));
     }
 }

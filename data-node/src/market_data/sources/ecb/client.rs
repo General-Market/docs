@@ -13,84 +13,16 @@ use std::time::Duration;
 use tracing::{debug, info, warn};
 
 use crate::market_data::traits::{
-    is_ecb_day, is_eu_weekend, next_eu_trading_day, today_at_cet, AssetUpdate, MarketDataSource,
-    PriceUpdate, ScheduledMarketDataSource,
+    is_ecb_day, is_eu_weekend, load_all_asset_entries, load_assets_from_json, next_eu_trading_day,
+    today_at_cet, AssetUpdate, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
 /// ECB API base URL
 const ECB_API_URL: &str = "https://data-api.ecb.europa.eu/service/data";
 
-/// ECB series to track
-/// Format: (series_key, asset_id, display_name, category)
-const ECB_SERIES: &[(&str, &str, &str, &str)] = &[
-    // Key Interest Rates (change on ECB meeting days)
-    (
-        "FM.B.U2.EUR.4F.KR.MRR_FR.LEV",
-        "ecb_main_refi",
-        "ECB Main Refinancing Rate",
-        "interest_rates",
-    ),
-    (
-        "FM.B.U2.EUR.4F.KR.DFR.LEV",
-        "ecb_deposit",
-        "ECB Deposit Facility Rate",
-        "interest_rates",
-    ),
-    (
-        "FM.B.U2.EUR.4F.KR.MLFR.LEV",
-        "ecb_marginal",
-        "ECB Marginal Lending Rate",
-        "interest_rates",
-    ),
-    // Money Supply (M3) - released ~27th of month
-    (
-        "BSI.M.U2.Y.V.M30.X.1.U2.2300.Z01.A",
-        "ecb_m3",
-        "Euro Area M3 Money Supply",
-        "money_supply",
-    ),
-    // Inflation (HICP) - end of month
-    (
-        "ICP.M.U2.N.000000.4.ANR",
-        "ecb_hicp",
-        "Euro Area HICP Inflation",
-        "inflation",
-    ),
-    (
-        "ICP.M.U2.N.XEF000.4.ANR",
-        "ecb_core_hicp",
-        "Euro Area Core HICP (Ex Energy & Food)",
-        "inflation",
-    ),
-    // GDP - Quarterly
-    (
-        "MNA.Q.Y.I8.W2.S1.S1.B.B1GQ._Z._Z._Z.EUR.LR.GY",
-        "ecb_gdp",
-        "Euro Area GDP Growth Rate",
-        "macro",
-    ),
-    // Unemployment - Monthly
-    (
-        "STS.M.I8.S.UNEH.RTT000.4.000",
-        "ecb_unemployment",
-        "Euro Area Unemployment Rate",
-        "employment",
-    ),
-    // Credit/Lending - Monthly
-    (
-        "BSI.M.U2.Y.U.A20.A.1.U2.2240.Z01.A",
-        "ecb_lending_corps",
-        "Euro Area Lending to Corporations",
-        "credit",
-    ),
-    (
-        "BSI.M.U2.Y.U.A20.A.1.U2.2250.Z01.A",
-        "ecb_lending_households",
-        "Euro Area Lending to Households",
-        "credit",
-    ),
-];
+/// Asset configuration loaded from JSON at compile time
+const ASSET_JSON: &str = include_str!("../../../config/ecb.json");
 
 /// ECB SDMX JSON response structure
 #[derive(Debug, Deserialize)]
@@ -150,7 +82,10 @@ impl EcbMarketSource {
             .build()
             .context("Failed to build reqwest client")?;
 
-        info!("ECB client initialized with {} series", ECB_SERIES.len());
+        let asset_count = load_assets_from_json(ASSET_JSON)
+            .map(|a| a.len())
+            .unwrap_or(0);
+        info!("ECB client initialized with {} series", asset_count);
 
         Ok(Self { client })
     }
@@ -256,33 +191,22 @@ impl MarketDataSource for EcbMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        Ok(ECB_SERIES
-            .iter()
-            .map(|(series_key, asset_id, name, category)| AssetUpdate {
-                asset_id: asset_id.to_string(),
-                symbol: asset_id.to_string(),
-                name: name.to_string(),
-                category: Some(category.to_string()),
-                metadata: serde_json::json!({
-                    "source": "ecb",
-                    "series_key": series_key,
-                }),
-            })
-            .collect())
+        load_assets_from_json(ASSET_JSON)
     }
 
     async fn fetch_prices(&self, asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
         let now = Utc::now();
         let mut results = Vec::new();
 
-        // Build a lookup from asset_id to series_key
-        let series_lookup: std::collections::HashMap<&str, &str> = ECB_SERIES
-            .iter()
-            .map(|(key, id, _, _)| (*id, *key))
+        // Build a lookup from asset_id to series_key (api_ref)
+        let entries = load_all_asset_entries(ASSET_JSON)?;
+        let series_lookup: std::collections::HashMap<String, String> = entries
+            .into_iter()
+            .map(|e| (e.asset_id, e.api_ref))
             .collect();
 
         for asset_id in asset_ids {
-            if let Some(series_key) = series_lookup.get(asset_id.as_str()) {
+            if let Some(series_key) = series_lookup.get(asset_id) {
                 // Small delay between requests
                 tokio::time::sleep(Duration::from_millis(500)).await;
 
@@ -392,7 +316,8 @@ mod tests {
 
     #[test]
     fn test_series_count() {
-        assert_eq!(ECB_SERIES.len(), 10, "Expected 10 ECB series");
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        assert_eq!(entries.len(), 10, "Expected 10 ECB series");
     }
 
     #[test]
@@ -402,20 +327,39 @@ mod tests {
 
     #[test]
     fn test_series_key_format() {
-        // Verify all series keys have the expected format
-        for (key, _, _, _) in ECB_SERIES {
-            assert!(key.contains('.'), "Series key should contain dots: {}", key);
+        // Verify all api_ref (series keys) have the expected format
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        for entry in &entries {
+            assert!(
+                entry.api_ref.contains('.'),
+                "Series key should contain dots: {}",
+                entry.api_ref
+            );
         }
     }
 
     #[test]
-    fn test_category_coverage() {
-        let categories: Vec<_> = ECB_SERIES.iter().map(|(_, _, _, cat)| *cat).collect();
-        assert!(categories.contains(&"interest_rates"));
-        assert!(categories.contains(&"money_supply"));
-        assert!(categories.contains(&"inflation"));
-        assert!(categories.contains(&"employment"));
-        assert!(categories.contains(&"credit"));
-        assert!(categories.contains(&"macro"));
+    fn test_category_is_macro() {
+        // All ECB entries should have category "macro"
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        for entry in &entries {
+            assert_eq!(
+                entry.category, "macro",
+                "Asset {} should have category 'macro'",
+                entry.asset_id
+            );
+        }
+    }
+
+    #[test]
+    fn test_subcategory_coverage() {
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        let subcats: Vec<_> = entries.iter().map(|e| e.subcategory.as_str()).collect();
+        assert!(subcats.contains(&"interest_rates"));
+        assert!(subcats.contains(&"money_supply"));
+        assert!(subcats.contains(&"inflation"));
+        assert!(subcats.contains(&"employment"));
+        assert!(subcats.contains(&"credit"));
+        assert!(subcats.contains(&"gdp"));
     }
 }

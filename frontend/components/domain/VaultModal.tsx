@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useAccount } from 'wagmi'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useAccount, usePublicClient } from 'wagmi'
 import { formatUnits } from 'viem'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { useMetaMorphoVault } from '@/hooks/useMetaMorphoVault'
@@ -11,6 +11,7 @@ import { VaultDeposit } from '@/components/lending/VaultDeposit'
 import { VaultPosition } from '@/components/lending/VaultPosition'
 import { BorrowUsdc } from '@/components/lending/BorrowUsdc'
 import { RepayDebt } from '@/components/lending/RepayDebt'
+import { BRIDGED_ITP_ABI } from '@/lib/contracts/index-protocol-abi'
 
 const LendingErrorFallback = (
   <div className="bg-surface-down border border-color-down/30 rounded-xl p-6 text-center">
@@ -253,11 +254,40 @@ function InfoRow({ label, value, valueColor, mono }: { label: string; value: str
 /* ── Inline Markets Table ── */
 function MarketsTableInline() {
   const { markets, isLoading } = useMorphoMarkets()
+  const publicClient = usePublicClient()
+  const [itpNames, setItpNames] = useState<Map<string, string>>(new Map())
+  const publicClientRef = useRef(publicClient)
+
+  useEffect(() => { publicClientRef.current = publicClient }, [publicClient])
+
+  // Fetch ITP names for all collateral tokens
+  const fetchNames = useCallback(async () => {
+    const client = publicClientRef.current
+    if (!client || markets.length === 0) return
+    const nameMap = new Map<string, string>()
+    for (const m of markets) {
+      const addr = m.params.collateralToken
+      if (nameMap.has(addr)) continue
+      try {
+        const name = await client.readContract({
+          address: addr,
+          abi: BRIDGED_ITP_ABI,
+          functionName: 'name',
+        }) as string
+        nameMap.set(addr, name)
+      } catch {
+        nameMap.set(addr, 'ITP')
+      }
+    }
+    setItpNames(nameMap)
+  }, [markets])
+
+  useEffect(() => { fetchNames() }, [fetchNames])
 
   // Static demo rows for the mockup look (markets from chain + placeholder extras)
   const rows = markets.length > 0
     ? markets.map(m => ({
-        market: `USDC / ${m.params.collateralToken.slice(0, 6)}`,
+        market: `USDC / ${itpNames.get(m.params.collateralToken) || 'ITP'}`,
         collateral: 'ITP',
         supplyApy: m.borrowApy > 0 ? (m.borrowApy * (m.utilization / 100)).toFixed(2) : '--',
         borrowApy: m.borrowApy.toFixed(2),

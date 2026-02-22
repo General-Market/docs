@@ -19,14 +19,7 @@ const VISION_API_URL = process.env.NEXT_PUBLIC_VISION_API_URL || ''
 const TILE_HEIGHT = 64 // px per tile row
 const SECTION_HEADER_HEIGHT = 48
 const SUBHEADER_HEIGHT = 36
-const COLS_BY_WIDTH: [number, number][] = [
-  [1800, 22],
-  [1400, 18],
-  [1200, 14],
-  [1000, 10],
-  [768, 8],
-  [0, 6],
-]
+const MIN_TILE_WIDTH = 120 // px — minimum width per tile to stay readable
 
 // Frontend display name overrides (sourceId → display name)
 const SOURCE_DISPLAY_OVERRIDES: Record<string, string> = {
@@ -36,14 +29,15 @@ const SOURCE_DISPLAY_OVERRIDES: Record<string, string> = {
 // Category groups — group sources into clean tabs
 const CATEGORY_GROUPS: { id: string; label: string; sources: string[] }[] = [
   { id: 'crypto', label: 'Crypto', sources: ['crypto', 'bchain', 'defi'] },
-  { id: 'stocks', label: 'Stocks', sources: ['stocks', 'twse', 'finra'] },
+  { id: 'stocks', label: 'Stocks', sources: ['stocks', 'twse', 'finra', 'finra_short_vol'] },
   { id: 'predictions', label: 'Predictions', sources: ['polymarket'] },
-  { id: 'macro', label: 'Macro', sources: ['rates', 'bls', 'ecb', 'bonds', 'imf', 'worldbank', 'sec_13f'] },
-  { id: 'commodities', label: 'Commodities', sources: ['futures', 'cftc', 'opec', 'eia', 'energy_charts', 'caiso'] },
-  { id: 'weather', label: 'Weather', sources: ['weather', 'tides', 'goes_xray'] },
+  { id: 'macro', label: 'Macro', sources: ['rates', 'bls', 'ecb', 'bonds', 'imf', 'worldbank'] },
+  { id: 'regulatory', label: 'Regulatory', sources: ['sec_13f', 'sec_efts', 'sec_insider', 'congress'] },
+  { id: 'commodities', label: 'Commodities', sources: ['futures', 'cftc', 'opec', 'eia'] },
+  { id: 'weather', label: 'Weather', sources: ['weather'] },
   { id: 'tech', label: 'Tech', sources: ['npm', 'pypi', 'crates_io', 'github', 'cloudflare', 'hackernews'] },
   { id: 'entertainment', label: 'Entertainment', sources: ['tmdb', 'anilist', 'twitch', 'steam', 'backpacktf', 'fourchan'] },
-  { id: 'transport', label: 'Transport', sources: ['opensky'] },
+  { id: 'real_estate', label: 'Real Estate', sources: ['zillow'] },
 ]
 
 // Reverse lookup: source → category (used internally for category routing)
@@ -137,9 +131,34 @@ const SUBCATEGORIZED_SOURCES = new Set(['weather', 'polymarket', 'defi'])
 // Helpers
 // ---------------------------------------------------------------------------
 
+// Sources where values are NOT denominated in dollars
+const COUNT_SOURCES = new Set([
+  'sec_13f', 'sec_efts', 'sec_insider', 'finra_short_vol', 'congress',
+  'npm', 'pypi', 'crates_io', 'github', 'hackernews',
+  'twitch', 'steam', 'anilist', 'fourchan', 'backpacktf',
+  'imf', 'worldbank', 'cftc', 'opec', 'eia', 'finra',
+  'cloudflare', 'tmdb', 'twse',
+])
+
+function formatNumber(v: number): string {
+  if (v >= 1e12) return `${(v / 1e12).toFixed(2)}T`
+  if (v >= 1e9) return `${(v / 1e9).toFixed(2)}B`
+  if (v >= 1e6) return `${(v / 1e6).toFixed(2)}M`
+  if (v >= 1e3) return `${(v / 1e3).toFixed(1)}K`
+  if (v >= 1) return v.toFixed(2)
+  if (v >= 0.01) return v.toFixed(4)
+  return v.toFixed(6)
+}
+
+function formatDollar(v: number): string {
+  return `$${formatNumber(v)}`
+}
+
 function formatValue(v: number, source: string, assetId?: string): string {
+  if (isNaN(v)) return '—'
   if (source === 'rates' || source === 'bls' || source === 'bonds') return `${v.toFixed(2)}%`
   if (source === 'ecb') return v.toFixed(4)
+  if (source === 'polymarket') return `${(v * 100).toFixed(1)}%`
   if (source === 'weather') {
     if (assetId) {
       const metric = assetId.split(':')[1]
@@ -151,13 +170,8 @@ function formatValue(v: number, source: string, assetId?: string): string {
     }
     return v.toFixed(1)
   }
-  if (v >= 1e12) return `$${(v / 1e12).toFixed(2)}T`
-  if (v >= 1e9) return `$${(v / 1e9).toFixed(2)}B`
-  if (v >= 1e6) return `$${(v / 1e6).toFixed(2)}M`
-  if (v >= 1e3) return `$${(v / 1e3).toFixed(1)}K`
-  if (v >= 1) return `$${v.toFixed(2)}`
-  if (v >= 0.01) return `$${v.toFixed(4)}`
-  return `$${v.toFixed(6)}`
+  if (COUNT_SOURCES.has(source)) return formatNumber(v)
+  return formatDollar(v)
 }
 
 function formatMarketCap(mc: string | null | undefined): string {
@@ -199,19 +213,18 @@ const STATUS_COLORS: Record<string, string> = {
   disabled: 'bg-zinc-300',
 }
 
-function useColumnCount() {
-  const [cols, setCols] = useState(10)
+function useColumnCount(containerRef: React.RefObject<HTMLDivElement | null>) {
+  const [cols, setCols] = useState(8)
   useEffect(() => {
-    function update() {
-      const w = window.innerWidth
-      for (const [breakpoint, c] of COLS_BY_WIDTH) {
-        if (w >= breakpoint) { setCols(c); return }
-      }
-    }
-    update()
-    window.addEventListener('resize', update)
-    return () => window.removeEventListener('resize', update)
-  }, [])
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(([entry]) => {
+      const w = entry.contentRect.width
+      setCols(Math.max(4, Math.floor(w / MIN_TILE_WIDTH)))
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [containerRef])
   return cols
 }
 
@@ -377,7 +390,7 @@ export function VisionMarketsGrid() {
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const cols = useColumnCount()
+  const cols = useColumnCount(scrollRef)
 
   // Use meta for instant display, full data once loaded
   const totalAssets = data?.totalAssets ?? meta?.totalAssets ?? 0
@@ -402,12 +415,12 @@ export function VisionMarketsGrid() {
     return (meta?.assetCounts ?? {}) as Record<string, number>
   }, [data?.prices, meta?.assetCounts])
 
-  // Enabled sources — hide sources with 0 assets
+  // Show all configured sources — pending ones appear with 0-asset badge
   const enabledSources = useMemo(() => {
-    return sources.filter((s) => s.enabled && (assetCountBySource[s.sourceId] ?? 0) > 0)
-  }, [sources, assetCountBySource])
+    return sources.filter((s) => s.enabled)
+  }, [sources])
 
-  // Category tabs with counts — only show categories that have active sources
+  // Category tabs with counts — show all categories, even those awaiting first sync
   const enabledCategories = useMemo(() => {
     return CATEGORY_GROUPS
       .map((cat) => {
@@ -417,7 +430,6 @@ export function VisionMarketsGrid() {
         )
         return { ...cat, count }
       })
-      .filter((cat) => cat.count > 0)
   }, [assetCountBySource])
 
   // Sources in the selected category (or all if no category selected)

@@ -32,9 +32,9 @@ module.exports = {
         'surface-dark': '#18181B',
         // Institutional green accent (BlackRock-inspired)
         brand: { DEFAULT: '#00A36C', light: '#E6F7F0', dark: '#008A5A' },
-        // Aliases
-        terminal: '#18181B',
-        accent: '#18181B',
+        // Aliases — terminal dark theme for Markets / ITP cards
+        terminal: { DEFAULT: '#18181B', dark: '#0C0C0D' },
+        accent: '#C40000',
       },
       fontFamily: {
         sans: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],

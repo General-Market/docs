@@ -1,0 +1,12 @@
+[
+  {"asset_id": "congress_bills_introduced_house", "symbol": "BILLS_HOUSE", "name": "Bills Introduced (House)", "category": "regulatory", "subcategory": "legislative", "api_ref": "bill?chamber=house", "active": true},
+  {"asset_id": "congress_bills_introduced_senate", "symbol": "BILLS_SENATE", "name": "Bills Introduced (Senate)", "category": "regulatory", "subcategory": "legislative", "api_ref": "bill?chamber=senate", "active": true},
+  {"asset_id": "congress_bills_passed_house", "symbol": "PASSED_HOUSE", "name": "Bills Passed House", "category": "regulatory", "subcategory": "legislative", "api_ref": "bill?billStatus=passedHouse", "active": true},
+  {"asset_id": "congress_bills_passed_senate", "symbol": "PASSED_SENATE", "name": "Bills Passed Senate", "category": "regulatory", "subcategory": "legislative", "api_ref": "bill?billStatus=passedSenate", "active": true},
+  {"asset_id": "congress_bills_became_law", "symbol": "BECAME_LAW", "name": "Bills Became Law", "category": "regulatory", "subcategory": "legislative", "api_ref": "bill?billStatus=becameLaw", "active": true},
+  {"asset_id": "congress_nominations_pending", "symbol": "NOMINATIONS_PENDING", "name": "Pending Nominations", "category": "regulatory", "subcategory": "legislative", "api_ref": "nomination?status=pending", "active": true},
+  {"asset_id": "congress_nominations_confirmed", "symbol": "NOMINATIONS_CONFIRMED", "name": "Confirmed Nominations", "category": "regulatory", "subcategory": "legislative", "api_ref": "nomination?status=confirmed", "active": true},
+  {"asset_id": "congress_bills_vetoed", "symbol": "BILLS_VETOED", "name": "Vetoed Bills", "category": "regulatory", "subcategory": "legislative", "api_ref": "bill?billStatus=vetoed", "active": true},
+  {"asset_id": "congress_resolutions_passed", "symbol": "RESOLUTIONS", "name": "Joint Resolutions Passed", "category": "regulatory", "subcategory": "legislative", "api_ref": "bill?billType=sjres&billStatus=passSenate", "active": true},
+  {"asset_id": "congress_committee_hearings", "symbol": "HEARINGS", "name": "Committee Hearings", "category": "regulatory", "subcategory": "legislative", "api_ref": "committee-meeting", "active": true}
+]

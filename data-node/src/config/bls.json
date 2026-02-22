@@ -1,0 +1,83 @@
+[
+  {
+    "asset_id": "bls_unemployment",
+    "symbol": "bls_unemployment",
+    "name": "Unemployment Rate",
+    "category": "macro",
+    "subcategory": "employment",
+    "api_ref": "LNS14000000",
+    "active": true
+  },
+  {
+    "asset_id": "bls_nfp",
+    "symbol": "bls_nfp",
+    "name": "Total Nonfarm Payrolls",
+    "category": "macro",
+    "subcategory": "employment",
+    "api_ref": "CES0000000001",
+    "active": true
+  },
+  {
+    "asset_id": "bls_wages",
+    "symbol": "bls_wages",
+    "name": "Average Hourly Earnings",
+    "category": "macro",
+    "subcategory": "employment",
+    "api_ref": "CES0500000003",
+    "active": true
+  },
+  {
+    "asset_id": "bls_lfpr",
+    "symbol": "bls_lfpr",
+    "name": "Labor Force Participation Rate",
+    "category": "macro",
+    "subcategory": "employment",
+    "api_ref": "LNS11300000",
+    "active": true
+  },
+  {
+    "asset_id": "bls_cpi",
+    "symbol": "bls_cpi",
+    "name": "CPI All Items",
+    "category": "macro",
+    "subcategory": "inflation",
+    "api_ref": "CUSR0000SA0",
+    "active": true
+  },
+  {
+    "asset_id": "bls_cpi_core",
+    "symbol": "bls_cpi_core",
+    "name": "CPI Core (Ex Food & Energy)",
+    "category": "macro",
+    "subcategory": "inflation",
+    "api_ref": "CUSR0000SA0L1E",
+    "active": true
+  },
+  {
+    "asset_id": "bls_ppi",
+    "symbol": "bls_ppi",
+    "name": "PPI Final Demand",
+    "category": "macro",
+    "subcategory": "inflation",
+    "api_ref": "WPUFD49104",
+    "active": true
+  },
+  {
+    "asset_id": "bls_jolts",
+    "symbol": "bls_jolts",
+    "name": "Job Openings (JOLTS)",
+    "category": "macro",
+    "subcategory": "employment",
+    "api_ref": "JTS000000000000000JOL",
+    "active": true
+  },
+  {
+    "asset_id": "bls_productivity",
+    "symbol": "bls_productivity",
+    "name": "Nonfarm Business Labor Productivity",
+    "category": "macro",
+    "subcategory": "gdp",
+    "api_ref": "PRS85006092",
+    "active": true
+  }
+]

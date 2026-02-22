@@ -1,0 +1,200 @@
+[
+  {
+    "asset_id": "tsy_yield_1_mo",
+    "symbol": "tsy_yield_1_mo",
+    "name": "Treasury Yield 1 MO",
+    "category": "macro",
+    "subcategory": "yield_curve",
+    "api_ref": "USTREASURY/YIELD:1 MO",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_yield_2_mo",
+    "symbol": "tsy_yield_2_mo",
+    "name": "Treasury Yield 2 MO",
+    "category": "macro",
+    "subcategory": "yield_curve",
+    "api_ref": "USTREASURY/YIELD:2 MO",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_yield_3_mo",
+    "symbol": "tsy_yield_3_mo",
+    "name": "Treasury Yield 3 MO",
+    "category": "macro",
+    "subcategory": "yield_curve",
+    "api_ref": "USTREASURY/YIELD:3 MO",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_yield_6_mo",
+    "symbol": "tsy_yield_6_mo",
+    "name": "Treasury Yield 6 MO",
+    "category": "macro",
+    "subcategory": "yield_curve",
+    "api_ref": "USTREASURY/YIELD:6 MO",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_yield_1_yr",
+    "symbol": "tsy_yield_1_yr",
+    "name": "Treasury Yield 1 YR",
+    "category": "macro",
+    "subcategory": "yield_curve",
+    "api_ref": "USTREASURY/YIELD:1 YR",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_yield_2_yr",
+    "symbol": "tsy_yield_2_yr",
+    "name": "Treasury Yield 2 YR",
+    "category": "macro",
+    "subcategory": "yield_curve",
+    "api_ref": "USTREASURY/YIELD:2 YR",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_yield_3_yr",
+    "symbol": "tsy_yield_3_yr",
+    "name": "Treasury Yield 3 YR",
+    "category": "macro",
+    "subcategory": "yield_curve",
+    "api_ref": "USTREASURY/YIELD:3 YR",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_yield_5_yr",
+    "symbol": "tsy_yield_5_yr",
+    "name": "Treasury Yield 5 YR",
+    "category": "macro",
+    "subcategory": "yield_curve",
+    "api_ref": "USTREASURY/YIELD:5 YR",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_yield_7_yr",
+    "symbol": "tsy_yield_7_yr",
+    "name": "Treasury Yield 7 YR",
+    "category": "macro",
+    "subcategory": "yield_curve",
+    "api_ref": "USTREASURY/YIELD:7 YR",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_yield_10_yr",
+    "symbol": "tsy_yield_10_yr",
+    "name": "Treasury Yield 10 YR",
+    "category": "macro",
+    "subcategory": "yield_curve",
+    "api_ref": "USTREASURY/YIELD:10 YR",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_yield_20_yr",
+    "symbol": "tsy_yield_20_yr",
+    "name": "Treasury Yield 20 YR",
+    "category": "macro",
+    "subcategory": "yield_curve",
+    "api_ref": "USTREASURY/YIELD:20 YR",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_yield_30_yr",
+    "symbol": "tsy_yield_30_yr",
+    "name": "Treasury Yield 30 YR",
+    "category": "macro",
+    "subcategory": "yield_curve",
+    "api_ref": "USTREASURY/YIELD:30 YR",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_billrates_4_wk",
+    "symbol": "tsy_billrates_4_wk",
+    "name": "T-Bill Rate 4 WEEKS BANK DISCOUNT",
+    "category": "macro",
+    "subcategory": "bill_rates",
+    "api_ref": "USTREASURY/BILLRATES:4 WEEKS BANK DISCOUNT",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_billrates_8_wk",
+    "symbol": "tsy_billrates_8_wk",
+    "name": "T-Bill Rate 8 WEEKS BANK DISCOUNT",
+    "category": "macro",
+    "subcategory": "bill_rates",
+    "api_ref": "USTREASURY/BILLRATES:8 WEEKS BANK DISCOUNT",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_billrates_13_wk",
+    "symbol": "tsy_billrates_13_wk",
+    "name": "T-Bill Rate 13 WEEKS BANK DISCOUNT",
+    "category": "macro",
+    "subcategory": "bill_rates",
+    "api_ref": "USTREASURY/BILLRATES:13 WEEKS BANK DISCOUNT",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_billrates_26_wk",
+    "symbol": "tsy_billrates_26_wk",
+    "name": "T-Bill Rate 26 WEEKS BANK DISCOUNT",
+    "category": "macro",
+    "subcategory": "bill_rates",
+    "api_ref": "USTREASURY/BILLRATES:26 WEEKS BANK DISCOUNT",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_billrates_52_wk",
+    "symbol": "tsy_billrates_52_wk",
+    "name": "T-Bill Rate 52 WEEKS BANK DISCOUNT",
+    "category": "macro",
+    "subcategory": "bill_rates",
+    "api_ref": "USTREASURY/BILLRATES:52 WEEKS BANK DISCOUNT",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_realyield_5_yr",
+    "symbol": "tsy_realyield_5_yr",
+    "name": "Real Yield 5 YR",
+    "category": "macro",
+    "subcategory": "real_yields",
+    "api_ref": "USTREASURY/REALYIELD:5 YR",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_realyield_7_yr",
+    "symbol": "tsy_realyield_7_yr",
+    "name": "Real Yield 7 YR",
+    "category": "macro",
+    "subcategory": "real_yields",
+    "api_ref": "USTREASURY/REALYIELD:7 YR",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_realyield_10_yr",
+    "symbol": "tsy_realyield_10_yr",
+    "name": "Real Yield 10 YR",
+    "category": "macro",
+    "subcategory": "real_yields",
+    "api_ref": "USTREASURY/REALYIELD:10 YR",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_realyield_20_yr",
+    "symbol": "tsy_realyield_20_yr",
+    "name": "Real Yield 20 YR",
+    "category": "macro",
+    "subcategory": "real_yields",
+    "api_ref": "USTREASURY/REALYIELD:20 YR",
+    "active": true
+  },
+  {
+    "asset_id": "tsy_realyield_30_yr",
+    "symbol": "tsy_realyield_30_yr",
+    "name": "Real Yield 30 YR",
+    "category": "macro",
+    "subcategory": "real_yields",
+    "api_ref": "USTREASURY/REALYIELD:30 YR",
+    "active": true
+  }
+]

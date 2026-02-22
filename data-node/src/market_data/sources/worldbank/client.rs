@@ -12,86 +12,16 @@ use std::time::Duration;
 use tracing::{debug, info};
 
 use crate::market_data::traits::{
-    AssetUpdate, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
+    load_all_asset_entries, load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate,
+    ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
 /// World Bank API base URL
 const WB_API_URL: &str = "https://api.worldbank.org/v2";
 
-/// World Bank indicators
-/// (code, name, unit, category)
-const WB_INDICATORS: &[(&str, &str, &str, &str)] = &[
-    ("NY.GDP.MKTP.CD", "GDP (Current USD)", "usd", "economy"),
-    (
-        "NY.GDP.MKTP.KD.ZG",
-        "GDP Growth (Annual %)",
-        "percent",
-        "economy",
-    ),
-    ("NY.GDP.PCAP.CD", "GDP Per Capita", "usd", "economy"),
-    ("SP.POP.TOTL", "Total Population", "count", "demographics"),
-    (
-        "SP.POP.GROW",
-        "Population Growth",
-        "percent",
-        "demographics",
-    ),
-    ("FP.CPI.TOTL.ZG", "Inflation (CPI)", "percent", "prices"),
-    ("SL.UEM.TOTL.ZS", "Unemployment Rate", "percent", "labor"),
-    ("NE.EXP.GNFS.ZS", "Exports (% of GDP)", "percent", "trade"),
-    ("NE.IMP.GNFS.ZS", "Imports (% of GDP)", "percent", "trade"),
-    (
-        "BN.CAB.XOKA.GD.ZS",
-        "Current Account (% GDP)",
-        "percent",
-        "trade",
-    ),
-    (
-        "GC.DOD.TOTL.GD.ZS",
-        "Government Debt (% GDP)",
-        "percent",
-        "fiscal",
-    ),
-    ("FR.INR.RINR", "Real Interest Rate", "percent", "rates"),
-    ("PA.NUS.FCRF", "Official Exchange Rate", "lcu_per_usd", "fx"),
-    (
-        "EG.USE.PCAP.KG.OE",
-        "Energy Use Per Capita",
-        "kg_oil_equiv",
-        "energy",
-    ),
-    (
-        "EN.ATM.CO2E.PC",
-        "CO2 Emissions Per Capita",
-        "metric_tons",
-        "environment",
-    ),
-];
-
-/// Countries (top 20 by GDP)
-const WB_COUNTRIES: &[(&str, &str)] = &[
-    ("USA", "United States"),
-    ("CHN", "China"),
-    ("JPN", "Japan"),
-    ("DEU", "Germany"),
-    ("IND", "India"),
-    ("GBR", "United Kingdom"),
-    ("FRA", "France"),
-    ("ITA", "Italy"),
-    ("BRA", "Brazil"),
-    ("CAN", "Canada"),
-    ("RUS", "Russia"),
-    ("KOR", "South Korea"),
-    ("AUS", "Australia"),
-    ("ESP", "Spain"),
-    ("MEX", "Mexico"),
-    ("IDN", "Indonesia"),
-    ("NLD", "Netherlands"),
-    ("SAU", "Saudi Arabia"),
-    ("TUR", "Turkey"),
-    ("CHE", "Switzerland"),
-];
+/// Asset configuration loaded from JSON at compile time
+const ASSET_JSON: &str = include_str!("../../../config/worldbank.json");
 
 /// World Bank API response structure
 /// Note: Response is parsed manually from JSON, these types are kept for reference
@@ -133,15 +63,20 @@ impl WorldBankMarketSource {
             .build()
             .context("Failed to build reqwest client")?;
 
-        let total_assets = WB_INDICATORS.len() * WB_COUNTRIES.len();
+        let asset_count = load_assets_from_json(ASSET_JSON)
+            .map(|a| a.len())
+            .unwrap_or(0);
         info!(
-            "World Bank client initialized with {} series ({} indicators × {} countries)",
-            total_assets,
-            WB_INDICATORS.len(),
-            WB_COUNTRIES.len()
+            "World Bank client initialized with {} indicators",
+            asset_count
         );
 
         Ok(Self { client })
+    }
+
+    /// Parse country and indicator from api_ref (format: "COUNTRY:INDICATOR")
+    fn parse_api_ref(api_ref: &str) -> Option<(&str, &str)> {
+        api_ref.split_once(':')
     }
 
     /// Generate asset ID from country and indicator
@@ -235,69 +170,46 @@ impl MarketDataSource for WorldBankMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        let mut assets = Vec::new();
-
-        for (country_code, country_name) in WB_COUNTRIES {
-            for (indicator_code, indicator_name, unit, category) in WB_INDICATORS {
-                let asset_id = Self::make_asset_id(country_code, indicator_code);
-                let name = format!("{} - {}", country_name, indicator_name);
-
-                assets.push(AssetUpdate {
-                    asset_id,
-                    symbol: format!("{}_{}", country_code, indicator_code.replace('.', "_")),
-                    name,
-                    category: Some(category.to_string()),
-                    metadata: serde_json::json!({
-                        "source": "worldbank",
-                        "country": country_code,
-                        "country_name": country_name,
-                        "indicator": indicator_code,
-                        "indicator_name": indicator_name,
-                        "unit": unit,
-                        "update_frequency": "annual",
-                    }),
-                });
-            }
-        }
-
-        Ok(assets)
+        load_assets_from_json(ASSET_JSON)
     }
 
     async fn fetch_prices(&self, _asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
         let now = Utc::now();
         let mut results = Vec::new();
 
-        for (country_code, _country_name) in WB_COUNTRIES {
-            for (indicator_code, _indicator_name, _unit, _category) in WB_INDICATORS {
-                // Be nice to the API
-                tokio::time::sleep(Duration::from_millis(200)).await;
+        let entries = load_all_asset_entries(ASSET_JSON)?;
 
-                let asset_id = Self::make_asset_id(country_code, indicator_code);
+        for entry in &entries {
+            let Some((country, indicator)) = Self::parse_api_ref(&entry.api_ref) else {
+                continue;
+            };
 
-                match self.fetch_indicator(country_code, indicator_code).await {
-                    Ok(Some((_date, value))) => {
-                        if let Ok(decimal_value) = Decimal::from_str(&value.to_string()) {
-                            results.push(PriceUpdate {
-                                asset_id,
-                                symbol: format!("{}_{}", country_code, indicator_code),
-                                value: decimal_value,
-                                prev_close: None,
-                                change_pct: None,
-                                volume_24h: None,
-                                market_cap: None,
-                                fetched_at: now,
-                            });
-                        }
+            // Be nice to the API
+            tokio::time::sleep(Duration::from_millis(200)).await;
+
+            match self.fetch_indicator(country, indicator).await {
+                Ok(Some((_date, value))) => {
+                    if let Ok(decimal_value) = Decimal::from_str(&value.to_string()) {
+                        results.push(PriceUpdate {
+                            asset_id: entry.asset_id.clone(),
+                            symbol: entry.symbol.clone(),
+                            value: decimal_value,
+                            prev_close: None,
+                            change_pct: None,
+                            volume_24h: None,
+                            market_cap: None,
+                            fetched_at: now,
+                        });
                     }
-                    Ok(None) => {
-                        // Many country/indicator combos may not have recent data
-                    }
-                    Err(e) => {
-                        debug!(
-                            "Error fetching World Bank {} {}: {:?}",
-                            country_code, indicator_code, e
-                        );
-                    }
+                }
+                Ok(None) => {
+                    // Many country/indicator combos may not have recent data
+                }
+                Err(e) => {
+                    debug!(
+                        "Error fetching World Bank {} {}: {:?}",
+                        country, indicator, e
+                    );
                 }
             }
         }
@@ -334,8 +246,9 @@ mod tests {
 
     #[test]
     fn test_asset_count() {
-        let total = WB_INDICATORS.len() * WB_COUNTRIES.len();
-        assert_eq!(total, 300); // 15 indicators × 20 countries
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        // Trimmed to top 20 indicators for major economies
+        assert!(entries.len() >= 20, "Expected at least 20 indicators");
     }
 
     #[test]
@@ -348,9 +261,8 @@ mod tests {
 
     #[test]
     fn test_categories() {
-        let categories: Vec<_> = WB_INDICATORS.iter().map(|i| i.3).collect();
-        assert!(categories.contains(&"economy"));
-        assert!(categories.contains(&"demographics"));
-        assert!(categories.contains(&"trade"));
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        assert!(entries.iter().all(|e| e.category == "macro"));
+        assert!(entries.iter().all(|e| e.subcategory == "global_indicators"));
     }
 }

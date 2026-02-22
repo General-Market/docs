@@ -79,7 +79,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
   const publicClient = usePublicClient()
   const { summary, history, trades, isLoading, error } = usePortfolio(address?.toLowerCase())
   const { formatted: usdcFormatted } = useUsdcBalance()
-  const [activeTab, setActiveTab] = useState<Tab>('value')
+  const [activeTab, setActiveTab] = useState<Tab>('positions')
 
   // --- Orders state ---
   const [orders, setOrders] = useState<ActiveOrder[]>([])
@@ -219,7 +219,9 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
         <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">Portfolio</h2>
       </div>
 
-      {!address || isLoading ? (
+      {!address ? (
+        <PortfolioSkeleton />
+      ) : isLoading ? (
         <PortfolioSkeleton />
       ) : error ? (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-600 text-sm mb-4">
@@ -294,7 +296,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
           </div>
           <div className="border-b border-border-light mb-0 mt-5">
             <div className="flex gap-6">
-              {(['value', 'positions', 'trades', 'orders'] as Tab[]).map(tab => {
+              {(['positions', 'trades', 'orders'] as Tab[]).map(tab => {
                 const label = tab.charAt(0).toUpperCase() + tab.slice(1)
                 return (
                   <button
@@ -319,8 +321,13 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
           </div>
 
           {/* Tab content */}
-          {activeTab === 'value' && <ValueTab history={history} />}
-          {activeTab === 'positions' && <PositionsTab summary={summary} itpNameMap={itpNameMap} />}
+          {activeTab === 'positions' && (
+            <>
+              <ValueTab history={history} />
+              <div className="mt-4" />
+              <PositionsTab summary={summary} itpNameMap={itpNameMap} />
+            </>
+          )}
           {activeTab === 'trades' && <TradesTab trades={trades} itpNameMap={itpNameMap} />}
           {activeTab === 'orders' && (
             <OrdersTab

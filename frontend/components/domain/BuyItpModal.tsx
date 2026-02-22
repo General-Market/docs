@@ -14,6 +14,8 @@ import { useUserState } from '@/hooks/useUserState'
 import { useNonceCheck } from '@/hooks/useNonceCheck'
 import { useItpNav } from '@/hooks/useItpNav'
 import { useSSEOrders, useSSEBalances, type UserOrder } from '@/hooks/useSSE'
+import { useToast } from '@/lib/contexts/ToastContext'
+import { YouTubeLite, extractYouTubeId } from '@/components/ui/YouTubeLite'
 
 /**
  * Buy flow micro-steps — 10 steps mapped to 3 visible steps + Done:
@@ -92,6 +94,7 @@ interface BuyItpModalProps {
 export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const { address, isConnected } = useAccount()
   const publicClient = usePublicClient()
+  const { showSuccess } = useToast()
 
   // SSE-driven order & balance tracking (replaces L3 polling)
   const sseOrders = useSSEOrders()
@@ -108,6 +111,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const [fillPrice, setFillPrice] = useState<bigint | null>(null)
   const [fillAmount, setFillAmount] = useState<bigint | null>(null)
   const [initialBridgedItp, setInitialBridgedItp] = useState<string | null>(null)
+  const [initialSharesBn, setInitialSharesBn] = useState<bigint | null>(null)
   const [skippedApproval, setSkippedApproval] = useState(false)
 
   // Saved tx hashes
@@ -146,6 +150,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
   const approveHandled = useRef(false)
   const buyHandled = useRef(false)
+  const toastFired = useRef(false)
 
   const userState = useUserState(itpId)
   const itpName = userState.bridgedItpName || 'ITP'
@@ -193,7 +198,8 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
   const snapshotBalances = useCallback(() => {
     setInitialBridgedItp(sseBalances?.bridged_itp ?? null)
-  }, [sseBalances])
+    setInitialSharesBn(userShares)
+  }, [sseBalances, userShares])
 
   const handleApprove = useCallback(() => {
     if (!amount) return
@@ -365,24 +371,53 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     return () => clearTimeout(timer)
   }, [micro])
 
-  // COMPLETE_BRIDGE + MINT_SHARES: detect bridged_itp balance increase via SSE
+  // Detect BridgedITP balance increase — works at ANY processing step.
+  // Issuers may complete the entire cross-chain buy in a single batch cycle,
+  // so we check from RELAY onward, not just at COMPLETE_BRIDGE.
+  // Uses both SSE balances and REST-polled userShares as fallback.
   useEffect(() => {
-    if (micro < BuyMicro.COMPLETE_BRIDGE || micro >= BuyMicro.DONE) return
-    if (!sseBalances || initialBridgedItp === null) return
+    if (micro < BuyMicro.RELAY || micro >= BuyMicro.DONE) return
 
-    const currentBridgedItp = sseBalances.bridged_itp
-    try {
-      if (BigInt(currentBridgedItp) > BigInt(initialBridgedItp)) {
-        if (micro === BuyMicro.COMPLETE_BRIDGE) {
-          setMicro(BuyMicro.MINT_SHARES)
-          // Brief delay then mark done
-          setTimeout(() => setMicro(BuyMicro.DONE), 1000)
-        } else {
-          setMicro(BuyMicro.DONE)
+    let increased = false
+
+    // Check SSE balances (instant)
+    if (sseBalances && initialBridgedItp !== null) {
+      try {
+        if (BigInt(sseBalances.bridged_itp) > BigInt(initialBridgedItp)) {
+          increased = true
         }
+      } catch {}
+    }
+
+    // Fallback: check REST-polled userShares (5s poll interval)
+    if (!increased && initialSharesBn !== null && userShares > initialSharesBn) {
+      increased = true
+    }
+
+    if (increased) {
+      if (micro < BuyMicro.MINT_SHARES) {
+        setMicro(BuyMicro.MINT_SHARES)
+        setTimeout(() => setMicro(BuyMicro.DONE), 1000)
+      } else {
+        setMicro(BuyMicro.DONE)
       }
-    } catch {}
-  }, [micro, sseBalances, initialBridgedItp])
+    }
+  }, [micro, sseBalances, initialBridgedItp, userShares, initialSharesBn])
+
+  // Toast notification on fill
+  useEffect(() => {
+    if (micro === BuyMicro.DONE && !toastFired.current) {
+      toastFired.current = true
+      const shares = fillAmount && fillPrice && fillPrice > 0n
+        ? parseFloat(formatUnits((fillAmount * BigInt(1e18)) / fillPrice, 18)).toFixed(2)
+        : null
+      const msg = shares
+        ? `Buy filled — ${shares} ${itpName} shares received`
+        : `Buy filled — ${itpName} shares received`
+      showSuccess(msg)
+    }
+    if (micro === -1) toastFired.current = false
+  }, [micro, fillAmount, fillPrice, itpName, showSuccess])
 
   // Error handlers
   useEffect(() => {
@@ -442,6 +477,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     setFillPrice(null)
     setFillAmount(null)
     setInitialBridgedItp(null)
+    setInitialSharesBn(null)
     setSkippedApproval(false)
     clearTxHashes()
   }, [clearTxHashes])
@@ -629,18 +665,15 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
           {itpSymbol && <p className="text-text-secondary mb-1 font-mono">${itpSymbol}</p>}
           <p className="text-xs text-text-muted font-mono mb-4 break-all">ITP ID: {itpId}</p>
 
-          {videoUrl && (
-            <div className="aspect-video bg-zinc-950 rounded-lg overflow-hidden mb-4">
-              <iframe
-                src={videoUrl}
-                className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                loading="lazy"
-                title="ITP video"
-              />
-            </div>
-          )}
+          {videoUrl && (() => {
+            const vid = extractYouTubeId(videoUrl)
+            if (!vid) return null
+            return (
+              <div className="rounded-lg overflow-hidden mb-4">
+                <YouTubeLite videoId={vid} title={itpName || 'ITP'} />
+              </div>
+            )
+          })()}
 
           {!isConnected ? (
             <div className="bg-muted border border-border-light rounded-xl p-8 text-center">

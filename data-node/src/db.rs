@@ -49,6 +49,12 @@ pub async fn run_migrations(pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::raw_sql(m018).execute(pool).await?;
     let m019 = include_str!("../migrations/019_create_fng_index.sql");
     sqlx::raw_sql(m019).execute(pool).await?;
+    let m020 = include_str!("../migrations/020_create_github_metrics.sql");
+    sqlx::raw_sql(m020).execute(pool).await?;
+    let m021 = include_str!("../migrations/021_create_market_sources.sql");
+    sqlx::raw_sql(m021).execute(pool).await?;
+    let m022 = include_str!("../migrations/022_widen_market_symbol.sql");
+    sqlx::raw_sql(m022).execute(pool).await?;
     info!("Database migrations applied");
     Ok(())
 }

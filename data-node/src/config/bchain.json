@@ -1,0 +1,14 @@
+[
+  {"asset_id": "bchain_hashrate", "symbol": "HRATE", "name": "Bitcoin Hash Rate", "category": "onchain", "subcategory": "btc_metrics", "api_ref": "HRATE", "active": true},
+  {"asset_id": "bchain_difficulty", "symbol": "DIFF", "name": "Bitcoin Mining Difficulty", "category": "onchain", "subcategory": "btc_metrics", "api_ref": "DIFF", "active": true},
+  {"asset_id": "bchain_block_size", "symbol": "BLCHS", "name": "Average Block Size", "category": "onchain", "subcategory": "btc_metrics", "api_ref": "BLCHS", "active": true},
+  {"asset_id": "bchain_tx_count", "symbol": "NTRAN", "name": "Daily Transactions", "category": "onchain", "subcategory": "btc_metrics", "api_ref": "NTRAN", "active": true},
+  {"asset_id": "bchain_unique_addresses", "symbol": "NTRBL", "name": "Unique Addresses Used", "category": "onchain", "subcategory": "btc_metrics", "api_ref": "NTRBL", "active": true},
+  {"asset_id": "bchain_tx_volume_usd", "symbol": "TRFUS", "name": "Transaction Volume (USD)", "category": "onchain", "subcategory": "btc_metrics", "api_ref": "TRFUS", "active": true},
+  {"asset_id": "bchain_tx_volume_btc", "symbol": "TRVOU", "name": "Transaction Volume (BTC)", "category": "onchain", "subcategory": "btc_metrics", "api_ref": "TRVOU", "active": true},
+  {"asset_id": "bchain_total_supply", "symbol": "TOTBC", "name": "Total Bitcoins Mined", "category": "onchain", "subcategory": "btc_metrics", "api_ref": "TOTBC", "active": true},
+  {"asset_id": "bchain_wallets", "symbol": "MWNUS", "name": "Blockchain Wallets", "category": "onchain", "subcategory": "btc_metrics", "api_ref": "MWNUS", "active": true},
+  {"asset_id": "bchain_marketcap", "symbol": "MKTCP", "name": "Bitcoin Market Cap", "category": "onchain", "subcategory": "btc_metrics", "api_ref": "MKTCP", "active": true},
+  {"asset_id": "bchain_cost_per_tx", "symbol": "CPTRA", "name": "Cost Per Transaction", "category": "onchain", "subcategory": "btc_metrics", "api_ref": "CPTRA", "active": true},
+  {"asset_id": "bchain_miner_revenue", "symbol": "MIREV", "name": "Daily Miner Revenue", "category": "onchain", "subcategory": "btc_metrics", "api_ref": "MIREV", "active": true}
+]

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agiarena.io/schemas/asset-list.json",
+  "title": "Asset List Schema",
+  "description": "Standard JSON schema for market-data-lib asset configuration files",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["asset_id", "symbol", "name", "category", "subcategory", "api_ref", "active"],
+    "properties": {
+      "asset_id": {
+        "type": "string",
+        "description": "Unique identifier within this source",
+        "minLength": 1
+      },
+      "symbol": {
+        "type": "string",
+        "description": "Trading symbol or ticker",
+        "minLength": 1
+      },
+      "name": {
+        "type": "string",
+        "description": "Human-readable display name",
+        "minLength": 1
+      },
+      "category": {
+        "type": "string",
+        "description": "Top-level category",
+        "enum": ["stocks", "crypto", "defi", "macro", "commodities", "weather", "onchain", "sentiment", "regulatory"]
+      },
+      "subcategory": {
+        "type": "string",
+        "description": "Subcategory within the top-level category",
+        "minLength": 1
+      },
+      "api_ref": {
+        "type": "string",
+        "description": "API-specific reference (series ID, endpoint slug, etc.)"
+      },
+      "active": {
+        "type": "boolean",
+        "description": "Whether this asset should be synced"
+      }
+    },
+    "additionalProperties": false
+  }
+}

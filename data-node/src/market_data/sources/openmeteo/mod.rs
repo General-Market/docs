@@ -5,9 +5,14 @@
 //!
 //! Asset ID format: `{city_id}:{metric}` (e.g., "paris-fr:temperature_2m")
 //! Source ID: "weather"
+//!
+//! ## Data Strategy
+//! - **Current data**: Stored to database (for settlement)
+//! - **Hourly forecast (7 days)**: Kept in memory, refreshed each sync
 
 pub mod api_client;
 pub mod client;
 pub mod models;
 
 pub use client::OpenMeteoMarketSource;
+pub use models::{CityForecast, HourlyDataPoint, WeatherMetric};

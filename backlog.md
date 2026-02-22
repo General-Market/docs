@@ -1,5 +1,19 @@
 # Design Decision Backlog
 
+## Session: 20260222-0300-dn2i (Restructure: Data-Node = Raw Prices Only)
+
+- [DECISION] Chain indexer moved from data-node (Task 2.5) to issuer (Task 3.9). Single unified indexer does BOTH in-memory scheduler update AND Postgres write per event. Eliminates two-indexer consistency problem.
+- [DECISION] Batch/history/backtest REST API moved from data-node (Task 2.4) to issuer (Task 3.7). Issuer has direct Postgres access for chain-indexed state.
+- [DECISION] DB migrations moved from data-node (Task 2.3c) to issuer (Task 3.1b). Same SQL, different directory.
+- [DECISION] Data-node now serves only: collectors (crypto, polymarket, twitch, HN, weather), `/p2pool/snapshot`, `/p2pool/markets/active`. No chain indexing.
+- [DECISION] Frontend batch/history hooks use ISSUER_URL, market catalog uses DATA_NODE_URL.
+- [DECISION] Deleted Tasks 2.3c, 2.5, 5.3 (backtest placeholder — now real impl in Task 3.7). Added Task 3.1b.
+
+## Session: 20260222-0100-vsn1 (Vision Snapshot Fix)
+
+- [DECISION] Snapshot endpoints now UNION data from coingecko_market_caps + defillama_protocols alongside market_assets/market_prices. Source IDs: 'crypto' for CoinGecko, 'defi' for DeFiLlama.
+- [FAILED] Using `prices` table for crypto snapshot — too sparse (only symbol + price + timestamp), no name/market_cap/volume. `coingecko_market_caps` has full data.
+
 ## Session: 20260221-2300-r2fx (P2Pool Plan Review Round 2)
 
 - [DECISION] Replay attack fix: monotonic tick enforcement in claimRewards (fromTick > lastClaimedTick). BLS sigs include tick range, contract rejects stale ranges.

@@ -138,12 +138,24 @@ Per tick computation:
 
 4. Resolve each sub-market (price check + resolution type)
 
-5. Compute payouts — winners split weighted by effective_stake:
-   payout[i] = (effective_stake[i] / Σ effective_stake[winners]) × market_pot
+5. Per sub-market, apply side matching:
+   UP_total  = Σ per_market_eff_stake for UP bettors
+   DOWN_total = Σ per_market_eff_stake for DOWN bettors
+   matched = min(UP_total, DOWN_total)
 
-6. Update balances (deduct stakes, add winnings)
+   Larger side → matched_stake[i] = stake[i] × (matched / side_total)
+   Smaller side → matched_stake[i] = stake[i]
+   Refund[i] = stake[i] - matched_stake[i]
 
-7. BLS-sign: {tick_id, market_results[], player_balances[]}
+   Winners: payout = matched_stake × (1 + opposing / winning_side_matched)
+   Losers: lose matched_stake
+   All: get refund back
+
+6. Verify bitmaps in 10-min reveal window (non-revealed = void)
+
+7. Update balances (deduct matched stakes, add winnings + refunds)
+
+8. BLS-sign: {tick_id, market_results[], player_balances[]}
 ```
 
 Multipliers are double-edged: higher mult = more weight in the pot,
@@ -176,6 +188,108 @@ If both win same market:
 0.3% on all withdrawals (claims + early exits). Deducted at the contract level
 when USDC leaves the PoolVault. No fee on deposits, no fee on internal
 balance updates between ticks.
+
+## Design Principles
+
+```
+Target users: quant funds, market makers, bots
+Model: sealed parimutuel (like Polymarket odds, but hidden until reveal)
+
+REWARD:
+  Accuracy     — correct predictions profit. Same as Polymarket: buy cheap side, collect $1.
+  Capital      — bigger stake = bigger absolute PnL. Linear scaling within matched bounds.
+  Contrarian   — minority side gets better return rate (parimutuel). Hidden odds = alpha.
+  Early commit — multiplier rewards pre-commitment (already in place).
+
+PROTECT:
+  Whale safety — max loss bounded by opposing side's capital. Excess refunded.
+  Privacy      — bitmaps sealed during tick. Strategies can't be copied.
+  Predictable  — deterministic formula. Bots can model EV precisely.
+
+PUNISH:
+  Free-riding  — $1 can't extract $1M. Side matching caps it.
+  Lazy capital — majority side earns low returns (parimutuel).
+```
+
+## Side Matching (Whale Safety)
+
+Per sub-market, the two sides (UP vs DOWN) are matched at the aggregate level.
+Unmatched excess on the heavier side is refunded. This is how parimutuel odds
+work in Polymarket — you can't win more than the opposing side put up — but
+applied post-tick because bitmaps are sealed.
+
+```
+Per sub-market, per tick:
+
+  UP_total   = Σ eff_stake_per_market[i]  for all players who bet 1 (UP)
+  DOWN_total = Σ eff_stake_per_market[i]  for all players who bet 0 (DOWN)
+  matched    = min(UP_total, DOWN_total)
+
+  For each player i:
+    if on larger side:
+      matched_stake[i] = per_market_stake[i] × (matched / own_side_total)
+      refund[i]        = per_market_stake[i] - matched_stake[i]
+    if on smaller side (or equal):
+      matched_stake[i] = per_market_stake[i]
+      refund[i]        = 0
+
+  Resolution:
+    Winning side → payout[i] = matched_stake[i] × (1 + opposing_matched / winning_matched)
+    Losing side  → payout[i] = 0  (loses matched_stake)
+    Both sides   → refund[i] returned
+
+  Special cases:
+    All same side (no opponents)  → everyone refunded, no bet
+    All losers (threshold unmet)  → everyone refunded
+    Equal sides                   → no refund, pure double-or-nothing
+
+  Equivalent to hidden Polymarket odds:
+    minority_side_return = majority_total / minority_total  (> 100%)
+    majority_side_return = minority_total / majority_total  (< 100%)
+    A quant who can estimate the hidden ratio has alpha.
+```
+
+```
+Properties:
+  - O(N × M) per tick — sum each side per market, no sorting
+  - Zero-sum per tick (total in = total out)
+  - Max loss = min(your_stake, total_opposing_stake_in_that_market)
+  - Max win = same bound
+  - Whale excess capital always safe (refunded)
+  - Minority side gets better odds (Polymarket-like)
+  - Multiplier still works: higher mult = more weight within your side
+```
+
+## Bitmap Reveal Period
+
+Bitmaps are sealed during the tick (privacy — strategies can't be copied).
+After the tick resolves, a 10-minute reveal window opens.
+
+```
+Timeline:
+
+  ──[tick N]──────[tick N ends]──[10 min reveal]──[final]──
+       │              │                │              │
+       │  bitmaps     │  issuers       │  all bitmaps │  BLS-sign
+       │  private     │  resolve       │  published   │  balances
+       │              │  prices        │  anyone can  │
+       │              │                │  verify hash │
+
+Rules:
+  - Issuers publish all bitmaps they hold for that tick
+  - Anyone can verify: keccak256(published_bitmap) == on-chain hash
+  - If a player's bitmap is NOT revealed within 10 minutes:
+    → treated as "did not bet" for that tick
+    → no payout, no loss (stake refunded for that tick)
+  - Issuers have the bitmap (received pre-tick), so reveal is automatic
+    unless issuer nodes are down
+
+Why:
+  - Pre-tick: sealed → anti-copy, strategy privacy, bot competitive edge
+  - Post-tick: revealed → transparency, verifiability, dispute resolution
+  - 10-min window: gives issuers time to gossip and publish
+  - Non-revealed = void: prevents selective reveal (only reveal if you won)
+```
 
 ## All Losers = Refund
 
@@ -235,6 +349,10 @@ Flow:
   2. Issuers store bitmap, verify hash, gossip to peers
   3. User submits keccak256(bitmap) on-chain (commitment proof)
   4. Issuers verify: stored bitmap hash == on-chain hash
+  5. During tick: bitmaps private (anti-copy, strategy protection)
+  6. After tick resolves: 10-min reveal — issuers publish all bitmaps
+  7. Anyone verifies hash(bitmap) == on-chain hash
+  8. Non-revealed within 10 min → void (treated as did not bet)
 
 On-chain: only keccak256(bitmap) — 32 bytes, 1 storage slot.
 Bitmap never touches the chain.
@@ -254,45 +372,85 @@ No event emitted — issuers already have the bitmap.
 If dispute: any issuer holding the bitmap can prove it matches the on-chain hash.
 ```
 
-## Example: Tick 5 Resolution
+## Example: Tick 5 Resolution (Side Matching)
 
 ```
-Batch "Crypto 3-pack": [btc_usd_10m(up_0), eth_usd_10m(down_0), sol_usd_10m(up_30)]
+Batch "BTC Single": [btc_usd_10m(up_0)]
+4 players, different stakes:
 
-Active players at tick 5: Alice, Bob, Carol, Dave  (4 players, all stake 1 USDC/tick)
+  Alice: eff_stake $1,000 — bets UP
+  Bob:   eff_stake $500   — bets DOWN
+  Carol: eff_stake $200   — bets UP
+  Dave:  eff_stake $100   — bets DOWN
 
-Multipliers (offset=9):
-  Alice: early 2.0 × commit log10(109) ≈ 2.04 → mult 4.08 → eff_stake 4.08
-  Bob:   early 2.0 × commit log10(109) ≈ 2.04 → mult 4.08 → eff_stake 4.08
-  Carol: early 1.5 × commit log10(15)  ≈ 1.18 → mult 1.77 → eff_stake 1.77
-  Dave:  early 1.25 × commit log10(15) ≈ 1.18 → mult 1.48 → eff_stake 1.48
+Side matching:
+  UP_total  = $1,000 + $200 = $1,200
+  DOWN_total = $500 + $100  = $600
+  matched = $600
 
-Total effective stake: 11.41
-Per market pot: 11.41 / 3 = 3.80
+  UP is larger → scale down:
+    Alice matched = $1,000 × ($600/$1,200) = $500    refund = $500
+    Carol matched = $200 × ($600/$1,200)   = $100    refund = $100
+  DOWN fully matched:
+    Bob   matched = $500    refund = $0
+    Dave  matched = $100    refund = $0
 
-Results: BTC +2%, ETH -1%, SOL +2% (below 30% threshold)
+  Hidden odds (revealed post-tick):
+    UP return if UP wins:  $600/$1,200 = 50%  (like buying YES at $0.67)
+    DOWN return if DOWN wins: $1,200/$600 = 100% (like buying YES at $0.50)
 
-BTC (up_0, result=up):
-  Alice bet 1 ✓ (weight 1.36)    Bob bet 1 ✓ (weight 1.36)
-  Carol bet 0 ✗                   Dave bet 1 ✓ (weight 0.49)
-  Winners total: 3.21
-  Payout: Alice 1.61, Bob 1.61, Dave 0.58
+Result — BTC went UP:
+  Alice: $500 matched × (1 + 600/600) = $1,000 + $500 refund → net +$500
+  Carol: $100 matched × (1 + 600/600) = $200   + $100 refund → net +$100
+  Bob:   loses $500 matched                                   → net -$500
+  Dave:  loses $100 matched                                   → net -$100
+  Sum: +500 +100 -500 -100 = 0 ✓
 
-ETH (down_0, result=down):
-  Alice bet 1 (up) ✗              Bob bet 0 (down) ✓ (weight 1.36)
-  Carol bet 1 (up) ✗              Dave bet 0 (down) ✓ (weight 0.49)
-  Winners total: 1.85
-  Payout: Bob 2.79, Dave 1.01
+Result — BTC went DOWN:
+  Bob:   $500 matched × (1 + 600/600) = $1,000 → net +$500
+  Dave:  $100 matched × (1 + 600/600) = $200   → net +$100
+  Alice: loses $500 matched, keeps $500 refund  → net -$500
+  Carol: loses $100 matched, keeps $100 refund  → net -$100
+  Sum: +500 +100 -500 -100 = 0 ✓
 
-SOL (up_30, result=+2%, below threshold):
-  ALL LOSERS → everyone refunded their per-market effective_stake
+Key: Alice put $1,000 but max loss = $500 (matched portion only).
+```
 
-Net this tick:
-  Alice: -4.08 paid, +1.61 BTC + 1.36 SOL refund = -1.11
-  Bob:   -4.08 paid, +1.61 BTC + 2.79 ETH + 1.36 SOL refund = +1.68
-  Carol: -1.77 paid, +0.59 SOL refund = -1.18
-  Dave:  -1.48 paid, +0.58 BTC + 1.01 ETH + 0.49 SOL refund = +0.60
-  Total in = total out (zero-sum)
+## Example: Multi-Market Tick
+
+```
+Batch "Crypto 3-pack": [btc(up_0), eth(down_0), sol(up_30)]
+4 players, eff_stake split equally across 3 markets:
+
+  Alice $1,200 → $400/mkt   Bob $600 → $200/mkt
+  Carol $300   → $100/mkt   Dave $300 → $100/mkt
+
+           BTC    ETH    SOL
+  Alice:    UP     UP     DOWN
+  Bob:      UP     DOWN   DOWN
+  Carol:    DOWN   UP     UP
+  Dave:     UP     DOWN   UP
+
+  Results: BTC +2% (up), ETH -1% (down), SOL +2% (below 30%)
+
+BTC (up_0, result=UP):
+  UP: Alice($400)+Bob($200)+Dave($100) = $700
+  DOWN: Carol($100)
+  matched = $100. UP excess $600 refunded proportionally.
+  UP wins → winners gain $100 from Carol, split by matched weight.
+
+ETH (down_0, result=DOWN):
+  UP: Alice($400)+Carol($100) = $500
+  DOWN: Bob($200)+Dave($100) = $300
+  matched = $300. UP excess $200 refunded proportionally.
+  DOWN wins → Bob and Dave split $300 from UP side.
+
+SOL (up_30, +2% below threshold):
+  ALL LOSERS → everyone refunded.
+
+Each market resolves independently with its own side matching.
+10-min reveal: all bitmaps published, hashes verified.
+Final balances BLS-signed by issuers.
 ```
 
 ## Entry Flow
@@ -515,13 +673,15 @@ User lands on page
 
 | Property | Value |
 |---|---|
-| **Model** | P2Pool — compete within your batch only |
+| **Model** | Sealed parimutuel P2Pool with side matching — compete within your batch |
 | **Lifecycle** | Perpetual rolling — anyone joins anytime, plays until deposit runs out |
 | **Markets** | Global dynamic registry, governed by issuer nodes |
 | **Batches** | Permissionless, no creator fees, market updates only after tick resolves |
 | **Resolution** | uint8 type per market: up_0, up_30, down_x, flat_x, etc. |
 | **Scale** | 100k+ bets per bitmap (100 markets × 1000 ticks = 12.5 KB) |
-| **Collateral** | USDC deposit, fixed stake per tick (set at join) |
+| **Collateral** | USDC deposit, stake per tick (set at join), side-matched per market |
+| **Whale safety** | Per-market side matching — excess refunded, max loss = opposing capital |
+| **Privacy** | Bitmaps sealed during tick, 10-min reveal after resolution |
 | **Entry** | Bitmap to issuers + 1 tx: deposit + stake config + hash (~40K gas) |
 | **Early mult** | `1 + min(t, tick_dur)² / tick_dur²` — capped at 2.0, pre-commit = max weight |
 | **Stale prices** | Issuer cancels sub-market for that tick, bettors refunded per market |
@@ -529,7 +689,7 @@ User lands on page
 | **Claim** | Verified against issuer BLS aggregated signature |
 | **Protocol fee** | 0.3% on all withdrawals (claims + exits) |
 | **Exit** | `withdraw()` anytime; `pause()` + `forceWithdraw()` by issuers |
-| **Target users** | Bots / AI agents ultimately, with strategy preset UX for humans |
+| **Target users** | Quant funds, market makers, bots — with strategy preset UX for humans |
 
 ## Contracts
 

@@ -62,10 +62,10 @@ export function usePortfolio(userAddress: string | undefined): UsePortfolioRetur
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchAll = useCallback(async () => {
+  const fetchAll = useCallback(async (initial = false) => {
     if (!userAddress) return
 
-    setIsLoading(true)
+    if (initial) setIsLoading(true)
     setError(null)
 
     try {
@@ -91,7 +91,10 @@ export function usePortfolio(userAddress: string | undefined): UsePortfolioRetur
         setTrades(data.trades || [])
       }
     } catch (e: any) {
-      setError(e.message || 'Failed to fetch portfolio data')
+      // Only show error on initial load — on refresh failures, keep existing data
+      if (initial) {
+        setError(e.message || 'Failed to fetch portfolio data')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -106,8 +109,8 @@ export function usePortfolio(userAddress: string | undefined): UsePortfolioRetur
       return
     }
 
-    fetchAll()
-    const interval = setInterval(fetchAll, 30000)
+    fetchAll(true)
+    const interval = setInterval(() => fetchAll(false), 30000)
     return () => clearInterval(interval)
   }, [userAddress, fetchAll])
 

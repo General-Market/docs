@@ -155,6 +155,32 @@ pub struct ServeArgs {
     #[arg(long, env = "FINRA_CLIENT_SECRET")]
     pub finra_client_secret: Option<String>,
 
+    // === New market data providers ===
+
+    /// Twitch client ID (enables Twitch live streaming data)
+    #[arg(long, env = "TWITCH_CLIENT_ID")]
+    pub twitch_client_id: Option<String>,
+
+    /// Twitch client secret
+    #[arg(long, env = "TWITCH_CLIENT_SECRET")]
+    pub twitch_client_secret: Option<String>,
+
+    /// TMDb API key (enables movie/TV popularity tracking)
+    #[arg(long, env = "TMDB_API_KEY")]
+    pub tmdb_api_key: Option<String>,
+
+    /// backpack.tf API key (enables TF2 item price tracking)
+    #[arg(long, env = "BACKPACKTF_API_KEY")]
+    pub backpacktf_api_key: Option<String>,
+
+    /// GitHub token (enables repository star tracking)
+    #[arg(long, env = "GITHUB_TOKEN")]
+    pub github_token: Option<String>,
+
+    /// Cloudflare Radar token (enables internet metrics tracking)
+    #[arg(long, env = "CLOUDFLARE_RADAR_TOKEN")]
+    pub cloudflare_radar_token: Option<String>,
+
     /// Admin token for protecting destructive admin endpoints (/admin/*)
     #[arg(long, env = "ADMIN_TOKEN")]
     pub admin_token: Option<String>,

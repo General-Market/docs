@@ -136,7 +136,7 @@ export default function Home() {
             <section id="system">
               <div className="px-6 lg:px-12">
                 <div className="max-w-site mx-auto">
-                  <SystemStatusSection />
+                  <SystemStatusSection deployedItps={deployedItps} />
                 </div>
               </div>
             </section>

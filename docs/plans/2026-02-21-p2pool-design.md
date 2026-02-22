@@ -7,19 +7,24 @@ Replace Vision's bilateral betting system (CollateralVault + KeeperRegistry) wit
 ## Architecture
 
 ```
-┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
-│   DATA NODE      │────→│   ISSUER NODES   │────→│   VISION.SOL     │
-│   Collectors:    │     │   Tick engine:    │     │   (on-chain)     │
-│   - Crypto       │     │   - Per-batch     │     │   - Batches      │
-│   - Polymarket   │     │     scheduling    │     │   - Positions    │
-│   - Twitch       │     │   - Resolution    │     │   - Claims       │
-│   - HackerNews   │     │   - Side matching │     │   - Bot registry │
-│   - Weather      │     │   - BLS signing   │     │   - 0.3% fee     │
-│                  │     │   - Bitmap store  │     │                  │
-│   Market catalog │     │   - Reveal        │     │   IssuerRegistry │
-│   + issuer       │     │                   │     │   (BLS verify)   │
-│   whitelist      │     │                   │     │                  │
-└──────────────────┘     └──────────────────┘     └──────────────────┘
+┌──────────────────┐     ┌──────────────────────┐     ┌──────────────────┐
+│   DATA NODE      │────→│   ISSUER NODES        │────→│   VISION.SOL     │
+│   (raw prices)   │     │   Tick engine:        │     │   (on-chain)     │
+│   Collectors:    │     │   - Per-batch sched   │     │   - Batches      │
+│   - Crypto       │     │   - Resolution        │     │   - Positions    │
+│   - Polymarket   │     │   - Side matching     │     │   - Claims       │
+│   - Twitch       │     │   - BLS signing       │     │   - Bot registry │
+│   - HackerNews   │     │   - Bitmap store      │     │   - 0.3% fee     │
+│   - Weather      │     │   - Reveal            │     │                  │
+│                  │     │                       │     │   IssuerRegistry │
+│   Market catalog │     │   Chain indexer:      │     │   (BLS verify)   │
+│   + price API    │     │   - Vision.sol → PG   │     │                  │
+│                  │     │                       │     │                  │
+│                  │     │   REST API:           │     │                  │
+│                  │     │   - Batch/history     │     │                  │
+│                  │     │   - Backtest          │     │                  │
+│                  │     │   - Bitmap/balance    │     │                  │
+└──────────────────┘     └──────────────────────┘     └──────────────────┘
          │                        │                        │
          └────────────────────────┼────────────────────────┘
                                   │
@@ -50,6 +55,7 @@ Replace Vision's bilateral betting system (CollateralVault + KeeperRegistry) wit
 | Strategy execution | Client-side Pyodide (WASM Python) | Strategies run in browser, not on server |
 | Coexistence | ITP cycle engine stays, tick engine runs in parallel | Two products, shared infra (prices, BLS, P2P) |
 | Migration | Build in parallel, delete old Vision when P2Pool is live | Zero downtime migration |
+| Data persistence | Chain-indexed state on issuer, not data-node | Single indexer avoids consistency issues between two indexers. Data-node stays pure price data. |
 
 ## Contract: Vision.sol
 
@@ -153,12 +159,28 @@ New `p2pool/` module in the issuer Rust crate, running alongside existing ITP cy
 - `GET /p2pool/balance/{batch_id}/{player}` → BLS-signed balance proof
 - Player uses this to call `claimRewards()` or `withdraw()` on-chain
 
+### Chain Indexer + Persistence
+- Unified chain listener watches Vision.sol events and does BOTH:
+  - In-memory scheduler updates (for tick resolution)
+  - Postgres writes (for REST API — batches, positions, tick results)
+- Single indexer eliminates consistency issues (previously planned as two separate indexers on data-node and issuer)
+- Uses kv_store bookmark to resume from last indexed block on restart
+- Tables: `p2pool_batches`, `p2pool_positions`, `p2pool_tick_results`, `kv_store`
+
+### Batch/Position/History REST API
+- `GET /p2pool/batches` — list all active batches with player count and TVL
+- `GET /p2pool/batch/{id}/state` — batch config, current tick, player count, TVL
+- `GET /p2pool/batch/{id}/history` — tick results, player performance over time
+- `GET /p2pool/backtest` — run strategy against historical data, return win rate + PnL curve
+
 ### Coexistence
 - Existing cycle engine stays for ITP
 - Tick engine runs as separate tokio tasks
 - Shared: price fetching, BLS signing infrastructure, P2P layer, IssuerRegistry sync
 
-## Data Node: Market Registry + New Collectors
+## Data Node: Market Catalog + Price Collectors
+
+The data-node serves raw price data only. Chain-indexed state (batches, positions, tick results) and batch/history/backtest APIs live on the issuer.
 
 ### Hybrid Market Registry
 - Data-node provides full asset catalog from all collectors
@@ -185,11 +207,9 @@ Resolution is always: `% change = (value_at_tick_end - value_at_tick_start) / va
 
 Each collector implements the same trait: poll source, store `(market_id, timestamp, value)` in DB.
 
-### New Endpoints
-- `GET /snapshot` — bulk market data for strategy scripts: `{ id, value, change_24h, change_7d, volume, mcap }`
-- `GET /batch/{id}/state` — batch config, current tick, player count, TVL
-- `GET /batch/{id}/history` — tick results, player performance over time
-- `GET /backtest` — run strategy against historical data, return win rate + PnL curve
+### Endpoints
+- `GET /p2pool/snapshot` — bulk market data for strategy scripts: `{ id, value, change_24h, change_7d, volume, mcap }`
+- `GET /p2pool/markets/active` — issuer-whitelisted active markets
 
 ## Frontend
 
@@ -229,11 +249,11 @@ Auto-select tab by market count:
 
 ### Strategy System (Pyodide)
 - Python runs client-side in browser via Pyodide (WASM)
-- Input: market snapshot from `/snapshot` endpoint
+- Input: market snapshot from data-node `/p2pool/snapshot` endpoint
 - Output: bitmap array (1/0 per market per tick)
 - Templates: pre-built strategies users can fork/modify
-- Backtest: run against historical data from `/backtest` endpoint
-- Bots: skip UI entirely, call data-node API + submit bitmap directly
+- Backtest: run against historical data from issuer `/p2pool/backtest` endpoint
+- Bots: skip UI entirely, call data-node for prices + issuer for batch state + submit bitmap directly
 
 ### Batch Creation Flow
 - Pick markets from active registry

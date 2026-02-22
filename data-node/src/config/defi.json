@@ -1,0 +1,1172 @@
+[
+  {
+    "asset_id": "chain_ethereum",
+    "symbol": "ETH",
+    "name": "Ethereum TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "ethereum",
+    "active": true
+  },
+  {
+    "asset_id": "chain_solana",
+    "symbol": "SOL",
+    "name": "Solana TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "solana",
+    "active": true
+  },
+  {
+    "asset_id": "chain_bsc",
+    "symbol": "BNB",
+    "name": "BSC TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "bsc",
+    "active": true
+  },
+  {
+    "asset_id": "chain_tron",
+    "symbol": "TRX",
+    "name": "Tron TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "tron",
+    "active": true
+  },
+  {
+    "asset_id": "chain_arbitrum",
+    "symbol": "ARB",
+    "name": "Arbitrum TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "arbitrum",
+    "active": true
+  },
+  {
+    "asset_id": "chain_base",
+    "symbol": "BASE",
+    "name": "Base TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "base",
+    "active": true
+  },
+  {
+    "asset_id": "chain_avalanche",
+    "symbol": "AVAX",
+    "name": "Avalanche TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "avalanche",
+    "active": true
+  },
+  {
+    "asset_id": "chain_polygon",
+    "symbol": "MATIC",
+    "name": "Polygon TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "polygon",
+    "active": true
+  },
+  {
+    "asset_id": "chain_optimism",
+    "symbol": "OP",
+    "name": "Optimism TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "optimism",
+    "active": true
+  },
+  {
+    "asset_id": "chain_sui",
+    "symbol": "SUI",
+    "name": "Sui TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "sui",
+    "active": true
+  },
+  {
+    "asset_id": "chain_aptos",
+    "symbol": "APT",
+    "name": "Aptos TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "aptos",
+    "active": true
+  },
+  {
+    "asset_id": "chain_ton",
+    "symbol": "TON",
+    "name": "Ton TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "ton",
+    "active": true
+  },
+  {
+    "asset_id": "chain_sei",
+    "symbol": "SEI",
+    "name": "Sei TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "sei",
+    "active": true
+  },
+  {
+    "asset_id": "chain_near",
+    "symbol": "NEAR",
+    "name": "Near TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "near",
+    "active": true
+  },
+  {
+    "asset_id": "chain_fantom",
+    "symbol": "FTM",
+    "name": "Fantom TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "fantom",
+    "active": true
+  },
+  {
+    "asset_id": "chain_cronos",
+    "symbol": "CRO",
+    "name": "Cronos TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "cronos",
+    "active": true
+  },
+  {
+    "asset_id": "chain_mantle",
+    "symbol": "MNT",
+    "name": "Mantle TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "mantle",
+    "active": true
+  },
+  {
+    "asset_id": "chain_linea",
+    "symbol": "LINEA",
+    "name": "Linea TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "linea",
+    "active": true
+  },
+  {
+    "asset_id": "chain_zksync_era",
+    "symbol": "ZK",
+    "name": "zkSync Era TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "zksync_era",
+    "active": true
+  },
+  {
+    "asset_id": "chain_blast",
+    "symbol": "BLAST",
+    "name": "Blast TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "blast",
+    "active": true
+  },
+  {
+    "asset_id": "chain_manta",
+    "symbol": "MANTA",
+    "name": "Manta TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "manta",
+    "active": true
+  },
+  {
+    "asset_id": "chain_scroll",
+    "symbol": "SCROLL",
+    "name": "Scroll TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "scroll",
+    "active": true
+  },
+  {
+    "asset_id": "chain_starknet",
+    "symbol": "STRK",
+    "name": "Starknet TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "starknet",
+    "active": true
+  },
+  {
+    "asset_id": "chain_celo",
+    "symbol": "CELO",
+    "name": "Celo TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "celo",
+    "active": true
+  },
+  {
+    "asset_id": "chain_moonbeam",
+    "symbol": "GLMR",
+    "name": "Moonbeam TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "moonbeam",
+    "active": true
+  },
+  {
+    "asset_id": "chain_kava",
+    "symbol": "KAVA",
+    "name": "Kava TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "kava",
+    "active": true
+  },
+  {
+    "asset_id": "chain_aurora",
+    "symbol": "AURORA",
+    "name": "Aurora TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "aurora",
+    "active": true
+  },
+  {
+    "asset_id": "chain_harmony",
+    "symbol": "ONE",
+    "name": "Harmony TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "harmony",
+    "active": true
+  },
+  {
+    "asset_id": "chain_gnosis",
+    "symbol": "GNO",
+    "name": "Gnosis TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "gnosis",
+    "active": true
+  },
+  {
+    "asset_id": "chain_cardano",
+    "symbol": "ADA",
+    "name": "Cardano TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "cardano",
+    "active": true
+  },
+  {
+    "asset_id": "chain_polkadot",
+    "symbol": "DOT",
+    "name": "Polkadot TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "polkadot",
+    "active": true
+  },
+  {
+    "asset_id": "chain_cosmos",
+    "symbol": "ATOM",
+    "name": "Cosmos TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "cosmos",
+    "active": true
+  },
+  {
+    "asset_id": "chain_osmosis",
+    "symbol": "OSMO",
+    "name": "Osmosis TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "osmosis",
+    "active": true
+  },
+  {
+    "asset_id": "chain_injective",
+    "symbol": "INJ",
+    "name": "Injective TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "injective",
+    "active": true
+  },
+  {
+    "asset_id": "chain_dydx",
+    "symbol": "DYDX",
+    "name": "dYdX TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "dydx",
+    "active": true
+  },
+  {
+    "asset_id": "chain_metis",
+    "symbol": "METIS",
+    "name": "Metis TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "metis",
+    "active": true
+  },
+  {
+    "asset_id": "chain_klaytn",
+    "symbol": "KLAY",
+    "name": "Klaytn TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "klaytn",
+    "active": true
+  },
+  {
+    "asset_id": "chain_hedera",
+    "symbol": "HBAR",
+    "name": "Hedera TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "hedera",
+    "active": true
+  },
+  {
+    "asset_id": "chain_algorand",
+    "symbol": "ALGO",
+    "name": "Algorand TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "algorand",
+    "active": true
+  },
+  {
+    "asset_id": "chain_zilliqa",
+    "symbol": "ZIL",
+    "name": "Zilliqa TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "zilliqa",
+    "active": true
+  },
+  {
+    "asset_id": "chain_pulsechain",
+    "symbol": "PLS",
+    "name": "Pulsechain TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "pulsechain",
+    "active": true
+  },
+  {
+    "asset_id": "chain_mode",
+    "symbol": "MODE",
+    "name": "Mode TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "mode",
+    "active": true
+  },
+  {
+    "asset_id": "chain_merlin",
+    "symbol": "MERL",
+    "name": "Merlin TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "merlin",
+    "active": true
+  },
+  {
+    "asset_id": "chain_boba",
+    "symbol": "BOBA",
+    "name": "Boba TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "boba",
+    "active": true
+  },
+  {
+    "asset_id": "chain_canto",
+    "symbol": "CANTO",
+    "name": "Canto TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "canto",
+    "active": true
+  },
+  {
+    "asset_id": "chain_moonriver",
+    "symbol": "MOVR",
+    "name": "Moonriver TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "moonriver",
+    "active": true
+  },
+  {
+    "asset_id": "chain_astar",
+    "symbol": "ASTR",
+    "name": "Astar TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "astar",
+    "active": true
+  },
+  {
+    "asset_id": "chain_wemix",
+    "symbol": "WEMIX",
+    "name": "Wemix TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "wemix",
+    "active": true
+  },
+  {
+    "asset_id": "chain_fraxtal",
+    "symbol": "FRAX",
+    "name": "Fraxtal TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "fraxtal",
+    "active": true
+  },
+  {
+    "asset_id": "chain_taiko",
+    "symbol": "TAIKO",
+    "name": "Taiko TVL",
+    "category": "defi",
+    "subcategory": "chain_tvl",
+    "api_ref": "taiko",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_lido",
+    "symbol": "LIDO",
+    "name": "Lido TVL",
+    "category": "defi",
+    "subcategory": "liquid_staking",
+    "api_ref": "lido",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_aave-v3",
+    "symbol": "AAVE",
+    "name": "Aave V3 TVL",
+    "category": "defi",
+    "subcategory": "lending",
+    "api_ref": "aave-v3",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_eigenlayer",
+    "symbol": "EIGEN",
+    "name": "EigenLayer TVL",
+    "category": "defi",
+    "subcategory": "liquid_staking",
+    "api_ref": "eigenlayer",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_makerdao",
+    "symbol": "MKR",
+    "name": "MakerDAO TVL",
+    "category": "defi",
+    "subcategory": "lending",
+    "api_ref": "makerdao",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_jito",
+    "symbol": "JTO",
+    "name": "Jito TVL",
+    "category": "defi",
+    "subcategory": "liquid_staking",
+    "api_ref": "jito",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_ether.fi-stake",
+    "symbol": "ETHFI",
+    "name": "Ether.fi TVL",
+    "category": "defi",
+    "subcategory": "liquid_staking",
+    "api_ref": "ether.fi-stake",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_uniswap",
+    "symbol": "UNI",
+    "name": "Uniswap TVL",
+    "category": "defi",
+    "subcategory": "dex",
+    "api_ref": "uniswap",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_rocket-pool",
+    "symbol": "RPL",
+    "name": "Rocket Pool TVL",
+    "category": "defi",
+    "subcategory": "liquid_staking",
+    "api_ref": "rocket-pool",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_morpho",
+    "symbol": "MORPHO",
+    "name": "Morpho TVL",
+    "category": "defi",
+    "subcategory": "lending",
+    "api_ref": "morpho",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_compound-v3",
+    "symbol": "COMP",
+    "name": "Compound V3 TVL",
+    "category": "defi",
+    "subcategory": "lending",
+    "api_ref": "compound-v3",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_raydium",
+    "symbol": "RAY",
+    "name": "Raydium TVL",
+    "category": "defi",
+    "subcategory": "dex",
+    "api_ref": "raydium",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_jupiter",
+    "symbol": "JUP",
+    "name": "Jupiter TVL",
+    "category": "defi",
+    "subcategory": "dex",
+    "api_ref": "jupiter",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_spark",
+    "symbol": "SPK",
+    "name": "Spark TVL",
+    "category": "defi",
+    "subcategory": "lending",
+    "api_ref": "spark",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_pendle",
+    "symbol": "PENDLE",
+    "name": "Pendle TVL",
+    "category": "defi",
+    "subcategory": "yield",
+    "api_ref": "pendle",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_kamino-lend",
+    "symbol": "KMNO",
+    "name": "Kamino TVL",
+    "category": "defi",
+    "subcategory": "lending",
+    "api_ref": "kamino-lend",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_aerodrome",
+    "symbol": "AERO",
+    "name": "Aerodrome TVL",
+    "category": "defi",
+    "subcategory": "dex",
+    "api_ref": "aerodrome",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_venus",
+    "symbol": "XVS",
+    "name": "Venus TVL",
+    "category": "defi",
+    "subcategory": "lending",
+    "api_ref": "venus",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_gmx-v2",
+    "symbol": "GMX",
+    "name": "GMX V2 TVL",
+    "category": "defi",
+    "subcategory": "derivatives",
+    "api_ref": "gmx-v2",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_pancakeswap-v3",
+    "symbol": "CAKE",
+    "name": "PancakeSwap V3 TVL",
+    "category": "defi",
+    "subcategory": "dex",
+    "api_ref": "pancakeswap-v3",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_curve-dex",
+    "symbol": "CRV",
+    "name": "Curve TVL",
+    "category": "defi",
+    "subcategory": "dex",
+    "api_ref": "curve-dex",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_marinade-finance",
+    "symbol": "MNDE",
+    "name": "Marinade TVL",
+    "category": "defi",
+    "subcategory": "liquid_staking",
+    "api_ref": "marinade-finance",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_stargate",
+    "symbol": "STG",
+    "name": "Stargate TVL",
+    "category": "defi",
+    "subcategory": "bridge",
+    "api_ref": "stargate",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_across",
+    "symbol": "ACX",
+    "name": "Across TVL",
+    "category": "defi",
+    "subcategory": "bridge",
+    "api_ref": "across",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_synapse",
+    "symbol": "SYN",
+    "name": "Synapse TVL",
+    "category": "defi",
+    "subcategory": "bridge",
+    "api_ref": "synapse",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_hop-protocol",
+    "symbol": "HOP",
+    "name": "Hop Protocol TVL",
+    "category": "defi",
+    "subcategory": "bridge",
+    "api_ref": "hop-protocol",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_yearn-finance",
+    "symbol": "YFI",
+    "name": "Yearn Finance TVL",
+    "category": "defi",
+    "subcategory": "yield",
+    "api_ref": "yearn-finance",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_convex-finance",
+    "symbol": "CVX",
+    "name": "Convex Finance TVL",
+    "category": "defi",
+    "subcategory": "yield",
+    "api_ref": "convex-finance",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_sushiswap",
+    "symbol": "SUSHI",
+    "name": "SushiSwap TVL",
+    "category": "defi",
+    "subcategory": "dex",
+    "api_ref": "sushiswap",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_balancer-v2",
+    "symbol": "BAL",
+    "name": "Balancer V2 TVL",
+    "category": "defi",
+    "subcategory": "dex",
+    "api_ref": "balancer-v2",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_trader-joe",
+    "symbol": "JOE",
+    "name": "Trader Joe TVL",
+    "category": "defi",
+    "subcategory": "dex",
+    "api_ref": "trader-joe",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_velodrome-v2",
+    "symbol": "VELO",
+    "name": "Velodrome V2 TVL",
+    "category": "defi",
+    "subcategory": "dex",
+    "api_ref": "velodrome-v2",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_radiant-v2",
+    "symbol": "RDNT",
+    "name": "Radiant V2 TVL",
+    "category": "defi",
+    "subcategory": "lending",
+    "api_ref": "radiant-v2",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_benqi-lending",
+    "symbol": "QI",
+    "name": "BENQI TVL",
+    "category": "defi",
+    "subcategory": "lending",
+    "api_ref": "benqi-lending",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_sommelier",
+    "symbol": "SOMM",
+    "name": "Sommelier TVL",
+    "category": "defi",
+    "subcategory": "yield",
+    "api_ref": "sommelier",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_instadapp",
+    "symbol": "INST",
+    "name": "Instadapp TVL",
+    "category": "defi",
+    "subcategory": "lending",
+    "api_ref": "instadapp",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_euler",
+    "symbol": "EUL",
+    "name": "Euler TVL",
+    "category": "defi",
+    "subcategory": "lending",
+    "api_ref": "euler",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_maple",
+    "symbol": "MPL",
+    "name": "Maple TVL",
+    "category": "defi",
+    "subcategory": "lending",
+    "api_ref": "maple",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_osmosis-dex",
+    "symbol": "OSMO",
+    "name": "Osmosis DEX TVL",
+    "category": "defi",
+    "subcategory": "dex",
+    "api_ref": "osmosis-dex",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_camelot-v3",
+    "symbol": "GRAIL",
+    "name": "Camelot V3 TVL",
+    "category": "defi",
+    "subcategory": "dex",
+    "api_ref": "camelot-v3",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_maverick-v2",
+    "symbol": "MAV",
+    "name": "Maverick V2 TVL",
+    "category": "defi",
+    "subcategory": "dex",
+    "api_ref": "maverick-v2",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_dydx",
+    "symbol": "DYDX",
+    "name": "dYdX TVL",
+    "category": "defi",
+    "subcategory": "derivatives",
+    "api_ref": "dydx",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_hyperliquid",
+    "symbol": "HYPE",
+    "name": "Hyperliquid TVL",
+    "category": "defi",
+    "subcategory": "derivatives",
+    "api_ref": "hyperliquid",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_gains-network",
+    "symbol": "GNS",
+    "name": "Gains Network TVL",
+    "category": "defi",
+    "subcategory": "derivatives",
+    "api_ref": "gains-network",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_synthetix",
+    "symbol": "SNX",
+    "name": "Synthetix TVL",
+    "category": "defi",
+    "subcategory": "derivatives",
+    "api_ref": "synthetix",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_drift",
+    "symbol": "DRIFT",
+    "name": "Drift Protocol TVL",
+    "category": "defi",
+    "subcategory": "derivatives",
+    "api_ref": "drift",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_fluid",
+    "symbol": "FLUID",
+    "name": "Fluid TVL",
+    "category": "defi",
+    "subcategory": "lending",
+    "api_ref": "fluid",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_silo-finance",
+    "symbol": "SILO",
+    "name": "Silo Finance TVL",
+    "category": "defi",
+    "subcategory": "lending",
+    "api_ref": "silo-finance",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_aave-v2",
+    "symbol": "AAVE",
+    "name": "Aave V2 TVL",
+    "category": "defi",
+    "subcategory": "lending",
+    "api_ref": "aave-v2",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_compound-v2",
+    "symbol": "COMP",
+    "name": "Compound V2 TVL",
+    "category": "defi",
+    "subcategory": "lending",
+    "api_ref": "compound-v2",
+    "active": true
+  },
+  {
+    "asset_id": "protocol_orca",
+    "symbol": "ORCA",
+    "name": "Orca TVL",
+    "category": "defi",
+    "subcategory": "dex",
+    "api_ref": "orca",
+    "active": true
+  },
+  {
+    "asset_id": "dex_24h_uniswap",
+    "symbol": "UNISWAP_24H",
+    "name": "Uniswap 24h Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "uniswap",
+    "active": true
+  },
+  {
+    "asset_id": "dex_30d_uniswap",
+    "symbol": "UNISWAP_30D",
+    "name": "Uniswap 30d Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "uniswap",
+    "active": true
+  },
+  {
+    "asset_id": "dex_24h_raydium",
+    "symbol": "RAYDIUM_24H",
+    "name": "Raydium 24h Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "raydium",
+    "active": true
+  },
+  {
+    "asset_id": "dex_30d_raydium",
+    "symbol": "RAYDIUM_30D",
+    "name": "Raydium 30d Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "raydium",
+    "active": true
+  },
+  {
+    "asset_id": "dex_24h_pancakeswap",
+    "symbol": "PANCAKESWAP_24H",
+    "name": "PancakeSwap 24h Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "pancakeswap",
+    "active": true
+  },
+  {
+    "asset_id": "dex_30d_pancakeswap",
+    "symbol": "PANCAKESWAP_30D",
+    "name": "PancakeSwap 30d Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "pancakeswap",
+    "active": true
+  },
+  {
+    "asset_id": "dex_24h_orca",
+    "symbol": "ORCA_24H",
+    "name": "Orca 24h Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "orca",
+    "active": true
+  },
+  {
+    "asset_id": "dex_30d_orca",
+    "symbol": "ORCA_30D",
+    "name": "Orca 30d Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "orca",
+    "active": true
+  },
+  {
+    "asset_id": "dex_24h_curve-dex",
+    "symbol": "CURVE-DEX_24H",
+    "name": "Curve 24h Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "curve-dex",
+    "active": true
+  },
+  {
+    "asset_id": "dex_30d_curve-dex",
+    "symbol": "CURVE-DEX_30D",
+    "name": "Curve 30d Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "curve-dex",
+    "active": true
+  },
+  {
+    "asset_id": "dex_24h_aerodrome",
+    "symbol": "AERODROME_24H",
+    "name": "Aerodrome 24h Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "aerodrome",
+    "active": true
+  },
+  {
+    "asset_id": "dex_30d_aerodrome",
+    "symbol": "AERODROME_30D",
+    "name": "Aerodrome 30d Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "aerodrome",
+    "active": true
+  },
+  {
+    "asset_id": "dex_24h_jupiter-perps",
+    "symbol": "JUPITER-PERP_24H",
+    "name": "Jupiter Perps 24h Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "jupiter-perps",
+    "active": true
+  },
+  {
+    "asset_id": "dex_30d_jupiter-perps",
+    "symbol": "JUPITER-PERP_30D",
+    "name": "Jupiter Perps 30d Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "jupiter-perps",
+    "active": true
+  },
+  {
+    "asset_id": "dex_24h_trader-joe",
+    "symbol": "TRADER-JOE_24H",
+    "name": "Trader Joe 24h Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "trader-joe",
+    "active": true
+  },
+  {
+    "asset_id": "dex_30d_trader-joe",
+    "symbol": "TRADER-JOE_30D",
+    "name": "Trader Joe 30d Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "trader-joe",
+    "active": true
+  },
+  {
+    "asset_id": "dex_24h_velodrome-v2",
+    "symbol": "VELODROME-V2_24H",
+    "name": "Velodrome 24h Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "velodrome-v2",
+    "active": true
+  },
+  {
+    "asset_id": "dex_30d_velodrome-v2",
+    "symbol": "VELODROME-V2_30D",
+    "name": "Velodrome 30d Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "velodrome-v2",
+    "active": true
+  },
+  {
+    "asset_id": "dex_24h_sushiswap",
+    "symbol": "SUSHISWAP_24H",
+    "name": "SushiSwap 24h Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "sushiswap",
+    "active": true
+  },
+  {
+    "asset_id": "dex_30d_sushiswap",
+    "symbol": "SUSHISWAP_30D",
+    "name": "SushiSwap 30d Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "sushiswap",
+    "active": true
+  },
+  {
+    "asset_id": "dex_24h_balancer-v2",
+    "symbol": "BALANCER-V2_24H",
+    "name": "Balancer 24h Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "balancer-v2",
+    "active": true
+  },
+  {
+    "asset_id": "dex_30d_balancer-v2",
+    "symbol": "BALANCER-V2_30D",
+    "name": "Balancer 30d Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "balancer-v2",
+    "active": true
+  },
+  {
+    "asset_id": "dex_24h_camelot",
+    "symbol": "CAMELOT_24H",
+    "name": "Camelot 24h Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "camelot",
+    "active": true
+  },
+  {
+    "asset_id": "dex_30d_camelot",
+    "symbol": "CAMELOT_30D",
+    "name": "Camelot 30d Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "camelot",
+    "active": true
+  },
+  {
+    "asset_id": "dex_24h_maverick",
+    "symbol": "MAVERICK_24H",
+    "name": "Maverick 24h Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "maverick",
+    "active": true
+  },
+  {
+    "asset_id": "dex_30d_maverick",
+    "symbol": "MAVERICK_30D",
+    "name": "Maverick 30d Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "maverick",
+    "active": true
+  },
+  {
+    "asset_id": "dex_24h_ambient",
+    "symbol": "AMBIENT_24H",
+    "name": "Ambient 24h Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "ambient",
+    "active": true
+  },
+  {
+    "asset_id": "dex_30d_ambient",
+    "symbol": "AMBIENT_30D",
+    "name": "Ambient 30d Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "ambient",
+    "active": true
+  },
+  {
+    "asset_id": "dex_24h_thena",
+    "symbol": "THENA_24H",
+    "name": "Thena 24h Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "thena",
+    "active": true
+  },
+  {
+    "asset_id": "dex_30d_thena",
+    "symbol": "THENA_30D",
+    "name": "Thena 30d Volume",
+    "category": "defi",
+    "subcategory": "dex_volume",
+    "api_ref": "thena",
+    "active": true
+  }
+]

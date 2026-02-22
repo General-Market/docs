@@ -13,102 +13,16 @@ use std::time::Duration;
 use tracing::{debug, info, warn};
 
 use crate::market_data::traits::{
-    today_at_eastern, AssetUpdate, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
+    load_all_asset_entries, load_assets_from_json, today_at_eastern, AssetUpdate,
+    MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
 /// EIA API base URL
 const EIA_API_URL: &str = "https://api.eia.gov/v2/petroleum/sum/sndw/data/";
 
-/// EIA series definitions
-/// (series_id, asset_id, name, category, unit, release_day)
-const EIA_SERIES: &[(&str, &str, &str, &str, &str, ReleaseDay)] = &[
-    // Petroleum (Wednesday 10:30 AM ET)
-    (
-        "WCESTUS1",
-        "eia_crude_stocks",
-        "U.S. Crude Oil Inventories",
-        "petroleum",
-        "thousand_barrels",
-        ReleaseDay::Wednesday,
-    ),
-    (
-        "WCSSTUS1",
-        "eia_spr",
-        "Strategic Petroleum Reserve",
-        "petroleum",
-        "thousand_barrels",
-        ReleaseDay::Wednesday,
-    ),
-    (
-        "WGTSTUS1",
-        "eia_gasoline_stocks",
-        "U.S. Gasoline Inventories",
-        "petroleum",
-        "thousand_barrels",
-        ReleaseDay::Wednesday,
-    ),
-    (
-        "WDISTUS1",
-        "eia_distillate_stocks",
-        "U.S. Distillate Inventories",
-        "petroleum",
-        "thousand_barrels",
-        ReleaseDay::Wednesday,
-    ),
-    (
-        "WCRFPUS2",
-        "eia_crude_production",
-        "U.S. Crude Oil Production",
-        "production",
-        "thousand_barrels_per_day",
-        ReleaseDay::Wednesday,
-    ),
-    (
-        "WPULEUS3",
-        "eia_refinery_util",
-        "U.S. Refinery Utilization",
-        "production",
-        "percent",
-        ReleaseDay::Wednesday,
-    ),
-    (
-        "WCRIMUS2",
-        "eia_crude_imports",
-        "U.S. Crude Oil Imports",
-        "trade",
-        "thousand_barrels_per_day",
-        ReleaseDay::Wednesday,
-    ),
-    (
-        "WRPUPUS2",
-        "eia_days_supply",
-        "Days of Crude Oil Supply",
-        "petroleum",
-        "days",
-        ReleaseDay::Wednesday,
-    ),
-];
-
-/// Natural gas series (uses different API endpoint)
-const EIA_NATGAS_SERIES: &[(&str, &str, &str, &str, &str)] = &[
-    // Natural Gas (Thursday 10:30 AM ET)
-    (
-        "natgas_storage",
-        "eia_natgas_storage",
-        "U.S. Natural Gas Storage",
-        "natural_gas",
-        "billion_cubic_feet",
-    ),
-];
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-#[allow(dead_code)]
-enum ReleaseDay {
-    Wednesday,
-    Thursday,
-    Friday,
-}
+/// Asset configuration loaded from JSON at compile time
+const ASSET_JSON: &str = include_str!("../../../config/eia.json");
 
 /// EIA API response structure
 #[derive(Debug, Deserialize)]
@@ -146,8 +60,10 @@ impl EiaMarketSource {
             .build()
             .context("Failed to build reqwest client")?;
 
-        let total_series = EIA_SERIES.len() + EIA_NATGAS_SERIES.len();
-        info!("EIA client initialized with {} series", total_series);
+        let asset_count = load_assets_from_json(ASSET_JSON)
+            .map(|a| a.len())
+            .unwrap_or(0);
+        info!("EIA client initialized with {} series", asset_count);
 
         Ok(Self { client, api_key })
     }
@@ -253,63 +169,53 @@ impl MarketDataSource for EiaMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        let mut assets: Vec<AssetUpdate> = EIA_SERIES
-            .iter()
-            .map(
-                |(series_id, asset_id, name, category, unit, release_day)| AssetUpdate {
-                    asset_id: asset_id.to_string(),
-                    symbol: series_id.to_string(),
-                    name: name.to_string(),
-                    category: Some(category.to_string()),
-                    metadata: serde_json::json!({
-                        "source": "eia",
-                        "series_id": series_id,
-                        "unit": unit,
-                        "release_day": match release_day {
-                            ReleaseDay::Wednesday => "wednesday",
-                            ReleaseDay::Thursday => "thursday",
-                            ReleaseDay::Friday => "friday",
-                        },
-                        "release_time": "10:30 AM ET",
-                    }),
-                },
-            )
-            .collect();
-
-        // Add natural gas series
-        for (series_id, asset_id, name, category, unit) in EIA_NATGAS_SERIES {
-            assets.push(AssetUpdate {
-                asset_id: asset_id.to_string(),
-                symbol: series_id.to_string(),
-                name: name.to_string(),
-                category: Some(category.to_string()),
-                metadata: serde_json::json!({
-                    "source": "eia",
-                    "series_id": series_id,
-                    "unit": unit,
-                    "release_day": "thursday",
-                    "release_time": "10:30 AM ET",
-                }),
-            });
-        }
-
-        Ok(assets)
+        load_assets_from_json(ASSET_JSON)
     }
 
     async fn fetch_prices(&self, _asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
         let now = Utc::now();
         let mut results = Vec::new();
 
-        // Fetch petroleum series
-        for (series_id, asset_id, _name, _category, _unit, _release_day) in EIA_SERIES {
-            tokio::time::sleep(Duration::from_millis(200)).await;
+        // Build lookup from JSON config
+        let entries = load_all_asset_entries(ASSET_JSON)?;
 
-            match self.fetch_petroleum_series(series_id).await {
+        for entry in &entries {
+            // Natural gas storage uses different endpoint
+            if entry.asset_id == "eia_natgas_storage" {
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                match self.fetch_natgas_storage().await {
+                    Ok(Some((_period, value))) => {
+                        if let Ok(decimal_value) = Decimal::from_str(&value.to_string()) {
+                            results.push(PriceUpdate {
+                                asset_id: entry.asset_id.clone(),
+                                symbol: entry.symbol.clone(),
+                                value: decimal_value,
+                                prev_close: None,
+                                change_pct: None,
+                                volume_24h: None,
+                                market_cap: None,
+                                fetched_at: now,
+                            });
+                        }
+                    }
+                    Ok(None) => {
+                        debug!("No EIA natural gas storage data");
+                    }
+                    Err(e) => {
+                        warn!("Error fetching EIA natural gas storage: {:?}", e);
+                    }
+                }
+                continue;
+            }
+
+            // Petroleum series
+            tokio::time::sleep(Duration::from_millis(200)).await;
+            match self.fetch_petroleum_series(&entry.api_ref).await {
                 Ok(Some((_period, value))) => {
                     if let Ok(decimal_value) = Decimal::from_str(&value.to_string()) {
                         results.push(PriceUpdate {
-                            asset_id: asset_id.to_string(),
-                            symbol: series_id.to_string(),
+                            asset_id: entry.asset_id.clone(),
+                            symbol: entry.symbol.clone(),
                             value: decimal_value,
                             prev_close: None,
                             change_pct: None,
@@ -320,36 +226,11 @@ impl MarketDataSource for EiaMarketSource {
                     }
                 }
                 Ok(None) => {
-                    debug!("No EIA data for {}", series_id);
+                    debug!("No EIA data for {}", entry.api_ref);
                 }
                 Err(e) => {
-                    warn!("Error fetching EIA series {}: {:?}", series_id, e);
+                    warn!("Error fetching EIA series {}: {:?}", entry.api_ref, e);
                 }
-            }
-        }
-
-        // Fetch natural gas storage
-        tokio::time::sleep(Duration::from_millis(200)).await;
-        match self.fetch_natgas_storage().await {
-            Ok(Some((_period, value))) => {
-                if let Ok(decimal_value) = Decimal::from_str(&value.to_string()) {
-                    results.push(PriceUpdate {
-                        asset_id: "eia_natgas_storage".to_string(),
-                        symbol: "natgas_storage".to_string(),
-                        value: decimal_value,
-                        prev_close: None,
-                        change_pct: None,
-                        volume_24h: None,
-                        market_cap: None,
-                        fetched_at: now,
-                    });
-                }
-            }
-            Ok(None) => {
-                debug!("No EIA natural gas storage data");
-            }
-            Err(e) => {
-                warn!("Error fetching EIA natural gas storage: {:?}", e);
             }
         }
 
@@ -457,15 +338,20 @@ mod tests {
 
     #[test]
     fn test_series_count() {
-        let total = EIA_SERIES.len() + EIA_NATGAS_SERIES.len();
-        assert!(total >= 9, "Expected at least 9 EIA series");
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        assert!(entries.len() >= 9, "Expected at least 9 EIA series");
     }
 
     #[test]
-    fn test_petroleum_categories() {
-        let categories: Vec<_> = EIA_SERIES.iter().map(|s| s.3).collect();
-        assert!(categories.contains(&"petroleum"));
-        assert!(categories.contains(&"production"));
-        assert!(categories.contains(&"trade"));
+    fn test_energy_categories() {
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        assert!(entries.iter().all(|e| e.category == "commodities"));
+        assert!(entries.iter().all(|e| e.subcategory == "energy"));
+    }
+
+    #[test]
+    fn test_natgas_storage_present() {
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        assert!(entries.iter().any(|e| e.asset_id == "eia_natgas_storage"));
     }
 }

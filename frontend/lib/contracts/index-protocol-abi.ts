@@ -460,6 +460,7 @@ export const INDEX_ABI = [
       { name: 'addAssets', type: 'address[]' },
       { name: 'newWeights', type: 'uint256[]' },
       { name: 'prices', type: 'uint256[]' },
+      { name: 'quoteTokens', type: 'address[]' },
       { name: 'blsSignature', type: 'bytes' },
     ],
     name: 'rebalance',
@@ -491,6 +492,16 @@ export const INDEX_ABI = [
       { indexed: false, name: 'blsSignature', type: 'bytes' },
     ],
     name: 'BatchConfirmed',
+    type: 'event',
+  },
+  // AuthorizedBridgeUpdated event
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'previousBridge', type: 'address' },
+      { indexed: true, name: 'newBridge', type: 'address' },
+    ],
+    name: 'AuthorizedBridgeUpdated',
     type: 'event',
   },
 ] as const

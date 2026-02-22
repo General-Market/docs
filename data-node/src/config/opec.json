@@ -1,0 +1,3 @@
+[
+  {"asset_id": "opec_basket", "symbol": "ORB", "name": "OPEC Reference Basket Price", "category": "commodities", "subcategory": "energy", "api_ref": "OPEC/ORB", "active": true}
+]

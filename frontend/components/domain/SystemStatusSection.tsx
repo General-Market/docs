@@ -3,8 +3,18 @@
 import { formatUnits } from 'viem'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { useSystemStatus } from '@/hooks/useSystemStatus'
+import type { DeployedItpRef } from '@/components/domain/ItpListing'
 
 const NODE_NAMES = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta']
+
+/** Format large USD values compactly: $1.2B, $345M, $12.3K, $1,234.56 */
+function formatUsdCompact(value: number): string {
+  if (value >= 1e12) return `$${(value / 1e12).toFixed(1)}T`
+  if (value >= 1e9) return `$${(value / 1e9).toFixed(1)}B`
+  if (value >= 1e6) return `$${(value / 1e6).toFixed(1)}M`
+  if (value >= 1e4) return `$${(value / 1e3).toFixed(1)}K`
+  return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+}
 
 function truncateAddr(addr: string): string {
   if (!addr || addr.length < 12) return addr || '—'
@@ -26,8 +36,21 @@ function formatTime(unix: number): string {
   return new Date(unix * 1000).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
 }
 
-export function SystemStatusSection() {
+interface SystemStatusSectionProps {
+  deployedItps?: DeployedItpRef[]
+}
+
+export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) {
   const sys = useSystemStatus()
+
+  // Build ITP name lookup: itpId → display name
+  const itpNameMap = new Map<string, string>()
+  if (deployedItps) {
+    for (const itp of deployedItps) {
+      const key = itp.itpId.toLowerCase()
+      itpNameMap.set(key, itp.symbol ? `$${itp.symbol}` : itp.name)
+    }
+  }
 
   const activeNodes = sys.nodes.filter(n => n.status === 1)
 
@@ -102,7 +125,7 @@ export function SystemStatusSection() {
                   { label: 'BLS Pubkey', value: node.blsPubkeyShort },
                   { label: 'Registered', value: formatTimestamp(node.registeredAt) },
                   { label: 'Status', value: 'Active', color: 'text-color-up' },
-                  { label: 'AP Vault', value: `$${sys.vaultUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, color: 'text-color-up' },
+                  { label: 'AP Vault', value: formatUsdCompact(sys.vaultUsdValue), color: 'text-color-up' },
                 ].map(row => (
                   <div key={row.label} className="flex justify-between items-center py-[3px]">
                     <span className="text-[11px] text-text-muted font-medium">{row.label}</span>
@@ -166,7 +189,7 @@ export function SystemStatusSection() {
                       tick={{ fontSize: 10, fill: '#888' }}
                       tickLine={false}
                       axisLine={false}
-                      tickFormatter={(v: number) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v.toFixed(0)}`}
+                      tickFormatter={(v: number) => formatUsdCompact(v)}
                     />
                     <YAxis
                       type="category"
@@ -178,7 +201,7 @@ export function SystemStatusSection() {
                     />
                     <Tooltip
                       contentStyle={{ fontSize: 12, border: '1px solid #e5e5e5', borderRadius: 4 }}
-                      formatter={(v: number) => [`$${v.toLocaleString(undefined, { maximumFractionDigits: 2 })}`, 'Value']}
+                      formatter={(v: number) => [formatUsdCompact(v), 'Value']}
                     />
                     <Bar dataKey="usdValue" radius={[0, 3, 3, 0]} maxBarSize={18}>
                       {sys.topVaultAssets.map((_, i) => (
@@ -232,7 +255,7 @@ export function SystemStatusSection() {
                     #{order.orderId.toString()}
                   </td>
                   <td className="px-4 py-3 border-b border-border-light font-bold text-black">
-                    {truncateItpId(order.itpId)}
+                    {itpNameMap.get(order.itpId.toLowerCase()) || truncateItpId(order.itpId)}
                   </td>
                   <td className="px-4 py-3 border-b border-border-light text-text-secondary">
                     {order.side === 0 ? 'Buy' : 'Sell'}

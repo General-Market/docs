@@ -86,3 +86,27 @@ pub struct WeatherCity {
     pub is_active: bool,
     pub created_at: DateTime<Utc>,
 }
+
+/// Hourly forecast data point
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HourlyDataPoint {
+    pub time: DateTime<Utc>,
+    pub value: Decimal,
+}
+
+/// Hourly forecast for a single city and metric
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HourlyForecast {
+    pub city_id: String,
+    pub metric: WeatherMetric,
+    pub data: Vec<HourlyDataPoint>,
+    pub fetched_at: DateTime<Utc>,
+}
+
+/// Complete forecast cache for a city (all metrics, 7 days hourly)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CityForecast {
+    pub city_id: String,
+    pub forecasts: std::collections::HashMap<WeatherMetric, Vec<HourlyDataPoint>>,
+    pub fetched_at: DateTime<Utc>,
+}

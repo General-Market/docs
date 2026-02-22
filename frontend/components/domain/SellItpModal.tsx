@@ -14,6 +14,8 @@ import { useUserState } from '@/hooks/useUserState'
 import { useItpCostBasis } from '@/hooks/useItpCostBasis'
 import { useItpNav } from '@/hooks/useItpNav'
 import { useSSEOrders, useSSEBalances, type UserOrder } from '@/hooks/useSSE'
+import { useToast } from '@/lib/contexts/ToastContext'
+import { YouTubeLite, extractYouTubeId } from '@/components/ui/YouTubeLite'
 
 const SLIPPAGE_TIERS = [
   { value: 0, label: '0.3%', description: 'Tight' },
@@ -111,6 +113,7 @@ interface SellItpModalProps {
 export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const { address, isConnected } = useAccount()
   const publicClient = usePublicClient()
+  const { showSuccess } = useToast()
 
   // SSE-driven order & balance tracking (replaces L3 polling)
   const sseOrders = useSSEOrders()
@@ -329,21 +332,43 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     return () => clearTimeout(timer)
   }, [micro])
 
-  // COMPLETE_SELL: detect USDC balance increase via SSE
+  // Detect USDC balance increase — works at ANY processing step.
+  // Issuers may complete the entire cross-chain sell in a single batch cycle.
+  // Uses both SSE balances and REST-polled arbUsdcBalance as fallback.
   useEffect(() => {
-    if (micro < SellMicro.COMPLETE_SELL || micro >= SellMicro.DONE) return
-    if (!sseBalances || initialUsdcArb === null) return
+    if (micro < SellMicro.RELAY || micro >= SellMicro.DONE) return
 
-    const currentUsdcArb = sseBalances.usdc_arb
-    try {
-      if (BigInt(currentUsdcArb) > BigInt(initialUsdcArb)) {
-        // Calculate proceeds from balance difference
-        const proceeds = BigInt(currentUsdcArb) - BigInt(initialUsdcArb)
-        setUsdcProceeds(proceeds)
-        setMicro(SellMicro.DONE)
-      }
-    } catch {}
-  }, [micro, sseBalances, initialUsdcArb])
+    let increased = false
+    let proceeds = 0n
+
+    // Check SSE balances (instant)
+    if (sseBalances && initialUsdcArb !== null) {
+      try {
+        const current = BigInt(sseBalances.usdc_arb)
+        const initial = BigInt(initialUsdcArb)
+        if (current > initial) {
+          increased = true
+          proceeds = current - initial
+        }
+      } catch {}
+    }
+
+    // Fallback: check REST-polled USDC balance (5s poll interval)
+    if (!increased && initialUsdcArb !== null && arbUsdcBalance > 0n) {
+      try {
+        const initial = BigInt(initialUsdcArb)
+        if (arbUsdcBalance > initial) {
+          increased = true
+          proceeds = arbUsdcBalance - initial
+        }
+      } catch {}
+    }
+
+    if (increased) {
+      setUsdcProceeds(proceeds)
+      setMicro(SellMicro.DONE)
+    }
+  }, [micro, sseBalances, initialUsdcArb, arbUsdcBalance])
 
   useEffect(() => {
     if (writeError) {
@@ -353,6 +378,19 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
       setMicro(-1)
     }
   }, [writeError])
+
+  // Toast notification on fill
+  const toastFired = useRef(false)
+  useEffect(() => {
+    if (micro === SellMicro.DONE && !toastFired.current) {
+      toastFired.current = true
+      const proceeds = usdcProceeds
+        ? `$${parseFloat(formatUnits(usdcProceeds, 6)).toFixed(2)} USDC`
+        : 'USDC'
+      showSuccess(`Sell filled — ${proceeds} received`)
+    }
+    if (micro === -1) toastFired.current = false
+  }, [micro, usdcProceeds, showSuccess])
 
   const [stuckWarning, setStuckWarning] = useState(false)
 
@@ -547,18 +585,15 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
           {itpSymbol && <p className="text-text-secondary mb-1 font-mono">${itpSymbol}</p>}
           <p className="text-xs text-text-muted font-mono mb-4 break-all">ITP ID: {itpId}</p>
 
-          {videoUrl && (
-            <div className="aspect-video bg-zinc-950 rounded-lg overflow-hidden mb-4">
-              <iframe
-                src={videoUrl}
-                className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                loading="lazy"
-                title="ITP video"
-              />
-            </div>
-          )}
+          {videoUrl && (() => {
+            const vid = extractYouTubeId(videoUrl)
+            if (!vid) return null
+            return (
+              <div className="rounded-lg overflow-hidden mb-4">
+                <YouTubeLite videoId={vid} title={itpName || 'ITP'} />
+              </div>
+            )
+          })()}
 
           {!isConnected ? (
             <div className="bg-muted border border-border-light rounded-xl p-8 text-center">

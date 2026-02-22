@@ -244,16 +244,7 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
           </WalletActionButton>
         )}
 
-        {/* Quote mode toggle */}
-        <label className="flex items-center gap-2 text-xs text-text-muted cursor-pointer">
-          <input
-            type="checkbox"
-            checked={useQuoteMode}
-            onChange={(e) => setUseQuoteMode(e.target.checked)}
-            className="rounded border-border-medium"
-          />
-          Use intent-based flow (quote + bundler)
-        </label>
+        {/* Quote mode toggle — hidden, direct borrow is default */}
 
         {(txError || quoteError || bundlerError) && (
           <div className="bg-surface-down border border-red-300 rounded-xl p-3 text-color-down text-sm">

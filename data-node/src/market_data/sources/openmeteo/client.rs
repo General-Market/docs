@@ -1,6 +1,7 @@
 //! Open-Meteo MarketDataSource implementation
 //!
 //! Provides weather data through the unified MarketDataSource trait.
+//! Uses smart sync to only fetch when OpenMeteo has new data available.
 //!
 //! Asset ID format: `{city_id}:{metric}` (e.g., "paris-fr:temperature_2m")
 //! Categories by population rank:
@@ -13,29 +14,52 @@ use chrono::Utc;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Duration;
-use tracing::info;
+use tokio::sync::RwLock;
+use tracing::{debug, info};
 
 use super::api_client::OpenMeteoClient;
-use super::models::{WeatherCity, WeatherMetric};
-use crate::market_data::traits::{AssetUpdate, MarketDataSource, PriceUpdate};
+use super::models::{CityForecast, HourlyDataPoint, WeatherCity, WeatherMetric};
+use crate::market_data::traits::{load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate};
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
-/// Default sync interval: 30 minutes
-const DEFAULT_SYNC_INTERVAL_SECS: u64 = 1800;
+/// Asset configuration loaded from JSON at compile time
+const ASSET_JSON: &str = include_str!("../../../config/weather.json");
+
+/// Default sync interval: 5 minutes (checks metadata, only fetches on update)
+const DEFAULT_SYNC_INTERVAL_SECS: u64 = 300;
+
+/// Minimum time between actual data fetches (even if metadata says new data)
+/// OpenMeteo updates roughly every 1-3 hours, so 1 hour minimum is safe
+/// and keeps us well under the 10,000 calls/day free tier limit
+const MIN_FETCH_INTERVAL_SECS: u64 = 3600;
 
 /// Embedded cities.json
 const CITIES_JSON: &str = include_str!("cities.json");
 
-/// Open-Meteo weather data source.
+/// Open-Meteo weather data source with smart sync.
 ///
 /// Source ID is `"weather"`.
 /// Each (city, metric) combination is a separate asset.
+///
+/// Uses metadata API to detect when new data is available,
+/// avoiding unnecessary fetches and maximizing city coverage.
+///
+/// ## Data Storage Strategy
+/// - **Current data**: Stored to database (for settlement)
+/// - **Hourly forecasts**: Kept in memory only (refreshed each sync)
 pub struct OpenMeteoMarketSource {
     client: OpenMeteoClient,
     sync_interval_secs: u64,
     /// Cached city data for asset generation
     cities: Vec<CityInfo>,
+    /// Last data timestamp from OpenMeteo (for smart sync)
+    last_data_timestamp: Arc<RwLock<Option<String>>>,
+    /// Last time we actually fetched data
+    last_fetch_time: Arc<RwLock<Option<std::time::Instant>>>,
+    /// In-memory cache of hourly forecasts (7 days) - refreshed each sync
+    forecast_cache: Arc<RwLock<HashMap<String, CityForecast>>>,
 }
 
 /// Parsed city info from embedded JSON
@@ -51,13 +75,13 @@ struct CityInfo {
 }
 
 impl OpenMeteoMarketSource {
-    /// Create a new Open-Meteo market source
+    /// Create a new Open-Meteo market source with smart sync
     pub fn new(sync_interval_secs: u64) -> Result<Self> {
         let client = OpenMeteoClient::new()?;
         let cities = parse_cities_json(CITIES_JSON)?;
 
         info!(
-            "OpenMeteoMarketSource initialized with {} cities",
+            "OpenMeteoMarketSource initialized with {} cities (smart sync + forecast cache)",
             cities.len()
         );
 
@@ -65,6 +89,9 @@ impl OpenMeteoMarketSource {
             client,
             sync_interval_secs,
             cities,
+            last_data_timestamp: Arc::new(RwLock::new(None)),
+            last_fetch_time: Arc::new(RwLock::new(None)),
+            forecast_cache: Arc::new(RwLock::new(HashMap::new())),
         })
     }
 
@@ -78,15 +105,123 @@ impl OpenMeteoMarketSource {
         Self::new(sync_interval_secs)
     }
 
-    /// Determine category based on city population rank
-    fn get_category(rank: i32) -> String {
-        if rank <= 100 {
-            "meteoTop100".to_string()
-        } else if rank <= 1000 {
-            "meteoTop1000".to_string()
-        } else {
-            "meteoOther".to_string()
+    /// Check if new data is available from OpenMeteo.
+    /// Returns true if we should fetch, false if we can skip.
+    async fn should_fetch(&self) -> bool {
+        // Check minimum fetch interval
+        {
+            let last_fetch = self.last_fetch_time.read().await;
+            if let Some(last) = *last_fetch {
+                if last.elapsed() < Duration::from_secs(MIN_FETCH_INTERVAL_SECS) {
+                    debug!(
+                        "Skipping fetch: only {}s since last fetch (min: {}s)",
+                        last.elapsed().as_secs(),
+                        MIN_FETCH_INTERVAL_SECS
+                    );
+                    return false;
+                }
+            }
         }
+
+        // Check if OpenMeteo has new data
+        match self.client.fetch_data_timestamp().await {
+            Ok(current_timestamp) => {
+                let last_timestamp = self.last_data_timestamp.read().await;
+
+                if let Some(ref last) = *last_timestamp {
+                    if last == &current_timestamp {
+                        debug!(
+                            "Skipping fetch: data timestamp unchanged ({})",
+                            current_timestamp
+                        );
+                        return false;
+                    }
+                }
+
+                info!(
+                    "New data available: {} (was: {:?})",
+                    current_timestamp,
+                    last_timestamp.as_ref()
+                );
+                true
+            }
+            Err(e) => {
+                // If metadata check fails, fetch anyway to be safe
+                debug!("Metadata check failed, fetching anyway: {:?}", e);
+                true
+            }
+        }
+    }
+
+    /// Update the last fetch timestamp after a successful fetch
+    async fn mark_fetched(&self, data_timestamp: Option<String>) {
+        {
+            let mut last_fetch = self.last_fetch_time.write().await;
+            *last_fetch = Some(std::time::Instant::now());
+        }
+
+        if let Some(ts) = data_timestamp {
+            let mut last_ts = self.last_data_timestamp.write().await;
+            *last_ts = Some(ts);
+        }
+    }
+
+    /// Update the forecast cache with new data
+    async fn update_forecast_cache(&self, forecasts: Vec<CityForecast>) {
+        let mut cache = self.forecast_cache.write().await;
+        for forecast in forecasts {
+            cache.insert(forecast.city_id.clone(), forecast);
+        }
+        info!("Forecast cache updated with {} cities", cache.len());
+    }
+
+    /// Get forecast for a specific city and metric
+    pub async fn get_forecast(
+        &self,
+        city_id: &str,
+        metric: WeatherMetric,
+    ) -> Option<Vec<HourlyDataPoint>> {
+        let cache = self.forecast_cache.read().await;
+        cache
+            .get(city_id)
+            .and_then(|f| f.forecasts.get(&metric).cloned())
+    }
+
+    /// Get all forecasts for a city
+    pub async fn get_city_forecast(&self, city_id: &str) -> Option<CityForecast> {
+        let cache = self.forecast_cache.read().await;
+        cache.get(city_id).cloned()
+    }
+
+    /// Get forecast cache size (number of cities)
+    pub async fn forecast_cache_size(&self) -> usize {
+        let cache = self.forecast_cache.read().await;
+        cache.len()
+    }
+
+    /// Get forecast at a specific time for a city and metric
+    pub async fn get_forecast_at_time(
+        &self,
+        city_id: &str,
+        metric: WeatherMetric,
+        target_time: chrono::DateTime<Utc>,
+    ) -> Option<Decimal> {
+        let cache = self.forecast_cache.read().await;
+        cache.get(city_id).and_then(|f| {
+            f.forecasts.get(&metric).and_then(|data| {
+                // Find the closest hourly data point
+                data.iter()
+                    .min_by_key(|point| {
+                        let diff = (point.time - target_time).num_seconds().abs();
+                        diff
+                    })
+                    .filter(|point| {
+                        // Only return if within 30 minutes of target
+                        (point.time - target_time).num_minutes().abs() <= 30
+                    })
+                    .map(|point| point.value)
+            })
+        })
     }
 
     /// Parse asset_id into (city_id, metric)
@@ -99,17 +234,6 @@ impl OpenMeteoMarketSource {
         }
     }
 
-    /// Get display name for a metric
-    fn metric_display_name(metric: &str) -> &'static str {
-        match metric {
-            "temperature_2m" => "Temperature",
-            "rain" => "Rainfall",
-            "wind_speed_10m" => "Wind Speed",
-            "pm2_5" => "PM2.5",
-            "ozone" => "Ozone",
-            _ => "Unknown",
-        }
-    }
 }
 
 #[async_trait::async_trait]
@@ -132,60 +256,29 @@ impl MarketDataSource for OpenMeteoMarketSource {
 
     fn rate_limit_config(&self) -> RateLimitConfig {
         // Open-Meteo free tier: 10,000 calls/day
-        // Conservative: 200 req/min to stay safe
+        // With smart sync (~6 fetches/day), we can be more generous per fetch
+        // 10,000 / 6 = ~1,666 calls per fetch session
+        // Allow 300 req/min burst for fast batch processing
         RateLimitConfig {
             windows: vec![RateWindow {
-                max_requests: 200,
+                max_requests: 300,
                 duration: Duration::from_secs(60),
             }],
         }
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        let metrics = WeatherMetric::all();
-        let mut assets = Vec::new();
-
-        for city in &self.cities {
-            let category = Self::get_category(city.rank);
-
-            for metric in metrics {
-                let metric_str = metric.as_str();
-                let asset_id = format!("{}:{}", city.city_id, metric_str);
-                let symbol = asset_id.clone();
-                let name = format!("{} {}", city.name, Self::metric_display_name(metric_str));
-
-                assets.push(AssetUpdate {
-                    asset_id,
-                    symbol,
-                    name,
-                    category: Some(category.clone()),
-                    metadata: serde_json::json!({
-                        "city_id": city.city_id,
-                        "city_name": city.name,
-                        "country_code": city.country_code,
-                        "latitude": city.latitude,
-                        "longitude": city.longitude,
-                        "population": city.population,
-                        "rank": city.rank,
-                        "metric": metric_str,
-                        "unit": metric.unit(),
-                    }),
-                });
-            }
-        }
-
-        info!(
-            "Generated {} weather assets ({} cities x {} metrics)",
-            assets.len(),
-            self.cities.len(),
-            metrics.len()
-        );
-
-        Ok(assets)
+        load_assets_from_json(ASSET_JSON)
     }
 
     async fn fetch_prices(&self, asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
         if asset_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        // Smart sync: check if new data is available
+        if !self.should_fetch().await {
+            debug!("Smart sync: no new data, returning empty");
             return Ok(Vec::new());
         }
 
@@ -225,13 +318,15 @@ impl MarketDataSource for OpenMeteoMarketSource {
             return Ok(Vec::new());
         }
 
-        // Fetch weather data
+        // Fetch weather data (current + hourly forecast in same request)
         let weather_data = self.client.fetch_all_weather(&weather_cities).await?;
         let now = Utc::now();
         let mut results = Vec::new();
+        let mut forecasts_to_cache = Vec::new();
 
         for data in weather_data {
-            for (metric, value) in data.readings {
+            // Collect current readings for DB storage
+            for (metric, value) in &data.readings {
                 let metric_str = metric.as_str();
                 let asset_id = format!("{}:{}", data.city_id, metric_str);
 
@@ -240,7 +335,7 @@ impl MarketDataSource for OpenMeteoMarketSource {
                     results.push(PriceUpdate {
                         asset_id: asset_id.clone(),
                         symbol: asset_id,
-                        value,
+                        value: *value,
                         prev_close: None,
                         change_pct: None,
                         volume_24h: None,
@@ -249,13 +344,28 @@ impl MarketDataSource for OpenMeteoMarketSource {
                     });
                 }
             }
+
+            // Collect hourly forecasts for memory cache
+            if let Some(forecast) = data.hourly_forecast {
+                forecasts_to_cache.push(forecast);
+            }
+        }
+
+        // Update in-memory forecast cache
+        if !forecasts_to_cache.is_empty() {
+            self.update_forecast_cache(forecasts_to_cache).await;
         }
 
         info!(
-            "Fetched {}/{} weather readings from Open-Meteo",
+            "Fetched {}/{} weather readings, forecast cache: {} cities",
             results.len(),
-            asset_ids.len()
+            asset_ids.len(),
+            self.forecast_cache_size().await
         );
+
+        // Mark fetch complete with current timestamp
+        let current_ts = self.client.fetch_data_timestamp().await.ok();
+        self.mark_fetched(current_ts).await;
 
         Ok(results)
     }
@@ -271,6 +381,7 @@ fn parse_cities_json(json_str: &str) -> Result<Vec<CityInfo>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::market_data::traits::load_all_asset_entries;
 
     #[test]
     fn test_parse_cities_json() {
@@ -284,12 +395,28 @@ mod tests {
     }
 
     #[test]
-    fn test_category_assignment() {
-        assert_eq!(OpenMeteoMarketSource::get_category(1), "meteoTop100");
-        assert_eq!(OpenMeteoMarketSource::get_category(100), "meteoTop100");
-        assert_eq!(OpenMeteoMarketSource::get_category(101), "meteoTop1000");
-        assert_eq!(OpenMeteoMarketSource::get_category(1000), "meteoTop1000");
-        assert_eq!(OpenMeteoMarketSource::get_category(1001), "meteoOther");
+    fn test_asset_count() {
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        assert_eq!(entries.len(), 25000, "Expected 25000 weather assets (5000 cities × 5 metrics)");
+    }
+
+    #[test]
+    fn test_fetch_assets_filters_active() {
+        let assets = load_assets_from_json(ASSET_JSON).unwrap();
+        assert!(!assets.is_empty());
+        for asset in &assets {
+            assert_eq!(asset.category, Some("weather".to_string()));
+        }
+    }
+
+    #[test]
+    fn test_subcategories() {
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        let subcats: Vec<&str> = entries.iter().map(|e| e.subcategory.as_str()).collect();
+        assert!(subcats.contains(&"temperature"));
+        assert!(subcats.contains(&"precipitation"));
+        assert!(subcats.contains(&"wind"));
+        assert!(subcats.contains(&"air_quality"));
     }
 
     #[test]

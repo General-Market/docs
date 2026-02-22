@@ -80,7 +80,12 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   const [websiteUrl, setWebsiteUrl] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
   const [issuerName, setIssuerName] = useState('')
-  const [selectedAssets, setSelectedAssets] = useState<AssetWeight[]>([])
+  const [selectedAssets, setSelectedAssets] = useState<AssetWeight[]>(() => {
+    const n = DEFAULT_SAMPLE_ASSETS.length
+    const w = Math.floor(100 / n)
+    const remainder = 100 - w * n
+    return DEFAULT_SAMPLE_ASSETS.map((a, i) => ({ ...a, weight: w + (i === 0 ? remainder : 0) }))
+  })
   const [searchTerm, setSearchTerm] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
   const [availableAssets, setAvailableAssets] = useState<{ address: string; symbol: string }[]>(DEFAULT_SAMPLE_ASSETS)
@@ -92,6 +97,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   const { isLoading: isConfirming, isSuccess, error: confirmError } = useWaitForTransactionReceipt({ hash, chainId: activeChainId })
   const { hasNonceGap, pendingCount, refresh: refreshNonce } = useNonceCheck()
   const [stuckWarning, setStuckWarning] = useState(false)
+  const [showFinalizeModal, setShowFinalizeModal] = useState(false)
 
   // Load full asset list from deployed-assets.json on mount
   useEffect(() => {
@@ -177,6 +183,44 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       ...a,
       weight: evenWeight + (i === 0 ? remainder : 0)
     })))
+  }
+
+  const [isFetchingMcap, setIsFetchingMcap] = useState(false)
+
+  const distributeByMcap = async () => {
+    if (selectedAssets.length === 0) return
+    setIsFetchingMcap(true)
+    try {
+      const addresses = selectedAssets.map(a => a.address).join(',')
+      const res = await fetch(`${DATA_NODE_URL}/prices-by-address?addresses=${addresses}`, { signal: AbortSignal.timeout(10_000) })
+      if (!res.ok) throw new Error('Failed')
+      const data = await res.json()
+      const priceMap: Record<string, number> = {}
+      for (const [addr, entry] of Object.entries(data.prices || {})) {
+        priceMap[addr.toLowerCase()] = parseFloat((entry as any).price) / 1e18
+      }
+      // Use price as a rough MCap proxy (higher price = larger cap for same-supply tokens)
+      const withPrices = selectedAssets.map(a => ({
+        ...a,
+        price: priceMap[a.address.toLowerCase()] || 0,
+      }))
+      const totalPrice = withPrices.reduce((s, a) => s + a.price, 0)
+      if (totalPrice === 0) { distributeEvenly(); return }
+      const weighted = withPrices.map(a => ({
+        ...a,
+        weight: Math.max(1, Math.floor((a.price / totalPrice) * 100)),
+      }))
+      // Fix rounding
+      const sum = weighted.reduce((s, a) => s + a.weight, 0)
+      if (sum !== 100 && weighted.length > 0) {
+        weighted[0].weight += 100 - sum
+      }
+      setSelectedAssets(weighted.map(({ price: _, ...rest }) => rest))
+    } catch {
+      distributeEvenly()
+    } finally {
+      setIsFetchingMcap(false)
+    }
   }
 
   const [isFetchingPrices, setIsFetchingPrices] = useState(false)
@@ -347,93 +391,6 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Name + Symbol row */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">
-                    ITP Name (max 32)
-                  </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value.slice(0, 32))}
-                    placeholder="e.g., DeFi Blue Chips"
-                    className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">
-                    Symbol (max 10)
-                  </label>
-                  <input
-                    type="text"
-                    value={symbol}
-                    onChange={(e) => setSymbol(e.target.value.toUpperCase().slice(0, 10))}
-                    placeholder="e.g., DEFI"
-                    className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Issuer Name (only if first time) */}
-              {needsIssuerName && (
-                <div>
-                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">
-                    Your Name / Issuer (max 64, shown on ITP cards)
-                  </label>
-                  <input
-                    type="text"
-                    value={issuerName}
-                    onChange={(e) => setIssuerName(e.target.value.slice(0, 64))}
-                    placeholder="e.g., Vanguard Labs"
-                    className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
-                  />
-                </div>
-              )}
-
-              {/* Description */}
-              <div>
-                <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">
-                  Description (optional, ~50 words)
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value.slice(0, 280))}
-                  placeholder="Brief description shown on ITP cards"
-                  rows={2}
-                  className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none resize-none"
-                />
-                <span className="text-[10px] text-text-muted">{description.length}/280</span>
-              </div>
-
-              {/* Website + Video URLs */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">
-                    Website URL (optional)
-                  </label>
-                  <input
-                    type="url"
-                    value={websiteUrl}
-                    onChange={(e) => setWebsiteUrl(e.target.value.slice(0, 128))}
-                    placeholder="https://yoursite.io"
-                    className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">
-                    Video URL (optional)
-                  </label>
-                  <input
-                    type="url"
-                    value={videoUrl}
-                    onChange={(e) => setVideoUrl(e.target.value.slice(0, 256))}
-                    placeholder="https://youtube.com/watch?v=..."
-                    className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
-                  />
-                </div>
-              </div>
-
               {/* Two-column: Select Assets | Configure Weights */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
 
@@ -497,12 +454,21 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                           <label className="text-xs font-semibold text-text-primary">
                             Total: {totalWeight}%
                           </label>
-                          <button
-                            onClick={distributeEvenly}
-                            className="text-xs text-text-secondary hover:bg-card border border-border-light rounded-lg px-2.5 py-1 transition-colors"
-                          >
-                            Distribute Evenly
-                          </button>
+                          <div className="flex gap-1.5">
+                            <button
+                              onClick={distributeEvenly}
+                              className="text-xs text-text-secondary hover:bg-card border border-border-light rounded-lg px-2.5 py-1 transition-colors"
+                            >
+                              Equal
+                            </button>
+                            <button
+                              onClick={distributeByMcap}
+                              disabled={isFetchingMcap}
+                              className="text-xs text-text-secondary hover:bg-card border border-border-light rounded-lg px-2.5 py-1 transition-colors disabled:opacity-50"
+                            >
+                              {isFetchingMcap ? 'Loading...' : 'MCap'}
+                            </button>
+                          </div>
                         </div>
                         <div className="space-y-1.5 max-h-80 overflow-y-auto">
                           {selectedAssets.map(asset => (
@@ -551,15 +517,15 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                           <span className="font-mono tabular-nums font-medium">{totalWeight}% {isValidWeights ? '' : '(must be 100%)'}</span>
                         </div>
 
-                        {/* Deploy button */}
+                        {/* Continue to finalize */}
                         <div className="flex justify-end mt-4">
-                          <WalletActionButton
-                            onClick={handleSubmit}
-                            disabled={!name || !symbol || selectedAssets.length === 0 || !isValidWeights || isPending || isConfirming || isFetchingPrices || hasNonceGap}
+                          <button
+                            onClick={() => setShowFinalizeModal(true)}
+                            disabled={selectedAssets.length === 0 || !isValidWeights}
                             className="bg-zinc-900 text-white font-medium rounded-lg px-6 py-2.5 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                           >
-                            {isFetchingPrices ? 'Fetching prices...' : isPending ? 'Waiting for wallet...' : isConfirming ? 'Confirming...' : 'Deploy ITP →'}
-                          </WalletActionButton>
+                            Continue →
+                          </button>
                         </div>
                       </>
                     )}
@@ -607,6 +573,184 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
           )}
         </div>
       )}
+
+      {/* Finalize Modal */}
+      {showFinalizeModal && (
+        <FinalizeItpModal
+          name={name} setName={setName}
+          symbol={symbol} setSymbol={setSymbol}
+          description={description} setDescription={setDescription}
+          websiteUrl={websiteUrl} setWebsiteUrl={setWebsiteUrl}
+          videoUrl={videoUrl} setVideoUrl={setVideoUrl}
+          issuerName={issuerName} setIssuerName={setIssuerName}
+          needsIssuerName={needsIssuerName}
+          selectedAssets={selectedAssets}
+          onClose={() => setShowFinalizeModal(false)}
+          onSubmit={handleSubmit}
+          isPending={isPending}
+          isConfirming={isConfirming}
+          isFetchingPrices={isFetchingPrices}
+          hasNonceGap={hasNonceGap}
+          txError={txError}
+          isSuccess={isSuccess}
+          stuckWarning={stuckWarning}
+          onCancel={handleCancel}
+        />
+      )}
+    </div>
+  )
+}
+
+/* ── Finalize Modal ── */
+interface FinalizeItpModalProps {
+  name: string; setName: (v: string) => void
+  symbol: string; setSymbol: (v: string) => void
+  description: string; setDescription: (v: string) => void
+  websiteUrl: string; setWebsiteUrl: (v: string) => void
+  videoUrl: string; setVideoUrl: (v: string) => void
+  issuerName: string; setIssuerName: (v: string) => void
+  needsIssuerName: boolean
+  selectedAssets: AssetWeight[]
+  onClose: () => void
+  onSubmit: () => void
+  isPending: boolean
+  isConfirming: boolean
+  isFetchingPrices: boolean
+  hasNonceGap: boolean
+  txError: string | null
+  isSuccess: boolean
+  stuckWarning: boolean
+  onCancel: () => void
+}
+
+function FinalizeItpModal({
+  name, setName, symbol, setSymbol, description, setDescription,
+  websiteUrl, setWebsiteUrl, videoUrl, setVideoUrl,
+  issuerName, setIssuerName, needsIssuerName, selectedAssets,
+  onClose, onSubmit, isPending, isConfirming, isFetchingPrices,
+  hasNonceGap, txError, isSuccess, stuckWarning, onCancel,
+}: FinalizeItpModalProps) {
+  const isValidForm = name.length > 0 && symbol.length > 0
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Modal */}
+      <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center px-6 py-4 border-b border-border-light">
+          <div>
+            <h3 className="text-lg font-bold text-text-primary">Finalize ITP</h3>
+            <p className="text-xs text-text-muted mt-0.5">{selectedAssets.length} assets selected</p>
+          </div>
+          <button onClick={onClose} className="text-text-muted hover:text-text-primary text-xl leading-none">×</button>
+        </div>
+
+        {/* Form */}
+        <div className="p-6 space-y-4">
+          {/* Name + Symbol */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">Name (max 32)</label>
+              <input
+                type="text" value={name}
+                onChange={(e) => setName(e.target.value.slice(0, 32))}
+                placeholder="e.g., DeFi Blue Chips"
+                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">Symbol (max 10)</label>
+              <input
+                type="text" value={symbol}
+                onChange={(e) => setSymbol(e.target.value.toUpperCase().slice(0, 10))}
+                placeholder="e.g., DEFI"
+                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Issuer Name */}
+          {needsIssuerName && (
+            <div>
+              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">Issuer Name (max 64)</label>
+              <input
+                type="text" value={issuerName}
+                onChange={(e) => setIssuerName(e.target.value.slice(0, 64))}
+                placeholder="e.g., Vanguard Labs"
+                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
+              />
+            </div>
+          )}
+
+          {/* Description */}
+          <div>
+            <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">Description (optional)</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value.slice(0, 280))}
+              placeholder="Brief description shown on ITP cards"
+              rows={2}
+              className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none resize-none"
+            />
+            <span className="text-[10px] text-text-muted">{description.length}/280</span>
+          </div>
+
+          {/* Website + Video */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">Website (optional)</label>
+              <input
+                type="url" value={websiteUrl}
+                onChange={(e) => setWebsiteUrl(e.target.value.slice(0, 128))}
+                placeholder="https://yoursite.io"
+                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">Video (optional)</label>
+              <input
+                type="url" value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value.slice(0, 256))}
+                placeholder="https://youtube.com/watch?v=..."
+                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Status messages */}
+          {txError && (
+            <div className="bg-color-down/10 border border-color-down/30 rounded-lg p-3 text-color-down text-xs break-all">{txError}</div>
+          )}
+          {stuckWarning && (
+            <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-3 text-orange-400 text-xs">
+              Transaction may be stuck. <button onClick={onCancel} className="underline">Cancel</button>
+            </div>
+          )}
+          {isSuccess && (
+            <div className="bg-color-up/10 border border-color-up/30 rounded-lg p-3 text-color-up text-xs">
+              <p className="font-medium">ITP Request Created!</p>
+              <p className="mt-1">Waiting for issuer consensus...</p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-border-light flex justify-between items-center">
+          <button onClick={onClose} className="text-sm text-text-muted hover:text-text-secondary transition-colors">
+            Back
+          </button>
+          <WalletActionButton
+            onClick={onSubmit}
+            disabled={!isValidForm || isPending || isConfirming || isFetchingPrices || hasNonceGap}
+            className="bg-zinc-900 text-white font-medium rounded-lg px-6 py-2.5 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {isFetchingPrices ? 'Fetching prices...' : isPending ? 'Waiting for wallet...' : isConfirming ? 'Confirming...' : 'Finalize & Deploy'}
+          </WalletActionButton>
+        </div>
+      </div>
     </div>
   )
 }

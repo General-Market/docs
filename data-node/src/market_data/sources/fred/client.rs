@@ -13,144 +13,16 @@ use std::time::Duration;
 use tracing::{debug, info, warn};
 
 use crate::market_data::traits::{
-    is_fomc_day, is_us_market_closed, next_us_trading_day, today_at_eastern, AssetUpdate,
-    MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
+    is_fomc_day, is_us_market_closed, load_assets_from_json, next_us_trading_day,
+    today_at_eastern, AssetUpdate, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
 /// FRED API base URL
 const FRED_API_URL: &str = "https://api.stlouisfed.org/fred";
 
-/// Series we track from FRED
-/// Format: (series_id, display_name, category, update_frequency)
-const FRED_SERIES: &[(&str, &str, &str, SeriesFrequency)] = &[
-    // Interest Rates (Daily)
-    (
-        "DFF",
-        "Fed Funds Rate (Effective)",
-        "interest_rates",
-        SeriesFrequency::Daily,
-    ),
-    (
-        "FEDFUNDS",
-        "Fed Funds Target Rate",
-        "interest_rates",
-        SeriesFrequency::Monthly,
-    ),
-    // Treasury Yields (Daily)
-    (
-        "DGS1MO",
-        "1-Month Treasury Yield",
-        "treasury_yields",
-        SeriesFrequency::Daily,
-    ),
-    (
-        "DGS3MO",
-        "3-Month Treasury Yield",
-        "treasury_yields",
-        SeriesFrequency::Daily,
-    ),
-    (
-        "DGS6MO",
-        "6-Month Treasury Yield",
-        "treasury_yields",
-        SeriesFrequency::Daily,
-    ),
-    (
-        "DGS1",
-        "1-Year Treasury Yield",
-        "treasury_yields",
-        SeriesFrequency::Daily,
-    ),
-    (
-        "DGS2",
-        "2-Year Treasury Yield",
-        "treasury_yields",
-        SeriesFrequency::Daily,
-    ),
-    (
-        "DGS5",
-        "5-Year Treasury Yield",
-        "treasury_yields",
-        SeriesFrequency::Daily,
-    ),
-    (
-        "DGS7",
-        "7-Year Treasury Yield",
-        "treasury_yields",
-        SeriesFrequency::Daily,
-    ),
-    (
-        "DGS10",
-        "10-Year Treasury Yield",
-        "treasury_yields",
-        SeriesFrequency::Daily,
-    ),
-    (
-        "DGS20",
-        "20-Year Treasury Yield",
-        "treasury_yields",
-        SeriesFrequency::Daily,
-    ),
-    (
-        "DGS30",
-        "30-Year Treasury Yield",
-        "treasury_yields",
-        SeriesFrequency::Daily,
-    ),
-    // Yield Spreads (Daily)
-    (
-        "T10Y2Y",
-        "10Y-2Y Treasury Spread",
-        "yield_spreads",
-        SeriesFrequency::Daily,
-    ),
-    (
-        "T10Y3M",
-        "10Y-3M Treasury Spread",
-        "yield_spreads",
-        SeriesFrequency::Daily,
-    ),
-    // Inflation Expectations (Daily)
-    (
-        "T5YIE",
-        "5-Year Breakeven Inflation",
-        "inflation",
-        SeriesFrequency::Daily,
-    ),
-    (
-        "T10YIE",
-        "10-Year Breakeven Inflation",
-        "inflation",
-        SeriesFrequency::Daily,
-    ),
-    (
-        "DFII10",
-        "10-Year Real Interest Rate",
-        "real_rates",
-        SeriesFrequency::Daily,
-    ),
-    // Mortgage Rates (Weekly - Thursday)
-    (
-        "MORTGAGE30US",
-        "30-Year Mortgage Rate",
-        "mortgage_rates",
-        SeriesFrequency::Weekly,
-    ),
-    (
-        "MORTGAGE15US",
-        "15-Year Mortgage Rate",
-        "mortgage_rates",
-        SeriesFrequency::Weekly,
-    ),
-];
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum SeriesFrequency {
-    Daily,
-    Weekly,
-    Monthly,
-}
+/// Asset configuration loaded from JSON at compile time
+const ASSET_JSON: &str = include_str!("../../../config/rates.json");
 
 /// FRED API observation response
 #[derive(Debug, Deserialize)]
@@ -180,7 +52,11 @@ impl FredMarketSource {
             .build()
             .context("Failed to build reqwest client")?;
 
-        info!("FRED client initialized with {} series", FRED_SERIES.len());
+        // Count assets from JSON
+        let asset_count = load_assets_from_json(ASSET_JSON)
+            .map(|a| a.len())
+            .unwrap_or(0);
+        info!("FRED client initialized with {} series", asset_count);
 
         Ok(Self { client, api_key })
     }
@@ -258,24 +134,7 @@ impl MarketDataSource for FredMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        Ok(FRED_SERIES
-            .iter()
-            .map(|(id, name, category, freq)| AssetUpdate {
-                asset_id: id.to_string(),
-                symbol: id.to_string(),
-                name: name.to_string(),
-                category: Some(category.to_string()),
-                metadata: serde_json::json!({
-                    "source": "fred",
-                    "series_id": id,
-                    "frequency": match freq {
-                        SeriesFrequency::Daily => "daily",
-                        SeriesFrequency::Weekly => "weekly",
-                        SeriesFrequency::Monthly => "monthly",
-                    },
-                }),
-            })
-            .collect())
+        load_assets_from_json(ASSET_JSON)
     }
 
     async fn fetch_prices(&self, asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
@@ -390,10 +249,12 @@ impl ScheduledMarketDataSource for FredMarketSource {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::market_data::traits::load_all_asset_entries;
 
     #[test]
     fn test_series_count() {
-        assert!(FRED_SERIES.len() >= 15, "Expected at least 15 FRED series");
+        let assets = load_assets_from_json(ASSET_JSON).unwrap();
+        assert!(assets.len() >= 15, "Expected at least 15 FRED series");
     }
 
     #[test]
@@ -403,11 +264,36 @@ mod tests {
     }
 
     #[test]
-    fn test_category_names() {
-        // Verify all categories are defined
-        let categories: Vec<_> = FRED_SERIES.iter().map(|(_, _, cat, _)| *cat).collect();
-        assert!(categories.contains(&"interest_rates"));
-        assert!(categories.contains(&"treasury_yields"));
-        assert!(categories.contains(&"mortgage_rates"));
+    fn test_category_is_macro() {
+        // Verify all assets have category "macro"
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        for entry in &entries {
+            assert_eq!(entry.category, "macro", "Asset {} should have category 'macro'", entry.asset_id);
+        }
+    }
+
+    #[test]
+    fn test_subcategories() {
+        // Verify subcategories are valid
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        let subcats: Vec<_> = entries.iter().map(|e| e.subcategory.as_str()).collect();
+        assert!(subcats.contains(&"interest_rates"));
+        assert!(subcats.contains(&"inflation"));
+    }
+
+    #[test]
+    fn test_all_entries_active() {
+        // By default all FRED entries should be active
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        assert!(entries.iter().all(|e| e.active), "All FRED entries should be active");
+    }
+
+    #[test]
+    fn test_api_ref_matches_asset_id() {
+        // For FRED, api_ref should match asset_id (series_id)
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        for entry in &entries {
+            assert_eq!(entry.api_ref, entry.asset_id, "api_ref should match asset_id for FRED");
+        }
     }
 }

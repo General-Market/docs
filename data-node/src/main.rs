@@ -535,6 +535,268 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
 
     info!("Free market data providers started (SEC EDGAR, SEC EFTS, SEC Insider, FINRA Short Vol, Congress, World Bank)");
 
+    // ── New market data providers (from AA market-data-lib) ─────────────
+    // 10. No-key sources — always enabled
+
+    // npm package downloads
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::npm::NpmMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("npm init failed: {e}"),
+            }
+        });
+    }
+
+    // PyPI package downloads
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::pypi::PypiMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("PyPI init failed: {e}"),
+            }
+        });
+    }
+
+    // crates.io Rust package downloads
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::crates_io::CratesIoMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("crates.io init failed: {e}"),
+            }
+        });
+    }
+
+    // Steam concurrent player counts
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::steam::SteamMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Steam init failed: {e}"),
+            }
+        });
+    }
+
+    // Hacker News story scores
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::hackernews::HackerNewsMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("HackerNews init failed: {e}"),
+            }
+        });
+    }
+
+    // 4chan board activity
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::fourchan::FourchanMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("4chan init failed: {e}"),
+            }
+        });
+    }
+
+    // AniList anime/manga popularity
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::anilist::AniListMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("AniList init failed: {e}"),
+            }
+        });
+    }
+
+    // TWSE (Taiwan Stock Exchange)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::twse::TwseMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("TWSE init failed: {e}"),
+            }
+        });
+    }
+
+    // Polymarket prediction markets
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::polymarket::PolymarketMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Polymarket init failed: {e}"),
+            }
+        });
+    }
+
+    // DefiLlama (chain TVL, protocol TVL, DEX volumes)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::defillama::DefiLlamaMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("DefiLlama market source init failed: {e}"),
+            }
+        });
+    }
+
+    // Zillow real estate (stub — requires Bridge Interactive API)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::zillow::ZillowMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Zillow init failed: {e}"),
+            }
+        });
+    }
+
+    info!("No-key market data providers started (npm, PyPI, crates.io, Steam, HackerNews, 4chan, AniList, TWSE, Polymarket, DefiLlama, Zillow)");
+
+    // 11. API-key-gated new sources
+
+    // Twitch — gated on client ID + secret
+    if let Some(ref client_id) = args.twitch_client_id {
+        if let Some(ref client_secret) = args.twitch_client_secret {
+            std::env::set_var("TWITCH_CLIENT_ID", client_id);
+            std::env::set_var("TWITCH_CLIENT_SECRET", client_secret);
+            let pool_c = pool.clone();
+            tokio::spawn(async move {
+                match market_data::sources::twitch::TwitchMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                        engine.run().await;
+                    }
+                    Err(e) => tracing::error!("Twitch init failed: {e}"),
+                }
+            });
+            info!("Twitch live streaming provider started");
+        } else {
+            info!("Twitch skipped (TWITCH_CLIENT_SECRET not configured)");
+        }
+    }
+
+    // TMDb — gated on API key
+    if let Some(ref key) = args.tmdb_api_key {
+        std::env::set_var("TMDB_API_KEY", key);
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::tmdb::TmdbMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("TMDb init failed: {e}"),
+            }
+        });
+        info!("TMDb movie/TV provider started");
+    }
+
+    // backpack.tf — gated on API key
+    if let Some(ref key) = args.backpacktf_api_key {
+        std::env::set_var("BACKPACKTF_API_KEY", key);
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::backpacktf::BackpackTfMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("backpack.tf init failed: {e}"),
+            }
+        });
+        info!("backpack.tf TF2 item provider started");
+    }
+
+    // GitHub — gated on token
+    if let Some(ref token) = args.github_token {
+        std::env::set_var("GITHUB_TOKEN", token);
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::github::GithubMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("GitHub init failed: {e}"),
+            }
+        });
+        info!("GitHub repository star provider started");
+    }
+
+    // Cloudflare Radar — gated on token
+    if let Some(ref token) = args.cloudflare_radar_token {
+        std::env::set_var("CLOUDFLARE_RADAR_TOKEN", token);
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::cloudflare::CloudflareRadarMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Cloudflare Radar init failed: {e}"),
+            }
+        });
+        info!("Cloudflare Radar internet metrics provider started");
+    }
+
+    // CoinGecko market source (crypto prices via SyncEngine) — reuses existing coingecko_api_key
+    if let Some(ref cg_api_key) = args.coingecko_api_key {
+        std::env::set_var("COINGECKO_API_KEY", cg_api_key);
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::coingecko::CoinGeckoMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("CoinGecko market source init failed: {e}"),
+            }
+        });
+        info!("CoinGecko market source (crypto prices) started");
+    }
+
     // Create live ticker cache and start fast poller
     let live_cache = Arc::new(LiveTickerCache::new());
     {

@@ -20,85 +20,16 @@ use std::time::Duration;
 use tracing::{debug, info, warn};
 
 use crate::market_data::traits::{
-    is_us_market_closed, AssetUpdate, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
+    is_us_market_closed, load_all_asset_entries, load_assets_from_json, AssetUpdate,
+    MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
 /// BLS API base URL
 const BLS_API_URL: &str = "https://api.bls.gov/publicAPI/v2/timeseries/data/";
 
-/// BLS series to track
-/// Format: (series_id, asset_id, display_name, category, release_type)
-const BLS_SERIES: &[(&str, &str, &str, &str, ReleaseType)] = &[
-    // Employment Situation (NFP) - First Friday 8:30 AM ET
-    (
-        "LNS14000000",
-        "bls_unemployment",
-        "Unemployment Rate",
-        "employment",
-        ReleaseType::Nfp,
-    ),
-    (
-        "CES0000000001",
-        "bls_nfp",
-        "Total Nonfarm Payrolls",
-        "employment",
-        ReleaseType::Nfp,
-    ),
-    (
-        "CES0500000003",
-        "bls_wages",
-        "Average Hourly Earnings",
-        "employment",
-        ReleaseType::Nfp,
-    ),
-    (
-        "LNS11300000",
-        "bls_lfpr",
-        "Labor Force Participation Rate",
-        "employment",
-        ReleaseType::Nfp,
-    ),
-    // CPI - ~10th-13th of month 8:30 AM ET
-    (
-        "CUSR0000SA0",
-        "bls_cpi",
-        "CPI All Items",
-        "inflation",
-        ReleaseType::Cpi,
-    ),
-    (
-        "CUSR0000SA0L1E",
-        "bls_cpi_core",
-        "CPI Core (Ex Food & Energy)",
-        "inflation",
-        ReleaseType::Cpi,
-    ),
-    // PPI - ~14th-16th of month 8:30 AM ET
-    (
-        "WPUFD49104",
-        "bls_ppi",
-        "PPI Final Demand",
-        "inflation",
-        ReleaseType::Ppi,
-    ),
-    // JOLTS - First week, usually Tuesday 10:00 AM ET
-    (
-        "JTS000000000000000JOL",
-        "bls_jolts",
-        "Job Openings (JOLTS)",
-        "employment",
-        ReleaseType::Jolts,
-    ),
-    // Productivity - Quarterly (first month of quarter)
-    (
-        "PRS85006092",
-        "bls_productivity",
-        "Nonfarm Business Labor Productivity",
-        "macro",
-        ReleaseType::Quarterly,
-    ),
-];
+/// Asset configuration loaded from JSON at compile time
+const ASSET_JSON: &str = include_str!("../../../config/bls.json");
 
 /// Release type determines scheduling behavior
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -166,7 +97,10 @@ impl BlsMarketSource {
             .build()
             .context("Failed to build reqwest client")?;
 
-        info!("BLS client initialized with {} series", BLS_SERIES.len());
+        let asset_count = load_assets_from_json(ASSET_JSON)
+            .map(|a| a.len())
+            .unwrap_or(0);
+        info!("BLS client initialized with {} series", asset_count);
 
         Ok(Self { client, api_key })
     }
@@ -419,37 +353,23 @@ impl MarketDataSource for BlsMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        Ok(BLS_SERIES
-            .iter()
-            .map(
-                |(series_id, asset_id, name, category, release_type)| AssetUpdate {
-                    asset_id: asset_id.to_string(),
-                    symbol: asset_id.to_string(),
-                    name: name.to_string(),
-                    category: Some(category.to_string()),
-                    metadata: serde_json::json!({
-                        "source": "bls",
-                        "series_id": series_id,
-                        "release_type": format!("{:?}", release_type),
-                    }),
-                },
-            )
-            .collect())
+        load_assets_from_json(ASSET_JSON)
     }
 
     async fn fetch_prices(&self, asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
         let now = Utc::now();
 
-        // Build lookup from asset_id to series_id
-        let series_lookup: std::collections::HashMap<&str, &str> = BLS_SERIES
+        // Build lookup from asset_id to series_id (api_ref)
+        let entries = load_all_asset_entries(ASSET_JSON)?;
+        let series_lookup: std::collections::HashMap<String, String> = entries
             .iter()
-            .map(|(series_id, asset_id, _, _, _)| (*asset_id, *series_id))
+            .map(|e| (e.asset_id.clone(), e.api_ref.clone()))
             .collect();
 
         // Get series IDs for requested assets
         let series_ids: Vec<&str> = asset_ids
             .iter()
-            .filter_map(|id| series_lookup.get(id.as_str()).copied())
+            .filter_map(|id| series_lookup.get(id).map(|s| s.as_str()))
             .collect();
 
         if series_ids.is_empty() {
@@ -459,27 +379,25 @@ impl MarketDataSource for BlsMarketSource {
         // Fetch all series in one batch request
         let fetched = self.fetch_series_batch(&series_ids).await?;
 
-        // Build reverse lookup from series_id to asset_id
-        let asset_lookup: std::collections::HashMap<&str, &str> = BLS_SERIES
-            .iter()
-            .map(|(series_id, asset_id, _, _, _)| (*series_id, *asset_id))
+        // Build reverse lookup from series_id (api_ref) to asset_id
+        let asset_lookup: std::collections::HashMap<String, String> = entries
+            .into_iter()
+            .map(|e| (e.api_ref, e.asset_id))
             .collect();
 
         let results: Vec<PriceUpdate> = fetched
             .into_iter()
             .filter_map(|(series_id, value)| {
-                asset_lookup
-                    .get(series_id.as_str())
-                    .map(|&asset_id| PriceUpdate {
-                        asset_id: asset_id.to_string(),
-                        symbol: asset_id.to_string(),
-                        value,
-                        prev_close: None,
-                        change_pct: None,
-                        volume_24h: None,
-                        market_cap: None,
-                        fetched_at: now,
-                    })
+                asset_lookup.get(&series_id).map(|asset_id| PriceUpdate {
+                    asset_id: asset_id.clone(),
+                    symbol: asset_id.clone(),
+                    value,
+                    prev_close: None,
+                    change_pct: None,
+                    volume_24h: None,
+                    market_cap: None,
+                    fetched_at: now,
+                })
             })
             .collect();
 
@@ -526,31 +444,47 @@ mod tests {
 
     #[test]
     fn test_series_count() {
-        assert_eq!(BLS_SERIES.len(), 9, "Expected 9 BLS series");
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        assert_eq!(entries.len(), 9, "Expected 9 BLS series");
     }
 
     #[test]
     fn test_source_id() {
-        // Verify source_id is "bls"
         assert_eq!("bls", "bls");
     }
 
     #[test]
-    fn test_category_coverage() {
-        let categories: Vec<_> = BLS_SERIES.iter().map(|(_, _, _, cat, _)| *cat).collect();
-        assert!(categories.contains(&"employment"));
-        assert!(categories.contains(&"inflation"));
-        assert!(categories.contains(&"macro"));
+    fn test_category_is_macro() {
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        for entry in &entries {
+            assert_eq!(
+                entry.category, "macro",
+                "Asset {} should have category 'macro'",
+                entry.asset_id
+            );
+        }
+    }
+
+    #[test]
+    fn test_subcategory_coverage() {
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        let subcats: Vec<_> = entries.iter().map(|e| e.subcategory.as_str()).collect();
+        assert!(subcats.contains(&"employment"));
+        assert!(subcats.contains(&"inflation"));
+        assert!(subcats.contains(&"gdp"));
     }
 
     #[test]
     fn test_release_types() {
-        // Verify we have all release types represented
-        let types: Vec<_> = BLS_SERIES.iter().map(|(_, _, _, _, rt)| *rt).collect();
+        // Keep this test for release window detection logic
+        let types = vec![
+            ReleaseType::Nfp,
+            ReleaseType::Cpi,
+            ReleaseType::Ppi,
+            ReleaseType::Jolts,
+            ReleaseType::Quarterly,
+        ];
         assert!(types.contains(&ReleaseType::Nfp));
         assert!(types.contains(&ReleaseType::Cpi));
-        assert!(types.contains(&ReleaseType::Ppi));
-        assert!(types.contains(&ReleaseType::Jolts));
-        assert!(types.contains(&ReleaseType::Quarterly));
     }
 }

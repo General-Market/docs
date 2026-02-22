@@ -52,7 +52,7 @@ export function useBundlerExec(): UseBundlerExecReturn {
 
     // Guard: ensure Morpho bundler address is configured (not empty, not falling back to core Morpho)
     const morphoBundler = MORPHO_ADDRESSES.morphoBundler
-    if (!morphoBundler || morphoBundler === '') {
+    if (!morphoBundler || (morphoBundler as string) === '') {
       throw new Error('Morpho bundler address not configured')
     }
 

@@ -391,10 +391,11 @@ export async function rebalanceItp(itpId: string): Promise<void> {
       args: [
         itpId as `0x${string}`,
         [],            // removeIndices
-        [],            // addAssets
+        [] as readonly `0x${string}`[], // addAssets
         newWeights,
         prices,
-        '0x',          // empty BLS signature (pubkey temporarily cleared)
+        [] as readonly `0x${string}`[], // quoteTokens
+        '0x' as `0x${string}`, // empty BLS signature (pubkey temporarily cleared)
       ],
     });
 

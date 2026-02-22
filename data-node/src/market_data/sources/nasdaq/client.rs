@@ -58,8 +58,7 @@ impl NasdaqClient {
         rows: u32,
     ) -> Result<T> {
         // Acquire semaphore permit
-        let _permit = self.request_semaphore.acquire().await
-            .map_err(|e| anyhow::anyhow!("Semaphore closed: {}", e))?;
+        let _permit = self.request_semaphore.acquire().await.unwrap();
 
         // Small delay to smooth out request rate
         tokio::time::sleep(Duration::from_millis(50)).await;

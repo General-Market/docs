@@ -1,21 +1,34 @@
 //! Finnhub API client implementing MarketDataSource
 //!
 //! Fetches stock quotes from https://finnhub.io/api/v1/quote
-//! Uses embedded tickers.json for the asset list.
+//! Uses config/stocks.json for the asset list.
+//!
+//! ## Rolling batch mode
+//!
+//! Instead of fetching all stocks in one long cycle, this client fetches
+//! `BATCH_SIZE` stocks per call using an internal cursor. The sync engine
+//! calls `fetch_prices()` every few seconds, and each call advances through
+//! the stock list. This produces a continuous stream of price updates rather
+//! than a burst every N minutes.
 
 use anyhow::{Context, Result};
 use chrono::Utc;
 use rust_decimal::Decimal;
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::sync::Mutex;
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
-use crate::market_data::traits::{AssetUpdate, MarketDataSource, PriceUpdate};
+use crate::market_data::traits::{load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate};
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
-/// Embedded tickers.json (compiled into the binary)
-const TICKERS_JSON: &str = include_str!("tickers.json");
+/// Number of stocks to fetch per sync cycle.
+/// At ~1050ms per request, 55 stocks ≈ 58 seconds per batch.
+/// Stays under Finnhub's 60 req/min free-tier limit.
+const BATCH_SIZE: usize = 55;
+
+/// Asset configuration loaded from JSON at compile time
+const ASSET_JSON: &str = include_str!("../../../config/stocks.json");
 
 /// Finnhub quote API response
 #[derive(Debug, Deserialize)]
@@ -38,23 +51,20 @@ struct FinnhubQuote {
     t: Option<i64>,
 }
 
-/// Ticker information parsed from tickers.json
-#[derive(Debug, Clone)]
-pub struct TickerInfo {
-    pub symbol: String,
-    pub category: String,
-    pub region: String,
-}
-
 /// Finnhub stock data client.
 ///
 /// Source ID is `"stocks"` — this is the source name used everywhere in the system.
 /// Finnhub is just the API adapter underneath.
+///
+/// Uses rolling batch mode: each `fetch_prices()` call processes only
+/// `BATCH_SIZE` stocks, advancing an internal cursor. The sync engine
+/// calls this frequently (default every 5s) to produce continuous updates.
 pub struct FinnhubClient {
     client: reqwest::Client,
     api_key: String,
-    tickers: Vec<TickerInfo>,
     sync_interval_secs: u64,
+    /// Cursor position in the asset list — advances by BATCH_SIZE each call
+    batch_cursor: Mutex<usize>,
 }
 
 impl FinnhubClient {
@@ -62,24 +72,31 @@ impl FinnhubClient {
     pub fn from_env() -> Result<Self> {
         let api_key = std::env::var("FINNHUB_API_KEY").context("FINNHUB_API_KEY not set")?;
 
+        // Default 5s: just a short pause between batches.
+        // The actual pacing comes from the per-request delay inside fetch_prices.
         let sync_interval_secs = std::env::var("FINNHUB_SYNC_INTERVAL_SECS")
             .ok()
             .and_then(|s| s.parse::<u64>().ok())
-            .unwrap_or(600);
+            .unwrap_or(5);
 
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(10))
             .build()
             .context("Failed to build reqwest client")?;
 
-        let tickers = parse_tickers_json(TICKERS_JSON)?;
-        info!("Finnhub client loaded {} tickers", tickers.len());
+        let asset_count = load_assets_from_json(ASSET_JSON)
+            .map(|a| a.len())
+            .unwrap_or(0);
+        info!(
+            "Finnhub client initialized: {} tickers, batch_size={}, interval={}s",
+            asset_count, BATCH_SIZE, sync_interval_secs
+        );
 
         Ok(Self {
             client,
             api_key,
-            tickers,
             sync_interval_secs,
+            batch_cursor: Mutex::new(0),
         })
     }
 
@@ -147,30 +164,37 @@ impl MarketDataSource for FinnhubClient {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        Ok(self
-            .tickers
-            .iter()
-            .map(|t| AssetUpdate {
-                asset_id: t.symbol.clone(),
-                symbol: t.symbol.clone(),
-                name: t.symbol.clone(), // Finnhub free tier doesn't provide names easily
-                category: Some(t.category.clone()),
-                metadata: serde_json::json!({
-                    "region": t.region,
-                    "category": t.category,
-                }),
-            })
-            .collect())
+        load_assets_from_json(ASSET_JSON)
     }
 
     async fn fetch_prices(&self, asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
+        if asset_ids.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let total = asset_ids.len();
+
+        // Determine which batch to fetch using the rolling cursor
+        let (start, batch): (usize, Vec<String>) = {
+            let mut cursor = self.batch_cursor.lock().unwrap();
+            // Reset cursor if it's past the end (assets list may have shrunk)
+            if *cursor >= total {
+                *cursor = 0;
+            }
+            let start = *cursor;
+            let end = (start + BATCH_SIZE).min(total);
+            let batch = asset_ids[start..end].to_vec();
+            // Advance cursor; wrap to 0 when we've covered all stocks
+            *cursor = if end >= total { 0 } else { end };
+            (start, batch)
+        };
+
         let now = Utc::now();
         let mut results = Vec::new();
 
-        for symbol in asset_ids {
-            // The rate limiter is called by the sync engine before this method,
-            // but we also want per-request throttling since we make N sequential requests.
-            // Use a simple delay to stay under 60/min.
+        for symbol in &batch {
+            // Per-request throttle: 1050ms × 55 = ~58s per batch.
+            // Keeps us under Finnhub's 60 req/min free-tier limit.
             tokio::time::sleep(Duration::from_millis(1050)).await;
 
             match self.fetch_quote(symbol).await {
@@ -197,14 +221,12 @@ impl MarketDataSource for FinnhubClient {
                         value,
                         prev_close: prev,
                         change_pct: pct,
-                        volume_24h: None, // Finnhub quote doesn't include volume
+                        volume_24h: None,
                         market_cap: None,
                         fetched_at: now,
                     });
                 }
-                Ok(None) => {
-                    // No valid price — skip
-                }
+                Ok(None) => {}
                 Err(e) => {
                     warn!("Error fetching quote for {}: {:?}", symbol, e);
                 }
@@ -212,71 +234,116 @@ impl MarketDataSource for FinnhubClient {
         }
 
         info!(
-            "Fetched {}/{} stock prices from Finnhub",
+            "Fetched {}/{} stock prices (batch {}-{}/{} total)",
             results.len(),
-            asset_ids.len()
+            batch.len(),
+            start,
+            start + batch.len(),
+            total
         );
 
         Ok(results)
     }
 }
 
-/// Parse tickers.json into a flat list of TickerInfo
-fn parse_tickers_json(json_str: &str) -> Result<Vec<TickerInfo>> {
-    #[derive(Deserialize)]
-    struct TickersFile {
-        regions: HashMap<String, HashMap<String, Vec<String>>>,
-    }
-
-    let file: TickersFile =
-        serde_json::from_str(json_str).context("Failed to parse tickers.json")?;
-
-    let mut tickers = Vec::new();
-    for (region_name, categories) in &file.regions {
-        for (category_name, symbols) in categories {
-            for symbol in symbols {
-                tickers.push(TickerInfo {
-                    symbol: symbol.clone(),
-                    category: category_name.clone(),
-                    region: region_name.clone(),
-                });
-            }
-        }
-    }
-
-    Ok(tickers)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::market_data::traits::load_all_asset_entries;
 
     #[test]
-    fn test_parse_tickers_json() {
-        let tickers = parse_tickers_json(TICKERS_JSON).expect("Failed to parse");
-        assert!(
-            tickers.len() > 500,
-            "Expected 540+ tickers, got {}",
-            tickers.len()
-        );
-
-        // Check a known ticker exists
-        assert!(
-            tickers.iter().any(|t| t.symbol == "AAPL"),
-            "AAPL should be in tickers"
-        );
-
-        // Check categories
-        assert!(
-            tickers.iter().any(|t| t.category == "usTechLargeCap"),
-            "usTechLargeCap category should exist"
-        );
+    fn test_asset_count() {
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        assert_eq!(entries.len(), 780, "Expected 780 stock tickers");
     }
 
     #[test]
-    fn test_source_id_is_stocks() {
-        // Verify the source ID is "stocks" not "finnhub"
-        // (Can't instantiate without env vars, but the const is in the impl)
-        assert_eq!("stocks", "stocks");
+    fn test_fetch_assets_filters_active() {
+        let assets = load_assets_from_json(ASSET_JSON).unwrap();
+        assert!(!assets.is_empty());
+        for asset in &assets {
+            assert_eq!(asset.category, Some("stocks".to_string()));
+        }
+    }
+
+    #[test]
+    fn test_known_tickers_exist() {
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        let symbols: Vec<&str> = entries.iter().map(|e| e.symbol.as_str()).collect();
+        assert!(symbols.contains(&"AAPL"), "AAPL should be in tickers");
+        assert!(symbols.contains(&"MSFT"), "MSFT should be in tickers");
+        assert!(symbols.contains(&"GOOGL"), "GOOGL should be in tickers");
+    }
+
+    #[test]
+    fn test_subcategories() {
+        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
+        let subcats: Vec<&str> = entries.iter().map(|e| e.subcategory.as_str()).collect();
+        assert!(subcats.contains(&"tech"));
+        assert!(subcats.contains(&"financials"));
+        assert!(subcats.contains(&"healthcare"));
+    }
+
+    #[test]
+    fn test_batch_cursor_advances() {
+        let cursor = Mutex::new(0usize);
+        let total = 150;
+
+        // First batch: 0..55
+        {
+            let mut c = cursor.lock().unwrap();
+            let start = *c;
+            let end = (start + BATCH_SIZE).min(total);
+            *c = if end >= total { 0 } else { end };
+            assert_eq!(start, 0);
+            assert_eq!(end, 55);
+            assert_eq!(*c, 55);
+        }
+
+        // Second batch: 55..110
+        {
+            let mut c = cursor.lock().unwrap();
+            let start = *c;
+            let end = (start + BATCH_SIZE).min(total);
+            *c = if end >= total { 0 } else { end };
+            assert_eq!(start, 55);
+            assert_eq!(end, 110);
+            assert_eq!(*c, 110);
+        }
+
+        // Third batch: 110..150 (partial, wraps cursor to 0)
+        {
+            let mut c = cursor.lock().unwrap();
+            let start = *c;
+            let end = (start + BATCH_SIZE).min(total);
+            *c = if end >= total { 0 } else { end };
+            assert_eq!(start, 110);
+            assert_eq!(end, 150);
+            assert_eq!(*c, 0); // wrapped
+        }
+
+        // Fourth batch: back to 0..55
+        {
+            let c = cursor.lock().unwrap();
+            assert_eq!(*c, 0);
+        }
+    }
+
+    #[test]
+    fn test_batch_cursor_resets_on_shrink() {
+        // If asset list shrinks, cursor should reset to 0
+        let cursor = Mutex::new(200usize); // cursor past end
+        let total = 100;
+
+        let mut c = cursor.lock().unwrap();
+        if *c >= total {
+            *c = 0;
+        }
+        assert_eq!(*c, 0);
+    }
+
+    #[test]
+    fn test_batch_size_constant() {
+        assert_eq!(BATCH_SIZE, 55);
     }
 }
