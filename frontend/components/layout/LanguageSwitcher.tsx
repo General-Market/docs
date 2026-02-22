@@ -1,0 +1,31 @@
+'use client'
+
+import { useLocale } from 'next-intl'
+import { useRouter, usePathname } from '@/i18n/routing'
+import { locales, LOCALE_LABELS, type Locale } from '@/i18n/config'
+
+export function LanguageSwitcher() {
+  const locale = useLocale()
+  const router = useRouter()
+  const pathname = usePathname()
+
+  function onSelectChange(newLocale: string) {
+    document.cookie = `NEXT_LOCALE=${newLocale};path=/;max-age=${365 * 24 * 60 * 60};samesite=lax`
+    router.replace(pathname, { locale: newLocale as Locale })
+  }
+
+  return (
+    <select
+      value={locale}
+      onChange={(e) => onSelectChange(e.target.value)}
+      className="bg-transparent text-xs border border-white/20 rounded px-2 py-1 text-white/70 hover:text-white cursor-pointer"
+      aria-label="Language"
+    >
+      {locales.map((l) => (
+        <option key={l} value={l} className="bg-black text-white">
+          {LOCALE_LABELS[l]}
+        </option>
+      ))}
+    </select>
+  )
+}

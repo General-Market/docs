@@ -1,35 +1,35 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
+import { Link, usePathname } from '@/i18n/routing'
 import { WalletConnectButton } from '@/components/domain/WalletConnectButton'
+import { LanguageSwitcher } from './LanguageSwitcher'
 
-type ActivePage = 'investment' | 'vision'
-
-const INVESTMENT_NAV = [
-  { id: 'markets', label: 'Markets' },
-  { id: 'portfolio', label: 'Portfolio' },
-  { id: 'create', label: 'Create' },
-  { id: 'lend', label: 'Lend' },
-  { id: 'backtest', label: 'Backtest' },
-  { id: 'system', label: 'System' },
-]
-
-const VISION_NAV = [
-  { id: 'p2pool', label: 'P2Pool' },
-  { id: 'leaderboard', label: 'Leaderboard' },
-  { id: 'markets-data', label: 'Markets' },
-]
-
-interface HeaderProps {
-  activePage?: ActivePage
-  onPageChange?: (page: ActivePage) => void
-}
-
-export function Header({ activePage = 'investment', onPageChange }: HeaderProps) {
+export function Header() {
+  const t = useTranslations('common')
+  const pathname = usePathname()
+  const isVision = pathname === '/vision'
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [activeSection, setActiveSection] = useState('markets')
 
-  const navLinks = activePage === 'investment' ? INVESTMENT_NAV : VISION_NAV
+  const INVESTMENT_NAV = [
+    { id: 'markets', label: t('nav.markets') },
+    { id: 'portfolio', label: t('nav.portfolio') },
+    { id: 'create', label: t('nav.create') },
+    { id: 'lend', label: t('nav.lend') },
+    { id: 'backtest', label: t('nav.backtest') },
+    { id: 'system', label: t('nav.system') },
+  ]
+
+  const VISION_NAV = [
+    { id: 'p2pool', label: t('nav.p2pool') },
+    { id: 'leaderboard', label: t('nav.leaderboard') },
+    { id: 'markets-data', label: t('nav.markets_data') },
+  ]
+
+  const [activeSection, setActiveSection] = useState(isVision ? 'p2pool' : 'markets')
+
+  const navLinks = isVision ? VISION_NAV : INVESTMENT_NAV
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -60,7 +60,7 @@ export function Header({ activePage = 'investment', onPageChange }: HeaderProps)
     <>
       {/* Topbar — thin black strip (scrolls away) */}
       <div className="bg-black text-white text-[11px] font-medium tracking-[0.02em] text-center py-1.5">
-        General Market — Decentralized Index Products
+        {t('brand.topbar')}
       </div>
 
       <div className="sticky top-0 z-50">
@@ -71,51 +71,60 @@ export function Header({ activePage = 'investment', onPageChange }: HeaderProps)
             {/* Logo */}
             <div className="shrink-0">
               <span className="text-[22px] font-black tracking-[-0.03em] text-black">
-                General Market.
+                {t('brand.logo_text')}
               </span>
             </div>
 
             {/* Page Tabs */}
             <nav className="hidden sm:flex items-center gap-0">
-              <button
-                onClick={() => onPageChange?.('investment')}
+              <Link
+                href="/"
                 className={`px-6 py-5 text-[15px] font-semibold transition-all border-b-[3px] ${
-                  activePage === 'investment'
+                  !isVision
                     ? 'text-black border-black'
                     : 'text-text-secondary border-transparent hover:text-black'
                 }`}
               >
-                Investment
-              </button>
-              <button
-                onClick={() => onPageChange?.('vision')}
+                {t('nav.investment')}
+              </Link>
+              <Link
+                href="/vision"
                 className={`px-6 py-5 text-[15px] font-semibold transition-all border-b-[3px] ${
-                  activePage === 'vision'
+                  isVision
                     ? 'text-black border-black'
                     : 'text-text-secondary border-transparent hover:text-black'
                 }`}
               >
-                Vision
-              </button>
+                {t('nav.vision')}
+              </Link>
             </nav>
 
             {/* Right side — Support + Wallet */}
             <div className="flex items-center gap-5 shrink-0">
+              <a
+                href="/docs"
+                className="hidden md:inline text-[13px] font-medium text-text-secondary hover:text-black transition-colors"
+              >
+                {t('nav.docs')}
+              </a>
               <a
                 href="https://discord.gg/xsfgzwR6"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hidden md:inline text-[13px] font-medium text-text-secondary hover:text-black transition-colors"
               >
-                Support
+                {t('nav.support')}
               </a>
+              <div className="hidden md:block">
+                <LanguageSwitcher />
+              </div>
               <div className="hidden md:block">
                 <WalletConnectButton />
               </div>
               <button
                 className="md:hidden p-2 text-text-muted hover:text-text-primary"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                aria-label="Toggle menu"
+                aria-label={t('aria.toggle_menu')}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   {mobileMenuOpen ? (
@@ -155,22 +164,24 @@ export function Header({ activePage = 'investment', onPageChange }: HeaderProps)
           <div className="md:hidden px-6 pb-3 space-y-1">
             {/* Mobile page tabs */}
             <div className="flex gap-2 pb-2 mb-2 border-b border-border-light">
-              <button
-                onClick={() => onPageChange?.('investment')}
+              <Link
+                href="/"
+                onClick={() => setMobileMenuOpen(false)}
                 className={`px-3 py-1.5 text-sm font-semibold rounded ${
-                  activePage === 'investment' ? 'bg-black text-white' : 'text-text-secondary'
+                  !isVision ? 'bg-black text-white' : 'text-text-secondary'
                 }`}
               >
-                Investment
-              </button>
-              <button
-                onClick={() => onPageChange?.('vision')}
+                {t('nav.investment')}
+              </Link>
+              <Link
+                href="/vision"
+                onClick={() => setMobileMenuOpen(false)}
                 className={`px-3 py-1.5 text-sm font-semibold rounded ${
-                  activePage === 'vision' ? 'bg-black text-white' : 'text-text-secondary'
+                  isVision ? 'bg-black text-white' : 'text-text-secondary'
                 }`}
               >
-                Vision
-              </button>
+                {t('nav.vision')}
+              </Link>
             </div>
             {navLinks.map((link) => (
               <button
@@ -192,9 +203,12 @@ export function Header({ activePage = 'investment', onPageChange }: HeaderProps)
                 rel="noopener noreferrer"
                 className="text-sm text-text-secondary hover:text-black transition-colors"
               >
-                Support
+                {t('nav.support')}
               </a>
-              <WalletConnectButton />
+              <div className="flex items-center gap-3">
+                <LanguageSwitcher />
+                <WalletConnectButton />
+              </div>
             </div>
           </div>
         )}
