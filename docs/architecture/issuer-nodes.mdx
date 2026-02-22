@@ -1,0 +1,148 @@
+---
+title: "Issuer Nodes"
+description: "BLS consensus nodes that batch orders and coordinate execution"
+---
+
+# Issuer Nodes
+
+Issuer nodes are the consensus participants of the Index protocol. Written in Rust as part of the monorepo (~68K LOC), issuer nodes batch user orders, coordinate BLS signing across peers, and submit confirmed batches on-chain. The issuer nodes operate on a fast 1-second cycle with round-robin leader election.
+
+## Issuer Node Responsibilities
+
+- Collect pending orders from the Index contract
+- Propose batches and coordinate BLS multi-party signing
+- Submit confirmed batches on-chain with aggregated signatures
+- Trigger rebalancing when ITP weights are updated
+- Maintain price consensus for NAV computation
+
+## Key Modules
+
+| Module | Responsibility |
+|---|---|
+| **consensus/** | BLS signature aggregation, threshold validation, batch agreement protocol |
+| **cycle/** | 1-second cycle state machine with 5 phases (200ms each) |
+| **p2p/** | TCP transport with TLS, peer discovery (static config + on-chain registry) |
+| **chain/** | Ethereum/L3 RPC interaction, transaction submission, event monitoring |
+| **netting/** | Order netting engine — matches opposing orders, handles USDT pair routing, computes net exposure |
+| **leader/** | Round-robin leader election, batch proposal construction |
+| **price/** | Price feed aggregation from data node, consensus on prices used in batches |
+| **state/** | Local state management, pending order tracking, batch history |
+
+## Consensus Flow
+
+The issuer nodes reach agreement on each batch through a BLS signing protocol:
+
+```text
+1. Leader proposes batch of pending orders
+       │
+       ▼
+2. Peer issuer nodes validate batch contents
+   (correct orders, valid prices, proper netting)
+       │
+       ▼
+3. Each peer issuer node signs the batch hash with the node's BLS private key
+       │
+       ▼
+4. Leader aggregates BLS signatures
+   Threshold: ceil(2n/3) of registered issuers
+       │
+       ▼
+5. Leader calls confirmBatch() on Index.sol
+   with aggregated signature + batch data
+       │
+       ▼
+6. On-chain BLS verification passes
+   → TradeRequest events emitted
+       │
+       ▼
+7. AP (Authorized Participant) receives events
+   and executes the underlying trades
+```
+
+<Info>
+  The BLS threshold of `ceil(2n/3)` ensures Byzantine fault tolerance — the issuer nodes can tolerate up to `floor((n-1)/3)` malicious or offline issuer nodes while still making progress.
+</Info>
+
+## Cycle Timing
+
+Each consensus cycle runs for exactly **1 second**, divided into 5 sequential phases of 200ms each:
+
+| Phase | Duration | Action |
+|---|---|---|
+| **COLLECT** | 200ms | Gather new pending orders from chain events and peer gossip |
+| **PROPOSE** | 200ms | Leader constructs and broadcasts the proposed batch |
+| **SIGN_SUBMIT** | 200ms | Peer issuer nodes validate the proposal and return BLS partial signatures |
+| **CONFIRM** | 200ms | Leader aggregates signatures and submits the confirmed batch on-chain |
+| **REBALANCE** | 200ms | Process any pending ITP rebalance operations (weight updates → new quantities) |
+
+```text
+ 0ms        200ms       400ms       600ms       800ms      1000ms
+  │ COLLECT  │ PROPOSE  │   SIGN    │ CONFIRM  │REBALANCE │
+  │◄────────►│◄────────►│◄─SUBMIT──►│◄────────►│◄────────►│
+  │          │          │           │          │          │
+  └──────────┴──────────┴───────────┴──────────┴──────────┘
+                    1-second cycle
+```
+
+## Leader Election
+
+Leader election follows a **round-robin** schedule — each registered issuer node takes turns as leader in a deterministic order based on the node's index in `IssuerRegistry.sol`. The leader role rotates every cycle (every 1 second).
+
+The leader is responsible for:
+- Constructing the batch proposal during the PROPOSE phase
+- Aggregating BLS signatures during SIGN_SUBMIT
+- Submitting the confirmed batch transaction during CONFIRM
+
+If a leader fails to produce a batch, the cycle is skipped and the next leader takes over on the following cycle.
+
+## Peer-to-Peer Transport
+
+| Property | Detail |
+|---|---|
+| **Transport** | TCP with TLS encryption |
+| **Discovery** | Static peer list in config + on-chain peer discovery via `IssuerRegistry.sol` |
+| **Messages** | Batch proposals, BLS partial signatures, heartbeats |
+| **Serialization** | Binary protocol for low-latency communication |
+
+Issuer nodes maintain persistent connections to all other registered issuer nodes. The P2P layer handles reconnection, message routing, and peer liveness detection.
+
+## Netting Engine
+
+The netting module optimizes execution by matching opposing orders before they reach the AP:
+
+- **Order netting** — Buy orders for asset A are matched against sell orders for asset A, reducing the net amount the AP needs to execute
+- **USDT pair handling** — Routes orders through USDT pairs when direct pairs are unavailable
+- **Rebalancing** — When ITP weights change, the netting engine computes the delta trades needed to move from old quantities to new quantities while preserving NAV
+
+## BLS Details
+
+| Property | Detail |
+|---|---|
+| **Curve** | BN254 (alt_bn128) |
+| **EVM compatibility** | Uses precompiles at `0x06` (addition), `0x07` (scalar multiplication), `0x08` (pairing) |
+| **Key registration** | Each issuer node registers the node's BLS public key in `IssuerRegistry.sol` |
+| **Aggregation** | Partial signatures are aggregated into a single signature by the leader |
+| **Verification** | On-chain via `BLSLib.sol` against the stored aggregated public key |
+
+<Warning>
+  BLS verification is **never bypassed** — not in local development, not in tests, not anywhere. If BLS is blocking development, the correct approach is to fix the BLS pipeline (generate proper test keys, register them in IssuerRegistry, compute valid signatures), not to add bypass logic.
+</Warning>
+
+## Security: AP Isolation (FR13)
+
+<Warning>
+  Issuer nodes **cannot communicate directly** with the Authorized Participant (AP). The AP learns about confirmed batches exclusively through on-chain `TradeRequest` events. The issuer-AP isolation ensures that issuer nodes cannot collude with the AP to front-run or manipulate trade execution.
+</Warning>
+
+```text
+  Issuer Nodes                L3 Chain                AP
+  ┌───────────┐         ┌──────────────┐        ┌─────────┐
+  │           │────tx──►│  Index.sol   │        │         │
+  │  Consensus│         │              │──event─►│ Execute │
+  │  + BLS    │         │ confirmBatch │        │  Fills  │
+  │           │         │  emits event │        │         │
+  └───────────┘         └──────────────┘        └─────────┘
+        ▲                                            │
+        │              No direct link                │
+        └────────────── ✕ ───────────────────────────┘
+```

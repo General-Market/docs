@@ -1,0 +1,140 @@
+---
+title: "Order Lifecycle"
+description: "How orders are processed -- from submission to settlement"
+---
+
+# Order Lifecycle
+
+Every buy or sell on General Market goes through a multi-step lifecycle: from order submission, through decentralized consensus, to real exchange execution and on-chain settlement. This page traces the full journey.
+
+## Buy Flow: The 10 Steps
+
+The following is the complete path of a buy order from the moment the buyer clicks "Buy" to the moment ITP tokens land in the buyer's wallet.
+
+<Steps>
+  <Step title="USDC Approval">
+    The wallet approves the Index contract to spend USDC on the buyer's behalf. The USDC approval is a one-time action (or per-transaction, depending on the wallet's approval settings).
+  </Step>
+  <Step title="Submit Order">
+    The buyer calls `submitOrder(itpId, amount, BUY)`. The buyer's USDC is transferred to the contract and **escrowed** -- the USDC is locked until the order fills or times out.
+  </Step>
+  <Step title="Order is PENDING">
+    The order is recorded on-chain with status `PENDING`. The order is now visible to the issuer nodes.
+  </Step>
+  <Step title="COLLECT Phase">
+    The issuer nodes detect the new pending order during the **COLLECT** phase of the current cycle (200ms). All pending orders are gathered into a candidate batch.
+  </Step>
+  <Step title="PROPOSE Phase">
+    The cycle's **leader** (determined by round-robin election) proposes a batch containing all collected orders. The batch includes order IDs and the computed batch hash.
+  </Step>
+  <Step title="BLS Signing">
+    Peer issuer nodes **validate** the proposed batch -- checking order data, prices, and consistency. Each validating issuer node signs the batch hash with the node's BLS private key.
+  </Step>
+  <Step title="Signature Aggregation">
+    The leader collects BLS signatures from peer issuer nodes. Once the threshold is met (`ceil(2n/3)` of registered issuers), the leader aggregates the BLS signatures into a single compact proof.
+  </Step>
+  <Step title="Batch Confirmation">
+    The leader calls `confirmBatch()` on-chain with the aggregated BLS signature. The contract verifies the signature against the registered aggregated public key. Orders move to `BATCHED` status.
+  </Step>
+  <Step title="Exchange Execution">
+    The Authorized Participant (AP) detects `TradeRequest` events from the batch confirmation. The AP executes the corresponding trades on **Bitget** exchange, buying the underlying assets.
+  </Step>
+  <Step title="Fill Confirmation">
+    The Authorized Participant (AP) calls `confirmFills()` on-chain with execution details. The contract validates fills against the **0.1% price tolerance**, then **mints ITP tokens** to the buyer's wallet. The order status becomes `FILLED`.
+  </Step>
+</Steps>
+
+## Sell Flow
+
+The sell flow mirrors the buy flow in reverse:
+
+<Steps>
+  <Step title="Submit Sell Order">
+    The seller calls `submitOrder(itpId, amount, SELL)`. The seller's ITP tokens are escrowed by the contract.
+  </Step>
+  <Step title="Consensus and Batching">
+    The sell order goes through the same COLLECT, PROPOSE, and BLS signing phases as a buy order.
+  </Step>
+  <Step title="Exchange Execution">
+    The AP sells the underlying assets on Bitget.
+  </Step>
+  <Step title="Settlement">
+    `confirmFills()` is called. The contract **burns** the seller's ITP tokens and **returns USDC** to the seller's wallet at the execution price.
+  </Step>
+</Steps>
+
+## Cycle Timing
+
+The issuer nodes operate in continuous **1-second cycles**, each divided into 5 phases:
+
+```text
+|--- COLLECT ---|--- PROPOSE ---|--- SIGN_SUBMIT ---|--- CONFIRM ---|--- REBALANCE ---|
+     200ms           200ms            200ms              200ms            200ms
+```
+
+| Phase | Duration | What Happens |
+|-------|----------|--------------|
+| **COLLECT** | 200ms | Issuer nodes scan for new pending orders on-chain |
+| **PROPOSE** | 200ms | Leader proposes a batch of collected orders |
+| **SIGN_SUBMIT** | 200ms | Peer issuer nodes validate and BLS-sign the batch; leader aggregates and submits |
+| **CONFIRM** | 200ms | Batch confirmation transaction is processed on-chain |
+| **REBALANCE** | 200ms | Any pending rebalance operations are executed |
+
+<Info>
+The 1-second cycle means an order is typically batched within 1-2 seconds of submission. End-to-end settlement (including exchange execution) usually completes in under 10 seconds.
+</Info>
+
+## Order States
+
+Each order transitions through these states:
+
+```text
+PENDING  -->  BATCHED  -->  FILLED
+   |
+   +-------->  TIMEOUT  (after 60s, up to 3 retries)
+```
+
+| State | Description |
+|-------|-------------|
+| `PENDING` | Order submitted and USDC/tokens escrowed. Waiting for next cycle. |
+| `BATCHED` | Included in a confirmed batch with valid BLS signature. AP is executing. |
+| `FILLED` | AP reported fills, tokens minted/burned, settlement complete. |
+| `TIMEOUT` | Order was not filled within 60 seconds. Retried up to 3 times before escrowed funds are returned. |
+
+## Safeguards
+
+### BLS Consensus
+
+Every batch must be approved by a supermajority of the issuer nodes. The threshold is `ceil(2n/3)` -- for example, with 3 issuer nodes, at least 2 must sign. With 20 issuer nodes, at least 14 must sign.
+
+<Warning>
+BLS verification is **never bypassed** -- not in production, not in testing, not in local development. This is a core security invariant of the protocol.
+</Warning>
+
+### Price Tolerance
+
+The AP must execute trades within **0.1%** of the reference price. The `confirmFills()` function on-chain validates every fill against the tolerance. If the AP reports a price outside the band, the fill is rejected.
+
+```text
+|reference_price - fill_price| / reference_price <= 0.001
+```
+
+### Order Timeout
+
+Orders that are not filled within **60 seconds** enter a timeout flow:
+
+1. First timeout: order is automatically retried (re-enters PENDING).
+2. Second timeout: retried again.
+3. Third timeout: order is cancelled. Escrowed USDC or ITP tokens are returned to the user.
+
+<Note>
+Timeouts are rare under normal conditions. They primarily protect against exchange downtime or network congestion.
+</Note>
+
+### Issuer-AP Separation
+
+Issuer nodes and the Authorized Participant (AP) operate independently. Issuer nodes **cannot** communicate directly with the AP -- issuer nodes only read on-chain fill data. The issuer-AP separation prevents collusion between the consensus layer and the execution layer.
+
+## Netting
+
+When the issuer nodes collect orders in a cycle, the netting engine applies **netting** before sending trade requests to the AP. If there are $10,000 in buys and $7,000 in sells for the same ITP, only the net $3,000 buy needs to be executed on the exchange. Netting reduces trading costs and exchange exposure.

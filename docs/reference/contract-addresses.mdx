@@ -1,0 +1,75 @@
+---
+title: "Contract Addresses"
+description: "Deployed contract addresses on Index L3"
+---
+
+# Deployed Contract Addresses
+
+All General Market protocol contracts are deployed on the Index L3 Arbitrum Orbit chain.
+
+<Warning>
+  Contract addresses are loaded from `deployments/active-deployment.json` and may differ between
+  environments (testnet, staging, production). Always verify addresses against the active deployment
+  file before interacting with contracts directly.
+</Warning>
+
+## Network Information
+
+| Property | Value |
+|----------|-------|
+| **Chain Name** | Index L3 (Arbitrum Orbit) |
+| **Chain ID** | `111222333` |
+| **RPC Endpoint** | `https://index.rpc.zeeve.net` |
+| **Collateral Token** | USDC (18 decimals on L3) |
+| **Consensus** | Arbitrum Orbit with BLS issuer consensus |
+
+## Core Contracts
+
+| Contract | Description |
+|----------|-------------|
+| **Index.sol** | Main entry point for order management, Index Tracking Product (ITP) creation, and NAV computation. Handles buy/sell order submission, weight updates, and rebalancing. |
+| **BridgeProxy.sol** | Cross-chain order routing between Arbitrum L2 and the Index L3. Relays orders and settlement messages across the bridge. |
+| **BridgedItpFactory.sol** | Factory contract on Arbitrum that deploys ERC-4626 ITP share tokens, enabling L2 representation of L3 ITPs. |
+| **IssuerRegistry.sol** | Manages issuer node registration and BLS public key storage. Maintains the aggregated public key used for batch signature verification. |
+| **CollateralRegistry.sol** | Whitelist of accepted collateral tokens. Controls which tokens can be escrowed for order placement. |
+| **FeeRegistry.sol** | Configures protocol fee parameters including creation fees, trading fees, and AP compensation rates. |
+| **Governance.sol** | Administrative controls for pausing contracts, updating parameters, and managing protocol upgrades via UUPS proxies. |
+
+## Retrieving Addresses
+
+### From the Deployment File
+
+The canonical source of truth for deployed addresses is the deployment JSON:
+
+```bash
+cat deployments/active-deployment.json
+```
+
+The deployment JSON file is updated by the deploy scripts after each deployment and contains all contract addresses along with deployment metadata.
+
+### In the Frontend
+
+The frontend imports addresses from a typed module that reads the deployment JSON:
+
+```typescript
+import deployment from "@/lib/contracts/deployment.json";
+
+// Access individual contract addresses
+const indexAddress = deployment.Index;
+const issuerRegistry = deployment.IssuerRegistry;
+```
+
+### Adding to a Wallet
+
+To interact with the Index L3 chain from a wallet like MetaMask:
+
+1. Open your wallet's network settings
+2. Add a custom network with the following details:
+   - **Network Name**: Index L3
+   - **RPC URL**: `https://index.rpc.zeeve.net`
+   - **Chain ID**: `111222333`
+   - **Currency Symbol**: ETH
+
+## Contract Upgrade Policy
+
+All core contracts use the UUPS (Universal Upgradeable Proxy Standard) pattern. Proxy addresses remain stable across upgrades -- only the implementation addresses change. The addresses listed in the deployment file always refer to the proxy addresses.

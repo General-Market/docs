@@ -23,6 +23,7 @@ DEPLOYER_KEY=${DEPLOYER_KEY:-0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efca
 TEST_USER_KEY=${TEST_USER_KEY:-0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537}
 TEST_USER_ADDRESS=${TEST_USER_ADDRESS:-0xC0D3C3ba6c2215b0cBf4375f4c280c0cc6C43850}
 AP_KEY=${AP_KEY:-0x582978b132648fe53de139c6b9297040a2757616cac9a2fd17aa167bdc6fa340}
+VISION_BOT_ADDRESS=${VISION_BOT_ADDRESS:-0x1111111111111111111111111111111111111111}
 
 # Bitget credentials (dummy = public endpoints only, sufficient for price reads)
 export BITGET_API_KEY=${BITGET_API_KEY:-dummy}
@@ -56,7 +57,7 @@ if ! command -v anvil &>/dev/null && [ -d "$HOME/.foundry/bin" ]; then
     export PATH="$HOME/.foundry/bin:$PATH"
 fi
 
-TOTAL_STEPS=12
+TOTAL_STEPS=13
 
 print_banner() {
     echo -e "${CYAN}"
@@ -320,6 +321,12 @@ else
     # Mint ARB_USDC on Arbitrum too (frontend reads from Arb)
     cast send --private-key $DEPLOYER_KEY $ARB_USDC "mint(address,uint256)" $TEST_USER 50000000000 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
     echo -e "  ${GREEN}Test user funded with 50k L3_WUSDC (L3) + 50k ARB_USDC (both chains)${NC}"
+
+    # Fund Vision bot (Player 2 for E2E P2Pool tests)
+    cast send --private-key $DEPLOYER_KEY --value 100ether $VISION_BOT_ADDRESS --rpc-url $RPC_URL > /dev/null 2>&1
+    cast send --private-key $DEPLOYER_KEY $L3_WUSDC "mint(address,uint256)" $VISION_BOT_ADDRESS 50000000000000000000000 --rpc-url $RPC_URL > /dev/null 2>&1
+    cast rpc anvil_impersonateAccount $VISION_BOT_ADDRESS --rpc-url $RPC_URL > /dev/null 2>&1
+    echo -e "  ${GREEN}Vision bot $VISION_BOT_ADDRESS funded with 100 ETH + 50k L3_WUSDC (L3)${NC}"
 
     # ============ STEP 3: 100-asset ITP ============
     echo -e "${BLUE}[3/$TOTAL_STEPS] Deploying 100-asset ITP...${NC}"
@@ -685,7 +692,10 @@ json.dump(deploy, open('../deployments/active-deployment.json', 'w'), indent=2)
         # Run P2Pool database migrations (issuer chain listener needs these tables)
         if $PG_ISREADY -q 2>/dev/null; then
             $PSQL -d index_prices -f ../issuer/migrations/001_create_p2pool_tables.sql > /dev/null 2>&1 || true
-            echo -e "  ${GREEN}P2Pool database tables created${NC}"
+            # Reset chain listener bookmark (Anvil restarts from block 0 each session)
+            $PSQL -d index_prices -c "UPDATE p2pool_kv_store SET value = '0' WHERE key = 'chain_listener_last_block';" > /dev/null 2>&1 || true
+            $PSQL -d index_prices -c "TRUNCATE p2pool_batches, p2pool_positions, p2pool_tick_results;" > /dev/null 2>&1 || true
+            echo -e "  ${GREEN}P2Pool database tables created (bookmark reset)${NC}"
         fi
     else
         echo -e "${YELLOW}  Warning: Vision deployment failed (check logs/deploy-vision.log)${NC}"
@@ -800,14 +810,14 @@ for i in $(seq 1 $ISSUER_COUNT); do
         export DATA_NODE_URL="http://localhost:8200"
     fi
 
-    # P2Pool subsystem — enable if Vision contract was deployed
+    # P2Pool subsystem — enable if Vision contract was deployed (pass via CLI flags)
     VISION_ADDR_CHECK=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts'].get('Vision',''))" 2>/dev/null || echo "")
     if [ -n "$VISION_ADDR_CHECK" ] && [ "$VISION_ADDR_CHECK" != "" ] && $PG_ISREADY -q 2>/dev/null; then
-        export ISSUER_P2POOL_ENABLED=true
-        export ISSUER_P2POOL_VISION_ADDRESS="$VISION_ADDR_CHECK"
-        export ISSUER_P2POOL_DATABASE_URL="postgres://localhost/index_prices"
-        export ISSUER_P2POOL_DATA_NODE_URL="http://localhost:8200"
-        export ISSUER_P2POOL_RPC_WS_URL="$RPC_URL"
+        ISSUER_ARGS="$ISSUER_ARGS --p2pool-enabled"
+        ISSUER_ARGS="$ISSUER_ARGS --p2pool-vision-address $VISION_ADDR_CHECK"
+        ISSUER_ARGS="$ISSUER_ARGS --p2pool-database-url postgres://localhost/index_prices"
+        ISSUER_ARGS="$ISSUER_ARGS --p2pool-data-node-url http://localhost:8200"
+        ISSUER_ARGS="$ISSUER_ARGS --p2pool-rpc-ws-url $RPC_URL"
     fi
     ./target/release/issuer $ISSUER_ARGS > logs/issuer-$i.log 2>&1 &
     ISSUER_PID=$!
@@ -861,6 +871,14 @@ else
     fi
 fi
 
+# Create default HackerNews batch — deferred until after NAV is ready
+# (data-node needs ~30s to fetch HN data from API)
+CREATE_DEFAULT_BATCH=false
+VISION_ADDR=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts'].get('Vision',''))" 2>/dev/null || echo "")
+if [ -n "$VISION_ADDR" ] && [ "$VISION_ADDR" != "" ] && [ "$DATA_NODE_RUNNING" = true ] && [ "$SKIP_DEPLOY" = false ]; then
+    CREATE_DEFAULT_BATCH=true
+fi
+
 # ============ STEP 10: Launch AP ============
 echo -e "${BLUE}[10/$TOTAL_STEPS] Starting AP with real Bitget price proxy...${NC}"
 
@@ -882,6 +900,30 @@ echo -e "  AP on port 9100 (PID: $AP_PID)"
 
 # Wait for services to start
 sleep 3
+
+# Launch Vision bot if Vision was deployed
+VISION_ADDR_BOT=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts'].get('Vision',''))" 2>/dev/null || echo "")
+if [ -n "$VISION_ADDR_BOT" ] && [ "$VISION_ADDR_BOT" != "" ] && [ -f "$SCRIPT_DIR/vision-bot/bot.py" ]; then
+    echo -e "${BLUE}  Starting Vision bot...${NC}"
+    # Install deps if needed
+    if [ ! -d "$SCRIPT_DIR/vision-bot/.venv" ]; then
+        python3 -m venv "$SCRIPT_DIR/vision-bot/.venv" 2>/dev/null || true
+    fi
+    (
+        source "$SCRIPT_DIR/vision-bot/.venv/bin/activate" 2>/dev/null || true
+        pip install -q -r "$SCRIPT_DIR/vision-bot/requirements.txt" 2>/dev/null || true
+        cd "$SCRIPT_DIR"
+        L3_RPC_URL="$RPC_URL" \
+        P2POOL_API_URL="http://localhost:10001" \
+        DATA_NODE_URL="http://localhost:8200" \
+        BOT_ADDRESS="$VISION_BOT_ADDRESS" \
+        python3 vision-bot/bot.py --once > logs/vision-bot.log 2>&1
+    ) &
+    VBOT_PID=$!
+    echo $VBOT_PID >> .pids
+    echo "vision-bot:$VBOT_PID" >> .pids.info
+    echo -e "  ${GREEN}Vision bot started (PID: $VBOT_PID)${NC}"
+fi
 
 # ============ STEP 11: Frontend E2E Browser Tests ============
 echo -e "${BLUE}[11/$TOTAL_STEPS] Starting frontend & running E2E browser tests...${NC}"
@@ -909,6 +951,58 @@ for attempt in $(seq 1 30); do
 done
 if [ "$NAV_READY" != true ]; then
     echo -e "  ${YELLOW}Data-node not ready after 30s — continuing anyway${NC}"
+fi
+
+# Deferred: Create default HackerNews batch now that data-node has had time to fetch
+if [ "$CREATE_DEFAULT_BATCH" = true ]; then
+    echo -e "${BLUE}  Creating default HackerNews batch...${NC}"
+    HN_MARKETS=""
+    HN_COUNT=0
+    for attempt in $(seq 1 30); do
+        HN_MARKETS=$(curl -sf "http://localhost:8200/p2pool/markets/active?source=hackernews" 2>/dev/null || echo "")
+        HN_COUNT=$(echo "$HN_MARKETS" | python3 -c "import sys,json; print(json.loads(sys.stdin.read()).get('count',0))" 2>/dev/null || echo "0")
+        if [ "$HN_COUNT" -gt 0 ] 2>/dev/null; then
+            break
+        fi
+        sleep 1
+    done
+
+    if [ "$HN_COUNT" -gt 0 ] 2>/dev/null; then
+        BATCH_DATA=$(echo "$HN_MARKETS" | python3 -c "
+import sys, json, subprocess
+data = json.loads(sys.stdin.read())
+snapshots = data.get('snapshots', [])[:10]
+if not snapshots:
+    sys.exit(1)
+market_ids = []
+for s in snapshots:
+    aid = s.get('assetId') or s.get('asset_id', '')
+    utf8 = subprocess.run(['cast', '--from-utf8', aid], capture_output=True, text=True).stdout.strip()
+    kh = subprocess.run(['cast', 'keccak', utf8], capture_output=True, text=True).stdout.strip()
+    market_ids.append(kh)
+n = len(market_ids)
+print('[' + ','.join(market_ids) + ']|[' + ','.join(['0']*n) + ']|[' + ','.join(['0']*n) + ']|' + str(n))
+" 2>/dev/null || echo "")
+
+        if [ -n "$BATCH_DATA" ]; then
+            IFS='|' read -r MARKET_IDS_ARR RES_TYPES_ARR THRESHOLDS_ARR MARKET_N <<< "$BATCH_DATA"
+            set +e
+            BATCH_TX=$(cast send --private-key $DEPLOYER_KEY "$VISION_ADDR" \
+                "createBatch(bytes32[],uint8[],uint256,uint256[])" \
+                "$MARKET_IDS_ARR" "$RES_TYPES_ARR" 3600 "$THRESHOLDS_ARR" \
+                --rpc-url $RPC_URL 2>&1)
+            if [ $? -eq 0 ]; then
+                echo -e "  ${GREEN}Default HackerNews batch created ($MARKET_N markets, 1h ticks)${NC}"
+            else
+                echo -e "  ${YELLOW}Warning: Default batch creation failed${NC}"
+            fi
+            set -e
+        else
+            echo -e "  ${YELLOW}Warning: Could not prepare batch data${NC}"
+        fi
+    else
+        echo -e "  ${YELLOW}Warning: No HackerNews markets found after 30s (skipping default batch)${NC}"
+    fi
 fi
 sleep 2
 
@@ -952,6 +1046,20 @@ for attempt in $(seq 1 60); do
     sleep 1
 done
 
+# ============ STEP 12: Mintlify Docs ============
+echo -e "${BLUE}[12/$TOTAL_STEPS] Starting Mintlify docs server...${NC}"
+if [ -f "$SCRIPT_DIR/docs/mint.json" ]; then
+    cd "$SCRIPT_DIR/docs"
+    npx @mintlify/cli@latest dev --port 3333 > "$SCRIPT_DIR/logs/docs.log" 2>&1 &
+    DOCS_PID=$!
+    echo $DOCS_PID >> "$SCRIPT_DIR/.pids"
+    echo "mintlify-docs:$DOCS_PID" >> "$SCRIPT_DIR/.pids.info"
+    cd "$SCRIPT_DIR"
+    echo -e "  ${GREEN}Mintlify docs server started on port 3333 (PID: $DOCS_PID)${NC}"
+else
+    echo -e "  ${YELLOW}No docs/mint.json found — skipping docs server${NC}"
+fi
+
 # Run Playwright E2E tests (health → connect → buy → lending → sell)
 echo -e ""
 echo -e "  ${BLUE}Running Playwright E2E tests...${NC}"
@@ -979,7 +1087,7 @@ echo ""
 
 set -e
 
-# ============ STEP 12: Verification ============
+# ============ STEP 13: Verification ============
 echo ""
 echo -e "${YELLOW}Verifying services...${NC}"
 
@@ -1037,6 +1145,7 @@ echo -e "  ${BLUE}Issuers:${NC}   ports 9001-900$ISSUER_COUNT (bitget-vault + ar
 echo -e "  ${BLUE}AP:${NC}        port 9100 (real Bitget price proxy)"
 echo -e "  ${BLUE}P2Pool:${NC}   http://localhost:10101 (issuer 1 API)"
 echo -e "  ${BLUE}Frontend:${NC}  http://localhost:3000 (running)"
+echo -e "  ${BLUE}Docs:${NC}      http://localhost:3333 (Mintlify)"
 echo -e "  ${BLUE}E2E Tests:${NC} cd frontend && npm run e2e:headed"
 echo -e "  ${BLUE}Logs:${NC}      ./logs/"
 echo ""

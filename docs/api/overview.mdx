@@ -1,0 +1,99 @@
+---
+title: "API Endpoints Index"
+description: "Introduction to the General Market API"
+---
+
+# API Endpoints Index
+
+The General Market API provides read access to real-time price data, Index Tracking Product (ITP) pricing, portfolio tracking, backtesting simulation, and lending position data.
+
+## Base URL
+
+In production, the API is proxied through Next.js rewrites at:
+
+```text
+https://generalmarket.io/api
+```
+
+The underlying data-node runs on port 8200. All paths documented in the API reference are relative to the base URL above.
+
+## Response Format
+
+All endpoints return JSON. A successful response contains the requested data directly in the response body:
+
+```json
+{
+  "asset": "BTC",
+  "price": 97432.15,
+  "timestamp": 1708600000
+}
+```
+
+Error responses return an appropriate HTTP status code with a JSON body:
+
+```json
+{
+  "error": "Asset not found"
+}
+```
+
+## Authentication
+
+No authentication is required for read endpoints. The API is publicly accessible.
+
+## Rate Limiting
+
+No strict rate limits are enforced, but excessive request volume may result in temporary throttling.
+
+## Available Endpoint Groups
+
+<CardGroup cols={2}>
+  <Card title="Prices" icon="chart-line" href="/api/prices">
+    Real-time and historical asset price data. Single asset lookups, bulk fetches, and low-latency trading prices.
+  </Card>
+  <Card title="ITPs" icon="layer-group" href="/api/itps">
+    ITP NAV (Net Asset Value) computation, historical NAV series, AUM rankings, and ITP state snapshots.
+  </Card>
+  <Card title="Portfolio" icon="wallet" href="/api/portfolio">
+    User portfolio summaries, historical value tracking, and trade history.
+  </Card>
+  <Card title="Simulation" icon="flask" href="/api/simulation">
+    Backtest simulation engine with configurable parameters and streaming results.
+  </Card>
+  <Card title="Morpho" icon="building-columns" href="/api/morpho">
+    Lending positions and operation history via Morpho integration.
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+Fetch the latest price for Bitcoin:
+
+<CodeGroup>
+```bash cURL
+curl https://generalmarket.io/api/price?asset=BTC
+```
+
+```javascript JavaScript
+const res = await fetch("https://generalmarket.io/api/price?asset=BTC");
+const data = await res.json();
+console.log(data.price);
+```
+
+```python Python
+import requests
+
+resp = requests.get("https://generalmarket.io/api/price?asset=BTC")
+data = resp.json()
+print(data["price"])
+```
+</CodeGroup>
+
+```json Response
+{
+  "asset": "BTC",
+  "price": 97432.15,
+  "timestamp": 1708600000,
+  "source": "binance"
+}
+```

@@ -1,0 +1,248 @@
+---
+title: "ITP Endpoints"
+description: "ITP pricing, NAV, and ranking data"
+---
+
+# ITP Endpoints
+
+Retrieve Index Tracking Product (ITP) pricing data, historical NAV series, AUM rankings, and state snapshots. ITPs are on-chain index products that track a basket of underlying assets.
+
+---
+
+## Get ITP Price / NAV
+
+<ParamField query="itp_id" type="string" required>
+  The on-chain ITP identifier (hex address, e.g., `0x...`).
+</ParamField>
+
+Returns the current NAV (Net Asset Value) for the specified ITP, including a breakdown of priced assets and AUM.
+
+<CodeGroup>
+```bash cURL
+curl "https://generalmarket.io/api/itp-price?itp_id=0x1234abcd..."
+```
+
+```javascript JavaScript
+const res = await fetch(
+  "https://generalmarket.io/api/itp-price?itp_id=0x1234abcd..."
+);
+const data = await res.json();
+```
+
+```python Python
+import requests
+
+resp = requests.get(
+    "https://generalmarket.io/api/itp-price",
+    params={"itp_id": "0x1234abcd..."}
+)
+data = resp.json()
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+{
+  "itp_id": "0x1234abcd...",
+  "nav": "1045000000000000000",
+  "nav_display": 1.045,
+  "assets_priced": 98,
+  "assets_total": 100,
+  "aum_usd": 52340.75,
+  "total_supply": "50000000000000000000000"
+}
+```
+</Expandable>
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `itp_id` | string | ITP identifier |
+| `nav` | string | NAV per share in wei (18 decimals) |
+| `nav_display` | number | Human-readable NAV per share in USD |
+| `assets_priced` | number | Number of assets with available price data |
+| `assets_total` | number | Total number of assets in the ITP basket |
+| `aum_usd` | number | Total assets under management in USD |
+| `total_supply` | string | Total ITP shares outstanding in wei |
+
+<Note>
+  NAV is computed as `sum(qty[i] * price[i]) / 1e18` where quantities are the fixed per-share amounts stored on-chain. See the pricing model documentation for details.
+</Note>
+
+---
+
+## Get NAV Time Series
+
+<ParamField query="itp_id" type="string" required>
+  The on-chain ITP identifier.
+</ParamField>
+
+<ParamField query="range" type="string" required>
+  Time range for the series. One of: `1d`, `7d`, `30d`, `90d`, `1y`.
+</ParamField>
+
+Returns historical NAV data points for the specified ITP over the requested time range.
+
+<CodeGroup>
+```bash cURL
+curl "https://generalmarket.io/api/nav-series?itp_id=0x1234abcd...&range=7d"
+```
+
+```javascript JavaScript
+const res = await fetch(
+  "https://generalmarket.io/api/nav-series?itp_id=0x1234abcd...&range=7d"
+);
+const series = await res.json();
+```
+
+```python Python
+import requests
+
+resp = requests.get(
+    "https://generalmarket.io/api/nav-series",
+    params={"itp_id": "0x1234abcd...", "range": "7d"}
+)
+series = resp.json()
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+[
+  { "timestamp": 1708000000, "nav": 1.012 },
+  { "timestamp": 1708086400, "nav": 1.018 },
+  { "timestamp": 1708172800, "nav": 1.025 },
+  { "timestamp": 1708259200, "nav": 1.031 },
+  { "timestamp": 1708345600, "nav": 1.038 },
+  { "timestamp": 1708432000, "nav": 1.042 },
+  { "timestamp": 1708518400, "nav": 1.045 }
+]
+```
+</Expandable>
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `timestamp` | number | Unix timestamp of the data point |
+| `nav` | number | NAV per share at that point in time |
+
+---
+
+## Get AUM Ranking
+
+Returns all ITPs ranked by total assets under management (AUM), from highest to lowest.
+
+<CodeGroup>
+```bash cURL
+curl "https://generalmarket.io/api/aum-ranking"
+```
+
+```javascript JavaScript
+const res = await fetch("https://generalmarket.io/api/aum-ranking");
+const ranking = await res.json();
+```
+
+```python Python
+import requests
+
+resp = requests.get("https://generalmarket.io/api/aum-ranking")
+ranking = resp.json()
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+[
+  {
+    "itp_id": "0xabc123...",
+    "name": "Top 100 Crypto Index",
+    "symbol": "T100",
+    "nav_per_share": 1.045,
+    "aum_usd": 523400.75,
+    "total_supply": "500000000000000000000000",
+    "asset_count": 100
+  },
+  {
+    "itp_id": "0xdef456...",
+    "name": "DeFi Blue Chips",
+    "symbol": "DEFI",
+    "nav_per_share": 1.128,
+    "aum_usd": 187200.50,
+    "total_supply": "165000000000000000000000",
+    "asset_count": 20
+  }
+]
+```
+</Expandable>
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `itp_id` | string | ITP identifier |
+| `name` | string | Human-readable ITP name |
+| `symbol` | string | ITP ticker symbol |
+| `nav_per_share` | number | Current NAV per share in USD |
+| `aum_usd` | number | Total assets under management in USD |
+| `total_supply` | string | Total shares outstanding in wei |
+| `asset_count` | number | Number of assets in the basket |
+
+---
+
+## Get Snapshot
+
+Returns the current state of all ITPs, or of a single ITP when `itp_id` is provided.
+
+<ParamField query="itp_id" type="string">
+  Optional. When provided, the endpoint returns the snapshot for only the specified ITP.
+</ParamField>
+
+<CodeGroup>
+```bash cURL
+# All ITPs
+curl "https://generalmarket.io/api/snapshot"
+
+# Specific ITP
+curl "https://generalmarket.io/api/snapshot?itp_id=0x1234abcd..."
+```
+
+```javascript JavaScript
+// All ITPs
+const res = await fetch("https://generalmarket.io/api/snapshot");
+const snapshot = await res.json();
+
+// Specific ITP
+const res2 = await fetch(
+  "https://generalmarket.io/api/snapshot?itp_id=0x1234abcd..."
+);
+const itpSnapshot = await res2.json();
+```
+
+```python Python
+import requests
+
+# All ITPs
+resp = requests.get("https://generalmarket.io/api/snapshot")
+snapshot = resp.json()
+
+# Specific ITP
+resp = requests.get(
+    "https://generalmarket.io/api/snapshot",
+    params={"itp_id": "0x1234abcd..."}
+)
+itp_snapshot = resp.json()
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+{
+  "itp_id": "0x1234abcd...",
+  "name": "Top 100 Crypto Index",
+  "symbol": "T100",
+  "nav": 1.045,
+  "aum_usd": 523400.75,
+  "total_supply": "500000000000000000000000",
+  "assets": [
+    { "symbol": "BTC", "weight": 0.25, "qty": "0.0000025", "price": 97432.15 },
+    { "symbol": "ETH", "weight": 0.15, "qty": "0.0000462", "price": 3245.80 }
+  ]
+}
+```
+</Expandable>

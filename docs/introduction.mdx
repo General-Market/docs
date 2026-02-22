@@ -1,0 +1,90 @@
+---
+title: "Introduction"
+description: "Decentralized protocol for on-chain index products and prediction markets"
+---
+
+# General Market
+
+General Market is a decentralized protocol for creating and trading **Index Tracking Products (ITPs)** and operating **Vision**, a sealed parimutuel prediction market. Built on an Arbitrum Orbit L3, General Market lets anyone build, buy, and sell tokenized baskets of crypto assets with exchange-backed execution and NAV-based pricing.
+
+## What General Market Does
+
+General Market provides two on-chain products:
+
+- **Index Tracking Products (ITPs)** -- tokenized baskets of up to 100 crypto assets, functioning like on-chain ETFs. Each ITP is backed by real exchange execution and priced via a Net Asset Value (NAV) formula.
+- **Vision (Prediction Market)** -- a sealed parimutuel prediction market where participants bet on binary price outcomes (UP/DOWN) across batches of assets with configurable tick durations and resolution types.
+
+<Info>
+ITPs work like ETFs. You buy one token and get diversified exposure to an entire basket. The NAV floats with underlying asset prices -- that is the whole point.
+</Info>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Index Tracking Products" icon="chart-pie">
+    Buy and sell tokenized baskets of up to 100 crypto assets. Each ITP is an ERC-4626 vault token with transparent NAV pricing.
+  </Card>
+  <Card title="Create Custom Indexes" icon="sliders">
+    Build your own ITP with custom weights and asset selection. Set a fee tier and earn protocol fees as the deployer.
+  </Card>
+  <Card title="Lending (Morpho)" icon="building-columns">
+    Deposit USDC to earn yield from borrowers, or use your ITP shares as collateral to borrow USDC through Morpho-powered lending markets.
+  </Card>
+  <Card title="Backtesting" icon="clock-rotate-left">
+    Simulate ITP performance against historical price data before committing real capital. Test your thesis before you deploy.
+  </Card>
+  <Card title="Exchange-Backed Execution" icon="shield-check">
+    Orders are batched by issuer nodes with BLS consensus, then executed on Bitget by Authorized Participants (APs) -- no AMM slippage.
+  </Card>
+  <Card title="Vision (Prediction Market)" icon="users">
+    Sealed parimutuel prediction market. Bet on binary price outcomes (UP/DOWN) across batches of assets with configurable tick durations and resolution types.
+  </Card>
+</CardGroup>
+
+## Who Is General Market For?
+
+| Audience | Use Case |
+|----------|----------|
+| **Individual traders** | Buy diversified crypto exposure with a single transaction instead of managing dozens of positions |
+| **Fund managers** | Create and manage custom indexes with configurable weights, earn deployer fees |
+| **DAOs & treasuries** | Diversify treasury holdings into on-chain index products with NAV-based pricing |
+| **DeFi power users** | Use ITP positions as collateral for lending, combine with other DeFi strategies |
+| **Prediction market participants** | Bet on short-term price movements across asset batches in Vision's sealed parimutuel format |
+
+## How It Works (30-Second Version)
+
+### ITP Flow
+
+1. **Browse** available ITPs on the Markets tab -- each ITP shows live NAV, composition, and performance.
+2. **Buy** with USDC. The buy order is batched by issuer nodes, executed on a real exchange, and ITP tokens are minted to the buyer's wallet.
+3. **Hold or sell** anytime. The ITP's NAV tracks the underlying basket. Sell to redeem USDC at the current NAV.
+4. **Earn more** by depositing ITP tokens as collateral in lending markets, or supply USDC to earn yield.
+
+### Vision Flow
+
+1. **Pick a batch** -- each Vision batch covers a set of assets with a defined tick duration and resolution type.
+2. **Place a bet** -- choose UP or DOWN on the batch outcome and commit USDC. Bets are sealed until the tick resolves.
+3. **Resolution** -- when the tick ends, the outcome is determined from price data and the winning side splits the pool proportionally.
+
+## Quick Links
+
+<CardGroup cols={2}>
+  <Card title="Getting Started" icon="rocket" href="/getting-started">
+    Set up your wallet and make your first ITP trade or Vision bet in under 5 minutes.
+  </Card>
+  <Card title="How ITPs Work" icon="book" href="/concepts/itps">
+    Understand the NAV pricing model, per-share quantities, and rebalancing mechanics.
+  </Card>
+  <Card title="Order Lifecycle" icon="arrows-spin" href="/concepts/order-lifecycle">
+    Follow an ITP order from submission through BLS consensus to settlement.
+  </Card>
+  <Card title="Lending" icon="hand-holding-dollar" href="/concepts/lending">
+    Earn yield or borrow against ITP positions via Morpho.
+  </Card>
+  <Card title="Vision Prediction Market" icon="chart-line" href="/concepts/vision">
+    Learn how sealed parimutuel betting works across asset batches.
+  </Card>
+  <Card title="Vision Batches" icon="layer-group" href="/guides/vision-batches">
+    Browse active Vision batches and place your first prediction bet.
+  </Card>
+</CardGroup>

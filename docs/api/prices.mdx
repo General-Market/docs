@@ -1,0 +1,173 @@
+---
+title: "Price Endpoints"
+description: "Real-time and historical asset price data"
+---
+
+# Price Endpoints
+
+Retrieve real-time and historical price data for supported assets. Multiple endpoints are available depending on your use case: single asset lookups, bulk fetches, and low-latency trading prices.
+
+---
+
+## Get Single Asset Price
+
+<ParamField query="asset" type="string" required>
+  Asset ticker symbol (e.g., `BTC`, `ETH`, `SOL`).
+</ParamField>
+
+Returns the latest price for the specified asset, including the data source and timestamp.
+
+<CodeGroup>
+```bash cURL
+curl "https://generalmarket.io/api/price?asset=BTC"
+```
+
+```javascript JavaScript
+const res = await fetch("https://generalmarket.io/api/price?asset=BTC");
+const data = await res.json();
+```
+
+```python Python
+import requests
+
+resp = requests.get("https://generalmarket.io/api/price", params={"asset": "BTC"})
+data = resp.json()
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+{
+  "asset": "BTC",
+  "price": 97432.15,
+  "timestamp": 1708600000,
+  "source": "binance"
+}
+```
+</Expandable>
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `asset` | string | Asset ticker symbol |
+| `price` | number | Latest price in USD |
+| `timestamp` | number | Unix timestamp of the price update |
+| `source` | string | Data source that provided the price |
+
+---
+
+## Get All Latest Prices
+
+Returns the latest price for every supported asset.
+
+<CodeGroup>
+```bash cURL
+curl "https://generalmarket.io/api/prices"
+```
+
+```javascript JavaScript
+const res = await fetch("https://generalmarket.io/api/prices");
+const data = await res.json();
+```
+
+```python Python
+import requests
+
+resp = requests.get("https://generalmarket.io/api/prices")
+data = resp.json()
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+[
+  { "asset": "BTC", "price": 97432.15 },
+  { "asset": "ETH", "price": 3245.80 },
+  { "asset": "SOL", "price": 187.42 },
+  { "asset": "AVAX", "price": 38.15 }
+]
+```
+</Expandable>
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `asset` | string | Asset ticker symbol |
+| `price` | number | Latest price in USD |
+
+---
+
+## Get Latest Prices (Bulk Map)
+
+Optimized bulk fetch that returns a map of asset tickers to prices. More efficient than `/prices` when you need to look up prices by asset name.
+
+<CodeGroup>
+```bash cURL
+curl "https://generalmarket.io/api/latest-prices"
+```
+
+```javascript JavaScript
+const res = await fetch("https://generalmarket.io/api/latest-prices");
+const priceMap = await res.json();
+console.log(priceMap["BTC"]); // 97432.15
+```
+
+```python Python
+import requests
+
+resp = requests.get("https://generalmarket.io/api/latest-prices")
+price_map = resp.json()
+print(price_map["BTC"])  # 97432.15
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+{
+  "BTC": 97432.15,
+  "ETH": 3245.80,
+  "SOL": 187.42,
+  "AVAX": 38.15,
+  "LINK": 19.22
+}
+```
+</Expandable>
+
+The response body is a JSON object where each key is an asset ticker and each value is the latest USD price for that asset.
+
+---
+
+## Get Fast Prices
+
+Low-latency price endpoint optimized for trading. Fast prices may be slightly stale compared to `/price`, but the `/fast-prices` response is faster, making the endpoint suitable for UI display and order previews.
+
+<CodeGroup>
+```bash cURL
+curl "https://generalmarket.io/api/fast-prices"
+```
+
+```javascript JavaScript
+const res = await fetch("https://generalmarket.io/api/fast-prices");
+const prices = await res.json();
+```
+
+```python Python
+import requests
+
+resp = requests.get("https://generalmarket.io/api/fast-prices")
+prices = resp.json()
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+{
+  "BTC": 97432.15,
+  "ETH": 3245.80,
+  "SOL": 187.42,
+  "AVAX": 38.15
+}
+```
+</Expandable>
+
+<Note>
+  Fast prices are cached and may lag behind real-time prices by a few seconds. Use `/price?asset=X` when the most current price for a specific asset is needed.
+</Note>

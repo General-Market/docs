@@ -1,0 +1,51 @@
+# General Market
+
+> Decentralized protocol for on-chain index products and prediction markets.
+
+General Market enables users to create, trade, and manage tokenized index tracking products (ITPs) and trade on Vision, a sealed parimutuel prediction market. The protocol runs on an Arbitrum Orbit L3 chain. ITPs work like ETFs — each holds a fixed basket of crypto assets whose NAV floats with underlying prices. Vision lets traders bet on binary price outcomes (UP/DOWN) across batches of assets with configurable tick durations.
+
+## Key Features
+
+- **Index Tracking Products (ITPs)**: Tokenized baskets of up to 100 crypto assets with real-time NAV pricing
+- **Buy & Sell**: On-chain order submission with BLS-consensus batching and CEX execution via Authorized Participants
+- **Create Custom ITPs**: Define asset weights, deploy your own index product in one transaction
+- **Lending (Morpho)**: Deposit USDC to earn yield, or borrow against ITP shares as collateral
+- **Backtesting**: Simulate portfolio performance with historical data before deploying
+- **Vision (Prediction Market)**: Sealed parimutuel prediction market — bet on binary price outcomes (UP/DOWN) across batches of assets with configurable tick durations and resolution types
+
+## Architecture
+
+- **Chain**: Arbitrum Orbit L3 (Chain ID: 111222333)
+- **Consensus**: BLS signature aggregation (BN254 curve, 2/3 threshold)
+- **Settlement**: 1-second cycles with 5 phases (Collect → Propose → Sign → Confirm → Rebalance)
+- **Execution**: Authorized Participants execute trades on Bitget with 0.1% price tolerance
+- **Collateral**: USDC (18 decimals)
+
+## Documentation
+
+- [Introduction](/docs/introduction)
+- [Getting Started](/docs/getting-started)
+- [How ITPs Work](/docs/concepts/itps)
+- [Order Lifecycle](/docs/concepts/order-lifecycle)
+- [Lending Guide](/docs/concepts/lending)
+- [Buy & Sell Guide](/docs/guides/buy-sell)
+- [Create an ITP](/docs/guides/create-itp)
+- [Backtesting](/docs/guides/backtesting)
+- [Smart Contracts](/docs/architecture/contracts)
+- [Issuer Nodes](/docs/architecture/issuer-nodes)
+- [Data Node API](/docs/architecture/data-node)
+- [API Reference](/docs/api/overview)
+- [Error Codes](/docs/reference/error-codes)
+- [Contract Addresses](/docs/reference/contract-addresses)
+- [Glossary](/docs/reference/glossary)
+- [Vision Concepts](/docs/concepts/vision)
+- [Vision Trading Guide](/docs/guides/vision-trading)
+- [Build a Vision Bot](/docs/guides/vision-bots)
+- [Vision API](/docs/api/vision)
+- [Resolution Types](/docs/reference/resolution-types)
+
+## Links
+
+- Website: https://generalmarket.io
+- App: https://generalmarket.io
+- Discord: https://discord.gg/xsfgzwR6
