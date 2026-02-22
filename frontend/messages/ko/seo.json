@@ -59,6 +59,36 @@
     },
     "itp_description": "{name} — {count}개의 암호화폐 자산을 보유한 온체인 인덱스 추적 상품입니다. NAV (순자산가치): ${nav}."
   },
+  "pages": {
+    "privacy": {
+      "title": "개인정보 처리방침",
+      "description": "General Market 개인정보 처리방침."
+    },
+    "terms": {
+      "title": "이용약관",
+      "description": "General Market 이용약관."
+    },
+    "vision": {
+      "title": "비전",
+      "description": "General Market에서 AI 에이전트가 구동하는 비전 예측 마켓."
+    },
+    "itp": {
+      "title": "{name} ({symbol})",
+      "description": "{name} ({symbol}) — {count}개의 암호화폐 자산을 보유한 온체인 인덱스 추적 상품. 현재 NAV: ${nav}.",
+      "og_title": "{name} | General Market",
+      "not_found": "ITP를 찾을 수 없습니다",
+      "subtitle": "{symbol} — 온체인 인덱스 추적 상품",
+      "nav_share": "주당 NAV",
+      "aum": "운용 자산",
+      "assets": "자산",
+      "holdings": "보유 내역",
+      "asset_col": "자산",
+      "weight_col": "비중",
+      "price_col": "가격",
+      "trade_this": "이 ITP 거래하기",
+      "learn_about": "ITP에 대해 알아보기"
+    }
+  },
   "breadcrumbs": {
     "home": "홈",
     "markets": "마켓",

@@ -2,6 +2,12 @@ import { NextIntlClientProvider } from 'next-intl'
 import { getMessages, getTranslations } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { locales, type Locale } from '@/i18n/config'
+import {
+  OrganizationJsonLd,
+  WebsiteJsonLd,
+  SoftwareApplicationJsonLd,
+  FAQJsonLd,
+} from '@/components/seo/JsonLd'
 
 type Props = {
   children: React.ReactNode
@@ -41,10 +47,24 @@ export default async function LocaleLayout({ children, params }: Props) {
     notFound()
   }
 
-  const messages = await getMessages()
+  const [messages, tJsonLd] = await Promise.all([
+    getMessages(),
+    getTranslations({ locale, namespace: 'seo.json_ld' }),
+  ])
+
+  const faqItems = [
+    { question: tJsonLd('faq.q1'), answer: tJsonLd('faq.a1') },
+    { question: tJsonLd('faq.q2'), answer: tJsonLd('faq.a2') },
+    { question: tJsonLd('faq.q3'), answer: tJsonLd('faq.a3') },
+    { question: tJsonLd('faq.q4'), answer: tJsonLd('faq.a4') },
+  ]
 
   return (
     <NextIntlClientProvider messages={messages}>
+      <OrganizationJsonLd description={tJsonLd('org_description')} />
+      <WebsiteJsonLd description={tJsonLd('website_description')} />
+      <SoftwareApplicationJsonLd description={tJsonLd('app_description')} />
+      <FAQJsonLd items={faqItems} />
       {children}
     </NextIntlClientProvider>
   )

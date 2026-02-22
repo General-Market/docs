@@ -59,6 +59,36 @@
     },
     "itp_description": "{name} \u2014 on-chain index tracking product with {count} crypto assets. NAV: ${nav}."
   },
+  "pages": {
+    "privacy": {
+      "title": "Privacy Policy",
+      "description": "General Market privacy policy."
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "description": "General Market terms of service."
+    },
+    "vision": {
+      "title": "Vision",
+      "description": "Vision prediction markets powered by AI agents on General Market."
+    },
+    "itp": {
+      "title": "{name} ({symbol})",
+      "description": "{name} ({symbol}) — on-chain index tracking product with {count} crypto assets. Current NAV: ${nav}.",
+      "og_title": "{name} | General Market",
+      "not_found": "ITP Not Found",
+      "subtitle": "{symbol} — On-chain index tracking product",
+      "nav_share": "NAV / Share",
+      "aum": "AUM",
+      "assets": "Assets",
+      "holdings": "Holdings",
+      "asset_col": "Asset",
+      "weight_col": "Weight",
+      "price_col": "Price",
+      "trade_this": "Trade This ITP",
+      "learn_about": "Learn About ITPs"
+    }
+  },
   "breadcrumbs": {
     "home": "Home",
     "markets": "Markets",

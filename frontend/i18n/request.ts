@@ -11,7 +11,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
   const namespaces = [
     'common', 'markets', 'portfolio', 'create-itp',
     'buy-modal', 'sell-modal', 'lending', 'p2pool',
-    'backtest', 'system', 'seo'
+    'backtest', 'system', 'seo', 'pages'
   ]
 
   const messages: Record<string, Record<string, unknown>> = {}

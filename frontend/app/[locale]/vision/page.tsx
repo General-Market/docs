@@ -1,8 +1,16 @@
+import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { P2PoolPage } from '@/components/domain/p2pool/P2PoolPage'
 
-export const metadata = { title: 'Vision' }
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'seo.pages.vision' })
+  return {
+    title: t('title'),
+    description: t('description'),
+  }
+}
 
 export default function VisionPage() {
   return (

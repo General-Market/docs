@@ -1,33 +1,44 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 import { getItpDetail, getItpSummaries } from '@/lib/api/server-data'
 import { BreadcrumbJsonLd } from '@/components/seo/JsonLd'
 
 interface Props {
-  params: Promise<{ itpId: string }>
+  params: Promise<{ locale: string; itpId: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { itpId } = await params
-  const itp = await getItpDetail(itpId)
+  const { locale, itpId } = await params
+  const [itp, t] = await Promise.all([
+    getItpDetail(itpId),
+    getTranslations({ locale, namespace: 'seo.pages.itp' }),
+  ])
 
   if (!itp) {
-    return { title: 'ITP Not Found' }
+    return { title: t('not_found') }
   }
 
-  const description = `${itp.name} (${itp.symbol}) — on-chain index tracking product with ${itp.assetCount} crypto assets. Current NAV: $${itp.nav.toFixed(4)}.`
+  const description = t('description', {
+    name: itp.name,
+    symbol: itp.symbol,
+    count: itp.assetCount,
+    nav: itp.nav.toFixed(4),
+  })
+
+  const ogTitle = t('og_title', { name: itp.name })
 
   return {
-    title: `${itp.name} (${itp.symbol})`,
+    title: t('title', { name: itp.name, symbol: itp.symbol }),
     description,
     openGraph: {
-      title: `${itp.name} | General Market`,
+      title: ogTitle,
       description,
       url: `https://generalmarket.io/itp/${itpId}`,
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${itp.name} | General Market`,
+      title: ogTitle,
       description,
     },
   }
@@ -39,8 +50,12 @@ export async function generateStaticParams() {
 }
 
 export default async function ItpPage({ params }: Props) {
-  const { itpId } = await params
-  const itp = await getItpDetail(itpId)
+  const { locale, itpId } = await params
+  const [itp, t, tBreadcrumbs] = await Promise.all([
+    getItpDetail(itpId),
+    getTranslations({ locale, namespace: 'seo.pages.itp' }),
+    getTranslations({ locale, namespace: 'seo.breadcrumbs' }),
+  ])
 
   if (!itp) {
     notFound()
@@ -49,8 +64,8 @@ export default async function ItpPage({ params }: Props) {
   return (
     <main className="min-h-screen bg-page">
       <BreadcrumbJsonLd items={[
-        { name: 'Home', url: 'https://generalmarket.io' },
-        { name: 'Markets', url: 'https://generalmarket.io/#markets' },
+        { name: tBreadcrumbs('home'), url: 'https://generalmarket.io' },
+        { name: tBreadcrumbs('markets'), url: 'https://generalmarket.io/#markets' },
         { name: itp.name, url: `https://generalmarket.io/itp/${itpId}` },
       ]} />
 
@@ -62,7 +77,12 @@ export default async function ItpPage({ params }: Props) {
             "@type": "InvestmentFund",
             name: itp.name,
             tickerSymbol: itp.symbol,
-            description: `${itp.name} — on-chain index tracking product with ${itp.assetCount} crypto assets.`,
+            description: t('description', {
+              name: itp.name,
+              symbol: itp.symbol,
+              count: itp.assetCount,
+              nav: itp.nav.toFixed(4),
+            }),
             url: `https://generalmarket.io/itp/${itpId}`,
             provider: {
               "@type": "Organization",
@@ -76,9 +96,9 @@ export default async function ItpPage({ params }: Props) {
       <div className="px-6 lg:px-12 py-12">
         <div className="max-w-4xl mx-auto">
           <nav className="text-sm text-text-muted mb-6">
-            <a href="/" className="hover:text-black transition-colors">Home</a>
+            <a href="/" className="hover:text-black transition-colors">{tBreadcrumbs('home')}</a>
             <span className="mx-2">/</span>
-            <a href="/#markets" className="hover:text-black transition-colors">Markets</a>
+            <a href="/#markets" className="hover:text-black transition-colors">{tBreadcrumbs('markets')}</a>
             <span className="mx-2">/</span>
             <span className="text-text-primary">{itp.name}</span>
           </nav>
@@ -88,35 +108,35 @@ export default async function ItpPage({ params }: Props) {
               {itp.name}
             </h1>
             <p className="text-lg text-text-secondary">
-              {itp.symbol} — On-chain index tracking product
+              {t('subtitle', { symbol: itp.symbol })}
             </p>
           </header>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
             <div className="bg-white border border-border-light rounded-lg p-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-1">NAV / Share</div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-1">{t('nav_share')}</div>
               <div className="text-2xl font-bold font-mono">${itp.nav.toFixed(4)}</div>
             </div>
             <div className="bg-white border border-border-light rounded-lg p-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-1">AUM</div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-1">{t('aum')}</div>
               <div className="text-2xl font-bold font-mono">${itp.aum.toFixed(2)}</div>
             </div>
             <div className="bg-white border border-border-light rounded-lg p-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-1">Assets</div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-1">{t('assets')}</div>
               <div className="text-2xl font-bold font-mono">{itp.assetCount}</div>
             </div>
           </div>
 
           {itp.holdings.length > 0 && (
             <section>
-              <h2 className="text-xl font-bold mb-4">Holdings</h2>
+              <h2 className="text-xl font-bold mb-4">{t('holdings')}</h2>
               <div className="bg-white border border-border-light rounded-lg overflow-hidden">
                 <table className="w-full text-sm">
                   <thead className="bg-surface">
                     <tr>
-                      <th className="text-left px-4 py-2 font-semibold text-text-secondary">Asset</th>
-                      <th className="text-right px-4 py-2 font-semibold text-text-secondary">Weight</th>
-                      <th className="text-right px-4 py-2 font-semibold text-text-secondary">Price</th>
+                      <th className="text-left px-4 py-2 font-semibold text-text-secondary">{t('asset_col')}</th>
+                      <th className="text-right px-4 py-2 font-semibold text-text-secondary">{t('weight_col')}</th>
+                      <th className="text-right px-4 py-2 font-semibold text-text-secondary">{t('price_col')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -138,13 +158,13 @@ export default async function ItpPage({ params }: Props) {
               href="/#markets"
               className="px-6 py-3 bg-black text-white text-sm font-bold rounded-md hover:bg-zinc-800 transition-colors"
             >
-              Trade This ITP
+              {t('trade_this')}
             </a>
             <a
               href="/docs/concepts/itps"
               className="px-6 py-3 border-2 border-black text-sm font-bold rounded-md hover:bg-black hover:text-white transition-colors"
             >
-              Learn About ITPs
+              {t('learn_about')}
             </a>
           </div>
         </div>

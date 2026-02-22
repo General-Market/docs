@@ -59,6 +59,36 @@
     },
     "itp_description": "{name} — {count}種類の暗号資産を含むオンチェーンインデックス追跡商品。NAV (純資産価値)：${nav}。"
   },
+  "pages": {
+    "privacy": {
+      "title": "プライバシーポリシー",
+      "description": "General Marketのプライバシーポリシー。"
+    },
+    "terms": {
+      "title": "利用規約",
+      "description": "General Marketの利用規約。"
+    },
+    "vision": {
+      "title": "ビジョン",
+      "description": "General MarketでAIエージェントが駆動するビジョン予測マーケット。"
+    },
+    "itp": {
+      "title": "{name} ({symbol})",
+      "description": "{name} ({symbol}) — {count}種類の暗号資産を含むオンチェーンインデックス追跡商品。現在のNAV：${nav}。",
+      "og_title": "{name} | General Market",
+      "not_found": "ITPが見つかりません",
+      "subtitle": "{symbol} — オンチェーンインデックス追跡商品",
+      "nav_share": "1シェアあたりNAV",
+      "aum": "運用資産額",
+      "assets": "資産",
+      "holdings": "保有銘柄",
+      "asset_col": "資産",
+      "weight_col": "ウェイト",
+      "price_col": "価格",
+      "trade_this": "このITPを取引する",
+      "learn_about": "ITPについて学ぶ"
+    }
+  },
   "breadcrumbs": {
     "home": "ホーム",
     "markets": "マーケット",

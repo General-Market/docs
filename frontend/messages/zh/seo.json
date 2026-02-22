@@ -59,6 +59,36 @@
     },
     "itp_description": "{name} -- 包含 {count} 种加密资产的链上指数跟踪产品。NAV (净资产价值): ${nav}。"
   },
+  "pages": {
+    "privacy": {
+      "title": "隐私政策",
+      "description": "General Market 隐私政策。"
+    },
+    "terms": {
+      "title": "服务条款",
+      "description": "General Market 服务条款。"
+    },
+    "vision": {
+      "title": "愿景",
+      "description": "General Market 上由 AI 代理驱动的愿景预测市场。"
+    },
+    "itp": {
+      "title": "{name} ({symbol})",
+      "description": "{name} ({symbol}) — 包含 {count} 种加密资产的链上指数跟踪产品。当前 NAV：${nav}。",
+      "og_title": "{name} | General Market",
+      "not_found": "未找到 ITP",
+      "subtitle": "{symbol} — 链上指数跟踪产品",
+      "nav_share": "每份额 NAV",
+      "aum": "管理资产规模",
+      "assets": "资产",
+      "holdings": "持仓",
+      "asset_col": "资产",
+      "weight_col": "权重",
+      "price_col": "价格",
+      "trade_this": "交易此 ITP",
+      "learn_about": "了解 ITP"
+    }
+  },
   "breadcrumbs": {
     "home": "首页",
     "markets": "市场",

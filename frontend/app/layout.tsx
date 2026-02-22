@@ -1,12 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { ClientProviders } from "./client-providers";
-import {
-  OrganizationJsonLd,
-  WebsiteJsonLd,
-  SoftwareApplicationJsonLd,
-  FAQJsonLd,
-} from "@/components/seo/JsonLd";
 import "./globals.css";
 
 const inter = Inter({
@@ -60,10 +54,6 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
         <link rel="canonical" href="https://generalmarket.io" />
-        <OrganizationJsonLd />
-        <WebsiteJsonLd />
-        <SoftwareApplicationJsonLd />
-        <FAQJsonLd />
       </head>
       <body className="bg-page text-text-primary font-sans antialiased">
         <ClientProviders>
