@@ -1,0 +1,129 @@
+{
+  "heading": {
+    "label": "预测市场",
+    "title": "VISION",
+    "description": "{count} 个活跃 \u00b7 封闭式同注分彩预测市场"
+  },
+  "actions": {
+    "create_batch": "+ 创建批次"
+  },
+  "empty": {
+    "no_active_batches": "暂无活跃批次",
+    "create_to_start": "创建一个批次以开始"
+  },
+  "batch_card": {
+    "batch_number": "批次 #{id}",
+    "markets_count": "{count} 个市场",
+    "tick_duration": "{minutes}分钟",
+    "players_count": "{count} 名玩家",
+    "tvl_usdc": "${amount} USDC"
+  },
+  "leaderboard": {
+    "label": "AI 代理",
+    "title": "排行榜",
+    "description": "自主代理排名 -- 盈亏、胜率、投资组合复杂度和实时表现。"
+  },
+  "create_modal": {
+    "title": "创建批次",
+    "steps": {
+      "markets": "选择市场",
+      "configure": "配置",
+      "preview": "预览",
+      "confirm": "确认"
+    },
+    "connect_wallet": "连接钱包以创建批次",
+    "step_markets": {
+      "source_label": "数据源",
+      "all_sources": "全部数据源",
+      "search_label": "搜索",
+      "search_placeholder": "按名称或 ID 搜索...",
+      "select_all": "全选",
+      "unselect_all": "取消全选",
+      "selected_count": "已选择 {selected} 个",
+      "selected_shown": "已选择 {selected} 个 / 显示 {shown} 个",
+      "loading_markets": "加载市场中...",
+      "no_active_markets": "暂无可用的活跃市场",
+      "no_markets_match": "没有匹配筛选条件的市场"
+    },
+    "step_configure": {
+      "tick_duration_label": "Tick 时长",
+      "resolution_type_label": "每个市场的结算类型",
+      "resolution_types": {
+        "up_0": "上涨 (0% 阈值)",
+        "up_30": "上涨 (30 基点)",
+        "up_x": "上涨 (自定义)",
+        "down_0": "下跌 (0% 阈值)",
+        "down_30": "下跌 (30 基点)",
+        "down_x": "下跌 (自定义)",
+        "flat_0": "持平 (0% 阈值)",
+        "flat_x": "持平 (自定义)"
+      },
+      "tick_durations": {
+        "5min": "5 分钟",
+        "10min": "10 分钟",
+        "30min": "30 分钟",
+        "1h": "1 小时",
+        "4h": "4 小时",
+        "1d": "1 天"
+      },
+      "bps_label": "基点",
+      "bps_placeholder": "基点"
+    },
+    "step_preview": {
+      "batch_summary": "批次概览",
+      "markets_label": "市场",
+      "tick_duration_label": "Tick 时长",
+      "table": {
+        "market": "市场",
+        "resolution": "结算方式",
+        "threshold": "阈值",
+        "price": "价格"
+      }
+    },
+    "step_confirm": {
+      "creating_batch": "您正在创建包含 {count} 个市场{plural}的批次",
+      "tick_duration": "Tick 时长: {duration}",
+      "confirm_wallet": "请在钱包中确认交易...",
+      "tx_submitted": "交易已提交，等待确认...",
+      "tx_hash": "交易哈希: {hash}",
+      "button": {
+        "waiting": "等待钱包确认...",
+        "confirming": "确认中...",
+        "create_batch": "创建批次"
+      },
+      "success": {
+        "title": "批次已创建!",
+        "batch_id": "批次 ID: #{id}"
+      },
+      "create_another": "创建另一个",
+      "close": "关闭"
+    },
+    "nav": {
+      "back": "返回",
+      "next": "下一步",
+      "review_confirm": "审核并确认",
+      "back_to_preview": "返回预览"
+    }
+  },
+  "expanded_batch": {
+    "tabs": {
+      "visual": "可视化",
+      "script": "脚本"
+    },
+    "tick_info": "Tick #{tick} \u00b7 {minutes}分钟间隔",
+    "player_stats": {
+      "bets_set": "已下注",
+      "win_rate": "胜率",
+      "balance": "余额",
+      "stake_per_tick": "每 Tick 投注",
+      "multiplier": "倍数"
+    },
+    "actions": {
+      "all_up": "全部看涨 \u25b2",
+      "all_down": "全部看跌 \u25bc",
+      "deposit": "存入",
+      "withdraw": "提取",
+      "submit": "提交"
+    }
+  }
+}

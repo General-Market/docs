@@ -1,0 +1,121 @@
+{
+  "brand": {
+    "name": "General Market",
+    "logo_text": "General Market.",
+    "tagline": "去中心化指数产品",
+    "topbar": "General Market -- 去中心化指数产品",
+    "description": "面向数字资产经济的机构级指数产品。"
+  },
+  "nav": {
+    "investment": "投资",
+    "vision": "Vision",
+    "docs": "文档",
+    "support": "支持",
+    "markets": "市场",
+    "portfolio": "投资组合",
+    "create": "创建",
+    "lend": "借贷",
+    "backtest": "回测",
+    "system": "系统",
+    "p2pool": "P2Pool",
+    "leaderboard": "排行榜",
+    "markets_data": "市场"
+  },
+  "footer": {
+    "product": "产品",
+    "resources": "资源",
+    "indexes": "指数",
+    "simulation": "模拟",
+    "lending": "借贷",
+    "create_itp": "创建 ITP",
+    "docs": "文档",
+    "discord": "Discord",
+    "privacy_policy": "隐私政策",
+    "terms_of_service": "服务条款",
+    "copyright": "\u00a9 2026 General Market. 保留所有权利。",
+    "disclaimer": "指数产品存在风险。过往业绩不代表未来表现。本平台不提供财务建议。"
+  },
+  "aria": {
+    "toggle_menu": "切换菜单",
+    "discord": "Discord",
+    "twitter": "X (Twitter)",
+    "collapse": "收起"
+  },
+  "language": {
+    "label": "语言",
+    "en": "English",
+    "ko": "\ud55c\uad6d\uc5b4",
+    "ja": "\u65e5\u672c\u8a9e",
+    "zh": "\u4e2d\u6587"
+  },
+  "actions": {
+    "connect_wallet": "连接钱包",
+    "disconnect": "断开连接",
+    "close": "关闭",
+    "cancel": "取消",
+    "confirm": "确认",
+    "submit": "提交",
+    "loading": "加载中...",
+    "copy": "复制",
+    "copied": "已复制!",
+    "share": "分享",
+    "back": "返回",
+    "next": "下一步",
+    "save": "保存",
+    "saving": "保存中...",
+    "max": "最大",
+    "search": "搜索...",
+    "details": "详情",
+    "hide_details": "隐藏详情",
+    "show_all": "显示全部 {count} 个基金",
+    "fullscreen": "全屏",
+    "esc": "ESC"
+  },
+  "wallet": {
+    "login": "在 Base 上登录",
+    "connecting": "连接中...",
+    "switching": "切换中...",
+    "switch_network": "切换到 Index Arbitrum",
+    "install_metamask": "安装 MetaMask",
+    "connect_to_buy": "连接钱包以购买 ITP 份额",
+    "connect_to_sell": "连接钱包以出售 ITP 份额",
+    "connect_to_create": "连接钱包以创建批次"
+  },
+  "status": {
+    "pending": "待处理",
+    "batched": "已批量",
+    "filled": "已成交",
+    "cancelled": "已取消",
+    "expired": "已过期",
+    "active": "活跃",
+    "completed": "已完成",
+    "unknown": "未知",
+    "confirmed": "已确认",
+    "live": "实时",
+    "polling": "轮询中",
+    "offline": "离线"
+  },
+  "errors": {
+    "generic": "出现错误，请重试。",
+    "wallet_not_connected": "请先连接您的钱包。",
+    "wrong_chain": "请切换到正确的网络。",
+    "transaction_failed": "交易失败",
+    "transaction_rejected": "交易被拒绝",
+    "confirmation_failed": "确认失败",
+    "insufficient_balance": "余额不足",
+    "failed_to_fetch": "数据获取失败"
+  },
+  "warnings": {
+    "tx_stuck_title": "交易可能卡住",
+    "tx_stuck_description": "超过30秒未确认。您可以取消后重试。",
+    "pending_tx_title": "检测到待处理交易",
+    "pending_tx_description": "您有 {count} 笔待处理交易。新交易可能会被阻塞。"
+  },
+  "time": {
+    "just_now": "刚刚",
+    "seconds_ago": "{count}秒前",
+    "minutes_ago": "{count}分钟前",
+    "hours_ago": "{count}小时前",
+    "days_ago": "{count}天前"
+  }
+}

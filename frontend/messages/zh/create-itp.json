@@ -1,0 +1,60 @@
+{
+  "heading": {
+    "label": "部署新产品",
+    "title": "创建",
+    "description": "构建自定义指数产品。选择资产、设置权重，并部署上链。"
+  },
+  "collapsed": {
+    "description": "创建具有自定义权重的指数跟踪产品"
+  },
+  "select_assets": {
+    "title": "选择资产 ({count}/100)",
+    "available": "{count} 个可用",
+    "skeleton_title": "选择资产 (0/100)"
+  },
+  "configure_weights": {
+    "title": "配置权重 ({count} 个资产)",
+    "skeleton_title": "配置权重",
+    "empty": "请选择资产以配置权重",
+    "total": "合计: {value}%",
+    "equal": "等权",
+    "mcap": "市值加权",
+    "mcap_loading": "加载中...",
+    "must_be_100": "(必须为 100%)",
+    "continue": "继续 \u2192"
+  },
+  "finalize": {
+    "title": "最终确认 ITP",
+    "assets_selected": "已选择 {count} 个资产",
+    "name_label": "名称 (最多 32 字符)",
+    "name_placeholder": "例如: DeFi 蓝筹",
+    "symbol_label": "代码 (最多 10 字符)",
+    "symbol_placeholder": "例如: DEFI",
+    "issuer_name_label": "发行人名称 (最多 64 字符)",
+    "issuer_name_placeholder": "例如: Vanguard Labs",
+    "description_label": "描述 (可选)",
+    "description_placeholder": "显示在 ITP 卡片上的简要描述",
+    "website_label": "网站 (可选)",
+    "website_placeholder": "https://yoursite.io",
+    "video_label": "视频 (可选)",
+    "video_placeholder": "https://youtube.com/watch?v=...",
+    "char_count": "{count}/280",
+    "submit_fetching": "获取价格中...",
+    "submit_pending": "等待钱包确认...",
+    "submit_confirming": "确认中...",
+    "submit_deploy": "最终确认并部署",
+    "tx_stuck": "交易可能卡住。"
+  },
+  "skeleton": {
+    "itp_name": "ITP 名称 (最多 32 字符)",
+    "symbol": "代码 (最多 10 字符)"
+  },
+  "success": {
+    "title": "ITP 请求已创建!",
+    "description": "等待发行人共识..."
+  },
+  "errors": {
+    "fill_all_fields": "请填写所有字段并确保权重合计为 100%",
+    "failed_prices": "获取价格失败: {message}"
+  }
+}

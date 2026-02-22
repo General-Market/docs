@@ -1,0 +1,167 @@
+{
+  "heading": {
+    "label": "Morpho 金库",
+    "title": "借贷",
+    "description": "存入 USDC 赚取收益，或抵押您的 ITP 持仓进行借款。"
+  },
+  "stats": {
+    "vault_tvl": "金库 TVL (总锁仓量)",
+    "supply_apy": "存款 APY (年化收益率)",
+    "borrow_apy": "借款 APY (年化收益率)",
+    "utilization": "利用率"
+  },
+  "supply_panel": {
+    "title": "存款 -- USDC 金库",
+    "your_deposits": "您的存款",
+    "accrued_interest": "累计利息",
+    "current_apy": "当前 APY (年化收益率)"
+  },
+  "borrow_panel": {
+    "title": "借款 -- 以 ITP 抵押",
+    "collateral_value": "抵押品 (ITP 价值)",
+    "outstanding_debt": "未偿债务",
+    "max_borrow": "最大可借 ({lltv}% LTV)"
+  },
+  "actions": {
+    "deposit": "存款",
+    "withdraw": "提款",
+    "borrow_usdc": "借入 USDC",
+    "repay": "还款",
+    "borrow": "借款",
+    "cancel": "取消",
+    "max": "最大"
+  },
+  "vault_deposit": {
+    "section_title": "存款",
+    "section_subtitle": "向金库存入 USDC",
+    "amount_label": "金额 (USDC)",
+    "balance_label": "余额: {amount}",
+    "insufficient_balance": "USDC 余额不足",
+    "button": {
+      "approving": "授权 USDC 中...",
+      "confirm_wallet": "请在钱包中确认...",
+      "depositing": "存款中...",
+      "deposited": "存款完成!",
+      "approve_and_deposit": "授权并存款",
+      "deposit_usdc": "存入 USDC"
+    }
+  },
+  "vault_position": {
+    "section_title": "持仓",
+    "section_subtitle": "您的金库存款",
+    "vault_shares": "金库份额",
+    "current_value": "当前价值",
+    "button": {
+      "confirm_wallet": "请在钱包中确认...",
+      "withdrawing": "提款中...",
+      "withdrawn": "提款完成!",
+      "withdraw_all": "全部提取"
+    }
+  },
+  "borrow_usdc": {
+    "title": "借入 USDC",
+    "description": "以您的 ITP 抵押品借入 USDC",
+    "amount_label": "金额 (USDC)",
+    "max_borrow_label": "最大可借: {amount} USDC",
+    "projected_health_factor": "预计健康因子",
+    "cannot_borrow_health": "无法借款: 健康因子将低于 1.0",
+    "low_health_warning": "警告: 健康因子过低会增加清算风险",
+    "button": {
+      "confirm_wallet": "请在钱包中确认...",
+      "borrowing": "借款中...",
+      "borrowed": "借款完成!",
+      "borrow_usdc": "借入 USDC"
+    },
+    "quote": {
+      "title": "报价条款",
+      "borrow_apr": "借款年利率",
+      "health_factor": "健康因子",
+      "liquidation_price": "清算价格",
+      "max_borrow": "最大可借",
+      "bundle_label": "Bundle:",
+      "expired": "报价已过期 --",
+      "refresh": "刷新",
+      "execute_bundle": "执行 Bundle",
+      "confirm_wallet": "请在钱包中确认...",
+      "executing_bundle": "执行 Bundle 中...",
+      "borrowed": "借款完成!"
+    }
+  },
+  "deposit_collateral": {
+    "title": "存入抵押品",
+    "description": "存入 ITP 代币作为抵押品以借入 USDC",
+    "amount_label": "金额 (ITP)",
+    "balance_label": "余额: {amount} ITP",
+    "insufficient_balance": "ITP 余额不足",
+    "button": {
+      "approving_itp": "授权 ITP 中...",
+      "confirm_wallet": "请在钱包中确认...",
+      "depositing": "存入中...",
+      "deposited": "存入完成!",
+      "approve_and_deposit": "授权并存入",
+      "deposit_collateral": "存入抵押品"
+    }
+  },
+  "repay_debt": {
+    "title": "偿还债务",
+    "description": "偿还您的 USDC 债务以改善健康因子",
+    "amount_label": "金额 (USDC)",
+    "debt_label": "债务: {amount}",
+    "balance_label": "余额: {amount}",
+    "insufficient_balance": "USDC 余额不足",
+    "button": {
+      "confirm_approval": "确认授权中...",
+      "approving_usdc": "授权 USDC 中...",
+      "confirm_wallet": "请在钱包中确认...",
+      "repaying": "还款中...",
+      "repaid": "还款完成!",
+      "approve_and_repay": "授权并还款",
+      "repay_debt": "偿还债务"
+    }
+  },
+  "withdraw_collateral": {
+    "title": "提取抵押品",
+    "description_no_debt": "提取您的 ITP 抵押品",
+    "description_with_debt": "提取可用抵押品 (受债务限制)",
+    "amount_label": "金额 (ITP)",
+    "deposited_label": "已存入: {amount}",
+    "max_withdraw_label": "最大可提: {amount}",
+    "projected_health_factor": "预计健康因子",
+    "cannot_withdraw_health": "无法提取: 健康因子将低于 1.0",
+    "close_position_notice": "此操作将关闭您的仓位并将所有 ITP 退回到您的钱包。",
+    "button": {
+      "confirm_wallet": "请在钱包中确认...",
+      "withdrawing": "提取中...",
+      "withdrawn": "提取完成!",
+      "withdraw_collateral": "提取抵押品"
+    }
+  },
+  "markets_table": {
+    "section_label": "Morpho 市场",
+    "section_title": "可用借贷市场",
+    "header": {
+      "market": "市场",
+      "my_balance": "我的余额",
+      "borrow_apy": "借款 APY (年化收益率)",
+      "tvl": "TVL (总锁仓量)",
+      "lltv": "LLTV"
+    },
+    "loading": "加载市场中...",
+    "no_markets": "暂无可用市场",
+    "market_pair": "{name} / USDC"
+  },
+  "common": {
+    "something_went_wrong": "出现错误",
+    "please_refresh": "请刷新页面。",
+    "transaction_rejected": "交易被拒绝",
+    "transaction_failed": "交易失败",
+    "withdrawal_failed": "提款失败",
+    "tx_stuck_title": "交易可能卡住",
+    "tx_stuck_description": "超过30秒未确认。您可以取消后重试。",
+    "market_frozen": "紧急情况下市场已冻结",
+    "rate_limited": "请求频率受限，请在 {seconds} 秒后重试"
+  },
+  "error": {
+    "title": "错误"
+  }
+}

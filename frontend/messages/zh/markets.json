@@ -1,0 +1,109 @@
+{
+  "heading": "跟踪市场",
+  "hero": {
+    "label": "指数跟踪产品",
+    "title": "市场",
+    "description": "探索去中心化指数产品。每个 ITP 跟踪一篮子加密资产，具有实时 NAV (净资产价值) 定价和链上结算。"
+  },
+  "summary": {
+    "types_count": "{count} 种类型",
+    "categories_count": "{count} 个分类"
+  },
+  "types": {
+    "crypto": {
+      "name": "加密货币",
+      "description": "BTC、ETH、SOL 及 100+ 代币",
+      "update_freq": "5 分钟"
+    },
+    "stocks": {
+      "name": "美国股票",
+      "description": "S&P 500、NASDAQ、主要指数",
+      "update_freq": "15 分钟 (交易时段)"
+    },
+    "weather": {
+      "name": "天气",
+      "description": "温度、降水、风力",
+      "update_freq": "30 分钟"
+    },
+    "economic": {
+      "name": "经济指标",
+      "description": "美联储利率、CPI、失业率",
+      "update_freq": "每日/每月"
+    },
+    "fx": {
+      "name": "外汇",
+      "description": "EUR/USD、主要货币对",
+      "update_freq": "每日"
+    },
+    "treasury": {
+      "name": "国债利率",
+      "description": "美国国债收益率",
+      "update_freq": "每日"
+    },
+    "defi": {
+      "name": "DeFi TVL (总锁仓量)",
+      "description": "协议 TVL (总锁仓量) 排名",
+      "update_freq": "1 小时"
+    }
+  },
+  "labels": {
+    "updates": "更新频率:",
+    "categories": "分类:",
+    "sample_assets": "示例资产:",
+    "loading_prices": "加载价格中..."
+  },
+  "footer": {
+    "data_sources": "数据来源: CoinGecko、Finnhub、Open-Meteo、FRED、ECB、Treasury、DefiLlama",
+    "resolution_note": "所有投注均通过链上 Keeper 共识结算"
+  },
+  "filters": {
+    "label": "筛选",
+    "all": "全部 ({count})",
+    "active": "活跃 ({count})",
+    "pending": "待处理 ({count})",
+    "search_placeholder": "按名称或代码搜索基金...",
+    "sort_aum_desc": "排序: 管理规模 从高到低",
+    "sort_aum_asc": "排序: 管理规模 从低到高",
+    "sort_newest": "排序: 最新",
+    "sort_name_az": "排序: 名称 A-Z"
+  },
+  "section_bar": {
+    "title": "数据视图",
+    "subtitle": "基金概览 -- 实时 NAV (净资产价值)",
+    "showing_partial": "显示 {shown} / {total} 个产品",
+    "showing_all": "显示全部 {total} 个产品"
+  },
+  "itp_card": {
+    "loading": "加载 ITP 中...",
+    "no_itps": "暂无已创建的 ITP",
+    "nav_per_share": "NAV (净资产价值) / 份额",
+    "assets": "资产",
+    "balance": "余额",
+    "by": "由 {name} 创建",
+    "pending_fill": "待成交",
+    "buy": "买入",
+    "sell": "卖出",
+    "chart": "图表",
+    "rebalance": "再平衡",
+    "borrow": "借款",
+    "edit_itp_info": "编辑 ITP 信息",
+    "description_placeholder": "描述 (最多 280 字符 / 约 50 词)",
+    "website_placeholder": "网站 URL (最多 128 字符)",
+    "video_placeholder": "YouTube URL (最多 256 字符)",
+    "arb_erc20": "Arbitrum ERC20:",
+    "itp_id": "ITP ID:",
+    "minted_supply": "已铸造供应量",
+    "loading_holders": "加载持有人中...",
+    "unable_fetch_holders": "无法获取持有人信息",
+    "no_tracked_holders": "暂无跟踪的持有人",
+    "other_holders": "其他持有人",
+    "source_index": "Index.sol (L3)",
+    "source_bridge": "BridgeProxy",
+    "nonce": "Nonce:",
+    "source": "来源:",
+    "admin": "管理员:",
+    "created": "创建时间:",
+    "arb_address": "Arb 地址:",
+    "request_number": "请求 #{number}"
+  }
+}

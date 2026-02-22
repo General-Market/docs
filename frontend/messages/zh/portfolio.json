@@ -1,0 +1,102 @@
+{
+  "heading": {
+    "label": "您的持仓",
+    "title": "投资组合",
+    "collapsed_title": "投资组合",
+    "collapsed_description": "您的持仓与收益表现",
+    "subtitle_with_data": "{count} 个持仓{plural} \u00b7 ${value} 价值",
+    "subtitle_empty": "跟踪您的持仓、交易和订单"
+  },
+  "stats": {
+    "total_value": "总价值",
+    "total_invested": "总投入",
+    "positions": "持仓数",
+    "pnl": "盈亏",
+    "usdc_available": "可用 USDC",
+    "change_24h": "24小时变化",
+    "unrealized_pnl": "未实现盈亏"
+  },
+  "tabs": {
+    "positions": "持仓",
+    "trades": "交易",
+    "orders": "订单"
+  },
+  "orders_banner": {
+    "active_orders": "{count} 个活跃订单{plural}正在处理中"
+  },
+  "section_bar": {
+    "title": "持仓",
+    "subtitle": "当前持有"
+  },
+  "positions_table": {
+    "itp": "ITP",
+    "shares": "份额",
+    "avg_cost": "平均成本",
+    "nav": "NAV (净资产价值)",
+    "value": "价值",
+    "pnl": "盈亏",
+    "pnl_pct": "盈亏%"
+  },
+  "trades_table": {
+    "date": "日期",
+    "itp": "ITP",
+    "side": "方向",
+    "amount": "金额",
+    "price": "价格",
+    "shares": "份额",
+    "status": "状态"
+  },
+  "orders_table": {
+    "id": "ID",
+    "side": "方向",
+    "amount": "金额",
+    "limit_price": "限价",
+    "status": "状态",
+    "time": "时间"
+  },
+  "empty": {
+    "no_positions_title": "暂无持仓",
+    "no_positions_description": "浏览上方的指数产品并购买您的第一个 ITP，即可在此跟踪收益表现。",
+    "explore_indexes": "浏览指数",
+    "no_trades_title": "暂无交易",
+    "no_trades_description": "您的买入和卖出记录将在首次交易后显示在此处。",
+    "no_orders_title": "暂无订单",
+    "no_orders_description": "当您买入或卖出指数产品时，活跃和近期订单将显示在此处。",
+    "loading_orders": "加载订单中..."
+  },
+  "chart": {
+    "current_value": "当前价值",
+    "chart_pending": "随着更多数据的积累，图表将逐步生成"
+  },
+  "tooltip": {
+    "value_label": "价值:",
+    "pnl_label": "盈亏:"
+  },
+  "skeleton": {
+    "fund": "基金",
+    "ticker": "代码",
+    "nav_per_share": "NAV (净资产价值) / 份额",
+    "avg_cost": "平均成本",
+    "change_24h": "24小时"
+  },
+  "cost_basis": {
+    "title": "您的持仓",
+    "shares": "份额",
+    "avg_cost": "平均成本",
+    "total_cost": "总成本",
+    "current_value": "当前价值",
+    "unrealized_pnl": "未实现盈亏",
+    "realized_pnl": "已实现盈亏",
+    "loading": "加载成本数据中...",
+    "fees_title": "已付费用",
+    "fee_trading": "交易费",
+    "fee_management": "管理费",
+    "fee_bridge": "跨链费",
+    "fee_gas": "Gas 费",
+    "fee_total": "费用总计"
+  },
+  "side": {
+    "buy": "买入",
+    "sell": "卖出"
+  }
+}

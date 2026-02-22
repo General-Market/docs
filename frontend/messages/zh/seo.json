@@ -1,0 +1,67 @@
+{
+  "metadata": {
+    "title": "General Market",
+    "title_template": "%s | General Market",
+    "description": "面向链上指数产品的机构级协议。",
+    "keywords": "指数基金, ETF, 机构级, 链上, 加密货币交易, DeFi, 自主资本市场, Base L2"
+  },
+  "og": {
+    "site_name": "General Market",
+    "title": "General Market",
+    "description": "面向链上指数产品的机构级协议。"
+  },
+  "twitter": {
+    "title": "General Market",
+    "description": "面向链上指数产品的机构级协议。"
+  },
+  "sr_only": {
+    "h1": "General Market -- 链上指数产品",
+    "markets": {
+      "title": "指数跟踪产品 (ITP)",
+      "description": "探索去中心化指数产品。每个 ITP 跟踪一篮子加密资产，具有实时 NAV (净资产价值) 定价和 Arbitrum Orbit L3 链上结算。"
+    },
+    "portfolio": {
+      "title": "投资组合追踪",
+      "description": "跟踪您的 ITP 持仓，查看实时盈亏、成本基础和交易历史。连接钱包即可查看所有指数产品的投资组合表现。"
+    },
+    "create": {
+      "title": "创建您的 ITP",
+      "description": "从 100+ 加密资产中选择并分配权重，设计自定义指数产品。通过单笔交易完成部署。您的 ITP 起始 NAV (净资产价值) 为 $1，随底层资产价格浮动。"
+    },
+    "lending": {
+      "title": "借贷",
+      "description": "通过 Morpho 借贷市场存入 USDC 赚取收益。或将您的 ITP 份额作为抵押品借入 USDC。"
+    },
+    "backtesting": {
+      "title": "策略回测",
+      "description": "在投入实际资金前，使用历史价格数据模拟投资组合表现。查看回报率、最大回撤和夏普比率。将优胜策略直接部署为 ITP。"
+    },
+    "itp_article": {
+      "nav_per_share": "每份额 NAV (净资产价值): ${nav}",
+      "aum": "管理资产规模: ${aum}",
+      "holdings": "持仓: {count} 项资产",
+      "view_details": "查看 {name} 详情"
+    }
+  },
+  "json_ld": {
+    "org_description": "面向链上指数产品的机构级协议。",
+    "website_description": "面向链上指数产品的机构级协议。创建、交易和管理链上代币化指数产品。",
+    "app_description": "面向链上指数产品的机构级协议。创建、交易和管理代币化指数产品。",
+    "faq": {
+      "q1": "什么是 General Market?",
+      "a1": "General Market 是面向链上指数产品的机构级协议。创建、交易和管理代币化指数跟踪产品 (ITP)，跟踪一篮子加密资产，类似于传统金融中的 ETF。",
+      "q2": "什么是指数跟踪产品 (ITP)?",
+      "a2": "ITP 是持有一篮子具有固定权重的加密资产的代币化指数产品。其 NAV (净资产价值) 随底层资产价格浮动，与 ETF 类似。您可以创建自定义 ITP 或交易现有 ITP。",
+      "q3": "General Market 的借贷功能如何运作?",
+      "a3": "General Market 集成了 Morpho 借贷市场。您可以存入 USDC 赚取收益，或将 ITP 份额作为抵押品进行借款。",
+      "q4": "开始使用需要什么?",
+      "a4": "您需要一个连接到 Index L3 网络的 Web3 钱包 (如 MetaMask) 和 USDC 代币。然后您可以浏览市场标签购买现有 ITP 或创建您自己的自定义指数。"
+    },
+    "itp_description": "{name} -- 包含 {count} 种加密资产的链上指数跟踪产品。NAV (净资产价值): ${nav}。"
+  },
+  "breadcrumbs": {
+    "home": "首页",
+    "markets": "市场",
+    "documentation": "文档"
+  }
+}

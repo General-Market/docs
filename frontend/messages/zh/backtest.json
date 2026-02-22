@@ -1,0 +1,16 @@
+{
+  "heading": {
+    "label": "策略模拟",
+    "title": "回测",
+    "description": "在投入资金前，使用历史数据测试指数策略。"
+  },
+  "fullscreen": {
+    "label": "指数回测器",
+    "title": "模拟结果",
+    "exit": "ESC",
+    "enter": "全屏"
+  },
+  "holdings": {
+    "title": "持仓 (最近一次再平衡)"
+  }
+}

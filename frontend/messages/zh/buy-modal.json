@@ -1,0 +1,67 @@
+{
+  "title": "买入 {name}",
+  "itp_id_label": "ITP ID:",
+  "amount_label": "金额 (USDC)",
+  "balance_label": "余额: {amount} USDC",
+  "max_price_label": "最高价格 (USDC/份额)",
+  "nav_label": "NAV (净资产价值): ${nav} ({priced}/{total} 已定价)",
+  "slippage_label": "滑点",
+  "slippage_tight": "低",
+  "slippage_normal": "标准",
+  "slippage_relaxed": "宽松",
+  "insufficient_usdc": "USDC 余额不足",
+  "no_prices_warning": "暂无可用的资产价格。请手动设置限价，或使用 0 表示不设限。",
+  "computing_price": "计算价格中...",
+  "set_limit_price": "设置限价",
+  "no_limit": "0 (不限价)",
+  "mint_test_usdc": "铸造 10,000 测试 USDC",
+  "minting": "铸造中...",
+  "minted": "铸造完成!",
+  "mint_failed": "铸造失败",
+  "your_itp_shares": "您的 ITP 份额",
+  "buy_more": "继续买入",
+  "button": {
+    "approve_pending": "请在钱包中确认授权...",
+    "approve_confirming": "授权 USDC 中...",
+    "buy_pending": "请在钱包中确认买入...",
+    "buy_confirming": "提交订单中...",
+    "approve_and_buy": "授权并买入",
+    "buy_itp": "买入 ITP"
+  },
+  "steps": {
+    "submit": "提交",
+    "process": "处理",
+    "deliver": "交付",
+    "done": "完成",
+    "complete": "已完成!"
+  },
+  "micro_steps": {
+    "approve_pending": "请在钱包中确认 USDC 授权...",
+    "approve_confirming": "授权 USDC 支出中...",
+    "submit_pending": "请在钱包中确认买入订单...",
+    "submit_confirming": "提交买入订单中...",
+    "bridge_to_l3": "将 USDC 跨链至 L3...",
+    "relay": "将订单中继至 L3...",
+    "batch": "批量处理订单中...",
+    "fill": "执行交易中...",
+    "record_collateral": "记录抵押品中...",
+    "bridge_to_arb": "将 USDC 跨链至 Arbitrum...",
+    "complete_bridge": "完成跨链中...",
+    "mint_shares": "铸造 BridgedITP 中...",
+    "shares_received": "份额已到账!"
+  },
+  "fill_details": {
+    "title": "成交详情",
+    "fill_price": "成交价格",
+    "amount_filled": "成交金额",
+    "shares": "份额",
+    "vs_limit": "对比限价"
+  },
+  "toast": {
+    "buy_filled_shares": "买入已成交 -- 收到 {shares} {name} 份额",
+    "buy_filled": "买入已成交 -- 收到 {name} 份额"
+  },
+  "error": {
+    "title": "错误"
+  }
+}

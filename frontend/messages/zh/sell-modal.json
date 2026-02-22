@@ -1,0 +1,63 @@
+{
+  "title": "卖出 {name}",
+  "itp_id_label": "ITP ID:",
+  "your_shares_label": "您的 BridgedITP 份额",
+  "no_shares": "您没有可出售的 BridgedITP 份额",
+  "no_bridged_itp": "未找到该 ITP 的 BridgedITP。可能尚未通过 BridgeProxy 创建。",
+  "shares_to_sell_label": "出售份额数",
+  "min_price_label": "最低价格 (USDC/份额)",
+  "nav_label": "NAV (净资产价值): ${nav} ({priced}/{total} 已定价)",
+  "slippage_label": "滑点",
+  "insufficient_shares": "BridgedITP 份额不足",
+  "computing_price": "计算价格中...",
+  "set_min_price": "设置最低价格",
+  "no_limit": "0 (不限价)",
+  "usdc_balance_label": "您的 USDC 余额 (Arbitrum)",
+  "sell_more": "继续卖出",
+  "estimated_pnl": {
+    "title": "预估盈亏",
+    "avg_cost_basis": "平均成本",
+    "current_nav": "当前 NAV (净资产价值)",
+    "est_proceeds": "预估收入",
+    "est_pnl": "预估盈亏"
+  },
+  "button": {
+    "pending": "等待钱包确认...",
+    "approving": "授权中...",
+    "submitting": "提交中...",
+    "approve_and_sell": "授权并卖出",
+    "sell_shares": "卖出份额"
+  },
+  "steps": {
+    "submit": "提交",
+    "process": "处理",
+    "deliver": "交付",
+    "done": "完成"
+  },
+  "micro_steps": {
+    "approve_pending": "请在钱包中确认 BridgedITP 授权...",
+    "approve_confirming": "授权份额中...",
+    "submit_pending": "请在钱包中确认卖出订单...",
+    "submit_confirming": "提交卖出订单中...",
+    "relay": "将卖出订单中继至 L3...",
+    "batch": "批量处理订单中...",
+    "fill": "执行交易中...",
+    "record_collateral": "记录抵押品中...",
+    "bridge_to_arb": "将 USDC 跨链至 Arbitrum...",
+    "complete_sell": "完成卖出订单中...",
+    "usdc_received": "USDC 已到账!"
+  },
+  "fill_details": {
+    "title": "成交详情",
+    "fill_price": "成交价格",
+    "shares_sold": "已售份额",
+    "usdc_proceeds": "USDC 收入",
+    "pnl_vs_cost": "盈亏 (对比成本)"
+  },
+  "toast": {
+    "sell_filled": "卖出已成交 -- 收到 {proceeds}"
+  },
+  "error": {
+    "title": "错误"
+  }
+}
