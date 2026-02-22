@@ -2,70 +2,26 @@
 
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslations } from 'next-intl'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || ''
 const STORAGE_KEY = 'gm-markets-collapsed'
 
 /**
- * Market type configuration with display info
- * Organized by TYPE (not source) as per user request
+ * Market type configuration — sources & emoji are static,
+ * name/description/updateFreq come from translation files.
  */
-const MARKET_TYPES: Record<string, {
-  name: string
+const MARKET_TYPE_CONFIG: Record<string, {
   emoji: string
-  description: string
   sources: string[]
-  updateFreq: string
 }> = {
-  crypto: {
-    name: 'Cryptocurrency',
-    emoji: '₿',
-    description: 'BTC, ETH, SOL and 100+ tokens',
-    sources: ['coingecko'],
-    updateFreq: '5 min',
-  },
-  stocks: {
-    name: 'US Stocks',
-    emoji: '📈',
-    description: 'S&P 500, NASDAQ, major indices',
-    sources: ['finnhub'],
-    updateFreq: '15 min (market hours)',
-  },
-  weather: {
-    name: 'Weather',
-    emoji: '🌡️',
-    description: 'Temperature, precipitation, wind',
-    sources: ['openmeteo'],
-    updateFreq: '30 min',
-  },
-  economic: {
-    name: 'Economic Indicators',
-    emoji: '📊',
-    description: 'Fed rates, CPI, unemployment',
-    sources: ['fred', 'bls'],
-    updateFreq: 'Daily/Monthly',
-  },
-  fx: {
-    name: 'Foreign Exchange',
-    emoji: '💱',
-    description: 'EUR/USD, major currency pairs',
-    sources: ['ecb'],
-    updateFreq: 'Daily',
-  },
-  treasury: {
-    name: 'Treasury Rates',
-    emoji: '🏛️',
-    description: 'US Treasury yields',
-    sources: ['treasury'],
-    updateFreq: 'Daily',
-  },
-  defi: {
-    name: 'DeFi TVL',
-    emoji: '🔗',
-    description: 'Protocol TVL rankings',
-    sources: ['defillama'],
-    updateFreq: '1 hour',
-  },
+  crypto: { emoji: '₿', sources: ['coingecko'] },
+  stocks: { emoji: '📈', sources: ['finnhub'] },
+  weather: { emoji: '🌡️', sources: ['openmeteo'] },
+  economic: { emoji: '📊', sources: ['fred', 'bls'] },
+  fx: { emoji: '💱', sources: ['ecb'] },
+  treasury: { emoji: '🏛️', sources: ['treasury'] },
+  defi: { emoji: '🔗', sources: ['defillama'] },
 }
 
 interface CategoryInfo {
@@ -102,6 +58,7 @@ interface MarketPrice {
  * Shows tracked market categories with live data from backend
  */
 export function MarketsSection() {
+  const t = useTranslations('markets')
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [isHydrated, setIsHydrated] = useState(false)
   const [expandedType, setExpandedType] = useState<string | null>(null)
@@ -137,7 +94,7 @@ export function MarketsSection() {
     queryKey: ['market-prices', expandedType],
     queryFn: async () => {
       if (!expandedType) return null
-      const typeConfig = MARKET_TYPES[expandedType]
+      const typeConfig = MARKET_TYPE_CONFIG[expandedType]
       if (!typeConfig) return null
 
       const source = typeConfig.sources[0]
@@ -155,7 +112,7 @@ export function MarketsSection() {
       <section id="markets" className="border border-border-light bg-card rounded-xl shadow-card" aria-labelledby="markets-heading">
         <button className="w-full flex justify-between items-center p-4 text-left" disabled>
           <h2 id="markets-heading" className="text-lg font-bold text-text-primary">
-            TRACKED MARKETS
+            {t('heading')}
           </h2>
           <span className="text-text-muted">▾</span>
         </button>
@@ -166,7 +123,7 @@ export function MarketsSection() {
   const activeCategories = categoriesData?.categories?.filter(c => c.isActive) || []
 
   // Map categories to market types
-  const activeTypes = Object.entries(MARKET_TYPES).filter(([_, config]) => {
+  const activeTypes = Object.entries(MARKET_TYPE_CONFIG).filter(([_, config]) => {
     return config.sources.some(source =>
       activeCategories.some(cat => cat.sources.includes(source))
     )
@@ -183,11 +140,11 @@ export function MarketsSection() {
         aria-controls="markets-content"
       >
         <h2 id="markets-heading" className="text-lg font-bold text-text-primary">
-          TRACKED MARKETS
+          {t('heading')}
         </h2>
         <div className="flex items-center gap-3">
           <span className="text-text-muted text-sm">
-            {activeTypes.length} types • {activeCategories.length} categories
+            {t('summary.types_count', { count: activeTypes.length })} • {t('summary.categories_count', { count: activeCategories.length })}
           </span>
           <span className="text-text-muted text-xl" aria-hidden="true">
             {isCollapsed ? '▸' : '▾'}
@@ -219,8 +176,8 @@ export function MarketsSection() {
                     <div className="flex items-center gap-3 mb-2">
                       <span className="text-2xl">{config.emoji}</span>
                       <div className="flex-1">
-                        <h3 className="text-text-primary font-bold">{config.name}</h3>
-                        <p className="text-text-muted text-xs">{config.description}</p>
+                        <h3 className="text-text-primary font-bold">{t(`types.${typeId}.name`)}</h3>
+                        <p className="text-text-muted text-xs">{t(`types.${typeId}.description`)}</p>
                       </div>
                       <span className="text-text-muted text-sm" aria-hidden="true">
                         {isExpanded ? '▾' : '▸'}
@@ -229,8 +186,8 @@ export function MarketsSection() {
 
                     {/* Update frequency badge */}
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="text-text-muted">Updates:</span>
-                      <span className="text-zinc-900">{config.updateFreq}</span>
+                      <span className="text-text-muted">{t('labels.updates')}</span>
+                      <span className="text-zinc-900">{t(`types.${typeId}.update_freq`)}</span>
                     </div>
                   </button>
 
@@ -239,7 +196,7 @@ export function MarketsSection() {
                     <div className="mt-3 pt-3 border-t border-border-light">
                       {/* Categories in this type */}
                       <div className="mb-3">
-                        <p className="text-text-muted text-xs mb-1">Categories:</p>
+                        <p className="text-text-muted text-xs mb-1">{t('labels.categories')}</p>
                         <div className="flex flex-wrap gap-1">
                           {relatedCategories.map(cat => (
                             <span
@@ -255,7 +212,7 @@ export function MarketsSection() {
                       {/* Sample prices */}
                       {pricesData?.prices && pricesData.prices.length > 0 ? (
                         <div>
-                          <p className="text-text-muted text-xs mb-1">Sample assets:</p>
+                          <p className="text-text-muted text-xs mb-1">{t('labels.sample_assets')}</p>
                           <div className="space-y-1">
                             {pricesData.prices.slice(0, 3).map(price => (
                               <div
@@ -281,7 +238,7 @@ export function MarketsSection() {
                           </div>
                         </div>
                       ) : (
-                        <p className="text-text-muted text-xs">Loading prices...</p>
+                        <p className="text-text-muted text-xs">{t('labels.loading_prices')}</p>
                       )}
                     </div>
                   )}
@@ -293,10 +250,10 @@ export function MarketsSection() {
           {/* Footer with data freshness */}
           <div className="p-4 border-t border-border-light text-center">
             <p className="text-text-muted text-xs">
-              Data sourced from CoinGecko, Finnhub, Open-Meteo, FRED, ECB, Treasury, DefiLlama
+              {t('footer.data_sources')}
             </p>
             <p className="text-text-muted text-xs mt-1">
-              All bets resolved using on-chain keeper consensus
+              {t('footer.resolution_note')}
             </p>
           </div>
         </div>

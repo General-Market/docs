@@ -22,6 +22,7 @@ import blacklistedItps from '@/lib/config/blacklisted-itps.json'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { indexL3 } from '@/lib/wagmi'
 import { useSSENav, type NavSnapshot } from '@/hooks/useSSE'
+import { useTranslations } from 'next-intl'
 
 // ERC20 ABI for balance queries — used by ItpCard detail expansion (low priority migration)
 const ERC20_ABI = [
@@ -142,6 +143,8 @@ function navSnapshotsToItpInfos(navList: NavSnapshot[]): ItpInfo[] {
 }
 
 export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpListingProps) {
+  const t = useTranslations('markets')
+  const tc = useTranslations('common')
   const { address, isConnected } = useAccount()
   const { connect, connectors, isPending: isConnectPending } = useConnect()
   const { disconnect } = useDisconnect()
@@ -197,13 +200,13 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
       <div className="hero-band">
         <div className="hero-band-inner">
           <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-2">
-            Index Tracking Products
+            {t('hero.label')}
           </div>
           <h2 className="text-[28px] md:text-[42px] font-black tracking-[-0.03em] text-black leading-[1.1] mb-2">
-            Markets
+            {t('hero.title')}
           </h2>
           <p className="text-[16px] text-text-secondary max-w-[600px]">
-            Explore decentralized index products. Each ITP tracks a basket of crypto assets with live NAV pricing and on-chain settlement.
+            {t('hero.description')}
           </p>
         </div>
       </div>
@@ -211,25 +214,25 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
       {/* Filter Bar — mockup: padding 20px 48px */}
       <div className="py-5 px-6 lg:px-12 border-b border-border-light">
         <div className="max-w-site mx-auto flex items-center gap-3 flex-wrap">
-          <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-text-primary mr-1">Filters</span>
+          <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-text-primary mr-1">{t('filters.label')}</span>
           <button
             onClick={() => { setCurrentPage(0); setShowAll(false) }}
             className={`filter-pill ${currentPage === 0 ? 'active' : ''}`}
           >
-            All ({itps.length})
+            {t('filters.all', { count: itps.length })}
           </button>
-          <button className="filter-pill">Active ({activeItps.length})</button>
-          <button className="filter-pill">Pending ({pendingItps.length})</button>
+          <button className="filter-pill">{t('filters.active', { count: activeItps.length })}</button>
+          <button className="filter-pill">{t('filters.pending', { count: pendingItps.length })}</button>
           <input
             type="text"
-            placeholder="Search funds by name or ticker..."
+            placeholder={t('filters.search_placeholder')}
             className="flex-1 min-w-0 md:min-w-[200px] max-w-[320px] border-2 border-border-light rounded-full px-4 py-[9px] text-[13px] text-text-primary placeholder-text-muted focus:outline-none focus:border-black transition-colors"
           />
           <select className="ml-auto border border-border-light rounded-md px-3.5 py-2 text-[12px] font-medium text-text-secondary bg-white focus:outline-none cursor-pointer">
-            <option>Sort: AUM High &rarr; Low</option>
-            <option>Sort: AUM Low &rarr; High</option>
-            <option>Sort: Newest</option>
-            <option>Sort: Name A-Z</option>
+            <option>{t('filters.sort_aum_desc')}</option>
+            <option>{t('filters.sort_aum_asc')}</option>
+            <option>{t('filters.sort_newest')}</option>
+            <option>{t('filters.sort_name_az')}</option>
           </select>
         </div>
       </div>
@@ -239,21 +242,21 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
         <div className="max-w-site mx-auto">
           <div className="section-bar">
             <div>
-              <div className="section-bar-title">Data View</div>
-              <div className="section-bar-value">Fund Overview — Live NAV</div>
+              <div className="section-bar-title">{t('section_bar.title')}</div>
+              <div className="section-bar-value">{t('section_bar.subtitle')}</div>
             </div>
             <div className="section-bar-right">
-              {showAll ? `Showing all ${itps.length} products` : `Showing ${Math.min(6, itps.length)} of ${itps.length} products`}
+              {showAll ? t('section_bar.showing_all', { total: itps.length }) : t('section_bar.showing_partial', { shown: Math.min(6, itps.length), total: itps.length })}
             </div>
           </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-text-muted">Loading ITPs...</div>
+        <div className="text-center py-12 text-text-muted">{t('itp_card.loading')}</div>
       ) : itps.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-text-muted mb-4">No ITPs created yet</p>
+          <p className="text-text-muted mb-4">{t('itp_card.no_itps')}</p>
         </div>
       ) : (
         <>
@@ -292,7 +295,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                 onClick={() => setShowAll(true)}
                 className="inline-flex items-center gap-2 px-8 py-3 border-2 border-black rounded-md text-[13px] font-bold text-black hover:bg-black hover:text-white transition-colors"
               >
-                Show All {itps.length} Funds
+                {tc('actions.show_all', { count: itps.length })}
               </button>
             </div>
           )}
@@ -336,6 +339,8 @@ interface ItpCardProps {
 }
 
 function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardProps) {
+  const t = useTranslations('markets')
+  const tc = useTranslations('common')
   const { address } = useAccount()
   const publicClient = usePublicClient()
   const [showDetails, setShowDetails] = useState(false)
@@ -500,12 +505,12 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
       <div className="flex justify-between items-start mb-3">
         <div>
           <h3 className="text-[16px] font-extrabold text-black tracking-[-0.01em]">{itp.name || `ITP #${itp.nonce ?? itp.id}`}</h3>
-          {deployerName && <p className="text-[11px] text-text-muted">by {deployerName}</p>}
+          {deployerName && <p className="text-[11px] text-text-muted">{t('itp_card.by', { name: deployerName })}</p>}
           <p className="text-[12px] text-text-muted font-mono font-medium">${itp.symbol || 'N/A'}</p>
         </div>
         <div className="flex items-center gap-1">
           <span className={`w-[6px] h-[6px] rounded-full ${isActive ? 'bg-color-up' : 'bg-text-muted'}`} />
-          <span className={`text-[11px] font-semibold ${isActive ? 'text-color-up' : 'text-text-muted'}`}>{isActive ? 'Active' : 'Pending'}</span>
+          <span className={`text-[11px] font-semibold ${isActive ? 'text-color-up' : 'text-text-muted'}`}>{isActive ? tc('status.active') : tc('status.pending')}</span>
         </div>
       </div>
 
@@ -513,7 +518,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
       {isActive && (
         <div className="grid grid-cols-3 border-t border-b border-border-light -mx-5 px-5">
           <div className="py-2.5 pr-3">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">NAV / Share</div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('itp_card.nav_per_share')}</div>
             {isNavLoading || navPerShare === 0 ? (
               <span className="text-sm text-text-muted animate-pulse">...</span>
             ) : (
@@ -521,11 +526,11 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
             )}
           </div>
           <div className="py-2.5 px-3 border-l border-border-light">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Assets</div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('itp_card.assets')}</div>
             <span className="text-[15px] font-bold text-black font-mono tabular-nums">{totalAssetCount || '—'}</span>
           </div>
           <div className="py-2.5 pl-3 border-l border-border-light">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Balance</div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('itp_card.balance')}</div>
             <span className="text-[15px] font-bold text-black font-mono tabular-nums">
               {address && userShares > 0n ? parseFloat(formatUnits(userShares, 18)).toFixed(2) : '—'}
             </span>
@@ -536,17 +541,17 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
       {/* Action links — mockup: .fund-actions padding-top: 12px, .fund-action padding: 6px 0, separator margin: 0 10px */}
       {itp.itpId && isActive && (
         <div className="pt-3 flex items-center flex-wrap">
-          <WalletActionButton onClick={onBuy} className="text-[12px] font-bold uppercase tracking-[0.04em] text-brand-dark hover:text-brand transition-colors py-1.5">Buy</WalletActionButton>
+          <WalletActionButton onClick={onBuy} className="text-[12px] font-bold uppercase tracking-[0.04em] text-brand-dark hover:text-brand transition-colors py-1.5">{t('itp_card.buy')}</WalletActionButton>
           <span className="mx-2.5 text-border-light font-normal">|</span>
-          <WalletActionButton onClick={onSell} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">Sell</WalletActionButton>
+          <WalletActionButton onClick={onSell} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">{t('itp_card.sell')}</WalletActionButton>
           <span className="mx-2.5 text-border-light font-normal">|</span>
-          <button onClick={onChart} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">Chart</button>
+          <button onClick={onChart} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">{t('itp_card.chart')}</button>
           <span className="mx-2.5 text-border-light font-normal">|</span>
-          <WalletActionButton onClick={onRebalance} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">Rebalance</WalletActionButton>
+          <WalletActionButton onClick={onRebalance} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">{t('itp_card.rebalance')}</WalletActionButton>
           {effectiveArbAddress && hasLendingMarket(effectiveArbAddress) && (
             <>
               <span className="mx-2.5 text-border-light font-normal">|</span>
-              <WalletActionButton onClick={() => onLend(effectiveArbAddress)} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">Borrow</WalletActionButton>
+              <WalletActionButton onClick={() => onLend(effectiveArbAddress)} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">{t('itp_card.borrow')}</WalletActionButton>
             </>
           )}
         </div>
@@ -554,7 +559,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
 
       {/* Pending fill status */}
       {itp.itpId && !isActive && (
-        <div className="pt-2 text-[11px] text-text-muted uppercase tracking-wider">Pending Fill</div>
+        <div className="pt-2 text-[11px] text-text-muted uppercase tracking-wider">{t('itp_card.pending_fill')}</div>
       )}
 
       {/* Expandable details toggle */}
@@ -562,7 +567,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
         onClick={() => setShowDetails(!showDetails)}
         className="mt-2 text-[11px] text-text-muted hover:text-text-primary transition-colors underline"
       >
-        {showDetails ? 'Hide Details' : 'Details'}
+        {showDetails ? tc('actions.hide_details') : tc('actions.details')}
       </button>
 
       {showDetails && (
@@ -583,8 +588,8 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
           )}
 
           <div className="text-text-muted space-y-0.5">
-            {itp.nonce !== undefined && <p>Request #{itp.nonce}</p>}
-            {itp.admin && <p className="truncate">Creator: {shortenAddress(itp.admin)}</p>}
+            {itp.nonce !== undefined && <p>{t('itp_card.request_number', { number: itp.nonce })}</p>}
+            {itp.admin && <p className="truncate">{t('itp_card.admin')} {shortenAddress(itp.admin)}</p>}
             {timeAgo && <p>{timeAgo}</p>}
           </div>
 
@@ -593,7 +598,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
               onClick={handleEditMeta}
               className="text-zinc-700 hover:text-zinc-900 underline"
             >
-              Edit ITP Info
+              {t('itp_card.edit_itp_info')}
             </button>
           )}
           {showEditMeta && (
@@ -603,7 +608,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
                 onChange={e => setEditDesc(e.target.value)}
                 maxLength={280}
                 rows={3}
-                placeholder="Description (max 280 chars / ~50 words)"
+                placeholder={t('itp_card.description_placeholder')}
                 className="w-full bg-card border border-border-medium rounded px-2 py-1 text-xs text-text-primary placeholder-text-muted focus:border-zinc-600 outline-none resize-none"
               />
               <input
@@ -611,7 +616,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
                 value={editUrl}
                 onChange={e => setEditUrl(e.target.value)}
                 maxLength={128}
-                placeholder="Website URL (max 128)"
+                placeholder={t('itp_card.website_placeholder')}
                 className="w-full bg-card border border-border-medium rounded px-2 py-1 text-xs text-text-primary placeholder-text-muted focus:border-zinc-600 outline-none"
               />
               <input
@@ -619,7 +624,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
                 value={editVideo}
                 onChange={e => setEditVideo(e.target.value)}
                 maxLength={256}
-                placeholder="YouTube URL (max 256)"
+                placeholder={t('itp_card.video_placeholder')}
                 className="w-full bg-card border border-border-medium rounded px-2 py-1 text-xs text-text-primary placeholder-text-muted focus:border-zinc-600 outline-none"
               />
               <div className="flex gap-2">
@@ -628,13 +633,13 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
                   disabled={isWriting}
                   className="px-3 py-1 bg-zinc-900 text-white text-xs font-semibold rounded hover:bg-zinc-800 disabled:opacity-50 transition-colors"
                 >
-                  {isWriting ? 'Saving...' : 'Save'}
+                  {isWriting ? tc('actions.saving') : tc('actions.save')}
                 </button>
                 <button
                   onClick={() => setShowEditMeta(false)}
                   className="px-3 py-1 border border-border-medium text-text-secondary text-xs rounded hover:border-zinc-500 transition-colors"
                 >
-                  Cancel
+                  {tc('actions.cancel')}
                 </button>
               </div>
             </div>
@@ -642,14 +647,14 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
 
           {effectiveArbAddress && (
             <div className="bg-muted rounded p-2 font-mono space-y-1">
-              <span className="text-text-muted">Arbitrum ERC20:</span>
+              <span className="text-text-muted">{t('itp_card.arb_erc20')}</span>
               <p className="text-text-secondary break-all">{effectiveArbAddress}</p>
             </div>
           )}
 
           {itp.itpId && (
             <div className="bg-muted rounded p-2 font-mono">
-              <span className="text-text-muted">ITP ID:</span>
+              <span className="text-text-muted">{t('itp_card.itp_id')}</span>
               <p className="text-text-secondary break-all">{itp.itpId.slice(0, 22)}...{itp.itpId.slice(-8)}</p>
             </div>
           )}
@@ -663,17 +668,17 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
           {effectiveArbAddress && (
             <div className="bg-muted rounded p-3">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-text-secondary font-medium">Minted Supply</span>
+                <span className="text-text-secondary font-medium">{t('itp_card.minted_supply')}</span>
                 <span className="text-text-primary font-mono">
                   {parseFloat(formatUnits(totalSupply, 18)).toFixed(4)} {itp.symbol}
                 </span>
               </div>
               {loadingHolders ? (
-                <div className="text-text-muted text-center py-2">Loading holders...</div>
+                <div className="text-text-muted text-center py-2">{t('itp_card.loading_holders')}</div>
               ) : holderError ? (
-                <div className="text-text-muted text-center py-2">Unable to fetch holders</div>
+                <div className="text-text-muted text-center py-2">{t('itp_card.unable_fetch_holders')}</div>
               ) : holders.length === 0 ? (
-                <div className="text-text-muted text-center py-2">No tracked holders</div>
+                <div className="text-text-muted text-center py-2">{t('itp_card.no_tracked_holders')}</div>
               ) : (
                 <div className="space-y-1">
                   {holders.map(holder => (
@@ -694,7 +699,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
                     if (unaccounted > 0n && totalSupply > 0n) {
                       return (
                         <div className="flex justify-between items-center pt-1 border-t border-border-light mt-1">
-                          <span className="text-color-warning">Other Holders</span>
+                          <span className="text-color-warning">{t('itp_card.other_holders')}</span>
                           <div className="flex gap-2">
                             <span className="text-color-warning/70 font-mono">
                               {parseFloat(formatUnits(unaccounted, 18)).toFixed(2)}
@@ -715,12 +720,12 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
 
           {/* Technical Details */}
           <div className="font-mono text-text-muted space-y-0.5">
-            {itp.nonce !== undefined && <p>Nonce: {itp.nonce}</p>}
-            <p>Source: {itp.source === 'index' ? 'Index.sol (L3)' : 'BridgeProxy'}</p>
-            {itp.admin && <p>Admin: {itp.admin}</p>}
-            {createdDate && <p>Created: {createdDate.toISOString()}</p>}
-            {effectiveArbAddress && <p className="break-all">Arb Address: {effectiveArbAddress}</p>}
-            {itp.itpId && <p className="break-all">ITP ID: {itp.itpId}</p>}
+            {itp.nonce !== undefined && <p>{t('itp_card.nonce')} {itp.nonce}</p>}
+            <p>{t('itp_card.source')} {itp.source === 'index' ? t('itp_card.source_index') : t('itp_card.source_bridge')}</p>
+            {itp.admin && <p>{t('itp_card.admin')} {itp.admin}</p>}
+            {createdDate && <p>{t('itp_card.created')} {createdDate.toISOString()}</p>}
+            {effectiveArbAddress && <p className="break-all">{t('itp_card.arb_address')} {effectiveArbAddress}</p>}
+            {itp.itpId && <p className="break-all">{t('itp_card.itp_id')} {itp.itpId}</p>}
           </div>
         </div>
       )}

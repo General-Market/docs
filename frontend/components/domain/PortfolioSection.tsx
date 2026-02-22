@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAccount, usePublicClient } from 'wagmi'
+import { activeChainId } from '@/lib/wagmi'
 import {
   AreaChart,
   Area,
@@ -19,6 +20,7 @@ import { useUsdcBalance } from '@/hooks/useUsdcBalance'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
 import { DeployedItpRef } from '@/components/domain/ItpListing'
+import { useTranslations } from 'next-intl'
 
 type Tab = 'value' | 'positions' | 'trades' | 'orders'
 
@@ -57,6 +59,7 @@ const STATUS_COLORS: Record<number, string> = {
 }
 
 function PortfolioTooltip({ active, payload }: TooltipProps<number, string>) {
+  const t = useTranslations('portfolio')
   if (!active || !payload || payload.length === 0) return null
 
   const data = payload[0].payload as PortfolioHistoryPoint
@@ -65,9 +68,9 @@ function PortfolioTooltip({ active, payload }: TooltipProps<number, string>) {
     <div className="bg-card border border-border-light rounded-lg shadow-card p-3 text-sm">
       <p className="text-text-primary font-semibold mb-1">{data.date}</p>
       <div className="space-y-1 text-text-secondary">
-        <p className="font-mono tabular-nums">Value: ${data.value.toFixed(2)}</p>
+        <p className="font-mono tabular-nums">{t('tooltip.value_label')} ${data.value.toFixed(2)}</p>
         <p className={`font-mono tabular-nums ${data.pnl >= 0 ? 'text-color-up' : 'text-color-down'}`}>
-          PnL: {data.pnl >= 0 ? '+' : ''}{data.pnl.toFixed(2)} ({data.pnl_pct >= 0 ? '+' : ''}{data.pnl_pct.toFixed(1)}%)
+          {t('tooltip.pnl_label')} {data.pnl >= 0 ? '+' : ''}{data.pnl.toFixed(2)} ({data.pnl_pct >= 0 ? '+' : ''}{data.pnl_pct.toFixed(1)}%)
         </p>
       </div>
     </div>
@@ -75,9 +78,11 @@ function PortfolioTooltip({ active, payload }: TooltipProps<number, string>) {
 }
 
 export function PortfolioSection({ expanded, onToggle, deployedItps }: PortfolioSectionProps) {
+  const t = useTranslations('portfolio')
+  const tc = useTranslations('common')
   const { address } = useAccount()
-  const publicClient = usePublicClient()
-  const { summary, history, trades, isLoading, error } = usePortfolio(address?.toLowerCase())
+  const publicClient = usePublicClient({ chainId: activeChainId })
+  const { summary, history, trades, isLoading, error, refetch } = usePortfolio(address?.toLowerCase())
   const { formatted: usdcFormatted } = useUsdcBalance()
   const [activeTab, setActiveTab] = useState<Tab>('positions')
 
@@ -157,6 +162,13 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
     return () => clearInterval(interval)
   }, [expanded, fetchOrders, address])
 
+  // Refetch on buy/sell order submission from modals
+  useEffect(() => {
+    const handler = () => { fetchOrders(); refetch() }
+    window.addEventListener('portfolio-refresh', handler)
+    return () => window.removeEventListener('portfolio-refresh', handler)
+  }, [fetchOrders, refetch])
+
   // Build ITP name lookup: itpId → display name
   const itpNameMap = new Map<string, string>()
   if (deployedItps) {
@@ -168,9 +180,13 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
 
   const activeCount = orders.filter(o => o.status < 2).length
   const totalPnl = summary ? parseFloat(summary.total_pnl) : 0
+  const usdcNum = parseFloat(usdcFormatted?.replace(/,/g, '') || '0') || 0
+  const positionsValue = summary ? parseFloat(summary.total_value) : 0
+  const totalValue = positionsValue + usdcNum
+  const hasAnyBalance = totalValue > 0.01 || (summary && summary.positions.length > 0)
   const subtitle = summary
-    ? `${summary.positions.length} position${summary.positions.length !== 1 ? 's' : ''} · $${summary.total_value} value`
-    : 'Track your positions, trades & orders'
+    ? t('heading.subtitle_with_data', { count: summary.positions.length, plural: summary.positions.length !== 1 ? 's' : '', value: summary.total_value })
+    : t('heading.subtitle_empty')
 
   // Collapsed state
   if (!expanded) {
@@ -182,12 +198,12 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
       >
         <div className="flex justify-between items-center">
           <div>
-            <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-1">Portfolio</p>
+            <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-1">{t('heading.collapsed_title')}</p>
             <p className="text-text-primary font-semibold">
-              Your positions &amp; performance
+              {t('heading.collapsed_description')}
               {activeCount > 0 && (
                 <span className="ml-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-mono">
-                  {activeCount} active
+                  {activeCount} {tc('status.active').toLowerCase()}
                 </span>
               )}
             </p>
@@ -201,7 +217,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
               onClick={e => e.stopPropagation()}
               className="px-3 py-1.5 bg-zinc-900 text-white font-semibold rounded-lg text-sm hover:bg-zinc-800 transition-colors"
             >
-              Support
+              {tc('nav.support')}
             </a>
             <span className="text-text-muted text-2xl select-none">+</span>
           </div>
@@ -215,8 +231,8 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
     <div id="portfolio" className="pb-10">
       {/* Section header */}
       <div className="pt-10">
-        <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">Your Holdings</p>
-        <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">Portfolio</h2>
+        <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">{t('heading.label')}</p>
+        <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">{t('heading.title')}</h2>
       </div>
 
       {!address ? (
@@ -229,38 +245,36 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
         </div>
       ) : (
         <>
-          {/* Stats row — mockup: .stats-row padding: 20px 0; .stat-cell padding: 12px 24px */}
-          {summary && (
-            <div className="py-5 border-b border-border-light">
-              <div className="grid grid-cols-2 md:grid-cols-5">
-                <div className="py-3 pr-6">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Total Value</div>
-                  <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">${summary.total_value}</div>
+          {/* Stats row */}
+          <div className="py-5 border-b border-border-light">
+            <div className="grid grid-cols-2 md:grid-cols-5">
+              <div className="py-3 pr-6">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('stats.total_value')}</div>
+                <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">${totalValue.toFixed(2)}</div>
+              </div>
+              <div className="py-3 px-4 md:px-6 md:border-l border-border-light">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('stats.total_invested')}</div>
+                <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">${summary?.total_invested || '0.00'}</div>
+              </div>
+              <div className="py-3 px-4 md:px-6 md:border-l border-t md:border-t-0 border-border-light">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('stats.positions')}</div>
+                <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">{summary?.positions.length || 0}</div>
+              </div>
+              <div className="py-3 px-4 md:px-6 md:border-l border-t md:border-t-0 border-border-light">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('stats.pnl')}</div>
+                <div className={`text-[22px] font-extrabold font-mono tabular-nums ${totalPnl >= 0 ? 'text-color-up' : 'text-color-down'}`}>
+                  {totalPnl >= 0 ? '+' : ''}${summary?.total_pnl || '0.00'}
                 </div>
-                <div className="py-3 px-4 md:px-6 md:border-l border-border-light">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Total Invested</div>
-                  <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">${summary.total_invested}</div>
-                </div>
-                <div className="py-3 px-4 md:px-6 md:border-l border-t md:border-t-0 border-border-light">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Positions</div>
-                  <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">{summary.positions.length}</div>
-                </div>
-                <div className="py-3 px-4 md:px-6 md:border-l border-t md:border-t-0 border-border-light">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">P&amp;L</div>
-                  <div className={`text-[22px] font-extrabold font-mono tabular-nums ${totalPnl >= 0 ? 'text-color-up' : 'text-color-down'}`}>
-                    {totalPnl >= 0 ? '+' : ''}${summary.total_pnl}
-                  </div>
-                  <div className="text-[11px] text-text-muted mt-0.5">
-                    {totalPnl >= 0 ? '+' : ''}{summary.total_pnl_pct}%
-                  </div>
-                </div>
-                <div className="py-3 px-4 md:px-6 md:border-l border-t md:border-t-0 border-border-light">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">USDC Available</div>
-                  <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">${usdcFormatted}</div>
+                <div className="text-[11px] text-text-muted mt-0.5">
+                  {totalPnl >= 0 ? '+' : ''}{summary?.total_pnl_pct || '0.0'}%
                 </div>
               </div>
+              <div className="py-3 px-4 md:px-6 md:border-l border-t md:border-t-0 border-border-light">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('stats.usdc_available')}</div>
+                <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">${usdcFormatted}</div>
+              </div>
             </div>
-          )}
+          </div>
 
           {/* Active orders banner — always visible when there are incomplete orders */}
           {activeCount > 0 && (
@@ -274,13 +288,13 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500" />
                 </span>
                 <span className="text-sm font-medium text-yellow-800">
-                  {activeCount} active order{activeCount !== 1 ? 's' : ''} in progress
+                  {t('orders_banner.active_orders', { count: activeCount, plural: activeCount !== 1 ? 's' : '' })}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 {orders.filter(o => o.status < 2).map(o => (
                   <span key={o.orderId} className={`text-xs px-2 py-0.5 rounded font-mono ${STATUS_COLORS[o.status]}`}>
-                    #{o.orderId} {o.side === 0 ? 'BUY' : 'SELL'} · {STATUS_LABELS[o.status]}
+                    #{o.orderId} {o.side === 0 ? t('side.buy') : t('side.sell')} · {STATUS_LABELS[o.status]}
                   </span>
                 ))}
               </div>
@@ -290,14 +304,14 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
           {/* Section bar + tab navigation */}
           <div className="section-bar mt-5">
             <div>
-              <div className="section-bar-title">Positions</div>
-              <div className="section-bar-value">Active Holdings</div>
+              <div className="section-bar-title">{t('section_bar.title')}</div>
+              <div className="section-bar-value">{t('section_bar.subtitle')}</div>
             </div>
           </div>
           <div className="border-b border-border-light mb-0 mt-5">
             <div className="flex gap-6">
               {(['positions', 'trades', 'orders'] as Tab[]).map(tab => {
-                const label = tab.charAt(0).toUpperCase() + tab.slice(1)
+                const label = t(`tabs.${tab}`)
                 return (
                   <button
                     key={tab}
@@ -344,12 +358,9 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
 
 // --- Value Tab ---
 function ValueTab({ history }: { history: PortfolioHistoryPoint[] }) {
+  const t = useTranslations('portfolio')
   if (history.length === 0) {
-    return (
-      <div className="bg-card rounded-md border border-border-light p-8 text-center text-text-muted">
-        No portfolio history yet
-      </div>
-    )
+    return null // Hide chart area entirely when no history — positions tab shows the CTA
   }
 
   const lastPoint = history[history.length - 1]
@@ -361,12 +372,12 @@ function ValueTab({ history }: { history: PortfolioHistoryPoint[] }) {
     return (
       <div className="bg-card rounded-md border border-border-light p-8">
         <div className="text-center">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">Current Value</div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">{t('chart.current_value')}</div>
           <div className="text-[36px] font-black font-mono tabular-nums text-black">${lastPoint.value.toFixed(2)}</div>
           <div className={`text-sm font-mono tabular-nums mt-2 ${isPositive ? 'text-color-up' : 'text-color-down'}`}>
             {isPositive ? '+' : ''}{lastPoint.pnl.toFixed(2)} ({isPositive ? '+' : ''}{lastPoint.pnl_pct.toFixed(1)}%)
           </div>
-          <div className="text-xs text-text-muted mt-3">Chart will populate as more data becomes available</div>
+          <div className="text-xs text-text-muted mt-3">{t('chart.chart_pending')}</div>
         </div>
       </div>
     )
@@ -415,10 +426,30 @@ function ValueTab({ history }: { history: PortfolioHistoryPoint[] }) {
 
 // --- Positions Tab ---
 function PositionsTab({ summary, itpNameMap }: { summary: ReturnType<typeof usePortfolio>['summary']; itpNameMap: Map<string, string> }) {
+  const t = useTranslations('portfolio')
   if (!summary || summary.positions.length === 0) {
     return (
-      <div className="bg-card rounded-md border border-border-light p-8 text-center text-text-muted">
-        No open positions
+      <div className="bg-card rounded-xl border border-border-light p-10 text-center">
+        <div className="max-w-sm mx-auto">
+          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+            <svg className="w-6 h-6 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+            </svg>
+          </div>
+          <h3 className="text-base font-bold text-text-primary mb-1.5">{t('empty.no_positions_title')}</h3>
+          <p className="text-sm text-text-muted leading-relaxed mb-5">
+            {t('empty.no_positions_description')}
+          </p>
+          <a
+            href="#markets"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-900 text-white text-sm font-semibold rounded-lg hover:bg-zinc-800 transition-colors"
+          >
+            {t('empty.explore_indexes')}
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </a>
+        </div>
       </div>
     )
   }
@@ -429,13 +460,13 @@ function PositionsTab({ summary, itpNameMap }: { summary: ReturnType<typeof useP
         <table className="w-full">
           <thead>
             <tr className="text-text-secondary text-[11px] font-bold uppercase tracking-wider border-b-[3px] border-black">
-              <th className="text-left px-4 py-3">ITP</th>
-              <th className="text-right px-4 py-3">Shares</th>
-              <th className="text-right px-4 py-3">Avg Cost</th>
-              <th className="text-right px-4 py-3">NAV</th>
-              <th className="text-right px-4 py-3">Value</th>
-              <th className="text-right px-4 py-3">PnL</th>
-              <th className="text-right px-4 py-3">PnL%</th>
+              <th className="text-left px-4 py-3">{t('positions_table.itp')}</th>
+              <th className="text-right px-4 py-3">{t('positions_table.shares')}</th>
+              <th className="text-right px-4 py-3">{t('positions_table.avg_cost')}</th>
+              <th className="text-right px-4 py-3">{t('positions_table.nav')}</th>
+              <th className="text-right px-4 py-3">{t('positions_table.value')}</th>
+              <th className="text-right px-4 py-3">{t('positions_table.pnl')}</th>
+              <th className="text-right px-4 py-3">{t('positions_table.pnl_pct')}</th>
             </tr>
           </thead>
           <tbody>
@@ -476,10 +507,21 @@ function PositionsTab({ summary, itpNameMap }: { summary: ReturnType<typeof useP
 
 // --- Trades Tab ---
 function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfolio>['trades']; itpNameMap: Map<string, string> }) {
+  const t = useTranslations('portfolio')
   if (trades.length === 0) {
     return (
-      <div className="bg-card rounded-md border border-border-light p-8 text-center text-text-muted">
-        No trades yet
+      <div className="bg-card rounded-xl border border-border-light p-10 text-center">
+        <div className="max-w-sm mx-auto">
+          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+            <svg className="w-6 h-6 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+            </svg>
+          </div>
+          <h3 className="text-base font-bold text-text-primary mb-1.5">{t('empty.no_trades_title')}</h3>
+          <p className="text-sm text-text-muted leading-relaxed">
+            {t('empty.no_trades_description')}
+          </p>
+        </div>
       </div>
     )
   }
@@ -490,13 +532,13 @@ function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfo
         <table className="w-full">
           <thead>
             <tr className="text-text-secondary text-[11px] font-bold uppercase tracking-wider border-b-[3px] border-black">
-              <th className="text-left px-4 py-3">Date</th>
-              <th className="text-left px-4 py-3">ITP</th>
-              <th className="text-left px-4 py-3">Side</th>
-              <th className="text-right px-4 py-3">Amount</th>
-              <th className="text-right px-4 py-3">Price</th>
-              <th className="text-right px-4 py-3">Shares</th>
-              <th className="text-right px-4 py-3">Status</th>
+              <th className="text-left px-4 py-3">{t('trades_table.date')}</th>
+              <th className="text-left px-4 py-3">{t('trades_table.itp')}</th>
+              <th className="text-left px-4 py-3">{t('trades_table.side')}</th>
+              <th className="text-right px-4 py-3">{t('trades_table.amount')}</th>
+              <th className="text-right px-4 py-3">{t('trades_table.price')}</th>
+              <th className="text-right px-4 py-3">{t('trades_table.shares')}</th>
+              <th className="text-right px-4 py-3">{t('trades_table.status')}</th>
             </tr>
           </thead>
           <tbody>
@@ -542,6 +584,8 @@ function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfo
 
 // --- Orders Tab (merged from ActiveOrdersSection) ---
 function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoading: boolean; error: string | null }) {
+  const t = useTranslations('portfolio')
+  const tc = useTranslations('common')
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-600 text-sm">
@@ -553,15 +597,25 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
   if (isLoading) {
     return (
       <div className="bg-card rounded-md border border-border-light p-8 text-center text-text-muted">
-        Loading orders...
+        {t('empty.loading_orders')}
       </div>
     )
   }
 
   if (orders.length === 0) {
     return (
-      <div className="bg-card rounded-md border border-border-light p-8 text-center text-text-muted">
-        No orders found
+      <div className="bg-card rounded-xl border border-border-light p-10 text-center">
+        <div className="max-w-sm mx-auto">
+          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+            <svg className="w-6 h-6 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="text-base font-bold text-text-primary mb-1.5">{t('empty.no_orders_title')}</h3>
+          <p className="text-sm text-text-muted leading-relaxed">
+            {t('empty.no_orders_description')}
+          </p>
+        </div>
       </div>
     )
   }
@@ -572,12 +626,12 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
         <table className="w-full">
           <thead>
             <tr className="text-text-secondary text-[11px] font-bold uppercase tracking-wider border-b-[3px] border-black">
-              <th className="text-left px-4 py-3">ID</th>
-              <th className="text-left px-4 py-3">Side</th>
-              <th className="text-right px-4 py-3">Amount</th>
-              <th className="text-right px-4 py-3">Limit Price</th>
-              <th className="text-right px-4 py-3">Status</th>
-              <th className="text-right px-4 py-3">Time</th>
+              <th className="text-left px-4 py-3">{t('orders_table.id')}</th>
+              <th className="text-left px-4 py-3">{t('orders_table.side')}</th>
+              <th className="text-right px-4 py-3">{t('orders_table.amount')}</th>
+              <th className="text-right px-4 py-3">{t('orders_table.limit_price')}</th>
+              <th className="text-right px-4 py-3">{t('orders_table.status')}</th>
+              <th className="text-right px-4 py-3">{t('orders_table.time')}</th>
             </tr>
           </thead>
           <tbody>
@@ -586,7 +640,7 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
                 <td className="px-4 py-3 text-text-primary font-mono text-sm tabular-nums">#{order.orderId}</td>
                 <td className="px-4 py-3">
                   <span className={`text-sm font-semibold ${order.side === 0 ? 'text-color-up' : 'text-color-down'}`}>
-                    {order.side === 0 ? 'BUY' : 'SELL'}
+                    {order.side === 0 ? t('side.buy') : t('side.sell')}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right text-text-primary font-mono text-sm tabular-nums">
@@ -597,7 +651,7 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
                 </td>
                 <td className="px-4 py-3 text-right">
                   <span className={`text-xs px-2 py-1 rounded-md font-medium ${STATUS_COLORS[order.status] || 'text-text-muted bg-muted'}`}>
-                    {STATUS_LABELS[order.status] || 'Unknown'}
+                    {STATUS_LABELS[order.status] || tc('status.unknown')}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right text-text-muted text-xs tabular-nums font-mono">
@@ -629,11 +683,13 @@ function Bone({ w = 'w-20', h = 'h-4' }: { w?: string; h?: string }) {
 }
 
 function PortfolioSkeleton() {
+  const t = useTranslations('portfolio')
+  const skeletonLabels = [t('stats.total_value'), t('stats.change_24h'), t('stats.positions'), t('stats.unrealized_pnl'), t('stats.usdc_available')]
   return (
     <>
       {/* Stats row skeleton */}
       <div className="grid grid-cols-2 md:grid-cols-5 py-5 border-b border-border-light">
-        {['Total Value', '24h Change', 'Positions', 'Unrealized P&L', 'USDC Available'].map((label, idx) => (
+        {skeletonLabels.map((label, idx) => (
           <div
             key={label}
             className={`py-3 px-4 md:px-6 ${idx > 0 ? 'md:border-l border-border-light' : 'md:pl-0'} ${idx >= 2 ? 'border-t md:border-t-0 border-border-light' : ''}`}
@@ -647,8 +703,8 @@ function PortfolioSkeleton() {
       {/* Section bar */}
       <div className="section-bar mt-5">
         <div>
-          <div className="section-bar-title">Positions</div>
-          <div className="section-bar-value">Active Holdings</div>
+          <div className="section-bar-title">{t('section_bar.title')}</div>
+          <div className="section-bar-value">{t('section_bar.subtitle')}</div>
         </div>
       </div>
 
@@ -657,7 +713,7 @@ function PortfolioSkeleton() {
         <table className="w-full border-collapse text-[13px]">
           <thead>
             <tr>
-              {['Fund', 'Ticker', 'Shares', 'NAV / Share', 'Value', 'Avg Cost', 'P&L', '24h'].map(h => (
+              {[t('skeleton.fund'), t('skeleton.ticker'), t('positions_table.shares'), t('skeleton.nav_per_share'), t('positions_table.value'), t('skeleton.avg_cost'), t('positions_table.pnl'), t('skeleton.change_24h')].map(h => (
                 <th key={h} className="text-left text-[11px] font-bold uppercase tracking-[0.06em] text-text-secondary px-4 py-3 border-b-[3px] border-black whitespace-nowrap">
                   {h}
                 </th>

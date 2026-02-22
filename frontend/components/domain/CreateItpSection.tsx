@@ -11,6 +11,7 @@ import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getCoinGeckoUrl } from '@/lib/coingecko'
 import { DATA_NODE_URL } from '@/lib/config'
 import { useDeployerName } from '@/hooks/useDeployerName'
+import { useTranslations } from 'next-intl'
 
 interface CoinEntry { id: string; image: string }
 
@@ -73,6 +74,8 @@ interface CreateItpSectionProps {
 }
 
 export function CreateItpSection({ expanded, onToggle, initialHoldings }: CreateItpSectionProps) {
+  const t = useTranslations('create-itp')
+  const tc = useTranslations('common')
   const { address, isConnected } = useAccount()
   const [name, setName] = useState('')
   const [symbol, setSymbol] = useState('')
@@ -105,7 +108,15 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       .then(res => res.ok ? res.json() : Promise.reject('not found'))
       .then((data: { address: string; symbol: string }[]) => {
         if (Array.isArray(data) && data.length > 0) {
-          setAvailableAssets(data)
+          // Deduplicate by symbol — keep first occurrence
+          const seen = new Set<string>()
+          const unique = data.filter(a => {
+            const key = a.symbol.toUpperCase()
+            if (seen.has(key)) return false
+            seen.add(key)
+            return true
+          })
+          setAvailableAssets(unique)
         }
       })
       .catch(() => {
@@ -227,7 +238,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
 
   const handleSubmit = async () => {
     if (!isConnected || !name || !symbol || selectedAssets.length === 0 || !isValidWeights) {
-      setTxError('Please fill in all fields and ensure weights sum to 100%')
+      setTxError(t('errors.fill_all_fields'))
       return
     }
 
@@ -261,7 +272,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       })
     } catch (e: any) {
       setIsFetchingPrices(false)
-      setTxError(`Failed to fetch prices: ${e.message || 'AP unreachable'}`)
+      setTxError(t('errors.failed_prices', { message: e.message || 'AP unreachable' }))
       return
     }
     setIsFetchingPrices(false)
@@ -354,9 +365,9 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     <div id="create-itp" className="pb-10">
       {/* Section header */}
       <div className="pt-10 mb-6">
-        <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">Deploy New Product</p>
-        <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">Create</h2>
-        <p className="text-[14px] text-text-secondary mt-1.5">Build a custom index product. Select assets, set weights, and deploy on-chain.</p>
+        <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">{t('heading.label')}</p>
+        <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">{t('heading.title')}</h2>
+        <p className="text-[14px] text-text-secondary mt-1.5">{t('heading.description')}</p>
       </div>
 
       {/* Collapsed toggle button */}
@@ -366,7 +377,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
           className="w-full bg-card rounded-xl shadow-card border border-border-light p-4 hover:shadow-card-hover cursor-pointer text-left flex justify-between items-center"
         >
           <div>
-            <span className="text-sm text-text-secondary">Create an Index Tracking Product with custom weights</span>
+            <span className="text-sm text-text-secondary">{t('collapsed.description')}</span>
           </div>
           <span className="text-text-muted text-2xl">+</span>
         </button>
@@ -379,7 +390,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
             <button
               onClick={onToggle}
               className="text-text-muted hover:text-text-secondary text-2xl leading-none"
-              aria-label="Collapse"
+              aria-label={tc('aria.collapse')}
             >
               −
             </button>
@@ -397,18 +408,18 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                 {/* LEFT — Select Assets */}
                 <div className="border border-border-light">
                   <div className="bg-black text-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.08em]">
-                    Select Assets ({selectedAssets.length}/100)
+                    {t('select_assets.title', { count: selectedAssets.length })}
                   </div>
                   <div className="p-5">
                     <div className="flex justify-between items-center mb-3">
                       <label className="text-xs font-semibold text-text-muted">
-                        {availableAssets.length} available
+                        {t('select_assets.available', { count: availableAssets.length })}
                       </label>
                       <input
                         type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search..."
+                        placeholder={tc('actions.search')}
                         className="bg-card border border-border-medium rounded-lg px-3 py-1 text-sm text-text-primary w-32 focus:outline-none focus:border-zinc-400"
                       />
                     </div>
@@ -443,30 +454,30 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                 {/* RIGHT — Configure Weights */}
                 <div className="border border-border-light">
                   <div className="bg-black text-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.08em]">
-                    Configure Weights ({selectedAssets.length} assets)
+                    {t('configure_weights.title', { count: selectedAssets.length })}
                   </div>
                   <div className="p-5">
                     {selectedAssets.length === 0 ? (
-                      <p className="text-sm text-text-muted py-8 text-center">Select assets to configure weights</p>
+                      <p className="text-sm text-text-muted py-8 text-center">{t('configure_weights.empty')}</p>
                     ) : (
                       <>
                         <div className="flex justify-between items-center mb-3">
                           <label className="text-xs font-semibold text-text-primary">
-                            Total: {totalWeight}%
+                            {t('configure_weights.total', { value: totalWeight })}
                           </label>
                           <div className="flex gap-1.5">
                             <button
                               onClick={distributeEvenly}
                               className="text-xs text-text-secondary hover:bg-card border border-border-light rounded-lg px-2.5 py-1 transition-colors"
                             >
-                              Equal
+                              {t('configure_weights.equal')}
                             </button>
                             <button
                               onClick={distributeByMcap}
                               disabled={isFetchingMcap}
                               className="text-xs text-text-secondary hover:bg-card border border-border-light rounded-lg px-2.5 py-1 transition-colors disabled:opacity-50"
                             >
-                              {isFetchingMcap ? 'Loading...' : 'MCap'}
+                              {isFetchingMcap ? t('configure_weights.mcap_loading') : t('configure_weights.mcap')}
                             </button>
                           </div>
                         </div>
@@ -513,8 +524,8 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                           ))}
                         </div>
                         <div className={`mt-3 pt-3 border-t border-border-light flex justify-between text-sm ${isValidWeights ? 'text-color-up' : 'text-color-down'}`}>
-                          <span>Total:</span>
-                          <span className="font-mono tabular-nums font-medium">{totalWeight}% {isValidWeights ? '' : '(must be 100%)'}</span>
+                          <span>{t('configure_weights.total', { value: totalWeight })}</span>
+                          <span className="font-mono tabular-nums font-medium">{isValidWeights ? '' : t('configure_weights.must_be_100')}</span>
                         </div>
 
                         {/* Continue to finalize */}
@@ -524,7 +535,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                             disabled={selectedAssets.length === 0 || !isValidWeights}
                             className="bg-zinc-900 text-white font-medium rounded-lg px-6 py-2.5 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                           >
-                            Continue →
+                            {t('configure_weights.continue')}
                           </button>
                         </div>
                       </>
@@ -539,21 +550,21 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                   onClick={handleCancel}
                   className="w-full text-center text-sm text-text-muted hover:text-text-secondary py-2 transition-colors"
                 >
-                  Cancel
+                  {tc('actions.cancel')}
                 </button>
               )}
 
               {hasNonceGap && (
                 <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-3 text-orange-400 text-sm">
-                  <p className="font-medium">Pending Transactions Detected</p>
-                  <p className="text-xs mt-1">You have {pendingCount} pending transaction(s). New transactions may get stuck.</p>
+                  <p className="font-medium">{tc('warnings.pending_tx_title')}</p>
+                  <p className="text-xs mt-1">{tc('warnings.pending_tx_description', { count: pendingCount })}</p>
                 </div>
               )}
 
               {stuckWarning && (
                 <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-3 text-orange-400 text-sm">
-                  <p className="font-medium">Transaction may be stuck</p>
-                  <p className="text-xs mt-1">Not confirmed after 30s. You can cancel and try again.</p>
+                  <p className="font-medium">{tc('warnings.tx_stuck_title')}</p>
+                  <p className="text-xs mt-1">{tc('warnings.tx_stuck_description')}</p>
                 </div>
               )}
 
@@ -565,8 +576,8 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
 
               {isSuccess && (
                 <div className="bg-color-up/10 border border-color-up/30 rounded-lg p-3 text-color-up text-xs">
-                  <p className="font-medium">ITP Request Created!</p>
-                  <p className="mt-1">Waiting for issuer consensus...</p>
+                  <p className="font-medium">{t('success.title')}</p>
+                  <p className="mt-1">{t('success.description')}</p>
                 </div>
               )}
             </div>
@@ -630,6 +641,8 @@ function FinalizeItpModal({
   onClose, onSubmit, isPending, isConfirming, isFetchingPrices,
   hasNonceGap, txError, isSuccess, stuckWarning, onCancel,
 }: FinalizeItpModalProps) {
+  const t = useTranslations('create-itp')
+  const tc = useTranslations('common')
   const isValidForm = name.length > 0 && symbol.length > 0
 
   return (
@@ -642,8 +655,8 @@ function FinalizeItpModal({
         {/* Header */}
         <div className="flex justify-between items-center px-6 py-4 border-b border-border-light">
           <div>
-            <h3 className="text-lg font-bold text-text-primary">Finalize ITP</h3>
-            <p className="text-xs text-text-muted mt-0.5">{selectedAssets.length} assets selected</p>
+            <h3 className="text-lg font-bold text-text-primary">{t('finalize.title')}</h3>
+            <p className="text-xs text-text-muted mt-0.5">{t('finalize.assets_selected', { count: selectedAssets.length })}</p>
           </div>
           <button onClick={onClose} className="text-text-muted hover:text-text-primary text-xl leading-none">×</button>
         </div>
@@ -653,20 +666,20 @@ function FinalizeItpModal({
           {/* Name + Symbol */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">Name (max 32)</label>
+              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">{t('finalize.name_label')}</label>
               <input
                 type="text" value={name}
                 onChange={(e) => setName(e.target.value.slice(0, 32))}
-                placeholder="e.g., DeFi Blue Chips"
+                placeholder={t('finalize.name_placeholder')}
                 className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
               />
             </div>
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">Symbol (max 10)</label>
+              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">{t('finalize.symbol_label')}</label>
               <input
                 type="text" value={symbol}
                 onChange={(e) => setSymbol(e.target.value.toUpperCase().slice(0, 10))}
-                placeholder="e.g., DEFI"
+                placeholder={t('finalize.symbol_placeholder')}
                 className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
               />
             </div>
@@ -675,11 +688,11 @@ function FinalizeItpModal({
           {/* Issuer Name */}
           {needsIssuerName && (
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">Issuer Name (max 64)</label>
+              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">{t('finalize.issuer_name_label')}</label>
               <input
                 type="text" value={issuerName}
                 onChange={(e) => setIssuerName(e.target.value.slice(0, 64))}
-                placeholder="e.g., Vanguard Labs"
+                placeholder={t('finalize.issuer_name_placeholder')}
                 className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
               />
             </div>
@@ -687,34 +700,34 @@ function FinalizeItpModal({
 
           {/* Description */}
           <div>
-            <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">Description (optional)</label>
+            <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">{t('finalize.description_label')}</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value.slice(0, 280))}
-              placeholder="Brief description shown on ITP cards"
+              placeholder={t('finalize.description_placeholder')}
               rows={2}
               className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none resize-none"
             />
-            <span className="text-[10px] text-text-muted">{description.length}/280</span>
+            <span className="text-[10px] text-text-muted">{t('finalize.char_count', { count: description.length })}</span>
           </div>
 
           {/* Website + Video */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">Website (optional)</label>
+              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">{t('finalize.website_label')}</label>
               <input
                 type="url" value={websiteUrl}
                 onChange={(e) => setWebsiteUrl(e.target.value.slice(0, 128))}
-                placeholder="https://yoursite.io"
+                placeholder={t('finalize.website_placeholder')}
                 className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
               />
             </div>
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">Video (optional)</label>
+              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">{t('finalize.video_label')}</label>
               <input
                 type="url" value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value.slice(0, 256))}
-                placeholder="https://youtube.com/watch?v=..."
+                placeholder={t('finalize.video_placeholder')}
                 className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
               />
             </div>
@@ -726,13 +739,13 @@ function FinalizeItpModal({
           )}
           {stuckWarning && (
             <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-3 text-orange-400 text-xs">
-              Transaction may be stuck. <button onClick={onCancel} className="underline">Cancel</button>
+              {t('finalize.tx_stuck')} <button onClick={onCancel} className="underline">{tc('actions.cancel')}</button>
             </div>
           )}
           {isSuccess && (
             <div className="bg-color-up/10 border border-color-up/30 rounded-lg p-3 text-color-up text-xs">
-              <p className="font-medium">ITP Request Created!</p>
-              <p className="mt-1">Waiting for issuer consensus...</p>
+              <p className="font-medium">{t('success.title')}</p>
+              <p className="mt-1">{t('success.description')}</p>
             </div>
           )}
         </div>
@@ -740,14 +753,14 @@ function FinalizeItpModal({
         {/* Footer */}
         <div className="px-6 py-4 border-t border-border-light flex justify-between items-center">
           <button onClick={onClose} className="text-sm text-text-muted hover:text-text-secondary transition-colors">
-            Back
+            {tc('actions.back')}
           </button>
           <WalletActionButton
             onClick={onSubmit}
             disabled={!isValidForm || isPending || isConfirming || isFetchingPrices || hasNonceGap}
             className="bg-zinc-900 text-white font-medium rounded-lg px-6 py-2.5 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            {isFetchingPrices ? 'Fetching prices...' : isPending ? 'Waiting for wallet...' : isConfirming ? 'Confirming...' : 'Finalize & Deploy'}
+            {isFetchingPrices ? t('finalize.submit_fetching') : isPending ? t('finalize.submit_pending') : isConfirming ? t('finalize.submit_confirming') : t('finalize.submit_deploy')}
           </WalletActionButton>
         </div>
       </div>
@@ -763,16 +776,17 @@ function Bone({ w = 'w-20', h = 'h-4' }: { w?: string; h?: string }) {
 const SKELETON_SYMBOLS = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'ADA', 'DOGE', 'DOT', 'LINK', 'AVAX']
 
 function CreateSkeleton({ coinMap }: { coinMap: Record<string, CoinEntry> }) {
+  const t = useTranslations('create-itp')
   return (
     <div className="space-y-4">
       {/* Name + Symbol fields */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5">ITP Name (max 32)</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5">{t('skeleton.itp_name')}</p>
           <div className="w-full h-[38px] bg-muted border border-border-medium rounded-lg animate-pulse" />
         </div>
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5">Symbol (max 10)</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5">{t('skeleton.symbol')}</p>
           <div className="w-full h-[38px] bg-muted border border-border-medium rounded-lg animate-pulse" />
         </div>
       </div>
@@ -782,7 +796,7 @@ function CreateSkeleton({ coinMap }: { coinMap: Record<string, CoinEntry> }) {
         {/* LEFT — Select Assets */}
         <div className="border border-border-light">
           <div className="bg-black text-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.08em]">
-            Select Assets (0/100)
+            {t('select_assets.skeleton_title')}
           </div>
           <div className="p-5">
             <div className="flex justify-between items-center mb-3">
@@ -806,7 +820,7 @@ function CreateSkeleton({ coinMap }: { coinMap: Record<string, CoinEntry> }) {
         {/* RIGHT — Configure Weights */}
         <div className="border border-border-light">
           <div className="bg-black text-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.08em]">
-            Configure Weights
+            {t('configure_weights.skeleton_title')}
           </div>
           <div className="p-5">
             <div className="flex justify-between items-center mb-3">
