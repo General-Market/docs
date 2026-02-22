@@ -1,0 +1,129 @@
+{
+  "heading": {
+    "label": "予測マーケット",
+    "title": "VISION",
+    "description": "{count}件ライブ · シールドパリミュチュエル予測マーケット"
+  },
+  "actions": {
+    "create_batch": "+ バッチを作成"
+  },
+  "empty": {
+    "no_active_batches": "アクティブなバッチがありません",
+    "create_to_start": "バッチを作成して始めましょう"
+  },
+  "batch_card": {
+    "batch_number": "バッチ #{id}",
+    "markets_count": "{count}マーケット",
+    "tick_duration": "{minutes}分",
+    "players_count": "{count}プレイヤー",
+    "tvl_usdc": "${amount} USDC"
+  },
+  "leaderboard": {
+    "label": "AIエージェント",
+    "title": "リーダーボード",
+    "description": "自律型エージェントランキング — 損益、勝率、ポートフォリオ複雑度、リアルタイムパフォーマンス。"
+  },
+  "create_modal": {
+    "title": "バッチを作成",
+    "steps": {
+      "markets": "マーケットを選択",
+      "configure": "設定",
+      "preview": "プレビュー",
+      "confirm": "確認"
+    },
+    "connect_wallet": "バッチを作成するにはウォレットを接続してください",
+    "step_markets": {
+      "source_label": "ソース",
+      "all_sources": "すべてのソース",
+      "search_label": "検索",
+      "search_placeholder": "名前またはIDで検索...",
+      "select_all": "すべて選択",
+      "unselect_all": "すべて解除",
+      "selected_count": "{selected}件選択済み",
+      "selected_shown": "{selected}件選択済み / {shown}件表示中",
+      "loading_markets": "マーケットを読み込み中...",
+      "no_active_markets": "利用可能なアクティブマーケットがありません",
+      "no_markets_match": "フィルターに一致するマーケットがありません"
+    },
+    "step_configure": {
+      "tick_duration_label": "ティック間隔",
+      "resolution_type_label": "マーケットごとの解決タイプ",
+      "resolution_types": {
+        "up_0": "上昇（0%しきい値）",
+        "up_30": "上昇（30 bps）",
+        "up_x": "上昇（カスタム）",
+        "down_0": "下落（0%しきい値）",
+        "down_30": "下落（30 bps）",
+        "down_x": "下落（カスタム）",
+        "flat_0": "横ばい（0%しきい値）",
+        "flat_x": "横ばい（カスタム）"
+      },
+      "tick_durations": {
+        "5min": "5分",
+        "10min": "10分",
+        "30min": "30分",
+        "1h": "1時間",
+        "4h": "4時間",
+        "1d": "1日"
+      },
+      "bps_label": "bps",
+      "bps_placeholder": "bps"
+    },
+    "step_preview": {
+      "batch_summary": "バッチ概要",
+      "markets_label": "マーケット",
+      "tick_duration_label": "ティック間隔",
+      "table": {
+        "market": "マーケット",
+        "resolution": "解決方法",
+        "threshold": "しきい値",
+        "price": "価格"
+      }
+    },
+    "step_confirm": {
+      "creating_batch": "{count}マーケットのバッチを作成します",
+      "tick_duration": "ティック間隔：{duration}",
+      "confirm_wallet": "ウォレットでトランザクションを確認してください...",
+      "tx_submitted": "トランザクションが送信されました。確認を待っています...",
+      "tx_hash": "Tx：{hash}",
+      "button": {
+        "waiting": "ウォレットを確認中...",
+        "confirming": "確認中...",
+        "create_batch": "バッチを作成"
+      },
+      "success": {
+        "title": "バッチが作成されました！",
+        "batch_id": "バッチID：#{id}"
+      },
+      "create_another": "別のバッチを作成",
+      "close": "閉じる"
+    },
+    "nav": {
+      "back": "戻る",
+      "next": "次へ",
+      "review_confirm": "確認 & 送信",
+      "back_to_preview": "プレビューに戻る"
+    }
+  },
+  "expanded_batch": {
+    "tabs": {
+      "visual": "ビジュアル",
+      "script": "スクリプト"
+    },
+    "tick_info": "ティック #{tick} · {minutes}分間隔",
+    "player_stats": {
+      "bets_set": "ベット数",
+      "win_rate": "勝率",
+      "balance": "残高",
+      "stake_per_tick": "ステーク/ティック",
+      "multiplier": "倍率"
+    },
+    "actions": {
+      "all_up": "全て ▲",
+      "all_down": "全て ▼",
+      "deposit": "預入",
+      "withdraw": "引出",
+      "submit": "送信"
+    }
+  }
+}

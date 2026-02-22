@@ -1,0 +1,67 @@
+{
+  "title": "{name}を購入",
+  "itp_id_label": "ITP ID：",
+  "amount_label": "金額（USDC）",
+  "balance_label": "残高：{amount} USDC",
+  "max_price_label": "上限価格（USDC/シェア）",
+  "nav_label": "NAV (純資産価値)：${nav}（{priced}/{total}件価格取得済み）",
+  "slippage_label": "スリッページ",
+  "slippage_tight": "タイト",
+  "slippage_normal": "標準",
+  "slippage_relaxed": "ゆるめ",
+  "insufficient_usdc": "USDC残高が不足しています",
+  "no_prices_warning": "資産価格が取得できません。指値を手動で設定するか、制限なしの場合は0を入力してください。",
+  "computing_price": "価格を計算中...",
+  "set_limit_price": "指値を設定",
+  "no_limit": "0（制限なし）",
+  "mint_test_usdc": "テストUSDC 10,000をミント",
+  "minting": "ミント中...",
+  "minted": "ミント完了！",
+  "mint_failed": "ミントに失敗しました",
+  "your_itp_shares": "あなたのITPシェア",
+  "buy_more": "追加購入",
+  "button": {
+    "approve_pending": "ウォレットで承認を確認してください...",
+    "approve_confirming": "USDCを承認中...",
+    "buy_pending": "ウォレットで購入を確認してください...",
+    "buy_confirming": "注文を送信中...",
+    "approve_and_buy": "承認 & 購入",
+    "buy_itp": "ITPを購入"
+  },
+  "steps": {
+    "submit": "送信",
+    "process": "処理",
+    "deliver": "配信",
+    "done": "完了",
+    "complete": "完了しました！"
+  },
+  "micro_steps": {
+    "approve_pending": "ウォレットでUSDC承認を確認してください...",
+    "approve_confirming": "USDCの支出を承認中...",
+    "submit_pending": "ウォレットで買い注文を確認してください...",
+    "submit_confirming": "買い注文を送信中...",
+    "bridge_to_l3": "USDCをL3にブリッジ中...",
+    "relay": "注文をL3にリレー中...",
+    "batch": "注文をバッチ処理中...",
+    "fill": "取引を実行中...",
+    "record_collateral": "担保を記録中...",
+    "bridge_to_arb": "USDCをArbitrumにブリッジ中...",
+    "complete_bridge": "ブリッジを完了中...",
+    "mint_shares": "BridgedITPをミント中...",
+    "shares_received": "シェアを受け取りました！"
+  },
+  "fill_details": {
+    "title": "約定詳細",
+    "fill_price": "約定価格",
+    "amount_filled": "約定金額",
+    "shares": "シェア",
+    "vs_limit": "指値比較"
+  },
+  "toast": {
+    "buy_filled_shares": "購入約定 — {name}のシェア{shares}を受け取りました",
+    "buy_filled": "購入約定 — {name}のシェアを受け取りました"
+  },
+  "error": {
+    "title": "エラー"
+  }
+}

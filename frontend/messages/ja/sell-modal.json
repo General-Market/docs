@@ -1,0 +1,63 @@
+{
+  "title": "{name}を売却",
+  "itp_id_label": "ITP ID：",
+  "your_shares_label": "あなたのBridgedITPシェア",
+  "no_shares": "売却可能なBridgedITPシェアがありません",
+  "no_bridged_itp": "このITPのBridgedITPが見つかりません。BridgeProxy経由でまだ作成されていない可能性があります。",
+  "shares_to_sell_label": "売却シェア数",
+  "min_price_label": "最低価格（USDC/シェア）",
+  "nav_label": "NAV (純資産価値)：${nav}（{priced}/{total}件価格取得済み）",
+  "slippage_label": "スリッページ",
+  "insufficient_shares": "BridgedITPシェアが不足しています",
+  "computing_price": "価格を計算中...",
+  "set_min_price": "最低価格を設定",
+  "no_limit": "0（制限なし）",
+  "usdc_balance_label": "あなたのUSDC残高（Arbitrum）",
+  "sell_more": "追加売却",
+  "estimated_pnl": {
+    "title": "推定損益",
+    "avg_cost_basis": "平均取得単価",
+    "current_nav": "現在のNAV (純資産価値)",
+    "est_proceeds": "推定受取額",
+    "est_pnl": "推定損益"
+  },
+  "button": {
+    "pending": "ウォレットを確認中...",
+    "approving": "承認中...",
+    "submitting": "送信中...",
+    "approve_and_sell": "承認 & 売却",
+    "sell_shares": "シェアを売却"
+  },
+  "steps": {
+    "submit": "送信",
+    "process": "処理",
+    "deliver": "配信",
+    "done": "完了"
+  },
+  "micro_steps": {
+    "approve_pending": "ウォレットでBridgedITP承認を確認してください...",
+    "approve_confirming": "シェアを承認中...",
+    "submit_pending": "ウォレットで売り注文を確認してください...",
+    "submit_confirming": "売り注文を送信中...",
+    "relay": "売り注文をL3にリレー中...",
+    "batch": "注文をバッチ処理中...",
+    "fill": "取引を実行中...",
+    "record_collateral": "担保を記録中...",
+    "bridge_to_arb": "USDCをArbitrumにブリッジ中...",
+    "complete_sell": "売り注文を完了中...",
+    "usdc_received": "USDCを受け取りました！"
+  },
+  "fill_details": {
+    "title": "約定詳細",
+    "fill_price": "約定価格",
+    "shares_sold": "売却シェア数",
+    "usdc_proceeds": "USDC受取額",
+    "pnl_vs_cost": "損益（取得単価比）"
+  },
+  "toast": {
+    "sell_filled": "売却約定 — {proceeds}を受け取りました"
+  },
+  "error": {
+    "title": "エラー"
+  }
+}

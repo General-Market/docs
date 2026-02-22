@@ -1,0 +1,109 @@
+{
+  "heading": "追跡中のマーケット",
+  "hero": {
+    "label": "インデックス追跡商品",
+    "title": "マーケット",
+    "description": "分散型インデックス商品をご覧ください。各ITFはリアルタイムのNAV (純資産価値) 価格設定とオンチェーン決済で暗号資産のバスケットを追跡します。"
+  },
+  "summary": {
+    "types_count": "{count}種類",
+    "categories_count": "{count}カテゴリ"
+  },
+  "types": {
+    "crypto": {
+      "name": "暗号通貨",
+      "description": "BTC、ETH、SOLおよび100以上のトークン",
+      "update_freq": "5分"
+    },
+    "stocks": {
+      "name": "米国株式",
+      "description": "S&P 500、NASDAQ、主要指数",
+      "update_freq": "15分（取引時間中）"
+    },
+    "weather": {
+      "name": "気象",
+      "description": "気温、降水量、風速",
+      "update_freq": "30分"
+    },
+    "economic": {
+      "name": "経済指標",
+      "description": "FRB金利、CPI、失業率",
+      "update_freq": "日次/月次"
+    },
+    "fx": {
+      "name": "外国為替",
+      "description": "EUR/USD、主要通貨ペア",
+      "update_freq": "日次"
+    },
+    "treasury": {
+      "name": "米国債金利",
+      "description": "米国債利回り",
+      "update_freq": "日次"
+    },
+    "defi": {
+      "name": "DeFi TVL (預入総額)",
+      "description": "プロトコルTVL (預入総額) ランキング",
+      "update_freq": "1時間"
+    }
+  },
+  "labels": {
+    "updates": "更新：",
+    "categories": "カテゴリ：",
+    "sample_assets": "サンプル資産：",
+    "loading_prices": "価格を読み込み中..."
+  },
+  "footer": {
+    "data_sources": "データソース：CoinGecko、Finnhub、Open-Meteo、FRED、ECB、Treasury、DefiLlama",
+    "resolution_note": "すべてのベットはオンチェーンキーパーコンセンサスにより解決されます"
+  },
+  "filters": {
+    "label": "フィルター",
+    "all": "すべて ({count})",
+    "active": "アクティブ ({count})",
+    "pending": "保留中 ({count})",
+    "search_placeholder": "ファンド名またはティッカーで検索...",
+    "sort_aum_desc": "並び替え：AUM 高い順",
+    "sort_aum_asc": "並び替え：AUM 低い順",
+    "sort_newest": "並び替え：新しい順",
+    "sort_name_az": "並び替え：名前 A-Z"
+  },
+  "section_bar": {
+    "title": "データビュー",
+    "subtitle": "ファンド概要 — リアルタイムNAV (純資産価値)",
+    "showing_partial": "{total}件中{shown}件を表示",
+    "showing_all": "全{total}件を表示"
+  },
+  "itp_card": {
+    "loading": "ITTを読み込み中...",
+    "no_itps": "まだITPが作成されていません",
+    "nav_per_share": "NAV (純資産価値) / シェア",
+    "assets": "資産",
+    "balance": "残高",
+    "by": "{name}作成",
+    "pending_fill": "約定待ち",
+    "buy": "購入",
+    "sell": "売却",
+    "chart": "チャート",
+    "rebalance": "リバランス",
+    "borrow": "借入",
+    "edit_itp_info": "ITP情報を編集",
+    "description_placeholder": "説明（最大280文字 / 約50語）",
+    "website_placeholder": "ウェブサイトURL（最大128文字）",
+    "video_placeholder": "YouTube URL（最大256文字）",
+    "arb_erc20": "Arbitrum ERC20：",
+    "itp_id": "ITP ID：",
+    "minted_supply": "発行済み供給量",
+    "loading_holders": "保有者を読み込み中...",
+    "unable_fetch_holders": "保有者の取得に失敗しました",
+    "no_tracked_holders": "追跡中の保有者はいません",
+    "other_holders": "その他の保有者",
+    "source_index": "Index.sol (L3)",
+    "source_bridge": "BridgeProxy",
+    "nonce": "ノンス：",
+    "source": "ソース：",
+    "admin": "管理者：",
+    "created": "作成日：",
+    "arb_address": "Arbアドレス：",
+    "request_number": "リクエスト #{number}"
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "heading": {
+    "label": "インフラストラクチャ",
+    "title": "システム",
+    "description": "リアルタイム運用データ — APキーパー残高、約定速度、コンセンサスの状態、インベントリ。"
+  },
+  "stats": {
+    "consensus_status": "コンセンサスステータス",
+    "active_issuers": "アクティブ発行者",
+    "avg_fill_speed": "平均約定速度",
+    "orders_total": "注文数（合計）",
+    "l3_block": "L3ブロック"
+  },
+  "consensus_values": {
+    "checking": "● 確認中…",
+    "healthy": "● 正常",
+    "offline": "● オフライン"
+  },
+  "issuer_network": {
+    "section_title": "発行者ネットワーク",
+    "section_subtitle": "BLSコンセンサスノード",
+    "issuer_label": "発行者 {name}",
+    "node_details": {
+      "address": "アドレス",
+      "bls_pubkey": "BLS公開鍵",
+      "registered": "登録済み",
+      "status": "ステータス",
+      "ap_vault": "AP Vault"
+    },
+    "status_active": "アクティブ"
+  },
+  "fill_speed": {
+    "section_title": "約定速度",
+    "section_subtitle": "注文あたりの約定時間",
+    "tooltip_label": "約定時間"
+  },
+  "inventory": {
+    "section_title": "インベントリ",
+    "section_subtitle": "USD評価額上位の保有銘柄",
+    "tooltip_label": "価値"
+  },
+  "recent_activity": {
+    "section_title": "最近のアクティビティ",
+    "section_subtitle": "キーパーBLS署名",
+    "table": {
+      "time": "時間",
+      "order_id": "注文ID",
+      "fund": "ファンド",
+      "type": "種別",
+      "amount": "金額",
+      "fill_time": "約定時間",
+      "signers": "署名者",
+      "status": "ステータス"
+    },
+    "side_buy": "購入",
+    "side_sell": "売却",
+    "status_confirmed": "✓ 確認済み",
+    "status_pending": "⌛ 保留中"
+  },
+  "connection": {
+    "live": "ライブ",
+    "polling": "ポーリング中",
+    "offline": "オフライン"
+  }
+}

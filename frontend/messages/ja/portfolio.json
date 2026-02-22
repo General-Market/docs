@@ -1,0 +1,102 @@
+{
+  "heading": {
+    "label": "保有資産",
+    "title": "ポートフォリオ",
+    "collapsed_title": "ポートフォリオ",
+    "collapsed_description": "ポジションとパフォーマンス",
+    "subtitle_with_data": "{count}ポジション · ${value}の価値",
+    "subtitle_empty": "ポジション、取引、注文を追跡"
+  },
+  "stats": {
+    "total_value": "総価値",
+    "total_invested": "投資総額",
+    "positions": "ポジション",
+    "pnl": "損益",
+    "usdc_available": "USDC残高",
+    "change_24h": "24時間変動",
+    "unrealized_pnl": "未実現損益"
+  },
+  "tabs": {
+    "positions": "ポジション",
+    "trades": "取引",
+    "orders": "注文"
+  },
+  "orders_banner": {
+    "active_orders": "{count}件のアクティブな注文が処理中です"
+  },
+  "section_bar": {
+    "title": "ポジション",
+    "subtitle": "保有中のポジション"
+  },
+  "positions_table": {
+    "itp": "ITP",
+    "shares": "シェア",
+    "avg_cost": "平均取得単価",
+    "nav": "NAV (純資産価値)",
+    "value": "価値",
+    "pnl": "損益",
+    "pnl_pct": "損益%"
+  },
+  "trades_table": {
+    "date": "日付",
+    "itp": "ITP",
+    "side": "売買",
+    "amount": "金額",
+    "price": "価格",
+    "shares": "シェア",
+    "status": "ステータス"
+  },
+  "orders_table": {
+    "id": "ID",
+    "side": "売買",
+    "amount": "金額",
+    "limit_price": "指値",
+    "status": "ステータス",
+    "time": "時間"
+  },
+  "empty": {
+    "no_positions_title": "ポジションがありません",
+    "no_positions_description": "上記のインデックス商品を閲覧し、最初のITPを購入してパフォーマンスの追跡を始めましょう。",
+    "explore_indexes": "インデックスを見る",
+    "no_trades_title": "取引履歴がありません",
+    "no_trades_description": "最初の取引を行うと、売買履歴がここに表示されます。",
+    "no_orders_title": "注文がありません",
+    "no_orders_description": "インデックス商品を売買すると、アクティブな注文と最近の注文がここに表示されます。",
+    "loading_orders": "注文を読み込み中..."
+  },
+  "chart": {
+    "current_value": "現在の価値",
+    "chart_pending": "データが蓄積されるとチャートが表示されます"
+  },
+  "tooltip": {
+    "value_label": "価値：",
+    "pnl_label": "損益："
+  },
+  "skeleton": {
+    "fund": "ファンド",
+    "ticker": "ティッカー",
+    "nav_per_share": "NAV (純資産価値) / シェア",
+    "avg_cost": "平均取得単価",
+    "change_24h": "24時間"
+  },
+  "cost_basis": {
+    "title": "あなたのポジション",
+    "shares": "シェア",
+    "avg_cost": "平均取得単価",
+    "total_cost": "取得総額",
+    "current_value": "現在の価値",
+    "unrealized_pnl": "未実現損益",
+    "realized_pnl": "実現損益",
+    "loading": "コストデータを読み込み中...",
+    "fees_title": "支払済み手数料",
+    "fee_trading": "取引",
+    "fee_management": "運用",
+    "fee_bridge": "ブリッジ",
+    "fee_gas": "ガス",
+    "fee_total": "手数料合計"
+  },
+  "side": {
+    "buy": "買い",
+    "sell": "売り"
+  }
+}
