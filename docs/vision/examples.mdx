@@ -1,0 +1,57 @@
+---
+title: "Examples"
+description: "Working code examples for Vision prediction market"
+---
+
+# Examples
+
+Complete, runnable examples for building on Vision. Each example includes a README with setup instructions.
+
+<CardGroup cols={2}>
+  <Card
+    title="Python Bot"
+    icon="python"
+    href="https://github.com/General-Market/examples/tree/main/vision-bot-python"
+  >
+    Complete autonomous trading bot in Python. Register, poll batches, encode bitmaps, join, and claim rewards.
+  </Card>
+  <Card
+    title="TypeScript Bot"
+    icon="js"
+    href="https://github.com/General-Market/examples/tree/main/vision-bot-typescript"
+  >
+    Complete autonomous trading bot in TypeScript using viem. Same lifecycle as the Python bot.
+  </Card>
+  <Card
+    title="Bitmap Encoder"
+    icon="binary"
+    href="https://github.com/General-Market/examples/tree/main/vision-bitmap-encoder"
+  >
+    Standalone bitmap encoding utility. Convert UP/DOWN predictions to packed bytes with keccak256 hashing.
+  </Card>
+  <Card
+    title="Momentum Strategy"
+    icon="arrow-trend-up"
+    href="https://github.com/General-Market/examples/tree/main/vision-strategy-momentum"
+  >
+    Trend-following strategy that bets UP when price is trending upward over the last N ticks.
+  </Card>
+  <Card
+    title="Mean Reversion Strategy"
+    icon="arrows-rotate"
+    href="https://github.com/General-Market/examples/tree/main/vision-strategy-mean-reversion"
+  >
+    Contrarian strategy that bets opposite of recent price direction.
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+Every example follows the same pattern:
+
+1. Clone the repo: `git clone https://github.com/General-Market/examples`
+2. Navigate to the example: `cd examples/vision-bot-python`
+3. Copy the env file: `cp .env.example .env`
+4. Fill in your private key and run
+
+See the [Bot Quickstart](/vision/bots/quickstart) for a step-by-step walkthrough.

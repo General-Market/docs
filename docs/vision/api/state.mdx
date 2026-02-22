@@ -1,0 +1,127 @@
+---
+title: "Batch State"
+description: "Query the full state of a single prediction batch"
+---
+
+# Batch State
+
+Retrieve the full live state of a single batch, including all player positions, the current tick, and pool size.
+
+---
+
+## Get Batch State
+
+`GET /vision/batch/{id}/state`
+
+Returns the complete state of a batch including every player's position, balance, and bitmap status. Player data comes from the live in-memory tick scheduler.
+
+<ParamField path="id" type="number" required>
+  The batch ID to query. Must be a valid, existing batch.
+</ParamField>
+
+<Tabs>
+<Tab title="cURL">
+```bash
+curl https://generalmarket.io/api/vision/batch/1/state
+```
+</Tab>
+<Tab title="Python">
+```python
+import requests
+
+batch_id = 1
+response = requests.get(f"https://generalmarket.io/api/vision/batch/{batch_id}/state")
+state = response.json()
+
+print(f"Batch {state['id']}: {state['player_count']} players")
+print(f"Next tick: {state['next_tick']}")
+for player in state["players"]:
+    print(f"  {player['address']}: balance={player['balance']}, bitmap={player['has_bitmap']}")
+```
+</Tab>
+<Tab title="TypeScript">
+```typescript
+const batchId = 1;
+const res = await fetch(`https://generalmarket.io/api/vision/batch/${batchId}/state`);
+const state = await res.json();
+
+console.log(`Batch ${state.id}: ${state.player_count} players`);
+console.log(`Next tick: ${state.next_tick}`);
+for (const player of state.players) {
+  console.log(`  ${player.address}: balance=${player.balance}, bitmap=${player.has_bitmap}`);
+}
+```
+</Tab>
+</Tabs>
+
+<Expandable title="Response">
+```json
+{
+  "id": 1,
+  "creator": "0xAbC123...def",
+  "market_ids": ["BTC-USD", "ETH-USD", "SOL-USD"],
+  "tick_duration": 3600,
+  "created_at_tick": 475166,
+  "paused": false,
+  "player_count": 3,
+  "next_tick": 1708603600,
+  "players": [
+    {
+      "address": "0x1111...aaaa",
+      "stake_per_tick": "100000",
+      "balance": "5000000000000000",
+      "start_tick": 475166,
+      "has_bitmap": true
+    },
+    {
+      "address": "0x2222...bbbb",
+      "stake_per_tick": "200000",
+      "balance": "3200000000000000",
+      "start_tick": 475167,
+      "has_bitmap": false
+    },
+    {
+      "address": "0x3333...cccc",
+      "stake_per_tick": "150000",
+      "balance": "8100000000000000",
+      "start_tick": 475166,
+      "has_bitmap": true
+    }
+  ]
+}
+```
+</Expandable>
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | number | Batch ID |
+| `creator` | string | Ethereum address of the batch creator |
+| `market_ids` | string[] | Market identifiers in this batch |
+| `tick_duration` | number | Seconds between tick resolutions |
+| `created_at_tick` | number | The tick number when the batch was created |
+| `paused` | boolean | Whether the batch is paused |
+| `player_count` | number | Number of active players |
+| `next_tick` | number | Unix timestamp of the next tick resolution |
+| `players` | object[] | Array of player positions (see below) |
+
+### Player Object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `address` | string | Player's Ethereum address |
+| `stake_per_tick` | string | Amount staked per tick per market, in wei |
+| `balance` | string | Current balance in the batch, in wei |
+| `start_tick` | number | The tick number when the player joined |
+| `has_bitmap` | boolean | Whether the player has submitted a bitmap for the current tick |
+
+<Warning>
+Players with `has_bitmap: false` will be voided for the current tick -- they forfeit their stake without participating in outcomes. Ensure your bot submits a bitmap before each tick closes.
+</Warning>
+
+### Errors
+
+| Status | Condition |
+|--------|-----------|
+| `404` | Batch with the given ID does not exist |

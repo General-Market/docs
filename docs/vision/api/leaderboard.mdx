@@ -1,0 +1,118 @@
+---
+title: "Leaderboard"
+description: "Player rankings across all Vision batches"
+---
+
+# Leaderboard
+
+Retrieve the global player leaderboard, ranked by PnL across all Vision batches.
+
+---
+
+## Get Leaderboard
+
+`GET /vision/leaderboard`
+
+Returns player rankings aggregated across all active batches. Players are ranked by total PnL (current balance minus initial deposit). Statistics include ROI, total volume, and portfolio metrics.
+
+No parameters required.
+
+<Tabs>
+<Tab title="cURL">
+```bash
+curl https://generalmarket.io/api/vision/leaderboard
+```
+</Tab>
+<Tab title="Python">
+```python
+import requests
+
+response = requests.get("https://generalmarket.io/api/vision/leaderboard")
+data = response.json()
+
+print(f"Updated at: {data['updatedAt']}")
+for entry in data["leaderboard"][:10]:
+    print(
+        f"#{entry['rank']} {entry['walletAddress']}: "
+        f"PnL={entry['pnl']}, ROI={entry['roi']}%, "
+        f"Win Rate={entry['winRate']:.0%}"
+    )
+```
+</Tab>
+<Tab title="TypeScript">
+```typescript
+const res = await fetch("https://generalmarket.io/api/vision/leaderboard");
+const data = await res.json();
+
+console.log(`Updated at: ${data.updatedAt}`);
+for (const entry of data.leaderboard.slice(0, 10)) {
+  console.log(
+    `#${entry.rank} ${entry.walletAddress}: ` +
+    `PnL=${entry.pnl}, ROI=${entry.roi}%, ` +
+    `Win Rate=${(entry.winRate * 100).toFixed(0)}%`
+  );
+}
+```
+</Tab>
+</Tabs>
+
+<Expandable title="Response">
+```json
+{
+  "leaderboard": [
+    {
+      "rank": 1,
+      "walletAddress": "0xAbC123...def",
+      "pnl": 123.45,
+      "winRate": 0.62,
+      "roi": 8.5,
+      "totalVolume": 1453.20,
+      "portfolioBets": 5,
+      "avgPortfolioSize": 4.2,
+      "largestPortfolio": 100
+    },
+    {
+      "rank": 2,
+      "walletAddress": "0x789Abc...012",
+      "pnl": 87.12,
+      "winRate": 0.58,
+      "roi": 5.2,
+      "totalVolume": 1675.00,
+      "portfolioBets": 8,
+      "avgPortfolioSize": 3.1,
+      "largestPortfolio": 50
+    }
+  ],
+  "updatedAt": "2026-02-22T12:00:00Z"
+}
+```
+</Expandable>
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `leaderboard` | object[] | Array of player entries, sorted by PnL descending |
+| `updatedAt` | string | ISO 8601 timestamp of when the leaderboard was last computed |
+
+### Leaderboard Entry
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `rank` | number | Player's position on the leaderboard (1-indexed) |
+| `walletAddress` | string | Player's Ethereum address |
+| `pnl` | number | Total profit/loss in USDC (current balance minus initial deposit) |
+| `winRate` | number | Fraction of market bets won (0.0 to 1.0). Currently `0.0` while per-player win tracking is being implemented. |
+| `roi` | number | Return on investment as a percentage (PnL / total deposited * 100) |
+| `totalVolume` | number | Total USDC deposited across all batches |
+| `portfolioBets` | number | Number of batches the player has joined |
+| `avgPortfolioSize` | number | Average number of markets across joined batches |
+| `largestPortfolio` | number | Largest number of markets in any single batch the player joined |
+
+<Info>
+The leaderboard is computed in real-time from in-memory player positions and Postgres deposit records. Rankings update after every tick resolution.
+</Info>
+
+<Note>
+The `winRate` field currently returns `0.0` for all players. Per-player win/loss tracking across individual market bets is under development and will be enabled in a future release.
+</Note>

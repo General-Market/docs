@@ -1,0 +1,106 @@
+---
+title: "API Overview"
+description: "Vision prediction market REST API reference"
+---
+
+# Vision API
+
+The Vision API provides programmatic access to the prediction market system. Use it to list batches, submit bitmaps, query balances, backtest strategies, and read tick history.
+
+## Base URL
+
+All Vision endpoints are served under:
+
+```
+https://generalmarket.io/api/vision
+```
+
+Requests are proxied to the issuer node running Vision on port 10001.
+
+## Authentication
+
+The Vision API is **public** -- no API key or authentication is required. Player identity is determined by Ethereum addresses passed as parameters.
+
+## Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | [`/vision/batches`](/vision/api/batches#list-batches) | List all active batches |
+| `GET` | [`/vision/markets`](/vision/api/batches#list-markets) | List supported markets |
+| `GET` | [`/vision/batch/{id}/state`](/vision/api/state#get-batch-state) | Full state for a single batch |
+| `POST` | [`/vision/bitmap`](/vision/api/bitmap#submit-bitmap) | Submit a prediction bitmap |
+| `GET` | [`/vision/balance/{batch_id}/{player}`](/vision/api/balance#get-player-balance) | Player balance with BLS proof |
+| `GET` | [`/vision/batch/{id}/history`](/vision/api/ticks#get-tick-history) | Tick result history for a batch |
+| `GET` | [`/vision/reveal/{batch_id}/{tick_id}`](/vision/api/ticks#get-revealed-bitmaps) | Revealed bitmaps after tick closes |
+| `POST` | [`/vision/backtest`](/vision/api/ticks#backtest-a-strategy) | Backtest a bitmap strategy |
+| `GET` | [`/vision/leaderboard`](/vision/api/leaderboard#get-leaderboard) | Player rankings by PnL |
+
+## Common Patterns
+
+### Wei-Encoded Values
+
+All token amounts (balances, TVL, stake) are returned as **string-encoded wei values** to avoid floating-point precision loss. For USDC (6 decimals), divide by `1e6` to get the human-readable amount. For WIND (18 decimals), divide by `1e18`.
+
+```python
+balance_wei = "5000000000000000000"
+balance_usdc = int(balance_wei) / 1e6  # 5000000000000.0 -- this is WIND (18 dec)
+```
+
+### Error Responses
+
+All endpoints return errors in a consistent format:
+
+```json
+{
+  "error": "Human-readable error message"
+}
+```
+
+Common HTTP status codes:
+
+| Code | Meaning |
+|------|---------|
+| `200` | Success |
+| `400` | Bad request (invalid parameters, malformed bitmap, etc.) |
+| `403` | Forbidden (e.g., reveal window not yet expired) |
+| `404` | Resource not found (batch or player does not exist) |
+| `500` | Internal server error (database failure) |
+
+### Addresses
+
+Ethereum addresses in responses are formatted as checksummed hex strings with the `0x` prefix (e.g., `0xAbC123...def`).
+
+## Rate Limits
+
+There are currently no rate limits on the Vision API. This may change as usage scales.
+
+## Quick Start
+
+Fetch all active batches:
+
+<Tabs>
+<Tab title="cURL">
+```bash
+curl https://generalmarket.io/api/vision/batches
+```
+</Tab>
+<Tab title="Python">
+```python
+import requests
+
+response = requests.get("https://generalmarket.io/api/vision/batches")
+batches = response.json()["batches"]
+for batch in batches:
+    print(f"Batch {batch['id']}: {batch['market_count']} markets, {batch['player_count']} players")
+```
+</Tab>
+<Tab title="TypeScript">
+```typescript
+const res = await fetch("https://generalmarket.io/api/vision/batches");
+const { batches } = await res.json();
+batches.forEach((b: any) =>
+  console.log(`Batch ${b.id}: ${b.market_count} markets, ${b.player_count} players`)
+);
+```
+</Tab>
+</Tabs>

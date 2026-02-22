@@ -1,0 +1,102 @@
+---
+title: "Balance & Proofs"
+description: "Query player balances and BLS-signed withdrawal proofs"
+---
+
+# Balance & Proofs
+
+Retrieve a player's current balance within a batch. In the full implementation, this endpoint also returns a BLS-signed balance proof that enables on-chain withdrawals.
+
+---
+
+## Get Player Balance
+
+`GET /vision/balance/{batch_id}/{player}`
+
+Returns the player's current balance and stake configuration in the specified batch. The balance reflects all tick resolutions processed so far (wins, losses, and fees).
+
+<ParamField path="batch_id" type="number" required>
+  The batch ID to query the balance for.
+</ParamField>
+
+<ParamField path="player" type="string" required>
+  The player's Ethereum address (checksummed, `0x`-prefixed).
+</ParamField>
+
+<Tabs>
+<Tab title="cURL">
+```bash
+curl https://generalmarket.io/api/vision/balance/1/0xAbC123def456789AbC123def456789AbC123def4
+```
+</Tab>
+<Tab title="Python">
+```python
+import requests
+
+batch_id = 1
+player = "0xAbC123def456789AbC123def456789AbC123def4"
+
+response = requests.get(
+    f"https://generalmarket.io/api/vision/balance/{batch_id}/{player}"
+)
+data = response.json()
+
+balance_human = int(data["balance"]) / 1e18
+print(f"Balance: {balance_human} WIND")
+print(f"Stake per tick: {data['stake_per_tick']}")
+```
+</Tab>
+<Tab title="TypeScript">
+```typescript
+const batchId = 1;
+const player = "0xAbC123def456789AbC123def456789AbC123def4";
+
+const res = await fetch(
+  `https://generalmarket.io/api/vision/balance/${batchId}/${player}`
+);
+const data = await res.json();
+
+const balanceHuman = BigInt(data.balance) / BigInt(1e18);
+console.log(`Balance: ${balanceHuman} WIND`);
+console.log(`Stake per tick: ${data.stake_per_tick}`);
+```
+</Tab>
+</Tabs>
+
+<Expandable title="Response">
+```json
+{
+  "batch_id": 1,
+  "player": "0xAbC123def456789AbC123def456789AbC123def4",
+  "balance": "5000000000000000000",
+  "stake_per_tick": "100000000000000000"
+}
+```
+</Expandable>
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `batch_id` | number | The batch ID |
+| `player` | string | The player's Ethereum address |
+| `balance` | string | Current balance in wei. This is the total amount the player can claim or continue staking. |
+| `stake_per_tick` | string | The amount risked per tick per market, in wei. Set when the player joins the batch. |
+
+<Info>
+In the production release, this endpoint will also return BLS signature fields for on-chain withdrawal proofs:
+
+- `bls_signature` -- The issuer's BLS signature over the balance proof message
+- `issuer_id` -- The issuer node ID that produced the signature
+- `pubkey` -- The issuer's BLS public key
+
+Players aggregate signatures from 2/3+ issuers and submit them on-chain to withdraw. See [Balance Proofs](/vision/concepts/balance-proofs) for details on the verification flow.
+</Info>
+
+### Errors
+
+| Status | Condition |
+|--------|-----------|
+| `400` | Invalid player address format |
+| `404` | Batch does not exist |
+| `404` | Player is not registered in the specified batch |
