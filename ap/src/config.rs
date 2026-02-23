@@ -105,6 +105,9 @@ pub struct APConfig {
 
     /// Arbitrum chain ID (default: 42161)
     pub arb_chain_id: Option<u64>,
+
+    /// Exchange mode: mock, testnet, or mainnet. Supersedes mock_bitget and bitget_testnet flags.
+    pub exchange_mode: Option<String>,
 }
 
 /// Custom Debug implementation that redacts sensitive fields
@@ -143,6 +146,7 @@ impl fmt::Debug for APConfig {
             .field("data_node_url", &self.data_node_url)
             .field("arb_rpc_url", &self.arb_rpc_url)
             .field("arb_chain_id", &self.arb_chain_id)
+            .field("exchange_mode", &self.exchange_mode)
             .finish()
     }
 }
@@ -219,6 +223,7 @@ impl APConfig {
                     None
                 })
             }),
+            exchange_mode: std::env::var("EXCHANGE_MODE").ok(),
         }
     }
 
@@ -283,6 +288,9 @@ impl APConfig {
         }
         if other.arb_chain_id.is_some() {
             self.arb_chain_id = other.arb_chain_id;
+        }
+        if other.exchange_mode.is_some() {
+            self.exchange_mode = other.exchange_mode.clone();
         }
     }
 
@@ -450,6 +458,22 @@ impl APConfig {
             .ok_or_else(|| "AP_ARB_CHAIN_ID not configured".to_string())
     }
 
+    /// Resolve the effective ExchangeMode using legacy flag compat.
+    pub fn effective_exchange_mode(&self) -> common::types::ExchangeMode {
+        if let Some(ref mode_str) = self.exchange_mode {
+            if let Ok(mode) = mode_str.parse() {
+                return mode;
+            }
+        }
+        common::types::resolve_exchange_mode(
+            None,
+            self.effective_mock_bitget(),
+            self.bitget_testnet,
+            false, // bitget_mainnet - no legacy flag for this
+            self.has_bitget_credentials(),
+        )
+    }
+
     /// Check if Bitget credentials are configured (non-empty key, secret, and passphrase)
     pub fn has_bitget_credentials(&self) -> bool {
         self.bitget_api_key.as_ref().is_some_and(|s| !s.is_empty())
@@ -517,6 +541,7 @@ impl ConfigBuilder {
             data_node_url: None,     // Set via with_data_node_url
             arb_rpc_url: None,
             arb_chain_id: None,
+            exchange_mode: None,     // Set via with_exchange_mode
         };
         self
     }
@@ -566,6 +591,12 @@ impl ConfigBuilder {
     /// Set arb_chain_id CLI override
     pub fn with_arb_chain_id(mut self, chain_id: Option<u64>) -> Self {
         self.cli_config.arb_chain_id = chain_id;
+        self
+    }
+
+    /// Set exchange_mode CLI override
+    pub fn with_exchange_mode(mut self, mode: Option<String>) -> Self {
+        self.cli_config.exchange_mode = mode;
         self
     }
 

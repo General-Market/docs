@@ -16,7 +16,7 @@ use common::adapters::{DeploymentConfig, RpcChainReader, RpcChainWriter};
 use common::mocks::{MockBitgetBuilder, MockChainBuilder};
 use common::rate_limit::{BitgetRateLimiter, RateLimiterTier};
 use common::traits::{APClient, ChainWriter};
-use common::types::{LimitOrder, OrderStatus, Side};
+use common::types::{ExchangeMode, LimitOrder, OrderStatus, Side};
 use ethers::prelude::*;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -88,6 +88,10 @@ struct Args {
     /// Index.sol contract address (hex, e.g., 0x1234...abcd)
     #[arg(long)]
     index_contract: Option<String>,
+
+    /// Exchange mode: mock, testnet, mainnet
+    #[arg(long, value_parser = ["mock", "testnet", "mainnet"])]
+    exchange_mode: Option<String>,
 
     /// Use Bitget testnet (safety default, overrides --bitget-mainnet)
     #[arg(long)]
@@ -348,10 +352,10 @@ async fn handle_http_request(
 async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<dyn std::error::Error>> {
     let port = config.effective_port();
     let rpc_url = config.effective_rpc_url();
-    let mock_bitget = config.effective_mock_bitget();
+    let exchange_mode = config.effective_exchange_mode();
     let use_mock_chain = config.effective_mock_chain();
     let target_chain_id = config.effective_chain_id();
-    let bitget_mode = if mock_bitget { "mock" } else { "live" };
+    let bitget_mode = if exchange_mode.is_mock() { "mock" } else { "live" };
     let chain_mode = if use_mock_chain { "mock" } else { "real" };
 
     let timestamp = chrono::Utc::now().to_rfc3339();
@@ -516,68 +520,67 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
     info!("EventMonitor initialized");
     let event_receiver = Arc::new(RwLock::new(EventReceiver::new(event_receiver)));
 
-    // Bitget client (mock or real based on flag)
-    let ap_client: Arc<dyn APClient> = if mock_bitget {
-        let mock_client = MockBitgetBuilder::new()
-            .with_latency(Duration::from_millis(100))
-            .with_fill_delay(Duration::from_millis(500))
-            .build();
-        info!("MockBitget initialized (APClient - mock mode)");
-        Arc::new(mock_client)
-    } else {
-        // Live mode: validate credentials
-        if !config.has_bitget_credentials() {
-            error!(code = "INFRA-011", "Live Bitget mode enabled but credentials not configured. Set BITGET_API_KEY, BITGET_API_SECRET, BITGET_API_PASSPHRASE environment variables.");
-            return Err("Live Bitget mode requires API credentials".into());
+    // Bitget client (mock, testnet, or mainnet based on exchange_mode)
+    let ap_client: Arc<dyn APClient> = match exchange_mode {
+        ExchangeMode::Mock => {
+            let mock_client = MockBitgetBuilder::new()
+                .with_latency(Duration::from_millis(100))
+                .with_fill_delay(Duration::from_millis(500))
+                .build();
+            info!("MockBitget initialized (APClient - mock mode)");
+            Arc::new(mock_client)
         }
+        ExchangeMode::Testnet | ExchangeMode::Mainnet => {
+            // Live mode: validate credentials
+            if !config.has_bitget_credentials() {
+                error!(code = "INFRA-011", exchange_mode = %exchange_mode, "Live Bitget mode enabled but credentials not configured. Set BITGET_API_KEY, BITGET_API_SECRET, BITGET_API_PASSPHRASE environment variables.");
+                return Err("Live Bitget mode requires API credentials".into());
+            }
 
-        // Determine testnet/mainnet
-        let is_testnet = config.effective_bitget_testnet();
-        let bitget_config = if is_testnet {
-            BitgetConfig::testnet()
-        } else {
-            BitgetConfig::mainnet()
-        };
+            let bitget_config = if exchange_mode.is_mainnet() {
+                BitgetConfig::mainnet()
+            } else {
+                BitgetConfig::testnet()
+            };
 
-        let env_label = if is_testnet { "testnet" } else { "mainnet" };
-        info!(environment = env_label, "Initializing live Bitget client");
+            let env_label = exchange_mode.to_string();
+            info!(environment = %env_label, "Initializing live Bitget client");
 
-        // Construct and authenticate BitgetClient
-        let mut bitget_client = BitgetClient::new(bitget_config)
-            .map_err(|e| format!("Failed to create Bitget client: {}", e))?;
-        bitget_client
-            .authenticate(
-                config.bitget_api_key.as_deref().unwrap_or_default(),
-                config.bitget_api_secret.as_deref().unwrap_or_default(),
-                config.bitget_api_passphrase.as_deref().unwrap_or_default(),
-            )
-            .map_err(|e| format!("Failed to authenticate Bitget client: {}", e))?;
+            // Construct and authenticate BitgetClient
+            let mut bitget_client = BitgetClient::new(bitget_config)
+                .map_err(|e| format!("Failed to create Bitget client: {}", e))?;
+            bitget_client
+                .authenticate(
+                    config.bitget_api_key.as_deref().unwrap_or_default(),
+                    config.bitget_api_secret.as_deref().unwrap_or_default(),
+                    config.bitget_api_passphrase.as_deref().unwrap_or_default(),
+                )
+                .map_err(|e| format!("Failed to authenticate Bitget client: {}", e))?;
 
-        // Wrap with rate limiter
-        let rate_limiter_tier = if is_testnet {
-            RateLimiterTier::Testnet
-        } else {
-            RateLimiterTier::Mainnet
-        };
-        let rate_limiter = Arc::new(BitgetRateLimiter::from_tier(rate_limiter_tier));
-        let rate_limited_client = RateLimitedBitgetClient::new(bitget_client, rate_limiter);
+            // Wrap with rate limiter
+            let rate_limiter_tier = if exchange_mode.is_mainnet() {
+                RateLimiterTier::Mainnet
+            } else {
+                RateLimiterTier::Testnet
+            };
+            let rate_limiter = Arc::new(BitgetRateLimiter::from_tier(rate_limiter_tier));
+            let rate_limited_client = RateLimitedBitgetClient::new(bitget_client, rate_limiter);
 
-        info!(
-            environment = env_label,
-            "Live Bitget client initialized (APClient - live mode)"
-        );
-        Arc::new(rate_limited_client)
+            info!(
+                environment = %env_label,
+                "Live Bitget client initialized (APClient - live mode)"
+            );
+            Arc::new(rate_limited_client)
+        }
     };
 
-    // Log which Bitget mode is active
-    let bitget_env = if mock_bitget {
-        "mock"
-    } else if config.effective_bitget_testnet() {
-        "testnet"
-    } else {
-        "mainnet"
-    };
-    info!(bitget_environment = bitget_env, "Bitget mode active");
+    // Mainnet safety warning
+    if exchange_mode.is_mainnet() {
+        warn!("========================================");
+        warn!("  MAINNET MODE - REAL MONEY TRADING");
+        warn!("========================================");
+    }
+    info!(exchange_mode = %exchange_mode, "Exchange mode active");
 
     // Load symbol map from data/symbol-map.json (used by OnChainSettlement for data-node lookups)
     let shared_symbol_map: Option<Arc<std::collections::HashMap<String, String>>> = {
@@ -644,7 +647,7 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
 
     // Initialize on-chain MockBitgetVault settlement for E2E testing (Story 6.17)
     // Multi-asset: resolves ITP inventory on-chain and trades all underlying assets.
-    let on_chain_settlement: Option<OnChainSettlement> = if mock_bitget {
+    let on_chain_settlement: Option<OnChainSettlement> = if exchange_mode.is_mock() {
         if let Some(vault_address) = config.effective_bitget_vault() {
             let private_key = config
                 .private_key
@@ -1268,6 +1271,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_data_node_url(args.data_node_url.clone())
         .with_arb_rpc_url(args.arb_rpc)
         .with_arb_chain_id(args.arb_chain_id)
+        .with_exchange_mode(args.exchange_mode)
         .build()
         .map_err(|e| {
             eprintln!("Configuration error: {}", e);
