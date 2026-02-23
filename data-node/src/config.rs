@@ -219,6 +219,10 @@ pub struct ServeArgs {
     #[arg(long, env = "EBIRD_API_KEY")]
     pub ebird_api_key: Option<String>,
 
+    /// Helius API key (enables Pump.fun token tracking via Solana RPC)
+    #[arg(long, env = "HELIUS_API_KEY")]
+    pub helius_api_key: Option<String>,
+
     /// P2.8: Allowed CORS origins (repeat for multiple). Empty = allow all.
     #[arg(long, env = "CORS_ORIGIN")]
     pub cors_origin: Vec<String>,

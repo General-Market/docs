@@ -244,8 +244,9 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     }
 
     // ── Market data providers (from AA) ──────────────────────────────────
-    // Initialize global error tracker before starting any sources
+    // Initialize global error tracker and sync registry before starting any sources
     market_data::error_tracker::init_global();
+    market_data::sync_registry::init_global();
 
     // Each provider is gated on its config key. We use SyncEngine (fixed interval)
     // for simple sources and ScheduledSyncEngine for schedule-aware sources.
@@ -346,7 +347,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("EIA energy data provider started");
     }
 
-    // 7. Nasdaq sources (CFTC, CHRIS, BCHAIN, OPEC, IMF) — gated on nasdaq_api_key
+    // 7. Nasdaq sources (CFTC, CHRIS, OPEC, IMF) — gated on nasdaq_api_key
     if let Some(ref key) = args.nasdaq_api_key {
         std::env::set_var("NASDAQ_API_KEY", key);
 
@@ -374,18 +375,6 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             }
         });
 
-        // BCHAIN (bitcoin on-chain)
-        let pool_c = pool.clone();
-        tokio::spawn(async move {
-            match market_data::sources::nasdaq::BchainMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
-                    engine.run().await;
-                }
-                Err(e) => tracing::error!("BCHAIN init failed: {e}"),
-            }
-        });
-
         // OPEC
         let pool_c = pool.clone();
         tokio::spawn(async move {
@@ -410,7 +399,23 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             }
         });
 
-        info!("Nasdaq Data Link providers started (CFTC, CHRIS, BCHAIN, OPEC, IMF)");
+        info!("Nasdaq Data Link providers started (CFTC, CHRIS, OPEC, IMF)");
+    }
+
+    // 7b. BCHAIN (bitcoin on-chain) — uses blockchain.info, NO API key needed.
+    // Previously gated behind nasdaq_api_key by mistake.
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::nasdaq::BchainMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("BCHAIN init failed: {e}"),
+            }
+        });
+        info!("BCHAIN blockchain metrics provider started (blockchain.info, no key needed)");
     }
 
     // 8. OpenMeteo (weather) — gated on sync interval > 0
@@ -430,7 +435,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     }
 
     // 9. Free/no-key providers — always enabled
-    // SEC EDGAR
+    // SEC EDGAR 13F Filings (no auth, User-Agent only)
     {
         let pool_c = pool.clone();
         tokio::spawn(async move {
@@ -458,20 +463,6 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         });
     }
 
-    // FINRA Daily Short Volume (no auth required, public CDN)
-    {
-        let pool_c = pool.clone();
-        tokio::spawn(async move {
-            match market_data::sources::finra_short_vol::FinraShortVolMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
-                    engine.run().await;
-                }
-                Err(e) => tracing::error!("FINRA Short Volume init failed: {e}"),
-            }
-        });
-    }
-
     // SEC Form 4 Insider Trading (no auth required)
     {
         let pool_c = pool.clone();
@@ -486,7 +477,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         });
     }
 
-    // FINRA — gated on OAuth credentials
+    // FINRA Daily Short Volume — OAuth (client_id + client_secret)
     if let Some(ref id) = args.finra_client_id {
         if let Some(ref secret) = args.finra_client_secret {
             std::env::set_var("FINRA_CLIENT_ID", id);
@@ -495,13 +486,13 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             tokio::spawn(async move {
                 match market_data::sources::finra::FinraMarketSource::from_env() {
                     Ok(source) => {
-                        let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
                         engine.run().await;
                     }
                     Err(e) => tracing::error!("FINRA init failed: {e}"),
                 }
             });
-            info!("FINRA short interest provider started");
+            info!("FINRA short volume provider started");
         } else {
             info!("FINRA skipped (FINRA_CLIENT_SECRET not configured)");
         }
@@ -537,7 +528,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         });
     }
 
-    info!("Free market data providers started (SEC EDGAR, SEC EFTS, SEC Insider, FINRA Short Vol, Congress, World Bank)");
+    info!("Free market data providers started (SEC EFTS, SEC Insider, Congress, World Bank)");
 
     // ── New market data providers (from AA market-data-lib) ─────────────
     // 10. No-key sources — always enabled
@@ -682,21 +673,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         });
     }
 
-    // Zillow real estate (stub — requires Bridge Interactive API)
-    {
-        let pool_c = pool.clone();
-        tokio::spawn(async move {
-            match market_data::sources::zillow::ZillowMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
-                    engine.run().await;
-                }
-                Err(e) => tracing::error!("Zillow init failed: {e}"),
-            }
-        });
-    }
+    // DISABLED: unimplemented stub — Zillow requires Bridge Interactive API which was never integrated.
+    // Registers assets that never get prices.
+    // {
+    //     let pool_c = pool.clone();
+    //     tokio::spawn(async move {
+    //         match market_data::sources::zillow::ZillowMarketSource::from_env() {
+    //             Ok(source) => {
+    //                 let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+    //                 engine.run().await;
+    //             }
+    //             Err(e) => tracing::error!("Zillow init failed: {e}"),
+    //         }
+    //     });
+    // }
 
-    info!("No-key market data providers started (npm, PyPI, crates.io, Steam, HackerNews, 4chan, AniList, TWSE, Polymarket, DefiLlama, Zillow)");
+    info!("No-key market data providers started (npm, PyPI, crates.io, Steam, HackerNews, 4chan, AniList, TWSE, Polymarket, DefiLlama)");
 
     // 11. API-key-gated new sources
 
@@ -861,7 +853,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("NASA FIRMS wildfire provider started");
     }
 
-    // Flights — OpenSky (no key)
+    // Flights — adsb.lol (no key, single-call strategy)
     {
         let pool_c = pool.clone();
         tokio::spawn(async move {
@@ -875,7 +867,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         });
     }
 
-    // Military Aircraft — OpenSky (no key, same API as flights)
+    // Military Aircraft — adsb.lol (no key, community ADS-B API)
     {
         let pool_c = pool.clone();
         tokio::spawn(async move {
@@ -1050,6 +1042,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("USASpending.gov defense spending provider started");
     }
 
+    // Pump.fun — Helius RPC + Dexscreener (gated on API key)
+    if let Some(ref key) = args.helius_api_key {
+        std::env::set_var("HELIUS_API_KEY", key);
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::pumpfun::PumpfunMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("PumpFun init failed: {e}"),
+            }
+        });
+        info!("Pump.fun token tracker started (Helius + Dexscreener)");
+    }
+
     // Record not_started for any source that was gated off (missing keys, disabled flags)
     {
         let tracker = market_data::error_tracker::global();
@@ -1077,9 +1085,9 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         if args.eia_api_key.is_none() {
             tracker.record_not_started("eia", "Missing --eia-api-key");
         }
-        // Nasdaq family (CFTC, CHRIS, BCHAIN, OPEC, IMF)
+        // Nasdaq family (CFTC, CHRIS, OPEC, IMF) — BCHAIN moved out, uses blockchain.info (no key)
         if args.nasdaq_api_key.is_none() {
-            for src in &["cftc", "futures", "bchain", "opec", "imf"] {
+            for src in &["cftc", "futures", "opec", "imf"] {
                 tracker.record_not_started(src, "Missing --nasdaq-api-key");
             }
         }
@@ -1128,9 +1136,13 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         if args.ebird_api_key.is_none() {
             tracker.record_not_started("ebird", "Missing --ebird-api-key");
         }
-        // FINRA (OAuth)
+        // FINRA
         if args.finra_client_id.is_none() || args.finra_client_secret.is_none() {
             tracker.record_not_started("finra", "Missing --finra-client-id / --finra-client-secret");
+        }
+        // Pump.fun (Helius)
+        if args.helius_api_key.is_none() {
+            tracker.record_not_started("pumpfun", "Missing --helius-api-key");
         }
 
     }

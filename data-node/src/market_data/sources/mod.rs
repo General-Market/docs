@@ -55,6 +55,7 @@ pub mod ebird;
 pub mod aisstream;
 pub mod mil_aircraft;
 pub mod usa_spending;
+pub mod pumpfun;
 
 // Index-only sources (3) + shared ticker list
 pub mod tracked_tickers;
@@ -113,6 +114,7 @@ pub use gtfs_rt::GtfsRtMarketSource;
 pub use aisstream::AisStreamMarketSource;
 pub use mil_aircraft::MilAircraftMarketSource;
 pub use usa_spending::UsaSpendingMarketSource;
+pub use pumpfun::PumpfunMarketSource;
 
 // Re-exports — Index-only sources
 pub use finra_short_vol::FinraShortVolMarketSource;
