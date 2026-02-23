@@ -7,6 +7,7 @@ import { getWagmiConfig } from '@/lib/wagmi'
 import { ToastProvider } from '@/lib/contexts/ToastContext'
 import { SSEProvider } from '@/hooks/useSSE'
 import { ChainGuard } from '@/components/ChainGuard'
+import { PostHogProvider } from '@/components/PostHogProvider'
 import { ReactNode, useMemo, useState } from 'react'
 
 /**
@@ -41,16 +42,18 @@ export function Providers({ children }: { children: ReactNode }) {
   }))
 
   return (
-    <WagmiProvider config={getWagmiConfig()}>
-      <QueryClientProvider client={queryClient}>
-        <ToastProvider>
-          <SSEWrapper>
-            <ChainGuard>
-              {children}
-            </ChainGuard>
-          </SSEWrapper>
-        </ToastProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+    <PostHogProvider>
+      <WagmiProvider config={getWagmiConfig()}>
+        <QueryClientProvider client={queryClient}>
+          <ToastProvider>
+            <SSEWrapper>
+              <ChainGuard>
+                {children}
+              </ChainGuard>
+            </SSEWrapper>
+          </ToastProvider>
+        </QueryClientProvider>
+      </WagmiProvider>
+    </PostHogProvider>
   )
 }

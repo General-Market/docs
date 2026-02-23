@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAccount } from 'wagmi'
 import { getMorphoMarketForItp } from '@/lib/contracts/morpho-markets-registry'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
@@ -14,6 +14,7 @@ import { useMorphoPosition } from '@/hooks/useMorphoPosition'
 import { useLendingQuote } from '@/hooks/useLendingQuote'
 import type { CrisisLevel } from '@/lib/types/lending-quote'
 import { useTranslations } from 'next-intl'
+import { usePostHogTracker } from '@/hooks/usePostHog'
 
 interface ItpInfo {
   id: string
@@ -47,7 +48,15 @@ const LendingErrorFallback = (
 export function LendItpModal({ itpInfo, isOpen, onClose }: LendItpModalProps) {
   const t = useTranslations('lending')
   const { isConnected } = useAccount()
+  const { capture } = usePostHogTracker()
   const [activeTab, setActiveTab] = useState<Tab>('borrow')
+
+  // Track modal open
+  useEffect(() => {
+    if (isOpen) {
+      capture('lend_modal_opened', { itp_id: itpInfo.orbitItpId || itpInfo.itpId || itpInfo.id })
+    }
+  }, [isOpen]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const market = getMorphoMarketForItp(itpInfo.arbAddress)
 

@@ -56,7 +56,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://cdn.jsdelivr.net https://index.rpc.zeeve.net wss://relay.walletconnect.com https://*.walletconnect.com${isDev ? " http://localhost:* ws://localhost:*" : ""}; frame-src https://www.youtube-nocookie.com https://www.youtube.com; frame-ancestors 'none'`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://us-assets.i.posthog.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://cdn.jsdelivr.net https://index.rpc.zeeve.net wss://relay.walletconnect.com https://*.walletconnect.com https://us.i.posthog.com https://us-assets.i.posthog.com${isDev ? " http://localhost:* ws://localhost:*" : ""}; frame-src https://www.youtube-nocookie.com https://www.youtube.com; frame-ancestors 'none'`,
           },
         ],
       },

@@ -1,6 +1,7 @@
 'use client'
 
 import { Component, ReactNode } from 'react'
+import { posthog } from '@/lib/posthog'
 
 interface ErrorBoundaryProps {
   children: ReactNode
@@ -30,6 +31,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Log error for debugging - could integrate with error tracking service
     console.error('[ErrorBoundary] Caught error:', error, errorInfo)
+    posthog.capture('error_boundary_triggered', {
+      error_message: error.message,
+      component_stack: errorInfo.componentStack?.slice(0, 500),
+    })
   }
 
   handleRetry = () => {

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useCallback, useState, ReactNode } from 'react'
 import { ToastContainer, ToastData, ToastType } from '@/components/ui/Toast'
+import { posthog } from '@/lib/posthog'
 
 interface ToastContextValue {
   showToast: (type: ToastType, message: string, link?: { url: string; text: string }) => void
@@ -62,6 +63,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
 
   const showError = useCallback(
     (message: string) => {
+      posthog.capture('toast_error_shown', { message })
       showToast('error', message)
     },
     [showToast]

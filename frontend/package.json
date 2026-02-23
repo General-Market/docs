@@ -57,6 +57,7 @@
     "pino": "^10.3.0",
     "pngjs": "^7.0.0",
     "porto": "^0.2.37",
+    "posthog-js": "^1.352.1",
     "qrcode.react": "^4.0.0",
     "react": "^19",
     "react-dom": "^19",

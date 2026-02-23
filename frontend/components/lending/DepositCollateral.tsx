@@ -8,6 +8,7 @@ import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import { useUserState } from '@/hooks/useUserState'
 import { useItpApproval } from '@/hooks/useItpApproval'
 import { useMorphoActions } from '@/hooks/useMorphoActions'
+import { usePostHogTracker } from '@/hooks/usePostHog'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
 
 interface DepositCollateralProps {
@@ -25,6 +26,7 @@ interface DepositCollateralProps {
 export function DepositCollateral({ market, itpId, onSuccess }: DepositCollateralProps) {
   const t = useTranslations('lending')
   const { address } = useAccount()
+  const { capture } = usePostHogTracker()
   const [amount, setAmount] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
   const [step, setStep] = useState<'input' | 'approving' | 'depositing' | 'success'>('input')
@@ -90,6 +92,7 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
     if (isSuccess && !successHandled.current) {
       successHandled.current = true
       setStep('success')
+      capture('lend_completed', { itp_id: itpId, action: 'deposit', tx_hash: undefined })
       refetchBalance()
       refetchAllowance()
       onSuccess?.()
@@ -110,6 +113,7 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
   useEffect(() => {
     if (actionError) {
       setTxError(actionError.message || 'Transaction failed')
+      capture('lend_failed', { itp_id: itpId, action: 'deposit', error_message: actionError.message || 'Transaction failed' })
       setStep('input')
       setPendingDepositAmount(0n)
       resetAction()
@@ -128,6 +132,7 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
   }, [amount, parsedAmount, approve])
 
   const handleSubmit = () => {
+    capture('lend_deposit_submitted', { itp_id: itpId, amount: amount })
     if (needsApproval) {
       handleApprove()
     } else {

@@ -9,6 +9,7 @@ import { useLendingQuote } from '@/hooks/useLendingQuote'
 import { useBundlerExec } from '@/hooks/useBundlerExec'
 import { calculateHealthFactor } from '@/lib/types/morpho'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
+import { usePostHogTracker } from '@/hooks/usePostHog'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
 
 interface BorrowUsdcProps {
@@ -24,6 +25,7 @@ interface BorrowUsdcProps {
  */
 export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
   const t = useTranslations('lending')
+  const { capture } = usePostHogTracker()
   const [amount, setAmount] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
   const [step, setStep] = useState<'input' | 'borrowing' | 'success'>('input')
@@ -83,6 +85,7 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
     if (isSuccess && !successHandled.current) {
       successHandled.current = true
       setStep('success')
+      capture('lend_completed', { itp_id: market?.collateralToken, action: 'borrow', tx_hash: undefined })
       refetchPosition()
       onSuccess?.()
       window.dispatchEvent(new Event('lending-refresh'))
@@ -98,6 +101,7 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
   useEffect(() => {
     if (actionError) {
       setTxError(actionError.message || 'Transaction failed')
+      capture('lend_failed', { itp_id: market?.collateralToken, action: 'borrow', error_message: actionError.message || 'Transaction failed' })
       setStep('input')
       resetAction()
     }
@@ -105,11 +109,12 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
 
   const handleBorrow = useCallback(() => {
     if (!amount || parsedAmount === 0n || !canBorrow) return
+    capture('lend_borrow_submitted', { itp_id: market?.collateralToken, amount: amount })
     successHandled.current = false
     setTxError(null)
     setStep('borrowing')
     borrow(parsedAmount)
-  }, [amount, parsedAmount, canBorrow, borrow])
+  }, [amount, parsedAmount, canBorrow, borrow, capture, market?.collateralToken])
 
   const isProcessing = isPending || isConfirming
 

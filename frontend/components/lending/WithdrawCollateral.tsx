@@ -6,6 +6,7 @@ import { formatUnits } from 'viem'
 import { useMorphoPosition } from '@/hooks/useMorphoPosition'
 import { useMorphoActions } from '@/hooks/useMorphoActions'
 import { calculateHealthFactor } from '@/lib/types/morpho'
+import { usePostHogTracker } from '@/hooks/usePostHog'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
 
 interface WithdrawCollateralProps {
@@ -22,6 +23,7 @@ interface WithdrawCollateralProps {
  */
 export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProps) {
   const t = useTranslations('lending')
+  const { capture } = usePostHogTracker()
   const [amount, setAmount] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
   const [step, setStep] = useState<'input' | 'withdrawing' | 'success'>('input')
@@ -81,6 +83,7 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
     if (isSuccess && !successHandled.current) {
       successHandled.current = true
       setStep('success')
+      capture('lend_completed', { itp_id: market?.collateralToken, action: 'withdraw', tx_hash: undefined })
       refetchPosition()
       onSuccess?.()
       window.dispatchEvent(new Event('lending-refresh'))
@@ -96,6 +99,7 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
   useEffect(() => {
     if (actionError) {
       setTxError(actionError.message || 'Transaction failed')
+      capture('lend_failed', { itp_id: market?.collateralToken, action: 'withdraw', error_message: actionError.message || 'Transaction failed' })
       setStep('input')
       resetAction()
     }
@@ -103,11 +107,12 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
 
   const handleWithdraw = useCallback(() => {
     if (!amount || parsedAmount === 0n || !canWithdraw) return
+    capture('lend_withdraw_submitted', { itp_id: market?.collateralToken, amount: amount })
     successHandled.current = false
     setTxError(null)
     setStep('withdrawing')
     withdrawCollateral(parsedAmount)
-  }, [amount, parsedAmount, canWithdraw, withdrawCollateral])
+  }, [amount, parsedAmount, canWithdraw, withdrawCollateral, capture, market?.collateralToken])
 
   const handleMax = () => {
     if (debtAmount === 0n) {

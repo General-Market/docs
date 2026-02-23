@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from 'react'
 import { DATA_NODE_URL } from '@/lib/config'
+import { posthog } from '@/lib/posthog'
 
 // ── System status types (previously in useSystemStatusSSE.ts) ──
 
@@ -231,12 +232,18 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
 
         // ── Event listeners for each topic ──
 
+        let sseFirstEvent = true
+
         es.addEventListener('itp-nav', (event: MessageEvent) => {
           try {
             const parsed: NavSnapshot[] = JSON.parse(event.data)
             setData(prev => ({ ...prev, itpNav: parsed }))
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
+            if (sseFirstEvent) {
+              sseFirstEvent = false
+              posthog.capture('sse_connected', { topic: topicsKey })
+            }
           } catch { /* ignore malformed */ }
         })
 
@@ -246,6 +253,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
             setData(prev => ({ ...prev, oraclePrices: parsed }))
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
+            if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
           } catch { /* ignore malformed */ }
         })
 
@@ -255,6 +263,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
             setData(prev => ({ ...prev, systemStatus: parsed }))
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
+            if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
           } catch { /* ignore malformed */ }
         })
 
@@ -264,6 +273,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
             setData(prev => ({ ...prev, userBalances: parsed }))
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
+            if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
           } catch { /* ignore malformed */ }
         })
 
@@ -273,6 +283,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
             setData(prev => ({ ...prev, userAllowances: parsed }))
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
+            if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
           } catch { /* ignore malformed */ }
         })
 
@@ -282,6 +293,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
             setData(prev => ({ ...prev, userOrders: parsed }))
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
+            if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
           } catch { /* ignore malformed */ }
         })
 
@@ -291,6 +303,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
             setData(prev => ({ ...prev, userPositions: parsed }))
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
+            if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
           } catch { /* ignore malformed */ }
         })
 
@@ -300,11 +313,13 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
             setData(prev => ({ ...prev, userCostBasis: parsed }))
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
+            if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
           } catch { /* ignore malformed */ }
         })
 
         es.onerror = () => {
           setConnectionState('error')
+          posthog.capture('sse_disconnected', { topic: topicsKey, reconnect_attempt: reconnectAttemptRef.current })
           es.close()
           eventSourceRef.current = null
 

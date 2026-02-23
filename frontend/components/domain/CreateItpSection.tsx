@@ -12,22 +12,12 @@ import { getCoinGeckoUrl } from '@/lib/coingecko'
 import { DATA_NODE_URL } from '@/lib/config'
 import { useDeployerName } from '@/hooks/useDeployerName'
 import { useTranslations } from 'next-intl'
+import { usePostHogTracker } from '@/hooks/usePostHog'
 
 interface CoinEntry { id: string; image: string }
 
-// Default sample assets — overridden at runtime from /deployed-assets.json if available
-const DEFAULT_SAMPLE_ASSETS = [
-  { address: '0x4c5859f0f772848b2d91f1d83e2fe57935348029', symbol: 'BTC' },
-  { address: '0x1291be112d480055dafd8a610b7d1e203891c274', symbol: 'ETH' },
-  { address: '0x5f3f1dbd7b74c6b46e8c44f98792a1daf8d69154', symbol: 'SOL' },
-  { address: '0xb7278a61aa25c888815afc32ad3cc52ff24fe575', symbol: 'BNB' },
-  { address: '0xcd8a1c3ba11cf5ecfa6267617243239504a98d90', symbol: 'XRP' },
-  { address: '0x82e01223d51eb87e16a03e24687edf0f294da6f1', symbol: 'ADA' },
-  { address: '0x2bdcc0de6be1f7d2ee689a0342d76f52e8efaba3', symbol: 'DOGE' },
-  { address: '0x7969c5ed335650692bc04293b07f5bf2e7a673c0', symbol: 'DOT' },
-  { address: '0x7bc06c482dead17c0e297afbc32f6e63d3846650', symbol: 'LINK' },
-  { address: '0xc351628eb244ec633d5f21fbd6621e1a683b1181', symbol: 'AVAX' },
-]
+// Symbols to pre-select when the asset list loads — addresses resolved dynamically from deployed-assets.json
+const DEFAULT_PRESELECT_SYMBOLS = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'ADA', 'DOGE', 'DOT', 'LINK', 'AVAX']
 
 /** Tiny coin logo — loads CoinGecko image with graceful fallback */
 function CoinLogo({ symbol, coinMap, size = 20 }: { symbol: string; coinMap: Record<string, CoinEntry>; size?: number }) {
@@ -77,21 +67,17 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   const t = useTranslations('create-itp')
   const tc = useTranslations('common')
   const { address, isConnected } = useAccount()
+  const { capture } = usePostHogTracker()
   const [name, setName] = useState('')
   const [symbol, setSymbol] = useState('')
   const [description, setDescription] = useState('')
   const [websiteUrl, setWebsiteUrl] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
   const [issuerName, setIssuerName] = useState('')
-  const [selectedAssets, setSelectedAssets] = useState<AssetWeight[]>(() => {
-    const n = DEFAULT_SAMPLE_ASSETS.length
-    const w = Math.floor(100 / n)
-    const remainder = 100 - w * n
-    return DEFAULT_SAMPLE_ASSETS.map((a, i) => ({ ...a, weight: w + (i === 0 ? remainder : 0) }))
-  })
+  const [selectedAssets, setSelectedAssets] = useState<AssetWeight[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
-  const [availableAssets, setAvailableAssets] = useState<{ address: string; symbol: string }[]>(DEFAULT_SAMPLE_ASSETS)
+  const [availableAssets, setAvailableAssets] = useState<{ address: string; symbol: string }[]>([])
   const [coinMap, setCoinMap] = useState<Record<string, CoinEntry>>({})
   const { name: existingDeployerName, refetch: refetchDeployerName } = useDeployerName(address as `0x${string}` | undefined)
   const needsIssuerName = isConnected && !existingDeployerName
@@ -117,11 +103,21 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
             return true
           })
           setAvailableAssets(unique)
+          // Pre-select default symbols with equal weights (only if no selection yet)
+          setSelectedAssets(prev => {
+            if (prev.length > 0) return prev
+            const preselected = DEFAULT_PRESELECT_SYMBOLS
+              .map(sym => unique.find(a => a.symbol.toUpperCase() === sym))
+              .filter((a): a is { address: string; symbol: string } => !!a)
+            const n = preselected.length
+            if (n === 0) return prev
+            const w = Math.floor(100 / n)
+            const remainder = 100 - w * n
+            return preselected.map((a, i) => ({ ...a, weight: w + (i === 0 ? remainder : 0) }))
+          })
         }
       })
-      .catch(() => {
-        // Fall back to DEFAULT_SAMPLE_ASSETS (already set as initial state)
-      })
+      .catch(() => { /* deployed-assets.json not available — user must select manually */ })
   }, [])
 
   // Load symbol → {id, image} mapping for logos from static coin-map
@@ -173,11 +169,21 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
 
   const addAsset = (asset: { address: string; symbol: string }) => {
     if (selectedAssets.length >= 100) return
-    setSelectedAssets([...selectedAssets, { ...asset, weight: 0 }])
+    const updated = [...selectedAssets, { ...asset, weight: 0 }]
+    setSelectedAssets(updated)
+    capture('create_itp_assets_selected', {
+      asset_count: updated.length,
+      asset_ids: updated.map(a => a.symbol),
+    })
   }
 
   const removeAsset = (address: string) => {
-    setSelectedAssets(selectedAssets.filter(a => a.address !== address))
+    const updated = selectedAssets.filter(a => a.address !== address)
+    setSelectedAssets(updated)
+    capture('create_itp_assets_selected', {
+      asset_count: updated.length,
+      asset_ids: updated.map(a => a.symbol),
+    })
   }
 
   const updateWeight = (address: string, weight: number) => {
@@ -194,6 +200,10 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       ...a,
       weight: evenWeight + (i === 0 ? remainder : 0)
     })))
+    capture('create_itp_weights_set', {
+      asset_count: selectedAssets.length,
+      weight_distribution: 'equal',
+    })
   }
 
   const [isFetchingMcap, setIsFetchingMcap] = useState(false)
@@ -227,6 +237,10 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
         weighted[0].weight += 100 - sum
       }
       setSelectedAssets(weighted.map(({ price: _, ...rest }) => rest))
+      capture('create_itp_weights_set', {
+        asset_count: selectedAssets.length,
+        weight_distribution: 'mcap',
+      })
     } catch {
       distributeEvenly()
     } finally {
@@ -273,6 +287,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     } catch (e: any) {
       setIsFetchingPrices(false)
       setTxError(t('errors.failed_prices', { message: e.message || 'AP unreachable' }))
+      capture('create_itp_failed', { error_message: e.message || 'AP unreachable', step: 'fetch_prices' })
       return
     }
     setIsFetchingPrices(false)
@@ -292,6 +307,11 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
         refetchDeployerName()
       }
 
+      capture('create_itp_submitted', {
+        asset_count: assets.length,
+        name,
+      })
+
       console.log('[CreateITP] Submitting tx:', {
         bridgeProxy: INDEX_PROTOCOL.bridgeProxy,
         name, symbol,
@@ -309,6 +329,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     } catch (e: any) {
       console.error('[CreateITP] writeContract threw:', e)
       setTxError(e.message || 'Failed to submit transaction')
+      capture('create_itp_failed', { error_message: e.message || 'writeContract threw', step: 'submit' })
     }
   }
 
@@ -319,6 +340,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       const msg = writeError.message || 'Transaction failed'
       const shortMsg = msg.includes('Details:') ? msg.split('Details:')[1].trim().slice(0, 200) : msg.slice(0, 200)
       setTxError(shortMsg)
+      capture('create_itp_failed', { error_message: shortMsg, step: 'write' })
     }
   }, [writeError])
 
@@ -326,11 +348,16 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     if (confirmError) {
       console.error('[CreateITP] confirmError:', confirmError)
       setTxError(confirmError.message?.slice(0, 200) || 'Confirmation failed')
+      capture('create_itp_failed', { error_message: confirmError.message?.slice(0, 200) || 'Confirmation failed', step: 'confirm' })
     }
   }, [confirmError])
 
   useEffect(() => {
     if (isSuccess) {
+      capture('create_itp_completed', {
+        asset_count: selectedAssets.length,
+        tx_hash: hash,
+      })
       refreshNonce()
       setName('')
       setSymbol('')

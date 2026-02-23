@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { Link, usePathname } from '@/i18n/routing'
 import { WalletConnectButton } from '@/components/domain/WalletConnectButton'
 import { LanguageSwitcher } from './LanguageSwitcher'
+import { usePostHogTracker } from '@/hooks/usePostHog'
 
 export function Header() {
   const t = useTranslations('common')
@@ -27,6 +28,7 @@ export function Header() {
     { id: 'markets-data', label: t('nav.markets_data') },
   ]
 
+  const { capture } = usePostHogTracker()
   const [activeSection, setActiveSection] = useState(isVision ? 'vision' : 'markets')
 
   const navLinks = isVision ? VISION_NAV : INVESTMENT_NAV
@@ -52,6 +54,7 @@ export function Header() {
   }, [navLinks])
 
   const scrollTo = (id: string) => {
+    capture('section_scrolled_to', { section_name: id })
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
     setMobileMenuOpen(false)
   }

@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { ItpListing, DeployedItpRef } from '@/components/domain/ItpListing'
+import { useSectionTimeTracker } from '@/hooks/useSectionTimeTracker'
 
 const SectionSkeleton = () => (
   <div className="animate-pulse bg-surface rounded-md h-48" />
@@ -35,9 +36,13 @@ const SystemStatusSection = dynamic(
   { ssr: false, loading: SectionSkeleton }
 )
 
+const SECTION_IDS = ['markets', 'portfolio', 'create', 'lend', 'backtest', 'system']
+
 export function HomeClient() {
   const [deployHoldings, setDeployHoldings] = useState<{ symbol: string; weight: number }[] | null>(null)
   const [deployedItps, setDeployedItps] = useState<DeployedItpRef[]>([])
+
+  useSectionTimeTracker(SECTION_IDS)
 
   const handleDeployIndex = useCallback((holdings: { symbol: string; weight: number }[]) => {
     setDeployHoldings(holdings)

@@ -11,6 +11,7 @@ import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getCoinGeckoUrl } from '@/lib/coingecko'
 import { useTranslations } from 'next-intl'
 import { DATA_NODE_URL, ARB_RPC_URL as ARB_RPC, L3_RPC_URL as L3_RPC } from '@/lib/config'
+import { usePostHogTracker } from '@/hooks/usePostHog'
 const L3_INDEX = '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6'
 const DEPLOYER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
 
@@ -87,11 +88,17 @@ async function waitForArbReceipt(hash: string, timeoutMs = 20_000): Promise<any>
 export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps) {
   const t = useTranslations('markets')
   const { address } = useAccount()
+  const { capture } = usePostHogTracker()
   const [assets, setAssets] = useState<AssetRow[]>([])
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState<Status>('idle')
   const [errorMsg, setErrorMsg] = useState('')
   const [txHash, setTxHash] = useState('')
+
+  // Track modal open on mount
+  useEffect(() => {
+    capture('rebalance_modal_opened', { itp_id: itpId })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Search bar state for adding new assets
   const [searchTerm, setSearchTerm] = useState('')
@@ -185,6 +192,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
           : msg.slice(0, 200)
       setErrorMsg(shortMsg)
       setStatus('error')
+      capture('rebalance_failed', { itp_id: itpId, error_message: shortMsg })
     }
   }, [writeError])
 
@@ -259,12 +267,14 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
         if (!cancelled) {
           setTxHash(hash)
           setStatus('success')
+          capture('rebalance_completed', { itp_id: itpId, tx_hash: hash })
         }
       } catch (e: any) {
         if (!cancelled) {
           console.error('[Rebalance] error:', e)
           setErrorMsg(e.message || 'Rebalance failed')
           setStatus('error')
+          capture('rebalance_failed', { itp_id: itpId, error_message: e.message || 'Rebalance failed' })
         }
       }
     }
@@ -322,6 +332,13 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
 
     resetWrite()
     setErrorMsg('')
+
+    const assetsChangedCount = assets.filter(a => {
+      const currentPct = Number(a.currentWeight) / 1e16
+      const newPct = parseFloat(a.newWeight || '0')
+      return Math.abs(currentPct - newPct) > 0.01 || a.isNew
+    }).length
+    capture('rebalance_submitted', { itp_id: itpId, assets_changed_count: assetsChangedCount })
 
     const newAssetRows = assets.filter(a => a.isNew)
     const removedIndices: bigint[] = []

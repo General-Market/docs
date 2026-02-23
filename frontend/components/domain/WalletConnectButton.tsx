@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain } from 'wagmi'
 import { truncateAddress } from '@/lib/utils/address'
 import { indexL3 } from '@/lib/wagmi'
+import { usePostHogTracker } from '@/hooks/usePostHog'
 
 export function WalletConnectButton() {
   const t = useTranslations('common')
@@ -14,6 +15,7 @@ export function WalletConnectButton() {
   const { disconnect } = useDisconnect()
   const chainId = useChainId()
   const { switchChain, isPending: isSwitching } = useSwitchChain()
+  const { capture, identify, reset: resetPostHog } = usePostHogTracker()
 
   // Prevent hydration mismatch by only rendering wallet state after mount
   useEffect(() => {
@@ -36,6 +38,29 @@ export function WalletConnectButton() {
       switchChain({ chainId: indexL3.id })
     }
   }, [isConnected, isWrongNetwork, isSwitching, switchChain])
+
+  // Track wallet connection + identify user in PostHog
+  useEffect(() => {
+    if (isConnected && address) {
+      const connectorName = injectedConnector?.name || 'injected'
+      identify(address, { wallet_type: connectorName, chain_id: chainId })
+      capture('wallet_connected', {
+        wallet_address: address,
+        connector_type: connectorName,
+        chain_id: chainId,
+      })
+    }
+  }, [isConnected, address])
+
+  // Track wrong network events
+  useEffect(() => {
+    if (isWrongNetwork) {
+      capture('wallet_wrong_network', {
+        current_chain_id: chainId,
+        target_chain_id: indexL3.id,
+      })
+    }
+  }, [isWrongNetwork])
 
   // Render placeholder during SSR and initial hydration to prevent mismatch
   if (!mounted) {
@@ -64,8 +89,8 @@ export function WalletConnectButton() {
           rpcUrls: [indexL3.rpcUrls.default.http[0]],
         }],
       })
-    } catch {
-      // Chain may already exist — continue
+    } catch (err) {
+      capture('wallet_network_switch_failed', { error_message: String(err) })
     }
     // Force switch (addEthereumChain doesn't always auto-switch)
     try {
@@ -73,14 +98,15 @@ export function WalletConnectButton() {
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: chainIdHex }],
       })
-    } catch {
-      // User rejected or chain not found — wagmi will show wrong-network state
+    } catch (err) {
+      capture('wallet_network_switch_failed', { error_message: String(err) })
     }
   }
 
   // Handle connect click - add chain, switch, then connect
   const handleConnect = async () => {
     if (injectedConnector) {
+      capture('wallet_connect_clicked', { source: 'header' })
       await addAndSwitchChain()
       connect({ connector: injectedConnector, chainId: indexL3.id })
     }
@@ -109,7 +135,7 @@ export function WalletConnectButton() {
   if (isConnected && address) {
     return (
       <button
-        onClick={() => disconnect()}
+        onClick={() => { capture('wallet_disconnected'); resetPostHog(); disconnect() }}
         className="group px-3 py-2 bg-muted border border-border-medium text-text-primary text-sm font-mono rounded-lg transition-all hover:bg-red-950/20 hover:border-red-400/30 hover:text-red-400"
       >
         <span className="group-hover:hidden">{truncateAddress(address)}</span>

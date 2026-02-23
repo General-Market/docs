@@ -17,6 +17,7 @@ import { useSSEOrders, useSSEBalances, type UserOrder } from '@/hooks/useSSE'
 import { useToast } from '@/lib/contexts/ToastContext'
 import { YouTubeLite, extractYouTubeId } from '@/components/ui/YouTubeLite'
 import { useTranslations } from 'next-intl'
+import { usePostHogTracker } from '@/hooks/usePostHog'
 
 /**
  * Buy flow micro-steps — 10 steps mapped to 3 visible steps + Done:
@@ -154,6 +155,10 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const approveHandled = useRef(false)
   const buyHandled = useRef(false)
   const toastFired = useRef(false)
+  const buyStartTime = useRef<number>(0)
+  const amountTracked = useRef(false)
+
+  const { capture } = usePostHogTracker()
 
   const userState = useUserState(itpId)
   const itpName = userState.bridgedItpName || 'ITP'
@@ -170,6 +175,19 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
       navPriceSet.current = true
     }
   }, [navPerShareBn, isNavLoading])
+
+  // --- PostHog: buy_modal_opened ---
+  useEffect(() => {
+    capture('buy_modal_opened', { itp_id: itpId, itp_name: itpName, current_nav: navPerShare })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // --- PostHog: buy_amount_entered (fire once) ---
+  useEffect(() => {
+    if (amount && !amountTracked.current) {
+      amountTracked.current = true
+      capture('buy_amount_entered', { itp_id: itpId, amount_usd: amount, user_balance: formattedBalance })
+    }
+  }, [amount]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const usdcBalance = userState.usdcBalance
   const usdcAllowance = userState.usdcAllowanceCustody
@@ -206,6 +224,11 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
   const handleApprove = useCallback(() => {
     if (!amount) return
+    buyStartTime.current = Date.now()
+    capture('buy_submitted', {
+      itp_id: itpId, amount_usd: amount, slippage: SLIPPAGE_TIERS[slippageTier].label,
+      deadline_hours: deadlineHours, is_limit_order: Boolean(limitPrice && parseFloat(limitPrice) > 0),
+    })
     approveHandled.current = false
     setTxError(null)
     setSkippedApproval(false)
@@ -225,6 +248,11 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     setTxError(null)
 
     if (micro < 0) {
+      buyStartTime.current = Date.now()
+      capture('buy_submitted', {
+        itp_id: itpId, amount_usd: amount, slippage: SLIPPAGE_TIERS[slippageTier].label,
+        deadline_hours: deadlineHours, is_limit_order: Boolean(limitPrice && parseFloat(limitPrice) > 0),
+      })
       setSkippedApproval(true)
       snapshotBalances()
     }
@@ -376,6 +404,16 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     return () => clearTimeout(timer)
   }, [micro])
 
+  // --- PostHog: buy_step_reached ---
+  useEffect(() => {
+    if (micro < 0) return
+    const stepName = BuyMicro[micro] || `step_${micro}`
+    capture('buy_step_reached', {
+      itp_id: itpId, step_name: stepName, step_index: micro,
+      time_since_submit_ms: buyStartTime.current ? Date.now() - buyStartTime.current : 0,
+    })
+  }, [micro]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Detect BridgedITP balance increase — works at ANY processing step.
   // Issuers may complete the entire cross-chain buy in a single batch cycle,
   // so we check from RELAY onward, not just at COMPLETE_BRIDGE.
@@ -413,6 +451,12 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   useEffect(() => {
     if (micro === BuyMicro.DONE && !toastFired.current) {
       toastFired.current = true
+      // --- PostHog: buy_completed ---
+      capture('buy_completed', {
+        itp_id: itpId, amount_usd: amount,
+        fill_price: fillPrice ? formatUnits(fillPrice, 18) : null,
+        total_time_ms: buyStartTime.current ? Date.now() - buyStartTime.current : 0,
+      })
       const shares = fillAmount && fillPrice && fillPrice > 0n
         ? parseFloat(formatUnits((fillAmount * BigInt(1e18)) / fillPrice, 18)).toFixed(2)
         : null
@@ -429,21 +473,31 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     if (approveError) {
       const msg = approveError.message || 'Approval failed'
       const shortMsg = msg.includes('Details:') ? msg.split('Details:')[1].trim().slice(0, 200) : msg.slice(0, 200)
+      // --- PostHog: buy_failed (approve) ---
+      capture('buy_failed', {
+        itp_id: itpId, step_name: micro >= 0 ? BuyMicro[micro] : 'INPUT', step_index: micro,
+        error_message: shortMsg, time_since_submit_ms: buyStartTime.current ? Date.now() - buyStartTime.current : 0,
+      })
       setTxError(shortMsg)
       setMicro(-1)
       resetApprove()
     }
-  }, [approveError, resetApprove])
+  }, [approveError, resetApprove]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (buyError) {
       const msg = buyError.message || 'Buy transaction failed'
       const shortMsg = msg.includes('Details:') ? msg.split('Details:')[1].trim().slice(0, 200) : msg.slice(0, 200)
+      // --- PostHog: buy_failed (buy tx) ---
+      capture('buy_failed', {
+        itp_id: itpId, step_name: micro >= 0 ? BuyMicro[micro] : 'INPUT', step_index: micro,
+        error_message: shortMsg, time_since_submit_ms: buyStartTime.current ? Date.now() - buyStartTime.current : 0,
+      })
       setTxError(shortMsg)
       setMicro(-1)
       resetBuy()
     }
-  }, [buyError, resetBuy])
+  }, [buyError, resetBuy]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Stuck tx warning
   useEffect(() => {
@@ -486,6 +540,14 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     setSkippedApproval(false)
     clearTxHashes()
   }, [clearTxHashes])
+
+  // --- PostHog: buy_modal_closed ---
+  const handleClose = useCallback(() => {
+    capture('buy_modal_closed', {
+      itp_id: itpId, last_step: micro >= 0 ? BuyMicro[micro] : 'INPUT', had_entered_amount: Boolean(amount),
+    })
+    onClose()
+  }, [capture, itpId, micro, amount, onClose])
 
   const formattedBalance = usdcBalance > 0n ? formatUnits(usdcBalance, 6) : '0'
   const isProcessing = isApprovePending || isApproveConfirming || isBuyPending || isBuyConfirming
@@ -660,12 +722,12 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={handleClose}>
       <div className="bg-card border border-border-light rounded-xl shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-text-primary">{t('title', { name: itpName })}</h2>
-            <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
+            <button onClick={handleClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
           </div>
           {itpSymbol && <p className="text-text-secondary mb-1 font-mono">${itpSymbol}</p>}
           <p className="text-xs text-text-muted font-mono mb-4 break-all">{t('itp_id_label')} {itpId}</p>
@@ -800,7 +862,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                   {SLIPPAGE_TIERS.map(tier => (
                     <button
                       key={tier.value}
-                      onClick={() => setSlippageTier(tier.value)}
+                      onClick={() => { setSlippageTier(tier.value); capture('buy_slippage_changed', { itp_id: itpId, slippage_tier: tier.label }) }}
                       className={`flex-1 py-2 rounded-lg border text-sm font-mono transition-colors ${
                         slippageTier === tier.value
                           ? 'border-zinc-900 text-white bg-zinc-900'

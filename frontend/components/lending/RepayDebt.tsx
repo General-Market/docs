@@ -10,6 +10,7 @@ import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { useUserState } from '@/hooks/useUserState'
 import { useMorphoPosition } from '@/hooks/useMorphoPosition'
 import { useMorphoActions } from '@/hooks/useMorphoActions'
+import { usePostHogTracker } from '@/hooks/usePostHog'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
 
 interface RepayDebtProps {
@@ -27,6 +28,7 @@ interface RepayDebtProps {
 export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
   const t = useTranslations('lending')
   const { address } = useAccount()
+  const { capture } = usePostHogTracker()
   const [amount, setAmount] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
   const [step, setStep] = useState<'input' | 'approving' | 'repaying' | 'success'>('input')
@@ -100,6 +102,7 @@ export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
     if (isSuccess && !successHandled.current) {
       successHandled.current = true
       setStep('success')
+      capture('lend_completed', { itp_id: itpId, action: 'repay', tx_hash: undefined })
       refetchPosition()
       refetchBalance()
       onSuccess?.()
@@ -119,7 +122,9 @@ export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
 
   useEffect(() => {
     if (actionError || approvalError) {
-      setTxError((actionError || approvalError)?.message || 'Transaction failed')
+      const errMsg = (actionError || approvalError)?.message || 'Transaction failed'
+      setTxError(errMsg)
+      capture('lend_failed', { itp_id: itpId, action: 'repay', error_message: errMsg })
       setStep('input')
       setPendingRepayAmount(0n)
       setIsMaxRepay(false)
@@ -158,6 +163,7 @@ export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
   }, [amount, parsedAmount, writeApproval, loanToken, morphoAddress])
 
   const handleSubmit = () => {
+    capture('lend_repay_submitted', { itp_id: itpId, amount: amount })
     if (needsApproval) {
       handleApprove()
     } else {

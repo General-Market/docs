@@ -17,6 +17,7 @@ import { useSSEOrders, useSSEBalances, type UserOrder } from '@/hooks/useSSE'
 import { useToast } from '@/lib/contexts/ToastContext'
 import { YouTubeLite, extractYouTubeId } from '@/components/ui/YouTubeLite'
 import { useTranslations } from 'next-intl'
+import { usePostHogTracker } from '@/hooks/usePostHog'
 
 // SLIPPAGE_TIERS moved inside component for i18n
 
@@ -95,6 +96,8 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const { address, isConnected } = useAccount()
   const publicClient = usePublicClient()
   const { showSuccess } = useToast()
+  const { capture } = usePostHogTracker()
+  const sellStartTime = useRef<number>(0)
 
   const VISIBLE_STEPS: VisibleStep[] = [
     { label: t('steps.submit') },
@@ -181,6 +184,15 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     }
   }, [navPerShareBn, isNavLoading])
 
+  // --- PostHog: sell_modal_opened ---
+  useEffect(() => {
+    capture('sell_modal_opened', {
+      itp_id: itpId,
+      user_shares: formatUnits(userShares, 18),
+      itp_name: itpName,
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const arbUsdcBalance = userState.usdcBalance
 
   const parsedAmount = amount ? parseUnits(amount, 18) : 0n
@@ -197,6 +209,16 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     approveHandled.current = false
     sellHandled.current = false
     snapshotBalances()
+
+    // --- PostHog: sell_submitted ---
+    sellStartTime.current = Date.now()
+    capture('sell_submitted', {
+      itp_id: itpId,
+      shares_amount: amount,
+      limit_price: limitPrice,
+      slippage_tier: SLIPPAGE_TIERS[slippageTier].label,
+      needs_approval: needsApproval,
+    })
 
     if (needsApproval) {
       setSkippedApproval(false)
@@ -382,6 +404,16 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
       const msg = writeError.message || 'Transaction failed'
       const shortMsg = msg.includes('Details:') ? msg.split('Details:')[1].trim().slice(0, 200) : msg.slice(0, 200)
       setTxError(shortMsg)
+
+      // --- PostHog: sell_failed ---
+      capture('sell_failed', {
+        itp_id: itpId,
+        error_message: shortMsg,
+        step_name: micro >= 0 ? SellMicro[micro] : 'INPUT',
+        step_index: micro,
+        time_since_submit_ms: sellStartTime.current ? Date.now() - sellStartTime.current : 0,
+      })
+
       setMicro(-1)
     }
   }, [writeError])
@@ -395,6 +427,15 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
         ? `$${parseFloat(formatUnits(usdcProceeds, 6)).toFixed(2)} USDC`
         : 'USDC'
       showSuccess(t('toast.sell_filled', { proceeds }))
+
+      // --- PostHog: sell_completed ---
+      capture('sell_completed', {
+        itp_id: itpId,
+        shares_amount: amount,
+        received_usd: usdcProceeds ? parseFloat(formatUnits(usdcProceeds, 6)) : null,
+        fill_price: fillPrice ? formatUnits(fillPrice, 18) : null,
+        total_time_ms: sellStartTime.current ? Date.now() - sellStartTime.current : 0,
+      })
     }
     if (micro === -1) toastFired.current = false
   }, [micro, usdcProceeds, showSuccess])
@@ -439,6 +480,17 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     setInitialUsdcArb(null)
     clearTxHashes()
   }, [clearTxHashes])
+
+  // --- PostHog: sell_modal_closed ---
+  const handleClose = useCallback(() => {
+    capture('sell_modal_closed', {
+      itp_id: itpId,
+      last_step: micro >= 0 ? SellMicro[micro] : 'INPUT',
+      had_entered_amount: Boolean(amount),
+      was_completed: micro === SellMicro.DONE,
+    })
+    onClose()
+  }, [capture, itpId, micro, amount, onClose])
 
   // --- Stepper data ---
   const isDone = micro === SellMicro.DONE
@@ -582,12 +634,12 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={handleClose}>
       <div className="bg-card border border-border-light rounded-xl shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-text-primary">{t('title', { name: itpName })}</h2>
-            <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
+            <button onClick={handleClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
           </div>
           {itpSymbol && <p className="text-text-secondary mb-1 font-mono">${itpSymbol}</p>}
           <p className="text-xs text-text-muted font-mono mb-4 break-all">{t('itp_id_label')} {itpId}</p>
