@@ -17,6 +17,12 @@ export BITGET_API_KEY="${BITGET_API_KEY:-$BITGET_PUB}"
 export BITGET_API_SECRET="${BITGET_API_SECRET:-$BITGET_PK}"
 export BITGET_API_PASSPHRASE="${BITGET_API_PASSPHRASE:-$BITGET_PASS}"
 
+# Backward compat: convert legacy AP_MOCK_BITGET to EXCHANGE_MODE
+if [ -z "$EXCHANGE_MODE" ] && [ "$AP_MOCK_BITGET" = "true" ]; then
+    EXCHANGE_MODE="mock"
+fi
+EXCHANGE_MODE="${EXCHANGE_MODE:-mock}"
+
 DEPLOYMENT_FILE="deployments/active-deployment.json"
 
 if [ ! -f "$DEPLOYMENT_FILE" ]; then
@@ -41,6 +47,7 @@ echo "RPC: $RPC"
 echo "Index: $INDEX"
 echo "MockBitgetVault: $BITGET_VAULT"
 echo "MockUSDT: $MOCK_USDT"
+echo "Exchange Mode: $EXCHANGE_MODE"
 echo "Data Node: http://localhost:8200"
 echo ""
 
@@ -57,7 +64,7 @@ AP_PRIVATE_KEY="$AP_KEY" \
     --port 9100 \
     --rpc "$RPC" \
     --index-contract "$INDEX" \
-    --mock-bitget \
+    --exchange-mode "$EXCHANGE_MODE" \
     --bitget-vault "$BITGET_VAULT" \
     --deployment-file "$DEPLOYMENT_FILE" \
     ${MOCK_USDT:+--mock-usdt "$MOCK_USDT"} \

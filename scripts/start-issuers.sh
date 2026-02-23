@@ -51,6 +51,7 @@ echo "RPC: $RPC"
 echo "IssuerRegistry: $ISSUER_REG"
 echo "BridgeProxy: $BRIDGE_PROXY"
 echo "MockBitgetVault: $BITGET_VAULT"
+echo "Exchange Mode: ${EXCHANGE_MODE:-mock}"
 echo "Bitget Readonly Key: ${BITGET_READONLY_API_KEY:+set (${#BITGET_READONLY_API_KEY} chars)}"
 echo ""
 
@@ -61,6 +62,7 @@ sleep 0.5
 mkdir -p logs
 
 # Common env vars
+export EXCHANGE_MODE="${EXCHANGE_MODE:-mock}"
 export ISSUER_RPC_URL="$RPC"
 export ISSUER_INDEX_ADDRESS="$INDEX"
 export ISSUER_GOVERNANCE_ADDRESS="$GOVERNANCE"

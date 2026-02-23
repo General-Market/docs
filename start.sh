@@ -35,6 +35,9 @@ export BITGET_READONLY_API_KEY=${BITGET_READONLY_API_KEY:-dummy}
 export BITGET_READONLY_API_SECRET=${BITGET_READONLY_API_SECRET:-dummysecretdummysecretdummysecret}
 export BITGET_READONLY_PASSPHRASE=${BITGET_READONLY_PASSPHRASE:-dummypass}
 
+# Exchange mode: mock (default for local dev), testnet, or mainnet
+export EXCHANGE_MODE="${EXCHANGE_MODE:-mock}"
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
@@ -124,7 +127,7 @@ fi
 print_banner
 
 echo -e "${YELLOW}Configuration:${NC}"
-echo "  Issuers: $ISSUER_COUNT | Skip deploy: $SKIP_DEPLOY | Tail logs: $([[ "$NO_TAIL" == "true" ]] && echo "no" || echo "yes") | Log level: $LOG_LEVEL"
+echo "  Issuers: $ISSUER_COUNT | Skip deploy: $SKIP_DEPLOY | Tail logs: $([[ "$NO_TAIL" == "true" ]] && echo "no" || echo "yes") | Log level: $LOG_LEVEL | Exchange: $EXCHANGE_MODE"
 echo ""
 
 # ============ Prerequisites ============
@@ -920,7 +923,7 @@ fi
 # ============ STEP 10: Launch AP ============
 echo -e "${BLUE}[10/$TOTAL_STEPS] Starting AP with real Bitget price proxy...${NC}"
 
-AP_ARGS="--port 9100 --rpc $RPC_URL --mock-bitget"
+AP_ARGS="--port 9100 --rpc $RPC_URL --exchange-mode $EXCHANGE_MODE"
 AP_ARGS="$AP_ARGS --arb-rpc $ARB_RPC_URL --arb-chain-id $ARB_CHAIN_ID"
 AP_ARGS="$AP_ARGS --deployment-file deployments/active-deployment.json"
 [ "$DATA_NODE_RUNNING" = true ] && AP_ARGS="$AP_ARGS --data-node-url http://localhost:8200"
