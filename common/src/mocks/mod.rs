@@ -6,6 +6,7 @@
 //! All mocks are designed for use in `#[cfg(test)]` contexts or with the `mock` feature flag.
 
 mod bitget;
+mod bitget_read_only;
 mod chain;
 mod error;
 mod issuer;
@@ -13,6 +14,7 @@ mod p2p;
 mod price_fetcher;
 
 pub use bitget::*;
+pub use bitget_read_only::*;
 pub use chain::*;
 pub use error::*;
 pub use issuer::*;
