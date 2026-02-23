@@ -17,8 +17,8 @@ type SortField =
   | 'displayName'
   | 'status'
   | 'activeAssets'
+  | 'syncIntervalSecs'
   | 'totalPriceRecords'
-  | 'oldestRecord'
   | 'lastSyncAgeSecs'
   | 'zeroValueAssets'
   | 'staleAssets'
@@ -37,19 +37,25 @@ interface SourceHealthTableProps {
 // ── Status helpers ──
 
 const STATUS_ORDER: Record<SourceStatus, number> = {
-  dead: 0,
-  stale: 1,
-  healthy: 2,
+  healthy: 0,
+  initializing: 1,
+  stale: 2,
+  dead: 3,
+  not_started: 4,
 }
 
 function getStatusColor(status: SourceStatus): string {
   switch (status) {
     case 'healthy':
       return 'text-color-up'
+    case 'initializing':
+      return 'text-color-info'
     case 'stale':
       return 'text-color-warning'
     case 'dead':
       return 'text-color-down'
+    case 'not_started':
+      return 'text-text-muted'
     default:
       return 'text-text-muted'
   }
@@ -59,10 +65,14 @@ function getStatusBg(status: SourceStatus): string {
   switch (status) {
     case 'healthy':
       return 'bg-surface-up'
+    case 'initializing':
+      return 'bg-surface-info'
     case 'stale':
       return 'bg-surface-warning'
     case 'dead':
       return 'bg-surface-down'
+    case 'not_started':
+      return 'bg-surface'
     default:
       return ''
   }
@@ -72,10 +82,14 @@ function getStatusDot(status: SourceStatus): string {
   switch (status) {
     case 'healthy':
       return 'bg-color-up'
+    case 'initializing':
+      return 'bg-color-info animate-pulse'
     case 'stale':
       return 'bg-color-warning'
     case 'dead':
       return 'bg-color-down'
+    case 'not_started':
+      return 'bg-text-muted'
     default:
       return 'bg-text-muted'
   }
@@ -96,15 +110,38 @@ function formatAge(secs: number): string {
   return `${(secs / 86400).toFixed(1)}d`
 }
 
-function formatDate(iso: string | null): string {
-  if (!iso) return '--'
-  const d = new Date(iso)
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
-}
-
 function hasHighZeroRate(source: SourceHealth): boolean {
   if (source.activeAssets === 0) return false
   return (source.zeroValueAssets / source.activeAssets) > 0.2
+}
+
+// ── API key signup links ──
+
+const API_KEY_LINKS: Record<string, { url: string; label: string }> = {
+  eia: { url: 'https://www.eia.gov/opendata/register.php', label: 'EIA' },
+  ecb: { url: 'https://data.ecb.europa.eu/', label: 'ECB (no key needed, enable flag)' },
+  weather: { url: 'https://open-meteo.com/', label: 'Open-Meteo (free, enable flag)' },
+  finra: { url: 'https://developer.finra.org/', label: 'FINRA Developer' },
+  bonds: { url: 'https://fiscaldata.treasury.gov/api-documentation/', label: 'Treasury' },
+  cloudflare: { url: 'https://developers.cloudflare.com/radar/', label: 'Cloudflare Radar' },
+  github: { url: 'https://github.com/settings/tokens', label: 'GitHub Token' },
+  wildfire: { url: 'https://firms.modaps.eosdis.nasa.gov/api/area/', label: 'NASA FIRMS' },
+  maritime: { url: 'https://aisstream.io/', label: 'AISstream' },
+  aisstream: { url: 'https://aisstream.io/', label: 'AISstream' },
+  crypto: { url: 'https://www.coingecko.com/en/api', label: 'CoinGecko' },
+  stocks: { url: 'https://finnhub.io/register', label: 'Finnhub' },
+  rates: { url: 'https://fred.stlouisfed.org/docs/api/api_key.html', label: 'FRED' },
+  bls: { url: 'https://data.bls.gov/registrationEngine/', label: 'BLS' },
+  cftc: { url: 'https://data.nasdaq.com/sign-up', label: 'Nasdaq Data Link' },
+  futures: { url: 'https://data.nasdaq.com/sign-up', label: 'Nasdaq Data Link' },
+  bchain: { url: 'https://data.nasdaq.com/sign-up', label: 'Nasdaq Data Link' },
+  opec: { url: 'https://data.nasdaq.com/sign-up', label: 'Nasdaq Data Link' },
+  imf: { url: 'https://data.nasdaq.com/sign-up', label: 'Nasdaq Data Link' },
+  twitch: { url: 'https://dev.twitch.tv/console/apps', label: 'Twitch Developer' },
+  tmdb: { url: 'https://www.themoviedb.org/settings/api', label: 'TMDb' },
+  backpacktf: { url: 'https://backpack.tf/developer/apikey/view', label: 'backpack.tf' },
+  movebank: { url: 'https://www.movebank.org/cms/movebank-main', label: 'Movebank' },
+  ebird: { url: 'https://ebird.org/api/keygen', label: 'eBird' },
 }
 
 // ── Skeleton ──
@@ -114,7 +151,7 @@ function TableSkeleton() {
     <>
       {Array.from({ length: 6 }, (_, r) => (
         <TableRow key={r}>
-          {Array.from({ length: 10 }, (_, c) => (
+          {Array.from({ length: 11 }, (_, c) => (
             <TableCell key={c}>
               <div className={`h-4 bg-border-light rounded animate-pulse ${c === 0 ? 'w-28' : 'w-14'}`} />
             </TableCell>
@@ -150,19 +187,28 @@ export function SourceHealthTable({
 }: SourceHealthTableProps) {
   const [sortField, setSortField] = useState<SortField>('status')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+  const [search, setSearch] = useState('')
 
   const handleSort = useCallback((field: SortField) => {
     if (sortField === field) {
       setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'))
     } else {
       setSortField(field)
-      // Default direction: ascending for status (red first), descending for numeric values
       setSortDirection(field === 'status' || field === 'displayName' ? 'asc' : 'desc')
     }
   }, [sortField])
 
+  const filteredSources = useMemo(() => {
+    if (!search.trim()) return sources
+    const q = search.toLowerCase().trim()
+    return sources.filter(s =>
+      s.displayName.toLowerCase().includes(q) ||
+      s.sourceId.toLowerCase().includes(q)
+    )
+  }, [sources, search])
+
   const sortedSources = useMemo(() => {
-    const sorted = [...sources].sort((a, b) => {
+    const sorted = [...filteredSources].sort((a, b) => {
       let cmp = 0
 
       switch (sortField) {
@@ -175,15 +221,12 @@ export function SourceHealthTable({
         case 'activeAssets':
           cmp = a.activeAssets - b.activeAssets
           break
+        case 'syncIntervalSecs':
+          cmp = a.syncIntervalSecs - b.syncIntervalSecs
+          break
         case 'totalPriceRecords':
           cmp = a.totalPriceRecords - b.totalPriceRecords
           break
-        case 'oldestRecord': {
-          const aTime = a.oldestRecord ? new Date(a.oldestRecord).getTime() : 0
-          const bTime = b.oldestRecord ? new Date(b.oldestRecord).getTime() : 0
-          cmp = aTime - bTime
-          break
-        }
         case 'lastSyncAgeSecs':
           cmp = a.lastSyncAgeSecs - b.lastSyncAgeSecs
           break
@@ -205,14 +248,14 @@ export function SourceHealthTable({
     })
 
     return sorted
-  }, [sources, sortField, sortDirection])
+  }, [filteredSources, sortField, sortDirection])
 
   const columns: { label: string; field: SortField; align?: string }[] = [
     { label: 'Source', field: 'displayName' },
     { label: 'Status', field: 'status' },
-    { label: 'Assets', field: 'activeAssets', align: 'text-right' },
+    { label: 'Live / Total', field: 'activeAssets', align: 'text-right' },
+    { label: 'Cycle', field: 'syncIntervalSecs', align: 'text-right' },
     { label: 'Records', field: 'totalPriceRecords', align: 'text-right' },
-    { label: 'Oldest', field: 'oldestRecord' },
     { label: 'Freshness', field: 'lastSyncAgeSecs', align: 'text-right' },
     { label: 'Zeros', field: 'zeroValueAssets', align: 'text-right' },
     { label: 'Stale', field: 'staleAssets', align: 'text-right' },
@@ -222,6 +265,24 @@ export function SourceHealthTable({
 
   return (
     <div className="border border-border-light overflow-hidden">
+      {/* Search bar */}
+      <div className="px-3 py-2 border-b border-border-light bg-muted">
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search sources..."
+            className="w-full max-w-xs bg-card border border-border-light rounded px-3 py-1.5 text-[12px] text-black placeholder:text-text-muted focus:outline-none focus:border-color-info transition-colors"
+          />
+          {search && (
+            <span className="text-[11px] text-text-muted whitespace-nowrap">
+              {filteredSources.length} of {sources.length}
+            </span>
+          )}
+        </div>
+      </div>
+
       <div className="overflow-x-auto">
         <Table aria-label="Source Health Monitoring">
           <TableHeader>
@@ -243,10 +304,14 @@ export function SourceHealthTable({
               <TableSkeleton />
             ) : sortedSources.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="py-12 text-center">
-                  <p className="text-text-muted">No sources found</p>
+                <TableCell colSpan={11} className="py-12 text-center">
+                  <p className="text-text-muted">
+                    {search ? 'No sources match your search' : 'No sources found'}
+                  </p>
                   <p className="text-text-muted text-sm mt-1">
-                    Check that the data-node is running and has ingested data.
+                    {search
+                      ? 'Try a different query or clear the search.'
+                      : 'Check that the data-node is running and has ingested data.'}
                   </p>
                 </TableCell>
               </TableRow>
@@ -280,28 +345,66 @@ export function SourceHealthTable({
 
                     {/* Status */}
                     <TableCell>
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${getStatusColor(source.status)} ${getStatusBg(source.status)}`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${getStatusDot(source.status)}`} />
-                        {source.status}
-                      </span>
+                      <div className="flex flex-col gap-0.5">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${getStatusColor(source.status)} ${getStatusBg(source.status)}`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${getStatusDot(source.status)}`} />
+                          {source.status === 'not_started' ? 'OFF' : source.status}
+                        </span>
+                        {source.notStartedReason && (
+                          <span className="text-[9px] text-text-muted leading-tight max-w-[160px] truncate" title={source.notStartedReason}>
+                            {source.notStartedReason}
+                          </span>
+                        )}
+                        {source.status === 'not_started' && API_KEY_LINKS[source.sourceId] && (
+                          <a
+                            href={API_KEY_LINKS[source.sourceId].url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[9px] text-color-info hover:underline leading-tight"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Get key: {API_KEY_LINKS[source.sourceId].label} &rarr;
+                          </a>
+                        )}
+                        {source.lastError && source.status === 'dead' && (
+                          <span className="text-[9px] text-color-down leading-tight max-w-[140px] truncate" title={source.lastError}>
+                            {source.errorCategory}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
 
-                    {/* Assets */}
+                    {/* Live / Total */}
                     <TableCell className="text-right font-mono tabular-nums text-[12px]">
-                      <span className="font-semibold text-black">{source.activeAssets}</span>
-                      <span className="text-text-muted"> / {source.totalAssets}</span>
+                      {(() => {
+                        const live = Math.max(0, source.activeAssets - source.staleAssets - source.zeroValueAssets)
+                        const liveRatio = source.totalAssets > 0 ? live / source.totalAssets : 0
+                        return (
+                          <div className="flex flex-col items-end">
+                            <div>
+                              <span className={`font-bold ${liveRatio > 0.7 ? 'text-color-up' : liveRatio > 0.3 ? 'text-color-warning' : 'text-color-down'}`}>
+                                {live}
+                              </span>
+                              <span className="text-text-muted"> / {source.totalAssets}</span>
+                            </div>
+                            <span className="text-[9px] text-text-muted">
+                              {source.totalAssets > 0 ? `${Math.round(liveRatio * 100)}%` : '--'}
+                            </span>
+                          </div>
+                        )
+                      })()}
+                    </TableCell>
+
+                    {/* Cycle (sync interval) */}
+                    <TableCell className="text-right font-mono tabular-nums text-[12px]">
+                      <span className="text-text-secondary">{formatAge(source.syncIntervalSecs)}</span>
                     </TableCell>
 
                     {/* Records */}
                     <TableCell className="text-right font-mono tabular-nums text-[12px]">
                       {formatNumber(source.totalPriceRecords)}
-                    </TableCell>
-
-                    {/* Oldest */}
-                    <TableCell className="text-[12px] font-mono tabular-nums whitespace-nowrap">
-                      {formatDate(source.oldestRecord)}
                     </TableCell>
 
                     {/* Freshness (last sync age) */}
