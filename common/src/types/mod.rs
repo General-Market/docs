@@ -5,6 +5,7 @@
 //! All monetary values use 18 decimals precision.
 
 mod bridge;
+mod exchange_mode;
 mod fill;
 mod issuer;
 mod itp;
@@ -13,6 +14,7 @@ mod p2p;
 mod price;
 
 pub use bridge::*;
+pub use exchange_mode::*;
 pub use fill::*;
 pub use issuer::*;
 pub use itp::*;
