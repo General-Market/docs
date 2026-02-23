@@ -93,7 +93,6 @@ contract E2ERebalanceFlowTest is TestHelper {
         pricesA[0] = BTC_PRICE;
         pricesA[1] = ETH_PRICE;
 
-        vm.prank(creator);
         itpIdA = index.createITP("ITP Alpha", "ITPA", weightsA, assetsA, pricesA, type(uint256).max);
 
         // Deploy ITP-A vault and link
@@ -116,7 +115,6 @@ contract E2ERebalanceFlowTest is TestHelper {
         pricesB[0] = BTC_PRICE;
         pricesB[1] = ETH_PRICE;
 
-        vm.prank(creator);
         itpIdB = index.createITP("ITP Beta", "ITPB", weightsB, assetsB, pricesB, type(uint256).max);
 
         // Deploy ITP-B vault and link

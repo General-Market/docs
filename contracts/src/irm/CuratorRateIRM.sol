@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.24;
 
 import {IIrm} from "@morpho-blue/interfaces/IIrm.sol";
 import {Id, MarketParams, Market} from "@morpho-blue/interfaces/IMorpho.sol";
@@ -10,6 +10,7 @@ import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
 /// @dev The curator pushes borrow rates per market based on the SERM algorithm.
 ///      Morpho Blue calls borrowRate() on every interaction — returns the curator-set rate.
 ///      If the curator hasn't updated in 48h, a punitive rate protects lenders.
+/// @custom:security-contact security@indexprotocol.com
 contract CuratorRateIRM is IIrm {
     using MarketParamsLib for MarketParams;
 
@@ -56,6 +57,7 @@ contract CuratorRateIRM is IIrm {
 
     error NotMorpho();
     error NotCurator();
+    error ZeroCurator();
     error ArrayLengthMismatch();
     error RateOutOfBounds();
 
@@ -129,6 +131,7 @@ contract CuratorRateIRM is IIrm {
     /// @notice Transfer curator role.
     function setCurator(address newCurator) external {
         if (msg.sender != curator) revert NotCurator();
+        if (newCurator == address(0)) revert ZeroCurator();
         emit CuratorChanged(curator, newCurator);
         curator = newCurator;
     }

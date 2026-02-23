@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.24;
 
 import {IIssuerRegistry} from "../interfaces/IIssuerRegistry.sol";
 import {IGovernance} from "../interfaces/IGovernance.sol";
@@ -13,6 +13,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 /// @title IssuerRegistry - Issuer node management for Index L3
 /// @notice Registry for issuer nodes, their BLS public keys, and aggregated key management
 /// @dev UUPS upgradeable. Story 2.12 covers core registry; Story 2.13 covers key rotation
+/// @custom:security-contact security@indexprotocol.com
 contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
     // ============ ERRORS ============
 

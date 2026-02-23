@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 import "../libraries/TypesLib.sol";
 import "../libraries/ErrorsLib.sol";
@@ -9,6 +9,7 @@ import "../interfaces/IGovernance.sol";
 /// @title AdminLib - External library for admin configuration functions
 /// @notice Extracted from Investment.sol to reduce contract size below the 24,576 byte limit
 /// @dev Uses external functions that compile to delegatecall, preserving caller's storage context
+/// @custom:security-contact security@indexprotocol.com
 library AdminLib {
 
     /// @notice Configure per-asset minimum buy amounts in batch

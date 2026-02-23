@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 import {IBridgedItpFactory} from "../interfaces/IBridgedItpFactory.sol";
 import {BridgedITP} from "./BridgedITP.sol";
 
 /// @title BridgedItpFactory - Deploys BridgedITP tokens via CREATE2
 /// @notice Only callable by BridgeProxy
+/// @custom:security-contact security@indexprotocol.com
 contract BridgedItpFactory is IBridgedItpFactory {
     error ONLY_BRIDGE_PROXY();
     error ALREADY_DEPLOYED();

@@ -84,12 +84,12 @@ contract IndexTest is TestHelper {
         prices[0] = DEFAULT_ASSET_PRICE;
         prices[1] = DEFAULT_ASSET_PRICE;
 
-        vm.prank(user1);
+        vm.prank(admin);
         bytes32 itpId = index.createITP("Test ITP", "TITP", weights, assets, prices, type(uint256).max);
 
         // Verify ITP was created
         TypesLib.ITPCore memory itp = index.getITP(itpId);
-        assertEq(itp.creator, user1, "Creator should be user1");
+        assertEq(itp.creator, admin, "Creator should be admin");
         assertEq(itp.assetCount, 2, "Asset count should be 2");
         assertEq(itp.status, uint256(TypesLib.ITPStatus.ACTIVE), "Status should be ACTIVE");
         assertEq(itp.totalSupply, 0, "Total supply should be 0");
@@ -108,7 +108,7 @@ contract IndexTest is TestHelper {
         uint256[] memory prices = new uint256[](1);
         prices[0] = DEFAULT_ASSET_PRICE;
 
-        vm.prank(user1);
+        vm.prank(admin);
         bytes32 itpId = index.createITP("Single Asset ITP", "SITP", weights, assets, prices, type(uint256).max);
 
         TypesLib.ITPCore memory itp = index.getITP(itpId);
@@ -135,7 +135,7 @@ contract IndexTest is TestHelper {
         prices[2] = DEFAULT_ASSET_PRICE;
         prices[3] = DEFAULT_ASSET_PRICE;
 
-        vm.prank(user1);
+        vm.prank(admin);
         bytes32 itpId = index.createITP("Multi Asset ITP", "MITP", weights, assets, prices, type(uint256).max);
 
         TypesLib.ITPCore memory itp = index.getITP(itpId);
@@ -159,7 +159,7 @@ contract IndexTest is TestHelper {
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E014_InvalidWeightSum.selector, 11e17, WEIGHT_SUM));
 
-        vm.prank(user1);
+        vm.prank(admin);
         index.createITP("Invalid ITP", "IITP", weights, assets, prices, type(uint256).max);
     }
 
@@ -178,7 +178,7 @@ contract IndexTest is TestHelper {
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E014_InvalidWeightSum.selector, 8e17, WEIGHT_SUM));
 
-        vm.prank(user1);
+        vm.prank(admin);
         index.createITP("Invalid ITP", "IITP", weights, assets, prices, type(uint256).max);
     }
 
@@ -199,7 +199,7 @@ contract IndexTest is TestHelper {
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E013_WeightBelowMinimum.selector, 24e14, WEIGHT_MIN));
 
-        vm.prank(user1);
+        vm.prank(admin);
         index.createITP("Invalid ITP", "IITP", weights, assets, prices, type(uint256).max);
     }
 
@@ -216,7 +216,7 @@ contract IndexTest is TestHelper {
         prices[0] = DEFAULT_ASSET_PRICE;
         prices[1] = DEFAULT_ASSET_PRICE;
 
-        vm.prank(user1);
+        vm.prank(admin);
         bytes32 itpId = index.createITP("Min Weight ITP", "MWITP", weights, assets, prices, type(uint256).max);
 
         TypesLib.ITPCore memory itp = index.getITP(itpId);
@@ -241,7 +241,7 @@ contract IndexTest is TestHelper {
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E015_LengthMismatch.selector, 2, 3));
 
-        vm.prank(user1);
+        vm.prank(admin);
         index.createITP("Invalid ITP", "IITP", weights, assets, prices, type(uint256).max);
     }
 
@@ -262,7 +262,7 @@ contract IndexTest is TestHelper {
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E015_LengthMismatch.selector, 3, 2));
 
-        vm.prank(user1);
+        vm.prank(admin);
         index.createITP("Invalid ITP", "IITP", weights, assets, prices, type(uint256).max);
     }
 
@@ -273,7 +273,7 @@ contract IndexTest is TestHelper {
 
         vm.expectRevert(ErrorsLib.E016_NoAssets.selector);
 
-        vm.prank(user1);
+        vm.prank(admin);
         index.createITP("Empty ITP", "EITP", weights, assets, prices, type(uint256).max);
     }
 
@@ -293,15 +293,15 @@ contract IndexTest is TestHelper {
         prices[1] = DEFAULT_ASSET_PRICE;
 
         // Create first ITP
-        vm.prank(user1);
+        vm.prank(admin);
         bytes32 itpId1 = index.createITP("ITP One", "ITP1", weights, assets, prices, type(uint256).max);
 
         // Create second ITP (same params, different ID expected)
-        vm.prank(user1);
+        vm.prank(admin);
         bytes32 itpId2 = index.createITP("ITP Two", "ITP2", weights, assets, prices, type(uint256).max);
 
-        // Create third ITP from different user
-        vm.prank(user2);
+        // Create third ITP
+        vm.prank(admin);
         bytes32 itpId3 = index.createITP("ITP Three", "ITP3", weights, assets, prices, type(uint256).max);
 
         assertNotEq(itpId1, itpId2, "ITP IDs should be unique (1 vs 2)");
@@ -319,7 +319,7 @@ contract IndexTest is TestHelper {
         uint256[] memory prices = new uint256[](1);
         prices[0] = DEFAULT_ASSET_PRICE;
 
-        vm.prank(user1);
+        vm.prank(admin);
         bytes32 itpId = index.createITP("Test ITP", "TITP", weights, assets, prices, type(uint256).max);
 
         // Verify it's a valid bytes32 (non-zero for a real ITP)
@@ -343,7 +343,7 @@ contract IndexTest is TestHelper {
         prices[0] = DEFAULT_ASSET_PRICE;
         prices[1] = DEFAULT_ASSET_PRICE;
 
-        vm.prank(user1);
+        vm.prank(admin);
         bytes32 itpId = index.createITP("Event ITP", "EITP", weights, assets, prices, type(uint256).max);
 
         Vm.Log[] memory entries = vm.getRecordedLogs();
@@ -356,7 +356,7 @@ contract IndexTest is TestHelper {
                 // topic1 = itpId (indexed)
                 assertEq(entries[i].topics[1], itpId, "Event itpId mismatch");
                 // topic2 = creator (indexed)
-                assertEq(entries[i].topics[2], bytes32(uint256(uint160(user1))), "Event creator mismatch");
+                assertEq(entries[i].topics[2], bytes32(uint256(uint160(admin))), "Event creator mismatch");
                 // Decode data: name, symbol, assets, weights
                 (bytes32 name, bytes32 symbol, address[] memory eventAssets, uint256[] memory eventWeights) =
                     abi.decode(entries[i].data, (bytes32, bytes32, address[], uint256[]));
@@ -389,12 +389,12 @@ contract IndexTest is TestHelper {
         prices[0] = DEFAULT_ASSET_PRICE;
         prices[1] = DEFAULT_ASSET_PRICE;
 
-        vm.prank(user1);
+        vm.prank(admin);
         bytes32 itpId = index.createITP("Test ITP", "TITP", weights, assets, prices, type(uint256).max);
 
         TypesLib.ITPCore memory itp = index.getITP(itpId);
 
-        assertEq(itp.creator, user1, "Creator mismatch");
+        assertEq(itp.creator, admin, "Creator mismatch");
         assertEq(itp.assetCount, 2, "Asset count mismatch");
         assertEq(itp.status, uint256(TypesLib.ITPStatus.ACTIVE), "Status mismatch");
         assertEq(itp.totalSupply, 0, "Total supply should be 0");
@@ -425,7 +425,7 @@ contract IndexTest is TestHelper {
         prices[0] = DEFAULT_ASSET_PRICE;
         prices[1] = DEFAULT_ASSET_PRICE;
 
-        vm.prank(user1);
+        vm.prank(admin);
         bytes32 itpId = index.createITP("State ITP", "SITP", weights, assets, prices, type(uint256).max);
 
         (
@@ -437,7 +437,7 @@ contract IndexTest is TestHelper {
             uint256[] memory inventory
         ) = index.getITPState(itpId);
 
-        assertEq(creator, user1, "Creator mismatch");
+        assertEq(creator, admin, "Creator mismatch");
         assertEq(totalSupply, 0, "Total supply should be 0");
         // NAV = Σ(inventory[i] * price[i]) / 1e18
         // With 50/50 weights at $100 price, inventory = (0.5e18 * 1e18) / 100e18 = 5e15 per asset
@@ -474,11 +474,11 @@ contract IndexTest is TestHelper {
         prices[1] = DEFAULT_ASSET_PRICE;
 
         // Create first ITP
-        vm.prank(user1);
+        vm.prank(admin);
         bytes32 itpId1 = index.createITP("ITP One", "ITP1", weights, assets1, prices, type(uint256).max);
 
         // Create second ITP sharing asset1
-        vm.prank(user2);
+        vm.prank(admin);
         bytes32 itpId2 = index.createITP("ITP Two", "ITP2", weights, assets2, prices, type(uint256).max);
 
         // Both ITPs should be created successfully
@@ -524,7 +524,7 @@ contract IndexTest is TestHelper {
 
         vm.expectRevert(ErrorsLib.E004_SystemPaused.selector);
 
-        vm.prank(user1);
+        vm.prank(admin);
         index.createITP("Paused ITP", "PITP", weights, assets, prices, type(uint256).max);
     }
 
@@ -545,7 +545,7 @@ contract IndexTest is TestHelper {
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E017_DuplicateAsset.selector, asset1));
 
-        vm.prank(user1);
+        vm.prank(admin);
         index.createITP("Dup ITP", "DITP", weights, assets, prices, type(uint256).max);
     }
 
@@ -564,7 +564,7 @@ contract IndexTest is TestHelper {
 
         vm.expectRevert(ErrorsLib.E018_ZeroAssetAddress.selector);
 
-        vm.prank(user1);
+        vm.prank(admin);
         index.createITP("Zero ITP", "ZITP", weights, assets, prices, type(uint256).max);
     }
 
@@ -578,7 +578,7 @@ contract IndexTest is TestHelper {
         uint256[] memory prices = new uint256[](1);
         prices[0] = DEFAULT_ASSET_PRICE;
 
-        vm.prank(user1);
+        vm.prank(admin);
         bytes32 itpId = index.createITP("My Test Name", "MTSYM", weights, assets, prices, type(uint256).max);
 
         TypesLib.ITPCore memory itp = index.getITP(itpId);
@@ -605,7 +605,7 @@ contract IndexTest is TestHelper {
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E064_StringTooLong.selector, bytes(longName).length, 32));
 
-        vm.prank(user1);
+        vm.prank(admin);
         index.createITP(longName, "SYM", weights, assets, prices, type(uint256).max);
     }
 
@@ -624,7 +624,7 @@ contract IndexTest is TestHelper {
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E064_StringTooLong.selector, bytes(longSymbol).length, 32));
 
-        vm.prank(user1);
+        vm.prank(admin);
         index.createITP("Name", longSymbol, weights, assets, prices, type(uint256).max);
     }
 
@@ -650,7 +650,7 @@ contract IndexTest is TestHelper {
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E051_TooManyAssets.selector, assetCount, 1000));
 
-        vm.prank(user1);
+        vm.prank(admin);
         index.createITP("Too Many", "MANY", weights, assets, prices, type(uint256).max);
     }
 
@@ -672,7 +672,7 @@ contract IndexTest is TestHelper {
         // Add remainder to first weight to ensure sum = 1e18
         weights[0] += remainder;
 
-        vm.prank(user1);
+        vm.prank(admin);
         bytes32 itpId = index.createITP("Max Assets", "MAX", weights, assets, prices, type(uint256).max);
 
         TypesLib.ITPCore memory itp = index.getITP(itpId);
@@ -697,7 +697,7 @@ contract IndexTest is TestHelper {
         // Add remainder to first weight to ensure sum = 1e18
         weights[0] += remainder;
 
-        vm.prank(user1);
+        vm.prank(admin);
         bytes32 itpId = index.createITP("Hundred Assets", "H100", weights, assets, prices, type(uint256).max);
 
         TypesLib.ITPCore memory itp = index.getITP(itpId);
@@ -723,7 +723,7 @@ contract IndexTest is TestHelper {
         prices[0] = DEFAULT_ASSET_PRICE;
         prices[1] = DEFAULT_ASSET_PRICE;
 
-        vm.prank(user1);
+        vm.prank(admin);
         bytes32 itpId = index.createITP("Fuzz ITP", "FITP", weights, assets, prices, type(uint256).max);
 
         TypesLib.ITPCore memory itp = index.getITP(itpId);
@@ -892,7 +892,7 @@ contract IndexTest is TestHelper {
 
         uint256 bridgeNonce = 42;
 
-        vm.startPrank(user1);
+        vm.startPrank(admin);
         bytes32 itpId1 = index.createITP("Idempotent ITP", "IITP", weights, assets, prices, bridgeNonce);
         bytes32 itpId2 = index.createITP("Idempotent ITP", "IITP", weights, assets, prices, bridgeNonce);
         vm.stopPrank();
@@ -909,7 +909,7 @@ contract IndexTest is TestHelper {
         uint256[] memory prices = new uint256[](1);
         prices[0] = DEFAULT_ASSET_PRICE;
 
-        vm.startPrank(user1);
+        vm.startPrank(admin);
         bytes32 itpId1 = index.createITP("ITP A", "ITPA", weights, assets, prices, type(uint256).max);
         bytes32 itpId2 = index.createITP("ITP B", "ITPB", weights, assets, prices, type(uint256).max);
         vm.stopPrank();
@@ -926,7 +926,7 @@ contract IndexTest is TestHelper {
         uint256[] memory prices = new uint256[](1);
         prices[0] = DEFAULT_ASSET_PRICE;
 
-        vm.startPrank(user1);
+        vm.startPrank(admin);
         bytes32 itpId1 = index.createITP("ITP 1", "ITP1", weights, assets, prices, 1);
         bytes32 itpId2 = index.createITP("ITP 2", "ITP2", weights, assets, prices, 2);
         vm.stopPrank();
@@ -945,7 +945,7 @@ contract IndexTest is TestHelper {
 
         uint256 bridgeNonce = 99;
 
-        vm.prank(user1);
+        vm.prank(admin);
         bytes32 itpId = index.createITP("Mapped ITP", "MITP", weights, assets, prices, bridgeNonce);
 
         assertEq(index._bridgeNonceToItpId(bridgeNonce), itpId, "Nonce mapping should be stored");

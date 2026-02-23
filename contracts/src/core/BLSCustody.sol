@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 import "../interfaces/IBLSCustody.sol";
 import "../interfaces/IIssuerRegistry.sol";
-import "../libraries/BLSLib.sol";
 import "../libraries/BLSVerifier.sol";
 import "../libraries/ErrorsLib.sol";
 import "../libraries/EventsLib.sol";
@@ -13,6 +12,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 /// @title BLSCustody - BLS-piloted custody contract for asset management
 /// @notice Manages custody with 11/20 BLS threshold for standard ops, 15/20 for emergency whitelist, 17/20 for emergency upgrade
 /// @dev UUPS upgradeable, uses bitmap nonce for replay protection
+/// @custom:security-contact security@indexprotocol.com
 contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody {
     // ============ CONSTRUCTOR ============
 
@@ -24,12 +24,21 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
     // ============ CONSTANTS ============
 
     /// @notice Standard operation threshold (11/20)
+    /// @dev NOT enforced on-chain. The aggregated BLS signature implicitly
+    /// enforces the threshold via off-chain aggregation. This constant exists
+    /// for documentation and off-chain tooling reference only.
     uint256 public constant override STANDARD_THRESHOLD = 11;
 
     /// @notice Emergency operation threshold for whitelist removal (15/20)
+    /// @dev NOT enforced on-chain. The aggregated BLS signature implicitly
+    /// enforces the threshold via off-chain aggregation. This constant exists
+    /// for documentation and off-chain tooling reference only.
     uint256 public constant override EMERGENCY_THRESHOLD = 15;
 
     /// @notice Emergency upgrade threshold (17/20) - per architecture NFR13
+    /// @dev NOT enforced on-chain. The aggregated BLS signature implicitly
+    /// enforces the threshold via off-chain aggregation. This constant exists
+    /// for documentation and off-chain tooling reference only.
     uint256 public constant override EMERGENCY_UPGRADE_THRESHOLD = 17;
 
     /// @notice Whitelist timelock duration (2 days)
@@ -44,6 +53,7 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
     // ============ STORAGE ============
 
     /// @notice Reference to IssuerRegistry for BLS key verification
+    /// @dev Legacy public accessor. Verification uses _blsIssuerRegistry from BLSVerifier.
     IIssuerRegistry public issuerRegistry;
 
     /// @notice Nonce bitmap for replay protection (supports non-sequential nonces)
@@ -150,10 +160,7 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "proposeWhitelist", target));
 
         // Verify BLS signature (11/20 threshold)
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length == 0 || !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-            revert ErrorsLib.E020_InvalidBLSSignature();
-        }
+        _verifyBLS(message, blsSignature);
 
         // Record proposal
         whitelistProposedAt[target] = block.timestamp;
@@ -202,10 +209,7 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "emergencyRemove", target));
 
         // Verify BLS signature (15/20 threshold for emergency)
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length == 0 || !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-            revert ErrorsLib.E020_InvalidBLSSignature();
-        }
+        _verifyBLS(message, blsSignature);
 
         // Remove from whitelist
         _whitelisted[target] = false;
@@ -234,10 +238,7 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "proposeUpgrade", newImpl));
 
         // Verify BLS signature (15/20 threshold for standard upgrades)
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length == 0 || !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-            revert ErrorsLib.E020_InvalidBLSSignature();
-        }
+        _verifyBLS(message, blsSignature);
 
         pendingUpgradeImpl = newImpl;
         pendingUpgradeProposedAt = block.timestamp;
@@ -262,10 +263,7 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "proposeEmergencyUpgrade", newImpl));
 
         // Verify BLS signature (17/20 threshold for emergency upgrades per architecture NFR13)
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
-        if (aggregatedPubkey.length == 0 || !BLSLib.verifyBLS(aggregatedPubkey, message, blsSignature)) {
-            revert ErrorsLib.E020_InvalidBLSSignature();
-        }
+        _verifyBLS(message, blsSignature);
 
         pendingUpgradeImpl = newImpl;
         pendingUpgradeProposedAt = block.timestamp;

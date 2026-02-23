@@ -570,7 +570,7 @@ contract BLSCustodyTest is TestHelper {
         );
 
         bytes memory anySig = signWithTestIssuers(keccak256("irrelevant"));
-        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E020_InvalidBLSSignature.selector));
+        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E07E_InvalidAggregatedPubkeyLength.selector, 0));
         custody.proposeWhitelist(address(0xDEAD), anySig);
     }
 

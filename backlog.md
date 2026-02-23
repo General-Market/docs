@@ -1,5 +1,409 @@
 # Design Decision Backlog
 
+## Session: 20260224-0200-x8m3 (Security Audit — 10 Findings)
+
+- [DECISION] Fix 1 — BLSCustody: Unified 4 divergent BLS verification paths to use inherited `_verifyBLS()` from BLSVerifier. Kept `issuerRegistry` public storage (20+ deploy scripts read it) with legacy comment. Removed direct BLSLib import.
+- [DECISION] Fix 2 — Investment `_safeTransferOrEscrow`: Decoded return data from low-level USDC transfer call (OpenZeppelin SafeERC20 pattern). USDC returns bool — success+false was silently losing funds.
+- [DECISION] Fix 3 — Added `nonReentrant` to `confirmFills()`. Other state-changing functions already had it; this one makes external calls (vault mint, USDC transfers) without the guard.
+- [DECISION] Fix 4 — Added admin/bridge access control to `createITP()`. Was previously open to anyone. Updated 30+ test prank callers from user1 to admin.
+- [DECISION] Fix 5 — CuratorRateIRM: Added `ZeroCurator()` error and zero-address check in `setCurator()`. Setting curator to address(0) would permanently brick rate management.
+- [DECISION] Fix 6 — Vision: Added `updateFeeCollector()` with BLS verification. Previously no update path existed — lost address = permanently locked fees.
+- [DECISION] Fix 7 — Replaced 3 remaining `require()` strings with custom errors E128/E129/E130 in Investment.sol. Consistent with rest of codebase.
+- [DECISION] Fix 8+9 — Locked pragma to `0.8.24` on all 29 deployed contracts/libraries. Kept floating on interfaces and mocks. Added `@custom:security-contact` to all 29 files.
+- [DECISION] Fix 10 — Added NatSpec to BLSCustody threshold constants documenting they're not enforced on-chain (BLS aggregation enforces implicitly off-chain).
+- [DECISION] Pre-existing test failure `test_confirmFills_sellOrder_partialFill` not caused by our changes — assertion has wrong expected value (100-50+20=70 vs correct 100-30+20=90). Left as-is.
+
+---
+
+## Session: 20260224-2100-p3x9 (PandaScore Esports Source)
+
+- [DECISION] Added PandaScore esports source (`esports` source_id) using free tier API (1000 req/hr). Follows sports source pattern with dynamic match discovery.
+- [DECISION] Each match produces 2 feeds (team1 score, team2 score) + 1 maps-progress feed for best-of-N matches. Labels format: "ELE vs HOLY (ELE 1) [CS2 / VCL]"
+- [DECISION] Discovery fetches /matches/running (all pages) + /matches/upcoming (2 pages). Matches fall off when they leave running endpoint — no explicit cleanup needed.
+- [DECISION] 5-minute sync interval for live score freshness. Rate limit set conservatively to 800/hr (80% of 1000 cap). ~4-6 API calls per sync = ~48-72 req/hr.
+- [DECISION] Token hardcoded as fallback, overridable via PANDASCORE_TOKEN env var.
+- [DECISION] Category reuses "sports" (already in valid categories list) rather than adding a new "esports" category.
+
+---
+
+## Session: 20260224-1430-s4q7 (Source Quality Upgrade — Full Plan)
+
+- [DECISION] Frontend /sources page: replaced "Assets" column with "Live / Total" showing (active - stale - zero) / total with color-coded percentage. Added "Cycle" column showing sync interval. Added "Live Assets" aggregate stat to header. Removed "Oldest" column (low value).
+- [DECISION] Full source-by-source upgrade plan written across 3 documents: this backlog (finance/macro + sentiment/popularity), and `data-node/SOURCE_UPGRADE_PLAN.md` (bet-on-everything/real-world sources).
+
+---
+
+# SOURCE QUALITY UPGRADE PLAN — All 53 Sources (Deep Dive)
+
+## Problem Statement
+
+Most sources have stale and zero-value data polluting the system. Zero values are recorded but not rejected at sync time. Sources with naturally intermittent data (sports off-season, weather alerts) appear dead when there's simply nothing happening. GPS-tracking sources store lat/long as scalar price values losing semantic meaning. ESPN scores produce weird values when games aren't live. No smart discovery for sources whose available data changes constantly.
+
+**Full detailed plans:** `data-node/SOURCE_UPGRADE_PLAN.md` (bet-on-everything sources) + inline below (finance + sentiment).
+
+## Architecture Changes (apply to ALL sources)
+
+### A1. Zero-Value Guard at Sync Layer
+**Where:** `sync_engine.rs` + `scheduled_sync_engine.rs`
+**What:** Before inserting into `market_prices`, reject values where `value == 0` UNLESS the source explicitly opts in via a new trait method `fn allows_zero_values(&self) -> bool` (default false). Sources like weather (temperature can be 0°C), earthquake (magnitude floor), and sports (0-0 scores) override to true.
+**Impact:** Stops zero pollution at the source. All existing zero records remain in DB but new ones are blocked.
+
+### A2. Stale Asset Auto-Deactivation
+**Where:** `sync_engine.rs`, new periodic task
+**What:** Every hour, check each asset: if `age_secs > 7 * sync_interval` AND `change_pct == 0` for 7 days → set `is_active = false` in `market_assets`. Source can reactivate on next discovery if the asset starts producing data again.
+**Impact:** Self-cleaning. Dead assets don't pollute live counts.
+
+### A3. Data Variance Scoring
+**Where:** New field in `market_prices` health query
+**What:** Track per-asset `variance_24h` = stddev of values over last 24h. Assets with variance=0 for >24h are flagged as "flat" (distinct from stale). Sources with >50% flat assets get a warning.
+**Impact:** Detects data feeds that technically update but always return the same number (dead API returning cached values).
+
+### A4. Smart Discovery Trait Extension
+**Where:** `traits.rs`
+**What:** Add optional `fn discover_dynamic_assets(&self) -> Result<Vec<AssetUpdate>>` called every 6 hours. Sources that implement this can add/remove assets based on what's currently available (e.g., ESPN games today, Polymarket active markets, Twitch top streamers).
+**Impact:** Sources automatically adapt to changing data landscape.
+
+---
+
+## BATCH 1: FINANCE & MACRO SOURCES (16 sources, ~65-72h)
+
+### 1. CoinGecko (`crypto`) — 3h
+- **File:** `sources/coingecko/client.rs` | **Config:** 10,000 assets | **Interval:** 120s
+- **BUGS:** Symbol fallback uses `coin_id.to_uppercase()` not actual trading symbol. `_asset_ids` parameter ignored (fetches ALL). `unwrap_or_default()` silently converts failures to zero.
+- **ZERO:** Reject price=0 (delisted token). Log as warn. If zero 3x in a row, reduce sync priority.
+- **DISCOVERY:** Wire `fetch_top_coins()` into `discover_upstream_assets()`. Weekly top-2000 refresh. Drop coins below top 5000.
+- **FRESHNESS:** 120s good for crypto. Consider 60s for top-100, 300s for long-tail.
+- **FIX:** Symbol map from config entries, zero-price filtering, respect asset_ids, wire discovery.
+
+### 2. DefiLlama (`defi`) — 3h
+- **File:** `sources/defillama/client.rs` | **Config:** 130 assets | **Interval:** 120s
+- **BUGS:** `unwrap_or_default()` silently zeros. Dead code path for `dex_30d_` assets. Over-fetches ALL data every sync. No ScheduledMarketDataSource (data updates hourly but we poll every 120s = 750x wasted calls).
+- **ZERO:** Replace unwrap_or_default. Skip TVL < 0 (migration artifacts). TVL=0 for >7 days → deactivate.
+- **FRESHNESS:** Implement ScheduledMarketDataSource with 60min interval. Data updates hourly.
+
+### 3. Finnhub Stocks (`stocks`) — 4-7.5h
+- **File:** `sources/finnhub/client.rs` | **Config:** 780 tickers | **Interval:** 5s rolling
+- **BUGS:** One request per ticker (780 x 1050ms = 14 min full cycle). No market hours awareness (fetches 24/7). `unwrap_or_default()` on Decimal conversion. No volume data.
+- **ZERO:** Already good — skips zero current+prev_close. Stock price=0 is invalid.
+- **FRESHNESS:** Implement ScheduledMarketDataSource. Market hours: 5s batch. After hours: 30min. Weekends: 1/day.
+- **OPTIONAL:** WebSocket support (4h extra) would replace polling entirely for top-100 tickers.
+
+### 4. TWSE Taiwan (`twse`) — 3h
+- **File:** `sources/twse/client.rs` | **Config:** empty (all dynamic) | **Interval:** 600s
+- **BUGS:** No market hours awareness (TWSE: 9:00-13:30 TST). Empty config = fragile if discovery endpoint is down. `unwrap_or_default()`.
+- **ZERO:** Good — skips `z="-"` and empty strings.
+- **DISCOVERY:** Excellent — fully dynamic via `discover_upstream_assets()`. All ~1000 TWSE stocks.
+- **FRESHNESS:** ScheduledMarketDataSource for Taiwan hours. Burst during open/close auctions.
+- **ADD:** OTC (TPEx) market support via `mis.tpex.org.tw`.
+
+### 5. Polymarket — 3.5h
+- **File:** `sources/polymarket/client.rs` | **Interval:** 300s
+- **BUGS:** `fetch_prices()` re-downloads ALL markets (5000+) and filters client-side. No individual market endpoint. Symbol is truncated condition_id hex (meaningless). No change detection.
+- **ZERO:** Prices are probabilities (0-1). Both 0.0 and 1.0 are valid (resolved markets). No zero filtering.
+- **DISCOVERY:** Excellent — fully dynamic with active/non-closed/non-resolved filtering.
+- **FIX:** Use individual `/markets/{conditionId}` for targeted fetches. Use `question` field as symbol. Add stale market cleanup on resolution.
+
+### 6. FRED Rates (`rates`) — 1.5h
+- **File:** `sources/fred/client.rs` | **Config:** 15+ series | **Scheduled**
+- **BUGS:** One API call per series (15 sequential). No observation date validation. No prev_close.
+- **ZERO:** Interest rate=0 is valid (ZIRP). No zero filtering.
+- **FRESHNESS:** Already excellent — ScheduledMarketDataSource with daily 6-7 PM ET, FOMC burst, weekend skipping.
+- **FIX:** Date validation (warn if >7 days old). Fetch `limit=2` for prev_close calculation.
+
+### 7. Treasury (`bonds`) — 4h
+- **File:** `sources/treasury/client.rs` | **Config:** 20+ tenors | **Scheduled**
+- **BUGS:** **Regex on XML** — `extract_xml_value()` uses regex to parse XML. Fragile if Treasury changes attribute order. Regex compiled per-call (not cached). Full year's XML downloaded but only last entry used.
+- **ZERO:** Yields can be negative (TIPS). Zero is valid. No filtering.
+- **FRESHNESS:** Good — daily 3:30 PM ET publish windows.
+- **FIX:** Migrate to `quick-xml` parser. Cache regex with `OnceLock`. Add date validation.
+
+### 8. BLS — 2.5h
+- **File:** `sources/bls/client.rs` | **Config:** 9 series | **Scheduled**
+- **BUGS:** No observation date tracking (discards `year`/`period` from response). Release windows approximate (CPI "10th-13th"). No prev_close.
+- **ZERO:** Unemployment rate=0 would be absurd → warn. CPI index=0 → reject.
+- **FRESHNESS:** Excellent — NFP 1st Friday 8:30 AM, CPI 10th-13th, 5-min burst during releases. Best scheduled implementation.
+- **FIX:** Capture year+period for freshness validation. Hardcode 2026 release calendar. Add prev_close.
+
+### 9. ECB — 3.5h
+- **File:** `sources/ecb/client.rs` | **Config:** 10 series | **Scheduled**
+- **BUGS:** **HashMap ordering bug** — `observations.values().last()` on HashMap does NOT guarantee latest observation chronologically. One API call per series (could batch). `unwrap_or_default()`. 404 logged at debug only.
+- **ZERO:** ECB rates can be negative (deposit facility was -0.5%). Zero is valid.
+- **FRESHNESS:** Good — daily 4 PM CET, ECB meeting day burst.
+- **FIX:** Sort observation HashMap keys (integers) and take max for latest. Batch via SDMX multi-key queries.
+
+### 10. EIA — 2.5h
+- **File:** `sources/eia/client.rs` | **Config:** 9+ series | **Scheduled**
+- **BUGS:** `_asset_ids` ignored. Sequential single-series fetches (could batch). `f64`→String→`Decimal` lossy conversion. No error on empty response.
+- **ZERO:** Petroleum production=0 → reject. Inventory change=0 → allow.
+- **FRESHNESS:** Good — Wed 10:30 AM petroleum, Thu 10:30 AM natural gas.
+- **FIX:** Batch via multi-facets EIA v2 request. Direct `Decimal::try_from()`. Period validation.
+
+### 11. World Bank — 2h
+- **File:** `sources/worldbank/client.rs` | **Config:** 20+ indicators | **Interval:** 7 days
+- **BUGS:** `_asset_ids` ignored. Annual data fetched weekly (fine). No year validation on observations. `f64`→String→`Decimal` lossy.
+- **ZERO:** GDP=0 → reject. Population growth rate=0 → allow.
+- **FRESHNESS:** Simple 7-day interval. Could add World Development Indicators release awareness (April).
+
+### 12. FINRA Short Vol — 3h
+- **File:** `sources/finra_short_vol/client.rs` | **105 assets** | **Scheduled**
+- **BUGS:** `fetched_at` set to `now` not actual file date (misleading timestamps). Fallback walks 5 days without warning. No OTC market data.
+- **ZERO:** Correctly skips total_vol==0. Short ratio=0 is valid.
+- **FRESHNESS:** Good — 6:30 PM and 7:30 PM ET windows, weekend skipping.
+- **FIX:** Extract file date into `fetched_at`. Warn on stale fallback. Add OTC file support.
+
+### 13. SEC EFTS Filing Counts — 3.5h
+- **File:** `sources/sec_efts/client.rs` | **35 forms** | **Scheduled**
+- **BUGS:** `_asset_ids` ignored. 22 of 35 forms need individual requests (could batch with URL encoding). Date scoped to today only → zero on weekends.
+- **ZERO:** Filing counts=0 on weekends is expected. Add previous-business-day fallback.
+- **FRESHNESS:** Good — 9 AM, 1 PM, 5 PM ET windows.
+
+### 14. SEC EDGAR 13F — 6h
+- **File:** `sources/sec_edgar/client.rs` | **45 assets (15 funds x 3)** | **Scheduled**
+- **BUGS:** XML parsing via string search (should use parser). No filing cache (re-fetches quarterly data daily for 3 months). CIK padding fragile. AUM in thousands (may need x1000).
+- **ZERO:** AUM=0 for tracked institutional funds → reject. Position count low is valid.
+- **FIX:** Cache parsed filings for 90 days. Migrate to `quick-xml`. Add filing deadline awareness (Feb 14, May 15, Aug 14, Nov 14).
+
+### 15. SEC Insider (Form 4) — 10h (LARGEST)
+- **File:** `sources/sec_insider/client.rs` | **978 lines** | **157 assets** | **Scheduled**
+- **BUGS:** **Most complex source.** Hard cap of 2000 filings/day (truncates on busy days). XML namespace stripping via string replace (fragile). 150ms per XML download → 2000 filings = 5 min sequential. CIK cache 3MB download can fail silently.
+- **ZERO:** Zero transactions/day is valid. Zero dollar value for a transaction → suspicious parsing error.
+- **FIX:** Increase filing cap with pagination. `quick-xml` migration. Parallelize downloads with `tokio::task::JoinSet`. Incremental filing tracking.
+
+### 16. Congress — 3.5h
+- **File:** `sources/congress/client.rs` | **10+ metrics** | **Interval:** 6h
+- **BUGS:** `_asset_ids` ignored. Counts are CUMULATIVE (all-time total), not daily new filings. No delta computation. No session filtering. No retry logic.
+- **ZERO:** Zero cumulative count is invalid. Zero daily delta is valid (weekends/recess).
+- **FIX:** Add session filtering (`congress=118`). Compute daily deltas. Add retry. Session-aware scheduling.
+
+### Nasdaq Sub-Sources (5 sub-sources, ~6.5h total)
+| Sub-Source | Assets | Key Issue | Effort |
+|------------|--------|-----------|--------|
+| CFTC | 42 | Column lookup uses `contains()` substring match (false-match risk) | 2h |
+| CHRIS Futures | 50 | Sequential per-contract fetches. `_asset_ids` ignored. | 1.5h |
+| BCHAIN | 12 | 3 UNAVAILABLE_METRICS hardcoded instead of config `active:false` | 1h |
+| OPEC | 1 | No prev_close computed (simplest source) | 0.5h |
+| IMF | 60 | 60 sequential calls. Weekly fetch outside Apr/Oct release windows is overkill | 1.5h |
+
+---
+
+## BATCH 2: SENTIMENT & POPULARITY SOURCES (14 sources, ~76h)
+
+### 17. ESPN Sports — 6h
+- **File:** `sources/sports/client.rs` | **12 leagues, dynamic** | **Interval:** 600s
+- **BUGS:** **Zero for vanished games** (line 383-385): returns `Decimal::ZERO` instead of skipping. Pre-game scores are `None` → 0 (indistinguishable from 0-0 in progress). No active/inactive lifecycle for completed games. 12 sequential fetches with 2s delay = 24s even for off-season leagues.
+- **ZERO:** Allow 0-0 for live games (state=="in"). Reject for pre-game or vanished games. Add game state to metadata.
+- **DISCOVERY:** ESPN `/scoreboard` is inherently fresh (today's games only). Add `is_in_season()` to skip off-season leagues.
+- **FRESHNESS:** Adaptive: 60s when games live, 600s when pre/post only, 3600s when no games.
+- **FIX:** Skip vanished games instead of emitting zero. Add game state metadata. Season-aware league filtering. Shared scoreboard cache.
+
+### 18. GitHub Stars — 8h
+- **File:** `sources/github/client.rs` | **700 repos** | **Interval:** 600s
+- **BUGS:** **One API call per repo** (700 x 850ms = 10 min per sync ≈ sync interval). `parse_repo_from_asset_id()` fails for orgs with underscores. `volume_24h` mapped to forks (wrong semantic). Star counts change slowly (10-min sync is overkill).
+- **ZERO:** Stars=0 → repo deleted, reject. Forks=0 → accept.
+- **DISCOVERY:** Search API top-700 by stars. Add trending repos discovery (by recent star velocity).
+- **FRESHNESS:** 3600s (1h) — star counts barely change in 10 min.
+- **FIX:** **Migrate to GraphQL API** (50+ repos per query → 14 calls instead of 700). Fix asset_id parsing via `api_ref`. Track star velocity.
+
+### 19. npm Downloads — 5h
+- **File:** `sources/npm/client.rs` | **~1000 packages** | **Interval:** 1800s
+- **BUGS:** **Scoped package name parsing broken** — `parse_package_from_asset_id()` can't reverse `npm_babel_core` to `@babel/core`. Bulk API only works for unscoped packages. Download count=0 early in UTC day (aggregation lag). Hardcoded 20 search terms biased to JS.
+- **ZERO:** Daily=0 accept if weekly>0 (UTC lag). Both daily+weekly=0 → reject for popular packages.
+- **FRESHNESS:** 3600s (1h). Daily download counts update once per day.
+- **FIX:** Store package name in DB. Use `last-week` as primary metric. Fix scoped package encoding. Cache discovery.
+
+### 20. PyPI Downloads — 4h
+- **File:** `sources/pypi/client.rs` | **250 packages** | **Interval:** 3600s
+- **BUGS:** Only 250 packages (rate limit constraint). 250 x 2.5s = 10.4 min fetch time. pypistats.org is third-party (can be down). `parse_package_from_asset_id()` reverses hyphens to underscores (fragile).
+- **ZERO:** Daily=0 accept if weekly>0. Weekly=0 for top-250 → very suspicious.
+- **FRESHNESS:** 7200s (2h). PyPI data updates daily.
+- **FIX:** Use hugovk 30-day counts directly during discovery (already has download counts, avoids 250 individual calls). Increase to 500+ packages. Normalize package names.
+
+### 21. crates.io Downloads — 5h
+- **File:** `sources/crates_io/client.rs` | **20,000 crates** | **Interval:** 600s
+- **BUGS:** **`fetch_prices()` re-fetches ALL 20,000 crates** (200 sequential API calls at 1.1s = 220 seconds). Uses `recent_downloads` (90-day) which barely changes day-to-day. No individual crate price fetch. 37% of sync time spent fetching.
+- **ZERO:** Downloads=0 → accept for new, reject for established crates.
+- **FRESHNESS:** 3600s (1h). Download metrics update daily.
+- **FIX:** Use individual crate endpoint `/crates/{name}` for prices. Reduce to top 1000-2000. Use `/crates/{name}/downloads` for daily granularity.
+
+### 22. Steam Player Counts — 6h
+- **File:** `sources/steam/client.rs` | **500 games** | **Interval:** 600s
+- **BUGS:** **500 x 1.2s = 600 seconds per fetch = EQUALS sync interval** (never catches up). SteamSpy unreliable (fallback to 20 hardcoded games). No volume/peak data.
+- **ZERO:** Players=0 during maintenance → accept briefly. Players=0 for >24h for top-500 → deactivate.
+- **DISCOVERY:** SteamSpy `?request=all` returns ~1000 games. Fragile dependency.
+- **FRESHNESS:** 300-900s adaptive. More frequent during global peak hours (1400-1800 UTC).
+- **FIX:** Concurrent requests (3-5 parallel). Replace SteamSpy with Steam Charts. Add peak tracking. Reduce to 200-300 games.
+
+### 23. Twitch Viewership — 5h
+- **File:** `sources/twitch/client.rs` | **6000 streams + 1000 games** | **Interval:** 60s
+- **BUGS:** `fetch_prices()` re-fetches ALL 6000 streams instead of using `fetch_streams_by_user_ids()` (method exists but unused). In-memory peak cache lost on restart. 0 viewers for offline streamers (correct but large % are offline).
+- **ZERO:** Viewers=0 for offline → accept. Consider peak viewers as alternative for offline.
+- **DISCOVERY:** Excellent — top 6000 by viewers, peak cache with 30-day retention.
+- **FRESHNESS:** 60s for live prices, 300s for game aggregates, hourly for discovery.
+- **FIX:** Use `fetch_streams_by_user_ids()` in price fetching. Persist peak cache to DB.
+
+### 24. TMDb Movies/TV — 5h
+- **File:** `sources/tmdb/client.rs` | **20,000 movies+TV** | **Interval:** 300s
+- **BUGS:** **`fetch_prices()` IGNORES asset_ids parameter entirely** — fetches 1000 pages (500 movies + 500 TV) every time regardless. 20K assets is enormous. Popularity scores update daily not every 5 min. No individual movie price fetch.
+- **ZERO:** Popularity=0.0 → reject (no popular movie has 0 popularity).
+- **DISCOVERY:** `/movie/popular` and `/tv/popular` paginated. Good but overkill at 500 pages.
+- **FRESHNESS:** 3600s (1h). Add `/trending/movie/day` for curated 40 trending items.
+- **FIX:** Respect asset_ids → use `/movie/{id}` for targeted fetches. Reduce to 100-200 pages. Add trending + now_playing endpoints.
+
+### 25. Hacker News — 4h
+- **File:** `sources/hackernews/client.rs` | **500 stories x 2 metrics** | **Interval:** 300s
+- **BUGS:** 500 individual item fetches for both discovery and prices (500 x 50ms = 25s each). **Negative scores possible** (HN allows downvoting) → breaks NAV calculations. High asset churn (stories cycle every few hours).
+- **ZERO:** Score=0 → accept (just posted). Score<0 → clamp to 0 (negative prices break NAV).
+- **FRESHNESS:** 300s is reasonable. Could go 120s for top-50, 600s for 50-500.
+- **FIX:** Clamp negative scores. Use Firebase SSE for real-time. Reduce to top 100. Cache between fetch_assets/fetch_prices.
+
+### 26. AniList Anime/Manga — 4h
+- **File:** `sources/anilist/client.rs` | **1000 (500 anime + 500 manga)** | **Interval:** 600s
+- **BUGS:** `popularity` is cumulative and slow-moving (barely changes). `trending` field is more dynamic but NOT used as primary price. `averageScore` mapped as `market_cap` (wrong semantic). No seasonal awareness (anime seasons: Jan/Apr/Jul/Oct).
+- **ZERO:** Popularity=0 → accept for new entries. Trending=0 → normal for non-airing titles.
+- **DISCOVERY:** GraphQL pagination by POPULARITY_DESC. Add currently-airing discovery.
+- **FRESHNESS:** 600s for airing shows, 7200s for finished shows.
+- **FIX:** Use `trending` as primary price. Add seasonal discovery (`status: RELEASING`). Fix semantic mappings.
+
+### 27. backpack.tf TF2 Items — 4h
+- **File:** `sources/backpacktf/client.rs` | **~2700 items** | **Interval:** 600s
+- **BUGS:** `Decimal::from_f64_retain()` introduces float imprecision on USD conversion. Key price fallback of 57.0 metal may be outdated. Only first defindex used. `raw_usd_value` validation missing (if wrong, ALL prices wrong).
+- **ZERO:** Price=$0.00 → reject. Key price=0 → reject entire response. `raw_usd_value`=0 → reject.
+- **FRESHNESS:** 1800s (30 min). TF2 prices change daily at most.
+- **FIX:** Use `Decimal` throughout instead of `f64`. Validate `raw_usd_value` range ($0.01-$0.10). Filter items not updated in >90 days.
+
+### 28. Cloudflare Radar — 6h
+- **File:** `sources/cloudflare/client.rs` | **~493 metrics** | **Interval:** 600s
+- **BUGS:** IQI/Speed data uses 7d/28d aggregates → barely changes in 10 min. 137 API calls per sync. Speed metrics return 0.0 on error (silent). `Decimal::from_f64_retain` for integer ranks.
+- **ZERO:** Rank=0 → reject. HTTP adoption %=0 → accept for obscure categories. Speed/IQI=0 → reject (missing data).
+- **FRESHNESS:** By metric type: domains 3600s, services 3600s, HTTP adoption 7200s, IQI 86400s, Speed 86400s.
+- **FIX:** Split sync intervals by metric type. Use `Decimal::from(rank as u64)`. Don't silently zero on failed speed fetches. Reduce countries from 30 to 10-15.
+
+### 29. 4chan Board Activity — 4h
+- **File:** `sources/fourchan/client.rs` | **100 (20 boards x 5 metrics)** | **Interval:** 600s
+- **BUGS:** `new_threads` window hardcoded to 600s (breaks if interval changes). `total_replies` is snapshot not rate. Greentext detection simplistic. External link counting fragile.
+- **ZERO:** All metrics=0 → accept (slow boards at off-peak). Board 404 → skip, don't emit zeros.
+- **FRESHNESS:** 300-900s adaptive. More frequent for high-traffic boards.
+- **FIX:** Configurable window. Add reply rate (delta tracking). Add thread velocity. Improve greentext regex.
+
+### 30. PumpFun (Solana Tokens) — 10h
+- **File:** `sources/pumpfun/client.rs` | **Up to 500 tokens** | **Interval:** 300s
+- **BUGS:** **Fragile mint detection** — `key.pubkey.ends_with("pump")` heuristic is unreliable. Expensive discovery (3000 signatures → 500 transactions → Dexscreener batches = 500+ RPC calls). No persistence between discovery cycles. Helius credits consumed quickly.
+- **ZERO:** Price=0 → rug pull, reject and deactivate. Volume=0 → reject on discovery, accept for existing. Liquidity<$100 → reject (unreliable price).
+- **FRESHNESS:** 120s for active tokens, 60s for high-volume (>$100K/24h), 600s for declining.
+- **FIX:** Replace signature-based discovery with pump.fun API or Dexscreener trending. Add liquidity filter >$1000. Persist discovered tokens. Add age filter (last 7 days only). Price sanity check (>90% change = suspicious).
+
+---
+
+## BATCH 3: BET ON EVERYTHING / REAL-WORLD SOURCES (16 sources, ~141h)
+
+**Full detailed plans in `data-node/SOURCE_UPGRADE_PLAN.md`**
+
+### Critical Bugs (P0 — fix immediately)
+| Source | Bug | Impact |
+|--------|-----|--------|
+| **Flights** | South America bounding box has INVERTED longitude → always returns 0 aircraft | Live data bug |
+| **Old weather** | Two sources claim `source_id="weather"` — old `sources/weather/` is dead code | Conflicts with OpenMeteo |
+| **Volcano** | 25+ of 50 volcanoes are non-US but USGS only monitors US → always zero | Half assets dead |
+| **ISS** | Speed and altitude are HARDCODED constants, never fetched from API | Fake data |
+| **eBird** | API failures default to `Decimal::ZERO` → indistinguishable from real zeros | Silent data corruption |
+| **Animals** | GBIF assets labeled "24h" actually use 7-day lookback window | Misleading labels |
+
+### Per-Source Summary
+| # | Source | Assets | Interval | Key Issue | Effort |
+|---|--------|--------|----------|-----------|--------|
+| 31 | OpenMeteo Weather | 25,000 | 300s (smart) | Old weather source conflict. Batch order starvation. | 6h |
+| 32 | Weather Alerts NWS | 20 | 300s | Zero alerts = calm weather, not broken. No urgency/certainty tracking. | 5h |
+| 33 | Earthquake USGS | 20 | 300s | 4 overlapping feeds. Magnitude=0 invalid. Seismic energy Decimal overflow risk. | 6h |
+| 34 | Volcano USGS | 50 | 600s | Non-US volcanoes always zero. No SmithsonianGVP fallback. | 5h |
+| 35 | SpaceWeather NOAA | ~30 | 300s | Storm scales usually 0 (valid). Planetary K-index from 3h-old data. | 5h |
+| 36 | Wildfire NASA FIRMS | 20 | 300s | 20 sequential calls (3s delay = 60s). Season-unaware. | 6h |
+| 37 | Flights adsb.lol | 25 | 120s | **South America bbox inverted** (live bug). Otherwise optimized (1 API call). | 5h |
+| 38 | Military Aircraft | 25 | 120s | Good design. Add altitude/speed aggregates. Add NATO type classification. | 5h |
+| 39 | AISStream Vessels | WebSocket | Persistent | Position timeout tracking. No reconnect metrics exposed. | 8h |
+| 40 | Maritime REST | 25 | 600s | **250 seconds per sync** (25 calls x 10s). Should share AISStream WebSocket. | 10h |
+| 41 | GTFS-RT Transit | ~50 | 30s | Protobuf parsing. MTA 8 feeds + BART. No time-of-day baseline. | 12h |
+| 42 | ISS | 5 | 60s | Speed+altitude hardcoded. Only lat/long from API. People count static. | 4h |
+| 43 | Movebank GPS | Dynamic | 600s | GPS lat/long as separate price values. Studies may go dormant. | 10h |
+| 44 | eBird | Dynamic | 600s | Zero on API failure. Region/species churn. Seasonal variation. | 8h |
+| 45 | Animals/Wildlife | Static | 3600s | "24h" label but 7-day window. GBIF rate limit 3/s. iNaturalist has no auth. | 6h |
+| 46 | Epidemic disease.sh | 70+ | 3600s | COVID data largely stale (countries stopped reporting). API may be deprecated. | 6h |
+
+---
+
+## MASTER EFFORT SUMMARY
+
+| Batch | Sources | Total Hours |
+|-------|---------|-------------|
+| Infrastructure (A1-A5 cross-cutting) | All 53 | ~15h |
+| Batch 1: Finance & Macro | 16 + 5 sub | ~65-72h |
+| Batch 2: Sentiment & Popularity | 14 | ~76h |
+| Batch 3: Bet on Everything | 16 | ~141h |
+| **GRAND TOTAL** | **53 sources** | **~300h** |
+
+## Implementation Priority (by impact/effort)
+
+### P0 — Bug Fixes (do first, <1h each)
+1. Flights: Fix South America bbox inversion
+2. Delete old `sources/weather/client.rs` (conflicts with OpenMeteo)
+3. ISS: Fetch actual speed/altitude from API instead of hardcoded constants
+4. eBird: Propagate API errors instead of defaulting to Decimal::ZERO
+5. ESPN: Skip vanished games instead of emitting Decimal::ZERO
+
+### P1 — Infrastructure (<15h, affects all)
+6. A1: Zero-Value Guard (`allows_zero_values()` trait method + sync_engine enforcement)
+7. A2: Stale Asset Auto-Deactivation (hourly task)
+8. A4: `unwrap_or_default()` cleanup across all sources
+9. A5: Respect `_asset_ids` parameter across all sources
+
+### P2 — Performance (sources where fetch time ≈ sync interval)
+10. crates.io: Stop re-fetching 20K crates (use individual endpoint)
+11. Steam: Parallelize + reduce tracked games
+12. TMDb: Respect asset_ids parameter (1000 pages → targeted fetches)
+13. Twitch: Use `fetch_streams_by_user_ids()` instead of global fetch
+14. GitHub: Migrate to GraphQL (700 calls → 14)
+15. Maritime: Share AISStream WebSocket instead of 25 REST calls
+
+### P3 — Data Quality (highest visibility improvements)
+16. ECB: Fix HashMap ordering bug (may serve wrong observation)
+17. Volcano: Remove non-US volcanoes or add Smithsonian GVP API
+18. ESPN: Adaptive interval + season-aware + game state tracking
+19. CoinGecko: Symbol fix + zero filtering + discovery wiring
+20. Finnhub/TWSE: ScheduledMarketDataSource with market hours
+
+### P4 — Smart Discovery & Freshness
+21. All sources with static configs: Wire `discover_upstream_assets()`
+22. Time-aware scheduling for all scheduled sources
+23. Variance scoring (A3)
+24. Per-source sync interval tuning per the tables above
+
+## Session: 20260223-1730-r7k2 (Issuer Resilience E2E Strengthening)
+
+- [DECISION] Resilience tests verify consensus participation (success_total) on ALL 3 nodes including reconnected ones, not just the surviving 2. Proves reconnected node re-enters the BLS consensus loop.
+- [DECISION] Fixed getIssuerHealth to parse 503 responses (alive but 0 peers) instead of returning null. Removed issuer-1 crash workaround in Test B — it was never crashing, just returning 503.
+- [FAILED] Attempted to verify real on-chain order fills (L3 totalSupply increase, BridgedITP balance increase) after reconnection. Orders placed via ArbBridgeCustody never reach issuers because data-node is down (pending_order_count stays 0). Arb event scanning depends on data-node. On-chain fill verification requires data-node running — separate concern from consensus protocol testing.
+
+## Session: 20260223-2100-lp3c (Landing Page Plan Cleanup)
+
+- [DECISION] Kept only 3 landing page plans: v3-9-manifesto, v3-5-deep-dive, v3-1-story. Deleted 19 others (v1-1, v1-2, v2-1 through v2-10, v3-2-terminal, v3-3-quiz, v3-4-app, v3-6-feed, v3-7-sandbox, v3-8-search, v3-10-walkthrough).
+- [FAILED] All deleted landing page variants (v1, v2, v3 non-kept) had unoptimized arguments/copy — too generic, didn't land the core value prop. Do NOT recreate these angles: terminal-style, quiz, app-preview, live-feed, sandbox-demo, search-first, walkthrough, pure-numbers, identity, AI-pitch, polymarket-killer, discovery, one-stat, grid, before-after, countdown, sandbox. The surviving 3 (manifesto, deep-dive, story) are the only angles worth iterating on.
+- [DECISION] Landing page core message shift: "Start with a dollar" → "Trade 100,000 markets with $0.10". Emphasize breadth (100K markets) and low entry ($0.10) rather than the $1 starting point.
+
+## Session: 20260223-1800-q8m4 (Deep Source Audit & Fixes)
+
+- [DECISION] Disabled 3 permanently dead sources (Zillow stub, SEC EDGAR 13F unimplemented XML, FINRA Short Interest placeholder + env var mismatch). These registered assets that could never get prices, polluting health dashboard.
+- [DECISION] Moved BCHAIN outside nasdaq_api_key gate — uses blockchain.info (no key needed), was incorrectly gated behind Nasdaq key.
+- [DECISION] Re-enabled FINRA Short Vol (CDN-based, actually works) — was incorrectly disabled by sub-agent. Extended date fallback from 2→5 days to handle Monday/holiday weekends.
+- [DECISION] Added `skips_when_unchanged()` trait method (default false) to MarketDataSource. OpenMeteo overrides to true. Sync engines check this before flagging "0 prices" as error — prevents false stale for smart-sync sources.
+- [DECISION] Sports ESPN error handling: skip league on error instead of pushing Decimal::ZERO — prevents data corruption with fake zero scores.
+- [DECISION] CoinGecko: use self.auth_header() instead of hardcoded "x-cg-pro-api-key" — demo keys now work for price fetching.
+- [DECISION] BLS: propagate HTTP errors as Err() instead of swallowing as Ok(vec![]) — makes failures visible to error tracker.
+- [DECISION] Nasdaq client: 429 handler now retries (max 2) after 10s sleep instead of sleeping then bailing.
+- [DECISION] npm: BULK_BATCH_SIZE 10→128 — 12x fewer API calls for bulk downloads.
+- [DECISION] Volcano: name normalization now strips periods and apostrophes — "Mount St. Helens" matches config correctly.
+- [FAILED] Sub-agent incorrectly disabled FINRA Short Vol (confused it with FINRA Short Interest) — caught and reverted.
+- [DECISION] Change% computation moved to API layer — compute from latest_value vs prev_value (24h ago) instead of reading NULL from DB column. All 53 sources now get change% without source-side changes.
+- [DECISION] Heartbeat insert for unchanged values: sync engines force-insert when record is older than 6x sync_interval even if value unchanged. Prevents stable metrics (storm scale=0, monthly data) from appearing stale on dashboard.
+
 ## Session: 20260222-1400-c9v3 (Task 3.9: Chain Listener)
 
 - [DECISION] Unified chain listener uses HTTP polling (Provider<Http> + get_logs) instead of WebSocket subscriptions — matches existing ArbitrationListener pattern in codebase, proven reliability over WS reconnect complexity.

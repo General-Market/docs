@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.24;
 
 /// @title BettingLib
 /// @author AgiArena Team
@@ -7,6 +7,7 @@ pragma solidity ^0.8.24;
 /// @dev Pure utility functions for hash generation and validation.
 ///      Used primarily off-chain by backend and keepers for bet integrity verification.
 ///      Deterministic hashing using keccak256 - ensure consistent JSON serialization.
+/// @custom:security-contact security@indexprotocol.com
 library BettingLib {
     /// @notice Verify that a provided hash matches the portfolio JSON content
     /// @dev Compares providedHash against keccak256 hash of jsonContent bytes.

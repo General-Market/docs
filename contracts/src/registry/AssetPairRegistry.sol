@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 import "../interfaces/IAssetPairRegistry.sol";
 import "../libraries/TypesLib.sol";
@@ -9,6 +9,7 @@ import "../libraries/BLSVerifier.sol";
 /// @title AssetPairRegistry - Global asset and trading pair whitelist
 /// @notice Manages which assets and pairs can be used in ITPs
 /// @dev All modifications require BLS signature from issuer consensus
+/// @custom:security-contact security@indexprotocol.com
 contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
     // ============ ERRORS ============
 

@@ -91,7 +91,7 @@ contract RegisteredAssetsStressTest is TestHelper {
         }
         weights[0] += remainder;
 
-        vm.prank(user1);
+        vm.prank(admin);
         bytes32 itpId = index.createITP("Stress 100", "S100", weights, tokens, prices, type(uint256).max);
 
         TypesLib.ITPCore memory itp = index.getITP(itpId);
@@ -115,7 +115,7 @@ contract RegisteredAssetsStressTest is TestHelper {
         }
         weights[0] += remainder;
 
-        vm.prank(user1);
+        vm.prank(admin);
         bytes32 itpId = index.createITP("Stress 200", "S200", weights, tokens, prices, type(uint256).max);
 
         TypesLib.ITPCore memory itp = index.getITP(itpId);
@@ -138,7 +138,7 @@ contract RegisteredAssetsStressTest is TestHelper {
         }
         weights[0] += remainder;
 
-        vm.prank(user1);
+        vm.prank(admin);
         bytes32 itpId = index.createITP("Stress 400", "S400", weights, tokens, prices, type(uint256).max);
 
         TypesLib.ITPCore memory itp = index.getITP(itpId);
@@ -172,7 +172,7 @@ contract RegisteredAssetsStressTest is TestHelper {
         }
         weights[0] += remainder;
 
-        vm.prank(user1);
+        vm.prank(admin);
         bytes32 itpId = index.createITP("Order Test", "OT100", weights, tokens, prices, type(uint256).max);
 
         // Fund user and submit buy order

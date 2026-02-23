@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 import "../interfaces/IBridge.sol";
 import "../interfaces/IIssuerRegistry.sol";
@@ -18,6 +18,7 @@ import "../interfaces/IBridgeProxy.sol";
 /// @title ArbBridgeCustody - Arbitrum destination chain bridge custody
 /// @notice Handles releasing USDC on Arbitrum and cross-chain ITP purchases
 /// @dev UUPS upgradeable, deployed on Arbitrum chain
+/// @custom:security-contact security@indexprotocol.com
 contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBridgeCustody {
     using SafeERC20 for IERC20;
 

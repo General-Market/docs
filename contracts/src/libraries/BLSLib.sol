@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.24;
 
 /// @title BLSLib - BLS signature verification using BN254 precompiles
 /// @notice Provides BLS signature verification for 11/20 issuer consensus on-chain
 /// @dev Uses EIP-196/197 precompiles for efficient BN254 operations
+/// @custom:security-contact security@indexprotocol.com
 library BLSLib {
     // ============ BN254 CURVE CONSTANTS ============
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 import "../interfaces/IBridge.sol";
 import "../interfaces/IIssuerRegistry.sol";
@@ -18,6 +18,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 /// @title L3BridgeCustody - L3 source chain bridge custody for cross-chain USDC transfers
 /// @notice Handles locking USDC on L3 for bridging to other chains using two-phase commit
 /// @dev UUPS upgradeable, uses sequential nonces for bridge operations
+/// @custom:security-contact security@indexprotocol.com
 contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3BridgeCustody {
     using SafeERC20 for IERC20;
 

@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 /// @title TypesLib - Shared type definitions for Index L3
 /// @notice All shared structs and enums used across Index contracts
 /// @dev All numeric values use uint256 for simplicity and safety (EVM native word size)
 /// @dev All monetary values use 18 decimals precision
 
+/// @custom:security-contact security@indexprotocol.com
 library TypesLib {
     // ============ ENUMS ============
 

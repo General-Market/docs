@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 import {IIssuerRegistry} from "../interfaces/IIssuerRegistry.sol";
 import {BLSLib} from "./BLSLib.sol";
@@ -9,6 +9,7 @@ import {ErrorsLib} from "./ErrorsLib.sol";
 /// @dev All contracts requiring BLS verification inherit this.
 ///      Single source of truth: reads aggregated pubkey from IssuerRegistry.
 ///      Follows EigenLayer's BLSSignatureChecker pattern.
+/// @custom:security-contact security@indexprotocol.com
 abstract contract BLSVerifier {
     /// @notice The IssuerRegistry that holds the aggregated BLS pubkey
     /// @dev Set once during initialize/__BLSVerifier_init. Private to prevent

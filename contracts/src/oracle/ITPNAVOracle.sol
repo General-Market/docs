@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.24;
 
 import {BLSLib} from "../libraries/BLSLib.sol";
 import {ErrorsLib} from "../libraries/ErrorsLib.sol";
@@ -13,6 +13,7 @@ import {IMirrorIssuerRegistry} from "../interfaces/IMirrorIssuerRegistry.sol";
 /// @dev One oracle instance per ITP. Fully permissionless — security comes from BLS verification.
 ///      Anyone can push a price update as long as it carries a valid aggregated BLS signature
 ///      from the issuer network. The oracle reads the aggregated pubkey from MirrorIssuerRegistry.
+/// @custom:security-contact security@indexprotocol.com
 contract ITPNAVOracle is IITPNAVOracle, IOracle {
     // ============ CONSTANTS ============
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 import {ERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -11,6 +11,7 @@ import {IInvestment} from "../interfaces/IInvestment.sol";
 /// @notice ERC4626-compliant vault token for Investment products
 /// @dev Thin wrapper - all state lives in Investment.sol except ERC20 balances
 /// @dev NOT upgradeable - each ITP is immutable once deployed
+/// @custom:security-contact security@indexprotocol.com
 contract ITP is ERC4626, IITP {
     // ============ CUSTOM ERRORS ============
 

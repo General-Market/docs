@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 import "../interfaces/IInvestment.sol";
 import "../interfaces/IGovernance.sol";
@@ -7,7 +7,6 @@ import "../interfaces/IIssuerRegistry.sol";
 import "../libraries/TypesLib.sol";
 import "../libraries/ErrorsLib.sol";
 import "../libraries/EventsLib.sol";
-import "../libraries/BLSLib.sol";
 import "../libraries/BLSVerifier.sol";
 import "../libraries/DecimalLib.sol";
 import "../libraries/RebalanceLib.sol";
@@ -23,6 +22,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 /// @title Investment - Main contract for order submission and ITP management
 /// @notice Central contract for submitting limit orders and managing Index Token Products
 /// @dev UUPS upgradeable proxy pattern, all monetary values use 18 decimals
+/// @custom:security-contact security@indexprotocol.com
 contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, ReentrancyGuardUpgradeable, BLSVerifier, IInvestment {
     using SafeERC20 for IERC20;
 
@@ -339,7 +339,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         TypesLib.AssetTrade[] calldata trades,
         bytes calldata blsSignature
     ) external {
-        require(cycleProcessed[cycleNumber], "cycle not confirmed");
+        if (!cycleProcessed[cycleNumber]) revert ErrorsLib.E128_CycleNotConfirmed(cycleNumber);
 
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(this), "assetTrades", cycleNumber, trades
@@ -360,7 +360,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
     }
 
     /// @inheritdoc IInvestment
-    function confirmFills(uint256 cycleNumber, TypesLib.Fill[] calldata fills, bytes calldata blsSignature) external {
+    function confirmFills(uint256 cycleNumber, TypesLib.Fill[] calldata fills, bytes calldata blsSignature) external nonReentrant {
         // Build message for BLS verification: keccak256(abi.encode(chainid, this, cycleNumber, fills))
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), cycleNumber, fills));
 
@@ -503,13 +503,15 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
     }
 
     /// @notice Transfer USDC to user, escrow on failure (Wave 3.1)
-    /// @dev Uses low-level call to prevent one bad address from reverting entire batch
+    /// @dev Uses low-level call to prevent one bad address from reverting entire batch.
+    ///      Decodes return data to catch tokens that return false instead of reverting.
     function _safeTransferOrEscrow(uint256 orderId, address user, uint256 amount) internal {
         // Use low-level call so one failed transfer doesn't revert the whole batch
-        (bool success, ) = address(usdc).call(
+        (bool success, bytes memory returndata) = address(usdc).call(
             abi.encodeWithSelector(IERC20.transfer.selector, user, amount)
         );
-        if (!success) {
+        bool transferred = success && (returndata.length == 0 || abi.decode(returndata, (bool)));
+        if (!transferred) {
             // Park funds in escrow for user to claim later
             failedFillEscrow[orderId] += amount;
             assert(failedFillEscrow[orderId] <= orders[orderId].amount);
@@ -533,7 +535,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
             revert ErrorsLib.E024_InvalidOrderStatus(orderId, uint256(order.status), uint256(TypesLib.OrderStatus.FILLED));
         }
         // Only the order's user can claim
-        require(msg.sender == order.user, "Not order owner");
+        if (msg.sender != order.user) revert ErrorsLib.E129_NotOrderOwner(msg.sender, order.user);
 
         failedFillEscrow[orderId] = 0;
         usdc.safeTransfer(order.user, amount);
@@ -604,6 +606,11 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         // 0. Check system pause
         if (governance.isPaused()) {
             revert ErrorsLib.E004_SystemPaused();
+        }
+
+        // Access control: only admin or authorized bridge can create ITPs
+        if (msg.sender != governance.admin() && msg.sender != authorizedBridge) {
+            revert ErrorsLib.E061_Unauthorized(msg.sender, governance.admin());
         }
 
         // Idempotency check: if bridgeNonce was already used, return existing itpId
@@ -1080,7 +1087,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
 
         // Must be past timeout
         uint256 batchedAt = batchedTimestamp[orderId];
-        require(batchedAt > 0 && block.timestamp > batchedAt + BATCHED_TIMEOUT, "Timeout not reached");
+        if (batchedAt == 0 || block.timestamp <= batchedAt + BATCHED_TIMEOUT) revert ErrorsLib.E130_BatchedTimeoutNotReached(orderId, batchedAt, block.timestamp);
 
         // BLS verification
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "refundBatched", orderId));

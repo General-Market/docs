@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 import "../libraries/TypesLib.sol";
 import "../interfaces/IGovernance.sol";
@@ -12,6 +12,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @dev All storage variables are defined here to ensure consistent layout across upgrades.
 ///      CRITICAL: Do not reorder, remove, or change types of existing variables.
 ///      Only append new variables before __gap and reduce __gap size accordingly.
+/// @custom:security-contact security@indexprotocol.com
 abstract contract InvestmentStorage {
     // ============ ORDER STORAGE ============
 

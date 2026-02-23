@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {BLSLib} from "../libraries/BLSLib.sol";
 import {BLSVerifier} from "../libraries/BLSVerifier.sol";
 import {IVision} from "../interfaces/IVision.sol";
 import {IIssuerRegistry} from "../interfaces/IIssuerRegistry.sol";
 
+/// @custom:security-contact security@indexprotocol.com
 contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     using SafeERC20 for IERC20;
 
@@ -62,6 +62,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     event ForceWithdrawn(uint256 indexed batchId, address indexed player, uint256 amount);
     event BotRegistered(address indexed bot, string endpoint);
     event BotDeregistered(address indexed bot);
+    event FeeCollectorUpdated(address indexed oldCollector, address indexed newCollector);
 
     constructor(address _usdc, address _issuerRegistry, address _feeCollector) {
         USDC = IERC20(_usdc);
@@ -321,6 +322,17 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         accumulatedFees = 0;
 
         USDC.safeTransfer(feeCollector, fees);
+    }
+
+    function updateFeeCollector(address newCollector, bytes calldata blsSignature) external {
+        if (newCollector == address(0)) revert Unauthorized();
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(this), "UPDATE_FEE_COLLECTOR", newCollector
+        ));
+        _verifyBLS(message, blsSignature);
+        address old = feeCollector;
+        feeCollector = newCollector;
+        emit FeeCollectorUpdated(old, newCollector);
     }
 
     // ============ ISSUER OPERATIONS ============

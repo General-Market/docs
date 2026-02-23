@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.24;
 
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /// @title BotRegistry
 /// @notice Registry for P2P trading bots with free registration
 /// @dev Bots register freely to enable peer discovery
+/// @custom:security-contact security@indexprotocol.com
 contract BotRegistry is ReentrancyGuard {
     // ============ Custom Errors ============
 

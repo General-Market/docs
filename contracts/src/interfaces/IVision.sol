@@ -86,6 +86,7 @@ interface IVision {
 
     // ============ FEE MANAGEMENT ============
     function collectFees() external;
+    function updateFeeCollector(address newCollector, bytes calldata blsSignature) external;
 
     // ============ ISSUER OPERATIONS ============
     function pause(uint256 batchId, bytes calldata blsSignature) external;

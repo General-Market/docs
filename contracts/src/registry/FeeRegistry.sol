@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 import "../interfaces/IFeeRegistry.sol";
 import "../libraries/TypesLib.sol";
@@ -12,6 +12,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 /// @title FeeRegistry - Fee calculation and distribution for Index L3
 /// @notice Tracks trading fees, management fees, bridge costs, and gas costs per ITP
 /// @dev UUPS upgradeable. All fee movements require BLS signature from 11/20 issuers.
+/// @custom:security-contact security@indexprotocol.com
 contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable, BLSVerifier {
     // ============ ERRORS ============
 

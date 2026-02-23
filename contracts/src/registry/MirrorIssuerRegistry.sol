@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.24;
 
 import {BLSLib} from "../libraries/BLSLib.sol";
 import {ErrorsLib} from "../libraries/ErrorsLib.sol";
@@ -16,6 +16,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 ///
 ///      Chain of trust: Old keys sign the transition to new keys.
 ///      The initial deploy (initialize) is the trust anchor.
+/// @custom:security-contact security@indexprotocol.com
 contract MirrorIssuerRegistry is IMirrorIssuerRegistry, Initializable, UUPSUpgradeable {
     // ============ CONSTANTS ============
 

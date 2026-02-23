@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -16,6 +16,7 @@ import {ErrorsLib} from "../libraries/ErrorsLib.sol";
 
 /// @title BridgeProxy - Cross-chain ITP creation with BLS consensus
 /// @notice UUPS upgradeable proxy on Arbitrum for bridged ITP creation
+/// @custom:security-contact security@indexprotocol.com
 contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, PausableUpgradeable, BLSVerifier, IBridgeProxy {
     // ============ CONSTANTS ============
 

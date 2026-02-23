@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.24;
 
 /// @title VisionMerkleProof
 /// @notice Merkle tree verification for P2P trade resolution
 /// @dev Story 15-1: Supports up to 1M trades (depth ~20)
 ///      Uses sorted hash pairs for consistency with off-chain TypeScript implementation
 ///      Renamed from MerkleProof to avoid OpenZeppelin collision
+/// @custom:security-contact security@indexprotocol.com
 library VisionMerkleProof {
     // ============================================================================
     // Trade Structs

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 /// @title DecimalLib
 /// @notice Utility library for converting between USDC decimals (6) and internal decimals (18)
@@ -13,6 +13,7 @@ pragma solidity ^0.8.20;
 ///   User deposits 100 USDC = 100_000_000 (6 decimals)
 ///   Internal representation = 100_000_000_000_000_000_000 (18 decimals)
 ///   User receives 100 USDC = 100_000_000 (6 decimals)
+/// @custom:security-contact security@indexprotocol.com
 library DecimalLib {
     /// @notice Number of decimals for real USDC (Arbitrum/mainnet)
     uint8 public constant USDC_DECIMALS = 6;

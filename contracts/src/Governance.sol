@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.24;
 
 import {IGovernance} from "./interfaces/IGovernance.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -8,6 +8,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 /// @title Governance - Admin and emergency controls for Index L3
 /// @notice Manages system pause, ITP-specific pause, and admin transfers
 /// @dev UUPS upgradeable proxy pattern for future upgrades
+/// @custom:security-contact security@indexprotocol.com
 contract Governance is IGovernance, Initializable, UUPSUpgradeable {
     // ============ ERRORS ============
 

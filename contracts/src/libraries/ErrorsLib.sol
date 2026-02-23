@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 /// @title ErrorsLib
 /// @notice Standardized error codes for Index L3 protocol (E001-E010)
 /// @dev All errors prefixed with E00X for easy identification and grep/search
 /// @dev Custom errors save ~2,500 gas vs require strings per revert
+/// @custom:security-contact security@indexprotocol.com
 library ErrorsLib {
     /// @notice E001: Order amount below minimum threshold
     /// @dev Minimum order amount is 0.001 USDC (1e15 wei with 18 decimals)
@@ -747,4 +748,21 @@ library ErrorsLib {
     /// @param requested Amount requested
     /// @param available Amount available
     error E226_InsufficientBalance(uint256 requested, uint256 available);
+
+    // ============ SECURITY AUDIT FIXES ============
+
+    /// @notice E128: Cycle has not been confirmed yet
+    /// @param cycleNumber The cycle that hasn't been confirmed
+    error E128_CycleNotConfirmed(uint256 cycleNumber);
+
+    /// @notice E129: Caller is not the order owner
+    /// @param caller The actual caller
+    /// @param owner The order owner
+    error E129_NotOrderOwner(address caller, address owner);
+
+    /// @notice E130: Batched timeout has not been reached
+    /// @param orderId The order ID
+    /// @param batchedAt Timestamp when order was batched
+    /// @param currentTime Current block timestamp
+    error E130_BatchedTimeoutNotReached(uint256 orderId, uint256 batchedAt, uint256 currentTime);
 }

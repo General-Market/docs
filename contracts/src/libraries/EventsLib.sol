@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 /// @title EventsLib - Shared event definitions for Index L3
 /// @notice All events emitted by Index contracts
 /// @dev Events are indexed strategically for efficient log filtering
 
+/// @custom:security-contact security@indexprotocol.com
 library EventsLib {
     // ============ ORDER EVENTS ============
 
