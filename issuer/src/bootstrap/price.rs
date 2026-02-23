@@ -10,6 +10,8 @@ use crate::{
 };
 use common::integrations::bitget::{BitgetReadOnlyClientImpl, BitgetReadOnlyConfig};
 use common::integrations::oneinch::{CachedQuoteClient, OneInchQuoteClient, OneInchRateLimitHandler, QuoteCacheConfig};
+use common::mocks::MockBitgetReadOnlyClient;
+use common::types::ExchangeMode;
 use std::sync::Arc;
 use tracing::{error, info, warn};
 
@@ -76,30 +78,9 @@ impl<'a> PriceBuilder<'a> {
             return Ok(Arc::new(fetcher));
         }
 
-        // Fallback to BitgetPriceFetcher
-        info!(self.node_id, "No DATA_NODE_URL set, falling back to BitgetPriceFetcher");
-
-        let has_api_key = std::env::var("BITGET_READONLY_API_KEY").is_ok();
-        let has_api_secret = std::env::var("BITGET_READONLY_API_SECRET").is_ok();
-        let has_passphrase = std::env::var("BITGET_READONLY_PASSPHRASE").is_ok();
-
-        if !has_api_key || !has_api_secret || !has_passphrase {
-            let missing = vec![
-                (!has_api_key).then_some("BITGET_READONLY_API_KEY"),
-                (!has_api_secret).then_some("BITGET_READONLY_API_SECRET"),
-                (!has_passphrase).then_some("BITGET_READONLY_PASSPHRASE"),
-            ].into_iter().flatten().collect::<Vec<_>>().join(", ");
-
-            error!(
-                self.node_id,
-                missing = %missing,
-                "No DATA_NODE_URL and Bitget credentials missing. Set DATA_NODE_URL or Bitget env vars."
-            );
-            return Err(BootstrapError::Config(format!(
-                "No price source: DATA_NODE_URL not set and missing Bitget credentials: {}",
-                missing
-            )));
-        }
+        // Resolve exchange mode to decide which Bitget client to use
+        let exchange_mode = self.config.effective_exchange_mode();
+        info!(self.node_id, mode = %exchange_mode, "No DATA_NODE_URL set, using BitgetPriceFetcher");
 
         // Check symbol map validity if provided
         if let Some(ref path) = self.params.symbol_map_file {
@@ -117,8 +98,42 @@ impl<'a> PriceBuilder<'a> {
             }
         }
 
-        let fetcher = self.build_bitget_fetcher(symbol_map)?;
-        Ok(Arc::new(fetcher))
+        match exchange_mode {
+            ExchangeMode::Mock => {
+                info!(self.node_id, "Using MockBitgetReadOnlyClient (no Bitget credentials needed)");
+                let client = MockBitgetReadOnlyClient::new();
+                let fetcher = BitgetPriceFetcher::new(Arc::new(client), symbol_map.clone());
+                Ok(Arc::new(fetcher))
+            }
+            ExchangeMode::Testnet | ExchangeMode::Mainnet => {
+                // Verify credentials are available for real modes
+                let has_api_key = std::env::var("BITGET_READONLY_API_KEY").is_ok();
+                let has_api_secret = std::env::var("BITGET_READONLY_API_SECRET").is_ok();
+                let has_passphrase = std::env::var("BITGET_READONLY_PASSPHRASE").is_ok();
+
+                if !has_api_key || !has_api_secret || !has_passphrase {
+                    let missing = vec![
+                        (!has_api_key).then_some("BITGET_READONLY_API_KEY"),
+                        (!has_api_secret).then_some("BITGET_READONLY_API_SECRET"),
+                        (!has_passphrase).then_some("BITGET_READONLY_PASSPHRASE"),
+                    ].into_iter().flatten().collect::<Vec<_>>().join(", ");
+
+                    error!(
+                        self.node_id,
+                        mode = %exchange_mode,
+                        missing = %missing,
+                        "Exchange mode requires Bitget credentials but they are missing"
+                    );
+                    return Err(BootstrapError::Config(format!(
+                        "Exchange mode '{}' requires Bitget credentials, missing: {}",
+                        exchange_mode, missing
+                    )));
+                }
+
+                let fetcher = self.build_bitget_fetcher(symbol_map)?;
+                Ok(Arc::new(fetcher))
+            }
+        }
     }
 
     fn build_bitget_fetcher(&self, symbol_map: &SymbolMap) -> Result<BitgetPriceFetcher<BitgetReadOnlyClientImpl>, BootstrapError> {

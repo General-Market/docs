@@ -237,6 +237,11 @@ pub struct IssuerConfig {
     /// When present and `enabled == true`, the P2Pool tick engine, scheduler, and API
     /// routes are initialized alongside the existing ITP consensus loop.
     pub p2pool: Option<crate::p2pool::config::P2PoolConfig>,
+
+    /// Exchange mode: mock, testnet, or mainnet.
+    /// Controls which Bitget client implementation is used for price fetching.
+    /// Can also be set via EXCHANGE_MODE env var.
+    pub exchange_mode: Option<String>,
 }
 
 impl IssuerConfig {
@@ -347,6 +352,7 @@ impl IssuerConfig {
             arbitration_threshold: parse_env_var("ISSUER_ARBITRATION_THRESHOLD"),
             arbitration_poll_interval: parse_env_var("ISSUER_ARBITRATION_POLL_INTERVAL"),
             arbitration_data_node_url: std::env::var("ISSUER_ARBITRATION_DATA_NODE_URL").ok(),
+            exchange_mode: std::env::var("EXCHANGE_MODE").ok(),
             p2pool: {
                 let enabled: Option<bool> = parse_env_var("ISSUER_P2POOL_ENABLED");
                 if enabled == Some(true) {
@@ -513,6 +519,9 @@ impl IssuerConfig {
         }
         if other.p2pool.is_some() {
             self.p2pool = other.p2pool.clone();
+        }
+        if other.exchange_mode.is_some() {
+            self.exchange_mode = other.exchange_mode.clone();
         }
     }
 
@@ -941,6 +950,37 @@ impl IssuerConfig {
         self.mock_usdt
             .as_ref()
             .and_then(|addr| addr.parse::<Address>().ok())
+    }
+
+    /// Get the effective exchange mode.
+    ///
+    /// Resolution: config field > EXCHANGE_MODE env var > auto-detect from credentials.
+    /// If no Bitget credentials are present, defaults to Mock.
+    /// If credentials are present, defaults to Testnet.
+    pub fn effective_exchange_mode(&self) -> common::types::ExchangeMode {
+        // 1. Config field (from file, env, or CLI merge)
+        if let Some(ref mode_str) = self.exchange_mode {
+            if let Ok(mode) = mode_str.parse() {
+                return mode;
+            }
+        }
+
+        // 2. EXCHANGE_MODE env var (fallback if not merged into config)
+        if let Ok(mode_str) = std::env::var("EXCHANGE_MODE") {
+            if let Ok(mode) = mode_str.parse() {
+                return mode;
+            }
+        }
+
+        // 3. Auto-detect: Mock if no Bitget credentials, Testnet if credentials present
+        let has_bitget = std::env::var("BITGET_READONLY_API_KEY").is_ok()
+            && std::env::var("BITGET_READONLY_API_SECRET").is_ok()
+            && std::env::var("BITGET_READONLY_PASSPHRASE").is_ok();
+        if has_bitget {
+            common::types::ExchangeMode::Testnet
+        } else {
+            common::types::ExchangeMode::Mock
+        }
     }
 }
 
