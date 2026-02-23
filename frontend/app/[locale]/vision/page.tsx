@@ -1,7 +1,7 @@
 import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
-import { P2PoolPage } from '@/components/domain/p2pool/P2PoolPage'
+import { VisionPage as VisionPageContent } from '@/components/domain/vision/VisionPage'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
@@ -17,7 +17,7 @@ export default function VisionPage() {
     <main className="min-h-screen bg-page flex flex-col">
       <Header />
       <div className="flex-1 overflow-x-clip">
-        <P2PoolPage />
+        <VisionPageContent />
       </div>
       <Footer />
     </main>

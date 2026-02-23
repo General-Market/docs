@@ -9,7 +9,7 @@ const VISION_ADDRESS = (
   process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000'
 ) as `0x${string}`
 
-import { P2POOL_ISSUER_URLS } from '@/lib/config'
+import { VISION_ISSUER_URLS } from '@/lib/config'
 
 export type ClaimStep = 'idle' | 'fetching-proof' | 'claiming' | 'done' | 'error'
 
@@ -51,10 +51,10 @@ async function fetchClaimProof(
 ): Promise<ClaimProof> {
   const errors: string[] = []
 
-  for (const url of P2POOL_ISSUER_URLS) {
+  for (const url of VISION_ISSUER_URLS) {
     try {
       const res = await fetch(
-        `${url}/p2pool/balance/${batchId}/${player}?fromTick=${fromTick}&toTick=${toTick}`
+        `${url}/vision/balance/${batchId}/${player}?fromTick=${fromTick}&toTick=${toTick}`
       )
       if (res.ok) {
         const data = await res.json()
@@ -76,7 +76,7 @@ async function fetchClaimProof(
 }
 
 /**
- * Hook to claim rewards from a P2Pool batch without fully withdrawing.
+ * Hook to claim rewards from a Vision batch without fully withdrawing.
  *
  * Flow:
  * 1. Fetch BLS-signed balance proof from issuer node (with tick range)

@@ -4,8 +4,8 @@ import { useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { useAccount, useReadContract } from 'wagmi'
 import { formatUnits } from 'viem'
-import { useWithdraw } from '@/hooks/p2pool/useWithdraw'
-import { useClaim } from '@/hooks/p2pool/useClaim'
+import { useWithdraw } from '@/hooks/vision/useWithdraw'
+import { useClaim } from '@/hooks/vision/useClaim'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 
@@ -21,7 +21,7 @@ interface WithdrawModalProps {
 }
 
 /**
- * Modal for withdrawing or claiming rewards from a P2Pool batch.
+ * Modal for withdrawing or claiming rewards from a Vision batch.
  *
  * Provides two options:
  * - "Withdraw All": fetches BLS proof from issuer, calls Vision.withdraw()
@@ -31,7 +31,7 @@ interface WithdrawModalProps {
  * Withdraw deducts a 0.3% fee on profit.
  */
 export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
-  const t = useTranslations('p2pool')
+  const t = useTranslations('vision')
   const { address, isConnected } = useAccount()
   const [mode, setMode] = useState<Mode>('choose')
 

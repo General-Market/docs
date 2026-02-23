@@ -13,14 +13,14 @@ export const AP_URL = process.env.NEXT_PUBLIC_AP_URL || 'http://localhost:9100'
 export const L3_EXPLORER_URL = process.env.NEXT_PUBLIC_L3_EXPLORER_URL || ''
 export const ARB_EXPLORER_URL = process.env.NEXT_PUBLIC_ARB_EXPLORER_URL || 'https://sepolia.arbiscan.io'
 
-// P2Pool API — proxied through Next.js rewrites to avoid CORS.
-// In dev: /api/p2pool/* → localhost:10001/p2pool/*
-// In prod: /api/p2pool/* → issuer health port
-export const P2POOL_API_URL = '/api'
+// Vision API — proxied through Next.js rewrites to avoid CORS.
+// In dev: /api/vision/* → localhost:10001/vision/*
+// In prod: /api/vision/* → issuer health port
+export const VISION_API_URL = '/api'
 
-// P2Pool issuer URLs — for bitmap submission, balance proofs, withdrawals.
-// These point to each issuer's health port (P2Pool routes merged in).
-export const P2POOL_ISSUER_URLS = (
+// Vision issuer URLs — for bitmap submission, balance proofs, withdrawals.
+// These point to each issuer's health port (Vision routes merged in).
+export const VISION_ISSUER_URLS = (
   process.env.NEXT_PUBLIC_ISSUER_URLS ||
   'http://localhost:10001,http://localhost:10002,http://localhost:10003'
 ).split(',').map(s => s.trim())

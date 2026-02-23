@@ -236,39 +236,39 @@ struct Args {
     #[arg(long)]
     arbitration_data_node_url: Option<String>,
 
-    // --- P2Pool subsystem ---
-    /// Enable the P2Pool prediction market subsystem.
+    // --- Vision subsystem ---
+    /// Enable the Vision prediction market subsystem.
     /// When enabled, the tick engine, scheduler, and API routes run alongside ITP consensus.
     #[arg(long)]
-    p2pool_enabled: bool,
+    vision_enabled: bool,
 
-    /// Vision contract address on L3 for P2Pool.
+    /// Vision contract address on L3.
     #[arg(long)]
-    p2pool_vision_address: Option<String>,
+    vision_address: Option<String>,
 
-    /// PostgreSQL connection string for P2Pool state storage.
+    /// PostgreSQL connection string for Vision state storage.
     #[arg(long)]
-    p2pool_database_url: Option<String>,
+    vision_database_url: Option<String>,
 
-    /// Data-node URL for P2Pool price feeds (defaults to --data-node-url if set).
+    /// Data-node URL for Vision price feeds (defaults to --data-node-url if set).
     #[arg(long)]
-    p2pool_data_node_url: Option<String>,
+    vision_data_node_url: Option<String>,
 
-    /// WebSocket RPC URL for P2Pool chain event subscriptions.
+    /// WebSocket RPC URL for Vision chain event subscriptions.
     #[arg(long)]
-    p2pool_rpc_ws_url: Option<String>,
+    vision_rpc_ws_url: Option<String>,
 
-    /// Block number to start syncing P2Pool events from.
+    /// Block number to start syncing Vision events from.
     #[arg(long)]
-    p2pool_start_block: Option<u64>,
+    vision_start_block: Option<u64>,
 
-    /// Reveal window in seconds for P2Pool bitmap commits (default: 600).
+    /// Reveal window in seconds for Vision bitmap commits (default: 600).
     #[arg(long)]
-    p2pool_reveal_window_secs: Option<u64>,
+    vision_reveal_window_secs: Option<u64>,
 
-    /// Tick poll interval in milliseconds for P2Pool engine (default: 1000).
+    /// Tick poll interval in milliseconds for Vision engine (default: 1000).
     #[arg(long)]
-    p2pool_tick_poll_interval_ms: Option<u64>,
+    vision_tick_poll_interval_ms: Option<u64>,
 }
 
 fn setup_logging(config: &issuer::IssuerConfig) -> Result<(), Box<dyn std::error::Error>> {
@@ -287,7 +287,7 @@ fn setup_logging(config: &issuer::IssuerConfig) -> Result<(), Box<dyn std::error
 type IssuerNavSignHandler = NavSignHandler<Box<dyn NavCalculator>, StubItpRegistryReader>;
 
 /// Shared state for the issuer HTTP API (health, nav-sign, registry-sync).
-/// All issuer endpoints and optional P2Pool endpoints share one axum server.
+/// All issuer endpoints and optional Vision endpoints share one axum server.
 struct IssuerApiState {
     node_id: u32,
     p2p_transport: Option<Arc<TcpP2PTransport>>,
@@ -433,11 +433,11 @@ fn issuer_api_routes(state: Arc<IssuerApiState>) -> axum::Router {
         .with_state(state)
 }
 
-async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data_node_url: Option<String>, itp_id: String, mock_usdt_addr: Option<ethers::types::Address>, p2pool_router: Option<axum::Router>) -> Result<(), Box<dyn std::error::Error>> {
+async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data_node_url: Option<String>, itp_id: String, mock_usdt_addr: Option<ethers::types::Address>, vision_router: Option<axum::Router>) -> Result<(), Box<dyn std::error::Error>> {
     let node_id = components.node_id;
     let shutdown = components.shutdown.clone();
 
-    // Bind HTTP API listener (health + nav-sign + registry-sync + optional P2Pool)
+    // Bind HTTP API listener (health + nav-sign + registry-sync + optional Vision)
     let listener = TcpListener::bind(format!("0.0.0.0:{}", components.p2p.health_port)).await?;
     info!(node_id, health_port = components.p2p.health_port, "HTTP API listening");
 
@@ -905,7 +905,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         None
     };
 
-    // Build unified HTTP API server (health + nav-sign + registry-sync + optional P2Pool)
+    // Build unified HTTP API server (health + nav-sign + registry-sync + optional Vision)
     let issuer_state = Arc::new(IssuerApiState {
         node_id,
         p2p_transport: components.p2p.transport.clone(),
@@ -914,9 +914,9 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         nav_sign_handler: nav_sign_handler.clone(),
     });
     let mut api_router = issuer_api_routes(issuer_state);
-    if let Some(p2pool) = p2pool_router {
-        api_router = api_router.merge(p2pool);
-        info!(node_id, "P2Pool API routes merged into health port");
+    if let Some(vision) = vision_router {
+        api_router = api_router.merge(vision);
+        info!(node_id, "Vision API routes merged into health port");
     }
     let health_handle = tokio::spawn(async move {
         if let Err(e) = axum::serve(listener, api_router).await {
@@ -2693,35 +2693,35 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             args.arbitration_threshold,
             args.arbitration_data_node_url.clone(),
         )
-        .with_p2pool(if args.p2pool_enabled {
-            let mut p2pool_cfg = issuer::p2pool::config::P2PoolConfig {
+        .with_vision(if args.vision_enabled {
+            let mut vision_cfg = issuer::vision::config::VisionConfig {
                 enabled: true,
                 ..Default::default()
             };
-            if let Some(ref addr) = args.p2pool_vision_address {
-                p2pool_cfg.vision_address = addr.clone();
+            if let Some(ref addr) = args.vision_address {
+                vision_cfg.vision_address = addr.clone();
             }
-            if let Some(ref url) = args.p2pool_database_url {
-                p2pool_cfg.database_url = url.clone();
+            if let Some(ref url) = args.vision_database_url {
+                vision_cfg.database_url = url.clone();
             }
-            if let Some(ref url) = args.p2pool_data_node_url {
-                p2pool_cfg.data_node_url = url.clone();
+            if let Some(ref url) = args.vision_data_node_url {
+                vision_cfg.data_node_url = url.clone();
             } else if let Some(ref url) = args.data_node_url {
-                p2pool_cfg.data_node_url = url.clone();
+                vision_cfg.data_node_url = url.clone();
             }
-            if let Some(ref url) = args.p2pool_rpc_ws_url {
-                p2pool_cfg.rpc_ws_url = url.clone();
+            if let Some(ref url) = args.vision_rpc_ws_url {
+                vision_cfg.rpc_ws_url = url.clone();
             }
-            if let Some(block) = args.p2pool_start_block {
-                p2pool_cfg.start_block = block;
+            if let Some(block) = args.vision_start_block {
+                vision_cfg.start_block = block;
             }
-            if let Some(secs) = args.p2pool_reveal_window_secs {
-                p2pool_cfg.reveal_window_secs = secs;
+            if let Some(secs) = args.vision_reveal_window_secs {
+                vision_cfg.reveal_window_secs = secs;
             }
-            if let Some(ms) = args.p2pool_tick_poll_interval_ms {
-                p2pool_cfg.tick_poll_interval_ms = ms;
+            if let Some(ms) = args.vision_tick_poll_interval_ms {
+                vision_cfg.tick_poll_interval_ms = ms;
             }
-            Some(p2pool_cfg)
+            Some(vision_cfg)
         } else {
             None
         })
@@ -2821,8 +2821,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Save arbitration config before config is consumed
     let arb_config = ArbitrationConfig::from_issuer_config(&config);
 
-    // Save P2Pool config before config is consumed
-    let p2pool_config = config.p2pool.clone();
+    // Save Vision config before config is consumed
+    let vision_config = config.vision.clone();
 
     let bootstrap = IssuerBootstrap::new(config, params);
     let mut components = bootstrap.build(shutdown).await.map_err(|e| {
@@ -2969,25 +2969,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         info!(node_id, "Arbitration subsystem disabled (not configured)");
     }
 
-    // --- P2Pool subsystem (optional) ---
-    let mut p2pool_api_router: Option<axum::Router> = None;
-    if let Some(p2pool_cfg) = p2pool_config {
-        if p2pool_cfg.enabled {
-            // Initialize P2Pool components
-            let bitmap_store = Arc::new(issuer::p2pool::bitmap_store::BitmapStore::new());
-            let scheduler = Arc::new(issuer::p2pool::tick_scheduler::TickScheduler::new());
-            let resolver = Arc::new(issuer::p2pool::resolver::TickResolver::new(
+    // --- Vision subsystem (optional) ---
+    let mut vision_api_router: Option<axum::Router> = None;
+    if let Some(vision_cfg) = vision_config {
+        if vision_cfg.enabled {
+            // Initialize Vision components
+            let bitmap_store = Arc::new(issuer::vision::bitmap_store::BitmapStore::new());
+            let scheduler = Arc::new(issuer::vision::tick_scheduler::TickScheduler::new());
+            let resolver = Arc::new(issuer::vision::resolver::TickResolver::new(
                 bitmap_store.clone(),
-                p2pool_cfg.clone(),
+                vision_cfg.clone(),
             ));
 
             // Spawn tick engine
             let engine_scheduler = scheduler.clone();
             let engine_resolver = resolver.clone();
-            let engine_config = p2pool_cfg.clone();
+            let engine_config = vision_cfg.clone();
             let engine_shutdown = components.shutdown.clone();
             tokio::spawn(async move {
-                issuer::p2pool::engine::run(
+                issuer::vision::engine::run(
                     engine_scheduler,
                     engine_resolver,
                     engine_config,
@@ -2996,10 +2996,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             });
 
             // Initialize Postgres pool, chain listener, and API routes
-            match sqlx::PgPool::connect(&p2pool_cfg.database_url).await {
+            match sqlx::PgPool::connect(&vision_cfg.database_url).await {
                 Ok(pool) => {
                     // Spawn chain listener (unified event indexer: scheduler + Postgres)
-                    let vision_address: ethers::types::Address = p2pool_cfg.vision_address
+                    let vision_address: ethers::types::Address = vision_cfg.vision_address
                         .parse()
                         .expect("valid Vision contract address");
                     let l3_rpc_url = components.chain.rpc_url.clone();
@@ -3007,51 +3007,51 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         ethers::providers::Provider::<ethers::providers::Http>::try_from(&l3_rpc_url)
                             .expect("valid L3 RPC URL for chain listener")
                     );
-                    let chain_listener = issuer::p2pool::chain_listener::ChainListener::new(
+                    let chain_listener = issuer::vision::chain_listener::ChainListener::new(
                         cl_provider,
                         vision_address,
                         scheduler.clone(),
                         pool.clone(),
-                        p2pool_cfg.start_block,
+                        vision_cfg.start_block,
                     );
                     let cl_shutdown = components.shutdown.clone();
                     tokio::spawn(async move {
                         chain_listener.run(cl_shutdown).await;
                     });
 
-                    let p2pool_state = Arc::new(issuer::p2pool::api::P2PoolState {
+                    let vision_state = Arc::new(issuer::vision::api::VisionState {
                         pool,
                         scheduler: scheduler.clone(),
                         bitmap_store: bitmap_store.clone(),
-                        config: p2pool_cfg.clone(),
+                        config: vision_cfg.clone(),
                     });
 
-                    // Build the P2Pool router (merged into health port in run_main_loop)
-                    p2pool_api_router = Some(issuer::p2pool::api::routes(p2pool_state));
+                    // Build the Vision router (merged into health port in run_main_loop)
+                    vision_api_router = Some(issuer::vision::api::routes(vision_state));
 
                     info!(
                         node_id,
-                        vision_address = %p2pool_cfg.vision_address,
-                        "P2Pool subsystem enabled (tick engine + API on health port)"
+                        vision_address = %vision_cfg.vision_address,
+                        "Vision subsystem enabled (tick engine + API on health port)"
                     );
                 }
                 Err(e) => {
                     warn!(
                         node_id,
                         error = %e,
-                        db_url = %p2pool_cfg.database_url,
-                        "P2Pool Postgres connection failed — tick engine running without API"
+                        db_url = %vision_cfg.database_url,
+                        "Vision Postgres connection failed — tick engine running without API"
                     );
                 }
             }
         } else {
-            info!(node_id, "P2Pool subsystem disabled (enabled=false)");
+            info!(node_id, "Vision subsystem disabled (enabled=false)");
         }
     } else {
-        debug!(node_id, "P2Pool subsystem not configured");
+        debug!(node_id, "Vision subsystem not configured");
     }
 
-    if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr, p2pool_api_router).await {
+    if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr, vision_api_router).await {
         error!(code = "E008", error = %e, "Issuer node error");
         std::process::exit(1);
     }

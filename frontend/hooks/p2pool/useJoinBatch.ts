@@ -5,7 +5,7 @@ import { useAccount, useWaitForTransactionReceipt, useReadContract } from 'wagmi
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { ERC20_ABI } from '@/lib/contracts/index-protocol-abi'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
-import { encodeBitmap, hashBitmap, type BetDirection } from '@/lib/p2pool/bitmap'
+import { encodeBitmap, hashBitmap, type BetDirection } from '@/lib/vision/bitmap'
 
 /**
  * Vision contract address.
@@ -47,7 +47,7 @@ export interface UseJoinBatchReturn {
 }
 
 /**
- * Hook to join a P2Pool batch.
+ * Hook to join a Vision batch.
  *
  * Flow:
  * 1. Encode bets into bitmap, compute keccak256 hash

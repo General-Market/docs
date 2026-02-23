@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useAccount } from 'wagmi'
 import { formatUnits } from 'viem'
-import { usePlayerBatches, type PlayerBatchPosition } from '@/hooks/p2pool/usePlayerBatches'
-import { useBatchMetadata } from '@/hooks/p2pool/useBatchMetadata'
+import { usePlayerBatches, type PlayerBatchPosition } from '@/hooks/vision/usePlayerBatches'
+import { useBatchMetadata } from '@/hooks/vision/useBatchMetadata'
 
 function fmtUsdc(value: bigint, decimals = 6): string {
   if (value === 0n) return '0.00'
@@ -79,7 +79,7 @@ interface MyPositionsProps {
  * Displayed at the top of /vision when wallet is connected with positions.
  */
 export function MyPositions({ onSelectBatch }: MyPositionsProps) {
-  const t = useTranslations('p2pool')
+  const t = useTranslations('vision')
   const { isConnected } = useAccount()
   const { positions, stats, isLoading } = usePlayerBatches()
   const [collapsed, setCollapsed] = useState(false)

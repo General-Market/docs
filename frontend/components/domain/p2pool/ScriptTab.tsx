@@ -1,6 +1,6 @@
 'use client'
 
-import type { BatchInfo } from '@/hooks/p2pool/useBatches'
+import type { BatchInfo } from '@/hooks/vision/useBatches'
 import { PythonEditor } from './PythonEditor'
 
 interface ScriptTabProps {

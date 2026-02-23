@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from 'react'
 import { useTranslations } from 'next-intl'
-import { useBatches, type BatchInfo } from '@/hooks/p2pool/useBatches'
+import { useBatches, type BatchInfo } from '@/hooks/vision/useBatches'
 import { BatchCard } from './BatchCard'
 import { ExpandedBatch } from './ExpandedBatch'
 import { CreateBatchModal } from './CreateBatchModal'
@@ -10,16 +10,16 @@ import { MyPositions } from './MyPositions'
 import { LeaderboardWrapper } from '@/components/domain/LeaderboardWrapper'
 import { LeaderboardSkeleton } from '@/components/domain/LeaderboardSkeleton'
 
-export function P2PoolPage() {
-  const t = useTranslations('p2pool')
+export function VisionPage() {
+  const t = useTranslations('vision')
   const { data: batches, isLoading } = useBatches()
   const [expandedBatchId, setExpandedBatchId] = useState<number | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
 
   return (
     <div className="flex-1">
-      {/* P2Pool Section */}
-      <section id="p2pool">
+      {/* Vision Section */}
+      <section id="vision">
         <div className="px-6 lg:px-12">
           <div className="max-w-site mx-auto py-8">
             {/* Header */}

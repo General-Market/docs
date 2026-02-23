@@ -110,7 +110,7 @@ function getStatusColor(status: string): string {
  * AC6: Read-only notice - no action buttons
  */
 export function BetCard({ bet, className = '' }: BetCardProps) {
-  const t = useTranslations('p2pool')
+  const t = useTranslations('vision')
   const [showAdvanced, setShowAdvanced] = useState(false)
   const odds = calculateOddsDisplay(bet)
   const category = useCategoryById(bet.categoryId)

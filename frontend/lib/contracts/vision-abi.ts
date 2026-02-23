@@ -1,6 +1,6 @@
 /**
  * Vision.sol ABI — derived from IVision.sol interface
- * Used for createBatch and other P2Pool contract interactions.
+ * Used for createBatch and other Vision contract interactions.
  */
 
 export const VISION_ABI = [

@@ -14,7 +14,7 @@ interface LendingSectionProps {
 
 export function LendingSection({ expanded, onToggle }: LendingSectionProps) {
   const { isConnected } = useAccount()
-  const t = useTranslations('p2pool')
+  const t = useTranslations('vision')
 
   const lendingErrorFallback = (
     <div className="bg-surface-down border border-color-down/30 rounded-xl p-6 text-center">

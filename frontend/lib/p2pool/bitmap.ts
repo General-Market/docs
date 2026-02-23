@@ -1,5 +1,5 @@
 /**
- * Bitmap encoding/decoding for P2Pool predictions.
+ * Bitmap encoding/decoding for Vision predictions.
  *
  * Each bit represents a player's bet on a market:
  *   1 = UP, 0 = DOWN

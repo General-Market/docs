@@ -65,7 +65,7 @@ export function BilateralBetCard({
   className = '',
   currentUserAddress,
 }: BilateralBetCardProps) {
-  const t = useTranslations('p2pool')
+  const t = useTranslations('vision')
   const userRole = getUserRole(bet, currentUserAddress)
   const isTerminal = isBetTerminal(bet.status)
   const canDispute = canRequestArbitration(bet)

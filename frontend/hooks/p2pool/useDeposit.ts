@@ -32,7 +32,7 @@ export interface UseDepositReturn {
 }
 
 /**
- * Hook to deposit additional USDC into a P2Pool batch.
+ * Hook to deposit additional USDC into a Vision batch.
  *
  * Flow:
  * 1. Check USDC allowance for Vision contract

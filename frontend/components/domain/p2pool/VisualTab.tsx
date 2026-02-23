@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import type { BatchInfo } from '@/hooks/p2pool/useBatches'
-import type { BatchHistoryEntry, MarketOutcome } from '@/hooks/p2pool/useBatchHistory'
+import type { BatchInfo } from '@/hooks/vision/useBatches'
+import type { BatchHistoryEntry, MarketOutcome } from '@/hooks/vision/useBatchHistory'
 
 interface VisualTabProps {
   batch: BatchInfo

@@ -1,9 +1,9 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { BatchInfo } from '@/hooks/p2pool/useBatches'
-import { useBatchMetadata } from '@/hooks/p2pool/useBatchMetadata'
-import { useVisionDeployerName } from '@/hooks/p2pool/useVisionDeployerName'
+import { BatchInfo } from '@/hooks/vision/useBatches'
+import { useBatchMetadata } from '@/hooks/vision/useBatchMetadata'
+import { useVisionDeployerName } from '@/hooks/vision/useVisionDeployerName'
 import { SparklineHeader } from './headers/SparklineHeader'
 import { BarGridHeader } from './headers/BarGridHeader'
 import { HeatmapHeader } from './headers/HeatmapHeader'
@@ -36,7 +36,7 @@ function truncateAddress(addr: string): string {
 }
 
 export function BatchCard({ batch, onClick }: BatchCardProps) {
-  const t = useTranslations('p2pool')
+  const t = useTranslations('vision')
   const marketCount = batch.marketCount || batch.marketIds.length
   const tvlUsdc = parseFloat(batch.tvl) / 1e18
   const { metadata } = useBatchMetadata(batch.id)

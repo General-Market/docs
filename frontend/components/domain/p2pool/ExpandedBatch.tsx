@@ -4,12 +4,12 @@ import { useState, useMemo, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { useAccount } from 'wagmi'
 import { formatUnits } from 'viem'
-import type { BatchInfo } from '@/hooks/p2pool/useBatches'
-import { useBatchHistory } from '@/hooks/p2pool/useBatchHistory'
-import { useBatchMetadata } from '@/hooks/p2pool/useBatchMetadata'
-import { useVisionDeployerName } from '@/hooks/p2pool/useVisionDeployerName'
-import { usePlayerPosition } from '@/hooks/p2pool/usePlayerPosition'
-import { saveBets, getStoredBets, computeHitRate } from '@/lib/p2pool/bitmap-store'
+import type { BatchInfo } from '@/hooks/vision/useBatches'
+import { useBatchHistory } from '@/hooks/vision/useBatchHistory'
+import { useBatchMetadata } from '@/hooks/vision/useBatchMetadata'
+import { useVisionDeployerName } from '@/hooks/vision/useVisionDeployerName'
+import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
+import { saveBets, getStoredBets, computeHitRate } from '@/lib/vision/bitmap-store'
 import { VisualTab } from './VisualTab'
 import { MarketAccordion } from './MarketAccordion'
 import { ScriptTab } from './ScriptTab'
@@ -31,7 +31,7 @@ function getYouTubeId(url: string): string | null {
 }
 
 export function ExpandedBatch({ batchId, batch }: ExpandedBatchProps) {
-  const t = useTranslations('p2pool')
+  const t = useTranslations('vision')
   const marketCount = batch.marketCount || batch.marketIds.length
   const defaultTab: TabType = marketCount > 100 ? 'SCRIPT' : 'VISUAL'
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab)

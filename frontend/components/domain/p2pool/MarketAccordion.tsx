@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
-import type { BatchInfo } from '@/hooks/p2pool/useBatches'
-import type { BatchHistoryEntry } from '@/hooks/p2pool/useBatchHistory'
-import { categorizeMarkets, formatMarketName, type MarketCategory } from '@/lib/p2pool/market-categories'
+import type { BatchInfo } from '@/hooks/vision/useBatches'
+import type { BatchHistoryEntry } from '@/hooks/vision/useBatchHistory'
+import { categorizeMarkets, formatMarketName, type MarketCategory } from '@/lib/vision/market-categories'
 
 interface MarketAccordionProps {
   batch: BatchInfo

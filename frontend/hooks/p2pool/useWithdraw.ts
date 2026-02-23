@@ -9,7 +9,7 @@ const VISION_ADDRESS = (
   process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000'
 ) as `0x${string}`
 
-import { P2POOL_ISSUER_URLS } from '@/lib/config'
+import { VISION_ISSUER_URLS } from '@/lib/config'
 
 export type WithdrawStep = 'idle' | 'fetching-proof' | 'withdrawing' | 'done' | 'error'
 
@@ -47,9 +47,9 @@ async function fetchBalanceProof(
 ): Promise<BalanceProof> {
   const errors: string[] = []
 
-  for (const url of P2POOL_ISSUER_URLS) {
+  for (const url of VISION_ISSUER_URLS) {
     try {
-      const res = await fetch(`${url}/p2pool/balance/${batchId}/${player}`)
+      const res = await fetch(`${url}/vision/balance/${batchId}/${player}`)
       if (res.ok) {
         const data = await res.json()
         return {
@@ -68,7 +68,7 @@ async function fetchBalanceProof(
 }
 
 /**
- * Hook to withdraw from a P2Pool batch.
+ * Hook to withdraw from a Vision batch.
  *
  * Flow:
  * 1. Fetch BLS-signed balance proof from issuer node

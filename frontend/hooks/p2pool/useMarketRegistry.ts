@@ -15,9 +15,9 @@ export interface MarketInfo {
  */
 export function useMarketRegistry() {
   const query = useQuery<MarketInfo[]>({
-    queryKey: ['p2pool-markets-active'],
+    queryKey: ['vision-markets-active'],
     queryFn: async () => {
-      const res = await fetch(`${DATA_NODE_URL}/p2pool/markets/active`)
+      const res = await fetch(`${DATA_NODE_URL}/vision/markets/active`)
       if (!res.ok) return []
       return res.json()
     },

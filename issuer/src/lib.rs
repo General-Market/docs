@@ -18,7 +18,7 @@ pub mod heartbeat;
 pub mod leader;
 pub mod netting;
 pub mod p2p;
-pub mod p2pool;
+pub mod vision;
 pub mod price;
 pub mod registry_sync;
 pub mod slippage;

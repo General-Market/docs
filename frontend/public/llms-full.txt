@@ -104,7 +104,7 @@ Backtesting uses the data node's `/sim/run` (batch) or `/sim/run-stream` (SSE st
 
 Vision is a sealed parimutuel prediction market on the General Market L3 chain. Traders bet on whether asset prices move UP or DOWN over fixed time intervals called ticks. All bets within a tick share a common pool — winners split the losers' stakes, minus a 0.3% protocol fee on profits.
 
-The internal technical name is "P2Pool" (used in contract code and API endpoints).
+The internal technical name is "Vision" (used in contract code and API endpoints).
 
 ### Batches
 
@@ -126,7 +126,7 @@ A bitmap is a packed binary representation of a player's bets across all markets
 
 Bitmaps follow a commit-reveal scheme:
 1. **Commit** — the player submits `keccak256(bitmap)` on-chain when joining the batch
-2. **Reveal** — the player sends the actual bitmap bytes to issuer nodes via `POST /p2pool/bitmap`
+2. **Reveal** — the player sends the actual bitmap bytes to issuer nodes via `POST /vision/bitmap`
 
 The sealed commitment prevents front-running: other players cannot see bet directions until after the commitment deadline.
 
@@ -186,15 +186,15 @@ payout = winnings - fee
 
 ### Vision API Endpoints
 
-**P2Pool API** (served by issuer nodes):
-- `GET /p2pool/batches` — all active batches (id, markets, tick duration, player count, TVL)
-- `GET /p2pool/batch/{batchId}/state` — batch state with player positions
-- `GET /p2pool/batch/{batchId}/history` — tick resolution history (outcomes, pool size, winners/losers)
-- `POST /p2pool/bitmap` — submit sealed bitmap to issuer node (player, batch_id, bitmap_hex, expected_hash)
-- `GET /p2pool/balance/{batchId}/{player}` — BLS-signed balance proof (optional: ?fromTick=N&toTick=M for claim range)
+**Vision API** (served by issuer nodes):
+- `GET /vision/batches` — all active batches (id, markets, tick duration, player count, TVL)
+- `GET /vision/batch/{batchId}/state` — batch state with player positions
+- `GET /vision/batch/{batchId}/history` — tick resolution history (outcomes, pool size, winners/losers)
+- `POST /vision/bitmap` — submit sealed bitmap to issuer node (player, batch_id, bitmap_hex, expected_hash)
+- `GET /vision/balance/{batchId}/{player}` — BLS-signed balance proof (optional: ?fromTick=N&toTick=M for claim range)
 
 **Data Node API** (market data):
-- `GET /p2pool/markets/active` — available markets for batch creation (id, source, name, value, change24h)
+- `GET /vision/markets/active` — available markets for batch creation (id, source, name, value, change24h)
 
 ### Building a Vision Bot
 
@@ -202,7 +202,7 @@ The protocol supports automated trading bots. Reference implementation: `vision-
 
 Bot lifecycle:
 1. Register via `registerBot(endpoint, pubkeyHash)` — free, no collateral
-2. Poll `GET /p2pool/batches` for active batches
+2. Poll `GET /vision/batches` for active batches
 3. For each batch: generate bets → encode bitmap → compute keccak256 hash → approve USDC → call `joinBatch()` → POST bitmap to all issuer nodes
 4. Periodically claim rewards via BLS balance proofs
 
@@ -320,7 +320,7 @@ Base URL: `https://generalmarket.io/api` (proxied to data node)
 - `GET /morpho-history?address=0x...` — lending history
 
 ### Vision Market Endpoints
-- `GET /p2pool/markets/active` — available markets for Vision batch creation
+- `GET /vision/markets/active` — available markets for Vision batch creation
 
 ---
 
@@ -360,7 +360,7 @@ Base URL: `https://generalmarket.io/api` (proxied to data node)
 - **Morpho**: DeFi lending protocol integrated for ITP collateral lending
 - **Rebalance**: Updating ITP asset quantities to match new target weights while preserving NAV
 - **USDC**: USD Coin — the collateral token used for all trading (18 decimals on L3)
-- **Vision**: Sealed parimutuel prediction market for binary price bets (internal name: P2Pool)
+- **Vision**: Sealed parimutuel prediction market for binary price bets
 - **Batch**: A group of Vision markets with shared pool, tick duration, and resolution configuration
 - **Bitmap**: Packed binary representation of a player's UP/DOWN bets (1 bit per market, big-endian)
 - **Tick**: One resolution interval within a Vision batch (5min to 1 day)

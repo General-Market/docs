@@ -45,7 +45,7 @@ export function BilateralBetsList({
   pageSize = 10,
   className = '',
 }: BilateralBetsListProps) {
-  const t = useTranslations('p2pool')
+  const t = useTranslations('vision')
   const tc = useTranslations('common')
 
   // Translation maps for select options

@@ -3,10 +3,10 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { useAccount } from 'wagmi'
-import { useMarketRegistry, type MarketInfo } from '@/hooks/p2pool/useMarketRegistry'
-import { useCreateBatch } from '@/hooks/p2pool/useCreateBatch'
-import { useSetBatchMetadata } from '@/hooks/p2pool/useSetBatchMetadata'
-import { useSetDeployerName } from '@/hooks/p2pool/useSetDeployerName'
+import { useMarketRegistry, type MarketInfo } from '@/hooks/vision/useMarketRegistry'
+import { useCreateBatch } from '@/hooks/vision/useCreateBatch'
+import { useSetBatchMetadata } from '@/hooks/vision/useSetBatchMetadata'
+import { useSetDeployerName } from '@/hooks/vision/useSetDeployerName'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 
 // Maps to IVision.ResolutionType enum
@@ -202,7 +202,7 @@ interface CreateBatchModalProps {
 }
 
 export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
-  const t = useTranslations('p2pool')
+  const t = useTranslations('vision')
   const { isConnected } = useAccount()
   const { markets, isLoading: marketsLoading } = useMarketRegistry()
   const {

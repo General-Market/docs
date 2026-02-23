@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { P2POOL_API_URL } from '@/lib/config'
+import { VISION_API_URL } from '@/lib/config'
 
 export interface BatchInfo {
   id: number
@@ -16,9 +16,9 @@ export interface BatchInfo {
 
 export function useBatches() {
   return useQuery<BatchInfo[]>({
-    queryKey: ['p2pool-batches'],
+    queryKey: ['vision-batches'],
     queryFn: async () => {
-      const res = await fetch(`${P2POOL_API_URL}/p2pool/batches`)
+      const res = await fetch(`${VISION_API_URL}/vision/batches`)
       if (!res.ok) return []
       const data = await res.json()
       // API returns { batches: [...] } with snake_case fields

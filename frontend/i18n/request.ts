@@ -10,7 +10,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
   // Load all namespace files for this locale
   const namespaces = [
     'common', 'markets', 'portfolio', 'create-itp',
-    'buy-modal', 'sell-modal', 'lending', 'p2pool',
+    'buy-modal', 'sell-modal', 'lending', 'vision',
     'backtest', 'system', 'seo', 'pages'
   ]
 

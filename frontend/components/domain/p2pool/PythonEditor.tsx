@@ -11,9 +11,9 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts'
-import type { BatchInfo } from '@/hooks/p2pool/useBatches'
-import { usePyodide } from '@/hooks/p2pool/usePyodide'
-import { useBacktest } from '@/hooks/p2pool/useBacktest'
+import type { BatchInfo } from '@/hooks/vision/useBatches'
+import { usePyodide } from '@/hooks/vision/usePyodide'
+import { useBacktest } from '@/hooks/vision/useBacktest'
 import { TemplatePicker, STRATEGY_TEMPLATES } from './StrategyTemplates'
 
 interface PythonEditorProps {

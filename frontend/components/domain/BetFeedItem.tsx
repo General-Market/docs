@@ -131,7 +131,7 @@ function MegaPortfolioBadge() {
  * AC7: Mega Portfolio badge for portfolioSize > 20000
  */
 export function BetFeedItem({ event }: BetFeedItemProps) {
-  const t = useTranslations('p2pool')
+  const t = useTranslations('vision')
   const tc = useTranslations('common')
   const { textColor } = getEventStyles(event.eventType)
   const description = getEventDescription(event)

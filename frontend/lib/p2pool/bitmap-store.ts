@@ -9,7 +9,7 @@
  * Value: JSON array of StoredBet entries (capped at 500 per address)
  */
 
-import type { BatchHistoryEntry } from '@/hooks/p2pool/useBatchHistory'
+import type { BatchHistoryEntry } from '@/hooks/vision/useBatchHistory'
 
 export interface StoredBet {
   batchId: number

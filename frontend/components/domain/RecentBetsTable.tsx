@@ -82,7 +82,7 @@ function formatBetDate(isoString: string): string {
  * - Date
  */
 export function RecentBetsTable({ bets, isLoading = false }: RecentBetsTableProps) {
-  const t = useTranslations('p2pool')
+  const t = useTranslations('vision')
   if (isLoading) {
     return <TableSkeleton />
   }

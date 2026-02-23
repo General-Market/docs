@@ -22,12 +22,12 @@ export function Header() {
   ]
 
   const VISION_NAV = [
-    { id: 'p2pool', label: t('nav.p2pool') },
+    { id: 'vision', label: t('nav.vision_nav') },
     { id: 'leaderboard', label: t('nav.leaderboard') },
     { id: 'markets-data', label: t('nav.markets_data') },
   ]
 
-  const [activeSection, setActiveSection] = useState(isVision ? 'p2pool' : 'markets')
+  const [activeSection, setActiveSection] = useState(isVision ? 'vision' : 'markets')
 
   const navLinks = isVision ? VISION_NAV : INVESTMENT_NAV
 

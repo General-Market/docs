@@ -2,8 +2,8 @@
 
 import { useState, useCallback } from 'react'
 import { useAccount } from 'wagmi'
-import { P2POOL_ISSUER_URLS } from '@/lib/config'
-import { bitmapToHex, hashBitmap, encodeBitmap, type BetDirection } from '@/lib/p2pool/bitmap'
+import { VISION_ISSUER_URLS } from '@/lib/config'
+import { bitmapToHex, hashBitmap, encodeBitmap, type BetDirection } from '@/lib/vision/bitmap'
 
 export interface SubmitBitmapParams {
   batchId: number
@@ -69,9 +69,9 @@ export function useSubmitBitmap(): UseSubmitBitmapReturn {
 
     // Submit to all issuers in parallel
     const results = await Promise.all(
-      P2POOL_ISSUER_URLS.map(async (url) => {
+      VISION_ISSUER_URLS.map(async (url) => {
         try {
-          const res = await fetch(`${url}/p2pool/bitmap`, {
+          const res = await fetch(`${url}/vision/bitmap`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body,

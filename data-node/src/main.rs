@@ -22,7 +22,7 @@ mod logo_downloader;
 mod simulation;
 mod trade_collector;
 mod market_data;
-mod p2pool_api;
+mod vision_api;
 
 use std::collections::HashSet;
 use std::net::SocketAddr;
@@ -244,6 +244,9 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     }
 
     // ── Market data providers (from AA) ──────────────────────────────────
+    // Initialize global error tracker before starting any sources
+    market_data::error_tracker::init_global();
+
     // Each provider is gated on its config key. We use SyncEngine (fixed interval)
     // for simple sources and ScheduledSyncEngine for schedule-aware sources.
 
@@ -1045,6 +1048,91 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             }
         });
         info!("USASpending.gov defense spending provider started");
+    }
+
+    // Record not_started for any source that was gated off (missing keys, disabled flags)
+    {
+        let tracker = market_data::error_tracker::global();
+        // Finnhub
+        if args.finnhub_api_key.is_none() {
+            tracker.record_not_started("stocks", "Missing --finnhub-api-key");
+        }
+        // FRED
+        if args.fred_api_key.is_none() {
+            tracker.record_not_started("rates", "Missing --fred-api-key");
+        }
+        // BLS
+        if args.bls_api_key.is_none() {
+            tracker.record_not_started("bls", "Missing --bls-api-key");
+        }
+        // Treasury
+        if args.treasury_api_key.is_none() {
+            tracker.record_not_started("bonds", "Missing --treasury-api-key");
+        }
+        // ECB
+        if !args.ecb_enabled {
+            tracker.record_not_started("ecb", "ECB disabled (--ecb-enabled not set)");
+        }
+        // EIA
+        if args.eia_api_key.is_none() {
+            tracker.record_not_started("eia", "Missing --eia-api-key");
+        }
+        // Nasdaq family (CFTC, CHRIS, BCHAIN, OPEC, IMF)
+        if args.nasdaq_api_key.is_none() {
+            for src in &["cftc", "futures", "bchain", "opec", "imf"] {
+                tracker.record_not_started(src, "Missing --nasdaq-api-key");
+            }
+        }
+        // OpenMeteo
+        if args.openmeteo_sync_interval == 0 {
+            tracker.record_not_started("weather", "OpenMeteo disabled (sync interval = 0)");
+        }
+        // Twitch
+        if args.twitch_client_id.is_none() || args.twitch_client_secret.is_none() {
+            tracker.record_not_started("twitch", "Missing --twitch-client-id / --twitch-client-secret");
+        }
+        // TMDb
+        if args.tmdb_api_key.is_none() {
+            tracker.record_not_started("tmdb", "Missing --tmdb-api-key");
+        }
+        // backpack.tf
+        if args.backpacktf_api_key.is_none() {
+            tracker.record_not_started("backpacktf", "Missing --backpacktf-api-key");
+        }
+        // GitHub
+        if args.github_token.is_none() {
+            tracker.record_not_started("github", "Missing --github-token");
+        }
+        // Cloudflare Radar
+        if args.cloudflare_radar_token.is_none() {
+            tracker.record_not_started("cloudflare", "Missing --cloudflare-radar-token");
+        }
+        // CoinGecko (market_data source)
+        if args.coingecko_api_key.is_none() {
+            tracker.record_not_started("crypto", "Missing --coingecko-api-key");
+        }
+        // Wildfire (NASA FIRMS)
+        if args.nasa_firms_key.is_none() {
+            tracker.record_not_started("wildfire", "Missing --nasa-firms-key");
+        }
+        // Maritime + AISstream
+        if args.aisstream_api_key.is_none() {
+            tracker.record_not_started("maritime", "Missing --aisstream-api-key");
+            tracker.record_not_started("aisstream", "Missing --aisstream-api-key");
+        }
+        // Movebank
+        if args.movebank_user.is_none() || args.movebank_password.is_none() {
+            tracker.record_not_started("movebank", "Missing --movebank-user / --movebank-password");
+        }
+        // eBird
+        if args.ebird_api_key.is_none() {
+            tracker.record_not_started("ebird", "Missing --ebird-api-key");
+        }
+        // FINRA (OAuth)
+        if args.finra_client_id.is_none() || args.finra_client_secret.is_none() {
+            tracker.record_not_started("finra", "Missing --finra-client-id / --finra-client-secret");
+        }
+
     }
 
     // Create live ticker cache and start fast poller

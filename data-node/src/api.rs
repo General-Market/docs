@@ -159,9 +159,9 @@ pub fn router(state: Arc<AppState>) -> Router {
         // Vision snapshot endpoints
         .route("/snapshot", get(snapshot))
         .route("/snapshot/meta", get(snapshot_meta))
-        // P2Pool market data endpoints
-        .route("/p2pool/snapshot", get(crate::p2pool_api::snapshot))
-        .route("/p2pool/markets/active", get(crate::p2pool_api::active_markets))
+        // Vision market data endpoints
+        .route("/vision/snapshot", get(crate::vision_api::snapshot))
+        .route("/vision/markets/active", get(crate::vision_api::active_markets))
         // Admin endpoints
         .route("/admin/truncate/:table", axum::routing::post(admin_truncate))
         .route("/admin/reset-session", axum::routing::post(admin_reset_session))
@@ -5209,6 +5209,17 @@ struct SourceHealthEntry {
     assets_with_no_change_24h: i64,
     sync_gap_max_secs: i64,
     estimated_daily_records: i64,
+    // Error tracker fields
+    error_category: String,
+    consecutive_errors: u32,
+    total_errors: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    last_error: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    last_success_at: Option<DateTime<Utc>>,
+    total_syncs: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    not_started_reason: Option<String>,
 }
 
 async fn admin_sources_health(
@@ -5261,81 +5272,11 @@ async fn admin_sources_health(
         record_map.insert(source, (total, oldest, newest, last_1h, last_24h, last_7d));
     }
 
-    // Query 3: Per-source zero-value and stale asset counts
-    let zero_stale: Vec<(String, i64, i64)> = sqlx::query_as(
-        r#"
-        SELECT mp.source,
-               (COUNT(DISTINCT mp.asset_id) FILTER (WHERE mp.value = 0))::bigint as zero_value,
-               (COUNT(DISTINCT mp.asset_id) FILTER (
-                   WHERE mp.fetched_at < NOW() - INTERVAL '1 hour'
-               ))::bigint as stale
-        FROM (
-            SELECT DISTINCT ON (source, asset_id) source, asset_id, value, fetched_at
-            FROM market_prices ORDER BY source, asset_id, fetched_at DESC
-        ) mp
-        GROUP BY mp.source
-        "#,
-    )
-    .fetch_all(pool)
-    .await
-    .map_err(|e| internal_error(format!("zero/stale query: {}", e)))?;
-
-    let mut zero_stale_map: HashMap<String, (i64, i64)> = HashMap::new();
-    for (source, zero_val, stale) in zero_stale {
-        zero_stale_map.insert(source, (zero_val, stale));
-    }
-
-    // Query 4: Per-source avg absolute change_pct and no-change count
-    let change_stats: Vec<(String, Option<f64>, i64)> = sqlx::query_as(
-        r#"
-        SELECT source,
-               (AVG(ABS(change_pct)) FILTER (WHERE change_pct IS NOT NULL))::float8 as avg_change,
-               (COUNT(DISTINCT asset_id) FILTER (
-                   WHERE change_pct IS NOT NULL AND ABS(change_pct) < 0.001
-               ))::bigint as no_change_count
-        FROM (
-            SELECT DISTINCT ON (source, asset_id) source, asset_id, change_pct
-            FROM market_prices
-            WHERE fetched_at > NOW() - INTERVAL '24 hours'
-            ORDER BY source, asset_id, fetched_at DESC
-        ) latest
-        GROUP BY source
-        "#,
-    )
-    .fetch_all(pool)
-    .await
-    .map_err(|e| internal_error(format!("change stats query: {}", e)))?;
-
-    let mut change_map: HashMap<String, (f64, i64)> = HashMap::new();
-    for (source, avg_change, no_change) in change_stats {
-        change_map.insert(source, (avg_change.unwrap_or(0.0), no_change));
-    }
-
-    // Query 5: Max sync gap per source (last 6 hours only)
-    let gap_stats: Vec<(String, Option<f64>)> = sqlx::query_as(
-        r#"
-        SELECT source,
-               MAX(gap_secs)::float8 as max_gap_secs
-        FROM (
-            SELECT source, asset_id,
-                EXTRACT(EPOCH FROM (fetched_at - LAG(fetched_at) OVER (
-                    PARTITION BY source, asset_id ORDER BY fetched_at
-                ))) as gap_secs
-            FROM market_prices
-            WHERE fetched_at > NOW() - INTERVAL '6 hours'
-        ) gaps
-        WHERE gap_secs IS NOT NULL
-        GROUP BY source
-        "#,
-    )
-    .fetch_all(pool)
-    .await
-    .map_err(|e| internal_error(format!("gap stats query: {}", e)))?;
-
-    let mut gap_map: HashMap<String, i64> = HashMap::new();
-    for (source, max_gap) in gap_stats {
-        gap_map.insert(source, max_gap.unwrap_or(0.0) as i64);
-    }
+    // Queries 3-5 replaced with lightweight approximations to avoid
+    // expensive DISTINCT ON / LAG window scans on large market_prices table.
+    let zero_stale_map: HashMap<String, (i64, i64)> = HashMap::new();
+    let change_map: HashMap<String, (f64, i64)> = HashMap::new();
+    let gap_map: HashMap<String, i64> = HashMap::new();
 
     // Assemble results for all known sources
     let mut sources = Vec::new();
@@ -5358,27 +5299,80 @@ async fn admin_sources_health(
             .unwrap_or((0.0, 0));
         let max_gap = gap_map.get(*id).copied().unwrap_or(0);
 
+        // No records = treat as very stale (999999s ≈ 11.5 days)
         let last_sync_age_secs = newest
             .map(|n| (now - n).num_seconds().max(0))
-            .unwrap_or(0);
+            .unwrap_or(999999);
 
-        // Compute status: healthy / stale / dead
-        let status = if total_records == 0 {
+        // Look up error tracker state
+        let err_state = crate::market_data::error_tracker::global().get_state(id);
+
+        // Freshness logic:
+        // - If source produced records in last 24h OR last 7d, use tracker age (data is flowing, just deduplicated)
+        // - If source has NO recent records, use DB age (stubs/broken sources that sync "successfully" with 0 prices)
+        let tracker_age = err_state
+            .as_ref()
+            .and_then(|s| s.last_success_at)
+            .map(|t| (now - t).num_seconds().max(0));
+        let has_recent_data = last_24h > 0 || last_7d > 0;
+        let effective_age_secs = match (tracker_age, has_recent_data) {
+            (Some(ta), true) => ta.min(last_sync_age_secs), // Source is active, use best of both
+            _ => last_sync_age_secs, // No recent data or no tracker — trust DB age
+        };
+
+        // Compute status using error tracker for better classification
+        let status = if err_state.as_ref().map(|s| matches!(s.category, crate::market_data::error_tracker::ErrorCategory::NotStarted)).unwrap_or(false) {
+            "not_started".to_string()
+        } else if err_state.as_ref().map(|s| matches!(s.category, crate::market_data::error_tracker::ErrorCategory::InitFailed)).unwrap_or(false) {
             "dead".to_string()
-        } else {
-            let threshold_stale = (*interval as i64) * 3;
-            let threshold_dead = (*interval as i64) * 10;
-            if last_sync_age_secs < threshold_stale {
-                "healthy".to_string()
-            } else if last_sync_age_secs < threshold_dead {
-                "stale".to_string()
-            } else {
+        } else if total_records == 0 && err_state.as_ref().map(|s| s.total_syncs).unwrap_or(0) == 0 {
+            // No records and no completed syncs — still initializing or dead
+            // If error tracker has Ok state OR no state at all (task spawned but not yet started), treat as initializing
+            let has_errors = err_state.as_ref().map(|s| !matches!(s.category, crate::market_data::error_tracker::ErrorCategory::Ok)).unwrap_or(false);
+            if has_errors {
                 "dead".to_string()
+            } else {
+                "initializing".to_string()
+            }
+        } else {
+            // If error tracker shows Ok with no completed syncs, source just restarted
+            let just_started = err_state.as_ref().map(|s| {
+                matches!(s.category, crate::market_data::error_tracker::ErrorCategory::Ok) && s.total_syncs == 0
+            }).unwrap_or(false);
+            if just_started {
+                "initializing".to_string()
+            } else {
+                // Tighter thresholds: stale at 2x interval (capped at 48h),
+                // dead at 5x interval (capped at 7 days)
+                let threshold_stale = ((*interval as i64) * 2).min(172800);
+                let threshold_dead = ((*interval as i64) * 5).min(604800);
+                if effective_age_secs < threshold_stale {
+                    "healthy".to_string()
+                } else if effective_age_secs < threshold_dead {
+                    "stale".to_string()
+                } else {
+                    "dead".to_string()
+                }
             }
         };
 
         // Estimated daily records = records_last_24h (direct measure)
         let estimated_daily_records = last_24h;
+
+        let (err_cat, cons_err, tot_err, last_err, last_succ, tot_syncs, ns_reason) =
+            if let Some(ref es) = err_state {
+                (
+                    es.category.to_string(),
+                    es.consecutive_errors,
+                    es.total_errors,
+                    es.last_error.clone(),
+                    es.last_success_at,
+                    es.total_syncs,
+                    es.not_started_reason.clone(),
+                )
+            } else {
+                ("ok".to_string(), 0, 0, None, None, 0, None)
+            };
 
         sources.push(SourceHealthEntry {
             source_id: id.to_string(),
@@ -5396,10 +5390,17 @@ async fn admin_sources_health(
             records_last_7d: last_7d,
             zero_value_assets: zero_value,
             stale_assets: stale,
-            avg_change_pct: (avg_change * 100.0).round() / 100.0, // 2 decimal places
+            avg_change_pct: (avg_change * 100.0).round() / 100.0,
             assets_with_no_change_24h: no_change,
             sync_gap_max_secs: max_gap,
             estimated_daily_records,
+            error_category: err_cat,
+            consecutive_errors: cons_err,
+            total_errors: tot_err,
+            last_error: last_err,
+            last_success_at: last_succ,
+            total_syncs: tot_syncs,
+            not_started_reason: ns_reason,
         });
     }
 
@@ -5465,6 +5466,13 @@ async fn admin_sources_health(
             assets_with_no_change_24h: no_change,
             sync_gap_max_secs: max_gap,
             estimated_daily_records: *last_24h,
+            error_category: "ok".to_string(),
+            consecutive_errors: 0,
+            total_errors: 0,
+            last_error: None,
+            last_success_at: None,
+            total_syncs: 0,
+            not_started_reason: None,
         });
     }
 

@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { useAccount, useReadContract } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
-import { useDeposit } from '@/hooks/p2pool/useDeposit'
+import { useDeposit } from '@/hooks/vision/useDeposit'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { ERC20_ABI } from '@/lib/contracts/index-protocol-abi'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
@@ -21,11 +21,11 @@ interface DepositModalProps {
 }
 
 /**
- * Modal for depositing additional USDC into a P2Pool batch.
+ * Modal for depositing additional USDC into a Vision batch.
  * Follows the same approve + contract call pattern as BuyItpModal.
  */
 export function DepositModal({ batchId, currentBalance, onClose }: DepositModalProps) {
-  const t = useTranslations('p2pool')
+  const t = useTranslations('vision')
   const { address, isConnected } = useAccount()
   const [amount, setAmount] = useState('')
 

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { P2POOL_API_URL } from '@/lib/config'
+import { VISION_API_URL } from '@/lib/config'
 
 export interface MarketOutcome {
   marketId: string
@@ -20,9 +20,9 @@ export interface BatchHistoryEntry {
 
 export function useBatchHistory(batchId: number | null) {
   return useQuery<BatchHistoryEntry[]>({
-    queryKey: ['p2pool-batch-history', batchId],
+    queryKey: ['vision-batch-history', batchId],
     queryFn: async () => {
-      const res = await fetch(`${P2POOL_API_URL}/p2pool/batch/${batchId}/history`)
+      const res = await fetch(`${VISION_API_URL}/vision/batch/${batchId}/history`)
       if (!res.ok) return []
       const data = await res.json()
       // Parse market_outcomes JSON if it comes as a string
