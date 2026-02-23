@@ -1257,4 +1257,100 @@ log_level: "trace"
             Some("0x1234567890123456789012345678901234567890".to_string())
         );
     }
+
+    // ── ExchangeMode integration tests ──────────────────────────────
+
+    #[test]
+    fn test_exchange_mode_mock_uses_mock_client() {
+        let config = APConfig {
+            exchange_mode: Some("mock".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(
+            config.effective_exchange_mode(),
+            common::types::ExchangeMode::Mock
+        );
+        assert!(config.effective_exchange_mode().is_mock());
+        assert!(!config.effective_exchange_mode().requires_credentials());
+    }
+
+    #[test]
+    fn test_exchange_mode_testnet_requires_credentials() {
+        let config = APConfig {
+            exchange_mode: Some("testnet".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(
+            config.effective_exchange_mode(),
+            common::types::ExchangeMode::Testnet
+        );
+        assert!(config.effective_exchange_mode().requires_credentials());
+    }
+
+    #[test]
+    fn test_exchange_mode_mainnet_requires_credentials() {
+        let config = APConfig {
+            exchange_mode: Some("mainnet".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(
+            config.effective_exchange_mode(),
+            common::types::ExchangeMode::Mainnet
+        );
+        assert!(config.effective_exchange_mode().is_mainnet());
+        assert!(config.effective_exchange_mode().requires_credentials());
+    }
+
+    #[test]
+    fn test_legacy_mock_bitget_flag_compat() {
+        // mock_bitget = true with no exchange_mode should resolve to Mock
+        let config = APConfig {
+            mock_bitget: Some(true),
+            ..Default::default()
+        };
+        assert_eq!(
+            config.effective_exchange_mode(),
+            common::types::ExchangeMode::Mock
+        );
+    }
+
+    #[test]
+    fn test_exchange_mode_overrides_legacy_flags() {
+        // Explicit exchange_mode = "mainnet" should win over mock_bitget = true
+        let config = APConfig {
+            exchange_mode: Some("mainnet".to_string()),
+            mock_bitget: Some(true),
+            ..Default::default()
+        };
+        assert_eq!(
+            config.effective_exchange_mode(),
+            common::types::ExchangeMode::Mainnet
+        );
+    }
+
+    #[test]
+    fn test_exchange_mode_default_is_mock() {
+        // No exchange_mode, no legacy flags → default Mock
+        let config = APConfig::default();
+        assert_eq!(
+            config.effective_exchange_mode(),
+            common::types::ExchangeMode::Mock
+        );
+    }
+
+    #[test]
+    fn test_legacy_testnet_flag_compat() {
+        // bitget_testnet = true with credentials should resolve to Testnet
+        let config = APConfig {
+            bitget_testnet: Some(true),
+            bitget_api_key: Some("key".to_string()),
+            bitget_api_secret: Some("secret".to_string()),
+            bitget_api_passphrase: Some("pass".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(
+            config.effective_exchange_mode(),
+            common::types::ExchangeMode::Testnet
+        );
+    }
 }
