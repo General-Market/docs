@@ -188,7 +188,7 @@ impl BitgetClient {
             .map_err(|e| BitgetError::invalid_request(format!("failed to serialize request: {}", e)))?;
 
         // Sign request
-        let request_path = "/api/spot/v1/trade/orders";
+        let request_path = "/api/v2/spot/trade/place-order";
         let timestamp = generate_timestamp()
             .map_err(|e| BitgetError::invalid_request(format!("timestamp error: {}", e)))?;
         let signed = sign_request(credentials, timestamp, "POST", request_path, &body)
@@ -250,7 +250,7 @@ impl BitgetClient {
     pub async fn get_order_detail(&self, order_id: &str) -> Result<super::types::OrderDetailData, BitgetError> {
         let credentials = self.require_credentials()?;
 
-        let request_path = format!("/api/spot/v1/trade/orderInfo?orderId={}", order_id);
+        let request_path = format!("/api/v2/spot/trade/orderInfo?orderId={}", order_id);
         let timestamp = generate_timestamp()
             .map_err(|e| BitgetError::invalid_request(format!("timestamp error: {}", e)))?;
         let signed = sign_request(credentials, timestamp, "GET", &request_path, "")
@@ -304,7 +304,7 @@ impl BitgetClient {
     pub async fn get_order_fills(&self, order_id: &str) -> Result<Vec<super::types::FillData>, BitgetError> {
         let credentials = self.require_credentials()?;
 
-        let request_path = format!("/api/spot/v1/trade/fills?orderId={}", order_id);
+        let request_path = format!("/api/v2/spot/trade/fills?orderId={}", order_id);
         let timestamp = generate_timestamp()
             .map_err(|e| BitgetError::invalid_request(format!("timestamp error: {}", e)))?;
         let signed = sign_request(credentials, timestamp, "GET", &request_path, "")

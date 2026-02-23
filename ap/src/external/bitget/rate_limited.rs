@@ -202,8 +202,8 @@ impl APClient for RateLimitedBitgetClient {
         for f in bitget_fills {
             let parsed_price: rust_decimal::Decimal = f.price.parse()
                 .map_err(|e| Error::ApClient(format!("failed to parse fill price '{}': {}", f.price, e)))?;
-            let parsed_qty: rust_decimal::Decimal = f.quantity.parse()
-                .map_err(|e| Error::ApClient(format!("failed to parse fill quantity '{}': {}", f.quantity, e)))?;
+            let parsed_qty: rust_decimal::Decimal = f.size.parse()
+                .map_err(|e| Error::ApClient(format!("failed to parse fill size '{}': {}", f.size, e)))?;
 
             let fill_price = decimal_to_u256(parsed_price, U256_DECIMALS);
             let fill_amount = decimal_to_u256(parsed_qty, U256_DECIMALS);

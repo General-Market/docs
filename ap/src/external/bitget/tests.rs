@@ -30,7 +30,7 @@ mod mock_tests {
         let mock_server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/spot/v1/trade/orders"))
+            .and(path("/api/v2/spot/trade/place-order"))
             .and(header("ACCESS-KEY", "test_api_key_12345"))
             .and(header("Content-Type", "application/json"))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
@@ -65,7 +65,7 @@ mod mock_tests {
         let mock_server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/spot/v1/trade/orders"))
+            .and(path("/api/v2/spot/trade/place-order"))
             .respond_with(
                 ResponseTemplate::new(429)
                     .append_header("retry-after", "5"),
@@ -93,7 +93,7 @@ mod mock_tests {
         let mock_server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/spot/v1/trade/orders"))
+            .and(path("/api/v2/spot/trade/place-order"))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
                 "code": "40001",
                 "msg": "Invalid API key",
@@ -122,7 +122,7 @@ mod mock_tests {
         let mock_server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/spot/v1/trade/orders"))
+            .and(path("/api/v2/spot/trade/place-order"))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
                 "code": "40602",
                 "msg": "Insufficient balance",
@@ -151,7 +151,7 @@ mod mock_tests {
         let mock_server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/spot/v1/trade/orders"))
+            .and(path("/api/v2/spot/trade/place-order"))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
                 "code": "40601",
                 "msg": "Symbol does not exist",
@@ -180,7 +180,7 @@ mod mock_tests {
         let mock_server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/spot/v1/trade/orders"))
+            .and(path("/api/v2/spot/trade/place-order"))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
                 "code": "40606",
                 "msg": "Order amount too small",
@@ -209,7 +209,7 @@ mod mock_tests {
         let mock_server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/spot/v1/trade/orders"))
+            .and(path("/api/v2/spot/trade/place-order"))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
                 "code": "00000",
                 "msg": "success",
@@ -244,7 +244,7 @@ mod mock_tests {
         // This mock verifies that the required static headers are present
         // We use header_exists for dynamic headers (timestamp, sign)
         Mock::given(method("POST"))
-            .and(path("/api/spot/v1/trade/orders"))
+            .and(path("/api/v2/spot/trade/place-order"))
             .and(header("ACCESS-KEY", "test_api_key_12345"))
             .and(header("ACCESS-PASSPHRASE", "test_passphrase"))
             .and(header("Content-Type", "application/json"))
@@ -281,7 +281,7 @@ mod mock_tests {
         let mock_server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/spot/v1/trade/orders"))
+            .and(path("/api/v2/spot/trade/place-order"))
             .respond_with(ResponseTemplate::new(200).set_body_string("not valid json"))
             .expect(1)
             .mount(&mock_server)
@@ -307,7 +307,7 @@ mod mock_tests {
         let mock_server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/spot/v1/trade/orders"))
+            .and(path("/api/v2/spot/trade/place-order"))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
                 "code": "00000",
                 "msg": "success",
@@ -339,7 +339,7 @@ mod mock_tests {
         // Configure mock to delay response longer than client timeout
         // Note: Don't use .expect(1) as the request may not complete due to timeout
         Mock::given(method("POST"))
-            .and(path("/api/spot/v1/trade/orders"))
+            .and(path("/api/v2/spot/trade/place-order"))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_json(serde_json::json!({

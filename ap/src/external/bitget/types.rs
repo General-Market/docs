@@ -1,6 +1,6 @@
 //! Bitget API request and response types
 //!
-//! These types match the Bitget Spot API v1 specification for order placement.
+//! These types match the Bitget Spot API v2 specification for order placement.
 
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
@@ -168,15 +168,15 @@ pub struct OrderDetailData {
     pub order_id: String,
     /// Order status string (e.g., "new", "partial_fill", "full_fill", "cancelled")
     pub status: String,
-    /// Filled quantity
-    #[serde(default)]
-    pub fill_quantity: Option<String>,
+    /// Filled quantity (v2: baseVolume, v1: fillQuantity)
+    #[serde(default, alias = "fillQuantity")]
+    pub base_volume: Option<String>,
     /// Filled amount (notional)
     #[serde(default)]
     pub fill_total_amount: Option<String>,
-    /// Average fill price
-    #[serde(default)]
-    pub avg_price: Option<String>,
+    /// Average fill price (v2: priceAvg, v1: avgPrice)
+    #[serde(default, alias = "avgPrice")]
+    pub price_avg: Option<String>,
 }
 
 /// Full response type for order detail endpoint
@@ -192,8 +192,9 @@ pub struct FillData {
     pub order_id: String,
     /// Filled price
     pub price: String,
-    /// Filled quantity
-    pub quantity: String,
+    /// Filled quantity (v2: size, v1: quantity)
+    #[serde(alias = "quantity")]
+    pub size: String,
     /// Trade side
     pub side: String,
 }
