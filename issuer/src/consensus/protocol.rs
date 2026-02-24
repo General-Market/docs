@@ -365,6 +365,24 @@ where
             self.aggregator.write().await.reset();
         }
 
+        // Replay any messages that arrived early (buffered as "future" in previous cycles).
+        // Also clear stale messages to prevent unbounded buffer growth.
+        {
+            let buffered = {
+                let mut handler = self.message_handler.write().await;
+                handler.clear_stale_messages(cycle_number);
+                handler.get_buffered_for_cycle(cycle_number)
+            };
+            if !buffered.is_empty() {
+                info!(cycle_number, count = buffered.len(), "Replaying buffered messages");
+                for (from, msg) in buffered {
+                    if let Err(e) = self.handle_message(from, msg).await {
+                        debug!(cycle_number, error = %e, "Error replaying buffered message");
+                    }
+                }
+            }
+        }
+
         // Determine if we're the leader using deterministic cycle-based rotation.
         // This ensures all nodes agree on the leader without needing to propagate
         // aggregated BLS signatures from leader to followers.
