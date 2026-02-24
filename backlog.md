@@ -1,5 +1,52 @@
 # Design Decision Backlog
 
+## Session: 20260224-2245-q7m3 (Tourism Data Sources: Queue-Times, CBP Border, FAA Delays)
+
+- [DECISION] Added 3 tourism-themed data sources: Queue-Times (theme park wait times), CBP Border (US border crossing wait times), FAA Delays (US airport delay status). All free, no API key required.
+- [DECISION] Queue-Times: Pattern B (grouped by park). 30 parks, 600s interval. Value = average wait time in minutes across open rides. API: queue-times.com/parks/{id}/queue_times.json.
+- [DECISION] CBP Border: Pattern A (single call, fan out). 30 crossings, 600s interval. Value = passenger vehicle delay in minutes. API: bwt.cbp.gov/api/waittimes.
+- [DECISION] FAA Delays: Pattern D (rolling cursor, 10 per batch). 30 airports, 600s interval. Value = 0/1 delay boolean. API: soa.smext.faa.gov/asws/api/airport/status/{IATA}. Full cycle through all airports ~30 min.
+- [DECISION] All 3 sources use category "transport" since there's no "tourism" category. Subcategories: theme_park, border_crossing, airport.
+- [DECISION] Frontend grouped under "Transport & Tourism" in VisionMarketsGrid CATEGORY_GROUPS.
+
+## Session: 20260224-2130-t8k4 (Celebrity Data: TMDb Trending People + Last.fm Music Artists)
+
+- [DECISION] TMDb upgrade: Added /trending/person/day (10 pages = 200 trending) + /person/popular (25 pages = 500 stable) with deduplication. Asset ID format: `tmdb_person_{id}`. Subcategory: "celebrities". Reuses same `tmdb` source_id — no new API key needed.
+- [DECISION] TMDb people merge strategy: Trending first (most volatile), then popular to fill roster. HashSet dedup by person ID. ~500-600 unique people per sync.
+- [DECISION] Last.fm: New source `lastfm`, Pattern F (full list re-fetch). chart.getTopArtists (10 pages × 50 = 500 artists). 2 feeds per artist: listeners + playcount (scrobbles). Dynamic discovery.
+- [DECISION] Last.fm rate limit: 250 req/min (community-tested ~5 req/s). 250ms inter-request delay. 10 chart pages = ~2.5s per sync. Budget: 15 req/sync × 6/hr = 90 req/hr (0.6% of capacity).
+- [DECISION] Last.fm slugify: Simple char-by-char — lowercase, keep alphanumeric + hyphen, replace everything else with underscore. Keeps Unicode chars (é, ü, etc.) since Rust's is_alphanumeric covers them.
+- [DECISION] Last.fm percent_encode: Hand-rolled to avoid adding urlencoding crate dependency. Only used in fetch_artist_info (currently unused, kept for future per-artist lookups).
+
+## Session: 20260224-2100-k8m3 (Board Games & Shopping: BGG + Best Buy)
+
+- [DECISION] BGG: Only track hotness rank (1-50) as feed metric. Other stats (rating, owned, wanting) change too slowly for 10-min polling — effectively static within an hour. 50 feeds, 1 API call per sync.
+- [DECISION] BGG: Dynamic discovery from `/hot?type=boardgame` endpoint. Games enter/exit the hot list organically. Pattern A (single call → fan out).
+- [DECISION] BGG: Manual XML parsing (no XML crate dependency). BGG API returns XML only. Simple `split("<item ")` + regex extraction is sufficient for the flat hot list format.
+- [DECISION] BGG: API-key-gated via `BGG_API_TOKEN`. As of 2025, BGG requires Authorization tokens for API access (free registration).
+- [DECISION] Best Buy: Track sale prices (USD) for top-selling products across 7 categories. Pattern B (grouped by category). ~70 feeds (10 per category × 7 categories).
+- [DECISION] Best Buy: Dynamic discovery — products shift as best-sellers change. No static config JSON.
+- [DECISION] Best Buy: API-key-gated via `BESTBUY_API_KEY`. Free API key with 5 req/sec limit. 7 category fetches per sync = trivially within limits.
+- [FAILED] Shopping APIs with hourly-changing data — evaluated Open Prices, Mercado Libre, Open Food Facts. None reliably update within an hour. Best Buy sale prices change during events but not guaranteed hourly. Accepted this tradeoff.
+
+## Session: 20260224-1800-n3b7 (4 NOAA/Environmental Sources: NDBC Buoys, CO-OPS Met, NWPS River Gauges, AirNow AQI)
+
+- [DECISION] NDBC Buoys: Pattern A — single bulk file (`latest_obs.txt`) for all ~1400 buoys. 1 request/sync. Track significant wave height (WVHT) as primary metric, cap at 500 stations with valid wave data.
+- [DECISION] NOAA CO-OPS Met: Same 59 stations as noaa_tides but separate source (noaa_met) for water_temperature and wind products. 25 req/min rate limit (slightly lower than noaa_tides to avoid competing on shared API).
+- [DECISION] NWPS River Gauges: Curated 67 major US river gauges at key cities/confluences. api.water.noaa.gov single-gauge requests, 2s inter-request delay, 20 req/min.
+- [DECISION] AirNow AQI: 3 bounding box requests (CONUS + Alaska + Hawaii) to get all US monitoring areas in bulk. Gated on AIRNOW_API_KEY env var (EPA, not NOAA). Max AQI across pollutants per reporting area.
+- [DECISION] Rate limits are independent across NOAA services (NDBC, CO-OPS, NWPS are separate infrastructure). Only NWS Observations and NWPS share infra.
+- [DECISION] Filtered 10 NOAA candidates down to 4 that update within-day. Dropped: ERDDAP SST (daily), Coral Reef Watch (daily), NSIDC Sea Ice (daily), Drought Monitor (weekly), NWS Observations (overlaps OpenMeteo), NCEI Hazards (historical only).
+
+## Session: 20260224-1500-k4w9 (4 New Data Sources: USGS Water, NOAA Tides, NRC Nuclear, CityBikes)
+
+- [DECISION] USGS Water: Batch by 15 curated US states, cap 200 stations/state. Parameter 00060 (discharge) only — 00065 (gage height) skipped to keep asset count manageable (~2-3K total).
+- [DECISION] NOAA Tides: Curated 59 major US stations (single-station API). 900s sync to stay safe under 30 req/min with sequential fetches + 1.2s delay.
+- [DECISION] NRC Nuclear: Single file download (365 days of pipe-delimited text). 3600s sync since data only updates daily. Parse all ~93 reactors dynamically.
+- [DECISION] CityBikes: Curated top 30 networks globally. 12s inter-request delay (5 req/min conservative). Track total available bikes per network.
+- [DECISION] All 4 sources are always-on (no API key gating). No CLI args needed.
+- [DECISION] Chaturbate reduced from 60s to 600s sync per user request to avoid rate issues.
+
 ## Session: 20260224-0200-x8m3 (Security Audit — 10 Findings)
 
 - [DECISION] Fix 1 — BLSCustody: Unified 4 divergent BLS verification paths to use inherited `_verifyBLS()` from BLSVerifier. Kept `issuerRegistry` public storage (20+ deploy scripts read it) with legacy comment. Removed direct BLSLib import.

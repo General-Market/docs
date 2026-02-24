@@ -1,0 +1,2262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vision — Prediction Markets, Fixed</title>
+    <meta name="description" content="1,047 sealed prediction markets across 44 data sources. Your edge, protected.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ============================================
+           RESET & FOUNDATIONS
+           ============================================ */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --black: #000000;
+            --white: #ffffff;
+            --gray: #888888;
+            --gray-dim: #444444;
+            --gray-subtle: #1a1a1a;
+            --green: #00ff88;
+            --green-dim: rgba(0, 255, 136, 0.15);
+            --green-glow: rgba(0, 255, 136, 0.4);
+            --red: #ff4444;
+            --red-dim: rgba(255, 68, 68, 0.15);
+            --blue: #4488ff;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            background: var(--black);
+            color: var(--white);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        ::selection {
+            background: var(--green);
+            color: var(--black);
+        }
+
+        /* ============================================
+           TYPOGRAPHY
+           ============================================ */
+        .statement-text {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            max-width: 900px;
+        }
+
+        .statement-sub {
+            font-size: clamp(1rem, 2vw, 1.4rem);
+            font-weight: 400;
+            color: var(--gray);
+            margin-top: 1.5rem;
+            max-width: 600px;
+        }
+
+        .proof-heading {
+            font-size: clamp(1.5rem, 3.5vw, 2.8rem);
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            max-width: 800px;
+        }
+
+        .proof-body {
+            font-size: clamp(1rem, 1.5vw, 1.2rem);
+            font-weight: 400;
+            color: var(--gray);
+            line-height: 1.7;
+            max-width: 680px;
+        }
+
+        .accent {
+            color: var(--green);
+        }
+
+        .accent-red {
+            color: var(--red);
+        }
+
+        .mono {
+            font-family: var(--font-mono);
+        }
+
+        .dim {
+            color: var(--gray-dim);
+        }
+
+        /* ============================================
+           LAYOUT
+           ============================================ */
+        .section-statement {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .section-proof {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 6rem 2rem;
+            position: relative;
+        }
+
+        .proof-inner {
+            max-width: 1100px;
+            width: 100%;
+        }
+
+        /* ============================================
+           SCROLL REVEAL ANIMATIONS
+           ============================================ */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+                        transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .reveal-delay-1 { transition-delay: 0.15s; }
+        .reveal-delay-2 { transition-delay: 0.3s; }
+        .reveal-delay-3 { transition-delay: 0.45s; }
+        .reveal-delay-4 { transition-delay: 0.6s; }
+        .reveal-delay-5 { transition-delay: 0.75s; }
+        .reveal-delay-6 { transition-delay: 0.9s; }
+
+        .reveal-fast {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        .reveal-fast.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ============================================
+           SCROLL INDICATOR
+           ============================================ */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 2.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0.4;
+            animation: pulse-scroll 2s ease-in-out infinite;
+        }
+
+        .scroll-indicator span {
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--gray);
+        }
+
+        .scroll-arrow {
+            width: 20px;
+            height: 20px;
+            border-right: 2px solid var(--gray);
+            border-bottom: 2px solid var(--gray);
+            transform: rotate(45deg);
+        }
+
+        @keyframes pulse-scroll {
+            0%, 100% { opacity: 0.4; transform: translateX(-50%) translateY(0); }
+            50% { opacity: 0.7; transform: translateX(-50%) translateY(8px); }
+        }
+
+        /* ============================================
+           SECTION 1: OPENING STATEMENT
+           ============================================ */
+        #opening {
+            background: var(--black);
+        }
+
+        #opening .statement-text {
+            font-size: clamp(3rem, 7vw, 5.5rem);
+        }
+
+        /* ============================================
+           SECTION 2: POLYMARKET PROBLEM (PROOF #1)
+           ============================================ */
+        .bar-chart-container {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 200px;
+            margin: 3rem 0;
+            padding: 0 1rem;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .bar {
+            flex: 1;
+            min-width: 4px;
+            border-radius: 2px 2px 0 0;
+            transition: height 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+
+        .bar.polymarket {
+            background: var(--red);
+            opacity: 0.8;
+        }
+
+        .bar.longtail {
+            background: var(--gray-dim);
+            opacity: 0.5;
+        }
+
+        .bar-labels {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 800px;
+            margin-top: 0.75rem;
+        }
+
+        .bar-label {
+            font-size: 0.8rem;
+            font-family: var(--font-mono);
+            color: var(--gray);
+        }
+
+        .crowd-stat {
+            display: flex;
+            gap: 4rem;
+            margin: 2.5rem 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .crowd-stat-item {
+            text-align: center;
+        }
+
+        .crowd-stat-number {
+            font-family: var(--font-mono);
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .crowd-stat-label {
+            font-size: 0.85rem;
+            color: var(--gray);
+            margin-top: 0.5rem;
+        }
+
+        /* ============================================
+           SECTION 4: THE BREADTH (PROOF #2)
+           ============================================ */
+        .market-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 1rem;
+            width: 100%;
+            margin: 3rem 0;
+        }
+
+        .market-card {
+            background: var(--gray-subtle);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 1.25rem;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+        }
+
+        .market-card.card-visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        .market-card:hover {
+            border-color: rgba(0, 255, 136, 0.2);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .card-category {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--green);
+            margin-bottom: 0.6rem;
+        }
+
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            line-height: 1.4;
+            color: var(--white);
+        }
+
+        .card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.8rem;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--gray-dim);
+        }
+
+        .card-resolution {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .source-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            margin: 2.5rem 0;
+            max-width: 900px;
+        }
+
+        .source-pill {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 0.4rem 0.9rem;
+            border-radius: 100px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--gray);
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        .source-pill.pill-visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .source-pill:hover {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        /* ============================================
+           SECTION 6: SEALED COMMITMENTS (PROOF #3)
+           ============================================ */
+        .hash-animation {
+            width: 100%;
+            max-width: 700px;
+            margin: 3rem auto;
+            position: relative;
+        }
+
+        .hash-step {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            opacity: 0;
+            transform: translateX(-30px);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .hash-step.step-visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .hash-step-num {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            border-radius: 50%;
+            background: var(--gray-subtle);
+            border: 2px solid var(--green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--green);
+        }
+
+        .hash-step-content {
+            flex: 1;
+        }
+
+        .hash-step-label {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .hash-step-detail {
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+
+        .hash-value {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--green);
+            background: var(--green-dim);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 0.3rem;
+            word-break: break-all;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 3rem 0;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        @media (max-width: 640px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid;
+        }
+
+        .comparison-card.bad {
+            border-color: rgba(255, 68, 68, 0.2);
+            background: rgba(255, 68, 68, 0.03);
+        }
+
+        .comparison-card.good {
+            border-color: rgba(0, 255, 136, 0.2);
+            background: rgba(0, 255, 136, 0.03);
+        }
+
+        .comparison-card-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .comparison-card.bad .comparison-card-title {
+            color: var(--red);
+        }
+
+        .comparison-card.good .comparison-card-title {
+            color: var(--green);
+        }
+
+        .comparison-list {
+            list-style: none;
+        }
+
+        .comparison-list li {
+            font-size: 0.9rem;
+            color: var(--gray);
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .comparison-list li:last-child {
+            border-bottom: none;
+        }
+
+        .comparison-list .icon {
+            flex-shrink: 0;
+            margin-top: 0.1rem;
+        }
+
+        /* ============================================
+           SECTION 8: PARIMUTUEL (PROOF #4)
+           ============================================ */
+        .pool-viz {
+            width: 100%;
+            max-width: 600px;
+            margin: 3rem auto;
+        }
+
+        .pool-bar {
+            height: 60px;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .pool-segment {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .pool-yes {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--green);
+        }
+
+        .pool-no {
+            background: rgba(255, 68, 68, 0.15);
+            color: var(--red);
+        }
+
+        .pool-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+
+        .pool-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin: 2rem 0;
+            max-width: 500px;
+        }
+
+        .pool-flow-step {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .pool-flow-arrow {
+            font-size: 1.5rem;
+            color: var(--green);
+            text-align: center;
+            width: 100%;
+        }
+
+        .flow-icon {
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .flow-icon.deposit { background: var(--green-dim); }
+        .flow-icon.lock { background: rgba(255, 255, 255, 0.06); }
+        .flow-icon.resolve { background: rgba(68, 136, 255, 0.15); }
+        .flow-icon.payout { background: var(--green-dim); }
+
+        .fee-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 3rem 0;
+            width: 100%;
+            max-width: 700px;
+        }
+
+        @media (max-width: 640px) {
+            .fee-comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .fee-card {
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .fee-card.old {
+            background: rgba(255, 68, 68, 0.05);
+            border: 1px solid rgba(255, 68, 68, 0.15);
+        }
+
+        .fee-card.new {
+            background: var(--green-dim);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .fee-card-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.75rem;
+        }
+
+        .fee-card.old .fee-card-label { color: var(--red); }
+        .fee-card.new .fee-card-label { color: var(--green); }
+
+        .fee-number {
+            font-family: var(--font-mono);
+            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .fee-card.old .fee-number { color: var(--red); }
+        .fee-card.new .fee-number { color: var(--green); }
+
+        .fee-detail {
+            font-size: 0.85rem;
+            color: var(--gray);
+            margin-top: 0.6rem;
+        }
+
+        /* ============================================
+           SECTION 10: BUILT FOR CODE (PROOF #5)
+           ============================================ */
+        .code-block {
+            background: #0d0d0d;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            overflow: hidden;
+            width: 100%;
+            max-width: 720px;
+            margin: 2.5rem 0;
+        }
+
+        .code-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .code-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .code-dot.red { background: #ff5f57; }
+        .code-dot.yellow { background: #febc2e; }
+        .code-dot.green { background: #28c840; }
+
+        .code-filename {
+            margin-left: 0.75rem;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--gray-dim);
+        }
+
+        .code-body {
+            padding: 1.5rem;
+            overflow-x: auto;
+        }
+
+        .code-body pre {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            line-height: 1.8;
+            color: var(--gray);
+            white-space: pre;
+            tab-size: 4;
+        }
+
+        .code-body .kw { color: #c792ea; }
+        .code-body .fn { color: #82aaff; }
+        .code-body .str { color: var(--green); }
+        .code-body .cm { color: var(--gray-dim); }
+        .code-body .num { color: #f78c6c; }
+        .code-body .op { color: #89ddff; }
+        .code-body .var { color: #eeffff; }
+
+        .sdk-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            width: 100%;
+            max-width: 700px;
+            margin: 2rem 0;
+        }
+
+        .sdk-card {
+            background: var(--gray-subtle);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 1.25rem;
+            text-align: center;
+            transition: border-color 0.3s ease;
+        }
+
+        .sdk-card:hover {
+            border-color: rgba(0, 255, 136, 0.2);
+        }
+
+        .sdk-card-name {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .sdk-card-desc {
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 3rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 3rem 0;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: var(--font-mono);
+            font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+            font-weight: 800;
+            color: var(--green);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--gray);
+            margin-top: 0.5rem;
+        }
+
+        /* ============================================
+           SECTION 12: LOW BARRIER (PROOF #6)
+           ============================================ */
+        .progression {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            width: 100%;
+            max-width: 900px;
+            margin: 3rem 0;
+            position: relative;
+        }
+
+        .progression::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(to right, var(--gray-dim), var(--green));
+            z-index: 0;
+        }
+
+        .prog-step {
+            flex: 1;
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 0 0.5rem;
+        }
+
+        .prog-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--gray-dim);
+            margin: 0 auto 1rem;
+            transition: all 0.6s ease;
+        }
+
+        .prog-step.active .prog-dot {
+            background: var(--green);
+            box-shadow: 0 0 20px var(--green-glow);
+        }
+
+        .prog-amount {
+            font-family: var(--font-mono);
+            font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+        }
+
+        .prog-label {
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+
+        .prog-desc {
+            font-size: 0.75rem;
+            color: var(--gray-dim);
+            margin-top: 0.3rem;
+        }
+
+        .onboarding-steps {
+            display: flex;
+            gap: 2rem;
+            margin: 3rem 0;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 800px;
+        }
+
+        .onboard-step {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .onboard-num {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--green);
+            line-height: 1;
+        }
+
+        .onboard-text {
+            font-size: 0.95rem;
+            color: var(--gray);
+        }
+
+        .onboard-connector {
+            font-size: 1.5rem;
+            color: var(--gray-dim);
+        }
+
+        /* ============================================
+           SECTION 13: THE CLOSE
+           ============================================ */
+        #close {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 4rem 2rem;
+            position: relative;
+        }
+
+        .close-statement {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 800;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            margin-bottom: 1rem;
+        }
+
+        .close-fix {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 900;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.5rem;
+        }
+
+        .close-proof {
+            font-size: clamp(1rem, 2vw, 1.3rem);
+            color: var(--gray);
+            margin-bottom: 3rem;
+            max-width: 500px;
+        }
+
+        .cta-primary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.1rem 3.5rem;
+            background: var(--green);
+            color: var(--black);
+            font-family: var(--font-sans);
+            font-size: 1.15rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 40px var(--green-glow), 0 0 80px rgba(0, 255, 136, 0.15);
+        }
+
+        .cta-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 60px var(--green-glow), 0 0 120px rgba(0, 255, 136, 0.2);
+        }
+
+        .cta-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.85rem 2.5rem;
+            background: transparent;
+            color: var(--gray);
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .cta-secondary:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+            color: var(--white);
+        }
+
+        .risk-pills {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 2.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .risk-pill {
+            font-size: 0.8rem;
+            color: var(--gray-dim);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .risk-pill .check {
+            color: var(--green);
+            font-weight: 700;
+        }
+
+        /* ============================================
+           DIVIDERS & ACCENTS
+           ============================================ */
+        .section-divider {
+            width: 60px;
+            height: 2px;
+            background: var(--gray-dim);
+            margin: 2rem 0;
+        }
+
+        .quote-block {
+            border-left: 3px solid var(--green);
+            padding-left: 1.5rem;
+            margin: 2rem 0;
+            max-width: 600px;
+        }
+
+        .quote-block p {
+            font-size: 1.05rem;
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+        }
+
+        /* ============================================
+           COUNTER ANIMATION
+           ============================================ */
+        .counter {
+            font-family: var(--font-mono);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ============================================
+           NAV (minimal, fades in after first scroll)
+           ============================================ */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 1.25rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.4s ease;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .nav.nav-visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+
+        .nav-logo {
+            font-size: 1.1rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-logo .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            display: inline-block;
+        }
+
+        .nav-cta {
+            padding: 0.55rem 1.5rem;
+            background: var(--green);
+            color: var(--black);
+            font-size: 0.85rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .nav-cta:hover {
+            opacity: 0.9;
+        }
+
+        /* ============================================
+           FOOTER
+           ============================================ */
+        .footer {
+            padding: 4rem 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .footer-links a {
+            color: var(--gray-dim);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.2s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--gray);
+        }
+
+        .footer-copy {
+            font-size: 0.75rem;
+            color: var(--gray-dim);
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 768px) {
+            .section-statement {
+                padding: 2rem 1.5rem;
+            }
+
+            .section-proof {
+                padding: 4rem 1.5rem;
+            }
+
+            .market-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .crowd-stat {
+                gap: 2rem;
+            }
+
+            .stats-row {
+                gap: 1.5rem;
+            }
+
+            .progression {
+                flex-direction: column;
+                gap: 2rem;
+                align-items: flex-start;
+            }
+
+            .progression::before {
+                top: 0;
+                bottom: 0;
+                left: 8px;
+                right: auto;
+                width: 2px;
+                height: 100%;
+            }
+
+            .prog-step {
+                text-align: left;
+                display: flex;
+                align-items: flex-start;
+                gap: 1rem;
+                padding: 0;
+            }
+
+            .prog-dot {
+                margin: 0.15rem 0 0 0;
+            }
+
+            .onboarding-steps {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+
+            .onboard-connector {
+                display: none;
+            }
+
+            .code-body pre {
+                font-size: 0.75rem;
+            }
+
+            .bar-chart-container {
+                height: 120px;
+            }
+
+            .hash-step {
+                gap: 1rem;
+            }
+
+            .hash-step-num {
+                width: 36px;
+                height: 36px;
+                min-width: 36px;
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .fee-comparison {
+                grid-template-columns: 1fr;
+            }
+
+            .risk-pills {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==========================================
+         NAVIGATION (fades in after first scroll)
+         ========================================== -->
+    <nav class="nav" id="nav">
+        <div class="nav-logo">
+            <span class="dot"></span>
+            Vision
+        </div>
+        <a href="#close" class="nav-cta">Start Trading</a>
+    </nav>
+
+    <!-- ==========================================
+         SECTION 1: OPENING STATEMENT
+         ========================================== -->
+    <section class="section-statement" id="opening">
+        <h1 class="statement-text reveal">
+            Prediction markets<br>are <span class="accent-red">broken</span>.
+        </h1>
+        <p class="statement-sub reveal reveal-delay-1">
+            And everyone knows it.
+        </p>
+        <div class="scroll-indicator">
+            <span>Scroll</span>
+            <div class="scroll-arrow"></div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         SECTION 2: PROOF #1 — THE POLYMARKET PROBLEM
+         ========================================== -->
+    <section class="section-proof" id="proof-polymarket">
+        <div class="proof-inner" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+            <p class="proof-heading reveal">
+                On the average prediction market,<br>
+                <span class="accent-red">everyone trades the same 50 events</span>.
+            </p>
+
+            <div class="section-divider reveal reveal-delay-1"></div>
+
+            <div class="crowd-stat reveal reveal-delay-1">
+                <div class="crowd-stat-item">
+                    <div class="crowd-stat-number accent-red counter" data-target="1200">0</div>
+                    <div class="crowd-stat-label">Average traders per popular market</div>
+                </div>
+                <div class="crowd-stat-item">
+                    <div class="crowd-stat-number counter dim" data-target="50">0</div>
+                    <div class="crowd-stat-label">Active markets on most platforms</div>
+                </div>
+            </div>
+
+            <div class="bar-chart-container reveal reveal-delay-2" id="polymarket-bars">
+                <!-- Bars generated by JS -->
+            </div>
+            <div class="bar-labels reveal reveal-delay-2">
+                <span class="bar-label" style="color: var(--red);">Top 50 markets (everyone)</span>
+                <span class="bar-label">Everything else (nobody)</span>
+            </div>
+
+            <p class="proof-body reveal reveal-delay-3" style="margin-top: 2.5rem;">
+                When 1,200 people crowd into the same election market, your edge disappears
+                the moment you place a bet. The signal is priced in before you finish typing.
+            </p>
+
+            <div class="quote-block reveal reveal-delay-4" style="text-align: left;">
+                <p>
+                    "There are 8 billion people with 8 billion different edges.
+                    Most of those edges have no market to trade on."
+                </p>
+            </div>
+
+            <p class="proof-body reveal reveal-delay-5" style="margin-top: 1.5rem;">
+                The information that matters isn't in the headlines.
+                It's in the npm download spike no one noticed. The 4chan thread that predicted the rug.
+                The anime ranking shift that signals a cultural moment.
+            </p>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         SECTION 3: STATEMENT #2
+         ========================================== -->
+    <section class="section-statement" id="statement-breadth">
+        <h2 class="statement-text reveal">
+            What if the market<br>came to <span class="accent">you</span>?
+        </h2>
+        <p class="statement-sub reveal reveal-delay-1">
+            Not 50 markets for everyone.<br>
+            1,000 markets for everyone's niche.
+        </p>
+    </section>
+
+    <!-- ==========================================
+         SECTION 4: PROOF #2 — THE BREADTH
+         ========================================== -->
+    <section class="section-proof" id="proof-breadth">
+        <div class="proof-inner" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+            <p class="proof-heading reveal">
+                Volcanic eruptions. Anime rankings. npm downloads.<br>
+                Congressional trades. ISS altitude. <span class="accent">4chan shitpost volume.</span>
+            </p>
+
+            <div class="source-pills reveal reveal-delay-1" id="source-pills">
+                <!-- Generated by JS -->
+            </div>
+
+            <div class="market-grid" id="market-grid">
+                <!-- Generated by JS -->
+            </div>
+
+            <div class="section-divider reveal"></div>
+
+            <div class="crowd-stat reveal">
+                <div class="crowd-stat-item">
+                    <div class="crowd-stat-number accent counter" data-target="44">0</div>
+                    <div class="crowd-stat-label">Data sources</div>
+                </div>
+                <div class="crowd-stat-item">
+                    <div class="crowd-stat-number accent counter" data-target="1047">0</div>
+                    <div class="crowd-stat-label">Active markets</div>
+                </div>
+                <div class="crowd-stat-item">
+                    <div class="crowd-stat-number counter" data-target="5" data-suffix="min" style="color: var(--white);">0</div>
+                    <div class="crowd-stat-label">Fastest resolution</div>
+                </div>
+            </div>
+
+            <p class="proof-body reveal" style="margin-top: 2rem;">
+                The most diverse prediction market ever built. Every category is a new surface area for edge.
+                Your geology degree, your open-source obsession, your anime knowledge &mdash;
+                they're all tradeable here.
+            </p>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         SECTION 5: STATEMENT #3
+         ========================================== -->
+    <section class="section-statement" id="statement-sealed">
+        <h2 class="statement-text reveal">
+            Your bets should be<br><span class="accent">invisible</span>.
+        </h2>
+        <p class="statement-sub reveal reveal-delay-1">
+            Until it's too late.
+        </p>
+    </section>
+
+    <!-- ==========================================
+         SECTION 6: PROOF #3 — SEALED COMMITMENTS
+         ========================================== -->
+    <section class="section-proof" id="proof-sealed">
+        <div class="proof-inner" style="display: flex; flex-direction: column; align-items: center;">
+            <p class="proof-heading reveal" style="text-align: center;">
+                Every prediction is <span class="accent">sealed</span> before submission.
+            </p>
+            <p class="proof-body reveal reveal-delay-1" style="text-align: center; margin-top: 1rem;">
+                Hashed with keccak256. Stored on Arbitrum. Invisible to everyone &mdash; including other traders &mdash; until the market resolves.
+            </p>
+
+            <div class="hash-animation">
+                <div class="hash-step" data-step="1">
+                    <div class="hash-step-num">1</div>
+                    <div class="hash-step-content">
+                        <div class="hash-step-label">You make a prediction</div>
+                        <div class="hash-step-detail">
+                            "BTC will be above $95,000 at 14:00 UTC"
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hash-step" data-step="2">
+                    <div class="hash-step-num">2</div>
+                    <div class="hash-step-content">
+                        <div class="hash-step-label">It's hashed locally</div>
+                        <div class="hash-step-detail">
+                            Your prediction + a random salt, run through keccak256:
+                        </div>
+                        <div class="hash-value" id="hash-display">
+                            0x7f83b165...e10b4d0f34
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hash-step" data-step="3">
+                    <div class="hash-step-num">3</div>
+                    <div class="hash-step-content">
+                        <div class="hash-step-label">Only the hash goes on-chain</div>
+                        <div class="hash-step-detail">
+                            Nobody can reverse a keccak256 hash. Your prediction is sealed.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hash-step" data-step="4">
+                    <div class="hash-step-num">4</div>
+                    <div class="hash-step-content">
+                        <div class="hash-step-label">Market resolves. Bets are revealed.</div>
+                        <div class="hash-step-detail">
+                            Winners are verified. Losers' stakes are distributed.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="comparison-grid reveal">
+                <div class="comparison-card bad">
+                    <div class="comparison-card-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                        Traditional Order Book
+                    </div>
+                    <ul class="comparison-list">
+                        <li><span class="icon" style="color: var(--red);">&#10005;</span> Everyone sees your position size</li>
+                        <li><span class="icon" style="color: var(--red);">&#10005;</span> Whales front-run retail</li>
+                        <li><span class="icon" style="color: var(--red);">&#10005;</span> Bots copy winning strategies</li>
+                        <li><span class="icon" style="color: var(--red);">&#10005;</span> Signal is priced in instantly</li>
+                        <li><span class="icon" style="color: var(--red);">&#10005;</span> Your edge erodes before payout</li>
+                    </ul>
+                </div>
+                <div class="comparison-card good">
+                    <div class="comparison-card-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="16 10 11 15 8 12"/></svg>
+                        Vision Sealed Commitments
+                    </div>
+                    <ul class="comparison-list">
+                        <li><span class="icon" style="color: var(--green);">&#10003;</span> Predictions are hash-sealed</li>
+                        <li><span class="icon" style="color: var(--green);">&#10003;</span> No front-running possible</li>
+                        <li><span class="icon" style="color: var(--green);">&#10003;</span> Nobody sees your strategy</li>
+                        <li><span class="icon" style="color: var(--green);">&#10003;</span> Signal stays private until resolution</li>
+                        <li><span class="icon" style="color: var(--green);">&#10003;</span> Your edge is protected by math</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="quote-block reveal" style="margin-top: 2rem;">
+                <p>
+                    "The geology student and the Python bot both predicted Kilauea correctly.
+                    Neither knew the other existed until the payout."
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         SECTION 7: STATEMENT #4
+         ========================================== -->
+    <section class="section-statement" id="statement-parimutuel">
+        <h2 class="statement-text reveal">
+            Winners take all.<br>Losers <span class="accent">fund it</span>.
+        </h2>
+    </section>
+
+    <!-- ==========================================
+         SECTION 8: PROOF #4 — PARIMUTUEL
+         ========================================== -->
+    <section class="section-proof" id="proof-parimutuel">
+        <div class="proof-inner" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+            <p class="proof-heading reveal">
+                No market makers. No house edge.<br>
+                No leverage. <span class="accent">No liquidation.</span>
+            </p>
+
+            <div class="pool-viz reveal reveal-delay-1">
+                <p style="font-size: 0.85rem; color: var(--gray); margin-bottom: 0.75rem;">
+                    Market: "ETH above $3,800 at 16:00 UTC"
+                </p>
+                <div class="pool-bar" id="pool-bar">
+                    <div class="pool-segment pool-yes" id="pool-yes" style="width: 0%;">
+                        YES
+                    </div>
+                    <div class="pool-segment pool-no" id="pool-no" style="width: 0%;">
+                        NO
+                    </div>
+                </div>
+                <div class="pool-labels">
+                    <span>YES Pool: <span class="mono accent" id="yes-amount">$0</span></span>
+                    <span>NO Pool: <span class="mono accent-red" id="no-amount">$0</span></span>
+                </div>
+            </div>
+
+            <div class="pool-flow reveal reveal-delay-2" style="align-items: center; text-align: left;">
+                <div class="pool-flow-step">
+                    <div class="flow-icon deposit">&#9650;</div>
+                    <div>
+                        <strong style="font-size: 0.95rem;">Bets flow into the pool</strong>
+                        <p style="font-size: 0.85rem; color: var(--gray);">
+                            YES and NO positions are committed with sealed predictions.
+                        </p>
+                    </div>
+                </div>
+                <div class="pool-flow-arrow">&#8595;</div>
+                <div class="pool-flow-step">
+                    <div class="flow-icon lock">&#9632;</div>
+                    <div>
+                        <strong style="font-size: 0.95rem;">Market locks at resolution time</strong>
+                        <p style="font-size: 0.85rem; color: var(--gray);">
+                            No more bets. Outcome is fetched from the data source.
+                        </p>
+                    </div>
+                </div>
+                <div class="pool-flow-arrow">&#8595;</div>
+                <div class="pool-flow-step">
+                    <div class="flow-icon resolve">&#9679;</div>
+                    <div>
+                        <strong style="font-size: 0.95rem;">Oracle reports the result</strong>
+                        <p style="font-size: 0.85rem; color: var(--gray);">
+                            44 data sources. Automated. On-chain.
+                        </p>
+                    </div>
+                </div>
+                <div class="pool-flow-arrow">&#8595;</div>
+                <div class="pool-flow-step">
+                    <div class="flow-icon payout">&#10003;</div>
+                    <div>
+                        <strong style="font-size: 0.95rem;">Winners split losers' stakes</strong>
+                        <p style="font-size: 0.85rem; color: var(--gray);">
+                            Proportional to bet size. 0.3% fee on profits only. Instant payout.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-divider reveal"></div>
+
+            <p class="proof-heading reveal" style="margin-top: 1rem; font-size: clamp(1.3rem, 2.5vw, 2rem);">
+                You only pay when you win.
+            </p>
+
+            <div class="fee-comparison reveal reveal-delay-1">
+                <div class="fee-card old">
+                    <div class="fee-card-label">Traditional Prediction Market</div>
+                    <div class="fee-number">0.1%</div>
+                    <div class="fee-detail">On every trade, win or lose.<br>Plus spread. Plus slippage.</div>
+                </div>
+                <div class="fee-card new">
+                    <div class="fee-card-label">Vision</div>
+                    <div class="fee-number">0.3%</div>
+                    <div class="fee-detail">On profits only.<br>Lose? Pay nothing.</div>
+                </div>
+            </div>
+
+            <p class="proof-body reveal" style="margin-top: 2rem;">
+                Traditional markets charge you for the privilege of being wrong.
+                Vision only takes a cut when you're right. The economics are aligned:
+                the protocol makes money only when <em>you</em> make money.
+            </p>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         SECTION 9: STATEMENT #5
+         ========================================== -->
+    <section class="section-statement" id="statement-bots">
+        <h2 class="statement-text reveal">
+            Bots aren't the enemy.<br>They're the <span class="accent">point</span>.
+        </h2>
+    </section>
+
+    <!-- ==========================================
+         SECTION 10: PROOF #5 — BUILT FOR CODE
+         ========================================== -->
+    <section class="section-proof" id="proof-bots">
+        <div class="proof-inner" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+            <p class="proof-heading reveal">
+                The best traders on Vision<br>aren't human. <span class="accent">And that's fine.</span>
+            </p>
+
+            <div class="code-block reveal reveal-delay-1">
+                <div class="code-header">
+                    <div class="code-dot red"></div>
+                    <div class="code-dot yellow"></div>
+                    <div class="code-dot green"></div>
+                    <span class="code-filename">strategy.py</span>
+                </div>
+                <div class="code-body">
+<pre><span class="kw">from</span> <span class="var">vision</span> <span class="kw">import</span> <span class="var">Client</span>, <span class="var">Market</span>
+
+<span class="cm"># Connect to Vision on Arbitrum</span>
+<span class="var">client</span> <span class="op">=</span> <span class="fn">Client</span>(<span class="str">"your-api-key"</span>)
+
+<span class="cm"># Find markets where your model has an edge</span>
+<span class="var">markets</span> <span class="op">=</span> <span class="var">client</span>.<span class="fn">get_markets</span>(
+    <span class="var">source</span><span class="op">=</span><span class="str">"coingecko"</span>,
+    <span class="var">resolution</span><span class="op">=</span><span class="str">"5m"</span>,
+    <span class="var">status</span><span class="op">=</span><span class="str">"open"</span>
+)
+
+<span class="kw">for</span> <span class="var">market</span> <span class="kw">in</span> <span class="var">markets</span>:
+    <span class="var">prediction</span> <span class="op">=</span> <span class="var">my_model</span>.<span class="fn">predict</span>(<span class="var">market</span>.<span class="var">asset</span>)
+
+    <span class="kw">if</span> <span class="var">prediction</span>.<span class="var">confidence</span> <span class="op">></span> <span class="num">0.7</span>:
+        <span class="var">client</span>.<span class="fn">place_sealed_bet</span>(
+            <span class="var">market_id</span><span class="op">=</span><span class="var">market</span>.<span class="var">id</span>,
+            <span class="var">direction</span><span class="op">=</span><span class="var">prediction</span>.<span class="var">direction</span>,
+            <span class="var">amount</span><span class="op">=</span><span class="num">10.0</span>,  <span class="cm"># USDC</span>
+        )
+
+<span class="cm"># That's it. 14 lines of code.</span>
+<span class="cm"># Your edge, running 24/7.</span></pre>
+                </div>
+            </div>
+
+            <div class="sdk-grid reveal reveal-delay-2">
+                <div class="sdk-card">
+                    <div class="sdk-card-name">Python SDK</div>
+                    <div class="sdk-card-desc">Full market access, backtesting, sealed bets</div>
+                </div>
+                <div class="sdk-card">
+                    <div class="sdk-card-name">TypeScript SDK</div>
+                    <div class="sdk-card-desc">Node.js and browser compatible</div>
+                </div>
+                <div class="sdk-card">
+                    <div class="sdk-card-name">REST API</div>
+                    <div class="sdk-card-desc">Language-agnostic, well-documented</div>
+                </div>
+            </div>
+
+            <p class="proof-body reveal" style="margin-top: 1rem;">
+                You can run a profitable strategy on a $5/month VPS.
+                No GPUs, no co-location, no HFT arms race.
+                Sealed bets mean speed doesn't matter &mdash; only <em>accuracy</em> matters.
+            </p>
+
+            <div class="stats-row reveal">
+                <div class="stat-item">
+                    <div class="stat-value counter" data-target="0.3" data-suffix="s" data-decimals="1">0</div>
+                    <div class="stat-label">Avg bot response</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value counter" data-target="847">0</div>
+                    <div class="stat-label">Markets resolved / day</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value counter" data-target="99.97" data-suffix="%" data-decimals="2">0</div>
+                    <div class="stat-label">API uptime</div>
+                </div>
+            </div>
+
+            <div class="quote-block reveal" style="margin-top: 2rem;">
+                <p>
+                    "I connected my weather prediction model to Vision and now it pays
+                    for my research server. No one at the university believes me."
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         SECTION 11: STATEMENT #6
+         ========================================== -->
+    <section class="section-statement" id="statement-barrier">
+        <h2 class="statement-text reveal">
+            Trade 100k markets.<br>Start with <span class="accent">$0.10</span>.
+        </h2>
+    </section>
+
+    <!-- ==========================================
+         SECTION 12: PROOF #6 — LOW BARRIER, HIGH CEILING
+         ========================================== -->
+    <section class="section-proof" id="proof-barrier">
+        <div class="proof-inner" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+            <p class="proof-heading reveal">
+                <span class="mono accent">0.1 USDC</span> minimum. No KYC.<br>
+                5-minute resolution.
+            </p>
+
+            <p class="proof-body reveal reveal-delay-1" style="margin-top: 1.5rem;">
+                Make your first prediction in under 60 seconds.
+            </p>
+
+            <div class="onboarding-steps reveal reveal-delay-2">
+                <div class="onboard-step">
+                    <div class="onboard-num">1</div>
+                    <div class="onboard-text">Connect wallet</div>
+                </div>
+                <div class="onboard-connector">&rarr;</div>
+                <div class="onboard-step">
+                    <div class="onboard-num">2</div>
+                    <div class="onboard-text">Pick a market</div>
+                </div>
+                <div class="onboard-connector">&rarr;</div>
+                <div class="onboard-step">
+                    <div class="onboard-num">3</div>
+                    <div class="onboard-text">Place sealed bet</div>
+                </div>
+                <div class="onboard-connector">&rarr;</div>
+                <div class="onboard-step">
+                    <div class="onboard-num">4</div>
+                    <div class="onboard-text">Collect winnings</div>
+                </div>
+            </div>
+
+            <div class="section-divider reveal"></div>
+
+            <p class="proof-heading reveal" style="font-size: clamp(1.3rem, 2.5vw, 2rem); margin-top: 1.5rem;">
+                The ceiling is as high as your edge takes you.
+            </p>
+
+            <div class="progression reveal reveal-delay-1" id="progression">
+                <div class="prog-step" data-level="1">
+                    <div class="prog-dot"></div>
+                    <div>
+                        <div class="prog-amount accent" style="opacity: 0.5;">$0.10</div>
+                        <div class="prog-label">Curious</div>
+                        <div class="prog-desc">First bet, 5-min market</div>
+                    </div>
+                </div>
+                <div class="prog-step" data-level="2">
+                    <div class="prog-dot"></div>
+                    <div>
+                        <div class="prog-amount accent" style="opacity: 0.65;">$10/day</div>
+                        <div class="prog-label">Regular</div>
+                        <div class="prog-desc">Manual trading, 3-4 markets</div>
+                    </div>
+                </div>
+                <div class="prog-step" data-level="3">
+                    <div class="prog-dot"></div>
+                    <div>
+                        <div class="prog-amount accent" style="opacity: 0.8;">$100/day</div>
+                        <div class="prog-label">Serious</div>
+                        <div class="prog-desc">Domain expertise, many markets</div>
+                    </div>
+                </div>
+                <div class="prog-step" data-level="4">
+                    <div class="prog-dot"></div>
+                    <div>
+                        <div class="prog-amount accent">24/7 Bot</div>
+                        <div class="prog-label">Automated</div>
+                        <div class="prog-desc">Strategy runs while you sleep</div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="proof-body reveal" style="margin-top: 2.5rem;">
+                Every level of commitment is valid. There's no minimum to be taken seriously
+                and no maximum that forces you to stop.
+                The market doesn't care who you are &mdash; only whether you're right.
+            </p>
+
+            <div class="comparison-grid reveal" style="margin-top: 2rem;">
+                <div class="comparison-card bad">
+                    <div class="comparison-card-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                        Traditional Platforms
+                    </div>
+                    <ul class="comparison-list">
+                        <li><span class="icon" style="color: var(--red);">&#10005;</span> KYC required, days to onboard</li>
+                        <li><span class="icon" style="color: var(--red);">&#10005;</span> High minimums ($50-$100)</li>
+                        <li><span class="icon" style="color: var(--red);">&#10005;</span> Limited to US elections and sports</li>
+                        <li><span class="icon" style="color: var(--red);">&#10005;</span> No API, no bots</li>
+                        <li><span class="icon" style="color: var(--red);">&#10005;</span> Geo-restricted</li>
+                    </ul>
+                </div>
+                <div class="comparison-card good">
+                    <div class="comparison-card-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="16 10 11 15 8 12"/></svg>
+                        Vision
+                    </div>
+                    <ul class="comparison-list">
+                        <li><span class="icon" style="color: var(--green);">&#10003;</span> Connect wallet, start trading</li>
+                        <li><span class="icon" style="color: var(--green);">&#10003;</span> 0.1 USDC minimum</li>
+                        <li><span class="icon" style="color: var(--green);">&#10003;</span> 1,047 markets across 44 sources</li>
+                        <li><span class="icon" style="color: var(--green);">&#10003;</span> Python SDK, TS SDK, REST API</li>
+                        <li><span class="icon" style="color: var(--green);">&#10003;</span> Permissionless, no KYC</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         SECTION 13: THE CLOSE
+         ========================================== -->
+    <section id="close">
+        <div class="close-statement reveal" style="color: var(--gray);">
+            Prediction markets are broken.
+        </div>
+        <div class="close-fix reveal reveal-delay-1">
+            We're <span class="accent">fixing</span> them.
+        </div>
+        <p class="close-proof reveal reveal-delay-2">
+            1,047 markets. 44 data sources. Sealed bets.<br>
+            Your edge, protected by math.
+        </p>
+
+        <a href="#" class="cta-primary reveal reveal-delay-3">
+            Start Trading
+        </a>
+        <a href="#" class="cta-secondary reveal reveal-delay-4">
+            Browse Markets
+        </a>
+
+        <div class="risk-pills reveal reveal-delay-5">
+            <div class="risk-pill">
+                <span class="check">&#10003;</span> No KYC
+            </div>
+            <div class="risk-pill">
+                <span class="check">&#10003;</span> 0.1 USDC minimum
+            </div>
+            <div class="risk-pill">
+                <span class="check">&#10003;</span> 5-min resolution
+            </div>
+            <div class="risk-pill">
+                <span class="check">&#10003;</span> Open source
+            </div>
+            <div class="risk-pill">
+                <span class="check">&#10003;</span> On Arbitrum
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         FOOTER
+         ========================================== -->
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="#">Documentation</a>
+            <a href="#">Python SDK</a>
+            <a href="#">TypeScript SDK</a>
+            <a href="#">API Reference</a>
+            <a href="#">GitHub</a>
+            <a href="#">Discord</a>
+            <a href="#">Blog</a>
+        </div>
+        <div class="footer-copy">
+            Vision Protocol &mdash; Built on Arbitrum. Open source. No permission needed.
+        </div>
+    </footer>
+
+    <!-- ==========================================
+         JAVASCRIPT
+         ========================================== -->
+    <script>
+    (function() {
+        'use strict';
+
+        // =============================================
+        // DATA: Market cards
+        // =============================================
+        const marketCards = [
+            { category: 'Crypto', title: 'BTC above $97,000 at 14:00 UTC?', resolution: '5 min', pool: '$2.4K' },
+            { category: 'Crypto', title: 'ETH/BTC ratio above 0.038 by Friday?', resolution: '3 days', pool: '$890' },
+            { category: 'Crypto', title: 'SOL market cap flips BNB this week?', resolution: '7 days', pool: '$1.2K' },
+            { category: '4chan', title: '/biz/ posts mentioning "rug" exceed 500 today?', resolution: '1 day', pool: '$340' },
+            { category: '4chan', title: '/pol/ daily unique IPs above 180K?', resolution: '1 day', pool: '$180' },
+            { category: 'npm', title: 'React daily downloads above 18M?', resolution: '1 day', pool: '$560' },
+            { category: 'npm', title: 'Vite weekly downloads surpass Webpack?', resolution: '7 days', pool: '$720' },
+            { category: 'PyPI', title: 'FastAPI downloads above 2M this week?', resolution: '7 days', pool: '$410' },
+            { category: 'HackerNews', title: 'Top HN post score exceeds 4,000 today?', resolution: '1 day', pool: '$290' },
+            { category: 'HackerNews', title: '"AI" appears in 5+ of top 30 HN posts?', resolution: '12 hours', pool: '$190' },
+            { category: 'AniList', title: 'Solo Leveling stays #1 on AniList this week?', resolution: '7 days', pool: '$650' },
+            { category: 'AniList', title: 'Frieren average score drops below 8.9?', resolution: '30 days', pool: '$380' },
+            { category: 'Steam', title: 'Steam concurrent users above 35M this weekend?', resolution: '2 days', pool: '$530' },
+            { category: 'USGS', title: 'Magnitude 5.0+ earthquake in Pacific Ring today?', resolution: '1 day', pool: '$470' },
+            { category: 'Volcano', title: 'Kilauea eruption alert level raised this month?', resolution: '30 days', pool: '$310' },
+            { category: 'ISS', title: 'ISS altitude adjustment exceeds 2km this week?', resolution: '7 days', pool: '$150' },
+            { category: 'Weather', title: 'Tokyo temperature exceeds 32C this week?', resolution: '7 days', pool: '$280' },
+            { category: 'Weather', title: 'Category 3+ hurricane forms in Atlantic this month?', resolution: '30 days', pool: '$890' },
+            { category: 'Congress', title: 'Any Congress member trades NVDA this week?', resolution: '7 days', pool: '$1.1K' },
+            { category: 'SEC', title: 'New SEC enforcement action filed this week?', resolution: '7 days', pool: '$420' },
+            { category: 'CoinGecko', title: 'New token in CoinGecko top 100 this month?', resolution: '30 days', pool: '$760' },
+            { category: 'Transport', title: 'NYC subway ridership above 5.5M today?', resolution: '1 day', pool: '$210' },
+            { category: 'Crypto', title: 'Ethereum gas below 10 gwei for 1 hour today?', resolution: '1 day', pool: '$330' },
+            { category: 'PyPI', title: 'New Python package reaches 100K downloads in first week?', resolution: '7 days', pool: '$180' },
+        ];
+
+        // =============================================
+        // DATA: Source pills
+        // =============================================
+        const sources = [
+            'CoinGecko', 'CoinMarketCap', '4chan', 'npm', 'PyPI', 'HackerNews',
+            'AniList', 'Steam', 'USGS Earthquakes', 'USGS Volcanoes', 'ISS Tracker',
+            'OpenMeteo', 'Congress Trading', 'SEC EDGAR', 'GitHub', 'Reddit',
+            'Wikipedia', 'YouTube', 'Spotify', 'NOAA', 'NASA', 'IMDB',
+            'Twitch', 'DeFiLlama', 'Dune Analytics', 'Etherscan',
+            'CryptoCompare', 'Messari', 'The Graph', 'Alchemy',
+            'Coinglass', 'Alternative.me', 'LunarCrush', 'Santiment',
+            'Google Trends', 'X/Twitter', 'Discord', 'Telegram',
+            'Binance', 'Coinbase', 'Kraken', 'Uniswap', 'Aave', 'MakerDAO'
+        ];
+
+        // =============================================
+        // GENERATE: Polymarket bar chart
+        // =============================================
+        function generateBarChart() {
+            const container = document.getElementById('polymarket-bars');
+            if (!container) return;
+
+            const totalBars = 80;
+            for (let i = 0; i < totalBars; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+
+                if (i < 8) {
+                    bar.classList.add('polymarket');
+                    // Top markets: tall bars, descending
+                    bar.style.height = '0%';
+                    bar.dataset.targetHeight = (95 - i * 8) + '%';
+                } else {
+                    bar.classList.add('longtail');
+                    // Long tail: very short
+                    const h = Math.max(2, 20 - (i - 8) * 0.25 + Math.random() * 5);
+                    bar.style.height = '0%';
+                    bar.dataset.targetHeight = h + '%';
+                }
+                container.appendChild(bar);
+            }
+        }
+
+        function animateBarChart() {
+            const bars = document.querySelectorAll('#polymarket-bars .bar');
+            bars.forEach((bar, i) => {
+                setTimeout(() => {
+                    bar.style.height = bar.dataset.targetHeight;
+                }, i * 15);
+            });
+        }
+
+        // =============================================
+        // GENERATE: Source pills
+        // =============================================
+        function generateSourcePills() {
+            const container = document.getElementById('source-pills');
+            if (!container) return;
+
+            sources.forEach((source, i) => {
+                const pill = document.createElement('span');
+                pill.className = 'source-pill';
+                pill.textContent = source;
+                pill.style.transitionDelay = (i * 0.03) + 's';
+                container.appendChild(pill);
+            });
+        }
+
+        // =============================================
+        // GENERATE: Market grid
+        // =============================================
+        function generateMarketGrid() {
+            const container = document.getElementById('market-grid');
+            if (!container) return;
+
+            marketCards.forEach((card, i) => {
+                const el = document.createElement('div');
+                el.className = 'market-card';
+                el.style.transitionDelay = (i * 0.06) + 's';
+                el.innerHTML = `
+                    <div class="card-category">${card.category}</div>
+                    <div class="card-title">${card.title}</div>
+                    <div class="card-meta">
+                        <span>${card.pool} pool</span>
+                        <span class="card-resolution">${card.resolution}</span>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        // =============================================
+        // COUNTER ANIMATION
+        // =============================================
+        function animateCounter(el) {
+            const target = parseFloat(el.dataset.target);
+            const suffix = el.dataset.suffix || '';
+            const decimals = parseInt(el.dataset.decimals || '0');
+            const duration = 1500;
+            const start = performance.now();
+
+            function update(now) {
+                const elapsed = now - start;
+                const progress = Math.min(elapsed / duration, 1);
+                // Ease out cubic
+                const eased = 1 - Math.pow(1 - progress, 3);
+                const current = target * eased;
+
+                if (decimals > 0) {
+                    el.textContent = current.toFixed(decimals) + suffix;
+                } else {
+                    el.textContent = Math.round(current).toLocaleString() + suffix;
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        // =============================================
+        // POOL VISUALIZATION ANIMATION
+        // =============================================
+        function animatePool() {
+            const yesEl = document.getElementById('pool-yes');
+            const noEl = document.getElementById('pool-no');
+            const yesAmt = document.getElementById('yes-amount');
+            const noAmt = document.getElementById('no-amount');
+
+            if (!yesEl || !noEl) return;
+
+            // Animate pool filling
+            setTimeout(() => {
+                yesEl.style.width = '62%';
+                noEl.style.width = '38%';
+            }, 300);
+
+            // Animate amounts
+            const yesTarget = 3720;
+            const noTarget = 2280;
+            const duration = 1500;
+            const start = performance.now();
+
+            function update(now) {
+                const elapsed = now - start;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+
+                const yesCurrent = Math.round(yesTarget * eased);
+                const noCurrent = Math.round(noTarget * eased);
+
+                yesAmt.textContent = '$' + yesCurrent.toLocaleString();
+                noAmt.textContent = '$' + noCurrent.toLocaleString();
+
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        // =============================================
+        // PROGRESSION ANIMATION
+        // =============================================
+        function animateProgression() {
+            const steps = document.querySelectorAll('#progression .prog-step');
+            steps.forEach((step, i) => {
+                setTimeout(() => {
+                    step.classList.add('active');
+                }, i * 400);
+            });
+        }
+
+        // =============================================
+        // HASH DISPLAY ANIMATION
+        // =============================================
+        function animateHash() {
+            const display = document.getElementById('hash-display');
+            if (!display) return;
+
+            const chars = '0123456789abcdef';
+            const fullHash = '0x7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069';
+            let frame = 0;
+            const totalFrames = 40;
+
+            function update() {
+                if (frame >= totalFrames) {
+                    display.textContent = fullHash;
+                    return;
+                }
+
+                let result = '0x';
+                const revealed = Math.floor((frame / totalFrames) * (fullHash.length - 2));
+
+                for (let i = 0; i < fullHash.length - 2; i++) {
+                    if (i < revealed) {
+                        result += fullHash[i + 2];
+                    } else {
+                        result += chars[Math.floor(Math.random() * chars.length)];
+                    }
+                }
+
+                display.textContent = result;
+                frame++;
+                requestAnimationFrame(update);
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        // =============================================
+        // INTERSECTION OBSERVER: Scroll reveals
+        // =============================================
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, {
+            threshold: 0.15,
+            rootMargin: '0px 0px -50px 0px'
+        });
+
+        // =============================================
+        // INTERSECTION OBSERVER: Special animations
+        // =============================================
+        const specialObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+
+                const id = entry.target.id;
+
+                if (id === 'proof-polymarket') {
+                    animateBarChart();
+                }
+
+                if (id === 'proof-breadth') {
+                    // Animate source pills
+                    const pills = entry.target.querySelectorAll('.source-pill');
+                    pills.forEach((pill, i) => {
+                        setTimeout(() => pill.classList.add('pill-visible'), i * 30);
+                    });
+                    // Animate market cards
+                    const cards = entry.target.querySelectorAll('.market-card');
+                    cards.forEach((card, i) => {
+                        setTimeout(() => card.classList.add('card-visible'), 800 + i * 60);
+                    });
+                }
+
+                if (id === 'proof-sealed') {
+                    const steps = entry.target.querySelectorAll('.hash-step');
+                    steps.forEach((step, i) => {
+                        setTimeout(() => {
+                            step.classList.add('step-visible');
+                            if (i === 1) animateHash();
+                        }, i * 400);
+                    });
+                }
+
+                if (id === 'proof-parimutuel') {
+                    animatePool();
+                }
+
+                if (id === 'proof-barrier') {
+                    animateProgression();
+                }
+
+                specialObserver.unobserve(entry.target);
+            });
+        }, {
+            threshold: 0.2
+        });
+
+        // =============================================
+        // INTERSECTION OBSERVER: Counters
+        // =============================================
+        const counterObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    animateCounter(entry.target);
+                    counterObserver.unobserve(entry.target);
+                }
+            });
+        }, {
+            threshold: 0.5
+        });
+
+        // =============================================
+        // NAV: Show after scrolling past opening
+        // =============================================
+        const navObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const nav = document.getElementById('nav');
+                if (!entry.isIntersecting) {
+                    nav.classList.add('nav-visible');
+                } else {
+                    nav.classList.remove('nav-visible');
+                }
+            });
+        }, {
+            threshold: 0.5
+        });
+
+        // =============================================
+        // SCROLL INDICATOR: Hide after first scroll
+        // =============================================
+        let scrollIndicatorHidden = false;
+        function hideScrollIndicator() {
+            if (scrollIndicatorHidden) return;
+            if (window.scrollY > 100) {
+                const indicator = document.querySelector('.scroll-indicator');
+                if (indicator) {
+                    indicator.style.opacity = '0';
+                    indicator.style.transition = 'opacity 0.5s ease';
+                }
+                scrollIndicatorHidden = true;
+            }
+        }
+
+        // =============================================
+        // INIT
+        // =============================================
+        function init() {
+            // Generate dynamic content
+            generateBarChart();
+            generateSourcePills();
+            generateMarketGrid();
+
+            // Observe all reveal elements
+            document.querySelectorAll('.reveal').forEach(el => {
+                revealObserver.observe(el);
+            });
+
+            // Observe special animation sections
+            ['proof-polymarket', 'proof-breadth', 'proof-sealed', 'proof-parimutuel', 'proof-barrier'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) specialObserver.observe(el);
+            });
+
+            // Observe counters
+            document.querySelectorAll('.counter').forEach(el => {
+                counterObserver.observe(el);
+            });
+
+            // Observe opening for nav
+            const opening = document.getElementById('opening');
+            if (opening) navObserver.observe(opening);
+
+            // Scroll indicator
+            window.addEventListener('scroll', hideScrollIndicator, { passive: true });
+
+            // Immediately reveal opening section elements
+            // (they should be visible on load, not wait for scroll)
+            setTimeout(() => {
+                document.querySelectorAll('#opening .reveal').forEach(el => {
+                    el.classList.add('visible');
+                });
+            }, 200);
+        }
+
+        // Run on DOM ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+
+        // =============================================
+        // SMOOTH SCROLL for anchor links
+        // =============================================
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('a[href^="#"]');
+            if (!link) return;
+
+            const target = document.querySelector(link.getAttribute('href'));
+            if (target) {
+                e.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+
+    })();
+    </script>
+
+</body>
+</html>
