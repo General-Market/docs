@@ -2,12 +2,12 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use chrono::{DateTime, TimeZone, Utc};
+use chrono::{DateTime, Utc};
 use ethers::prelude::*;
 use ethers::types::{Address, H256, U256};
 use sqlx::PgPool;
 use tokio::sync::RwLock;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 use crate::db;
 
@@ -40,6 +40,9 @@ impl ItpCollectorState {
         }
     }
 }
+
+const BACKFILL_BATCH_SIZE: u64 = 10_000;
+const MAX_RETRIES: u32 = 3;
 
 async fn get_block_timestamp(
     _provider: &Provider<Http>,
@@ -107,6 +110,53 @@ async fn store_itp_state(
     );
 
     Ok(())
+}
+
+/// Backfill the orderId→itpId map by scanning OrderSubmitted events in batches with retry.
+async fn backfill_order_map(
+    contract: &IndexCollector<Provider<Http>>,
+    order_to_itp: &RwLock<HashMap<U256, H256>>,
+    from: u64,
+    to: u64,
+) {
+    let mut cursor = from;
+    while cursor < to {
+        let batch_end = (cursor + BACKFILL_BATCH_SIZE).min(to);
+
+        let mut success = false;
+        for attempt in 1..=MAX_RETRIES {
+            match contract
+                .order_submitted_filter()
+                .from_block(cursor)
+                .to_block(batch_end)
+                .query()
+                .await
+            {
+                Ok(events) => {
+                    let mut map = order_to_itp.write().await;
+                    for event in &events {
+                        map.insert(event.order_id, H256::from_slice(&event.itp_id));
+                    }
+                    debug!(from = cursor, to = batch_end, count = events.len(), "Backfilled order map batch");
+                    success = true;
+                    break;
+                }
+                Err(e) if attempt < MAX_RETRIES => {
+                    warn!(from = cursor, to = batch_end, attempt, %e, "Order map backfill batch failed, retrying");
+                    tokio::time::sleep(Duration::from_secs(2u64.pow(attempt))).await;
+                }
+                Err(e) => {
+                    error!(from = cursor, to = batch_end, %e, "Order map backfill batch failed after {MAX_RETRIES} attempts, skipping");
+                }
+            }
+        }
+
+        if !success {
+            warn!(from = cursor, to = batch_end, "Skipped order map batch due to failures — some fills may lack ITP association");
+        }
+
+        cursor = batch_end + 1;
+    }
 }
 
 pub async fn run(
@@ -190,28 +240,23 @@ pub async fn run(
         }
     }
 
-    // 1c. Query ALL historical OrderSubmitted events to build orderId→itpId map
-    info!("Building historical orderId→itpId map...");
-    let order_filter = contract
-        .order_submitted_filter()
-        .from_block(0u64)
-        .to_block(current_block);
+    // 1c. Resume from persisted cursor and backfill order map from there
+    let persisted_block = db::get_collector_cursor(&pool, "itp_collector")
+        .await
+        .unwrap_or(0);
 
-    match order_filter.query().await {
-        Ok(events) => {
-            let mut map = state.order_to_itp.write().await;
-            for event in &events {
-                map.insert(event.order_id, H256::from_slice(&event.itp_id));
-            }
-            info!(orders = map.len(), "Built orderId→itpId map");
-        }
-        Err(e) => {
-            warn!(%e, "Failed to query historical OrderSubmitted events");
-        }
+    info!(from = persisted_block, to = current_block, "Building orderId→itpId map (paginated)...");
+    backfill_order_map(&contract, &state.order_to_itp, persisted_block, current_block).await;
+    {
+        let map = state.order_to_itp.read().await;
+        info!(orders = map.len(), "Built orderId→itpId map");
     }
 
     *state.last_block.write().await = current_block;
     *state.last_poll_at.write().await = Some(Utc::now());
+    db::set_collector_cursor(&pool, "itp_collector", current_block)
+        .await
+        .ok();
     info!(current_block, "ITP collector initialized, entering poll loop");
 
     // Periodic snapshot: every 5 minutes, snapshot all ITPs regardless of events
@@ -377,5 +422,6 @@ pub async fn run(
 
         *state.last_block.write().await = to_block;
         *state.last_poll_at.write().await = Some(Utc::now());
+        db::set_collector_cursor(&pool, "itp_collector", to_block).await.ok();
     }
 }
