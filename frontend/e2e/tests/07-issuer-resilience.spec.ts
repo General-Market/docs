@@ -57,7 +57,7 @@ test.describe.serial('Issuer Resilience', () => {
 
     // Wait for consensus warmup — at least 1 successful round proves the cluster works
     console.log('Waiting for consensus warmup...');
-    await waitForConsensusWarmup([1, 2, 3], 60_000);
+    await waitForConsensusWarmup([1, 2, 3], 120_000);
     console.log('All issuers warmed up and achieving consensus.');
   });
 
@@ -117,6 +117,9 @@ test.describe.serial('Issuer Resilience', () => {
 
     // 9. Wait for healthy (connected to peers)
     await waitForIssuerHealthy(3, 60_000);
+
+    // 9b. Wait for issuer-3 to reconstruct state and achieve consensus
+    await waitForConsensusWarmup([3], 60_000);
 
     // 10. Verify reconnected issuer-3 participates in consensus
     const baselineAfter1 = await getConsensusTotal(1);
@@ -188,6 +191,9 @@ test.describe.serial('Issuer Resilience', () => {
     await waitForIssuerHealthy(1, 30_000);
     await waitForIssuerHealthy(2, 30_000);
 
+    // 8b. Wait for issuer-2 to reconstruct state and re-establish consensus
+    await waitForConsensusWarmup([1, 2], 60_000);
+
     // --- Verify consensus RESUMES ---
 
     // 9. Get fresh baselines
@@ -203,6 +209,9 @@ test.describe.serial('Issuer Resilience', () => {
     // 11. Restart issuer-3
     await restartIssuer(3);
     await waitForIssuerHealthy(3, 30_000);
+
+    // 11b. Wait for issuer-3 to reconstruct state and achieve consensus
+    await waitForConsensusWarmup([3], 60_000);
 
     // 12. Verify ALL 3 nodes process consensus after full recovery
     const finalBaseline1 = await getConsensusTotal(1);

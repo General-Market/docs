@@ -134,9 +134,9 @@ export async function restartIssuer(id: number): Promise<void> {
     '--node-id', String(id),
     '--port', String(port),
     '--rpc', 'http://localhost:8545',
-    '--cycle-duration-ms', '2000',
-    '--min-cycle-gap-ms', '200',
-    '--consensus-timeout-ms', '1500',
+    '--cycle-duration-ms', '200',
+    '--min-cycle-gap-ms', '20',
+    '--consensus-timeout-ms', '150',
     '--no-tls',
     '--test-key-seeds',
     '--bls-key-seed-index', String(blsIdx),
@@ -245,7 +245,7 @@ export async function waitForIssuerHealthy(id: number, timeoutMs: number): Promi
   while (Date.now() < deadline) {
     const health = await getIssuerHealth(id);
     if (health && health.connected_peers >= 1) return;
-    await new Promise(r => setTimeout(r, 2_000));
+    await new Promise(r => setTimeout(r, 500));
   }
   throw new Error(`issuer-${id} not healthy after ${timeoutMs}ms`);
 }
@@ -263,7 +263,7 @@ export async function waitForConsensusWarmup(ids: number[], timeoutMs: number): 
     while (Date.now() < deadline) {
       const total = await getConsensusTotal(id);
       if (total > 0) break;
-      await new Promise(r => setTimeout(r, 2_000));
+      await new Promise(r => setTimeout(r, 500));
     }
     const total = await getConsensusTotal(id);
     if (total === 0) {
@@ -284,7 +284,7 @@ export async function waitForConsensusProgress(
   while (Date.now() < deadline) {
     const total = await getConsensusTotal(id);
     if (total >= target) return;
-    await new Promise(r => setTimeout(r, 2_000));
+    await new Promise(r => setTimeout(r, 500));
   }
   const final = await getConsensusTotal(id);
   throw new Error(

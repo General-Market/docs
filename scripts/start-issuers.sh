@@ -38,6 +38,8 @@ BRIDGE_PROXY=$(jq -r '.contracts.BridgeProxy' "$DEPLOYMENT_FILE")
 BITGET_VAULT=$(jq -r '.contracts.MockBitgetVault' "$DEPLOYMENT_FILE")
 MOCK_USDT=$(jq -r '.contracts.MOCK_USDT // .contracts.MockUSDT // empty' "$DEPLOYMENT_FILE")
 VISION=$(jq -r '.contracts.Vision // empty' "$DEPLOYMENT_FILE")
+ARB_CUSTODY=$(jq -r '.contracts.ArbBridgeCustody // empty' "$DEPLOYMENT_FILE")
+BLS_CUSTODY=$(jq -r '.contracts.BLSCustody // empty' "$DEPLOYMENT_FILE")
 CHAIN_ID=$(jq -r '.chainId' "$DEPLOYMENT_FILE")
 
 # Issuer private keys
@@ -93,7 +95,9 @@ ISSUER_PEERS="127.0.0.1:9002,127.0.0.1:9003" \
 $BINARY \
     --node-id 1 \
     --port 9001 \
-    --cycle-duration-ms 5000 \
+    --cycle-duration-ms 200 \
+    --min-cycle-gap-ms 20 \
+    --consensus-timeout-ms 150 \
     --no-tls \
     --bridge-proxy "$BRIDGE_PROXY" \
     --test-key-seeds \
@@ -103,6 +107,9 @@ $BINARY \
     --ntp-server "" \
     --data-node-url http://localhost:8200 \
     --itp-id 0x0000000000000000000000000000000000000000000000000000000000000001 \
+    --deployment-file "$DEPLOYMENT_FILE" \
+    ${ARB_CUSTODY:+--arb-custody "$ARB_CUSTODY"} \
+    ${BLS_CUSTODY:+--issuer-custody-arb "$BLS_CUSTODY"} \
     --symbol-map-file data/symbol-map.json \
     > logs/issuer-1.log 2>&1 &
 ISSUER_1_PID=$!
@@ -114,7 +121,9 @@ ISSUER_PEERS="127.0.0.1:9001,127.0.0.1:9003" \
 $BINARY \
     --node-id 2 \
     --port 9002 \
-    --cycle-duration-ms 5000 \
+    --cycle-duration-ms 200 \
+    --min-cycle-gap-ms 20 \
+    --consensus-timeout-ms 150 \
     --no-tls \
     --bridge-proxy "$BRIDGE_PROXY" \
     --test-key-seeds \
@@ -124,6 +133,9 @@ $BINARY \
     --ntp-server "" \
     --data-node-url http://localhost:8200 \
     --itp-id 0x0000000000000000000000000000000000000000000000000000000000000001 \
+    --deployment-file "$DEPLOYMENT_FILE" \
+    ${ARB_CUSTODY:+--arb-custody "$ARB_CUSTODY"} \
+    ${BLS_CUSTODY:+--issuer-custody-arb "$BLS_CUSTODY"} \
     --symbol-map-file data/symbol-map.json \
     > logs/issuer-2.log 2>&1 &
 ISSUER_2_PID=$!
@@ -135,7 +147,9 @@ ISSUER_PEERS="127.0.0.1:9001,127.0.0.1:9002" \
 $BINARY \
     --node-id 3 \
     --port 9003 \
-    --cycle-duration-ms 5000 \
+    --cycle-duration-ms 200 \
+    --min-cycle-gap-ms 20 \
+    --consensus-timeout-ms 150 \
     --no-tls \
     --bridge-proxy "$BRIDGE_PROXY" \
     --test-key-seeds \
@@ -145,6 +159,9 @@ $BINARY \
     --ntp-server "" \
     --data-node-url http://localhost:8200 \
     --itp-id 0x0000000000000000000000000000000000000000000000000000000000000001 \
+    --deployment-file "$DEPLOYMENT_FILE" \
+    ${ARB_CUSTODY:+--arb-custody "$ARB_CUSTODY"} \
+    ${BLS_CUSTODY:+--issuer-custody-arb "$BLS_CUSTODY"} \
     --symbol-map-file data/symbol-map.json \
     > logs/issuer-3.log 2>&1 &
 ISSUER_3_PID=$!
