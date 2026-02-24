@@ -69,6 +69,8 @@ struct MarketPriceSummary {
 pub struct DataNodePriceFetcher {
     client: Client,
     base_url: String,
+    /// Optional bearer token for authenticating data-node HTTP requests.
+    data_node_token: Option<String>,
 }
 
 impl DataNodePriceFetcher {
@@ -76,6 +78,16 @@ impl DataNodePriceFetcher {
         Self {
             client: Client::new(),
             base_url: base_url.trim_end_matches('/').to_string(),
+            data_node_token: None,
+        }
+    }
+
+    /// Create a new fetcher with an optional bearer token for authentication.
+    pub fn with_token(base_url: &str, token: Option<String>) -> Self {
+        Self {
+            client: Client::new(),
+            base_url: base_url.trim_end_matches('/').to_string(),
+            data_node_token: token,
         }
     }
 
@@ -115,7 +127,11 @@ impl DataNodePriceFetcher {
         );
         debug!(url = %url, source = %source, symbol = %symbol, "Fetching price from data-node");
 
-        let resp = self.client.get(&url).send().await?;
+        let mut request = self.client.get(&url);
+        if let Some(ref token) = self.data_node_token {
+            request = request.bearer_auth(token);
+        }
+        let resp = request.send().await?;
 
         if !resp.status().is_success() {
             // Non-200 is not fatal — the source just doesn't have this symbol.

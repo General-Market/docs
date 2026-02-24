@@ -269,6 +269,11 @@ struct Args {
     /// Tick poll interval in milliseconds for Vision engine (default: 1000).
     #[arg(long)]
     vision_tick_poll_interval_ms: Option<u64>,
+
+    /// Bearer token for authenticating data-node HTTP requests.
+    /// Used by Vision, Arbitration, and NAV subsystems to authenticate with the data-node.
+    #[arg(long, env = "DATA_NODE_TOKEN")]
+    data_node_token: Option<String>,
 }
 
 fn setup_logging(config: &issuer::IssuerConfig) -> Result<(), Box<dyn std::error::Error>> {
@@ -2693,6 +2698,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             args.arbitration_threshold,
             args.arbitration_data_node_url.clone(),
         )
+        .with_data_node_token(args.data_node_token.clone())
         .with_vision(if args.vision_enabled {
             let mut vision_cfg = issuer::vision::config::VisionConfig {
                 enabled: true,
@@ -2721,6 +2727,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(ms) = args.vision_tick_poll_interval_ms {
                 vision_cfg.tick_poll_interval_ms = ms;
             }
+            vision_cfg.data_node_token = args.data_node_token.clone();
             Some(vision_cfg)
         } else {
             None
@@ -2750,6 +2757,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if args.num_issuers == 0 || args.num_issuers > 20 {
         eprintln!("Error: --num-issuers must be between 1 and 20 (got {})", args.num_issuers);
         std::process::exit(1);
+    }
+
+    // --- Production guards: dev-only flags must not be used without --mock ---
+    if !args.mock {
+        if args.no_tls {
+            panic!("FATAL: --no-tls requires --mock. Do not disable TLS in production.");
+        }
+        if args.bls_key_seed_index.is_some() {
+            panic!("FATAL: --bls-key-seed-index requires --mock. Deterministic keys are insecure.");
+        }
+        if args.skip_reconstruction {
+            panic!("FATAL: --skip-reconstruction requires --mock. Production nodes must reconstruct state.");
+        }
+    }
+
+    // --- Validate data-node URLs use HTTPS in production ---
+    if let Some(ref url) = args.data_node_url {
+        issuer::config::validate_data_node_url(url, args.mock)
+            .unwrap_or_else(|e| panic!("FATAL: {}", e));
+    }
+    if let Some(ref url) = args.vision_data_node_url {
+        issuer::config::validate_data_node_url(url, args.mock)
+            .unwrap_or_else(|e| panic!("FATAL: {}", e));
+    }
+    if let Some(ref url) = args.arbitration_data_node_url {
+        issuer::config::validate_data_node_url(url, args.mock)
+            .unwrap_or_else(|e| panic!("FATAL: {}", e));
     }
 
     setup_logging(&config)?;

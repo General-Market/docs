@@ -3882,3 +3882,13 @@ The backtester currently supports one rebalance method: **periodic time-based re
 [DECISION] Aggregator threshold hardened — calculate_threshold(0) now returns 2 (was 1). set_threshold() now asserts threshold >= 2 to prevent vacuous consensus.
 
 [DECISION] Created issuer/src/vision/ stub module — the p2pool->vision rename (commit ebdb26ed) removed p2pool/ but never created vision/. Created minimal mod.rs + config.rs stubs to allow lib compilation. Full vision module implementation is separate work.
+
+## Session: 20260224-task5 (Task 5: Secure data-node connections)
+
+[DECISION] Added validate_data_node_url() to config.rs — rejects http:// URLs unless --mock is set. Applied to all three data-node URL args: --data-node-url, --vision-data-node-url, --arbitration-data-node-url.
+
+[DECISION] Production guards: --no-tls, --bls-key-seed-index, --skip-reconstruction now panic without --mock. These flags were dev-only but had no enforcement.
+
+[DECISION] Bearer token auth via --data-node-token / DATA_NODE_TOKEN env var flows into VisionConfig.data_node_token, ArbitrationConfig.data_node_token, and IssuerConfig.data_node_token. DataNodePriceFetcher::with_token() constructor applies bearer_auth() on all HTTP requests.
+
+[DECISION] Vision engine.rs does not exist yet (only config.rs and mod.rs stubs). Added data_node_token field to VisionConfig for when engine is implemented. The main.rs already passes it through.

@@ -232,6 +232,10 @@ pub struct IssuerConfig {
     /// Data-node URL for price queries (default: http://localhost:8200)
     pub arbitration_data_node_url: Option<String>,
 
+    /// Bearer token for authenticating data-node HTTP requests.
+    /// Shared across Vision, Arbitration, and NAV subsystems.
+    pub data_node_token: Option<String>,
+
     // --- Vision subsystem fields ---
     /// Vision prediction market configuration.
     /// When present and `enabled == true`, the Vision tick engine, scheduler, and API
@@ -352,6 +356,7 @@ impl IssuerConfig {
             arbitration_threshold: parse_env_var("ISSUER_ARBITRATION_THRESHOLD"),
             arbitration_poll_interval: parse_env_var("ISSUER_ARBITRATION_POLL_INTERVAL"),
             arbitration_data_node_url: std::env::var("ISSUER_ARBITRATION_DATA_NODE_URL").ok(),
+            data_node_token: std::env::var("DATA_NODE_TOKEN").ok(),
             exchange_mode: std::env::var("EXCHANGE_MODE").ok(),
             vision: {
                 let enabled: Option<bool> = parse_env_var("ISSUER_VISION_ENABLED");
@@ -370,6 +375,7 @@ impl IssuerConfig {
                         commitment_offset: parse_env_var("ISSUER_VISION_COMMITMENT_OFFSET").unwrap_or(9),
                         staleness_threshold_secs: parse_env_var("ISSUER_VISION_STALENESS_THRESHOLD_SECS").unwrap_or(300),
                         tick_poll_interval_ms: parse_env_var("ISSUER_VISION_TICK_POLL_INTERVAL_MS").unwrap_or(1000),
+                        data_node_token: std::env::var("DATA_NODE_TOKEN").ok(),
                     })
                 } else {
                     None
@@ -516,6 +522,9 @@ impl IssuerConfig {
         }
         if other.arbitration_data_node_url.is_some() {
             self.arbitration_data_node_url = other.arbitration_data_node_url.clone();
+        }
+        if other.data_node_token.is_some() {
+            self.data_node_token = other.data_node_token.clone();
         }
         if other.vision.is_some() {
             self.vision = other.vision.clone();
@@ -1180,6 +1189,16 @@ impl ConfigBuilder {
         self
     }
 
+    /// Set the bearer token for data-node HTTP requests.
+    ///
+    /// Shared across Vision, Arbitration, and NAV subsystems.
+    pub fn with_data_node_token(mut self, token: Option<String>) -> Self {
+        if token.is_some() {
+            self.cli_config.data_node_token = token;
+        }
+        self
+    }
+
     /// Build the final configuration.
     ///
     /// Resolution order: CLI > ENV > Config file > Deployment file > Defaults
@@ -1221,6 +1240,18 @@ impl ConfigBuilder {
 
         Ok(config)
     }
+}
+
+/// Validate that data-node URLs use HTTPS in production mode.
+/// Plain HTTP is only allowed when --mock is set.
+pub fn validate_data_node_url(url: &str, is_mock: bool) -> Result<(), String> {
+    if !is_mock && url.starts_with("http://") {
+        return Err(format!(
+            "Data-node URL '{}' uses plain HTTP. Use HTTPS in production, or pass --mock for development.",
+            url
+        ));
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -2126,5 +2157,30 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
             base.arb_custody,
             Some("0x2222222222222222222222222222222222222222".to_string())
         );
+    }
+
+    #[test]
+    fn test_validate_data_node_url_rejects_http_in_production() {
+        let result = validate_data_node_url("http://localhost:8200", false);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("plain HTTP"));
+    }
+
+    #[test]
+    fn test_validate_data_node_url_allows_http_in_mock() {
+        let result = validate_data_node_url("http://localhost:8200", true);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_data_node_url_allows_https_in_production() {
+        let result = validate_data_node_url("https://data-node.example.com", false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_data_node_url_allows_https_in_mock() {
+        let result = validate_data_node_url("https://data-node.example.com", true);
+        assert!(result.is_ok());
     }
 }

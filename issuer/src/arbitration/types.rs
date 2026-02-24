@@ -21,6 +21,8 @@ pub struct ArbitrationConfig {
     pub consensus_timeout_ms: u64,
     /// Data-node base URL for price queries
     pub data_node_url: String,
+    /// Optional bearer token for authenticating data-node HTTP requests
+    pub data_node_token: Option<String>,
     /// Price tolerance in basis points (e.g. 50 = 0.5%)
     pub price_tolerance_bps: u32,
     /// Chain ID where ArbitrationSettlement is deployed (queried from provider at startup)
@@ -36,6 +38,7 @@ impl Default for ArbitrationConfig {
             poll_interval_secs: 30,
             consensus_timeout_ms: 1100,
             data_node_url: "http://localhost:8200".to_string(),
+            data_node_token: None,
             price_tolerance_bps: 50,
             chain_id: 0,
         }
@@ -60,6 +63,7 @@ impl ArbitrationConfig {
             poll_interval_secs: config.arbitration_poll_interval.unwrap_or(30),
             data_node_url: config.arbitration_data_node_url.clone()
                 .unwrap_or_else(|| "http://localhost:8200".to_string()),
+            data_node_token: config.data_node_token.clone(),
             ..Default::default()
         })
     }
