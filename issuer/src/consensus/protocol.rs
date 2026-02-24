@@ -1946,8 +1946,11 @@ where
                 code = "INFRA-007",
                 cycle_number,
                 ?leader_id,
-                "Leader public key not found in registry, skipping signature verification"
+                "Leader public key not found in registry, REJECTING proposal"
             );
+            return Err(Error::BlsVerification(
+                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
+            ));
         }
 
         // Convert leader's (asset_index, price) tuples to Price structs
@@ -2082,8 +2085,11 @@ where
                 code = "INFRA-007",
                 cycle_number,
                 ?leader_id,
-                "Leader public key not found in registry, skipping signature verification"
+                "Leader public key not found in registry, REJECTING proposal"
             );
+            return Err(Error::BlsVerification(
+                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
+            ));
         }
 
         // Validate the batch
@@ -2558,8 +2564,11 @@ where
                 code = "INFRA-007",
                 nonce = %nonce,
                 ?leader_id,
-                "Leader public key not found, skipping signature verification"
+                "Leader public key not found in registry, REJECTING proposal"
             );
+            return Err(Error::BlsVerification(
+                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
+            ));
         }
 
         // Step 3: Sign the same message
@@ -3672,8 +3681,11 @@ where
                 code = "INFRA-007",
                 order_id = %order_id,
                 ?leader_id,
-                "Leader public key not found, skipping signature verification"
+                "Leader public key not found in registry, REJECTING proposal"
             );
+            return Err(Error::BlsVerification(
+                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
+            ));
         }
 
         // Step 3: Reconstruct BridgeProposal and validate
@@ -4147,8 +4159,11 @@ where
                 code = "INFRA-007",
                 cycle_number,
                 ?leader_id,
-                "Leader public key not found, skipping signature verification"
+                "Leader public key not found in registry, REJECTING proposal"
             );
+            return Err(Error::BlsVerification(
+                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
+            ));
         }
 
         // Step 3: Reconstruct BridgeL3ToArbProposal and validate
@@ -4633,8 +4648,11 @@ where
                 code = "INFRA-007",
                 cycle_number,
                 ?leader_id,
-                "Leader public key not found, skipping signature verification"
+                "Leader public key not found in registry, REJECTING proposal"
             );
+            return Err(Error::BlsVerification(
+                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
+            ));
         }
 
         // Step 3: Reconstruct ReleaseToVaultProposal and validate
@@ -4880,8 +4898,11 @@ where
                 code = "INFRA-007",
                 arb_order_id = %arb_order_id,
                 ?leader_id,
-                "Leader public key not found, skipping signature verification"
+                "Leader public key not found in registry, REJECTING proposal"
             );
+            return Err(Error::BlsVerification(
+                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
+            ));
         }
 
         // Step 3: Reconstruct SubmitOrderProposal and validate
@@ -5122,8 +5143,11 @@ where
                 code = "INFRA-007",
                 cycle_number,
                 ?leader_id,
-                "Leader public key not found, skipping signature verification"
+                "Leader public key not found in registry, REJECTING proposal"
             );
+            return Err(Error::BlsVerification(
+                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
+            ));
         }
 
         // Step 3: Reconstruct BatchProposal and validate
@@ -5351,8 +5375,11 @@ where
                 code = "INFRA-007",
                 cycle_number,
                 ?leader_id,
-                "Leader public key not found, skipping signature verification"
+                "Leader public key not found in registry, REJECTING proposal"
             );
+            return Err(Error::BlsVerification(
+                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
+            ));
         }
 
         // Step 3: Reconstruct FillsProposal and validate
@@ -7690,8 +7717,32 @@ where
                 tx_type,
             );
 
-            // Try to verify with zero address first; if mismatch, still sign based on leader trust
-            let _ = message_hash; // verification is best-effort for this phase
+            let hash_bytes: [u8; 32] = message_hash.into();
+            match self.bls_signer.verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature) {
+                Ok(true) => {
+                    debug!(cycle_number, "Leader signature verified for RecordCollateralMove");
+                }
+                Ok(false) => {
+                    return Err(Error::BlsVerification(
+                        "Invalid leader signature on RecordCollateralMove".to_string(),
+                    ));
+                }
+                Err(e) => {
+                    return Err(Error::BlsVerification(
+                        format!("Failed to verify RecordCollateralMove sig: {}", e),
+                    ));
+                }
+            }
+        } else {
+            warn!(
+                code = "INFRA-007",
+                cycle_number,
+                ?leader_id,
+                "Leader public key not found in registry, REJECTING proposal"
+            );
+            return Err(Error::BlsVerification(
+                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
+            ));
         }
 
         // Reconstruct proposal with the hash from the leader's data
@@ -7950,11 +8001,27 @@ where
             let hash_bytes: [u8; 32] = message_hash.into();
             match self.bls_signer.verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature) {
                 Ok(true) => debug!(cycle_number, "Leader signature verified for MintBridgedShares"),
-                Ok(false) | Err(_) => {
-                    // Allow - follower may not know exact bridge_proxy address
-                    debug!(cycle_number, "MintBridgedShares leader sig verification skipped (address mismatch ok)");
+                Ok(false) => {
+                    return Err(Error::BlsVerification(
+                        "Invalid leader signature on MintBridgedShares".to_string(),
+                    ));
+                }
+                Err(e) => {
+                    return Err(Error::BlsVerification(
+                        format!("Failed to verify MintBridgedShares sig: {}", e),
+                    ));
                 }
             }
+        } else {
+            warn!(
+                code = "INFRA-007",
+                cycle_number,
+                ?leader_id,
+                "Leader public key not found in registry, REJECTING proposal"
+            );
+            return Err(Error::BlsVerification(
+                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
+            ));
         }
 
         // Sign the proposal

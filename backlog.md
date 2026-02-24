@@ -3864,3 +3864,15 @@ The backtester currently supports one rebalance method: **periodic time-based re
 [DECISION] Removed updateBitmap — bitmap hash is immutable (set once at joinBatch). No on-chain update function. Players must withdraw and rejoin to change strategy.
 
 [DECISION] Solvency trust model documented — per-payout solvency checks are correct but no global invariant. BLS issuer quorum is the trust anchor. Documented as design note in contract.
+
+## Session: 20260224-issuer-bls-audit (Issuer BLS Verification Audit)
+
+[DECISION] Eliminated 9 "key not found" BLS bypass paths in protocol.rs — when a follower couldn't find the leader's public key in the registry, it silently continued and signed the proposal. Changed all 9 to return Error::BlsVerification, rejecting the proposal entirely.
+
+[DECISION] Fixed RecordCollateralMove BLS bypass — the message_hash was computed but discarded with `let _ = message_hash`. Added actual verify_message_hash call with proper Ok(true)/Ok(false)/Err handling, plus added the missing else branch for key-not-found.
+
+[DECISION] Fixed MintBridgedShares silent failure — Ok(false)|Err(_) was being silently swallowed as "address mismatch ok". Split into separate Ok(false) and Err(e) arms that both return Error::BlsVerification. Also added missing else branch for key-not-found.
+
+[DECISION] Aggregator threshold hardened — calculate_threshold(0) now returns 2 (was 1). set_threshold() now asserts threshold >= 2 to prevent vacuous consensus.
+
+[DECISION] Created issuer/src/vision/ stub module — the p2pool->vision rename (commit ebdb26ed) removed p2pool/ but never created vision/. Created minimal mod.rs + config.rs stubs to allow lib compilation. Full vision module implementation is separate work.
