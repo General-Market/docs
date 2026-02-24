@@ -138,12 +138,17 @@ impl EcbMarketSource {
         if let Some(data_sets) = data.data_sets {
             if let Some(first_set) = data_sets.first() {
                 if let Some(series) = &first_set.series {
-                    // Get the first (and usually only) series
+                    if series.len() > 1 {
+                        warn!("ECB response for {} has {} series, using first", series_key, series.len());
+                    }
                     if let Some(first_series) = series.values().next() {
                         if let Some(observations) = &first_series.observations {
-                            // Get the last observation (most recent)
-                            if let Some(last_obs) = observations.values().last() {
-                                if let Some(value) = last_obs.first() {
+                            // Find the most recent observation by max key (keys are period indices "0", "1", ...)
+                            let latest_obs = observations.iter()
+                                .max_by_key(|(k, _)| k.parse::<u64>().unwrap_or(0))
+                                .map(|(_, v)| v);
+                            if let Some(obs_values) = latest_obs {
+                                if let Some(value) = obs_values.first() {
                                     if let Some(num) = value.as_f64() {
                                         return Ok(Some(
                                             Decimal::from_str(&num.to_string()).unwrap_or_default(),

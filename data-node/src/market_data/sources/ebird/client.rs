@@ -351,7 +351,6 @@ impl MarketDataSource for EbirdMarketSource {
 
         // Build results
         let mut results = Vec::with_capacity(asset_ids.len());
-        let mut success_count = 0u32;
 
         for (asset_id, ref api_ref) in &asset_refs {
             let key = api_ref.endpoint_key();
@@ -378,7 +377,15 @@ impl MarketDataSource for EbirdMarketSource {
                 }
             };
 
-            let value = value.unwrap_or(Decimal::ZERO);
+            let value = match value {
+                Some(v) => v,
+                None => {
+                    // API call failed or returned no data — skip rather than emit fake zero
+                    debug!("eBird: no data for {}, skipping", asset_id);
+                    continue;
+                }
+            };
+
             let symbol = symbol_map
                 .get(asset_id)
                 .map(|s| s.to_string())
@@ -395,16 +402,13 @@ impl MarketDataSource for EbirdMarketSource {
                 fetched_at: now,
             });
 
-            if value != Decimal::ZERO {
-                success_count += 1;
-            }
         }
 
         info!(
-            "Fetched {}/{} prices from eBird ({} non-zero, {} unique API calls)",
+            "Fetched {}/{} prices from eBird ({} skipped, {} unique API calls)",
             results.len(),
             asset_ids.len(),
-            success_count,
+            asset_refs.len() - results.len(),
             needed_endpoints.len(),
         );
 

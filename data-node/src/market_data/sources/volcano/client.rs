@@ -4,6 +4,12 @@
 //! Each volcano is an asset; its value is the numeric alert level:
 //! Normal=0, Advisory=1, Watch=2, Warning=3.
 //!
+//! **KNOWN LIMITATION:** The USGS /elevated endpoint only covers US volcanoes
+//! (Hawaii, Alaska, Cascades, Yellowstone). Non-US volcanoes in our config
+//! (Etna, Fuji, Merapi, Eyjafjallajokull, etc.) will ALWAYS report Normal (0)
+//! regardless of actual activity. To fix this, we need to integrate the
+//! Smithsonian GVP (Global Volcanism Program) VONA/weekly report feed.
+//!
 //! Assets are static — defined in config/volcano.json (~50 volcanoes).
 //!
 //! API: https://volcanoes.usgs.gov/vsc/api/volcanoApi
@@ -182,9 +188,12 @@ impl MarketDataSource for VolcanoMarketSource {
 // ============================================================================
 
 /// Convert a USGS volcano name to our normalized form.
-/// Lowercases and replaces spaces/hyphens with underscores.
+/// Lowercases, removes periods and apostrophes, and replaces spaces/hyphens
+/// with underscores. E.g., "Mount St. Helens" -> "mount_st_helens".
 fn normalize_volcano_name(name: &str) -> String {
     name.to_lowercase()
+        .replace('.', "")
+        .replace('\'', "")
         .replace(' ', "_")
         .replace('-', "_")
 }
@@ -289,7 +298,7 @@ mod tests {
     fn test_normalize_volcano_name() {
         assert_eq!(normalize_volcano_name("Kilauea"), "kilauea");
         assert_eq!(normalize_volcano_name("Mauna Loa"), "mauna_loa");
-        assert_eq!(normalize_volcano_name("Mount St. Helens"), "mount_st._helens");
+        assert_eq!(normalize_volcano_name("Mount St. Helens"), "mount_st_helens");
         assert_eq!(normalize_volcano_name("Ol Doinyo Lengai"), "ol_doinyo_lengai");
         assert_eq!(normalize_volcano_name("Piton de la Fournaise"), "piton_de_la_fournaise");
     }
@@ -298,6 +307,17 @@ mod tests {
     fn test_normalize_volcano_name_hyphens() {
         assert_eq!(normalize_volcano_name("Some-Volcano"), "some_volcano");
         assert_eq!(normalize_volcano_name("Already_normalized"), "already_normalized");
+    }
+
+    #[test]
+    fn test_normalize_volcano_name_periods_and_apostrophes() {
+        // Periods should be removed
+        assert_eq!(normalize_volcano_name("Mt. Rainier"), "mt_rainier");
+        assert_eq!(normalize_volcano_name("St. Augustine"), "st_augustine");
+        // Apostrophes should be removed
+        assert_eq!(normalize_volcano_name("Ol'Doinyo"), "oldoinyo");
+        // Combined
+        assert_eq!(normalize_volcano_name("Mt. O'Brien"), "mt_obrien");
     }
 
     #[test]

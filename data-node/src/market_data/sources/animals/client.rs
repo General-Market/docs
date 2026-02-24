@@ -2,7 +2,15 @@
 //!
 //! Tracks animal observation counts from GBIF (Global Biodiversity Information
 //! Facility) and iNaturalist. Each asset represents a taxon group or species;
-//! its value is the number of observations recorded in the past 24 hours.
+//! its value is the number of observations recorded in the past 7 days (GBIF)
+//! or 24 hours (iNaturalist). GBIF uses a wider window due to significant data
+//! ingestion lag; see `gbif_url()` for details.
+//!
+//! NOTE: Some asset IDs and display names still reference "24h" (e.g.,
+//! `animal_total_observations_24h`, `animal_endangered_sightings_24h`,
+//! `animal_marine_mammals_24h`). These are kept for backward compatibility
+//! with existing DB references, but GBIF-sourced assets actually use a 7-day
+//! window. The "24h" label is accurate only for iNaturalist-sourced assets.
 //!
 //! Assets are static — defined in config/animals.json (~24 entries).
 //!
@@ -242,7 +250,7 @@ impl MarketDataSource for AnimalsMarketSource {
                 }
             };
 
-            // Fetch observation count
+            // Fetch observation count — skip on error to avoid fake zeros
             let value = match self.fetch_single(&parsed).await {
                 Ok(count) => {
                     debug!("Animal {}: {} observations", asset_id, count);
@@ -252,8 +260,7 @@ impl MarketDataSource for AnimalsMarketSource {
                 Err(e) => {
                     warn!("Error fetching animal data for {}: {:?}", asset_id, e);
                     error_count += 1;
-                    // Return 0 on error rather than skipping
-                    Decimal::ZERO
+                    continue;
                 }
             };
 

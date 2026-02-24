@@ -368,20 +368,29 @@ impl MarketDataSource for SportsMarketSource {
                         games.iter().map(|g| (g.game_id.as_str(), g)).collect();
 
                     for parsed in parsed_assets {
-                        let value = if let Some(game) = game_map.get(parsed.game_id.as_str()) {
-                            match parsed.metric.as_str() {
-                                "home" => game.home_score.unwrap_or(Decimal::ZERO),
-                                "away" => game.away_score.unwrap_or(Decimal::ZERO),
-                                "total" => {
-                                    let home = game.home_score.unwrap_or(Decimal::ZERO);
-                                    let away = game.away_score.unwrap_or(Decimal::ZERO);
-                                    home + away
-                                }
-                                _ => Decimal::ZERO,
+                        let game = match game_map.get(parsed.game_id.as_str()) {
+                            Some(g) => g,
+                            None => {
+                                // Game no longer on scoreboard — skip, don't emit fake zero
+                                debug!("Sports: game {} no longer on scoreboard, skipping", parsed.game_id);
+                                continue;
                             }
-                        } else {
-                            // Game not on scoreboard anymore
-                            Decimal::ZERO
+                        };
+
+                        let value = match parsed.metric.as_str() {
+                            "home" => match game.home_score {
+                                Some(s) => s,
+                                None => continue, // Pre-game, no score yet
+                            },
+                            "away" => match game.away_score {
+                                Some(s) => s,
+                                None => continue,
+                            },
+                            "total" => match (game.home_score, game.away_score) {
+                                (Some(h), Some(a)) => h + a,
+                                _ => continue, // Need both scores
+                            },
+                            _ => continue,
                         };
 
                         results.push(PriceUpdate {
@@ -402,26 +411,11 @@ impl MarketDataSource for SportsMarketSource {
                 }
                 Err(e) => {
                     warn!(
-                        "Error fetching ESPN scoreboard for league '{}': {:?}",
+                        "Error fetching ESPN scoreboard for league '{}': {:?} — skipping league",
                         league_code, e
                     );
-                    // Return 0 for all assets in this league on error
-                    for parsed in parsed_assets {
-                        results.push(PriceUpdate {
-                            asset_id: parsed.original_id.clone(),
-                            symbol: format!(
-                                "{}/{}",
-                                league_code.to_uppercase(),
-                                parsed.game_id
-                            ),
-                            value: Decimal::ZERO,
-                            prev_close: None,
-                            change_pct: None,
-                            volume_24h: None,
-                            market_cap: None,
-                            fetched_at: now,
-                        });
-                    }
+                    // Skip this league entirely; do not emit fake zeros
+                    continue;
                 }
             }
         }

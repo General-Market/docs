@@ -1,6 +1,6 @@
 //! ISS Position client implementing MarketDataSource
 //!
-//! Tracks the International Space Station's position, speed, altitude,
+//! Tracks the International Space Station's position (latitude/longitude)
 //! and the number of people currently in space.
 //!
 //! APIs:
@@ -25,7 +25,7 @@ use crate::market_data::traits::{
     load_assets_from_json, AssetEntry, AssetUpdate, MarketDataSource, PriceUpdate,
 };
 
-/// Asset configuration — 5 ISS-related metrics
+/// Asset configuration — 3 ISS-related metrics
 const ASSET_JSON: &str = include_str!("../../../config/iss.json");
 
 /// ISS position API (HTTP, not HTTPS)
@@ -33,12 +33,6 @@ const ISS_POSITION_URL: &str = "http://api.open-notify.org/iss-now.json";
 
 /// Astronauts API (HTTP, not HTTPS)
 const ASTROS_URL: &str = "http://api.open-notify.org/astros.json";
-
-/// Approximate ISS orbital speed in km/h (varies ~27,500-27,700)
-const ISS_SPEED_KMH: i64 = 27600;
-
-/// Approximate ISS altitude in km (varies ~400-420)
-const ISS_ALTITUDE_KM: i64 = 408;
 
 // ============================================================================
 // API RESPONSE TYPES
@@ -84,7 +78,7 @@ struct Astronaut {
 
 /// ISS Position market data source.
 ///
-/// Tracks ISS latitude, longitude, speed, altitude, and people in space.
+/// Tracks ISS latitude, longitude, and people in space.
 /// Source ID is `"iss"`.
 pub struct IssMarketSource {
     http: SourceHttpClient,
@@ -173,7 +167,6 @@ impl MarketDataSource for IssMarketSource {
                 match api_ref.as_str() {
                     "latitude" | "longitude" => need_position = true,
                     "people" => need_astros = true,
-                    "speed" | "altitude" => {} // constants, no API call needed
                     _ => {}
                 }
             }
@@ -228,8 +221,6 @@ impl MarketDataSource for IssMarketSource {
                 let value = match api_ref.as_str() {
                     "latitude" => latitude,
                     "longitude" => longitude,
-                    "speed" => Some(Decimal::from(ISS_SPEED_KMH)),
-                    "altitude" => Some(Decimal::from(ISS_ALTITUDE_KM)),
                     "people" => people_count,
                     _ => None,
                 };
@@ -282,8 +273,8 @@ mod tests {
         let entries = load_all_asset_entries(ASSET_JSON).unwrap();
         assert_eq!(
             entries.len(),
-            5,
-            "Expected exactly 5 ISS assets, got {}",
+            3,
+            "Expected exactly 3 ISS assets, got {}",
             entries.len()
         );
     }
@@ -293,8 +284,8 @@ mod tests {
         let assets = load_assets_from_json(ASSET_JSON).unwrap();
         assert_eq!(
             assets.len(),
-            5,
-            "Expected exactly 5 active ISS assets, got {}",
+            3,
+            "Expected exactly 3 active ISS assets, got {}",
             assets.len()
         );
     }
@@ -326,7 +317,7 @@ mod tests {
     #[test]
     fn test_valid_api_refs() {
         let entries = load_all_asset_entries(ASSET_JSON).unwrap();
-        let valid_refs = ["latitude", "longitude", "speed", "altitude", "people"];
+        let valid_refs = ["latitude", "longitude", "people"];
         for entry in &entries {
             assert!(
                 valid_refs.contains(&entry.api_ref.as_str()),
@@ -336,22 +327,6 @@ mod tests {
                 valid_refs
             );
         }
-    }
-
-    #[test]
-    fn test_speed_constant() {
-        assert_eq!(ISS_SPEED_KMH, 27600);
-        // ISS orbital speed ranges ~27,500-27,700 km/h
-        assert!(ISS_SPEED_KMH >= 27000);
-        assert!(ISS_SPEED_KMH <= 28000);
-    }
-
-    #[test]
-    fn test_altitude_constant() {
-        assert_eq!(ISS_ALTITUDE_KM, 408);
-        // ISS altitude ranges ~400-420 km
-        assert!(ISS_ALTITUDE_KM >= 400);
-        assert!(ISS_ALTITUDE_KM <= 420);
     }
 
     #[test]
