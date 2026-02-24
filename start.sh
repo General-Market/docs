@@ -21,7 +21,7 @@ SKIP_DEPLOY=${SKIP_DEPLOY:-false}
 NO_TAIL=${NO_TAIL:-false}
 DEPLOYER_KEY=${DEPLOYER_KEY:-0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80}
 TEST_USER_KEY=${TEST_USER_KEY:-0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537}
-TEST_USER_ADDRESS=${TEST_USER_ADDRESS:-0xC0D3C3ba6c2215b0cBf4375f4c280c0cc6C43850}
+TEST_USER_ADDRESS=${TEST_USER_ADDRESS:-0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4}
 AP_KEY=${AP_KEY:-0x582978b132648fe53de139c6b9297040a2757616cac9a2fd17aa167bdc6fa340}
 # Vision bots use real private keys (no impersonation)
 VISION_BOT_KEY=${VISION_BOT_KEY:-0x701b615bbdfb9de65240bc28bd21bbc0d996645a3dd57e7b12bc2bdf6f192c82}
@@ -314,9 +314,8 @@ else
     TEST_USER=$TEST_USER_ADDRESS
     cast send --private-key $DEPLOYER_KEY --value 100ether $TEST_USER --rpc-url $RPC_URL > /dev/null 2>&1
     cast send --private-key $DEPLOYER_KEY --value 100ether $TEST_USER --rpc-url $ARB_RPC_URL > /dev/null 2>&1
-    # Impersonate test user on both Anvils so mock wallet can send eth_sendTransaction
-    cast rpc anvil_impersonateAccount $TEST_USER --rpc-url $RPC_URL > /dev/null 2>&1
-    cast rpc anvil_impersonateAccount $TEST_USER --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+    # NOTE: impersonation moved to after all deployments (Step 7) — Forge --broadcast
+    # resets Anvil impersonation state, so impersonating here gets lost by Steps 3-6.
     echo -e "  ${GREEN}Test user $TEST_USER funded with 100 ETH on both chains${NC}"
 
     # Fund AP wallet with native ETH on Arb (needed for gas on executeTrade + swapStable)
@@ -759,6 +758,13 @@ fi
 
 echo "  Address sync complete"
 
+# Impersonate test user on both Anvils so mock wallet can send eth_sendTransaction.
+# MUST be after all forge --broadcast deployments — Forge broadcast resets Anvil impersonation state.
+TEST_USER=$TEST_USER_ADDRESS
+cast rpc anvil_impersonateAccount $TEST_USER --rpc-url $RPC_URL > /dev/null 2>&1
+cast rpc anvil_impersonateAccount $TEST_USER --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+echo -e "  ${GREEN}Test user $TEST_USER impersonated on both Anvils${NC}"
+
 # Start background block miner — issuers need blocks to advance for event detection.
 # Anvil automine only creates blocks on transactions; this loop creates empty blocks
 # every 1 second so issuers reliably detect cross-chain events between transactions.
@@ -876,6 +882,13 @@ if ! $PG_ISREADY -q 2>/dev/null; then
     echo -e "  ${YELLOW}PostgreSQL not running — skipping data-node${NC}"
     echo -e "  ${YELLOW}Charts won't work. Start PostgreSQL and re-run.${NC}"
 else
+    # Load API keys from .env.data-node if it exists
+    if [ -f "$SCRIPT_DIR/.env.data-node" ]; then
+        set -a
+        source "$SCRIPT_DIR/.env.data-node"
+        set +a
+    fi
+
     ./target/release/data-node serve \
         --database-url postgres://localhost/index_prices \
         --symbol-map "$SCRIPT_DIR/data/symbol-map.json" \
@@ -884,9 +897,37 @@ else
         --deployment-file deployments/active-deployment.json \
         --morpho-deployment-file deployments/morpho-e2e.json \
         ${INDEX_ADDRESS:+--index-address $INDEX_ADDRESS} \
-        --movebank-user "Bobobo" \
-        --movebank-password "u23@9R8m4BDezE_" \
-        --ebird-api-key "lbo0nq9d1hd0" \
+        ${FINNHUB_API_KEY:+--finnhub-api-key "$FINNHUB_API_KEY"} \
+        ${COINGECKO_API_KEY:+--coingecko-api-key "$COINGECKO_API_KEY"} \
+        ${FRED_API_KEY:+--fred-api-key "$FRED_API_KEY"} \
+        ${BLS_API_KEY:+--bls-api-key "$BLS_API_KEY"} \
+        ${NASDAQ_API_KEY:+--nasdaq-api-key "$NASDAQ_API_KEY"} \
+        ${TWITCH_CLIENT_ID:+--twitch-client-id "$TWITCH_CLIENT_ID"} \
+        ${TWITCH_CLIENT_SECRET:+--twitch-client-secret "$TWITCH_CLIENT_SECRET"} \
+        ${TMDB_API_KEY:+--tmdb-api-key "$TMDB_API_KEY"} \
+        ${LASTFM_API_KEY:+--lastfm-api-key "$LASTFM_API_KEY"} \
+        ${BACKPACKTF_API_KEY:+--backpacktf-api-key "$BACKPACKTF_API_KEY"} \
+        ${MOVEBANK_USER:+--movebank-user "$MOVEBANK_USER"} \
+        ${MOVEBANK_PASSWORD:+--movebank-password "$MOVEBANK_PASSWORD"} \
+        ${EBIRD_API_KEY:+--ebird-api-key "$EBIRD_API_KEY"} \
+        ${CLOUDFLARE_RADAR_TOKEN:+--cloudflare-radar-token "$CLOUDFLARE_RADAR_TOKEN"} \
+        ${TREASURY_API_KEY:+--treasury-api-key "$TREASURY_API_KEY"} \
+        ${EIA_API_KEY:+--eia-api-key "$EIA_API_KEY"} \
+        ${GITHUB_TOKEN:+--github-token "$GITHUB_TOKEN"} \
+        ${NASA_FIRMS_MAP_KEY:+--nasa-firms-key "$NASA_FIRMS_MAP_KEY"} \
+        ${AISSTREAM_API_KEY:+--aisstream-api-key "$AISSTREAM_API_KEY"} \
+        ${FINRA_CLIENT_ID:+--finra-client-id "$FINRA_CLIENT_ID"} \
+        ${FINRA_CLIENT_SECRET:+--finra-client-secret "$FINRA_CLIENT_SECRET"} \
+        ${PETFINDER_CLIENT_ID:+--petfinder-client-id "$PETFINDER_CLIENT_ID"} \
+        ${PETFINDER_CLIENT_SECRET:+--petfinder-client-secret "$PETFINDER_CLIENT_SECRET"} \
+        ${BGG_API_TOKEN:+--bgg-api-token "$BGG_API_TOKEN"} \
+        ${BESTBUY_API_KEY:+--bestbuy-api-key "$BESTBUY_API_KEY"} \
+        ${ADZUNA_APP_ID:+--adzuna-app-id "$ADZUNA_APP_ID"} \
+        ${ADZUNA_APP_KEY:+--adzuna-app-key "$ADZUNA_APP_KEY"} \
+        ${UNTAPPD_CLIENT_ID:+--untappd-client-id "$UNTAPPD_CLIENT_ID"} \
+        ${UNTAPPD_CLIENT_SECRET:+--untappd-client-secret "$UNTAPPD_CLIENT_SECRET"} \
+        --ecb-enabled \
+        --openmeteo-sync-interval 300 \
         > logs/data-node.log 2>&1 &
     PH_PID=$!
     echo $PH_PID >> .pids
@@ -1008,7 +1049,7 @@ ITP_ID=$(python3 -c "import json; print(json.load(open('deployments/active-deplo
 # Wait for issuers + data-node to initialize (E2E buy test needs live NAV)
 echo -e "  Waiting for issuers + data-node to initialize..."
 NAV_READY=false
-for attempt in $(seq 1 30); do
+for attempt in $(seq 1 90); do
     NAV_RESP=$(curl -sf "http://localhost:8200/itp-price?itp_id=$ITP_ID" 2>/dev/null || echo "")
     if [ -n "$NAV_RESP" ]; then
         NAV_VAL=$(echo "$NAV_RESP" | python3 -c "import sys,json; print(json.loads(sys.stdin.read()).get('nav','0'))" 2>/dev/null || echo "0")
@@ -1022,7 +1063,7 @@ for attempt in $(seq 1 30); do
     sleep 1
 done
 if [ "$NAV_READY" != true ]; then
-    echo -e "  ${YELLOW}Data-node not ready after 30s — continuing anyway${NC}"
+    echo -e "  ${YELLOW}Data-node not ready after 90s — continuing anyway${NC}"
 fi
 
 # Deferred: Create default HackerNews batch now that data-node has had time to fetch
@@ -1030,7 +1071,7 @@ if [ "$CREATE_DEFAULT_BATCH" = true ]; then
     echo -e "${BLUE}  Creating default HackerNews batch...${NC}"
     HN_MARKETS=""
     HN_COUNT=0
-    for attempt in $(seq 1 30); do
+    for attempt in $(seq 1 90); do
         HN_MARKETS=$(curl -sf "http://localhost:8200/vision/markets/active?source=hackernews" 2>/dev/null || echo "")
         HN_COUNT=$(echo "$HN_MARKETS" | python3 -c "import sys,json; print(json.loads(sys.stdin.read()).get('count',0))" 2>/dev/null || echo "0")
         if [ "$HN_COUNT" -gt 0 ] 2>/dev/null; then
@@ -1077,7 +1118,7 @@ print('[' + ','.join(market_ids) + ']|[' + ','.join(['0']*n) + ']|[' + ','.join(
             echo -e "  ${YELLOW}Warning: Could not prepare batch data${NC}"
         fi
     else
-        echo -e "  ${YELLOW}Warning: No HackerNews markets found after 30s (skipping default batch)${NC}"
+        echo -e "  ${YELLOW}Warning: No HackerNews markets found after 90s (skipping default batch)${NC}"
     fi
 fi
 sleep 2

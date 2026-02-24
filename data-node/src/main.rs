@@ -500,6 +500,20 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("FINRA skipped (FINRA_CLIENT_ID not configured)");
     }
 
+    // FINRA Daily Short Volume (public endpoint, no API key needed)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::finra_short_vol::FinraShortVolMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("FINRA Short Volume init failed: {e}"),
+            }
+        });
+    }
+
     // Congress (requires CONGRESS_API_KEY — skip silently if not set)
     {
         let pool_c = pool.clone();
@@ -726,7 +740,23 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
                 Err(e) => tracing::error!("TMDb init failed: {e}"),
             }
         });
-        info!("TMDb movie/TV provider started");
+        info!("TMDb movie/TV/celebrity provider started");
+    }
+
+    // Last.fm — gated on API key
+    if let Some(ref key) = args.lastfm_api_key {
+        std::env::set_var("LASTFM_API_KEY", key);
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::lastfm::LastfmMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Last.fm init failed: {e}"),
+            }
+        });
+        info!("Last.fm music artist provider started");
     }
 
     // backpack.tf — gated on API key
@@ -1058,6 +1088,452 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("Pump.fun token tracker started (Helius + Dexscreener)");
     }
 
+    // Reddit — gated on client ID + secret
+    if let Some(ref client_id) = args.reddit_client_id {
+        if let Some(ref client_secret) = args.reddit_client_secret {
+            std::env::set_var("REDDIT_CLIENT_ID", client_id);
+            std::env::set_var("REDDIT_CLIENT_SECRET", client_secret);
+            let pool_c = pool.clone();
+            tokio::spawn(async move {
+                match market_data::sources::reddit::RedditMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                        engine.run().await;
+                    }
+                    Err(e) => tracing::error!("Reddit init failed: {e}"),
+                }
+            });
+            info!("Reddit community tracker started");
+        } else {
+            info!("Reddit skipped (REDDIT_CLIENT_SECRET not configured)");
+        }
+    }
+
+    // Petfinder — gated on client ID + secret
+    if let Some(ref client_id) = args.petfinder_client_id {
+        if let Some(ref client_secret) = args.petfinder_client_secret {
+            std::env::set_var("PETFINDER_CLIENT_ID", client_id);
+            std::env::set_var("PETFINDER_CLIENT_SECRET", client_secret);
+            let pool_c = pool.clone();
+            tokio::spawn(async move {
+                match market_data::sources::petfinder::PetfinderMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                        engine.run().await;
+                    }
+                    Err(e) => tracing::error!("Petfinder init failed: {e}"),
+                }
+            });
+            info!("Petfinder adoptable pets tracker started");
+        } else {
+            info!("Petfinder skipped (PETFINDER_CLIENT_SECRET not configured)");
+        }
+    }
+
+    // Chaturbate — always-on, no auth needed
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::chaturbate::ChaturbateMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Chaturbate init failed: {e}"),
+            }
+        });
+        info!("Chaturbate live cam tracker started");
+    }
+
+    // PandaScore Esports — always-on (token hardcoded in source, overridable via env)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::pandascore::PandascoreMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("PandaScore esports init failed: {e}"),
+            }
+        });
+        info!("PandaScore esports tracker started");
+    }
+
+    // USGS Water — no key needed
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::usgs_water::UsgsWaterMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("USGS Water init failed: {e}"),
+            }
+        });
+        info!("USGS Water monitoring started");
+    }
+
+    // NOAA Tides — no key needed
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::noaa_tides::NoaaTidesMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("NOAA Tides init failed: {e}"),
+            }
+        });
+        info!("NOAA Tides & Currents monitoring started");
+    }
+
+    // NRC Nuclear Reactors — no key needed (daily data, hourly sync)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::nrc_nuclear::NrcNuclearMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("NRC Nuclear init failed: {e}"),
+            }
+        });
+        info!("NRC Nuclear reactor status started");
+    }
+
+    // CityBikes — no key needed
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::citybikes::CityBikesMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("CityBikes init failed: {e}"),
+            }
+        });
+        info!("CityBikes bike sharing started");
+    }
+
+    // NDBC Ocean Buoys — no key needed
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::ndbc::NdbcMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("NDBC Buoys init failed: {e}"),
+            }
+        });
+        info!("NDBC Ocean Buoys started");
+    }
+
+    // NOAA Ocean Meteorology — no key needed
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::noaa_met::NoaaMetMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("NOAA Met init failed: {e}"),
+            }
+        });
+        info!("NOAA Ocean Meteorology started");
+    }
+
+    // NWPS River Gauges — no key needed
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::nwps::NwpsMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("NWPS River Gauges init failed: {e}"),
+            }
+        });
+        info!("NWPS River Gauges started");
+    }
+
+    // AirNow AQI — gated on AIRNOW_API_KEY env var
+    if std::env::var("AIRNOW_API_KEY").is_ok() {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::airnow::AirnowMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("AirNow AQI init failed: {e}"),
+            }
+        });
+        info!("AirNow Air Quality started");
+    }
+
+    // CourtListener — gated on COURTLISTENER_TOKEN env var
+    if std::env::var("COURTLISTENER_TOKEN").is_ok() {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::courtlistener::CourtListenerMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("CourtListener init failed: {e}"),
+            }
+        });
+        info!("CourtListener federal courts started");
+    }
+
+    // OpenAlex Scholarly Works — no key needed (email optional via OPENALEX_EMAIL env)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::openalex::OpenAlexMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("OpenAlex init failed: {e}"),
+            }
+        });
+        info!("OpenAlex scholarly works started");
+    }
+
+    // Crossref DOI Registry — no key needed (email optional via CROSSREF_EMAIL env)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::crossref::CrossrefMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Crossref init failed: {e}"),
+            }
+        });
+        info!("Crossref DOI registry started");
+    }
+
+    // PubMed Biomedical Research — no key needed (API key optional via NCBI_API_KEY env)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::pubmed::PubMedMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("PubMed init failed: {e}"),
+            }
+        });
+        info!("PubMed biomedical research started");
+    }
+
+    // Stack Exchange — gated on STACKEXCHANGE_KEY env var
+    if std::env::var("STACKEXCHANGE_KEY").is_ok() {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::stackexchange::StackExchangeMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Stack Exchange init failed: {e}"),
+            }
+        });
+        info!("Stack Exchange developer Q&A started");
+    }
+
+    // Queue-Times — theme park wait times (no key)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::queue_times::QueueTimesMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Queue-Times init failed: {e}"),
+            }
+        });
+        info!("Queue-Times theme park wait times started");
+    }
+
+    // ParkAPI Parking Garages — no key needed
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::parking::ParkingMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("ParkAPI Parking init failed: {e}"),
+            }
+        });
+        info!("ParkAPI parking garages started");
+    }
+
+    // TomTom Traffic Flow — gated on TOMTOM_API_KEY env var
+    if std::env::var("TOMTOM_API_KEY").is_ok() {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::tomtom_traffic::TomtomTrafficMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("TomTom Traffic init failed: {e}"),
+            }
+        });
+        info!("TomTom Traffic flow started");
+    }
+
+    // TomTom EV Charging — gated on TOMTOM_API_KEY env var
+    if std::env::var("TOMTOM_API_KEY").is_ok() {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::tomtom_evcharge::TomtomEvchargeMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("TomTom EV Charging init failed: {e}"),
+            }
+        });
+        info!("TomTom EV charging started");
+    }
+
+    // BoardGameGeek — gated on BGG_API_TOKEN
+    if let Some(ref token) = args.bgg_api_token {
+        std::env::set_var("BGG_API_TOKEN", token);
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::bgg::BggMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("BGG init failed: {e}"),
+            }
+        });
+        info!("BoardGameGeek hotness tracker started");
+    }
+
+    // Best Buy Products — gated on BESTBUY_API_KEY
+    if let Some(ref key) = args.bestbuy_api_key {
+        std::env::set_var("BESTBUY_API_KEY", key);
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::bestbuy::BestBuyMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Best Buy init failed: {e}"),
+            }
+        });
+        info!("Best Buy product price tracker started");
+    }
+
+    // Adzuna Job Market — gated on app ID + app key
+    if let Some(ref app_id) = args.adzuna_app_id {
+        if let Some(ref app_key) = args.adzuna_app_key {
+            std::env::set_var("ADZUNA_APP_ID", app_id);
+            std::env::set_var("ADZUNA_APP_KEY", app_key);
+            let pool_c = pool.clone();
+            tokio::spawn(async move {
+                match market_data::sources::adzuna::AdzunaMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                        engine.run().await;
+                    }
+                    Err(e) => tracing::error!("Adzuna init failed: {e}"),
+                }
+            });
+            info!("Adzuna job market tracker started");
+        } else {
+            info!("Adzuna skipped (ADZUNA_APP_KEY not configured)");
+        }
+    }
+
+    // CBP Border Wait Times — no key needed (US government API)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::cbp_border::CbpBorderMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("CBP Border Wait Times init failed: {e}"),
+            }
+        });
+        info!("CBP Border Wait Times started");
+    }
+
+    // FAA Airport Delays — no key needed (US government API)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::faa_delays::FaaDelaysMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("FAA Airport Delays init failed: {e}"),
+            }
+        });
+        info!("FAA Airport Delays monitoring started");
+    }
+
+    // Yahoo Finance Drink Markets — no key needed (unofficial API)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::yahoo_drinks::YahooDrinksMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Yahoo Drink Markets init failed: {e}"),
+            }
+        });
+        info!("Yahoo Drink Markets started");
+    }
+
+    // Untappd Beer — gated on client ID + client secret
+    if let Some(ref cid) = args.untappd_client_id {
+        if let Some(ref csec) = args.untappd_client_secret {
+            std::env::set_var("UNTAPPD_CLIENT_ID", cid);
+            std::env::set_var("UNTAPPD_CLIENT_SECRET", csec);
+            let pool_c = pool.clone();
+            tokio::spawn(async move {
+                match market_data::sources::untappd::UntappdMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                        engine.run().await;
+                    }
+                    Err(e) => tracing::error!("Untappd Beer init failed: {e}"),
+                }
+            });
+            info!("Untappd Beer social data started");
+        } else {
+            info!("Untappd skipped (UNTAPPD_CLIENT_SECRET not configured)");
+        }
+    }
+
     // Record not_started for any source that was gated off (missing keys, disabled flags)
     {
         let tracker = market_data::error_tracker::global();
@@ -1103,6 +1579,10 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         if args.tmdb_api_key.is_none() {
             tracker.record_not_started("tmdb", "Missing --tmdb-api-key");
         }
+        // Last.fm
+        if args.lastfm_api_key.is_none() {
+            tracker.record_not_started("lastfm", "Missing --lastfm-api-key");
+        }
         // backpack.tf
         if args.backpacktf_api_key.is_none() {
             tracker.record_not_started("backpacktf", "Missing --backpacktf-api-key");
@@ -1143,6 +1623,47 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         // Pump.fun (Helius)
         if args.helius_api_key.is_none() {
             tracker.record_not_started("pumpfun", "Missing --helius-api-key");
+        }
+        // Reddit
+        if args.reddit_client_id.is_none() || args.reddit_client_secret.is_none() {
+            tracker.record_not_started("reddit", "Missing --reddit-client-id / --reddit-client-secret");
+        }
+        // Petfinder
+        if args.petfinder_client_id.is_none() || args.petfinder_client_secret.is_none() {
+            tracker.record_not_started("petfinder", "Missing --petfinder-client-id / --petfinder-client-secret");
+        }
+        // CourtListener
+        if std::env::var("COURTLISTENER_TOKEN").is_err() {
+            tracker.record_not_started("courtlistener", "Missing COURTLISTENER_TOKEN env var");
+        }
+        // AirNow
+        if std::env::var("AIRNOW_API_KEY").is_err() {
+            tracker.record_not_started("airnow", "Missing AIRNOW_API_KEY env var");
+        }
+        // Stack Exchange
+        if std::env::var("STACKEXCHANGE_KEY").is_err() {
+            tracker.record_not_started("stackexchange", "Missing STACKEXCHANGE_KEY env var");
+        }
+        // TomTom (Traffic + EV Charging)
+        if std::env::var("TOMTOM_API_KEY").is_err() {
+            tracker.record_not_started("tomtom_traffic", "Missing TOMTOM_API_KEY env var");
+            tracker.record_not_started("tomtom_evcharge", "Missing TOMTOM_API_KEY env var");
+        }
+        // BoardGameGeek
+        if args.bgg_api_token.is_none() {
+            tracker.record_not_started("bgg", "Missing --bgg-api-token");
+        }
+        // Best Buy
+        if args.bestbuy_api_key.is_none() {
+            tracker.record_not_started("bestbuy", "Missing --bestbuy-api-key");
+        }
+        // Adzuna
+        if args.adzuna_app_id.is_none() || args.adzuna_app_key.is_none() {
+            tracker.record_not_started("adzuna", "Missing --adzuna-app-id / --adzuna-app-key");
+        }
+        // Untappd
+        if args.untappd_client_id.is_none() || args.untappd_client_secret.is_none() {
+            tracker.record_not_started("untappd", "Missing --untappd-client-id / --untappd-client-secret");
         }
 
     }

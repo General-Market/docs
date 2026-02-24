@@ -165,9 +165,13 @@ pub struct ServeArgs {
     #[arg(long, env = "TWITCH_CLIENT_SECRET")]
     pub twitch_client_secret: Option<String>,
 
-    /// TMDb API key (enables movie/TV popularity tracking)
+    /// TMDb API key (enables movie/TV/celebrity popularity tracking)
     #[arg(long, env = "TMDB_API_KEY")]
     pub tmdb_api_key: Option<String>,
+
+    /// Last.fm API key (enables music artist listener/scrobble tracking)
+    #[arg(long, env = "LASTFM_API_KEY")]
+    pub lastfm_api_key: Option<String>,
 
     /// backpack.tf API key (enables TF2 item price tracking)
     #[arg(long, env = "BACKPACKTF_API_KEY")]
@@ -222,6 +226,46 @@ pub struct ServeArgs {
     /// Helius API key (enables Pump.fun token tracking via Solana RPC)
     #[arg(long, env = "HELIUS_API_KEY")]
     pub helius_api_key: Option<String>,
+
+    /// Reddit client ID (enables subreddit popularity tracking)
+    #[arg(long, env = "REDDIT_CLIENT_ID")]
+    pub reddit_client_id: Option<String>,
+
+    /// Reddit client secret
+    #[arg(long, env = "REDDIT_CLIENT_SECRET")]
+    pub reddit_client_secret: Option<String>,
+
+    /// Petfinder client ID (enables adoptable pet tracking)
+    #[arg(long, env = "PETFINDER_CLIENT_ID")]
+    pub petfinder_client_id: Option<String>,
+
+    /// Petfinder client secret
+    #[arg(long, env = "PETFINDER_CLIENT_SECRET")]
+    pub petfinder_client_secret: Option<String>,
+
+    /// BoardGameGeek API token (enables BGG hotness tracking)
+    #[arg(long, env = "BGG_API_TOKEN")]
+    pub bgg_api_token: Option<String>,
+
+    /// Best Buy API key (enables product price tracking)
+    #[arg(long, env = "BESTBUY_API_KEY")]
+    pub bestbuy_api_key: Option<String>,
+
+    /// Adzuna app ID (enables job market tracking)
+    #[arg(long, env = "ADZUNA_APP_ID")]
+    pub adzuna_app_id: Option<String>,
+
+    /// Adzuna app key
+    #[arg(long, env = "ADZUNA_APP_KEY")]
+    pub adzuna_app_key: Option<String>,
+
+    /// Untappd client ID (enables beer social data tracking)
+    #[arg(long, env = "UNTAPPD_CLIENT_ID")]
+    pub untappd_client_id: Option<String>,
+
+    /// Untappd client secret
+    #[arg(long, env = "UNTAPPD_CLIENT_SECRET")]
+    pub untappd_client_secret: Option<String>,
 
     /// P2.8: Allowed CORS origins (repeat for multiple). Empty = allow all.
     #[arg(long, env = "CORS_ORIGIN")]

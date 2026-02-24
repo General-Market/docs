@@ -169,6 +169,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/admin/sources/health", get(admin_sources_health))
         .route("/admin/sources/:source_id/assets", get(admin_source_assets))
         .route("/admin/sources/:source_id/history", get(admin_source_history))
+        .route("/admin/sources/:source_id/force-sync", axum::routing::post(admin_force_sync))
         .route("/sse/system-status", get(sse_system_status))
         .route("/sse/stream", get(sse_stream))
         .layer(cors)
@@ -4320,7 +4321,8 @@ const SOURCE_META: &[(&str, &str, u64)] = &[
     ("polymarket", "Polymarket Predictions", 300),         // polymarket
     ("pypi", "PyPI Python Packages", 600),                 // pypi
     ("steam", "Steam Games", 600),                         // steam
-    ("tmdb", "TMDb Movies & TV", 300),                     // tmdb
+    ("tmdb", "TMDb Movies, TV & Celebrities", 300),          // tmdb
+    ("lastfm", "Last.fm Music Artists", 600),              // lastfm
     ("twitch", "Twitch Live Streaming", 60),               // twitch
     ("twse", "Taiwan Stock Exchange", 600),                // twse
     ("zillow", "Zillow Real Estate", 86400),               // zillow
@@ -4342,6 +4344,46 @@ const SOURCE_META: &[(&str, &str, u64)] = &[
     ("aisstream", "AIS Ship Tracking", 60),
     ("gtfs_transit", "GTFS Transit", 120),
     ("usa_spending", "US Defense Spending", 3600),
+    ("pumpfun", "Pump.fun Tokens", 300),
+    ("usgs_water", "USGS Water Monitoring", 600),
+    // ── Social / Live sources ─────────────────────────────────────────────
+    ("reddit", "Reddit Communities", 600),
+    ("chaturbate", "Chaturbate Live Cams", 600),
+    // ── Esports ─────────────────────────────────────────────────────────
+    ("esports", "PandaScore Esports", 300),
+    // ── Environment & Transport ───────────────────────────────────────
+    ("noaa_tides", "NOAA Tides & Currents", 900),
+    ("nrc_nuclear", "NRC Nuclear Reactors", 3600),
+    ("citybikes", "CityBikes Bike Sharing", 600),
+    ("ndbc", "NDBC Ocean Buoys", 600),
+    ("noaa_met", "NOAA Ocean Meteorology", 600),
+    ("nwps", "NWPS River Gauges", 600),
+    ("airnow", "AirNow Air Quality", 600),
+    // ── Government / Legal ──────────────────────────────────────────────
+    ("courtlistener", "CourtListener Federal Courts", 600),
+    // ── Education / Research ──────────────────────────────────────────────
+    ("openalex", "OpenAlex Scholarly Works", 600),
+    ("crossref", "Crossref DOI Registry", 600),
+    ("pubmed", "PubMed Biomedical Research", 600),
+    ("stackexchange", "Stack Exchange Developer Q&A", 600),
+    // ── Animals ──────────────────────────────────────────────────────────
+    ("petfinder", "Petfinder Adoptable Pets", 900),
+    // ── Autos & Vehicles ──────────────────────────────────────────────
+    ("parking", "ParkAPI Parking Garages", 600),
+    ("tomtom_traffic", "TomTom Traffic Flow", 600),
+    ("tomtom_evcharge", "TomTom EV Charging", 600),
+    // ── Board Games & Shopping ──────────────────────────────────────────
+    ("bgg", "BoardGameGeek Hotness", 600),
+    ("bestbuy", "Best Buy Products", 600),
+    // ── Jobs / Labor ──────────────────────────────────────────────────────
+    ("adzuna", "Adzuna Job Market", 1800),
+    // ── Tourism ──────────────────────────────────────────────────────────
+    ("queue_times", "Queue-Times Theme Parks", 600),
+    ("cbp_border", "CBP Border Wait Times", 600),
+    ("faa_delays", "FAA Airport Delays", 600),
+    // ── Drink Sources ───────────────────────────────────────────────────────
+    ("yahoo_drinks", "Yahoo Drink Markets", 600),
+    ("untappd", "Untappd Beer", 600),
 ];
 
 #[derive(Serialize)]
@@ -5222,6 +5264,35 @@ struct SourceHealthEntry {
     not_started_reason: Option<String>,
 }
 
+async fn admin_force_sync(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+    AxumPath(source_id): AxumPath<String>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    require_admin_auth(&headers, &state)?;
+
+    let registry = crate::market_data::sync_registry::global();
+    if registry.trigger(&source_id) {
+        Ok(Json(serde_json::json!({
+            "status": "triggered",
+            "source_id": source_id,
+            "message": format!("Force-sync triggered for '{}'", source_id)
+        })))
+    } else {
+        let registered = registry.registered_sources();
+        Err((
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse {
+                error: format!(
+                    "Source '{}' not found. Registered sources: {}",
+                    source_id,
+                    registered.join(", ")
+                ),
+            }),
+        ))
+    }
+}
+
 async fn admin_sources_health(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<SourceHealthResponse>, (StatusCode, Json<ErrorResponse>)> {
@@ -5272,11 +5343,113 @@ async fn admin_sources_health(
         record_map.insert(source, (total, oldest, newest, last_1h, last_24h, last_7d));
     }
 
-    // Queries 3-5 replaced with lightweight approximations to avoid
-    // expensive DISTINCT ON / LAG window scans on large market_prices table.
-    let zero_stale_map: HashMap<String, (i64, i64)> = HashMap::new();
-    let change_map: HashMap<String, (f64, i64)> = HashMap::new();
-    let gap_map: HashMap<String, i64> = HashMap::new();
+    // Query 3: Latest price per active asset (uses idx_market_prices_asset_time)
+    // Returns one row per (source, asset_id) — the most recent price within 7 days.
+    let latest_prices: Vec<(String, rust_decimal::Decimal, Option<rust_decimal::Decimal>, DateTime<Utc>)> =
+        sqlx::query_as(
+            r#"
+            SELECT source, value, change_pct, fetched_at
+            FROM (
+                SELECT DISTINCT ON (source, asset_id)
+                       source, value, change_pct, fetched_at
+                FROM market_prices
+                WHERE fetched_at > NOW() - INTERVAL '7 days'
+                ORDER BY source, asset_id, fetched_at DESC
+            ) latest
+            "#,
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(|e| internal_error(format!("latest prices query: {}", e)))?;
+
+    // Build interval lookup from SOURCE_META for per-source stale thresholds
+    let interval_lookup: HashMap<&str, u64> =
+        SOURCE_META.iter().map(|(id, _, iv)| (*id, *iv)).collect();
+
+    // Accumulate per-source stats
+    struct SourceAccum {
+        zero_count: i64,
+        stale_count: i64,
+        change_sum: f64,
+        change_count: i64,
+        no_change_count: i64,
+    }
+    let mut accum_map: HashMap<String, SourceAccum> = HashMap::new();
+
+    for (source, value, change_pct, fetched_at) in &latest_prices {
+        let a = accum_map.entry(source.clone()).or_insert(SourceAccum {
+            zero_count: 0,
+            stale_count: 0,
+            change_sum: 0.0,
+            change_count: 0,
+            no_change_count: 0,
+        });
+
+        if value.is_zero() {
+            a.zero_count += 1;
+        }
+
+        let interval = interval_lookup.get(source.as_str()).copied().unwrap_or(600);
+        let stale_threshold = chrono::Duration::seconds((interval as i64) * 3);
+        if now - *fetched_at > stale_threshold {
+            a.stale_count += 1;
+        }
+
+        if let Some(cp) = change_pct {
+            use rust_decimal::prelude::ToPrimitive;
+            let cp_f = cp.abs().to_f64().unwrap_or(0.0);
+            a.change_sum += cp_f;
+            a.change_count += 1;
+            if cp.is_zero() {
+                a.no_change_count += 1;
+            }
+        } else {
+            a.no_change_count += 1;
+        }
+    }
+
+    // Convert accumulated stats into the maps the assembly loop expects
+    let mut zero_stale_map: HashMap<String, (i64, i64)> = HashMap::new();
+    let mut change_map: HashMap<String, (f64, i64)> = HashMap::new();
+    for (source, a) in &accum_map {
+        zero_stale_map.insert(source.clone(), (a.zero_count, a.stale_count));
+        let avg = if a.change_count > 0 {
+            a.change_sum / a.change_count as f64
+        } else {
+            0.0
+        };
+        change_map.insert(source.clone(), (avg, a.no_change_count));
+    }
+
+    // Query 4: Max sync gap per source (last 24h, minute-bucketed)
+    let gap_rows: Vec<(String, Option<i64>)> = sqlx::query_as(
+        r#"
+        WITH sync_times AS (
+            SELECT source, date_trunc('minute', fetched_at) as sync_min
+            FROM market_prices
+            WHERE fetched_at > NOW() - INTERVAL '24 hours'
+            GROUP BY source, date_trunc('minute', fetched_at)
+        ),
+        with_lag AS (
+            SELECT source, sync_min,
+                   LAG(sync_min) OVER (PARTITION BY source ORDER BY sync_min) as prev_min
+            FROM sync_times
+        )
+        SELECT source,
+               MAX(EXTRACT(EPOCH FROM sync_min - prev_min))::bigint as max_gap
+        FROM with_lag
+        WHERE prev_min IS NOT NULL
+        GROUP BY source
+        "#,
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| internal_error(format!("gap query: {}", e)))?;
+
+    let mut gap_map: HashMap<String, i64> = HashMap::new();
+    for (source, max_gap) in gap_rows {
+        gap_map.insert(source, max_gap.unwrap_or(0));
+    }
 
     // Assemble results for all known sources
     let mut sources = Vec::new();
@@ -5299,7 +5472,7 @@ async fn admin_sources_health(
             .unwrap_or((0.0, 0));
         let max_gap = gap_map.get(*id).copied().unwrap_or(0);
 
-        // No records = treat as very stale (999999s ≈ 11.5 days)
+        // Record age from DB (how old is the newest price record)
         let last_sync_age_secs = newest
             .map(|n| (now - n).num_seconds().max(0))
             .unwrap_or(999999);
@@ -5307,53 +5480,51 @@ async fn admin_sources_health(
         // Look up error tracker state
         let err_state = crate::market_data::error_tracker::global().get_state(id);
 
-        // Freshness logic:
-        // - If source produced records in last 24h OR last 7d, use tracker age (data is flowing, just deduplicated)
-        // - If source has NO recent records, use DB age (stubs/broken sources that sync "successfully" with 0 prices)
-        let tracker_age = err_state
-            .as_ref()
-            .and_then(|s| s.last_success_at)
-            .map(|t| (now - t).num_seconds().max(0));
-        let has_recent_data = last_24h > 0 || last_7d > 0;
-        let effective_age_secs = match (tracker_age, has_recent_data) {
-            (Some(ta), true) => ta.min(last_sync_age_secs), // Source is active, use best of both
-            _ => last_sync_age_secs, // No recent data or no tracker — trust DB age
-        };
-
-        // Compute status using error tracker for better classification
-        let status = if err_state.as_ref().map(|s| matches!(s.category, crate::market_data::error_tracker::ErrorCategory::NotStarted)).unwrap_or(false) {
-            "not_started".to_string()
-        } else if err_state.as_ref().map(|s| matches!(s.category, crate::market_data::error_tracker::ErrorCategory::InitFailed)).unwrap_or(false) {
-            "dead".to_string()
-        } else if total_records == 0 && err_state.as_ref().map(|s| s.total_syncs).unwrap_or(0) == 0 {
-            // No records and no completed syncs — still initializing or dead
-            // If error tracker has Ok state OR no state at all (task spawned but not yet started), treat as initializing
-            let has_errors = err_state.as_ref().map(|s| !matches!(s.category, crate::market_data::error_tracker::ErrorCategory::Ok)).unwrap_or(false);
-            if has_errors {
-                "dead".to_string()
-            } else {
-                "initializing".to_string()
+        // ── Tracker-first status algorithm ──
+        // Primary signal: is the sync engine working? (error tracker)
+        // Secondary signal: is data actually flowing? (DB records)
+        //
+        // Status rules:
+        //   not_started → source was never spawned (missing key / disabled)
+        //   initializing → spawned but hasn't completed first sync yet
+        //   healthy → sync engine running OK (even if data doesn't change often)
+        //   stale → sync engine has recent errors but still retrying
+        //   dead → persistent errors or source never produces data
+        let status = match &err_state {
+            // Not started — gated off
+            Some(es) if matches!(es.category, crate::market_data::error_tracker::ErrorCategory::NotStarted) => {
+                "not_started".to_string()
             }
-        } else {
-            // If error tracker shows Ok with no completed syncs, source just restarted
-            let just_started = err_state.as_ref().map(|s| {
-                matches!(s.category, crate::market_data::error_tracker::ErrorCategory::Ok) && s.total_syncs == 0
-            }).unwrap_or(false);
-            if just_started {
-                "initializing".to_string()
-            } else {
-                // Tighter thresholds: stale at 2x interval (capped at 48h),
-                // dead at 5x interval (capped at 7 days)
-                let threshold_stale = ((*interval as i64) * 2).min(172800);
-                let threshold_dead = ((*interval as i64) * 5).min(604800);
-                if effective_age_secs < threshold_stale {
-                    "healthy".to_string()
-                } else if effective_age_secs < threshold_dead {
-                    "stale".to_string()
-                } else {
+            // Init failed — code-level error
+            Some(es) if matches!(es.category, crate::market_data::error_tracker::ErrorCategory::InitFailed) => {
+                "dead".to_string()
+            }
+            // Has completed at least one sync
+            Some(es) if es.total_syncs > 0 => {
+                if matches!(es.category, crate::market_data::error_tracker::ErrorCategory::Ok) {
+                    // Sync engine is healthy. But check if source ever produced data.
+                    if total_records == 0 && last_7d == 0 {
+                        // Completed syncs but NEVER produced any data → stub/broken
+                        "dead".to_string()
+                    } else {
+                        "healthy".to_string()
+                    }
+                } else if es.consecutive_errors >= 5 {
+                    // 5+ consecutive errors → dead
                     "dead".to_string()
+                } else {
+                    // Some errors but still retrying → stale
+                    "stale".to_string()
                 }
             }
+            // Spawned but no syncs completed yet
+            Some(es) if es.total_syncs == 0 && !matches!(es.category, crate::market_data::error_tracker::ErrorCategory::NotStarted) => {
+                "initializing".to_string()
+            }
+            // No tracker state at all — just spawned
+            None => "initializing".to_string(),
+            // Fallback
+            _ => "initializing".to_string(),
         };
 
         // Estimated daily records = records_last_24h (direct measure)
@@ -5593,6 +5764,14 @@ async fn admin_source_assets(
                 _ => true, // if no prev, assume changed (can't prove otherwise)
             };
 
+            // Compute change_pct from latest and prev values (DB column is often NULL)
+            let computed_change_pct = match (latest_value, prev_value) {
+                (Some(curr), Some(prev)) if prev.abs() > 1e-12 => {
+                    Some(((curr - prev) / prev) * 100.0)
+                }
+                _ => change_pct, // fall back to source-provided value
+            };
+
             SourceAssetEntry {
                 asset_id,
                 symbol,
@@ -5604,7 +5783,7 @@ async fn admin_source_assets(
                 total_records: total_records.unwrap_or(0),
                 oldest_record,
                 value_changed_in_24h,
-                change_pct,
+                change_pct: computed_change_pct,
                 is_zero,
                 is_stale,
             }

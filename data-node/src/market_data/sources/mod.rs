@@ -1,4 +1,4 @@
-//! Market data source implementations (44 providers)
+//! Market data source implementations (52 providers)
 //!
 //! Contains implementations for all supported data sources.
 
@@ -31,6 +31,7 @@ pub mod pypi;
 pub mod sec_edgar;
 pub mod steam;
 pub mod tmdb;
+pub mod lastfm;
 pub mod treasury;
 pub mod twitch;
 pub mod twse;
@@ -56,6 +57,34 @@ pub mod aisstream;
 pub mod mil_aircraft;
 pub mod usa_spending;
 pub mod pumpfun;
+pub mod reddit;
+pub mod chaturbate;
+pub mod pandascore;
+pub mod usgs_water;
+pub mod noaa_tides;
+pub mod nrc_nuclear;
+pub mod citybikes;
+pub mod courtlistener;
+pub mod openalex;
+pub mod crossref;
+pub mod pubmed;
+pub mod stackexchange;
+pub mod ndbc;
+pub mod noaa_met;
+pub mod nwps;
+pub mod airnow;
+pub mod cbp_border;
+pub mod faa_delays;
+pub mod petfinder;
+pub mod queue_times;
+pub mod parking;
+pub mod tomtom_traffic;
+pub mod tomtom_evcharge;
+pub mod bgg;
+pub mod bestbuy;
+pub mod adzuna;
+pub mod yahoo_drinks;
+pub mod untappd;
 
 // Index-only sources (3) + shared ticker list
 pub mod tracked_tickers;
@@ -90,6 +119,7 @@ pub use pypi::PypiMarketSource;
 pub use sec_edgar::SecEdgarMarketSource;
 pub use steam::SteamMarketSource;
 pub use tmdb::TmdbMarketSource;
+pub use lastfm::LastfmMarketSource;
 pub use treasury::TreasuryMarketSource;
 pub use twitch::TwitchMarketSource;
 pub use twse::TwseMarketSource;
@@ -115,6 +145,34 @@ pub use aisstream::AisStreamMarketSource;
 pub use mil_aircraft::MilAircraftMarketSource;
 pub use usa_spending::UsaSpendingMarketSource;
 pub use pumpfun::PumpfunMarketSource;
+pub use reddit::RedditMarketSource;
+pub use chaturbate::ChaturbateMarketSource;
+pub use pandascore::PandascoreMarketSource;
+pub use usgs_water::UsgsWaterMarketSource;
+pub use noaa_tides::NoaaTidesMarketSource;
+pub use nrc_nuclear::NrcNuclearMarketSource;
+pub use citybikes::CityBikesMarketSource;
+pub use courtlistener::CourtListenerMarketSource;
+pub use openalex::OpenAlexMarketSource;
+pub use crossref::CrossrefMarketSource;
+pub use pubmed::PubMedMarketSource;
+pub use stackexchange::StackExchangeMarketSource;
+pub use ndbc::NdbcMarketSource;
+pub use noaa_met::NoaaMetMarketSource;
+pub use nwps::NwpsMarketSource;
+pub use airnow::AirnowMarketSource;
+pub use cbp_border::CbpBorderMarketSource;
+pub use faa_delays::FaaDelaysMarketSource;
+pub use petfinder::PetfinderMarketSource;
+pub use queue_times::QueueTimesMarketSource;
+pub use parking::ParkingMarketSource;
+pub use tomtom_traffic::TomtomTrafficMarketSource;
+pub use tomtom_evcharge::TomtomEvchargeMarketSource;
+pub use bgg::BggMarketSource;
+pub use bestbuy::BestBuyMarketSource;
+pub use adzuna::AdzunaMarketSource;
+pub use yahoo_drinks::YahooDrinksMarketSource;
+pub use untappd::UntappdMarketSource;
 
 // Re-exports — Index-only sources
 pub use finra_short_vol::FinraShortVolMarketSource;
