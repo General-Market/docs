@@ -230,6 +230,10 @@ pub struct ServeArgs {
     /// P2.9: Bind address for the HTTP server (default: 0.0.0.0)
     #[arg(long, default_value = "0.0.0.0", env = "BIND_ADDRESS")]
     pub bind: String,
+
+    /// Reset session data (truncate trades/snapshots, clear cursors) before starting collectors.
+    #[arg(long, default_value = "false", env = "DATA_NODE_RESET_SESSION")]
+    pub reset_session: bool,
 }
 
 #[derive(Parser, Debug)]

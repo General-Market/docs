@@ -65,6 +65,18 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     db::run_migrations(&pool).await?;
     info!("Database connected and migrated");
 
+    // Handle --reset-session: truncate session tables and reset cursors BEFORE collectors start
+    if args.reset_session {
+        info!("--reset-session: truncating session tables and resetting cursors");
+        sqlx::query("TRUNCATE itp_snapshots, trades CASCADE")
+            .execute(&pool)
+            .await
+            .expect("truncate failed");
+        db::reset_collector_cursors(&pool)
+            .await
+            .expect("cursor reset failed");
+    }
+
     // Load global simulation data cache FIRST (before collectors steal pool connections).
     // This loads all Bitget-eligible coin prices into memory for instant simulations.
     let sim_cache_inner = simulation::SimDataCache::load(&pool).await

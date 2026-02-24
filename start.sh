@@ -876,6 +876,13 @@ if ! $PG_ISREADY -q 2>/dev/null; then
     echo -e "  ${YELLOW}PostgreSQL not running — skipping data-node${NC}"
     echo -e "  ${YELLOW}Charts won't work. Start PostgreSQL and re-run.${NC}"
 else
+    # On fresh deploy, pass --reset-session so data-node truncates session tables
+    # and resets cursors atomically before collectors start
+    RESET_SESSION_FLAG=""
+    if [ "$SKIP_DEPLOY" = false ]; then
+        RESET_SESSION_FLAG="--reset-session"
+    fi
+
     ./target/release/data-node serve \
         --database-url postgres://localhost/index_prices \
         --symbol-map "$SCRIPT_DIR/data/symbol-map.json" \
@@ -887,29 +894,13 @@ else
         --movebank-user "Bobobo" \
         --movebank-password "u23@9R8m4BDezE_" \
         --ebird-api-key "lbo0nq9d1hd0" \
+        $RESET_SESSION_FLAG \
         > logs/data-node.log 2>&1 &
     PH_PID=$!
     echo $PH_PID >> .pids
     echo "data-node:$PH_PID" >> .pids.info
     echo -e "  data-node on port 8200 (PID: $PH_PID)"
     DATA_NODE_RUNNING=true
-
-    if [ "$SKIP_DEPLOY" = false ]; then
-        # Wait for data-node to be ready, then reset session data via admin endpoint
-        for i in $(seq 1 10); do
-            if curl -sf http://localhost:8200/health > /dev/null 2>&1; then
-                break
-            fi
-            sleep 0.5
-        done
-        if curl -sf -X POST http://localhost:8200/admin/reset-session > /dev/null 2>&1; then
-            echo -e "  ${GREEN}Session data reset via admin endpoint${NC}"
-        else
-            # Fallback to direct psql if admin endpoint unavailable
-            $PSQL -d index_prices -c "TRUNCATE itp_snapshots, trades;" 2>/dev/null || true
-            echo -e "  ${YELLOW}Session data reset via psql fallback${NC}"
-        fi
-    fi
 fi
 
 # Create default HackerNews batch — deferred until after NAV is ready

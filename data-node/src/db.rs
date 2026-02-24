@@ -55,7 +55,43 @@ pub async fn run_migrations(pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::raw_sql(m021).execute(pool).await?;
     let m022 = include_str!("../migrations/022_widen_market_symbol.sql");
     sqlx::raw_sql(m022).execute(pool).await?;
+    let m023 = include_str!("../migrations/023_create_collector_cursors.sql");
+    sqlx::raw_sql(m023).execute(pool).await?;
     info!("Database migrations applied");
+    Ok(())
+}
+
+/// Read the last processed block for a collector. Returns 0 if no row exists.
+pub async fn get_collector_cursor(pool: &PgPool, name: &str) -> Result<u64, sqlx::Error> {
+    let row: Option<(i64,)> = sqlx::query_as(
+        "SELECT last_block FROM collector_cursors WHERE collector_name = $1",
+    )
+    .bind(name)
+    .fetch_optional(pool)
+    .await?;
+    Ok(row.map(|(b,)| b as u64).unwrap_or(0))
+}
+
+/// Upsert the last processed block for a collector.
+pub async fn set_collector_cursor(pool: &PgPool, name: &str, block: u64) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO collector_cursors (collector_name, last_block, updated_at)
+         VALUES ($1, $2, NOW())
+         ON CONFLICT (collector_name) DO UPDATE
+         SET last_block = $2, updated_at = NOW()",
+    )
+    .bind(name)
+    .bind(block as i64)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+/// Reset all collector cursors (used by --reset-session).
+pub async fn reset_collector_cursors(pool: &PgPool) -> Result<(), sqlx::Error> {
+    sqlx::query("DELETE FROM collector_cursors")
+        .execute(pool)
+        .await?;
     Ok(())
 }
 
