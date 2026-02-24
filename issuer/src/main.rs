@@ -628,6 +628,11 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                     let result = protocol.run_cycle(current_cycle, prices, order_ids, fills, &last_signature).await;
                     let elapsed_ms = start_time.elapsed().as_millis() as u64;
 
+                    let consensus_succeeded = matches!(
+                        result,
+                        ConsensusResult::Success { .. } | ConsensusResult::ItpCreated { .. }
+                    );
+
                     match result {
                         ConsensusResult::Success { ref aggregated_signature, signer_count, cycle_number } => {
                             info!(cycle = cycle_number, signer_count, elapsed_ms, "Consensus cycle completed");
@@ -651,6 +656,22 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             last_signature = aggregated_signature.clone();
                             consensus_metrics.record_consensus_result(true, signer_count, elapsed_ms);
                         }
+                    }
+
+                    // Skip heavy post-consensus work (ITP creation, NAV computation,
+                    // cross-chain processing) when consensus failed or timed out.
+                    // These operations take 10-15 seconds of chain I/O and block
+                    // the consensus loop, preventing nodes from finding overlapping
+                    // cycles after a restart (where timing offsets exist).
+                    if !consensus_succeeded {
+                        // Still signal CycleManager for fast cycle detection
+                        let has_pending = if let Some(ref orch) = bridge_orchestrator_for_task {
+                            orch.read().await.has_in_flight_orders().await
+                        } else {
+                            false
+                        };
+                        let _ = work_tx_for_task.try_send(has_pending);
+                        continue;
                     }
 
                     // ITP creation phase
