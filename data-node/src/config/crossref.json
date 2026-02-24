@@ -1,0 +1,110 @@
+[
+  {
+    "asset_id": "crossref_total",
+    "symbol": "CREF/TOTAL",
+    "name": "Total New DOIs Today",
+    "category": "education",
+    "subcategory": "doi_registry",
+    "api_ref": "total",
+    "active": true
+  },
+  {
+    "asset_id": "crossref_journal_article",
+    "symbol": "CREF/JART",
+    "name": "Journal Articles Today",
+    "category": "education",
+    "subcategory": "doi_registry",
+    "api_ref": "journal-article",
+    "active": true
+  },
+  {
+    "asset_id": "crossref_book_chapter",
+    "symbol": "CREF/BKCH",
+    "name": "Book Chapters Today",
+    "category": "education",
+    "subcategory": "doi_registry",
+    "api_ref": "book-chapter",
+    "active": true
+  },
+  {
+    "asset_id": "crossref_proceedings",
+    "symbol": "CREF/PROC",
+    "name": "Proceedings Articles Today",
+    "category": "education",
+    "subcategory": "doi_registry",
+    "api_ref": "proceedings-article",
+    "active": true
+  },
+  {
+    "asset_id": "crossref_preprint",
+    "symbol": "CREF/PREP",
+    "name": "Preprints Today",
+    "category": "education",
+    "subcategory": "doi_registry",
+    "api_ref": "posted-content",
+    "active": true
+  },
+  {
+    "asset_id": "crossref_dataset",
+    "symbol": "CREF/DATA",
+    "name": "Datasets Today",
+    "category": "education",
+    "subcategory": "doi_registry",
+    "api_ref": "dataset",
+    "active": true
+  },
+  {
+    "asset_id": "crossref_report",
+    "symbol": "CREF/REPT",
+    "name": "Reports Today",
+    "category": "education",
+    "subcategory": "doi_registry",
+    "api_ref": "report",
+    "active": true
+  },
+  {
+    "asset_id": "crossref_book",
+    "symbol": "CREF/BOOK",
+    "name": "Books Today",
+    "category": "education",
+    "subcategory": "doi_registry",
+    "api_ref": "book",
+    "active": true
+  },
+  {
+    "asset_id": "crossref_dissertation",
+    "symbol": "CREF/DISS",
+    "name": "Dissertations Today",
+    "category": "education",
+    "subcategory": "doi_registry",
+    "api_ref": "dissertation",
+    "active": true
+  },
+  {
+    "asset_id": "crossref_standard",
+    "symbol": "CREF/STND",
+    "name": "Standards Today",
+    "category": "education",
+    "subcategory": "doi_registry",
+    "api_ref": "standard",
+    "active": true
+  },
+  {
+    "asset_id": "crossref_monograph",
+    "symbol": "CREF/MONO",
+    "name": "Monographs Today",
+    "category": "education",
+    "subcategory": "doi_registry",
+    "api_ref": "monograph",
+    "active": true
+  },
+  {
+    "asset_id": "crossref_peer_review",
+    "symbol": "CREF/PREV",
+    "name": "Peer Reviews Today",
+    "category": "education",
+    "subcategory": "doi_registry",
+    "api_ref": "peer-review",
+    "active": true
+  }
+]

@@ -53,13 +53,17 @@ impl ScheduledSyncEngine {
 
     /// Run the schedule-aware sync loop forever
     pub async fn run(&self) {
+        let source_id = self.source.source_id();
         let name = self.source.display_name();
         let tz = self.source.timezone();
+        let tracker = super::error_tracker::global();
+        let force_trigger = super::sync_registry::global().register(source_id);
 
         info!(
             "[{}] Starting scheduled sync engine (timezone: {})",
             name, tz
         );
+        tracker.record_started(source_id);
 
         // Initial asset sync
         info!("[{}] Running initial asset metadata sync...", name);
@@ -71,13 +75,22 @@ impl ScheduledSyncEngine {
         // Initial price sync (get current data)
         info!("[{}] Running initial price sync...", name);
         match self.sync_prices().await {
-            Ok((updated, errors)) => {
+            Ok((updated, errors, fetched, active)) => {
                 info!(
                     "[{}] Initial price sync: {} updated, {} errors",
                     name, updated, errors
                 );
+                if fetched == 0 && active > 0 && !self.source.skips_when_unchanged() {
+                    warn!("[{}] API returned 0 prices for {} active assets — source may be broken", name, active);
+                    tracker.record_error(source_id, "API returned 0 prices — all requests may have failed");
+                } else {
+                    tracker.record_success(source_id);
+                }
             }
-            Err(e) => error!("[{}] Initial price sync failed: {:?}", name, e),
+            Err(e) => {
+                error!("[{}] Initial price sync failed: {:?}", name, e);
+                tracker.record_error(source_id, &format!("{:?}", e));
+            }
         }
 
         // Metadata refresh interval (hourly)
@@ -114,13 +127,21 @@ impl ScheduledSyncEngine {
 
                 let count = self.sync_count.fetch_add(1, Ordering::Relaxed) + 1;
                 match self.sync_prices().await {
-                    Ok((updated, errors)) => {
+                    Ok((updated, errors, fetched, active)) => {
                         info!(
                             "[{}] Burst sync #{}: {} updated, {} errors",
                             name, count, updated, errors
                         );
+                        if fetched == 0 && active > 0 && !self.source.skips_when_unchanged() {
+                            tracker.record_error(source_id, "API returned 0 prices — all requests may have failed");
+                        } else {
+                            tracker.record_success(source_id);
+                        }
                     }
-                    Err(e) => error!("[{}] Burst sync #{} failed: {:?}", name, count, e),
+                    Err(e) => {
+                        error!("[{}] Burst sync #{} failed: {:?}", name, count, e);
+                        tracker.record_error(source_id, &format!("{:?}", e));
+                    }
                 }
 
                 tokio::time::sleep(burst_interval).await;
@@ -146,7 +167,7 @@ impl ScheduledSyncEngine {
                     actual_wait
                 );
 
-                // Use tokio::select to also handle metadata refresh while waiting
+                // Use tokio::select to also handle metadata refresh and force-sync while waiting
                 tokio::select! {
                     _ = tokio::time::sleep(actual_wait) => {
                         // Time to fetch
@@ -159,19 +180,34 @@ impl ScheduledSyncEngine {
                         }
                         continue; // Re-evaluate schedule
                     }
+                    _ = force_trigger.notified() => {
+                        info!("[{}] Force-sync triggered via admin API (bypassing schedule)", name);
+                        // Fall through to the fetch below
+                    }
                 }
             }
 
             // Execute the fetch
             let count = self.sync_count.fetch_add(1, Ordering::Relaxed) + 1;
             match self.sync_prices().await {
-                Ok((updated, errors)) => {
+                Ok((updated, errors, fetched, active)) => {
                     info!(
                         "[{}] Price sync #{}: {} updated, {} errors",
                         name, count, updated, errors
                     );
+                    if fetched == 0 && active > 0 && !self.source.skips_when_unchanged() {
+                        tracker.record_error(source_id, "API returned 0 prices — all requests may have failed");
+                    } else {
+                        if fetched > 0 && active > 0 && (fetched as f64) < (active as f64 * 0.5) {
+                            warn!("[{}] Partial data loss: got {}/{} prices ({:.0}%)", name, fetched, active, fetched as f64 / active as f64 * 100.0);
+                        }
+                        tracker.record_success(source_id);
+                    }
                 }
-                Err(e) => error!("[{}] Price sync #{} failed: {:?}", name, count, e),
+                Err(e) => {
+                    error!("[{}] Price sync #{} failed: {:?}", name, count, e);
+                    tracker.record_error(source_id, &format!("{:?}", e));
+                }
             }
 
             // Prune old data periodically
@@ -226,9 +262,10 @@ impl ScheduledSyncEngine {
         Ok(count)
     }
 
-    /// Sync prices for all active assets
-    async fn sync_prices(&self) -> Result<(usize, usize)> {
+    /// Sync prices for all active assets. Returns (updated, errors, fetched, active_assets).
+    async fn sync_prices(&self) -> Result<(usize, usize, usize, usize)> {
         let source_id = self.source.source_id();
+        let sync_start = std::time::Instant::now();
 
         // Get active asset IDs
         let asset_ids: Vec<String> = sqlx::query_scalar(
@@ -238,43 +275,70 @@ impl ScheduledSyncEngine {
         .fetch_all(&self.pool)
         .await?;
 
+        let active_assets = asset_ids.len();
+
         if asset_ids.is_empty() {
             warn!(
                 "[{}] No active assets to sync — run asset sync first",
                 self.source.display_name()
             );
-            return Ok((0, 0));
+            return Ok((0, 0, 0, 0));
         }
+
+        info!("[{}] Fetching prices for {} assets...", self.source.display_name(), asset_ids.len());
 
         // Rate-limit: wait before fetching
         self.rate_limiter.wait_for_permit().await;
 
+        let fetch_start = std::time::Instant::now();
         let prices = self.source.fetch_prices(&asset_ids).await?;
+        let fetch_elapsed = fetch_start.elapsed();
+        let fetched = prices.len();
+        info!("[{}] API fetch: {} prices in {:.1}s", self.source.display_name(), fetched, fetch_elapsed.as_secs_f64());
 
-        // Get latest values from DB to detect changes
-        let latest_values: std::collections::HashMap<String, rust_decimal::Decimal> =
-            sqlx::query_as::<_, (String, rust_decimal::Decimal)>(
+        // Get latest values + timestamps from DB to detect changes (LATERAL for index efficiency)
+        let latest_values: std::collections::HashMap<String, (rust_decimal::Decimal, chrono::DateTime<Utc>)> =
+            sqlx::query_as::<_, (String, rust_decimal::Decimal, chrono::DateTime<Utc>)>(
                 r#"
-                SELECT DISTINCT ON (asset_id) asset_id, value
-                FROM market_prices
-                WHERE source = $1
-                ORDER BY asset_id, fetched_at DESC
+                SELECT a.asset_id, p.value, p.fetched_at
+                FROM market_assets a
+                CROSS JOIN LATERAL (
+                    SELECT value, fetched_at FROM market_prices
+                    WHERE market_prices.source = a.source AND market_prices.asset_id = a.asset_id
+                    ORDER BY fetched_at DESC LIMIT 1
+                ) p
+                WHERE a.source = $1 AND a.is_active = true
                 "#,
             )
             .bind(source_id)
             .fetch_all(&self.pool)
             .await?
             .into_iter()
+            .map(|(id, val, ts)| (id, (val, ts)))
             .collect();
+
+        // Force-insert unchanged values if record is older than 6x sync interval
+        let max_staleness = ChronoDuration::from_std(self.source.sync_interval() * 6)
+            .unwrap_or(ChronoDuration::minutes(30));
 
         let mut updated = 0usize;
         let mut skipped = 0usize;
         let mut errors = 0usize;
 
+        let hundred = rust_decimal::Decimal::from(100);
+
         for price in &prices {
-            // Only insert if value changed or no previous value exists
-            let should_insert = match latest_values.get(&price.asset_id) {
-                Some(prev_value) => *prev_value != price.value,
+            // Insert if value changed, no previous value, or record is too old (heartbeat)
+            let prev_info = latest_values.get(&price.asset_id);
+            let should_insert = match prev_info {
+                Some((prev_value, prev_time)) => {
+                    if *prev_value != price.value {
+                        true // value changed
+                    } else {
+                        // Force-insert to keep fetched_at fresh for stable metrics
+                        (Utc::now() - *prev_time) > max_staleness
+                    }
+                }
                 None => true,
             };
 
@@ -282,6 +346,22 @@ impl ScheduledSyncEngine {
                 skipped += 1;
                 continue;
             }
+
+            // Compute change_pct from previous DB value when the source didn't provide it
+            let change_pct = price.change_pct.or_else(|| {
+                prev_info.and_then(|(prev_value, _)| {
+                    if !prev_value.is_zero() {
+                        Some((price.value - *prev_value) / *prev_value * hundred)
+                    } else {
+                        None
+                    }
+                })
+            });
+
+            // Use previous DB value as prev_close when the source didn't provide it
+            let prev_close = price.prev_close.or_else(|| {
+                prev_info.map(|(prev_value, _)| *prev_value)
+            });
 
             let result = sqlx::query(
                 r#"
@@ -296,8 +376,8 @@ impl ScheduledSyncEngine {
             .bind(source_id)
             .bind(&price.symbol)
             .bind(price.value)
-            .bind(price.prev_close)
-            .bind(price.change_pct)
+            .bind(prev_close)
+            .bind(change_pct)
             .bind(price.volume_24h)
             .bind(price.market_cap)
             .bind(price.fetched_at)
@@ -313,15 +393,14 @@ impl ScheduledSyncEngine {
             }
         }
 
-        if skipped > 0 {
-            debug!(
-                "[{}] Skipped {} unchanged prices",
-                self.source.display_name(),
-                skipped
-            );
-        }
+        let total_elapsed = sync_start.elapsed();
+        info!(
+            "[{}] Sync complete: {} updated, {} skipped, {} errors in {:.1}s",
+            self.source.display_name(),
+            updated, skipped, errors, total_elapsed.as_secs_f64()
+        );
 
-        Ok((updated, errors))
+        Ok((updated, errors, fetched, active_assets))
     }
 
     /// Prune price records older than retention_days

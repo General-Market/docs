@@ -4367,7 +4367,7 @@ const SOURCE_META: &[(&str, &str, u64)] = &[
     ("pubmed", "PubMed Biomedical Research", 600),
     ("stackexchange", "Stack Exchange Developer Q&A", 600),
     // ── Animals ──────────────────────────────────────────────────────────
-    ("petfinder", "Petfinder Adoptable Pets", 900),
+    ("shelter", "Animal Shelters", 600),
     // ── Autos & Vehicles ──────────────────────────────────────────────
     ("parking", "ParkAPI Parking Garages", 600),
     ("tomtom_traffic", "TomTom Traffic Flow", 600),

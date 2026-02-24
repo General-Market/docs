@@ -32,7 +32,7 @@ const DOWNLOADS_URL: &str = "https://api.npmjs.org/downloads/point/last-day";
 const SEARCH_PAGE_SIZE: usize = 250;
 const PAGES_PER_TERM: usize = 2; // 2 pages × 250 = 500 per term
 const BULK_BATCH_SIZE: usize = 128;
-const INTER_REQUEST_DELAY_MS: u64 = 500;
+const INTER_REQUEST_DELAY_MS: u64 = 1500;
 
 /// Broad search terms covering different npm ecosystems.
 /// Each returns 50K+ results sorted by popularity, so the first pages
@@ -192,7 +192,7 @@ impl MarketDataSource for NpmMarketSource {
     }
 
     fn sync_interval(&self) -> Duration {
-        Duration::from_secs(600)
+        Duration::from_secs(1800) // 30 min — 1000 pkgs × 1.5s = ~15 min fetch time
     }
 
     fn rate_limit_config(&self) -> RateLimitConfig {
@@ -212,27 +212,35 @@ impl MarketDataSource for NpmMarketSource {
 
         info!("npm config is empty, performing live discovery");
         let packages = self
-            .discover_packages(5_000)
+            .discover_packages(1_000)
             .await
             .map_err(|e| anyhow::anyhow!("Failed to discover npm packages: {:?}", e))?;
 
         let assets: Vec<AssetUpdate> = packages
             .iter()
-            .map(|(name, desc)| AssetUpdate {
-                asset_id: make_asset_id(name),
-                symbol: format!("NPM:{}", name),
-                name: if desc.is_empty() {
+            .map(|(name, desc)| {
+                let display_name = if desc.is_empty() {
                     name.clone()
                 } else {
-                    desc.clone()
-                },
-                category: Some("sentiment".to_string()),
-                metadata: serde_json::json!({
-                    "api_ref": format!("pkg:{}", name),
-                    "subcategory": "npm",
-                    "active": true,
-                    "extra": {},
-                }),
+                    let mut d = desc.clone();
+                    if d.len() > 190 {
+                        d.truncate(190);
+                        d.push_str("...");
+                    }
+                    d
+                };
+                AssetUpdate {
+                    asset_id: make_asset_id(name),
+                    symbol: format!("NPM:{}", name),
+                    name: display_name,
+                    category: Some("sentiment".to_string()),
+                    metadata: serde_json::json!({
+                        "api_ref": format!("pkg:{}", name),
+                        "subcategory": "npm",
+                        "active": true,
+                        "extra": {},
+                    }),
+                }
             })
             .collect();
 
@@ -326,24 +334,32 @@ impl MarketDataSource for NpmMarketSource {
     async fn discover_upstream_assets(&self) -> Result<Vec<AssetEntry>> {
         info!("Discovering npm packages...");
         let packages = self
-            .discover_packages(5_000)
+            .discover_packages(1_000)
             .await
             .map_err(|e| anyhow::anyhow!("Failed to discover npm packages: {:?}", e))?;
 
         let entries: Vec<AssetEntry> = packages
             .iter()
-            .map(|(name, desc)| AssetEntry {
-                asset_id: make_asset_id(name),
-                symbol: format!("NPM:{}", name),
-                name: if desc.is_empty() {
+            .map(|(name, desc)| {
+                let display_name = if desc.is_empty() {
                     name.clone()
                 } else {
-                    desc.clone()
-                },
-                category: "sentiment".to_string(),
-                subcategory: "npm".to_string(),
-                api_ref: format!("pkg:{}", name),
-                active: true,
+                    let mut d = desc.clone();
+                    if d.len() > 190 {
+                        d.truncate(190);
+                        d.push_str("...");
+                    }
+                    d
+                };
+                AssetEntry {
+                    asset_id: make_asset_id(name),
+                    symbol: format!("NPM:{}", name),
+                    name: display_name,
+                    category: "sentiment".to_string(),
+                    subcategory: "npm".to_string(),
+                    api_ref: format!("pkg:{}", name),
+                    active: true,
+                }
             })
             .collect();
 

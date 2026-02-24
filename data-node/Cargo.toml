@@ -48,6 +48,7 @@ reqwest = { version = "0.12", features = ["json"] }
 # Encoding
 hex = "0.4"
 base64 = "0.22"
+md5 = "0.7"
 
 # Protobuf (GTFS-RT)
 prost = "0.13"

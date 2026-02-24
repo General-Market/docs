@@ -169,6 +169,9 @@ impl MarketDataSource for EpidemicMarketSource {
         }
 
         // Fetch each country
+        let mut failed_countries: Vec<String> = Vec::new();
+        let total_countries = country_metrics.len();
+
         for (country, metrics) in &country_metrics {
             tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
 
@@ -191,15 +194,24 @@ impl MarketDataSource for EpidemicMarketSource {
                 }
                 Err(e) => {
                     warn!("Error fetching epidemic data for {}: {:?}", country, e);
+                    failed_countries.push(country.clone());
                 }
             }
         }
 
-        info!(
-            "Fetched {}/{} prices from disease.sh",
-            results.len(),
-            asset_ids.len()
-        );
+        if failed_countries.is_empty() {
+            info!(
+                "Fetched {}/{} prices from disease.sh ({} countries)",
+                results.len(), asset_ids.len(), total_countries
+            );
+        } else {
+            warn!(
+                "Fetched {}/{} prices from disease.sh ({}/{} countries ok, failed: {})",
+                results.len(), asset_ids.len(),
+                total_countries - failed_countries.len(), total_countries,
+                failed_countries.join(", ")
+            );
+        }
 
         Ok(results)
     }

@@ -38,11 +38,14 @@ pub mod categories {
     pub const SPORTS: &str = "sports";
     pub const DEFENSE: &str = "defense";
     pub const GOVERNMENT: &str = "government";
+    pub const EDUCATION: &str = "education";
+    pub const ANIMALS: &str = "animals";
 
     /// All valid categories
     pub const ALL: &[&str] = &[
         STOCKS, CRYPTO, DEFI, MACRO, COMMODITIES, WEATHER, ONCHAIN, SENTIMENT, REGULATORY,
         GEOPHYSICAL, SPACE, ENVIRONMENT, TRANSPORT, HEALTH, SPORTS, DEFENSE, GOVERNMENT,
+        EDUCATION, ANIMALS,
     ];
 
     /// Check if a category string is valid
@@ -172,6 +175,14 @@ pub trait MarketDataSource: Send + Sync {
     /// or reactivates previously deactivated ones.
     async fn discover_upstream_assets(&self) -> Result<Vec<AssetEntry>> {
         Ok(vec![])
+    }
+
+    /// Whether this source uses smart-sync and may intentionally return 0 prices
+    /// when upstream data hasn't changed (e.g., OpenMeteo checks a metadata timestamp
+    /// and skips fetching if unchanged). When true, the sync engine won't record
+    /// an error for "0 prices fetched with active assets".
+    fn skips_when_unchanged(&self) -> bool {
+        false
     }
 }
 
@@ -542,7 +553,7 @@ mod tests {
 
     #[test]
     fn test_category_count() {
-        assert_eq!(categories::ALL.len(), 17);
+        assert_eq!(categories::ALL.len(), 19);
     }
 
     // ========================================================================

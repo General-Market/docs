@@ -176,6 +176,7 @@ impl WeatherSource {
     /// Fetch weather for all cities sequentially with a small delay between requests.
     async fn fetch_all_cities(&self) -> Result<Vec<CachedReading>> {
         let mut all_readings = Vec::with_capacity(CITIES.len() * 3);
+        let mut failed_cities: Vec<&str> = Vec::new();
 
         for (i, city) in CITIES.iter().enumerate() {
             match self.fetch_city(city).await {
@@ -184,7 +185,7 @@ impl WeatherSource {
                 }
                 Err(e) => {
                     warn!("Weather: failed to fetch {}: {}", city.name, e);
-                    // Continue with other cities on failure
+                    failed_cities.push(city.name);
                 }
             }
 
@@ -194,11 +195,19 @@ impl WeatherSource {
             }
         }
 
-        info!(
-            "Weather: fetched {} readings from {} cities",
-            all_readings.len(),
-            CITIES.len()
-        );
+        let succeeded = CITIES.len() - failed_cities.len();
+        if failed_cities.is_empty() {
+            info!(
+                "Weather: fetched {} readings from {}/{} cities",
+                all_readings.len(), succeeded, CITIES.len()
+            );
+        } else {
+            warn!(
+                "Weather: fetched {} readings from {}/{} cities (failed: {})",
+                all_readings.len(), succeeded, CITIES.len(),
+                failed_cities.join(", ")
+            );
+        }
 
         Ok(all_readings)
     }

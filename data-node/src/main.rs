@@ -1109,25 +1109,19 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         }
     }
 
-    // Petfinder — gated on client ID + secret
-    if let Some(ref client_id) = args.petfinder_client_id {
-        if let Some(ref client_secret) = args.petfinder_client_secret {
-            std::env::set_var("PETFINDER_CLIENT_ID", client_id);
-            std::env::set_var("PETFINDER_CLIENT_SECRET", client_secret);
-            let pool_c = pool.clone();
-            tokio::spawn(async move {
-                match market_data::sources::petfinder::PetfinderMarketSource::from_env() {
-                    Ok(source) => {
-                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
-                        engine.run().await;
-                    }
-                    Err(e) => tracing::error!("Petfinder init failed: {e}"),
+    // Shelter — always-on, no auth needed (Austin Animal Center Socrata SODA)
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::shelter::ShelterMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
                 }
-            });
-            info!("Petfinder adoptable pets tracker started");
-        } else {
-            info!("Petfinder skipped (PETFINDER_CLIENT_SECRET not configured)");
-        }
+                Err(e) => tracing::error!("Shelter init failed: {e}"),
+            }
+        });
+        info!("Animal shelter tracker started");
     }
 
     // Chaturbate — always-on, no auth needed
@@ -1606,10 +1600,6 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         // Reddit
         if args.reddit_client_id.is_none() || args.reddit_client_secret.is_none() {
             tracker.record_not_started("reddit", "Missing --reddit-client-id / --reddit-client-secret");
-        }
-        // Petfinder
-        if args.petfinder_client_id.is_none() || args.petfinder_client_secret.is_none() {
-            tracker.record_not_started("petfinder", "Missing --petfinder-client-id / --petfinder-client-secret");
         }
         // CourtListener
         if std::env::var("COURTLISTENER_TOKEN").is_err() {

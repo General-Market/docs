@@ -5,7 +5,7 @@ use tracing::info;
 
 pub async fn create_pool(database_url: &str) -> Result<PgPool, sqlx::Error> {
     PgPoolOptions::new()
-        .max_connections(30)
+        .max_connections(50)
         .connect(database_url)
         .await
 }
@@ -220,9 +220,13 @@ pub async fn query_latest_prices_batch(
     }
 
     let rows = sqlx::query_as::<_, (String, String, DateTime<Utc>)>(
-        "SELECT DISTINCT ON (symbol) symbol, price, fetched_at
-         FROM prices WHERE symbol = ANY($1)
-         ORDER BY symbol, fetched_at DESC"
+        "SELECT s.symbol, p.price, p.fetched_at
+         FROM unnest($1::text[]) AS s(symbol)
+         CROSS JOIN LATERAL (
+             SELECT price, fetched_at FROM prices
+             WHERE prices.symbol = s.symbol
+             ORDER BY fetched_at DESC LIMIT 1
+         ) p"
     )
     .bind(symbols)
     .fetch_all(pool)
@@ -241,9 +245,13 @@ pub async fn query_latest_kline_prices_batch(
     }
 
     let rows = sqlx::query_as::<_, (String, String, DateTime<Utc>)>(
-        "SELECT DISTINCT ON (symbol) symbol, close, open_time
-         FROM klines WHERE symbol = ANY($1)
-         ORDER BY symbol, open_time DESC"
+        "SELECT s.symbol, k.close, k.open_time
+         FROM unnest($1::text[]) AS s(symbol)
+         CROSS JOIN LATERAL (
+             SELECT close, open_time FROM klines
+             WHERE klines.symbol = s.symbol
+             ORDER BY open_time DESC LIMIT 1
+         ) k"
     )
     .bind(symbols)
     .fetch_all(pool)

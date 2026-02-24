@@ -38,7 +38,8 @@ struct EiaResponseData {
 #[derive(Debug, Deserialize)]
 struct EiaDataPoint {
     period: String,
-    value: Option<f64>,
+    /// EIA v2 API returns value as a JSON string (e.g. "419815"), not a number
+    value: Option<String>,
     #[serde(rename = "series-description")]
     #[allow(dead_code)]
     series_description: Option<String>,
@@ -95,8 +96,10 @@ impl EiaMarketSource {
             .with_context(|| format!("Failed to parse EIA response for {}", series_id))?;
 
         if let Some(point) = data.response.data.first() {
-            if let Some(value) = point.value {
-                return Ok(Some((point.period.clone(), value)));
+            if let Some(ref value_str) = point.value {
+                if let Ok(value) = value_str.parse::<f64>() {
+                    return Ok(Some((point.period.clone(), value)));
+                }
             }
         }
 
@@ -131,8 +134,10 @@ impl EiaMarketSource {
             .context("Failed to parse EIA natural gas response")?;
 
         if let Some(point) = data.response.data.first() {
-            if let Some(value) = point.value {
-                return Ok(Some((point.period.clone(), value)));
+            if let Some(ref value_str) = point.value {
+                if let Ok(value) = value_str.parse::<f64>() {
+                    return Ok(Some((point.period.clone(), value)));
+                }
             }
         }
 

@@ -1,0 +1,182 @@
+[
+  {
+    "asset_id": "tomtom_traffic_i405_la",
+    "symbol": "TRAF/I405-LA",
+    "name": "I-405 Los Angeles",
+    "category": "transport",
+    "subcategory": "traffic",
+    "api_ref": "33.9425,-118.4081",
+    "active": true
+  },
+  {
+    "asset_id": "tomtom_traffic_i95_nyc",
+    "symbol": "TRAF/I95-NYC",
+    "name": "I-95 New York City",
+    "category": "transport",
+    "subcategory": "traffic",
+    "api_ref": "40.7831,-73.9712",
+    "active": true
+  },
+  {
+    "asset_id": "tomtom_traffic_i10_houston",
+    "symbol": "TRAF/I10-HOUSTON",
+    "name": "I-10 Houston",
+    "category": "transport",
+    "subcategory": "traffic",
+    "api_ref": "29.7604,-95.3698",
+    "active": true
+  },
+  {
+    "asset_id": "tomtom_traffic_i90_chicago",
+    "symbol": "TRAF/I90-CHICAGO",
+    "name": "I-90 Chicago",
+    "category": "transport",
+    "subcategory": "traffic",
+    "api_ref": "41.8781,-87.6298",
+    "active": true
+  },
+  {
+    "asset_id": "tomtom_traffic_i66_dc",
+    "symbol": "TRAF/I66-DC",
+    "name": "I-66 Washington DC",
+    "category": "transport",
+    "subcategory": "traffic",
+    "api_ref": "38.8920,-77.0714",
+    "active": true
+  },
+  {
+    "asset_id": "tomtom_traffic_us101_sf",
+    "symbol": "TRAF/US101-SF",
+    "name": "US-101 San Francisco",
+    "category": "transport",
+    "subcategory": "traffic",
+    "api_ref": "37.7749,-122.4194",
+    "active": true
+  },
+  {
+    "asset_id": "tomtom_traffic_m25_london",
+    "symbol": "TRAF/M25-LONDON",
+    "name": "M25 London",
+    "category": "transport",
+    "subcategory": "traffic",
+    "api_ref": "51.4700,-0.4543",
+    "active": true
+  },
+  {
+    "asset_id": "tomtom_traffic_a1_berlin",
+    "symbol": "TRAF/A1-BERLIN",
+    "name": "A1 Berlin",
+    "category": "transport",
+    "subcategory": "traffic",
+    "api_ref": "52.5200,13.4050",
+    "active": true
+  },
+  {
+    "asset_id": "tomtom_traffic_a6_paris",
+    "symbol": "TRAF/A6-PARIS",
+    "name": "A6 Paris",
+    "category": "transport",
+    "subcategory": "traffic",
+    "api_ref": "48.8566,2.3522",
+    "active": true
+  },
+  {
+    "asset_id": "tomtom_traffic_a4_madrid",
+    "symbol": "TRAF/A4-MADRID",
+    "name": "A4 Madrid",
+    "category": "transport",
+    "subcategory": "traffic",
+    "api_ref": "40.4168,-3.7038",
+    "active": true
+  },
+  {
+    "asset_id": "tomtom_traffic_a1_milan",
+    "symbol": "TRAF/A1-MILAN",
+    "name": "A1 Milan",
+    "category": "transport",
+    "subcategory": "traffic",
+    "api_ref": "45.4642,9.1900",
+    "active": true
+  },
+  {
+    "asset_id": "tomtom_traffic_a2_amsterdam",
+    "symbol": "TRAF/A2-AMSTERDAM",
+    "name": "A2 Amsterdam",
+    "category": "transport",
+    "subcategory": "traffic",
+    "api_ref": "52.3676,4.9041",
+    "active": true
+  },
+  {
+    "asset_id": "tomtom_traffic_shuto_tokyo",
+    "symbol": "TRAF/SHUTO-TOKYO",
+    "name": "Shuto Expressway Tokyo",
+    "category": "transport",
+    "subcategory": "traffic",
+    "api_ref": "35.6762,139.6503",
+    "active": true
+  },
+  {
+    "asset_id": "tomtom_traffic_ring4_beijing",
+    "symbol": "TRAF/RING4-BEIJING",
+    "name": "Ring Road 4 Beijing",
+    "category": "transport",
+    "subcategory": "traffic",
+    "api_ref": "39.9042,116.4074",
+    "active": true
+  },
+  {
+    "asset_id": "tomtom_traffic_aye_singapore",
+    "symbol": "TRAF/AYE-SINGAPORE",
+    "name": "AYE Singapore",
+    "category": "transport",
+    "subcategory": "traffic",
+    "api_ref": "1.3013,103.7636",
+    "active": true
+  },
+  {
+    "asset_id": "tomtom_traffic_m1_sydney",
+    "symbol": "TRAF/M1-SYDNEY",
+    "name": "M1 Sydney",
+    "category": "transport",
+    "subcategory": "traffic",
+    "api_ref": "-33.8688,151.2093",
+    "active": true
+  },
+  {
+    "asset_id": "tomtom_traffic_401_toronto",
+    "symbol": "TRAF/401-TORONTO",
+    "name": "401 Toronto",
+    "category": "transport",
+    "subcategory": "traffic",
+    "api_ref": "43.6532,-79.3832",
+    "active": true
+  },
+  {
+    "asset_id": "tomtom_traffic_szr_dubai",
+    "symbol": "TRAF/SZR-DUBAI",
+    "name": "Sheikh Zayed Road Dubai",
+    "category": "transport",
+    "subcategory": "traffic",
+    "api_ref": "25.2048,55.2708",
+    "active": true
+  },
+  {
+    "asset_id": "tomtom_traffic_marginal_saopaulo",
+    "symbol": "TRAF/MARGINAL-SAOPAULO",
+    "name": "Marginal Pinheiros Sao Paulo",
+    "category": "transport",
+    "subcategory": "traffic",
+    "api_ref": "-23.5505,-46.6333",
+    "active": true
+  },
+  {
+    "asset_id": "tomtom_traffic_n1_capetown",
+    "symbol": "TRAF/N1-CAPETOWN",
+    "name": "N1 Cape Town",
+    "category": "transport",
+    "subcategory": "traffic",
+    "api_ref": "-33.9249,18.4241",
+    "active": true
+  }
+]

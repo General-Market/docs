@@ -1,11 +1,13 @@
 //! Market data provider framework (ported from AA market-data-lib)
 
+pub mod error_tracker;
 pub mod models;
 pub mod queries;
 pub mod rate_limiter;
 pub mod scheduled_sync_engine;
 pub mod sources;
 pub mod sync_engine;
+pub mod sync_registry;
 pub mod traits;
 
 pub use models::{MarketAsset, MarketPriceRecord, MarketPriceSummary, MarketSyncStats};

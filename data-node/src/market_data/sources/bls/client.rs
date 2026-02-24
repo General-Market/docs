@@ -126,17 +126,18 @@ impl BlsMarketSource {
         if !resp.status().is_success() {
             let status = resp.status();
             let body_text = resp.text().await.unwrap_or_default();
-            warn!("BLS API error: {} {}", status, body_text);
-            return Ok(Vec::new());
+            return Err(anyhow::anyhow!("BLS API error: {} {}", status, body_text));
         }
 
         let data: BlsResponse = resp.json().await.context("Failed to parse BLS response")?;
 
         if data.status != "REQUEST_SUCCEEDED" {
-            if let Some(msgs) = &data.message {
-                warn!("BLS API message: {:?}", msgs);
-            }
-            return Ok(Vec::new());
+            let msgs = data.message.unwrap_or_default().join("; ");
+            return Err(anyhow::anyhow!(
+                "BLS API request failed (status='{}'): {}",
+                data.status,
+                msgs
+            ));
         }
 
         let mut results = Vec::new();

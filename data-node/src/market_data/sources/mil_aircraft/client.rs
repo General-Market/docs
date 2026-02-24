@@ -1,18 +1,18 @@
-//! US Military Aircraft tracking via OpenSky Network API
+//! US Military Aircraft tracking via adsb.lol community ADS-B API
 //!
 //! Tracks individual US military aircraft GPS positions and aggregate counts.
 //! Military aircraft are identified by ICAO 24-bit hex address in the range AE0000-AFFFFF.
 //!
-//! Makes ONE call to `https://opensky-network.org/api/states/all` (global, no bbox),
-//! then filters for military ICAO hex codes.
+//! Makes ONE call to `https://api.adsb.lol/v2/mil` (global military filter),
+//! then filters for US military ICAO hex codes.
 //!
 //! Assets:
 //! - Static aggregates: total broadcasting, airborne, ground, regional counts, avg altitude/speed
 //! - Dynamic per-aircraft: lat, lon, alt for each currently broadcasting military aircraft
 //!
-//! API: https://opensky-network.org/api/states/all
-//! Auth: None (anonymous access)
-//! Rate limit: 6 req/min (shared with flights on OpenSky's IP-level limit)
+//! API: https://api.adsb.lol/v2/mil
+//! Auth: None (community API, no key required)
+//! Rate limit: generous (~60 req/min)
 
 use anyhow::Result;
 use chrono::Utc;
@@ -32,27 +32,32 @@ use crate::market_data::traits::{
 /// Asset configuration -- 9 static aggregate assets
 const ASSET_JSON: &str = include_str!("../../../config/mil_aircraft.json");
 
-/// OpenSky API base URL (global, no bbox)
-const API_URL: &str = "https://opensky-network.org/api/states/all";
+/// adsb.lol military aircraft endpoint (pre-filtered for military)
+const API_URL: &str = "https://api.adsb.lol/v2/mil";
 
 /// US military ICAO range start (inclusive)
 const MIL_ICAO_START: u32 = 0xAE0000;
 /// US military ICAO range end (inclusive)
 const MIL_ICAO_END: u32 = 0xAFFFFF;
 
+/// Feet to meters conversion factor
+const FEET_TO_METERS: f64 = 0.3048;
+/// Knots to m/s conversion factor
+const KNOTS_TO_MS: f64 = 0.514444;
+
 // ============================================================================
 // API RESPONSE TYPES
 // ============================================================================
 
-/// OpenSky Network states response
+/// adsb.lol military aircraft response
 #[derive(Debug, Deserialize)]
-struct OpenSkyResponse {
-    /// Unix timestamp of the state vectors
-    #[allow(dead_code)]
-    time: i64,
-    /// Array of state vectors. Each element is an array of mixed types.
-    /// null if no aircraft broadcasting.
-    states: Option<Vec<serde_json::Value>>,
+struct AdsbLolResponse {
+    /// Array of aircraft objects. May be empty or absent.
+    #[serde(default)]
+    ac: Vec<serde_json::Value>,
+    /// Total count of military aircraft
+    #[serde(default)]
+    total: i64,
 }
 
 // ============================================================================
@@ -66,8 +71,10 @@ pub struct MilAircraftState {
     pub callsign: String,
     pub latitude: Option<f64>,
     pub longitude: Option<f64>,
+    /// Barometric altitude in meters (converted from feet)
     pub baro_altitude: Option<f64>,
     pub on_ground: bool,
+    /// Ground speed in m/s (converted from knots)
     pub velocity: Option<f64>,
 }
 
@@ -105,32 +112,50 @@ pub fn classify_region(lat: f64, lon: f64) -> &'static str {
     "other"
 }
 
-/// Parse a single OpenSky state vector (JSON array) into a MilAircraftState.
-/// Returns None if the ICAO is not in the US military range.
-pub fn parse_state_vector(state: &serde_json::Value) -> Option<MilAircraftState> {
-    let arr = state.as_array()?;
-    if arr.len() < 10 {
+/// Parse a single adsb.lol aircraft JSON object into a MilAircraftState.
+/// Returns None if the ICAO hex is not in the US military range.
+///
+/// adsb.lol fields:
+/// - `hex`: ICAO 24-bit address (lowercase)
+/// - `flight`: callsign (may have trailing spaces)
+/// - `lat`/`lon`: position
+/// - `alt_baro`: altitude in feet (number) or "ground" (string)
+/// - `gs`: ground speed in knots
+pub fn parse_aircraft(ac: &serde_json::Value) -> Option<MilAircraftState> {
+    let obj = ac.as_object()?;
+
+    let hex = obj.get("hex")?.as_str()?.trim().to_lowercase();
+    if !is_us_military(&hex) {
         return None;
     }
 
-    let icao24 = arr[0].as_str()?.trim().to_lowercase();
-    if !is_us_military(&icao24) {
-        return None;
-    }
-
-    let callsign = arr[1]
-        .as_str()
+    let callsign = obj
+        .get("flight")
+        .and_then(|v| v.as_str())
         .map(|s| s.trim().to_string())
         .unwrap_or_default();
 
-    let longitude = arr[5].as_f64();
-    let latitude = arr[6].as_f64();
-    let baro_altitude = arr[7].as_f64();
-    let on_ground = arr[8].as_bool().unwrap_or(false);
-    let velocity = arr[9].as_f64();
+    let latitude = obj.get("lat").and_then(|v| v.as_f64());
+    let longitude = obj.get("lon").and_then(|v| v.as_f64());
+
+    // alt_baro can be a number (feet) or the string "ground"
+    let (baro_altitude, on_ground) = match obj.get("alt_baro") {
+        Some(v) if v.is_number() => {
+            let feet = v.as_f64().unwrap_or(0.0);
+            (Some(feet * FEET_TO_METERS), false)
+        }
+        Some(v) if v.as_str() == Some("ground") => (None, true),
+        _ => (None, false),
+    };
+
+    // gs is ground speed in knots → convert to m/s
+    let velocity = obj
+        .get("gs")
+        .and_then(|v| v.as_f64())
+        .map(|knots| knots * KNOTS_TO_MS);
 
     Some(MilAircraftState {
-        icao24,
+        icao24: hex,
         callsign,
         latitude,
         longitude,
@@ -391,7 +416,7 @@ fn decimal_from_f64(v: f64) -> Decimal {
 /// US Military Aircraft tracking market data source.
 ///
 /// Tracks individual US military aircraft positions and aggregate counts
-/// using the OpenSky Network API.
+/// using the adsb.lol community ADS-B API.
 /// Source ID is `"mil_aircraft"`.
 pub struct MilAircraftMarketSource {
     http: SourceHttpClient,
@@ -403,13 +428,13 @@ impl MilAircraftMarketSource {
     pub fn from_env() -> Result<Self> {
         let rate_limit = RateLimitConfig {
             windows: vec![RateWindow {
-                max_requests: 6,
+                max_requests: 30,
                 duration: Duration::from_secs(60),
             }],
         };
         let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
 
-        info!("Military aircraft source initialized (OpenSky, ICAO AE0000-AFFFFF)");
+        info!("Military aircraft source initialized (adsb.lol, ICAO AE0000-AFFFFF)");
 
         Ok(Self {
             http,
@@ -417,20 +442,20 @@ impl MilAircraftMarketSource {
         })
     }
 
-    /// Fetch all state vectors from OpenSky and filter to US military.
+    /// Fetch all military aircraft from adsb.lol and filter to US military.
     async fn fetch_military_states(&self) -> Result<Vec<MilAircraftState>, crate::market_data::sources::error::SourceError> {
-        let response: OpenSkyResponse = self.http.get_json(API_URL).await?;
+        let response: AdsbLolResponse = self.http.get_json(API_URL).await?;
 
         let states = response
-            .states
-            .unwrap_or_default()
+            .ac
             .iter()
-            .filter_map(parse_state_vector)
+            .filter_map(parse_aircraft)
             .collect::<Vec<_>>();
 
         debug!(
-            "MilAircraft: {} military aircraft from global feed",
-            states.len()
+            "MilAircraft: {} US military from {} total military aircraft",
+            states.len(),
+            response.total
         );
 
         Ok(states)
@@ -452,13 +477,13 @@ impl MarketDataSource for MilAircraftMarketSource {
     }
 
     fn sync_interval(&self) -> Duration {
-        Duration::from_secs(600) // 10 minutes
+        Duration::from_secs(300) // 5 minutes (adsb.lol is more generous than OpenSky)
     }
 
     fn rate_limit_config(&self) -> RateLimitConfig {
         RateLimitConfig {
             windows: vec![RateWindow {
-                max_requests: 6,
+                max_requests: 30,
                 duration: Duration::from_secs(60),
             }],
         }
@@ -493,17 +518,17 @@ impl MarketDataSource for MilAircraftMarketSource {
 
         let now = Utc::now();
 
-        // ONE API call to get global states, then filter
+        // ONE API call to get all military aircraft, then filter to US
         let states = match self.fetch_military_states().await {
             Ok(s) => s,
             Err(e) => {
-                warn!("MilAircraft: failed to fetch OpenSky states: {:?}", e);
+                warn!("MilAircraft: failed to fetch adsb.lol states: {:?}", e);
                 return Ok(Vec::new());
             }
         };
 
         info!(
-            "MilAircraft: {} military aircraft found, computing prices for {} assets",
+            "MilAircraft: {} US military aircraft found, computing prices for {} assets",
             states.len(),
             asset_ids.len()
         );
@@ -641,8 +666,8 @@ mod tests {
     #[test]
     fn test_classify_region_other() {
         assert_eq!(classify_region(-34.6037, -58.3816), "other"); // Buenos Aires
-        assert_eq!(classify_region(5.0, 10.0), "other"); // Gulf of Guinea (below Europe lat, below Mideast lat)
-        assert_eq!(classify_region(75.0, 30.0), "other"); // Svalbard (above Europe lat range)
+        assert_eq!(classify_region(5.0, 10.0), "other"); // Gulf of Guinea
+        assert_eq!(classify_region(75.0, 30.0), "other"); // Svalbard
     }
 
     #[test]
@@ -654,84 +679,92 @@ mod tests {
     }
 
     // ========================================================================
-    // State vector parsing tests
+    // Aircraft parsing tests (adsb.lol JSON objects)
     // ========================================================================
 
     #[test]
-    fn test_parse_state_vector_military() {
-        let state = serde_json::json!([
-            "ae1234",  // 0: icao24 (US military)
-            "EVAC01 ", // 1: callsign (with trailing space)
-            "United States", // 2: origin_country
-            1234567890.0, // 3: time_position
-            1234567890.0, // 4: last_contact
-            -77.0365, // 5: longitude
-            38.8977,  // 6: latitude
-            10668.0,  // 7: baro_altitude
-            false,    // 8: on_ground
-            250.5,    // 9: velocity
-            45.0,     // 10: true_track
-            0.0,      // 11: vertical_rate
-            null,     // 12: sensors
-            10972.0,  // 13: geo_altitude
-            "1234",   // 14: squawk
-            false,    // 15: spi
-            0         // 16: position_source
-        ]);
+    fn test_parse_aircraft_military() {
+        let ac = serde_json::json!({
+            "hex": "ae1234",
+            "type": "adsb_icao",
+            "flight": "EVAC01 ",
+            "r": "65-0968",
+            "t": "C5M",
+            "dbFlags": 1,
+            "alt_baro": 35000,
+            "gs": 456.2,
+            "track": 270.5,
+            "lat": 38.8977,
+            "lon": -77.0365,
+            "squawk": "1234"
+        });
 
-        let parsed = parse_state_vector(&state).unwrap();
+        let parsed = parse_aircraft(&ac).unwrap();
         assert_eq!(parsed.icao24, "ae1234");
         assert_eq!(parsed.callsign, "EVAC01");
         assert_eq!(parsed.latitude, Some(38.8977));
         assert_eq!(parsed.longitude, Some(-77.0365));
-        assert_eq!(parsed.baro_altitude, Some(10668.0));
+        // 35000 feet × 0.3048 = 10668.0 meters
+        assert!((parsed.baro_altitude.unwrap() - 10668.0).abs() < 0.1);
         assert!(!parsed.on_ground);
-        assert_eq!(parsed.velocity, Some(250.5));
+        // 456.2 knots × 0.514444 = ~234.7 m/s
+        assert!((parsed.velocity.unwrap() - 234.7).abs() < 1.0);
     }
 
     #[test]
-    fn test_parse_state_vector_non_military() {
-        let state = serde_json::json!([
-            "a12345",  // Not in military range
-            "UAL123",
-            "United States",
-            0.0, 0.0,
-            -73.0, 40.0, 10000.0, false, 200.0,
-            0.0, 0.0, null, 0.0, "1234", false, 0
-        ]);
+    fn test_parse_aircraft_non_military() {
+        let ac = serde_json::json!({
+            "hex": "a12345",
+            "flight": "UAL123",
+            "alt_baro": 35000,
+            "gs": 400.0,
+            "lat": 40.0,
+            "lon": -73.0
+        });
 
-        assert!(parse_state_vector(&state).is_none());
+        assert!(parse_aircraft(&ac).is_none());
     }
 
     #[test]
-    fn test_parse_state_vector_null_fields() {
-        let state = serde_json::json!([
-            "ae5678",
-            null,  // null callsign
-            "United States",
-            0.0, 0.0,
-            null,  // null longitude
-            null,  // null latitude
-            null,  // null altitude
-            true,  // on ground
-            null,  // null velocity
-            0.0, 0.0, null, 0.0, null, false, 0
-        ]);
+    fn test_parse_aircraft_on_ground() {
+        let ac = serde_json::json!({
+            "hex": "ae5678",
+            "flight": "EVAC02 ",
+            "alt_baro": "ground",
+            "lat": 38.9,
+            "lon": -77.0
+        });
 
-        let parsed = parse_state_vector(&state).unwrap();
+        let parsed = parse_aircraft(&ac).unwrap();
         assert_eq!(parsed.icao24, "ae5678");
+        assert!(parsed.baro_altitude.is_none());
+        assert!(parsed.on_ground);
+        assert!(parsed.velocity.is_none()); // no gs field
+    }
+
+    #[test]
+    fn test_parse_aircraft_missing_fields() {
+        let ac = serde_json::json!({
+            "hex": "ae9999"
+        });
+
+        let parsed = parse_aircraft(&ac).unwrap();
+        assert_eq!(parsed.icao24, "ae9999");
         assert_eq!(parsed.callsign, "");
         assert!(parsed.latitude.is_none());
         assert!(parsed.longitude.is_none());
         assert!(parsed.baro_altitude.is_none());
-        assert!(parsed.on_ground);
+        assert!(!parsed.on_ground);
         assert!(parsed.velocity.is_none());
     }
 
     #[test]
-    fn test_parse_state_vector_too_short() {
-        let state = serde_json::json!(["ae1234", "CALL", "US"]);
-        assert!(parse_state_vector(&state).is_none());
+    fn test_parse_aircraft_not_object() {
+        let ac = serde_json::json!("not an object");
+        assert!(parse_aircraft(&ac).is_none());
+
+        let ac2 = serde_json::json!(42);
+        assert!(parse_aircraft(&ac2).is_none());
     }
 
     // ========================================================================
@@ -952,5 +985,23 @@ mod tests {
 
         let zero = decimal_from_f64(0.0);
         assert_eq!(zero, Decimal::ZERO);
+    }
+
+    // ========================================================================
+    // Unit conversion tests
+    // ========================================================================
+
+    #[test]
+    fn test_feet_to_meters() {
+        // 35000 feet = 10668.0 meters
+        let meters = 35000.0 * FEET_TO_METERS;
+        assert!((meters - 10668.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_knots_to_ms() {
+        // 100 knots ≈ 51.44 m/s
+        let ms = 100.0 * KNOTS_TO_MS;
+        assert!((ms - 51.44).abs() < 0.1);
     }
 }

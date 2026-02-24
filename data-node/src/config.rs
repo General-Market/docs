@@ -235,14 +235,6 @@ pub struct ServeArgs {
     #[arg(long, env = "REDDIT_CLIENT_SECRET")]
     pub reddit_client_secret: Option<String>,
 
-    /// Petfinder client ID (enables adoptable pet tracking)
-    #[arg(long, env = "PETFINDER_CLIENT_ID")]
-    pub petfinder_client_id: Option<String>,
-
-    /// Petfinder client secret
-    #[arg(long, env = "PETFINDER_CLIENT_SECRET")]
-    pub petfinder_client_secret: Option<String>,
-
     /// BoardGameGeek API token (enables BGG hotness tracking)
     #[arg(long, env = "BGG_API_TOKEN")]
     pub bgg_api_token: Option<String>,

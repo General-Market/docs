@@ -35,3 +35,4 @@ CREATE INDEX IF NOT EXISTS idx_market_prices_source ON market_prices(source);
 CREATE INDEX IF NOT EXISTS idx_market_prices_asset ON market_prices(source, asset_id);
 CREATE INDEX IF NOT EXISTS idx_market_prices_time ON market_prices(fetched_at DESC);
 CREATE INDEX IF NOT EXISTS idx_market_prices_asset_time ON market_prices(source, asset_id, fetched_at DESC);
+CREATE INDEX IF NOT EXISTS idx_market_prices_source_fetched ON market_prices(source, fetched_at DESC);

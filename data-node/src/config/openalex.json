@@ -1,0 +1,236 @@
+[
+  {
+    "asset_id": "openalex_total",
+    "symbol": "OALEX/TOTAL",
+    "name": "Total New Works Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "total",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_agriculture",
+    "symbol": "OALEX/AGRI",
+    "name": "Agricultural and Biological Sciences Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Agricultural and Biological Sciences",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_arts",
+    "symbol": "OALEX/ARTS",
+    "name": "Arts and Humanities Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Arts and Humanities",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_biochem",
+    "symbol": "OALEX/BIOC",
+    "name": "Biochemistry, Genetics and Molecular Biology Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Biochemistry, Genetics and Molecular Biology",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_business",
+    "symbol": "OALEX/BUSI",
+    "name": "Business, Management and Accounting Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Business, Management and Accounting",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_chemistry",
+    "symbol": "OALEX/CHEM",
+    "name": "Chemistry Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Chemistry",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_cs",
+    "symbol": "OALEX/CS",
+    "name": "Computer Science Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Computer Science",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_earth",
+    "symbol": "OALEX/EART",
+    "name": "Earth and Planetary Sciences Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Earth and Planetary Sciences",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_economics",
+    "symbol": "OALEX/ECON",
+    "name": "Economics, Econometrics and Finance Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Economics, Econometrics and Finance",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_energy",
+    "symbol": "OALEX/ENER",
+    "name": "Energy Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Energy",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_engineering",
+    "symbol": "OALEX/ENGR",
+    "name": "Engineering Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Engineering",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_environmental",
+    "symbol": "OALEX/ENVR",
+    "name": "Environmental Science Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Environmental Science",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_immunology",
+    "symbol": "OALEX/IMMU",
+    "name": "Immunology and Microbiology Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Immunology and Microbiology",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_law",
+    "symbol": "OALEX/LAW",
+    "name": "Law Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Law",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_materials",
+    "symbol": "OALEX/MATR",
+    "name": "Materials Science Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Materials Science",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_math",
+    "symbol": "OALEX/MATH",
+    "name": "Mathematics Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Mathematics",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_medicine",
+    "symbol": "OALEX/MED",
+    "name": "Medicine Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Medicine",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_neuroscience",
+    "symbol": "OALEX/NEUR",
+    "name": "Neuroscience Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Neuroscience",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_nursing",
+    "symbol": "OALEX/NURS",
+    "name": "Nursing Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Nursing",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_pharma",
+    "symbol": "OALEX/PHRM",
+    "name": "Pharmacology, Toxicology and Pharmaceutics Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Pharmacology, Toxicology and Pharmaceutics",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_physics",
+    "symbol": "OALEX/PHYS",
+    "name": "Physics and Astronomy Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Physics and Astronomy",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_polisci",
+    "symbol": "OALEX/POLS",
+    "name": "Political Science and International Relations Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Political Science and International Relations",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_psychology",
+    "symbol": "OALEX/PSYC",
+    "name": "Psychology Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Psychology",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_social",
+    "symbol": "OALEX/SOCL",
+    "name": "Social Sciences Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Social Sciences",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_sociology",
+    "symbol": "OALEX/SOCI",
+    "name": "Sociology Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Sociology",
+    "active": true
+  },
+  {
+    "asset_id": "openalex_veterinary",
+    "symbol": "OALEX/VETR",
+    "name": "Veterinary Papers Today",
+    "category": "education",
+    "subcategory": "scholarly_works",
+    "api_ref": "Veterinary",
+    "active": true
+  }
+]

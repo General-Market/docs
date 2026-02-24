@@ -1,0 +1,227 @@
+[
+  {
+    "asset_id": "pubmed_total",
+    "symbol": "PMED/TOTAL",
+    "name": "Total New Articles Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "total",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_cancer",
+    "symbol": "PMED/CANC",
+    "name": "Cancer Research Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "cancer",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_cardiovascular",
+    "symbol": "PMED/CARD",
+    "name": "Cardiovascular Research Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "cardiovascular diseases",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_neuroscience",
+    "symbol": "PMED/NEUR",
+    "name": "Neuroscience Papers Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "neuroscience",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_immunology",
+    "symbol": "PMED/IMMU",
+    "name": "Immunology Papers Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "immunology",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_genetics",
+    "symbol": "PMED/GENE",
+    "name": "Genetics Papers Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "genetics genomics",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_infectious",
+    "symbol": "PMED/INFD",
+    "name": "Infectious Disease Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "infectious disease",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_pharmacology",
+    "symbol": "PMED/PHRM",
+    "name": "Pharmacology Papers Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "pharmacology",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_surgery",
+    "symbol": "PMED/SURG",
+    "name": "Surgery Papers Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "surgery",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_pediatrics",
+    "symbol": "PMED/PEDI",
+    "name": "Pediatrics Papers Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "pediatrics",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_psychiatry",
+    "symbol": "PMED/PSYC",
+    "name": "Psychiatry Papers Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "psychiatry mental health",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_diabetes",
+    "symbol": "PMED/DIAB",
+    "name": "Diabetes Research Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "diabetes",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_covid",
+    "symbol": "PMED/COVD",
+    "name": "COVID-19 Papers Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "covid-19",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_ai_health",
+    "symbol": "PMED/AIMD",
+    "name": "AI in Medicine Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "artificial intelligence medicine",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_clinical_trial",
+    "symbol": "PMED/CLTR",
+    "name": "Clinical Trials Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "clinical trial",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_public_health",
+    "symbol": "PMED/PUBH",
+    "name": "Public Health Papers Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "public health",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_radiology",
+    "symbol": "PMED/RADL",
+    "name": "Radiology Papers Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "radiology imaging",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_orthopedics",
+    "symbol": "PMED/ORTH",
+    "name": "Orthopedics Papers Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "orthopedics",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_dermatology",
+    "symbol": "PMED/DERM",
+    "name": "Dermatology Papers Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "dermatology",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_ophthalmology",
+    "symbol": "PMED/OPHT",
+    "name": "Ophthalmology Papers Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "ophthalmology",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_gastroenterology",
+    "symbol": "PMED/GAST",
+    "name": "Gastroenterology Papers Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "gastroenterology",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_endocrinology",
+    "symbol": "PMED/ENDO",
+    "name": "Endocrinology Papers Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "endocrinology",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_nephrology",
+    "symbol": "PMED/NEPH",
+    "name": "Nephrology Papers Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "nephrology",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_pulmonology",
+    "symbol": "PMED/PULM",
+    "name": "Pulmonology Papers Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "pulmonology respiratory",
+    "active": true
+  },
+  {
+    "asset_id": "pubmed_hematology",
+    "symbol": "PMED/HEMA",
+    "name": "Hematology Papers Today",
+    "category": "education",
+    "subcategory": "biomedical_research",
+    "api_ref": "hematology",
+    "active": true
+  }
+]

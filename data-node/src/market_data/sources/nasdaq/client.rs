@@ -70,32 +70,40 @@ impl NasdaqClient {
 
         debug!("Fetching Nasdaq dataset: {}", dataset_code);
 
-        let resp = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .with_context(|| format!("Failed to fetch Nasdaq dataset {}", dataset_code))?;
+        const MAX_RETRIES: u32 = 2;
+        let mut attempt = 0;
 
-        if !resp.status().is_success() {
+        loop {
+            let resp = self
+                .client
+                .get(&url)
+                .send()
+                .await
+                .with_context(|| format!("Failed to fetch Nasdaq dataset {}", dataset_code))?;
+
+            if resp.status().is_success() {
+                let data: T = resp.json().await.with_context(|| {
+                    format!("Failed to parse Nasdaq response for {}", dataset_code)
+                })?;
+                return Ok(data);
+            }
+
             let status = resp.status();
             let body = resp.text().await.unwrap_or_default();
 
-            // Check for rate limit
-            if status.as_u16() == 429 {
-                warn!("Nasdaq rate limit hit for {}. Waiting...", dataset_code);
+            // Retry on rate limit (429)
+            if status.as_u16() == 429 && attempt < MAX_RETRIES {
+                attempt += 1;
+                warn!(
+                    "Nasdaq rate limit hit for {} (attempt {}/{}). Retrying in 10s...",
+                    dataset_code, attempt, MAX_RETRIES
+                );
                 tokio::time::sleep(Duration::from_secs(10)).await;
+                continue;
             }
 
             anyhow::bail!("Nasdaq API error for {}: {} {}", dataset_code, status, body);
         }
-
-        let data: T = resp
-            .json()
-            .await
-            .with_context(|| format!("Failed to parse Nasdaq response for {}", dataset_code))?;
-
-        Ok(data)
     }
 
     /// Check if API key is configured

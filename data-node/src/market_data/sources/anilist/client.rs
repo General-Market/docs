@@ -28,10 +28,10 @@ const ASSET_JSON: &str = include_str!("../../../config/anilist.json");
 const ANILIST_API_URL: &str = "https://graphql.anilist.co";
 
 /// Delay between sequential GraphQL requests (ms)
-const INTER_REQUEST_DELAY_MS: u64 = 800;
+const INTER_REQUEST_DELAY_MS: u64 = 1200;
 
 /// How many discovery pages per media type (50 items/page)
-const DISCOVERY_PAGES: u32 = 20;
+const DISCOVERY_PAGES: u32 = 10;
 
 /// Items per page
 const PAGE_SIZE: u32 = 50;
@@ -251,6 +251,7 @@ impl AniListMarketSource {
         let query = r#"
             query ($ids: [Int], $page: Int, $perPage: Int) {
                 Page(page: $page, perPage: $perPage) {
+                    pageInfo { hasNextPage }
                     media(id_in: $ids) {
                         id
                         title { romaji english }

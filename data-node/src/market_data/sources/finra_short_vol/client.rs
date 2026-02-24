@@ -92,42 +92,32 @@ impl FinraShortVolMarketSource {
     }
 
     /// Try to get today's date string in Eastern time (YYYYMMDD format).
-    /// If today's file is unavailable, try the previous trading day.
+    /// If today's file is unavailable, walk back up to 5 days to find the most
+    /// recent file. This handles weekends (Sat/Sun have no data) and holidays.
     async fn fetch_file_with_fallback(&self, now: DateTime<Utc>) -> Result<Option<String>> {
         let eastern = now.with_timezone(&chrono_tz::US::Eastern);
+        let mut date = eastern.date_naive();
+
+        for days_back in 0..=5 {
+            let date_str = date.format("%Y%m%d").to_string();
+
+            if let Some(text) = self.download_short_volume_file(&date_str).await? {
+                if days_back == 0 {
+                    debug!("Downloaded FINRA short volume file for {}", date_str);
+                } else {
+                    debug!(
+                        "Downloaded FINRA short volume file for {} ({}-day fallback)",
+                        date_str, days_back
+                    );
+                }
+                return Ok(Some(text));
+            }
+
+            date = date.pred_opt().unwrap();
+        }
+
         let today_str = eastern.format("%Y%m%d").to_string();
-
-        // Try today first
-        if let Some(text) = self.download_short_volume_file(&today_str).await? {
-            debug!("Downloaded FINRA short volume file for {}", today_str);
-            return Ok(Some(text));
-        }
-
-        // Try previous day (handles weekends and late publishing)
-        let yesterday = eastern.date_naive().pred_opt().unwrap();
-        let yesterday_str = yesterday.format("%Y%m%d").to_string();
-
-        if let Some(text) = self.download_short_volume_file(&yesterday_str).await? {
-            debug!(
-                "Downloaded FINRA short volume file for {} (fallback)",
-                yesterday_str
-            );
-            return Ok(Some(text));
-        }
-
-        // Try two days back (handles weekends: Monday before file is published)
-        let two_days_ago = yesterday.pred_opt().unwrap();
-        let two_days_str = two_days_ago.format("%Y%m%d").to_string();
-
-        if let Some(text) = self.download_short_volume_file(&two_days_str).await? {
-            debug!(
-                "Downloaded FINRA short volume file for {} (2-day fallback)",
-                two_days_str
-            );
-            return Ok(Some(text));
-        }
-
-        warn!("No FINRA short volume file found for {} or prior days", today_str);
+        warn!("No FINRA short volume file found for {} or prior 5 days", today_str);
         Ok(None)
     }
 }

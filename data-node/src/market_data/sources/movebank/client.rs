@@ -13,6 +13,7 @@
 
 use anyhow::Result;
 use chrono::Utc;
+use md5;
 use rust_decimal::Decimal;
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
@@ -181,6 +182,8 @@ impl MovebankMarketSource {
     }
 
     /// Make an authenticated GET request to the Movebank API, returning raw CSV text.
+    /// If the API returns a license agreement HTML page, automatically accepts it
+    /// by computing the MD5 hash and re-requesting with `license-md5` parameter.
     async fn api_get(&self, query_params: &str) -> Result<String, anyhow::Error> {
         let url = format!("{}?{}", MOVEBANK_API_URL, query_params);
 
@@ -211,13 +214,59 @@ impl MovebankMarketSource {
             .await
             .map_err(|e| anyhow::anyhow!("Failed to read Movebank response body: {}", e))?;
 
-        // Movebank may return a license agreement page instead of data.
-        // Detect this and report it clearly.
-        if text.contains("License Terms") || text.contains("accept the license") {
+        // "No data are available for download" — study is restricted
+        if text.contains("No data are available for download") {
             return Err(anyhow::anyhow!(
-                "Movebank returned a license agreement page. \
-                 The user may need to accept study-level licenses via the Movebank web UI."
+                "Movebank: no data available for download (study may be restricted)"
             ));
+        }
+
+        // Movebank returns an HTML license page that must be "accepted" via the API.
+        // Auto-accept by computing the MD5 hash of the page and re-requesting.
+        if text.contains("License Terms") || text.contains("accept the license") {
+            let md5_hash = format!("{:x}", md5::compute(text.as_bytes()));
+            debug!(
+                "Movebank: auto-accepting license (md5={}) for query: {}",
+                md5_hash, query_params
+            );
+
+            // Re-request with license-md5 to accept
+            self.http.rate_limiter().wait_for_permit().await;
+
+            let accept_url = format!("{}&license-md5={}", url, md5_hash);
+            let accept_response = self
+                .http
+                .inner()
+                .get(&accept_url)
+                .basic_auth(&self.user, Some(&self.password))
+                .send()
+                .await
+                .map_err(|e| anyhow::anyhow!("Movebank license accept request failed: {}", e))?;
+
+            let accept_status = accept_response.status();
+            if !accept_status.is_success() {
+                let body = accept_response.text().await.unwrap_or_default();
+                return Err(anyhow::anyhow!(
+                    "Movebank license accept failed (HTTP {}): {}",
+                    accept_status.as_u16(),
+                    truncate(&body, 200)
+                ));
+            }
+
+            let accepted_text = accept_response.text().await.map_err(|e| {
+                anyhow::anyhow!("Failed to read Movebank accept response: {}", e)
+            })?;
+
+            // If we still get a license page after accepting, something is wrong
+            if accepted_text.contains("License Terms")
+                || accepted_text.contains("accept the license")
+            {
+                return Err(anyhow::anyhow!(
+                    "Movebank: license still not accepted after MD5 submission"
+                ));
+            }
+
+            return Ok(accepted_text);
         }
 
         Ok(text)

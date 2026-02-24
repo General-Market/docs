@@ -2,11 +2,13 @@
 //!
 //! Fetches 13F filings from https://data.sec.gov/
 //! Tracks 15 major institutional investors.
+//! Parses the infotable XML to extract AUM, top-10 concentration, and position count.
 
 use anyhow::{Context, Result};
 use chrono::{DateTime, Datelike, Utc};
 use rust_decimal::Decimal;
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::str::FromStr;
 use std::time::Duration;
 use tracing::{debug, info, warn};
@@ -36,9 +38,29 @@ struct SecRecentFilings {
     form: Vec<String>,
     #[serde(rename = "filingDate")]
     filing_date: Vec<String>,
+    #[serde(rename = "accessionNumber")]
+    accession_number: Vec<String>,
     #[serde(rename = "primaryDocument")]
     #[allow(dead_code)]
     primary_document: Vec<String>,
+}
+
+/// Filing directory index from SEC
+#[derive(Debug, Deserialize)]
+struct FilingIndex {
+    directory: FilingDirectory,
+}
+
+#[derive(Debug, Deserialize)]
+struct FilingDirectory {
+    item: Vec<FilingItem>,
+}
+
+#[derive(Debug, Deserialize)]
+struct FilingItem {
+    name: String,
+    #[allow(dead_code)]
+    size: Option<String>,
 }
 
 /// SEC EDGAR market data source
@@ -89,18 +111,14 @@ impl SecEdgarMarketSource {
         )
     }
 
-    /// Fetch 13F data for a fund (placeholder - actual implementation requires XML parsing)
+    /// Fetch and parse 13F data for a fund
     async fn fetch_fund_data(&self, cik: &str) -> Result<Option<FundData>> {
-        // Note: Full implementation would:
-        // 1. Fetch submissions list from SEC
-        // 2. Find latest 13F-HR filing
-        // 3. Parse the XML to extract holdings
-        // 4. Calculate AUM, top 10 concentration, position count
+        // submissions API needs 10-digit zero-padded CIK
+        // Archives path needs CIK without leading zeros
+        let cik_stripped = cik.trim_start_matches('0');
 
-        let url = format!(
-            "https://data.sec.gov/submissions/CIK{}.json",
-            cik.trim_start_matches('0')
-        );
+        // Step 1: Fetch submissions list
+        let url = format!("https://data.sec.gov/submissions/CIK{}.json", cik);
 
         let resp = self
             .client
@@ -115,13 +133,12 @@ impl SecEdgarMarketSource {
             return Ok(None);
         }
 
-        // Parse submissions to find latest 13F-HR
         let submissions: SecSubmissions = resp
             .json()
             .await
             .with_context(|| format!("Failed to parse SEC response for CIK {}", cik))?;
 
-        // Find the most recent 13F-HR filing
+        // Step 2: Find the most recent 13F-HR filing
         let form_index = submissions
             .filings
             .recent
@@ -129,26 +146,175 @@ impl SecEdgarMarketSource {
             .iter()
             .position(|f| f == "13F-HR");
 
-        if let Some(idx) = form_index {
-            let filing_date = submissions.filings.recent.filing_date.get(idx).cloned();
+        let Some(idx) = form_index else {
+            debug!("No 13F-HR filing found for CIK {}", cik);
+            return Ok(None);
+        };
 
-            // In a full implementation, we'd fetch and parse the actual 13F XML here
-            // For now, return placeholder data indicating the filing exists
-            return Ok(Some(FundData {
-                filing_date,
-                aum: None,            // Would be calculated from holdings
-                top10_pct: None,      // Would be calculated from holdings
-                position_count: None, // Would be calculated from holdings
-            }));
+        let accession = match submissions.filings.recent.accession_number.get(idx) {
+            Some(a) => a.clone(),
+            None => return Ok(None),
+        };
+        let filing_date = submissions.filings.recent.filing_date.get(idx).cloned();
+
+        // Step 3: Fetch filing directory to find infotable XML
+        let accession_no_dash = accession.replace('-', "");
+        let index_url = format!(
+            "https://www.sec.gov/Archives/edgar/data/{}/{}/index.json",
+            cik_stripped, accession_no_dash
+        );
+
+        // Rate-limit between SEC requests
+        tokio::time::sleep(Duration::from_millis(150)).await;
+
+        let index_resp = self
+            .client
+            .get(&index_url)
+            .send()
+            .await
+            .with_context(|| format!("Failed to fetch filing index for CIK {}", cik))?;
+
+        if !index_resp.status().is_success() {
+            warn!("Filing index error for CIK {}: {}", cik, index_resp.status());
+            return Ok(None);
         }
 
-        Ok(None)
+        let filing_index: FilingIndex = index_resp
+            .json()
+            .await
+            .with_context(|| format!("Failed to parse filing index for CIK {}", cik))?;
+
+        // Find the infotable XML (any .xml that's not primary_doc.xml)
+        let infotable_file = filing_index
+            .directory
+            .item
+            .iter()
+            .find(|item| {
+                item.name.ends_with(".xml") && item.name != "primary_doc.xml"
+            })
+            .map(|item| item.name.clone());
+
+        let Some(infotable_name) = infotable_file else {
+            warn!("No infotable XML found in 13F filing for CIK {}", cik);
+            return Ok(None);
+        };
+
+        // Step 4: Fetch and parse infotable XML
+        let xml_url = format!(
+            "https://www.sec.gov/Archives/edgar/data/{}/{}/{}",
+            cik_stripped, accession_no_dash, infotable_name
+        );
+
+        tokio::time::sleep(Duration::from_millis(150)).await;
+
+        let xml_resp = self
+            .client
+            .get(&xml_url)
+            .send()
+            .await
+            .with_context(|| format!("Failed to fetch infotable for CIK {}", cik))?;
+
+        if !xml_resp.status().is_success() {
+            warn!("Infotable error for CIK {}: {}", cik, xml_resp.status());
+            return Ok(None);
+        }
+
+        let xml_text = xml_resp
+            .text()
+            .await
+            .with_context(|| format!("Failed to read infotable for CIK {}", cik))?;
+
+        // Parse the infotable XML
+        let fund_data = Self::parse_infotable(&xml_text, filing_date);
+
+        Ok(Some(fund_data))
+    }
+
+    /// Parse 13F infotable XML to extract AUM, top-10 concentration, position count.
+    ///
+    /// XML structure (one entry per holding):
+    /// ```xml
+    /// <infoTable>
+    ///   <cusip>02005N100</cusip>
+    ///   <value>576074081</value>
+    ///   ...
+    /// </infoTable>
+    /// ```
+    fn parse_infotable(xml: &str, filing_date: Option<String>) -> FundData {
+        // Extract all (cusip, value) pairs from the XML
+        let mut holdings: HashMap<String, i64> = HashMap::new();
+
+        // Simple regex-free XML parsing: find each <infoTable>...</infoTable> block
+        let mut pos = 0;
+        while let Some(start) = xml[pos..].find("<infoTable>") {
+            let abs_start = pos + start;
+            let Some(end) = xml[abs_start..].find("</infoTable>") else {
+                break;
+            };
+            let block = &xml[abs_start..abs_start + end];
+
+            // Extract <value>...</value>
+            let value = Self::extract_tag(block, "value")
+                .and_then(|v| v.parse::<i64>().ok());
+
+            // Extract <cusip>...</cusip>
+            let cusip = Self::extract_tag(block, "cusip");
+
+            if let (Some(cusip_str), Some(val)) = (cusip, value) {
+                // Aggregate by CUSIP (same security can have multiple entries)
+                *holdings.entry(cusip_str).or_insert(0) += val;
+            }
+
+            pos = abs_start + end + 12; // skip past </infoTable>
+        }
+
+        if holdings.is_empty() {
+            return FundData {
+                filing_date,
+                aum: None,
+                top10_pct: None,
+                position_count: None,
+            };
+        }
+
+        // AUM = sum of all holding values (in dollars)
+        let aum: i64 = holdings.values().sum();
+
+        // Position count = unique CUSIPs
+        let position_count = holdings.len() as i64;
+
+        // Top-10 concentration
+        let mut values: Vec<i64> = holdings.values().copied().collect();
+        values.sort_unstable_by(|a, b| b.cmp(a));
+        let top10_sum: i64 = values.iter().take(10).sum();
+        let top10_pct = if aum > 0 {
+            (top10_sum as f64 / aum as f64) * 100.0
+        } else {
+            0.0
+        };
+
+        FundData {
+            filing_date,
+            aum: Some(aum as f64),
+            top10_pct: Some(top10_pct),
+            position_count: Some(position_count),
+        }
+    }
+
+    /// Extract text content from a simple XML tag (no attributes, no nesting)
+    fn extract_tag<'a>(xml: &'a str, tag: &str) -> Option<String> {
+        let open = format!("<{}>", tag);
+        let close = format!("</{}>", tag);
+        let start = xml.find(&open)?;
+        let content_start = start + open.len();
+        let end = xml[content_start..].find(&close)?;
+        Some(xml[content_start..content_start + end].trim().to_string())
     }
 }
 
 /// Fund data extracted from 13F
-#[allow(dead_code)]
 struct FundData {
+    #[allow(dead_code)]
     filing_date: Option<String>,
     aum: Option<f64>,
     top10_pct: Option<f64>,
@@ -197,7 +363,7 @@ impl MarketDataSource for SecEdgarMarketSource {
         let mut seen_ciks = std::collections::HashSet::new();
 
         for entry in &entries {
-            let Some((cik, metric)) = Self::parse_api_ref(&entry.api_ref) else {
+            let Some((cik, _metric)) = Self::parse_api_ref(&entry.api_ref) else {
                 continue;
             };
 
@@ -225,7 +391,7 @@ impl MarketDataSource for SecEdgarMarketSource {
                         };
 
                         if let Some(val) = value_opt {
-                            if let Ok(decimal_value) = Decimal::from_str(&val.to_string()) {
+                            if let Ok(decimal_value) = Decimal::from_str(&format!("{:.2}", val)) {
                                 results.push(PriceUpdate {
                                     asset_id: e.asset_id.clone(),
                                     symbol: e.symbol.clone(),
@@ -249,7 +415,7 @@ impl MarketDataSource for SecEdgarMarketSource {
             }
         }
 
-        info!("Fetched {} SEC 13F metrics", results.len());
+        info!("Fetched {} SEC 13F metrics from {} funds", results.len(), seen_ciks.len());
         Ok(results)
     }
 }
@@ -324,5 +490,57 @@ mod tests {
         // June 15 should NOT be in filing window
         let june = chrono::Utc.with_ymd_and_hms(2026, 6, 15, 12, 0, 0).unwrap();
         assert!(!SecEdgarMarketSource::is_filing_window(june));
+    }
+
+    #[test]
+    fn test_parse_infotable() {
+        let xml = r#"
+        <informationTable xmlns="http://www.sec.gov/edgar/document/thirteenf/informationtable">
+          <infoTable>
+            <cusip>02005N100</cusip>
+            <value>500000000</value>
+          </infoTable>
+          <infoTable>
+            <cusip>02005N100</cusip>
+            <value>100000000</value>
+          </infoTable>
+          <infoTable>
+            <cusip>037833100</cusip>
+            <value>300000000</value>
+          </infoTable>
+          <infoTable>
+            <cusip>594918104</cusip>
+            <value>200000000</value>
+          </infoTable>
+        </informationTable>
+        "#;
+
+        let data = SecEdgarMarketSource::parse_infotable(xml, Some("2026-02-17".to_string()));
+
+        // AUM = 500M + 100M + 300M + 200M = 1.1B
+        assert_eq!(data.aum, Some(1_100_000_000.0));
+
+        // 3 unique CUSIPs
+        assert_eq!(data.position_count, Some(3));
+
+        // Top-10: all 3 positions (sum = 1.1B), so 100%
+        // But by CUSIP: 02005N100=600M, 037833100=300M, 594918104=200M
+        // Top 10 (all 3): 1.1B / 1.1B = 100%
+        let top10 = data.top10_pct.unwrap();
+        assert!((top10 - 100.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_extract_tag() {
+        let xml = "<infoTable><cusip>02005N100</cusip><value>576074081</value></infoTable>";
+        assert_eq!(
+            SecEdgarMarketSource::extract_tag(xml, "cusip"),
+            Some("02005N100".to_string())
+        );
+        assert_eq!(
+            SecEdgarMarketSource::extract_tag(xml, "value"),
+            Some("576074081".to_string())
+        );
+        assert_eq!(SecEdgarMarketSource::extract_tag(xml, "missing"), None);
     }
 }

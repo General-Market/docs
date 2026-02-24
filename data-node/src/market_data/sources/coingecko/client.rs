@@ -277,7 +277,7 @@ impl CoinGeckoMarketSource {
             match self
                 .client
                 .get(&url)
-                .header("x-cg-pro-api-key", &self.api_key)
+                .header(self.auth_header(), &self.api_key)
                 .send()
                 .await
             {
@@ -386,6 +386,8 @@ impl MarketDataSource for CoinGeckoMarketSource {
 
         let now = Utc::now();
         let mut results = Vec::new();
+        let total_batches = (asset_ids.len() + BATCH_SIZE - 1) / BATCH_SIZE;
+        let mut failed_batches = 0u32;
 
         // Batch requests to respect API limits
         for chunk in asset_ids.chunks(BATCH_SIZE) {
@@ -423,15 +425,24 @@ impl MarketDataSource for CoinGeckoMarketSource {
                     }
                 }
                 Err(e) => {
-                    warn!("Error fetching batch prices: {:?}", e);
+                    warn!("Error fetching CoinGecko batch: {:?}", e);
+                    failed_batches += 1;
                 }
             }
         }
 
+        if failed_batches > 0 {
+            let estimated_missing = failed_batches as usize * BATCH_SIZE;
+            warn!(
+                "CoinGecko: {}/{} batches failed, ~{}/{} assets may be missing",
+                failed_batches, total_batches, estimated_missing, asset_ids.len()
+            );
+        }
+
         info!(
-            "Fetched {}/{} crypto prices from CoinGecko",
-            results.len(),
-            asset_ids.len()
+            "Fetched {}/{} crypto prices from CoinGecko ({}/{} batches ok)",
+            results.len(), asset_ids.len(),
+            total_batches - failed_batches as usize, total_batches
         );
 
         Ok(results)

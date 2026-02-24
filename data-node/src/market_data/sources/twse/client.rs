@@ -31,7 +31,8 @@ const ASSET_JSON: &str = include_str!("../../../config/twse.json");
 const TWSE_OPENAPI_URL: &str = "https://openapi.twse.com.tw/v1/opendata/t187ap03_L";
 
 /// TWSE MIS API base URL (HTTP, for real-time quotes)
-const TWSE_MIS_URL: &str = "http://mis.twse.com.tw/stock/api/getStockInfo.jsp";
+/// TWSE MIS API (HTTPS — HTTP returns 301)
+const TWSE_MIS_URL: &str = "https://mis.twse.com.tw/stock/api/getStockInfo.jsp";
 
 /// Delay between sequential batch price fetches (ms)
 const INTER_REQUEST_DELAY_MS: u64 = 1200;

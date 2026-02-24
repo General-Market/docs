@@ -126,7 +126,7 @@ impl MarketDataSource for PypiMarketSource {
     }
 
     fn sync_interval(&self) -> Duration {
-        Duration::from_secs(600) // 10 minutes, top 250 packages
+        Duration::from_secs(3600) // 1 hour — 250 packages × 2.5s each = ~10 min fetch time
     }
 
     fn rate_limit_config(&self) -> RateLimitConfig {

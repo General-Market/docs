@@ -1,14 +1,17 @@
-//! OpenSky Flight Tracking client implementing MarketDataSource
+//! Global Flight Tracking via adsb.lol community ADS-B API
 //!
-//! Tracks aircraft counts across 25 global airspace regions and airport areas
-//! using the OpenSky Network REST API.
+//! Tracks aircraft counts across 25 global airspace regions and airport areas.
+//!
+//! Strategy: ONE call to `https://api.adsb.lol/v2/all` fetches all aircraft globally,
+//! then counts per bounding box region in-memory. This replaces the old OpenSky approach
+//! which needed 25 separate calls with 11s delays (275s total per sync).
 //!
 //! Each region is defined by a bounding box. The value for each asset is the
 //! count of aircraft currently in that airspace.
 //!
-//! API: https://opensky-network.org/api/states/all?lamin=...&lamax=...&lomin=...&lomax=...
-//! Auth: None (anonymous access)
-//! Rate limit: 10s cooldown between requests (anonymous), ~6 req/min
+//! API: https://api.adsb.lol/v2/all
+//! Auth: None (community API, no key required)
+//! Rate limit: generous (~60 req/min)
 
 use anyhow::Result;
 use chrono::Utc;
@@ -19,8 +22,6 @@ use std::time::Duration;
 use tracing::{debug, info, warn};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
-use crate::market_data::sources::error::SourceError;
-use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
 use crate::market_data::traits::{
     load_assets_from_json, AssetEntry, AssetUpdate, MarketDataSource, PriceUpdate,
 };
@@ -28,78 +29,77 @@ use crate::market_data::traits::{
 /// Asset configuration — 25 global airspace monitoring regions
 const ASSET_JSON: &str = include_str!("../../../config/flights.json");
 
-/// OpenSky API base URL
-const API_BASE: &str = "https://opensky-network.org/api/states/all";
-
-/// Delay between sequential region fetches (ms) — OpenSky requires 10s+ cooldown
-const INTER_REQUEST_DELAY_MS: u64 = 11000;
+/// adsb.lol global aircraft endpoint (fetches everything once)
+const API_URL: &str = "https://api.adsb.lol/v2/all";
 
 // ============================================================================
 // API RESPONSE TYPES
 // ============================================================================
 
-/// OpenSky Network states response
+/// adsb.lol global aircraft response
 #[derive(Debug, Deserialize)]
-struct OpenSkyResponse {
-    /// Unix timestamp of the state vectors
-    #[allow(dead_code)]
-    time: i64,
-    /// Array of state vectors. Each element is an array of mixed types.
-    /// null if no aircraft in the bounding box.
-    states: Option<Vec<serde_json::Value>>,
+struct AdsbLolResponse {
+    /// Array of aircraft objects
+    #[serde(default)]
+    ac: Vec<AircraftPosition>,
+    /// Total aircraft count
+    #[serde(default)]
+    total: i64,
+}
+
+/// Minimal aircraft position — only extract what we need for counting
+#[derive(Debug, Deserialize)]
+struct AircraftPosition {
+    #[serde(default)]
+    lat: Option<f64>,
+    #[serde(default)]
+    lon: Option<f64>,
+}
+
+/// Parsed bounding box
+#[derive(Debug, Clone)]
+struct BBox {
+    lat_min: f64,
+    lat_max: f64,
+    lon_min: f64,
+    lon_max: f64,
+}
+
+impl BBox {
+    /// Check if a lat/lon point is inside this bounding box.
+    fn contains(&self, lat: f64, lon: f64) -> bool {
+        lat >= self.lat_min && lat <= self.lat_max
+            && lon >= self.lon_min && lon <= self.lon_max
+    }
 }
 
 // ============================================================================
 // SOURCE IMPLEMENTATION
 // ============================================================================
 
-/// OpenSky flight tracking market data source.
+/// Global flight tracking market data source.
 ///
-/// Tracks aircraft counts across 25 global airspace regions.
+/// Tracks aircraft counts across 25 global airspace regions
+/// using the adsb.lol community ADS-B API.
 /// Source ID is `"flights"`.
 pub struct FlightsMarketSource {
-    http: SourceHttpClient,
+    client: reqwest::Client,
 }
 
 impl FlightsMarketSource {
     pub fn from_env() -> Result<Self> {
-        let rate_limit = RateLimitConfig {
-            windows: vec![RateWindow {
-                max_requests: 6,
-                duration: Duration::from_secs(60),
-            }],
-        };
-        let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(60)) // Large response, generous timeout
+            .gzip(true)
+            .build()?;
 
-        info!("OpenSky flights source initialized (25 regions)");
+        info!("adsb.lol flights source initialized (25 regions, single-call strategy)");
 
-        Ok(Self { http })
+        Ok(Self { client })
     }
 
-    /// Build the OpenSky API URL for a given bounding box.
-    /// Bounding box format in config: "lat_min,lat_max,lon_min,lon_max"
-    fn build_url(bbox: &str) -> Result<String, SourceError> {
-        let parts: Vec<&str> = bbox.split(',').collect();
-        if parts.len() != 4 {
-            return Err(SourceError::DataError(format!(
-                "Invalid bounding box format '{}': expected 'lat_min,lat_max,lon_min,lon_max'",
-                bbox
-            )));
-        }
-
-        Ok(format!(
-            "{}?lamin={}&lamax={}&lomin={}&lomax={}",
-            API_BASE,
-            parts[0].trim(),
-            parts[1].trim(),
-            parts[2].trim(),
-            parts[3].trim()
-        ))
-    }
-
-    /// Parse bounding box string into (lat_min, lat_max, lon_min, lon_max).
-    /// Used for validation in tests.
-    fn parse_bbox(bbox: &str) -> Result<(f64, f64, f64, f64), String> {
+    /// Parse bounding box string "lat_min,lat_max,lon_min,lon_max" into BBox.
+    fn parse_bbox(bbox: &str) -> Result<BBox, String> {
         let parts: Vec<&str> = bbox.split(',').collect();
         if parts.len() != 4 {
             return Err(format!(
@@ -108,11 +108,12 @@ impl FlightsMarketSource {
                 bbox
             ));
         }
-        let lat_min: f64 = parts[0].trim().parse().map_err(|e| format!("lat_min: {}", e))?;
-        let lat_max: f64 = parts[1].trim().parse().map_err(|e| format!("lat_max: {}", e))?;
-        let lon_min: f64 = parts[2].trim().parse().map_err(|e| format!("lon_min: {}", e))?;
-        let lon_max: f64 = parts[3].trim().parse().map_err(|e| format!("lon_max: {}", e))?;
-        Ok((lat_min, lat_max, lon_min, lon_max))
+        Ok(BBox {
+            lat_min: parts[0].trim().parse().map_err(|e| format!("lat_min: {}", e))?,
+            lat_max: parts[1].trim().parse().map_err(|e| format!("lat_max: {}", e))?,
+            lon_min: parts[2].trim().parse().map_err(|e| format!("lon_min: {}", e))?,
+            lon_max: parts[3].trim().parse().map_err(|e| format!("lon_max: {}", e))?,
+        })
     }
 }
 
@@ -123,7 +124,7 @@ impl MarketDataSource for FlightsMarketSource {
     }
 
     fn display_name(&self) -> &'static str {
-        "OpenSky Flights"
+        "Global Flights"
     }
 
     fn default_resolution(&self) -> &'static str {
@@ -131,13 +132,13 @@ impl MarketDataSource for FlightsMarketSource {
     }
 
     fn sync_interval(&self) -> Duration {
-        Duration::from_secs(600) // 10 minutes
+        Duration::from_secs(300) // 5 minutes (single call, no rate limit pressure)
     }
 
     fn rate_limit_config(&self) -> RateLimitConfig {
         RateLimitConfig {
             windows: vec![RateWindow {
-                max_requests: 6,
+                max_requests: 10,
                 duration: Duration::from_secs(60),
             }],
         }
@@ -155,7 +156,6 @@ impl MarketDataSource for FlightsMarketSource {
         }
 
         let now = Utc::now();
-        let mut results = Vec::new();
 
         // Load asset config to get bounding boxes
         let all_entries: Vec<AssetEntry> = serde_json::from_str(ASSET_JSON)?;
@@ -164,14 +164,60 @@ impl MarketDataSource for FlightsMarketSource {
             .map(|e| (e.asset_id.as_str(), e.api_ref.as_str()))
             .collect();
 
+        // ONE call to get ALL aircraft globally
+        let resp = self
+            .client
+            .get(API_URL)
+            .header("Accept", "application/json")
+            .send()
+            .await;
+
+        let response: AdsbLolResponse = match resp {
+            Ok(r) => {
+                if !r.status().is_success() {
+                    let status = r.status();
+                    warn!("Flights: adsb.lol returned {}", status);
+                    return Ok(Vec::new());
+                }
+                match r.json().await {
+                    Ok(data) => data,
+                    Err(e) => {
+                        warn!("Flights: failed to parse adsb.lol response: {:?}", e);
+                        return Ok(Vec::new());
+                    }
+                }
+            }
+            Err(e) => {
+                warn!("Flights: failed to fetch adsb.lol: {:?}", e);
+                return Ok(Vec::new());
+            }
+        };
+
+        // Extract valid positions
+        let positions: Vec<(f64, f64)> = response
+            .ac
+            .iter()
+            .filter_map(|ac| {
+                match (ac.lat, ac.lon) {
+                    (Some(lat), Some(lon)) if lat.is_finite() && lon.is_finite() => {
+                        Some((lat, lon))
+                    }
+                    _ => None,
+                }
+            })
+            .collect();
+
         debug!(
-            "Flights fetch_prices: fetching {} regions (expect ~{}s total due to rate limit)",
-            asset_ids.len(),
-            asset_ids.len() * 11
+            "Flights: {} aircraft with positions out of {} total",
+            positions.len(),
+            response.total
         );
 
+        // Count aircraft per requested region
+        let mut results = Vec::new();
+
         for asset_id in asset_ids {
-            let bbox = match bbox_map.get(asset_id.as_str()) {
+            let bbox_str = match bbox_map.get(asset_id.as_str()) {
                 Some(b) => *b,
                 None => {
                     warn!("Flights: unknown asset_id '{}', skipping", asset_id);
@@ -179,60 +225,44 @@ impl MarketDataSource for FlightsMarketSource {
                 }
             };
 
-            let url = match Self::build_url(bbox) {
-                Ok(u) => u,
+            let bbox = match Self::parse_bbox(bbox_str) {
+                Ok(b) => b,
                 Err(e) => {
-                    warn!("Flights: bad bounding box for {}: {:?}", asset_id, e);
+                    warn!("Flights: bad bounding box for {}: {}", asset_id, e);
                     continue;
                 }
             };
 
-            // OpenSky requires 10s+ between requests for anonymous access
-            tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
+            let count = positions
+                .iter()
+                .filter(|&&(lat, lon)| bbox.contains(lat, lon))
+                .count();
 
-            match self.http.get_json::<OpenSkyResponse>(&url).await {
-                Ok(response) => {
-                    let aircraft_count = response
-                        .states
-                        .as_ref()
-                        .map(|s| s.len())
-                        .unwrap_or(0);
+            debug!("Flights {}: {} aircraft (bbox={})", asset_id, count, bbox_str);
 
-                    debug!(
-                        "Flights {}: {} aircraft (bbox={})",
-                        asset_id, aircraft_count, bbox
-                    );
+            let symbol = all_entries
+                .iter()
+                .find(|e| e.asset_id == *asset_id)
+                .map(|e| e.symbol.clone())
+                .unwrap_or_else(|| format!("FLT/{}", asset_id));
 
-                    let symbol = all_entries
-                        .iter()
-                        .find(|e| e.asset_id == *asset_id)
-                        .map(|e| e.symbol.clone())
-                        .unwrap_or_else(|| format!("FLT/{}", asset_id));
-
-                    results.push(PriceUpdate {
-                        asset_id: asset_id.clone(),
-                        symbol,
-                        value: Decimal::from(aircraft_count as u64),
-                        prev_close: None,
-                        change_pct: None,
-                        volume_24h: None,
-                        market_cap: None,
-                        fetched_at: now,
-                    });
-                }
-                Err(e) => {
-                    warn!(
-                        "Error fetching flight data for {} (bbox={}): {:?}",
-                        asset_id, bbox, e
-                    );
-                }
-            }
+            results.push(PriceUpdate {
+                asset_id: asset_id.clone(),
+                symbol,
+                value: Decimal::from(count as u64),
+                prev_close: None,
+                change_pct: None,
+                volume_24h: None,
+                market_cap: None,
+                fetched_at: now,
+            });
         }
 
         info!(
-            "Fetched {}/{} prices from OpenSky",
+            "Flights: counted {}/{} regions from {} aircraft (adsb.lol)",
             results.len(),
-            asset_ids.len()
+            asset_ids.len(),
+            positions.len()
         );
 
         Ok(results)
@@ -325,12 +355,11 @@ mod tests {
 
     #[test]
     fn test_parse_bbox_valid() {
-        let (lat_min, lat_max, lon_min, lon_max) =
-            FlightsMarketSource::parse_bbox("40.4,40.9,-74,-73.5").unwrap();
-        assert!((lat_min - 40.4).abs() < 0.001);
-        assert!((lat_max - 40.9).abs() < 0.001);
-        assert!((lon_min - (-74.0)).abs() < 0.001);
-        assert!((lon_max - (-73.5)).abs() < 0.001);
+        let bbox = FlightsMarketSource::parse_bbox("40.4,40.9,-74,-73.5").unwrap();
+        assert!((bbox.lat_min - 40.4).abs() < 0.001);
+        assert!((bbox.lat_max - 40.9).abs() < 0.001);
+        assert!((bbox.lon_min - (-74.0)).abs() < 0.001);
+        assert!((bbox.lon_max - (-73.5)).abs() < 0.001);
     }
 
     #[test]
@@ -341,19 +370,33 @@ mod tests {
     }
 
     #[test]
-    fn test_build_url() {
-        let url = FlightsMarketSource::build_url("40.4,40.9,-74,-73.5").unwrap();
-        assert!(url.contains("lamin=40.4"));
-        assert!(url.contains("lamax=40.9"));
-        assert!(url.contains("lomin=-74"));
-        assert!(url.contains("lomax=-73.5"));
-        assert!(url.starts_with("https://opensky-network.org/api/states/all?"));
+    fn test_bbox_contains() {
+        // JFK area: 40.4,40.9,-74,-73.5
+        let bbox = BBox {
+            lat_min: 40.4,
+            lat_max: 40.9,
+            lon_min: -74.0,
+            lon_max: -73.5,
+        };
+
+        // JFK coordinates: ~40.64, -73.78
+        assert!(bbox.contains(40.64, -73.78));
+        // Outside: Los Angeles
+        assert!(!bbox.contains(33.94, -118.41));
+        // Edge: exact boundary
+        assert!(bbox.contains(40.4, -74.0));
+        assert!(bbox.contains(40.9, -73.5));
     }
 
     #[test]
-    fn test_build_url_invalid() {
-        let result = FlightsMarketSource::build_url("1,2,3");
-        assert!(result.is_err());
+    fn test_global_bbox_contains_everything() {
+        // Global bbox: -90,90,-180,180
+        let bbox = FlightsMarketSource::parse_bbox("-90,90,-180,180").unwrap();
+        assert!(bbox.contains(0.0, 0.0));
+        assert!(bbox.contains(89.99, 179.99));
+        assert!(bbox.contains(-89.99, -179.99));
+        assert!(bbox.contains(40.64, -73.78)); // JFK
+        assert!(bbox.contains(-33.87, 151.21)); // Sydney
     }
 
     #[test]

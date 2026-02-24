@@ -254,6 +254,10 @@ impl MarketDataSource for OpenMeteoMarketSource {
         Duration::from_secs(self.sync_interval_secs)
     }
 
+    fn skips_when_unchanged(&self) -> bool {
+        true // Smart sync: returns empty when OpenMeteo data timestamp hasn't changed
+    }
+
     fn rate_limit_config(&self) -> RateLimitConfig {
         // Open-Meteo free tier: 10,000 calls/day
         // With smart sync (~6 fetches/day), we can be more generous per fetch

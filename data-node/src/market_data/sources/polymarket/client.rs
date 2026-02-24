@@ -53,6 +53,9 @@ struct GammaMarket {
     /// Whether market is active
     #[serde(default)]
     active: bool,
+    /// Whether market has been resolved (e.g. "Yes" or "No" outcome decided)
+    #[serde(default)]
+    resolved: bool,
 }
 
 /// Polymarket prediction markets data source
@@ -242,9 +245,14 @@ impl MarketDataSource for PolymarketMarketSource {
         // Dynamically discover all active markets from Gamma API
         let markets = self.fetch_all_markets().await?;
 
+        let resolved_count = markets.iter().filter(|m| m.resolved).count();
+        let closed_count = markets.iter().filter(|m| m.closed).count();
+        info!("Polymarket: {} total, {} resolved, {} closed — filtering to active only",
+            markets.len(), resolved_count, closed_count);
+
         let assets: Vec<AssetUpdate> = markets
             .into_iter()
-            .filter(|m| m.active && !m.closed)
+            .filter(|m| m.active && !m.closed && !m.resolved)
             .filter(|m| m.outcome_prices.is_some()) // Only markets with prices
             .map(|m| {
                 let category = m.category
@@ -283,7 +291,7 @@ impl MarketDataSource for PolymarketMarketSource {
 
         let prices: Vec<PriceUpdate> = markets
             .into_iter()
-            .filter(|m| asset_set.contains(m.condition_id.as_str()))
+            .filter(|m| asset_set.contains(m.condition_id.as_str()) && !m.resolved && !m.closed)
             .filter_map(|m| {
                 // Parse outcome prices
                 let (yes_price, _no_price) =
