@@ -62,9 +62,9 @@ impl ConsensusMessageHandler {
                     nonce = %nonce,
                     "Received ItpCreationProposal"
                 );
-                // Use leader_id from message for routing (more reliable than transport-level from)
                 MessageHandleResult::ProcessItpCreationProposal {
-                    from: leader_id,
+                    from,
+                    leader_id,
                     admin,
                     nonce,
                     name,
@@ -107,9 +107,9 @@ impl ConsensusMessageHandler {
                     itp_id = ?itp_id,
                     "Received BridgeArbToL3Proposal"
                 );
-                // Use leader_id from message for routing
                 MessageHandleResult::ProcessBridgeArbToL3Proposal {
-                    from: leader_id,
+                    from,
+                    leader_id,
                     order_id,
                     itp_id,
                     user,
@@ -158,9 +158,9 @@ impl ConsensusMessageHandler {
                     itp_id = ?itp_id,
                     "Received SubmitOrderForUserProposal"
                 );
-                // Use leader_id from message for routing
                 MessageHandleResult::ProcessSubmitOrderForUserProposal {
-                    from: leader_id,
+                    from,
+                    leader_id,
                     arb_order_id,
                     itp_id,
                     user,
@@ -207,9 +207,9 @@ impl ConsensusMessageHandler {
                     num_orders = order_ids.len(),
                     "Received ConfirmBatchProposal"
                 );
-                // Use leader_id from message for routing
                 MessageHandleResult::ProcessConfirmBatchProposal {
-                    from: leader_id,
+                    from,
+                    leader_id,
                     cycle_number,
                     order_ids,
                     prices,
@@ -250,9 +250,9 @@ impl ConsensusMessageHandler {
                     num_fills = fills.len(),
                     "Received ConfirmFillsProposal"
                 );
-                // Use leader_id from message for routing
                 MessageHandleResult::ProcessConfirmFillsProposal {
-                    from: leader_id,
+                    from,
+                    leader_id,
                     cycle_number,
                     fills,
                     leader_signature,
@@ -296,9 +296,9 @@ impl ConsensusMessageHandler {
                     total_amount = %total_amount,
                     "Received BridgeL3ToArbProposal"
                 );
-                // Use leader_id from message for routing
                 MessageHandleResult::ProcessBridgeL3ToArbProposal {
-                    from: leader_id,
+                    from,
+                    leader_id,
                     cycle_number,
                     order_ids,
                     total_amount,
@@ -345,9 +345,9 @@ impl ConsensusMessageHandler {
                     ?vault_address,
                     "Received ReleaseToVaultProposal"
                 );
-                // Use leader_id from message for routing
                 MessageHandleResult::ProcessReleaseToVaultProposal {
-                    from: leader_id,
+                    from,
+                    leader_id,
                     cycle_number,
                     order_ids,
                     total_amount,
@@ -391,7 +391,8 @@ impl ConsensusMessageHandler {
                     "Received RebalanceBatchProposal"
                 );
                 MessageHandleResult::ProcessRebalanceBatchProposal {
-                    from: leader_id,
+                    from,
+                    leader_id,
                     cycle_number,
                     itp_ids,
                     leader_signature,
@@ -436,7 +437,8 @@ impl ConsensusMessageHandler {
                     "Received UpdateWeightsProposal"
                 );
                 MessageHandleResult::ProcessUpdateWeightsProposal {
-                    from: leader_id,
+                    from,
+                    leader_id,
                     itp_id,
                     new_weights,
                     new_inventory,
@@ -483,7 +485,8 @@ impl ConsensusMessageHandler {
                     "Received RebalanceProposal"
                 );
                 MessageHandleResult::ProcessRebalanceProposal {
-                    from: leader_id,
+                    from,
+                    leader_id,
                     itp_id,
                     remove_indices,
                     add_assets,
@@ -527,7 +530,8 @@ impl ConsensusMessageHandler {
                     "Received AssetTradesProposal"
                 );
                 MessageHandleResult::ProcessAssetTradesProposal {
-                    from: leader_id,
+                    from,
+                    leader_id,
                     cycle_number,
                     trades_data,
                     leader_signature,
@@ -571,7 +575,8 @@ impl ConsensusMessageHandler {
                     "Received SubmitSellOrderProposal"
                 );
                 MessageHandleResult::ProcessSubmitSellOrderProposal {
-                    from: leader_id,
+                    from,
+                    leader_id,
                     order_id,
                     itp_id,
                     user,
@@ -614,7 +619,8 @@ impl ConsensusMessageHandler {
                     "Received CompleteSellOrderProposal"
                 );
                 MessageHandleResult::ProcessCompleteSellOrderProposal {
-                    from: leader_id,
+                    from,
+                    leader_id,
                     order_id,
                     usdc_proceeds,
                     leader_signature,
@@ -659,7 +665,8 @@ impl ConsensusMessageHandler {
                     "Received RecordCollateralMoveProposal"
                 );
                 MessageHandleResult::ProcessRecordCollateralMoveProposal {
-                    from: leader_id,
+                    from,
+                    leader_id,
                     cycle_number,
                     itp_id,
                     from_chain,
@@ -706,7 +713,8 @@ impl ConsensusMessageHandler {
                     "Received MintBridgedSharesProposal"
                 );
                 MessageHandleResult::ProcessMintBridgedSharesProposal {
-                    from: leader_id,
+                    from,
+                    leader_id,
                     cycle_number,
                     itp_id,
                     user,
@@ -750,7 +758,8 @@ impl ConsensusMessageHandler {
                     "Received CompleteBuyOrderProposal"
                 );
                 MessageHandleResult::ProcessCompleteBuyOrderProposal {
-                    from: leader_id,
+                    from,
+                    leader_id,
                     cycle_number,
                     order_id,
                     vault,
@@ -792,7 +801,8 @@ impl ConsensusMessageHandler {
                     "Received SetItpNavProposal"
                 );
                 MessageHandleResult::ProcessSetItpNavProposal {
-                    from: leader_id,
+                    from,
+                    leader_id,
                     itp_id,
                     nav,
                     leader_signature,
@@ -1101,6 +1111,7 @@ pub enum MessageHandleResult {
     /// Process an ITP creation proposal from the leader (Story 6.21)
     ProcessItpCreationProposal {
         from: PeerId,
+        leader_id: PeerId,
         admin: Address,
         nonce: U256,
         name: String,
@@ -1120,6 +1131,7 @@ pub enum MessageHandleResult {
     /// Process a bridge Arb→L3 proposal from the leader (Story 7.2)
     ProcessBridgeArbToL3Proposal {
         from: PeerId,
+        leader_id: PeerId,
         order_id: U256,
         itp_id: H256,
         user: Address,
@@ -1138,6 +1150,7 @@ pub enum MessageHandleResult {
     /// Process a submit order proposal from the leader (Story 7.3)
     ProcessSubmitOrderForUserProposal {
         from: PeerId,
+        leader_id: PeerId,
         arb_order_id: U256,
         itp_id: H256,
         user: Address,
@@ -1158,6 +1171,7 @@ pub enum MessageHandleResult {
     /// Process a confirm batch proposal from the leader (Story 7.4)
     ProcessConfirmBatchProposal {
         from: PeerId,
+        leader_id: PeerId,
         cycle_number: u64,
         order_ids: Vec<U256>,
         prices: Vec<U256>,
@@ -1174,6 +1188,7 @@ pub enum MessageHandleResult {
     /// Process a confirm fills proposal from the leader (Story 7.4)
     ProcessConfirmFillsProposal {
         from: PeerId,
+        leader_id: PeerId,
         cycle_number: u64,
         fills: Vec<common::types::OrderFill>,
         leader_signature: P2PBLSSignature,
@@ -1189,6 +1204,7 @@ pub enum MessageHandleResult {
     /// Process a bridge L3→Arb proposal from the leader (Story 7.5)
     ProcessBridgeL3ToArbProposal {
         from: PeerId,
+        leader_id: PeerId,
         cycle_number: u64,
         order_ids: Vec<U256>,
         total_amount: U256,
@@ -1206,6 +1222,7 @@ pub enum MessageHandleResult {
     /// Process a custody release to vault proposal from the leader (Story 7.6)
     ProcessReleaseToVaultProposal {
         from: PeerId,
+        leader_id: PeerId,
         cycle_number: u64,
         order_ids: Vec<U256>,
         total_amount: U256,
@@ -1223,6 +1240,7 @@ pub enum MessageHandleResult {
     /// Process a rebalance batch proposal from the leader (Story 7-14)
     ProcessRebalanceBatchProposal {
         from: PeerId,
+        leader_id: PeerId,
         cycle_number: u64,
         itp_ids: Vec<H256>,
         leader_signature: P2PBLSSignature,
@@ -1238,6 +1256,7 @@ pub enum MessageHandleResult {
     /// Process an update weights proposal from the leader (Story 7-14)
     ProcessUpdateWeightsProposal {
         from: PeerId,
+        leader_id: PeerId,
         itp_id: H256,
         new_weights: Vec<U256>,
         new_inventory: Vec<U256>,
@@ -1255,6 +1274,7 @@ pub enum MessageHandleResult {
     /// Process a single-phase rebalance proposal from the leader
     ProcessRebalanceProposal {
         from: PeerId,
+        leader_id: PeerId,
         itp_id: H256,
         remove_indices: Vec<U256>,
         add_assets: Vec<Address>,
@@ -1274,6 +1294,7 @@ pub enum MessageHandleResult {
     /// Process an asset trades proposal from the leader (issuer-driven settlement)
     ProcessAssetTradesProposal {
         from: PeerId,
+        leader_id: PeerId,
         cycle_number: u64,
         trades_data: Vec<(Address, u8, U256, U256, Address)>,
         leader_signature: P2PBLSSignature,
@@ -1289,6 +1310,7 @@ pub enum MessageHandleResult {
     /// Process a submit sell order proposal from the leader (cross-chain sell)
     ProcessSubmitSellOrderProposal {
         from: PeerId,
+        leader_id: PeerId,
         order_id: U256,
         itp_id: H256,
         user: Address,
@@ -1307,6 +1329,7 @@ pub enum MessageHandleResult {
     /// Process a complete sell order proposal from the leader (cross-chain sell)
     ProcessCompleteSellOrderProposal {
         from: PeerId,
+        leader_id: PeerId,
         order_id: U256,
         usdc_proceeds: U256,
         leader_signature: P2PBLSSignature,
@@ -1322,6 +1345,7 @@ pub enum MessageHandleResult {
     // 8-step bridge: RecordCollateralMove
     ProcessRecordCollateralMoveProposal {
         from: PeerId,
+        leader_id: PeerId,
         cycle_number: u64,
         itp_id: H256,
         from_chain: U256,
@@ -1339,6 +1363,7 @@ pub enum MessageHandleResult {
     // 8-step bridge: MintBridgedShares
     ProcessMintBridgedSharesProposal {
         from: PeerId,
+        leader_id: PeerId,
         cycle_number: u64,
         itp_id: H256,
         user: Address,
@@ -1354,6 +1379,7 @@ pub enum MessageHandleResult {
     // completeBuyOrder BLS consensus
     ProcessCompleteBuyOrderProposal {
         from: PeerId,
+        leader_id: PeerId,
         cycle_number: u64,
         order_id: U256,
         vault: Address,
@@ -1368,6 +1394,7 @@ pub enum MessageHandleResult {
     /// Process a setItpNav proposal from the leader (rebalance NAV consensus)
     ProcessSetItpNavProposal {
         from: PeerId,
+        leader_id: PeerId,
         itp_id: H256,
         nav: U256,
         leader_signature: P2PBLSSignature,
