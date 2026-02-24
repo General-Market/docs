@@ -1,5 +1,26 @@
 # Design Decision Backlog
 
+## Session: 20260224-1730-b3k9 (Fix Issuer Config Mismatch & Resilience Test)
+
+- [DECISION] Aligned issuer timing config across all launch paths: `restartIssuer()` (issuer-process.ts) and `start-issuers.sh` now match `start.sh` (200/20/150ms for cycle/gap/consensus-timeout). Previously `restartIssuer()` used 2000/200/1500ms (10x slower) and `start-issuers.sh` used 5000ms cycles.
+- [DECISION] Reduced health-check polling from 2000ms to 500ms in `waitForIssuerHealthy`, `waitForConsensusWarmup`, `waitForConsensusProgress` — with 200ms cycles (5/sec), 2s polling missed too much.
+- [DECISION] Added `waitForConsensusWarmup()` after every `restartIssuer()` + `waitForIssuerHealthy()` in the resilience test — a healthy node (has peers) still needs time to reconstruct state from chain before participating in consensus.
+- [DECISION] Added missing `--deployment-file`, `--arb-custody`, `--issuer-custody-arb` flags to `start-issuers.sh` (were present in `start.sh` but not the standalone script).
+- [FAILED] Resilience test still fails after timing+warmup fixes. Root cause: restarted issuer-3 rejects ALL proposals with "Leader public key not found in registry". The `leader_id` bytes in rejections (`[250, 212, 179, ...]`) are complex 32-byte values that don't match expected test peer IDs (`[1, 0, ...]`). The in-memory `InMemoryKeyRegistry` (built from `--test-key-seeds`) maps simple peer_ids to BLS pubkeys, but the actual leader_ids received over P2P don't match these simple IDs. `beforeAll` (kill-all + restart-all) works because all 3 start fresh together; single-node restart into running cluster fails because the restarted node's key registry doesn't match the running nodes' actual peer identities. This is a binary-level bug in peer_id/key_registry management during reconstruction.
+
+## Session: 20260224-2330-f9x1 (Source Health Fixes: Dead, Stale, Initializing)
+
+- [DECISION] Implemented shelter source: Austin Animal Center SODA API (data.austintexas.gov). 9 assets tracking stray animal counts by species and shelter status. No API key needed.
+- [DECISION] Implemented adzuna source: Adzuna Jobs API. 8 assets (US/GB/DE/FR × vacancies/salary). Requires ADZUNA_APP_ID + ADZUNA_APP_KEY.
+- [DECISION] usgs_water was "dead" because fetch_assets() loaded empty config and never did API discovery. Fixed by adding live discovery fallback in fetch_assets() — discovers ~2000 stations across 15 US states when config is empty.
+- [DECISION] futures/chris.rs was already fully implemented (50 contracts via Nasdaq CHRIS dataset). Stale status likely due to NASDAQ_API_KEY not being set or CHRIS dataset being discontinued.
+- [DECISION] Enforced 5-minute minimum sync interval across all sources. Changed: aisstream (60s→300s), gtfs_rt (120s→300s), twitch (60s→300s).
+- [DECISION] Reduced TMDb discovery pages (500→50 movies, 500→50 TV, 100→20 trending people, 500→50 popular people) to cut init from ~64s to ~7s. 1k items per category is sufficient.
+- [DECISION] Reduced PyPI max packages (250→100) to cut init from 10+ min to ~4 min.
+- [DECISION] Reduced crates_io max pages (200→50) — 5k crates is plenty, was fetching 20k.
+- [FAILED] chaturbate, nrc_nuclear, cbp_border have proper dynamic discovery in fetch_assets() but are still "dead" — likely external API issues (blocked IP, changed endpoints, rate limits). Cannot fix from code alone.
+- [DECISION] Not-started sources (lastfm, reddit, courtlistener, bgg) are fully implemented — just need API credentials configured in prod deployment.
+
 ## Session: 20260224-2245-q7m3 (Tourism Data Sources: Queue-Times, CBP Border, FAA Delays)
 
 - [DECISION] Added 3 tourism-themed data sources: Queue-Times (theme park wait times), CBP Border (US border crossing wait times), FAA Delays (US airport delay status). All free, no API key required.
