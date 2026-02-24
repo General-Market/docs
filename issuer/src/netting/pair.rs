@@ -46,26 +46,16 @@ pub fn pair_netting(orders: Vec<LimitOrder>) -> HashMap<H256, MergedOrder> {
             .or_insert_with(MergedOrderBuilder::new);
 
         // Net buys (positive) and sells (negative)
-        // Use checked conversion to prevent overflow - amounts > I256::MAX/2 are invalid
-        // In practice, amounts should never exceed ~10^30 (100 trillion with 18 decimals)
-        let signed_amount = if order.amount > U256::from(i128::MAX as u128) {
-            // For extremely large amounts, cap at I256::MAX to prevent overflow
-            // This is a safety check - real amounts should never hit this
-            tracing::warn!(
-                code = "E010",
-                order_id = %order.id,
-                amount = %order.amount,
-                "Order amount exceeds safe I256 range, capping"
-            );
-            match order.side {
-                Side::Buy => I256::MAX,
-                Side::Sell => I256::MIN,
-            }
-        } else {
-            match order.side {
-                Side::Buy => I256::from_raw(order.amount),
-                Side::Sell => -I256::from_raw(order.amount),
-            }
+        // Panic if amount exceeds I256::MAX -- this would flip buy/sell direction
+        let i256_amount = I256::try_from(order.amount).unwrap_or_else(|_| {
+            panic!(
+                "Order {} amount {} exceeds I256::MAX -- cannot net safely",
+                order.id, order.amount
+            )
+        });
+        let signed_amount = match order.side {
+            Side::Buy => i256_amount,
+            Side::Sell => -i256_amount,
         };
         entry.net_signed += signed_amount;
 

@@ -440,10 +440,16 @@ fn calculate_net_flows_with_registry<R: PairQuoteLookup + ?Sized>(
     for order in orders {
         let is_usdt = is_usdt_pair(order.pair_id, registry);
 
-        // Use I256 to handle full U256 range without truncation
+        // Panic if amount exceeds I256::MAX -- this would flip buy/sell direction
+        let i256_amount = I256::try_from(order.amount).unwrap_or_else(|_| {
+            panic!(
+                "Order amount {} exceeds I256::MAX -- cannot net safely",
+                order.amount
+            )
+        });
         let signed_amount = match order.side {
-            Side::Buy => I256::from_raw(order.amount),   // Buying = need quote currency
-            Side::Sell => -I256::from_raw(order.amount), // Selling = excess quote currency
+            Side::Buy => i256_amount,   // Buying = need quote currency
+            Side::Sell => -i256_amount, // Selling = excess quote currency
         };
 
         if is_usdt {

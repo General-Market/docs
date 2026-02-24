@@ -13,6 +13,12 @@
 - [DECISION] Fix 10 — Added NatSpec to BLSCustody threshold constants documenting they're not enforced on-chain (BLS aggregation enforces implicitly off-chain).
 - [DECISION] Pre-existing test failure `test_confirmFills_sellOrder_partialFill` not caused by our changes — assertion has wrong expected value (100-50+20=70 vs correct 100-30+20=90). Left as-is.
 
+## Session: 20260224-0200-x8m3 (Issuer Audit — Task 2: I256 Overflow)
+
+- [DECISION] Replaced all `I256::from_raw(v)` calls in netting pipeline with `I256::try_from(v)` + panic on overflow. Found 5 locations total: `asset_decompose.rs` (1), `pair.rs` (2), `usdt.rs` (2), `slippage/mod.rs` (2). Left `rebalance.rs` as-is since it already has a proper bounds check wrapper (`i256_from_u256_checked`).
+- [DECISION] Panic instead of cap/warn for overflows. Rationale: capping at I256::MAX/MIN is worse than crashing because it silently processes wrong amounts. A panic halts the cycle and is detectable. An overflow that flips buy/sell direction causes fund loss.
+- [DECISION] Pre-existing test failures `test_tier_filtering_at_boundary` and `test_symbol_map_from_file_invalid_address` confirmed unrelated to our changes (both fail on clean checkout).
+
 ---
 
 ## Session: 20260224-2100-p3x9 (PandaScore Esports Source)
