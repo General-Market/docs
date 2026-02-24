@@ -58,9 +58,9 @@ test.describe('Vision', () => {
     // Vision is now the root page
     await page.goto('/')
 
-    // Wait for batch content (batch card or batch info)
+    // Wait for batch content (batch card)
     const batchVisible = await page
-      .locator('[class*="batch"], [class*="Batch"], [data-testid*="batch"]')
+      .locator('[data-testid="batch-card"]')
       .first()
       .isVisible({ timeout: 15_000 })
       .catch(() => false)

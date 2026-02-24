@@ -9,6 +9,7 @@ import { getUserState, mintBridgedItp, rebalanceItp } from '../helpers/backend-a
 
 test.describe('Lending (Deposit → Borrow → Repay → Withdraw)', () => {
   test('full lending cycle', async ({ walletPage: page }) => {
+    test.setTimeout(180_000); // 3 min — Morpho txs on Anvil can be slow
     // ── Setup: connect wallet ────────────────────────────────
     const connectBtn = connectWalletButton(page);
     await expect(connectBtn).toBeVisible({ timeout: 15_000 });

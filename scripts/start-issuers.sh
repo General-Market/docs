@@ -94,7 +94,6 @@ $BINARY \
     --node-id 1 \
     --port 9001 \
     --cycle-duration-ms 5000 \
-    --mock \
     --no-tls \
     --bridge-proxy "$BRIDGE_PROXY" \
     --test-key-seeds \
@@ -116,7 +115,6 @@ $BINARY \
     --node-id 2 \
     --port 9002 \
     --cycle-duration-ms 5000 \
-    --mock \
     --no-tls \
     --bridge-proxy "$BRIDGE_PROXY" \
     --test-key-seeds \
@@ -138,7 +136,6 @@ $BINARY \
     --node-id 3 \
     --port 9003 \
     --cycle-duration-ms 5000 \
-    --mock \
     --no-tls \
     --bridge-proxy "$BRIDGE_PROXY" \
     --test-key-seeds \
