@@ -95,7 +95,8 @@ impl InMemoryKeyRegistry {
 
         for i in 0..count {
             let mut peer_id = [0u8; 32];
-            peer_id[0] = (offset + i) as u8; // Use offset for peer_id
+            // +1 to match generate_peer_id() which avoids all-zeros sentinel
+            peer_id[0] = (offset + i + 1) as u8;
 
             // Generate deterministic keypair from seed (must match bls-tool: vec![idx; 32])
             let seed = vec![i as u8; 32];

@@ -208,9 +208,11 @@ impl Default for IssuerMetrics {
     }
 }
 
-/// Generate a deterministic peer ID from node_id
+/// Generate a deterministic peer ID from node_id.
+/// Adds 1 to avoid producing all-zeros ([0u8; 32]) which the P2P layer
+/// uses as a sentinel for "unknown/unidentified peer".
 pub fn generate_peer_id(node_id: u32) -> [u8; 32] {
     let mut peer_id = [0u8; 32];
-    peer_id[0..4].copy_from_slice(&node_id.to_le_bytes());
+    peer_id[0..4].copy_from_slice(&(node_id + 1).to_le_bytes());
     peer_id
 }
