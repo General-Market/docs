@@ -1,0 +1,56 @@
+import { useMutation } from '@tanstack/react-query'
+import { VISION_API_URL } from '@/lib/config'
+
+export interface BacktestParams {
+  batchId: number
+  /** Packed bitmap hex string (e.g. "0xab01...") */
+  bitmapHex: string
+  /** Number of simulated ticks (default: 50) */
+  ticks?: number
+}
+
+export interface BacktestResult {
+  /** Win rate as a decimal 0..1 */
+  winRate: number
+  /** PnL curve over time */
+  pnlCurve: { tick: number; pnl: number }[]
+  /** Total PnL at end of backtest period */
+  totalPnl: number
+}
+
+/**
+ * Mutation hook that sends a bitmap to the backtest endpoint.
+ * Uses useMutation (not useQuery) because this is an on-demand action.
+ */
+export function useBacktest() {
+  return useMutation<BacktestResult, Error, BacktestParams>({
+    mutationFn: async (params: BacktestParams) => {
+      const res = await fetch(`${VISION_API_URL}/vision/backtest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          batch_id: params.batchId,
+          bitmap_hex: params.bitmapHex,
+          ticks: params.ticks ?? 50,
+        }),
+      })
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => `HTTP ${res.status}`)
+        throw new Error(`Backtest failed: ${text}`)
+      }
+
+      const data = await res.json()
+      return {
+        winRate: data.win_rate ?? data.winRate ?? 0,
+        pnlCurve: (data.pnl_curve ?? data.pnlCurve ?? []).map(
+          (p: { tick: number; pnl: number }) => ({
+            tick: p.tick,
+            pnl: p.pnl,
+          })
+        ),
+        totalPnl: data.total_pnl ?? data.totalPnl ?? 0,
+      } satisfies BacktestResult
+    },
+  })
+}

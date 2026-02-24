@@ -114,7 +114,9 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
         {/* Node grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 border border-border-light" style={{ margin: '20px 0' }}>
           {activeNodes.length === 0 && (
-            <NodeGridSkeleton />
+            sys.isLoading ? <NodeGridSkeleton /> : (
+              <div className="col-span-full px-5 py-8 text-center text-[13px] text-text-muted">{t('issuer_network.no_nodes')}</div>
+            )
           )}
           {activeNodes.map((node, idx) => (
             <div key={node.id} className={`px-5 py-4 ${idx < activeNodes.length - 1 ? 'border-r border-border-light' : ''}`}>
@@ -151,7 +153,9 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
             </div>
             <div className="border border-border-light border-t-0 bg-surface h-[220px] flex items-center justify-center overflow-hidden">
               {sys.fillTimeBuckets.length === 0 ? (
-                <ChartSkeleton bars={8} />
+                sys.isLoading ? <ChartSkeleton bars={8} /> : (
+                  <span className="text-[13px] text-text-muted">{t('fill_speed.no_data')}</span>
+                )
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={sys.fillTimeBuckets} margin={{ top: 16, right: 16, bottom: 4, left: -8 }}>
@@ -182,7 +186,9 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
             </div>
             <div className="border border-border-light border-t-0 bg-surface h-[220px] flex items-center justify-center overflow-hidden">
               {sys.topVaultAssets.length === 0 ? (
-                <ChartSkeleton bars={6} horizontal />
+                sys.isLoading ? <ChartSkeleton bars={6} horizontal /> : (
+                  <span className="text-[13px] text-text-muted">{t('inventory.no_data')}</span>
+                )
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={sys.topVaultAssets} layout="vertical" margin={{ top: 8, right: 24, bottom: 4, left: 4 }}>
@@ -244,7 +250,9 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
           </thead>
           <tbody>
             {sys.recentOrders.length === 0 && (
-              <TableRowsSkeleton cols={8} rows={4} />
+              sys.isLoading ? <TableRowsSkeleton cols={8} rows={4} /> : (
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-[13px] text-text-muted">{t('recent_activity.no_data')}</td></tr>
+              )
             )}
             {sys.recentOrders.map((order) => {
               const amountFormatted = `$${Number(formatUnits(order.amount, 18)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`

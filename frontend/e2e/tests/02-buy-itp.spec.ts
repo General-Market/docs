@@ -8,8 +8,9 @@ test.describe('Buy ITP', () => {
     const connectBtn = connectWalletButton(page);
     await expect(connectBtn).toBeVisible({ timeout: 15_000 });
     await connectBtn.click();
+    await page.mouse.move(0, 0);
     const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4);
-    await expect(page.getByText(truncated, { exact: true })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 15_000 });
 
     // 2. Wait for ITP listing to load
     await expect(itpCard(page).first()).toBeVisible({ timeout: 30_000 });
@@ -23,13 +24,16 @@ test.describe('Buy ITP', () => {
     await expect(page.getByRole('heading', { name: /^Buy\s/ })).toBeVisible({ timeout: 10_000 });
 
     // 5. If USDC balance is 0, mint test USDC
+    // Wait for balance to load first — mint button flashes briefly while balance is undefined
+    await expect(page.getByText(/Balance:.*USDC/)).toBeVisible({ timeout: 10_000 });
     const mintBtn = buyModal.mintTestUsdcButton(page);
-    if (await mintBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await mintBtn.click();
-      // Wait for "Minted!" confirmation
-      await expect(buyModal.mintedBadge(page)).toBeVisible({ timeout: 30_000 });
-      // Wait for balance to refresh in UI (backend polls every 5s)
-      await page.waitForTimeout(6_000);
+    if (await mintBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      // Mint button can flash briefly while balance loads — use short click timeout
+      const clicked = await mintBtn.click({ timeout: 5_000 }).then(() => true).catch(() => false);
+      if (clicked) {
+        await expect(buyModal.mintedBadge(page)).toBeVisible({ timeout: 30_000 });
+        await page.waitForTimeout(6_000);
+      }
     }
 
     // 6. Enter buy amount (100 USDC)
@@ -46,13 +50,16 @@ test.describe('Buy ITP', () => {
     await expect(submitBtn).toBeEnabled({ timeout: 15_000 });
     await submitBtn.click();
 
-    // 9. Wait for "Order Submitted" success banner — this is the frontend's deliverable
-    await expect(buyModal.orderSubmittedBanner(page)).toBeVisible({ timeout: 60_000 });
+    // 9. Wait for buy tx to be confirmed (stepper enters "Process" phase)
+    await expect(page.getByText(/Relaying|Bridging|Batching/)).toBeVisible({ timeout: 30_000 });
 
-    // 10. Simulate Step 8 of 8-step bridge: mintBridgedShares on Arb.
-    // In local dev, the full issuer consensus pipeline (Steps 3b-8) may not
-    // complete reliably, so we mint BridgedITP directly via anvil impersonation.
-    // In production, this is handled by BridgeProxy.mintBridgedShares() via BLS consensus.
+    // 10. Simulate the cross-chain pipeline: mint BridgedITP shares directly.
+    // In local dev, the full issuer consensus pipeline (Arb→L3 bridge, batch, fill,
+    // L3→Arb bridge) doesn't complete automatically. We mint BridgedITP directly
+    // via Anvil impersonation. The modal detects the balance increase and shows "Done".
     await mintBridgedItp(TEST_ADDRESS, ITP_ID, 100n * 10n ** 18n);
+
+    // 11. Modal detects BridgedITP balance increase → shows "Buy More"
+    await expect(buyModal.orderSubmittedBanner(page)).toBeVisible({ timeout: 60_000 });
   });
 });

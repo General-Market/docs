@@ -48,7 +48,7 @@ const TRACKED_HOLDERS = [
   { label: 'Deployer', address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' as `0x${string}` },
   { label: 'User 1', address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' as `0x${string}` },
   { label: 'User 2', address: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC' as `0x${string}` },
-  { label: 'Test User', address: '0xC0D3C3ba6c2215b0cBf4375f4c280c0cc6C43850' as `0x${string}` },
+  { label: 'Test User', address: '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4' as `0x${string}` },
   { label: 'MockBitgetVault', address: INDEX_PROTOCOL.mockBitgetVault as `0x${string}` },
 ]
 

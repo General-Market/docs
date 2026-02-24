@@ -8,7 +8,7 @@ import { type Page, type Locator } from '@playwright/test';
 // ── Wallet ──────────────────────────────────────────────────
 
 export function connectWalletButton(page: Page): Locator {
-  return page.getByRole('button', { name: 'Connect Wallet' });
+  return page.getByRole('button', { name: 'Login on Base' });
 }
 
 export function disconnectButton(page: Page): Locator {
@@ -22,8 +22,7 @@ export function switchNetworkButton(page: Page): Locator {
 // ── ITP Listing ─────────────────────────────────────────────
 
 export function itpCard(page: Page): Locator {
-  // ITP cards are inside the listing grid
-  return page.locator('.bg-terminal-dark.border.border-white\\/10.rounded-lg.p-4');
+  return page.locator('[id^="itp-card-"]');
 }
 
 export function buyButton(page: Page): Locator {
@@ -46,11 +45,11 @@ export function rebalanceButton(page: Page): Locator {
 // ── Modal backdrop ──────────────────────────────────────────
 
 export function modalBackdrop(page: Page): Locator {
-  return page.locator('.fixed.inset-0.bg-black\\/80');
+  return page.locator('.fixed.inset-0.bg-black\\/60');
 }
 
 export function modalContainer(page: Page): Locator {
-  return page.locator('.bg-terminal.border.border-white\\/20.rounded-lg');
+  return page.locator('.bg-card.border.border-border-light.rounded-xl');
 }
 
 // ── Buy Modal ───────────────────────────────────────────────
@@ -79,7 +78,7 @@ export const buyModal = {
   },
 
   orderSubmittedBanner(page: Page): Locator {
-    return page.getByText('Order Submitted');
+    return page.getByRole('button', { name: 'Buy More' });
   },
 
   buyMoreButton(page: Page): Locator {
@@ -103,7 +102,7 @@ export const sellModal = {
   },
 
   maxButton(page: Page): Locator {
-    return modalContainer(page).getByRole('button', { name: 'Max', exact: true });
+    return modalContainer(page).getByRole('button', { name: 'MAX' });
   },
 
   submitButton(page: Page): Locator {
@@ -111,7 +110,7 @@ export const sellModal = {
   },
 
   orderSubmittedBanner(page: Page): Locator {
-    return page.getByText('Cross-Chain Sell Order Submitted');
+    return page.getByRole('button', { name: 'Sell More' });
   },
 
   closeButton(page: Page): Locator {

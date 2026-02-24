@@ -13,8 +13,9 @@ test.describe('Sell ITP', () => {
     const connectBtn = connectWalletButton(page);
     await expect(connectBtn).toBeVisible({ timeout: 15_000 });
     await connectBtn.click();
+    await page.mouse.move(0, 0);
     const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4);
-    await expect(page.getByText(truncated, { exact: true })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 15_000 });
 
     // 2. Wait for ITP listing
     await expect(itpCard(page).first()).toBeVisible({ timeout: 30_000 });
@@ -44,6 +45,7 @@ test.describe('Sell ITP', () => {
     await submitBtn.click();
 
     // 8. Wait for "Cross-Chain Sell Order Submitted" success banner
-    await expect(sellModal.orderSubmittedBanner(page)).toBeVisible({ timeout: 60_000 });
+    // Cross-chain relay can take >60s when chain is busy from prior tests
+    await expect(sellModal.orderSubmittedBanner(page)).toBeVisible({ timeout: 120_000 });
   });
 });

@@ -236,7 +236,17 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
       </div>
 
       {!address ? (
-        <PortfolioSkeleton />
+        <div className="bg-card rounded-xl border border-border-light p-10 text-center mt-6">
+          <div className="max-w-sm mx-auto">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+              <svg className="w-6 h-6 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3" />
+              </svg>
+            </div>
+            <h3 className="text-base font-bold text-text-primary mb-1.5">{t('heading.subtitle_empty')}</h3>
+            <p className="text-sm text-text-muted leading-relaxed">{tc('connect_wallet_to_view')}</p>
+          </div>
+        </div>
       ) : isLoading ? (
         <PortfolioSkeleton />
       ) : error ? (

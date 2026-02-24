@@ -27,21 +27,25 @@
       "status": "状态",
       "ap_vault": "AP 金库"
     },
-    "status_active": "活跃"
+    "status_active": "活跃",
+    "no_nodes": "尚未注册发行人节点。"
   },
   "fill_speed": {
     "section_title": "成交速度",
     "section_subtitle": "每笔订单的成交时间",
-    "tooltip_label": "成交时间"
+    "tooltip_label": "成交时间",
+    "no_data": "暂无成交数据 — 首笔交易后图表将自动填充。"
   },
   "inventory": {
     "section_title": "库存",
     "section_subtitle": "按美元价值排列的前列持仓",
-    "tooltip_label": "价值"
+    "tooltip_label": "价值",
+    "no_data": "暂无库存数据。"
   },
   "recent_activity": {
     "section_title": "近期活动",
     "section_subtitle": "Keeper BLS 签名",
+    "no_data": "暂无订单 — 首笔交易后活动将自动显示。",
     "table": {
       "time": "时间",
       "order_id": "订单 ID",

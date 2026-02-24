@@ -267,7 +267,7 @@ const SOURCE_META: Record<string, SourceMeta> = {
     },
   },
   animals: { valueLabel: 'Observations', unit: '/24h' },
-  petfinder: { valueLabel: 'Adoptable', unit: 'pets' },
+  shelter: { valueLabel: 'Count', unit: 'animals' },
   ebird: {
     valueLabel: 'Count', unit: '',
     assetUnit: (name) => {

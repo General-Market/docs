@@ -23,6 +23,8 @@ export default function SourcesPage() {
   const healthyCt = sources.filter(s => s.status === 'healthy').length
   const staleCt = sources.filter(s => s.status === 'stale').length
   const deadCt = sources.filter(s => s.status === 'dead').length
+  const totalLiveAssets = sources.reduce((sum, s) => sum + Math.max(0, s.activeAssets - s.staleAssets - s.zeroValueAssets), 0)
+  const totalAssets = sources.reduce((sum, s) => sum + s.totalAssets, 0)
 
   return (
     <main className="min-h-screen bg-page">
@@ -41,10 +43,10 @@ export default function SourcesPage() {
         </div>
 
         {/* Stats row */}
-        <div className="grid grid-cols-2 md:grid-cols-5 py-5 border-b border-border-light mt-0">
+        <div className="grid grid-cols-2 md:grid-cols-6 py-5 border-b border-border-light mt-0">
           <div className="py-3 px-4 md:px-0">
             <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">
-              Total Sources
+              Sources
             </p>
             <p className="text-[22px] font-extrabold font-mono tabular-nums text-black">
               {loading ? '--' : sources.length}
@@ -76,13 +78,25 @@ export default function SourcesPage() {
           </div>
           <div className="py-3 px-4 md:px-6 md:border-l border-border-light border-t md:border-t-0">
             <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">
+              Live Assets
+            </p>
+            <p className="text-[22px] font-extrabold font-mono tabular-nums text-black">
+              {loading ? '--' : (
+                <>
+                  {totalLiveAssets.toLocaleString()}
+                  <span className="text-[14px] text-text-muted font-semibold"> / {totalAssets.toLocaleString()}</span>
+                </>
+              )}
+            </p>
+          </div>
+          <div className="py-3 px-4 md:px-6 md:border-l border-border-light border-t md:border-t-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">
               Last Updated
             </p>
             <div className="flex items-center gap-2">
               <p className="text-[16px] font-extrabold font-mono tabular-nums text-black">
                 {formatLastUpdated(lastUpdated)}
               </p>
-              {/* Auto-refresh indicator */}
               {!loading && (
                 <span
                   className="w-2 h-2 rounded-full bg-color-up animate-pulse"

@@ -42,7 +42,7 @@ const CATEGORY_GROUPS: { id: string; label: string; sources: string[] }[] = [
   { id: 'jobs', label: 'Jobs & Labor', sources: ['adzuna'] },
   { id: 'shopping', label: 'Shopping', sources: ['bestbuy'] },
   { id: 'real_estate', label: 'Real Estate', sources: ['zillow'] },
-  { id: 'animals', label: 'Animals', sources: ['petfinder', 'animals', 'movebank', 'ebird'] },
+  { id: 'animals', label: 'Animals', sources: ['shelter', 'animals', 'movebank', 'ebird'] },
 ]
 
 // Reverse lookup: source → category (used internally for category routing)
@@ -147,7 +147,7 @@ const COUNT_SOURCES = new Set([
   'ndbc', 'noaa_met', 'nwps', 'airnow',
   'courtlistener',
   'openalex', 'crossref', 'pubmed', 'stackexchange',
-  'petfinder',
+  'shelter',
   'parking', 'tomtom_traffic', 'tomtom_evcharge',
   'bgg',
   'adzuna',

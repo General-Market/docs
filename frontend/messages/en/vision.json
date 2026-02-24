@@ -1,0 +1,240 @@
+{
+  "heading": {
+    "label": "Prediction Markets",
+    "title": "VISION",
+    "description": "{count} live \u00b7 sealed parimutuel prediction markets"
+  },
+  "actions": {
+    "create_batch": "+ CREATE BATCH"
+  },
+  "empty": {
+    "no_active_batches": "No active batches",
+    "create_to_start": "Create a batch to get started"
+  },
+  "batch_card": {
+    "batch_number": "Batch #{id}",
+    "markets_count": "{count} mkts",
+    "tick_duration": "{minutes}min",
+    "players_count": "{count} players",
+    "tvl_usdc": "${amount} USDC"
+  },
+  "leaderboard": {
+    "label": "AI Agents",
+    "title": "Leaderboard",
+    "description": "Autonomous agent rankings \u2014 P&L, win rate, portfolio complexity, and real-time performance."
+  },
+  "create_modal": {
+    "title": "Create Batch",
+    "steps": {
+      "markets": "Pick Markets",
+      "configure": "Configure",
+      "preview": "Preview",
+      "confirm": "Confirm"
+    },
+    "connect_wallet": "Connect your wallet to create a batch",
+    "step_markets": {
+      "source_label": "Source",
+      "all_sources": "All Sources",
+      "search_label": "Search",
+      "search_placeholder": "Search by name or ID...",
+      "select_all": "Select All",
+      "unselect_all": "Unselect All",
+      "selected_count": "{selected} selected",
+      "selected_shown": "{selected} selected / {shown} shown",
+      "loading_markets": "Loading markets...",
+      "no_active_markets": "No active markets available",
+      "no_markets_match": "No markets match your filter"
+    },
+    "step_configure": {
+      "tick_duration_label": "Tick Duration",
+      "resolution_type_label": "Resolution Type per Market",
+      "resolution_types": {
+        "up_0": "Up (0% threshold)",
+        "up_30": "Up (30 bps)",
+        "up_x": "Up (custom)",
+        "down_0": "Down (0% threshold)",
+        "down_30": "Down (30 bps)",
+        "down_x": "Down (custom)",
+        "flat_0": "Flat (0% threshold)",
+        "flat_x": "Flat (custom)"
+      },
+      "tick_durations": {
+        "5min": "5 min",
+        "10min": "10 min",
+        "30min": "30 min",
+        "1h": "1 hour",
+        "4h": "4 hours",
+        "1d": "1 day"
+      },
+      "bps_label": "bps",
+      "bps_placeholder": "bps"
+    },
+    "step_preview": {
+      "batch_summary": "Batch Summary",
+      "markets_label": "Markets",
+      "tick_duration_label": "Tick Duration",
+      "table": {
+        "market": "Market",
+        "resolution": "Resolution",
+        "threshold": "Threshold",
+        "price": "Price"
+      }
+    },
+    "step_confirm": {
+      "creating_batch": "You are creating a batch with {count} market{plural}",
+      "tick_duration": "Tick duration: {duration}",
+      "confirm_wallet": "Confirm the transaction in your wallet...",
+      "tx_submitted": "Transaction submitted, waiting for confirmation...",
+      "tx_hash": "Tx: {hash}",
+      "button": {
+        "waiting": "Waiting for wallet...",
+        "confirming": "Confirming...",
+        "create_batch": "Create Batch"
+      },
+      "success": {
+        "title": "Batch Created!",
+        "batch_id": "Batch ID: #{id}"
+      },
+      "create_another": "Create Another",
+      "close": "Close"
+    },
+    "nav": {
+      "back": "Back",
+      "next": "Next",
+      "review_confirm": "Review & Confirm",
+      "back_to_preview": "Back to Preview"
+    }
+  },
+  "expanded_batch": {
+    "tabs": {
+      "visual": "VISUAL",
+      "script": "SCRIPT"
+    },
+    "tick_info": "Tick #{tick} \u00b7 {minutes}min intervals",
+    "player_stats": {
+      "bets_set": "Bets Set",
+      "win_rate": "Win Rate",
+      "balance": "Balance",
+      "pnl": "PnL",
+      "stake_per_tick": "Stake/Tick",
+      "multiplier": "Multiplier"
+    },
+    "actions": {
+      "all_up": "ALL \u25b2",
+      "all_down": "ALL \u25bc",
+      "deposit": "DEPOSIT",
+      "withdraw": "WITHDRAW",
+      "submit": "SUBMIT"
+    }
+  },
+  "bet_card": {
+    "creator_staked": "Creator Staked",
+    "filler_stake": "Filler Stake",
+    "matched": "Matched",
+    "awaiting_match": "Awaiting match",
+    "payout_info": "Payout Info",
+    "total_pot": "Total Pot:",
+    "creator_return": "Creator Return:",
+    "matcher_return": "Matcher Return:",
+    "show_probability": "Show implied probability",
+    "hide_probability": "Hide implied probability",
+    "creator_implied": "Creator implied:",
+    "matcher_implied": "Matcher implied:",
+    "portfolio_markets": "Portfolio: {count} markets",
+    "list_size_trades": "List Size: {count} trades",
+    "view_details": "View Details \u2192",
+    "bot_notice": "Bets placed by AI agents",
+    "early_exit": "\u2297 Early Exit"
+  },
+  "bet_feed": {
+    "placed": "placed portfolio bet",
+    "matched": "portfolio bet matched",
+    "won": "won portfolio bet",
+    "lost": "portfolio bet settled",
+    "default": "portfolio bet",
+    "markets": "markets"
+  },
+  "bilateral": {
+    "bet_id": "Bet #{id}",
+    "creator": "Creator",
+    "filler": "Filler",
+    "total_locked": "Total Locked",
+    "deadline": "Deadline",
+    "settlement": "Settlement",
+    "winner": "Winner:",
+    "resolution": "Resolution:",
+    "creator_payout": "Creator Payout:",
+    "filler_payout": "Filler Payout:",
+    "keeper_votes": "Keeper Votes:",
+    "committed": "Committed: {date}",
+    "settled": "Settled: {date}",
+    "can_dispute": "Can dispute",
+    "all_statuses": "All Statuses",
+    "disputed": "Disputed",
+    "custom_split": "Custom Split",
+    "sort_by": "Sort by:",
+    "created_date": "Created Date",
+    "amount": "Amount",
+    "view_all_statuses": "view all statuses",
+    "failed_to_load": "Failed to load bilateral bets: {error}"
+  },
+  "bets_table": {
+    "bet_id": "Bet ID",
+    "markets": "Markets",
+    "amount": "Amount",
+    "result": "Result",
+    "status": "Status",
+    "date": "Date"
+  },
+  "lending_section": {
+    "title": "USDC Vault",
+    "description": "Earn yield by lending USDC to borrowers",
+    "connect_wallet": "Connect your wallet to access vault features",
+    "error_title": "Something went wrong",
+    "error_description": "Please refresh the page."
+  },
+  "deposit_modal": {
+    "title": "Deposit to Batch #{id}",
+    "connect_wallet": "Connect your wallet to deposit",
+    "success_title": "Deposit Successful",
+    "success_description": "{amount} USDC deposited to batch #{id}",
+    "deposit_more": "Deposit More",
+    "close": "Close",
+    "batch_balance": "Batch Balance",
+    "amount_label": "Amount (USDC)",
+    "balance_label": "Balance: {amount} USDC",
+    "insufficient_balance": "Insufficient USDC balance",
+    "button_confirm": "Confirm in wallet...",
+    "button_approving": "Approving...",
+    "button_depositing": "Depositing...",
+    "button_deposit": "Deposit USDC",
+    "error_title": "Error",
+    "cancel": "Cancel"
+  },
+  "withdraw_modal": {
+    "title_withdraw": "Withdraw from Batch #{id}",
+    "title_claim": "Claim Rewards from Batch #{id}",
+    "title_choose": "Withdraw / Claim Batch #{id}",
+    "connect_wallet": "Connect your wallet",
+    "withdrawal_successful": "Withdrawal Successful",
+    "claim_successful": "Claim Successful",
+    "usdc_returned": "{amount} USDC returned",
+    "rewards_claimed": "Rewards claimed for ticks {from} - {to}",
+    "back": "Back",
+    "close": "Close",
+    "on_chain_balance": "On-chain Balance",
+    "total_deposited": "Total Deposited",
+    "profit": "Profit",
+    "est_fee": "Est. Fee (0.3% on profit)",
+    "error_title": "Error",
+    "try_again": "Try again",
+    "withdraw_all": "Withdraw All",
+    "withdraw_description": "Exits the batch entirely. 0.3% fee on profit only.",
+    "claim_rewards": "Claim Rewards",
+    "claim_description": "Claim resolved tick rewards without leaving the batch.",
+    "cancel": "Cancel"
+  },
+  "my_positions": {
+    "title": "My Positions"
+  }
+}

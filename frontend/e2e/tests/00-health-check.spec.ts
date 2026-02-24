@@ -7,7 +7,7 @@ test.describe('Health Check', () => {
     await page.goto('/');
     await expect(page).toHaveTitle(/General Market/i);
     // The hero heading should be visible
-    await expect(page.getByRole('heading', { name: 'Index', exact: true })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('heading', { name: 'Markets' })).toBeVisible({ timeout: 15_000 });
   });
 
   test('backend API is reachable', async () => {
@@ -28,7 +28,7 @@ test.describe('Health Check', () => {
   test('ITP listing appears with at least one ITP', async ({ page }) => {
     await page.goto('/');
     // Wait for ITP cards to load (they come from on-chain reads)
-    const itpCards = page.locator('.bg-terminal-dark.border.border-white\\/10.rounded-lg.p-4');
+    const itpCards = page.locator('[id^="itp-card-"]');
     await expect(itpCards.first()).toBeVisible({ timeout: 30_000 });
   });
 });

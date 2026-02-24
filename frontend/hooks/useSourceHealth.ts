@@ -5,7 +5,7 @@ import { DATA_NODE_URL } from '@/lib/config'
 
 // ── Types ──
 
-export type SourceStatus = 'healthy' | 'stale' | 'dead'
+export type SourceStatus = 'healthy' | 'stale' | 'dead' | 'not_started' | 'initializing'
 
 export interface SourceHealth {
   sourceId: string
@@ -27,31 +27,19 @@ export interface SourceHealth {
   assetsWithNoChange24h: number
   syncGapMaxSecs: number
   estimatedDailyRecords: number
+  // Error tracker fields
+  errorCategory: string
+  consecutiveErrors: number
+  totalErrors: number
+  lastError: string | null
+  lastSuccessAt: string | null
+  totalSyncs: number
+  notStartedReason: string | null
 }
 
 interface SourceHealthResponse {
-  generated_at: string
-  sources: Array<{
-    source_id: string
-    display_name: string
-    sync_interval_secs: number
-    status: string
-    total_assets: number
-    active_assets: number
-    total_price_records: number
-    oldest_record: string | null
-    newest_record: string | null
-    last_sync_age_secs: number
-    records_last_1h: number
-    records_last_24h: number
-    records_last_7d: number
-    zero_value_assets: number
-    stale_assets: number
-    avg_change_pct: number
-    assets_with_no_change_24h: number
-    sync_gap_max_secs: number
-    estimated_daily_records: number
-  }>
+  generatedAt: string
+  sources: Array<SourceHealth & { status: string }>
 }
 
 export interface UseSourceHealthReturn {
@@ -62,29 +50,13 @@ export interface UseSourceHealthReturn {
   refresh: () => Promise<void>
 }
 
-// ── Transform snake_case response to camelCase ──
-
 function transformSource(raw: SourceHealthResponse['sources'][0]): SourceHealth {
   return {
-    sourceId: raw.source_id,
-    displayName: raw.display_name,
-    syncIntervalSecs: raw.sync_interval_secs,
+    ...raw,
     status: raw.status as SourceStatus,
-    totalAssets: raw.total_assets,
-    activeAssets: raw.active_assets,
-    totalPriceRecords: raw.total_price_records,
-    oldestRecord: raw.oldest_record,
-    newestRecord: raw.newest_record,
-    lastSyncAgeSecs: raw.last_sync_age_secs,
-    recordsLast1h: raw.records_last_1h,
-    recordsLast24h: raw.records_last_24h,
-    recordsLast7d: raw.records_last_7d,
-    zeroValueAssets: raw.zero_value_assets,
-    staleAssets: raw.stale_assets,
-    avgChangePct: raw.avg_change_pct,
-    assetsWithNoChange24h: raw.assets_with_no_change_24h,
-    syncGapMaxSecs: raw.sync_gap_max_secs,
-    estimatedDailyRecords: raw.estimated_daily_records,
+    lastError: raw.lastError ?? null,
+    lastSuccessAt: raw.lastSuccessAt ?? null,
+    notStartedReason: raw.notStartedReason ?? null,
   }
 }
 

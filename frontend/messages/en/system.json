@@ -27,21 +27,25 @@
       "status": "Status",
       "ap_vault": "AP Vault"
     },
-    "status_active": "Active"
+    "status_active": "Active",
+    "no_nodes": "No issuer nodes registered yet."
   },
   "fill_speed": {
     "section_title": "Fill Speed",
     "section_subtitle": "Fill time per order",
-    "tooltip_label": "Fill time"
+    "tooltip_label": "Fill time",
+    "no_data": "No fill data yet — charts will populate after the first trade."
   },
   "inventory": {
     "section_title": "Inventory",
     "section_subtitle": "Top holdings by USD",
-    "tooltip_label": "Value"
+    "tooltip_label": "Value",
+    "no_data": "No inventory data yet."
   },
   "recent_activity": {
     "section_title": "Recent Activity",
     "section_subtitle": "Keeper BLS Signatures",
+    "no_data": "No orders yet — activity will appear after the first trade.",
     "table": {
       "time": "Time",
       "order_id": "Order ID",

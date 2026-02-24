@@ -27,21 +27,25 @@
       "status": "상태",
       "ap_vault": "AP 볼트"
     },
-    "status_active": "활성"
+    "status_active": "활성",
+    "no_nodes": "등록된 발행자 노드가 없습니다."
   },
   "fill_speed": {
     "section_title": "체결 속도",
     "section_subtitle": "주문당 체결 시간",
-    "tooltip_label": "체결 시간"
+    "tooltip_label": "체결 시간",
+    "no_data": "체결 데이터 없음 — 첫 거래 후 차트가 표시됩니다."
   },
   "inventory": {
     "section_title": "재고",
     "section_subtitle": "USD 기준 상위 보유 자산",
-    "tooltip_label": "가치"
+    "tooltip_label": "가치",
+    "no_data": "재고 데이터가 아직 없습니다."
   },
   "recent_activity": {
     "section_title": "최근 활동",
     "section_subtitle": "키퍼 BLS 서명",
+    "no_data": "주문 없음 — 첫 거래 후 활동이 표시됩니다.",
     "table": {
       "time": "시간",
       "order_id": "주문 ID",

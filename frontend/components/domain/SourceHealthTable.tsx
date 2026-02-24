@@ -149,7 +149,7 @@ const API_KEY_LINKS: Record<string, { url: string; label: string }> = {
   noaa_met: { url: 'https://tidesandcurrents.noaa.gov/api/', label: 'CO-OPS API' },
   nwps: { url: 'https://api.water.noaa.gov/nwps/v1/', label: 'NWPS API' },
   airnow: { url: 'https://docs.airnowapi.org/', label: 'AirNow API' },
-  petfinder: { url: 'https://www.petfinder.com/developers/', label: 'Petfinder API' },
+  shelter: { url: 'https://data.austintexas.gov/Health-and-Community-Services/Austin-Animal-Center-Stray-Map/kz4x-q9k5', label: 'Austin Animal Center (Socrata)' },
   parking: { url: 'https://api.parkendd.de/', label: 'ParkAPI' },
   tomtom_traffic: { url: 'https://developer.tomtom.com/traffic-api/documentation', label: 'TomTom Traffic' },
   tomtom_evcharge: { url: 'https://developer.tomtom.com/ev-charging-stations-availability-api', label: 'TomTom EV' },

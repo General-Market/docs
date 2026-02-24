@@ -1,5 +1,5 @@
 import { test, expect, TEST_ADDRESS } from '../fixtures/wallet';
-import { connectWalletButton, disconnectButton } from '../helpers/selectors';
+import { connectWalletButton } from '../helpers/selectors';
 
 test.describe('Connect Wallet', () => {
   test('connects wallet and shows truncated address', async ({ walletPage: page }) => {
@@ -8,9 +8,12 @@ test.describe('Connect Wallet', () => {
     await expect(connectBtn).toBeVisible({ timeout: 15_000 });
     await connectBtn.click();
 
-    // Should show truncated address: 0xf39F...2266
+    // Move mouse away so group-hover:hidden CSS clears and address span is visible
+    await page.mouse.move(0, 0);
+
+    // Should show truncated address in the wallet button
     const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4);
-    await expect(page.getByText(truncated, { exact: true })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 15_000 });
   });
 
   test('disconnect button works', async ({ walletPage: page }) => {
@@ -18,15 +21,16 @@ test.describe('Connect Wallet', () => {
     const connectBtn = connectWalletButton(page);
     await expect(connectBtn).toBeVisible({ timeout: 15_000 });
     await connectBtn.click();
+    await page.mouse.move(0, 0);
 
     const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4);
-    await expect(page.getByText(truncated, { exact: true })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 15_000 });
 
-    // Now disconnect
-    const disconnectBtn = disconnectButton(page);
-    await disconnectBtn.click();
+    // Hover to reveal disconnect text, then click
+    const walletBtn = page.getByRole('button', { name: truncated });
+    await walletBtn.click();
 
-    // Should show Connect Wallet again
+    // Should show Login button again
     await expect(connectWalletButton(page)).toBeVisible({ timeout: 10_000 });
   });
 
@@ -35,16 +39,17 @@ test.describe('Connect Wallet', () => {
     const connectBtn = connectWalletButton(page);
     await expect(connectBtn).toBeVisible({ timeout: 15_000 });
     await connectBtn.click();
+    await page.mouse.move(0, 0);
 
     const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4);
-    await expect(page.getByText(truncated, { exact: true })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 15_000 });
 
     // Reload
     await page.reload();
 
     // Wagmi may auto-reconnect from stored state, or we may need to re-connect.
-    // Either we see the address or the Connect button.
-    const addressOrConnect = page.getByText(truncated, { exact: true }).or(connectWalletButton(page));
+    // Either we see the address button or the Login button.
+    const addressOrConnect = page.getByRole('button', { name: truncated }).or(connectWalletButton(page));
     await expect(addressOrConnect).toBeVisible({ timeout: 15_000 });
   });
 });
