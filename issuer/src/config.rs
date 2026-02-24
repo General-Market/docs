@@ -1246,10 +1246,14 @@ impl ConfigBuilder {
 /// Plain HTTP is only allowed when --mock is set.
 pub fn validate_data_node_url(url: &str, is_mock: bool) -> Result<(), String> {
     if !is_mock && url.starts_with("http://") {
-        return Err(format!(
-            "Data-node URL '{}' uses plain HTTP. Use HTTPS in production, or pass --mock for development.",
-            url
-        ));
+        // Allow localhost HTTP for local dev (no --mock needed)
+        let is_localhost = url.starts_with("http://localhost") || url.starts_with("http://127.0.0.1");
+        if !is_localhost {
+            return Err(format!(
+                "Data-node URL '{}' uses plain HTTP. Use HTTPS in production, or pass --mock for development.",
+                url
+            ));
+        }
     }
     Ok(())
 }
@@ -2160,10 +2164,19 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
     }
 
     #[test]
-    fn test_validate_data_node_url_rejects_http_in_production() {
-        let result = validate_data_node_url("http://localhost:8200", false);
+    fn test_validate_data_node_url_rejects_http_remote_in_production() {
+        let result = validate_data_node_url("http://data-node.example.com", false);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("plain HTTP"));
+    }
+
+    #[test]
+    fn test_validate_data_node_url_allows_http_localhost() {
+        // Localhost HTTP is always allowed (local dev without --mock)
+        let result = validate_data_node_url("http://localhost:8200", false);
+        assert!(result.is_ok());
+        let result = validate_data_node_url("http://127.0.0.1:8200", false);
+        assert!(result.is_ok());
     }
 
     #[test]

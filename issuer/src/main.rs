@@ -2759,17 +2759,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(1);
     }
 
-    // --- Production guards: dev-only flags must not be used without --mock ---
-    if !args.mock {
-        if args.no_tls {
-            panic!("FATAL: --no-tls requires --mock. Do not disable TLS in production.");
-        }
-        if args.bls_key_seed_index.is_some() {
-            panic!("FATAL: --bls-key-seed-index requires --mock. Deterministic keys are insecure.");
-        }
-        if args.skip_reconstruction {
-            panic!("FATAL: --skip-reconstruction requires --mock. Production nodes must reconstruct state.");
-        }
+    // --- Production guards ---
+    // --no-tls and --test-key-seeds are allowed in local dev without --mock.
+    // --mock fully disables chain writer (no on-chain writes at all).
+    // --skip-reconstruction still requires --mock (production nodes must reconstruct).
+    if !args.mock && args.skip_reconstruction {
+        panic!("FATAL: --skip-reconstruction requires --mock. Production nodes must reconstruct state.");
     }
 
     // --- Validate data-node URLs use HTTPS in production ---

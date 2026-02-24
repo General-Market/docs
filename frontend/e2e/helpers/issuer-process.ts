@@ -137,7 +137,6 @@ export async function restartIssuer(id: number): Promise<void> {
     '--cycle-duration-ms', '2000',
     '--min-cycle-gap-ms', '200',
     '--consensus-timeout-ms', '1500',
-    '--mock',
     '--no-tls',
     '--test-key-seeds',
     '--bls-key-seed-index', String(blsIdx),

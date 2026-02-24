@@ -50,6 +50,7 @@ export function BatchCard({ batch, onClick }: BatchCardProps) {
 
   return (
     <div
+      data-testid="batch-card"
       onClick={onClick}
       className="bg-card border border-border-light rounded-card p-4 cursor-pointer
                  hover:bg-card-hover hover:shadow-card-hover transition-all"
