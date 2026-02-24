@@ -1,0 +1,14 @@
+[
+  {"asset_id": "yahoodrinks_kc_f", "symbol": "DRINK/COFFEE", "name": "Coffee Arabica Futures (KC=F)", "category": "commodities", "subcategory": "drink_futures", "api_ref": "KC=F", "active": true},
+  {"asset_id": "yahoodrinks_sb_f", "symbol": "DRINK/SUGAR", "name": "Sugar #11 Futures (SB=F)", "category": "commodities", "subcategory": "drink_futures", "api_ref": "SB=F", "active": true},
+  {"asset_id": "yahoodrinks_cc_f", "symbol": "DRINK/COCOA", "name": "Cocoa Futures (CC=F)", "category": "commodities", "subcategory": "drink_futures", "api_ref": "CC=F", "active": true},
+  {"asset_id": "yahoodrinks_oj_f", "symbol": "DRINK/OJ", "name": "Orange Juice Futures (OJ=F)", "category": "commodities", "subcategory": "drink_futures", "api_ref": "OJ=F", "active": true},
+  {"asset_id": "yahoodrinks_ko", "symbol": "DRINK/KO", "name": "Coca-Cola (KO)", "category": "stocks", "subcategory": "drink_stocks", "api_ref": "KO", "active": true},
+  {"asset_id": "yahoodrinks_pep", "symbol": "DRINK/PEP", "name": "PepsiCo (PEP)", "category": "stocks", "subcategory": "drink_stocks", "api_ref": "PEP", "active": true},
+  {"asset_id": "yahoodrinks_stz", "symbol": "DRINK/STZ", "name": "Constellation Brands (STZ)", "category": "stocks", "subcategory": "drink_stocks", "api_ref": "STZ", "active": true},
+  {"asset_id": "yahoodrinks_sam", "symbol": "DRINK/SAM", "name": "Boston Beer Company (SAM)", "category": "stocks", "subcategory": "drink_stocks", "api_ref": "SAM", "active": true},
+  {"asset_id": "yahoodrinks_bf_b", "symbol": "DRINK/BFB", "name": "Brown-Forman Spirits (BF-B)", "category": "stocks", "subcategory": "drink_stocks", "api_ref": "BF-B", "active": true},
+  {"asset_id": "yahoodrinks_deo", "symbol": "DRINK/DEO", "name": "Diageo Spirits (DEO)", "category": "stocks", "subcategory": "drink_stocks", "api_ref": "DEO", "active": true},
+  {"asset_id": "yahoodrinks_tap", "symbol": "DRINK/TAP", "name": "Molson Coors (TAP)", "category": "stocks", "subcategory": "drink_stocks", "api_ref": "TAP", "active": true},
+  {"asset_id": "yahoodrinks_sbux", "symbol": "DRINK/SBUX", "name": "Starbucks (SBUX)", "category": "stocks", "subcategory": "drink_stocks", "api_ref": "SBUX", "active": true}
+]
