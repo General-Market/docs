@@ -267,6 +267,7 @@ const SOURCE_META: Record<string, SourceMeta> = {
     },
   },
   animals: { valueLabel: 'Observations', unit: '/24h' },
+  petfinder: { valueLabel: 'Adoptable', unit: 'pets' },
   ebird: {
     valueLabel: 'Count', unit: '',
     assetUnit: (name) => {
@@ -303,9 +304,19 @@ const SOURCE_META: Record<string, SourceMeta> = {
   // ── Entertainment ──
   steam: { valueLabel: 'Players', unit: 'online' },
   twitch: { valueLabel: 'Viewers', unit: 'live' },
+  chaturbate: { valueLabel: 'Viewers', unit: 'live' },
   tmdb: { valueLabel: 'Popularity', unit: 'score' },
+  lastfm: {
+    valueLabel: 'Count', unit: '',
+    assetUnit: (name) => {
+      if (/listener/i.test(name)) return 'listeners'
+      if (/scrobble|playcount/i.test(name)) return 'plays'
+      return 'count'
+    },
+  },
   anilist: { valueLabel: 'Popularity', unit: 'score' },
   sports: { valueLabel: 'Score', unit: 'pts' },
+  esports: { valueLabel: 'Score', unit: 'maps' },
 
   // ── Internet / Tech ──
   hackernews: {
@@ -327,6 +338,14 @@ const SOURCE_META: Record<string, SourceMeta> = {
   crates_io: { valueLabel: 'Downloads', unit: 'recent' },
   pypi: { valueLabel: 'Downloads', unit: '/day' },
   github: { valueLabel: 'Stars', unit: '' },
+  reddit: {
+    valueLabel: 'Count', unit: '',
+    assetUnit: (name) => {
+      if (/subscriber/i.test(name)) return 'subs'
+      if (/active/i.test(name)) return 'online'
+      return ''
+    },
+  },
   cloudflare: {
     valueLabel: 'Rank', unit: '',
     assetUnit: (name) => {
@@ -334,6 +353,70 @@ const SOURCE_META: Record<string, SourceMeta> = {
       if (/rank/i.test(name)) return '#'
       if (/score|quality/i.test(name)) return 'score'
       return ''
+    },
+  },
+
+  // ── Environment & Transport ──
+  usgs_water: { valueLabel: 'Discharge', unit: 'ft³/s' },
+  noaa_tides: { valueLabel: 'Water Level', unit: 'ft' },
+  nrc_nuclear: { valueLabel: 'Power Output', unit: '%' },
+  citybikes: { valueLabel: 'Available Bikes', unit: 'bikes' },
+  courtlistener: { valueLabel: 'Filings', unit: 'filings' },
+  ndbc: { valueLabel: 'Wave Height', unit: 'm' },
+  noaa_met: {
+    valueLabel: 'Value', unit: '',
+    assetUnit: (name) => {
+      if (/water.*temp/i.test(name)) return '°F'
+      if (/wind/i.test(name)) return 'kn'
+      return ''
+    },
+  },
+  nwps: { valueLabel: 'Stage Height', unit: 'ft' },
+  airnow: { valueLabel: 'AQI', unit: '0-500' },
+  openalex: { valueLabel: 'Works', unit: 'papers' },
+  crossref: { valueLabel: 'DOIs', unit: 'registrations' },
+  pubmed: { valueLabel: 'Articles', unit: 'papers' },
+  stackexchange: { valueLabel: 'Questions', unit: '/day' },
+
+  // ── Autos & Vehicles ──
+  parking: { valueLabel: 'Free Spaces', unit: 'spaces' },
+  tomtom_traffic: { valueLabel: 'Congestion', unit: '0-1' },
+  tomtom_evcharge: { valueLabel: 'Available', unit: 'connectors' },
+
+  // ── Board Games & Shopping ──
+  bgg: { valueLabel: 'Hotness Rank', unit: '#' },
+  bestbuy: { valueLabel: 'Sale Price', unit: 'USD' },
+
+  // ── Jobs / Labor ──
+  adzuna: {
+    valueLabel: 'Value', unit: '',
+    assetUnit: (name) => {
+      if (/salary/i.test(name)) return 'local ccy'
+      if (/vacanc/i.test(name)) return 'jobs'
+      return ''
+    },
+  },
+
+  // ── Tourism ──
+  queue_times: { valueLabel: 'Avg Wait', unit: 'min' },
+  cbp_border: { valueLabel: 'Wait Time', unit: 'min' },
+  faa_delays: { valueLabel: 'Delay', unit: '0/1' },
+
+  // ── Drink Sources ──
+  yahoo_drinks: {
+    valueLabel: 'Price', unit: '',
+    assetUnit: (name) => {
+      if (/futures|=F/i.test(name)) return 'USD/lb'
+      return 'USD'
+    },
+  },
+  untappd: {
+    valueLabel: 'Value', unit: '',
+    assetUnit: (name) => {
+      if (/rating\b/i.test(name) && !/count/i.test(name)) return '/5'
+      if (/check.?in/i.test(name)) return 'check-ins'
+      if (/monthly/i.test(name)) return '/month'
+      return 'count'
     },
   },
 

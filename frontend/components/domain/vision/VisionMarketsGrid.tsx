@@ -32,12 +32,17 @@ const CATEGORY_GROUPS: { id: string; label: string; sources: string[] }[] = [
   { id: 'stocks', label: 'Stocks', sources: ['stocks', 'twse', 'finra', 'finra_short_vol'] },
   { id: 'predictions', label: 'Predictions', sources: ['polymarket'] },
   { id: 'macro', label: 'Macro', sources: ['rates', 'bls', 'ecb', 'bonds', 'imf', 'worldbank'] },
-  { id: 'regulatory', label: 'Regulatory', sources: ['sec_13f', 'sec_efts', 'sec_insider', 'congress'] },
-  { id: 'commodities', label: 'Commodities', sources: ['futures', 'cftc', 'opec', 'eia'] },
-  { id: 'weather', label: 'Weather', sources: ['weather'] },
-  { id: 'tech', label: 'Tech', sources: ['npm', 'pypi', 'crates_io', 'github', 'cloudflare', 'hackernews'] },
-  { id: 'entertainment', label: 'Entertainment', sources: ['tmdb', 'anilist', 'twitch', 'steam', 'backpacktf', 'fourchan'] },
+  { id: 'regulatory', label: 'Regulatory', sources: ['sec_13f', 'sec_efts', 'sec_insider', 'congress', 'courtlistener'] },
+  { id: 'commodities', label: 'Commodities', sources: ['futures', 'cftc', 'opec', 'eia', 'yahoo_drinks'] },
+  { id: 'weather', label: 'Weather & Environment', sources: ['weather', 'usgs_water', 'noaa_tides', 'nrc_nuclear', 'ndbc', 'noaa_met', 'nwps', 'airnow'] },
+  { id: 'transport', label: 'Transport & Tourism', sources: ['citybikes', 'parking', 'tomtom_traffic', 'tomtom_evcharge', 'queue_times', 'cbp_border', 'faa_delays'] },
+  { id: 'education', label: 'Education & Research', sources: ['openalex', 'crossref', 'pubmed', 'stackexchange'] },
+  { id: 'tech', label: 'Tech', sources: ['npm', 'pypi', 'crates_io', 'github', 'cloudflare', 'hackernews', 'reddit'] },
+  { id: 'entertainment', label: 'Entertainment', sources: ['tmdb', 'lastfm', 'anilist', 'twitch', 'chaturbate', 'steam', 'backpacktf', 'fourchan', 'esports', 'bgg', 'untappd'] },
+  { id: 'jobs', label: 'Jobs & Labor', sources: ['adzuna'] },
+  { id: 'shopping', label: 'Shopping', sources: ['bestbuy'] },
   { id: 'real_estate', label: 'Real Estate', sources: ['zillow'] },
+  { id: 'animals', label: 'Animals', sources: ['petfinder', 'animals', 'movebank', 'ebird'] },
 ]
 
 // Reverse lookup: source → category (used internally for category routing)
@@ -135,9 +140,19 @@ const SUBCATEGORIZED_SOURCES = new Set(['weather', 'polymarket', 'defi'])
 const COUNT_SOURCES = new Set([
   'sec_13f', 'sec_efts', 'sec_insider', 'finra_short_vol', 'congress',
   'npm', 'pypi', 'crates_io', 'github', 'hackernews',
-  'twitch', 'steam', 'anilist', 'fourchan', 'backpacktf',
+  'twitch', 'steam', 'anilist', 'fourchan', 'backpacktf', 'esports',
   'imf', 'worldbank', 'cftc', 'opec', 'eia', 'finra',
-  'cloudflare', 'tmdb', 'twse',
+  'cloudflare', 'tmdb', 'lastfm', 'twse',
+  'usgs_water', 'noaa_tides', 'nrc_nuclear', 'citybikes',
+  'ndbc', 'noaa_met', 'nwps', 'airnow',
+  'courtlistener',
+  'openalex', 'crossref', 'pubmed', 'stackexchange',
+  'petfinder',
+  'parking', 'tomtom_traffic', 'tomtom_evcharge',
+  'bgg',
+  'adzuna',
+  'queue_times', 'cbp_border', 'faa_delays',
+  'untappd',
 ])
 
 function formatNumber(v: number): string {
