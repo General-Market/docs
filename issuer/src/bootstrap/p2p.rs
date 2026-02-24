@@ -8,7 +8,6 @@ use crate::p2p::{OnChainPeerDiscovery, PeerDiscovery, StaticPeerDiscovery, TcpP2
 use common::traits::P2PTransport;
 use crate::{HeartbeatMetrics, HeartbeatMonitor, IssuerConfig, PeerHealthTracker};
 use common::types::PeerInfo;
-use sha2::{Sha256, Digest};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
@@ -157,14 +156,11 @@ impl<'a> P2PBuilder<'a> {
                 if parts.len() == 2 {
                     let ip = parts[0].to_string();
                     let port = parts[1].parse::<u16>().ok()?;
-                    // Generate deterministic peer_id from address using SHA-256
-                    let mut hasher = Sha256::new();
-                    hasher.update(format!("{}:{}", ip, port));
-                    let result = hasher.finalize();
-                    let mut peer_id = [0u8; 32];
-                    peer_id.copy_from_slice(&result);
+                    // Use zeroed peer_id — connect_peers() will generate a
+                    // temporary 0xFF-prefixed ID from the address, and the
+                    // reader_loop re-keys to the real peer_id on first message.
                     Some(PeerInfo {
-                        peer_id,
+                        peer_id: [0u8; 32],
                         ip,
                         port,
                     })
