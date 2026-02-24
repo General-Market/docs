@@ -30,6 +30,8 @@ use std::sync::Arc;
 use thiserror::Error;
 use tokio::sync::RwLock;
 
+use crate::consensus::ConfigUpdate;
+
 /// Cached registry sync state for serving via HTTP endpoint
 ///
 /// This struct contains all the data needed for a registry sync proof.
@@ -183,6 +185,7 @@ pub fn compute_threshold(active_count: u64) -> u64 {
 // RegistrySyncHandler: Event watcher that updates cached sync state (Task 5)
 // ============================================================================
 
+use crate::bootstrap::generate_peer_id;
 use crate::chain::events::RegistryStateChangedEvent;
 use common::traits::ChainReader;
 use ethers::prelude::*;
@@ -235,8 +238,12 @@ pub struct RegistrySyncHandler<M: Middleware> {
     chain_reader: Arc<dyn ChainReader>,
     /// BLS keypair for signing
     bls_keypair: BLSKeyPair,
-    /// Issuer ID (0-19)
+    /// Issuer ID (0-19) — used for RegistrySyncState.issuer_id in BLS signing
     issuer_id: u8,
+    /// On-chain issuer ID from IssuerRegistry (1-based). Used to compute
+    /// node_index (dense rank among active issuers) and issuer_registry_index
+    /// (for signer bitmaps) when pushing ConfigUpdate.
+    on_chain_issuer_id: u64,
     /// Cache to update
     cache: RegistrySyncCache,
     /// Event topic hash
@@ -246,18 +253,27 @@ pub struct RegistrySyncHandler<M: Middleware> {
     /// Optional key registry for runtime updates on issuer join/leave
     key_registry: Option<Arc<crate::consensus::InMemoryKeyRegistry>>,
     /// Optional shared cell for pushing consensus config updates
-    /// (new_active_count, new_threshold)
-    pending_config_update: Option<Arc<RwLock<Option<(u8, usize)>>>>,
+    pending_config_update: Option<Arc<RwLock<Option<ConfigUpdate>>>>,
 }
 
 impl<M: Middleware + 'static> RegistrySyncHandler<M> {
     /// Create a new RegistrySyncHandler
+    ///
+    /// # Arguments
+    /// * `provider` - L3 chain provider
+    /// * `config` - RegistrySyncConfig
+    /// * `chain_reader` - For fetching issuer data
+    /// * `bls_keypair` - BLS keypair for signing
+    /// * `issuer_id` - Legacy 0-based index (used for RegistrySyncState)
+    /// * `on_chain_issuer_id` - On-chain issuer ID from IssuerRegistry (for computing indices)
+    /// * `cache` - RegistrySyncCache to update
     pub fn new(
         provider: Arc<M>,
         config: RegistrySyncConfig,
         chain_reader: Arc<dyn ChainReader>,
         bls_keypair: BLSKeyPair,
         issuer_id: u8,
+        on_chain_issuer_id: u64,
         cache: RegistrySyncCache,
     ) -> Self {
         use crate::chain::events::REGISTRY_STATE_CHANGED_SIGNATURE;
@@ -271,6 +287,7 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
             chain_reader,
             bls_keypair,
             issuer_id,
+            on_chain_issuer_id,
             cache,
             event_topic,
             last_block: 0,
@@ -291,7 +308,7 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
     /// Set shared config update cell for pushing consensus parameter changes
     pub fn with_pending_config_update(
         mut self,
-        cell: Arc<RwLock<Option<(u8, usize)>>>,
+        cell: Arc<RwLock<Option<ConfigUpdate>>>,
     ) -> Self {
         self.pending_config_update = Some(cell);
         self
@@ -415,14 +432,17 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
         if let Some(ref key_registry) = self.key_registry {
             use common::types::BLSPublicKey;
 
-            for (idx, issuer) in issuers.iter().enumerate() {
-                let mut peer_id = [0u8; 32];
-                peer_id[0] = idx as u8;
+            for issuer in issuers.iter() {
+                // Use generate_peer_id with the on-chain issuer ID for consistency
+                // with bootstrap (which also uses generate_peer_id).
+                // The enumerate() index is a dense index that diverges from on-chain
+                // IDs after any issuer removal.
+                let peer_id = generate_peer_id(issuer.id as u32);
 
                 if issuer.is_active() {
                     let pubkey = BLSPublicKey(issuer.bls_pubkey.to_vec());
                     if let Err(e) = key_registry.register(peer_id, pubkey) {
-                        warn!(issuer_idx = idx, error = %e, "Failed to update key registry");
+                        warn!(issuer_id = issuer.id, error = %e, "Failed to update key registry");
                     }
                 } else {
                     let _ = key_registry.unregister(&peer_id);
@@ -438,13 +458,48 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
         let active_count = active_issuers.len() as u64;
         let threshold = compute_threshold(active_count);
         if let Some(ref config_cell) = self.pending_config_update {
-            let mut guard = config_cell.write().await;
-            *guard = Some((active_count as u8, threshold as usize));
-            info!(
-                active_count,
-                threshold,
-                "Pushed consensus config update"
-            );
+            // Check if this node is still in the active set
+            let my_id = self.on_chain_issuer_id;
+            let is_active = active_issuers.iter().any(|i| i.id == my_id);
+
+            if !is_active {
+                error!(
+                    on_chain_issuer_id = my_id,
+                    active_count,
+                    "This node is no longer in the active issuer set! \
+                     It was removed or deactivated. Skipping config update — \
+                     node should be shut down gracefully."
+                );
+                // Do NOT push a config update — the node cannot participate.
+                // A future phase will trigger graceful shutdown here.
+            } else {
+                // Compute dense node_index: count of active issuers with ID < ours
+                let node_index = active_issuers
+                    .iter()
+                    .filter(|i| i.id < my_id)
+                    .count() as u8;
+
+                // issuer_registry_index = our on-chain ID (for signer bitmaps)
+                let issuer_registry_index = my_id as u8;
+
+                let update = ConfigUpdate {
+                    active_count: active_count as u8,
+                    threshold: threshold as usize,
+                    node_index,
+                    issuer_registry_index,
+                };
+
+                info!(
+                    active_count,
+                    threshold,
+                    node_index,
+                    issuer_registry_index,
+                    "Pushed consensus config update"
+                );
+
+                let mut guard = config_cell.write().await;
+                *guard = Some(update);
+            }
         }
 
         // Compute aggregated pubkey
@@ -974,6 +1029,7 @@ mod tests {
         let keypair = BLSKeyPair::from_seed(&seed).expect("valid seed");
 
         Issuer {
+            id: id as u64,
             addr: Address::from([id; 20]),
             ip: H256::from([id; 32]),
             bls_pubkey: Bytes::from(keypair.public_key_bytes()),

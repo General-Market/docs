@@ -9,6 +9,8 @@ use common::bls::BLSKeyPair;
 use common::error::Error;
 use common::types::{BLSPublicKey, PeerId};
 
+use crate::bootstrap::generate_peer_id;
+
 /// Trait for looking up BLS public keys by peer ID
 pub trait KeyRegistry: Send + Sync {
     /// Get the public key for a peer
@@ -84,8 +86,9 @@ impl InMemoryKeyRegistry {
     /// Create a test registry with generated keypairs and a peer_id offset
     ///
     /// Generates `count` deterministic keypairs for testing.
-    /// The peer_id[0] values will be offset + i (for i in 0..count),
-    /// but seed indices remain 0..count for deterministic key generation.
+    /// peer_ids are generated via `generate_peer_id(offset + i)` for consistency
+    /// with bootstrap and registry_sync, but seed indices remain 0..count
+    /// for deterministic key generation.
     ///
     /// This is useful when the on-chain IssuerRegistry has keys registered
     /// at different indices than the seed indices used to generate them.
@@ -94,9 +97,9 @@ impl InMemoryKeyRegistry {
         let mut keypairs = Vec::new();
 
         for i in 0..count {
-            let mut peer_id = [0u8; 32];
-            // +1 to match generate_peer_id() which avoids all-zeros sentinel
-            peer_id[0] = (offset + i + 1) as u8;
+            // Use generate_peer_id for consistency with bootstrap and registry_sync.
+            // generate_peer_id adds +1 internally to avoid all-zeros sentinel.
+            let peer_id = generate_peer_id((offset + i) as u32);
 
             // Generate deterministic keypair from seed (must match bls-tool: vec![idx; 32])
             let seed = vec![i as u8; 32];

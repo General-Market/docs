@@ -1,5 +1,22 @@
 # Design Decision Backlog
 
+## Session: 20260225-0100-c1h7 (Phase -1c: Bootstrap from on-chain state)
+
+- [DECISION] ChainReader trait extended with get_active_issuer_count(), get_registry_nonce(), get_aggregated_pubkey() as default-erroring methods for backward compatibility with MockChain
+- [DECISION] EthersChainReader uses ethers abigen bindings (not raw keccak256+eth_call) for activeIssuerCount/registryNonce/getAggregatedPubkey since they are simple view functions with no struct returns
+- [DECISION] build_protocol() threshold computation: on-chain activeIssuerCount is preferred, CLI --num-issuers is fallback. The --signature-threshold override still takes precedence if specified (but deprecated)
+- [DECISION] derive_indices_from_chain matches BLS pubkey bytes against on-chain registry. issuer_registry_index = on-chain ID, node_index = dense index (count of active issuers with lower ID). Falls back to CLI args on failure
+- [DECISION] peer_id generation now uses the resolved issuer_registry_index (from chain or CLI fallback) instead of the raw node_id, ensuring consistency with signer bitmaps
+- [DECISION] --signature-threshold CLI flag deprecated with warning but still honored. Will be removed in future release since threshold is now auto-computed from on-chain state
+
+## Session: 20260225-0100-p4c7 (Phase 0c: Fix peer_id[0] inconsistencies)
+
+- [DECISION] Added `extract_issuer_id(peer_id)` function as inverse of `generate_peer_id(node_id)`. Decodes on-chain issuer ID from peer_id bytes by reading LE u32 from bytes[0..4] and subtracting 1. This provides a single canonical way to recover the issuer ID for bitmap computation.
+- [DECISION] Fixed RegistrySyncHandler to use `generate_peer_id(issuer.id as u32)` instead of `peer_id[0] = idx as u8`. The `enumerate()` index is a dense 0-based index that diverges from on-chain IDs after any issuer removal. Using issuer.id (the on-chain ID) ensures consistency with bootstrap.
+- [DECISION] Fixed `generate_test_registry_with_offset` in keys.rs to use `generate_peer_id((offset + i) as u32)` instead of manual `peer_id[0] = (offset + i + 1) as u8`. Both produce the same result for small values, but using generate_peer_id is canonical and handles IDs > 255 correctly.
+- [DECISION] Removed the `indexed_peer_id[0] = issuer_registry_index` hack in ITP creation bitmap code. Previously, peer_id[0] was overwritten with the issuer index before storing in the aggregator, then read back as `peer_id[0] as u32` for bitmap. This broke key_registry lookups because the registered key used the original peer_id. Now the aggregator stores the real peer_id, and bitmap extraction uses `extract_issuer_id(peer_id)`.
+- [DECISION] Left `peer_id[0]` usage in test-only code (state.rs, discovery.rs) unchanged. These are self-contained unit tests that create simple peer_ids as HashMap keys, not used for bitmap computation.
+
 ## Session: 20260224-1730-b3k9 (Fix Issuer Config Mismatch & Resilience Test)
 
 - [DECISION] Aligned issuer timing config across all launch paths: `restartIssuer()` (issuer-process.ts) and `start-issuers.sh` now match `start.sh` (200/20/150ms for cycle/gap/consensus-timeout). Previously `restartIssuer()` used 2000/200/1500ms (10x slower) and `start-issuers.sh` used 5000ms cycles.
@@ -3965,3 +3982,13 @@ The backtester currently supports one rebalance method: **periodic time-based re
 [DECISION] Bearer token auth via --data-node-token / DATA_NODE_TOKEN env var flows into VisionConfig.data_node_token, ArbitrationConfig.data_node_token, and IssuerConfig.data_node_token. DataNodePriceFetcher::with_token() constructor applies bearer_auth() on all HTTP requests.
 
 [DECISION] Vision engine.rs does not exist yet (only config.rs and mod.rs stubs). Added data_node_token field to VisionConfig for when engine is implemented. The main.rs already passes it through.
+
+## Session: 20260224-phase0b (Phase 0b: Fix apply_pending_config_update crash)
+
+[DECISION] Replaced pending_config_update tuple `(u8, usize)` with `ConfigUpdate` struct containing `active_count`, `threshold`, `node_index`, and `issuer_registry_index`. This prevents the `LeaderElector::new()` panic when `node_index >= new_num_issuers` after an issuer is removed.
+
+[DECISION] Added `RuntimeConfig` struct with atomic fields (`AtomicU8`/`AtomicUsize`) for lock-free interior mutability of `node_index`, `num_issuers`, `issuer_registry_index`, and `signature_threshold`. These fields change at runtime when issuers join/leave, but `ConsensusProtocol` methods take `&self`. Using atomics avoids wrapping the entire `ConsensusConfig` in a `RwLock` (which would require `.read().await` at 85+ access sites).
+
+[DECISION] RegistrySyncHandler now computes `node_index` as dense rank (count of active issuers with ID < ours) and `issuer_registry_index` from the on-chain ID. If this node is removed from the active set, logs ERROR and skips config update instead of pushing invalid indices that would panic.
+
+[FAILED] Considered wrapping entire `ConsensusConfig` in `RwLock<ConsensusConfig>` — rejected because `self.config.*` is accessed 85+ times throughout protocol.rs, and adding `.read().await` everywhere would be a massive, error-prone refactor. Atomics are cleaner for the few fields that change.

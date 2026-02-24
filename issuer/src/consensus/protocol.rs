@@ -75,16 +75,92 @@ use crate::bridge::{
 };
 
 use crate::arbitration::ArbitrationMessageSender;
+use crate::bootstrap::extract_issuer_id;
 use crate::leader::LeaderElector;
 use crate::price::{PriceFetcher, ToleranceValidator};
 
 use super::aggregator::{
     AggregationStatus, SignatureAggregator, DISAGREEMENT_PERCENT,
-    MAX_PRICE_RETRIES, SIGNATURE_THRESHOLD,
+    MAX_PRICE_RETRIES, compute_threshold,
 };
 use super::keys::KeyRegistry;
 use super::messages::{ConsensusMessageHandler, MessageHandleResult};
 use super::state::{ConsensusPhase, ConsensusState, ConsensusTimeouts, PriceVote};
+
+/// Config update pushed by RegistrySyncHandler when the issuer set changes.
+///
+/// Contains all the information needed to reconfigure the consensus protocol
+/// at the start of the next cycle: active count, BFT threshold, and the two
+/// indices this node uses (dense index for leader election, on-chain ID for
+/// signer bitmaps).
+#[derive(Debug, Clone)]
+pub struct ConfigUpdate {
+    /// Number of currently active issuers
+    pub active_count: u8,
+    /// BFT signature threshold: compute_threshold(active_count)
+    pub threshold: usize,
+    /// Dense 0-based index among active issuers (for LeaderElector)
+    pub node_index: u8,
+    /// On-chain issuer ID from IssuerRegistry (for signer bitmaps)
+    pub issuer_registry_index: u8,
+}
+
+/// Runtime-mutable subset of ConsensusConfig.
+///
+/// These fields can change when the issuer set changes (issuer join/leave).
+/// Uses atomics for lock-free interior mutability since ConsensusProtocol methods
+/// take `&self` (not `&mut self`).
+pub struct RuntimeConfig {
+    /// This node's dense index in the active issuer set (0-based, for leader election)
+    pub node_index: std::sync::atomic::AtomicU8,
+    /// Total number of active issuers
+    pub num_issuers: std::sync::atomic::AtomicU8,
+    /// On-chain IssuerRegistry index for signer bitmap
+    pub issuer_registry_index: std::sync::atomic::AtomicU8,
+    /// Signature threshold (BFT: floor(2n/3)+1)
+    pub signature_threshold: std::sync::atomic::AtomicUsize,
+}
+
+impl RuntimeConfig {
+    fn new(config: &ConsensusConfig) -> Self {
+        use std::sync::atomic::{AtomicU8, AtomicUsize};
+        Self {
+            node_index: AtomicU8::new(config.node_index),
+            num_issuers: AtomicU8::new(config.num_issuers),
+            issuer_registry_index: AtomicU8::new(config.issuer_registry_index),
+            signature_threshold: AtomicUsize::new(config.signature_threshold),
+        }
+    }
+
+    /// Get the current issuer_registry_index (for signer bitmaps)
+    #[inline]
+    pub fn issuer_registry_index(&self) -> u8 {
+        self.issuer_registry_index.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    /// Get the current node_index (for leader election)
+    #[inline]
+    pub fn node_index(&self) -> u8 {
+        self.node_index.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    /// Get the current num_issuers
+    #[inline]
+    pub fn num_issuers(&self) -> u8 {
+        self.num_issuers.load(std::sync::atomic::Ordering::Relaxed)
+    }
+}
+
+impl std::fmt::Debug for RuntimeConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RuntimeConfig")
+            .field("node_index", &self.node_index())
+            .field("num_issuers", &self.num_issuers())
+            .field("issuer_registry_index", &self.issuer_registry_index())
+            .field("signature_threshold", &self.signature_threshold.load(std::sync::atomic::Ordering::Relaxed))
+            .finish()
+    }
+}
 
 /// Result of a consensus round
 #[derive(Debug)]
@@ -141,12 +217,12 @@ pub struct ConsensusConfig {
     pub issuer_registry_index: u8,
     /// Timeout configuration
     pub timeouts: ConsensusTimeouts,
-    /// Signature threshold (default: 11)
+    /// Signature threshold (BFT: floor(2n/3)+1)
     pub signature_threshold: usize,
 }
 
 impl ConsensusConfig {
-    /// Create a new consensus config
+    /// Create a new consensus config with BFT threshold derived from num_issuers
     pub fn new(peer_id: PeerId, num_issuers: u8, node_index: u8) -> Self {
         Self {
             peer_id,
@@ -154,7 +230,7 @@ impl ConsensusConfig {
             node_index,
             issuer_registry_index: node_index, // Default: same as node_index
             timeouts: ConsensusTimeouts::default(),
-            signature_threshold: SIGNATURE_THRESHOLD,
+            signature_threshold: compute_threshold(num_issuers as usize),
         }
     }
 
@@ -207,8 +283,12 @@ where
     aggregator: RwLock<SignatureAggregator>,
     /// Price tolerance validator
     price_validator: ToleranceValidator,
-    /// Configuration
+    /// Configuration (immutable initial values — for fields that change at runtime, see `runtime_config`)
     config: ConsensusConfig,
+    /// Runtime-mutable config subset (node_index, num_issuers, issuer_registry_index, threshold).
+    /// Updated by `apply_pending_config_update` when the issuer set changes.
+    /// Uses atomics for lock-free interior mutability.
+    runtime_config: RuntimeConfig,
     /// Optional fill verifier for on-chain verification (FR13)
     fill_verifier: Option<Arc<BitgetVaultReader>>,
     /// Optional ITP creation config for handling cross-chain ITP creation (Story 6.24)
@@ -217,8 +297,7 @@ where
     bridge_orchestrator: RwLock<Option<Arc<RwLock<BridgeOrchestrator>>>>,
     /// Shared cell for pending consensus config updates (registry auto-update)
     /// Written by RegistrySyncHandler, read at cycle start.
-    /// Format: (new_active_count, new_threshold)
-    pending_config_update: Arc<RwLock<Option<(u8, usize)>>>,
+    pending_config_update: Arc<RwLock<Option<ConfigUpdate>>>,
     /// Optional sender for forwarding arbitration P2P messages to the ArbitrationSubsystem
     arbitration_tx: RwLock<Option<ArbitrationMessageSender>>,
 }
@@ -242,6 +321,7 @@ where
         let leader_elector = LeaderElector::new(config.node_index, config.num_issuers);
         let state = ConsensusState::with_timeouts(config.timeouts.clone());
         let aggregator = SignatureAggregator::with_threshold(config.signature_threshold);
+        let runtime_config = RuntimeConfig::new(&config);
 
         Self {
             bls_signer: Bn254BLSSigner::new(),
@@ -256,6 +336,7 @@ where
             aggregator: RwLock::new(aggregator),
             price_validator: ToleranceValidator::new(),
             config,
+            runtime_config,
             fill_verifier: None,
             itp_creation_config: RwLock::new(None),
             bridge_orchestrator: RwLock::new(None),
@@ -266,33 +347,44 @@ where
 
     /// Get a handle to the pending config update cell for RegistrySyncHandler
     ///
-    /// The handler writes `(new_active_count, new_threshold)` when the issuer set changes.
+    /// The handler writes a `ConfigUpdate` when the issuer set changes.
     /// The consensus loop reads it at cycle start and applies updates.
-    pub fn pending_config_handle(&self) -> Arc<RwLock<Option<(u8, usize)>>> {
+    pub fn pending_config_handle(&self) -> Arc<RwLock<Option<ConfigUpdate>>> {
         self.pending_config_update.clone()
     }
 
     /// Apply any pending config update at cycle start
     ///
-    /// Updates leader elector, signature aggregator, and internal issuer count
-    /// if RegistrySyncHandler has written a new config.
+    /// Updates leader elector (using dense node_index), signature aggregator
+    /// (using BFT threshold), and runtime config (node_index, num_issuers,
+    /// issuer_registry_index) if RegistrySyncHandler has written a new config.
     pub async fn apply_pending_config_update(&self) {
         let update = {
             let mut guard = self.pending_config_update.write().await;
             guard.take()
         };
-        if let Some((new_num_issuers, new_threshold)) = update {
+        if let Some(cfg) = update {
             info!(
-                new_num_issuers,
-                new_threshold,
+                active_count = cfg.active_count,
+                threshold = cfg.threshold,
+                node_index = cfg.node_index,
+                issuer_registry_index = cfg.issuer_registry_index,
                 "Applying consensus config update from registry sync"
             );
+            // Update leader elector with dense node index
             *self.leader_elector.write().await =
-                LeaderElector::new(self.config.node_index, new_num_issuers);
+                LeaderElector::new(cfg.node_index, cfg.active_count);
+            // Update BFT signature threshold
             self.aggregator
                 .write()
                 .await
-                .set_threshold(new_threshold);
+                .set_threshold(cfg.threshold);
+            // Update runtime config (node_index, num_issuers, issuer_registry_index)
+            use std::sync::atomic::Ordering::Relaxed;
+            self.runtime_config.node_index.store(cfg.node_index, Relaxed);
+            self.runtime_config.num_issuers.store(cfg.active_count, Relaxed);
+            self.runtime_config.issuer_registry_index.store(cfg.issuer_registry_index, Relaxed);
+            self.runtime_config.signature_threshold.store(cfg.threshold, Relaxed);
         }
     }
 
@@ -551,7 +643,7 @@ where
             if let Some(round) = state.current_round() {
                 // If we have enough votes, we can evaluate early
                 let total_votes = round.price_votes.len();
-                let expected_voters = (self.config.num_issuers - 1) as usize; // Exclude self
+                let expected_voters = (self.runtime_config.num_issuers() - 1) as usize; // Exclude self
 
                 if total_votes >= expected_voters {
                     return Ok(round.disagreement_percent());
@@ -1567,7 +1659,7 @@ where
                         Ok(signature) => {
                             let sign_msg = P2PMessage::AssetTradesSign {
                                 signer_id: self.config.peer_id,
-                                signer_index: self.config.issuer_registry_index,
+                                signer_index: self.runtime_config.issuer_registry_index(),
                                 cycle_number: msg_cycle,
                                 signature: signature.clone(),
                             };
@@ -1926,7 +2018,7 @@ where
 
                 let message = P2PMessage::CompleteBuyOrderSign {
                     signer_id: self.config.peer_id,
-                    signer_index: self.config.issuer_registry_index,
+                    signer_index: self.runtime_config.issuer_registry_index(),
                     cycle_number: msg_cycle,
                     signature,
                 };
@@ -2449,14 +2541,12 @@ where
                 reason: e.to_string(),
             })?;
 
-        // Add our signature to aggregator (use indexed peer_id for bitmap calculation)
+        // Add our signature to aggregator using real peer_id (generated by generate_peer_id).
+        // Bitmap is extracted from peer_id via extract_issuer_id() at finalization time.
         {
-            let mut indexed_peer_id = self.config.peer_id;
-            indexed_peer_id[0] = self.config.issuer_registry_index;
-
             let mut aggregator = self.aggregator.write().await;
             aggregator
-                .add_signature(indexed_peer_id, signature.clone())
+                .add_signature(self.config.peer_id, signature.clone())
                 .map_err(|e| ItpCreationError::BlsSigningError {
                     reason: e.to_string(),
                 })?;
@@ -2546,8 +2636,8 @@ where
         for (peer_id, signature) in signature_map.iter() {
             signatures.push(signature.clone());
 
-            // Convert peer_id[0] to issuer index for bitmap
-            let issuer_index = peer_id[0] as u32;
+            // Extract issuer ID from peer_id (inverse of generate_peer_id)
+            let issuer_index = extract_issuer_id(peer_id);
             signer_bitmap = signer_bitmap | (U256::one() << issuer_index);
 
             // Get pubkey from key registry
@@ -2724,14 +2814,14 @@ where
         // Step 4: Send signature to leader (include signer_id and signer_index for routing and bitmap)
         let message = P2PMessage::ItpCreationSign {
             signer_id: self.config.peer_id,
-            signer_index: self.config.issuer_registry_index,
+            signer_index: self.runtime_config.issuer_registry_index(),
             nonce,
             signature: BLSSignature(signature.0),
         };
 
         debug!(
             nonce = %nonce,
-            signer_index = self.config.issuer_registry_index,
+            signer_index = self.runtime_config.issuer_registry_index(),
             "Follower: Sending ITP creation signature to leader"
         );
         self.p2p.send_to(from, message).await
@@ -2754,18 +2844,16 @@ where
         debug!(
             ?from,
             signer_index,
+            issuer_id_from_peer = extract_issuer_id(&from),
             nonce = %nonce,
             "Leader: Received ITP creation signature"
         );
 
-        // Store signer_index in peer_id for bitmap calculation
-        // We use a modified peer_id where [0] = signer_index for consistent bitmap building
-        let mut indexed_peer_id = from;
-        indexed_peer_id[0] = signer_index;
-
-        // Add signature to aggregator
+        // Add signature keyed by the real peer_id (generated by generate_peer_id).
+        // Bitmap is extracted from peer_id via extract_issuer_id() at finalization time.
+        // signer_index is kept for backward compatibility but not used for bitmap.
         let mut aggregator = self.aggregator.write().await;
-        aggregator.add_signature(indexed_peer_id, signature)?;
+        aggregator.add_signature(from, signature)?;
 
         Ok(())
     }
@@ -3891,14 +3979,14 @@ where
         // Step 5: Send signature back to leader
         let message = P2PMessage::BridgeArbToL3Sign {
             signer_id: self.config.peer_id,
-            signer_index: self.config.issuer_registry_index,
+            signer_index: self.runtime_config.issuer_registry_index(),
             order_id,
             signature: signature.clone(),
         };
 
         debug!(
             order_id = %order_id,
-            signer_index = self.config.issuer_registry_index,
+            signer_index = self.runtime_config.issuer_registry_index(),
             "Follower: Sending bridge signature to leader"
         );
 
@@ -4375,14 +4463,14 @@ where
         // Step 5: Send signature back to leader
         let message = P2PMessage::BridgeL3ToArbSign {
             signer_id: self.config.peer_id,
-            signer_index: self.config.issuer_registry_index,
+            signer_index: self.runtime_config.issuer_registry_index(),
             cycle_number,
             signature: signature.clone(),
         };
 
         debug!(
             cycle_number,
-            signer_index = self.config.issuer_registry_index,
+            signer_index = self.runtime_config.issuer_registry_index(),
             "Follower: Sending L3→Arb bridge signature to leader"
         );
 
@@ -4867,14 +4955,14 @@ where
         // Step 5: Send signature back to leader
         let message = P2PMessage::ReleaseToVaultSign {
             signer_id: self.config.peer_id,
-            signer_index: self.config.issuer_registry_index,
+            signer_index: self.runtime_config.issuer_registry_index(),
             cycle_number,
             signature: signature.clone(),
         };
 
         debug!(
             cycle_number,
-            signer_index = self.config.issuer_registry_index,
+            signer_index = self.runtime_config.issuer_registry_index(),
             "Follower: Sending custody release signature to leader"
         );
 
@@ -5123,14 +5211,14 @@ where
         // Step 5: Send signature back to leader
         let message = P2PMessage::SubmitOrderForUserSign {
             signer_id: self.config.peer_id,
-            signer_index: self.config.issuer_registry_index,
+            signer_index: self.runtime_config.issuer_registry_index(),
             arb_order_id,
             signature: signature.clone(),
         };
 
         debug!(
             arb_order_id = %arb_order_id,
-            signer_index = self.config.issuer_registry_index,
+            signer_index = self.runtime_config.issuer_registry_index(),
             "Follower: Sending submit order signature to leader"
         );
 
@@ -5361,14 +5449,14 @@ where
         // Step 5: Send signature back to leader
         let message = P2PMessage::ConfirmBatchSign {
             signer_id: self.config.peer_id,
-            signer_index: self.config.issuer_registry_index,
+            signer_index: self.runtime_config.issuer_registry_index(),
             cycle_number,
             signature: signature.clone(),
         };
 
         debug!(
             cycle_number,
-            signer_index = self.config.issuer_registry_index,
+            signer_index = self.runtime_config.issuer_registry_index(),
             "Follower: Sending confirm batch signature to leader"
         );
 
@@ -5594,14 +5682,14 @@ where
         // Step 5: Send signature back to leader
         let message = P2PMessage::ConfirmFillsSign {
             signer_id: self.config.peer_id,
-            signer_index: self.config.issuer_registry_index,
+            signer_index: self.runtime_config.issuer_registry_index(),
             cycle_number,
             signature: signature.clone(),
         };
 
         debug!(
             cycle_number,
-            signer_index = self.config.issuer_registry_index,
+            signer_index = self.runtime_config.issuer_registry_index(),
             "Follower: Sending confirm fills signature to leader"
         );
 
@@ -6026,14 +6114,14 @@ where
         // Send signature back to leader
         let message = P2PMessage::RebalanceBatchSign {
             signer_id: self.config.peer_id,
-            signer_index: self.config.issuer_registry_index,
+            signer_index: self.runtime_config.issuer_registry_index(),
             cycle_number,
             signature,
         };
 
         debug!(
             cycle_number,
-            signer_index = self.config.issuer_registry_index,
+            signer_index = self.runtime_config.issuer_registry_index(),
             "Follower: Sending rebalance batch signature to leader"
         );
 
@@ -6411,14 +6499,14 @@ where
         // Send signature back to leader
         let message = P2PMessage::UpdateWeightsSign {
             signer_id: self.config.peer_id,
-            signer_index: self.config.issuer_registry_index,
+            signer_index: self.runtime_config.issuer_registry_index(),
             itp_id,
             signature,
         };
 
         debug!(
             itp_id = ?itp_id,
-            signer_index = self.config.issuer_registry_index,
+            signer_index = self.runtime_config.issuer_registry_index(),
             "Follower: Sending update weights signature to leader"
         );
 
@@ -6750,12 +6838,12 @@ where
         // Send signature back to leader
         let message = P2PMessage::RebalanceSign {
             signer_id: self.config.peer_id,
-            signer_index: self.config.issuer_registry_index,
+            signer_index: self.runtime_config.issuer_registry_index(),
             itp_id,
             signature,
         };
 
-        debug!(itp_id = ?itp_id, signer_index = self.config.issuer_registry_index, "Follower: Sending rebalance signature to leader");
+        debug!(itp_id = ?itp_id, signer_index = self.runtime_config.issuer_registry_index(), "Follower: Sending rebalance signature to leader");
         self.p2p.send_to(from, message).await
     }
 
@@ -7021,12 +7109,12 @@ where
         // Send signature back to leader
         let message = P2PMessage::SetItpNavSign {
             signer_id: self.config.peer_id,
-            signer_index: self.config.issuer_registry_index,
+            signer_index: self.runtime_config.issuer_registry_index(),
             itp_id,
             signature,
         };
 
-        debug!(itp_id = ?itp_id, signer_index = self.config.issuer_registry_index, "Follower: Sending setItpNav signature to leader");
+        debug!(itp_id = ?itp_id, signer_index = self.runtime_config.issuer_registry_index(), "Follower: Sending setItpNav signature to leader");
         self.p2p.send_to(from, message).await
     }
 
@@ -7375,14 +7463,14 @@ where
         // Send signature back to leader
         let message = P2PMessage::SubmitSellOrderSign {
             signer_id: self.config.peer_id,
-            signer_index: self.config.issuer_registry_index,
+            signer_index: self.runtime_config.issuer_registry_index(),
             order_id,
             signature,
         };
 
         debug!(
             order_id = %order_id,
-            signer_index = self.config.issuer_registry_index,
+            signer_index = self.runtime_config.issuer_registry_index(),
             "Follower: Sending submit sell order signature to leader"
         );
 
@@ -7678,14 +7766,14 @@ where
         // Send signature back to leader
         let message = P2PMessage::CompleteSellOrderSign {
             signer_id: self.config.peer_id,
-            signer_index: self.config.issuer_registry_index,
+            signer_index: self.runtime_config.issuer_registry_index(),
             order_id,
             signature,
         };
 
         debug!(
             order_id = %order_id,
-            signer_index = self.config.issuer_registry_index,
+            signer_index = self.runtime_config.issuer_registry_index(),
             "Follower: Sending complete sell order signature to leader"
         );
 
@@ -7992,7 +8080,7 @@ where
 
         let message = P2PMessage::RecordCollateralMoveSign {
             signer_id: self.config.peer_id,
-            signer_index: self.config.issuer_registry_index,
+            signer_index: self.runtime_config.issuer_registry_index(),
             cycle_number,
             signature,
         };
@@ -8255,7 +8343,7 @@ where
 
         let message = P2PMessage::MintBridgedSharesSign {
             signer_id: self.config.peer_id,
-            signer_index: self.config.issuer_registry_index,
+            signer_index: self.runtime_config.issuer_registry_index(),
             cycle_number,
             signature,
         };
@@ -8480,7 +8568,7 @@ mod tests {
         let config = ConsensusConfig::new(test_peer_id(0), 20, 0);
         assert_eq!(config.num_issuers, 20);
         assert_eq!(config.node_index, 0);
-        assert_eq!(config.signature_threshold, SIGNATURE_THRESHOLD);
+        assert_eq!(config.signature_threshold, compute_threshold(20)); // BFT: 14
     }
 
     #[tokio::test]
