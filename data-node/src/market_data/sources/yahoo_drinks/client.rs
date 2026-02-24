@@ -1,8 +1,8 @@
 //! Yahoo Finance drink commodities & beverage stocks.
 //!
 //! Tracks coffee/sugar/cocoa/OJ futures and major beverage company stocks.
-//! Uses Yahoo Finance unofficial v8 chart API (no auth needed).
-//! Pattern A: sequential ticker fetch, fan-out from API responses.
+//! Uses Yahoo Finance v7 quote API (batch endpoint, no auth needed).
+//! Single call fetches all tickers at once.
 
 use std::collections::HashMap;
 use std::time::Duration;
@@ -19,35 +19,29 @@ use crate::market_data::traits::{load_assets_from_json, AssetUpdate, MarketDataS
 
 const ASSET_JSON: &str = include_str!("../../../config/yahoo_drinks.json");
 
-const YAHOO_CHART_URL: &str = "https://query2.finance.yahoo.com/v8/finance/chart";
+const YAHOO_QUOTE_URL: &str = "https://query2.finance.yahoo.com/v7/finance/quote";
 
-/// Delay between sequential ticker fetches (ms) to avoid Yahoo rate limiting.
-const INTER_REQUEST_DELAY_MS: u64 = 500;
-
-// ── Yahoo v8 chart response types ──
+// ── Yahoo v7 batch quote response types ──
 
 #[derive(Debug, Deserialize)]
-struct YahooChartResponse {
-    chart: Option<YahooChart>,
+#[serde(rename_all = "camelCase")]
+struct YahooQuoteResponse {
+    quote_response: Option<QuoteResponse>,
 }
 
 #[derive(Debug, Deserialize)]
-struct YahooChart {
-    result: Option<Vec<YahooChartResult>>,
-}
-
-#[derive(Debug, Deserialize)]
-struct YahooChartResult {
-    meta: Option<YahooChartMeta>,
+struct QuoteResponse {
+    result: Option<Vec<QuoteResult>>,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct YahooChartMeta {
+struct QuoteResult {
+    symbol: Option<String>,
     regular_market_price: Option<f64>,
-    previous_close: Option<f64>,
+    regular_market_previous_close: Option<f64>,
     regular_market_volume: Option<f64>,
-    chart_previous_close: Option<f64>,
+    market_cap: Option<f64>,
 }
 
 // ── Source implementation ──
@@ -95,7 +89,7 @@ impl MarketDataSource for YahooDrinksMarketSource {
         if asset_ids.is_empty() { return Ok(Vec::new()); }
         let now = Utc::now();
 
-        // Build asset_id → api_ref lookup from config
+        // Build asset_id → (api_ref ticker) lookup from config
         let entries: Vec<crate::market_data::traits::AssetEntry> =
             serde_json::from_str(ASSET_JSON)?;
         let ref_map: HashMap<String, String> = entries
@@ -104,66 +98,82 @@ impl MarketDataSource for YahooDrinksMarketSource {
             .map(|e| (e.asset_id.clone(), e.api_ref.clone()))
             .collect();
 
+        // Collect tickers for requested asset_ids
+        let mut ticker_to_assets: HashMap<String, Vec<String>> = HashMap::new();
+        for asset_id in asset_ids {
+            if let Some(ticker) = ref_map.get(asset_id) {
+                ticker_to_assets
+                    .entry(ticker.clone())
+                    .or_default()
+                    .push(asset_id.clone());
+            } else {
+                warn!("Yahoo drinks: unknown asset_id {}", asset_id);
+            }
+        }
+
+        if ticker_to_assets.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        // Build comma-separated symbols list for batch call
+        let symbols: Vec<&str> = ticker_to_assets.keys().map(|s| s.as_str()).collect();
+        let symbols_param = symbols.join(",");
+        let url = format!("{}?symbols={}", YAHOO_QUOTE_URL, symbols_param);
+
         let mut results = Vec::with_capacity(asset_ids.len());
 
-        for asset_id in asset_ids {
-            let ticker = match ref_map.get(asset_id) {
-                Some(t) => t,
-                None => {
-                    warn!("Yahoo drinks: unknown asset_id {}", asset_id);
-                    continue;
-                }
-            };
+        match self.http.get_json::<YahooQuoteResponse>(&url).await {
+            Ok(resp) => {
+                let quotes = resp
+                    .quote_response
+                    .and_then(|qr| qr.result)
+                    .unwrap_or_default();
 
-            // URL-encode ticker (KC=F → KC%3DF)
-            let encoded = ticker.replace('=', "%3D");
-            let url = format!(
-                "{}/{}?interval=1d&range=1d",
-                YAHOO_CHART_URL, encoded
-            );
+                for quote in quotes {
+                    let symbol = match &quote.symbol {
+                        Some(s) => s,
+                        None => continue,
+                    };
 
-            match self.http.get_json::<YahooChartResponse>(&url).await {
-                Ok(resp) => {
-                    if let Some(meta) = resp.chart
-                        .and_then(|c| c.result)
-                        .and_then(|r| r.into_iter().next())
-                        .and_then(|r| r.meta)
-                    {
-                        if let Some(price) = meta.regular_market_price {
-                            let value = Decimal::try_from(price).unwrap_or(Decimal::ZERO);
-                            let prev = meta.previous_close
-                                .or(meta.chart_previous_close)
-                                .and_then(|p| Decimal::try_from(p).ok());
-                            let change_pct = prev.and_then(|p| {
-                                if p.is_zero() { None }
-                                else { Some(((value - p) / p) * Decimal::from(100)) }
-                            });
-                            let volume = meta.regular_market_volume
-                                .and_then(|v| Decimal::try_from(v).ok());
+                    let asset_ids_for_ticker = match ticker_to_assets.get(symbol) {
+                        Some(ids) => ids,
+                        None => continue,
+                    };
 
+                    if let Some(price) = quote.regular_market_price {
+                        let value = Decimal::try_from(price).unwrap_or(Decimal::ZERO);
+                        let prev = quote.regular_market_previous_close
+                            .and_then(|p| Decimal::try_from(p).ok());
+                        let change_pct = prev.and_then(|p| {
+                            if p.is_zero() { None }
+                            else { Some(((value - p) / p) * Decimal::from(100)) }
+                        });
+                        let volume = quote.regular_market_volume
+                            .and_then(|v| Decimal::try_from(v).ok());
+                        let mcap = quote.market_cap
+                            .and_then(|m| Decimal::try_from(m).ok());
+
+                        for asset_id in asset_ids_for_ticker {
                             results.push(PriceUpdate {
                                 asset_id: asset_id.clone(),
-                                symbol: format!("DRINK/{}", ticker.replace('=', "").replace('-', "")),
+                                symbol: format!("DRINK/{}", symbol.replace('=', "").replace('-', "")),
                                 value,
                                 prev_close: prev,
                                 change_pct,
                                 volume_24h: volume,
-                                market_cap: None,
+                                market_cap: mcap,
                                 fetched_at: now,
                             });
                         }
                     }
                 }
-                Err(e) => {
-                    warn!("Yahoo drinks: failed to fetch {}: {:?}", ticker, e);
-                }
             }
-
-            // Rate limit: sleep between requests
-            tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
+            Err(e) => {
+                warn!("Yahoo drinks: batch quote failed: {:?}", e);
+            }
         }
 
-        info!("Yahoo drinks: fetched {}/{} prices", results.len(), asset_ids.len());
+        info!("Yahoo drinks: fetched {}/{} prices (1 batch call)", results.len(), asset_ids.len());
         Ok(results)
     }
 }
