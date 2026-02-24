@@ -254,7 +254,7 @@ async fn run_from_registry(rpc: &str, issuer_registry: Address) {
         .zip(ips.iter())
         .zip(pubkeys.iter())
         .map(|((id_tok, ip_tok), pk_tok)| {
-            let _id = id_tok.clone().into_uint().expect("id is uint");
+            let id = id_tok.clone().into_uint().expect("id is uint").as_u64();
             let ip_bytes: [u8; 32] = ip_tok
                 .clone()
                 .into_fixed_bytes()
@@ -264,6 +264,7 @@ async fn run_from_registry(rpc: &str, issuer_registry: Address) {
             let pubkey_bytes = pk_tok.clone().into_bytes().expect("pubkey is bytes");
 
             common::types::Issuer {
+                id,
                 addr: Address::zero(),
                 ip: H256::from(ip_bytes),
                 bls_pubkey: Bytes::from(pubkey_bytes),

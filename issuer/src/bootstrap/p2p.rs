@@ -94,7 +94,14 @@ impl<'a> P2PBuilder<'a> {
             }
         };
 
-        let transport = TcpP2PTransport::new(*self.peer_id, port, tls_config);
+        let transport = TcpP2PTransport::new(
+            *self.peer_id,
+            port,
+            tls_config,
+            self.params.p2p_max_per_ip,
+            self.params.p2p_rate_limit,
+            self.params.p2p_rate_burst,
+        );
 
         // Start listener
         transport.start_listener().await.map_err(|e| {
@@ -110,6 +117,9 @@ impl<'a> P2PBuilder<'a> {
                 warn!(code = "INFRA-007", self.node_id, error = %e, "Failed to connect to some peers");
             }
         }
+
+        // Start the peer scorer tick (5s interval, auto-bans misbehaving peers)
+        transport.start_scorer_tick().await;
 
         Ok(Some(Arc::new(transport)))
     }

@@ -202,7 +202,7 @@ pub struct RegistrySyncConfig {
     pub max_block_range: u64,
     /// How many blocks back to scan on first startup (before any checkpoint).
     /// Must be large enough to catch the initial RegistryStateChanged event.
-    /// Default: 10_000 blocks.
+    /// Default: 86_400 blocks (~24h at 1s blocks) for downtime tolerance.
     pub initial_scan_blocks: u64,
 }
 
@@ -212,7 +212,7 @@ impl Default for RegistrySyncConfig {
             issuer_registry_address: Address::zero(),
             poll_interval_ms: 5_000, // 5 seconds
             max_block_range: 1_000,
-            initial_scan_blocks: 10_000,
+            initial_scan_blocks: 86_400, // 24h downtime tolerance at 1s blocks
         }
     }
 }
@@ -1221,7 +1221,7 @@ mod tests {
         assert_eq!(config.issuer_registry_address, ethers::types::Address::zero());
         assert_eq!(config.poll_interval_ms, 5_000);
         assert_eq!(config.max_block_range, 1_000);
-        assert_eq!(config.initial_scan_blocks, 10_000);
+        assert_eq!(config.initial_scan_blocks, 86_400);
     }
 
     #[test]

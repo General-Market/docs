@@ -176,4 +176,29 @@ pub trait ChainReader: Send + Sync {
         let _ = itp_id;
         Err(Error::NotFound("get_itp_inventory_state not implemented".to_string()))
     }
+
+    /// Get the number of currently active issuers from IssuerRegistry.activeIssuerCount().
+    ///
+    /// Used to compute the BFT threshold without relying on CLI `--num-issuers`.
+    /// Default implementation returns an error for backwards compatibility.
+    async fn get_active_issuer_count(&self) -> Result<u64, Error> {
+        Err(Error::ChainRead("get_active_issuer_count not implemented".to_string()))
+    }
+
+    /// Get the registry nonce from IssuerRegistry.registryNonce().
+    ///
+    /// Incremented on every state change (add/remove issuer, key rotation).
+    /// Used for sync tracking and replay protection.
+    /// Default implementation returns an error for backwards compatibility.
+    async fn get_registry_nonce(&self) -> Result<u64, Error> {
+        Err(Error::ChainRead("get_registry_nonce not implemented".to_string()))
+    }
+
+    /// Get the aggregated BLS public key from IssuerRegistry.getAggregatedPubkey().
+    ///
+    /// Returns the precomputed aggregated G2 pubkey stored on-chain.
+    /// Default implementation returns an error for backwards compatibility.
+    async fn get_aggregated_pubkey(&self) -> Result<Vec<u8>, Error> {
+        Err(Error::ChainRead("get_aggregated_pubkey not implemented".to_string()))
+    }
 }

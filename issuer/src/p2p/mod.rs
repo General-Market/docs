@@ -20,11 +20,18 @@
 mod codec;
 mod connection;
 mod discovery;
+pub mod equivocation;
+pub mod metrics;
+pub mod peer_scoring;
+pub mod rate_limit;
 mod tls;
 mod transport;
+pub mod wal;
 
 pub use codec::{decode, encode, Codec};
 pub use connection::{ConnectionStatus, PeerConnection};
 pub use discovery::{OnChainPeerDiscovery, PeerDiscovery, PeerDiscoveryRunner, StaticPeerDiscovery};
+pub use metrics::{P2PMetrics, P2PMetricsSnapshot};
+pub use peer_scoring::PeerScorer;
 pub use tls::{P2PStream, TlsConfig};
 pub use transport::TcpP2PTransport;

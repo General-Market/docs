@@ -166,6 +166,16 @@ interface IIssuerRegistry {
     /// @param blsSignature BLS signature proving ownership
     function updateIssuerIp(uint256 issuerId, bytes32 newIp, bytes calldata blsSignature) external;
 
+    // ============ CONSENSUS PAUSE ============
+
+    /// @notice Whether consensus is currently paused
+    /// @return True if consensus is paused
+    function consensusPaused() external view returns (bool);
+
+    /// @notice Pause or unpause consensus (admin circuit breaker)
+    /// @param paused Whether to pause consensus
+    function setConsensusPaused(bool paused) external;
+
     // ============ EVENTS ============
 
     /// @notice Emitted when a new issuer is added

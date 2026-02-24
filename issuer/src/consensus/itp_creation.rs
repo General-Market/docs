@@ -9,7 +9,7 @@
 //! 2. Issuers detect `CreateItpRequested` event
 //! 3. Leader broadcasts `ItpCreationProposal` with weightsHash + assetsHash
 //! 4. Followers verify and sign
-//! 5. Leader aggregates signatures (11/20 threshold)
+//! 5. Leader aggregates signatures (BFT >2/3 threshold)
 //! 6. Leader calls `BridgeProxy.completeCreateItp()` on Arbitrum
 //!    (BridgeProxy atomically calls Index.createITP on L3)
 //!
@@ -163,7 +163,7 @@ pub struct ItpCreationConfig {
     pub proposal_timeout_ms: u64,
     /// Timeout for collecting signatures (ms)
     pub sign_timeout_ms: u64,
-    /// Minimum signatures required (11/20)
+    /// Minimum signatures required (BFT >2/3)
     pub min_signatures: usize,
 }
 

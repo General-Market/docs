@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 use common::types::{BLSSignature, PeerId};
 
 /// Consensus phase within a round
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ConsensusPhase {
     /// Not currently in consensus
     Idle,

@@ -226,6 +226,7 @@ impl ChainReader for RpcChainReader {
             {
                 Ok(raw) => {
                     issuers.push(Issuer {
+                        id: i,
                         addr: raw.0,
                         ip: H256::from(raw.1),
                         bls_pubkey: raw.2,

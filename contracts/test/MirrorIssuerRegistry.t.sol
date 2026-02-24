@@ -469,7 +469,7 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
         uint256 syncNonce = l3NonceAfter;
         uint256 newActiveCount = 4;
         uint256 newThreshold = 3;
-        bytes32 messageHash = keccak256(abi.encode("REGISTRY_SYNC", syncNonce, newAggPubkey, newActiveCount, newThreshold));
+        bytes32 messageHash = keccak256(abi.encodePacked("REGISTRY_SYNC", syncNonce, newAggPubkey, newActiveCount, newThreshold));
         bytes memory blsSignature = signWithTestIssuers(messageHash);
         uint256 signersBitmask = 0x7; // First 3 issuers signed
 
@@ -501,7 +501,7 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
         // Sync 1: Catch up to L3's current state.
         // Use blsAggPubkey("0,1,2") as the new pubkey so the mirror stays signable.
         bytes memory aggPubkey1 = blsAggPubkey("0,1,2");
-        bytes32 msg1 = keccak256(abi.encode("REGISTRY_SYNC", uint256(1), aggPubkey1, uint256(3), uint256(2)));
+        bytes32 msg1 = keccak256(abi.encodePacked("REGISTRY_SYNC", uint256(1), aggPubkey1, uint256(3), uint256(2)));
         mirror.sync(aggPubkey1, 3, 2, 1, signWithTestIssuers(msg1), 0x7);
         assertEq(mirror.registryNonce(), 1);
 
@@ -512,7 +512,7 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
         // Sync 2: Update mirror with new issuer count.
         // Mirror still holds blsAggPubkey("0,1,2") as current pubkey → still signable.
         bytes memory aggPubkey2 = blsAggPubkey("0,1,2");
-        bytes32 msg2 = keccak256(abi.encode("REGISTRY_SYNC", uint256(2), aggPubkey2, uint256(4), uint256(3)));
+        bytes32 msg2 = keccak256(abi.encodePacked("REGISTRY_SYNC", uint256(2), aggPubkey2, uint256(4), uint256(3)));
         mirror.sync(aggPubkey2, 4, 3, 2, signWithTestIssuers(msg2), 0xF);
         assertEq(mirror.registryNonce(), 2);
         assertEq(mirror.activeCount(), 4);

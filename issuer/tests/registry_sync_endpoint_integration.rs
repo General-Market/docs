@@ -35,6 +35,7 @@ fn create_test_issuer(id: u8, active: bool) -> (Issuer, BLSKeyPair) {
     let keypair = BLSKeyPair::from_seed(&seed).expect("valid seed");
 
     let issuer = Issuer {
+        id: id as u64,
         addr: Address::from([id; 20]),
         ip: H256::from([id; 32]),
         bls_pubkey: Bytes::from(keypair.public_key_bytes()),

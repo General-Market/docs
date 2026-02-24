@@ -475,6 +475,12 @@ library EventsLib {
         uint256 nav
     );
 
+    // ============ CONSENSUS SAFETY EVENTS ============
+
+    /// @notice Emitted when consensus is paused or unpaused by admin
+    /// @param paused Whether consensus is now paused
+    event ConsensusPausedChanged(bool paused);
+
     // ============ BRIDGE RECOVERY EVENTS ============
 
     /// @notice Emitted when reversed bridge lock funds are withdrawn via BLS consensus

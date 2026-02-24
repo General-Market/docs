@@ -87,6 +87,19 @@ struct Args {
     #[arg(long)]
     no_tls: bool,
 
+    /// Maximum connections allowed from a single IP address (default: 2).
+    /// Set to 0 for unlimited. Loopback IPs (127.x.x.x) are always exempt.
+    #[arg(long, default_value = "2")]
+    p2p_max_per_ip: usize,
+
+    /// Rate limit: messages per second per peer connection (default: 100).
+    #[arg(long, default_value = "100")]
+    p2p_rate_limit: f64,
+
+    /// Rate burst: maximum burst size / token bucket capacity (default: 100).
+    #[arg(long, default_value = "100")]
+    p2p_rate_burst: f64,
+
     /// Use mock chain reader/writer instead of real RPC connections (development mode)
     #[arg(long)]
     mock: bool,
@@ -274,6 +287,20 @@ struct Args {
     /// Used by Vision, Arbitration, and NAV subsystems to authenticate with the data-node.
     #[arg(long, env = "DATA_NODE_TOKEN")]
     data_node_token: Option<String>,
+
+    /// Path to the consensus Write-Ahead Log file.
+    /// Default: ./consensus-{node_id}.wal
+    #[arg(long)]
+    wal_path: Option<PathBuf>,
+
+    /// WAL sync mode: fdatasync, fsync, or none.
+    /// Auto-detect: none if cycle < 500ms, fdatasync otherwise.
+    #[arg(long)]
+    wal_sync_mode: Option<String>,
+
+    /// Skip WAL replay on startup.
+    #[arg(long)]
+    skip_wal_replay: bool,
 }
 
 fn setup_logging(config: &issuer::IssuerConfig) -> Result<(), Box<dyn std::error::Error>> {
@@ -291,14 +318,21 @@ fn setup_logging(config: &issuer::IssuerConfig) -> Result<(), Box<dyn std::error
 /// Type alias for the NAV sign handler used in the issuer node
 type IssuerNavSignHandler = NavSignHandler<Box<dyn NavCalculator>, StubItpRegistryReader>;
 
-/// Shared state for the issuer HTTP API (health, nav-sign, registry-sync).
+/// Shared state for the issuer HTTP API (health, nav-sign, registry-sync, ready).
 /// All issuer endpoints and optional Vision endpoints share one axum server.
 struct IssuerApiState {
     node_id: u32,
     p2p_transport: Option<Arc<TcpP2PTransport>>,
     metrics: Arc<IssuerMetrics>,
+    p2p_metrics: Arc<issuer::p2p::P2PMetrics>,
     registry_sync_cache: Option<RegistrySyncCache>,
     nav_sign_handler: Option<Arc<IssuerNavSignHandler>>,
+    /// Number of issuers in the network (for threshold computation)
+    num_issuers: u8,
+    /// Whether this node has a BLS keypair loaded
+    bls_keypair_loaded: bool,
+    /// Epoch-millis timestamp of last successful RPC call (updated by consensus loop)
+    last_rpc_success_ms: Arc<std::sync::atomic::AtomicU64>,
 }
 
 /// GET /health — issuer health check with metrics
@@ -367,8 +401,97 @@ async fn axum_health_handler(
         body.as_object_mut().unwrap().insert("heartbeat".into(), serde_json::Value::Object(heartbeat));
     }
 
+    // P2P subsystem metrics (rate limiting, bans, WAL, equivocations, etc.)
+    let p2p_snap = state.p2p_metrics.snapshot();
+    body.as_object_mut().unwrap().insert(
+        "p2p".into(),
+        serde_json::to_value(&p2p_snap).unwrap_or_default(),
+    );
+
     let status = if http_status == 200 { StatusCode::OK } else { StatusCode::SERVICE_UNAVAILABLE };
     (status, [(header::CONTENT_TYPE, "application/json")], body.to_string()).into_response()
+}
+
+/// GET /ready — readiness check for deployment orchestration
+///
+/// Returns 200 OK if the node can participate in consensus (if unpaused):
+/// - Enough peers connected (>= threshold - 1)
+/// - BLS keypair loaded
+/// - Chain reader operational (last RPC success < 30s ago)
+/// - Registry sync caught up (if enabled)
+///
+/// Returns 503 with JSON body indicating which checks failed.
+/// Does NOT check consensusPaused — that is intentional to avoid deadlocking
+/// the deployment ceremony (step 7 waits for /ready, step 8 unpauses).
+async fn axum_ready_handler(
+    axum::extract::State(state): axum::extract::State<Arc<IssuerApiState>>,
+) -> axum::response::Response {
+    use axum::http::{header, StatusCode};
+    use axum::response::IntoResponse;
+
+    let threshold = issuer::consensus::aggregator::compute_threshold(state.num_issuers as usize);
+    let required_peers = if threshold > 0 { threshold - 1 } else { 0 };
+
+    // Check 1: peer count
+    let connected_peers = if let Some(ref transport) = state.p2p_transport {
+        transport.connected_peer_count().await
+    } else {
+        0
+    };
+    let peers_ok = connected_peers >= required_peers;
+
+    // Check 2: BLS keypair
+    let bls_ok = state.bls_keypair_loaded;
+
+    // Check 3: chain reader (last RPC success < 30s ago)
+    let last_rpc_epoch_ms = state.last_rpc_success_ms.load(Ordering::Relaxed);
+    let now_epoch_ms = Utc::now().timestamp_millis() as u64;
+    let last_success_ms_ago = if last_rpc_epoch_ms > 0 {
+        now_epoch_ms.saturating_sub(last_rpc_epoch_ms)
+    } else {
+        u64::MAX // never succeeded
+    };
+    let chain_reader_ok = last_success_ms_ago < 30_000;
+
+    // Check 4: registry sync (if enabled)
+    let (registry_ok, registry_caught_up) = if let Some(ref cache) = state.registry_sync_cache {
+        let guard = cache.read().await;
+        if guard.is_some() {
+            (true, true)
+        } else {
+            (false, false)
+        }
+    } else {
+        // Registry sync not enabled — pass the check (single-issuer or not configured)
+        (true, true)
+    };
+
+    let all_ok = peers_ok && bls_ok && chain_reader_ok && registry_ok;
+    let status_code = if all_ok { StatusCode::OK } else { StatusCode::SERVICE_UNAVAILABLE };
+
+    let body = serde_json::json!({
+        "ready": all_ok,
+        "checks": {
+            "peers": {
+                "ok": peers_ok,
+                "connected": connected_peers,
+                "required": required_peers,
+            },
+            "bls_keypair": {
+                "ok": bls_ok,
+            },
+            "chain_reader": {
+                "ok": chain_reader_ok,
+                "last_success_ms_ago": if last_rpc_epoch_ms > 0 { last_success_ms_ago } else { 0 },
+            },
+            "registry_sync": {
+                "ok": registry_ok,
+                "caught_up": registry_caught_up,
+            },
+        }
+    });
+
+    (status_code, [(header::CONTENT_TYPE, "application/json")], body.to_string()).into_response()
 }
 
 /// GET /api/nav-sign — BLS-signed NAV price for an ITP
@@ -428,10 +551,11 @@ async fn axum_root_health_handler(
     axum_health_handler(state).await
 }
 
-/// Build the core issuer API router (health, nav-sign, registry-sync).
+/// Build the core issuer API router (health, ready, nav-sign, registry-sync).
 fn issuer_api_routes(state: Arc<IssuerApiState>) -> axum::Router {
     axum::Router::new()
         .route("/health", axum::routing::get(axum_health_handler))
+        .route("/ready", axum::routing::get(axum_ready_handler))
         .route("/", axum::routing::get(axum_root_health_handler))
         .route("/api/nav-sign", axum::routing::get(axum_nav_sign_handler))
         .route("/api/registry-sync", axum::routing::get(axum_registry_sync_handler))
@@ -488,6 +612,12 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     } else {
         None
     };
+
+    // Shared readiness state for /ready endpoint
+    let last_rpc_success_ms = Arc::new(std::sync::atomic::AtomicU64::new(0));
+    let last_rpc_success_ms_for_task = last_rpc_success_ms.clone();
+    let num_issuers = components.consensus.config.num_issuers;
+    let bls_keypair_loaded = components.consensus.keys.bls_keypair.is_some();
 
     // Spawn consensus coordination task
     let consensus_shutdown = shutdown.clone();
@@ -608,6 +738,14 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                     };
 
                     let orders_result = consensus_chain_reader.get_pending_orders().await;
+
+                    // Update last RPC success timestamp for /ready endpoint
+                    if orders_result.is_ok() {
+                        last_rpc_success_ms_for_task.store(
+                            chrono::Utc::now().timestamp_millis() as u64,
+                            Ordering::Relaxed,
+                        );
+                    }
 
                     // Get L3 order IDs tracked by bridge pipeline to exclude from regular consensus
                     let bridge_tracked_l3_ids: Vec<u64> = if let Some(ref orch) = bridge_orchestrator_for_task {
@@ -931,13 +1069,18 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         None
     };
 
-    // Build unified HTTP API server (health + nav-sign + registry-sync + optional Vision)
+    // Build unified HTTP API server (health + ready + nav-sign + registry-sync + optional Vision)
+    let p2p_metrics = Arc::new(issuer::p2p::P2PMetrics::default());
     let issuer_state = Arc::new(IssuerApiState {
         node_id,
         p2p_transport: components.p2p.transport.clone(),
         metrics: components.consensus.metrics.clone(),
+        p2p_metrics: p2p_metrics.clone(),
         registry_sync_cache: components.registry_sync_cache.clone(),
         nav_sign_handler: nav_sign_handler.clone(),
+        num_issuers,
+        bls_keypair_loaded,
+        last_rpc_success_ms: last_rpc_success_ms.clone(),
     });
     let mut api_router = issuer_api_routes(issuer_state);
     if let Some(vision) = vision_router {
@@ -2780,6 +2923,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(1);
     }
 
+    // --- Mandatory registry-sync for multi-issuer deployments ---
+    // Without registry-sync, issuers cannot detect join/leave events and will
+    // desync their key registries, causing BLS aggregation failures.
+    if args.num_issuers > 1 && !args.registry_sync {
+        error!("ERROR: --registry-sync required for multi-issuer deployments (num_issuers={}). Refusing to start.", args.num_issuers);
+        std::process::exit(1);
+    }
+
     // --- Production guards ---
     // --no-tls and --test-key-seeds are allowed in local dev without --mock.
     // --mock fully disables chain writer (no on-chain writes at all).
@@ -2854,7 +3005,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         max_gas_limit: args.max_gas_limit,
         receipt_timeout_secs: args.receipt_timeout_secs,
         consensus_timeout_ms: args.consensus_timeout_ms,
+        p2p_max_per_ip: args.p2p_max_per_ip,
+        p2p_rate_limit: args.p2p_rate_limit,
+        p2p_rate_burst: args.p2p_rate_burst,
     };
+
+    // Deprecation warning for --signature-threshold
+    if args.signature_threshold.is_some() {
+        warn!(
+            "DEPRECATED: --signature-threshold is deprecated and will be removed in a future release. \
+             Threshold is now auto-computed from on-chain activeIssuerCount using BFT 2/3+1 formula. \
+             The override is still honoured for this run, but please remove it from your launch config."
+        );
+    }
 
     // Bootstrap and run
     // Save NTP config before config is consumed by bootstrap
@@ -2929,7 +3092,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     issuer_registry_address,
                     poll_interval_ms: registry_sync_poll_interval_ms,
                     max_block_range: 1000,
-                    initial_scan_blocks: 10_000,
+                    initial_scan_blocks: 86_400, // 24h downtime tolerance at 1s blocks
                 };
 
                 let mut handler = RegistrySyncHandler::new(
@@ -2938,6 +3101,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     components.chain.reader.clone(),
                     bls_keypair.clone(),
                     components.consensus.keys.node_index,
+                    components.consensus.keys.issuer_registry_index as u64,
                     cache.clone(),
                 );
 

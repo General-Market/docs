@@ -1410,6 +1410,38 @@ pub enum MessageHandleResult {
     ForwardToArbitration(P2PMessage),
 }
 
+impl MessageHandleResult {
+    /// Extract the sender PeerId if this is a proposal variant (leader-originated message).
+    ///
+    /// Returns `Some(peer_id)` for all `Process*Proposal` variants, `None` for votes,
+    /// signatures, and non-actionable results (Stale, Buffered, etc.).
+    /// Used by `ConsensusProtocol::handle_message` to verify leader identity before processing.
+    pub fn proposal_sender(&self) -> Option<PeerId> {
+        match self {
+            Self::ProcessPriceProposal { from, .. } => Some(*from),
+            Self::ProcessBatchProposal { from, .. } => Some(*from),
+            Self::ProcessItpCreationProposal { from, .. } => Some(*from),
+            Self::ProcessBridgeArbToL3Proposal { from, .. } => Some(*from),
+            Self::ProcessSubmitOrderForUserProposal { from, .. } => Some(*from),
+            Self::ProcessConfirmBatchProposal { from, .. } => Some(*from),
+            Self::ProcessConfirmFillsProposal { from, .. } => Some(*from),
+            Self::ProcessBridgeL3ToArbProposal { from, .. } => Some(*from),
+            Self::ProcessReleaseToVaultProposal { from, .. } => Some(*from),
+            Self::ProcessRebalanceBatchProposal { from, .. } => Some(*from),
+            Self::ProcessUpdateWeightsProposal { from, .. } => Some(*from),
+            Self::ProcessRebalanceProposal { from, .. } => Some(*from),
+            Self::ProcessAssetTradesProposal { from, .. } => Some(*from),
+            Self::ProcessSubmitSellOrderProposal { from, .. } => Some(*from),
+            Self::ProcessCompleteSellOrderProposal { from, .. } => Some(*from),
+            Self::ProcessRecordCollateralMoveProposal { from, .. } => Some(*from),
+            Self::ProcessMintBridgedSharesProposal { from, .. } => Some(*from),
+            Self::ProcessCompleteBuyOrderProposal { from, .. } => Some(*from),
+            Self::ProcessSetItpNavProposal { from, .. } => Some(*from),
+            _ => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

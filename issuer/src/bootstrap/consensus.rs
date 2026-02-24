@@ -49,24 +49,40 @@ impl<'a> ConsensusBuilder<'a> {
 
     /// Build BLS keypair and key registry
     pub async fn build_keys(&self) -> Result<ConsensusKeyComponents, BootstrapError> {
-        // Generate peer_id
-        let peer_id = if let Some(issuer_id) = self.params.on_chain_issuer_id {
-            generate_peer_id(issuer_id as u32)
-        } else if let Some(seed_idx) = self.params.bls_key_seed_index {
-            generate_peer_id(seed_idx as u32)
-        } else {
-            generate_peer_id(self.node_id)
-        };
-
-        // Build BLS keypair
+        // Build BLS keypair first — needed for chain-based index derivation
         let bls_keypair = self.build_bls_keypair().await;
 
         // Build key registry
-        let key_registry = self.build_key_registry();
+        let key_registry = self.build_key_registry().await;
 
-        // Calculate indices
-        let node_index = (self.node_id - 1) as u8;
-        let issuer_registry_index = self.params.on_chain_issuer_id.unwrap_or(node_index);
+        // Derive indices: try chain-based derivation using BLS pubkey matching,
+        // fall back to CLI args if chain query fails or no BLS key available
+        let (issuer_registry_index, node_index) = match self.derive_indices_from_chain(&bls_keypair).await {
+            Ok((reg_idx, dense_idx)) => {
+                info!(
+                    self.node_id,
+                    issuer_registry_index = reg_idx,
+                    node_index = dense_idx,
+                    "Derived indices from on-chain registry"
+                );
+                (reg_idx, dense_idx)
+            }
+            Err(e) => {
+                let fallback_node_index = (self.node_id - 1) as u8;
+                let fallback_registry_index = self.params.on_chain_issuer_id.unwrap_or(fallback_node_index);
+                warn!(
+                    self.node_id,
+                    error = %e,
+                    fallback_node_index,
+                    fallback_registry_index,
+                    "Failed to derive indices from chain, falling back to CLI args"
+                );
+                (fallback_registry_index, fallback_node_index)
+            }
+        };
+
+        // Generate peer_id from the resolved issuer_registry_index
+        let peer_id = generate_peer_id(issuer_registry_index as u32);
 
         Ok(ConsensusKeyComponents {
             bls_keypair,
@@ -75,6 +91,38 @@ impl<'a> ConsensusBuilder<'a> {
             node_index,
             issuer_registry_index,
         })
+    }
+
+    /// Derive issuer_registry_index and node_index from on-chain registry by matching BLS pubkey.
+    ///
+    /// - `issuer_registry_index`: The on-chain issuer ID (used in signerBitmap)
+    /// - `node_index`: Dense index = count of active issuers with ID < ours (used for leader election)
+    async fn derive_indices_from_chain(&self, bls_keypair: &Option<common::bls::BLSKeyPair>) -> Result<(u8, u8), BootstrapError> {
+        let keypair = bls_keypair.as_ref()
+            .ok_or_else(|| BootstrapError::Config("Cannot derive chain indices: no BLS keypair available".to_string()))?;
+
+        let my_bls_pubkey_bytes = keypair.public_key_bytes();
+
+        let issuers = self.chain_reader.get_issuer_registry().await
+            .map_err(|e| BootstrapError::Config(format!("Failed to query issuer registry for index derivation: {e}")))?;
+
+        // Find our on-chain record by matching BLS pubkey
+        let my_issuer = issuers.iter()
+            .find(|i| {
+                i.status == ethers::types::U256::one() && i.bls_pubkey.as_ref() == my_bls_pubkey_bytes.as_slice()
+            })
+            .ok_or_else(|| BootstrapError::Config(
+                "This node's BLS pubkey not found among active issuers in on-chain registry".to_string()
+            ))?;
+
+        let issuer_registry_index = my_issuer.id as u8;
+
+        // Dense index = count of active issuers with ID strictly less than ours
+        let node_index = issuers.iter()
+            .filter(|i| i.status == ethers::types::U256::one() && i.id < my_issuer.id)
+            .count() as u8;
+
+        Ok((issuer_registry_index, node_index))
     }
 
     /// Build the full consensus protocol (needs keys, P2P, chain, price components)
@@ -86,9 +134,22 @@ impl<'a> ConsensusBuilder<'a> {
         price: &PriceComponents,
         target_chain_id: u64,
     ) -> Result<ConsensusComponents, BootstrapError> {
-        // Calculate signature threshold
+        // Calculate signature threshold — prefer on-chain activeIssuerCount, fall back to CLI --num-issuers
+        let on_chain_active = match self.chain_reader.get_active_issuer_count().await {
+            Ok(count) => {
+                info!(self.node_id, on_chain_active_count = count, "Using on-chain activeIssuerCount for threshold");
+                count as usize
+            }
+            Err(e) => {
+                warn!(self.node_id, error = %e,
+                    "Failed to query on-chain activeIssuerCount, falling back to --num-issuers CLI arg ({})",
+                    self.params.num_issuers
+                );
+                self.params.num_issuers as usize
+            }
+        };
         let sig_threshold = self.params.signature_threshold_override.unwrap_or_else(|| {
-            crate::consensus::aggregator::calculate_threshold(self.params.num_issuers as usize)
+            crate::consensus::aggregator::compute_threshold(on_chain_active)
         });
 
         // Build consensus timeouts (use CLI override or defaults)
@@ -289,24 +350,86 @@ impl<'a> ConsensusBuilder<'a> {
         }
     }
 
-    fn build_key_registry(&self) -> Option<Arc<InMemoryKeyRegistry>> {
-        if !self.params.test_key_seeds {
-            return None;
+    async fn build_key_registry(&self) -> Option<Arc<InMemoryKeyRegistry>> {
+        // 1. Try chain-based bootstrap (production path)
+        if let Ok(issuers) = self.chain_reader.get_issuer_registry().await {
+            let active_issuers: Vec<_> = issuers
+                .iter()
+                .filter(|i| i.status == ethers::types::U256::one())
+                .collect();
+
+            if !active_issuers.is_empty() {
+                let registry = InMemoryKeyRegistry::new();
+                let mut registered = 0usize;
+
+                for issuer in &active_issuers {
+                    let peer_id = generate_peer_id(issuer.id as u32);
+                    let pubkey_bytes: &[u8] = issuer.bls_pubkey.as_ref();
+
+                    if pubkey_bytes.len() != BLSKeyPair::PUBLIC_KEY_SIZE {
+                        warn!(
+                            issuer_id = issuer.id,
+                            pubkey_len = pubkey_bytes.len(),
+                            expected = BLSKeyPair::PUBLIC_KEY_SIZE,
+                            "Skipping issuer: BLS pubkey wrong length"
+                        );
+                        continue;
+                    }
+
+                    // Validate the G2 point is on-curve before registering
+                    if let Err(e) = common::bls::keypair::deserialize_g2_point(pubkey_bytes) {
+                        warn!(
+                            issuer_id = issuer.id,
+                            error = %e,
+                            "Skipping issuer: BLS pubkey is not a valid G2 point"
+                        );
+                        continue;
+                    }
+
+                    let pubkey = common::types::BLSPublicKey(pubkey_bytes.to_vec());
+                    if let Err(e) = registry.register(peer_id, pubkey) {
+                        warn!(
+                            issuer_id = issuer.id,
+                            error = %e,
+                            "Failed to register BLS pubkey for issuer"
+                        );
+                    } else {
+                        registered += 1;
+                    }
+                }
+
+                if registered > 0 {
+                    info!(
+                        peer_count = registered,
+                        active_issuers = active_issuers.len(),
+                        "InMemoryKeyRegistry built from on-chain issuer registry"
+                    );
+                    return Some(Arc::new(registry));
+                }
+
+                warn!("On-chain registry had active issuers but none had valid BLS pubkeys");
+            }
         }
 
-        let (registry, keypairs) = InMemoryKeyRegistry::generate_test_registry_with_offset(
-            self.params.num_issuers as usize,
-            self.params.key_registry_offset as usize,
-        );
+        // 2. Fallback: deterministic test seeds (local dev / E2E)
+        if self.params.test_key_seeds {
+            let (registry, keypairs) = InMemoryKeyRegistry::generate_test_registry_with_offset(
+                self.params.num_issuers as usize,
+                self.params.key_registry_offset as usize,
+            );
 
-        info!(
-            self.node_id,
-            peer_count = keypairs.len(),
-            key_registry_offset = self.params.key_registry_offset,
-            "InMemoryKeyRegistry built from deterministic test seeds"
-        );
+            info!(
+                self.node_id,
+                peer_count = keypairs.len(),
+                key_registry_offset = self.params.key_registry_offset,
+                "InMemoryKeyRegistry built from deterministic test seeds"
+            );
 
-        Some(Arc::new(registry))
+            return Some(Arc::new(registry));
+        }
+
+        warn!("No key registry available — consensus disabled");
+        None
     }
 
     fn build_fill_verifier(&self, rpc_url: &str) -> Option<Arc<BitgetVaultReader>> {
@@ -482,6 +605,10 @@ impl<'a> ConsensusBuilder<'a> {
             protocol = protocol.with_fill_verifier(verifier.clone());
             info!(self.node_id, "ConsensusProtocol with on-chain fill verifier (FR13)");
         }
+
+        // Attach peer scorer from transport for leader identity verification
+        protocol = protocol.with_peer_scorer(p2p_transport.peer_scorer().clone());
+        info!(self.node_id, "ConsensusProtocol with peer scorer for leader verification");
 
         let protocol = Arc::new(protocol);
 

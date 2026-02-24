@@ -126,8 +126,11 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, Initializable, UUPSUpgra
         }
 
         // Compute message hash for BLS verification
+        // NOTE: Uses encodePacked to match Rust-side build_registry_sync_message_hash()
+        // which produces raw byte concatenation (no ABI padding). Phase 4 will change
+        // BOTH sides to abi.encode with chain binding (block.chainid, address(this)).
         bytes32 messageHash = keccak256(
-            abi.encode("REGISTRY_SYNC", nonce, newAggPubkey, newActiveCount, newThreshold)
+            abi.encodePacked("REGISTRY_SYNC", nonce, newAggPubkey, newActiveCount, newThreshold)
         );
 
         // Verify BLS signature against CURRENT aggregated pubkey

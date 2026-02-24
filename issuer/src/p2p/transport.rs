@@ -17,7 +17,24 @@ use common::traits::{MessageStream, P2PTransport};
 use common::types::{P2PMessage, PeerId, PeerInfo};
 
 use super::connection::{temp_peer_id_from_addr, ConnectionStatus, PeerConnection};
+use super::peer_scoring::PeerScorer;
 use super::tls::TlsConfig;
+
+/// Maximum total inbound connections (20 issuers + headroom for reconnections)
+const MAX_INBOUND_CONNECTIONS: usize = 30;
+
+/// Default per-IP connection limit (1 inbound + 1 outbound)
+const DEFAULT_MAX_PER_IP: usize = 2;
+
+/// Check if an IP address is loopback (127.x.x.x / ::1).
+/// Loopback IPs are exempt from per-IP limits because local dev runs N issuers
+/// on 127.0.0.1.
+fn is_loopback(ip: &std::net::IpAddr) -> bool {
+    match ip {
+        std::net::IpAddr::V4(v4) => v4.is_loopback(),
+        std::net::IpAddr::V6(v6) => v6.is_loopback(),
+    }
+}
 
 /// TCP-based P2P transport for issuer nodes
 ///
@@ -38,7 +55,23 @@ pub struct TcpP2PTransport {
     tls_config: Option<Arc<TlsConfig>>,
     /// Listener handle
     listener_handle: Arc<RwLock<Option<tokio::task::JoinHandle<()>>>>,
+    /// Per-IP connection limit (0 = unlimited)
+    max_per_ip: usize,
+    /// Rate limit: tokens refilled per second per connection
+    rate_limit: f64,
+    /// Rate limit: maximum burst size (token bucket capacity)
+    rate_burst: f64,
+    /// Peer reputation scorer for auto-banning
+    peer_scorer: Arc<PeerScorer>,
+    /// Handle for the scorer tick background task
+    scorer_tick_handle: Arc<RwLock<Option<tokio::task::JoinHandle<()>>>>,
 }
+
+/// Default rate limit: 100 messages per second per peer
+pub const DEFAULT_RATE_LIMIT: f64 = 100.0;
+
+/// Default rate burst: 100 messages (token bucket capacity)
+pub const DEFAULT_RATE_BURST: f64 = 100.0;
 
 impl TcpP2PTransport {
     /// Create a new TCP P2P transport
@@ -47,7 +80,17 @@ impl TcpP2PTransport {
     /// * `peer_id` - This node's peer identifier
     /// * `listen_port` - Port to listen on for incoming connections
     /// * `tls_config` - Optional TLS configuration for secure connections
-    pub fn new(peer_id: PeerId, listen_port: u16, tls_config: Option<TlsConfig>) -> Self {
+    /// * `max_per_ip` - Maximum connections from a single IP (0 = unlimited, default: 2)
+    /// * `rate_limit` - Tokens refilled per second per connection (default: 100)
+    /// * `rate_burst` - Maximum burst size / token bucket capacity (default: 100)
+    pub fn new(
+        peer_id: PeerId,
+        listen_port: u16,
+        tls_config: Option<TlsConfig>,
+        max_per_ip: usize,
+        rate_limit: f64,
+        rate_burst: f64,
+    ) -> Self {
         let (tx, rx) = mpsc::channel(1000);
 
         Self {
@@ -58,6 +101,11 @@ impl TcpP2PTransport {
             incoming_rx: Arc::new(RwLock::new(Some(rx))),
             tls_config: tls_config.map(Arc::new),
             listener_handle: Arc::new(RwLock::new(None)),
+            max_per_ip,
+            rate_limit,
+            rate_burst,
+            peer_scorer: Arc::new(PeerScorer::new()),
+            scorer_tick_handle: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -80,6 +128,11 @@ impl TcpP2PTransport {
     ///
     /// This spawns a background task that accepts incoming connections
     /// and handles TLS handshake if configured.
+    ///
+    /// Connection limits are enforced atomically (single write-lock acquisition)
+    /// before spawning the connection handler:
+    /// - Total inbound connections capped at [`MAX_INBOUND_CONNECTIONS`]
+    /// - Per-IP connections capped at `max_per_ip` (loopback IPs exempt)
     pub async fn start_listener(&self) -> Result<(), Error> {
         let addr: SocketAddr = format!("0.0.0.0:{}", self.listen_port)
             .parse()
@@ -89,17 +142,58 @@ impl TcpP2PTransport {
             .await
             .map_err(|e| Error::P2PConnection(format!("Failed to bind: {}", e)))?;
 
-        info!(port = self.listen_port, "P2P listener started");
+        info!(port = self.listen_port, max_per_ip = self.max_per_ip, "P2P listener started");
 
         let connections = self.connections.clone();
         let incoming_tx = self.incoming_tx.clone();
         let tls_config = self.tls_config.clone();
         let peer_id = self.peer_id;
+        let max_per_ip = self.max_per_ip;
+        let rate_limit = self.rate_limit;
+        let rate_burst = self.rate_burst;
 
         let handle = tokio::spawn(async move {
             loop {
                 match listener.accept().await {
                     Ok((stream, addr)) => {
+                        // --- Atomic check-and-accept under a single write lock ---
+                        {
+                            let conns = connections.read().await;
+
+                            // 1. Global connection limit
+                            if conns.len() >= MAX_INBOUND_CONNECTIONS {
+                                warn!(
+                                    code = "INFRA-021",
+                                    conn_count = conns.len(),
+                                    max = MAX_INBOUND_CONNECTIONS,
+                                    %addr,
+                                    "Max inbound connections reached, rejecting"
+                                );
+                                drop(stream);
+                                continue;
+                            }
+
+                            // 2. Per-IP limit (skip for loopback — local dev runs N issuers on 127.0.0.1)
+                            if max_per_ip > 0 && !is_loopback(&addr.ip()) {
+                                let ip_count = conns
+                                    .values()
+                                    .filter(|c| c.addr().ip() == addr.ip())
+                                    .count();
+                                if ip_count >= max_per_ip {
+                                    warn!(
+                                        code = "INFRA-021",
+                                        %addr,
+                                        ip_count,
+                                        max_per_ip,
+                                        "Per-IP connection limit reached, rejecting"
+                                    );
+                                    drop(stream);
+                                    continue;
+                                }
+                            }
+                        }
+                        // Lock released before spawning handler
+
                         debug!(%addr, "Accepted incoming connection");
 
                         let connections = connections.clone();
@@ -114,6 +208,8 @@ impl TcpP2PTransport {
                                 incoming_tx,
                                 tls_config,
                                 peer_id,
+                                rate_limit,
+                                rate_burst,
                             )
                             .await
                             {
@@ -162,6 +258,11 @@ impl TcpP2PTransport {
     pub async fn shutdown(&self) {
         info!("Shutting down P2P transport");
 
+        // Stop scorer tick
+        if let Some(handle) = self.scorer_tick_handle.write().await.take() {
+            handle.abort();
+        }
+
         // Stop listener
         self.stop_listener().await;
 
@@ -173,6 +274,72 @@ impl TcpP2PTransport {
         }
 
         info!("P2P transport shutdown complete");
+    }
+
+    /// Force-disconnect a peer by removing and closing its connection.
+    pub async fn disconnect_peer(&self, peer_id: &PeerId) {
+        let mut connections = self.connections.write().await;
+        if let Some(conn) = connections.remove(peer_id) {
+            info!(?peer_id, "Force-disconnecting peer");
+            conn.close().await;
+        }
+    }
+
+    /// Return the list of currently connected peer IDs.
+    pub async fn connected_peer_ids(&self) -> Vec<PeerId> {
+        let connections = self.connections.read().await;
+        connections
+            .iter()
+            .filter(|(_, c)| c.status() == ConnectionStatus::Connected)
+            .map(|(id, _)| *id)
+            .collect()
+    }
+
+    /// Get a reference to the peer scorer.
+    pub fn peer_scorer(&self) -> &Arc<PeerScorer> {
+        &self.peer_scorer
+    }
+
+    /// Start the background scorer tick timer (5-second interval).
+    ///
+    /// On each tick:
+    /// 1. Collects connected peer IDs
+    /// 2. Calls `scorer.tick()` to apply heartbeat penalties and detect bans
+    /// 3. Force-disconnects any newly banned peers
+    pub async fn start_scorer_tick(&self) {
+        let connections = self.connections.clone();
+        let scorer = self.peer_scorer.clone();
+
+        let handle = tokio::spawn(async move {
+            let mut interval = tokio::time::interval(std::time::Duration::from_secs(5));
+            loop {
+                interval.tick().await;
+
+                // Collect connected peer IDs (short read-lock)
+                let connected: Vec<PeerId> = {
+                    let conns = connections.read().await;
+                    conns
+                        .iter()
+                        .filter(|(_, c)| c.status() == ConnectionStatus::Connected)
+                        .map(|(id, _)| *id)
+                        .collect()
+                };
+
+                let to_ban = scorer.tick(&connected);
+
+                // Disconnect banned peers
+                for peer_id in &to_ban {
+                    let mut conns = connections.write().await;
+                    if let Some(conn) = conns.remove(peer_id) {
+                        info!(?peer_id, "Disconnecting banned peer");
+                        conn.close().await;
+                    }
+                }
+            }
+        });
+
+        *self.scorer_tick_handle.write().await = Some(handle);
+        info!("Peer scorer tick started (5s interval)");
     }
 }
 
@@ -218,6 +385,8 @@ impl P2PTransport for TcpP2PTransport {
                 self.incoming_tx.clone(),
                 self.tls_config.clone(),
                 Some(self.peer_id),
+                self.rate_limit,
+                self.rate_burst,
             )
             .await
             {
@@ -233,6 +402,9 @@ impl P2PTransport for TcpP2PTransport {
                     let incoming_tx = self.incoming_tx.clone();
                     let tls_config = self.tls_config.clone();
                     let our_peer_id = self.peer_id;
+                    let rate_limit = self.rate_limit;
+                    let rate_burst = self.rate_burst;
+                    let peer_scorer = Some(self.peer_scorer.clone());
 
                     tokio::spawn(async move {
                         PeerConnection::reconnect_loop(
@@ -242,6 +414,9 @@ impl P2PTransport for TcpP2PTransport {
                             incoming_tx,
                             tls_config,
                             Some(our_peer_id),
+                            rate_limit,
+                            rate_burst,
+                            peer_scorer,
                         )
                         .await;
                     });
@@ -344,7 +519,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_transport_creation() {
-        let transport = TcpP2PTransport::new(test_peer_id(1), 9001, None);
+        let transport = TcpP2PTransport::new(test_peer_id(1), 9001, None, DEFAULT_MAX_PER_IP, DEFAULT_RATE_LIMIT, DEFAULT_RATE_BURST);
 
         assert_eq!(transport.peer_id(), test_peer_id(1));
         assert_eq!(transport.listen_port(), 9001);
@@ -353,7 +528,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_empty_broadcast_succeeds() {
-        let transport = TcpP2PTransport::new(test_peer_id(1), 9002, None);
+        let transport = TcpP2PTransport::new(test_peer_id(1), 9002, None, DEFAULT_MAX_PER_IP, DEFAULT_RATE_LIMIT, DEFAULT_RATE_BURST);
 
         let msg = P2PMessage::Heartbeat {
             sender_id: test_peer_id(1),
@@ -367,7 +542,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_send_to_unknown_peer_fails() {
-        let transport = TcpP2PTransport::new(test_peer_id(1), 9003, None);
+        let transport = TcpP2PTransport::new(test_peer_id(1), 9003, None, DEFAULT_MAX_PER_IP, DEFAULT_RATE_LIMIT, DEFAULT_RATE_BURST);
 
         let msg = P2PMessage::Heartbeat {
             sender_id: test_peer_id(1),
@@ -381,7 +556,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_receive_can_only_be_called_once() {
-        let transport = TcpP2PTransport::new(test_peer_id(1), 9004, None);
+        let transport = TcpP2PTransport::new(test_peer_id(1), 9004, None, DEFAULT_MAX_PER_IP, DEFAULT_RATE_LIMIT, DEFAULT_RATE_BURST);
 
         // First call should succeed
         let result1 = transport.receive().await;
@@ -405,8 +580,8 @@ mod tests {
         use tokio::time::{sleep, Duration};
 
         // Create two transports
-        let transport_a = TcpP2PTransport::new(test_peer_id(1), 19001, None);
-        let transport_b = TcpP2PTransport::new(test_peer_id(2), 19002, None);
+        let transport_a = TcpP2PTransport::new(test_peer_id(1), 19001, None, DEFAULT_MAX_PER_IP, DEFAULT_RATE_LIMIT, DEFAULT_RATE_BURST);
+        let transport_b = TcpP2PTransport::new(test_peer_id(2), 19002, None, DEFAULT_MAX_PER_IP, DEFAULT_RATE_LIMIT, DEFAULT_RATE_BURST);
 
         // Start listeners
         transport_a.start_listener().await.expect("A should start listener");

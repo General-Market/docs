@@ -60,6 +60,8 @@ impl From<U256> for IssuerStatus {
 /// Stored in IssuerRegistry contract.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Issuer {
+    /// On-chain issuer ID (1-based index in IssuerRegistry)
+    pub id: u64,
     /// Issuer's Ethereum address for rewards/governance
     pub addr: Address,
     /// IP address for P2P communication (packed bytes32)

@@ -144,8 +144,11 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
     /// @dev Aggregated BLS G2 public key (computed off-chain, stored for getAggregatedPubkey)
     bytes private _aggregatedPubkey;
 
-    /// @dev Storage gap for upgrade safety (reduced from 35 to 34 for _aggregatedPubkey)
-    uint256[34] private __gap;
+    /// @dev Whether consensus is paused (admin circuit breaker)
+    bool public consensusPaused;
+
+    /// @dev Storage gap for upgrade safety (reduced from 34 to 33 for consensusPaused)
+    uint256[33] private __gap;
 
     // ============ CONSTRUCTOR ============
 
@@ -487,6 +490,14 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
         return _currentCycle;
     }
 
+    // ============ CONSENSUS PAUSE (Phase -1a) ============
+
+    /// @notice Pause or unpause consensus (admin circuit breaker)
+    /// @param paused Whether to pause consensus
+    function setConsensusPaused(bool paused) external onlyAdmin {
+        consensusPaused = paused;
+        emit EventsLib.ConsensusPausedChanged(paused);
+    }
 
     // ============ PEER DISCOVERY (Story 7.17) ============
 

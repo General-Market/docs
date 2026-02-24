@@ -12,27 +12,15 @@ use tracing::{debug, info, warn};
 
 /// Threshold constants for consensus
 pub const QUORUM_THRESHOLD: usize = 14; // 14/20 online required
-pub const SIGNATURE_THRESHOLD: usize = 11; // 11/20 for batch approval
 pub const DISAGREEMENT_PERCENT: u8 = 20; // 20% disagree triggers retry
 pub const MAX_PRICE_RETRIES: u8 = 3;
 pub const MAX_BATCH_RETRIES: u8 = 3;
 
-/// Calculate the signature threshold for a given number of issuers.
-///
-/// Uses proportional scaling from the production ratio (11/20 = 55%):
-/// `threshold = max(2, ceil(n * 11 / 20))`
-///
-/// Results:
-/// - 3 nodes → 2
-/// - 5 nodes → 3
-/// - 10 nodes → 6
-/// - 20 nodes → 11
-pub fn calculate_threshold(num_issuers: usize) -> usize {
-    if num_issuers == 0 {
-        return 2;
-    }
-    let scaled = (num_issuers * 11 + 19) / 20; // ceil(n * 11 / 20)
-    scaled.max(2)
+/// BFT threshold: floor(2n/3) + 1. Requires >2/3 of issuers to sign.
+/// For n=20: threshold=14. For n=3: threshold=3.
+pub fn compute_threshold(num_issuers: usize) -> usize {
+    if num_issuers == 0 { return 1; }
+    (num_issuers * 2 / 3) + 1
 }
 
 /// Status of signature aggregation
@@ -79,9 +67,9 @@ impl std::fmt::Debug for SignatureAggregator {
 }
 
 impl SignatureAggregator {
-    /// Create a new signature aggregator with default threshold (11/20)
-    pub fn new() -> Self {
-        Self::with_threshold(SIGNATURE_THRESHOLD)
+    /// Create a new signature aggregator with the given threshold
+    pub fn new(threshold: usize) -> Self {
+        Self::with_threshold(threshold)
     }
 
     /// Create a new signature aggregator with custom threshold
@@ -205,7 +193,8 @@ impl SignatureAggregator {
 
 impl Default for SignatureAggregator {
     fn default() -> Self {
-        Self::new()
+        // Default to BFT threshold for 20 issuers
+        Self::new(compute_threshold(20))
     }
 }
 
@@ -227,8 +216,8 @@ mod tests {
 
     #[test]
     fn test_aggregator_new() {
-        let aggregator = SignatureAggregator::new();
-        assert_eq!(aggregator.required_signatures(), SIGNATURE_THRESHOLD);
+        let aggregator = SignatureAggregator::new(compute_threshold(20));
+        assert_eq!(aggregator.required_signatures(), 14); // BFT: floor(2*20/3)+1 = 14
         assert_eq!(aggregator.collected_count(), 0);
         assert!(!aggregator.is_threshold_reached());
     }
@@ -349,7 +338,7 @@ mod tests {
 
     #[test]
     fn test_aggregator_invalid_signature_length() {
-        let mut aggregator = SignatureAggregator::new();
+        let mut aggregator = SignatureAggregator::new(compute_threshold(20));
         let invalid_sig = BLSSignature(vec![0u8; 32]); // Wrong length
 
         let result = aggregator.add_signature(test_peer_id(1), invalid_sig);
@@ -358,7 +347,7 @@ mod tests {
 
     #[test]
     fn test_aggregator_has_signature_from() {
-        let mut aggregator = SignatureAggregator::new();
+        let mut aggregator = SignatureAggregator::new(compute_threshold(20));
         let keypair = BLSKeyPair::generate();
         let message = b"test message";
 
@@ -373,7 +362,6 @@ mod tests {
 
     #[test]
     fn test_threshold_constants() {
-        assert_eq!(SIGNATURE_THRESHOLD, 11);
         assert_eq!(QUORUM_THRESHOLD, 14);
         assert_eq!(DISAGREEMENT_PERCENT, 20);
         assert_eq!(MAX_PRICE_RETRIES, 3);
@@ -381,35 +369,40 @@ mod tests {
     }
 
     #[test]
-    fn test_calculate_threshold_3_nodes() {
-        assert_eq!(calculate_threshold(3), 2);
+    fn test_compute_threshold_3_nodes() {
+        // BFT: floor(2*3/3)+1 = 3
+        assert_eq!(compute_threshold(3), 3);
     }
 
     #[test]
-    fn test_calculate_threshold_5_nodes() {
-        assert_eq!(calculate_threshold(5), 3);
+    fn test_compute_threshold_5_nodes() {
+        // BFT: floor(2*5/3)+1 = floor(10/3)+1 = 3+1 = 4
+        assert_eq!(compute_threshold(5), 4);
     }
 
     #[test]
-    fn test_calculate_threshold_10_nodes() {
-        assert_eq!(calculate_threshold(10), 6);
+    fn test_compute_threshold_10_nodes() {
+        // BFT: floor(2*10/3)+1 = floor(20/3)+1 = 6+1 = 7
+        assert_eq!(compute_threshold(10), 7);
     }
 
     #[test]
-    fn test_calculate_threshold_20_nodes() {
-        assert_eq!(calculate_threshold(20), 11);
+    fn test_compute_threshold_20_nodes() {
+        // BFT: floor(2*20/3)+1 = floor(40/3)+1 = 13+1 = 14
+        assert_eq!(compute_threshold(20), 14);
     }
 
     #[test]
-    fn test_calculate_threshold_minimum_is_2() {
-        // Even with 1 or 2 nodes, threshold should be at least 2
-        assert_eq!(calculate_threshold(1), 2);
-        assert_eq!(calculate_threshold(2), 2);
+    fn test_compute_threshold_small_values() {
+        // 1 node: floor(2/3)+1 = 0+1 = 1
+        assert_eq!(compute_threshold(1), 1);
+        // 2 nodes: floor(4/3)+1 = 1+1 = 2
+        assert_eq!(compute_threshold(2), 2);
     }
 
     #[test]
-    fn test_calculate_threshold_zero_nodes() {
-        // 0 issuers must still require >= 2 signatures to prevent vacuous consensus
-        assert_eq!(calculate_threshold(0), 2);
+    fn test_compute_threshold_zero_nodes() {
+        // 0 issuers returns 1 (guard)
+        assert_eq!(compute_threshold(0), 1);
     }
 }

@@ -3,7 +3,7 @@
 //! Implements the consensus protocol for Index L3 issuers:
 //! - Price consensus: Leader proposes prices, followers vote
 //! - Batch consensus: Leader proposes batch, followers sign
-//! - Signature aggregation: 11/20 threshold for batch approval
+//! - Signature aggregation: BFT 2/3+1 threshold for batch approval
 //!
 //! ## Protocol Flow
 //!
@@ -16,11 +16,12 @@
 //! 3. PHASE 2: Batch Consensus
 //!    - Leader broadcasts BATCH_PROPOSAL (500ms timeout)
 //!    - Followers respond BATCH_SIGN within 300ms
-//!    - Leader aggregates when 11 signatures received
+//!    - Leader aggregates when BFT threshold (>2/3) signatures received
 //! 4. Leader submits aggregated signature on-chain
 //! ```
 
 pub mod aggregator;
+pub mod equivocation;
 pub mod itp_creation;
 pub mod rebalance_request;
 mod keys;
@@ -28,7 +29,7 @@ mod messages;
 mod protocol;
 mod state;
 
-pub use aggregator::{AggregationStatus, SignatureAggregator, calculate_threshold};
+pub use aggregator::{AggregationStatus, SignatureAggregator, compute_threshold};
 pub use itp_creation::{
     build_message_hash, verify_proposal_matches_request, ItpCreationConfig, ItpCreationError,
     ItpCreationResult,
@@ -39,5 +40,5 @@ pub use rebalance_request::{
 };
 pub use keys::{InMemoryKeyRegistry, KeyRegistry};
 pub use messages::ConsensusMessageHandler;
-pub use protocol::{ConsensusConfig, ConsensusProtocol, ConsensusResult};
+pub use protocol::{ConfigUpdate, ConsensusConfig, ConsensusProtocol, ConsensusResult};
 pub use state::{ConsensusPhase, ConsensusRound, ConsensusState, ConsensusTimeouts};

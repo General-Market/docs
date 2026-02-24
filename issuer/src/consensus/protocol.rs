@@ -77,12 +77,14 @@ use crate::bridge::{
 use crate::arbitration::ArbitrationMessageSender;
 use crate::bootstrap::extract_issuer_id;
 use crate::leader::LeaderElector;
+use crate::p2p::peer_scoring::PeerScorer;
 use crate::price::{PriceFetcher, ToleranceValidator};
 
 use super::aggregator::{
     AggregationStatus, SignatureAggregator, DISAGREEMENT_PERCENT,
     MAX_PRICE_RETRIES, compute_threshold,
 };
+use super::equivocation::{content_hash, is_vote_or_sign, EquivocationDetector};
 use super::keys::KeyRegistry;
 use super::messages::{ConsensusMessageHandler, MessageHandleResult};
 use super::state::{ConsensusPhase, ConsensusState, ConsensusTimeouts, PriceVote};
@@ -300,6 +302,14 @@ where
     pending_config_update: Arc<RwLock<Option<ConfigUpdate>>>,
     /// Optional sender for forwarding arbitration P2P messages to the ArbitrationSubsystem
     arbitration_tx: RwLock<Option<ArbitrationMessageSender>>,
+    /// Ordered list of PeerIds for index->PeerId mapping (sorted by on-chain issuer ID).
+    /// Populated at startup from the key registry and updated when the issuer set changes.
+    peer_registry: Arc<RwLock<Vec<PeerId>>>,
+    /// Optional peer scorer for recording peer reputation events (e.g. non-leader proposals).
+    peer_scorer: Option<Arc<PeerScorer>>,
+    /// Equivocation detector: tracks (peer, cycle, phase) -> content_hash to
+    /// detect peers that send conflicting votes/signatures in the same round.
+    equivocation_detector: EquivocationDetector,
 }
 
 impl<P, C, K, F> ConsensusProtocol<P, C, K, F>
@@ -323,6 +333,10 @@ where
         let aggregator = SignatureAggregator::with_threshold(config.signature_threshold);
         let runtime_config = RuntimeConfig::new(&config);
 
+        // Build ordered peer registry from key registry (sorted by on-chain issuer ID)
+        let mut peers = key_registry.registered_peers();
+        peers.sort_by_key(|p| extract_issuer_id(p));
+
         Self {
             bls_signer: Bn254BLSSigner::new(),
             bls_keypair,
@@ -342,6 +356,9 @@ where
             bridge_orchestrator: RwLock::new(None),
             pending_config_update: Arc::new(RwLock::new(None)),
             arbitration_tx: RwLock::new(None),
+            peer_registry: Arc::new(RwLock::new(peers)),
+            peer_scorer: None,
+            equivocation_detector: EquivocationDetector::new(),
         }
     }
 
@@ -385,6 +402,9 @@ where
             self.runtime_config.num_issuers.store(cfg.active_count, Relaxed);
             self.runtime_config.issuer_registry_index.store(cfg.issuer_registry_index, Relaxed);
             self.runtime_config.signature_threshold.store(cfg.threshold, Relaxed);
+
+            // Refresh peer registry to match updated issuer set
+            self.refresh_peer_registry().await;
         }
     }
 
@@ -424,9 +444,132 @@ where
         self
     }
 
+    /// Set the peer scorer for recording peer reputation events.
+    ///
+    /// When set, non-leader proposals will trigger `record_invalid_message`
+    /// on the scorer, feeding into the peer scoring / auto-ban pipeline.
+    pub fn with_peer_scorer(mut self, scorer: Arc<PeerScorer>) -> Self {
+        self.peer_scorer = Some(scorer);
+        self
+    }
+
+    /// Refresh the peer_registry from the key registry.
+    ///
+    /// Called when the issuer set changes (e.g. after a config update)
+    /// to keep the ordered PeerId list in sync.
+    pub async fn refresh_peer_registry(&self) {
+        let mut peers = self.key_registry.registered_peers();
+        peers.sort_by_key(|p| extract_issuer_id(p));
+        let mut registry = self.peer_registry.write().await;
+        *registry = peers;
+    }
+
     /// Get this node's peer ID
     pub fn peer_id(&self) -> PeerId {
         self.config.peer_id
+    }
+
+    /// Check if a PeerId is the zeroed sentinel (all bytes zero).
+    ///
+    /// Zeroed PeerIds are used before re-keying completes; skip leader
+    /// verification for these since they can't be mapped to a dense index.
+    fn is_zeroed_peer_id(peer: &PeerId) -> bool {
+        peer.iter().all(|&b| b == 0)
+    }
+
+    /// Check if a PeerId is a temporary/placeholder ID.
+    ///
+    /// Temp PeerIds (first byte 0xFE or 0xFF) are used during bootstrap
+    /// before re-keying assigns a real identity. Skip leader verification
+    /// for these as well.
+    fn is_temp_peer_id(peer: &PeerId) -> bool {
+        peer[0] == 0xFE || peer[0] == 0xFF
+    }
+
+    /// Compute the dense index (0-based position among active issuers) for a given PeerId.
+    ///
+    /// Uses the key registry to get all registered peers, sorts them by on-chain issuer ID,
+    /// and returns the position of the sender in that sorted list.
+    /// Returns `None` if the peer is not in the registry.
+    fn get_dense_index(&self, peer_id: &PeerId) -> Option<u8> {
+        let mut peers = self.key_registry.registered_peers();
+        // Sort by on-chain issuer ID to get deterministic dense ordering
+        peers.sort_by_key(|p| extract_issuer_id(p));
+        peers.iter().position(|p| p == peer_id).map(|i| i as u8)
+    }
+
+    /// Verify that the sender is the expected leader for this cycle.
+    ///
+    /// During config propagation (~5s window), accept proposals from
+    /// the leader under current OR +-1 num_issuers count to tolerate
+    /// nodes that haven't yet seen the latest registry update.
+    ///
+    /// Zeroed and temp PeerIds are always accepted (they'll be re-verified
+    /// after re-keying assigns a real identity).
+    ///
+    /// When a non-leader proposal is detected and a `peer_scorer` is available,
+    /// records an `invalid_message` event against the offending peer.
+    fn is_valid_leader(&self, sender_id: &PeerId, cycle: u64) -> bool {
+        // Skip verification for zeroed or temp PeerIds — they can't be
+        // mapped to a dense index and will be re-verified after re-keying.
+        if Self::is_zeroed_peer_id(sender_id) || Self::is_temp_peer_id(sender_id) {
+            return true;
+        }
+
+        let current_count = self.runtime_config.num_issuers() as u64;
+        if current_count == 0 {
+            return true; // Safety: can't verify without count
+        }
+
+        let sender_index = match self.get_dense_index(sender_id) {
+            Some(idx) => idx as u64,
+            None => {
+                warn!(
+                    code = "CONSENSUS-020",
+                    ?sender_id,
+                    "Leader check: sender not in key registry"
+                );
+                // Record invalid message for unregistered peer attempting proposals
+                if let Some(ref scorer) = self.peer_scorer {
+                    scorer.record_invalid_message(sender_id);
+                }
+                return false;
+            }
+        };
+
+        // Accept if leader under current config
+        if sender_index == cycle % current_count {
+            return true;
+        }
+
+        // Also accept under previous config (-1 issuer) for propagation tolerance
+        if current_count > 1 {
+            let prev_count = current_count - 1;
+            if sender_index == cycle % prev_count {
+                return true;
+            }
+        }
+
+        // Also accept under next config (+1 issuer) for propagation tolerance
+        let next_count = current_count + 1;
+        if sender_index == cycle % next_count {
+            return true;
+        }
+
+        // Not the leader under any acceptable config — record violation
+        if let Some(ref scorer) = self.peer_scorer {
+            warn!(
+                code = "CONSENSUS-020",
+                ?sender_id,
+                cycle,
+                sender_index,
+                current_count,
+                "Non-leader proposal detected, penalizing peer"
+            );
+            scorer.record_invalid_message(sender_id);
+        }
+
+        false
     }
 
     /// Run a consensus cycle
@@ -456,6 +599,9 @@ where
             state.start_round(cycle_number);
             self.aggregator.write().await.reset();
         }
+
+        // GC equivocation detector: remove entries older than current_cycle - 2
+        self.equivocation_detector.gc(cycle_number);
 
         // Replay any messages that arrived early (buffered as "future" in previous cycles).
         // Also clear stale messages to prevent unbounded buffer growth.
@@ -891,10 +1037,47 @@ where
             }
         };
 
+        // Equivocation detection: for vote/sign messages, check if this peer
+        // already sent a *different* payload for the same (cycle, phase).
+        if is_vote_or_sign(&message) {
+            let hash = content_hash(&message);
+            if self.equivocation_detector.check(&from, cycle_number, phase, hash) {
+                error!(
+                    code = "CONSENSUS-021",
+                    ?from,
+                    cycle_number,
+                    ?phase,
+                    "EQUIVOCATION DETECTED: peer sent conflicting vote/sign"
+                );
+                // Double penalty via peer scorer
+                if let Some(ref scorer) = self.peer_scorer {
+                    scorer.record_invalid_message(&from);
+                    scorer.record_invalid_message(&from);
+                }
+                return Ok(());
+            }
+        }
+
         let result = {
             let mut handler = self.message_handler.write().await;
             handler.handle_message(from, message, cycle_number, phase)
         };
+
+        // Leader identity verification: reject proposals from non-leaders.
+        // Extract the sender PeerId from proposal variants and verify they are the
+        // expected leader for the current cycle, with +-1 issuer count tolerance
+        // for config propagation windows.
+        if let Some(proposal_sender) = result.proposal_sender() {
+            if !self.is_valid_leader(&proposal_sender, cycle_number) {
+                warn!(
+                    code = "CONSENSUS-020",
+                    ?proposal_sender,
+                    cycle_number,
+                    "Proposal from non-leader, rejecting"
+                );
+                return Ok(());
+            }
+        }
 
         match result {
             MessageHandleResult::ProcessPriceVote {
@@ -8669,6 +8852,7 @@ mod tests {
         // Without orchestrator, handler should return Ok(()) and log warning
         let result = protocol
             .handle_bridge_l3_to_arb_proposal(
+                test_peer_id(1),              // from
                 test_peer_id(1),              // leader_id
                 1,                            // cycle_number
                 vec![U256::from(1)],          // order_ids
@@ -8705,6 +8889,7 @@ mod tests {
         // Without orchestrator, handler should return Ok(()) and log warning
         let result = protocol
             .handle_release_to_vault_proposal(
+                test_peer_id(1),              // from
                 test_peer_id(1),              // leader_id
                 1,                            // cycle_number
                 vec![U256::from(1)],          // order_ids

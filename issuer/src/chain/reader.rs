@@ -44,6 +44,7 @@ abigen!(
     r#"[
         function getAggregatedPubkey() external view returns (bytes)
         function activeIssuerCount() external view returns (uint256)
+        function registryNonce() external view returns (uint256)
     ]"#
 );
 
@@ -476,67 +477,67 @@ where
     async fn get_issuer_registry(&self) -> Result<Vec<Issuer>, Error> {
         debug!(
             contract = ?self.config.contracts.issuer_registry,
-            "Fetching issuer registry from IssuerRegistry contract"
+            "Fetching issuer registry via getActiveIssuerEndpoints()"
         );
 
-        // Use raw eth_call for getIssuers() because the contract returns
-        // TypesLib.Issuer structs which require tuple ABI decoding that
-        // ethers-rs human-readable bindings don't handle correctly.
-        let selector = &ethers::utils::keccak256("getIssuers()")[..4];
+        // Call getActiveIssuerEndpoints() which returns (uint256[] ids, bytes32[] ips, bytes[] pubkeys)
+        // This only returns active issuers and preserves on-chain IDs.
+        let selector = &ethers::utils::keccak256("getActiveIssuerEndpoints()")[..4];
         let call_data = ethers::types::Bytes::from(selector.to_vec());
         let tx = ethers::types::TransactionRequest::new()
             .to(self.config.contracts.issuer_registry)
             .data(call_data);
 
         let result = self.provider.call(&tx.into(), None).await
-            .map_err(|e| Error::ChainRead(format!("Failed to call getIssuers: {}", e)))?;
+            .map_err(|e| Error::ChainRead(format!("Failed to call getActiveIssuerEndpoints: {}", e)))?;
 
-        // Decode ABI: returns Issuer[] where Issuer = (address, bytes32, bytes, uint256, uint256)
-        let issuer_tuple = ethers::abi::ParamType::Tuple(vec![
-            ethers::abi::ParamType::Address,
-            ethers::abi::ParamType::FixedBytes(32),
-            ethers::abi::ParamType::Bytes,
-            ethers::abi::ParamType::Uint(256),
-            ethers::abi::ParamType::Uint(256),
-        ]);
-        let return_type = vec![ethers::abi::ParamType::Array(Box::new(issuer_tuple))];
+        // Decode ABI: returns (uint256[], bytes32[], bytes[])
+        let return_type = vec![
+            ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Uint(256))),
+            ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::FixedBytes(32))),
+            ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Bytes)),
+        ];
 
         let tokens = ethers::abi::decode(&return_type, &result)
-            .map_err(|e| Error::ChainRead(format!("Failed to decode getIssuers response: {}", e)))?;
+            .map_err(|e| Error::ChainRead(format!("Failed to decode getActiveIssuerEndpoints response: {}", e)))?;
 
-        let issuer_array = match tokens.into_iter().next() {
-            Some(ethers::abi::Token::Array(arr)) => arr,
+        let ids = match tokens.get(0) {
+            Some(ethers::abi::Token::Array(arr)) => arr.clone(),
+            _ => return Ok(Vec::new()),
+        };
+        let ips = match tokens.get(1) {
+            Some(ethers::abi::Token::Array(arr)) => arr.clone(),
+            _ => return Ok(Vec::new()),
+        };
+        let pubkeys = match tokens.get(2) {
+            Some(ethers::abi::Token::Array(arr)) => arr.clone(),
             _ => return Ok(Vec::new()),
         };
 
-        let mut issuers = Vec::new();
-        for token in issuer_array {
-            if let ethers::abi::Token::Tuple(fields) = token {
-                if fields.len() != 5 {
-                    continue;
-                }
-                let addr = fields[0].clone().into_address().unwrap_or_default();
-                let ip_bytes = fields[1].clone().into_fixed_bytes().unwrap_or_default();
-                let bls_pubkey = fields[2].clone().into_bytes().unwrap_or_default();
-                let status = fields[3].clone().into_uint().unwrap_or_default();
-                let registered_at = fields[4].clone().into_uint().unwrap_or_default();
+        if ids.len() != ips.len() || ids.len() != pubkeys.len() {
+            return Err(Error::ChainRead(format!(
+                "getActiveIssuerEndpoints array length mismatch: ids={}, ips={}, pubkeys={}",
+                ids.len(), ips.len(), pubkeys.len()
+            )));
+        }
 
-                // Skip inactive issuers (status != 1)
-                if status != U256::from(1u64) {
-                    continue;
-                }
+        let mut issuers = Vec::with_capacity(ids.len());
+        for i in 0..ids.len() {
+            let id = ids[i].clone().into_uint().unwrap_or_default().as_u64();
+            let ip_bytes = ips[i].clone().into_fixed_bytes().unwrap_or_default();
+            let bls_pubkey = pubkeys[i].clone().into_bytes().unwrap_or_default();
 
-                let mut ip_h256 = [0u8; 32];
-                ip_h256.copy_from_slice(&ip_bytes);
+            let mut ip_h256 = [0u8; 32];
+            ip_h256.copy_from_slice(&ip_bytes);
 
-                issuers.push(Issuer {
-                    addr,
-                    ip: ip_h256.into(),
-                    bls_pubkey: bls_pubkey.into(),
-                    status,
-                    registered_at,
-                });
-            }
+            issuers.push(Issuer {
+                id,
+                addr: Address::zero(),
+                ip: ip_h256.into(),
+                bls_pubkey: bls_pubkey.into(),
+                status: U256::one(),
+                registered_at: U256::zero(),
+            });
         }
 
         debug!(count = issuers.len(), "Fetched issuer registry successfully");
@@ -805,6 +806,50 @@ where
             quantities: inventory,
             nav,
         })
+    }
+
+    async fn get_active_issuer_count(&self) -> Result<u64, Error> {
+        let contract = self.issuer_registry_contract();
+        let result = contract
+            .active_issuer_count()
+            .call()
+            .await
+            .map_err(|e| {
+                Error::ChainRead(format!("Failed to fetch activeIssuerCount: {}", e))
+            })?;
+
+        let count = result.as_u64();
+        debug!(active_issuer_count = count, "Fetched activeIssuerCount from IssuerRegistry");
+        Ok(count)
+    }
+
+    async fn get_registry_nonce(&self) -> Result<u64, Error> {
+        let contract = self.issuer_registry_contract();
+        let result = contract
+            .registry_nonce()
+            .call()
+            .await
+            .map_err(|e| {
+                Error::ChainRead(format!("Failed to fetch registryNonce: {}", e))
+            })?;
+
+        let nonce = result.as_u64();
+        debug!(registry_nonce = nonce, "Fetched registryNonce from IssuerRegistry");
+        Ok(nonce)
+    }
+
+    async fn get_aggregated_pubkey(&self) -> Result<Vec<u8>, Error> {
+        let contract = self.issuer_registry_contract();
+        let result = contract
+            .get_aggregated_pubkey()
+            .call()
+            .await
+            .map_err(|e| {
+                Error::ChainRead(format!("Failed to fetch getAggregatedPubkey: {}", e))
+            })?;
+
+        debug!(aggregated_pubkey_len = result.len(), "Fetched aggregated pubkey from IssuerRegistry");
+        Ok(result.to_vec())
     }
 }
 

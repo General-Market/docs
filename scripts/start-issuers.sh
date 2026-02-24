@@ -104,6 +104,7 @@ $BINARY \
     --bls-key-seed-index 0 \
     --signature-threshold 2 \
     --num-issuers 3 \
+    --registry-sync \
     --ntp-server "" \
     --data-node-url http://localhost:8200 \
     --itp-id 0x0000000000000000000000000000000000000000000000000000000000000001 \
@@ -111,6 +112,7 @@ $BINARY \
     ${ARB_CUSTODY:+--arb-custody "$ARB_CUSTODY"} \
     ${BLS_CUSTODY:+--issuer-custody-arb "$BLS_CUSTODY"} \
     --symbol-map-file data/symbol-map.json \
+    --wal-path logs/consensus-1.wal \
     > logs/issuer-1.log 2>&1 &
 ISSUER_1_PID=$!
 
@@ -130,6 +132,7 @@ $BINARY \
     --bls-key-seed-index 1 \
     --signature-threshold 2 \
     --num-issuers 3 \
+    --registry-sync \
     --ntp-server "" \
     --data-node-url http://localhost:8200 \
     --itp-id 0x0000000000000000000000000000000000000000000000000000000000000001 \
@@ -137,6 +140,7 @@ $BINARY \
     ${ARB_CUSTODY:+--arb-custody "$ARB_CUSTODY"} \
     ${BLS_CUSTODY:+--issuer-custody-arb "$BLS_CUSTODY"} \
     --symbol-map-file data/symbol-map.json \
+    --wal-path logs/consensus-2.wal \
     > logs/issuer-2.log 2>&1 &
 ISSUER_2_PID=$!
 
@@ -156,6 +160,7 @@ $BINARY \
     --bls-key-seed-index 2 \
     --signature-threshold 2 \
     --num-issuers 3 \
+    --registry-sync \
     --ntp-server "" \
     --data-node-url http://localhost:8200 \
     --itp-id 0x0000000000000000000000000000000000000000000000000000000000000001 \
@@ -163,6 +168,7 @@ $BINARY \
     ${ARB_CUSTODY:+--arb-custody "$ARB_CUSTODY"} \
     ${BLS_CUSTODY:+--issuer-custody-arb "$BLS_CUSTODY"} \
     --symbol-map-file data/symbol-map.json \
+    --wal-path logs/consensus-3.wal \
     > logs/issuer-3.log 2>&1 &
 ISSUER_3_PID=$!
 

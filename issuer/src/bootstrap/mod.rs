@@ -55,6 +55,13 @@ pub struct BootstrapParams {
     pub receipt_timeout_secs: u64,
     /// Custom consensus timeout total in milliseconds (overrides default 800ms).
     pub consensus_timeout_ms: Option<u64>,
+    /// Maximum connections allowed from a single IP address (0 = unlimited, default: 2).
+    /// Loopback IPs (127.x.x.x) are always exempt for local dev.
+    pub p2p_max_per_ip: usize,
+    /// Rate limit: tokens refilled per second per peer connection (default: 100).
+    pub p2p_rate_limit: f64,
+    /// Rate burst: maximum burst size / token bucket capacity (default: 100).
+    pub p2p_rate_burst: f64,
 }
 
 /// Main bootstrap orchestrator

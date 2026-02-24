@@ -17,6 +17,7 @@ use common::error::Error;
 use common::types::{P2PMessage, PeerId};
 
 use super::codec::{self, Codec};
+use super::rate_limit::RateBucket;
 use super::tls::{P2PStream, TlsConfig};
 
 /// Reconnection configuration
@@ -110,6 +111,8 @@ impl PeerConnection {
         incoming_tx: mpsc::Sender<(PeerId, P2PMessage)>,
         tls_config: Option<Arc<TlsConfig>>,
         our_peer_id: Option<PeerId>,
+        rate_limit: f64,
+        rate_burst: f64,
     ) -> Result<PeerConnection, Error> {
         debug!(?peer_id, %addr, "Connecting to peer");
 
@@ -117,7 +120,7 @@ impl PeerConnection {
             .await
             .map_err(|e| Error::P2PConnection(format!("Connection failed: {}", e)))?;
 
-        let conn = Self::setup_connection(peer_id, addr, stream, connections, incoming_tx, tls_config, false)
+        let conn = Self::setup_connection(peer_id, addr, stream, connections, incoming_tx, tls_config, false, rate_limit, rate_burst)
             .await?;
 
         // Send heartbeat to identify ourselves to the remote peer
@@ -145,6 +148,8 @@ impl PeerConnection {
         incoming_tx: mpsc::Sender<(PeerId, P2PMessage)>,
         tls_config: Option<Arc<TlsConfig>>,
         our_peer_id: PeerId,
+        rate_limit: f64,
+        rate_burst: f64,
     ) -> Result<(), Error> {
         debug!(%addr, "Setting up incoming connection");
 
@@ -163,6 +168,8 @@ impl PeerConnection {
             incoming_tx,
             tls_config,
             true,
+            rate_limit,
+            rate_burst,
         )
         .await?;
 
@@ -196,6 +203,8 @@ impl PeerConnection {
         incoming_tx: mpsc::Sender<(PeerId, P2PMessage)>,
         tls_config: Option<Arc<TlsConfig>>,
         is_server: bool,
+        rate_limit: f64,
+        rate_burst: f64,
     ) -> Result<PeerConnection, Error> {
         // Apply TLS if configured, otherwise wrap as plaintext
         let stream: P2PStream = if let Some(config) = tls_config {
@@ -212,6 +221,9 @@ impl PeerConnection {
         // Spawn writer task
         let writer_handle = tokio::spawn(Self::writer_loop(write_half, outgoing_rx));
 
+        // Create per-connection rate bucket
+        let rate_bucket = RateBucket::new(rate_burst, rate_limit);
+
         // Spawn reader task
         let reader_handle = tokio::spawn(Self::reader_loop(
             read_half,
@@ -219,6 +231,7 @@ impl PeerConnection {
             incoming_tx,
             connections.clone(),
             addr,
+            rate_bucket,
         ));
 
         Ok(PeerConnection {
@@ -263,6 +276,7 @@ impl PeerConnection {
         incoming_tx: mpsc::Sender<(PeerId, P2PMessage)>,
         connections: Arc<RwLock<HashMap<PeerId, PeerConnection>>>,
         addr: SocketAddr,
+        mut rate_bucket: RateBucket,
     ) {
         let mut codec = Codec::new();
         let mut buf = [0u8; 4096];
@@ -281,6 +295,17 @@ impl PeerConnection {
                     while let Some(result) = codec.decode_next() {
                         match result {
                             Ok(message) => {
+                                // Rate limit check: drop message if bucket empty
+                                if !rate_bucket.try_consume() {
+                                    warn!(
+                                        code = "INFRA-020",
+                                        ?actual_peer_id,
+                                        %addr,
+                                        "Rate limit exceeded, dropping message"
+                                    );
+                                    continue;
+                                }
+
                                 // If this connection has a temporary peer_id (not yet
                                 // identified), extract the actual peer ID from the message
                                 // and re-key the connection map entry.
@@ -323,7 +348,10 @@ impl PeerConnection {
         }
     }
 
-    /// Reconnection loop with exponential backoff
+    /// Reconnection loop with exponential backoff.
+    ///
+    /// If a `peer_scorer` is provided, the loop checks `is_banned()` before
+    /// each attempt and aborts reconnection to banned peers.
     pub async fn reconnect_loop(
         peer_id: PeerId,
         addr: SocketAddr,
@@ -331,10 +359,21 @@ impl PeerConnection {
         incoming_tx: mpsc::Sender<(PeerId, P2PMessage)>,
         tls_config: Option<Arc<TlsConfig>>,
         our_peer_id: Option<PeerId>,
+        rate_limit: f64,
+        rate_burst: f64,
+        peer_scorer: Option<Arc<super::peer_scoring::PeerScorer>>,
     ) {
         let mut backoff_ms = INITIAL_BACKOFF_MS;
 
         loop {
+            // Skip reconnection to banned peers
+            if let Some(ref scorer) = peer_scorer {
+                if scorer.is_banned(&peer_id) {
+                    debug!(?peer_id, "Skipping reconnection to banned peer");
+                    return;
+                }
+            }
+
             // Check if already connected
             {
                 let conns = connections.read().await;
@@ -357,6 +396,8 @@ impl PeerConnection {
                 incoming_tx.clone(),
                 tls_config.clone(),
                 our_peer_id,
+                rate_limit,
+                rate_burst,
             )
             .await
             {

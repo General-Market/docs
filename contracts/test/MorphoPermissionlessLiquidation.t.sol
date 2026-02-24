@@ -59,7 +59,7 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
         internal
         returns (bytes memory)
     {
-        bytes32 h = keccak256(abi.encode("REGISTRY_SYNC", nonce, newAggPubkey, newActiveCount, newThreshold));
+        bytes32 h = keccak256(abi.encodePacked("REGISTRY_SYNC", nonce, newAggPubkey, newActiveCount, newThreshold));
         return signWithTestIssuers(h);
     }
 

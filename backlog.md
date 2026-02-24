@@ -1,5 +1,18 @@
 # Design Decision Backlog
 
+## Session: 20260225-0400-e1h5 (Phase -1e: /ready health endpoint)
+
+- [DECISION] /ready endpoint added alongside /health. /health reports operational metrics; /ready is a binary readiness gate for deployment orchestration (200 = can participate, 503 = not ready).
+- [DECISION] /ready checks 4 conditions: peers >= threshold-1, BLS keypair loaded, chain reader RPC < 30s old, registry sync caught up. Intentionally does NOT check consensusPaused to avoid deadlocking the deployment ceremony where step 7 waits for /ready and step 8 unpauses.
+- [DECISION] Chain reader liveness tracked via Arc<AtomicU64> timestamp updated after successful get_pending_orders() in the consensus loop. This piggybacks on existing RPC calls rather than adding a dedicated health-check RPC call, minimizing overhead.
+- [DECISION] num_issuers and bls_keypair_loaded captured as static values at IssuerApiState construction time. num_issuers changes only via registry sync (which would restart the node), and BLS keypair is loaded once at boot.
+
+## Session: 20260224-2200-r7b1 (Phase -1b: Mandatory --registry-sync for multi-issuer)
+
+- [DECISION] Issuer refuses to start if num_issuers > 1 and --registry-sync is not set. Without registry-sync, issuers cannot detect join/leave events, causing key registry desync and BLS aggregation failures.
+- [DECISION] Increased initial_scan_blocks from 10_000 to 86_400 (24h of 1s blocks). This gives 24-hour downtime tolerance for registry sync catch-up on restart, preventing missed RegistryStateChanged events after extended outages.
+- [DECISION] Also fixed `crate::consensus::aggregator::compute_threshold` to `issuer::consensus::aggregator::compute_threshold` in main.rs binary — binary crate references the lib crate as `issuer`, not `crate`.
+
 ## Session: 20260225-0100-c1h7 (Phase -1c: Bootstrap from on-chain state)
 
 - [DECISION] ChainReader trait extended with get_active_issuer_count(), get_registry_nonce(), get_aggregated_pubkey() as default-erroring methods for backward compatibility with MockChain
@@ -3992,3 +4005,35 @@ The backtester currently supports one rebalance method: **periodic time-based re
 [DECISION] RegistrySyncHandler now computes `node_index` as dense rank (count of active issuers with ID < ours) and `issuer_registry_index` from the on-chain ID. If this node is removed from the active set, logs ERROR and skips config update instead of pushing invalid indices that would panic.
 
 [FAILED] Considered wrapping entire `ConsensusConfig` in `RwLock<ConsensusConfig>` — rejected because `self.config.*` is accessed 85+ times throughout protocol.rs, and adding `.read().await` everywhere would be a massive, error-prone refactor. Atomics are cleaner for the few fields that change.
+
+## Session: 20260224-2300-k9p1 (Phase -1d: Bootstrap key registry from chain)
+
+[DECISION] `build_key_registry()` now queries on-chain IssuerRegistry as primary path. Previously it returned `None` when `!self.params.test_key_seeds`, which meant production nodes NEVER had a key registry and BLS verification from peers was broken. The new flow: (1) query chain for active issuers, (2) validate each BLS pubkey is correct length (128 bytes) AND a valid on-curve G2 point via `deserialize_g2_point()`, (3) register into InMemoryKeyRegistry. Falls back to deterministic test seeds only if chain query fails/empty AND `test_key_seeds` flag is set.
+
+[DECISION] Made `build_key_registry()` async since it now calls `chain_reader.get_issuer_registry().await`. The caller `build_keys()` was already async so only needed `.await` at call site.
+
+## Session: 20260224-2320-v4m7 (Phase 0d: Leader identity verification with dual-view tolerance)
+
+[DECISION] Leader identity verification uses key_registry.registered_peers() to compute dense index from PeerId. Sorting all registered peers by extract_issuer_id() and finding position gives the same dense index used by LeaderElector (cycle % num_issuers). Added +-1 issuer count tolerance window for config propagation lag (~5s window when issuer set changes).
+
+[DECISION] Added proposal_sender() method on MessageHandleResult enum to centralize extraction of sender PeerId from all 19 proposal variants. This avoids duplicating the is_valid_leader check inside each match arm in handle_message(). The check runs once before the main match block, rejecting non-leader proposals with CONSENSUS-020 warning.
+
+## Session: 20260224-2340-p4v2 (P2P-4: Leader identity verification — transport-level peer scoring)
+
+[DECISION] PeerScorer wired into ConsensusProtocol via Option<Arc<PeerScorer>> field (not through P2PTransport trait). The trait is generic so concrete transport methods aren't accessible. Builder pattern with_peer_scorer() mirrors with_fill_verifier(). Bootstrap grabs scorer from p2p_transport.peer_scorer() and passes it in.
+
+[DECISION] peer_registry (Arc<RwLock<Vec<PeerId>>>) added to ConsensusProtocol, populated at construction from key_registry.registered_peers() sorted by extract_issuer_id(). Refreshed in apply_pending_config_update() when issuer set changes. Provides deterministic PeerId->index mapping for leader verification.
+
+[DECISION] Zeroed PeerIds (all zeros) and temp PeerIds (first byte 0xFE/0xFF) skip leader verification entirely (return true). These are used during bootstrap before re-keying assigns real identities. Verifying them would always fail since they're not in the registry.
+
+[DECISION] is_valid_leader() now calls peer_scorer.record_invalid_message() in two cases: (1) sender not in key registry, (2) sender index doesn't match expected leader under any config variant. This feeds into the existing peer scoring pipeline (score -10.0 per violation, ban at -50.0).
+
+## Session: 20260224-2350-m7q4 (P2P-7: Observability — metrics + structured logging)
+
+[DECISION] P2PMetrics uses AtomicU64 counters with Relaxed ordering (same pattern as IssuerMetrics). Relaxed is sufficient because these are monotonic counters for diagnostics — no cross-field consistency needed.
+
+[DECISION] P2PMetrics exposed via /health endpoint under a "p2p" key, serialized as P2PMetricsSnapshot via serde. This extends the existing health JSON (which already has consensus, heartbeat sections) rather than creating a separate /metrics endpoint.
+
+[DECISION] Arc<P2PMetrics> created at API state construction time in run_main_loop(), not threaded through bootstrap. The metrics are consumed only by the health endpoint for now; wiring individual counters into rate_limit, wal, peer_scoring, etc. is deferred to when those subsystems actively need to increment them.
+
+[DECISION] Error codes verified non-colliding: INFRA-020 (rate limit), INFRA-021 (connection limit), INFRA-022 (WAL), INFRA-023 (peer ban/partition), CONSENSUS-020 (non-leader proposal), CONSENSUS-021 (equivocation). All are used exclusively within the P2P hardening code — no overlap with existing INFRA-001..019 or CONSENSUS-001..019 error codes.

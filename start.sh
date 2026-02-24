@@ -816,6 +816,7 @@ for i in $(seq 1 $ISSUER_COUNT); do
     ISSUER_ARGS="$ISSUER_ARGS --cycle-duration-ms 200 --min-cycle-gap-ms 20 --consensus-timeout-ms 150 --no-tls"
     ISSUER_ARGS="$ISSUER_ARGS --test-key-seeds --bls-key-seed-index $BLS_IDX"
     ISSUER_ARGS="$ISSUER_ARGS --signature-threshold $SIG_THRESHOLD --num-issuers $ISSUER_COUNT"
+    ISSUER_ARGS="$ISSUER_ARGS --registry-sync"
     ISSUER_ARGS="$ISSUER_ARGS --ntp-server \"\""
     ISSUER_ARGS="$ISSUER_ARGS --log-level ${LOG_LEVEL}"
 
@@ -825,6 +826,7 @@ for i in $(seq 1 $ISSUER_COUNT); do
     [ -n "$BLS_CUSTODY" ] && ISSUER_ARGS="$ISSUER_ARGS --issuer-custody-arb $BLS_CUSTODY"
     [ -n "$MOCK_USDT" ] && [ "$MOCK_USDT" != "0x0000000000000000000000000000000000000000" ] && ISSUER_ARGS="$ISSUER_ARGS --mock-usdt $MOCK_USDT"
     ISSUER_ARGS="$ISSUER_ARGS --deployment-file deployments/active-deployment.json"
+    ISSUER_ARGS="$ISSUER_ARGS --wal-path logs/consensus-$i.wal"
     [ -f "$SCRIPT_DIR/data/symbol-map.json" ] && ISSUER_ARGS="$ISSUER_ARGS --symbol-map-file $SCRIPT_DIR/data/symbol-map.json"
 
     # Build peer list (all other issuers)
