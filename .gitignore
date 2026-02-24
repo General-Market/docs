@@ -80,3 +80,18 @@ data/symbol-map-local.json
 
 # Stress test reports
 scripts/stress-test/reports/
+
+# CoinGecko logo images (~8800 files)
+data/logos/
+
+# YouTube research data
+_bmad-output/
+
+# Python virtual environments
+vision-bot/.venv/
+
+# Environment files with secrets
+.env.*
+
+# Root-level screenshots from debugging sessions
+/*.png
