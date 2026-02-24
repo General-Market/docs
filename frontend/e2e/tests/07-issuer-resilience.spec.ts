@@ -106,8 +106,9 @@ test.describe.serial('Issuer Resilience', () => {
     // --- Verify consensus CONTINUES with 2/3 quorum ---
 
     // 7. Wait for at least 1 successful consensus round on surviving issuers
-    await waitForConsensusProgress(1, 1, baseline1, 90_000);
-    await waitForConsensusProgress(2, 1, baseline2, 90_000);
+    // With real consensus (chain writes), most price rounds fail so allow 180s
+    await waitForConsensusProgress(1, 1, baseline1, 180_000);
+    await waitForConsensusProgress(2, 1, baseline2, 180_000);
 
     // --- Restart killed node ---
 
