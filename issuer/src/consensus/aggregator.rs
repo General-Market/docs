@@ -29,7 +29,7 @@ pub const MAX_BATCH_RETRIES: u8 = 3;
 /// - 20 nodes → 11
 pub fn calculate_threshold(num_issuers: usize) -> usize {
     if num_issuers == 0 {
-        return 1;
+        return 2;
     }
     let scaled = (num_issuers * 11 + 19) / 20; // ceil(n * 11 / 20)
     scaled.max(2)
@@ -96,6 +96,7 @@ impl SignatureAggregator {
 
     /// Update the signature threshold at runtime (for registry auto-update)
     pub fn set_threshold(&mut self, threshold: usize) {
+        assert!(threshold >= 2, "BLS threshold must be >= 2, got {}", threshold);
         self.required_signatures = threshold;
     }
 
@@ -408,7 +409,7 @@ mod tests {
 
     #[test]
     fn test_calculate_threshold_zero_nodes() {
-        // P2.2: 0 issuers should require 1 signature (not 0) to prevent vacuous consensus
-        assert_eq!(calculate_threshold(0), 1);
+        // 0 issuers must still require >= 2 signatures to prevent vacuous consensus
+        assert_eq!(calculate_threshold(0), 2);
     }
 }

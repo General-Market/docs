@@ -176,9 +176,15 @@ pub fn filter_merged_order(
     // Recalculate net amount from included orders only
     let mut net_signed = ethers::types::I256::zero();
     for order in &filter_result.included {
+        let i256_amount = ethers::types::I256::try_from(order.amount).unwrap_or_else(|_| {
+            panic!(
+                "Order {} amount {} exceeds I256::MAX -- cannot net safely",
+                order.id, order.amount
+            )
+        });
         let signed_amount = match order.side {
-            Side::Buy => ethers::types::I256::from_raw(order.amount),
-            Side::Sell => -ethers::types::I256::from_raw(order.amount),
+            Side::Buy => i256_amount,
+            Side::Sell => -i256_amount,
         };
         net_signed += signed_amount;
     }

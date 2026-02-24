@@ -106,10 +106,10 @@ pub struct PriceDisagreement {
     pub my_price: U256,
     /// The leader's price
     pub leader_price: U256,
-    /// The percentage difference (as a decimal, e.g., 0.05 = 5%)
-    pub difference_percent: f64,
-    /// The tolerance threshold for this asset type
-    pub tolerance: f64,
+    /// The difference in basis points (e.g., 500 = 5%)
+    pub difference_bps: u64,
+    /// The tolerance threshold in basis points (e.g., 200 = 2%)
+    pub tolerance_bps: u64,
 }
 
 /// Well-known stablecoin addresses (Ethereum mainnet reference only)
@@ -215,37 +215,38 @@ impl ToleranceValidator {
             if let Some(&leader_price) = leader_map.get(&my_price.asset) {
                 let tolerance = self.get_tolerance(my_price.asset);
 
-                // Calculate percentage difference using U256 arithmetic
-                // diff_percent = abs(my - leader) / leader
+                // Calculate difference using pure U256 arithmetic
                 let diff = if my_price.price >= leader_price.price {
                     my_price.price - leader_price.price
                 } else {
                     leader_price.price - my_price.price
                 };
 
-                // Avoid division by zero
-                let difference_percent = if leader_price.price.is_zero() {
-                    if my_price.price.is_zero() {
-                        0.0
-                    } else {
-                        f64::INFINITY
-                    }
+                // Tolerance in basis points (e.g., 0.02 => 200 bps)
+                let tolerance_bps = (tolerance * 10000.0) as u64;
+                let exceeds_tolerance = if leader_price.price.is_zero() {
+                    !my_price.price.is_zero() // zero vs non-zero = infinite difference
                 } else {
-                    // Convert to f64 for percentage calculation
-                    // This is safe for typical price values but may lose precision for very large numbers
-                    let diff_f64 = diff.as_u128() as f64;
-                    let leader_f64 = leader_price.price.as_u128() as f64;
-                    diff_f64 / leader_f64
+                    // difference_bps = (diff * 10000) / leader_price
+                    let diff_bps = (diff * U256::from(10000u64)) / leader_price.price;
+                    diff_bps > U256::from(tolerance_bps)
                 };
 
-                if difference_percent > tolerance {
+                if exceeds_tolerance {
+                    // Compute diff_bps for logging/storage (safe: only reached when leader != 0 or special case)
+                    let diff_bps_val = if leader_price.price.is_zero() {
+                        u64::MAX // infinite difference marker
+                    } else {
+                        ((diff * U256::from(10000u64)) / leader_price.price).as_u64()
+                    };
+
                     warn!(
                         code = "E005",
                         asset = ?my_price.asset,
                         my_price = %my_price.price,
                         leader_price = %leader_price.price,
-                        difference_percent = difference_percent * 100.0,
-                        tolerance_percent = tolerance * 100.0,
+                        difference_bps = diff_bps_val,
+                        tolerance_bps = tolerance_bps,
                         "Price disagreement detected"
                     );
 
@@ -253,8 +254,8 @@ impl ToleranceValidator {
                         asset: my_price.asset,
                         my_price: my_price.price,
                         leader_price: leader_price.price,
-                        difference_percent,
-                        tolerance,
+                        difference_bps: diff_bps_val,
+                        tolerance_bps,
                     });
                 }
             }
@@ -553,7 +554,7 @@ mod tests {
 
         assert!(!result.agrees);
         assert_eq!(result.disagreements.len(), 1);
-        assert!(result.disagreements[0].difference_percent > 0.02);
+        assert!(result.disagreements[0].difference_bps > 200); // > 2% = 200 bps
     }
 
     #[test]
@@ -581,7 +582,7 @@ mod tests {
 
         assert!(!result.agrees);
         assert_eq!(result.disagreements.len(), 1);
-        assert!((result.disagreements[0].tolerance - 0.005).abs() < 0.0001);
+        assert_eq!(result.disagreements[0].tolerance_bps, 50); // 0.5% = 50 bps
     }
 
     #[test]

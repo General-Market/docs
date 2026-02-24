@@ -6,6 +6,7 @@
 //! 3. Failure recovery: Reset to on-chain nonce on tx rejection
 //! 4. Reorg handling: Monitor for tx not included, resubmit if needed
 
+use std::collections::BTreeSet;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -44,6 +45,10 @@ pub struct NonceManager {
     pending_txs: DashMap<U256, PendingTx>,
     /// Whether the nonce has been initialized from chain
     initialized: std::sync::atomic::AtomicBool,
+    /// Nonces currently in-flight (assigned but not yet confirmed or failed)
+    in_flight: Arc<tokio::sync::Mutex<BTreeSet<u64>>>,
+    /// Nonces reclaimed from failed transactions, available for reuse
+    reclaim_queue: Arc<tokio::sync::Mutex<BTreeSet<u64>>>,
 }
 
 impl NonceManager {
@@ -59,6 +64,8 @@ impl NonceManager {
             local_nonce: AtomicU64::new(0),
             pending_txs: DashMap::new(),
             initialized: std::sync::atomic::AtomicBool::new(false),
+            in_flight: Arc::new(tokio::sync::Mutex::new(BTreeSet::new())),
+            reclaim_queue: Arc::new(tokio::sync::Mutex::new(BTreeSet::new())),
         }
     }
 
@@ -89,7 +96,8 @@ impl NonceManager {
 
     /// Get the next nonce for transaction submission
     ///
-    /// Atomically increments the local nonce counter.
+    /// Checks the reclaim queue first for reusable nonces from failed transactions,
+    /// then falls back to atomically incrementing the local nonce counter.
     /// Initializes from chain if not already done.
     pub async fn get_next_nonce(&self) -> Result<U256, Error> {
         // Initialize if needed
@@ -97,8 +105,27 @@ impl NonceManager {
             self.initialize().await?;
         }
 
-        // Atomically fetch and increment
+        // First check if we have reclaimed nonces to reuse
+        {
+            let mut reclaim = self.reclaim_queue.lock().await;
+            if let Some(&nonce) = reclaim.iter().next() {
+                reclaim.remove(&nonce);
+                drop(reclaim);
+                self.in_flight.lock().await.insert(nonce);
+
+                debug!(
+                    address = ?self.address,
+                    nonce = nonce,
+                    "Reusing reclaimed nonce for transaction"
+                );
+
+                return Ok(U256::from(nonce));
+            }
+        }
+
+        // Otherwise allocate the next sequential nonce
         let nonce = self.local_nonce.fetch_add(1, Ordering::SeqCst);
+        self.in_flight.lock().await.insert(nonce);
 
         debug!(
             address = ?self.address,
@@ -145,22 +172,24 @@ impl NonceManager {
         }
     }
 
-    /// Handle a transaction failure by resetting nonce if needed
+    /// Handle a transaction failure by reclaiming the nonce for reuse
     ///
-    /// If the error indicates a nonce issue, resets to the failed nonce
-    /// so it can be reused.
+    /// If the error indicates the nonce was already used on-chain, resyncs instead.
+    /// For all other failures (revert, timeout, etc.), the nonce is added to the
+    /// reclaim queue so it can be reused by the next `get_next_nonce()` call.
     ///
     /// # Arguments
     /// * `nonce` - The nonce that failed
     /// * `error_msg` - The error message
     pub async fn handle_failure(&self, nonce: U256, error_msg: &str) -> Result<(), Error> {
-        // Remove from pending
+        let nonce_u64 = nonce.as_u64();
+        self.in_flight.lock().await.remove(&nonce_u64);
         self.pending_txs.remove(&nonce);
 
         let error_lower = error_msg.to_lowercase();
 
-        // Check if we need to reset nonce
         if error_lower.contains("nonce too low") || error_lower.contains("nonce has already been used") {
+            // Nonce already used on-chain -- don't reclaim, resync
             warn!(
                 code = "INFRA-002",
                 nonce = ?nonce,
@@ -171,24 +200,25 @@ impl NonceManager {
             // Re-sync with chain (with retry for transient failures)
             self.resync_with_retry(3).await?;
         } else {
-            // For other errors, we might need to allow nonce reuse
-            // Only reset if this was the highest pending nonce
-            let nonce_u64 = nonce.as_u64();
-            let current = self.local_nonce.load(Ordering::SeqCst);
-
-            if nonce_u64 == current.saturating_sub(1) {
-                // This was the last nonce we gave out, we can reuse it
-                self.local_nonce
-                    .compare_exchange(current, nonce_u64, Ordering::SeqCst, Ordering::SeqCst)
-                    .ok();
-                debug!(
-                    nonce = nonce_u64,
-                    "Allowing nonce reuse after failure"
-                );
-            }
+            // Other failures (revert, timeout, etc.) -- reclaim for reuse
+            self.reclaim_queue.lock().await.insert(nonce_u64);
+            debug!(
+                nonce = nonce_u64,
+                "Nonce reclaimed for reuse after failure"
+            );
         }
 
         Ok(())
+    }
+
+    /// Handle a successful transaction by removing it from in-flight tracking
+    ///
+    /// # Arguments
+    /// * `nonce` - The nonce that succeeded
+    pub async fn handle_success(&self, nonce: U256) {
+        let nonce_u64 = nonce.as_u64();
+        self.in_flight.lock().await.remove(&nonce_u64);
+        self.pending_txs.remove(&nonce);
     }
 
     /// Re-synchronize nonce with on-chain state, with retry on transient failures
@@ -254,6 +284,10 @@ impl NonceManager {
 
         // Clear pending transactions that are now stale
         self.pending_txs.retain(|nonce, _| nonce.as_u64() >= on_chain_u64);
+
+        // Clear reclaim queue and in-flight tracking -- stale after resync
+        self.reclaim_queue.lock().await.clear();
+        self.in_flight.lock().await.clear();
 
         Ok(())
     }
@@ -375,5 +409,108 @@ mod tests {
 
         assert_eq!(tx.nonce, U256::from(42));
         assert_eq!(tx.check_count, 0);
+    }
+
+    #[tokio::test]
+    async fn test_handle_failure_reclaims_nonce() {
+        let provider = create_test_provider();
+        let address = Address::random();
+        let manager = NonceManager::new(address, provider);
+
+        // Simulate initialized state with nonce 10
+        manager.local_nonce.store(10, Ordering::SeqCst);
+        manager.initialized.store(true, std::sync::atomic::Ordering::SeqCst);
+
+        // Simulate an in-flight nonce
+        manager.in_flight.lock().await.insert(7);
+
+        // Fail nonce 7 with a non-nonce error (e.g., revert)
+        manager.handle_failure(U256::from(7), "execution reverted").await.unwrap();
+
+        // Nonce 7 should be in the reclaim queue
+        let reclaim = manager.reclaim_queue.lock().await;
+        assert!(reclaim.contains(&7), "Failed nonce should be in reclaim queue");
+        drop(reclaim);
+
+        // Nonce 7 should NOT be in-flight anymore
+        let in_flight = manager.in_flight.lock().await;
+        assert!(!in_flight.contains(&7), "Failed nonce should be removed from in-flight");
+    }
+
+    #[tokio::test]
+    async fn test_get_next_nonce_reuses_reclaimed() {
+        let provider = create_test_provider();
+        let address = Address::random();
+        let manager = NonceManager::new(address, provider);
+
+        // Simulate initialized state with nonce 10
+        manager.local_nonce.store(10, Ordering::SeqCst);
+        manager.initialized.store(true, std::sync::atomic::Ordering::SeqCst);
+
+        // Put nonce 7 in reclaim queue
+        manager.reclaim_queue.lock().await.insert(7);
+
+        // get_next_nonce should return 7 (reclaimed) instead of 10 (next sequential)
+        let nonce = manager.get_next_nonce().await.unwrap();
+        assert_eq!(nonce, U256::from(7), "Should reuse reclaimed nonce 7");
+
+        // Reclaim queue should be empty now
+        assert!(manager.reclaim_queue.lock().await.is_empty(), "Reclaim queue should be empty after reuse");
+
+        // Nonce 7 should be in-flight
+        assert!(manager.in_flight.lock().await.contains(&7), "Reclaimed nonce should be in-flight");
+
+        // Next call should allocate from the sequential counter (10)
+        let nonce2 = manager.get_next_nonce().await.unwrap();
+        assert_eq!(nonce2, U256::from(10), "Should allocate sequential nonce after reclaim queue empty");
+    }
+
+    #[tokio::test]
+    async fn test_handle_success_removes_from_in_flight() {
+        let provider = create_test_provider();
+        let address = Address::random();
+        let manager = NonceManager::new(address, provider);
+
+        // Add nonce 5 to in-flight and pending
+        manager.in_flight.lock().await.insert(5);
+        manager.track_pending(U256::from(5), H256::random());
+
+        manager.handle_success(U256::from(5)).await;
+
+        assert!(!manager.in_flight.lock().await.contains(&5), "Should remove from in-flight on success");
+        assert_eq!(manager.pending_count(), 0, "Should remove from pending on success");
+    }
+
+    #[tokio::test]
+    async fn test_concurrent_failure_reclaim_order() {
+        let provider = create_test_provider();
+        let address = Address::random();
+        let manager = NonceManager::new(address, provider);
+
+        manager.local_nonce.store(15, Ordering::SeqCst);
+        manager.initialized.store(true, std::sync::atomic::Ordering::SeqCst);
+
+        // Simulate in-flight nonces 10, 11, 12
+        {
+            let mut in_flight = manager.in_flight.lock().await;
+            in_flight.insert(10);
+            in_flight.insert(11);
+            in_flight.insert(12);
+        }
+
+        // Fail nonces 10 and 12 (out of order)
+        manager.handle_failure(U256::from(12), "timeout").await.unwrap();
+        manager.handle_failure(U256::from(10), "execution reverted").await.unwrap();
+
+        // Reclaim queue should contain both, and BTreeSet ensures lowest first
+        let nonce1 = manager.get_next_nonce().await.unwrap();
+        assert_eq!(nonce1, U256::from(10), "Should reuse lowest reclaimed nonce first");
+
+        let nonce2 = manager.get_next_nonce().await.unwrap();
+        assert_eq!(nonce2, U256::from(12), "Should reuse next reclaimed nonce");
+
+        // After reclaim queue is drained, should allocate sequentially
+        let nonce3 = manager.get_next_nonce().await.unwrap();
+        assert_eq!(nonce3, U256::from(15), "Should allocate sequential nonce after reclaim queue empty");
     }
 }

@@ -254,9 +254,9 @@ fn decompose_and_net_orders_internal(
     }
 }
 
-/// Convert U256 to I256 (panics if > I256::MAX, but USDC amounts never reach that)
+/// Convert U256 to I256 (panics if > I256::MAX)
 fn i256_from_u256(v: U256) -> I256 {
-    I256::from_raw(v)
+    I256::try_from(v).expect("U256 value exceeds I256::MAX -- amount overflow")
 }
 
 /// Convert positive I256 to U256

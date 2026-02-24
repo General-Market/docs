@@ -60,6 +60,12 @@
 - [DECISION] Fix 10 — Added NatSpec to BLSCustody threshold constants documenting they're not enforced on-chain (BLS aggregation enforces implicitly off-chain).
 - [DECISION] Pre-existing test failure `test_confirmFills_sellOrder_partialFill` not caused by our changes — assertion has wrong expected value (100-50+20=70 vs correct 100-30+20=90). Left as-is.
 
+## Session: 20260224-0200-x8m3 (Issuer Audit — Task 2: I256 Overflow)
+
+- [DECISION] Replaced all `I256::from_raw(v)` calls in netting pipeline with `I256::try_from(v)` + panic on overflow. Found 5 locations total: `asset_decompose.rs` (1), `pair.rs` (2), `usdt.rs` (2), `slippage/mod.rs` (2). Left `rebalance.rs` as-is since it already has a proper bounds check wrapper (`i256_from_u256_checked`).
+- [DECISION] Panic instead of cap/warn for overflows. Rationale: capping at I256::MAX/MIN is worse than crashing because it silently processes wrong amounts. A panic halts the cycle and is detectable. An overflow that flips buy/sell direction causes fund loss.
+- [DECISION] Pre-existing test failures `test_tier_filtering_at_boundary` and `test_symbol_map_from_file_invalid_address` confirmed unrelated to our changes (both fail on clean checkout).
+
 ---
 
 ## Session: 20260224-2100-p3x9 (PandaScore Esports Source)
@@ -3911,3 +3917,25 @@ The backtester currently supports one rebalance method: **periodic time-based re
 [DECISION] Removed updateBitmap — bitmap hash is immutable (set once at joinBatch). No on-chain update function. Players must withdraw and rejoin to change strategy.
 
 [DECISION] Solvency trust model documented — per-payout solvency checks are correct but no global invariant. BLS issuer quorum is the trust anchor. Documented as design note in contract.
+
+## Session: 20260224-issuer-bls-audit (Issuer BLS Verification Audit)
+
+[DECISION] Eliminated 9 "key not found" BLS bypass paths in protocol.rs — when a follower couldn't find the leader's public key in the registry, it silently continued and signed the proposal. Changed all 9 to return Error::BlsVerification, rejecting the proposal entirely.
+
+[DECISION] Fixed RecordCollateralMove BLS bypass — the message_hash was computed but discarded with `let _ = message_hash`. Added actual verify_message_hash call with proper Ok(true)/Ok(false)/Err handling, plus added the missing else branch for key-not-found.
+
+[DECISION] Fixed MintBridgedShares silent failure — Ok(false)|Err(_) was being silently swallowed as "address mismatch ok". Split into separate Ok(false) and Err(e) arms that both return Error::BlsVerification. Also added missing else branch for key-not-found.
+
+[DECISION] Aggregator threshold hardened — calculate_threshold(0) now returns 2 (was 1). set_threshold() now asserts threshold >= 2 to prevent vacuous consensus.
+
+[DECISION] Created issuer/src/vision/ stub module — the p2pool->vision rename (commit ebdb26ed) removed p2pool/ but never created vision/. Created minimal mod.rs + config.rs stubs to allow lib compilation. Full vision module implementation is separate work.
+
+## Session: 20260224-task5 (Task 5: Secure data-node connections)
+
+[DECISION] Added validate_data_node_url() to config.rs — rejects http:// URLs unless --mock is set. Applied to all three data-node URL args: --data-node-url, --vision-data-node-url, --arbitration-data-node-url.
+
+[DECISION] Production guards: --no-tls, --bls-key-seed-index, --skip-reconstruction now panic without --mock. These flags were dev-only but had no enforcement.
+
+[DECISION] Bearer token auth via --data-node-token / DATA_NODE_TOKEN env var flows into VisionConfig.data_node_token, ArbitrationConfig.data_node_token, and IssuerConfig.data_node_token. DataNodePriceFetcher::with_token() constructor applies bearer_auth() on all HTTP requests.
+
+[DECISION] Vision engine.rs does not exist yet (only config.rs and mod.rs stubs). Added data_node_token field to VisionConfig for when engine is implemented. The main.rs already passes it through.

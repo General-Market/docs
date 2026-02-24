@@ -27,6 +27,8 @@ pub struct VisionConfig {
     pub staleness_threshold_secs: u64,
     /// Interval (in milliseconds) between tick polling checks.
     pub tick_poll_interval_ms: u64,
+    /// Optional bearer token for authenticating data-node HTTP requests.
+    pub data_node_token: Option<String>,
 }
 
 impl Default for VisionConfig {
@@ -42,6 +44,7 @@ impl Default for VisionConfig {
             commitment_offset: 9,
             staleness_threshold_secs: 300,
             tick_poll_interval_ms: 1000,
+            data_node_token: None,
         }
     }
 }

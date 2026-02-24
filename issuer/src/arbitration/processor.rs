@@ -65,7 +65,7 @@ impl ArbitrationProcessor {
         bls_keypair: BLSKeyPair,
         issuer_index: u8,
     ) -> Self {
-        let price_fetcher = DataNodePriceFetcher::new(&config.data_node_url);
+        let price_fetcher = DataNodePriceFetcher::with_token(&config.data_node_url, config.data_node_token.clone());
         Self {
             config,
             price_fetcher,
