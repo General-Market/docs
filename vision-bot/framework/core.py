@@ -135,6 +135,7 @@ def load_config(path=None):
         "issuer_discovery": "static",
         "issuer_urls": ["http://localhost:10001", "http://localhost:10002", "http://localhost:10003"],
         "pnl_file": "pnl.json",
+        "batch_ids": [],  # empty = join any, e.g. [1, 3, 7]
     }
     # Try TOML parsing
     for p in [path, "config.toml", "../config.toml"]:

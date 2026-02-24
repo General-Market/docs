@@ -918,8 +918,6 @@ else
         ${AISSTREAM_API_KEY:+--aisstream-api-key "$AISSTREAM_API_KEY"} \
         ${FINRA_CLIENT_ID:+--finra-client-id "$FINRA_CLIENT_ID"} \
         ${FINRA_CLIENT_SECRET:+--finra-client-secret "$FINRA_CLIENT_SECRET"} \
-        ${PETFINDER_CLIENT_ID:+--petfinder-client-id "$PETFINDER_CLIENT_ID"} \
-        ${PETFINDER_CLIENT_SECRET:+--petfinder-client-secret "$PETFINDER_CLIENT_SECRET"} \
         ${BGG_API_TOKEN:+--bgg-api-token "$BGG_API_TOKEN"} \
         ${BESTBUY_API_KEY:+--bestbuy-api-key "$BESTBUY_API_KEY"} \
         ${ADZUNA_APP_ID:+--adzuna-app-id "$ADZUNA_APP_ID"} \

@@ -44,6 +44,8 @@ def run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn):
             continue
         if batch_id in tracker.active_ids:
             continue
+        if cfg["batch_ids"] and batch_id not in cfg["batch_ids"]:
+            continue
         if batch.get("paused"):
             continue
         if tracker.active_count >= cfg["max_batches"]:

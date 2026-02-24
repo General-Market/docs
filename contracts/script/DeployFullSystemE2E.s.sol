@@ -72,7 +72,7 @@ contract DeployFullSystemE2E is DeployBLSHelper {
     address public issuer3;
     address public ap;
     address public user;
-    address public constant TEST_USER = 0xC0D3C3ba6c2215b0cBf4375f4c280c0cc6C43850;
+    address public constant TEST_USER = 0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4;
 
     function run() external {
         _setupAccounts();
