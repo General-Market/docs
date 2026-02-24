@@ -2113,7 +2113,7 @@ where
                     asset = ?disagreement.asset,
                     my_price = %disagreement.my_price,
                     leader_price = %disagreement.leader_price,
-                    diff_pct = disagreement.difference_percent * 100.0,
+                    diff_bps = disagreement.difference_bps,
                     "Price disagreement detail"
                 );
             }

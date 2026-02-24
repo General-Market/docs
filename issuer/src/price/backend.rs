@@ -47,6 +47,35 @@ impl BackendPriceFetcher {
     }
 }
 
+/// Parse a decimal string like "100000.123456789012345" to U256 with 18 decimal places.
+/// Uses pure string manipulation -- no f64 intermediate.
+fn parse_decimal_to_u256_18dec(s: &str) -> Option<U256> {
+    let s = s.trim();
+    if s.is_empty() {
+        return None;
+    }
+
+    let (integer_part, decimal_part) = match s.split_once('.') {
+        Some((i, d)) => (i, d),
+        None => (s, ""),
+    };
+
+    // Pad or truncate decimal to exactly 18 digits
+    let decimal_18 = if decimal_part.len() >= 18 {
+        &decimal_part[..18]
+    } else {
+        // Need to create an owned string for padding
+        return {
+            let padded = format!("{:0<18}", decimal_part);
+            let combined = format!("{}{}", integer_part, padded);
+            U256::from_dec_str(&combined).ok()
+        };
+    };
+
+    let combined = format!("{}{}", integer_part, decimal_18);
+    U256::from_dec_str(&combined).ok()
+}
+
 fn current_timestamp() -> U256 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -123,12 +152,10 @@ impl PriceFetcher for BackendPriceFetcher {
         // Build symbol → U256 price map (using last_price from fast-prices response)
         let mut symbol_to_price: HashMap<String, U256> = HashMap::new();
         for (symbol, entry) in &body.prices {
-            let price_f64: f64 = match entry.last_price.parse() {
-                Ok(p) => p,
-                Err(_) => continue,
+            let price_u256 = match parse_decimal_to_u256_18dec(&entry.last_price) {
+                Some(p) => p,
+                None => continue,
             };
-            // Convert to 18-decimal U256: price_f64 * 1e18
-            let price_u256 = U256::from((price_f64 * 1e18) as u128);
             symbol_to_price.insert(symbol.clone(), price_u256);
         }
 
@@ -175,5 +202,61 @@ mod tests {
             .add_hex("0x0000000000000000000000000000000000000001", "BTCUSDT");
         let fetcher = BackendPriceFetcher::new("http://localhost:8080".to_string(), symbol_map);
         assert_eq!(fetcher.symbol_map().len(), 1);
+    }
+
+    #[test]
+    fn test_parse_decimal_to_u256_18dec_integer() {
+        // "100000" => 100000 * 1e18
+        let result = parse_decimal_to_u256_18dec("100000").unwrap();
+        assert_eq!(result, U256::from_dec_str("100000000000000000000000").unwrap());
+    }
+
+    #[test]
+    fn test_parse_decimal_to_u256_18dec_with_decimals() {
+        // "1.5" => 1.5 * 1e18 = 1500000000000000000
+        let result = parse_decimal_to_u256_18dec("1.5").unwrap();
+        assert_eq!(result, U256::from_dec_str("1500000000000000000").unwrap());
+    }
+
+    #[test]
+    fn test_parse_decimal_to_u256_18dec_btc_price() {
+        // "100000.123456789012345678" (18 decimal digits) => exact
+        let result = parse_decimal_to_u256_18dec("100000.123456789012345678").unwrap();
+        assert_eq!(result, U256::from_dec_str("100000123456789012345678").unwrap());
+    }
+
+    #[test]
+    fn test_parse_decimal_to_u256_18dec_small_number() {
+        // "0.000001" => 1000000000000 (1e12)
+        let result = parse_decimal_to_u256_18dec("0.000001").unwrap();
+        assert_eq!(result, U256::from_dec_str("1000000000000").unwrap());
+    }
+
+    #[test]
+    fn test_parse_decimal_to_u256_18dec_truncates_beyond_18() {
+        // "1.1234567890123456789999" => truncated to 18 decimals
+        let result = parse_decimal_to_u256_18dec("1.1234567890123456789999").unwrap();
+        assert_eq!(result, U256::from_dec_str("1123456789012345678").unwrap());
+    }
+
+    #[test]
+    fn test_parse_decimal_to_u256_18dec_empty() {
+        assert!(parse_decimal_to_u256_18dec("").is_none());
+        assert!(parse_decimal_to_u256_18dec("  ").is_none());
+    }
+
+    #[test]
+    fn test_parse_decimal_to_u256_18dec_invalid() {
+        assert!(parse_decimal_to_u256_18dec("abc").is_none());
+    }
+
+    #[test]
+    fn test_parse_decimal_to_u256_18dec_precision_vs_f64() {
+        // This is the key test: f64 loses precision for BTC at $100,000
+        // f64: (100000.123456789012345 * 1e18) as u128 = imprecise
+        // Our function: exact string manipulation
+        let result = parse_decimal_to_u256_18dec("100000.123456789012345").unwrap();
+        let expected = U256::from_dec_str("100000123456789012345000").unwrap();
+        assert_eq!(result, expected);
     }
 }
