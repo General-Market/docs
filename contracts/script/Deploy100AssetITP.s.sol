@@ -20,10 +20,10 @@ contract Deploy100AssetITP is Script {
     address[] public tokens;
     bytes32 public itpId;
     address public itpVaultAddr;
+    string private _pricesJson; // loaded once, used for USDC/USDT auto-detection
 
-    // Token symbols for 100 assets (from assets.json first 100 entries)
+    // Token symbols for 100 assets — USDC/USDT auto-detected from Bitget prices
     function _getSymbol(uint256 i) internal pure returns (string memory) {
-        // First 38 are USDC pairs (verified on Bitget spot)
         if (i == 0) return "BTC";
         if (i == 1) return "ETH";
         if (i == 2) return "SOL";
@@ -62,8 +62,7 @@ contract Deploy100AssetITP is Script {
         if (i == 35) return "BGB";
         if (i == 36) return "ALGO";
         if (i == 37) return "DAI";
-        // Remaining 62 use USDT pairs
-        // ATOM/ETC moved here: no USDC pair on Bitget
+        // Remaining 62 symbols
         if (i == 38) return "ATOM";
         if (i == 39) return "ETC";
         if (i == 40) return "1INCH";
@@ -84,7 +83,7 @@ contract Deploy100AssetITP is Script {
         if (i == 55) return "AUCTION";
         if (i == 56) return "AXL";
         if (i == 57) return "AXS";
-        if (i == 58) return "BAL";
+        if (i == 58) return "KSM";        // was BAL (delisted from Bitget)
         if (i == 59) return "BAND";
         if (i == 60) return "BAT";
         if (i == 61) return "BERA";
@@ -128,11 +127,20 @@ contract Deploy100AssetITP is Script {
         return "LA"; // 99, was KDA (delisted)
     }
 
-    function _getBitgetPair(uint256 i) internal pure returns (string memory) {
+    /// @notice Auto-detect USDC/USDT pair from Bitget prices JSON
+    /// @dev Tries USDC first (more liquid), falls back to USDT, reverts if delisted
+    function _getBitgetPair(uint256 i) internal view returns (string memory) {
         string memory sym = _getSymbol(i);
-        // First 38 are USDC pairs (ATOM/ETC moved to USDT group), rest are USDT
-        if (i < 38) {
-            return string.concat(sym, "USDC");
+        if (bytes(_pricesJson).length > 0) {
+            string memory usdcPair = string.concat(sym, "USDC");
+            if (vm.keyExistsJson(_pricesJson, string.concat(".", usdcPair))) {
+                return usdcPair;
+            }
+            string memory usdtPair = string.concat(sym, "USDT");
+            if (vm.keyExistsJson(_pricesJson, string.concat(".", usdtPair))) {
+                return usdtPair;
+            }
+            revert(string.concat(sym, " has no USDC or USDT pair on Bitget - delisted? Replace in _getSymbol()"));
         }
         return string.concat(sym, "USDT");
     }
@@ -271,17 +279,17 @@ contract Deploy100AssetITP is Script {
     }
 
     /// @notice Load real Bitget prices from data/creation-prices.json
-    /// @dev Reverts if file is missing or any price is zero — never silently default to $1
+    /// @dev Auto-detects USDC/USDT for each symbol. Reverts on missing/delisted symbols.
     function _loadPrices(uint256[] memory prices) internal {
-        string memory json = vm.readFile("../data/creation-prices.json");
+        _pricesJson = vm.readFile("../data/creation-prices.json");
 
         uint256 loaded = 0;
         for (uint256 i = 0; i < NUM_ASSETS; i++) {
             string memory pair = _getBitgetPair(i);
             string memory key = string.concat(".", pair);
-            string memory priceStr = vm.parseJsonString(json, key);
+            string memory priceStr = vm.parseJsonString(_pricesJson, key);
             uint256 price = _stringToUint(priceStr);
-            require(price > 0, string.concat("Missing or zero price for ", pair));
+            require(price > 0, string.concat("Zero price for ", pair));
             prices[i] = price;
             loaded++;
             if (i < 3 || i == 99) {

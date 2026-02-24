@@ -49,8 +49,9 @@ export const test = base.extend<{ walletPage: Page }>({
     // Intercept backend API calls that may 404 on stale binary
     await installApiInterceptors(page);
 
-    // Navigate to trigger the init script on the actual page
-    await page.goto('/');
+    // Navigate to ITP listing to trigger the init script on the actual page.
+    // Most walletPage consumers are ITP tests; Vision tests override with page.goto('/').
+    await page.goto('/index');
 
     await use(page);
   },

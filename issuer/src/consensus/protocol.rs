@@ -832,6 +832,7 @@ where
             }
             MessageHandleResult::ProcessItpCreationProposal {
                 from,
+                leader_id,
                 admin,
                 nonce,
                 name,
@@ -856,6 +857,7 @@ where
 
                     if let Err(e) = self.handle_itp_creation_proposal(
                         from,
+                        leader_id,
                         admin,
                         nonce,
                         name,
@@ -890,6 +892,7 @@ where
             // Story 7.2/7.9: Bridge Arb→L3 messages - handled via BridgeOrchestrator
             MessageHandleResult::ProcessBridgeArbToL3Proposal {
                 from,
+                leader_id,
                 order_id,
                 itp_id,
                 user,
@@ -910,6 +913,7 @@ where
 
                 if let Err(e) = self.handle_bridge_arb_to_l3_proposal(
                     from,
+                    leader_id,
                     order_id,
                     itp_id,
                     user,
@@ -956,6 +960,7 @@ where
             // Story 7.3: Submit Order for User messages - routed to ConsensusProtocol handlers
             MessageHandleResult::ProcessSubmitOrderForUserProposal {
                 from,
+                leader_id,
                 arb_order_id,
                 itp_id,
                 user,
@@ -977,6 +982,7 @@ where
                 if let Err(e) = self
                     .handle_submit_order_proposal(
                         from,
+                        leader_id,
                         arb_order_id,
                         itp_id,
                         user,
@@ -1029,6 +1035,7 @@ where
             // Story 7.4: Batch and Fill confirmation messages - routed to ConsensusProtocol handlers
             MessageHandleResult::ProcessConfirmBatchProposal {
                 from,
+                leader_id,
                 cycle_number,
                 order_ids,
                 prices,
@@ -1044,6 +1051,7 @@ where
                 if let Err(e) = self
                     .handle_confirm_batch_proposal(
                         from,
+                        leader_id,
                         cycle_number,
                         order_ids,
                         prices,
@@ -1091,6 +1099,7 @@ where
             }
             MessageHandleResult::ProcessConfirmFillsProposal {
                 from,
+                leader_id,
                 cycle_number,
                 fills,
                 leader_signature,
@@ -1111,6 +1120,7 @@ where
                 if let Err(e) = self
                     .handle_confirm_fills_proposal(
                         from,
+                        leader_id,
                         cycle_number,
                         bridge_fills,
                         BLSSignature(leader_signature.0),
@@ -1158,6 +1168,7 @@ where
             // Story 7.10: Bridge L3 to Arb messages - routed to ConsensusProtocol handlers
             MessageHandleResult::ProcessBridgeL3ToArbProposal {
                 from,
+                leader_id,
                 cycle_number,
                 order_ids,
                 total_amount,
@@ -1176,6 +1187,7 @@ where
                 if let Err(e) = self
                     .handle_bridge_l3_to_arb_proposal(
                         from,
+                        leader_id,
                         cycle_number,
                         order_ids,
                         total_amount,
@@ -1220,6 +1232,7 @@ where
             // Story 7.10: Custody release to vault messages - routed to ConsensusProtocol handlers
             MessageHandleResult::ProcessReleaseToVaultProposal {
                 from,
+                leader_id,
                 cycle_number,
                 order_ids,
                 total_amount,
@@ -1238,6 +1251,7 @@ where
                 if let Err(e) = self
                     .handle_release_to_vault_proposal(
                         from,
+                        leader_id,
                         cycle_number,
                         order_ids,
                         total_amount,
@@ -1282,6 +1296,7 @@ where
             // Story 7-14: Rebalance batch consensus messages
             MessageHandleResult::ProcessRebalanceBatchProposal {
                 from,
+                leader_id,
                 cycle_number,
                 itp_ids,
                 leader_signature,
@@ -1293,7 +1308,7 @@ where
                     "Received RebalanceBatchProposal - routing to handler"
                 );
                 if let Err(e) = self
-                    .handle_rebalance_batch_proposal(from, cycle_number, itp_ids, leader_signature)
+                    .handle_rebalance_batch_proposal(from, leader_id, cycle_number, itp_ids, leader_signature)
                     .await
                 {
                     warn!(
@@ -1331,6 +1346,7 @@ where
             // Story 7-14: Update weights consensus messages
             MessageHandleResult::ProcessUpdateWeightsProposal {
                 from,
+                leader_id,
                 itp_id,
                 new_weights,
                 new_inventory,
@@ -1344,7 +1360,7 @@ where
                     "Received UpdateWeightsProposal - routing to handler"
                 );
                 if let Err(e) = self
-                    .handle_update_weights_proposal(from, itp_id, new_weights, new_inventory, nav, leader_signature)
+                    .handle_update_weights_proposal(from, leader_id, itp_id, new_weights, new_inventory, nav, leader_signature)
                     .await
                 {
                     warn!(
@@ -1382,6 +1398,7 @@ where
             // Single-phase rebalance consensus messages
             MessageHandleResult::ProcessRebalanceProposal {
                 from,
+                leader_id,
                 itp_id,
                 remove_indices,
                 add_assets,
@@ -1397,7 +1414,7 @@ where
                     "Received RebalanceProposal - routing to handler"
                 );
                 if let Err(e) = self
-                    .handle_rebalance_proposal(from, itp_id, remove_indices, add_assets, new_weights, prices, quote_tokens, leader_signature)
+                    .handle_rebalance_proposal(from, leader_id, itp_id, remove_indices, add_assets, new_weights, prices, quote_tokens, leader_signature)
                     .await
                 {
                     warn!(
@@ -1434,6 +1451,7 @@ where
             }
             MessageHandleResult::ProcessAssetTradesProposal {
                 from,
+                leader_id,
                 cycle_number: msg_cycle,
                 trades_data,
                 leader_signature,
@@ -1475,7 +1493,7 @@ where
                     // Verify leader's BLS signature before signing
                     {
                         let hash_bytes: [u8; 32] = message_hash.into();
-                        if let Some(leader_pubkey) = self.key_registry.get_public_key(&from) {
+                        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
                             match self
                                 .bls_signer
                                 .verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature)
@@ -1507,17 +1525,17 @@ where
                             warn!(
                                 code = "INFRA-007",
                                 cycle_number = msg_cycle,
-                                leader_id = ?from,
+                                leader_id = ?leader_id,
                                 "Leader public key not found in registry, REJECTING proposal"
                             );
                             return Err(Error::BlsVerification(
-                                format!("Leader {:?} not found in key registry -- refusing to sign", from)
+                                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
                             ));
                         }
                     }
 
                     let proposal = AssetTradesProposal {
-                        leader_id: from,
+                        leader_id,
                         cycle_number: msg_cycle,
                         trades,
                         leader_signature: BLSSignature(leader_signature.0.clone()),
@@ -1588,6 +1606,7 @@ where
             // Cross-chain sell flow messages
             MessageHandleResult::ProcessSubmitSellOrderProposal {
                 from,
+                leader_id,
                 order_id,
                 itp_id,
                 user,
@@ -1602,7 +1621,7 @@ where
                 );
                 if let Err(e) = self
                     .handle_submit_sell_order_proposal(
-                        from, order_id, itp_id, user, bridged_itp_address, amount, leader_signature,
+                        from, leader_id, order_id, itp_id, user, bridged_itp_address, amount, leader_signature,
                     )
                     .await
                 {
@@ -1640,6 +1659,7 @@ where
             }
             MessageHandleResult::ProcessCompleteSellOrderProposal {
                 from,
+                leader_id,
                 order_id,
                 usdc_proceeds,
                 leader_signature,
@@ -1652,7 +1672,7 @@ where
                 );
                 if let Err(e) = self
                     .handle_complete_sell_order_proposal(
-                        from, order_id, usdc_proceeds, leader_signature,
+                        from, leader_id, order_id, usdc_proceeds, leader_signature,
                     )
                     .await
                 {
@@ -1691,6 +1711,7 @@ where
             // 8-step bridge: RecordCollateralMove consensus
             MessageHandleResult::ProcessRecordCollateralMoveProposal {
                 from,
+                leader_id,
                 cycle_number: msg_cycle,
                 itp_id,
                 from_chain,
@@ -1707,7 +1728,7 @@ where
                 );
                 if let Err(e) = self
                     .handle_record_collateral_move_proposal(
-                        from, msg_cycle, itp_id, from_chain, to_chain, amount, tx_type, leader_signature,
+                        from, leader_id, msg_cycle, itp_id, from_chain, to_chain, amount, tx_type, leader_signature,
                     )
                     .await
                 {
@@ -1746,6 +1767,7 @@ where
             // 8-step bridge: MintBridgedShares consensus
             MessageHandleResult::ProcessMintBridgedSharesProposal {
                 from,
+                leader_id,
                 cycle_number: msg_cycle,
                 itp_id,
                 user,
@@ -1760,7 +1782,7 @@ where
                 );
                 if let Err(e) = self
                     .handle_mint_bridged_shares_proposal(
-                        from, msg_cycle, itp_id, user, amount, leader_signature,
+                        from, leader_id, msg_cycle, itp_id, user, amount, leader_signature,
                     )
                     .await
                 {
@@ -1798,7 +1820,8 @@ where
             }
             // completeBuyOrder BLS consensus messages
             MessageHandleResult::ProcessCompleteBuyOrderProposal {
-                from: leader_id,
+                from,
+                leader_id,
                 cycle_number: msg_cycle,
                 order_id,
                 vault,
@@ -1889,7 +1912,7 @@ where
                     cycle_number: msg_cycle,
                     signature,
                 };
-                self.p2p.send_to(leader_id, message).await?;
+                self.p2p.send_to(from, message).await?;
             }
             MessageHandleResult::ProcessCompleteBuyOrderSign {
                 from: signer_id,
@@ -1927,6 +1950,7 @@ where
             // Rebalance NAV consensus: setItpNav
             MessageHandleResult::ProcessSetItpNavProposal {
                 from,
+                leader_id,
                 itp_id,
                 nav,
                 leader_signature,
@@ -1938,7 +1962,7 @@ where
                     "Received SetItpNavProposal - routing to handler"
                 );
                 if let Err(e) = self
-                    .handle_set_itp_nav_proposal(from, itp_id, nav, leader_signature)
+                    .handle_set_itp_nav_proposal(from, leader_id, itp_id, nav, leader_signature)
                     .await
                 {
                     warn!(
@@ -2569,6 +2593,7 @@ where
     /// Handle incoming ItpCreationProposal message (as follower)
     pub async fn handle_itp_creation_proposal(
         &self,
+        from: PeerId,
         leader_id: PeerId,
         admin: Address,
         nonce: U256,
@@ -2691,7 +2716,7 @@ where
             signer_index = self.config.issuer_registry_index,
             "Follower: Sending ITP creation signature to leader"
         );
-        self.p2p.send_to(leader_id, message).await
+        self.p2p.send_to(from, message).await
     }
 
     /// Handle incoming ItpCreationSign message (as leader)
@@ -3691,6 +3716,7 @@ where
     /// Validates the proposal, signs it, and sends signature back to leader.
     pub async fn handle_bridge_arb_to_l3_proposal(
         &self,
+        from: PeerId,
         leader_id: PeerId,
         order_id: U256,
         itp_id: H256,
@@ -3858,7 +3884,7 @@ where
             "Follower: Sending bridge signature to leader"
         );
 
-        self.p2p.send_to(leader_id, message).await
+        self.p2p.send_to(from, message).await
     }
 
     /// Handle incoming BridgeArbToL3Sign message (as leader) - Task 6
@@ -4174,6 +4200,7 @@ where
     /// Validates the proposal, signs it, and sends signature back to leader.
     pub async fn handle_bridge_l3_to_arb_proposal(
         &self,
+        from: PeerId,
         leader_id: PeerId,
         cycle_number: u64,
         order_ids: Vec<U256>,
@@ -4341,7 +4368,7 @@ where
             "Follower: Sending L3→Arb bridge signature to leader"
         );
 
-        self.p2p.send_to(leader_id, message).await
+        self.p2p.send_to(from, message).await
     }
 
     /// Handle incoming BridgeL3ToArbSign message (as leader) - Task 3
@@ -4661,6 +4688,7 @@ where
     /// Validates the proposal, signs it, and sends signature back to leader.
     pub async fn handle_release_to_vault_proposal(
         &self,
+        from: PeerId,
         leader_id: PeerId,
         cycle_number: u64,
         order_ids: Vec<U256>,
@@ -4832,7 +4860,7 @@ where
             "Follower: Sending custody release signature to leader"
         );
 
-        self.p2p.send_to(leader_id, message).await
+        self.p2p.send_to(from, message).await
     }
 
     /// Handle incoming ReleaseToVaultSign message (as leader) - Task 6
@@ -4907,6 +4935,7 @@ where
     /// Validates the proposal, signs it, and sends signature back to leader.
     pub async fn handle_submit_order_proposal(
         &self,
+        from: PeerId,
         leader_id: PeerId,
         arb_order_id: U256,
         itp_id: H256,
@@ -5087,7 +5116,7 @@ where
             "Follower: Sending submit order signature to leader"
         );
 
-        self.p2p.send_to(leader_id, message).await
+        self.p2p.send_to(from, message).await
     }
 
     /// Handle incoming SubmitOrderForUserSign message (as leader)
@@ -5162,6 +5191,7 @@ where
     /// Validates the batch proposal, signs it, and sends signature back to leader.
     pub async fn handle_confirm_batch_proposal(
         &self,
+        from: PeerId,
         leader_id: PeerId,
         cycle_number: u64,
         order_ids: Vec<U256>,
@@ -5324,7 +5354,7 @@ where
             "Follower: Sending confirm batch signature to leader"
         );
 
-        self.p2p.send_to(leader_id, message).await
+        self.p2p.send_to(from, message).await
     }
 
     /// Handle incoming ConfirmBatchSign message (as leader)
@@ -5395,6 +5425,7 @@ where
     /// Validates the fills proposal, signs it, and sends signature back to leader.
     pub async fn handle_confirm_fills_proposal(
         &self,
+        from: PeerId,
         leader_id: PeerId,
         cycle_number: u64,
         fills: Vec<crate::bridge::Fill>,
@@ -5556,7 +5587,7 @@ where
             "Follower: Sending confirm fills signature to leader"
         );
 
-        self.p2p.send_to(leader_id, message).await
+        self.p2p.send_to(from, message).await
     }
 
     /// Handle incoming ConfirmFillsSign message (as leader)
@@ -5875,6 +5906,7 @@ where
     /// Handle incoming RebalanceBatchProposal message (as follower)
     pub async fn handle_rebalance_batch_proposal(
         &self,
+        from: PeerId,
         leader_id: PeerId,
         cycle_number: u64,
         itp_ids: Vec<H256>,
@@ -5987,7 +6019,7 @@ where
             "Follower: Sending rebalance batch signature to leader"
         );
 
-        self.p2p.send_to(leader_id, message).await
+        self.p2p.send_to(from, message).await
     }
 
     /// Handle incoming RebalanceBatchSign message (as leader)
@@ -6255,6 +6287,7 @@ where
     /// Handle incoming UpdateWeightsProposal message (as follower)
     pub async fn handle_update_weights_proposal(
         &self,
+        from: PeerId,
         leader_id: PeerId,
         itp_id: H256,
         new_weights: Vec<U256>,
@@ -6371,7 +6404,7 @@ where
             "Follower: Sending update weights signature to leader"
         );
 
-        self.p2p.send_to(leader_id, message).await
+        self.p2p.send_to(from, message).await
     }
 
     /// Handle incoming UpdateWeightsSign message (as leader)
@@ -6612,6 +6645,7 @@ where
     /// Handle incoming RebalanceProposal message (as follower)
     pub async fn handle_rebalance_proposal(
         &self,
+        from: PeerId,
         leader_id: PeerId,
         itp_id: H256,
         remove_indices: Vec<U256>,
@@ -6704,7 +6738,7 @@ where
         };
 
         debug!(itp_id = ?itp_id, signer_index = self.config.issuer_registry_index, "Follower: Sending rebalance signature to leader");
-        self.p2p.send_to(leader_id, message).await
+        self.p2p.send_to(from, message).await
     }
 
     /// Handle incoming RebalanceSign message (as leader)
@@ -6894,6 +6928,7 @@ where
     /// Handle incoming SetItpNavProposal message (as follower)
     pub async fn handle_set_itp_nav_proposal(
         &self,
+        from: PeerId,
         leader_id: PeerId,
         itp_id: H256,
         nav: U256,
@@ -6974,7 +7009,7 @@ where
         };
 
         debug!(itp_id = ?itp_id, signer_index = self.config.issuer_registry_index, "Follower: Sending setItpNav signature to leader");
-        self.p2p.send_to(leader_id, message).await
+        self.p2p.send_to(from, message).await
     }
 
     /// Handle incoming SetItpNavSign message (as leader)
@@ -7200,6 +7235,7 @@ where
     /// Follower: handle submit sell order proposal
     pub async fn handle_submit_sell_order_proposal(
         &self,
+        from: PeerId,
         leader_id: PeerId,
         order_id: U256,
         itp_id: H256,
@@ -7332,7 +7368,7 @@ where
             "Follower: Sending submit sell order signature to leader"
         );
 
-        self.p2p.send_to(leader_id, message).await
+        self.p2p.send_to(from, message).await
     }
 
     /// Leader: handle submit sell order sign
@@ -7512,6 +7548,7 @@ where
     /// Follower: handle complete sell order proposal
     pub async fn handle_complete_sell_order_proposal(
         &self,
+        from: PeerId,
         leader_id: PeerId,
         order_id: U256,
         usdc_proceeds: U256,
@@ -7634,7 +7671,7 @@ where
             "Follower: Sending complete sell order signature to leader"
         );
 
-        self.p2p.send_to(leader_id, message).await
+        self.p2p.send_to(from, message).await
     }
 
     /// Leader: handle complete sell order sign
@@ -7833,6 +7870,7 @@ where
     /// Handle incoming RecordCollateralMoveProposal message (as follower)
     pub async fn handle_record_collateral_move_proposal(
         &self,
+        from: PeerId,
         leader_id: PeerId,
         cycle_number: u64,
         itp_id: H256,
@@ -7941,7 +7979,7 @@ where
             signature,
         };
 
-        self.p2p.send_to(leader_id, message).await
+        self.p2p.send_to(from, message).await
     }
 
     /// Handle incoming RecordCollateralMoveSign message (as leader)
@@ -8118,6 +8156,7 @@ where
     /// Handle incoming MintBridgedSharesProposal message (as follower)
     pub async fn handle_mint_bridged_shares_proposal(
         &self,
+        from: PeerId,
         leader_id: PeerId,
         cycle_number: u64,
         itp_id: H256,
@@ -8203,7 +8242,7 @@ where
             signature,
         };
 
-        self.p2p.send_to(leader_id, message).await
+        self.p2p.send_to(from, message).await
     }
 
     /// Handle incoming MintBridgedSharesSign message (as leader)
