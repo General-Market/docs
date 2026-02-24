@@ -52,7 +52,6 @@ const PREFIX_MAP: [string, string, string][] = [
   ['cbp_border_', 'cbp_border', 'Border Wait Times'],
   ['faa_delays_', 'faa_delays', 'Airport Delays'],
   ['yahoodrinks_', 'yahoo_drinks', 'Drink Markets'],
-  ['untappd_', 'untappd', 'Untappd Beer'],
 ]
 
 // Common bare crypto tickers (no prefix)
@@ -73,7 +72,7 @@ const CATEGORY_ORDER = [
   'bgg', 'bestbuy',
   'adzuna',
   'queue_times', 'cbp_border', 'faa_delays',
-  'yahoo_drinks', 'untappd',
+  'yahoo_drinks',
   'other',
 ]
 

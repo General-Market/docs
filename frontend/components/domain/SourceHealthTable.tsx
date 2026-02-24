@@ -159,7 +159,6 @@ const API_KEY_LINKS: Record<string, { url: string; label: string }> = {
   queue_times: { url: 'https://queue-times.com/en-US/pages/api', label: 'Queue-Times API' },
   cbp_border: { url: 'https://bwt.cbp.gov/', label: 'CBP Border Wait Times' },
   faa_delays: { url: 'https://soa.smext.faa.gov/asws/api/airport/status/', label: 'FAA ASWS' },
-  untappd: { url: 'https://untappd.com/api/docs', label: 'Untappd API' },
 }
 
 // ── Skeleton ──

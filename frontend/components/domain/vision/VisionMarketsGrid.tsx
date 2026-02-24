@@ -38,7 +38,7 @@ const CATEGORY_GROUPS: { id: string; label: string; sources: string[] }[] = [
   { id: 'transport', label: 'Transport & Tourism', sources: ['citybikes', 'parking', 'tomtom_traffic', 'tomtom_evcharge', 'queue_times', 'cbp_border', 'faa_delays'] },
   { id: 'education', label: 'Education & Research', sources: ['openalex', 'crossref', 'pubmed', 'stackexchange'] },
   { id: 'tech', label: 'Tech', sources: ['npm', 'pypi', 'crates_io', 'github', 'cloudflare', 'hackernews', 'reddit'] },
-  { id: 'entertainment', label: 'Entertainment', sources: ['tmdb', 'lastfm', 'anilist', 'twitch', 'chaturbate', 'steam', 'backpacktf', 'fourchan', 'esports', 'bgg', 'untappd'] },
+  { id: 'entertainment', label: 'Entertainment', sources: ['tmdb', 'lastfm', 'anilist', 'twitch', 'chaturbate', 'steam', 'backpacktf', 'fourchan', 'esports', 'bgg'] },
   { id: 'jobs', label: 'Jobs & Labor', sources: ['adzuna'] },
   { id: 'shopping', label: 'Shopping', sources: ['bestbuy'] },
   { id: 'real_estate', label: 'Real Estate', sources: ['zillow'] },
@@ -152,7 +152,6 @@ const COUNT_SOURCES = new Set([
   'bgg',
   'adzuna',
   'queue_times', 'cbp_border', 'faa_delays',
-  'untappd',
 ])
 
 function formatNumber(v: number): string {

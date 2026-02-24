@@ -1513,27 +1513,6 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("Yahoo Drink Markets started");
     }
 
-    // Untappd Beer — gated on client ID + client secret
-    if let Some(ref cid) = args.untappd_client_id {
-        if let Some(ref csec) = args.untappd_client_secret {
-            std::env::set_var("UNTAPPD_CLIENT_ID", cid);
-            std::env::set_var("UNTAPPD_CLIENT_SECRET", csec);
-            let pool_c = pool.clone();
-            tokio::spawn(async move {
-                match market_data::sources::untappd::UntappdMarketSource::from_env() {
-                    Ok(source) => {
-                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
-                        engine.run().await;
-                    }
-                    Err(e) => tracing::error!("Untappd Beer init failed: {e}"),
-                }
-            });
-            info!("Untappd Beer social data started");
-        } else {
-            info!("Untappd skipped (UNTAPPD_CLIENT_SECRET not configured)");
-        }
-    }
-
     // Record not_started for any source that was gated off (missing keys, disabled flags)
     {
         let tracker = market_data::error_tracker::global();
@@ -1660,10 +1639,6 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         // Adzuna
         if args.adzuna_app_id.is_none() || args.adzuna_app_key.is_none() {
             tracker.record_not_started("adzuna", "Missing --adzuna-app-id / --adzuna-app-key");
-        }
-        // Untappd
-        if args.untappd_client_id.is_none() || args.untappd_client_secret.is_none() {
-            tracker.record_not_started("untappd", "Missing --untappd-client-id / --untappd-client-secret");
         }
 
     }

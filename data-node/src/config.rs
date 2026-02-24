@@ -259,14 +259,6 @@ pub struct ServeArgs {
     #[arg(long, env = "ADZUNA_APP_KEY")]
     pub adzuna_app_key: Option<String>,
 
-    /// Untappd client ID (enables beer social data tracking)
-    #[arg(long, env = "UNTAPPD_CLIENT_ID")]
-    pub untappd_client_id: Option<String>,
-
-    /// Untappd client secret
-    #[arg(long, env = "UNTAPPD_CLIENT_SECRET")]
-    pub untappd_client_secret: Option<String>,
-
     /// P2.8: Allowed CORS origins (repeat for multiple). Empty = allow all.
     #[arg(long, env = "CORS_ORIGIN")]
     pub cors_origin: Vec<String>,

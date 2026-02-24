@@ -924,8 +924,6 @@ else
         ${BESTBUY_API_KEY:+--bestbuy-api-key "$BESTBUY_API_KEY"} \
         ${ADZUNA_APP_ID:+--adzuna-app-id "$ADZUNA_APP_ID"} \
         ${ADZUNA_APP_KEY:+--adzuna-app-key "$ADZUNA_APP_KEY"} \
-        ${UNTAPPD_CLIENT_ID:+--untappd-client-id "$UNTAPPD_CLIENT_ID"} \
-        ${UNTAPPD_CLIENT_SECRET:+--untappd-client-secret "$UNTAPPD_CLIENT_SECRET"} \
         --ecb-enabled \
         --openmeteo-sync-interval 300 \
         > logs/data-node.log 2>&1 &

@@ -410,15 +410,6 @@ const SOURCE_META: Record<string, SourceMeta> = {
       return 'USD'
     },
   },
-  untappd: {
-    valueLabel: 'Value', unit: '',
-    assetUnit: (name) => {
-      if (/rating\b/i.test(name) && !/count/i.test(name)) return '/5'
-      if (/check.?in/i.test(name)) return 'check-ins'
-      if (/monthly/i.test(name)) return '/month'
-      return 'count'
-    },
-  },
 
   // ── SEC ──
   sec_efts: { valueLabel: 'Filings', unit: 'count' },

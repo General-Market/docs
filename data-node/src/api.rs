@@ -4383,7 +4383,6 @@ const SOURCE_META: &[(&str, &str, u64)] = &[
     ("faa_delays", "FAA Airport Delays", 600),
     // ── Drink Sources ───────────────────────────────────────────────────────
     ("yahoo_drinks", "Yahoo Drink Markets", 600),
-    ("untappd", "Untappd Beer", 600),
 ];
 
 #[derive(Serialize)]
