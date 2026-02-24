@@ -11,15 +11,17 @@ interface IIssuerRegistry {
     // ============ ISSUER MANAGEMENT ============
 
     /// @notice Add a new issuer to the registry
-    /// @dev Only callable by admin
+    /// @dev Only callable by admin. Requires Proof of Possession (PoP) to prove key ownership.
     /// @param issuerAddr Issuer's Ethereum address for rewards/governance
     /// @param ip IP address for P2P communication (packed as bytes32)
     /// @param blsPubkey BLS public key for signature aggregation
+    /// @param blsPopSignature PoP: BLS signature over keccak256(abi.encode("INDEX_BLS_POP", chainid, registry, issuerAddr, blsPubkey))
     /// @return issuerId The assigned issuer ID
     function addIssuer(
         address issuerAddr,
         bytes32 ip,
-        bytes calldata blsPubkey
+        bytes calldata blsPubkey,
+        bytes calldata blsPopSignature
     ) external returns (uint256 issuerId);
 
     /// @notice Remove an issuer from the registry
@@ -31,16 +33,17 @@ interface IIssuerRegistry {
     // ============ KEY ROTATION ============
 
     /// @notice Request a key rotation for an issuer
-    /// @dev Must be signed with the OLD key to prove ownership
+    /// @dev Must be signed with the OLD key to prove ownership + PoP with NEW key
     /// @dev Starts approval process requiring 10/19 other issuer approvals
-    /// @dev Message: keccak256(abi.encode(chainid, this, "rotateKey", issuerId, newPubkey))
     /// @param issuerId The issuer requesting rotation
     /// @param newPubkey The new BLS public key
     /// @param signatureWithOldKey Signature with the current (old) key
+    /// @param newKeyPopSignature PoP: BLS signature over keccak256(abi.encode("INDEX_BLS_POP", chainid, registry, issuerAddr, newPubkey))
     function requestKeyRotation(
         uint256 issuerId,
         bytes calldata newPubkey,
-        bytes calldata signatureWithOldKey
+        bytes calldata signatureWithOldKey,
+        bytes calldata newKeyPopSignature
     ) external;
 
     /// @notice Approve a pending key rotation

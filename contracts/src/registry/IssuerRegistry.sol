@@ -79,6 +79,13 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
     /// @notice Thrown when new pubkey is same as current pubkey
     error SamePubkey();
 
+    /// @notice Thrown when BLS pubkey is already registered to another issuer
+    /// @param existingIssuerId The issuer that already has this pubkey
+    error IssuerRegistry__PubkeyAlreadyRegistered(uint256 existingIssuerId);
+
+    /// @notice Thrown when Proof of Possession BLS signature is invalid
+    error IssuerRegistry__InvalidPoP();
+
     // ============ CONSTANTS ============
 
     /// @notice Key rotation approval threshold (10/19 other issuers)
@@ -147,8 +154,12 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
     /// @dev Whether consensus is paused (admin circuit breaker)
     bool public consensusPaused;
 
-    /// @dev Storage gap for upgrade safety (reduced from 34 to 33 for consensusPaused)
-    uint256[33] private __gap;
+    /// @dev Pubkey hash to issuer ID + 1 (0 = not registered, N = issuer N-1)
+    /// @dev Sentinel +1 avoids collision with issuer ID 0
+    mapping(bytes32 => uint256) private _pubkeyHashToIssuerId;
+
+    /// @dev Storage gap for upgrade safety (reduced from 34 to 32 for consensusPaused + _pubkeyHashToIssuerId)
+    uint256[32] private __gap;
 
     // ============ CONSTRUCTOR ============
 
@@ -181,7 +192,8 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
     function addIssuer(
         address issuerAddr,
         bytes32 ip,
-        bytes calldata blsPubkey
+        bytes calldata blsPubkey,
+        bytes calldata blsPopSignature
     ) external override onlyAdmin returns (uint256 issuerId) {
         if (issuerAddr == address(0)) revert ZeroAddress();
         if (blsPubkey.length != PUBKEY_LENGTH) revert InvalidPubkeyLength(blsPubkey.length);
@@ -196,9 +208,23 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
         }
         if (allZeros) revert InvalidPubkeyLength(0);
 
-        // G2 pubkey validation: we can't verify G2 curve membership on-chain
-        // (no precompile for G2 operations). The pairing check will fail if invalid.
-        // Basic length check is sufficient - BLSLib.verifyBLS will reject invalid G2 points.
+        // Key uniqueness: reject if pubkey already registered to another issuer
+        bytes32 pubkeyHash = keccak256(blsPubkey);
+        uint256 existingSentinel = _pubkeyHashToIssuerId[pubkeyHash];
+        if (existingSentinel != 0) {
+            revert IssuerRegistry__PubkeyAlreadyRegistered(existingSentinel - 1);
+        }
+
+        // Proof of Possession: verify issuer controls the BLS private key
+        // Domain-separated message: prevents cross-chain/cross-contract replay
+        {
+            bytes32 popMessage = keccak256(abi.encode(
+                "INDEX_BLS_POP", block.chainid, address(this), issuerAddr, blsPubkey
+            ));
+            if (!BLSLib.verifyBLS(blsPubkey, popMessage, blsPopSignature)) {
+                revert IssuerRegistry__InvalidPoP();
+            }
+        }
 
         // Assign new issuer ID
         issuerId = _issuerCount++;
@@ -215,8 +241,8 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
         // Update active count
         _activeCount++;
 
-        // NOTE: G2 aggregation cannot be done on-chain (no G2 addition precompile).
-        // Aggregated pubkey is computed off-chain and passed to verification functions.
+        // Register pubkey in uniqueness mapping (sentinel = issuerId + 1)
+        _pubkeyHashToIssuerId[pubkeyHash] = issuerId + 1;
 
         emit IssuerAdded(issuerId, issuerAddr, blsPubkey);
 
@@ -242,11 +268,12 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
             revert Unauthorized();
         }
 
+        // Clear pubkey uniqueness mapping
+        delete _pubkeyHashToIssuerId[keccak256(issuer.blsPubkey)];
+
         // Deactivate issuer
         issuer.status = 0; // inactive
         _activeCount--;
-
-        // NOTE: G2 aggregation handled off-chain; no on-chain update needed
 
         emit IssuerRemoved(issuerId);
 
@@ -271,6 +298,9 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
             revert InvalidBLSSignature();
         }
 
+        // Clear pubkey uniqueness mapping
+        delete _pubkeyHashToIssuerId[keccak256(issuer.blsPubkey)];
+
         issuer.status = 0;
         _activeCount--;
         emit IssuerRemoved(issuerId);
@@ -281,10 +311,12 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
     //
     /// @inheritdoc IIssuerRegistry
     /// @dev BLS verification: issuer signs keccak256(abi.encode("ROTATE", issuerId, newPubkey)) with old key
+    /// @dev PoP verification: issuer signs keccak256(abi.encode("INDEX_BLS_POP", chainid, this, addr, newPubkey)) with new key
     function requestKeyRotation(
         uint256 issuerId,
         bytes calldata newPubkey,
-        bytes calldata signatureWithOldKey
+        bytes calldata signatureWithOldKey,
+        bytes calldata newKeyPopSignature
     ) external override {
         // Validate issuer exists and is active
         TypesLib.Issuer storage issuer = _issuers[issuerId];
@@ -303,7 +335,26 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
         if (newPubkey.length != PUBKEY_LENGTH) revert InvalidPubkeyLength(newPubkey.length);
 
         // Validate new pubkey is different from current pubkey
-        if (keccak256(newPubkey) == keccak256(issuer.blsPubkey)) revert SamePubkey();
+        bytes32 newPubkeyHash = keccak256(newPubkey);
+        if (newPubkeyHash == keccak256(issuer.blsPubkey)) revert SamePubkey();
+
+        // Key uniqueness: reject if new pubkey already registered to another issuer
+        {
+            uint256 existingSentinel = _pubkeyHashToIssuerId[newPubkeyHash];
+            if (existingSentinel != 0 && existingSentinel - 1 != issuerId) {
+                revert IssuerRegistry__PubkeyAlreadyRegistered(existingSentinel - 1);
+            }
+        }
+
+        // Proof of Possession for new key
+        {
+            bytes32 popMessage = keccak256(abi.encode(
+                "INDEX_BLS_POP", block.chainid, address(this), issuer.addr, newPubkey
+            ));
+            if (!BLSLib.verifyBLS(newPubkey, popMessage, newKeyPopSignature)) {
+                revert IssuerRegistry__InvalidPoP();
+            }
+        }
 
         // Check no pending rotation exists
         if (_pendingRotations[issuerId].requestedAt != 0) revert RotationAlreadyPending(issuerId);
@@ -397,16 +448,18 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
         TypesLib.Issuer storage issuer = _issuers[issuerId];
         bytes memory oldPubkey = issuer.blsPubkey;
 
+        // Update pubkey uniqueness mapping: clear old, set new
+        bytes32 oldPubkeyHash = keccak256(oldPubkey);
+        delete _pubkeyHashToIssuerId[oldPubkeyHash];
+        _pubkeyHashToIssuerId[keccak256(rotation.newPubkey)] = issuerId + 1;
+
         // Update issuer's pubkey
         issuer.blsPubkey = rotation.newPubkey;
-
-        // NOTE: G2 aggregation handled off-chain; no on-chain update needed
 
         // Mark rotation as executed
         rotation.executed = true;
 
         // Set grace period for old key
-        bytes32 oldPubkeyHash = keccak256(oldPubkey);
         _keyGracePeriod[oldPubkeyHash] = _currentCycle + ROTATION_GRACE_CYCLES;
 
         // Clear force window if set

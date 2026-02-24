@@ -109,7 +109,10 @@ contract DeployCrossChainE2E is DeployBLSHelper {
         ];
         for (uint256 i = 0; i < 3; i++) {
             bytes memory pubkey = blsPubkey(uint8(i));
-            IssuerRegistry(issuerRegistry).addIssuer(issuers[i], bytes32(bytes("127.0.0.1:9000")), pubkey);
+            // Generate Proof of Possession signature
+            bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, issuerRegistry, issuers[i], pubkey));
+            bytes memory popSig = blsSign(vm.toString(i), popMsg);
+            IssuerRegistry(issuerRegistry).addIssuer(issuers[i], bytes32(bytes("127.0.0.1:9000")), pubkey, popSig);
         }
         IssuerRegistry(issuerRegistry).setAggregatedPubkey(blsAggPubkey("0,1,2"));
     }

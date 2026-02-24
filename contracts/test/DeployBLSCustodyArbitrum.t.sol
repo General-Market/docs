@@ -240,15 +240,16 @@ contract DeployBLSCustodyArbitrumTest is TestHelper {
     // ============ ISSUER REGISTRY INTEGRATION ============
 
     function test_issuerRegistry_canAddIssuers() public {
-        vm.startPrank(deployer);
         uint256 countBefore = issuerRegistry.activeIssuerCount();
-        // G2 pubkey format: 128 bytes [x_im, x_re, y_im, y_re]
-        bytes memory blsPubkey = abi.encodePacked(
-            uint256(1), uint256(2), uint256(3), uint256(4)
-        );
-        issuerRegistry.addIssuer(address(0x1001), bytes32(uint256(1)), blsPubkey);
+        // Real BLS G2 pubkey from deterministic seed via FFI (use seed 10 to avoid collision with seeds 0,1,2)
+        bytes memory testPubkey = blsPubkey(10);
+        address issuerAddr = address(0x1001);
+        // Generate Proof of Possession
+        bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(issuerRegistry), issuerAddr, testPubkey));
+        bytes memory popSig = blsSign(vm.toString(uint256(10)), popMsg);
+        vm.prank(deployer);
+        issuerRegistry.addIssuer(issuerAddr, bytes32(uint256(1)), testPubkey, popSig);
         assertEq(issuerRegistry.activeIssuerCount(), countBefore + 1);
-        vm.stopPrank();
     }
 
     function test_blsCustody_readsAggregatedPubkey() public view {

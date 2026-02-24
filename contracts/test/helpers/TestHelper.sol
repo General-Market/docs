@@ -39,8 +39,10 @@ abstract contract TestHelper is BLSTestHelper {
         uint8 seed
     ) internal returns (uint256 issuerId) {
         bytes memory pubkey = blsPubkey(seed);
+        bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(registry), issuerAddr, pubkey));
+        bytes memory popSig = blsSign(vm.toString(uint256(seed)), popMsg);
         vm.prank(admin);
-        issuerId = registry.addIssuer(issuerAddr, ipPort, pubkey);
+        issuerId = registry.addIssuer(issuerAddr, ipPort, pubkey, popSig);
     }
 
     /// @notice Generate a real BLS public key from a seed index via FFI

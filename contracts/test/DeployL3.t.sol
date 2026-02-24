@@ -15,10 +15,11 @@ import {Investment} from "../src/core/Investment.sol";
 import {BLSLib} from "../src/libraries/BLSLib.sol";
 import {TypesLib} from "../src/libraries/TypesLib.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {BLSTestHelper} from "./helpers/BLSTestHelper.sol";
 
 /// @title DeployL3Test - Tests for L3 deployment logic
 /// @notice Verifies the deployment order, initialization, and wiring of all contracts
-contract DeployL3Test is Test {
+contract DeployL3Test is BLSTestHelper {
     // Simulated deployer / admin
     address public deployer;
     uint256 public deployerKey;
@@ -209,20 +210,28 @@ contract DeployL3Test is Test {
     function test_registerTestIssuers_threeIssuers() public {
         IssuerRegistry reg = IssuerRegistry(issuerRegistryProxy);
 
-        // G2 pubkeys: 128 bytes each [x_im, x_re, y_im, y_re]
-        bytes memory pubkey1 = abi.encodePacked(uint256(1), uint256(2), uint256(3), uint256(4));
-        bytes memory pubkey2 = abi.encodePacked(uint256(5), uint256(6), uint256(7), uint256(8));
-        bytes memory pubkey3 = abi.encodePacked(uint256(9), uint256(10), uint256(11), uint256(12));
+        // Real BLS G2 pubkeys from deterministic seeds via FFI
+        bytes memory pubkey1 = blsPubkey(0);
+        bytes memory pubkey2 = blsPubkey(1);
+        bytes memory pubkey3 = blsPubkey(2);
 
         address issuer1 = address(uint160(uint256(keccak256("test-issuer-1"))));
         address issuer2 = address(uint160(uint256(keccak256("test-issuer-2"))));
         address issuer3 = address(uint160(uint256(keccak256("test-issuer-3"))));
 
+        // Generate Proof of Possession signatures
+        bytes32 popMsg1 = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), issuer1, pubkey1));
+        bytes32 popMsg2 = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), issuer2, pubkey2));
+        bytes32 popMsg3 = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), issuer3, pubkey3));
+        bytes memory popSig1 = blsSign(vm.toString(uint256(0)), popMsg1);
+        bytes memory popSig2 = blsSign(vm.toString(uint256(1)), popMsg2);
+        bytes memory popSig3 = blsSign(vm.toString(uint256(2)), popMsg3);
+
         // addIssuer requires admin of governance
         vm.startPrank(deployer);
-        uint256 id1 = reg.addIssuer(issuer1, bytes32("issuer1.index.network"), pubkey1);
-        uint256 id2 = reg.addIssuer(issuer2, bytes32("issuer2.index.network"), pubkey2);
-        uint256 id3 = reg.addIssuer(issuer3, bytes32("issuer3.index.network"), pubkey3);
+        uint256 id1 = reg.addIssuer(issuer1, bytes32("issuer1.index.network"), pubkey1, popSig1);
+        uint256 id2 = reg.addIssuer(issuer2, bytes32("issuer2.index.network"), pubkey2, popSig2);
+        uint256 id3 = reg.addIssuer(issuer3, bytes32("issuer3.index.network"), pubkey3, popSig3);
         vm.stopPrank();
 
         assertEq(id1, 0);
@@ -238,12 +247,16 @@ contract DeployL3Test is Test {
     function test_registerTestIssuers_issuerDataCorrect() public {
         IssuerRegistry reg = IssuerRegistry(issuerRegistryProxy);
 
-        // G2 pubkey: 128 bytes [x_im, x_re, y_im, y_re]
-        bytes memory pubkey1 = abi.encodePacked(uint256(1), uint256(2), uint256(3), uint256(4));
+        // Real BLS G2 pubkey from deterministic seed via FFI
+        bytes memory pubkey1 = blsPubkey(0);
         address issuer1 = address(uint160(uint256(keccak256("test-issuer-1"))));
 
+        // Generate Proof of Possession
+        bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), issuer1, pubkey1));
+        bytes memory popSig = blsSign(vm.toString(uint256(0)), popMsg);
+
         vm.prank(deployer);
-        uint256 id = reg.addIssuer(issuer1, bytes32("issuer1.index.network"), pubkey1);
+        uint256 id = reg.addIssuer(issuer1, bytes32("issuer1.index.network"), pubkey1, popSig);
 
         TypesLib.Issuer memory issuer = reg.getIssuer(id);
         assertEq(issuer.addr, issuer1);

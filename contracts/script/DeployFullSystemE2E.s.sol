@@ -321,8 +321,12 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         // Real BLS G2 pubkey from deterministic seed via FFI
         bytes memory pubkey = blsPubkey(uint8(idx));
 
+        // Generate Proof of Possession signature
+        bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, issuerRegistry, issuer, pubkey));
+        bytes memory popSig = blsSign(vm.toString(idx), popMsg);
+
         // Deployer (admin) is the broadcast sender, so no vm.prank needed
-        IssuerRegistry(issuerRegistry).addIssuer(issuer, ipBytes32, pubkey);
+        IssuerRegistry(issuerRegistry).addIssuer(issuer, ipBytes32, pubkey, popSig);
         console.log("  Registered issuer", idx + 1, ":", issuer);
     }
 

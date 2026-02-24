@@ -405,12 +405,16 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
         // Get current nonce from L3 registry
         uint256 currentNonce = l3Registry.registryNonce();
 
+        // Generate Proof of Possession for issuer4
+        bytes32 popMsg4 = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(l3Registry), issuer4, pubkey4));
+        bytes memory popSig4 = blsSign(vm.toString(uint256(4)), popMsg4);
+
         // Expect RegistryStateChanged event
         vm.expectEmit(true, false, false, false);
         emit EventsLib.RegistryStateChanged(currentNonce + 1, 4, bytes32(0));
 
         vm.prank(admin);
-        l3Registry.addIssuer(issuer4, bytes32("ip4"), pubkey4);
+        l3Registry.addIssuer(issuer4, bytes32("ip4"), pubkey4, popSig4);
 
         // Verify nonce incremented
         assertEq(l3Registry.registryNonce(), currentNonce + 1);
@@ -455,8 +459,12 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
         address issuer4 = address(0x1004);
         uint256 l3NonceBefore = l3Registry.registryNonce();
 
+        // Generate Proof of Possession for issuer4
+        bytes32 popMsg4 = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(l3Registry), issuer4, pubkey4));
+        bytes memory popSig4 = blsSign(vm.toString(uint256(4)), popMsg4);
+
         vm.prank(admin);
-        l3Registry.addIssuer(issuer4, bytes32("ip4"), pubkey4);
+        l3Registry.addIssuer(issuer4, bytes32("ip4"), pubkey4, popSig4);
 
         uint256 l3NonceAfter = l3Registry.registryNonce();
         assertEq(l3NonceAfter, l3NonceBefore + 1);
@@ -506,8 +514,11 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
         assertEq(mirror.registryNonce(), 1);
 
         // Add issuer on L3
+        bytes memory pubkey4_ = generateTestPubkey(4);
+        bytes32 popMsg4_ = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(l3Registry), address(0x1004), pubkey4_));
+        bytes memory popSig4_ = blsSign(vm.toString(uint256(4)), popMsg4_);
         vm.prank(admin);
-        l3Registry.addIssuer(address(0x1004), bytes32("ip4"), generateTestPubkey(4));
+        l3Registry.addIssuer(address(0x1004), bytes32("ip4"), pubkey4_, popSig4_);
 
         // Sync 2: Update mirror with new issuer count.
         // Mirror still holds blsAggPubkey("0,1,2") as current pubkey → still signable.

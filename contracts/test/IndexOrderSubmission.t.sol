@@ -573,7 +573,7 @@ contract IndexOrderSubmissionTest is TestHelper {
 
         // Register an issuer
         issuerAddr = address(0xC0D3);
-        registerIssuer(registry, address(this), issuerAddr, bytes32(0), 1);
+        registerIssuer(registry, address(this), issuerAddr, bytes32(0), 10);
 
         // Fund the issuer with USDC and approve
         usdc.mint(issuerAddr, 1000e18);
