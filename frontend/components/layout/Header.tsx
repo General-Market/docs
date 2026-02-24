@@ -10,7 +10,7 @@ import { usePostHogTracker } from '@/hooks/usePostHog'
 export function Header() {
   const t = useTranslations('common')
   const pathname = usePathname()
-  const isVision = pathname === '/vision'
+  const isVision = pathname === '/'
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const INVESTMENT_NAV = [
@@ -81,7 +81,7 @@ export function Header() {
             {/* Page Tabs */}
             <nav className="hidden sm:flex items-center gap-0">
               <Link
-                href="/"
+                href="/index"
                 className={`px-6 py-5 text-[15px] font-semibold transition-all border-b-[3px] ${
                   !isVision
                     ? 'text-black border-black'
@@ -91,7 +91,7 @@ export function Header() {
                 {t('nav.investment')}
               </Link>
               <Link
-                href="/vision"
+                href="/"
                 className={`px-6 py-5 text-[15px] font-semibold transition-all border-b-[3px] ${
                   isVision
                     ? 'text-black border-black'
@@ -168,7 +168,7 @@ export function Header() {
             {/* Mobile page tabs */}
             <div className="flex gap-2 pb-2 mb-2 border-b border-border-light">
               <Link
-                href="/"
+                href="/index"
                 onClick={() => setMobileMenuOpen(false)}
                 className={`px-3 py-1.5 text-sm font-semibold rounded ${
                   !isVision ? 'bg-black text-white' : 'text-text-secondary'
@@ -177,7 +177,7 @@ export function Header() {
                 {t('nav.investment')}
               </Link>
               <Link
-                href="/vision"
+                href="/"
                 onClick={() => setMobileMenuOpen(false)}
                 className={`px-3 py-1.5 text-sm font-semibold rounded ${
                   isVision ? 'bg-black text-white' : 'text-text-secondary'
