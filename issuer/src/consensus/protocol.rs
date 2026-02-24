@@ -1457,24 +1457,71 @@ where
 
                 let bridge_orch_guard = self.bridge_orchestrator.read().await;
                 if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
+                    // Compute the message hash for verification
+                    let message_hash = {
+                        let orch = bridge_orch.read().await;
+                        crate::bridge::build_emit_asset_trades_hash(
+                            orch.config().l3_chain_id,
+                            orch.config().index_address,
+                            msg_cycle,
+                            &trades_data.iter()
+                                .map(|(asset, side, usdc_amount, price, quote_token)| AssetTrade {
+                                    asset: *asset, side: *side, usdc_amount: *usdc_amount, price: *price, quote_token: *quote_token,
+                                })
+                                .collect::<Vec<_>>(),
+                        )
+                    };
+
+                    // Verify leader's BLS signature before signing
+                    {
+                        let hash_bytes: [u8; 32] = message_hash.into();
+                        if let Some(leader_pubkey) = self.key_registry.get_public_key(&from) {
+                            match self
+                                .bls_signer
+                                .verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature)
+                            {
+                                Ok(true) => {
+                                    debug!(cycle_number = msg_cycle, "Leader signature verified for AssetTrades");
+                                }
+                                Ok(false) => {
+                                    warn!(
+                                        code = "INFRA-007",
+                                        cycle_number = msg_cycle,
+                                        "Invalid leader signature on AssetTrades proposal"
+                                    );
+                                    return Err(Error::BlsVerification(
+                                        "Invalid leader signature on AssetTrades proposal".to_string(),
+                                    ));
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        code = "INFRA-007",
+                                        cycle_number = msg_cycle,
+                                        error = %e,
+                                        "Failed to verify leader signature for AssetTrades"
+                                    );
+                                    return Err(e);
+                                }
+                            }
+                        } else {
+                            warn!(
+                                code = "INFRA-007",
+                                cycle_number = msg_cycle,
+                                leader_id = ?from,
+                                "Leader public key not found in registry, REJECTING proposal"
+                            );
+                            return Err(Error::BlsVerification(
+                                format!("Leader {:?} not found in key registry -- refusing to sign", from)
+                            ));
+                        }
+                    }
+
                     let proposal = AssetTradesProposal {
                         leader_id: from,
                         cycle_number: msg_cycle,
                         trades,
                         leader_signature: BLSSignature(leader_signature.0.clone()),
-                        message_hash: {
-                            let orch = bridge_orch.read().await;
-                            crate::bridge::build_emit_asset_trades_hash(
-                                orch.config().l3_chain_id,
-                                orch.config().index_address,
-                                msg_cycle,
-                                &trades_data.iter()
-                                    .map(|(asset, side, usdc_amount, price, quote_token)| AssetTrade {
-                                        asset: *asset, side: *side, usdc_amount: *usdc_amount, price: *price, quote_token: *quote_token,
-                                    })
-                                    .collect::<Vec<_>>(),
-                            )
-                        },
+                        message_hash,
                     };
 
                     match {
@@ -1784,6 +1831,50 @@ where
                 );
 
                 let hash_bytes: [u8; 32] = message_hash.into();
+
+                // Verify leader's BLS signature before signing
+                if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
+                    match self
+                        .bls_signer
+                        .verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature)
+                    {
+                        Ok(true) => {
+                            debug!(cycle_number = msg_cycle, order_id = %order_id, "Leader signature verified for CompleteBuyOrder");
+                        }
+                        Ok(false) => {
+                            warn!(
+                                code = "INFRA-007",
+                                cycle_number = msg_cycle,
+                                order_id = %order_id,
+                                "Invalid leader signature on CompleteBuyOrder proposal"
+                            );
+                            return Err(Error::BlsVerification(
+                                "Invalid leader signature on CompleteBuyOrder proposal".to_string(),
+                            ));
+                        }
+                        Err(e) => {
+                            warn!(
+                                code = "INFRA-007",
+                                cycle_number = msg_cycle,
+                                order_id = %order_id,
+                                error = %e,
+                                "Failed to verify leader signature for CompleteBuyOrder"
+                            );
+                            return Err(e);
+                        }
+                    }
+                } else {
+                    warn!(
+                        code = "INFRA-007",
+                        cycle_number = msg_cycle,
+                        ?leader_id,
+                        "Leader public key not found in registry, REJECTING proposal"
+                    );
+                    return Err(Error::BlsVerification(
+                        format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
+                    ));
+                }
+
                 let signature = self
                     .bls_signer
                     .sign_message_hash(&self.bls_keypair, &hash_bytes)
@@ -5848,6 +5939,16 @@ where
                     return Err(e);
                 }
             }
+        } else {
+            warn!(
+                code = "INFRA-007",
+                cycle_number,
+                ?leader_id,
+                "Leader public key not found in registry, REJECTING proposal"
+            );
+            return Err(Error::BlsVerification(
+                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
+            ));
         }
 
         // Sign the proposal
@@ -6222,6 +6323,16 @@ where
                     return Err(e);
                 }
             }
+        } else {
+            warn!(
+                code = "INFRA-007",
+                itp_id = ?itp_id,
+                ?leader_id,
+                "Leader public key not found in registry, REJECTING proposal"
+            );
+            return Err(Error::BlsVerification(
+                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
+            ));
         }
 
         // Sign the proposal
@@ -6551,6 +6662,16 @@ where
                     return Err(e);
                 }
             }
+        } else {
+            warn!(
+                code = "INFRA-007",
+                itp_id = ?itp_id,
+                ?leader_id,
+                "Leader public key not found in registry, REJECTING proposal"
+            );
+            return Err(Error::BlsVerification(
+                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
+            ));
         }
 
         // Sign the proposal
@@ -6815,6 +6936,16 @@ where
                     return Err(e);
                 }
             }
+        } else {
+            warn!(
+                code = "INFRA-007",
+                itp_id = ?itp_id,
+                ?leader_id,
+                "Leader public key not found in registry, REJECTING proposal"
+            );
+            return Err(Error::BlsVerification(
+                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
+            ));
         }
 
         // Sign the proposal
@@ -7124,6 +7255,16 @@ where
                     return Err(e);
                 }
             }
+        } else {
+            warn!(
+                code = "INFRA-007",
+                order_id = %order_id,
+                ?leader_id,
+                "Leader public key not found in registry, REJECTING proposal"
+            );
+            return Err(Error::BlsVerification(
+                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
+            ));
         }
 
         // Reconstruct and validate proposal
@@ -7419,6 +7560,16 @@ where
                     return Err(e);
                 }
             }
+        } else {
+            warn!(
+                code = "INFRA-007",
+                order_id = %order_id,
+                ?leader_id,
+                "Leader public key not found in registry, REJECTING proposal"
+            );
+            return Err(Error::BlsVerification(
+                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
+            ));
         }
 
         // Reconstruct and validate proposal
