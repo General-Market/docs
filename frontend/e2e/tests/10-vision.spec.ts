@@ -58,6 +58,9 @@ test.describe('Vision', () => {
     // Vision is now the root page
     await page.goto('/')
 
+    // Wait for page to hydrate — the VISION heading always renders
+    await page.getByRole('heading', { name: /vision/i }).waitFor({ timeout: 30_000 })
+
     // Wait for batch content (batch card)
     const batchVisible = await page
       .locator('[data-testid="batch-card"]')
@@ -67,7 +70,7 @@ test.describe('Vision', () => {
 
     // Also check for text indicators
     const hasMarkets = await page
-      .getByText(/market/i)
+      .getByText(/prediction market/i)
       .first()
       .isVisible({ timeout: 5_000 })
       .catch(() => false)
@@ -78,7 +81,7 @@ test.describe('Vision', () => {
       .isVisible({ timeout: 5_000 })
       .catch(() => false)
 
-    // At least one indicator should be visible
+    // At least one indicator should be visible (page loaded with vision content)
     expect(batchVisible || hasMarkets || hasTvl).toBe(true)
   })
 
