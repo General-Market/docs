@@ -855,15 +855,23 @@ where
 
     async fn is_consensus_paused(&self) -> Result<bool, Error> {
         let contract = self.issuer_registry_contract();
-        let result = contract
-            .consensus_paused()
-            .call()
-            .await
-            .map_err(|e| {
-                Error::ChainRead(format!("Failed to fetch consensusPaused: {}", e))
-            })?;
-
-        Ok(result)
+        match contract.consensus_paused().call().await {
+            Ok(result) => Ok(result),
+            Err(e) => {
+                let err_str = e.to_string();
+                // If the function doesn't exist on-chain (old contract version),
+                // treat as "not paused" — the contract hasn't been upgraded yet.
+                if err_str.contains("empty bytes")
+                    || err_str.contains("Invalid name")
+                    || err_str.contains("0x")
+                {
+                    tracing::debug!("consensusPaused() not found on contract, assuming not paused");
+                    Ok(false)
+                } else {
+                    Err(Error::ChainRead(format!("Failed to fetch consensusPaused: {}", e)))
+                }
+            }
+        }
     }
 }
 
