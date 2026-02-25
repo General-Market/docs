@@ -269,7 +269,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
     }
 
     /// @inheritdoc IInvestment
-    function confirmBatch(uint256 cycleNumber, uint256[] calldata orderIds, bytes calldata blsSignature) external {
+    function confirmBatch(uint256 cycleNumber, uint256[] calldata orderIds, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         // Check cycle not already processed (replay protection)
         if (cycleProcessed[cycleNumber]) {
             revert ErrorsLib.E019_CycleAlreadyProcessed(cycleNumber);
@@ -280,7 +280,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
 
         // Verify BLS signature against aggregated public key
         // SECURITY: issuerRegistry MUST be set in production. Empty pubkey only allowed for testing.
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Process each order: validate and mark as BATCHED
         for (uint256 i = 0; i < orderIds.length;) {
@@ -337,14 +337,16 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
     function emitAssetTrades(
         uint256 cycleNumber,
         TypesLib.AssetTrade[] calldata trades,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external {
         if (!cycleProcessed[cycleNumber]) revert ErrorsLib.E128_CycleNotConfirmed(cycleNumber);
 
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(this), "assetTrades", cycleNumber, trades
         ));
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         for (uint256 i = 0; i < trades.length;) {
             emit EventsLib.AssetTradeRequest(
@@ -360,13 +362,13 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
     }
 
     /// @inheritdoc IInvestment
-    function confirmFills(uint256 cycleNumber, TypesLib.Fill[] calldata fills, bytes calldata blsSignature) external nonReentrant {
+    function confirmFills(uint256 cycleNumber, TypesLib.Fill[] calldata fills, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external nonReentrant {
         // Build message for BLS verification: keccak256(abi.encode(chainid, this, cycleNumber, fills))
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), cycleNumber, fills));
 
         // Verify BLS signature against aggregated public key
         // SECURITY: issuerRegistry MUST be set in production. Empty pubkey only allowed for testing.
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Process each fill
         for (uint256 i = 0; i < fills.length;) {
@@ -544,7 +546,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
     }
 
     /// @inheritdoc IInvestment
-    function refundExpiredOrder(uint256 orderId, bytes calldata blsSignature) external {
+    function refundExpiredOrder(uint256 orderId, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         TypesLib.LimitOrder storage order = orders[orderId];
 
         // Verify order exists
@@ -571,7 +573,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
 
         // Verify BLS signature
         // SECURITY: issuerRegistry MUST be set in production. Empty pubkey only allowed for testing.
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Mark order as expired
         order.status = TypesLib.OrderStatus.EXPIRED;
@@ -763,7 +765,9 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         uint256[] calldata newWeights,
         uint256[] calldata prices,
         address[] calldata quoteTokens,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external {
         if (!_itpExists[itpId]) {
             revert ErrorsLib.E006_ITPNotFound(itpId);
@@ -773,7 +777,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
             block.chainid, address(this), "rebalance",
             itpId, removeIndices, addAssets, newWeights, prices, quoteTokens
         ));
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         RebalanceLib.rebalance(
             itpId, removeIndices, addAssets, newWeights, prices, quoteTokens,
@@ -808,9 +812,9 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
     /// @param itpId The ITP identifier
     /// @param nav The NAV value (18 decimals)
     /// @param blsSignature Aggregated BLS signature from issuers
-    function setItpNav(bytes32 itpId, uint256 nav, bytes calldata blsSignature) external {
+    function setItpNav(bytes32 itpId, uint256 nav, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "setItpNav", itpId, nav));
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
         _itpNavs[itpId] = nav;
         emit EventsLib.ItpNavUpdated(itpId, nav);
     }
@@ -992,9 +996,9 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
 
     /// @notice Update venue pool balance after bridge operations (BLS-signed)
     /// @dev BLS verification done here, pool update delegated to AdminLib.
-    function updateVenueBalance(uint256 venueId, uint256 newBalance, bytes calldata blsSignature) external {
+    function updateVenueBalance(uint256 venueId, uint256 newBalance, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "UPDATE_VENUE", venueId, newBalance));
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
         AdminLib.updateVenueBalance(venueId, newBalance, venuePools);
     }
 
@@ -1019,9 +1023,9 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
     /// @dev Verifies BLS signature, sets orders to EXPIRED, decrements pendingOrderCount, refunds USDC
     /// @param orderIds Array of order IDs to cancel
     /// @param blsSignature Aggregated BLS signature from issuers
-    function cancelStalePendingOrders(uint256[] calldata orderIds, bytes calldata blsSignature) external {
+    function cancelStalePendingOrders(uint256[] calldata orderIds, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "cancelStale", orderIds));
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         uint256 cancelledCount = 0;
         for (uint256 i = 0; i < orderIds.length;) {
@@ -1068,7 +1072,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
     ///      Requires BLS signature for authorization.
     /// @param orderId The order to refund
     /// @param blsSignature Aggregated BLS signature from issuers
-    function refundTimedOutBatchedOrder(uint256 orderId, bytes calldata blsSignature) external {
+    function refundTimedOutBatchedOrder(uint256 orderId, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         TypesLib.LimitOrder storage order = orders[orderId];
 
         // Verify order exists
@@ -1091,7 +1095,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
 
         // BLS verification
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "refundBatched", orderId));
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Mark as expired and refund
         order.status = TypesLib.OrderStatus.EXPIRED;

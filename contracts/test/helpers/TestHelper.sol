@@ -10,6 +10,11 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {BLSTestHelper} from "./BLSTestHelper.sol";
 
 abstract contract TestHelper is BLSTestHelper {
+    /// @notice Standard test values for consensus-hardening params
+    /// @dev REF_NONCE = 3 because registerTestIssuersWithBLS creates snapshots at nonces 1, 2, 3
+    uint256 constant REF_NONCE = 3;
+    uint256 constant SIGNERS_BITMASK = 7; // binary 111 = 3 issuers active
+
     function deployGovernance(address admin) internal returns (Governance) {
         Governance impl = new Governance();
         bytes memory initData = abi.encodeWithSelector(Governance.initialize.selector, admin);
@@ -43,6 +48,23 @@ abstract contract TestHelper is BLSTestHelper {
         bytes memory popSig = blsSign(vm.toString(uint256(seed)), popMsg);
         vm.prank(admin);
         issuerId = registry.addIssuer(issuerAddr, ipPort, pubkey, popSig);
+
+        // Auto-snapshot to satisfy PendingSnapshot constraint for subsequent mutations
+        // Uses individual key as placeholder aggregate — tests needing proper BLS verification
+        // should use registerTestIssuersWithBLS which overrides with correct aggregate keys
+        uint256 nonce = registry.registryNonce();
+        vm.prank(admin);
+        registry.setAggregatedPubkey(pubkey, nonce);
+    }
+
+    /// @notice Create a snapshot after a non-addIssuer mutation (remove, rotate, etc.)
+    /// @dev Call after removeIssuer or other state changes that increment registryNonce
+    function snapshotRegistry(IssuerRegistry registry, address admin) internal {
+        uint256 nonce = registry.registryNonce();
+        bytes memory pubkey = registry.getAggregatedPubkey();
+        if (pubkey.length == 0) pubkey = new bytes(128); // dummy for empty registry
+        vm.prank(admin);
+        registry.setAggregatedPubkey(pubkey, nonce);
     }
 
     /// @notice Generate a real BLS public key from a seed index via FFI
@@ -70,14 +92,15 @@ abstract contract TestHelper is BLSTestHelper {
             bytes32(uint256(0x7f000001_1F92))  // 127.0.0.1:8082
         ];
 
+        // registerIssuer auto-snapshots after each addIssuer (with individual key)
         for (uint8 i = 0; i < 3; i++) {
             issuerIds[i] = registerIssuer(registry, admin, addrs[i], ips[i], i);
         }
 
-        // Set the aggregated pubkey
+        // Override final snapshot with correct aggregate key for BLS verification
         bytes memory aggPubkey = blsAggPubkey("0,1,2");
         vm.prank(admin);
-        registry.setAggregatedPubkey(aggPubkey);
+        registry.setAggregatedPubkey(aggPubkey, 3);
     }
 
     /// @notice Sign a message hash with the 3 test issuers (seeds 0,1,2)

@@ -22,7 +22,9 @@ interface IBLSCustody {
         address target,
         bytes calldata data,
         bytes calldata blsSignature,
-        uint256 nonce
+        uint256 nonce,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external returns (bool success, bytes memory returnData);
 
     // ============ WHITELIST MANAGEMENT ============
@@ -35,7 +37,9 @@ interface IBLSCustody {
     /// @param blsSignature Aggregated BLS signature from 11/20 issuers
     function proposeWhitelist(
         address target,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     /// @notice Activate a proposed whitelist after timelock expires
@@ -52,7 +56,9 @@ interface IBLSCustody {
     /// @param blsSignature Aggregated BLS signature from 15/20 issuers
     function emergencyRemoveWhitelist(
         address target,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     // ============ UPGRADE MANAGEMENT ============
@@ -65,7 +71,9 @@ interface IBLSCustody {
     /// @param blsSignature Aggregated BLS signature from 15/20 issuers
     function proposeUpgrade(
         address newImpl,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     /// @notice Propose an emergency UUPS upgrade (24-hour timelock)
@@ -76,7 +84,9 @@ interface IBLSCustody {
     /// @param blsSignature Aggregated BLS signature from 17/20 issuers
     function proposeEmergencyUpgrade(
         address newImpl,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     /// @notice Execute a proposed upgrade after timelock expires

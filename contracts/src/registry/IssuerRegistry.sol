@@ -86,6 +86,9 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
     /// @notice Thrown when Proof of Possession BLS signature is invalid
     error IssuerRegistry__InvalidPoP();
 
+    /// @notice Thrown when a snapshot is pending (must call setAggregatedPubkey before further mutations)
+    error IssuerRegistry__PendingSnapshot();
+
     // ============ CONSTANTS ============
 
     /// @notice Key rotation approval threshold (10/19 other issuers)
@@ -158,8 +161,17 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
     /// @dev Sentinel +1 avoids collision with issuer ID 0
     mapping(bytes32 => uint256) private _pubkeyHashToIssuerId;
 
-    /// @dev Storage gap for upgrade safety (reduced from 34 to 32 for consensusPaused + _pubkeyHashToIssuerId)
-    uint256[32] private __gap;
+    /// @dev Latest snapshot nonce (set when setAggregatedPubkey is called)
+    uint256 public lastSnapshotNonce;
+
+    /// @dev Registry snapshots by nonce
+    mapping(uint256 => TypesLib.RegistrySnapshot) private _nonceSnapshots;
+
+    /// @dev Advisory missed-round count per issuer ID (public, permissionless increment)
+    mapping(uint256 => uint256) public issuerMissedCount;
+
+    /// @dev Storage gap for upgrade safety (reduced from 32 to 29 for lastSnapshotNonce + _nonceSnapshots + issuerMissedCount)
+    uint256[29] private __gap;
 
     // ============ CONSTRUCTOR ============
 
@@ -195,6 +207,7 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
         bytes calldata blsPubkey,
         bytes calldata blsPopSignature
     ) external override onlyAdmin returns (uint256 issuerId) {
+        if (lastSnapshotNonce != _registryNonce) revert IssuerRegistry__PendingSnapshot();
         if (issuerAddr == address(0)) revert ZeroAddress();
         if (blsPubkey.length != PUBKEY_LENGTH) revert InvalidPubkeyLength(blsPubkey.length);
 
@@ -252,6 +265,7 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
 
     /// @inheritdoc IIssuerRegistry
     function removeIssuer(uint256 issuerId) external override {
+        if (lastSnapshotNonce != _registryNonce) revert IssuerRegistry__PendingSnapshot();
         TypesLib.Issuer storage issuer = _issuers[issuerId];
 
         // Validate issuer exists and is active
@@ -284,18 +298,44 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
     /// @notice Remove an issuer via BLS vote from other issuers
     /// @param issuerId The issuer to remove
     /// @param blsSignature Aggregated BLS signature over the removal message
-    function removeIssuerByVote(uint256 issuerId, bytes calldata blsSignature) external {
+    /// @param referenceNonce Registry snapshot nonce for historical pubkey lookup
+    /// @param signersBitmask Bitmask of issuers that signed this vote
+    function removeIssuerByVote(
+        uint256 issuerId,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external {
+        if (lastSnapshotNonce != _registryNonce) revert IssuerRegistry__PendingSnapshot();
         TypesLib.Issuer storage issuer = _issuers[issuerId];
         if (issuer.addr == address(0)) revert IssuerNotFound(issuerId);
         if (issuer.status != 1) revert IssuerNotActive(issuerId);
+
+        // Validate reference nonce is within acceptable window
+        uint256 latest = lastSnapshotNonce;
+        uint256 minNonce = latest > 256 ? latest - 256 : 0;
+        if (referenceNonce < minNonce) revert IssuerNotFound(0); // nonce too old
+        if (referenceNonce > latest) revert IssuerNotFound(0);   // nonce future
+
+        // Load snapshot and validate signers
+        TypesLib.RegistrySnapshot memory snap = _nonceSnapshots[referenceNonce];
+        if ((signersBitmask & ~snap.activeBitmask) != 0) revert InvalidBLSSignature();
+        if (_popcount(signersBitmask) < snap.activeCount * 2 / 3 + 1) revert InvalidBLSSignature();
 
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(this), "removeIssuerByVote", issuerId
         ));
 
-        // Verify against aggregated pubkey (same as BLSVerifier pattern)
-        if (!BLSLib.verifyBLS(_aggregatedPubkey, message, blsSignature)) {
+        // Verify against snapshot's aggregated pubkey
+        bytes memory pubkey = _fixedToPubkey(snap.aggregatedPubkey);
+        if (!BLSLib.verifyBLS(pubkey, message, blsSignature)) {
             revert InvalidBLSSignature();
+        }
+
+        // Liveness accounting — advisory only
+        uint256 nonSignersBitmask = snap.activeBitmask ^ signersBitmask;
+        if (nonSignersBitmask != 0) {
+            this.incrementMissedCounts(nonSignersBitmask);
         }
 
         // Clear pubkey uniqueness mapping
@@ -614,12 +654,28 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
         return _aggregatedPubkey;
     }
 
-    /// @notice Set the aggregated BLS G2 public key (computed off-chain)
+    /// @notice Set the aggregated BLS G2 public key and create a registry snapshot
     /// @dev Must be called after any addIssuer/removeIssuer/key rotation
     /// @param pubkey The aggregated G2 public key (128 bytes)
-    function setAggregatedPubkey(bytes calldata pubkey) external onlyAdmin {
+    /// @param nonce The registry nonce this snapshot corresponds to
+    function setAggregatedPubkey(bytes calldata pubkey, uint256 nonce) external override onlyAdmin {
+        if (nonce != _registryNonce) revert IssuerRegistry__PendingSnapshot();
         _aggregatedPubkey = pubkey;
+
+        // Write snapshot
+        uint256 activeBitmask = _computeActiveBitmask();
+        bytes32[4] memory fixedPubkey = _pubkeyToFixed(pubkey);
+        _nonceSnapshots[nonce] = TypesLib.RegistrySnapshot({
+            activeCount: _activeCount,
+            stateHash: getRegistryStateHash(),
+            aggregatedPubkey: fixedPubkey,
+            blockNumber: block.number,
+            activeBitmask: activeBitmask
+        });
+        lastSnapshotNonce = nonce;
+
         emit AggregatedPubkeyUpdated(pubkey);
+        emit EventsLib.SnapshotCreated(nonce, block.number, activeBitmask);
     }
 
     /// @notice Get pubkeys for specific issuers (for off-chain aggregation)
@@ -761,12 +817,67 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
         _registryNonce++;
         bytes32 stateHash = getRegistryStateHash();
         emit EventsLib.RegistryStateChanged(_registryNonce, _activeCount, stateHash);
+        emit EventsLib.SnapshotPending(_registryNonce);
     }
 
     /// @notice Get the governance contract address
     /// @return The governance contract
     function governance() external view returns (IGovernance) {
         return _governance;
+    }
+
+    // ============ SNAPSHOT & NON-SIGNER TRACKING (Phase 2+3) ============
+
+    /// @inheritdoc IIssuerRegistry
+    function getSnapshotAtNonce(uint256 nonce) external view override returns (TypesLib.RegistrySnapshot memory) {
+        return _nonceSnapshots[nonce];
+    }
+
+    /// @inheritdoc IIssuerRegistry
+    function getActiveBitmask() external view override returns (uint256) {
+        return _computeActiveBitmask();
+    }
+
+    /// @inheritdoc IIssuerRegistry
+    function incrementMissedCounts(uint256 nonSignersBitmask) external override {
+        uint256 mask = nonSignersBitmask;
+        for (uint256 i = 0; i < 256 && mask != 0; i++) {
+            if (mask & 1 == 1) {
+                issuerMissedCount[i]++;
+            }
+            mask >>= 1;
+        }
+        emit EventsLib.NonSignersRecorded(nonSignersBitmask);
+    }
+
+    /// @dev Compute active issuer bitmask from current state
+    /// @return bitmask where bit i = issuer i is active
+    function _computeActiveBitmask() internal view returns (uint256 bitmask) {
+        for (uint256 i = 0; i < _issuerCount && i < 256; i++) {
+            if (_issuers[i].addr != address(0) && _issuers[i].status == 1) {
+                bitmask |= (1 << i);
+            }
+        }
+    }
+
+    /// @dev Convert dynamic bytes pubkey to fixed bytes32[4] for snapshot storage
+    function _pubkeyToFixed(bytes calldata pubkey) internal pure returns (bytes32[4] memory r) {
+        assembly {
+            calldatacopy(r, pubkey.offset, 128)
+        }
+    }
+
+    /// @dev Convert fixed bytes32[4] pubkey back to dynamic bytes
+    function _fixedToPubkey(bytes32[4] memory pk) internal pure returns (bytes memory) {
+        return abi.encodePacked(pk[0], pk[1], pk[2], pk[3]);
+    }
+
+    /// @dev Count set bits in a uint256 (population count)
+    function _popcount(uint256 x) internal pure returns (uint256 count) {
+        while (x != 0) {
+            x &= x - 1;
+            count++;
+        }
     }
 
     // ============ UPGRADE AUTHORIZATION ============

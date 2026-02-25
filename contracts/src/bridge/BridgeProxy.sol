@@ -164,7 +164,9 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     function completeCreateItp(
         uint256 nonce,
         bytes32 orbitItpId,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external override whenNotPaused returns (address bridgedItpAddress) {
         PendingItpCreation storage pending = _pendingCreations[nonce];
         if (pending.admin == address(0)) revert ErrorsLib.E072_CreationNotFound(nonce);
@@ -178,7 +180,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         );
 
         // Verify BLS signature via BLSVerifier
-        _verifyBLS(messageHash, blsSignature);
+        _verifyBLS(messageHash, blsSignature, referenceNonce, signersBitmask);
 
         // Mark completed
         pending.completed = true;
@@ -249,7 +251,9 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         uint256[] calldata newWeights,
         uint256[] calldata prices,
         address[] calldata quoteTokens,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external override whenNotPaused {
         // Build message hash matching L3 Investment.rebalance format
         bytes32 messageHash = keccak256(abi.encode(
@@ -258,7 +262,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         ));
 
         // Verify BLS signature via BLSVerifier
-        _verifyBLS(messageHash, blsSignature);
+        _verifyBLS(messageHash, blsSignature, referenceNonce, signersBitmask);
 
         // Investment.sol only exists on L3 — issuer relays rebalance to L3 separately
         emit RebalanceCompleted(itpId, 0);
@@ -386,7 +390,9 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         bytes32 itpId,
         address user,
         uint256 amount,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external override whenNotPaused {
         address bridgedItp = orbitToArbitrum[itpId];
         if (bridgedItp == address(0)) revert ErrorsLib.E099_BridgeItpNotFound(itpId);
@@ -395,7 +401,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(this), "mintBridgedShares", itpId, user, amount
         ));
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         IBridgedITP(bridgedItp).mint(user, amount);
 
@@ -411,7 +417,9 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         bytes32 itpId,
         address from,
         uint256 amount,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external override whenNotPaused {
         address bridgedItp = orbitToArbitrum[itpId];
         if (bridgedItp == address(0)) revert ErrorsLib.E099_BridgeItpNotFound(itpId);
@@ -420,7 +428,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(this), "burnBridgedShares", itpId, from, amount
         ));
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         IBridgedITP(bridgedItp).burn(from, amount);
 

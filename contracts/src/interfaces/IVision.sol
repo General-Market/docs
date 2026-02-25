@@ -46,7 +46,9 @@ interface IVision {
         uint256 batchId,
         bytes32[] calldata marketIds,
         uint8[] calldata resolutionTypes,
-        bytes calldata blsSig
+        bytes calldata blsSig,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     function getBatch(uint256 batchId) external view returns (Batch memory);
@@ -68,13 +70,17 @@ interface IVision {
         uint256 fromTick,
         uint256 toTick,
         uint256 newBalance,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     function withdraw(
         uint256 batchId,
         uint256 finalBalance,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     function getPosition(uint256 batchId, address player) external view returns (PlayerPosition memory);
@@ -86,10 +92,10 @@ interface IVision {
 
     // ============ FEE MANAGEMENT ============
     function collectFees() external;
-    function updateFeeCollector(address newCollector, bytes calldata blsSignature) external;
+    function updateFeeCollector(address newCollector, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     // ============ ISSUER OPERATIONS ============
-    function pause(uint256 batchId, bytes calldata blsSignature) external;
-    function unpause(uint256 batchId, bytes calldata blsSignature) external;
-    function forceWithdraw(uint256 batchId, address player, uint256 finalBalance, bytes calldata blsSignature) external;
+    function pause(uint256 batchId, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
+    function unpause(uint256 batchId, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
+    function forceWithdraw(uint256 batchId, address player, uint256 finalBalance, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 }

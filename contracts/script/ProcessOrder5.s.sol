@@ -36,7 +36,7 @@ contract ProcessOrder5 is Script {
 
         bytes memory emptySignature = new bytes(64);
 
-        index.confirmBatch(cycleNumber, orderIds, emptySignature);
+        index.confirmBatch(cycleNumber, orderIds, emptySignature, 3, 7);
         console.log("confirmBatch succeeded for cycle", cycleNumber);
 
         // Step 3: Call confirmFills
@@ -51,7 +51,7 @@ contract ProcessOrder5 is Script {
             txHash: bytes32(0)
         });
 
-        index.confirmFills(cycleNumber, fills, emptySignature);
+        index.confirmFills(cycleNumber, fills, emptySignature, 3, 7);
         console.log("confirmFills succeeded");
 
         vm.stopBroadcast();

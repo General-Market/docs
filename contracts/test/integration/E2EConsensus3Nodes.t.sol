@@ -13,6 +13,7 @@ import "../../src/libraries/TypesLib.sol";
 import "../../src/libraries/ErrorsLib.sol";
 import "../../src/libraries/EventsLib.sol";
 import "../../src/libraries/BLSLib.sol";
+import {BLSVerifier} from "../../src/libraries/BLSVerifier.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title E2EConsensus3Nodes - Multi-Node BLS Consensus Integration Test (Story 6.16)
@@ -195,7 +196,7 @@ contract E2EConsensus3NodesTest is TestHelper {
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
 
-        index.confirmBatch(1, orderIds, _signConfirmBatch(1, orderIds));
+        index.confirmBatch(1, orderIds, _signConfirmBatch(1, orderIds), 3, 7);
 
         TypesLib.LimitOrder memory order = index.getOrder(orderId);
         assertEq(
@@ -216,7 +217,7 @@ contract E2EConsensus3NodesTest is TestHelper {
         bytes32 expectedMessage = _computeBatchMessage(1, orderIds);
         assertTrue(expectedMessage != bytes32(0), "Message hash should be non-zero");
 
-        index.confirmBatch(1, orderIds, _signConfirmBatch(1, orderIds));
+        index.confirmBatch(1, orderIds, _signConfirmBatch(1, orderIds), 3, 7);
 
         TypesLib.LimitOrder memory order = index.getOrder(orderId);
         assertEq(uint8(order.status), uint8(TypesLib.OrderStatus.BATCHED));
@@ -233,8 +234,8 @@ contract E2EConsensus3NodesTest is TestHelper {
 
         // Real sig over wrong message — BLS pairing will fail
         bytes memory wrongSig = signWithTestIssuers(keccak256("wrong message"));
-        vm.expectRevert(ErrorsLib.E020_InvalidBLSSignature.selector);
-        index.confirmBatch(1, orderIds, wrongSig);
+        vm.expectRevert(BLSVerifier.BLSVerifier__InvalidSignature.selector);
+        index.confirmBatch(1, orderIds, wrongSig, 3, 7);
     }
 
     /// @notice Test that a short (non-64-byte) signature is rejected
@@ -245,8 +246,8 @@ contract E2EConsensus3NodesTest is TestHelper {
         orderIds[0] = orderId;
 
         bytes memory shortSig = new bytes(32);
-        vm.expectRevert(ErrorsLib.E020_InvalidBLSSignature.selector);
-        index.confirmBatch(1, orderIds, shortSig);
+        vm.expectRevert(BLSVerifier.BLSVerifier__InvalidSignature.selector);
+        index.confirmBatch(1, orderIds, shortSig, 3, 7);
     }
 
     // ============ TASK 1.8: LEADER ROTATION DETERMINISTIC ============
@@ -290,13 +291,13 @@ contract E2EConsensus3NodesTest is TestHelper {
 
         uint256[] memory batch1 = new uint256[](1);
         batch1[0] = orderId1;
-        index.confirmBatch(1, batch1, _signConfirmBatch(1, batch1));
+        index.confirmBatch(1, batch1, _signConfirmBatch(1, batch1), 3, 7);
 
         uint256[] memory batch2 = new uint256[](1);
         batch2[0] = orderId2;
         vm.expectRevert(); // Replay protection revert (cycle already used)
         // Any sig — revert happens before BLS check
-        index.confirmBatch(1, batch2, signWithTestIssuers(keccak256("irrelevant")));
+        index.confirmBatch(1, batch2, signWithTestIssuers(keccak256("irrelevant")), 3, 7);
 
         assertEq(
             uint8(index.getOrder(orderId1).status),
@@ -332,7 +333,7 @@ contract E2EConsensus3NodesTest is TestHelper {
         emit EventsLib.BatchConfirmed(1, orderIds, new bytes(0));
 
         bytes memory batchSig = _signConfirmBatch(1, orderIds);
-        index.confirmBatch(1, orderIds, batchSig);
+        index.confirmBatch(1, orderIds, batchSig, 3, 7);
         assertEq(uint8(index.getOrder(orderId).status), uint8(TypesLib.OrderStatus.BATCHED));
 
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
@@ -347,7 +348,7 @@ contract E2EConsensus3NodesTest is TestHelper {
         vm.expectEmit(true, true, false, true);
         emit EventsLib.FillConfirmed(orderId, 1, fillPrice, orderAmount);
 
-        index.confirmFills(1, fills, _signConfirmFills(1, fills));
+        index.confirmFills(1, fills, _signConfirmFills(1, fills), 3, 7);
 
         uint256 expectedShares = (orderAmount * 1e18) / fillPrice;
         assertEq(itpVault.balanceOf(user1), expectedShares, "User should receive ITP tokens");
@@ -366,31 +367,31 @@ contract E2EConsensus3NodesTest is TestHelper {
         uint256 orderId1 = _submitOrder(user1, 100e18, 1e18, 1);
         uint256[] memory batch1 = new uint256[](1);
         batch1[0] = orderId1;
-        index.confirmBatch(1, batch1, _signConfirmBatch(1, batch1));
+        index.confirmBatch(1, batch1, _signConfirmBatch(1, batch1), 3, 7);
 
         TypesLib.Fill[] memory fills1 = new TypesLib.Fill[](1);
         fills1[0] = TypesLib.Fill({orderId: orderId1, fillPrice: 1e18, fillAmount: 100e18, cycleNumber: 1, txHash: bytes32(0)});
-        index.confirmFills(1, fills1, _signConfirmFills(1, fills1));
+        index.confirmFills(1, fills1, _signConfirmFills(1, fills1), 3, 7);
 
         // Cycle 2
         uint256 orderId2 = _submitOrder(user1, 150e18, 1e18, 1);
         uint256[] memory batch2 = new uint256[](1);
         batch2[0] = orderId2;
-        index.confirmBatch(2, batch2, _signConfirmBatch(2, batch2));
+        index.confirmBatch(2, batch2, _signConfirmBatch(2, batch2), 3, 7);
 
         TypesLib.Fill[] memory fills2 = new TypesLib.Fill[](1);
         fills2[0] = TypesLib.Fill({orderId: orderId2, fillPrice: 1e18, fillAmount: 150e18, cycleNumber: 2, txHash: bytes32(0)});
-        index.confirmFills(2, fills2, _signConfirmFills(2, fills2));
+        index.confirmFills(2, fills2, _signConfirmFills(2, fills2), 3, 7);
 
         // Cycle 3
         uint256 orderId3 = _submitOrder(user1, 75e18, 1e18, 1);
         uint256[] memory batch3 = new uint256[](1);
         batch3[0] = orderId3;
-        index.confirmBatch(3, batch3, _signConfirmBatch(3, batch3));
+        index.confirmBatch(3, batch3, _signConfirmBatch(3, batch3), 3, 7);
 
         TypesLib.Fill[] memory fills3 = new TypesLib.Fill[](1);
         fills3[0] = TypesLib.Fill({orderId: orderId3, fillPrice: 1e18, fillAmount: 75e18, cycleNumber: 3, txHash: bytes32(0)});
-        index.confirmFills(3, fills3, _signConfirmFills(3, fills3));
+        index.confirmFills(3, fills3, _signConfirmFills(3, fills3), 3, 7);
 
         uint256 totalExpected = 100e18 + 150e18 + 75e18;
         assertEq(itpVault.balanceOf(user1), totalExpected, "Total ITP after 3 cycles");
@@ -409,7 +410,7 @@ contract E2EConsensus3NodesTest is TestHelper {
         uint256 orderId = _submitOrder(user1, 50e18, 1e18, 1);
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(1, orderIds, _signConfirmBatch(1, orderIds));
+        index.confirmBatch(1, orderIds, _signConfirmBatch(1, orderIds), 3, 7);
 
         assertEq(uint8(index.getOrder(orderId).status), uint8(TypesLib.OrderStatus.BATCHED));
     }

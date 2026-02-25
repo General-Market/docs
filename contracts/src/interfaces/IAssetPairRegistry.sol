@@ -13,7 +13,9 @@ interface IAssetPairRegistry {
     /// @dev Message format: keccak256(abi.encode("PROPOSE_ASSET", chainid, this, asset, nonce))
     /// @param asset The asset address to propose
     /// @param blsSignature Aggregated BLS signature from 11/20 issuers
-    function proposeAsset(address asset, bytes calldata blsSignature) external;
+    /// @param referenceNonce The registry nonce at time of signing
+    /// @param signersBitmask Bitmask of which issuers signed
+    function proposeAsset(address asset, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     /// @notice Activate a pending asset after timelock period
     /// @dev Anyone can call after 2-day timelock has passed. Asset moves from PENDING to ACTIVE.
@@ -25,14 +27,18 @@ interface IAssetPairRegistry {
     /// @dev Message format: keccak256(abi.encode("DELIST_ASSET", chainid, this, asset, nonce))
     /// @param asset The asset address to delist
     /// @param blsSignature Aggregated BLS signature from 11/20 issuers
-    function delistAsset(address asset, bytes calldata blsSignature) external;
+    /// @param referenceNonce The registry nonce at time of signing
+    /// @param signersBitmask Bitmask of which issuers signed
+    function delistAsset(address asset, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     /// @notice Emergency removal of an asset (immediate, for security situations)
     /// @dev Requires 15/20 issuer threshold. Asset immediately becomes INACTIVE.
     /// @dev Message format: keccak256(abi.encode("EMERGENCY_REMOVE_ASSET", chainid, this, asset, nonce))
     /// @param asset The asset address to remove
     /// @param blsSignature Aggregated BLS signature from 15/20 issuers
-    function emergencyRemoveAsset(address asset, bytes calldata blsSignature) external;
+    /// @param referenceNonce The registry nonce at time of signing
+    /// @param signersBitmask Bitmask of which issuers signed
+    function emergencyRemoveAsset(address asset, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     // ============ PAIR MANAGEMENT ============
 
@@ -49,7 +55,9 @@ interface IAssetPairRegistry {
         bytes32 source,
         address quoteToken,
         uint256 chainId,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     /// @notice Activate a pending pair after timelock period
@@ -62,7 +70,9 @@ interface IAssetPairRegistry {
     /// @dev Message format: keccak256(abi.encode("DELIST_PAIR", chainid, this, pairId, nonce))
     /// @param pairId The pair identifier to delist
     /// @param blsSignature Aggregated BLS signature from 11/20 issuers
-    function delistPair(bytes32 pairId, bytes calldata blsSignature) external;
+    /// @param referenceNonce The registry nonce at time of signing
+    /// @param signersBitmask Bitmask of which issuers signed
+    function delistPair(bytes32 pairId, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     // ============ PROPOSAL CANCELLATION ============
 
@@ -71,14 +81,18 @@ interface IAssetPairRegistry {
     /// @dev Message format: keccak256(abi.encode("CANCEL_ASSET_PROPOSAL", chainid, this, asset, nonce))
     /// @param asset The asset address to cancel
     /// @param blsSignature Aggregated BLS signature from 11/20 issuers
-    function cancelAssetProposal(address asset, bytes calldata blsSignature) external;
+    /// @param referenceNonce The registry nonce at time of signing
+    /// @param signersBitmask Bitmask of which issuers signed
+    function cancelAssetProposal(address asset, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     /// @notice Cancel a pending pair proposal during timelock period
     /// @dev Requires 11/20 issuer threshold. Resets pair to INACTIVE status.
     /// @dev Message format: keccak256(abi.encode("CANCEL_PAIR_PROPOSAL", chainid, this, pairId, nonce))
     /// @param pairId The pair identifier to cancel
     /// @param blsSignature Aggregated BLS signature from 11/20 issuers
-    function cancelPairProposal(bytes32 pairId, bytes calldata blsSignature) external;
+    /// @param referenceNonce The registry nonce at time of signing
+    /// @param signersBitmask Bitmask of which issuers signed
+    function cancelPairProposal(bytes32 pairId, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     // ============ VIEW FUNCTIONS ============
 

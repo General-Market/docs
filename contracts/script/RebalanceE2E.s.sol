@@ -105,7 +105,7 @@ contract RebalanceE2E is Script {
         console.log("Executing rebalance with BLS signature");
 
         vm.startBroadcast(deployerKey);
-        index.rebalance(itpId, emptyIndices, emptyAddrs, newWeights, prices, emptyQt, sig);
+        index.rebalance(itpId, emptyIndices, emptyAddrs, newWeights, prices, emptyQt, sig, 3, 7);
         vm.stopBroadcast();
 
         console.log("Rebalance executed on-chain");

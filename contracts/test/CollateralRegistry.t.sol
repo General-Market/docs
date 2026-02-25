@@ -227,7 +227,7 @@ contract CollateralRegistryTest is TestHelper {
         vm.expectRevert(
             abi.encodeWithSelector(CollateralRegistry.InsufficientCollateral.selector, ITP_1, ARBITRUM, AMOUNT, 0)
         );
-        registry.recordCollateralMove(ITP_1, ARBITRUM, ETHEREUM, AMOUNT, TypesLib.TxType.BRIDGE, sig);
+        registry.recordCollateralMove(ITP_1, ARBITRUM, ETHEREUM, AMOUNT, TypesLib.TxType.BRIDGE, sig, 3, 7);
     }
 
     function test_RecordCollateralMove_RevertsOnPartialUnderflow() public {
@@ -240,7 +240,7 @@ contract CollateralRegistryTest is TestHelper {
         vm.expectRevert(
             abi.encodeWithSelector(CollateralRegistry.InsufficientCollateral.selector, ITP_1, ARBITRUM, 200e18, 100e18)
         );
-        registry.recordCollateralMove(ITP_1, ARBITRUM, ETHEREUM, 200e18, TypesLib.TxType.BRIDGE, sig);
+        registry.recordCollateralMove(ITP_1, ARBITRUM, ETHEREUM, 200e18, TypesLib.TxType.BRIDGE, sig, 3, 7);
     }
 
     // ============ MULTIPLE ITPs TRACK INDEPENDENTLY ============
@@ -337,7 +337,7 @@ contract CollateralRegistryTest is TestHelper {
         // Pre-compute signature BEFORE vm.expectRevert to avoid getNonce() being captured
         bytes memory sig = _signRecordCollateralMove(ITP_1, INDEX_L3, ARBITRUM, 0, TypesLib.TxType.BRIDGE);
         vm.expectRevert(CollateralRegistry.ZeroAmount.selector);
-        registry.recordCollateralMove(ITP_1, INDEX_L3, ARBITRUM, 0, TypesLib.TxType.BRIDGE, sig);
+        registry.recordCollateralMove(ITP_1, INDEX_L3, ARBITRUM, 0, TypesLib.TxType.BRIDGE, sig, 3, 7);
     }
 
     function test_EmptyBreakdown_ForNewITP() public view {
@@ -505,6 +505,6 @@ contract CollateralRegistryTest is TestHelper {
         internal
     {
         bytes memory sig = _signRecordCollateralMove(itpId, fromChain, toChain, amount, txType);
-        registry.recordCollateralMove(itpId, fromChain, toChain, amount, txType, sig);
+        registry.recordCollateralMove(itpId, fromChain, toChain, amount, txType, sig, 3, 7);
     }
 }

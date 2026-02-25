@@ -184,7 +184,7 @@ contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable, BLSVerifie
     // ============ FEE RATE MANAGEMENT ============
 
     /// @inheritdoc IFeeRegistry
-    function setFeeRate(bytes32 itpId, uint256 feeRate, bytes calldata blsSignature) external override onlyAuthorized {
+    function setFeeRate(bytes32 itpId, uint256 feeRate, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external override onlyAuthorized {
         // Validate fee rate
         if (feeRate > MAX_FEE_RATE) revert FeeRateExceedsMax(feeRate, MAX_FEE_RATE);
 
@@ -194,7 +194,7 @@ contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable, BLSVerifie
         );
 
         // Verify BLS signature
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Update fee rate
         uint256 oldRate = _feeRates[itpId];
@@ -216,7 +216,9 @@ contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable, BLSVerifie
         bytes32 itpId,
         uint256 feeAmount,
         TypesLib.FeeType feeType,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external override onlyAuthorized {
         // Validate inputs
         if (user == address(0)) revert ZeroAddress();
@@ -228,7 +230,7 @@ contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable, BLSVerifie
         );
 
         // Verify BLS signature
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Record fee
         _accumulatedFees[itpId][feeType] += feeAmount;
@@ -262,7 +264,7 @@ contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable, BLSVerifie
     // ============ FEE DISTRIBUTION ============
 
     /// @inheritdoc IFeeRegistry
-    function setFeeSplit(uint256 _deployerShareBps, bytes calldata blsSignature) external override onlyAuthorized {
+    function setFeeSplit(uint256 _deployerShareBps, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external override onlyAuthorized {
         // Validate share
         if (_deployerShareBps > BASIS_POINTS) revert InvalidDeployerShare(_deployerShareBps);
 
@@ -272,7 +274,7 @@ contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable, BLSVerifie
         );
 
         // Verify BLS signature
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Update deployer share
         deployerShareBps = _deployerShareBps;

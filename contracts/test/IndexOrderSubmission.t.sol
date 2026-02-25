@@ -433,7 +433,7 @@ contract IndexOrderSubmissionTest is TestHelper {
         orderIds[0] = orderId;
         uint256 cycleNum = 1;
         bytes32 batchMsg = keccak256(abi.encode(block.chainid, address(index), cycleNum, orderIds));
-        index.confirmBatch(cycleNum, orderIds, signWithTestIssuers(batchMsg));
+        index.confirmBatch(cycleNum, orderIds, signWithTestIssuers(batchMsg), 3, 7);
 
         // Fill the order with real BLS signature
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
@@ -445,7 +445,7 @@ contract IndexOrderSubmissionTest is TestHelper {
             txHash: keccak256("test_tx")
         });
         bytes32 fillMsg = keccak256(abi.encode(block.chainid, address(index), cycleNum, fills));
-        index.confirmFills(cycleNum, fills, signWithTestIssuers(fillMsg));
+        index.confirmFills(cycleNum, fills, signWithTestIssuers(fillMsg), 3, 7);
     }
 
     // Helper to get user shares (reads internal _userShares via storage slot)
@@ -655,7 +655,7 @@ contract IndexOrderSubmissionTest is TestHelper {
         orderIds[0] = orderId;
         uint256 cycleNum2 = 2;
         bytes32 batchMsg2 = keccak256(abi.encode(block.chainid, address(index), cycleNum2, orderIds));
-        index.confirmBatch(cycleNum2, orderIds, signWithTestIssuers(batchMsg2));
+        index.confirmBatch(cycleNum2, orderIds, signWithTestIssuers(batchMsg2), 3, 7);
 
         // Confirm fill with real BLS signature
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
@@ -667,7 +667,7 @@ contract IndexOrderSubmissionTest is TestHelper {
             txHash: bytes32(0)
         });
         bytes32 fillMsg2 = keccak256(abi.encode(block.chainid, address(index), cycleNum2, fills));
-        index.confirmFills(cycleNum2, fills, signWithTestIssuers(fillMsg2));
+        index.confirmFills(cycleNum2, fills, signWithTestIssuers(fillMsg2), 3, 7);
 
         // Verify shares went to beneficiary, not issuer
         // shares = (100e18 * 1e18) / 1e18 = 100e18

@@ -195,13 +195,13 @@ contract E2ECrossChainBuyTest is TestHelper {
     /// @dev Confirm batch on L3
     function _confirmBatch(uint256 cycleNumber, uint256[] memory orderIds) internal {
         bytes32 message = keccak256(abi.encode(block.chainid, address(index), cycleNumber, orderIds));
-        index.confirmBatch(cycleNumber, orderIds, signWithTestIssuers(message));
+        index.confirmBatch(cycleNumber, orderIds, signWithTestIssuers(message), 3, 7);
     }
 
     /// @dev Confirm fills on L3
     function _confirmFills(uint256 cycleNumber, TypesLib.Fill[] memory fills) internal {
         bytes32 message = keccak256(abi.encode(block.chainid, address(index), cycleNumber, fills));
-        index.confirmFills(cycleNumber, fills, signWithTestIssuers(message));
+        index.confirmFills(cycleNumber, fills, signWithTestIssuers(message), 3, 7);
     }
 
     // ============ SIGNING HELPERS ============
@@ -536,7 +536,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         // Set NAV to $2 on L3 so limit price validation passes
         {
             bytes32 navMessage = keccak256(abi.encode(block.chainid, address(index), "setItpNav", itpId, uint256(2e18)));
-            index.setItpNav(itpId, 2e18, signWithTestIssuers(navMessage));
+            index.setItpNav(itpId, 2e18, signWithTestIssuers(navMessage), 3, 7);
         }
 
         // Submit matching order on L3 at $2 limit (18-decimal amount)
@@ -735,7 +735,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         MockBitgetVault vault = new MockBitgetVault();
 
         // Whitelist arbUsdc in BLSCustody (requires propose + timelock + activate)
-        blsCustody.proposeWhitelist(address(arbUsdc), _signProposeWhitelist(address(blsCustody), address(arbUsdc)));
+        blsCustody.proposeWhitelist(address(arbUsdc), _signProposeWhitelist(address(blsCustody), address(arbUsdc)), 3, 7);
         vm.warp(block.timestamp + 2 days + 1);
         blsCustody.activateWhitelist(address(arbUsdc));
 
@@ -765,7 +765,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         address bridgedItpAddr = bridgeProx.completeCreateItp(
             0, itpId,
             _signCompleteCreateItp(address(bridgeProx), admin, 0, bWeights, bAssets)
-        );
+        , 3, 7);
 
         // Set deadline after all warps (whitelist timelock advanced block.timestamp)
         uint256 deadline = block.timestamp + 1 hours;
@@ -795,14 +795,14 @@ contract E2ECrossChainBuyTest is TestHelper {
         colReg.recordCollateralMove(
             itpId, 0, L3_CHAIN_ID, orderAmount18Dec, TypesLib.TxType.BUY,
             _signRecordCollateralMove(address(colReg), itpId, 0, L3_CHAIN_ID, orderAmount18Dec, TypesLib.TxType.BUY, 0)
-        );
+        , 3, 7);
         assertEq(colReg.getITPCollateralByChain(itpId, L3_CHAIN_ID), orderAmount18Dec, "L3 seeded");
 
         // Now record the actual L3→Arb move (nonce 1)
         colReg.recordCollateralMove(
             itpId, L3_CHAIN_ID, ARB_CHAIN_ID, orderAmount18Dec, TypesLib.TxType.BUY,
             _signRecordCollateralMove(address(colReg), itpId, L3_CHAIN_ID, ARB_CHAIN_ID, orderAmount18Dec, TypesLib.TxType.BUY, 1)
-        );
+        , 3, 7);
 
         assertEq(colReg.getITPCollateralByChain(itpId, L3_CHAIN_ID), 0, "L3 collateral moved out");
         assertEq(colReg.getITPCollateralByChain(itpId, ARB_CHAIN_ID), orderAmount18Dec, "Arb collateral received");
@@ -823,7 +823,7 @@ contract E2ECrossChainBuyTest is TestHelper {
             address(vault),
             orderAmount6Dec
         );
-        blsCustody.execute(address(arbUsdc), transferCalldata, _signExecute(address(blsCustody), address(arbUsdc), transferCalldata, 0), 0);
+        blsCustody.execute(address(arbUsdc), transferCalldata, _signExecute(address(blsCustody), address(arbUsdc), transferCalldata, 0), 0, 3, 7);
         assertEq(arbUsdc.balanceOf(address(vault)), orderAmount6Dec, "Vault should hold USDC");
         assertEq(arbUsdc.balanceOf(address(blsCustody)), 0, "BLSCustody should be empty");
 
@@ -848,7 +848,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         assertEq(itpVault.balanceOf(user1), expectedShares, "User should have L3 ITP");
 
         // ====== STEP 8: Mint BridgedITP shares on Arbitrum ======
-        bridgeProx.mintBridgedShares(itpId, user1, expectedShares, _signMintBridgedShares(address(bridgeProx), itpId, user1, expectedShares));
+        bridgeProx.mintBridgedShares(itpId, user1, expectedShares, _signMintBridgedShares(address(bridgeProx), itpId, user1, expectedShares), 3, 7);
 
         // Verify BridgedITP minted
         assertGt(IERC20(bridgedItpAddr).balanceOf(user1), 0, "User should have BridgedITP on Arb");

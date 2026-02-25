@@ -275,12 +275,15 @@ contract DeployL3 is DeployBLSHelper {
         // Real BLS G2 pubkeys from deterministic seeds via FFI (matching node-id 0,1,2)
         // PoP signatures prove each issuer controls the corresponding BLS private key
 
+        // Must snapshot (setAggregatedPubkey) after EACH addIssuer due to PendingSnapshot constraint
+
         // Issuer 1 (node-id 0)
         {
             bytes memory pubkey = blsPubkey(0);
             bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), issuer1Addr, pubkey));
             bytes memory popSig = blsSign("0", popMsg);
             uint256 id = reg.addIssuer(issuer1Addr, bytes32("issuer1.index.network"), pubkey, popSig);
+            reg.setAggregatedPubkey(blsPubkey(0), 1);
             console2.log("  Issuer 1 registered, id:", id);
             console2.log("    Address:", issuer1Addr);
         }
@@ -291,6 +294,7 @@ contract DeployL3 is DeployBLSHelper {
             bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), issuer2Addr, pubkey));
             bytes memory popSig = blsSign("1", popMsg);
             uint256 id = reg.addIssuer(issuer2Addr, bytes32("issuer2.index.network"), pubkey, popSig);
+            reg.setAggregatedPubkey(blsAggPubkey("0,1"), 2);
             console2.log("  Issuer 2 registered, id:", id);
             console2.log("    Address:", issuer2Addr);
         }
@@ -301,6 +305,7 @@ contract DeployL3 is DeployBLSHelper {
             bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), issuer3Addr, pubkey));
             bytes memory popSig = blsSign("2", popMsg);
             uint256 id = reg.addIssuer(issuer3Addr, bytes32("issuer3.index.network"), pubkey, popSig);
+            reg.setAggregatedPubkey(blsAggPubkey("0,1,2"), 3);
             console2.log("  Issuer 3 registered, id:", id);
             console2.log("    Address:", issuer3Addr);
         }
@@ -308,7 +313,7 @@ contract DeployL3 is DeployBLSHelper {
         // Verify registration
         require(reg.activeIssuerCount() == 3, "IssuerRegistry: expected 3 active issuers");
         console2.log("  Active issuers:", reg.activeIssuerCount());
-        // Note: getAggregatedPubkey() returns empty bytes (G2 aggregation is done off-chain)
+        console2.log("  Aggregated pubkey set (snapshot after each addIssuer)");
     }
 
     // ============ JSON OUTPUT ============

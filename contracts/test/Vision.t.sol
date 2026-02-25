@@ -208,7 +208,7 @@ contract VisionTest is TestHelper {
 
         vm.expectRevert(Vision.Unauthorized.selector);
         vm.prank(nonCreator);
-        vision.updateBatchMarkets(batchId, newMarketIds, newResolutionTypes, new bytes(64));
+        vision.updateBatchMarkets(batchId, newMarketIds, newResolutionTypes, new bytes(64), 3, 7);
     }
 
     function test_updateBatchMarkets_revertBatchNotFound() public {
@@ -220,7 +220,7 @@ contract VisionTest is TestHelper {
 
         vm.expectRevert(Vision.BatchNotFound.selector);
         vm.prank(creator);
-        vision.updateBatchMarkets(999, newMarketIds, newResolutionTypes, new bytes(64));
+        vision.updateBatchMarkets(999, newMarketIds, newResolutionTypes, new bytes(64), 3, 7);
     }
 
     function test_updateBatchMarkets_revertArrayMismatch() public {
@@ -246,7 +246,7 @@ contract VisionTest is TestHelper {
 
         vm.expectRevert(Vision.ArrayLengthMismatch.selector);
         vm.prank(creator);
-        vision.updateBatchMarkets(batchId, newMarketIds, newResolutionTypes, new bytes(64));
+        vision.updateBatchMarkets(batchId, newMarketIds, newResolutionTypes, new bytes(64), 3, 7);
     }
 
     function test_updateBatchMarkets_happyPath() public {
@@ -291,7 +291,7 @@ contract VisionTest is TestHelper {
         emit Vision.BatchMarketsUpdated(batchId);
 
         vm.prank(creator);
-        vision.updateBatchMarkets(batchId, newMarketIds, newResolutionTypes, blsSig);
+        vision.updateBatchMarkets(batchId, newMarketIds, newResolutionTypes, blsSig, 3, 7);
 
         // Verify the update
         IVision.Batch memory updatedBatch = vision.getBatch(batchId);
@@ -326,7 +326,7 @@ contract VisionTest is TestHelper {
 
         vm.expectRevert();
         vm.prank(creator);
-        vision.updateBatchMarkets(batchId, newMarketIds, newResolutionTypes, wrongSig);
+        vision.updateBatchMarkets(batchId, newMarketIds, newResolutionTypes, wrongSig, 3, 7);
     }
 
     // ============ Helper: create a batch and return its ID ============
@@ -549,7 +549,7 @@ contract VisionTest is TestHelper {
         emit Vision.RewardsClaimed(batchId, player, expectedPayout);
 
         vm.prank(player);
-        vision.claimRewards(batchId, fromTick, toTick, newBalance, blsSig);
+        vision.claimRewards(batchId, fromTick, toTick, newBalance, blsSig, 3, 7);
 
         IVision.PlayerPosition memory pos = vision.getPosition(batchId, player);
         assertEq(pos.balance, 13e6, "Balance should be updated to newBalance");
@@ -585,7 +585,7 @@ contract VisionTest is TestHelper {
         bytes memory blsSig = signWithTestIssuers(message);
 
         vm.prank(player);
-        vision.claimRewards(batchId, fromTick, toTick, newBalance, blsSig);
+        vision.claimRewards(batchId, fromTick, toTick, newBalance, blsSig, 3, 7);
 
         IVision.PlayerPosition memory pos = vision.getPosition(batchId, player);
         assertEq(pos.balance, 7e6, "Balance should decrease to newBalance");
@@ -600,7 +600,7 @@ contract VisionTest is TestHelper {
 
         vm.expectRevert(Vision.NotJoined.selector);
         vm.prank(player);
-        vision.claimRewards(batchId, 1, 5, 10e6, new bytes(64));
+        vision.claimRewards(batchId, 1, 5, 10e6, new bytes(64), 3, 7);
     }
 
     function test_claimRewards_revertInvalidTickRange() public {
@@ -614,7 +614,7 @@ contract VisionTest is TestHelper {
         // toTick < fromTick
         vm.expectRevert(Vision.InvalidTickRange.selector);
         vm.prank(player);
-        vision.claimRewards(batchId, 5, 3, 10e6, new bytes(64));
+        vision.claimRewards(batchId, 5, 3, 10e6, new bytes(64), 3, 7);
     }
 
     function test_claimRewards_revertTickAlreadyClaimed() public {
@@ -634,12 +634,12 @@ contract VisionTest is TestHelper {
         bytes memory blsSig = signWithTestIssuers(message);
 
         vm.prank(player);
-        vision.claimRewards(batchId, 1, 5, newBalance, blsSig);
+        vision.claimRewards(batchId, 1, 5, newBalance, blsSig, 3, 7);
 
         // Second claim with overlapping ticks (fromTick=3 <= lastClaimedTick=5)
         vm.expectRevert(Vision.TickAlreadyClaimed.selector);
         vm.prank(player);
-        vision.claimRewards(batchId, 3, 8, 10e6, new bytes(64));
+        vision.claimRewards(batchId, 3, 8, 10e6, new bytes(64), 3, 7);
     }
 
     function test_claimRewards_revertInvalidBLS() public {
@@ -655,7 +655,7 @@ contract VisionTest is TestHelper {
 
         vm.expectRevert();
         vm.prank(player);
-        vision.claimRewards(batchId, 1, 5, 12e6, wrongSig);
+        vision.claimRewards(batchId, 1, 5, 12e6, wrongSig, 3, 7);
     }
 
     // ============ withdraw ============
@@ -685,7 +685,7 @@ contract VisionTest is TestHelper {
         emit Vision.PlayerWithdrawn(batchId, player, expectedPayout);
 
         vm.prank(player);
-        vision.withdraw(batchId, finalBalance, blsSig);
+        vision.withdraw(batchId, finalBalance, blsSig, 3, 7);
 
         // Position should be deleted
         IVision.PlayerPosition memory pos = vision.getPosition(batchId, player);
@@ -712,7 +712,7 @@ contract VisionTest is TestHelper {
 
         // No profit, fee = 0, payout = 7e6
         vm.prank(player);
-        vision.withdraw(batchId, finalBalance, blsSig);
+        vision.withdraw(batchId, finalBalance, blsSig, 3, 7);
 
         IVision.PlayerPosition memory pos = vision.getPosition(batchId, player);
         assertEq(pos.stakePerTick, 0, "Position should be deleted");
@@ -727,7 +727,7 @@ contract VisionTest is TestHelper {
 
         vm.expectRevert(Vision.NotJoined.selector);
         vm.prank(player);
-        vision.withdraw(batchId, 10e6, new bytes(64));
+        vision.withdraw(batchId, 10e6, new bytes(64), 3, 7);
     }
 
     function test_withdraw_revertInvalidBLS() public {
@@ -742,7 +742,7 @@ contract VisionTest is TestHelper {
 
         vm.expectRevert();
         vm.prank(player);
-        vision.withdraw(batchId, 10e6, wrongSig);
+        vision.withdraw(batchId, 10e6, wrongSig, 3, 7);
     }
 
     // ============ getPosition ============
@@ -896,7 +896,7 @@ contract VisionTest is TestHelper {
         bytes memory blsSig = signWithTestIssuers(message);
 
         vm.prank(player);
-        vision.withdraw(batchId, finalBalance, blsSig);
+        vision.withdraw(batchId, finalBalance, blsSig, 3, 7);
 
         // fees = (14e6 - 10e6) * 30 / 10000 = 12000
         uint256 expectedFees = 4e6 * 30 / 10000;
@@ -931,7 +931,7 @@ contract VisionTest is TestHelper {
         vm.expectEmit(true, false, false, false);
         emit Vision.BatchPausedEvent(batchId);
 
-        vision.pause(batchId, blsSig);
+        vision.pause(batchId, blsSig, 3, 7);
 
         IVision.Batch memory batch = vision.getBatch(batchId);
         assertTrue(batch.paused, "Batch should be paused");
@@ -944,7 +944,7 @@ contract VisionTest is TestHelper {
         bytes memory blsSig = signWithTestIssuers(message);
 
         vm.expectRevert(Vision.BatchNotFound.selector);
-        vision.pause(999, blsSig);
+        vision.pause(999, blsSig, 3, 7);
     }
 
     function test_pause_revertInvalidBLS() public {
@@ -953,7 +953,7 @@ contract VisionTest is TestHelper {
         bytes memory wrongSig = signWithTestIssuers(keccak256("wrong"));
 
         vm.expectRevert();
-        vision.pause(batchId, wrongSig);
+        vision.pause(batchId, wrongSig, 3, 7);
     }
 
     // ============ unpause ============
@@ -966,7 +966,7 @@ contract VisionTest is TestHelper {
             block.chainid, address(vision), "PAUSE", batchId
         ));
         bytes memory pauseSig = signWithTestIssuers(pauseMsg);
-        vision.pause(batchId, pauseSig);
+        vision.pause(batchId, pauseSig, 3, 7);
 
         assertTrue(vision.getBatch(batchId).paused, "Should be paused");
 
@@ -979,7 +979,7 @@ contract VisionTest is TestHelper {
         vm.expectEmit(true, false, false, false);
         emit Vision.BatchUnpaused(batchId);
 
-        vision.unpause(batchId, unpauseSig);
+        vision.unpause(batchId, unpauseSig, 3, 7);
 
         assertFalse(vision.getBatch(batchId).paused, "Should be unpaused");
     }
@@ -991,7 +991,7 @@ contract VisionTest is TestHelper {
         bytes memory blsSig = signWithTestIssuers(message);
 
         vm.expectRevert(Vision.BatchNotFound.selector);
-        vision.unpause(999, blsSig);
+        vision.unpause(999, blsSig, 3, 7);
     }
 
     function test_unpause_revertInvalidBLS() public {
@@ -1000,7 +1000,7 @@ contract VisionTest is TestHelper {
         bytes memory wrongSig = signWithTestIssuers(keccak256("wrong"));
 
         vm.expectRevert();
-        vision.unpause(batchId, wrongSig);
+        vision.unpause(batchId, wrongSig, 3, 7);
     }
 
     // ============ forceWithdraw ============
@@ -1028,7 +1028,7 @@ contract VisionTest is TestHelper {
         vm.expectEmit(true, true, false, true);
         emit Vision.ForceWithdrawn(batchId, player, expectedPayout);
 
-        vision.forceWithdraw(batchId, player, finalBalance, blsSig);
+        vision.forceWithdraw(batchId, player, finalBalance, blsSig, 3, 7);
 
         // Position should be deleted
         IVision.PlayerPosition memory pos = vision.getPosition(batchId, player);
@@ -1055,7 +1055,7 @@ contract VisionTest is TestHelper {
         vm.expectEmit(true, true, false, true);
         emit Vision.ForceWithdrawn(batchId, player, 7e6);
 
-        vision.forceWithdraw(batchId, player, finalBalance, blsSig);
+        vision.forceWithdraw(batchId, player, finalBalance, blsSig, 3, 7);
 
         assertEq(usdc.balanceOf(player), 7e6, "Player gets remaining balance");
         assertEq(vision.accumulatedFees(), 0, "No fees on loss");
@@ -1071,7 +1071,7 @@ contract VisionTest is TestHelper {
         bytes memory blsSig = signWithTestIssuers(message);
 
         vm.expectRevert(Vision.NotJoined.selector);
-        vision.forceWithdraw(batchId, player, 10e6, blsSig);
+        vision.forceWithdraw(batchId, player, 10e6, blsSig, 3, 7);
     }
 
     function test_forceWithdraw_revertInvalidBLS() public {
@@ -1085,7 +1085,7 @@ contract VisionTest is TestHelper {
         bytes memory wrongSig = signWithTestIssuers(keccak256("wrong"));
 
         vm.expectRevert();
-        vision.forceWithdraw(batchId, player, 10e6, wrongSig);
+        vision.forceWithdraw(batchId, player, 10e6, wrongSig, 3, 7);
     }
 
     // ============ pause prevents join ============
@@ -1098,7 +1098,7 @@ contract VisionTest is TestHelper {
             block.chainid, address(vision), "PAUSE", batchId
         ));
         bytes memory pauseSig = signWithTestIssuers(pauseMsg);
-        vision.pause(batchId, pauseSig);
+        vision.pause(batchId, pauseSig, 3, 7);
 
         // Try to join — should revert
         address player = makeAddr("player1");

@@ -7,6 +7,7 @@ import "../src/registry/IssuerRegistry.sol";
 import "../src/mocks/MockERC20.sol";
 import "../src/libraries/ErrorsLib.sol";
 import "../src/libraries/EventsLib.sol";
+import {BLSVerifier} from "../src/libraries/BLSVerifier.sol";
 import "./helpers/TestHelper.sol";
 import {Governance} from "../src/Governance.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -69,7 +70,7 @@ contract IssuerCustodyArbTest is TestHelper {
             transferData,
             transferSig,
             0
-        );
+        , 3, 7);
 
         assertTrue(success, "Transfer should succeed");
         assertEq(arbUsdc.balanceOf(mockBitgetVault), 100_000e6, "MockBitgetVault should receive ArbUSDC");
@@ -88,7 +89,7 @@ contract IssuerCustodyArbTest is TestHelper {
         vm.expectEmit(true, false, false, true);
         emit EventsLib.Executed(address(arbUsdc), transferData, 0);
 
-        issuerCustodyArb.execute(address(arbUsdc), transferData, _signExecute(address(issuerCustodyArb), address(arbUsdc), transferData, 0), 0);
+        issuerCustodyArb.execute(address(arbUsdc), transferData, _signExecute(address(issuerCustodyArb), address(arbUsdc), transferData, 0), 0, 3, 7);
     }
 
     function test_transferToMockBitgetVault_multipleTransfersWithDifferentNonces() public {
@@ -101,9 +102,9 @@ contract IssuerCustodyArbTest is TestHelper {
         );
 
         // Execute multiple transfers with different nonces — each nonce needs its own signature
-        issuerCustodyArb.execute(address(arbUsdc), transferData, _signExecute(address(issuerCustodyArb), address(arbUsdc), transferData, 0), 0);
-        issuerCustodyArb.execute(address(arbUsdc), transferData, _signExecute(address(issuerCustodyArb), address(arbUsdc), transferData, 1), 1);
-        issuerCustodyArb.execute(address(arbUsdc), transferData, _signExecute(address(issuerCustodyArb), address(arbUsdc), transferData, 2), 2);
+        issuerCustodyArb.execute(address(arbUsdc), transferData, _signExecute(address(issuerCustodyArb), address(arbUsdc), transferData, 0), 0, 3, 7);
+        issuerCustodyArb.execute(address(arbUsdc), transferData, _signExecute(address(issuerCustodyArb), address(arbUsdc), transferData, 1), 1, 3, 7);
+        issuerCustodyArb.execute(address(arbUsdc), transferData, _signExecute(address(issuerCustodyArb), address(arbUsdc), transferData, 2), 2, 3, 7);
 
         assertEq(arbUsdc.balanceOf(mockBitgetVault), 30_000e6, "MockBitgetVault should receive 3 transfers");
         assertTrue(issuerCustodyArb.isNonceUsed(0));
@@ -124,7 +125,7 @@ contract IssuerCustodyArbTest is TestHelper {
 
         // Should revert because arbUsdc is not whitelisted — reverts before BLS check
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E026_TargetNotWhitelisted.selector, address(arbUsdc)));
-        issuerCustodyArb.execute(address(arbUsdc), transferData, new bytes(64), 0);
+        issuerCustodyArb.execute(address(arbUsdc), transferData, new bytes(64), 0, 3, 7);
     }
 
     function test_transferToMockBitgetVault_revertsOnNonceReuse() public {
@@ -137,11 +138,11 @@ contract IssuerCustodyArbTest is TestHelper {
         );
 
         // First execution succeeds
-        issuerCustodyArb.execute(address(arbUsdc), transferData, _signExecute(address(issuerCustodyArb), address(arbUsdc), transferData, 0), 0);
+        issuerCustodyArb.execute(address(arbUsdc), transferData, _signExecute(address(issuerCustodyArb), address(arbUsdc), transferData, 0), 0, 3, 7);
 
         // Second execution with same nonce fails — reverts before BLS check
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E025_NonceAlreadyUsed.selector, 0));
-        issuerCustodyArb.execute(address(arbUsdc), transferData, new bytes(64), 0);
+        issuerCustodyArb.execute(address(arbUsdc), transferData, new bytes(64), 0, 3, 7);
     }
 
     function test_transferToMockBitgetVault_revertsWithInvalidBLSSignature() public {
@@ -155,8 +156,8 @@ contract IssuerCustodyArbTest is TestHelper {
 
         // Sign over the wrong message hash — BLS verification will fail
         bytes memory invalidSig = signWithTestIssuers(keccak256("wrong message"));
-        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E020_InvalidBLSSignature.selector));
-        issuerCustodyArb.execute(address(arbUsdc), transferData, invalidSig, 0);
+        vm.expectRevert(abi.encodeWithSelector(BLSVerifier.BLSVerifier__InvalidSignature.selector));
+        issuerCustodyArb.execute(address(arbUsdc), transferData, invalidSig, 0, 3, 7);
     }
 
     // ============ TASK 5.7: WHITELIST ENFORCEMENT ============
@@ -171,12 +172,12 @@ contract IssuerCustodyArbTest is TestHelper {
         bytes memory data = abi.encodeWithSignature("someFunction()");
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E026_TargetNotWhitelisted.selector, randomTarget));
-        issuerCustodyArb.execute(randomTarget, data, new bytes(64), 0); // reverts before BLS check
+        issuerCustodyArb.execute(randomTarget, data, new bytes(64), 0, 3, 7); // reverts before BLS check
     }
 
     function test_whitelistEnforcement_cannotCallNonWhitelistedToken() public {
         // Only whitelist MockBitgetVault, NOT arbUsdc
-        issuerCustodyArb.proposeWhitelist(mockBitgetVault, _signProposeWhitelist(address(issuerCustodyArb), mockBitgetVault));
+        issuerCustodyArb.proposeWhitelist(mockBitgetVault, _signProposeWhitelist(address(issuerCustodyArb), mockBitgetVault), 3, 7);
         vm.warp(block.timestamp + 2 days + 1);
         issuerCustodyArb.activateWhitelist(mockBitgetVault);
 
@@ -194,7 +195,7 @@ contract IssuerCustodyArbTest is TestHelper {
 
         // This should fail because arbUsdc is not whitelisted as a call target — reverts before BLS check
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E026_TargetNotWhitelisted.selector, address(arbUsdc)));
-        issuerCustodyArb.execute(address(arbUsdc), transferData, new bytes(64), 0);
+        issuerCustodyArb.execute(address(arbUsdc), transferData, new bytes(64), 0, 3, 7);
     }
 
     // ============ INITIALIZATION AND SETUP TESTS ============
@@ -211,7 +212,7 @@ contract IssuerCustodyArbTest is TestHelper {
     }
 
     function test_whitelistProposal_succeeds() public {
-        issuerCustodyArb.proposeWhitelist(mockBitgetVault, _signProposeWhitelist(address(issuerCustodyArb), mockBitgetVault));
+        issuerCustodyArb.proposeWhitelist(mockBitgetVault, _signProposeWhitelist(address(issuerCustodyArb), mockBitgetVault), 3, 7);
 
         (uint256 proposedAt, uint256 activatedAt) = issuerCustodyArb.getWhitelistStatus(mockBitgetVault);
         assertGt(proposedAt, 0, "Proposal timestamp should be set");
@@ -220,7 +221,7 @@ contract IssuerCustodyArbTest is TestHelper {
     }
 
     function test_whitelistActivation_afterTimelock() public {
-        issuerCustodyArb.proposeWhitelist(mockBitgetVault, _signProposeWhitelist(address(issuerCustodyArb), mockBitgetVault));
+        issuerCustodyArb.proposeWhitelist(mockBitgetVault, _signProposeWhitelist(address(issuerCustodyArb), mockBitgetVault), 3, 7);
 
         // Fast forward past 2-day timelock
         vm.warp(block.timestamp + 2 days + 1);
@@ -231,7 +232,7 @@ contract IssuerCustodyArbTest is TestHelper {
     }
 
     function test_whitelistActivation_failsBeforeTimelock() public {
-        issuerCustodyArb.proposeWhitelist(mockBitgetVault, _signProposeWhitelist(address(issuerCustodyArb), mockBitgetVault));
+        issuerCustodyArb.proposeWhitelist(mockBitgetVault, _signProposeWhitelist(address(issuerCustodyArb), mockBitgetVault), 3, 7);
 
         // Only fast forward 1 day (need 2 days)
         vm.warp(block.timestamp + 1 days);
@@ -248,12 +249,12 @@ contract IssuerCustodyArbTest is TestHelper {
         assertEq(arbUsdc.balanceOf(address(issuerCustodyArb)), 1_000_000e6);
 
         // 2. Whitelist MockBitgetVault (with timelock)
-        issuerCustodyArb.proposeWhitelist(mockBitgetVault, _signProposeWhitelist(address(issuerCustodyArb), mockBitgetVault));
+        issuerCustodyArb.proposeWhitelist(mockBitgetVault, _signProposeWhitelist(address(issuerCustodyArb), mockBitgetVault), 3, 7);
         vm.warp(2 days + 2);
         issuerCustodyArb.activateWhitelist(mockBitgetVault);
 
         // 3. Also whitelist the arbUsdc token as transfer target
-        issuerCustodyArb.proposeWhitelist(address(arbUsdc), _signProposeWhitelist(address(issuerCustodyArb), address(arbUsdc)));
+        issuerCustodyArb.proposeWhitelist(address(arbUsdc), _signProposeWhitelist(address(issuerCustodyArb), address(arbUsdc)), 3, 7);
         vm.warp(4 days + 3);
         issuerCustodyArb.activateWhitelist(address(arbUsdc));
 
@@ -270,7 +271,7 @@ contract IssuerCustodyArbTest is TestHelper {
             transferData,
             execSig,
             0
-        );
+        , 3, 7);
 
         assertTrue(success, "Transfer to MockBitgetVault should succeed");
         assertEq(arbUsdc.balanceOf(mockBitgetVault), 500_000e6, "MockBitgetVault should receive ArbUSDC");
@@ -317,13 +318,13 @@ contract IssuerCustodyArbTest is TestHelper {
 
     function _whitelistTarget(address target) internal {
         // Whitelist both the target contract AND the arbUsdc token
-        issuerCustodyArb.proposeWhitelist(address(arbUsdc), _signProposeWhitelist(address(issuerCustodyArb), address(arbUsdc)));
+        issuerCustodyArb.proposeWhitelist(address(arbUsdc), _signProposeWhitelist(address(issuerCustodyArb), address(arbUsdc)), 3, 7);
         vm.warp(2 days + 2);
         issuerCustodyArb.activateWhitelist(address(arbUsdc));
 
         // Also whitelist the target if different from arbUsdc
         if (target != address(arbUsdc)) {
-            issuerCustodyArb.proposeWhitelist(target, _signProposeWhitelist(address(issuerCustodyArb), target));
+            issuerCustodyArb.proposeWhitelist(target, _signProposeWhitelist(address(issuerCustodyArb), target), 3, 7);
             vm.warp(4 days + 3);
             issuerCustodyArb.activateWhitelist(target);
         }

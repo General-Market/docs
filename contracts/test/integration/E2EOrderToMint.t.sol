@@ -129,11 +129,11 @@ contract E2EOrderToMintTest is TestHelper {
     }
 
     function _confirmBatch(uint256 cycleNumber, uint256[] memory orderIds) internal {
-        index.confirmBatch(cycleNumber, orderIds, _signConfirmBatch(cycleNumber, orderIds));
+        index.confirmBatch(cycleNumber, orderIds, _signConfirmBatch(cycleNumber, orderIds), 3, 7);
     }
 
     function _confirmFills(uint256 cycleNumber, TypesLib.Fill[] memory fills) internal {
-        index.confirmFills(cycleNumber, fills, _signConfirmFills(cycleNumber, fills));
+        index.confirmFills(cycleNumber, fills, _signConfirmFills(cycleNumber, fills), 3, 7);
     }
 
     // ============ E2E HAPPY PATH (AC1, AC2, AC4, AC5, AC7) ============
@@ -295,7 +295,7 @@ contract E2EOrderToMintTest is TestHelper {
         vm.expectEmit(true, true, false, true);
         emit EventsLib.OrderRefunded(orderId, user1, orderAmount);
 
-        index.refundExpiredOrder(orderId, _signRefundExpiredOrder(orderId));
+        index.refundExpiredOrder(orderId, _signRefundExpiredOrder(orderId), 3, 7);
 
         // Verify USDC refunded
         assertEq(usdc.balanceOf(user1), userUsdcBefore, "Full USDC should be refunded");
@@ -352,7 +352,7 @@ contract E2EOrderToMintTest is TestHelper {
         uint256 expectedShares = (orderAmount * 1e18) / fillPrice; // 50e18
 
         // Set NAV to $2 so limit price validation passes
-        index.setItpNav(itpId, 2e18, _signSetItpNav(itpId, 2e18));
+        index.setItpNav(itpId, 2e18, _signSetItpNav(itpId, 2e18), 3, 7);
 
         uint256 orderId = _submitOrder(user1, orderAmount, 2e18, 1);
 

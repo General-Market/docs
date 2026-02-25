@@ -103,7 +103,9 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         uint256 batchId,
         bytes32[] calldata marketIds,
         uint8[] calldata resolutionTypes,
-        bytes calldata blsSig
+        bytes calldata blsSig,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external {
         Batch storage batch = _batches[batchId];
         if (batch.creator == address(0)) revert BatchNotFound();
@@ -121,7 +123,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             keccak256(abi.encodePacked(resolutionTypes)),
             currentTick
         ));
-        _verifyBLS(message, blsSig);
+        _verifyBLS(message, blsSig, referenceNonce, signersBitmask);
 
         batch.marketIds = marketIds;
         batch.resolutionTypes = resolutionTypes;
@@ -187,7 +189,9 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         uint256 fromTick,
         uint256 toTick,
         uint256 newBalance,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external nonReentrant {
         PlayerPosition storage position = _positions[batchId][msg.sender];
         if (position.stakePerTick == 0) revert NotJoined();
@@ -205,7 +209,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             toTick,
             newBalance
         ));
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         uint256 oldBalance = position.balance;
         position.balance = newBalance;
@@ -231,7 +235,9 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     function withdraw(
         uint256 batchId,
         uint256 finalBalance,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external nonReentrant {
         PlayerPosition storage position = _positions[batchId][msg.sender];
         if (position.stakePerTick == 0) revert NotJoined();
@@ -245,7 +251,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             msg.sender,
             finalBalance
         ));
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Fee on profit only
         uint256 totalDeposited = position.totalDeposited;
@@ -324,12 +330,12 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         USDC.safeTransfer(feeCollector, fees);
     }
 
-    function updateFeeCollector(address newCollector, bytes calldata blsSignature) external {
+    function updateFeeCollector(address newCollector, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         if (newCollector == address(0)) revert Unauthorized();
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(this), "UPDATE_FEE_COLLECTOR", newCollector
         ));
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
         address old = feeCollector;
         feeCollector = newCollector;
         emit FeeCollectorUpdated(old, newCollector);
@@ -337,7 +343,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
 
     // ============ ISSUER OPERATIONS ============
 
-    function pause(uint256 batchId, bytes calldata blsSignature) external {
+    function pause(uint256 batchId, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         Batch storage batch = _batches[batchId];
         if (batch.creator == address(0)) revert BatchNotFound();
 
@@ -347,14 +353,14 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             "PAUSE",
             batchId
         ));
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         batch.paused = true;
 
         emit BatchPausedEvent(batchId);
     }
 
-    function unpause(uint256 batchId, bytes calldata blsSignature) external {
+    function unpause(uint256 batchId, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         Batch storage batch = _batches[batchId];
         if (batch.creator == address(0)) revert BatchNotFound();
 
@@ -364,7 +370,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             "UNPAUSE",
             batchId
         ));
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         batch.paused = false;
 
@@ -375,7 +381,9 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         uint256 batchId,
         address player,
         uint256 finalBalance,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external nonReentrant {
         PlayerPosition storage position = _positions[batchId][player];
         if (position.stakePerTick == 0) revert NotJoined();
@@ -388,7 +396,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             player,
             finalBalance
         ));
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Fee on profit only
         uint256 totalDeposited = position.totalDeposited;

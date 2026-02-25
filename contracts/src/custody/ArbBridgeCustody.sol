@@ -129,7 +129,9 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
         uint256 amount,
         uint256 nonce,
         TypesLib.ReleaseProof calldata proof,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external override {
         // Validate source chain ID (not zero, not current chain)
         if (sourceChainId == 0 || sourceChainId == block.chainid) {
@@ -156,7 +158,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), proof, amount, nonce));
 
         // Verify BLS signature (11/20 threshold)
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Mark nonce as used
         bridgeCompleted[sourceChainId][nonce] = true;
@@ -255,7 +257,9 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
     function completeBuyOrder(
         uint256 orderId,
         address vault,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external override {
         TypesLib.CrossChainOrder storage order = crossChainOrders[orderId];
         if (order.user == address(0)) revert ErrorsLib.E125_BuyOrderNotFound(orderId);
@@ -263,7 +267,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(this), "completeBuyOrder", orderId, vault
         ));
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         uint256 internalAmount = order.amount;
         delete crossChainOrders[orderId];
@@ -279,7 +283,9 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
         uint256 orderId,
         address vault,
         uint256 usdcAmount,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external override {
         TypesLib.CrossChainSellOrder storage order = crossChainSellOrders[orderId];
         if (order.user == address(0)) revert ErrorsLib.E119_SellOrderNotFound(orderId);
@@ -287,7 +293,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(this), "fundSellOrder", orderId, vault, usdcAmount
         ));
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         if (usdcAmount > 0) usdc.safeTransferFrom(vault, address(this), usdcAmount);
 
@@ -325,14 +331,14 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
     /// @notice Set the BridgeProxy address (one-time setup)
     /// @param bridgeProxy_ Address of the BridgeProxy contract
     /// @param blsSignature BLS signature from issuers
-    function setBridgeProxy(address bridgeProxy_, bytes calldata blsSignature) external {
+    function setBridgeProxy(address bridgeProxy_, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         if (bridgeProxy_ == address(0)) {
             revert ErrorsLib.E118_ZeroBridgeProxy();
         }
 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "setBridgeProxy", bridgeProxy_));
 
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         bridgeProxy = IBridgeProxy(bridgeProxy_);
     }
@@ -399,7 +405,9 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
     function completeSellOrder(
         uint256 orderId,
         uint256 usdcProceeds,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external override {
         TypesLib.CrossChainSellOrder storage order = crossChainSellOrders[orderId];
         if (order.user == address(0)) {
@@ -411,7 +419,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
             block.chainid, address(this), "completeSellOrder", orderId, usdcProceeds
         ));
 
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         address user = order.user;
 
@@ -429,7 +437,9 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
     /// @inheritdoc IArbBridgeCustody
     function refundSellOrder(
         uint256 orderId,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external override {
         TypesLib.CrossChainSellOrder storage order = crossChainSellOrders[orderId];
         if (order.user == address(0)) {
@@ -441,7 +451,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
             block.chainid, address(this), "refundSellOrder", orderId
         ));
 
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         address user = order.user;
         address bridgedItpAddress = order.bridgedItpAddress;
@@ -466,7 +476,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
     /// @notice Propose a standard upgrade (7-day timelock)
     /// @param newImpl New implementation address
     /// @param blsSignature BLS signature from issuers
-    function proposeUpgrade(address newImpl, bytes calldata blsSignature) external {
+    function proposeUpgrade(address newImpl, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         if (newImpl == address(0)) {
             revert ErrorsLib.E038_ZeroImplementation();
         }
@@ -476,7 +486,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "proposeUpgrade", newImpl));
 
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         pendingUpgradeImpl = newImpl;
         pendingUpgradeProposedAt = block.timestamp;
@@ -486,7 +496,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
     /// @notice Propose an emergency upgrade (24-hour timelock, 17/20 threshold)
     /// @param newImpl New implementation address
     /// @param blsSignature BLS signature from issuers
-    function proposeEmergencyUpgrade(address newImpl, bytes calldata blsSignature) external {
+    function proposeEmergencyUpgrade(address newImpl, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         if (newImpl == address(0)) {
             revert ErrorsLib.E038_ZeroImplementation();
         }
@@ -496,7 +506,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "proposeEmergencyUpgrade", newImpl));
 
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         pendingUpgradeImpl = newImpl;
         pendingUpgradeProposedAt = block.timestamp;
@@ -531,14 +541,14 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
 
     /// @notice Cancel a pending upgrade
     /// @param blsSignature BLS signature from issuers
-    function cancelUpgrade(bytes calldata blsSignature) external {
+    function cancelUpgrade(bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         if (pendingUpgradeImpl == address(0)) {
             revert ErrorsLib.E040_NoPendingUpgrade();
         }
 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "cancelUpgrade", pendingUpgradeImpl));
 
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Clear pending upgrade
         pendingUpgradeImpl = address(0);

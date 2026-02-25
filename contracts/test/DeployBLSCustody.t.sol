@@ -196,7 +196,7 @@ contract DeployBLSCustodyTest is TestHelper {
         vm.startPrank(deployer);
 
         // Propose with real BLS signature
-        custodyMock.proposeWhitelist(ONEINCH_ROUTER_V6, _signProposeWhitelist(address(custodyMock), ONEINCH_ROUTER_V6));
+        custodyMock.proposeWhitelist(ONEINCH_ROUTER_V6, _signProposeWhitelist(address(custodyMock), ONEINCH_ROUTER_V6), 3, 7);
         (uint256 proposedAt, ) = custodyMock.getWhitelistStatus(ONEINCH_ROUTER_V6);
         assertGt(proposedAt, 0, "1inch Router should be proposed");
 
@@ -210,7 +210,7 @@ contract DeployBLSCustodyTest is TestHelper {
 
     function test_whitelist_proposeUSDCEthereum() public {
         vm.startPrank(deployer);
-        custodyMock.proposeWhitelist(USDC_ETHEREUM, _signProposeWhitelist(address(custodyMock), USDC_ETHEREUM));
+        custodyMock.proposeWhitelist(USDC_ETHEREUM, _signProposeWhitelist(address(custodyMock), USDC_ETHEREUM), 3, 7);
         (uint256 proposedAt, ) = custodyMock.getWhitelistStatus(USDC_ETHEREUM);
         assertGt(proposedAt, 0, "USDC Ethereum should be proposed");
         vm.stopPrank();
@@ -218,7 +218,7 @@ contract DeployBLSCustodyTest is TestHelper {
 
     function test_whitelist_proposeUSDCBase() public {
         vm.startPrank(deployer);
-        custodyMock.proposeWhitelist(USDC_BASE, _signProposeWhitelist(address(custodyMock), USDC_BASE));
+        custodyMock.proposeWhitelist(USDC_BASE, _signProposeWhitelist(address(custodyMock), USDC_BASE), 3, 7);
         (uint256 proposedAt, ) = custodyMock.getWhitelistStatus(USDC_BASE);
         assertGt(proposedAt, 0, "USDC Base should be proposed");
         vm.stopPrank();
@@ -226,7 +226,7 @@ contract DeployBLSCustodyTest is TestHelper {
 
     function test_whitelist_proposeUSDCOptimism() public {
         vm.startPrank(deployer);
-        custodyMock.proposeWhitelist(USDC_OPTIMISM, _signProposeWhitelist(address(custodyMock), USDC_OPTIMISM));
+        custodyMock.proposeWhitelist(USDC_OPTIMISM, _signProposeWhitelist(address(custodyMock), USDC_OPTIMISM), 3, 7);
         (uint256 proposedAt, ) = custodyMock.getWhitelistStatus(USDC_OPTIMISM);
         assertGt(proposedAt, 0, "USDC Optimism should be proposed");
         vm.stopPrank();
@@ -234,7 +234,7 @@ contract DeployBLSCustodyTest is TestHelper {
 
     function test_whitelist_cannotActivateBeforeTimelock() public {
         vm.startPrank(deployer);
-        custodyMock.proposeWhitelist(ONEINCH_ROUTER_V6, _signProposeWhitelist(address(custodyMock), ONEINCH_ROUTER_V6));
+        custodyMock.proposeWhitelist(ONEINCH_ROUTER_V6, _signProposeWhitelist(address(custodyMock), ONEINCH_ROUTER_V6), 3, 7);
 
         vm.expectRevert();
         custodyMock.activateWhitelist(ONEINCH_ROUTER_V6);
@@ -244,7 +244,7 @@ contract DeployBLSCustodyTest is TestHelper {
     // ============ AC #9: CROSS-CHAIN REPLAY PROTECTION ============
 
     function test_chainIdIncludedInMessageHash() public view {
-        // BLSCustody.execute() uses: keccak256(abi.encode(block.chainid, address(this), target, data, nonceValue))
+        // BLSCustody.execute(, 3, 7) uses: keccak256(abi.encode(block.chainid, address(this), target, data, nonceValue))
         // Verify different chainIds produce different message hashes (replay protection)
         address target = address(0x1234);
         bytes memory data = hex"deadbeef";
@@ -264,7 +264,7 @@ contract DeployBLSCustodyTest is TestHelper {
         vm.expectRevert(
             abi.encodeWithSelector(ErrorsLib.E026_TargetNotWhitelisted.selector, nonWhitelisted)
         );
-        custody.execute(nonWhitelisted, "", "", 0);
+        custody.execute(nonWhitelisted, "", "", 0, 3, 7);
     }
 
     // ============ EXISTING ISSUER REGISTRY REUSE ============

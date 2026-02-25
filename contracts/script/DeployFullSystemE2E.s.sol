@@ -240,14 +240,18 @@ contract DeployFullSystemE2E is DeployBLSHelper {
 
     function _registerIssuers() internal {
         console.log("Phase 7: Register 3 Issuers");
-        _registerIssuer(0, issuer1, "127.0.0.1:9001");
-        _registerIssuer(1, issuer2, "127.0.0.1:9002");
-        _registerIssuer(2, issuer3, "127.0.0.1:9003");
 
-        // Set aggregated pubkey from real BLS keys (seeds 0,1,2) via FFI
-        bytes memory aggPubkey = blsAggPubkey("0,1,2");
-        IssuerRegistry(issuerRegistry).setAggregatedPubkey(aggPubkey);
-        console.log("  Aggregated pubkey set on IssuerRegistry");
+        // Must snapshot (setAggregatedPubkey) after EACH addIssuer due to PendingSnapshot constraint
+        _registerIssuer(0, issuer1, "127.0.0.1:9001");
+        IssuerRegistry(issuerRegistry).setAggregatedPubkey(blsPubkey(0), 1);
+
+        _registerIssuer(1, issuer2, "127.0.0.1:9002");
+        IssuerRegistry(issuerRegistry).setAggregatedPubkey(blsAggPubkey("0,1"), 2);
+
+        _registerIssuer(2, issuer3, "127.0.0.1:9003");
+        IssuerRegistry(issuerRegistry).setAggregatedPubkey(blsAggPubkey("0,1,2"), 3);
+
+        console.log("  Aggregated pubkey set on IssuerRegistry (snapshot after each addIssuer)");
     }
 
     function _fundContracts() internal {

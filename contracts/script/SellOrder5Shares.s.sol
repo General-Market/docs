@@ -51,7 +51,7 @@ contract SellOrder5Shares is Script {
         orderIds[0] = orderId;
         bytes memory emptySignature = new bytes(64);
 
-        index.confirmBatch(cycleNumber, orderIds, emptySignature);
+        index.confirmBatch(cycleNumber, orderIds, emptySignature, 3, 7);
         console.log("confirmBatch succeeded");
 
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
@@ -63,7 +63,7 @@ contract SellOrder5Shares is Script {
             txHash: bytes32(0)
         });
 
-        index.confirmFills(cycleNumber, fills, emptySignature);
+        index.confirmFills(cycleNumber, fills, emptySignature, 3, 7);
         console.log("confirmFills succeeded");
 
         vm.stopBroadcast();

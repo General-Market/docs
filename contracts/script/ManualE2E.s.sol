@@ -37,7 +37,7 @@ contract ManualE2E is Script {
         // Empty sig works in testing mode when issuerRegistry.getAggregatedPubkey() returns empty bytes
         bytes memory emptySignature = new bytes(64);
         
-        index.confirmBatch(cycleNumber, orderIds, emptySignature);
+        index.confirmBatch(cycleNumber, orderIds, emptySignature, 3, 7);
         console.log("confirmBatch succeeded for cycle", cycleNumber);
         
         // Check order status after batch
@@ -56,7 +56,7 @@ contract ManualE2E is Script {
             txHash: bytes32(0) // Empty for testing
         });
         
-        index.confirmFills(cycleNumber, fills, emptySignature);
+        index.confirmFills(cycleNumber, fills, emptySignature, 3, 7);
         console.log("confirmFills succeeded for cycle", cycleNumber);
         
         vm.stopBroadcast();

@@ -87,9 +87,32 @@ interface IIssuerRegistry {
     /// @return The aggregated public key bytes
     function getAggregatedPubkey() external view returns (bytes memory);
 
-    /// @notice Set the aggregated BLS G2 public key (computed off-chain)
+    /// @notice Set the aggregated BLS G2 public key and create a registry snapshot
+    /// @dev Must be called after any addIssuer/removeIssuer/key rotation
     /// @param pubkey The aggregated G2 public key (128 bytes)
-    function setAggregatedPubkey(bytes calldata pubkey) external;
+    /// @param nonce The registry nonce this snapshot corresponds to
+    function setAggregatedPubkey(bytes calldata pubkey, uint256 nonce) external;
+
+    /// @notice Get the latest snapshot nonce
+    /// @return The latest nonce that has a snapshot
+    function lastSnapshotNonce() external view returns (uint256);
+
+    /// @notice Get a registry snapshot by nonce
+    /// @param nonce The nonce to look up
+    /// @return snapshot The registry snapshot at that nonce
+    function getSnapshotAtNonce(uint256 nonce) external view returns (TypesLib.RegistrySnapshot memory snapshot);
+
+    /// @notice Get the current active issuer bitmask (computed live)
+    /// @dev For node bootstrap before Phase 2+3 snapshots exist
+    /// @return bitmask Bitmask where bit i = issuer i is active
+    function getActiveBitmask() external view returns (uint256 bitmask);
+
+    /// @notice Increment missed counts for non-signing issuers
+    /// @dev Advisory liveness metric. DO NOT use for automated slashing or forced removal.
+    ///      Public and permissionless — counters can be inflated by anyone.
+    ///      Governance must cross-reference with on-chain transaction history before acting.
+    /// @param nonSignersBitmask Bitmask of issuers that did not sign
+    function incrementMissedCounts(uint256 nonSignersBitmask) external;
 
     /// @notice Get all registered issuers
     /// @return An array of all issuer structs

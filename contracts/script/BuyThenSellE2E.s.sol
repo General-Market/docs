@@ -39,13 +39,13 @@ contract BuyThenSellE2E is Script {
         buyIds[0] = buyOrderId;
         bytes memory sig = new bytes(64);
 
-        index.confirmBatch(buyCycle, buyIds, sig);
+        index.confirmBatch(buyCycle, buyIds, sig, 3, 7);
 
         TypesLib.Fill[] memory buyFills = new TypesLib.Fill[](1);
         buyFills[0] = TypesLib.Fill({
             orderId: buyOrderId, fillPrice: fillPrice, fillAmount: buyAmount, cycleNumber: buyCycle, txHash: bytes32(0)
         });
-        index.confirmFills(buyCycle, buyFills, sig);
+        index.confirmFills(buyCycle, buyFills, sig, 3, 7);
         vm.stopBroadcast();
 
         console.log("BUY processed. Status:", uint256(index.getOrder(buyOrderId).status));
@@ -73,13 +73,13 @@ contract BuyThenSellE2E is Script {
         uint256[] memory sellIds = new uint256[](1);
         sellIds[0] = sellOrderId;
 
-        index.confirmBatch(sellCycle, sellIds, sig);
+        index.confirmBatch(sellCycle, sellIds, sig, 3, 7);
 
         TypesLib.Fill[] memory sellFills = new TypesLib.Fill[](1);
         sellFills[0] = TypesLib.Fill({
             orderId: sellOrderId, fillPrice: fillPrice, fillAmount: totalShares, cycleNumber: sellCycle, txHash: bytes32(0)
         });
-        index.confirmFills(sellCycle, sellFills, sig);
+        index.confirmFills(sellCycle, sellFills, sig, 3, 7);
         vm.stopBroadcast();
 
         console.log("SELL processed. Status:", uint256(index.getOrder(sellOrderId).status));

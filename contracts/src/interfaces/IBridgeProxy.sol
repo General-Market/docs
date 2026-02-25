@@ -137,7 +137,9 @@ interface IBridgeProxy {
     function completeCreateItp(
         uint256 nonce,
         bytes32 orbitItpId,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external returns (address bridgedItpAddress);
 
     /// @notice Request a rebalance (permissionless, event-only)
@@ -170,7 +172,9 @@ interface IBridgeProxy {
         uint256[] calldata newWeights,
         uint256[] calldata prices,
         address[] calldata quoteTokens,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     /// @notice Transfer deployer role for an ITP
@@ -187,7 +191,9 @@ interface IBridgeProxy {
         bytes32 itpId,
         address user,
         uint256 amount,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     /// @notice Burn BridgedITP shares (e.g., after sell order completion)
@@ -199,7 +205,9 @@ interface IBridgeProxy {
         bytes32 itpId,
         address from,
         uint256 amount,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     /// @notice Set the Investment contract address for atomic ITP creation

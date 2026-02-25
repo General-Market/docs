@@ -481,6 +481,21 @@ library EventsLib {
     /// @param paused Whether consensus is now paused
     event ConsensusPausedChanged(bool paused);
 
+    /// @notice Emitted when a registry snapshot is created (after setAggregatedPubkey)
+    /// @param nonce The snapshot nonce
+    /// @param blockNumber Block number when snapshot was created
+    /// @param activeBitmask Bitmask of active issuer IDs
+    event SnapshotCreated(uint256 indexed nonce, uint256 blockNumber, uint256 activeBitmask);
+
+    /// @notice Emitted when a snapshot is pending (after add/remove issuer)
+    /// @dev Issuer nodes should log WARNING if gap persists > 10 blocks
+    /// @param nonce The nonce that needs a snapshot
+    event SnapshotPending(uint256 indexed nonce);
+
+    /// @notice Emitted when non-signer missed counts are incremented
+    /// @param nonSignersBitmask Bitmask of issuers that did not sign
+    event NonSignersRecorded(uint256 nonSignersBitmask);
+
     // ============ BRIDGE RECOVERY EVENTS ============
 
     /// @notice Emitted when reversed bridge lock funds are withdrawn via BLS consensus

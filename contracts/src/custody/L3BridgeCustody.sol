@@ -96,7 +96,9 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
     function initiateBridge(
         uint256 destChainId,
         uint256 amount,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external override returns (uint256 nonce) {
         // Validate amount is non-zero
         if (amount == 0) {
@@ -116,7 +118,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), destChainId, amount, nonce));
 
         // Verify BLS signature (11/20 threshold)
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Transfer USDC from caller to this contract (escrow)
         usdc.safeTransferFrom(msg.sender, address(this), amount);
@@ -154,7 +156,9 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
     function markReleased(
         uint256 nonce,
         bytes32 destTxHash,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external override {
         TypesLib.PendingLock storage lock = pendingLocks[nonce];
 
@@ -178,7 +182,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), nonce, destTxHash));
 
         // Verify BLS signature (11/20 threshold)
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Mark as released
         lock.released = true;
@@ -191,7 +195,9 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
     function reverseLock(
         uint256 nonce,
         bytes calldata blsSignature,
-        uint256 signerCount
+        uint256 signerCount,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external override {
         TypesLib.PendingLock storage lock = pendingLocks[nonce];
 
@@ -225,7 +231,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "reverse", nonce, signerCount));
 
         // Verify BLS signature (15/20 threshold for emergency reversal)
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Mark as reversed
         lock.reversed = true;
@@ -248,7 +254,9 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
     function withdrawReversedFunds(
         uint256 nonce,
         address recipient,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external {
         TypesLib.PendingLock storage lock = pendingLocks[nonce];
         if (lock.amount == 0) revert ErrorsLib.E049_LockNotFound(nonce);
@@ -258,7 +266,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(this), "withdrawReversed", nonce, recipient
         ));
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         uint256 amount = lock.amount;
         lock.amount = 0; // prevent double withdrawal
@@ -301,7 +309,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
     /// @notice Propose a standard upgrade (7-day timelock)
     /// @param newImpl New implementation address
     /// @param blsSignature BLS signature from issuers
-    function proposeUpgrade(address newImpl, bytes calldata blsSignature) external {
+    function proposeUpgrade(address newImpl, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         if (newImpl == address(0)) {
             revert ErrorsLib.E038_ZeroImplementation();
         }
@@ -311,7 +319,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "proposeUpgrade", newImpl));
 
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         pendingUpgradeImpl = newImpl;
         pendingUpgradeProposedAt = block.timestamp;
@@ -321,7 +329,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
     /// @notice Propose an emergency upgrade (24-hour timelock, 17/20 threshold)
     /// @param newImpl New implementation address
     /// @param blsSignature BLS signature from issuers
-    function proposeEmergencyUpgrade(address newImpl, bytes calldata blsSignature) external {
+    function proposeEmergencyUpgrade(address newImpl, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         if (newImpl == address(0)) {
             revert ErrorsLib.E038_ZeroImplementation();
         }
@@ -331,7 +339,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "proposeEmergencyUpgrade", newImpl));
 
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         pendingUpgradeImpl = newImpl;
         pendingUpgradeProposedAt = block.timestamp;
@@ -366,14 +374,14 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
 
     /// @notice Cancel a pending upgrade
     /// @param blsSignature BLS signature from issuers
-    function cancelUpgrade(bytes calldata blsSignature) external {
+    function cancelUpgrade(bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         if (pendingUpgradeImpl == address(0)) {
             revert ErrorsLib.E040_NoPendingUpgrade();
         }
 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "cancelUpgrade", pendingUpgradeImpl));
 
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Clear pending upgrade
         pendingUpgradeImpl = address(0);

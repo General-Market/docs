@@ -21,9 +21,11 @@ contract SetAggregatedPubkey is Script {
 
         vm.startBroadcast();
 
-        IssuerRegistry(issuerRegistry).setAggregatedPubkey(aggPubkey);
+        uint256 nonce = IssuerRegistry(issuerRegistry).registryNonce();
+        IssuerRegistry(issuerRegistry).setAggregatedPubkey(aggPubkey, nonce);
         console.log("IssuerRegistry updated with aggregated pubkey");
         console.log("Pubkey length:", aggPubkey.length);
+        console.log("Registry nonce used:", nonce);
 
         vm.stopBroadcast();
     }

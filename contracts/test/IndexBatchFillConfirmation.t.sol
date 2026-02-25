@@ -115,7 +115,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
 
         // Confirm batch
         uint256 cycleNumber = 1;
-        index.confirmBatch(cycleNumber, orderIds, _signBatch(cycleNumber, orderIds));
+        index.confirmBatch(cycleNumber, orderIds, _signBatch(cycleNumber, orderIds), 3, 7);
 
         // Verify orders are marked as BATCHED
         TypesLib.LimitOrder memory order1 = index.getOrder(orderId1);
@@ -149,7 +149,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         vm.expectEmit(true, false, false, false);
         emit EventsLib.BatchConfirmed(1, orderIds, batchSig);
 
-        index.confirmBatch(1, orderIds, batchSig);
+        index.confirmBatch(1, orderIds, batchSig, 3, 7);
     }
 
     function test_confirmBatch_revertsOnCycleAlreadyProcessed() public {
@@ -163,11 +163,11 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         orderIds2[0] = orderId2;
 
         // First batch succeeds
-        index.confirmBatch(1, orderIds1, _signBatch(1, orderIds1));
+        index.confirmBatch(1, orderIds1, _signBatch(1, orderIds1), 3, 7);
 
         // Second batch with same cycle number reverts
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E019_CycleAlreadyProcessed.selector, 1));
-        index.confirmBatch(1, orderIds2, _signBatch(1, orderIds2));
+        index.confirmBatch(1, orderIds2, _signBatch(1, orderIds2), 3, 7);
     }
 
     function test_confirmBatch_revertsOnOrderNotFound() public {
@@ -175,7 +175,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         orderIds[0] = 999; // Non-existent order
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E022_OrderNotFound.selector, 999));
-        index.confirmBatch(1, orderIds, _signBatch(1, orderIds));
+        index.confirmBatch(1, orderIds, _signBatch(1, orderIds), 3, 7);
     }
 
     function test_confirmBatch_revertsOnOrderAlreadyBatched() public {
@@ -185,11 +185,11 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         orderIds[0] = orderId;
 
         // First batch succeeds
-        index.confirmBatch(1, orderIds, _signBatch(1, orderIds));
+        index.confirmBatch(1, orderIds, _signBatch(1, orderIds), 3, 7);
 
         // Try to batch the same order in a different cycle
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E021_OrderAlreadyBatched.selector, orderId));
-        index.confirmBatch(2, orderIds, _signBatch(2, orderIds));
+        index.confirmBatch(2, orderIds, _signBatch(2, orderIds), 3, 7);
     }
 
     function test_confirmBatch_multipleOrdersSameCycle() public {
@@ -202,7 +202,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         orderIds[1] = orderId2;
         orderIds[2] = orderId3;
 
-        index.confirmBatch(1, orderIds, _signBatch(1, orderIds));
+        index.confirmBatch(1, orderIds, _signBatch(1, orderIds), 3, 7);
 
         // All orders should be batched
         assertEq(uint8(index.getOrder(orderId1).status), uint8(TypesLib.OrderStatus.BATCHED));
@@ -214,7 +214,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         uint256[] memory orderIds = new uint256[](0);
 
         // Should succeed with empty array (no orders to batch)
-        index.confirmBatch(1, orderIds, _signBatch(1, orderIds));
+        index.confirmBatch(1, orderIds, _signBatch(1, orderIds), 3, 7);
         assertTrue(index.cycleProcessed(1));
     }
 
@@ -226,7 +226,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
 
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(1, orderIds, _signBatch(1, orderIds));
+        index.confirmBatch(1, orderIds, _signBatch(1, orderIds), 3, 7);
 
         // Confirm fills
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
@@ -238,7 +238,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
             txHash: bytes32(0)
         });
 
-        index.confirmFills(1, fills, _signFills(1, fills));
+        index.confirmFills(1, fills, _signFills(1, fills), 3, 7);
 
         // Verify order is marked as FILLED
         TypesLib.LimitOrder memory order = index.getOrder(orderId);
@@ -255,7 +255,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
 
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(1, orderIds, _signBatch(1, orderIds));
+        index.confirmBatch(1, orderIds, _signBatch(1, orderIds), 3, 7);
 
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
         fills[0] = TypesLib.Fill({
@@ -269,7 +269,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         vm.expectEmit(true, true, false, true);
         emit EventsLib.FillConfirmed(orderId, 1, 1e18, 10e18);
 
-        index.confirmFills(1, fills, _signFills(1, fills));
+        index.confirmFills(1, fills, _signFills(1, fills), 3, 7);
     }
 
     function test_confirmFills_revertsOnOrderNotFound() public {
@@ -283,7 +283,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         });
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E022_OrderNotFound.selector, 999));
-        index.confirmFills(1, fills, _signFills(1, fills));
+        index.confirmFills(1, fills, _signFills(1, fills), 3, 7);
     }
 
     function test_confirmFills_revertsOnOrderAlreadyFilled() public {
@@ -293,7 +293,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
 
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(1, orderIds, _signBatch(1, orderIds));
+        index.confirmBatch(1, orderIds, _signBatch(1, orderIds), 3, 7);
 
         // Fill the order first
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
@@ -304,7 +304,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
             cycleNumber: 1,
             txHash: bytes32(0)
         });
-        index.confirmFills(1, fills, _signFills(1, fills));
+        index.confirmFills(1, fills, _signFills(1, fills), 3, 7);
 
         // Now try to fill the already-FILLED order again
         TypesLib.Fill[] memory fills2 = new TypesLib.Fill[](1);
@@ -324,7 +324,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
                 uint256(TypesLib.OrderStatus.BATCHED)
             )
         );
-        index.confirmFills(2, fills2, _signFills(2, fills2));
+        index.confirmFills(2, fills2, _signFills(2, fills2), 3, 7);
     }
 
     function test_confirmFills_revertsOnFillExceedsOrder() public {
@@ -332,7 +332,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
 
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(1, orderIds, _signBatch(1, orderIds));
+        index.confirmBatch(1, orderIds, _signBatch(1, orderIds), 3, 7);
 
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
         fills[0] = TypesLib.Fill({
@@ -346,7 +346,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         vm.expectRevert(
             abi.encodeWithSelector(ErrorsLib.E023_FillExceedsOrder.selector, orderId, 20e18, 10e18)
         );
-        index.confirmFills(1, fills, _signFills(1, fills));
+        index.confirmFills(1, fills, _signFills(1, fills), 3, 7);
     }
 
     function test_confirmFills_multipleFills() public {
@@ -356,7 +356,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         uint256[] memory orderIds = new uint256[](2);
         orderIds[0] = orderId1;
         orderIds[1] = orderId2;
-        index.confirmBatch(1, orderIds, _signBatch(1, orderIds));
+        index.confirmBatch(1, orderIds, _signBatch(1, orderIds), 3, 7);
 
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](2);
         fills[0] = TypesLib.Fill({
@@ -374,7 +374,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
             txHash: bytes32(0)
         });
 
-        index.confirmFills(1, fills, _signFills(1, fills));
+        index.confirmFills(1, fills, _signFills(1, fills), 3, 7);
 
         assertEq(uint8(index.getOrder(orderId1).status), uint8(TypesLib.OrderStatus.FILLED));
         assertEq(uint8(index.getOrder(orderId2).status), uint8(TypesLib.OrderStatus.FILLED));
@@ -390,7 +390,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
 
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(1, orderIds, _signBatch(1, orderIds));
+        index.confirmBatch(1, orderIds, _signBatch(1, orderIds), 3, 7);
 
         // Record user balance before fill
         uint256 userBalanceBefore = usdc.balanceOf(user);
@@ -405,7 +405,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
             txHash: bytes32(0)
         });
 
-        index.confirmFills(1, fills, _signFills(1, fills));
+        index.confirmFills(1, fills, _signFills(1, fills), 3, 7);
 
         // Order should still be marked as FILLED (status changes)
         assertEq(uint8(index.getOrder(orderId).status), uint8(TypesLib.OrderStatus.FILLED));
@@ -425,7 +425,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
 
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(1, orderIds, _signBatch(1, orderIds));
+        index.confirmBatch(1, orderIds, _signBatch(1, orderIds), 3, 7);
 
         // Fill at 2 USD per share
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
@@ -437,7 +437,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
             txHash: bytes32(0)
         });
 
-        index.confirmFills(1, fills, _signFills(1, fills));
+        index.confirmFills(1, fills, _signFills(1, fills), 3, 7);
 
         // shares = fillAmount / fillPrice = 10e18 / 2e18 = 5e18 shares
         TypesLib.ITPCore memory itp = index.getITP(itpId);
@@ -471,7 +471,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
 
         uint256[] memory buyOrderIds = new uint256[](1);
         buyOrderIds[0] = buyOrderId;
-        index.confirmBatch(cycleNum, buyOrderIds, _signBatch(cycleNum, buyOrderIds));
+        index.confirmBatch(cycleNum, buyOrderIds, _signBatch(cycleNum, buyOrderIds), 3, 7);
 
         TypesLib.Fill[] memory buyFills = new TypesLib.Fill[](1);
         buyFills[0] = TypesLib.Fill({
@@ -481,7 +481,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
             cycleNumber: cycleNum,
             txHash: keccak256(abi.encode("setup_buy", cycleNum))
         });
-        index.confirmFills(cycleNum, buyFills, _signFills(cycleNum, buyFills));
+        index.confirmFills(cycleNum, buyFills, _signFills(cycleNum, buyFills), 3, 7);
     }
 
     function test_confirmFills_sellOrder_happyPath() public {
@@ -511,7 +511,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         uint256[] memory sellOrderIds = new uint256[](1);
         sellOrderIds[0] = sellOrderId;
         uint256 sellCycleNumber = block.timestamp + 100;
-        index.confirmBatch(sellCycleNumber, sellOrderIds, _signBatch(sellCycleNumber, sellOrderIds));
+        index.confirmBatch(sellCycleNumber, sellOrderIds, _signBatch(sellCycleNumber, sellOrderIds), 3, 7);
 
         // Confirm the fill: fillAmount=10e18 shares at fillPrice=1e18
         // usdcToReturn = (10e18 * 1e18) / 1e18 = 10e18
@@ -523,7 +523,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
             cycleNumber: sellCycleNumber,
             txHash: keccak256("sell_tx")
         });
-        index.confirmFills(sellCycleNumber, sellFills, _signFills(sellCycleNumber, sellFills));
+        index.confirmFills(sellCycleNumber, sellFills, _signFills(sellCycleNumber, sellFills), 3, 7);
 
         // Verify order marked as FILLED
         TypesLib.LimitOrder memory order = index.getOrder(sellOrderId);
@@ -558,7 +558,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         uint256[] memory sellOrderIds = new uint256[](1);
         sellOrderIds[0] = sellOrderId;
         uint256 sellCycleNumber = block.timestamp + 100;
-        index.confirmBatch(sellCycleNumber, sellOrderIds, _signBatch(sellCycleNumber, sellOrderIds));
+        index.confirmBatch(sellCycleNumber, sellOrderIds, _signBatch(sellCycleNumber, sellOrderIds), 3, 7);
 
         // Fill at price 2.0: usdcToReturn = (10e18 * 2e18) / 1e18 = 20e18
         TypesLib.Fill[] memory sellFills = new TypesLib.Fill[](1);
@@ -573,7 +573,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         // Need to fund the contract with enough USDC for the payout
         usdc.mint(address(index), 20e18);
 
-        index.confirmFills(sellCycleNumber, sellFills, _signFills(sellCycleNumber, sellFills));
+        index.confirmFills(sellCycleNumber, sellFills, _signFills(sellCycleNumber, sellFills), 3, 7);
 
         // User should get 20 USDC (10 shares * $2 price)
         assertEq(usdc.balanceOf(user), userBalanceBefore + 20e18, "Should receive shares * price USDC");
@@ -600,7 +600,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         uint256[] memory sellOrderIds = new uint256[](1);
         sellOrderIds[0] = sellOrderId;
         uint256 sellCycleNumber = block.timestamp + 200;
-        index.confirmBatch(sellCycleNumber, sellOrderIds, _signBatch(sellCycleNumber, sellOrderIds));
+        index.confirmBatch(sellCycleNumber, sellOrderIds, _signBatch(sellCycleNumber, sellOrderIds), 3, 7);
 
         // Expect FillConfirmed event
         vm.expectEmit(true, true, false, true);
@@ -614,7 +614,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
             cycleNumber: sellCycleNumber,
             txHash: keccak256("sell_tx_2")
         });
-        index.confirmFills(sellCycleNumber, sellFills, _signFills(sellCycleNumber, sellFills));
+        index.confirmFills(sellCycleNumber, sellFills, _signFills(sellCycleNumber, sellFills), 3, 7);
     }
 
     function test_confirmFills_sellOrder_partialFill() public {
@@ -634,7 +634,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         uint256[] memory sellOrderIds = new uint256[](1);
         sellOrderIds[0] = sellOrderId;
         uint256 sellCycleNumber = block.timestamp + 300;
-        index.confirmBatch(sellCycleNumber, sellOrderIds, _signBatch(sellCycleNumber, sellOrderIds));
+        index.confirmBatch(sellCycleNumber, sellOrderIds, _signBatch(sellCycleNumber, sellOrderIds), 3, 7);
 
         // But only 30 shares are filled at price 1.0
         // usdcToReturn = (30e18 * 1e18) / 1e18 = 30e18
@@ -648,7 +648,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         });
 
         uint256 userBalanceBefore = usdc.balanceOf(user);
-        index.confirmFills(sellCycleNumber, sellFills, _signFills(sellCycleNumber, sellFills));
+        index.confirmFills(sellCycleNumber, sellFills, _signFills(sellCycleNumber, sellFills), 3, 7);
 
         // User receives 30 USDC: (30e18 shares * 1e18 price) / 1e18 = 30e18
         assertEq(usdc.balanceOf(user), userBalanceBefore + 30e18);
@@ -678,7 +678,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         uint256[] memory sellOrderIds = new uint256[](1);
         sellOrderIds[0] = sellOrderId;
         uint256 sellCycleNumber = block.timestamp + 400;
-        index.confirmBatch(sellCycleNumber, sellOrderIds, _signBatch(sellCycleNumber, sellOrderIds));
+        index.confirmBatch(sellCycleNumber, sellOrderIds, _signBatch(sellCycleNumber, sellOrderIds), 3, 7);
 
         TypesLib.Fill[] memory sellFills = new TypesLib.Fill[](1);
         sellFills[0] = TypesLib.Fill({
@@ -688,7 +688,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
             cycleNumber: sellCycleNumber,
             txHash: keccak256("full_sell_tx")
         });
-        index.confirmFills(sellCycleNumber, sellFills, _signFills(sellCycleNumber, sellFills));
+        index.confirmFills(sellCycleNumber, sellFills, _signFills(sellCycleNumber, sellFills), 3, 7);
 
         // ITP should have 0 supply after selling all
         TypesLib.ITPCore memory itpAfter = index.getITP(itpId);
@@ -715,7 +715,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         sellOrderIds[0] = sellOrderId1;
         sellOrderIds[1] = sellOrderId2;
         uint256 sellCycleNumber = block.timestamp + 500;
-        index.confirmBatch(sellCycleNumber, sellOrderIds, _signBatch(sellCycleNumber, sellOrderIds));
+        index.confirmBatch(sellCycleNumber, sellOrderIds, _signBatch(sellCycleNumber, sellOrderIds), 3, 7);
 
         TypesLib.Fill[] memory sellFills = new TypesLib.Fill[](2);
         sellFills[0] = TypesLib.Fill({
@@ -732,7 +732,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
             cycleNumber: sellCycleNumber,
             txHash: keccak256("multi_sell_2")
         });
-        index.confirmFills(sellCycleNumber, sellFills, _signFills(sellCycleNumber, sellFills));
+        index.confirmFills(sellCycleNumber, sellFills, _signFills(sellCycleNumber, sellFills), 3, 7);
 
         // ITP totalSupply: 150 - 30 - 20 = 100
         TypesLib.ITPCore memory itpAfter = index.getITP(itpId);
@@ -753,7 +753,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         vm.expectEmit(true, true, false, true);
         emit EventsLib.OrderRefunded(orderId, user, 10e18);
 
-        index.refundExpiredOrder(orderId, _signRefund(orderId));
+        index.refundExpiredOrder(orderId, _signRefund(orderId), 3, 7);
 
         // Verify USDC refunded
         assertEq(usdc.balanceOf(user), userBalanceBefore + 10e18);
@@ -774,12 +774,12 @@ contract IndexBatchFillConfirmationTest is TestHelper {
                 block.timestamp
             )
         );
-        index.refundExpiredOrder(orderId, _signRefund(orderId));
+        index.refundExpiredOrder(orderId, _signRefund(orderId), 3, 7);
     }
 
     function test_refundExpiredOrder_revertsOnOrderNotFound() public {
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E022_OrderNotFound.selector, 999));
-        index.refundExpiredOrder(999, _signRefund(999));
+        index.refundExpiredOrder(999, _signRefund(999), 3, 7);
     }
 
     function test_refundExpiredOrder_revertsIfAlreadyFilled() public {
@@ -787,7 +787,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
 
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(1, orderIds, _signBatch(1, orderIds));
+        index.confirmBatch(1, orderIds, _signBatch(1, orderIds), 3, 7);
 
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
         fills[0] = TypesLib.Fill({
@@ -797,7 +797,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
             cycleNumber: 1,
             txHash: bytes32(0)
         });
-        index.confirmFills(1, fills, _signFills(1, fills));
+        index.confirmFills(1, fills, _signFills(1, fills), 3, 7);
 
         // Fast forward past deadline
         vm.warp(block.timestamp + 2 hours);
@@ -811,7 +811,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
                 uint256(TypesLib.OrderStatus.PENDING)
             )
         );
-        index.refundExpiredOrder(orderId, _signRefund(orderId));
+        index.refundExpiredOrder(orderId, _signRefund(orderId), 3, 7);
     }
 
     function test_refundExpiredOrder_revertsIfAlreadyExpired() public {
@@ -820,7 +820,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         vm.warp(block.timestamp + 2 hours);
 
         // First refund succeeds
-        index.refundExpiredOrder(orderId, _signRefund(orderId));
+        index.refundExpiredOrder(orderId, _signRefund(orderId), 3, 7);
 
         // Second refund fails (already expired/refunded)
         vm.expectRevert(
@@ -831,7 +831,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
                 uint256(TypesLib.OrderStatus.PENDING)
             )
         );
-        index.refundExpiredOrder(orderId, _signRefund(orderId));
+        index.refundExpiredOrder(orderId, _signRefund(orderId), 3, 7);
     }
 
     function test_refundExpiredOrder_batchedOrderCanBeRefunded() public {
@@ -839,7 +839,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
 
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(1, orderIds, _signBatch(1, orderIds));
+        index.confirmBatch(1, orderIds, _signBatch(1, orderIds), 3, 7);
 
         // Fast forward past deadline
         vm.warp(block.timestamp + 2 hours);
@@ -847,7 +847,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         uint256 userBalanceBefore = usdc.balanceOf(user);
 
         // Batched but unfilled order can be refunded
-        index.refundExpiredOrder(orderId, _signRefund(orderId));
+        index.refundExpiredOrder(orderId, _signRefund(orderId), 3, 7);
 
         assertEq(usdc.balanceOf(user), userBalanceBefore + 10e18);
         assertEq(uint8(index.getOrder(orderId).status), uint8(TypesLib.OrderStatus.EXPIRED));
@@ -866,8 +866,8 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         orderIds2[0] = orderId2;
 
         // Process different cycles
-        index.confirmBatch(1, orderIds1, _signBatch(1, orderIds1));
-        index.confirmBatch(2, orderIds2, _signBatch(2, orderIds2));
+        index.confirmBatch(1, orderIds1, _signBatch(1, orderIds1), 3, 7);
+        index.confirmBatch(2, orderIds2, _signBatch(2, orderIds2), 3, 7);
 
         assertTrue(index.cycleProcessed(1));
         assertTrue(index.cycleProcessed(2));
@@ -880,7 +880,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
 
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(1, orderIds, _signBatch(1, orderIds));
+        index.confirmBatch(1, orderIds, _signBatch(1, orderIds), 3, 7);
 
         // Fill has cycleNumber=2 but function param is 1
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
@@ -895,7 +895,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         vm.expectRevert(
             abi.encodeWithSelector(ErrorsLib.E036_FillCycleMismatch.selector, 2, 1)
         );
-        index.confirmFills(1, fills, _signFills(1, fills));
+        index.confirmFills(1, fills, _signFills(1, fills), 3, 7);
     }
 
     function test_confirmFills_revertsOnZeroShares() public {
@@ -906,7 +906,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
 
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(1, orderIds, _signBatch(1, orderIds));
+        index.confirmBatch(1, orderIds, _signBatch(1, orderIds), 3, 7);
 
         // Fill with extremely high price that results in < MIN_SHARES
         // MIN_SHARES = 1e12, so need: fillAmount * 1e18 / fillPrice < 1e12
@@ -923,7 +923,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         vm.expectRevert(
             abi.encodeWithSelector(ErrorsLib.E037_ZeroSharesCalculated.selector, 10e18, 100e24)
         );
-        index.confirmFills(1, fills, _signFills(1, fills));
+        index.confirmFills(1, fills, _signFills(1, fills), 3, 7);
     }
 
     // ============ FUZZ TESTS ============
@@ -937,7 +937,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
 
-        index.confirmBatch(cycleNumber, orderIds, _signBatch(cycleNumber, orderIds));
+        index.confirmBatch(cycleNumber, orderIds, _signBatch(cycleNumber, orderIds), 3, 7);
         assertTrue(index.cycleProcessed(cycleNumber));
     }
 
@@ -950,7 +950,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
 
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(1, orderIds, _signBatch(1, orderIds));
+        index.confirmBatch(1, orderIds, _signBatch(1, orderIds), 3, 7);
 
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
         fills[0] = TypesLib.Fill({
@@ -961,7 +961,7 @@ contract IndexBatchFillConfirmationTest is TestHelper {
             txHash: bytes32(0)
         });
 
-        index.confirmFills(1, fills, _signFills(1, fills));
+        index.confirmFills(1, fills, _signFills(1, fills), 3, 7);
         assertEq(uint8(index.getOrder(orderId).status), uint8(TypesLib.OrderStatus.FILLED));
     }
 }

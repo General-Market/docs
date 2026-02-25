@@ -228,10 +228,14 @@ contract DeployL3Test is BLSTestHelper {
         bytes memory popSig3 = blsSign(vm.toString(uint256(2)), popMsg3);
 
         // addIssuer requires admin of governance
+        // Each addIssuer increments registryNonce; must snapshot before next addIssuer
         vm.startPrank(deployer);
         uint256 id1 = reg.addIssuer(issuer1, bytes32("issuer1.index.network"), pubkey1, popSig1);
+        reg.setAggregatedPubkey(pubkey1, 1); // snapshot nonce 1
         uint256 id2 = reg.addIssuer(issuer2, bytes32("issuer2.index.network"), pubkey2, popSig2);
+        reg.setAggregatedPubkey(pubkey2, 2); // snapshot nonce 2
         uint256 id3 = reg.addIssuer(issuer3, bytes32("issuer3.index.network"), pubkey3, popSig3);
+        reg.setAggregatedPubkey(pubkey3, 3); // snapshot nonce 3
         vm.stopPrank();
 
         assertEq(id1, 0);
@@ -239,9 +243,9 @@ contract DeployL3Test is BLSTestHelper {
         assertEq(id3, 2);
         assertEq(reg.activeIssuerCount(), 3);
 
-        // G2 aggregation is done off-chain; getAggregatedPubkey returns empty bytes
+        // After setAggregatedPubkey snapshots, getAggregatedPubkey returns the last set pubkey
         bytes memory aggKey = reg.getAggregatedPubkey();
-        assertEq(aggKey.length, 0);
+        assertEq(aggKey.length, 128);
     }
 
     function test_registerTestIssuers_issuerDataCorrect() public {
@@ -255,8 +259,10 @@ contract DeployL3Test is BLSTestHelper {
         bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), issuer1, pubkey1));
         bytes memory popSig = blsSign(vm.toString(uint256(0)), popMsg);
 
-        vm.prank(deployer);
+        vm.startPrank(deployer);
         uint256 id = reg.addIssuer(issuer1, bytes32("issuer1.index.network"), pubkey1, popSig);
+        reg.setAggregatedPubkey(pubkey1, 1); // snapshot nonce 1
+        vm.stopPrank();
 
         TypesLib.Issuer memory issuer = reg.getIssuer(id);
         assertEq(issuer.addr, issuer1);

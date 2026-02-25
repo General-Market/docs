@@ -26,7 +26,9 @@ interface ICollateralRegistry {
         uint256 toChain,
         uint256 amount,
         TypesLib.TxType txType,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     // ============ VIEW FUNCTIONS ============

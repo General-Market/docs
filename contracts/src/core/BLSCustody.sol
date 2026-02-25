@@ -105,7 +105,9 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
         address target,
         bytes calldata data,
         bytes calldata blsSignature,
-        uint256 nonceValue
+        uint256 nonceValue,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external override returns (bool success, bytes memory returnData) {
         // Check nonce not already used (bitmap pattern prevents gap attacks)
         if (_isNonceUsed(nonceValue)) {
@@ -122,7 +124,7 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), target, data, nonceValue));
 
         // Verify BLS signature via BLSVerifier
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Mark nonce as used
         _markNonceUsed(nonceValue);
@@ -143,7 +145,9 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
     /// @inheritdoc IBLSCustody
     function proposeWhitelist(
         address target,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external override {
         // Check not already whitelisted
         if (_whitelisted[target]) {
@@ -160,7 +164,7 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "proposeWhitelist", target));
 
         // Verify BLS signature (11/20 threshold)
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Record proposal
         whitelistProposedAt[target] = block.timestamp;
@@ -197,7 +201,9 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
     /// @inheritdoc IBLSCustody
     function emergencyRemoveWhitelist(
         address target,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external override {
         // Check target is currently whitelisted
         if (!_whitelisted[target]) {
@@ -209,7 +215,7 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "emergencyRemove", target));
 
         // Verify BLS signature (15/20 threshold for emergency)
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Remove from whitelist
         _whitelisted[target] = false;
@@ -225,7 +231,9 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
     /// @inheritdoc IBLSCustody
     function proposeUpgrade(
         address newImpl,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external override {
         if (newImpl == address(0)) {
             revert ErrorsLib.E038_ZeroImplementation();
@@ -238,7 +246,7 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "proposeUpgrade", newImpl));
 
         // Verify BLS signature (15/20 threshold for standard upgrades)
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         pendingUpgradeImpl = newImpl;
         pendingUpgradeProposedAt = block.timestamp;
@@ -250,7 +258,9 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
     /// @inheritdoc IBLSCustody
     function proposeEmergencyUpgrade(
         address newImpl,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external override {
         if (newImpl == address(0)) {
             revert ErrorsLib.E038_ZeroImplementation();
@@ -263,7 +273,7 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "proposeEmergencyUpgrade", newImpl));
 
         // Verify BLS signature (17/20 threshold for emergency upgrades per architecture NFR13)
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         pendingUpgradeImpl = newImpl;
         pendingUpgradeProposedAt = block.timestamp;

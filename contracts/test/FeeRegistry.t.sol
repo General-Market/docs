@@ -134,7 +134,7 @@ contract FeeRegistryTest is TestHelper {
         vm.expectEmit(true, false, false, true);
         emit FeeRateUpdated(ITP_1, 0, feeRate);
 
-        registry.setFeeRate(ITP_1, feeRate, _signSetFeeRate(ITP_1, feeRate));
+        registry.setFeeRate(ITP_1, feeRate, _signSetFeeRate(ITP_1, feeRate), 3, 7);
 
         assertEq(registry.getFeeRate(ITP_1), feeRate);
     }
@@ -144,30 +144,30 @@ contract FeeRegistryTest is TestHelper {
 
         bytes memory sig = _signSetFeeRate(ITP_1, feeRate);
         vm.expectRevert(abi.encodeWithSelector(FeeRegistry.FeeRateExceedsMax.selector, feeRate, 1000));
-        registry.setFeeRate(ITP_1, feeRate, sig);
+        registry.setFeeRate(ITP_1, feeRate, sig, 3, 7);
     }
 
     function test_SetFeeRate_AllowsExactlyMaxRate() public {
         uint256 feeRate = 1000; // 10% - exactly max
 
-        registry.setFeeRate(ITP_1, feeRate, _signSetFeeRate(ITP_1, feeRate));
+        registry.setFeeRate(ITP_1, feeRate, _signSetFeeRate(ITP_1, feeRate), 3, 7);
 
         assertEq(registry.getFeeRate(ITP_1), feeRate);
     }
 
     function test_SetFeeRate_AllowsZeroRate() public {
-        registry.setFeeRate(ITP_1, 0, _signSetFeeRate(ITP_1, 0));
+        registry.setFeeRate(ITP_1, 0, _signSetFeeRate(ITP_1, 0), 3, 7);
         assertEq(registry.getFeeRate(ITP_1), 0);
     }
 
     function test_SetFeeRate_UpdatesExistingRate() public {
-        registry.setFeeRate(ITP_1, 500, _signSetFeeRate(ITP_1, 500));
+        registry.setFeeRate(ITP_1, 500, _signSetFeeRate(ITP_1, 500), 3, 7);
         assertEq(registry.getFeeRate(ITP_1), 500);
 
         vm.expectEmit(true, false, false, true);
         emit FeeRateUpdated(ITP_1, 500, 300);
 
-        registry.setFeeRate(ITP_1, 300, _signSetFeeRate(ITP_1, 300));
+        registry.setFeeRate(ITP_1, 300, _signSetFeeRate(ITP_1, 300), 3, 7);
         assertEq(registry.getFeeRate(ITP_1), 300);
     }
 
@@ -175,7 +175,7 @@ contract FeeRegistryTest is TestHelper {
         bytes memory sig = _signSetFeeRate(ITP_1, 500);
         vm.prank(user);
         vm.expectRevert(FeeRegistry.Unauthorized.selector);
-        registry.setFeeRate(ITP_1, 500, sig);
+        registry.setFeeRate(ITP_1, 500, sig, 3, 7);
     }
 
     // ============ AC3 & AC4: RECORD FEE CHARGE TESTS ============
@@ -184,7 +184,7 @@ contract FeeRegistryTest is TestHelper {
         vm.expectEmit(true, true, false, true);
         emit FeeCharged(user, ITP_1, AMOUNT, TRADING);
 
-        registry.recordFeeCharge(user, ITP_1, AMOUNT, TRADING, _signRecordFeeCharge(user, ITP_1, AMOUNT, TRADING));
+        registry.recordFeeCharge(user, ITP_1, AMOUNT, TRADING, _signRecordFeeCharge(user, ITP_1, AMOUNT, TRADING), 3, 7);
 
         (uint256 trading,,,) = registry.getAccumulatedFees(ITP_1);
         assertEq(trading, AMOUNT);
@@ -194,7 +194,7 @@ contract FeeRegistryTest is TestHelper {
         vm.expectEmit(true, true, false, true);
         emit FeeCharged(user, ITP_1, AMOUNT, MANAGEMENT);
 
-        registry.recordFeeCharge(user, ITP_1, AMOUNT, MANAGEMENT, _signRecordFeeCharge(user, ITP_1, AMOUNT, MANAGEMENT));
+        registry.recordFeeCharge(user, ITP_1, AMOUNT, MANAGEMENT, _signRecordFeeCharge(user, ITP_1, AMOUNT, MANAGEMENT), 3, 7);
 
         (, uint256 management,,) = registry.getAccumulatedFees(ITP_1);
         assertEq(management, AMOUNT);
@@ -204,7 +204,7 @@ contract FeeRegistryTest is TestHelper {
         vm.expectEmit(true, true, false, true);
         emit FeeCharged(user, ITP_1, AMOUNT, BRIDGE);
 
-        registry.recordFeeCharge(user, ITP_1, AMOUNT, BRIDGE, _signRecordFeeCharge(user, ITP_1, AMOUNT, BRIDGE));
+        registry.recordFeeCharge(user, ITP_1, AMOUNT, BRIDGE, _signRecordFeeCharge(user, ITP_1, AMOUNT, BRIDGE), 3, 7);
 
         (,, uint256 bridge,) = registry.getAccumulatedFees(ITP_1);
         assertEq(bridge, AMOUNT);
@@ -214,17 +214,17 @@ contract FeeRegistryTest is TestHelper {
         vm.expectEmit(true, true, false, true);
         emit FeeCharged(user, ITP_1, AMOUNT, GAS);
 
-        registry.recordFeeCharge(user, ITP_1, AMOUNT, GAS, _signRecordFeeCharge(user, ITP_1, AMOUNT, GAS));
+        registry.recordFeeCharge(user, ITP_1, AMOUNT, GAS, _signRecordFeeCharge(user, ITP_1, AMOUNT, GAS), 3, 7);
 
         (,,, uint256 gas) = registry.getAccumulatedFees(ITP_1);
         assertEq(gas, AMOUNT);
     }
 
     function test_RecordFeeCharge_AllTypesTrackedSeparately() public {
-        registry.recordFeeCharge(user, ITP_1, 100e18, TRADING, _signRecordFeeCharge(user, ITP_1, 100e18, TRADING));
-        registry.recordFeeCharge(user, ITP_1, 200e18, MANAGEMENT, _signRecordFeeCharge(user, ITP_1, 200e18, MANAGEMENT));
-        registry.recordFeeCharge(user, ITP_1, 300e18, BRIDGE, _signRecordFeeCharge(user, ITP_1, 300e18, BRIDGE));
-        registry.recordFeeCharge(user, ITP_1, 400e18, GAS, _signRecordFeeCharge(user, ITP_1, 400e18, GAS));
+        registry.recordFeeCharge(user, ITP_1, 100e18, TRADING, _signRecordFeeCharge(user, ITP_1, 100e18, TRADING), 3, 7);
+        registry.recordFeeCharge(user, ITP_1, 200e18, MANAGEMENT, _signRecordFeeCharge(user, ITP_1, 200e18, MANAGEMENT), 3, 7);
+        registry.recordFeeCharge(user, ITP_1, 300e18, BRIDGE, _signRecordFeeCharge(user, ITP_1, 300e18, BRIDGE), 3, 7);
+        registry.recordFeeCharge(user, ITP_1, 400e18, GAS, _signRecordFeeCharge(user, ITP_1, 400e18, GAS), 3, 7);
 
         (uint256 trading, uint256 management, uint256 bridge, uint256 gas) = registry.getAccumulatedFees(ITP_1);
         assertEq(trading, 100e18);
@@ -236,28 +236,28 @@ contract FeeRegistryTest is TestHelper {
     function test_RecordFeeCharge_RevertsOnZeroAddress() public {
         bytes memory sig = _signRecordFeeCharge(address(0), ITP_1, AMOUNT, TRADING);
         vm.expectRevert(FeeRegistry.ZeroAddress.selector);
-        registry.recordFeeCharge(address(0), ITP_1, AMOUNT, TRADING, sig);
+        registry.recordFeeCharge(address(0), ITP_1, AMOUNT, TRADING, sig, 3, 7);
     }
 
     function test_RecordFeeCharge_RevertsOnZeroAmount() public {
         bytes memory sig = _signRecordFeeCharge(user, ITP_1, 0, TRADING);
         vm.expectRevert(FeeRegistry.ZeroAmount.selector);
-        registry.recordFeeCharge(user, ITP_1, 0, TRADING, sig);
+        registry.recordFeeCharge(user, ITP_1, 0, TRADING, sig, 3, 7);
     }
 
     function test_RecordFeeCharge_RevertsForUnauthorized() public {
         bytes memory sig = _signRecordFeeCharge(user, ITP_1, AMOUNT, TRADING);
         vm.prank(user);
         vm.expectRevert(FeeRegistry.Unauthorized.selector);
-        registry.recordFeeCharge(user, ITP_1, AMOUNT, TRADING, sig);
+        registry.recordFeeCharge(user, ITP_1, AMOUNT, TRADING, sig, 3, 7);
     }
 
     // ============ AC5: GET ACCUMULATED FEES TESTS ============
 
     function test_GetAccumulatedFees_ReturnsCorrectTotals() public {
-        registry.recordFeeCharge(user, ITP_1, 100e18, TRADING, _signRecordFeeCharge(user, ITP_1, 100e18, TRADING));
-        registry.recordFeeCharge(user, ITP_1, 50e18, TRADING, _signRecordFeeCharge(user, ITP_1, 50e18, TRADING));
-        registry.recordFeeCharge(user, ITP_1, 200e18, MANAGEMENT, _signRecordFeeCharge(user, ITP_1, 200e18, MANAGEMENT));
+        registry.recordFeeCharge(user, ITP_1, 100e18, TRADING, _signRecordFeeCharge(user, ITP_1, 100e18, TRADING), 3, 7);
+        registry.recordFeeCharge(user, ITP_1, 50e18, TRADING, _signRecordFeeCharge(user, ITP_1, 50e18, TRADING), 3, 7);
+        registry.recordFeeCharge(user, ITP_1, 200e18, MANAGEMENT, _signRecordFeeCharge(user, ITP_1, 200e18, MANAGEMENT), 3, 7);
 
         (uint256 trading, uint256 management, uint256 bridge, uint256 gas) = registry.getAccumulatedFees(ITP_1);
 
@@ -268,17 +268,17 @@ contract FeeRegistryTest is TestHelper {
     }
 
     function test_GetTotalFees_SumsAllTypes() public {
-        registry.recordFeeCharge(user, ITP_1, 100e18, TRADING, _signRecordFeeCharge(user, ITP_1, 100e18, TRADING));
-        registry.recordFeeCharge(user, ITP_1, 200e18, MANAGEMENT, _signRecordFeeCharge(user, ITP_1, 200e18, MANAGEMENT));
-        registry.recordFeeCharge(user, ITP_1, 300e18, BRIDGE, _signRecordFeeCharge(user, ITP_1, 300e18, BRIDGE));
-        registry.recordFeeCharge(user, ITP_1, 400e18, GAS, _signRecordFeeCharge(user, ITP_1, 400e18, GAS));
+        registry.recordFeeCharge(user, ITP_1, 100e18, TRADING, _signRecordFeeCharge(user, ITP_1, 100e18, TRADING), 3, 7);
+        registry.recordFeeCharge(user, ITP_1, 200e18, MANAGEMENT, _signRecordFeeCharge(user, ITP_1, 200e18, MANAGEMENT), 3, 7);
+        registry.recordFeeCharge(user, ITP_1, 300e18, BRIDGE, _signRecordFeeCharge(user, ITP_1, 300e18, BRIDGE), 3, 7);
+        registry.recordFeeCharge(user, ITP_1, 400e18, GAS, _signRecordFeeCharge(user, ITP_1, 400e18, GAS), 3, 7);
 
         uint256 total = registry.getTotalFees(ITP_1);
         assertEq(total, 1000e18);
     }
 
     function test_GetFeeRate_ReturnsCurrentRate() public {
-        registry.setFeeRate(ITP_1, 750, _signSetFeeRate(ITP_1, 750));
+        registry.setFeeRate(ITP_1, 750, _signSetFeeRate(ITP_1, 750), 3, 7);
         assertEq(registry.getFeeRate(ITP_1), 750);
     }
 
@@ -294,32 +294,32 @@ contract FeeRegistryTest is TestHelper {
         vm.expectEmit(false, false, false, true);
         emit FeeSplitUpdated(newShare);
 
-        registry.setFeeSplit(newShare, _signSetFeeSplit(newShare));
+        registry.setFeeSplit(newShare, _signSetFeeSplit(newShare), 3, 7);
 
         assertEq(registry.deployerShareBps(), newShare);
     }
 
     function test_SetFeeSplit_AllowsZeroShare() public {
-        registry.setFeeSplit(0, _signSetFeeSplit(0));
+        registry.setFeeSplit(0, _signSetFeeSplit(0), 3, 7);
         assertEq(registry.deployerShareBps(), 0);
     }
 
     function test_SetFeeSplit_AllowsFullShare() public {
-        registry.setFeeSplit(10000, _signSetFeeSplit(10000)); // 100%
+        registry.setFeeSplit(10000, _signSetFeeSplit(10000), 3, 7); // 100%
         assertEq(registry.deployerShareBps(), 10000);
     }
 
     function test_SetFeeSplit_RevertsIfExceeds100Percent() public {
         bytes memory sig = _signSetFeeSplit(10001);
         vm.expectRevert(abi.encodeWithSelector(FeeRegistry.InvalidDeployerShare.selector, 10001));
-        registry.setFeeSplit(10001, sig);
+        registry.setFeeSplit(10001, sig, 3, 7);
     }
 
     function test_SetFeeSplit_RevertsForUnauthorized() public {
         bytes memory sig = _signSetFeeSplit(6000);
         vm.prank(user);
         vm.expectRevert(FeeRegistry.Unauthorized.selector);
-        registry.setFeeSplit(6000, sig);
+        registry.setFeeSplit(6000, sig, 3, 7);
     }
 
     // ============ AC7: CLAIM FEES TESTS ============
@@ -330,7 +330,7 @@ contract FeeRegistryTest is TestHelper {
         registry.registerITPDeployer(ITP_1, deployer);
 
         // Accumulate 1000 in fees
-        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING));
+        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING), 3, 7);
 
         // Default deployer share is 70%
         uint256 expectedClaimable = (1000e18 * 7000) / 10000; // 700e18
@@ -347,7 +347,7 @@ contract FeeRegistryTest is TestHelper {
         vm.prank(admin);
         registry.registerITPDeployer(ITP_1, deployer);
 
-        registry.recordFeeCharge(user, ITP_1, AMOUNT, TRADING, _signRecordFeeCharge(user, ITP_1, AMOUNT, TRADING));
+        registry.recordFeeCharge(user, ITP_1, AMOUNT, TRADING, _signRecordFeeCharge(user, ITP_1, AMOUNT, TRADING), 3, 7);
 
         // Try to claim from non-deployer
         vm.prank(user);
@@ -356,7 +356,7 @@ contract FeeRegistryTest is TestHelper {
     }
 
     function test_ClaimFees_RevertsIfNoDeployerRegistered() public {
-        registry.recordFeeCharge(user, ITP_1, AMOUNT, TRADING, _signRecordFeeCharge(user, ITP_1, AMOUNT, TRADING));
+        registry.recordFeeCharge(user, ITP_1, AMOUNT, TRADING, _signRecordFeeCharge(user, ITP_1, AMOUNT, TRADING), 3, 7);
 
         vm.prank(deployer);
         vm.expectRevert(abi.encodeWithSelector(FeeRegistry.NotITPDeployer.selector, ITP_1, deployer, address(0)));
@@ -377,7 +377,7 @@ contract FeeRegistryTest is TestHelper {
         vm.prank(admin);
         registry.registerITPDeployer(ITP_1, deployer);
 
-        registry.recordFeeCharge(user, ITP_1, AMOUNT, TRADING, _signRecordFeeCharge(user, ITP_1, AMOUNT, TRADING));
+        registry.recordFeeCharge(user, ITP_1, AMOUNT, TRADING, _signRecordFeeCharge(user, ITP_1, AMOUNT, TRADING), 3, 7);
 
         vm.prank(deployer);
         vm.expectRevert(FeeRegistry.ZeroAddress.selector);
@@ -389,7 +389,7 @@ contract FeeRegistryTest is TestHelper {
         registry.registerITPDeployer(ITP_1, deployer);
 
         // First batch of fees
-        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING));
+        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING), 3, 7);
 
         // First claim
         vm.prank(deployer);
@@ -399,7 +399,7 @@ contract FeeRegistryTest is TestHelper {
         assertEq(registry.getClaimableFees(ITP_1), 0);
 
         // Add more fees
-        registry.recordFeeCharge(user, ITP_1, 500e18, TRADING, _signRecordFeeCharge(user, ITP_1, 500e18, TRADING));
+        registry.recordFeeCharge(user, ITP_1, 500e18, TRADING, _signRecordFeeCharge(user, ITP_1, 500e18, TRADING), 3, 7);
 
         // Should be able to claim 70% of the new 500
         uint256 expectedClaimable = (500e18 * 7000) / 10000; // 350e18
@@ -416,8 +416,8 @@ contract FeeRegistryTest is TestHelper {
         vm.prank(admin);
         registry.registerITPDeployer(ITP_1, deployer);
 
-        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING));
-        registry.recordFeeCharge(user, ITP_1, 500e18, BRIDGE, _signRecordFeeCharge(user, ITP_1, 500e18, BRIDGE));
+        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING), 3, 7);
+        registry.recordFeeCharge(user, ITP_1, 500e18, BRIDGE, _signRecordFeeCharge(user, ITP_1, 500e18, BRIDGE), 3, 7);
 
         // Total = 1500e18, deployer share = 70%
         uint256 expected = (1500e18 * 7000) / 10000; // 1050e18
@@ -508,27 +508,27 @@ contract FeeRegistryTest is TestHelper {
     function test_Nonce_IncrementsOnSetFeeRate() public {
         assertEq(registry.getNonce(), 0);
 
-        registry.setFeeRate(ITP_1, 500, _signSetFeeRate(ITP_1, 500));
+        registry.setFeeRate(ITP_1, 500, _signSetFeeRate(ITP_1, 500), 3, 7);
         assertEq(registry.getNonce(), 1);
 
-        registry.setFeeRate(ITP_1, 600, _signSetFeeRate(ITP_1, 600));
+        registry.setFeeRate(ITP_1, 600, _signSetFeeRate(ITP_1, 600), 3, 7);
         assertEq(registry.getNonce(), 2);
     }
 
     function test_Nonce_IncrementsOnRecordFeeCharge() public {
         assertEq(registry.getNonce(), 0);
 
-        registry.recordFeeCharge(user, ITP_1, AMOUNT, TRADING, _signRecordFeeCharge(user, ITP_1, AMOUNT, TRADING));
+        registry.recordFeeCharge(user, ITP_1, AMOUNT, TRADING, _signRecordFeeCharge(user, ITP_1, AMOUNT, TRADING), 3, 7);
         assertEq(registry.getNonce(), 1);
 
-        registry.recordFeeCharge(user, ITP_1, AMOUNT, BRIDGE, _signRecordFeeCharge(user, ITP_1, AMOUNT, BRIDGE));
+        registry.recordFeeCharge(user, ITP_1, AMOUNT, BRIDGE, _signRecordFeeCharge(user, ITP_1, AMOUNT, BRIDGE), 3, 7);
         assertEq(registry.getNonce(), 2);
     }
 
     function test_Nonce_IncrementsOnSetFeeSplit() public {
         assertEq(registry.getNonce(), 0);
 
-        registry.setFeeSplit(6000, _signSetFeeSplit(6000));
+        registry.setFeeSplit(6000, _signSetFeeSplit(6000), 3, 7);
         assertEq(registry.getNonce(), 1);
     }
 
@@ -585,7 +585,7 @@ contract FeeRegistryTest is TestHelper {
         registry.setAuthorizedCaller(authorizedCaller, true);
 
         vm.prank(authorizedCaller);
-        registry.setFeeRate(ITP_1, 500, _signSetFeeRate(ITP_1, 500));
+        registry.setFeeRate(ITP_1, 500, _signSetFeeRate(ITP_1, 500), 3, 7);
 
         assertEq(registry.getFeeRate(ITP_1), 500);
     }
@@ -599,7 +599,7 @@ contract FeeRegistryTest is TestHelper {
         bytes memory sig = _signSetFeeRate(ITP_1, 500);
         vm.prank(authorizedCaller);
         vm.expectRevert(FeeRegistry.Unauthorized.selector);
-        registry.setFeeRate(ITP_1, 500, sig);
+        registry.setFeeRate(ITP_1, 500, sig, 3, 7);
     }
 
     function test_RegisterITPDeployer_AuthorizedCaller() public {
@@ -636,8 +636,8 @@ contract FeeRegistryTest is TestHelper {
     // ============ MULTIPLE ITPs TRACK INDEPENDENTLY ============
 
     function test_MultipleITPs_TrackIndependently() public {
-        registry.recordFeeCharge(user, ITP_1, 100e18, TRADING, _signRecordFeeCharge(user, ITP_1, 100e18, TRADING));
-        registry.recordFeeCharge(user, ITP_2, 500e18, TRADING, _signRecordFeeCharge(user, ITP_2, 500e18, TRADING));
+        registry.recordFeeCharge(user, ITP_1, 100e18, TRADING, _signRecordFeeCharge(user, ITP_1, 100e18, TRADING), 3, 7);
+        registry.recordFeeCharge(user, ITP_2, 500e18, TRADING, _signRecordFeeCharge(user, ITP_2, 500e18, TRADING), 3, 7);
 
         (uint256 trading1,,,) = registry.getAccumulatedFees(ITP_1);
         (uint256 trading2,,,) = registry.getAccumulatedFees(ITP_2);
@@ -650,8 +650,8 @@ contract FeeRegistryTest is TestHelper {
     }
 
     function test_MultipleITPs_IndependentFeeRates() public {
-        registry.setFeeRate(ITP_1, 500, _signSetFeeRate(ITP_1, 500));
-        registry.setFeeRate(ITP_2, 800, _signSetFeeRate(ITP_2, 800));
+        registry.setFeeRate(ITP_1, 500, _signSetFeeRate(ITP_1, 500), 3, 7);
+        registry.setFeeRate(ITP_2, 800, _signSetFeeRate(ITP_2, 800), 3, 7);
 
         assertEq(registry.getFeeRate(ITP_1), 500);
         assertEq(registry.getFeeRate(ITP_2), 800);
@@ -677,10 +677,10 @@ contract FeeRegistryTest is TestHelper {
         registry.registerITPDeployer(ITP_1, deployer);
 
         // Accumulate fees
-        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING));
+        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING), 3, 7);
 
         // Change fee split to 50%
-        registry.setFeeSplit(5000, _signSetFeeSplit(5000));
+        registry.setFeeSplit(5000, _signSetFeeSplit(5000), 3, 7);
 
         // Claimable should now be 50%
         uint256 expected = (1000e18 * 5000) / 10000; // 500e18
@@ -711,7 +711,7 @@ contract FeeRegistryTest is TestHelper {
         vm.prank(admin);
         registry.registerITPDeployer(ITP_1, deployer);
 
-        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING));
+        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING), 3, 7);
 
         vm.prank(deployer);
         registry.claimFees(ITP_1, recipient);
@@ -726,7 +726,7 @@ contract FeeRegistryTest is TestHelper {
         vm.prank(admin);
         registry.registerITPDeployer(ITP_1, deployer);
 
-        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING));
+        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING), 3, 7);
 
         // Non-admin should fail
         vm.prank(user);
@@ -735,7 +735,7 @@ contract FeeRegistryTest is TestHelper {
     }
 
     function test_ClaimProtocolFees_CalculatesCorrectProtocolShare() public {
-        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING));
+        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING), 3, 7);
 
         // Default deployer share is 70%, so protocol gets 30%
         uint256 expectedProtocolShare = (1000e18 * 3000) / 10000; // 300e18
@@ -748,7 +748,7 @@ contract FeeRegistryTest is TestHelper {
     }
 
     function test_ClaimProtocolFees_RevertsOnZeroRecipient() public {
-        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING));
+        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING), 3, 7);
 
         vm.prank(admin);
         vm.expectRevert(FeeRegistry.ZeroAddress.selector);
@@ -762,7 +762,7 @@ contract FeeRegistryTest is TestHelper {
     }
 
     function test_ClaimProtocolFees_RevertsIfAlreadyClaimed() public {
-        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING));
+        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING), 3, 7);
 
         // First claim should succeed
         vm.prank(admin);
@@ -776,9 +776,9 @@ contract FeeRegistryTest is TestHelper {
 
     function test_ClaimProtocolFees_WorksWithCustomFeeSplit() public {
         // Set deployer share to 50%, protocol gets 50%
-        registry.setFeeSplit(5000, _signSetFeeSplit(5000));
+        registry.setFeeSplit(5000, _signSetFeeSplit(5000), 3, 7);
 
-        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING));
+        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING), 3, 7);
 
         uint256 expectedProtocolShare = (1000e18 * 5000) / 10000; // 500e18
 
@@ -793,7 +793,7 @@ contract FeeRegistryTest is TestHelper {
         vm.prank(admin);
         registry.registerITPDeployer(ITP_1, deployer);
 
-        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING));
+        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING), 3, 7);
 
         // Admin claims protocol fees first (30% = 300e18)
         vm.prank(admin);
@@ -819,7 +819,7 @@ contract FeeRegistryTest is TestHelper {
         vm.prank(admin);
         registry.registerITPDeployer(ITP_1, deployer);
 
-        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING));
+        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING), 3, 7);
 
         // Deployer claims first (70% = 700e18)
         vm.prank(deployer);
@@ -845,7 +845,7 @@ contract FeeRegistryTest is TestHelper {
         registry.registerITPDeployer(ITP_1, deployer);
 
         // First batch of fees
-        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING));
+        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING), 3, 7);
 
         // Verify initial claimable amounts
         uint256 expectedDeployer = (1000e18 * 7000) / 10000; // 700e18
@@ -870,7 +870,7 @@ contract FeeRegistryTest is TestHelper {
         assertEq(registry.getProtocolClaimableFees(ITP_1), 0);
 
         // Add more fees
-        registry.recordFeeCharge(user, ITP_1, 500e18, TRADING, _signRecordFeeCharge(user, ITP_1, 500e18, TRADING));
+        registry.recordFeeCharge(user, ITP_1, 500e18, TRADING, _signRecordFeeCharge(user, ITP_1, 500e18, TRADING), 3, 7);
 
         // Both can claim their shares of new fees
         uint256 newExpectedDeployer = (500e18 * 7000) / 10000; // 350e18
@@ -880,7 +880,7 @@ contract FeeRegistryTest is TestHelper {
     }
 
     function test_GetProtocolClaimableFees_ReturnsCorrectAmount() public {
-        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING));
+        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING), 3, 7);
 
         // Default deployer share is 70%, protocol gets 30%
         uint256 expected = (1000e18 * 3000) / 10000; // 300e18
@@ -888,7 +888,7 @@ contract FeeRegistryTest is TestHelper {
     }
 
     function test_GetProtocolClaimableFees_ReturnsZeroAfterClaim() public {
-        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING));
+        registry.recordFeeCharge(user, ITP_1, 1000e18, TRADING, _signRecordFeeCharge(user, ITP_1, 1000e18, TRADING), 3, 7);
 
         vm.prank(admin);
         registry.claimProtocolFees(ITP_1, recipient);

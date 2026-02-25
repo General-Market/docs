@@ -107,25 +107,46 @@ contract DeployCrossChainE2E is DeployBLSHelper {
             address(0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC),
             address(0x90F79bf6EB2c4f870365E785982E1f101E93b906)
         ];
-        for (uint256 i = 0; i < 3; i++) {
-            bytes memory pubkey = blsPubkey(uint8(i));
-            // Generate Proof of Possession signature
-            bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, issuerRegistry, issuers[i], pubkey));
-            bytes memory popSig = blsSign(vm.toString(i), popMsg);
-            IssuerRegistry(issuerRegistry).addIssuer(issuers[i], bytes32(bytes("127.0.0.1:9000")), pubkey, popSig);
+
+        // Must snapshot (setAggregatedPubkey) after EACH addIssuer due to PendingSnapshot constraint
+        // Issuer 0
+        {
+            bytes memory pubkey = blsPubkey(0);
+            bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, issuerRegistry, issuers[0], pubkey));
+            bytes memory popSig = blsSign("0", popMsg);
+            IssuerRegistry(issuerRegistry).addIssuer(issuers[0], bytes32(bytes("127.0.0.1:9000")), pubkey, popSig);
+            IssuerRegistry(issuerRegistry).setAggregatedPubkey(blsPubkey(0), 1);
         }
-        IssuerRegistry(issuerRegistry).setAggregatedPubkey(blsAggPubkey("0,1,2"));
+
+        // Issuer 1
+        {
+            bytes memory pubkey = blsPubkey(1);
+            bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, issuerRegistry, issuers[1], pubkey));
+            bytes memory popSig = blsSign("1", popMsg);
+            IssuerRegistry(issuerRegistry).addIssuer(issuers[1], bytes32(bytes("127.0.0.1:9000")), pubkey, popSig);
+            IssuerRegistry(issuerRegistry).setAggregatedPubkey(blsAggPubkey("0,1"), 2);
+        }
+
+        // Issuer 2
+        {
+            bytes memory pubkey = blsPubkey(2);
+            bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, issuerRegistry, issuers[2], pubkey));
+            bytes memory popSig = blsSign("2", popMsg);
+            IssuerRegistry(issuerRegistry).addIssuer(issuers[2], bytes32(bytes("127.0.0.1:9000")), pubkey, popSig);
+            IssuerRegistry(issuerRegistry).setAggregatedPubkey(blsAggPubkey("0,1,2"), 3);
+        }
     }
 
     function _whitelistAssets() internal {
         AssetPairRegistry apr = AssetPairRegistry(assetPairRegistry);
 
         // Propose all 627 assets with real BLS signatures
+        // referenceNonce=0, signersBitmask=7 (3 test issuers = bits 0,1,2)
         for (uint256 i = 1; i <= 627; i++) {
             address asset = address(uint160(i));
             uint256 nonce = apr.getNonce();
             bytes32 msg_ = keccak256(abi.encode("PROPOSE_ASSET", block.chainid, address(apr), asset, nonce));
-            apr.proposeAsset(asset, blsSign("0,1,2", msg_));
+            apr.proposeAsset(asset, blsSign("0,1,2", msg_), 3, 7);
         }
         // Warp past timelock and activate assets + propose pairs
         vm.warp(block.timestamp + 2 days + 1);
@@ -134,7 +155,7 @@ contract DeployCrossChainE2E is DeployBLSHelper {
             apr.activateAsset(asset);
             uint256 nonce = apr.getNonce();
             bytes32 msg_ = keccak256(abi.encode("PROPOSE_PAIR", block.chainid, address(apr), asset, BITGET_SOURCE, MOCK_USDC_QUOTE, uint256(0), nonce));
-            apr.proposePair(asset, BITGET_SOURCE, MOCK_USDC_QUOTE, 0, blsSign("0,1,2", msg_));
+            apr.proposePair(asset, BITGET_SOURCE, MOCK_USDC_QUOTE, 0, blsSign("0,1,2", msg_), 3, 7);
         }
         // Warp past timelock and activate pairs
         vm.warp(block.timestamp + 2 days + 1);

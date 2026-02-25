@@ -117,7 +117,7 @@ contract E2EEfficiencyTest is TestHelper {
         {
             uint256 nonce = feeRegistry.getNonce();
             bytes32 msg_ = keccak256(abi.encode(block.chainid, feeRegistryProxy, "setFeeRate", itpId, uint256(50), nonce));
-            feeRegistry.setFeeRate(itpId, 50, signWithTestIssuers(msg_));
+            feeRegistry.setFeeRate(itpId, 50, signWithTestIssuers(msg_), 3, 7);
         }
 
         // Verify inventory qty formula: qty[i] = (weight[i] * 1e18) / price[i]
@@ -213,7 +213,7 @@ contract E2EEfficiencyTest is TestHelper {
         ));
         feeRegistry.recordFeeCharge(
             user, itpId, feeAmt, TypesLib.FeeType.TRADING, signWithTestIssuers(message)
-        );
+        , 3, 7);
     }
 
     // ============ FLOW HELPERS ============
@@ -225,7 +225,7 @@ contract E2EEfficiencyTest is TestHelper {
     /// @dev Set NAV from prices using inventory-based computation, push via setItpNav with BLS
     function _setNavFromPrices(uint256[] memory prices) internal returns (uint256 midNAV) {
         midNAV = _computeMidNav(prices);
-        index.setItpNav(itpId, midNAV, _signNav(itpId, midNAV));
+        index.setItpNav(itpId, midNAV, _signNav(itpId, midNAV), 3, 7);
     }
 
     /// @dev Buy flow at specific fill price. Returns (orderId, sharesReceived).
@@ -236,11 +236,11 @@ contract E2EEfficiencyTest is TestHelper {
         uint256 c = _nextCycle();
         uint256[] memory ids = new uint256[](1);
         ids[0] = orderId;
-        index.confirmBatch(c, ids, _signBatch(c, ids));
+        index.confirmBatch(c, ids, _signBatch(c, ids), 3, 7);
 
         TypesLib.Fill[] memory f = new TypesLib.Fill[](1);
         f[0] = TypesLib.Fill(orderId, fillPrice, usdcAmt, c, bytes32(0));
-        index.confirmFills(c, f, _signFills(c, f));
+        index.confirmFills(c, f, _signFills(c, f), 3, 7);
 
         shares = (usdcAmt * 1e18) / fillPrice;
     }
@@ -253,11 +253,11 @@ contract E2EEfficiencyTest is TestHelper {
         uint256 c = _nextCycle();
         uint256[] memory ids = new uint256[](1);
         ids[0] = orderId;
-        index.confirmBatch(c, ids, _signBatch(c, ids));
+        index.confirmBatch(c, ids, _signBatch(c, ids), 3, 7);
 
         TypesLib.Fill[] memory f = new TypesLib.Fill[](1);
         f[0] = TypesLib.Fill(orderId, fillPrice, shareAmt, c, bytes32(0));
-        index.confirmFills(c, f, _signFills(c, f));
+        index.confirmFills(c, f, _signFills(c, f), 3, 7);
 
         usdcOut = (shareAmt * fillPrice) / 1e18;
     }
@@ -269,13 +269,13 @@ contract E2EEfficiencyTest is TestHelper {
         uint256[] memory fillAmounts
     ) internal returns (uint256 cycle) {
         cycle = _nextCycle();
-        index.confirmBatch(cycle, orderIds, _signBatch(cycle, orderIds));
+        index.confirmBatch(cycle, orderIds, _signBatch(cycle, orderIds), 3, 7);
 
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](orderIds.length);
         for (uint256 i = 0; i < orderIds.length; i++) {
             fills[i] = TypesLib.Fill(orderIds[i], fillPrices[i], fillAmounts[i], cycle, bytes32(0));
         }
-        index.confirmFills(cycle, fills, _signFills(cycle, fills));
+        index.confirmFills(cycle, fills, _signFills(cycle, fills), 3, 7);
     }
 
     // ============ SNAPSHOT HELPERS ============
@@ -347,7 +347,7 @@ contract E2EEfficiencyTest is TestHelper {
         emit log_named_uint("mid-bid spread (wei)", midNAV - bidNAV);
 
         // Seed sellers with shares at askNAV (deposits USDC into pool)
-        index.setItpNav(itpId, askNAV, _signNav(itpId, askNAV));
+        index.setItpNav(itpId, askNAV, _signNav(itpId, askNAV), 3, 7);
         _buy(user4, 5_000e18, askNAV);
         _buy(user5, 5_000e18, askNAV);
 
@@ -567,7 +567,7 @@ contract E2EEfficiencyTest is TestHelper {
 
         address[] memory emptyQt = new address[](0);
         index.rebalance(itpId, removeIndices, addAssets, newWeights, rebalPrices, emptyQt,
-            _signRebal(itpId, removeIndices, addAssets, newWeights, rebalPrices, emptyQt));
+            _signRebal(itpId, removeIndices, addAssets, newWeights, rebalPrices, emptyQt), 3, 7);
 
         Snap memory s2Post = _snap();
 
@@ -741,7 +741,7 @@ contract E2EEfficiencyTest is TestHelper {
         uint256 navPreRebal = index.getNAV(itpId);
         address[] memory emptyQt2 = new address[](0);
         index.rebalance(itpId, emptyIdx, emptyAddr, wB, prices, emptyQt2,
-            _signRebal(itpId, emptyIdx, emptyAddr, wB, prices, emptyQt2));
+            _signRebal(itpId, emptyIdx, emptyAddr, wB, prices, emptyQt2), 3, 7);
 
         Snap memory sB = _snap();
         assertApproxEqAbs(sB.nav, navPreRebal, 1e5, "NAV preserved by rebalance");

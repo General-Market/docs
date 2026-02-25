@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 /// @notice Deploys Governance, IssuerRegistry, and BLSCustody as UUPS proxies on Arbitrum One
 /// @dev Story 6.5: Deploys the full Arbitrum custody chain.
 ///      Whitelist proposal is attempted but may fail if IssuerRegistry returns a non-empty
-///      aggregated pubkey (G1 64 bytes), because BLSCustody.proposeWhitelist() calls
+///      aggregated pubkey (G1 64 bytes), because BLSCustody.proposeWhitelist(, 3, 7) calls
 ///      BLSLib.verifyBLS() which expects G2 pubkeys (128 bytes). This is a known Phase 1
 ///      limitation. Set SKIP_WHITELIST=true to skip whitelist proposals.
 ///      When whitelist succeeds, activation requires a separate call after the 2-day timelock.
@@ -163,11 +163,11 @@ contract DeployBLSCustodyArbitrum is Script {
         bytes memory emptySignature = "";
 
         // Propose 1inch Router V6
-        custody.proposeWhitelist(ONEINCH_ROUTER_V6, emptySignature);
+        custody.proposeWhitelist(ONEINCH_ROUTER_V6, emptySignature, 3, 7);
         console2.log("  Proposed: 1inch Router V6 ", ONEINCH_ROUTER_V6);
 
         // Propose USDC
-        custody.proposeWhitelist(USDC_ARBITRUM, emptySignature);
+        custody.proposeWhitelist(USDC_ARBITRUM, emptySignature, 3, 7);
         console2.log("  Proposed: USDC            ", USDC_ARBITRUM);
 
         console2.log("");

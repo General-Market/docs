@@ -106,7 +106,7 @@ contract AssetPairRegistryTest is TestHelper {
 
     function test_proposeAsset_createsPendingEntry() public {
         vm.prank(user);
-        registry.proposeAsset(asset1, _signProposeAsset(asset1));
+        registry.proposeAsset(asset1, _signProposeAsset(asset1), 3, 7);
 
         (address assetAddr, uint8 status, uint256 proposedAt,) = registry.getAsset(asset1);
 
@@ -122,38 +122,38 @@ contract AssetPairRegistryTest is TestHelper {
         emit IAssetPairRegistry.AssetProposed(asset1, user, block.timestamp + 2 days);
 
         vm.prank(user);
-        registry.proposeAsset(asset1, sig);
+        registry.proposeAsset(asset1, sig, 3, 7);
     }
 
     function test_proposeAsset_incrementsNonce() public {
         uint256 nonceBefore = registry.getNonce();
 
         vm.prank(user);
-        registry.proposeAsset(asset1, _signProposeAsset(asset1));
+        registry.proposeAsset(asset1, _signProposeAsset(asset1), 3, 7);
 
         assertEq(registry.getNonce(), nonceBefore + 1);
     }
 
     function test_proposeAsset_revertsOnZeroAddress() public {
         vm.expectRevert(AssetPairRegistry.ZeroAddress.selector);
-        registry.proposeAsset(address(0), new bytes(64));
+        registry.proposeAsset(address(0), new bytes(64), 3, 7);
     }
 
     function test_proposeAsset_revertsIfAlreadyExists() public {
         vm.prank(user);
-        registry.proposeAsset(asset1, _signProposeAsset(asset1));
+        registry.proposeAsset(asset1, _signProposeAsset(asset1), 3, 7);
 
         bytes memory sig = _signProposeAsset(asset1);
         vm.expectRevert(AssetPairRegistry.AssetAlreadyExists.selector);
         vm.prank(user);
-        registry.proposeAsset(asset1, sig);
+        registry.proposeAsset(asset1, sig, 3, 7);
     }
 
     // ============ ACTIVATE ASSET TESTS ============
 
     function test_activateAsset_failsBeforeTimelock() public {
         vm.prank(user);
-        registry.proposeAsset(asset1, _signProposeAsset(asset1));
+        registry.proposeAsset(asset1, _signProposeAsset(asset1), 3, 7);
 
         // Try to activate immediately
         vm.expectRevert(AssetPairRegistry.TimelockNotPassed.selector);
@@ -162,7 +162,7 @@ contract AssetPairRegistryTest is TestHelper {
 
     function test_activateAsset_succeedsAfterTimelock() public {
         vm.prank(user);
-        registry.proposeAsset(asset1, _signProposeAsset(asset1));
+        registry.proposeAsset(asset1, _signProposeAsset(asset1), 3, 7);
 
         // Warp past timelock
         vm.warp(block.timestamp + 2 days + 1);
@@ -176,7 +176,7 @@ contract AssetPairRegistryTest is TestHelper {
 
     function test_activateAsset_emitsEvent() public {
         vm.prank(user);
-        registry.proposeAsset(asset1, _signProposeAsset(asset1));
+        registry.proposeAsset(asset1, _signProposeAsset(asset1), 3, 7);
 
         vm.warp(block.timestamp + 2 days + 1);
 
@@ -194,7 +194,7 @@ contract AssetPairRegistryTest is TestHelper {
 
     function test_activateAsset_anyoneCanCall() public {
         vm.prank(user);
-        registry.proposeAsset(asset1, _signProposeAsset(asset1));
+        registry.proposeAsset(asset1, _signProposeAsset(asset1), 3, 7);
 
         vm.warp(block.timestamp + 2 days + 1);
 
@@ -213,7 +213,7 @@ contract AssetPairRegistryTest is TestHelper {
         _proposeAndActivateAsset(asset1);
 
         vm.prank(user);
-        registry.delistAsset(asset1, _signDelistAsset(asset1));
+        registry.delistAsset(asset1, _signDelistAsset(asset1), 3, 7);
 
         (, uint8 status,,) = registry.getAsset(asset1);
         assertEq(status, uint8(TypesLib.AssetStatus.DELISTING));
@@ -228,14 +228,14 @@ contract AssetPairRegistryTest is TestHelper {
         emit IAssetPairRegistry.AssetDelisting(asset1);
 
         vm.prank(user);
-        registry.delistAsset(asset1, sig);
+        registry.delistAsset(asset1, sig, 3, 7);
     }
 
     function test_delistAsset_revertsIfNotActive() public {
         // Asset not proposed
         bytes memory sig = _signDelistAsset(asset1);
         vm.expectRevert(AssetPairRegistry.AssetNotActive.selector);
-        registry.delistAsset(asset1, sig);
+        registry.delistAsset(asset1, sig, 3, 7);
     }
 
     // ============ EMERGENCY REMOVE ASSET TESTS ============
@@ -244,7 +244,7 @@ contract AssetPairRegistryTest is TestHelper {
         _proposeAndActivateAsset(asset1);
 
         vm.prank(user);
-        registry.emergencyRemoveAsset(asset1, _signEmergencyRemoveAsset(asset1));
+        registry.emergencyRemoveAsset(asset1, _signEmergencyRemoveAsset(asset1), 3, 7);
 
         (, uint8 status,,) = registry.getAsset(asset1);
         assertEq(status, uint8(TypesLib.AssetStatus.INACTIVE));
@@ -259,7 +259,7 @@ contract AssetPairRegistryTest is TestHelper {
         emit IAssetPairRegistry.AssetEmergencyRemoved(asset1);
 
         vm.prank(user);
-        registry.emergencyRemoveAsset(asset1, sig);
+        registry.emergencyRemoveAsset(asset1, sig, 3, 7);
     }
 
     function test_emergencyRemoveAsset_worksOnDelistingAsset() public {
@@ -267,11 +267,11 @@ contract AssetPairRegistryTest is TestHelper {
 
         // First delist
         vm.prank(user);
-        registry.delistAsset(asset1, _signDelistAsset(asset1));
+        registry.delistAsset(asset1, _signDelistAsset(asset1), 3, 7);
 
         // Then emergency remove
         vm.prank(user);
-        registry.emergencyRemoveAsset(asset1, _signEmergencyRemoveAsset(asset1));
+        registry.emergencyRemoveAsset(asset1, _signEmergencyRemoveAsset(asset1), 3, 7);
 
         (, uint8 status,,) = registry.getAsset(asset1);
         assertEq(status, uint8(TypesLib.AssetStatus.INACTIVE));
@@ -280,7 +280,7 @@ contract AssetPairRegistryTest is TestHelper {
     function test_emergencyRemoveAsset_revertsIfNotActiveOrDelisting() public {
         bytes memory sig = _signEmergencyRemoveAsset(asset1);
         vm.expectRevert(AssetPairRegistry.AssetNotActive.selector);
-        registry.emergencyRemoveAsset(asset1, sig);
+        registry.emergencyRemoveAsset(asset1, sig, 3, 7);
     }
 
     // ============ PROPOSE PAIR TESTS ============
@@ -289,7 +289,7 @@ contract AssetPairRegistryTest is TestHelper {
         _proposeAndActivateAsset(asset1);
 
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX));
+        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX), 3, 7);
 
         bytes32 pairId = registry.computePairId(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX);
 
@@ -315,14 +315,14 @@ contract AssetPairRegistryTest is TestHelper {
         bytes memory sig = _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX);
         vm.expectRevert(AssetPairRegistry.AssetNotWhitelisted.selector);
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, sig);
+        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, sig, 3, 7);
     }
 
     function test_proposePair_generatesCorrectPairId() public {
         _proposeAndActivateAsset(asset1);
 
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX));
+        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX), 3, 7);
 
         bytes32 expectedPairId = keccak256(abi.encode(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX));
         bytes32 computedPairId = registry.computePairId(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX);
@@ -347,19 +347,19 @@ contract AssetPairRegistryTest is TestHelper {
         );
 
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, sig);
+        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, sig, 3, 7);
     }
 
     function test_proposePair_revertsIfPairExists() public {
         _proposeAndActivateAsset(asset1);
 
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX));
+        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX), 3, 7);
 
         bytes memory sig = _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX);
         vm.expectRevert(AssetPairRegistry.PairAlreadyExists.selector);
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, sig);
+        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, sig, 3, 7);
     }
 
     // ============ ACTIVATE PAIR TESTS ============
@@ -368,7 +368,7 @@ contract AssetPairRegistryTest is TestHelper {
         _proposeAndActivateAsset(asset1);
 
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX));
+        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX), 3, 7);
 
         bytes32 pairId = registry.computePairId(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX);
 
@@ -380,7 +380,7 @@ contract AssetPairRegistryTest is TestHelper {
         _proposeAndActivateAsset(asset1);
 
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX));
+        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX), 3, 7);
 
         bytes32 pairId = registry.computePairId(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX);
 
@@ -398,7 +398,7 @@ contract AssetPairRegistryTest is TestHelper {
         _proposeAndActivateAsset(asset1);
 
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX));
+        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX), 3, 7);
 
         bytes32 pairId = registry.computePairId(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX);
 
@@ -423,7 +423,7 @@ contract AssetPairRegistryTest is TestHelper {
         bytes32 pairId = _proposeAndActivatePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX);
 
         vm.prank(user);
-        registry.delistPair(pairId, _signDelistPair(pairId));
+        registry.delistPair(pairId, _signDelistPair(pairId), 3, 7);
 
         (,,,, uint8 status,,) = registry.getPair(pairId);
         assertEq(status, uint8(TypesLib.PairStatus.DELISTED));
@@ -438,7 +438,7 @@ contract AssetPairRegistryTest is TestHelper {
         emit IAssetPairRegistry.PairDelisted(pairId);
 
         vm.prank(user);
-        registry.delistPair(pairId, sig);
+        registry.delistPair(pairId, sig, 3, 7);
     }
 
     function test_delistPair_revertsIfNotActive() public {
@@ -446,7 +446,7 @@ contract AssetPairRegistryTest is TestHelper {
 
         bytes memory sig = _signDelistPair(fakePairId);
         vm.expectRevert(AssetPairRegistry.PairNotActive.selector);
-        registry.delistPair(fakePairId, sig);
+        registry.delistPair(fakePairId, sig, 3, 7);
     }
 
     // ============ VIEW FUNCTION TESTS ============
@@ -462,7 +462,7 @@ contract AssetPairRegistryTest is TestHelper {
 
         // Pending
         vm.prank(user);
-        registry.proposeAsset(asset1, _signProposeAsset(asset1));
+        registry.proposeAsset(asset1, _signProposeAsset(asset1), 3, 7);
         assertFalse(registry.isAssetWhitelisted(asset1));
     }
 
@@ -470,7 +470,7 @@ contract AssetPairRegistryTest is TestHelper {
         _proposeAndActivateAsset(asset1);
 
         vm.prank(user);
-        registry.delistAsset(asset1, _signDelistAsset(asset1));
+        registry.delistAsset(asset1, _signDelistAsset(asset1), 3, 7);
 
         assertTrue(registry.isAssetDelisting(asset1));
     }
@@ -497,7 +497,7 @@ contract AssetPairRegistryTest is TestHelper {
 
         // Delist one
         vm.prank(user);
-        registry.delistAsset(asset1, _signDelistAsset(asset1));
+        registry.delistAsset(asset1, _signDelistAsset(asset1), 3, 7);
 
         activeAssets = registry.getActiveAssets();
         assertEq(activeAssets.length, 1);
@@ -515,7 +515,7 @@ contract AssetPairRegistryTest is TestHelper {
 
         // Delist one
         vm.prank(user);
-        registry.delistPair(pairId1, _signDelistPair(pairId1));
+        registry.delistPair(pairId1, _signDelistPair(pairId1), 3, 7);
 
         activePairs = registry.getActivePairs();
         assertEq(activePairs.length, 1);
@@ -527,10 +527,10 @@ contract AssetPairRegistryTest is TestHelper {
 
         // Create multiple pairs for same asset
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX));
+        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX), 3, 7);
 
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM, _signProposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM));
+        registry.proposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM, _signProposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM), 3, 7);
 
         bytes32[] memory assetPairs = registry.getPairsForAsset(asset1);
         assertEq(assetPairs.length, 2);
@@ -548,7 +548,7 @@ contract AssetPairRegistryTest is TestHelper {
         uint256 nonce0 = registry.getNonce();
 
         vm.prank(user);
-        registry.proposeAsset(asset1, _signProposeAsset(asset1));
+        registry.proposeAsset(asset1, _signProposeAsset(asset1), 3, 7);
         assertEq(registry.getNonce(), nonce0 + 1);
 
         vm.warp(block.timestamp + 2 days + 1);
@@ -558,7 +558,7 @@ contract AssetPairRegistryTest is TestHelper {
         assertEq(registry.getNonce(), nonce0 + 1);
 
         vm.prank(user);
-        registry.delistAsset(asset1, _signDelistAsset(asset1));
+        registry.delistAsset(asset1, _signDelistAsset(asset1), 3, 7);
         assertEq(registry.getNonce(), nonce0 + 2);
     }
 
@@ -584,7 +584,7 @@ contract AssetPairRegistryTest is TestHelper {
 
         // Delist one asset
         vm.prank(user);
-        registry.delistAsset(asset1, _signDelistAsset(asset1));
+        registry.delistAsset(asset1, _signDelistAsset(asset1), 3, 7);
 
         assertTrue(registry.isAssetDelisting(asset1));
         assertTrue(registry.isAssetWhitelisted(asset2)); // asset2 unaffected
@@ -602,7 +602,7 @@ contract AssetPairRegistryTest is TestHelper {
 
         // Delist asset
         vm.prank(user);
-        registry.delistAsset(asset1, _signDelistAsset(asset1));
+        registry.delistAsset(asset1, _signDelistAsset(asset1), 3, 7);
 
         // Pair is still active (existing orders can complete)
         assertTrue(registry.isPairActive(pairId));
@@ -615,7 +615,7 @@ contract AssetPairRegistryTest is TestHelper {
         bytes memory sig = _signProposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM);
         vm.expectRevert(AssetPairRegistry.AssetNotWhitelisted.selector);
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM, sig);
+        registry.proposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM, sig, 3, 7);
     }
 
     // ============ ACTIVATE PAIR - ASSET STATUS CHECK (HIGH-3 FIX) ============
@@ -625,12 +625,12 @@ contract AssetPairRegistryTest is TestHelper {
 
         // Propose a pair
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX));
+        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX), 3, 7);
         bytes32 pairId = registry.computePairId(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX);
 
         // Delist the asset during pair's timelock
         vm.prank(user);
-        registry.delistAsset(asset1, _signDelistAsset(asset1));
+        registry.delistAsset(asset1, _signDelistAsset(asset1), 3, 7);
 
         // Warp past timelock
         vm.warp(block.timestamp + 2 days + 1);
@@ -645,12 +645,12 @@ contract AssetPairRegistryTest is TestHelper {
 
         // Propose a pair
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX));
+        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX), 3, 7);
         bytes32 pairId = registry.computePairId(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX);
 
         // Emergency remove the asset during pair's timelock
         vm.prank(user);
-        registry.emergencyRemoveAsset(asset1, _signEmergencyRemoveAsset(asset1));
+        registry.emergencyRemoveAsset(asset1, _signEmergencyRemoveAsset(asset1), 3, 7);
 
         // Warp past timelock
         vm.warp(block.timestamp + 2 days + 1);
@@ -664,11 +664,11 @@ contract AssetPairRegistryTest is TestHelper {
 
     function test_cancelAssetProposal_resetsToInactive() public {
         vm.prank(user);
-        registry.proposeAsset(asset1, _signProposeAsset(asset1));
+        registry.proposeAsset(asset1, _signProposeAsset(asset1), 3, 7);
 
         // Cancel the proposal
         vm.prank(user);
-        registry.cancelAssetProposal(asset1, _signCancelAssetProposal(asset1));
+        registry.cancelAssetProposal(asset1, _signCancelAssetProposal(asset1), 3, 7);
 
         (, uint8 status,,) = registry.getAsset(asset1);
         assertEq(status, uint8(TypesLib.AssetStatus.INACTIVE));
@@ -676,7 +676,7 @@ contract AssetPairRegistryTest is TestHelper {
 
     function test_cancelAssetProposal_emitsEvent() public {
         vm.prank(user);
-        registry.proposeAsset(asset1, _signProposeAsset(asset1));
+        registry.proposeAsset(asset1, _signProposeAsset(asset1), 3, 7);
 
         bytes memory sig = _signCancelAssetProposal(asset1);
 
@@ -684,27 +684,27 @@ contract AssetPairRegistryTest is TestHelper {
         emit IAssetPairRegistry.AssetProposalCancelled(asset1);
 
         vm.prank(user);
-        registry.cancelAssetProposal(asset1, sig);
+        registry.cancelAssetProposal(asset1, sig, 3, 7);
     }
 
     function test_cancelAssetProposal_revertsIfNotPending() public {
         bytes memory sig = _signCancelAssetProposal(asset1);
         vm.expectRevert(AssetPairRegistry.AssetNotPending.selector);
-        registry.cancelAssetProposal(asset1, sig);
+        registry.cancelAssetProposal(asset1, sig, 3, 7);
     }
 
     function test_cancelAssetProposal_allowsReproposal() public {
         // Propose
         vm.prank(user);
-        registry.proposeAsset(asset1, _signProposeAsset(asset1));
+        registry.proposeAsset(asset1, _signProposeAsset(asset1), 3, 7);
 
         // Cancel
         vm.prank(user);
-        registry.cancelAssetProposal(asset1, _signCancelAssetProposal(asset1));
+        registry.cancelAssetProposal(asset1, _signCancelAssetProposal(asset1), 3, 7);
 
         // Re-propose should succeed
         vm.prank(user);
-        registry.proposeAsset(asset1, _signProposeAsset(asset1));
+        registry.proposeAsset(asset1, _signProposeAsset(asset1), 3, 7);
 
         (, uint8 status,,) = registry.getAsset(asset1);
         assertEq(status, uint8(TypesLib.AssetStatus.PENDING));
@@ -716,12 +716,12 @@ contract AssetPairRegistryTest is TestHelper {
         _proposeAndActivateAsset(asset1);
 
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX));
+        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX), 3, 7);
         bytes32 pairId = registry.computePairId(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX);
 
         // Cancel the proposal
         vm.prank(user);
-        registry.cancelPairProposal(pairId, _signCancelPairProposal(pairId));
+        registry.cancelPairProposal(pairId, _signCancelPairProposal(pairId), 3, 7);
 
         (,,,, uint8 status,,) = registry.getPair(pairId);
         assertEq(status, uint8(TypesLib.PairStatus.INACTIVE));
@@ -731,7 +731,7 @@ contract AssetPairRegistryTest is TestHelper {
         _proposeAndActivateAsset(asset1);
 
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX));
+        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX), 3, 7);
         bytes32 pairId = registry.computePairId(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX);
 
         bytes memory sig = _signCancelPairProposal(pairId);
@@ -740,7 +740,7 @@ contract AssetPairRegistryTest is TestHelper {
         emit IAssetPairRegistry.PairProposalCancelled(pairId);
 
         vm.prank(user);
-        registry.cancelPairProposal(pairId, sig);
+        registry.cancelPairProposal(pairId, sig, 3, 7);
     }
 
     function test_cancelPairProposal_revertsIfNotPending() public {
@@ -748,7 +748,7 @@ contract AssetPairRegistryTest is TestHelper {
 
         bytes memory sig = _signCancelPairProposal(fakePairId);
         vm.expectRevert(AssetPairRegistry.PairNotPending.selector);
-        registry.cancelPairProposal(fakePairId, sig);
+        registry.cancelPairProposal(fakePairId, sig, 3, 7);
     }
 
     function test_cancelPairProposal_allowsReproposal() public {
@@ -756,16 +756,16 @@ contract AssetPairRegistryTest is TestHelper {
 
         // Propose
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX));
+        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX), 3, 7);
         bytes32 pairId = registry.computePairId(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX);
 
         // Cancel
         vm.prank(user);
-        registry.cancelPairProposal(pairId, _signCancelPairProposal(pairId));
+        registry.cancelPairProposal(pairId, _signCancelPairProposal(pairId), 3, 7);
 
         // Re-propose should succeed
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX));
+        registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX), 3, 7);
 
         (,,,, uint8 status,,) = registry.getPair(pairId);
         assertEq(status, uint8(TypesLib.PairStatus.PENDING));
@@ -786,7 +786,7 @@ contract AssetPairRegistryTest is TestHelper {
 
         // Delist one pair
         vm.prank(user);
-        registry.delistPair(pairId1, _signDelistPair(pairId1));
+        registry.delistPair(pairId1, _signDelistPair(pairId1), 3, 7);
 
         // Only one should be active now
         activePairs = registry.getActivePairsForAsset(asset1);
@@ -802,7 +802,7 @@ contract AssetPairRegistryTest is TestHelper {
 
         // Propose another (still pending)
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM, _signProposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM));
+        registry.proposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM, _signProposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM), 3, 7);
 
         // getPairsForAsset returns both
         bytes32[] memory allPairs = registry.getPairsForAsset(asset1);
@@ -849,7 +849,7 @@ contract AssetPairRegistryTest is TestHelper {
 
     function _proposeAndActivateAsset(address asset) internal {
         vm.prank(user);
-        registry.proposeAsset(asset, _signProposeAsset(asset));
+        registry.proposeAsset(asset, _signProposeAsset(asset), 3, 7);
 
         vm.warp(block.timestamp + 2 days + 1);
         registry.activateAsset(asset);
@@ -865,7 +865,7 @@ contract AssetPairRegistryTest is TestHelper {
         }
 
         vm.prank(user);
-        registry.proposePair(asset, source, quote, chainId, _signProposePair(asset, source, quote, chainId));
+        registry.proposePair(asset, source, quote, chainId, _signProposePair(asset, source, quote, chainId), 3, 7);
 
         pairId = registry.computePairId(asset, source, quote, chainId);
 

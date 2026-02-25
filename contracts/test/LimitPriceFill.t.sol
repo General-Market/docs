@@ -90,7 +90,7 @@ contract LimitPriceFillTest is TestHelper {
 
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(cycle, orderIds, _signBatch(cycle, orderIds));
+        index.confirmBatch(cycle, orderIds, _signBatch(cycle, orderIds), 3, 7);
 
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
         fills[0] = TypesLib.Fill({
@@ -100,7 +100,7 @@ contract LimitPriceFillTest is TestHelper {
             cycleNumber: cycle,
             txHash: bytes32(0)
         });
-        index.confirmFills(cycle, fills, _signFills(cycle, fills));
+        index.confirmFills(cycle, fills, _signFills(cycle, fills), 3, 7);
     }
 
     /// @notice Submit a BUY order with a specific limit price
@@ -129,7 +129,7 @@ contract LimitPriceFillTest is TestHelper {
 
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(cycle, orderIds, _signBatch(cycle, orderIds));
+        index.confirmBatch(cycle, orderIds, _signBatch(cycle, orderIds), 3, 7);
 
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
         fills[0] = TypesLib.Fill({
@@ -139,7 +139,7 @@ contract LimitPriceFillTest is TestHelper {
             cycleNumber: cycle,
             txHash: bytes32(0)
         });
-        index.confirmFills(cycle, fills, _signFills(cycle, fills));
+        index.confirmFills(cycle, fills, _signFills(cycle, fills), 3, 7);
     }
 
     /// @notice Batch and attempt fill (expecting revert)
@@ -148,7 +148,7 @@ contract LimitPriceFillTest is TestHelper {
 
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(cycle, orderIds, _signBatch(cycle, orderIds));
+        index.confirmBatch(cycle, orderIds, _signBatch(cycle, orderIds), 3, 7);
 
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
         fills[0] = TypesLib.Fill({
@@ -160,7 +160,7 @@ contract LimitPriceFillTest is TestHelper {
         });
 
         vm.expectRevert(revertData);
-        index.confirmFills(cycle, fills, _signFills(cycle, fills));
+        index.confirmFills(cycle, fills, _signFills(cycle, fills), 3, 7);
     }
 
     // ============ BUY LIMIT PRICE TESTS ============

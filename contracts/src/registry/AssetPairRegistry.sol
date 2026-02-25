@@ -114,7 +114,7 @@ contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
     // ============ ASSET MANAGEMENT ============
 
     /// @inheritdoc IAssetPairRegistry
-    function proposeAsset(address asset, bytes calldata blsSignature) external override {
+    function proposeAsset(address asset, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external override {
         if (asset == address(0)) revert ZeroAddress();
 
         // Check asset doesn't already exist or is inactive
@@ -127,7 +127,7 @@ contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
         );
 
         // Verify BLS signature (11/20 threshold)
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Set asset to PENDING with activation time
         uint256 activationTime = block.timestamp + ASSET_TIMELOCK;
@@ -162,7 +162,7 @@ contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
     }
 
     /// @inheritdoc IAssetPairRegistry
-    function delistAsset(address asset, bytes calldata blsSignature) external override {
+    function delistAsset(address asset, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external override {
         TypesLib.AssetInfo storage assetInfo = _assets[asset];
 
         // Must be in ACTIVE status
@@ -174,7 +174,7 @@ contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
         );
 
         // Verify BLS signature (11/20 threshold)
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Mark as DELISTING (not immediate removal)
         assetInfo.status = TypesLib.AssetStatus.DELISTING;
@@ -183,7 +183,7 @@ contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
     }
 
     /// @inheritdoc IAssetPairRegistry
-    function emergencyRemoveAsset(address asset, bytes calldata blsSignature) external override {
+    function emergencyRemoveAsset(address asset, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external override {
         TypesLib.AssetInfo storage assetInfo = _assets[asset];
 
         // Must be in ACTIVE or DELISTING status
@@ -198,7 +198,7 @@ contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
         );
 
         // Verify BLS signature (15/20 threshold)
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Immediately set to INACTIVE
         assetInfo.status = TypesLib.AssetStatus.INACTIVE;
@@ -214,7 +214,9 @@ contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
         bytes32 source,
         address quoteToken,
         uint256 chainId,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external override {
         if (asset == address(0)) revert ZeroAddress();
         if (quoteToken == address(0)) revert ZeroAddress();
@@ -237,7 +239,7 @@ contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
         );
 
         // Verify BLS signature (11/20 threshold)
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Set pair to PENDING with activation time
         uint256 activationTime = block.timestamp + PAIR_TIMELOCK;
@@ -282,7 +284,7 @@ contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
     }
 
     /// @inheritdoc IAssetPairRegistry
-    function delistPair(bytes32 pairId, bytes calldata blsSignature) external override {
+    function delistPair(bytes32 pairId, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external override {
         TypesLib.PairInfo storage pairInfo = _pairs[pairId];
 
         // Must be in ACTIVE status
@@ -294,7 +296,7 @@ contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
         );
 
         // Verify BLS signature (11/20 threshold)
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Mark as DELISTED
         pairInfo.status = TypesLib.PairStatus.DELISTED;
@@ -305,7 +307,7 @@ contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
     // ============ PROPOSAL CANCELLATION ============
 
     /// @inheritdoc IAssetPairRegistry
-    function cancelAssetProposal(address asset, bytes calldata blsSignature) external override {
+    function cancelAssetProposal(address asset, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external override {
         TypesLib.AssetInfo storage assetInfo = _assets[asset];
 
         // Must be in PENDING status
@@ -317,7 +319,7 @@ contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
         );
 
         // Verify BLS signature (11/20 threshold)
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Reset to INACTIVE
         assetInfo.status = TypesLib.AssetStatus.INACTIVE;
@@ -326,7 +328,7 @@ contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
     }
 
     /// @inheritdoc IAssetPairRegistry
-    function cancelPairProposal(bytes32 pairId, bytes calldata blsSignature) external override {
+    function cancelPairProposal(bytes32 pairId, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external override {
         TypesLib.PairInfo storage pairInfo = _pairs[pairId];
 
         // Must be in PENDING status
@@ -338,7 +340,7 @@ contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
         );
 
         // Verify BLS signature (11/20 threshold)
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Reset to INACTIVE
         pairInfo.status = TypesLib.PairStatus.INACTIVE;

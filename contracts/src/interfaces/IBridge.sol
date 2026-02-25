@@ -21,7 +21,9 @@ interface IL3BridgeCustody {
     function initiateBridge(
         uint256 destChainId,
         uint256 amount,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external returns (uint256 nonce);
 
     /// @notice Mark a lock as released on destination
@@ -33,7 +35,9 @@ interface IL3BridgeCustody {
     function markReleased(
         uint256 nonce,
         bytes32 destTxHash,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     /// @notice Reverse a lock after timeout (1 hour)
@@ -46,7 +50,9 @@ interface IL3BridgeCustody {
     function reverseLock(
         uint256 nonce,
         bytes calldata blsSignature,
-        uint256 signerCount
+        uint256 signerCount,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     // ============ VIEW FUNCTIONS ============
@@ -103,7 +109,9 @@ interface IArbBridgeCustody {
         uint256 amount,
         uint256 nonce,
         TypesLib.ReleaseProof calldata proof,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     /// @notice Buy ITP tokens from Arbitrum (cross-chain purchase)
@@ -130,7 +138,7 @@ interface IArbBridgeCustody {
     /// @param orderId The cross-chain order ID
     /// @param vault Destination vault address for USDC
     /// @param blsSignature Aggregated BLS signature
-    function completeBuyOrder(uint256 orderId, address vault, bytes calldata blsSignature) external;
+    function completeBuyOrder(uint256 orderId, address vault, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     /// @notice Fund a sell order by pulling USDC from vault into custody
     /// @dev Called by issuers before completeSellOrder. Vault must have approved this contract.
@@ -138,7 +146,7 @@ interface IArbBridgeCustody {
     /// @param vault Source vault address to pull USDC from
     /// @param usdcAmount Amount of USDC to pull (6 decimals)
     /// @param blsSignature Aggregated BLS signature
-    function fundSellOrder(uint256 orderId, address vault, uint256 usdcAmount, bytes calldata blsSignature) external;
+    function fundSellOrder(uint256 orderId, address vault, uint256 usdcAmount, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     /// @notice Emitted when a buy order is completed (USDC sent to vault)
     event BuyOrderCompleted(uint256 indexed orderId, address indexed vault, uint256 usdcAmount);
@@ -213,7 +221,9 @@ interface IArbBridgeCustody {
     function completeSellOrder(
         uint256 orderId,
         uint256 usdcProceeds,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     /// @notice Refund a failed/expired sell order
@@ -222,7 +232,9 @@ interface IArbBridgeCustody {
     /// @param blsSignature Aggregated BLS signature
     function refundSellOrder(
         uint256 orderId,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     /// @notice Get the BridgeProxy address

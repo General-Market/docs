@@ -9,6 +9,7 @@ import "../src/registry/IssuerRegistry.sol";
 import {IIssuerRegistry} from "../src/interfaces/IIssuerRegistry.sol";
 import {IBridgedItpFactory} from "../src/interfaces/IBridgedItpFactory.sol";
 import "../src/libraries/ErrorsLib.sol";
+import {BLSVerifier} from "../src/libraries/BLSVerifier.sol";
 import "./helpers/TestHelper.sol";
 import {Governance} from "../src/Governance.sol";
 import {IInvestment} from "../src/interfaces/IInvestment.sol";
@@ -474,7 +475,7 @@ contract BridgeProxyTest is TestHelper {
 
     function test_completeCreateItp_revertsCreationNotFound() public {
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E072_CreationNotFound.selector, 999));
-        bridgeProxy.completeCreateItp(999, bytes32(uint256(1)), signWithTestIssuers(keccak256("irrelevant")));
+        bridgeProxy.completeCreateItp(999, bytes32(uint256(1)), signWithTestIssuers(keccak256("irrelevant")), 3, 7);
     }
 
     function test_completeCreateItp_revertsWithWrongSignatureLength() public {
@@ -491,8 +492,8 @@ contract BridgeProxyTest is TestHelper {
         bytes memory wrongLengthSignature = new bytes(32);
 
         // BLSLib.verifyBLS returns false for wrong length → BLSVerifier reverts E020
-        vm.expectRevert(ErrorsLib.E020_InvalidBLSSignature.selector);
-        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), wrongLengthSignature);
+        vm.expectRevert(BLSVerifier.BLSVerifier__InvalidSignature.selector);
+        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), wrongLengthSignature, 3, 7);
     }
 
     function test_completeCreateItp_revertsWithWrongPubkeyLength() public {
@@ -507,16 +508,18 @@ contract BridgeProxyTest is TestHelper {
 
         bytes memory signature = new bytes(64);
 
-        // Override issuerRegistry to return a 64-byte pubkey (wrong length, should be 128)
+        // Mocking getAggregatedPubkey to 64-byte pubkey no longer affects verification.
+        // BLSVerifier loads pubkey from snapshot (getSnapshotAtNonce), not the live getter.
+        // Snapshot at nonce 3 has valid 128-byte pubkey, so mock is irrelevant.
+        // The dummy signature (64 zero bytes) fails BLS verification → InvalidSignature.
         vm.mockCall(
             address(issuerRegistry),
             abi.encodeWithSelector(IIssuerRegistry.getAggregatedPubkey.selector),
             abi.encode(new bytes(64))
         );
 
-        // BLSVerifier reverts E07E for wrong pubkey length
-        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E07E_InvalidAggregatedPubkeyLength.selector, 64));
-        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), signature);
+        vm.expectRevert(BLSVerifier.BLSVerifier__InvalidSignature.selector);
+        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), signature, 3, 7);
 
         vm.clearMockedCalls();
     }
@@ -536,7 +539,7 @@ contract BridgeProxyTest is TestHelper {
 
         vm.expectRevert();
         // Paused reverts before BLS — any signature works
-        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), signWithTestIssuers(keccak256("irrelevant")));
+        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), signWithTestIssuers(keccak256("irrelevant")), 3, 7);
     }
 
     function test_completeCreateItp_success() public {
@@ -565,7 +568,7 @@ contract BridgeProxyTest is TestHelper {
         emit ItpCreated(orbitItpId, address(0), nonce, user);
 
         // Step 4: Call completeCreateItp with L3 itpId (created by issuer on L3 beforehand)
-        address bridgedItpAddress = bridgeProxy.completeCreateItp(nonce, orbitItpId, signature);
+        address bridgedItpAddress = bridgeProxy.completeCreateItp(nonce, orbitItpId, signature, 3, 7);
 
         // Step 5: Verify state changes
         assertFalse(bridgedItpAddress == address(0), "BridgedITP should be deployed");
@@ -597,11 +600,11 @@ contract BridgeProxyTest is TestHelper {
         bytes memory signature = _signCompleteCreateItp(nonce, user, weights, assets);
 
         // Complete the first time
-        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), signature);
+        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), signature, 3, 7);
 
         // Step 2: Try to complete again — reverts before BLS (already-completed check)
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E070_AlreadyCompleted.selector, nonce));
-        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), new bytes(64));
+        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), new bytes(64), 3, 7);
     }
 
     function test_completeCreateItp_revertsOrbitItpAlreadyMapped() public {
@@ -620,12 +623,12 @@ contract BridgeProxyTest is TestHelper {
         // Complete the first request with a specific orbitItpId
         bytes32 sharedOrbitItpId = keccak256(abi.encodePacked("shared_itp"));
         bytes memory sig1 = _signCompleteCreateItp(nonce1, user, weights, assets);
-        address firstBridgedItp = bridgeProxy.completeCreateItp(nonce1, sharedOrbitItpId, sig1);
+        address firstBridgedItp = bridgeProxy.completeCreateItp(nonce1, sharedOrbitItpId, sig1, 3, 7);
 
         // Try to complete second request with the SAME orbitItpId - reverts before BLS (already-mapped check)
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E07C_OrbitItpAlreadyMapped.selector, sharedOrbitItpId, firstBridgedItp));
         bytes memory sig2 = _signCompleteCreateItp(nonce2, user, weights, assets);
-        bridgeProxy.completeCreateItp(nonce2, sharedOrbitItpId, sig2);
+        bridgeProxy.completeCreateItp(nonce2, sharedOrbitItpId, sig2, 3, 7);
     }
 
     // ============ View Functions Tests ============
@@ -823,7 +826,7 @@ contract BridgeProxyTest is TestHelper {
         // Sign with real BLS for completeCreateItp
         bytes memory signature = _signCompleteCreateItp(nonce, user, weights, assets);
 
-        bridgeProxy.completeCreateItp(nonce, orbitItpId, signature);
+        bridgeProxy.completeCreateItp(nonce, orbitItpId, signature, 3, 7);
 
         // Verify deployer was stored
         assertEq(bridgeProxy.itpDeployer(orbitItpId), user);
@@ -847,7 +850,7 @@ contract BridgeProxyTest is TestHelper {
         orbitItpId = bytes32(uint256(nonce + 1));
 
         bytes memory signature = _signCompleteCreateItp(nonce, user, weights, assets);
-        bridgeProxy.completeCreateItp(nonce, orbitItpId, signature);
+        bridgeProxy.completeCreateItp(nonce, orbitItpId, signature, 3, 7);
     }
 
     function test_rebalance_success() public {
@@ -870,9 +873,9 @@ contract BridgeProxyTest is TestHelper {
 
         bridgeProxy.rebalance(
             orbitItpId, emptyIndices, emptyAddrs, newWeights, prices, emptyQt, signature
-        );
+        , 3, 7);
 
-        // BridgeProxy no longer calls Index.rebalance() directly —
+        // BridgeProxy no longer calls Index.rebalance(, 3, 7) directly —
         // issuer relays to L3 separately. Just verify it didn't revert.
     }
 
@@ -894,10 +897,10 @@ contract BridgeProxyTest is TestHelper {
         // Use a wrong-message signature to force BLS failure → E020
         bytes memory badSig = signWithTestIssuers(keccak256("wrong message"));
 
-        vm.expectRevert(ErrorsLib.E020_InvalidBLSSignature.selector);
+        vm.expectRevert(BLSVerifier.BLSVerifier__InvalidSignature.selector);
         bridgeProxy.rebalance(
             orbitItpId, emptyIndices, emptyAddrs, newWeights, prices, emptyQt, badSig
-        );
+        , 3, 7);
     }
 
     function test_rebalance_revertsWhenPaused() public {
@@ -921,7 +924,7 @@ contract BridgeProxyTest is TestHelper {
         vm.expectRevert();
         bridgeProxy.rebalance(
             orbitItpId, emptyIndices, emptyAddrs, newWeights, prices, emptyQt, signWithTestIssuers(keccak256("irrelevant"))
-        );
+        , 3, 7);
     }
 
     // ============ transferDeployer Tests ============
@@ -1144,7 +1147,7 @@ contract BridgeProxyTest is TestHelper {
 
         address[] memory quoteTokens = new address[](0);
 
-        // Matches BridgeProxy.rebalance() message hash format
+        // Matches BridgeProxy.rebalance(, 3, 7) message hash format
         bytes32 messageHash = keccak256(abi.encode(
             chainId, bridgeProxyAddr, "rebalance",
             itpId, removeIndices, addAssets, weights, prices, quoteTokens

@@ -60,7 +60,7 @@ contract CreateBridgedItp is DeployBLSHelper {
         bytes memory blsSig = blsSign("0,1,2", messageHash);
 
         // Step 4: completeCreateItp
-        address bridgedItp = bridge.completeCreateItp(nonce, orbitItpId, blsSig);
+        address bridgedItp = bridge.completeCreateItp(nonce, orbitItpId, blsSig, 3, 7);
         console.log("  BridgedITP created:", bridgedItp);
 
         vm.stopBroadcast();

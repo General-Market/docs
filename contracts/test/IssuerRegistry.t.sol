@@ -61,9 +61,10 @@ contract IssuerRegistryTest is TestHelper {
         pubkey3 = blsPubkey(2);
 
         // Set the aggregated pubkey from seeds 0,1,2
+        // Nonce is 0 because no issuers have been added yet (no state changes)
         bytes memory aggPubkey = blsAggPubkey("0,1,2");
         vm.prank(admin);
-        registry.setAggregatedPubkey(aggPubkey);
+        registry.setAggregatedPubkey(aggPubkey, 0);
     }
 
     // ============ BLS SIGNING HELPERS ============
@@ -102,6 +103,30 @@ contract IssuerRegistryTest is TestHelper {
     function _signIpUpdate(uint256 issuerId, bytes32 newIp, uint8 seedIndex) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode("UPDATE_IP", issuerId, newIp));
         return blsSign(vm.toString(uint256(seedIndex)), message);
+    }
+
+    // ============ SNAPSHOT HELPERS ============
+
+    /// @notice Wrapper: addIssuer + auto-snapshot to satisfy PendingSnapshot constraint
+    function _addIssuerAndSnapshot(
+        address issuerAddr, bytes32 ip, bytes memory pubkey, bytes memory popSig
+    ) internal returns (uint256 issuerId) {
+        vm.prank(admin);
+        issuerId = registry.addIssuer(issuerAddr, ip, pubkey, popSig);
+        uint256 nonce = registry.registryNonce();
+        vm.prank(admin);
+        registry.setAggregatedPubkey(pubkey, nonce);
+    }
+
+    /// @notice Wrapper: removeIssuer + auto-snapshot
+    function _removeIssuerAndSnapshot(uint256 issuerId) internal {
+        vm.prank(admin);
+        registry.removeIssuer(issuerId);
+        uint256 nonce = registry.registryNonce();
+        bytes memory pubkey = registry.getAggregatedPubkey();
+        if (pubkey.length == 0) pubkey = new bytes(128);
+        vm.prank(admin);
+        registry.setAggregatedPubkey(pubkey, nonce);
     }
 
     // ============ INITIALIZATION TESTS ============
@@ -160,13 +185,11 @@ contract IssuerRegistryTest is TestHelper {
     function test_addIssuer_incrementsActiveCount() public {
         assertEq(registry.activeIssuerCount(), 0);
 
-        vm.prank(admin);
-        registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
         assertEq(registry.activeIssuerCount(), 1);
 
-        vm.prank(admin);
-        registry.addIssuer(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
+        _addIssuerAndSnapshot(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
 
         assertEq(registry.activeIssuerCount(), 2);
     }
@@ -176,13 +199,9 @@ contract IssuerRegistryTest is TestHelper {
         bytes memory pop2 = _signPoP(issuer2Addr, pubkey2, 1);
         bytes memory pop3 = _signPoP(issuer3Addr, pubkey3, 2);
 
-        vm.startPrank(admin);
-
-        uint256 id1 = registry.addIssuer(issuer1Addr, IP_1, pubkey1, pop1);
-        uint256 id2 = registry.addIssuer(issuer2Addr, IP_2, pubkey2, pop2);
-        uint256 id3 = registry.addIssuer(issuer3Addr, IP_3, pubkey3, pop3);
-
-        vm.stopPrank();
+        uint256 id1 = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, pop1);
+        uint256 id2 = _addIssuerAndSnapshot(issuer2Addr, IP_2, pubkey2, pop2);
+        uint256 id3 = _addIssuerAndSnapshot(issuer3Addr, IP_3, pubkey3, pop3);
 
         assertEq(id1, 0);
         assertEq(id2, 1);
@@ -205,16 +224,14 @@ contract IssuerRegistryTest is TestHelper {
         assertEq(initialAgg.length, 128);
 
         // Add first issuer
-        vm.prank(admin);
-        registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
         // Verify pubkey stored correctly on issuer struct
         TypesLib.Issuer memory issuer = registry.getIssuer(0);
         assertEq(issuer.blsPubkey, pubkey1);
 
         // Add second issuer
-        vm.prank(admin);
-        registry.addIssuer(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
+        _addIssuerAndSnapshot(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
 
         // Verify second pubkey stored correctly
         TypesLib.Issuer memory issuer2 = registry.getIssuer(1);
@@ -258,8 +275,7 @@ contract IssuerRegistryTest is TestHelper {
     // ============ REMOVE ISSUER TESTS ============
 
     function test_removeIssuer_deactivatesIssuer() public {
-        vm.prank(admin);
-        uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 issuerId = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
         vm.prank(admin);
         registry.removeIssuer(issuerId);
@@ -269,10 +285,8 @@ contract IssuerRegistryTest is TestHelper {
     }
 
     function test_removeIssuer_decrementsActiveCount() public {
-        vm.startPrank(admin);
-        uint256 id1 = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
-        registry.addIssuer(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
-        vm.stopPrank();
+        uint256 id1 = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        _addIssuerAndSnapshot(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
 
         assertEq(registry.activeIssuerCount(), 2);
 
@@ -283,8 +297,7 @@ contract IssuerRegistryTest is TestHelper {
     }
 
     function test_removeIssuer_emitsIssuerRemoved() public {
-        vm.prank(admin);
-        uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 issuerId = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
         vm.expectEmit(true, false, false, false);
         emit IssuerRemoved(issuerId);
@@ -295,10 +308,8 @@ contract IssuerRegistryTest is TestHelper {
 
     function test_removeIssuer_deactivatesButKeepsPubkey() public {
         // Add two issuers
-        vm.startPrank(admin);
-        uint256 id1 = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
-        registry.addIssuer(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
-        vm.stopPrank();
+        uint256 id1 = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        _addIssuerAndSnapshot(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
 
         // Remove first issuer
         vm.prank(admin);
@@ -315,8 +326,7 @@ contract IssuerRegistryTest is TestHelper {
 
     function test_removeIssuer_addAndRemoveRestoresZero() public {
         // Add issuer
-        vm.prank(admin);
-        uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 issuerId = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
         // Remove issuer
         vm.prank(admin);
@@ -331,8 +341,7 @@ contract IssuerRegistryTest is TestHelper {
     }
 
     function test_removeIssuer_revertsForNonAdmin() public {
-        vm.prank(admin);
-        uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 issuerId = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
         vm.expectRevert(IssuerRegistry.Unauthorized.selector);
         vm.prank(user);
@@ -346,11 +355,9 @@ contract IssuerRegistryTest is TestHelper {
     }
 
     function test_removeIssuer_revertsForAlreadyInactiveIssuer() public {
-        vm.prank(admin);
-        uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 issuerId = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
-        vm.prank(admin);
-        registry.removeIssuer(issuerId);
+        _removeIssuerAndSnapshot(issuerId);
 
         vm.expectRevert(abi.encodeWithSelector(IssuerRegistry.IssuerNotActive.selector, issuerId));
         vm.prank(admin);
@@ -380,11 +387,9 @@ contract IssuerRegistryTest is TestHelper {
     }
 
     function test_getIssuers_returnsAllIssuers() public {
-        vm.startPrank(admin);
-        registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
-        registry.addIssuer(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
-        registry.addIssuer(issuer3Addr, IP_3, pubkey3, _signPoP(issuer3Addr, pubkey3, 2));
-        vm.stopPrank();
+        _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        _addIssuerAndSnapshot(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
+        _addIssuerAndSnapshot(issuer3Addr, IP_3, pubkey3, _signPoP(issuer3Addr, pubkey3, 2));
 
         TypesLib.Issuer[] memory issuers = registry.getIssuers();
 
@@ -395,11 +400,9 @@ contract IssuerRegistryTest is TestHelper {
     }
 
     function test_getIssuers_includesInactiveIssuers() public {
-        vm.startPrank(admin);
-        uint256 id1 = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
-        registry.addIssuer(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
-        registry.removeIssuer(id1);
-        vm.stopPrank();
+        uint256 id1 = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        _addIssuerAndSnapshot(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
+        _removeIssuerAndSnapshot(id1);
 
         TypesLib.Issuer[] memory issuers = registry.getIssuers();
 
@@ -409,46 +412,42 @@ contract IssuerRegistryTest is TestHelper {
     }
 
     function test_activeIssuerCount_accurate() public {
-        vm.startPrank(admin);
-
         assertEq(registry.activeIssuerCount(), 0);
 
-        uint256 id1 = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 id1 = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
         assertEq(registry.activeIssuerCount(), 1);
 
-        registry.addIssuer(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
+        _addIssuerAndSnapshot(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
         assertEq(registry.activeIssuerCount(), 2);
 
+        vm.prank(admin);
         registry.removeIssuer(id1);
         assertEq(registry.activeIssuerCount(), 1);
-
-        vm.stopPrank();
     }
 
     // ============ AGGREGATED PUBKEY MATH TESTS ============
 
     function test_aggregatedPubkey_offChainComputation() public {
         // G2 aggregation is computed off-chain; aggregated pubkey is set in setUp and not auto-updated
-        vm.startPrank(admin);
 
         // Add all three issuers
-        uint256 id1 = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
-        uint256 id2 = registry.addIssuer(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
-        registry.addIssuer(issuer3Addr, IP_3, pubkey3, _signPoP(issuer3Addr, pubkey3, 2));
+        uint256 id1 = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 id2 = _addIssuerAndSnapshot(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
+        _addIssuerAndSnapshot(issuer3Addr, IP_3, pubkey3, _signPoP(issuer3Addr, pubkey3, 2));
 
         // Aggregated pubkey is set in setUp (computed off-chain, not auto-updated)
         assertEq(registry.getAggregatedPubkey().length, 128);
         assertEq(registry.activeIssuerCount(), 3);
 
         // Remove issuer 1
-        registry.removeIssuer(id1);
+        _removeIssuerAndSnapshot(id1);
 
         // Not auto-updated (off-chain aggregation)
         assertEq(registry.getAggregatedPubkey().length, 128);
         assertEq(registry.activeIssuerCount(), 2);
 
         // Remove issuer 2
-        registry.removeIssuer(id2);
+        _removeIssuerAndSnapshot(id2);
 
         // Not auto-updated
         assertEq(registry.getAggregatedPubkey().length, 128);
@@ -458,8 +457,6 @@ contract IssuerRegistryTest is TestHelper {
         TypesLib.Issuer memory issuer3 = registry.getIssuer(2);
         assertEq(issuer3.blsPubkey, pubkey3);
         assertEq(issuer3.status, 1); // active
-
-        vm.stopPrank();
     }
 
     // ============ CONSTANTS TESTS ============
@@ -486,10 +483,8 @@ contract IssuerRegistryTest is TestHelper {
 
     function test_upgrade_preservesState() public {
         // Add issuers
-        vm.startPrank(admin);
-        registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
-        registry.addIssuer(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
-        vm.stopPrank();
+        _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        _addIssuerAndSnapshot(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
 
         // Upgrade
         IssuerRegistry newImpl = new IssuerRegistry();
@@ -545,13 +540,13 @@ contract IssuerRegistryTest is TestHelper {
     // ============ BLS VERIFICATION STUB TESTS ============
 
     function test_removeIssuerByVote_revertsWithInvalidBLSSignature() public {
-        vm.prank(admin);
-        uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 issuerId = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
         bytes memory fakeSignature = new bytes(128);
+        uint256 refNonce = registry.lastSnapshotNonce();
 
         vm.expectRevert(IssuerRegistry.InvalidBLSSignature.selector);
-        registry.removeIssuerByVote(issuerId, fakeSignature);
+        registry.removeIssuerByVote(issuerId, fakeSignature, refNonce, SIGNERS_BITMASK);
     }
 
     // ============ KEY ROTATION TESTS (Story 2.13) ============
@@ -569,29 +564,26 @@ contract IssuerRegistryTest is TestHelper {
         issuerIds = new uint256[](20);
         pubkeys = new bytes[](20);
 
-        vm.startPrank(admin);
         for (uint256 i = 0; i < 20; i++) {
-            (issuerIds[i], pubkeys[i]) = _registerSingleIssuer(i);
+            (issuerIds[i], pubkeys[i]) = _registerSingleIssuerAndSnapshot(i);
         }
-        vm.stopPrank();
 
         return (issuerIds, pubkeys);
     }
 
     /// @dev Inner helper to reduce stack depth in _setupIssuersForRotation loop
-    function _registerSingleIssuer(uint256 i) internal returns (uint256 id, bytes memory pk) {
+    function _registerSingleIssuerAndSnapshot(uint256 i) internal returns (uint256 id, bytes memory pk) {
         pk = blsPubkey(uint8(i));
         address issuerAddr = makeAddr(string(abi.encodePacked("issuer", i)));
         bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(registry), issuerAddr, pk));
         bytes memory popSig = blsSign(vm.toString(i), popMsg);
-        id = registry.addIssuer(issuerAddr, bytes32(i), pk, popSig);
+        id = _addIssuerAndSnapshot(issuerAddr, bytes32(i), pk, popSig);
     }
 
     // ============ requestKeyRotation Tests ============
 
     function test_requestKeyRotation_success() public {
-        vm.prank(admin);
-        uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 issuerId = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
         bytes memory sig = _signRotationRequest(issuerId, pubkey2, 0);
         bytes memory newKeyPop = _signRotationPoP(issuer1Addr, pubkey2, 1);
@@ -612,8 +604,7 @@ contract IssuerRegistryTest is TestHelper {
     function test_requestKeyRotation_anyoneCanCallWithValidBLS() public {
         // BLS signature verification replaces admin access control for key rotation.
         // Anyone with a valid BLS sig (signed by the issuer's current key) can request rotation.
-        vm.prank(admin);
-        uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 issuerId = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
         bytes memory sig = _signRotationRequest(issuerId, pubkey2, 0);
         bytes memory newKeyPop = _signRotationPoP(issuer1Addr, pubkey2, 1);
@@ -632,19 +623,16 @@ contract IssuerRegistryTest is TestHelper {
     }
 
     function test_requestKeyRotation_revertsIssuerNotActive() public {
-        vm.prank(admin);
-        uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 issuerId = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
-        vm.prank(admin);
-        registry.removeIssuer(issuerId);
+        _removeIssuerAndSnapshot(issuerId);
 
         vm.expectRevert(abi.encodeWithSelector(IssuerRegistry.IssuerNotActive.selector, issuerId));
         registry.requestKeyRotation(issuerId, pubkey2, new bytes(64), new bytes(64));
     }
 
     function test_requestKeyRotation_revertsInvalidPubkeyLength() public {
-        vm.prank(admin);
-        uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 issuerId = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
         bytes memory shortPubkey = new bytes(32);
         // BLS check happens before pubkey length check, so sign correctly
@@ -655,8 +643,7 @@ contract IssuerRegistryTest is TestHelper {
     }
 
     function test_requestKeyRotation_revertsInvalidPubkey() public {
-        vm.prank(admin);
-        uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 issuerId = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
         // 64-byte pubkey is invalid length (must be 128 for G2)
         bytes memory invalidPubkey = abi.encodePacked(uint256(12345), uint256(67890));
@@ -667,8 +654,7 @@ contract IssuerRegistryTest is TestHelper {
     }
 
     function test_requestKeyRotation_revertsRotationAlreadyPending() public {
-        vm.prank(admin);
-        uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 issuerId = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
         registry.requestKeyRotation(issuerId, pubkey2, _signRotationRequest(issuerId, pubkey2, 0), _signRotationPoP(issuer1Addr, pubkey2, 1));
 
@@ -1080,8 +1066,7 @@ contract IssuerRegistryTest is TestHelper {
     }
 
     function test_requestKeyRotation_revertsSamePubkey() public {
-        vm.prank(admin);
-        uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 issuerId = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
         // Try to rotate to the same pubkey
         bytes memory sig = _signRotationRequest(issuerId, pubkey1, 0);
@@ -1210,12 +1195,8 @@ contract IssuerRegistryTest is TestHelper {
         bytes memory pop1 = _signPoP(issuer1Addr, pubkey1, 0);
         bytes memory pop2 = _signPoP(issuer1Addr, pubkey2, 1);
 
-        vm.startPrank(admin);
-
-        uint256 id1 = registry.addIssuer(issuer1Addr, IP_1, pubkey1, pop1);
-        uint256 id2 = registry.addIssuer(issuer1Addr, IP_2, pubkey2, pop2);
-
-        vm.stopPrank();
+        uint256 id1 = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, pop1);
+        uint256 id2 = _addIssuerAndSnapshot(issuer1Addr, IP_2, pubkey2, pop2);
 
         assertEq(id1, 0);
         assertEq(id2, 1);
@@ -1225,8 +1206,7 @@ contract IssuerRegistryTest is TestHelper {
     // ============ BLS VERIFICATION TESTS (Story 7.17) ============
 
     function test_requestKeyRotation_revertsWithInvalidSignature() public {
-        vm.prank(admin);
-        uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 issuerId = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
         // Sign with a WRONG seed index (seed 1 instead of seed 0 which owns the key)
         bytes32 message = keccak256(abi.encode("ROTATE", issuerId, pubkey2));
@@ -1237,8 +1217,7 @@ contract IssuerRegistryTest is TestHelper {
     }
 
     function test_requestKeyRotation_anyoneCanCallWithValidSig() public {
-        vm.prank(admin);
-        uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 issuerId = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
         // Non-admin calling with wrong sig should get E086
         bytes32 message = keccak256(abi.encode("ROTATE", issuerId, pubkey2));
@@ -1267,11 +1246,9 @@ contract IssuerRegistryTest is TestHelper {
     // ============ PEER DISCOVERY TESTS (Story 7.17) ============
 
     function test_getActiveIssuerEndpoints_returnsActiveIssuers() public {
-        vm.startPrank(admin);
-        registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
-        registry.addIssuer(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
-        registry.addIssuer(issuer3Addr, IP_3, pubkey3, _signPoP(issuer3Addr, pubkey3, 2));
-        vm.stopPrank();
+        _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        _addIssuerAndSnapshot(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
+        _addIssuerAndSnapshot(issuer3Addr, IP_3, pubkey3, _signPoP(issuer3Addr, pubkey3, 2));
 
         (uint256[] memory ids, bytes32[] memory ips, bytes[] memory pubkeys_) = registry.getActiveIssuerEndpoints();
 
@@ -1288,11 +1265,9 @@ contract IssuerRegistryTest is TestHelper {
     }
 
     function test_getActiveIssuerEndpoints_excludesInactive() public {
-        vm.startPrank(admin);
-        uint256 id1 = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
-        registry.addIssuer(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
-        registry.removeIssuer(id1);
-        vm.stopPrank();
+        uint256 id1 = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        _addIssuerAndSnapshot(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
+        _removeIssuerAndSnapshot(id1);
 
         (uint256[] memory ids, bytes32[] memory ips,) = registry.getActiveIssuerEndpoints();
 
@@ -1340,11 +1315,9 @@ contract IssuerRegistryTest is TestHelper {
     }
 
     function test_updateIssuerIp_revertsIssuerNotActive() public {
-        vm.prank(admin);
-        uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 issuerId = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
-        vm.prank(admin);
-        registry.removeIssuer(issuerId);
+        _removeIssuerAndSnapshot(issuerId);
 
         vm.expectRevert(abi.encodeWithSelector(IssuerRegistry.IssuerNotActive.selector, issuerId));
         registry.updateIssuerIp(issuerId, bytes32(uint256(1)), new bytes(64));
@@ -1366,8 +1339,7 @@ contract IssuerRegistryTest is TestHelper {
 
     function test_samePublicKey_differentIssuers_revertsOnDuplicate() public {
         // Key uniqueness: same pubkey cannot be registered by two different issuers
-        vm.prank(admin);
-        registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
         // Second registration with same pubkey should revert
         vm.expectRevert(abi.encodeWithSelector(IssuerRegistry.IssuerRegistry__PubkeyAlreadyRegistered.selector, 0));
@@ -1400,21 +1372,18 @@ contract IssuerRegistryTest is TestHelper {
     function test_addIssuer_incrementsNonceCorrectly() public {
         assertEq(registry.registryNonce(), 0);
 
-        vm.startPrank(admin);
-        registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
         assertEq(registry.registryNonce(), 1);
 
-        registry.addIssuer(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
+        _addIssuerAndSnapshot(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
         assertEq(registry.registryNonce(), 2);
 
-        registry.addIssuer(issuer3Addr, IP_3, pubkey3, _signPoP(issuer3Addr, pubkey3, 2));
+        _addIssuerAndSnapshot(issuer3Addr, IP_3, pubkey3, _signPoP(issuer3Addr, pubkey3, 2));
         assertEq(registry.registryNonce(), 3);
-        vm.stopPrank();
     }
 
     function test_removeIssuer_emitsRegistryStateChanged() public {
-        vm.prank(admin);
-        uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 issuerId = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
         assertEq(registry.registryNonce(), 1);
 
         // After removal, state hash should be empty (keccak256 of empty bytes)
@@ -1473,22 +1442,19 @@ contract IssuerRegistryTest is TestHelper {
         assertEq(emptyHash, keccak256(""));
 
         // Add first issuer
-        vm.prank(admin);
-        registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
         bytes32 hash1 = registry.getRegistryStateHash();
         assertEq(hash1, keccak256(abi.encodePacked(pubkey1)));
 
         // Add second issuer
-        vm.prank(admin);
-        registry.addIssuer(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
+        _addIssuerAndSnapshot(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
 
         bytes32 hash2 = registry.getRegistryStateHash();
         assertEq(hash2, keccak256(abi.encodePacked(pubkey1, pubkey2)));
 
         // Add third issuer
-        vm.prank(admin);
-        registry.addIssuer(issuer3Addr, IP_3, pubkey3, _signPoP(issuer3Addr, pubkey3, 2));
+        _addIssuerAndSnapshot(issuer3Addr, IP_3, pubkey3, _signPoP(issuer3Addr, pubkey3, 2));
 
         bytes32 hash3 = registry.getRegistryStateHash();
         assertEq(hash3, keccak256(abi.encodePacked(pubkey1, pubkey2, pubkey3)));
@@ -1497,37 +1463,32 @@ contract IssuerRegistryTest is TestHelper {
     function test_registryNonce_returnsCorrectValueAfterMutations() public {
         assertEq(registry.registryNonce(), 0);
 
-        vm.startPrank(admin);
-
         // Add 3 issuers
-        uint256 id1 = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 id1 = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
         assertEq(registry.registryNonce(), 1);
 
-        registry.addIssuer(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
+        _addIssuerAndSnapshot(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
         assertEq(registry.registryNonce(), 2);
 
-        registry.addIssuer(issuer3Addr, IP_3, pubkey3, _signPoP(issuer3Addr, pubkey3, 2));
+        _addIssuerAndSnapshot(issuer3Addr, IP_3, pubkey3, _signPoP(issuer3Addr, pubkey3, 2));
         assertEq(registry.registryNonce(), 3);
 
         // Remove one issuer
+        vm.prank(admin);
         registry.removeIssuer(id1);
         assertEq(registry.registryNonce(), 4);
-
-        vm.stopPrank();
     }
 
     function test_stateHash_changesWhenIssuersAddedRemoved() public {
         bytes32 hash0 = registry.getRegistryStateHash();
 
         // Add first issuer - hash changes
-        vm.prank(admin);
-        uint256 id1 = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 id1 = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
         bytes32 hash1 = registry.getRegistryStateHash();
         assertTrue(hash0 != hash1);
 
         // Add second issuer - hash changes again
-        vm.prank(admin);
-        registry.addIssuer(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
+        _addIssuerAndSnapshot(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
         bytes32 hash2 = registry.getRegistryStateHash();
         assertTrue(hash1 != hash2);
 
@@ -1542,17 +1503,14 @@ contract IssuerRegistryTest is TestHelper {
     }
 
     function test_getRegistryStateHash_skipInactiveIssuers() public {
-        vm.startPrank(admin);
-
         // Add 3 issuers
-        uint256 id1 = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
-        registry.addIssuer(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
-        registry.addIssuer(issuer3Addr, IP_3, pubkey3, _signPoP(issuer3Addr, pubkey3, 2));
+        uint256 id1 = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        _addIssuerAndSnapshot(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
+        _addIssuerAndSnapshot(issuer3Addr, IP_3, pubkey3, _signPoP(issuer3Addr, pubkey3, 2));
 
         // Remove the first issuer
+        vm.prank(admin);
         registry.removeIssuer(id1);
-
-        vm.stopPrank();
 
         // State hash should only include pubkey2 and pubkey3
         bytes32 stateHash = registry.getRegistryStateHash();
@@ -1605,8 +1563,7 @@ contract IssuerRegistryTest is TestHelper {
 
     function test_removeIssuer_eventOrderIssuerRemovedBeforeStateChanged() public {
         // AC6: _emitStateChange() must be called AFTER emit IssuerRemoved
-        vm.prank(admin);
-        uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 issuerId = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
         vm.recordLogs();
 
@@ -1691,8 +1648,7 @@ contract IssuerRegistryTest is TestHelper {
 
     function test_addIssuer_revertsOnDuplicatePubkey() public {
         // Register issuer1 with pubkey1
-        vm.prank(admin);
-        registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
         // Try to register issuer2 with the same pubkey1 -- should revert
         vm.expectRevert(abi.encodeWithSelector(IssuerRegistry.IssuerRegistry__PubkeyAlreadyRegistered.selector, 0));
@@ -1702,11 +1658,9 @@ contract IssuerRegistryTest is TestHelper {
 
     function test_removeIssuer_clearsPubkeyUniqueness() public {
         // Register and remove issuer1 with pubkey1
-        vm.prank(admin);
-        uint256 id1 = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 id1 = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
-        vm.prank(admin);
-        registry.removeIssuer(id1);
+        _removeIssuerAndSnapshot(id1);
 
         // Now issuer2 can register with the same pubkey1 (uniqueness was cleared on removal)
         vm.prank(admin);
@@ -1736,6 +1690,14 @@ contract IssuerRegistryTest is TestHelper {
         vm.warp(block.timestamp + 25 hours);
         registry.executeRotation(rotatingId);
 
+        // Snapshot after rotation to allow further mutations
+        {
+            uint256 nonce = registry.registryNonce();
+            bytes memory aggPk = registry.getAggregatedPubkey();
+            vm.prank(admin);
+            registry.setAggregatedPubkey(aggPk, nonce);
+        }
+
         // Old pubkey (seed 0) is now free. A new issuer should be able to register with it.
         address newIssuerAddr = makeAddr("newIssuerForOldKey");
         bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(registry), newIssuerAddr, oldPubkey));
@@ -1750,10 +1712,8 @@ contract IssuerRegistryTest is TestHelper {
 
     function test_requestKeyRotation_revertsOnDuplicateNewPubkey() public {
         // Register issuer1 with pubkey1 and issuer2 with pubkey2
-        vm.startPrank(admin);
-        uint256 id1 = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
-        registry.addIssuer(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
-        vm.stopPrank();
+        uint256 id1 = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        _addIssuerAndSnapshot(issuer2Addr, IP_2, pubkey2, _signPoP(issuer2Addr, pubkey2, 1));
 
         // Try to rotate issuer1 to pubkey2 (already used by issuer2)
         bytes memory sig = _signRotationRequest(id1, pubkey2, 0);
@@ -1763,8 +1723,7 @@ contract IssuerRegistryTest is TestHelper {
 
     function test_requestKeyRotation_revertsOnInvalidNewKeyPoP() public {
         // Register issuer1
-        vm.prank(admin);
-        uint256 issuerId = registry.addIssuer(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
+        uint256 issuerId = _addIssuerAndSnapshot(issuer1Addr, IP_1, pubkey1, _signPoP(issuer1Addr, pubkey1, 0));
 
         // Request rotation with valid old-key sig but WRONG PoP for new key
         // Sign PoP with seed 0 (wrong) instead of seed 1 (the new key's seed)

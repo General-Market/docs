@@ -104,7 +104,7 @@ contract DeployItpWhitelist is DeployBLSHelper {
             address asset = assetIdToAddress(i);
             uint256 nonce = registry.getNonce();
             bytes32 msg_ = keccak256(abi.encode("PROPOSE_ASSET", block.chainid, address(registry), asset, nonce));
-            registry.proposeAsset(asset, blsSign("0,1,2", msg_));
+            registry.proposeAsset(asset, blsSign("0,1,2", msg_), 3, 7);
         }
         console.log("  All 627 assets proposed");
 
@@ -117,7 +117,7 @@ contract DeployItpWhitelist is DeployBLSHelper {
             registry.activateAsset(asset);
             uint256 nonce = registry.getNonce();
             bytes32 msg_ = keccak256(abi.encode("PROPOSE_PAIR", block.chainid, address(registry), asset, BITGET_SOURCE, MOCK_USDC, CEX_CHAIN_ID, nonce));
-            registry.proposePair(asset, BITGET_SOURCE, MOCK_USDC, CEX_CHAIN_ID, blsSign("0,1,2", msg_));
+            registry.proposePair(asset, BITGET_SOURCE, MOCK_USDC, CEX_CHAIN_ID, blsSign("0,1,2", msg_), 3, 7);
         }
         console.log("  All 627 assets activated, pairs proposed");
 

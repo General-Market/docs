@@ -195,7 +195,7 @@ contract IndexProductionHardeningTest is TestHelper {
         // qty_btc = (6e17 * 1e18) / 50000e18 = 12000000000000
         // contribution = (12000000000000 * 50000e18) / 1e18 = 6e17 ($0.60)
         uint256 expected = 6e17;
-        index.setItpNav(multiAssetItpId, expected, _signSetItpNav(multiAssetItpId, expected));
+        index.setItpNav(multiAssetItpId, expected, _signSetItpNav(multiAssetItpId, expected), 3, 7);
         uint256 nav = index.getNAV(multiAssetItpId);
         assertEq(nav, expected, "NAV should reflect zero ETH price scenario");
     }
@@ -377,7 +377,7 @@ contract IndexProductionHardeningTest is TestHelper {
         // Batch and fill
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
-        index.confirmBatch(1, orderIds, _signBatch(1, orderIds));
+        index.confirmBatch(1, orderIds, _signBatch(1, orderIds), 3, 7);
 
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
         fills[0] = TypesLib.Fill({
@@ -387,7 +387,7 @@ contract IndexProductionHardeningTest is TestHelper {
             cycleNumber: 1,
             txHash: bytes32(0)
         });
-        index.confirmFills(1, fills, _signFills(1, fills));
+        index.confirmFills(1, fills, _signFills(1, fills), 3, 7);
 
         assertEq(index.pendingOrderCount(), 0, "Should decrement to 0 after fill");
     }
@@ -405,7 +405,7 @@ contract IndexProductionHardeningTest is TestHelper {
         vm.warp(block.timestamp + 2 hours);
 
         // Refund
-        index.refundExpiredOrder(orderId, _signRefund(orderId));
+        index.refundExpiredOrder(orderId, _signRefund(orderId), 3, 7);
 
         assertEq(index.pendingOrderCount(), 0, "Should decrement to 0 after refund");
     }
@@ -509,7 +509,7 @@ contract IndexProductionHardeningTest is TestHelper {
         // Update NAV directly: BTC $50k → $55k (10% increase) → NAV = $1.10
         // qty_btc = (1e18 * 1e18) / 50000e18 = 2e13 (computed at creation)
         // new NAV = (2e13 * 55000e18) / 1e18 = 1.1e18 ($1.10)
-        index.setItpNav(singleAssetItpId, 1.1e18, _signSetItpNav(singleAssetItpId, 1.1e18));
+        index.setItpNav(singleAssetItpId, 1.1e18, _signSetItpNav(singleAssetItpId, 1.1e18), 3, 7);
 
         uint256 nav = index.getNAV(singleAssetItpId);
         assertEq(nav, 1.1e18, "NAV should reflect updated value ($1.10)");
@@ -532,7 +532,7 @@ contract IndexProductionHardeningTest is TestHelper {
 
     function test_integration_zeroPrice_edgeCase() public {
         // Set NAV to 0 (simulates oracle failure — all prices 0)
-        index.setItpNav(multiAssetItpId, 0, _signSetItpNav(multiAssetItpId, 0));
+        index.setItpNav(multiAssetItpId, 0, _signSetItpNav(multiAssetItpId, 0), 3, 7);
 
         // NAV should be 0
         uint256 nav = index.getNAV(multiAssetItpId);
@@ -637,7 +637,7 @@ contract IndexProductionHardeningTest is TestHelper {
         orderIds[0] = orderId;
         // Use a unique cycle number
         uint256 cycle = uint256(keccak256(abi.encode(orderId, block.timestamp)));
-        index.confirmBatch(cycle, orderIds, _signBatch(cycle, orderIds));
+        index.confirmBatch(cycle, orderIds, _signBatch(cycle, orderIds), 3, 7);
 
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
         fills[0] = TypesLib.Fill({
@@ -647,6 +647,6 @@ contract IndexProductionHardeningTest is TestHelper {
             cycleNumber: cycle,
             txHash: bytes32(0)
         });
-        index.confirmFills(cycle, fills, _signFills(cycle, fills));
+        index.confirmFills(cycle, fills, _signFills(cycle, fills), 3, 7);
     }
 }

@@ -40,8 +40,14 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, Initializable, UUPSUpgra
     /// @notice Admin address for upgrades only
     address public admin;
 
+    /// @notice Nonce of the last pubkey snapshot stored
+    uint256 public lastSnapshotNonce;
+
+    /// @notice Historical aggregated pubkeys indexed by nonce
+    mapping(uint256 => bytes) private _pubkeyAtNonce;
+
     /// @notice Storage gap for upgrade safety
-    uint256[45] private __gap;
+    uint256[43] private __gap;
 
     // ============ ERRORS ============
 
@@ -146,6 +152,10 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, Initializable, UUPSUpgra
         threshold = newThreshold;
         registryNonce = nonce;
 
+        // Snapshot pubkey at this nonce for historical lookups
+        _pubkeyAtNonce[nonce] = newAggPubkey;
+        lastSnapshotNonce = nonce;
+
         // Emit event with pubkey hash and signers bitmask for indexing
         emit EventsLib.RegistrySynced(
             nonce,
@@ -162,6 +172,13 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, Initializable, UUPSUpgra
     /// @return The aggregated pubkey bytes (128 bytes)
     function getAggregatedPubkey() external view returns (bytes memory) {
         return aggregatedPubkey;
+    }
+
+    /// @notice Get the aggregated G2 pubkey that was active at a specific nonce
+    /// @param nonce The registry nonce to look up
+    /// @return The aggregated pubkey bytes at that nonce (128 bytes), or empty if not found
+    function getAggregatedPubkeyAtNonce(uint256 nonce) external view returns (bytes memory) {
+        return _pubkeyAtNonce[nonce];
     }
 
     // threshold() and activeCount() have auto-generated getters from public storage

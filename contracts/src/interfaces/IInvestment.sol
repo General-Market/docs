@@ -56,7 +56,9 @@ interface IInvestment {
     function confirmBatch(
         uint256 cycleNumber,
         uint256[] calldata orderIds,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     /// @notice Confirm order fills with execution prices
@@ -68,7 +70,9 @@ interface IInvestment {
     function confirmFills(
         uint256 cycleNumber,
         TypesLib.Fill[] calldata fills,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     /// @notice Refund an expired order
@@ -78,7 +82,9 @@ interface IInvestment {
     /// @param blsSignature Aggregated BLS signature from 11/20 issuers
     function refundExpiredOrder(
         uint256 orderId,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     // ============ ITP FUNCTIONS ============
@@ -133,7 +139,9 @@ interface IInvestment {
         uint256[] calldata newWeights,
         uint256[] calldata prices,
         address[] calldata quoteTokens,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     /// @notice Transfer ITP creator via authorized bridge
@@ -203,7 +211,7 @@ interface IInvestment {
     /// @param itpId The ITP identifier
     /// @param nav The NAV value (18 decimals)
     /// @param blsSignature Aggregated BLS signature from issuers
-    function setItpNav(bytes32 itpId, uint256 nav, bytes calldata blsSignature) external;
+    function setItpNav(bytes32 itpId, uint256 nav, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     // ============ STALENESS & VENUE FUNCTIONS (Story 7.17) ============
 
@@ -227,7 +235,7 @@ interface IInvestment {
     /// @param venueId The venue identifier
     /// @param newBalance The new balance
     /// @param blsSignature Aggregated BLS signature from issuers
-    function updateVenueBalance(uint256 venueId, uint256 newBalance, bytes calldata blsSignature) external;
+    function updateVenueBalance(uint256 venueId, uint256 newBalance, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     // ============ ISSUER DECOMPOSITION FUNCTIONS ============
 
@@ -239,7 +247,9 @@ interface IInvestment {
     function emitAssetTrades(
         uint256 cycleNumber,
         TypesLib.AssetTrade[] calldata trades,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     // Note: lastProcessedCycleNumber() and cycleProcessed(uint256) are exposed via

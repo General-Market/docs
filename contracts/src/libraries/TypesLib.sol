@@ -325,6 +325,23 @@ library TypesLib {
         address quoteToken;
     }
 
+    // ============ REGISTRY SNAPSHOT (Phase 2+3) ============
+
+    /// @notice Registry state snapshot for BLS verification with historical state tracking
+    /// @dev Stored per-nonce in IssuerRegistry. BLSVerifier loads snapshot by referenceNonce.
+    /// @param activeCount Number of active issuers at snapshot time
+    /// @param stateHash keccak256 of all active issuer pubkeys concatenated
+    /// @param aggregatedPubkey Aggregated BLS G2 pubkey stored as 4x bytes32 (128 bytes total)
+    /// @param blockNumber Block number when snapshot was created
+    /// @param activeBitmask Bitmask of active issuer IDs (bit i = issuer i is active)
+    struct RegistrySnapshot {
+        uint256 activeCount;
+        bytes32 stateHash;
+        bytes32[4] aggregatedPubkey;
+        uint256 blockNumber;
+        uint256 activeBitmask;
+    }
+
     // ============ CONSTANTS ============
 
     /// @notice Slippage tier limits (basis points)

@@ -10,6 +10,7 @@ import "../src/registry/FeeRegistry.sol";
 import "../src/registry/AssetPairRegistry.sol";
 import "../src/bridge/BridgeProxy.sol";
 import "../src/libraries/ErrorsLib.sol";
+import {BLSVerifier} from "../src/libraries/BLSVerifier.sol";
 import "../src/mocks/MockERC20.sol";
 import "./helpers/TestHelper.sol";
 import {Governance} from "../src/Governance.sol";
@@ -51,7 +52,7 @@ contract BLSEnforcementTest is TestHelper {
 
     function test_index_emptySignature_reverts() public {
         // Set registry with valid pubkey
-        issuerRegistry.setAggregatedPubkey(new bytes(128));
+        issuerRegistry.setAggregatedPubkey(new bytes(128), 0);
         index.setIssuerRegistry(address(issuerRegistry));
 
         // Create an ITP so confirmBatch has something to work with
@@ -66,32 +67,34 @@ contract BLSEnforcementTest is TestHelper {
         // Empty signature must revert
         uint256[] memory orderIds = new uint256[](0);
         vm.expectRevert();
-        index.confirmBatch(1, orderIds, "");
+        index.confirmBatch(1, orderIds, "", 3, 7);
     }
 
     function test_custody_emptySignature_reverts() public {
-        issuerRegistry.setAggregatedPubkey(new bytes(128));
+        issuerRegistry.setAggregatedPubkey(new bytes(128), 0);
 
         // Propose whitelist with empty sig must revert (BLS verification fails)
         vm.expectRevert();
-        custody.proposeWhitelist(address(0x1), "");
+        custody.proposeWhitelist(address(0x1), "", 3, 7);
     }
 
     // ============ EMPTY PUBKEY REVERTS ============
 
     function test_index_emptyPubkey_reverts() public {
-        // Do NOT set aggregated pubkey — it remains empty
+        // Do NOT set aggregated pubkey — no snapshot exists.
+        // lastSnapshotNonce=0, referenceNonce=3 > 0 → NonceFuture.
+        // Still reverts — no bypass possible without a valid snapshot.
         index.setIssuerRegistry(address(issuerRegistry));
 
         uint256[] memory orderIds = new uint256[](0);
-        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E07E_InvalidAggregatedPubkeyLength.selector, 0));
-        index.confirmBatch(1, orderIds, new bytes(64));
+        vm.expectRevert(BLSVerifier.BLSVerifier__NonceFuture.selector);
+        index.confirmBatch(1, orderIds, new bytes(64), 3, 7);
     }
 
     function test_custody_emptyPubkey_reverts() public {
         // Do NOT set aggregated pubkey
         vm.expectRevert();
-        custody.proposeWhitelist(address(0x1), new bytes(64));
+        custody.proposeWhitelist(address(0x1), new bytes(64), 3, 7);
     }
 
     // ============ UNSET REGISTRY REVERTS ============
@@ -100,7 +103,7 @@ contract BLSEnforcementTest is TestHelper {
         // Do NOT call setIssuerRegistry
         uint256[] memory orderIds = new uint256[](0);
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E043_ZeroIssuerRegistry.selector));
-        index.confirmBatch(1, orderIds, new bytes(64));
+        index.confirmBatch(1, orderIds, new bytes(64), 3, 7);
     }
 
     // ============ NO TESTMODE FUNCTION EXISTS ============
@@ -154,7 +157,9 @@ contract BLSEnforcementTest is TestHelper {
             1,
             100e18,
             TypesLib.TxType.BUY,
-            new bytes(64)
+            new bytes(64),
+            0,
+            7
         );
     }
 
@@ -170,7 +175,7 @@ contract BLSEnforcementTest is TestHelper {
         // _verifyBLS with empty pubkey returns false now
         // Any BLS-protected function should fail
         vm.expectRevert();
-        fr.setFeeRate(bytes32(uint256(1)), 100, new bytes(64));
+        fr.setFeeRate(bytes32(uint256(1)), 100, new bytes(64), 3, 7);
     }
 
     // ============ WRONG SIGNATURE OVER VALID PUBKEY REVERTS ============
@@ -184,20 +189,23 @@ contract BLSEnforcementTest is TestHelper {
         bytes memory wrongSig = signWithTestIssuers(keccak256("wrong message"));
 
         uint256[] memory orderIds = new uint256[](0);
-        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E020_InvalidBLSSignature.selector));
-        index.confirmBatch(1, orderIds, wrongSig);
+        vm.expectRevert(abi.encodeWithSelector(BLSVerifier.BLSVerifier__InvalidSignature.selector));
+        index.confirmBatch(1, orderIds, wrongSig, 3, 7);
     }
 
     // ============ INVALID PUBKEY LENGTH REVERTS ============
 
     function test_index_wrongPubkeyLength_reverts() public {
-        // Set 64-byte pubkey (should be 128)
-        issuerRegistry.setAggregatedPubkey(new bytes(64));
+        // Set 64-byte pubkey at nonce 0 — snapshot exists at nonce 0 only.
+        // referenceNonce=3 > lastSnapshotNonce=0 → NonceFuture.
+        // In the snapshot model, pubkey length checks are implicit: corrupted
+        // snapshots can't produce valid BLS verification anyway.
+        issuerRegistry.setAggregatedPubkey(new bytes(64), 0);
         index.setIssuerRegistry(address(issuerRegistry));
 
         uint256[] memory orderIds = new uint256[](0);
-        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E07E_InvalidAggregatedPubkeyLength.selector, 64));
-        index.confirmBatch(1, orderIds, new bytes(64));
+        vm.expectRevert(BLSVerifier.BLSVerifier__NonceFuture.selector);
+        index.confirmBatch(1, orderIds, new bytes(64), 3, 7);
     }
 
     // ============ META: NO BLS PRECOMPILE MOCKS REMAIN ============

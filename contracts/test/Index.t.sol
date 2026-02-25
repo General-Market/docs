@@ -826,7 +826,7 @@ contract IndexTest is TestHelper {
         // Update balance above threshold (no PoolRebalanceNeeded event)
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "UPDATE_VENUE", uint256(1), uint256(500e18)));
         bytes memory sig = signWithTestIssuers(msgHash);
-        index.updateVenueBalance(1, 500e18, sig);
+        index.updateVenueBalance(1, 500e18, sig, 3, 7);
 
         (,uint256 current,,uint256 lastRebalance) = index.venuePools(1);
         assertEq(current, 500e18);
@@ -843,7 +843,7 @@ contract IndexTest is TestHelper {
 
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "UPDATE_VENUE", uint256(1), uint256(50e18)));
         bytes memory sig = signWithTestIssuers(msgHash);
-        index.updateVenueBalance(1, 50e18, sig);
+        index.updateVenueBalance(1, 50e18, sig, 3, 7);
     }
 
     function test_updateVenueBalance_zeroBalance() public {
@@ -855,7 +855,7 @@ contract IndexTest is TestHelper {
 
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "UPDATE_VENUE", uint256(1), uint256(0)));
         bytes memory sig = signWithTestIssuers(msgHash);
-        index.updateVenueBalance(1, 0, sig);
+        index.updateVenueBalance(1, 0, sig, 3, 7);
 
         (,uint256 current,,) = index.venuePools(1);
         assertEq(current, 0);
@@ -868,7 +868,7 @@ contract IndexTest is TestHelper {
         // Set some balance
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "UPDATE_VENUE", uint256(1), uint256(500e18)));
         bytes memory sig = signWithTestIssuers(msgHash);
-        index.updateVenueBalance(1, 500e18, sig);
+        index.updateVenueBalance(1, 500e18, sig, 3, 7);
 
         // Reconfigure pool - balance should be preserved
         vm.prank(admin);

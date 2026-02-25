@@ -48,7 +48,7 @@ interface IFeeRegistry {
     /// @param itpId The ITP identifier
     /// @param feeRate Fee rate in basis points (max 1000 = 10%)
     /// @param blsSignature BLS signature from issuer consensus
-    function setFeeRate(bytes32 itpId, uint256 feeRate, bytes calldata blsSignature) external;
+    function setFeeRate(bytes32 itpId, uint256 feeRate, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     /// @notice Get the current fee rate for an ITP
     /// @param itpId The ITP identifier
@@ -69,7 +69,9 @@ interface IFeeRegistry {
         bytes32 itpId,
         uint256 feeAmount,
         TypesLib.FeeType feeType,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external;
 
     // ============ FEE QUERIES ============
@@ -96,7 +98,7 @@ interface IFeeRegistry {
     /// @dev Requires BLS signature from issuer consensus
     /// @param deployerShareBps Deployer share in basis points (default 7000 = 70%)
     /// @param blsSignature BLS signature from issuer consensus
-    function setFeeSplit(uint256 deployerShareBps, bytes calldata blsSignature) external;
+    function setFeeSplit(uint256 deployerShareBps, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     /// @notice Claim accumulated fees for an ITP
     /// @dev Only callable by ITP deployer

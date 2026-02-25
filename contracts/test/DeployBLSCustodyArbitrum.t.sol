@@ -109,8 +109,8 @@ contract DeployBLSCustodyArbitrumTest is TestHelper {
         custody = BLSCustody(blsCustodyProxy);
 
         // Propose whitelist targets with real BLS signatures
-        custody.proposeWhitelist(ONEINCH_ROUTER_V6, _signProposeWhitelist(address(custody), ONEINCH_ROUTER_V6));
-        custody.proposeWhitelist(USDC_ARBITRUM, _signProposeWhitelist(address(custody), USDC_ARBITRUM));
+        custody.proposeWhitelist(ONEINCH_ROUTER_V6, _signProposeWhitelist(address(custody), ONEINCH_ROUTER_V6), 3, 7);
+        custody.proposeWhitelist(USDC_ARBITRUM, _signProposeWhitelist(address(custody), USDC_ARBITRUM), 3, 7);
 
         vm.stopPrank();
     }
@@ -234,7 +234,7 @@ contract DeployBLSCustodyArbitrumTest is TestHelper {
     function test_execute_failsWithNonWhitelistedTarget() public {
         address nonWhitelisted = address(0xDEAD);
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E026_TargetNotWhitelisted.selector, nonWhitelisted));
-        custody.execute(nonWhitelisted, "", "", 0);
+        custody.execute(nonWhitelisted, "", "", 0, 3, 7);
     }
 
     // ============ ISSUER REGISTRY INTEGRATION ============

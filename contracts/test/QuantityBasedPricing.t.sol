@@ -172,7 +172,7 @@ contract QuantityBasedPricingTest is TestHelper {
         // BTC was 1% of $1 = $0.01. BTC doubles -> contribution becomes $0.02
         // SOL was 99% = $0.99, unchanged
         // New NAV = $0.99 + $0.02 = $1.01
-        index.setItpNav(itpId, 1.01e18, _signSetItpNav(itpId, 1.01e18));
+        index.setItpNav(itpId, 1.01e18, _signSetItpNav(itpId, 1.01e18), 3, 7);
 
         uint256 navAfter = index.getNAV(itpId);
         assertApproxEqAbs(navAfter, 1.01e18, 1e3, "NAV should be ~$1.01 after BTC doubles");
@@ -192,7 +192,7 @@ contract QuantityBasedPricingTest is TestHelper {
         bytes32 itpId = index.createITP("5050", "5050", weights, assets, prices, type(uint256).max);
 
         // All prices double -> NAV doubles from $1 to $2
-        index.setItpNav(itpId, 2e18, _signSetItpNav(itpId, 2e18));
+        index.setItpNav(itpId, 2e18, _signSetItpNav(itpId, 2e18), 3, 7);
 
         uint256 nav = index.getNAV(itpId);
         assertApproxEqAbs(nav, 2e18, 1e4, "NAV should double when all prices double");
@@ -214,7 +214,7 @@ contract QuantityBasedPricingTest is TestHelper {
         // ETH price drops to 0 (oracle failure) — only BTC contributes
         // qty_btc = (6e17 * 1e18) / 100000e18 = 6e12
         // contribution = (6e12 * 100000e18) / 1e18 = 6e17
-        index.setItpNav(itpId, 6e17, _signSetItpNav(itpId, 6e17));
+        index.setItpNav(itpId, 6e17, _signSetItpNav(itpId, 6e17), 3, 7);
 
         uint256 nav = index.getNAV(itpId);
         assertEq(nav, 6e17, "Only BTC portion should contribute when ETH price is 0");
@@ -241,7 +241,7 @@ contract QuantityBasedPricingTest is TestHelper {
         // new NAV = (6e12 * 120000e18 + 133333333333333 * 2500e18) / 1e18
         //         = (720000000000000000 + 333333333333332500) = 1053333333333332500
         uint256 simulatedNav = 1053333333333332500;
-        index.setItpNav(itpId, simulatedNav, _signSetItpNav(itpId, simulatedNav));
+        index.setItpNav(itpId, simulatedNav, _signSetItpNav(itpId, simulatedNav), 3, 7);
 
         uint256 navBefore = index.getNAV(itpId);
         assertGt(navBefore, 0, "NAV should be non-zero before rebalance");
@@ -265,7 +265,7 @@ contract QuantityBasedPricingTest is TestHelper {
         address[] memory emptyAddrs = new address[](0);
         address[] memory emptyQt = new address[](0);
 
-        index.rebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices, emptyQt, _signRebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices, emptyQt));
+        index.rebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices, emptyQt, _signRebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices, emptyQt), 3, 7);
 
         uint256 navAfter = index.getNAV(itpId);
 
@@ -313,7 +313,7 @@ contract QuantityBasedPricingTest is TestHelper {
         address[] memory emptyAddrs = new address[](0);
         address[] memory emptyQt = new address[](0);
 
-        index.rebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices, emptyQt, _signRebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices, emptyQt));
+        index.rebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices, emptyQt, _signRebalance(itpId, emptyIndices, emptyAddrs, newWeights, rebalPrices, emptyQt), 3, 7);
 
         (,,,,, uint256[] memory invAfter) = index.getITPState(itpId);
 

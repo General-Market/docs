@@ -78,7 +78,7 @@ contract DeployBridgeE2E is DeployBLSHelper {
             address asset = address(uint160(i));
             uint256 nonce = apr.getNonce();
             bytes32 msg_ = keccak256(abi.encode("PROPOSE_ASSET", block.chainid, address(apr), asset, nonce));
-            apr.proposeAsset(asset, blsSign("0,1,2", msg_));
+            apr.proposeAsset(asset, blsSign("0,1,2", msg_), 3, 7);
         }
         vm.warp(block.timestamp + 2 days + 1);
         for (uint256 i = 1; i <= 627; i++) {
@@ -86,7 +86,7 @@ contract DeployBridgeE2E is DeployBLSHelper {
             apr.activateAsset(asset);
             uint256 nonce = apr.getNonce();
             bytes32 msg_ = keccak256(abi.encode("PROPOSE_PAIR", block.chainid, address(apr), asset, BITGET_SOURCE, MOCK_USDC_QUOTE, uint256(0), nonce));
-            apr.proposePair(asset, BITGET_SOURCE, MOCK_USDC_QUOTE, 0, blsSign("0,1,2", msg_));
+            apr.proposePair(asset, BITGET_SOURCE, MOCK_USDC_QUOTE, 0, blsSign("0,1,2", msg_), 3, 7);
         }
         vm.warp(block.timestamp + 2 days + 1);
         for (uint256 i = 1; i <= 627; i++) {

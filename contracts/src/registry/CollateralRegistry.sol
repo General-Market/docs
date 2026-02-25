@@ -110,7 +110,9 @@ contract CollateralRegistry is ICollateralRegistry, BLSVerifier {
         uint256 toChain,
         uint256 amount,
         TypesLib.TxType txType,
-        bytes calldata blsSignature
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
     ) external override {
         // Validate amount is non-zero to prevent spam/abuse
         if (amount == 0) revert ZeroAmount();
@@ -121,7 +123,7 @@ contract CollateralRegistry is ICollateralRegistry, BLSVerifier {
         );
 
         // Verify BLS signature via BLSVerifier
-        _verifyBLS(message, blsSignature);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Update fromChain (decrease collateral)
         if (fromChain != 0) {
