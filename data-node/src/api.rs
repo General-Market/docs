@@ -360,6 +360,13 @@ pub fn router(state: Arc<AppState>) -> Router {
         // Vision market data endpoints
         .route("/vision/snapshot", get(crate::vision_api::snapshot))
         .route("/vision/markets/active", get(crate::vision_api::active_markets))
+        // Batch config endpoints
+        .route("/batches/recommended", get(batches_recommended))
+        .route("/batches/config/:hash", get(batch_config_by_hash))
+        .route("/batches/signed", get(batches_signed))
+        .route("/batches/signed", axum::routing::post(store_signed_batch))
+        .route("/batches/replicate", axum::routing::post(replicate_signed_batch))
+        .route("/batches/settlement", axum::routing::post(record_batch_settlement))
         // Admin endpoints
         .route("/admin/truncate/:table", axum::routing::post(admin_truncate))
         .route("/admin/reset-session", axum::routing::post(admin_reset_session))
@@ -4958,6 +4965,247 @@ async fn snapshot(
         sources: schedules,
         prices,
     }))
+}
+
+// ---- Batch config endpoints ----
+
+/// GET /batches/recommended — latest recommended batch configs from BatchEngine.
+async fn batches_recommended(
+    State(state): State<Arc<AppState>>,
+) -> Json<serde_json::Value> {
+    let configs = state.batch_engine.configs.read().await;
+    Json(serde_json::json!({
+        "generatedAt": Utc::now(),
+        "batchCount": configs.len(),
+        "totalMarkets": configs.iter().map(|c| c.markets.len()).sum::<usize>(),
+        "batches": *configs,
+    }))
+}
+
+/// GET /batches/config/:hash — fetch full batch config by keccak256 hash.
+/// Used by issuers/resolver to get the full market list for a committed hash.
+async fn batch_config_by_hash(
+    State(state): State<Arc<AppState>>,
+    axum::extract::Path(hash): axum::extract::Path<String>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    // Check in-memory recommended configs first
+    let configs = state.batch_engine.configs.read().await;
+    if let Some(c) = configs.iter().find(|c| c.config_hash == hash) {
+        return Ok(Json(serde_json::json!(c)));
+    }
+    drop(configs);
+
+    // Also check signed configs
+    let signed = state.batch_engine.signed_configs.read().await;
+    if let Some(s) = signed.iter().find(|s| s.config_hash == hash) {
+        return Ok(Json(serde_json::json!({
+            "source_id": s.source_id,
+            "config_hash": s.config_hash,
+            "tick_duration_secs": s.tick_duration_secs,
+            "lock_offset_secs": s.lock_offset_secs,
+            "markets": s.markets,
+        })));
+    }
+    drop(signed);
+
+    // Fall back to DB
+    let hash_clean = hash.trim_start_matches("0x");
+    let hash_bytes = hex::decode(hash_clean).unwrap_or_default();
+    let row: Option<(serde_json::Value, i32, i32, String, DateTime<Utc>)> = sqlx::query_as(
+        "SELECT markets, tick_duration_secs, lock_offset_secs, source_id, created_at \
+         FROM batch_configs WHERE config_hash = $1 ORDER BY created_at DESC LIMIT 1",
+    )
+    .bind(&hash_bytes)
+    .fetch_optional(&state.pool)
+    .await
+    .ok()
+    .flatten();
+
+    match row {
+        Some((markets, tick_dur, lock_off, source_id, created_at)) => {
+            Ok(Json(serde_json::json!({
+                "source_id": source_id,
+                "config_hash": hash,
+                "tick_duration_secs": tick_dur,
+                "lock_offset_secs": lock_off,
+                "markets": markets,
+                "created_at": created_at,
+            })))
+        }
+        None => Err(StatusCode::NOT_FOUND),
+    }
+}
+
+/// GET /batches/signed — frontend reads this to build user transactions.
+/// Returns array of all sources with their latest signed config.
+async fn batches_signed(
+    State(state): State<Arc<AppState>>,
+) -> Json<serde_json::Value> {
+    let signed = state.batch_engine.signed_configs.read().await;
+    Json(serde_json::json!({
+        "generatedAt": Utc::now(),
+        "batches": *signed,
+    }))
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SignedBatchPayload {
+    source_id: String,
+    config: serde_json::Value,
+    config_hash: String,
+    bls_signature: String, // hex-encoded
+    signers_bitmask: u64,
+    reference_nonce: u64,
+    tick_duration_secs: u64,
+    lock_offset_secs: u64,
+}
+
+/// POST /batches/signed — issuer pushes signed config after BLS consensus.
+/// Requires x-admin-token header auth.
+async fn store_signed_batch(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+    Json(payload): Json<SignedBatchPayload>,
+) -> StatusCode {
+    // Auth check
+    let token = headers.get("x-admin-token").and_then(|v| v.to_str().ok());
+    let expected = match state.admin_token.as_deref() {
+        Some(t) => t,
+        None => return StatusCode::UNAUTHORIZED,
+    };
+    if token != Some(expected) {
+        return StatusCode::UNAUTHORIZED;
+    }
+
+    // Persist to DB first (crash recovery)
+    let hash_bytes =
+        hex::decode(payload.config_hash.trim_start_matches("0x")).unwrap_or_default();
+    let sig_bytes =
+        hex::decode(payload.bls_signature.trim_start_matches("0x")).unwrap_or_default();
+
+    if let Err(e) = sqlx::query(
+        r#"
+        INSERT INTO signed_batch_configs
+            (source_id, config_hash, config_json, bls_signature, signers_bitmask,
+             reference_nonce, tick_duration_secs, lock_offset_secs, signed_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+        ON CONFLICT (source_id, config_hash) DO UPDATE SET
+            bls_signature = EXCLUDED.bls_signature,
+            signers_bitmask = EXCLUDED.signers_bitmask,
+            reference_nonce = EXCLUDED.reference_nonce,
+            signed_at = NOW()
+        "#,
+    )
+    .bind(&payload.source_id)
+    .bind(&hash_bytes)
+    .bind(&payload.config)
+    .bind(&sig_bytes)
+    .bind(payload.signers_bitmask as i64)
+    .bind(payload.reference_nonce as i64)
+    .bind(payload.tick_duration_secs as i32)
+    .bind(payload.lock_offset_secs as i32)
+    .execute(&state.pool)
+    .await
+    {
+        tracing::error!(%e, source = %payload.source_id, "Failed to persist signed config to DB");
+    }
+
+    // Update in-memory cache
+    let markets: Vec<crate::batch_engine::BatchMarket> = serde_json::from_value(
+        payload.config.get("markets").cloned().unwrap_or_default(),
+    )
+    .unwrap_or_default();
+    let display_name = payload
+        .config
+        .get("display_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or(&payload.source_id)
+        .to_string();
+
+    let signed = crate::batch_engine::SignedBatchConfig {
+        source_id: payload.source_id.clone(),
+        display_name,
+        config_hash: payload.config_hash,
+        tick_duration_secs: payload.tick_duration_secs,
+        lock_offset_secs: payload.lock_offset_secs,
+        markets,
+        bls_signature: payload.bls_signature,
+        signers_bitmask: payload.signers_bitmask,
+        reference_nonce: payload.reference_nonce,
+        signed_at: Utc::now(),
+    };
+
+    let mut configs = state.batch_engine.signed_configs.write().await;
+    // Replace existing entry for this source, or push new
+    if let Some(existing) = configs.iter_mut().find(|c| c.source_id == signed.source_id) {
+        *existing = signed;
+    } else {
+        configs.push(signed);
+    }
+
+    StatusCode::OK
+}
+
+/// POST /batches/replicate — followers store leader's full config.
+/// Same as store_signed_batch but named differently for clarity.
+/// Requires x-admin-token header auth.
+async fn replicate_signed_batch(
+    state: State<Arc<AppState>>,
+    headers: HeaderMap,
+    payload: Json<SignedBatchPayload>,
+) -> StatusCode {
+    store_signed_batch(state, headers, payload).await
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SettlementRecord {
+    source_id: String,
+    asset_id: String,
+    config_hash: String,
+    start_price: f64,
+    end_price: f64,
+    change_pct: f64,
+}
+
+/// POST /batches/settlement — issuers record settlement results for threshold feedback.
+/// Requires x-admin-token header auth.
+async fn record_batch_settlement(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+    Json(records): Json<Vec<SettlementRecord>>,
+) -> StatusCode {
+    let token = headers.get("x-admin-token").and_then(|v| v.to_str().ok());
+    let expected = match state.admin_token.as_deref() {
+        Some(t) => t,
+        None => return StatusCode::UNAUTHORIZED,
+    };
+    if token != Some(expected) {
+        return StatusCode::UNAUTHORIZED;
+    }
+
+    for rec in &records {
+        let hash_bytes =
+            hex::decode(rec.config_hash.trim_start_matches("0x")).unwrap_or_default();
+
+        let _ = sqlx::query(
+            r#"
+            INSERT INTO batch_settlements (source_id, asset_id, config_hash, start_price, end_price, change_pct)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            "#,
+        )
+        .bind(&rec.source_id)
+        .bind(&rec.asset_id)
+        .bind(&hash_bytes)
+        .bind(rust_decimal::Decimal::try_from(rec.start_price).unwrap_or_default())
+        .bind(rust_decimal::Decimal::try_from(rec.end_price).unwrap_or_default())
+        .bind(rust_decimal::Decimal::try_from(rec.change_pct).unwrap_or_default())
+        .execute(&state.pool)
+        .await;
+    }
+
+    StatusCode::OK
 }
 
 // ---- Admin auth helper ----
