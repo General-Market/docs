@@ -283,7 +283,7 @@ contract ITPNAVOracleTest is TestHelper {
 
         // Sync registry to a new aggregated pubkey (seeds 3,4,5)
         bytes memory newPubkey = blsAggPubkey("3,4,5");
-        bytes32 syncHash = keccak256(abi.encodePacked("REGISTRY_SYNC", uint256(1), newPubkey, uint256(4), uint256(3)));
+        bytes32 syncHash = keccak256(abi.encode("REGISTRY_SYNC", block.chainid, address(mirror), uint256(1), newPubkey, uint256(4), uint256(3)));
         bytes memory syncSig = signWithTestIssuers(syncHash);
         mirror.sync(newPubkey, 4, 3, 1, syncSig, 0x7);
 

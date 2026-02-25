@@ -131,12 +131,11 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, Initializable, UUPSUpgra
             revert ErrorsLib.E093_InvalidThreshold(newThreshold, newActiveCount);
         }
 
-        // Compute message hash for BLS verification
-        // NOTE: Uses encodePacked to match Rust-side build_registry_sync_message_hash()
-        // which produces raw byte concatenation (no ABI padding). Phase 4 will change
-        // BOTH sides to abi.encode with chain binding (block.chainid, address(this)).
+        // Compute message hash for BLS verification (chain-bound)
+        // Uses abi.encode with block.chainid and address(this) for cross-chain replay protection.
+        // Rust-side build_registry_sync_message_hash() must match this encoding.
         bytes32 messageHash = keccak256(
-            abi.encodePacked("REGISTRY_SYNC", nonce, newAggPubkey, newActiveCount, newThreshold)
+            abi.encode("REGISTRY_SYNC", block.chainid, address(this), nonce, newAggPubkey, newActiveCount, newThreshold)
         );
 
         // Verify BLS signature against CURRENT aggregated pubkey

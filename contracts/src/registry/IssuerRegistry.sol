@@ -350,7 +350,8 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
     // ============ KEY ROTATION (Story 2.13, upgraded in Story 7.17) ============
     //
     /// @inheritdoc IIssuerRegistry
-    /// @dev BLS verification: issuer signs keccak256(abi.encode("ROTATE", issuerId, newPubkey)) with old key
+    /// @dev 3-factor rotation request: ECDSA (msg.sender) + old-key BLS + new-key PoP
+    /// @dev BLS verification: issuer signs keccak256(abi.encode("ROTATE", chainid, this, issuerId, newPubkey)) with old key
     /// @dev PoP verification: issuer signs keccak256(abi.encode("INDEX_BLS_POP", chainid, this, addr, newPubkey)) with new key
     function requestKeyRotation(
         uint256 issuerId,
@@ -363,9 +364,12 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
         if (issuer.addr == address(0)) revert IssuerNotFound(issuerId);
         if (issuer.status != 1) revert IssuerNotActive(issuerId);
 
-        // Verify BLS signature with issuer's current (old) key
+        // ECDSA factor: msg.sender must be the issuer's registered address
+        if (msg.sender != issuer.addr) revert Unauthorized();
+
+        // Verify BLS signature with issuer's current (old) key (chain-bound)
         {
-            bytes32 message = keccak256(abi.encode("ROTATE", issuerId, newPubkey));
+            bytes32 message = keccak256(abi.encode("ROTATE", block.chainid, address(this), issuerId, newPubkey));
             if (!BLSLib.verifyBLS(issuer.blsPubkey, message, signatureWithOldKey)) {
                 revert ErrorsLib.E086_InvalidRotationSignature();
             }
@@ -412,7 +416,8 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
     }
 
     /// @inheritdoc IIssuerRegistry
-    /// @dev BLS verification: approver signs keccak256(abi.encode("APPROVE_ROTATION", rotatingIssuerId, rotation.newPubkey))
+    /// @dev 2-factor approval: ECDSA (msg.sender) + BLS (chain-bound)
+    /// @dev BLS verification: approver signs keccak256(abi.encode("APPROVE_ROTATION", chainid, this, rotatingIssuerId, rotation.newPubkey))
     function approveRotation(
         uint256 rotatingIssuerId,
         uint256 approvingIssuerId,
@@ -428,12 +433,15 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
         if (approver.addr == address(0)) revert IssuerNotFound(approvingIssuerId);
         if (approver.status != 1) revert IssuerNotActive(approvingIssuerId);
 
+        // ECDSA factor: msg.sender must be the approving issuer's registered address
+        if (msg.sender != approver.addr) revert Unauthorized();
+
         // Block self-approval
         if (rotatingIssuerId == approvingIssuerId) revert SelfApprovalNotAllowed();
 
-        // Verify BLS signature from approving issuer
+        // Verify BLS signature from approving issuer (chain-bound)
         {
-            bytes32 message = keccak256(abi.encode("APPROVE_ROTATION", rotatingIssuerId, rotation.newPubkey));
+            bytes32 message = keccak256(abi.encode("APPROVE_ROTATION", block.chainid, address(this), rotatingIssuerId, rotation.newPubkey));
             if (!BLSLib.verifyBLS(approver.blsPubkey, message, approverSignature)) {
                 revert ErrorsLib.E087_InvalidApprovalSignature();
             }
@@ -632,7 +640,7 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
         if (issuer.status != 1) revert IssuerNotActive(issuerId);
 
         {
-            bytes32 message = keccak256(abi.encode("UPDATE_IP", issuerId, newIp));
+            bytes32 message = keccak256(abi.encode("UPDATE_IP", block.chainid, address(this), issuerId, newIp));
             if (!BLSLib.verifyBLS(issuer.blsPubkey, message, blsSignature)) {
                 revert ErrorsLib.E088_InvalidIpUpdateSignature();
             }
