@@ -98,18 +98,31 @@ export function SourcesGrid() {
                   <span className="text-[20px] font-black">{categoryCount}</span>
                   <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">Categories</span>
                 </div>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-[20px] font-black">24/7</span>
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">Live Sync</span>
-                </div>
               </div>
-              <button
-                onClick={() => setShowSectionBar(false)}
-                className="ml-auto text-white/40 hover:text-white transition-colors text-[18px] leading-none"
-                aria-label="Dismiss"
-              >
-                &times;
-              </button>
+
+              {/* Live uptime indicator — right aligned */}
+              <div className="ml-auto flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+                  </span>
+                  <span className="text-[12px] font-bold text-green-400 uppercase tracking-[0.04em]">Live</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500 rounded-full" style={{ width: '99.99%' }} />
+                  </div>
+                  <span className="text-[11px] font-mono font-bold text-white/60">99.99%</span>
+                </div>
+                <button
+                  onClick={() => setShowSectionBar(false)}
+                  className="text-white/40 hover:text-white transition-colors text-[18px] leading-none ml-2"
+                  aria-label="Dismiss"
+                >
+                  &times;
+                </button>
+              </div>
             </div>
           </div>
         </div>

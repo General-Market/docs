@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { SourceDetailCategoryNav } from '@/components/domain/vision/detail/SourceDetailCategoryNav'
 import { SourceDetail } from '@/components/domain/vision/detail/SourceDetail'
 import { getSource, getSourceIds } from '@/lib/vision/sources'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
@@ -46,6 +47,7 @@ export default async function SourcePage({ params }: Props) {
   return (
     <main className="min-h-screen bg-page flex flex-col">
       <Header />
+      <SourceDetailCategoryNav sourceCategory={source.category} />
       <div className="flex-1 overflow-x-clip">
         <SourceDetail sourceId={sourceId} />
       </div>
