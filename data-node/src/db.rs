@@ -57,6 +57,8 @@ pub async fn run_migrations(pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::raw_sql(m022).execute(pool).await?;
     let m023 = include_str!("../migrations/023_create_collector_cursors.sql");
     sqlx::raw_sql(m023).execute(pool).await?;
+    let m024 = include_str!("../migrations/024_create_batch_tables.sql");
+    sqlx::raw_sql(m024).execute(pool).await?;
     info!("Database migrations applied");
     Ok(())
 }
