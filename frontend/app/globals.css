@@ -206,6 +206,8 @@ input[type="number"] {
   .btn-interactive, .card-interactive {
     transition: none;
   }
+  .bitmap-cell { transition: none; }
+  .bitmap-cell:hover { transform: none; }
   tr[data-wallet] {
     will-change: auto;
     transition: none !important;
@@ -213,9 +215,57 @@ input[type="number"] {
   }
 }
 
+/* ── SOURCE CARDS — ITP-style with bitmap roll on hover ── */
+.bitmap-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-content: flex-start;
+  overflow: hidden;
+}
+.bitmap-cell {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 7px;
+  font-weight: 800;
+  font-family: var(--mono);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  transition: all 0.12s;
+  cursor: pointer;
+  user-select: none;
+}
+.bitmap-cell.b-up { background: rgba(22,163,74,0.15); color: var(--up); border-color: rgba(22,163,74,0.4); }
+.bitmap-cell.b-dn { background: rgba(220,38,38,0.15); color: var(--down); border-color: rgba(220,38,38,0.4); }
+.bitmap-cell.b-empty { background: var(--background); color: #999999; }
+.bitmap-cell:hover { transform: scale(1.2); z-index: 1; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+.bitmap-cell:active { transform: scale(0.95); }
+
+/* ── SORT ROW ── */
+.sort-row { display: flex; align-items: center; gap: 8px; padding: 12px 0; }
+.sort-btn {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 6px 14px;
+  background: none;
+  border: 1px solid var(--border);
+  color: #999999;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sort-btn:hover { color: var(--foreground); border-color: #555555; }
+.sort-btn.active { background: var(--surface); color: var(--foreground); border-color: #555555; }
+
 @media (max-width: 767px) {
   tr[data-wallet] { will-change: auto; }
   .hero-band { padding: 28px 16px 24px; }
   .section-bar { padding: 12px 16px; }
   .section-bar-value { font-size: 13px; }
+  .sources-grid { grid-template-columns: 1fr; }
 }

@@ -59,7 +59,7 @@
     box-shadow: 0 8px 24px rgba(0,0,0,0.4);
   }
 
-  /* ── Brand area: combo logo image ── */
+  /* -- Brand area: combo logo image -- */
   .card-brand {
     height: 130px; display: flex;
     align-items: center; justify-content: center;
@@ -68,6 +68,11 @@
   }
   .card-brand img {
     max-height: 80px; max-width: 90%; object-fit: contain;
+  }
+  .card-brand-text {
+    font-size: 22px; font-weight: 800; color: rgba(255,255,255,0.9);
+    text-align: center; letter-spacing: -0.02em; line-height: 1.2;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
   }
 
   .card-badge {
@@ -96,8 +101,8 @@
 <body>
 
 <div class="stats-bar">
-  <div class="stat-item"><div class="stat-num">55</div><div class="stat-label">Data Sources</div></div>
-  <div class="stat-item"><div class="stat-num">25,000+</div><div class="stat-label">Trackable Assets</div></div>
+  <div class="stat-item"><div class="stat-num">85</div><div class="stat-label">Data Sources</div></div>
+  <div class="stat-item"><div class="stat-num">30,000+</div><div class="stat-label">Trackable Assets</div></div>
   <div class="stat-item"><div class="stat-num">10</div><div class="stat-label">Categories</div></div>
   <div class="stat-item"><div class="stat-num">24/7</div><div class="stat-label">Live Sync</div></div>
 </div>
@@ -105,7 +110,7 @@
 <div class="section-header">
   <div class="eyebrow">Data Infrastructure</div>
   <h2>Predict Anything, Anywhere</h2>
-  <p>Real-time data from <span class="source-count">55</span> institutional and community sources. Every asset is a prediction market waiting to happen.</p>
+  <p>Real-time data from <span class="source-count">85</span> institutional and community sources. Every asset is a prediction market waiting to happen.</p>
 </div>
 
 <div class="category-tabs">
@@ -114,6 +119,7 @@
   <button class="category-tab" onclick="filterCards('economic')">Economic</button>
   <button class="category-tab" onclick="filterCards('regulatory')">Regulatory</button>
   <button class="category-tab" onclick="filterCards('tech')">Tech & Dev</button>
+  <button class="category-tab" onclick="filterCards('academic')">Academic</button>
   <button class="category-tab" onclick="filterCards('entertainment')">Entertainment</button>
   <button class="category-tab" onclick="filterCards('geophysical')">Geophysical</button>
   <button class="category-tab" onclick="filterCards('transport')">Transport</button>
@@ -127,7 +133,7 @@
 
 <div class="source-card" data-category="finance">
   <div class="card-brand" style="background:linear-gradient(135deg,#8DC63F,#3d7a0a);">
-    <img src="source-imgs/coingecko.png" alt="CoinGecko">
+    <img src="source-imgs/new-coingecko.png" alt="CoinGecko">
     <span class="card-badge">Finance</span>
   </div>
   <div class="card-body"><h3>CoinGecko Crypto</h3><p>Cryptocurrency market data — prices, volumes, market caps for thousands of tokens.</p></div>
@@ -154,7 +160,7 @@
 
 <div class="source-card" data-category="finance">
   <div class="card-brand" style="background:#000;">
-    <img src="source-imgs/new-finnhub.png" alt="Finnhub" style="max-height:none;width:100%;height:100%;object-fit:cover;">
+    <img src="source-imgs/new-finnhub.png" alt="Finnhub">
     <span class="card-badge">Finance</span>
   </div>
   <div class="card-body"><h3>Finnhub Stocks</h3><p>Real-time stock market data — US equities, forex, and crypto with company fundamentals.</p></div>
@@ -190,7 +196,7 @@
 
 <div class="source-card" data-category="finance">
   <div class="card-brand" style="background:#1b1b1b;">
-    <img src="source-imgs/zillow.svg" alt="Zillow" style="max-height:none;max-width:none;width:80%;">
+    <img src="source-imgs/zillow.svg" alt="Zillow">
     <span class="card-badge">Finance</span>
   </div>
   <div class="card-body"><h3>Zillow Real Estate</h3><p>US housing market data — home values, rent indices, inventory, and price-to-rent ratios.</p></div>
@@ -204,6 +210,24 @@
   </div>
   <div class="card-body"><h3>Pump.fun Tokens</h3><p>Solana memecoin launchpad — real-time prices, volumes, and market caps for recently launched tokens.</p></div>
   <div class="card-footer"><span class="asset-count">500+ tokens</span><span class="source-type">RPC + API</span></div>
+</div>
+
+<div class="source-card" data-category="finance">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-bestbuy.png" alt="Best Buy">
+    <span class="card-badge">Finance</span>
+  </div>
+  <div class="card-body"><h3>Best Buy Electronics Prices</h3><p>Consumer electronics pricing — real-time sale prices across 7 categories from top-selling products.</p></div>
+  <div class="card-footer"><span class="asset-count">70+ products</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="finance">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-yahoodrinks.png" alt="Yahoo Drinks">
+    <span class="card-badge">Finance</span>
+  </div>
+  <div class="card-body"><h3>Beverage & Commodity Futures</h3><p>Coffee, sugar, cocoa, OJ futures and major beverage company stock prices via Yahoo Finance.</p></div>
+  <div class="card-footer"><span class="asset-count">15+ assets</span><span class="source-type">API</span></div>
 </div>
 
 <!-- ══════ ECONOMIC ══════ -->
@@ -254,8 +278,8 @@
 </div>
 
 <div class="source-card" data-category="economic">
-  <div class="card-brand" style="background:#1b1b1b;">
-    <img src="source-imgs/new-imf.png?v=2" alt="IMF">
+  <div class="card-brand" style="background:linear-gradient(135deg,#002b5c,#001a3a);">
+    <img src="source-imgs/new-imf.png" alt="IMF">
     <span class="card-badge">Economic</span>
   </div>
   <div class="card-body"><h3>IMF World Economic Outlook</h3><p>International Monetary Fund — GDP forecasts, inflation projections, global economic outlook.</p></div>
@@ -263,8 +287,8 @@
 </div>
 
 <div class="source-card" data-category="economic">
-  <div class="card-brand" style="background:#1b1b1b;">
-    <img src="source-imgs/worldbank.svg" alt="World Bank">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-worldbank.svg" alt="World Bank">
     <span class="card-badge">Economic</span>
   </div>
   <div class="card-body"><h3>World Bank Global Indicators</h3><p>Development indicators — GDP, population, poverty, health, education for 200+ countries.</p></div>
@@ -278,6 +302,24 @@
   </div>
   <div class="card-body"><h3>OPEC Reference Basket</h3><p>OPEC crude oil reference basket — daily weighted average of key crude grades from member nations.</p></div>
   <div class="card-footer"><span class="asset-count">1 basket</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="economic">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-adzuna.png" alt="Adzuna">
+    <span class="card-badge">Economic</span>
+  </div>
+  <div class="card-body"><h3>Adzuna Job Market</h3><p>Job vacancy counts and average advertised salaries across US, UK, Germany, and France.</p></div>
+  <div class="card-footer"><span class="asset-count">8 metrics</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="economic">
+  <div class="card-brand" style="background:#1a2744;">
+    <img src="source-imgs/new-cbpborder.png" alt="CBP Border">
+    <span class="card-badge">Economic</span>
+  </div>
+  <div class="card-body"><h3>CBP Border Wait Times</h3><p>US Customs and Border Protection — real-time passenger and commercial wait times at all ports of entry.</p></div>
+  <div class="card-footer"><span class="asset-count">100+ ports</span><span class="source-type">API</span></div>
 </div>
 
 <!-- ══════ REGULATORY ══════ -->
@@ -354,6 +396,24 @@
   <div class="card-footer"><span class="asset-count">100+ agencies</span><span class="source-type">API</span></div>
 </div>
 
+<div class="source-card" data-category="regulatory">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-courtlistener.png" alt="CourtListener">
+    <span class="card-badge">Regulatory</span>
+  </div>
+  <div class="card-body"><h3>CourtListener Federal Courts</h3><p>Daily federal court filing counts — opinions, docket entries, and new cases across 34 courts.</p></div>
+  <div class="card-footer"><span class="asset-count">102 metrics</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="regulatory">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-nrcnuclear.png" alt="NRC Nuclear">
+    <span class="card-badge">Regulatory</span>
+  </div>
+  <div class="card-body"><h3>NRC Nuclear Reactor Status</h3><p>Daily power output percentage for all 93 US commercial nuclear reactors from NRC reports.</p></div>
+  <div class="card-footer"><span class="asset-count">93 reactors</span><span class="source-type">API</span></div>
+</div>
+
 <!-- ══════ TECH & DEV ══════ -->
 
 <div class="source-card" data-category="tech">
@@ -385,7 +445,7 @@
 
 <div class="source-card" data-category="tech">
   <div class="card-brand" style="background:#173d13;">
-    <img src="source-imgs/new-cratesio.png" alt="crates.io" style="max-height:none;width:100%;height:100%;object-fit:cover;">
+    <img src="source-imgs/new-cratesio.png" alt="crates.io">
     <span class="card-badge">Tech</span>
   </div>
   <div class="card-body"><h3>crates.io Rust Packages</h3><p>Rust ecosystem — crate downloads, versions, and dependency metrics.</p></div>
@@ -408,6 +468,53 @@
   </div>
   <div class="card-body"><h3>Hacker News</h3><p>Tech community pulse — top stories, trending topics, engagement from Y Combinator's forum.</p></div>
   <div class="card-footer"><span class="asset-count">100+ stories/day</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="tech">
+  <div class="card-brand" style="background:#1a1a2e;">
+    <img src="source-imgs/new-reddit.png" alt="Reddit">
+    <span class="card-badge">Tech</span>
+  </div>
+  <div class="card-body"><h3>Reddit Subreddit Metrics</h3><p>Community analytics — subscriber counts and active users across 100+ curated subreddits.</p></div>
+  <div class="card-footer"><span class="asset-count">200+ metrics</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="tech">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-stackoverflow.png" alt="Stack Overflow">
+    <span class="card-badge">Tech</span>
+  </div>
+  <div class="card-body"><h3>StackOverflow Questions</h3><p>Developer activity — daily new question counts by popular tag tracking framework and language adoption.</p></div>
+  <div class="card-footer"><span class="asset-count">30 tags</span><span class="source-type">API</span></div>
+</div>
+
+<!-- ══════ ACADEMIC ══════ -->
+
+<div class="source-card" data-category="academic">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-crossref.png" alt="Crossref">
+    <span class="card-badge">Academic</span>
+  </div>
+  <div class="card-body"><h3>Crossref DOI Registry</h3><p>Scholarly publishing — daily new DOI registrations by document type tracking research output trends.</p></div>
+  <div class="card-footer"><span class="asset-count">12 types</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="academic">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-openalex.png" alt="OpenAlex">
+    <span class="card-badge">Academic</span>
+  </div>
+  <div class="card-body"><h3>OpenAlex Research Fields</h3><p>Scholarly work tracker — daily new publication counts by research field across 25 academic disciplines.</p></div>
+  <div class="card-footer"><span class="asset-count">26 fields</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="academic">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-pubmed.png" alt="PubMed">
+    <span class="card-badge">Academic</span>
+  </div>
+  <div class="card-body"><h3>PubMed Biomedical</h3><p>NCBI biomedical literature — daily new article counts by topic across 24 medical research areas.</p></div>
+  <div class="card-footer"><span class="asset-count">25 topics</span><span class="source-type">API</span></div>
 </div>
 
 <!-- ══════ ENTERTAINMENT ══════ -->
@@ -473,6 +580,51 @@
   </div>
   <div class="card-body"><h3>4chan</h3><p>Imageboard sentiment — post volumes, trending topics across /biz/, /pol/, and more.</p></div>
   <div class="card-footer"><span class="asset-count">20+ boards</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="entertainment">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-chaturbate.png" alt="Chaturbate">
+    <span class="card-badge">Entertainment</span>
+  </div>
+  <div class="card-body"><h3>Chaturbate Live Viewers</h3><p>Adult streaming metrics — live viewer counts for top models from the public affiliate API.</p></div>
+  <div class="card-footer"><span class="asset-count">500+ models</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="entertainment">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-pandascore.png" alt="PandaScore">
+    <span class="card-badge">Entertainment</span>
+  </div>
+  <div class="card-body"><h3>PandaScore Esports</h3><p>Esports match tracking — live scores across CS2, LoL, Dota 2, Valorant, and more.</p></div>
+  <div class="card-footer"><span class="asset-count">100+ matches</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="entertainment">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-bgg.png" alt="BoardGameGeek">
+    <span class="card-badge">Entertainment</span>
+  </div>
+  <div class="card-body"><h3>BoardGameGeek Hotness</h3><p>Board game trends — hotness rankings for top 50 board games from the BGG community.</p></div>
+  <div class="card-footer"><span class="asset-count">50 games</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="entertainment">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-lastfm.png" alt="Last.fm">
+    <span class="card-badge">Entertainment</span>
+  </div>
+  <div class="card-body"><h3>Last.fm Music Charts</h3><p>Music analytics — top artist listener counts, playcounts, and chart trends from Last.fm.</p></div>
+  <div class="card-footer"><span class="asset-count">500+ artists</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="entertainment">
+  <div class="card-brand" style="background:#1a1a2e;">
+    <img src="source-imgs/new-queuetimes.png" alt="Queue Times">
+    <span class="card-badge">Entertainment</span>
+  </div>
+  <div class="card-body"><h3>Theme Park Wait Times</h3><p>Average ride wait times across 30+ major theme parks worldwide — Disney, Universal, and more.</p></div>
+  <div class="card-footer"><span class="asset-count">30+ parks</span><span class="source-type">API</span></div>
 </div>
 
 <!-- ══════ GEOPHYSICAL ══════ -->
@@ -549,6 +701,60 @@
   <div class="card-footer"><span class="asset-count">2,000+ zones</span><span class="source-type">API</span></div>
 </div>
 
+<div class="source-card" data-category="geophysical">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-noaatides.png" alt="NOAA Tides">
+    <span class="card-badge">Geophysical</span>
+  </div>
+  <div class="card-body"><h3>NOAA Tide Stations</h3><p>Real-time water levels from 59 major US tide stations relative to MLLW datum.</p></div>
+  <div class="card-footer"><span class="asset-count">59 stations</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="geophysical">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-ndbc.png" alt="NDBC Buoys">
+    <span class="card-badge">Geophysical</span>
+  </div>
+  <div class="card-body"><h3>NDBC Ocean Buoys</h3><p>Wave height and ocean conditions from NDBC buoys across US coastal and offshore waters.</p></div>
+  <div class="card-footer"><span class="asset-count">500+ buoys</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="geophysical">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-noaamet.png" alt="NOAA Coastal">
+    <span class="card-badge">Geophysical</span>
+  </div>
+  <div class="card-body"><h3>NOAA Coastal Stations</h3><p>Water temperature and wind speed from 59 major US coastal meteorological stations.</p></div>
+  <div class="card-footer"><span class="asset-count">118 metrics</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="geophysical">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-nwps.png" alt="NWPS Rivers">
+    <span class="card-badge">Geophysical</span>
+  </div>
+  <div class="card-body"><h3>NWPS River Gauges</h3><p>Real-time river gauge heights and flood stage data from 68 major US waterway monitoring points.</p></div>
+  <div class="card-footer"><span class="asset-count">68 gauges</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="geophysical">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-usgswater.png" alt="USGS Water">
+    <span class="card-badge">Geophysical</span>
+  </div>
+  <div class="card-body"><h3>USGS Streamflow</h3><p>River discharge monitoring — real-time streamflow data from USGS stations across 15 US states.</p></div>
+  <div class="card-footer"><span class="asset-count">3,000+ stations</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="geophysical">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-airnow.png" alt="AirNow">
+    <span class="card-badge">Geophysical</span>
+  </div>
+  <div class="card-body"><h3>AirNow Air Quality</h3><p>EPA air quality index — real-time AQI readings across 300+ US metropolitan reporting areas.</p></div>
+  <div class="card-footer"><span class="asset-count">300+ areas</span><span class="source-type">API</span></div>
+</div>
+
 <!-- ══════ TRANSPORT ══════ -->
 
 <div class="source-card" data-category="transport">
@@ -596,6 +802,51 @@
   <div class="card-footer"><span class="asset-count">200+ aircraft</span><span class="source-type">API</span></div>
 </div>
 
+<div class="source-card" data-category="transport">
+  <div class="card-brand" style="background:linear-gradient(135deg,#ffb800,#f59e00);">
+    <img src="source-imgs/new-citybikes.svg" alt="CityBikes">
+    <span class="card-badge">Transport</span>
+  </div>
+  <div class="card-body"><h3>CityBikes Bike Sharing</h3><p>Available bikes across 30 major bike-sharing networks worldwide — real-time station data.</p></div>
+  <div class="card-footer"><span class="asset-count">30 networks</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="transport">
+  <div class="card-brand" style="background:linear-gradient(135deg,#e8eaf6,#c5cae9);">
+    <img src="source-imgs/new-parkapi.png" alt="ParkAPI">
+    <span class="card-badge">Transport</span>
+  </div>
+  <div class="card-body"><h3>European Parking</h3><p>Real-time free parking space counts across 20+ European cities from municipal sensors.</p></div>
+  <div class="card-footer"><span class="asset-count">20+ cities</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="transport">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-tomtomtraffic.png" alt="TomTom Traffic">
+    <span class="card-badge">Transport</span>
+  </div>
+  <div class="card-body"><h3>TomTom Road Congestion</h3><p>Real-time road congestion ratios for 20+ highway corridors — current speed vs free-flow speed.</p></div>
+  <div class="card-footer"><span class="asset-count">20+ corridors</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="transport">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-tomtomev.png" alt="TomTom EV">
+    <span class="card-badge">Transport</span>
+  </div>
+  <div class="card-body"><h3>TomTom EV Charging</h3><p>Available EV charging connectors at 25+ major charging hubs worldwide — real-time availability.</p></div>
+  <div class="card-footer"><span class="asset-count">25+ hubs</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="transport">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-faadelays.png" alt="FAA Delays">
+    <span class="card-badge">Transport</span>
+  </div>
+  <div class="card-body"><h3>FAA Airport Delays</h3><p>Real-time delay status for 30 major US airports from the FAA Airport Status Web Service.</p></div>
+  <div class="card-footer"><span class="asset-count">30 airports</span><span class="source-type">API</span></div>
+</div>
+
 <!-- ══════ NATURE ══════ -->
 
 <div class="source-card" data-category="nature">
@@ -623,6 +874,15 @@
   </div>
   <div class="card-body"><h3>eBird Observations</h3><p>Global birding data — species checklists, hotspot activity, migration timing from Cornell Lab.</p></div>
   <div class="card-footer"><span class="asset-count">10,000+ species</span><span class="source-type">API</span></div>
+</div>
+
+<div class="source-card" data-category="nature">
+  <div class="card-brand" style="background:#f5f5f5;">
+    <img src="source-imgs/new-shelter.png" alt="Shelter Animals">
+    <span class="card-badge">Nature</span>
+  </div>
+  <div class="card-body"><h3>Animal Shelter Census</h3><p>Stray animal counts at shelters by species and status — dogs and cats via Socrata open data.</p></div>
+  <div class="card-footer"><span class="asset-count">8 metrics</span><span class="source-type">API</span></div>
 </div>
 
 <!-- ══════ SPACE ══════ -->
@@ -657,7 +917,7 @@
 </div>
 
 <div class="page-footer">
-  <p>All data synced 24/7 via Vision data-node infrastructure &mdash; <strong>55 sources</strong>, <strong>25,000+ assets</strong></p>
+  <p>All data synced 24/7 via Vision data-node infrastructure &mdash; <strong>85 sources</strong>, <strong>30,000+ assets</strong></p>
 </div>
 
 <script>
