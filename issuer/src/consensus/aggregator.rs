@@ -8,6 +8,7 @@ use common::bls::Bn254BLSSigner;
 use common::error::Error;
 use common::traits::BLSSigner;
 use common::types::{BLSSignature, PeerId};
+use ethers::types::U256;
 use tracing::{debug, info, warn};
 
 /// Threshold constants for consensus
@@ -39,6 +40,8 @@ pub enum AggregationStatus {
         aggregated_signature: BLSSignature,
         /// Number of signatures that were aggregated
         signer_count: usize,
+        /// Bitmask of signer indices (bit i set = signer i participated)
+        signers_bitmask: U256,
     },
     /// Batch was already submitted
     AlreadySubmitted,
@@ -50,6 +53,8 @@ pub struct SignatureAggregator {
     required_signatures: usize,
     /// Collected signatures by peer ID
     collected: HashMap<PeerId, BLSSignature>,
+    /// Signer index for each peer (for bitmask computation)
+    signer_indices: HashMap<PeerId, u8>,
     /// Whether threshold has been reached and submitted
     threshold_reached: bool,
     /// The BLS signer for aggregation
@@ -77,6 +82,7 @@ impl SignatureAggregator {
         Self {
             required_signatures,
             collected: HashMap::new(),
+            signer_indices: HashMap::new(),
             threshold_reached: false,
             signer: Bn254BLSSigner::new(),
         }
@@ -106,6 +112,7 @@ impl SignatureAggregator {
     /// Reset the aggregator for a new round
     pub fn reset(&mut self) {
         self.collected.clear();
+        self.signer_indices.clear();
         self.threshold_reached = false;
     }
 
@@ -113,9 +120,15 @@ impl SignatureAggregator {
     ///
     /// Returns the current aggregation status.
     /// Rejects duplicate signatures from the same peer.
+    ///
+    /// # Arguments
+    /// * `peer_id` - The peer's unique identifier
+    /// * `signer_index` - The signer's index in the issuer registry (for bitmask computation)
+    /// * `signature` - The BLS signature
     pub fn add_signature(
         &mut self,
         peer_id: PeerId,
+        signer_index: u8,
         signature: BLSSignature,
     ) -> Result<AggregationStatus, Error> {
         // Check if already submitted
@@ -144,11 +157,13 @@ impl SignatureAggregator {
             )));
         }
 
-        // Add signature
+        // Add signature and signer index
         self.collected.insert(peer_id, signature);
+        self.signer_indices.insert(peer_id, signer_index);
 
         debug!(
             ?peer_id,
+            signer_index,
             collected = self.collected.len(),
             required = self.required_signatures,
             "Signature added"
@@ -168,9 +183,16 @@ impl SignatureAggregator {
 
             self.threshold_reached = true;
 
+            // Compute signers bitmask
+            let mut bitmask = U256::zero();
+            for &idx in self.signer_indices.values() {
+                bitmask |= U256::one() << idx;
+            }
+
             Ok(AggregationStatus::ThresholdReached {
                 aggregated_signature: aggregated,
                 signer_count: self.collected.len(),
+                signers_bitmask: bitmask,
             })
         } else {
             Ok(AggregationStatus::Collecting {
@@ -188,6 +210,17 @@ impl SignatureAggregator {
     /// Check if we have a signature from a specific peer
     pub fn has_signature_from(&self, peer_id: &PeerId) -> bool {
         self.collected.contains_key(peer_id)
+    }
+
+    /// Compute the current signers bitmask from collected signer indices
+    ///
+    /// Bit i is set if a signer with index i has contributed a signature.
+    pub fn signers_bitmask(&self) -> U256 {
+        let mut bitmask = U256::zero();
+        for &idx in self.signer_indices.values() {
+            bitmask |= U256::one() << idx;
+        }
+        bitmask
     }
 }
 
@@ -236,7 +269,7 @@ mod tests {
 
         // Add first signature
         let sig1 = create_signature(&keypair, message);
-        let status = aggregator.add_signature(test_peer_id(1), sig1).unwrap();
+        let status = aggregator.add_signature(test_peer_id(1), 0, sig1).unwrap();
         assert!(matches!(
             status,
             AggregationStatus::Collecting {
@@ -247,7 +280,7 @@ mod tests {
 
         // Add second signature
         let sig2 = create_signature(&keypair, message);
-        let status = aggregator.add_signature(test_peer_id(2), sig2).unwrap();
+        let status = aggregator.add_signature(test_peer_id(2), 1, sig2).unwrap();
         assert!(matches!(
             status,
             AggregationStatus::Collecting {
@@ -258,7 +291,7 @@ mod tests {
 
         // Add third signature - threshold reached
         let sig3 = create_signature(&keypair, message);
-        let status = aggregator.add_signature(test_peer_id(3), sig3).unwrap();
+        let status = aggregator.add_signature(test_peer_id(3), 2, sig3).unwrap();
         assert!(matches!(
             status,
             AggregationStatus::ThresholdReached {
@@ -278,12 +311,12 @@ mod tests {
         // Add first signature
         let sig1 = create_signature(&keypair, message);
         aggregator
-            .add_signature(test_peer_id(1), sig1.clone())
+            .add_signature(test_peer_id(1), 0, sig1.clone())
             .unwrap();
         assert_eq!(aggregator.collected_count(), 1);
 
         // Try to add duplicate
-        let status = aggregator.add_signature(test_peer_id(1), sig1).unwrap();
+        let status = aggregator.add_signature(test_peer_id(1), 0, sig1).unwrap();
         assert!(matches!(
             status,
             AggregationStatus::Collecting {
@@ -302,15 +335,15 @@ mod tests {
 
         // Reach threshold
         let sig1 = create_signature(&keypair, message);
-        aggregator.add_signature(test_peer_id(1), sig1).unwrap();
+        aggregator.add_signature(test_peer_id(1), 0, sig1).unwrap();
         let sig2 = create_signature(&keypair, message);
-        aggregator.add_signature(test_peer_id(2), sig2).unwrap();
+        aggregator.add_signature(test_peer_id(2), 1, sig2).unwrap();
 
         assert!(aggregator.is_threshold_reached());
 
         // Try to add more after threshold
         let sig3 = create_signature(&keypair, message);
-        let status = aggregator.add_signature(test_peer_id(3), sig3).unwrap();
+        let status = aggregator.add_signature(test_peer_id(3), 2, sig3).unwrap();
         assert!(matches!(status, AggregationStatus::AlreadySubmitted));
     }
 
@@ -322,9 +355,9 @@ mod tests {
 
         // Add signatures and reach threshold
         let sig1 = create_signature(&keypair, message);
-        aggregator.add_signature(test_peer_id(1), sig1).unwrap();
+        aggregator.add_signature(test_peer_id(1), 0, sig1).unwrap();
         let sig2 = create_signature(&keypair, message);
-        aggregator.add_signature(test_peer_id(2), sig2).unwrap();
+        aggregator.add_signature(test_peer_id(2), 1, sig2).unwrap();
 
         assert!(aggregator.is_threshold_reached());
         assert_eq!(aggregator.collected_count(), 2);
@@ -341,7 +374,7 @@ mod tests {
         let mut aggregator = SignatureAggregator::new(compute_threshold(20));
         let invalid_sig = BLSSignature(vec![0u8; 32]); // Wrong length
 
-        let result = aggregator.add_signature(test_peer_id(1), invalid_sig);
+        let result = aggregator.add_signature(test_peer_id(1), 0, invalid_sig);
         assert!(result.is_err());
     }
 
@@ -354,7 +387,7 @@ mod tests {
         assert!(!aggregator.has_signature_from(&test_peer_id(1)));
 
         let sig = create_signature(&keypair, message);
-        aggregator.add_signature(test_peer_id(1), sig).unwrap();
+        aggregator.add_signature(test_peer_id(1), 0, sig).unwrap();
 
         assert!(aggregator.has_signature_from(&test_peer_id(1)));
         assert!(!aggregator.has_signature_from(&test_peer_id(2)));

@@ -27,7 +27,9 @@
           { "name": "txHash", "type": "bytes32" }
         ]
       },
-      { "name": "blsSignature", "type": "bytes" }
+      { "name": "blsSignature", "type": "bytes" },
+      { "name": "referenceNonce", "type": "uint256" },
+      { "name": "signersBitmask", "type": "uint256" }
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
@@ -38,7 +40,9 @@
     "inputs": [
       { "name": "cycleNumber", "type": "uint256" },
       { "name": "orderIds", "type": "uint256[]" },
-      { "name": "blsSignature", "type": "bytes" }
+      { "name": "blsSignature", "type": "bytes" },
+      { "name": "referenceNonce", "type": "uint256" },
+      { "name": "signersBitmask", "type": "uint256" }
     ],
     "outputs": [],
     "stateMutability": "nonpayable"

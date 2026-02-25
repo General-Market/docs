@@ -198,6 +198,7 @@ impl ArbitrationProcessor {
             bet_id,
             prices: price_tuples,
             timestamp,
+            reference_nonce: 0,
             leader_signature: signature,
         };
 

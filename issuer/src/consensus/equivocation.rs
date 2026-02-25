@@ -92,6 +92,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
         P2PMessage::PriceProposal {
             cycle_number,
             prices,
+            reference_nonce: _, // exclude from equivocation hash
             proposer_signature: _, // exclude BLS sig
         } => {
             h.update(b"PriceProposal");
@@ -118,6 +119,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             cycle_number,
             order_ids,
             fills,
+            reference_nonce: _, // exclude from equivocation hash
             proposer_signature: _, // exclude BLS sig
         } => {
             h.update(b"BatchProposal");
@@ -167,6 +169,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             symbol,
             weights,
             assets,
+            reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
             h.update(b"ItpCreationProposal");
@@ -207,6 +210,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             itp_id,
             nonce,
             new_weights,
+            reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
             h.update(b"RebalanceRequestProposal");
@@ -244,6 +248,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             user,
             amount,
             deadline,
+            reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
             h.update(b"BridgeArbToL3Proposal");
@@ -282,6 +287,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             limit_price,
             slippage_tier,
             deadline,
+            reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
             h.update(b"SubmitOrderForUserProposal");
@@ -320,6 +326,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             cycle_number,
             order_ids,
             prices,
+            reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
             h.update(b"ConfirmBatchProposal");
@@ -351,6 +358,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             leader_id,
             cycle_number,
             fills,
+            reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
             h.update(b"ConfirmFillsProposal");
@@ -378,6 +386,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             order_ids,
             total_amount,
             destination,
+            reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
             h.update(b"BridgeL3ToArbProposal");
@@ -412,6 +421,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             order_ids,
             total_amount,
             vault_address,
+            reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
             h.update(b"ReleaseToVaultProposal");
@@ -444,6 +454,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             leader_id,
             cycle_number,
             itp_ids,
+            reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
             h.update(b"RebalanceBatchProposal");
@@ -472,6 +483,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             new_weights,
             new_inventory,
             nav,
+            reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
             h.update(b"UpdateWeightsProposal");
@@ -512,6 +524,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             new_weights,
             prices,
             quote_tokens,
+            reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
             h.update(b"RebalanceProposal");
@@ -559,6 +572,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             user,
             bridged_itp_address,
             amount,
+            reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
             h.update(b"SubmitSellOrderProposal");
@@ -589,6 +603,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             leader_id,
             order_id,
             usdc_proceeds,
+            reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
             h.update(b"CompleteSellOrderProposal");
@@ -618,6 +633,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             leader_id,
             cycle_number,
             trades_data,
+            reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
             h.update(b"AssetTradesProposal");
@@ -655,6 +671,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             to_chain,
             amount,
             tx_type,
+            reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
             h.update(b"RecordCollateralMoveProposal");
@@ -689,6 +706,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             itp_id,
             user,
             amount,
+            reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
             h.update(b"MintBridgedSharesProposal");
@@ -718,6 +736,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             cycle_number,
             order_id,
             vault,
+            reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
             h.update(b"CompleteBuyOrderProposal");
@@ -745,6 +764,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             leader_id,
             itp_id,
             nav,
+            reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
             h.update(b"SetItpNavProposal");
@@ -772,6 +792,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             bet_id,
             prices,
             timestamp,
+            reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
             h.update(b"ArbitrationPriceProposal");
@@ -961,6 +982,7 @@ mod tests {
         let proposal = P2PMessage::PriceProposal {
             cycle_number: 1,
             prices: vec![],
+            reference_nonce: 0,
             proposer_signature: BLSSignature(vec![]),
         };
         assert!(!is_vote_or_sign(&proposal));
@@ -1010,6 +1032,7 @@ mod tests {
             leader_id: [1u8; 32],
             itp_id: ethers::types::H256::from([0xAB; 32]),
             nav: U256::from(1_000_000_000_000_000_000u64),
+            reference_nonce: 0,
             leader_signature: BLSSignature(vec![]),
         };
         let sign = P2PMessage::SetItpNavSign {

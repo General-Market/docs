@@ -85,6 +85,8 @@ impl ChainWriter for MockChainWriter {
         _cycle_number: u64,
         _order_ids: Vec<u64>,
         _bls_signature: Vec<u8>,
+        _reference_nonce: u64,
+        _signers_bitmask: U256,
     ) -> Result<TxHash, Error> {
         Ok(H256::zero())
     }
@@ -94,6 +96,8 @@ impl ChainWriter for MockChainWriter {
         _cycle_number: u64,
         _fills: Vec<Fill>,
         _bls_signature: Vec<u8>,
+        _reference_nonce: u64,
+        _signers_bitmask: U256,
     ) -> Result<TxHash, Error> {
         Ok(H256::zero())
     }
@@ -103,6 +107,8 @@ impl ChainWriter for MockChainWriter {
         _dest_chain_id: u64,
         _amount: U256,
         _bls_signature: Vec<u8>,
+        _reference_nonce: u64,
+        _signers_bitmask: U256,
     ) -> Result<TxHash, Error> {
         Ok(H256::zero())
     }

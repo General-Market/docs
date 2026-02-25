@@ -389,6 +389,8 @@ impl ChainWriter for MockChain {
         cycle_number: u64,
         order_ids: Vec<u64>,
         _bls_signature: Vec<u8>,
+        _reference_nonce: u64,
+        _signers_bitmask: U256,
     ) -> Result<TxHash, Error> {
         self.maybe_fail().await?;
         self.apply_latency().await;
@@ -424,6 +426,8 @@ impl ChainWriter for MockChain {
         cycle_number: u64,
         fills: Vec<Fill>,
         _bls_signature: Vec<u8>,
+        _reference_nonce: u64,
+        _signers_bitmask: U256,
     ) -> Result<TxHash, Error> {
         self.maybe_fail().await?;
         self.apply_latency().await;
@@ -460,6 +464,8 @@ impl ChainWriter for MockChain {
         dest_chain_id: u64,
         _amount: U256,
         _bls_signature: Vec<u8>,
+        _reference_nonce: u64,
+        _signers_bitmask: U256,
     ) -> Result<TxHash, Error> {
         self.maybe_fail().await?;
         self.apply_latency().await;

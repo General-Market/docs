@@ -84,16 +84,19 @@ impl ChainWriter for RpcChainWriter {
         cycle_number: u64,
         order_ids: Vec<u64>,
         bls_signature: Vec<u8>,
+        reference_nonce: u64,
+        signers_bitmask: U256,
     ) -> Result<TxHash, Error> {
         let cycle = U256::from(cycle_number);
         let ids: Vec<U256> = order_ids.iter().map(|&id| U256::from(id)).collect();
         let sig = Bytes::from(bls_signature);
+        let ref_nonce = U256::from(reference_nonce);
 
         let contract = self.index_contract.clone();
         let client = self.client.clone();
 
         // Build and estimate gas, then send
-        let call = contract.confirm_batch(cycle, ids.clone(), sig.clone());
+        let call = contract.confirm_batch(cycle, ids.clone(), sig.clone(), ref_nonce, signers_bitmask);
         let mut tx: TypedTransaction = call.tx.clone();
         let gas = self.estimate_gas_with_multiplier(&tx).await?;
         tx.set_gas(gas);
@@ -128,9 +131,12 @@ impl ChainWriter for RpcChainWriter {
         cycle_number: u64,
         fills: Vec<Fill>,
         bls_signature: Vec<u8>,
+        reference_nonce: u64,
+        signers_bitmask: U256,
     ) -> Result<TxHash, Error> {
         let cycle = U256::from(cycle_number);
         let sig = Bytes::from(bls_signature);
+        let ref_nonce = U256::from(reference_nonce);
 
         // Convert Fill structs to ABI tuple format
         let abi_fills: Vec<(U256, U256, U256, U256, [u8; 32])> = fills
@@ -149,7 +155,7 @@ impl ChainWriter for RpcChainWriter {
         let contract = self.index_contract.clone();
         let client = self.client.clone();
 
-        let call = contract.confirm_fills(cycle, abi_fills, sig.clone());
+        let call = contract.confirm_fills(cycle, abi_fills, sig.clone(), ref_nonce, signers_bitmask);
         let mut tx: TypedTransaction = call.tx.clone();
         let gas = self.estimate_gas_with_multiplier(&tx).await?;
         tx.set_gas(gas);
@@ -184,14 +190,17 @@ impl ChainWriter for RpcChainWriter {
         dest_chain_id: u64,
         amount: U256,
         bls_signature: Vec<u8>,
+        reference_nonce: u64,
+        signers_bitmask: U256,
     ) -> Result<TxHash, Error> {
         let dest = U256::from(dest_chain_id);
         let sig = Bytes::from(bls_signature);
+        let ref_nonce = U256::from(reference_nonce);
 
         let contract = self.bridge_contract.clone();
         let client = self.client.clone();
 
-        let call = contract.initiate_bridge(dest, amount, sig.clone());
+        let call = contract.initiate_bridge(dest, amount, sig.clone(), ref_nonce, signers_bitmask);
         let mut tx: TypedTransaction = call.tx.clone();
         let gas = self.estimate_gas_with_multiplier(&tx).await?;
         tx.set_gas(gas);

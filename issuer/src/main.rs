@@ -3095,6 +3095,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     initial_scan_blocks: 86_400, // 24h downtime tolerance at 1s blocks
                 };
 
+                // TODO: wire mirror_address from config (L2 MirrorIssuerRegistry contract address)
+                let mirror_address = ethers::types::Address::zero();
+
                 let mut handler = RegistrySyncHandler::new(
                     provider,
                     sync_config,
@@ -3103,6 +3106,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     components.consensus.keys.node_index,
                     components.consensus.keys.issuer_registry_index as u64,
                     cache.clone(),
+                    components.target_chain_id,
+                    mirror_address,
                 );
 
                 // Wire key registry for runtime updates on issuer join/leave

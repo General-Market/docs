@@ -2145,10 +2145,13 @@ impl BridgeOrchestrator {
         );
 
         // Build Index.confirmBatch() calldata using L3 order IDs
+        // TODO(consensus-hardening): pass real reference_nonce from consensus result
         let calldata = build_confirm_batch_calldata(
             cycle_number,
             order_ids,
             &aggregated.aggregated_signature.0,
+            0, // reference_nonce placeholder
+            aggregated.signer_bitmap,
         );
 
         // Submit transaction to Index contract
@@ -2217,10 +2220,13 @@ impl BridgeOrchestrator {
         // Use them directly for the on-chain call.
 
         // Build Index.confirmFills() calldata using L3 order IDs
+        // TODO(consensus-hardening): pass real reference_nonce from consensus result
         let calldata = build_confirm_fills_calldata(
             cycle_number,
             fills,
             &aggregated.aggregated_signature.0,
+            0, // reference_nonce placeholder
+            aggregated.signer_bitmap,
         );
 
         // Submit transaction to Index contract
@@ -2314,11 +2320,14 @@ impl BridgeOrchestrator {
         let approve_calldata = build_erc20_approve_calldata(spender, amount);
 
         // Build BLSCustody.execute calldata
+        // TODO(consensus-hardening): pass real reference_nonce and signers_bitmask
         let execute_calldata = build_custody_execute_calldata(
             token,
             &approve_calldata,
             &aggregated_signature.0,
             nonce,
+            0, // reference_nonce placeholder
+            U256::zero(), // signers_bitmask placeholder
         );
 
         // Submit transaction
@@ -2363,11 +2372,14 @@ impl BridgeOrchestrator {
         let nonce = self.claim_custody_nonce(custody_address).await;
 
         // Build BLSCustody.execute calldata
+        // TODO(consensus-hardening): pass real reference_nonce and signers_bitmask
         let execute_calldata = build_custody_execute_calldata(
             target,
             inner_calldata,
             &aggregated_signature.0,
             nonce,
+            0, // reference_nonce placeholder
+            U256::zero(), // signers_bitmask placeholder
         );
 
         // Submit transaction

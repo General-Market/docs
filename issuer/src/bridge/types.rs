@@ -1624,52 +1624,35 @@ pub fn build_confirm_batch_calldata(
     cycle_number: u64,
     order_ids: &[U256],
     bls_signature: &[u8],
+    reference_nonce: u64,
+    signers_bitmask: U256,
 ) -> Vec<u8> {
-    let selector = &ethers::utils::keccak256(
-        "confirmBatch(uint256,uint256[],bytes)"
-    )[..4];
+    use ethers::abi::{Function, Param, ParamType, StateMutability, Token};
 
-    let mut calldata = selector.to_vec();
+    let function = Function {
+        name: "confirmBatch".to_string(),
+        inputs: vec![
+            Param { name: "cycleNumber".into(), kind: ParamType::Uint(256), internal_type: None },
+            Param { name: "orderIds".into(), kind: ParamType::Array(Box::new(ParamType::Uint(256))), internal_type: None },
+            Param { name: "blsSignature".into(), kind: ParamType::Bytes, internal_type: None },
+            Param { name: "referenceNonce".into(), kind: ParamType::Uint(256), internal_type: None },
+            Param { name: "signersBitmask".into(), kind: ParamType::Uint(256), internal_type: None },
+        ],
+        outputs: vec![],
+        #[allow(deprecated)]
+        constant: None,
+        state_mutability: StateMutability::NonPayable,
+    };
 
-    // cycle_number (32 bytes)
-    let mut cycle_bytes = [0u8; 32];
-    U256::from(cycle_number).to_big_endian(&mut cycle_bytes);
-    calldata.extend_from_slice(&cycle_bytes);
+    let tokens = vec![
+        Token::Uint(U256::from(cycle_number)),
+        Token::Array(order_ids.iter().map(|&id| Token::Uint(id)).collect()),
+        Token::Bytes(bls_signature.to_vec()),
+        Token::Uint(U256::from(reference_nonce)),
+        Token::Uint(signers_bitmask),
+    ];
 
-    // Dynamic offset for order_ids array (3 head words * 32 = 96 = 0x60)
-    let mut offset1_bytes = [0u8; 32];
-    U256::from(96).to_big_endian(&mut offset1_bytes);
-    calldata.extend_from_slice(&offset1_bytes);
-
-    // Dynamic offset for bls_signature (after order_ids)
-    // = 96 + 32 (array length) + order_ids.len() * 32
-    let sig_offset = 96 + 32 + order_ids.len() * 32;
-    let mut offset2_bytes = [0u8; 32];
-    U256::from(sig_offset).to_big_endian(&mut offset2_bytes);
-    calldata.extend_from_slice(&offset2_bytes);
-
-    // order_ids array: length + elements
-    let mut len_bytes = [0u8; 32];
-    U256::from(order_ids.len()).to_big_endian(&mut len_bytes);
-    calldata.extend_from_slice(&len_bytes);
-
-    for order_id in order_ids {
-        let mut order_bytes = [0u8; 32];
-        order_id.to_big_endian(&mut order_bytes);
-        calldata.extend_from_slice(&order_bytes);
-    }
-
-    // bls_signature bytes: length + data (padded to 32)
-    let mut sig_len_bytes = [0u8; 32];
-    U256::from(bls_signature.len()).to_big_endian(&mut sig_len_bytes);
-    calldata.extend_from_slice(&sig_len_bytes);
-
-    calldata.extend_from_slice(bls_signature);
-    // Pad to 32-byte boundary
-    let padding = (32 - (bls_signature.len() % 32)) % 32;
-    calldata.extend(vec![0u8; padding]);
-
-    calldata
+    function.encode_input(&tokens).expect("ABI encoding should not fail")
 }
 
 // ============================================================================
@@ -1741,7 +1724,7 @@ pub fn build_custody_execute_hash(
 
 /// Build calldata for BLSCustody.execute()
 ///
-/// Selector: keccak256("execute(address,bytes,bytes,uint256)")[0:4]
+/// Selector: keccak256("execute(address,bytes,bytes,uint256,uint256,uint256)")[0:4]
 ///
 /// Story 7.4: Task 7.1
 pub fn build_custody_execute_calldata(
@@ -1749,125 +1732,99 @@ pub fn build_custody_execute_calldata(
     data: &[u8],
     bls_signature: &[u8],
     nonce: U256,
+    reference_nonce: u64,
+    signers_bitmask: U256,
 ) -> Vec<u8> {
-    let selector = &ethers::utils::keccak256("execute(address,bytes,bytes,uint256)")[..4];
+    use ethers::abi::{Function, Param, ParamType, StateMutability, Token};
 
-    let mut calldata = selector.to_vec();
+    let function = Function {
+        name: "execute".to_string(),
+        inputs: vec![
+            Param { name: "target".into(), kind: ParamType::Address, internal_type: None },
+            Param { name: "data".into(), kind: ParamType::Bytes, internal_type: None },
+            Param { name: "blsSignature".into(), kind: ParamType::Bytes, internal_type: None },
+            Param { name: "nonce".into(), kind: ParamType::Uint(256), internal_type: None },
+            Param { name: "referenceNonce".into(), kind: ParamType::Uint(256), internal_type: None },
+            Param { name: "signersBitmask".into(), kind: ParamType::Uint(256), internal_type: None },
+        ],
+        outputs: vec![],
+        #[allow(deprecated)]
+        constant: None,
+        state_mutability: StateMutability::NonPayable,
+    };
 
-    // target address (32 bytes, left-padded)
-    let mut target_bytes = [0u8; 32];
-    target_bytes[12..32].copy_from_slice(target.as_bytes());
-    calldata.extend_from_slice(&target_bytes);
+    let tokens = vec![
+        Token::Address(target),
+        Token::Bytes(data.to_vec()),
+        Token::Bytes(bls_signature.to_vec()),
+        Token::Uint(nonce),
+        Token::Uint(U256::from(reference_nonce)),
+        Token::Uint(signers_bitmask),
+    ];
 
-    // Dynamic offsets for data and blsSignature
-    // Fixed params: target (32) + data_offset (32) + sig_offset (32) + nonce (32) = 128 bytes
-    // data starts at offset 128
-    let mut data_offset_bytes = [0u8; 32];
-    U256::from(128).to_big_endian(&mut data_offset_bytes);
-    calldata.extend_from_slice(&data_offset_bytes);
-
-    // sig_offset = 128 + 32 (data length) + data.len() padded to 32
-    let data_padded_len = data.len() + (32 - (data.len() % 32)) % 32;
-    let sig_offset = 128 + 32 + data_padded_len;
-    let mut sig_offset_bytes = [0u8; 32];
-    U256::from(sig_offset).to_big_endian(&mut sig_offset_bytes);
-    calldata.extend_from_slice(&sig_offset_bytes);
-
-    // nonce (32 bytes)
-    let mut nonce_bytes = [0u8; 32];
-    nonce.to_big_endian(&mut nonce_bytes);
-    calldata.extend_from_slice(&nonce_bytes);
-
-    // data: length + content (padded to 32)
-    let mut data_len_bytes = [0u8; 32];
-    U256::from(data.len()).to_big_endian(&mut data_len_bytes);
-    calldata.extend_from_slice(&data_len_bytes);
-    calldata.extend_from_slice(data);
-    let data_padding = (32 - (data.len() % 32)) % 32;
-    calldata.extend(vec![0u8; data_padding]);
-
-    // blsSignature: length + content (padded to 32)
-    let mut sig_len_bytes = [0u8; 32];
-    U256::from(bls_signature.len()).to_big_endian(&mut sig_len_bytes);
-    calldata.extend_from_slice(&sig_len_bytes);
-    calldata.extend_from_slice(bls_signature);
-    let sig_padding = (32 - (bls_signature.len() % 32)) % 32;
-    calldata.extend(vec![0u8; sig_padding]);
-
-    calldata
+    function.encode_input(&tokens).expect("ABI encoding should not fail")
 }
 
 /// Build calldata for Index.confirmFills()
 ///
-/// Selector: keccak256("confirmFills(uint256,(uint256,uint256,uint256)[],bytes)")
+/// Selector: keccak256("confirmFills(uint256,(uint256,uint256,uint256,uint256,bytes32)[],bytes,uint256,uint256)")
 ///
 /// Story 7.4: Batch and Fill Orchestration
 pub fn build_confirm_fills_calldata(
     cycle_number: u64,
     fills: &[Fill],
     bls_signature: &[u8],
+    reference_nonce: u64,
+    signers_bitmask: U256,
 ) -> Vec<u8> {
+    use ethers::abi::{Function, Param, ParamType, StateMutability, Token};
+
     // On-chain Fill struct: (uint256 orderId, uint256 fillPrice, uint256 fillAmount, uint256 cycleNumber, bytes32 txHash)
-    let selector = &ethers::utils::keccak256(
-        "confirmFills(uint256,(uint256,uint256,uint256,uint256,bytes32)[],bytes)"
-    )[..4];
+    let fill_tuple_type = ParamType::Tuple(vec![
+        ParamType::Uint(256), // orderId
+        ParamType::Uint(256), // fillPrice
+        ParamType::Uint(256), // fillAmount
+        ParamType::Uint(256), // cycleNumber
+        ParamType::FixedBytes(32), // txHash
+    ]);
 
-    let mut calldata = selector.to_vec();
+    let function = Function {
+        name: "confirmFills".to_string(),
+        inputs: vec![
+            Param { name: "cycleNumber".into(), kind: ParamType::Uint(256), internal_type: None },
+            Param { name: "fills".into(), kind: ParamType::Array(Box::new(fill_tuple_type)), internal_type: None },
+            Param { name: "blsSignature".into(), kind: ParamType::Bytes, internal_type: None },
+            Param { name: "referenceNonce".into(), kind: ParamType::Uint(256), internal_type: None },
+            Param { name: "signersBitmask".into(), kind: ParamType::Uint(256), internal_type: None },
+        ],
+        outputs: vec![],
+        #[allow(deprecated)]
+        constant: None,
+        state_mutability: StateMutability::NonPayable,
+    };
 
-    // cycle_number (32 bytes)
-    let mut cycle_bytes = [0u8; 32];
-    U256::from(cycle_number).to_big_endian(&mut cycle_bytes);
-    calldata.extend_from_slice(&cycle_bytes);
+    let fill_tokens: Vec<Token> = fills
+        .iter()
+        .map(|fill| {
+            Token::Tuple(vec![
+                Token::Uint(fill.order_id),
+                Token::Uint(fill.fill_price),
+                Token::Uint(fill.fill_amount),
+                Token::Uint(U256::from(cycle_number)),
+                Token::FixedBytes(vec![0u8; 32]), // txHash — zero for now, not validated on-chain
+            ])
+        })
+        .collect();
 
-    // Dynamic offset for fills array (3 head words * 32 = 96 = 0x60)
-    let mut offset1_bytes = [0u8; 32];
-    U256::from(96).to_big_endian(&mut offset1_bytes);
-    calldata.extend_from_slice(&offset1_bytes);
+    let tokens = vec![
+        Token::Uint(U256::from(cycle_number)),
+        Token::Array(fill_tokens),
+        Token::Bytes(bls_signature.to_vec()),
+        Token::Uint(U256::from(reference_nonce)),
+        Token::Uint(signers_bitmask),
+    ];
 
-    // Dynamic offset for bls_signature (after fills)
-    // Each fill is 5 x 32 = 160 bytes
-    // = 96 + 32 (array length) + fills.len() * 160
-    let sig_offset = 96 + 32 + fills.len() * 160;
-    let mut offset2_bytes = [0u8; 32];
-    U256::from(sig_offset).to_big_endian(&mut offset2_bytes);
-    calldata.extend_from_slice(&offset2_bytes);
-
-    // fills array: length + elements (each fill is 5 x 32 bytes)
-    let mut len_bytes = [0u8; 32];
-    U256::from(fills.len()).to_big_endian(&mut len_bytes);
-    calldata.extend_from_slice(&len_bytes);
-
-    for fill in fills {
-        let mut order_bytes = [0u8; 32];
-        fill.order_id.to_big_endian(&mut order_bytes);
-        calldata.extend_from_slice(&order_bytes);
-
-        let mut price_bytes = [0u8; 32];
-        fill.fill_price.to_big_endian(&mut price_bytes);
-        calldata.extend_from_slice(&price_bytes);
-
-        let mut amount_bytes = [0u8; 32];
-        fill.fill_amount.to_big_endian(&mut amount_bytes);
-        calldata.extend_from_slice(&amount_bytes);
-
-        // cycleNumber (same as the function parameter)
-        calldata.extend_from_slice(&cycle_bytes);
-
-        // txHash (bytes32 — zero for now, not validated on-chain)
-        calldata.extend_from_slice(&[0u8; 32]);
-    }
-
-    // bls_signature bytes: length + data (padded to 32)
-    let mut sig_len_bytes = [0u8; 32];
-    U256::from(bls_signature.len()).to_big_endian(&mut sig_len_bytes);
-    calldata.extend_from_slice(&sig_len_bytes);
-
-    calldata.extend_from_slice(bls_signature);
-    // Pad to 32-byte boundary
-    let padding = (32 - (bls_signature.len() % 32)) % 32;
-    calldata.extend(vec![0u8; padding]);
-
-    calldata
+    function.encode_input(&tokens).expect("ABI encoding should not fail")
 }
 
 // ============================================================================
@@ -3077,14 +3034,13 @@ mod tests {
         let order_ids = vec![U256::from(1), U256::from(2)];
         let bls_sig = vec![0xAA; 96];
 
-        let calldata = build_confirm_batch_calldata(42, &order_ids, &bls_sig);
+        let calldata = build_confirm_batch_calldata(42, &order_ids, &bls_sig, 0, U256::from(7));
 
-        // Should have: 4 (selector) + 32 (cycle) + 32 (offset1) + 32 (offset2) +
-        //              32 (len) + 64 (orders) + 32 (sig_len) + 96 (sig)
+        // Should have: 4 (selector) + ABI encoded params
         assert!(calldata.len() >= 4 + 32 * 5 + 64 + 96);
 
         // Verify selector (first 4 bytes)
-        let expected_selector = &ethers::utils::keccak256("confirmBatch(uint256,uint256[],bytes)")[..4];
+        let expected_selector = &ethers::utils::keccak256("confirmBatch(uint256,uint256[],bytes,uint256,uint256)")[..4];
         assert_eq!(&calldata[0..4], expected_selector);
     }
 
@@ -3099,14 +3055,13 @@ mod tests {
         ];
         let bls_sig = vec![0xBB; 96];
 
-        let calldata = build_confirm_fills_calldata(42, &fills, &bls_sig);
+        let calldata = build_confirm_fills_calldata(42, &fills, &bls_sig, 0, U256::from(7));
 
-        // Should have: 4 (selector) + 32 (cycle) + 32 (offset1) + 32 (offset2) +
-        //              32 (len) + 96 (fill) + 32 (sig_len) + 96 (sig)
+        // Should have: 4 (selector) + ABI encoded params
         assert!(calldata.len() >= 4 + 32 * 4 + 96 + 32 + 96);
 
         // Verify selector (first 4 bytes)
-        let expected_selector = &ethers::utils::keccak256("confirmFills(uint256,(uint256,uint256,uint256,uint256,bytes32)[],bytes)")[..4];
+        let expected_selector = &ethers::utils::keccak256("confirmFills(uint256,(uint256,uint256,uint256,uint256,bytes32)[],bytes,uint256,uint256)")[..4];
         assert_eq!(&calldata[0..4], expected_selector);
     }
 
@@ -3304,10 +3259,12 @@ mod tests {
             &data,
             &bls_sig,
             U256::from(42),
+            0,
+            U256::from(7),
         );
 
         // Verify selector (first 4 bytes)
-        let expected_selector = &ethers::utils::keccak256("execute(address,bytes,bytes,uint256)")[..4];
+        let expected_selector = &ethers::utils::keccak256("execute(address,bytes,bytes,uint256,uint256,uint256)")[..4];
         assert_eq!(&calldata[0..4], expected_selector);
 
         // Verify target address is at bytes 4-36 (32 bytes, left-padded)
@@ -3316,9 +3273,9 @@ mod tests {
         assert_eq!(&calldata[4..36], &expected_target);
 
         // Verify calldata is non-empty and has reasonable size
-        // 4 (selector) + 32 (target) + 32 (data_offset) + 32 (sig_offset) + 32 (nonce)
+        // 4 (selector) + 32 (target) + 32 (data_offset) + 32 (sig_offset) + 32 (nonce) + 32 (refNonce) + 32 (bitmask)
         // + 32 (data_len) + 32 (data padded) + 32 (sig_len) + 96 (sig)
-        assert!(calldata.len() >= 4 + 32 * 5 + 32 + 96);
+        assert!(calldata.len() >= 4 + 32 * 7 + 32 + 96);
     }
 
     #[test]
@@ -3332,10 +3289,12 @@ mod tests {
             &data,
             &bls_sig,
             U256::from(0),
+            0,
+            U256::zero(),
         );
 
         // Should still produce valid calldata
-        let expected_selector = &ethers::utils::keccak256("execute(address,bytes,bytes,uint256)")[..4];
+        let expected_selector = &ethers::utils::keccak256("execute(address,bytes,bytes,uint256,uint256,uint256)")[..4];
         assert_eq!(&calldata[0..4], expected_selector);
     }
 
@@ -3350,6 +3309,8 @@ mod tests {
             &data,
             &bls_sig,
             U256::from(0),
+            0,
+            U256::zero(),
         );
 
         let calldata2 = build_custody_execute_calldata(
@@ -3357,6 +3318,8 @@ mod tests {
             &data,
             &bls_sig,
             U256::from(1), // Different nonce
+            0,
+            U256::zero(),
         );
 
         // Should produce different calldata

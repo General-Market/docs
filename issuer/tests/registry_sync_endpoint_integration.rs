@@ -24,8 +24,16 @@ use issuer::registry_sync::{
 };
 
 // ============================================================================
-// Test Helpers
+// Test Constants & Helpers
 // ============================================================================
+
+/// Test chain ID for chain-bound message hashing
+const TEST_CHAIN_ID: u64 = 111222333;
+
+/// Test mirror contract address for chain-bound message hashing
+fn test_mirror_address() -> Address {
+    Address::from([0xAB; 20])
+}
 
 /// Create a test issuer with a deterministic BLS keypair
 fn create_test_issuer(id: u8, active: bool) -> (Issuer, BLSKeyPair) {
@@ -58,7 +66,7 @@ fn produce_sync_proof(
     let active_count = issuers.iter().filter(|i| i.is_active()).count() as u64;
     let threshold = compute_threshold(active_count);
     let message_hash =
-        build_registry_sync_message_hash(nonce, &aggregated_pubkey, active_count, threshold);
+        build_registry_sync_message_hash(TEST_CHAIN_ID, test_mirror_address(), nonce, &aggregated_pubkey, active_count, threshold);
     let bls_signature = sign_registry_sync_message(keypair, &message_hash).unwrap();
 
     RegistrySyncState::new(
@@ -131,6 +139,8 @@ async fn test_registry_sync_handler_processes_event_and_updates_cache() {
     // Verify the individual BLS signature is valid
     let signer = Bn254BLSSigner::new();
     let message_hash = build_registry_sync_message_hash(
+        TEST_CHAIN_ID,
+        test_mirror_address(),
         state.nonce,
         &state.aggregated_pubkey,
         state.active_count,
@@ -318,6 +328,8 @@ async fn test_aggregate_signatures_verify_against_aggregated_pubkey() {
     // AC8: Verify aggregated signature against aggregated pubkey
     let agg_pk = BLSPublicKey(state1.aggregated_pubkey.clone());
     let message_hash = build_registry_sync_message_hash(
+        TEST_CHAIN_ID,
+        test_mirror_address(),
         state1.nonce,
         &state1.aggregated_pubkey,
         state1.active_count,
@@ -361,6 +373,8 @@ async fn test_aggregate_signatures_partial_threshold() {
     let partial_agg_pk = aggregate_pubkeys(&[pk1, pk2]).unwrap();
 
     let message_hash = build_registry_sync_message_hash(
+        TEST_CHAIN_ID,
+        test_mirror_address(),
         state1.nonce,
         &state1.aggregated_pubkey,
         state1.active_count,
@@ -432,7 +446,7 @@ async fn test_mock_chain_provides_issuers_for_aggregation() {
     let active_count = issuers.iter().filter(|i| i.is_active()).count() as u64;
     let threshold = compute_threshold(active_count);
     let message_hash =
-        build_registry_sync_message_hash(1, &agg_pubkey, active_count, threshold);
+        build_registry_sync_message_hash(TEST_CHAIN_ID, test_mirror_address(), 1, &agg_pubkey, active_count, threshold);
     let signature = sign_registry_sync_message(&kp1, &message_hash).unwrap();
     assert_eq!(signature.len(), 64);
 

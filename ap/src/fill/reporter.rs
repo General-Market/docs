@@ -255,7 +255,7 @@ impl<W: ChainWriter + 'static> FillReporter<W> {
             warn!("FillReporter: submitting fill report with empty BLS signature (issuers will sign confirmation)");
             match self
                 .chain_writer
-                .confirm_fills(cycle, fills.clone(), vec![])
+                .confirm_fills(cycle, fills.clone(), vec![], 0, U256::zero())
                 .await
             {
                 Ok(tx_hash) => {

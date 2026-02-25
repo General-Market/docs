@@ -417,7 +417,7 @@ async fn test_threshold_calculation_3_nodes() {
         p[0] = 1;
         p
     };
-    let status = aggregator.add_signature(peer1, sig1).unwrap();
+    let status = aggregator.add_signature(peer1, 0, sig1).unwrap();
     assert!(matches!(
         status,
         issuer::AggregationStatus::Collecting {
@@ -433,7 +433,7 @@ async fn test_threshold_calculation_3_nodes() {
         p[0] = 2;
         p
     };
-    let status = aggregator.add_signature(peer2, sig2).unwrap();
+    let status = aggregator.add_signature(peer2, 1, sig2).unwrap();
     assert!(matches!(
         status,
         issuer::AggregationStatus::ThresholdReached {

@@ -189,15 +189,17 @@ impl EthersChainWriter {
 
     /// Build a confirmBatch transaction
     ///
-    /// Encodes: Index.confirmBatch(cycleNumber, orderIds, blsSignature)
+    /// Encodes: Index.confirmBatch(cycleNumber, orderIds, blsSignature, referenceNonce, signersBitmask)
     fn build_confirm_batch_tx(
         &self,
         cycle_number: u64,
         order_ids: Vec<u64>,
         bls_signature: Vec<u8>,
+        reference_nonce: u64,
+        signers_bitmask: U256,
     ) -> TypedTransaction {
-        // Function signature: confirmBatch(uint256,uint256[],bytes)
-        // Selector = keccak256("confirmBatch(uint256,uint256[],bytes)")[:4]
+        // Function signature: confirmBatch(uint256,uint256[],bytes,uint256,uint256)
+        // Selector = keccak256("confirmBatch(uint256,uint256[],bytes,uint256,uint256)")[:4]
         let function = ethers::abi::Function {
             name: "confirmBatch".to_string(),
             inputs: vec![
@@ -214,6 +216,16 @@ impl EthersChainWriter {
                 ethers::abi::Param {
                     name: "blsSignature".to_string(),
                     kind: ethers::abi::ParamType::Bytes,
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "referenceNonce".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "signersBitmask".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
                     internal_type: None,
                 },
             ],
@@ -235,6 +247,8 @@ impl EthersChainWriter {
                     .collect(),
             ),
             ethers::abi::Token::Bytes(bls_signature),
+            ethers::abi::Token::Uint(U256::from(reference_nonce)),
+            ethers::abi::Token::Uint(signers_bitmask),
         ];
 
         // encode_input includes the 4-byte selector + ABI-encoded params
@@ -249,14 +263,16 @@ impl EthersChainWriter {
 
     /// Build a confirmFills transaction
     ///
-    /// Encodes: Index.confirmFills(cycleNumber, fills, blsSignature)
+    /// Encodes: Index.confirmFills(cycleNumber, fills, blsSignature, referenceNonce, signersBitmask)
     fn build_confirm_fills_tx(
         &self,
         cycle_number: u64,
         fills: Vec<Fill>,
         bls_signature: Vec<u8>,
+        reference_nonce: u64,
+        signers_bitmask: U256,
     ) -> TypedTransaction {
-        // Function signature: confirmFills(uint256,(uint256,uint256,uint256,uint256,bytes32)[],bytes)
+        // Function signature: confirmFills(uint256,(uint256,uint256,uint256,uint256,bytes32)[],bytes,uint256,uint256)
         // Fill struct: (orderId, fillPrice, fillAmount, cycleNumber, txHash)
         let fill_tuple_type = ethers::abi::ParamType::Tuple(vec![
             ethers::abi::ParamType::Uint(256), // orderId
@@ -284,6 +300,16 @@ impl EthersChainWriter {
                     kind: ethers::abi::ParamType::Bytes,
                     internal_type: None,
                 },
+                ethers::abi::Param {
+                    name: "referenceNonce".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "signersBitmask".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
             ],
             outputs: vec![],
             #[allow(deprecated)]
@@ -309,6 +335,8 @@ impl EthersChainWriter {
             ethers::abi::Token::Uint(U256::from(cycle_number)),
             ethers::abi::Token::Array(fill_tokens),
             ethers::abi::Token::Bytes(bls_signature),
+            ethers::abi::Token::Uint(U256::from(reference_nonce)),
+            ethers::abi::Token::Uint(signers_bitmask),
         ];
 
         // encode_input includes the 4-byte selector + ABI-encoded params
@@ -323,14 +351,16 @@ impl EthersChainWriter {
 
     /// Build an initiateBridge transaction
     ///
-    /// Encodes: L3BridgeCustody.initiateBridge(destChainId, amount, blsSignature)
+    /// Encodes: L3BridgeCustody.initiateBridge(destChainId, amount, blsSignature, referenceNonce, signersBitmask)
     fn build_initiate_bridge_tx(
         &self,
         dest_chain_id: u64,
         amount: U256,
         bls_signature: Vec<u8>,
+        reference_nonce: u64,
+        signers_bitmask: U256,
     ) -> TypedTransaction {
-        // Function signature: initiateBridge(uint256,uint256,bytes)
+        // Function signature: initiateBridge(uint256,uint256,bytes,uint256,uint256)
         let function = ethers::abi::Function {
             name: "initiateBridge".to_string(),
             inputs: vec![
@@ -347,6 +377,16 @@ impl EthersChainWriter {
                 ethers::abi::Param {
                     name: "blsSignature".to_string(),
                     kind: ethers::abi::ParamType::Bytes,
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "referenceNonce".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "signersBitmask".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
                     internal_type: None,
                 },
             ],
@@ -366,6 +406,8 @@ impl EthersChainWriter {
             ethers::abi::Token::Uint(U256::from(dest_chain_id)),
             ethers::abi::Token::Uint(amount),
             ethers::abi::Token::Bytes(bls_signature),
+            ethers::abi::Token::Uint(U256::from(reference_nonce)),
+            ethers::abi::Token::Uint(signers_bitmask),
         ];
 
         // encode_input includes the 4-byte selector + ABI-encoded params
@@ -456,15 +498,19 @@ impl ChainWriter for EthersChainWriter {
         cycle_number: u64,
         order_ids: Vec<u64>,
         bls_signature: Vec<u8>,
+        reference_nonce: u64,
+        signers_bitmask: U256,
     ) -> Result<TxHash, Error> {
         debug!(
             cycle_number = cycle_number,
             order_count = order_ids.len(),
             signature_len = bls_signature.len(),
+            reference_nonce = reference_nonce,
+            signers_bitmask = %signers_bitmask,
             "Building confirmBatch transaction"
         );
 
-        let tx = self.build_confirm_batch_tx(cycle_number, order_ids.clone(), bls_signature);
+        let tx = self.build_confirm_batch_tx(cycle_number, order_ids.clone(), bls_signature, reference_nonce, signers_bitmask);
         self.submit_tx(tx, "submit_batch").await
     }
 
@@ -473,15 +519,19 @@ impl ChainWriter for EthersChainWriter {
         cycle_number: u64,
         fills: Vec<Fill>,
         bls_signature: Vec<u8>,
+        reference_nonce: u64,
+        signers_bitmask: U256,
     ) -> Result<TxHash, Error> {
         debug!(
             cycle_number = cycle_number,
             fill_count = fills.len(),
             signature_len = bls_signature.len(),
+            reference_nonce = reference_nonce,
+            signers_bitmask = %signers_bitmask,
             "Building confirmFills transaction"
         );
 
-        let tx = self.build_confirm_fills_tx(cycle_number, fills, bls_signature);
+        let tx = self.build_confirm_fills_tx(cycle_number, fills, bls_signature, reference_nonce, signers_bitmask);
         self.submit_tx(tx, "confirm_fills").await
     }
 
@@ -490,15 +540,19 @@ impl ChainWriter for EthersChainWriter {
         dest_chain_id: u64,
         amount: U256,
         bls_signature: Vec<u8>,
+        reference_nonce: u64,
+        signers_bitmask: U256,
     ) -> Result<TxHash, Error> {
         debug!(
             dest_chain_id = dest_chain_id,
             amount = ?amount,
             signature_len = bls_signature.len(),
+            reference_nonce = reference_nonce,
+            signers_bitmask = %signers_bitmask,
             "Building initiateBridge transaction"
         );
 
-        let tx = self.build_initiate_bridge_tx(dest_chain_id, amount, bls_signature);
+        let tx = self.build_initiate_bridge_tx(dest_chain_id, amount, bls_signature, reference_nonce, signers_bitmask);
         self.submit_tx(tx, "submit_bridge").await
     }
 
@@ -760,13 +814,14 @@ impl EthersChainWriter {
 
     /// Submit an arbitration settlement on-chain
     ///
-    /// Encodes: ArbitrationSettlement.settleBet(uint256 betId, bool creatorWins, bytes blsSignature, uint256 signerBitmap)
+    /// Encodes: ArbitrationSettlement.settleBet(uint256 betId, bool creatorWins, bytes blsSignature, uint256 referenceNonce, uint256 signerBitmap)
     ///
     /// # Arguments
     /// * `settlement_contract` - ArbitrationSettlement contract address
     /// * `bet_id` - The bet ID to settle
     /// * `creator_wins` - Whether the creator wins
     /// * `bls_signature` - Aggregated BLS signature (threshold)
+    /// * `reference_nonce` - Reference nonce for replay protection
     /// * `signer_bitmap` - Bitmap of signing issuer indices
     pub async fn submit_settlement(
         &self,
@@ -774,12 +829,14 @@ impl EthersChainWriter {
         bet_id: U256,
         creator_wins: bool,
         bls_signature: Vec<u8>,
+        reference_nonce: u64,
         signer_bitmap: U256,
     ) -> Result<TxHash, Error> {
         info!(
             bet_id = %bet_id,
             creator_wins = creator_wins,
             sig_len = bls_signature.len(),
+            reference_nonce = reference_nonce,
             bitmap = %signer_bitmap,
             settlement = ?settlement_contract,
             "Building settleBet transaction"
@@ -790,6 +847,7 @@ impl EthersChainWriter {
             bet_id,
             creator_wins,
             bls_signature,
+            reference_nonce,
             signer_bitmap,
         );
         self.submit_tx(tx, "settle_bet").await
@@ -797,13 +855,14 @@ impl EthersChainWriter {
 
     /// Build a settleBet transaction
     ///
-    /// Encodes: settleBet(uint256 betId, bool creatorWins, bytes memory blsSignature, uint256 signerBitmap)
+    /// Encodes: settleBet(uint256 betId, bool creatorWins, bytes memory blsSignature, uint256 referenceNonce, uint256 signerBitmap)
     fn build_settle_bet_tx(
         &self,
         settlement_contract: Address,
         bet_id: U256,
         creator_wins: bool,
         bls_signature: Vec<u8>,
+        reference_nonce: u64,
         signer_bitmap: U256,
     ) -> TypedTransaction {
         let function = ethers::abi::Function {
@@ -825,6 +884,11 @@ impl EthersChainWriter {
                     internal_type: None,
                 },
                 ethers::abi::Param {
+                    name: "referenceNonce".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
                     name: "signerBitmap".to_string(),
                     kind: ethers::abi::ParamType::Uint(256),
                     internal_type: None,
@@ -840,6 +904,7 @@ impl EthersChainWriter {
             ethers::abi::Token::Uint(bet_id),
             ethers::abi::Token::Bool(creator_wins),
             ethers::abi::Token::Bytes(bls_signature),
+            ethers::abi::Token::Uint(U256::from(reference_nonce)),
             ethers::abi::Token::Uint(signer_bitmap),
         ];
 
@@ -919,14 +984,14 @@ mod tests {
 
         let writer = EthersChainWriter::new(config, private_key).unwrap();
 
-        let tx = writer.build_confirm_batch_tx(1, vec![1, 2, 3], vec![0u8; 96]);
+        let tx = writer.build_confirm_batch_tx(1, vec![1, 2, 3], vec![0u8; 96], 0, U256::from(7));
 
         assert!(tx.to().is_some());
         assert!(tx.data().is_some());
 
-        // Verify function selector is correct for confirmBatch(uint256,uint256[],bytes)
+        // Verify function selector is correct for confirmBatch(uint256,uint256[],bytes,uint256,uint256)
         let calldata = tx.data().unwrap();
-        let expected_selector = ethers::utils::keccak256("confirmBatch(uint256,uint256[],bytes)");
+        let expected_selector = ethers::utils::keccak256("confirmBatch(uint256,uint256[],bytes,uint256,uint256)");
         assert_eq!(
             &calldata[0..4],
             &expected_selector[0..4],
@@ -945,12 +1010,12 @@ mod tests {
         let writer = EthersChainWriter::new(config, private_key).unwrap();
 
         // Build with known values
-        let tx = writer.build_confirm_batch_tx(42, vec![100, 200], vec![0xaa; 48]);
+        let tx = writer.build_confirm_batch_tx(42, vec![100, 200], vec![0xaa; 48], 5, U256::from(3));
         let calldata = tx.data().unwrap();
 
         // Calldata should have: 4 byte selector + ABI encoded params
-        // Minimum size: 4 + 32 (cycle) + 32 (offset to array) + 32 (offset to bytes) + 32 (array len) + 64 (2 elements) + 32 (bytes len) + 64 (48 bytes padded)
-        assert!(calldata.len() > 4 + 32 * 3, "Calldata should contain encoded parameters");
+        // Minimum size: 4 + 32 (cycle) + 32 (offset to array) + 32 (offset to bytes) + 32 (refNonce) + 32 (bitmask) + ...
+        assert!(calldata.len() > 4 + 32 * 5, "Calldata should contain encoded parameters");
     }
 
     #[test]
@@ -971,15 +1036,15 @@ mod tests {
             tx_hash: H256::zero(),
         };
 
-        let tx = writer.build_confirm_fills_tx(1, vec![fill], vec![0u8; 96]);
+        let tx = writer.build_confirm_fills_tx(1, vec![fill], vec![0u8; 96], 0, U256::from(7));
 
         assert!(tx.to().is_some());
         assert!(tx.data().is_some());
 
-        // Verify function selector is correct for confirmFills(uint256,(uint256,uint256,uint256,uint256,bytes32)[],bytes)
+        // Verify function selector is correct for confirmFills(uint256,(uint256,uint256,uint256,uint256,bytes32)[],bytes,uint256,uint256)
         let calldata = tx.data().unwrap();
         let expected_selector = ethers::utils::keccak256(
-            "confirmFills(uint256,(uint256,uint256,uint256,uint256,bytes32)[],bytes)"
+            "confirmFills(uint256,(uint256,uint256,uint256,uint256,bytes32)[],bytes,uint256,uint256)"
         );
         assert_eq!(
             &calldata[0..4],
@@ -999,14 +1064,14 @@ mod tests {
         let writer = EthersChainWriter::new(config, private_key).unwrap();
 
         let amount = U256::from(1000) * U256::exp10(18);
-        let tx = writer.build_initiate_bridge_tx(42161, amount, vec![0u8; 96]);
+        let tx = writer.build_initiate_bridge_tx(42161, amount, vec![0u8; 96], 0, U256::from(7));
 
         assert!(tx.to().is_some());
         assert!(tx.data().is_some());
 
-        // Verify function selector is correct for initiateBridge(uint256,uint256,bytes)
+        // Verify function selector is correct for initiateBridge(uint256,uint256,bytes,uint256,uint256)
         let calldata = tx.data().unwrap();
-        let expected_selector = ethers::utils::keccak256("initiateBridge(uint256,uint256,bytes)");
+        let expected_selector = ethers::utils::keccak256("initiateBridge(uint256,uint256,bytes,uint256,uint256)");
         assert_eq!(
             &calldata[0..4],
             &expected_selector[0..4],
@@ -1028,6 +1093,7 @@ mod tests {
             U256::from(42),
             true,
             vec![0xAA; 64],
+            10, // reference_nonce
             U256::from(5), // bitmap: bits 0 and 2
         );
 
@@ -1036,7 +1102,7 @@ mod tests {
 
         let calldata = tx.data().unwrap();
         let expected_selector =
-            ethers::utils::keccak256("settleBet(uint256,bool,bytes,uint256)");
+            ethers::utils::keccak256("settleBet(uint256,bool,bytes,uint256,uint256)");
         assert_eq!(
             &calldata[0..4],
             &expected_selector[0..4],
@@ -1045,7 +1111,7 @@ mod tests {
 
         // Calldata should contain encoded parameters
         assert!(
-            calldata.len() > 4 + 32 * 4,
+            calldata.len() > 4 + 32 * 5,
             "Calldata should contain encoded parameters"
         );
     }

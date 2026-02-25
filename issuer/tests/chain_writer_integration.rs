@@ -41,7 +41,7 @@ async fn test_mock_chain_implements_chain_writer_trait() {
 
     // Test submit_batch with valid orders
     let tx_hash = mock_chain
-        .submit_batch(1, vec![1, 2, 3], vec![0u8; 96])
+        .submit_batch(1, vec![1, 2, 3], vec![0u8; 96], 0, U256::zero())
         .await
         .expect("submit_batch should succeed");
     assert_ne!(tx_hash, H256::zero(), "tx_hash should not be zero");
@@ -55,7 +55,7 @@ async fn test_mock_chain_implements_chain_writer_trait() {
         tx_hash: H256::random(),
     };
     let tx_hash = mock_chain
-        .confirm_fills(1, vec![fill], vec![0u8; 96])
+        .confirm_fills(1, vec![fill], vec![0u8; 96], 0, U256::zero())
         .await
         .expect("confirm_fills should succeed");
     assert_ne!(tx_hash, H256::zero(), "tx_hash should not be zero");
@@ -63,7 +63,7 @@ async fn test_mock_chain_implements_chain_writer_trait() {
     // Test submit_bridge
     let amount = U256::from(1000) * U256::exp10(18);
     let tx_hash = mock_chain
-        .submit_bridge(42161, amount, vec![0u8; 96])
+        .submit_bridge(42161, amount, vec![0u8; 96], 0, U256::zero())
         .await
         .expect("submit_bridge should succeed");
     assert_ne!(tx_hash, H256::zero(), "tx_hash should not be zero");
@@ -100,7 +100,7 @@ async fn test_transaction_lifecycle() {
 
     // Submit batch
     let tx_hash = mock_chain
-        .submit_batch(1, vec![1], vec![0u8; 96])
+        .submit_batch(1, vec![1], vec![0u8; 96], 0, U256::zero())
         .await
         .expect("submit_batch should succeed");
     assert_ne!(tx_hash, H256::zero());
@@ -115,7 +115,7 @@ async fn test_transaction_lifecycle() {
     };
 
     let tx_hash = mock_chain
-        .confirm_fills(1, vec![fill], vec![0u8; 96])
+        .confirm_fills(1, vec![fill], vec![0u8; 96], 0, U256::zero())
         .await
         .expect("confirm_fills should succeed");
     assert_ne!(tx_hash, H256::zero());
@@ -139,7 +139,7 @@ async fn test_batch_validation_with_unknown_orders() {
     let mock_chain = MockChainBuilder::new().build();
 
     // Try to batch non-existent orders
-    let result = mock_chain.submit_batch(1, vec![999], vec![0u8; 96]).await;
+    let result = mock_chain.submit_batch(1, vec![999], vec![0u8; 96], 0, U256::zero()).await;
 
     assert!(result.is_err(), "Should fail with non-existent orders");
     match result {
@@ -158,12 +158,12 @@ async fn test_bridge_tx_uniqueness() {
     let amount = U256::from(1000) * U256::exp10(18);
 
     let tx1 = mock_chain
-        .submit_bridge(42161, amount, vec![0u8; 96])
+        .submit_bridge(42161, amount, vec![0u8; 96], 0, U256::zero())
         .await
         .unwrap();
 
     let tx2 = mock_chain
-        .submit_bridge(42161, amount, vec![0u8; 96])
+        .submit_bridge(42161, amount, vec![0u8; 96], 0, U256::zero())
         .await
         .unwrap();
 
@@ -219,7 +219,7 @@ async fn test_multiple_fills_confirmation() {
 
     // Confirm all fills in one transaction
     let tx_hash = mock_chain
-        .confirm_fills(1, fills, vec![0u8; 96])
+        .confirm_fills(1, fills, vec![0u8; 96], 0, U256::zero())
         .await
         .expect("confirm_fills should succeed");
     assert_ne!(tx_hash, H256::zero());
@@ -242,17 +242,17 @@ async fn test_chain_writer_trait_object_safety() {
 
     // All methods should work via trait object
     let tx = writer
-        .submit_batch(1, vec![], vec![0u8; 96])
+        .submit_batch(1, vec![], vec![0u8; 96], 0, U256::zero())
         .await
         .unwrap();
     assert_ne!(tx, H256::zero());
 
-    let tx = writer.confirm_fills(1, vec![], vec![0u8; 96]).await.unwrap();
+    let tx = writer.confirm_fills(1, vec![], vec![0u8; 96], 0, U256::zero()).await.unwrap();
     assert_ne!(tx, H256::zero());
 
     let amount = U256::from(1000) * U256::exp10(18);
     let tx = writer
-        .submit_bridge(42161, amount, vec![0u8; 96])
+        .submit_bridge(42161, amount, vec![0u8; 96], 0, U256::zero())
         .await
         .unwrap();
     assert_ne!(tx, H256::zero());

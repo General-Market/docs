@@ -5,7 +5,9 @@
     "inputs": [
       { "name": "destChainId", "type": "uint256" },
       { "name": "amount", "type": "uint256" },
-      { "name": "blsSignature", "type": "bytes" }
+      { "name": "blsSignature", "type": "bytes" },
+      { "name": "referenceNonce", "type": "uint256" },
+      { "name": "signersBitmask", "type": "uint256" }
     ],
     "outputs": [],
     "stateMutability": "nonpayable"

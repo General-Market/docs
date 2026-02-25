@@ -17,9 +17,11 @@
 //! ## Message Format (AC3)
 //!
 //! BLS signature is computed over:
-//! `keccak256(abi.encodePacked("REGISTRY_SYNC", nonce, newAggPubkey, activeCount, threshold))`
+//! `keccak256(abi.encode("REGISTRY_SYNC", block.chainid, address(this), nonce, newAggPubkey, activeCount, threshold))`
 //!
 //! This matches the Solidity verification in MirrorIssuerRegistry.sol.
+//! The chain_id and mirror_address parameters bind the message to a specific
+//! chain and contract, preventing cross-chain replay attacks.
 
 use common::bls::{aggregate_pubkeys, BLSKeyPair, Bn254BLSSigner};
 use common::types::{BLSPublicKey, Issuer};
@@ -254,6 +256,10 @@ pub struct RegistrySyncHandler<M: Middleware> {
     key_registry: Option<Arc<crate::consensus::InMemoryKeyRegistry>>,
     /// Optional shared cell for pushing consensus config updates
     pending_config_update: Option<Arc<RwLock<Option<ConfigUpdate>>>>,
+    /// Chain ID for chain-bound message hashing (prevents cross-chain replay)
+    chain_id: u64,
+    /// Mirror contract address for chain-bound message hashing
+    mirror_address: Address,
 }
 
 impl<M: Middleware + 'static> RegistrySyncHandler<M> {
@@ -267,6 +273,8 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
     /// * `issuer_id` - Legacy 0-based index (used for RegistrySyncState)
     /// * `on_chain_issuer_id` - On-chain issuer ID from IssuerRegistry (for computing indices)
     /// * `cache` - RegistrySyncCache to update
+    /// * `chain_id` - Chain ID for chain-bound message hashing (prevents cross-chain replay)
+    /// * `mirror_address` - Mirror contract address for chain-bound message hashing
     pub fn new(
         provider: Arc<M>,
         config: RegistrySyncConfig,
@@ -275,6 +283,8 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
         issuer_id: u8,
         on_chain_issuer_id: u64,
         cache: RegistrySyncCache,
+        chain_id: u64,
+        mirror_address: Address,
     ) -> Self {
         use crate::chain::events::REGISTRY_STATE_CHANGED_SIGNATURE;
         let event_topic = H256::from_slice(&ethers::utils::keccak256(
@@ -293,6 +303,8 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
             last_block: 0,
             key_registry: None,
             pending_config_update: None,
+            chain_id,
+            mirror_address,
         }
     }
 
@@ -505,8 +517,10 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
         // Compute aggregated pubkey
         let aggregated_pubkey = compute_aggregated_pubkey(&issuers)?;
 
-        // Build message hash and sign
+        // Build message hash and sign (chain-bound via chain_id + mirror_address)
         let message_hash = build_registry_sync_message_hash(
+            self.chain_id,
+            self.mirror_address,
             event.nonce,
             &aggregated_pubkey,
             active_count,
@@ -694,27 +708,28 @@ impl RegistrySyncState {
 /// Build the message hash for BLS signing (AC3)
 ///
 /// The message hash is computed as:
-/// `keccak256(abi.encodePacked("REGISTRY_SYNC", nonce, newAggPubkey, activeCount, threshold))`
+/// `keccak256(abi.encode("REGISTRY_SYNC", block.chainid, address(this), nonce, newAggPubkey, activeCount, threshold))`
 ///
 /// **CRITICAL — Solidity coordination (Story 8.2):**
-/// This uses `abi.encodePacked`, NOT `abi.encode`. The Solidity side in
-/// MirrorIssuerRegistry.sol MUST use `keccak256(abi.encodePacked(...))` to match.
-/// Differences:
-/// - "REGISTRY_SYNC" is raw 13 bytes (not left-padded to bytes32)
-/// - nonce/activeCount/threshold are uint256 (32 bytes big-endian each)
-/// - newAggPubkey is raw 128 bytes (not ABI-encoded with offset+length)
+/// This uses `abi.encode` (standard ABI encoding with proper padding), NOT `abi.encodePacked`.
+/// The Solidity side in MirrorIssuerRegistry.sol uses:
+/// `keccak256(abi.encode("REGISTRY_SYNC", block.chainid, address(this), nonce, newAggPubkey, newActiveCount, newThreshold))`
 ///
-/// Total packed message: 13 + 32 + 128 + 32 + 32 = 237 bytes
+/// The `chain_id` and `mirror_address` parameters bind the message to a specific
+/// chain and contract, preventing cross-chain replay attacks.
 ///
 /// # Panics
 ///
 /// Panics if `agg_pubkey` is not exactly 128 bytes (G2 point).
 pub fn build_registry_sync_message_hash(
+    chain_id: u64,
+    mirror_address: Address,
     nonce: u64,
     agg_pubkey: &[u8],
     active_count: u64,
     threshold: u64,
 ) -> [u8; 32] {
+    use ethers::abi::Token;
     use ethers::types::U256;
 
     assert_eq!(
@@ -724,31 +739,17 @@ pub fn build_registry_sync_message_hash(
         agg_pubkey.len()
     );
 
-    let mut data = Vec::with_capacity(237); // 13 + 32 + 128 + 32 + 32
+    let tokens = vec![
+        Token::String("REGISTRY_SYNC".to_string()),
+        Token::Uint(U256::from(chain_id)),
+        Token::Address(mirror_address),
+        Token::Uint(U256::from(nonce)),
+        Token::Bytes(agg_pubkey.to_vec()),
+        Token::Uint(U256::from(active_count)),
+        Token::Uint(U256::from(threshold)),
+    ];
 
-    // "REGISTRY_SYNC" as raw bytes (not padded - using encodePacked)
-    let tag_bytes = b"REGISTRY_SYNC";
-    data.extend_from_slice(tag_bytes);
-
-    // nonce as uint256 (32 bytes big-endian)
-    let mut nonce_bytes = [0u8; 32];
-    U256::from(nonce).to_big_endian(&mut nonce_bytes);
-    data.extend_from_slice(&nonce_bytes);
-
-    // newAggPubkey as raw bytes (128 bytes for G2)
-    data.extend_from_slice(agg_pubkey);
-
-    // activeCount as uint256
-    let mut active_count_bytes = [0u8; 32];
-    U256::from(active_count).to_big_endian(&mut active_count_bytes);
-    data.extend_from_slice(&active_count_bytes);
-
-    // threshold as uint256
-    let mut threshold_bytes = [0u8; 32];
-    U256::from(threshold).to_big_endian(&mut threshold_bytes);
-    data.extend_from_slice(&threshold_bytes);
-
-    ethers::utils::keccak256(&data)
+    ethers::utils::keccak256(&ethers::abi::encode(&tokens))
 }
 
 /// Serde helper for hex-encoding bytes
@@ -916,20 +917,26 @@ mod tests {
         assert_eq!(sig.len(), 2 + 128); // 0x + 64 bytes * 2
     }
 
+    // Test constants for chain-bound message hashing
+    const TEST_CHAIN_ID: u64 = 111222333;
+    fn test_mirror_address() -> ethers::types::Address {
+        ethers::types::Address::from([0xAB; 20])
+    }
+
     #[test]
     fn test_build_registry_sync_message_hash() {
         let agg_pubkey = vec![0x11u8; 128];
-        let hash = build_registry_sync_message_hash(5, &agg_pubkey, 3, 2);
+        let hash = build_registry_sync_message_hash(TEST_CHAIN_ID, test_mirror_address(), 5, &agg_pubkey, 3, 2);
 
         // Verify it's a valid 32-byte hash
         assert_eq!(hash.len(), 32);
 
         // Verify determinism
-        let hash2 = build_registry_sync_message_hash(5, &agg_pubkey, 3, 2);
+        let hash2 = build_registry_sync_message_hash(TEST_CHAIN_ID, test_mirror_address(), 5, &agg_pubkey, 3, 2);
         assert_eq!(hash, hash2);
 
         // Verify different inputs produce different hashes
-        let hash3 = build_registry_sync_message_hash(6, &agg_pubkey, 3, 2);
+        let hash3 = build_registry_sync_message_hash(TEST_CHAIN_ID, test_mirror_address(), 6, &agg_pubkey, 3, 2);
         assert_ne!(hash, hash3);
     }
 
@@ -937,16 +944,22 @@ mod tests {
     fn test_message_hash_components() {
         // Test that message hash changes with each component
         let pubkey = vec![0x22u8; 128];
+        let cid = TEST_CHAIN_ID;
+        let ma = test_mirror_address();
 
-        let hash1 = build_registry_sync_message_hash(1, &pubkey, 3, 2);
-        let hash2 = build_registry_sync_message_hash(2, &pubkey, 3, 2); // Different nonce
-        let hash3 = build_registry_sync_message_hash(1, &pubkey, 4, 2); // Different active_count
-        let hash4 = build_registry_sync_message_hash(1, &pubkey, 3, 3); // Different threshold
+        let hash1 = build_registry_sync_message_hash(cid, ma, 1, &pubkey, 3, 2);
+        let hash2 = build_registry_sync_message_hash(cid, ma, 2, &pubkey, 3, 2); // Different nonce
+        let hash3 = build_registry_sync_message_hash(cid, ma, 1, &pubkey, 4, 2); // Different active_count
+        let hash4 = build_registry_sync_message_hash(cid, ma, 1, &pubkey, 3, 3); // Different threshold
+        let hash5 = build_registry_sync_message_hash(999, ma, 1, &pubkey, 3, 2); // Different chain_id
+        let hash6 = build_registry_sync_message_hash(cid, ethers::types::Address::from([0xCD; 20]), 1, &pubkey, 3, 2); // Different mirror_address
 
         // All should be different
         assert_ne!(hash1, hash2);
         assert_ne!(hash1, hash3);
         assert_ne!(hash1, hash4);
+        assert_ne!(hash1, hash5);
+        assert_ne!(hash1, hash6);
         assert_ne!(hash2, hash3);
         assert_ne!(hash2, hash4);
         assert_ne!(hash3, hash4);
@@ -1104,7 +1117,7 @@ mod tests {
     #[test]
     fn test_sign_registry_sync_message() {
         let keypair = BLSKeyPair::from_seed(&[42u8; 32]).unwrap();
-        let message_hash = build_registry_sync_message_hash(5, &[0x11u8; 128], 3, 2);
+        let message_hash = build_registry_sync_message_hash(TEST_CHAIN_ID, test_mirror_address(), 5, &[0x11u8; 128], 3, 2);
 
         let result = sign_registry_sync_message(&keypair, &message_hash);
         assert!(result.is_ok());
@@ -1115,7 +1128,7 @@ mod tests {
     #[test]
     fn test_sign_registry_sync_message_deterministic() {
         let keypair = BLSKeyPair::from_seed(&[42u8; 32]).unwrap();
-        let message_hash = build_registry_sync_message_hash(5, &[0x11u8; 128], 3, 2);
+        let message_hash = build_registry_sync_message_hash(TEST_CHAIN_ID, test_mirror_address(), 5, &[0x11u8; 128], 3, 2);
 
         let sig1 = sign_registry_sync_message(&keypair, &message_hash).unwrap();
         let sig2 = sign_registry_sync_message(&keypair, &message_hash).unwrap();
@@ -1126,7 +1139,7 @@ mod tests {
     fn test_sign_registry_sync_message_different_keypairs() {
         let kp1 = BLSKeyPair::from_seed(&[1u8; 32]).unwrap();
         let kp2 = BLSKeyPair::from_seed(&[2u8; 32]).unwrap();
-        let message_hash = build_registry_sync_message_hash(5, &[0x11u8; 128], 3, 2);
+        let message_hash = build_registry_sync_message_hash(TEST_CHAIN_ID, test_mirror_address(), 5, &[0x11u8; 128], 3, 2);
 
         let sig1 = sign_registry_sync_message(&kp1, &message_hash).unwrap();
         let sig2 = sign_registry_sync_message(&kp2, &message_hash).unwrap();
@@ -1141,7 +1154,7 @@ mod tests {
         let keypair = BLSKeyPair::from_seed(&[42u8; 32]).unwrap();
         let pubkey = keypair.public_key();
         let agg_pubkey = [0x11u8; 128];
-        let message_hash = build_registry_sync_message_hash(5, &agg_pubkey, 3, 2);
+        let message_hash = build_registry_sync_message_hash(TEST_CHAIN_ID, test_mirror_address(), 5, &agg_pubkey, 3, 2);
 
         let signature = sign_registry_sync_message(&keypair, &message_hash).unwrap();
 
@@ -1192,7 +1205,7 @@ mod tests {
         let nonce = 1u64;
         let active_count = 3u64;
         let threshold = compute_threshold(active_count);
-        let message_hash = build_registry_sync_message_hash(nonce, &agg_pubkey, active_count, threshold);
+        let message_hash = build_registry_sync_message_hash(TEST_CHAIN_ID, test_mirror_address(), nonce, &agg_pubkey, active_count, threshold);
 
         // Step 3: Each issuer signs the message
         let signatures: Vec<Vec<u8>> = keypairs

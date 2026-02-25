@@ -54,6 +54,7 @@ impl ConsensusMessageHandler {
                 symbol,
                 weights,
                 assets,
+                reference_nonce: _,
                 leader_signature,
             } => {
                 debug!(
@@ -98,6 +99,7 @@ impl ConsensusMessageHandler {
                 user,
                 amount,
                 deadline,
+                reference_nonce: _,
                 leader_signature,
             } => {
                 debug!(
@@ -149,6 +151,7 @@ impl ConsensusMessageHandler {
                 limit_price,
                 slippage_tier,
                 deadline,
+                reference_nonce: _,
                 leader_signature,
             } => {
                 debug!(
@@ -198,6 +201,7 @@ impl ConsensusMessageHandler {
                 cycle_number,
                 order_ids,
                 prices,
+                reference_nonce: _,
                 leader_signature,
             } => {
                 debug!(
@@ -241,6 +245,7 @@ impl ConsensusMessageHandler {
                 leader_id,
                 cycle_number,
                 fills,
+                reference_nonce: _,
                 leader_signature,
             } => {
                 debug!(
@@ -286,6 +291,7 @@ impl ConsensusMessageHandler {
                 order_ids,
                 total_amount,
                 destination,
+                reference_nonce: _,
                 leader_signature,
             } => {
                 debug!(
@@ -334,6 +340,7 @@ impl ConsensusMessageHandler {
                 order_ids,
                 total_amount,
                 vault_address,
+                reference_nonce: _,
                 leader_signature,
             } => {
                 debug!(
@@ -381,6 +388,7 @@ impl ConsensusMessageHandler {
                 leader_id,
                 cycle_number,
                 itp_ids,
+                reference_nonce: _,
                 leader_signature,
             } => {
                 debug!(
@@ -425,6 +433,7 @@ impl ConsensusMessageHandler {
                 new_weights,
                 new_inventory,
                 nav,
+                reference_nonce: _,
                 leader_signature,
             } => {
                 debug!(
@@ -475,6 +484,7 @@ impl ConsensusMessageHandler {
                 new_weights,
                 prices,
                 quote_tokens,
+                reference_nonce: _,
                 leader_signature,
             } => {
                 debug!(
@@ -520,6 +530,7 @@ impl ConsensusMessageHandler {
                 leader_id,
                 cycle_number,
                 trades_data,
+                reference_nonce: _,
                 leader_signature,
             } => {
                 debug!(
@@ -565,6 +576,7 @@ impl ConsensusMessageHandler {
                 user,
                 bridged_itp_address,
                 amount,
+                reference_nonce: _,
                 leader_signature,
             } => {
                 debug!(
@@ -609,6 +621,7 @@ impl ConsensusMessageHandler {
                 leader_id,
                 order_id,
                 usdc_proceeds,
+                reference_nonce: _,
                 leader_signature,
             } => {
                 debug!(
@@ -655,6 +668,7 @@ impl ConsensusMessageHandler {
                 to_chain,
                 amount,
                 tx_type,
+                reference_nonce: _,
                 leader_signature,
             } => {
                 debug!(
@@ -703,6 +717,7 @@ impl ConsensusMessageHandler {
                 itp_id,
                 user,
                 amount,
+                reference_nonce: _,
                 leader_signature,
             } => {
                 debug!(
@@ -748,6 +763,7 @@ impl ConsensusMessageHandler {
                 cycle_number,
                 order_id,
                 vault,
+                reference_nonce: _,
                 leader_signature,
             } => {
                 debug!(
@@ -791,6 +807,7 @@ impl ConsensusMessageHandler {
                 leader_id,
                 itp_id,
                 nav,
+                reference_nonce: _,
                 leader_signature,
             } => {
                 debug!(
@@ -1458,6 +1475,7 @@ mod tests {
         P2PMessage::PriceProposal {
             cycle_number: cycle,
             prices: vec![(1, U256::from(1000))],
+            reference_nonce: 0,
             proposer_signature: TestBLSSignature(vec![0; 64]),
         }
     }
@@ -1476,6 +1494,7 @@ mod tests {
             cycle_number: cycle,
             order_ids: vec![1, 2, 3],
             fills: vec![],
+            reference_nonce: 0,
             proposer_signature: TestBLSSignature(vec![0; 64]),
         }
     }

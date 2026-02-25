@@ -41,6 +41,8 @@ pub enum P2PMessage {
     PriceProposal {
         cycle_number: u64,
         prices: Vec<(u32, U256)>, // (asset_index, price)
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         proposer_signature: BLSSignature,
     },
 
@@ -59,6 +61,8 @@ pub enum P2PMessage {
         cycle_number: u64,
         order_ids: Vec<u64>,
         fills: Vec<crate::Fill>,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         proposer_signature: BLSSignature,
     },
 
@@ -104,6 +108,8 @@ pub enum P2PMessage {
         weights: Vec<U256>,
         /// Asset addresses
         assets: Vec<Address>,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         /// Leader's signature (included in aggregation)
         leader_signature: BLSSignature,
     },
@@ -136,6 +142,8 @@ pub enum P2PMessage {
         nonce: U256,
         /// New target weights (sum to 1e18)
         new_weights: Vec<U256>,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         /// Leader's BLS signature (included in aggregation)
         leader_signature: BLSSignature,
     },
@@ -170,6 +178,8 @@ pub enum P2PMessage {
         amount: U256,
         /// Order deadline (must not be passed)
         deadline: U256,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         /// Leader's BLS signature on the bridge message
         leader_signature: BLSSignature,
     },
@@ -208,6 +218,8 @@ pub enum P2PMessage {
         slippage_tier: U256,
         /// Order deadline
         deadline: U256,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         /// Leader's BLS signature on the message
         leader_signature: BLSSignature,
     },
@@ -238,6 +250,8 @@ pub enum P2PMessage {
         order_ids: Vec<U256>,
         /// Current prices for each order's ITP (18 decimals)
         prices: Vec<U256>,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         /// Leader's BLS signature on the batch hash
         leader_signature: BLSSignature,
     },
@@ -266,6 +280,8 @@ pub enum P2PMessage {
         cycle_number: u64,
         /// Fill details for each order
         fills: Vec<OrderFill>,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         /// Leader's BLS signature on the fills hash
         leader_signature: BLSSignature,
     },
@@ -298,6 +314,8 @@ pub enum P2PMessage {
         total_amount: U256,
         /// Destination: IssuerCustody on Arbitrum
         destination: Address,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         /// Leader's BLS signature on the bridge hash
         leader_signature: BLSSignature,
     },
@@ -330,6 +348,8 @@ pub enum P2PMessage {
         total_amount: U256,
         /// Destination: MockBitgetVault on Arbitrum
         vault_address: Address,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         /// Leader's BLS signature on the release hash
         leader_signature: BLSSignature,
     },
@@ -358,6 +378,8 @@ pub enum P2PMessage {
         cycle_number: u64,
         /// ITP IDs included in this rebalance batch
         itp_ids: Vec<H256>,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         /// Leader's BLS signature on the rebalance batch hash
         leader_signature: BLSSignature,
     },
@@ -390,6 +412,8 @@ pub enum P2PMessage {
         new_inventory: Vec<U256>,
         /// NAV at time of rebalance (18 decimals)
         nav: U256,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         /// Leader's BLS signature on the update weights hash
         leader_signature: BLSSignature,
     },
@@ -426,6 +450,8 @@ pub enum P2PMessage {
         prices: Vec<U256>,
         /// Per-asset quote token for settlement (address(0) = USDC)
         quote_tokens: Vec<Address>,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         /// Leader's BLS signature on the rebalance hash
         leader_signature: BLSSignature,
     },
@@ -460,6 +486,8 @@ pub enum P2PMessage {
         bridged_itp_address: Address,
         /// ITP amount to sell (18 decimals)
         amount: U256,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         /// Leader's BLS signature
         leader_signature: BLSSignature,
     },
@@ -488,6 +516,8 @@ pub enum P2PMessage {
         order_id: U256,
         /// USDC proceeds to return to user
         usdc_proceeds: U256,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         /// Leader's BLS signature
         leader_signature: BLSSignature,
     },
@@ -517,6 +547,8 @@ pub enum P2PMessage {
         /// Per-asset trade data: (asset_address, side, usdc_amount, price, quoteToken)
         /// Serialized as Vec of (Address, u8, U256, U256, Address) tuples
         trades_data: Vec<(Address, u8, U256, U256, Address)>,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         /// Leader's BLS signature on the asset trades hash
         leader_signature: BLSSignature,
     },
@@ -544,6 +576,8 @@ pub enum P2PMessage {
         to_chain: U256,
         amount: U256,
         tx_type: u8,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         leader_signature: BLSSignature,
     },
     RecordCollateralMoveSign {
@@ -559,6 +593,8 @@ pub enum P2PMessage {
         itp_id: H256,
         user: Address,
         amount: U256,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         leader_signature: BLSSignature,
     },
     MintBridgedSharesSign {
@@ -573,6 +609,8 @@ pub enum P2PMessage {
         cycle_number: u64,
         order_id: U256,
         vault: Address,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         leader_signature: BLSSignature,
     },
     CompleteBuyOrderSign {
@@ -592,6 +630,8 @@ pub enum P2PMessage {
         itp_id: H256,
         /// Computed NAV value (18 decimals)
         nav: U256,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         /// Leader's BLS signature on the setItpNav hash
         leader_signature: BLSSignature,
     },
@@ -623,6 +663,8 @@ pub enum P2PMessage {
         prices: Vec<(u32, String, i64)>,
         /// Timestamp of price fetch
         timestamp: u64,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
         /// Leader's BLS signature on the proposal hash
         leader_signature: BLSSignature,
     },
@@ -688,6 +730,7 @@ mod tests {
                 Address::from([0x11u8; 20]),
                 Address::from([0x22u8; 20]),
             ],
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0x01, 0x02, 0x03]),
         };
 
@@ -790,6 +833,7 @@ mod tests {
             user: Address::from([0xCDu8; 20]),
             amount: U256::from(1000000000000000000u64), // 1 USDC with 18 decimals
             deadline: U256::from(1700000000u64),
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0x01, 0x02, 0x03, 0x04]),
         };
 
@@ -857,6 +901,7 @@ mod tests {
             user: Address::from([0x33u8; 20]),
             amount: U256::from(5000000000000000000u64), // 5 USDC
             deadline: U256::from(1800000000u64),
+            reference_nonce: 42,
             leader_signature: BLSSignature(vec![0xFF; 96]), // 96-byte BLS signature
         };
 
@@ -868,6 +913,7 @@ mod tests {
             user,
             amount,
             deadline,
+            reference_nonce,
             leader_signature,
         } = msg.clone()
         {
@@ -877,6 +923,7 @@ mod tests {
             assert_eq!(user, Address::from([0x33u8; 20]));
             assert_eq!(amount, U256::from(5000000000000000000u64));
             assert_eq!(deadline, U256::from(1800000000u64));
+            assert_eq!(reference_nonce, 42);
             assert_eq!(leader_signature.0.len(), 96);
         } else {
             panic!("Expected BridgeArbToL3Proposal variant");
@@ -896,6 +943,7 @@ mod tests {
             limit_price: U256::from(2000000000000000000u64), // 2.0 price
             slippage_tier: U256::from(1),
             deadline: U256::from(1700000000u64),
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0x01, 0x02, 0x03, 0x04]),
         };
 
@@ -965,6 +1013,7 @@ mod tests {
             limit_price: U256::from(10000000000000000000u64), // 10.0 price
             slippage_tier: U256::from(2),
             deadline: U256::from(1800000000u64),
+            reference_nonce: 42,
             leader_signature: BLSSignature(vec![0xFF; 96]), // 96-byte BLS signature
         };
 
@@ -978,6 +1027,7 @@ mod tests {
             limit_price,
             slippage_tier,
             deadline,
+            reference_nonce,
             leader_signature,
         } = msg.clone()
         {
@@ -989,6 +1039,7 @@ mod tests {
             assert_eq!(limit_price, U256::from(10000000000000000000u64));
             assert_eq!(slippage_tier, U256::from(2));
             assert_eq!(deadline, U256::from(1800000000u64));
+            assert_eq!(reference_nonce, 42);
             assert_eq!(leader_signature.0.len(), 96);
         } else {
             panic!("Expected SubmitOrderForUserProposal variant");
@@ -1010,6 +1061,7 @@ mod tests {
                 limit_price: U256::from(1000000000000000000u64),
                 slippage_tier: U256::from(tier),
                 deadline: U256::from(1700000000u64),
+                reference_nonce: 1,
                 leader_signature: BLSSignature(vec![0x01]),
             };
 
@@ -1033,6 +1085,7 @@ mod tests {
                 U256::from(2000000000000000000u64), // 2.0
                 U256::from(3000000000000000000u64), // 3.0
             ],
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0x01, 0x02, 0x03, 0x04]),
         };
 
@@ -1098,6 +1151,7 @@ mod tests {
             cycle_number: 0,
             order_ids: vec![],
             prices: vec![],
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0xFF; 96]),
         };
 
@@ -1124,6 +1178,7 @@ mod tests {
             cycle_number: 999,
             order_ids: order_ids.clone(),
             prices: prices.clone(),
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0xFF; 96]),
         };
 
@@ -1159,6 +1214,7 @@ mod tests {
                     fill_amount: U256::from(1000000000000000000u64),
                 },
             ],
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0x01, 0x02, 0x03, 0x04]),
         };
 
@@ -1239,6 +1295,7 @@ mod tests {
             leader_id: [0x11u8; 32],
             cycle_number: 0,
             fills: vec![],
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0xFF; 96]),
         };
 
@@ -1266,6 +1323,7 @@ mod tests {
             leader_id: [0x11u8; 32],
             cycle_number: 999,
             fills: fills.clone(),
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0xFF; 96]),
         };
 
@@ -1292,6 +1350,7 @@ mod tests {
             order_ids: vec![U256::from(1), U256::from(2), U256::from(3)],
             total_amount: U256::from(3000000000000000000u64), // 3 USDC
             destination: Address::from([0xABu8; 20]),
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0x01, 0x02, 0x03, 0x04]),
         };
 
@@ -1358,6 +1417,7 @@ mod tests {
             order_ids: vec![],
             total_amount: U256::zero(),
             destination: Address::from([0xCDu8; 20]),
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0xFF; 96]),
         };
 
@@ -1385,6 +1445,7 @@ mod tests {
             order_ids: order_ids.clone(),
             total_amount,
             destination: Address::from([0xEEu8; 20]),
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0xFF; 96]),
         };
 
@@ -1410,6 +1471,7 @@ mod tests {
             order_ids: vec![U256::from(1), U256::from(2)],
             total_amount: U256::from(5000000000000000000u64), // 5 USDC
             destination: Address::from([0x33u8; 20]),
+            reference_nonce: 42,
             leader_signature: BLSSignature(vec![0xFF; 96]), // 96-byte BLS signature
         };
 
@@ -1420,6 +1482,7 @@ mod tests {
             order_ids,
             total_amount,
             destination,
+            reference_nonce,
             leader_signature,
         } = msg.clone()
         {
@@ -1428,6 +1491,7 @@ mod tests {
             assert_eq!(order_ids.len(), 2);
             assert_eq!(total_amount, U256::from(5000000000000000000u64));
             assert_eq!(destination, Address::from([0x33u8; 20]));
+            assert_eq!(reference_nonce, 42);
             assert_eq!(leader_signature.0.len(), 96);
         } else {
             panic!("Expected BridgeL3ToArbProposal variant");
@@ -1444,6 +1508,7 @@ mod tests {
             order_ids: vec![U256::from(1)],
             total_amount: U256::from(1000000000000000000u64),
             destination: Address::from([0xABu8; 20]),
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0x01]),
         };
 
@@ -1453,6 +1518,7 @@ mod tests {
             order_ids: vec![U256::from(2)], // Different order
             total_amount: U256::from(1000000000000000000u64),
             destination: Address::from([0xABu8; 20]),
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0x01]),
         };
 
@@ -1474,6 +1540,7 @@ mod tests {
             order_ids: vec![U256::from(1), U256::from(2), U256::from(3)],
             total_amount: U256::from(3000000000000000000u64), // 3 USDC
             vault_address: Address::from([0xABu8; 20]),
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0x01, 0x02, 0x03, 0x04]),
         };
 
@@ -1540,6 +1607,7 @@ mod tests {
             order_ids: vec![],
             total_amount: U256::zero(),
             vault_address: Address::from([0xCDu8; 20]),
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0xFF; 96]),
         };
 
@@ -1567,6 +1635,7 @@ mod tests {
             order_ids: order_ids.clone(),
             total_amount,
             vault_address: Address::from([0xEEu8; 20]),
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0xFF; 96]),
         };
 
@@ -1592,6 +1661,7 @@ mod tests {
             order_ids: vec![U256::from(1), U256::from(2)],
             total_amount: U256::from(5000000000000000000u64), // 5 USDC
             vault_address: Address::from([0x33u8; 20]),
+            reference_nonce: 42,
             leader_signature: BLSSignature(vec![0xFF; 96]), // 96-byte BLS signature
         };
 
@@ -1602,6 +1672,7 @@ mod tests {
             order_ids,
             total_amount,
             vault_address,
+            reference_nonce,
             leader_signature,
         } = msg.clone()
         {
@@ -1610,6 +1681,7 @@ mod tests {
             assert_eq!(order_ids.len(), 2);
             assert_eq!(total_amount, U256::from(5000000000000000000u64));
             assert_eq!(vault_address, Address::from([0x33u8; 20]));
+            assert_eq!(reference_nonce, 42);
             assert_eq!(leader_signature.0.len(), 96);
         } else {
             panic!("Expected ReleaseToVaultProposal variant");
@@ -1626,6 +1698,7 @@ mod tests {
             order_ids: vec![U256::from(1)],
             total_amount: U256::from(1000000000000000000u64),
             vault_address: Address::from([0xABu8; 20]),
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0x01]),
         };
 
@@ -1635,6 +1708,7 @@ mod tests {
             order_ids: vec![U256::from(2)], // Different order
             total_amount: U256::from(1000000000000000000u64),
             vault_address: Address::from([0xABu8; 20]),
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0x01]),
         };
 
@@ -1654,6 +1728,7 @@ mod tests {
             order_ids: vec![U256::from(1)],
             total_amount: U256::from(1000000000000000000u64),
             vault_address: Address::from([0xABu8; 20]),
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0x01]),
         };
 
@@ -1663,6 +1738,7 @@ mod tests {
             order_ids: vec![U256::from(1)],
             total_amount: U256::from(1000000000000000000u64),
             vault_address: Address::from([0xCDu8; 20]), // Different vault
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0x01]),
         };
 
@@ -1681,6 +1757,7 @@ mod tests {
             bet_id: U256::from(42),
             prices: vec![(0, "AAPL".to_string(), 15023), (1, "MSFT".to_string(), 41520)],
             timestamp: 1700000000,
+            reference_nonce: 1,
             leader_signature: BLSSignature(vec![0x01, 0x02, 0x03]),
         };
         let serialized = rmp_serde::to_vec(&msg).expect("Serialization failed");

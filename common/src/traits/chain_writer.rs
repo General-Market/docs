@@ -16,6 +16,8 @@ pub trait ChainWriter: Send + Sync {
     /// * `cycle_number` - The cycle number this batch belongs to
     /// * `order_ids` - List of order IDs to include in the batch
     /// * `bls_signature` - Aggregated BLS signature from issuer quorum
+    /// * `reference_nonce` - Reference nonce for replay protection
+    /// * `signers_bitmask` - Bitmask of signing issuer indices
     ///
     /// # Returns
     /// Transaction hash of the submitted transaction
@@ -24,6 +26,8 @@ pub trait ChainWriter: Send + Sync {
         cycle_number: u64,
         order_ids: Vec<u64>,
         bls_signature: Vec<u8>,
+        reference_nonce: u64,
+        signers_bitmask: U256,
     ) -> Result<TxHash, Error>;
 
     /// Confirm fills for orders in a cycle
@@ -32,6 +36,8 @@ pub trait ChainWriter: Send + Sync {
     /// * `cycle_number` - The cycle number these fills belong to
     /// * `fills` - List of fill data
     /// * `bls_signature` - Aggregated BLS signature from issuer quorum
+    /// * `reference_nonce` - Reference nonce for replay protection
+    /// * `signers_bitmask` - Bitmask of signing issuer indices
     ///
     /// # Returns
     /// Transaction hash of the submitted transaction
@@ -40,6 +46,8 @@ pub trait ChainWriter: Send + Sync {
         cycle_number: u64,
         fills: Vec<Fill>,
         bls_signature: Vec<u8>,
+        reference_nonce: u64,
+        signers_bitmask: U256,
     ) -> Result<TxHash, Error>;
 
     /// Submit a bridge transaction to move funds cross-chain
@@ -48,6 +56,8 @@ pub trait ChainWriter: Send + Sync {
     /// * `dest_chain_id` - Destination chain ID
     /// * `amount` - Amount to bridge (18 decimals)
     /// * `bls_signature` - Aggregated BLS signature from issuer quorum
+    /// * `reference_nonce` - Reference nonce for replay protection
+    /// * `signers_bitmask` - Bitmask of signing issuer indices
     ///
     /// # Returns
     /// Transaction hash of the submitted transaction
@@ -56,6 +66,8 @@ pub trait ChainWriter: Send + Sync {
         dest_chain_id: u64,
         amount: U256,
         bls_signature: Vec<u8>,
+        reference_nonce: u64,
+        signers_bitmask: U256,
     ) -> Result<TxHash, Error>;
 
     /// Create an ITP on the L3 chain (Story 6.24)
