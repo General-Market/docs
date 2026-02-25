@@ -44,7 +44,7 @@ export function SourceCard({ source, markets, bitmapEditor }: SourceCardProps) {
             <img
               src={source.logo}
               alt={source.name}
-              className="max-h-[80px] max-w-[90%] object-contain"
+              className="max-h-[60px] max-w-[75%] object-contain"
             />
             <span className="absolute top-2.5 right-2.5 text-[10px] font-bold tracking-[0.06em] uppercase px-2 py-0.5 rounded bg-black/55 text-white/90 backdrop-blur-sm">
               {getCategoryLabel(source.category).toUpperCase()}

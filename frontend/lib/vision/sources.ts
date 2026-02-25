@@ -32,7 +32,7 @@ export interface VisionSource {
  */
 export const VISION_SOURCES: VisionSource[] = [
   // ── Finance ──
-  { id: 'coingecko', name: 'CoinGecko Crypto', description: 'Cryptocurrency market data — prices, volumes, market caps for thousands of tokens.', category: 'finance', logo: '/source-imgs/new-coingecko.png', brandBg: 'linear-gradient(135deg,#8DC63F,#3d7a0a)', prefixes: ['crypto_'] },
+  { id: 'coingecko', name: 'CoinGecko Crypto', description: 'Cryptocurrency market data — prices, volumes, market caps for thousands of tokens.', category: 'finance', logo: '/source-imgs/new-coingecko.png', brandBg: '#f5f5f5', prefixes: ['crypto_'] },
   { id: 'pumpfun', name: 'Pump.fun Tokens', description: 'Solana memecoin launchpad — real-time prices, volumes, and market caps for recently launched tokens.', category: 'finance', logo: '/source-imgs/new-pumpfun.png', brandBg: 'linear-gradient(135deg,#00d18c,#1a1a2e)', prefixes: ['pumpfun_'] },
   { id: 'defillama', name: 'DefiLlama DeFi', description: 'DeFi protocol analytics — TVL, yields, fees, volumes across all major chains and protocols.', category: 'finance', logo: '/source-imgs/new-defillama.png', brandBg: '#1b1b1b', prefixes: ['defi_'] },
   { id: 'finnhub', name: 'Finnhub Stocks', description: 'Real-time stock market data — US equities, forex, and crypto with company fundamentals.', category: 'finance', logo: '/source-imgs/new-finnhub.png', brandBg: '#000000', prefixes: ['stock_', 'stocks_'] },

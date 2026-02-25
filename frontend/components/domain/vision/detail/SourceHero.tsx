@@ -35,7 +35,7 @@ export function SourceHero({ source, sourceSchedule, marketCount }: SourceHeroPr
         <img
           src={source.logo}
           alt={source.name}
-          className="max-h-[80px] max-w-[90%] object-contain"
+          className="max-h-[70px] max-w-[75%] object-contain"
         />
       </div>
 
