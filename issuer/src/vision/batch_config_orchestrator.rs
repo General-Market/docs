@@ -425,15 +425,21 @@ mod tests {
 
     #[test]
     fn test_verify_unknown_asset_tolerance() {
-        // Leader has assets A-E, follower only knows A
-        // 4/5 = 80% unknown > 20% tolerance -> reject
+        // Leader has assets A-E, follower knows A-C (but not D,E)
+        // Asset counts: leader=5, follower=5 (within tolerance)
+        // Unknown: 2/5 = 40% > 20% tolerance -> reject on unknown assets
         let leader = make_batch(
             "crypto",
             600,
             90,
             vec![("a", 100), ("b", 100), ("c", 100), ("d", 100), ("e", 100)],
         );
-        let follower = make_batch("crypto", 600, 90, vec![("a", 100)]);
+        let follower = make_batch(
+            "crypto",
+            600,
+            90,
+            vec![("a", 100), ("b", 100), ("c", 100), ("x", 100), ("y", 100)],
+        );
         let err = verify_single_source(&leader, &follower).unwrap_err();
         assert!(err.contains("unknown assets"));
     }

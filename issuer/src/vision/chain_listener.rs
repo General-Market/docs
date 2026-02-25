@@ -77,6 +77,17 @@ impl EventTopics {
     }
 }
 
+/// Fetched batch data from the contract (intermediate struct for decoding).
+struct FetchedBatchData {
+    source_id: H256,
+    config_hash: H256,
+    next_config_hash: H256,
+    lock_offset: u64,
+    next_lock_offset: u64,
+    created_at_tick: u64,
+    last_promotion_tick: u64,
+}
+
 impl ChainListener {
     pub fn new(
         provider: Arc<Provider<Http>>,
@@ -228,8 +239,7 @@ impl ChainListener {
     /// Handle `BatchCreated(uint256 indexed batchId, address indexed creator, uint256 tickDuration)`
     ///
     /// The event only contains batchId, creator, tickDuration. We fetch the full
-    /// batch from the contract to get marketIds, resolutionTypes, customThresholds,
-    /// and createdAtTick.
+    /// batch from the contract to get sourceId, configHash, lockOffset, etc.
     async fn handle_batch_created(&self, log: &Log) {
         let batch_id = match extract_indexed_u64(log, 1) {
             Some(v) => v,
@@ -253,62 +263,73 @@ impl ChainListener {
             }
         };
 
-        // Fetch full batch from contract to get marketIds, resolutionTypes, etc.
-        let (market_ids, resolution_types, custom_thresholds, created_at_tick) =
-            match self.fetch_batch_from_contract(batch_id).await {
-                Some(v) => v,
-                None => {
-                    // Fallback: use block timestamp to compute created_at_tick
-                    let created_at_tick = match self.get_block_timestamp(log).await {
-                        Some(ts) => {
-                            if tick_duration > 0 {
-                                ts / tick_duration
-                            } else {
-                                0
-                            }
+        // Fetch full batch from contract to get sourceId, configHash, etc.
+        let batch = match self.fetch_batch_from_contract(batch_id).await {
+            Some(fetched) => Batch {
+                id: batch_id,
+                creator,
+                source_id: fetched.source_id,
+                config_hash: fetched.config_hash,
+                next_config_hash: fetched.next_config_hash,
+                tick_duration,
+                lock_offset: fetched.lock_offset,
+                next_lock_offset: fetched.next_lock_offset,
+                created_at_tick: fetched.created_at_tick,
+                last_promotion_tick: fetched.last_promotion_tick,
+                paused: false,
+            },
+            None => {
+                // Fallback: use block timestamp to compute created_at_tick
+                let created_at_tick = match self.get_block_timestamp(log).await {
+                    Some(ts) => {
+                        if tick_duration > 0 {
+                            ts / tick_duration
+                        } else {
+                            0
                         }
-                        None => 0,
-                    };
-                    warn!(
-                        batch_id,
-                        "Failed to fetch batch from contract, using fallback"
-                    );
-                    (vec![], vec![], vec![], created_at_tick)
+                    }
+                    None => 0,
+                };
+                warn!(
+                    batch_id,
+                    "Failed to fetch batch from contract, using fallback"
+                );
+                Batch {
+                    id: batch_id,
+                    creator,
+                    source_id: H256::zero(),
+                    config_hash: H256::zero(),
+                    next_config_hash: H256::zero(),
+                    tick_duration,
+                    lock_offset: 0,
+                    next_lock_offset: 0,
+                    created_at_tick,
+                    last_promotion_tick: 0,
+                    paused: false,
                 }
-            };
-
-        let batch = Batch {
-            id: batch_id,
-            creator,
-            market_ids,
-            resolution_types,
-            tick_duration,
-            custom_thresholds,
-            created_at_tick,
-            paused: false,
+            }
         };
 
         // 1. Update in-memory scheduler
         self.scheduler.on_batch_created(batch.clone()).await;
 
         // 2. Write to Postgres
-        let market_ids_text: Vec<String> = batch.market_ids.iter().map(|h| format!("{:?}", h)).collect();
         if let Err(e) = sqlx::query(
-            "INSERT INTO vision_batches (id, creator, market_count, tick_duration, created_at_tick, paused, market_ids)
+            "INSERT INTO vision_batches (id, creator, tick_duration, created_at_tick, paused, source_id, config_hash)
              VALUES ($1, $2, $3, $4, $5, $6, $7)
              ON CONFLICT (id) DO UPDATE SET
-                market_count = EXCLUDED.market_count,
                 tick_duration = EXCLUDED.tick_duration,
                 paused = EXCLUDED.paused,
-                market_ids = EXCLUDED.market_ids"
+                source_id = EXCLUDED.source_id,
+                config_hash = EXCLUDED.config_hash"
         )
         .bind(batch.id as i64)
         .bind(format!("{:?}", batch.creator))
-        .bind(batch.market_ids.len() as i32)
         .bind(batch.tick_duration as i64)
         .bind(batch.created_at_tick as i64)
         .bind(false)
-        .bind(&market_ids_text)
+        .bind(format!("{:?}", batch.source_id))
+        .bind(format!("{:?}", batch.config_hash))
         .execute(&self.pool)
         .await
         {
@@ -319,8 +340,8 @@ impl ChainListener {
             batch_id,
             creator = %creator,
             tick_duration,
-            markets = batch.market_ids.len(),
-            created_at_tick,
+            config_hash = ?batch.config_hash,
+            created_at_tick = batch.created_at_tick,
             "BatchCreated"
         );
     }
@@ -681,11 +702,11 @@ impl ChainListener {
 
     /// Fetch full batch data from Vision.getBatch(uint256).
     ///
-    /// Returns (market_ids, resolution_types, custom_thresholds, created_at_tick).
+    /// Returns the decoded batch fields needed to construct a Batch struct.
     async fn fetch_batch_from_contract(
         &self,
         batch_id: u64,
-    ) -> Option<(Vec<H256>, Vec<u8>, Vec<U256>, u64)> {
+    ) -> Option<FetchedBatchData> {
         // getBatch(uint256) selector = keccak256("getBatch(uint256)")[:4]
         let selector = &ethers::utils::keccak256(b"getBatch(uint256)")[..4];
         let encoded_arg = abi::encode(&[Token::Uint(U256::from(batch_id))]);
@@ -706,18 +727,22 @@ impl ChainListener {
             }
         };
 
-        // Decode the Batch struct tuple:
-        // (address creator, bytes32[] marketIds, uint8[] resolutionTypes,
-        //  uint256 tickDuration, uint256[] customThresholds, uint256 createdAtTick, bool paused)
+        // Decode the new Batch struct tuple:
+        // (address creator, bytes32 sourceId, bytes32 configHash, bytes32 nextConfigHash,
+        //  uint256 tickDuration, uint256 lockOffset, uint256 nextLockOffset,
+        //  uint256 createdAtTick, uint256 lastPromotionTick, bool paused)
         let tokens = match abi::decode(
             &[abi::ParamType::Tuple(vec![
-                abi::ParamType::Address,
-                abi::ParamType::Array(Box::new(abi::ParamType::FixedBytes(32))),
-                abi::ParamType::Array(Box::new(abi::ParamType::Uint(8))),
-                abi::ParamType::Uint(256),
-                abi::ParamType::Array(Box::new(abi::ParamType::Uint(256))),
-                abi::ParamType::Uint(256),
-                abi::ParamType::Bool,
+                abi::ParamType::Address,           // creator
+                abi::ParamType::FixedBytes(32),     // sourceId
+                abi::ParamType::FixedBytes(32),     // configHash
+                abi::ParamType::FixedBytes(32),     // nextConfigHash
+                abi::ParamType::Uint(256),          // tickDuration
+                abi::ParamType::Uint(256),          // lockOffset
+                abi::ParamType::Uint(256),          // nextLockOffset
+                abi::ParamType::Uint(256),          // createdAtTick
+                abi::ParamType::Uint(256),          // lastPromotionTick
+                abi::ParamType::Bool,               // paused
             ])],
             &result,
         ) {
@@ -733,51 +758,59 @@ impl ChainListener {
             _ => return None,
         };
 
-        // tuple[0] = creator (skip)
-        // tuple[1] = marketIds
-        let market_ids: Vec<H256> = match &tuple[1] {
-            Token::Array(arr) => arr
-                .iter()
-                .filter_map(|t| match t {
-                    Token::FixedBytes(b) if b.len() == 32 => Some(H256::from_slice(b)),
-                    _ => None,
-                })
-                .collect(),
-            _ => vec![],
+        // tuple[0] = creator (skip, from event)
+        // tuple[1] = sourceId
+        let source_id = match &tuple[1] {
+            Token::FixedBytes(b) if b.len() == 32 => H256::from_slice(b),
+            _ => H256::zero(),
         };
 
-        // tuple[2] = resolutionTypes
-        let resolution_types: Vec<u8> = match &tuple[2] {
-            Token::Array(arr) => arr
-                .iter()
-                .filter_map(|t| match t {
-                    Token::Uint(v) => Some(v.as_u32() as u8),
-                    _ => None,
-                })
-                .collect(),
-            _ => vec![],
+        // tuple[2] = configHash
+        let config_hash = match &tuple[2] {
+            Token::FixedBytes(b) if b.len() == 32 => H256::from_slice(b),
+            _ => H256::zero(),
         };
 
-        // tuple[3] = tickDuration (skip, already from event)
-        // tuple[4] = customThresholds
-        let custom_thresholds: Vec<U256> = match &tuple[4] {
-            Token::Array(arr) => arr
-                .iter()
-                .filter_map(|t| match t {
-                    Token::Uint(v) => Some(*v),
-                    _ => None,
-                })
-                .collect(),
-            _ => vec![],
+        // tuple[3] = nextConfigHash
+        let next_config_hash = match &tuple[3] {
+            Token::FixedBytes(b) if b.len() == 32 => H256::from_slice(b),
+            _ => H256::zero(),
         };
 
-        // tuple[5] = createdAtTick
-        let created_at_tick = match &tuple[5] {
+        // tuple[4] = tickDuration (skip, from event)
+        // tuple[5] = lockOffset
+        let lock_offset = match &tuple[5] {
             Token::Uint(v) => v.as_u64(),
             _ => 0,
         };
 
-        Some((market_ids, resolution_types, custom_thresholds, created_at_tick))
+        // tuple[6] = nextLockOffset
+        let next_lock_offset = match &tuple[6] {
+            Token::Uint(v) => v.as_u64(),
+            _ => 0,
+        };
+
+        // tuple[7] = createdAtTick
+        let created_at_tick = match &tuple[7] {
+            Token::Uint(v) => v.as_u64(),
+            _ => 0,
+        };
+
+        // tuple[8] = lastPromotionTick
+        let last_promotion_tick = match &tuple[8] {
+            Token::Uint(v) => v.as_u64(),
+            _ => 0,
+        };
+
+        Some(FetchedBatchData {
+            source_id,
+            config_hash,
+            next_config_hash,
+            lock_offset,
+            next_lock_offset,
+            created_at_tick,
+            last_promotion_tick,
+        })
     }
 
     /// Fetch a player's current balance from Vision.getPosition(uint256,address).

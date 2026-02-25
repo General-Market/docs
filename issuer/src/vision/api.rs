@@ -74,8 +74,8 @@ pub fn routes(state: Arc<VisionState>) -> axum::Router {
 pub struct BatchSummary {
     pub id: u64,
     pub creator: String,
-    pub market_ids: Vec<String>,
-    pub market_count: usize,
+    pub source_id: String,
+    pub config_hash: String,
     pub tick_duration: u64,
     pub player_count: usize,
     pub tvl: String,
@@ -87,7 +87,8 @@ pub struct BatchSummary {
 pub struct BatchStateResponse {
     pub id: u64,
     pub creator: String,
-    pub market_ids: Vec<String>,
+    pub source_id: String,
+    pub config_hash: String,
     pub tick_duration: u64,
     pub created_at_tick: u64,
     pub paused: bool,
@@ -203,7 +204,7 @@ async fn list_batches(
     // iterator, we query Postgres for batch IDs and then enrich with live data.
 
     let rows = sqlx::query_as::<_, BatchRow>(
-        "SELECT id, creator, market_ids, market_count, tick_duration, paused
+        "SELECT id, creator, tick_duration, paused, source_id, config_hash
          FROM vision_batches
          WHERE paused = false
          ORDER BY id DESC
@@ -234,8 +235,8 @@ async fn list_batches(
                 summaries.push(BatchSummary {
                     id: batch_id,
                     creator: row.creator,
-                    market_ids: row.market_ids,
-                    market_count: row.market_count as usize,
+                    source_id: row.source_id.unwrap_or_default(),
+                    config_hash: row.config_hash.unwrap_or_default(),
                     tick_duration: row.tick_duration as u64,
                     player_count,
                     tvl: tvl.to_string(),
@@ -260,10 +261,10 @@ async fn list_batches(
 struct BatchRow {
     id: i64,
     creator: String,
-    market_ids: Vec<String>,
-    market_count: i32,
     tick_duration: i64,
     paused: bool,
+    source_id: Option<String>,
+    config_hash: Option<String>,
 }
 
 // ---------------------------------------------------------------------------
@@ -296,7 +297,8 @@ async fn batch_state(
             let response = BatchStateResponse {
                 id: batch.id,
                 creator: format!("{:?}", batch.creator),
-                market_ids: batch.market_ids.iter().map(|m| format!("{:?}", m)).collect(),
+                source_id: format!("{:?}", batch.source_id),
+                config_hash: format!("{:?}", batch.config_hash),
                 tick_duration: batch.tick_duration,
                 created_at_tick: batch.created_at_tick,
                 paused: batch.paused,
@@ -448,16 +450,20 @@ async fn backtest(
         }
     };
 
-    let market_count = batch.market_ids.len();
+    // Use config_hash as seed for deterministic market simulation.
+    // In a full implementation, this would fetch the actual market config
+    // from the data-node to get market_ids. For now, use a fixed market_count
+    // derived from the bitmap length or a default.
+    let market_count = bitmap.len() * 8; // each byte = 8 markets
     if market_count == 0 {
         return (
             StatusCode::BAD_REQUEST,
-            Json(ApiError::new("Batch has no markets")),
+            Json(ApiError::new("Batch has no markets (empty bitmap)")),
         )
             .into_response();
     }
 
-    // Simulate ticks with deterministic PRNG based on batch_id + tick
+    // Simulate ticks with deterministic PRNG based on config_hash + tick
     let mut pnl_curve = Vec::with_capacity(ticks as usize);
     let mut cumulative_pnl = 0.0_f64;
     let mut total_wins = 0u64;
@@ -466,11 +472,12 @@ async fn backtest(
     for tick in 0..ticks {
         let mut tick_wins = 0u64;
 
-        for (i, market_id) in batch.market_ids.iter().enumerate() {
-            // Deterministic outcome from market_id bytes + tick
-            let mut seed_bytes = [0u8; 40];
-            seed_bytes[..32].copy_from_slice(market_id.as_bytes());
-            seed_bytes[32..40].copy_from_slice(&tick.to_le_bytes());
+        for i in 0..market_count {
+            // Deterministic outcome from config_hash + market_index + tick
+            let mut seed_bytes = [0u8; 44];
+            seed_bytes[..32].copy_from_slice(batch.config_hash.as_bytes());
+            seed_bytes[32..36].copy_from_slice(&(i as u32).to_le_bytes());
+            seed_bytes[36..44].copy_from_slice(&tick.to_le_bytes());
             let seed_hash = ethers::utils::keccak256(&seed_bytes);
             let market_went_up = seed_hash[0] & 1 == 0; // 50/50 split
 
@@ -844,8 +851,7 @@ async fn vision_leaderboard(
     > = std::collections::HashMap::new();
 
     for batch_id in &batch_ids {
-        if let Some((batch, players)) = state.scheduler.get_batch_state(*batch_id).await {
-            let market_count = batch.market_ids.len();
+        if let Some((_batch, players)) = state.scheduler.get_batch_state(*batch_id).await {
             for p in &players {
                 let entry = player_data.entry(p.player).or_insert((0, 0, 0, 0));
                 entry.0 += p.balance.as_u128(); // current balance
@@ -854,9 +860,8 @@ async fn vision_leaderboard(
                 let initial = p.stake_per_tick.as_u128() * 10;
                 entry.1 += initial;
                 entry.2 += 1; // batches joined
-                if market_count > entry.3 {
-                    entry.3 = market_count;
-                }
+                // Market count is no longer stored on-chain in batch struct;
+                // config is fetched from data-node by config_hash.
             }
         }
     }
@@ -961,8 +966,8 @@ mod tests {
         let summary = BatchSummary {
             id: 1,
             creator: "0x0000000000000000000000000000000000000001".into(),
-            market_ids: vec!["0x0000000000000000000000000000000000000000000000000000000000000001".into()],
-            market_count: 5,
+            source_id: "0x0000000000000000000000000000000000000000000000000000000000000001".into(),
+            config_hash: "0x0000000000000000000000000000000000000000000000000000000000000002".into(),
             tick_duration: 3600,
             player_count: 10,
             tvl: "1000000000000000000".into(),

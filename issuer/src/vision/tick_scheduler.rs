@@ -246,11 +246,14 @@ mod tests {
         Batch {
             id,
             creator: Address::zero(),
-            market_ids: vec![H256::zero()],
-            resolution_types: vec![0],
+            source_id: H256::zero(),
+            config_hash: H256::zero(),
+            next_config_hash: H256::zero(),
             tick_duration,
-            custom_thresholds: vec![],
+            lock_offset: 0,
+            next_lock_offset: 0,
             created_at_tick,
+            last_promotion_tick: 0,
             paused: false,
         }
     }

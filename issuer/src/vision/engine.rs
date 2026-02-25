@@ -12,13 +12,82 @@ use ethers::types::H256;
 use ethers::utils::keccak256;
 use tokio::sync::RwLock;
 
+use super::batch_config_orchestrator;
 use super::config::VisionConfig;
 use super::resolver::{MarketPrices, TickResolver};
 use super::tick_scheduler::TickScheduler;
+use super::types::MarketConfig;
 
 /// Reference prices from the previous tick, used as "start" prices for the next tick.
 /// Maps market_id (H256) -> price value (f64).
 type ReferencePrices = Arc<RwLock<HashMap<H256, f64>>>;
+
+/// Cache of fetched configs to avoid re-fetching within same tick.
+/// Maps config_hash (H256) -> Vec<MarketConfig>.
+struct ConfigCache {
+    configs: RwLock<HashMap<H256, Vec<MarketConfig>>>,
+}
+
+impl ConfigCache {
+    fn new() -> Self {
+        Self {
+            configs: RwLock::new(HashMap::new()),
+        }
+    }
+
+    async fn get_or_fetch(
+        &self,
+        data_node_url: &str,
+        config_hash: &H256,
+    ) -> Result<Vec<MarketConfig>, Box<dyn std::error::Error + Send + Sync>> {
+        // Check cache first
+        {
+            let cache = self.configs.read().await;
+            if let Some(configs) = cache.get(config_hash) {
+                return Ok(configs.clone());
+            }
+        }
+
+        // Fetch from data-node
+        let hash_hex = format!("0x{}", hex::encode(config_hash));
+        let batch = batch_config_orchestrator::fetch_config_by_hash(data_node_url, &hash_hex)
+            .await?;
+
+        let market_configs: Vec<MarketConfig> = batch
+            .markets
+            .iter()
+            .map(|m| MarketConfig {
+                asset_id: m.asset_id.clone(),
+                market_id: H256::from(keccak256(m.asset_id.as_bytes())),
+                resolution_type: parse_resolution_type(&m.resolution_type),
+                threshold_bps: m.threshold_bps,
+            })
+            .collect();
+
+        // Cache it
+        self.configs
+            .write()
+            .await
+            .insert(*config_hash, market_configs.clone());
+
+        Ok(market_configs)
+    }
+}
+
+/// Parse resolution type string ("up_0", "up_x", etc.) to u8 (0-7).
+fn parse_resolution_type(s: &str) -> u8 {
+    match s {
+        "up_0" => 0,
+        "up_30" => 1,
+        "up_x" => 2,
+        "down_0" => 3,
+        "down_30" => 4,
+        "down_x" => 5,
+        "flat_0" => 6,
+        "flat_x" => 7,
+        _ => 2, // default to up_x for auto-batches
+    }
+}
 
 /// Compute the market_id (keccak256 of raw UTF-8 bytes of asset_id).
 /// This matches `cast keccak $(cast --from-utf8 asset_id)` used in batch creation.
@@ -28,43 +97,34 @@ fn asset_id_to_market_id(asset_id: &str) -> H256 {
 
 /// Fetch market prices from the data-node's Vision snapshot endpoint.
 ///
-/// Fetches `/vision/snapshot?source=hackernews`, maps asset_ids to market_ids,
+/// Fetches `/vision/snapshot`, maps asset_ids to market_ids,
 /// and builds a MarketPrices with start prices from the reference map and
 /// end prices from the current snapshot.
+///
+/// Returns Result instead of silently returning empty on failure.
 async fn fetch_market_prices(
     data_node_url: &str,
     batch_market_ids: &[H256],
     reference_prices: &ReferencePrices,
     now: u64,
-) -> MarketPrices {
+) -> Result<MarketPrices, Box<dyn std::error::Error + Send + Sync>> {
     let mut prices = MarketPrices::new();
 
     let url = format!("{}/vision/snapshot?source=hackernews&limit=10000", data_node_url);
     let client = reqwest::Client::new();
 
-    let response = match client.get(&url).timeout(std::time::Duration::from_secs(10)).send().await {
-        Ok(r) => r,
-        Err(e) => {
-            tracing::warn!(error = %e, "Failed to fetch prices from data-node");
-            return prices;
-        }
-    };
+    let response = client
+        .get(&url)
+        .timeout(std::time::Duration::from_secs(10))
+        .send()
+        .await?;
 
-    let json: serde_json::Value = match response.json().await {
-        Ok(j) => j,
-        Err(e) => {
-            tracing::warn!(error = %e, "Failed to parse data-node snapshot response");
-            return prices;
-        }
-    };
+    let json: serde_json::Value = response.json().await?;
 
-    let snapshots = match json.get("snapshots").and_then(|s| s.as_array()) {
-        Some(arr) => arr,
-        None => {
-            tracing::warn!("data-node snapshot response missing 'snapshots' array");
-            return prices;
-        }
-    };
+    let snapshots = json
+        .get("snapshots")
+        .and_then(|s| s.as_array())
+        .ok_or("data-node snapshot response missing 'snapshots' array")?;
 
     // Build a set of batch market_ids for fast lookup
     let batch_ids: std::collections::HashSet<H256> = batch_market_ids.iter().copied().collect();
@@ -73,7 +133,8 @@ async fn fetch_market_prices(
     let mut current_values: HashMap<H256, f64> = HashMap::new();
 
     for snap in snapshots {
-        let asset_id = snap.get("asset_id")
+        let asset_id = snap
+            .get("asset_id")
             .or_else(|| snap.get("assetId"))
             .and_then(|v| v.as_str())
             .unwrap_or("");
@@ -89,7 +150,8 @@ async fn fetch_market_prices(
         }
 
         // Parse the value (current price/score)
-        let value = snap.get("value")
+        let value = snap
+            .get("value")
             .and_then(|v| {
                 if let Some(f) = v.as_f64() {
                     Some(f)
@@ -125,7 +187,7 @@ async fn fetch_market_prices(
         "Fetched market prices from data-node"
     );
 
-    prices
+    Ok(prices)
 }
 
 /// Update reference prices with current values after a tick is resolved.
@@ -139,6 +201,45 @@ async fn update_reference_prices(
         if let Some((_, end)) = prices.get_prices(&market_id) {
             ref_prices.insert(market_id, end);
         }
+    }
+}
+
+/// Record settlements to data-node for threshold feedback loop.
+async fn record_settlements(
+    data_node_url: &str,
+    admin_token: &str,
+    result: &super::types::TickResult,
+    config_hash: &H256,
+) {
+    let settlements: Vec<serde_json::Value> = result
+        .market_results
+        .iter()
+        .filter(|r| !matches!(r.outcome, super::types::MarketOutcome::Cancelled))
+        .map(|r| {
+            serde_json::json!({
+                "sourceId": "",
+                "assetId": r.asset_id,
+                "configHash": format!("0x{}", hex::encode(config_hash)),
+                "startPrice": r.start_price,
+                "endPrice": r.end_price,
+                "changePct": r.pct_change,
+            })
+        })
+        .collect();
+
+    if settlements.is_empty() {
+        return;
+    }
+
+    let client = reqwest::Client::new();
+    if let Err(e) = client
+        .post(&format!("{}/batches/settlement", data_node_url))
+        .header("x-admin-token", admin_token)
+        .json(&settlements)
+        .send()
+        .await
+    {
+        tracing::warn!(error = %e, "Failed to record settlements to data-node");
     }
 }
 
@@ -180,12 +281,13 @@ async fn get_chain_timestamp(rpc_url: &str) -> u64 {
 /// that have a tick due for resolution. When a due batch is found, it:
 ///
 /// 1. Retrieves batch state and player positions from the scheduler
-/// 2. Looks up player bitmaps from the bitmap store
-/// 3. Fetches prices from the data-node (stub — prices currently empty)
+/// 2. Fetches market config from data-node by config_hash (cached)
+/// 3. Fetches prices from the data-node
 /// 4. Runs the tick resolver to compute outcomes
-/// 5. Marks the tick as resolved in the scheduler
-/// 6. (TODO) Drives BLS consensus with other issuers
-/// 7. (TODO) Submits the signed result on-chain
+/// 5. Records settlements to data-node for threshold feedback
+/// 6. Marks the tick as resolved in the scheduler
+/// 7. (TODO) Drives BLS consensus with other issuers
+/// 8. (TODO) Submits the signed result on-chain
 pub async fn run(
     scheduler: Arc<TickScheduler>,
     resolver: Arc<TickResolver>,
@@ -194,6 +296,8 @@ pub async fn run(
 ) {
     let interval = tokio::time::Duration::from_millis(config.tick_poll_interval_ms);
     let reference_prices: ReferencePrices = Arc::new(RwLock::new(HashMap::new()));
+    let config_cache = ConfigCache::new();
+    let admin_token = config.data_node_token.clone().unwrap_or_default();
 
     tracing::info!(
         poll_interval_ms = config.tick_poll_interval_ms,
@@ -238,30 +342,73 @@ pub async fn run(
                                 tracing::debug!(
                                     batch_id,
                                     tick_id,
-                                    "Skipping tick — no players in batch"
+                                    "Skipping tick -- no players in batch"
                                 );
                                 // Mark resolved so we advance past empty ticks
                                 scheduler.mark_resolved(batch_id, tick_id).await;
                                 continue;
                             }
 
+                            // Fetch market configs from data-node by config_hash
+                            let market_configs = match config_cache
+                                .get_or_fetch(&config.data_node_url, &batch.config_hash)
+                                .await
+                            {
+                                Ok(mc) => mc,
+                                Err(e) => {
+                                    tracing::warn!(
+                                        batch_id,
+                                        tick_id,
+                                        error = %e,
+                                        "Failed to fetch market config, skipping tick"
+                                    );
+                                    continue;
+                                }
+                            };
+
+                            let market_ids: Vec<H256> =
+                                market_configs.iter().map(|m| m.market_id).collect();
+
                             tracing::info!(
                                 batch_id,
                                 tick_id,
                                 player_count = players.len(),
-                                market_count = batch.market_ids.len(),
+                                market_count = market_configs.len(),
                                 "Processing due tick"
                             );
 
                             // Fetch prices from data-node for each market_id.
-                            let prices = fetch_market_prices(
+                            let prices = match fetch_market_prices(
                                 &config.data_node_url,
-                                &batch.market_ids,
+                                &market_ids,
                                 &reference_prices,
                                 now,
-                            ).await;
+                            )
+                            .await
+                            {
+                                Ok(p) => p,
+                                Err(e) => {
+                                    tracing::warn!(
+                                        batch_id,
+                                        tick_id,
+                                        error = %e,
+                                        "Failed to fetch market prices, skipping tick"
+                                    );
+                                    continue;
+                                }
+                            };
 
-                            match resolver.resolve_tick(&batch, tick_id, &players, &prices, now).await {
+                            match resolver
+                                .resolve_tick(
+                                    &batch,
+                                    tick_id,
+                                    &players,
+                                    &prices,
+                                    now,
+                                    &market_configs,
+                                )
+                                .await
+                            {
                                 Ok(result) => {
                                     // Log per-player balance changes
                                     for pb in &result.player_balances {
@@ -282,17 +429,45 @@ pub async fn run(
                                     }
 
                                     // Count market outcomes
-                                    let up_count = result.market_results.iter()
-                                        .filter(|m| matches!(m.outcome, super::types::MarketOutcome::Up))
+                                    let up_count = result
+                                        .market_results
+                                        .iter()
+                                        .filter(|m| {
+                                            matches!(
+                                                m.outcome,
+                                                super::types::MarketOutcome::Up
+                                            )
+                                        })
                                         .count();
-                                    let down_count = result.market_results.iter()
-                                        .filter(|m| matches!(m.outcome, super::types::MarketOutcome::Down))
+                                    let down_count = result
+                                        .market_results
+                                        .iter()
+                                        .filter(|m| {
+                                            matches!(
+                                                m.outcome,
+                                                super::types::MarketOutcome::Down
+                                            )
+                                        })
                                         .count();
-                                    let flat_count = result.market_results.iter()
-                                        .filter(|m| matches!(m.outcome, super::types::MarketOutcome::Flat))
+                                    let flat_count = result
+                                        .market_results
+                                        .iter()
+                                        .filter(|m| {
+                                            matches!(
+                                                m.outcome,
+                                                super::types::MarketOutcome::Flat
+                                            )
+                                        })
                                         .count();
-                                    let cancelled_count = result.market_results.iter()
-                                        .filter(|m| matches!(m.outcome, super::types::MarketOutcome::Cancelled))
+                                    let cancelled_count = result
+                                        .market_results
+                                        .iter()
+                                        .filter(|m| {
+                                            matches!(
+                                                m.outcome,
+                                                super::types::MarketOutcome::Cancelled
+                                            )
+                                        })
                                         .count();
 
                                     tracing::info!(
@@ -308,12 +483,22 @@ pub async fn run(
                                         "Tick resolved"
                                     );
 
+                                    // Record settlements to data-node for threshold feedback
+                                    record_settlements(
+                                        &config.data_node_url,
+                                        &admin_token,
+                                        &result,
+                                        &batch.config_hash,
+                                    )
+                                    .await;
+
                                     // Update reference prices for next tick
                                     update_reference_prices(
                                         &reference_prices,
-                                        &batch.market_ids,
+                                        &market_ids,
                                         &prices,
-                                    ).await;
+                                    )
+                                    .await;
 
                                     scheduler.mark_resolved(batch_id, tick_id).await;
                                 }
@@ -324,7 +509,7 @@ pub async fn run(
                                         error = %e,
                                         "Tick resolution failed"
                                     );
-                                    // Don't mark resolved — retry on next poll
+                                    // Don't mark resolved -- retry on next poll
                                 }
                             }
                         }
@@ -354,11 +539,14 @@ mod tests {
         Batch {
             id,
             creator: Address::zero(),
-            market_ids: vec![H256::zero()],
-            resolution_types: vec![0],
+            source_id: H256::zero(),
+            config_hash: H256::zero(),
+            next_config_hash: H256::zero(),
             tick_duration,
-            custom_thresholds: vec![],
+            lock_offset: 0,
+            next_lock_offset: 0,
             created_at_tick,
+            last_promotion_tick: 0,
             paused: false,
         }
     }
@@ -447,12 +635,9 @@ mod tests {
             .expect("engine should shut down")
             .expect("engine task should not panic");
 
-        // The resolver will either resolve (all markets cancelled due to no prices)
-        // or fail with NoActivePlayers. Either way, tick should advance or stay.
-        // With empty prices, markets get cancelled but tick still resolves.
+        // The engine will try to fetch config from data-node (H256::zero hash),
+        // which will fail. Tick remains unresolved. This is expected behavior.
         let next_tick = sched_check.next_tick_for_batch(1).await;
-        // If resolved, next_tick >= 1. If failed, next_tick == 0.
-        // Both are valid outcomes since we have no real prices.
         tracing::info!(next_tick = next_tick, "Final tick state");
     }
 }

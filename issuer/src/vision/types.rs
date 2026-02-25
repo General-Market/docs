@@ -6,16 +6,41 @@ use ethers::types::{Address, H256, U256};
 use serde::{Deserialize, Serialize};
 
 /// A batch of prediction markets created by a batch creator.
+///
+/// New auto-batch system: config_hash points to off-chain config (markets, thresholds).
+/// On-chain stores only the hash. Full config fetched from data-node.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Batch {
     pub id: u64,
     pub creator: Address,
-    pub market_ids: Vec<H256>,
-    pub resolution_types: Vec<u8>,
+    /// keccak256 of source_id string (identifies the data source)
+    pub source_id: H256,
+    /// Active config hash (keccak256 of ABI-encoded batch config)
+    pub config_hash: H256,
+    /// Pending config hash (promoted at tick boundary via lazy promotion)
+    pub next_config_hash: H256,
     pub tick_duration: u64,
-    pub custom_thresholds: Vec<U256>,
+    /// Active lock window offset in seconds
+    pub lock_offset: u64,
+    /// Pending lock window offset (promoted with next_config_hash)
+    pub next_lock_offset: u64,
     pub created_at_tick: u64,
+    /// Last tick at which config was promoted (prevents mid-tick changes)
+    pub last_promotion_tick: u64,
     pub paused: bool,
+}
+
+/// Per-market config from off-chain batch config.
+/// Replaces on-chain market_ids/resolution_types/custom_thresholds.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MarketConfig {
+    pub asset_id: String,
+    /// keccak256(asset_id) -- market identifier
+    pub market_id: H256,
+    /// Resolution type (0-7, parsed from "up_x" string)
+    pub resolution_type: u8,
+    /// Threshold in basis points (e.g. 150 = 1.5%)
+    pub threshold_bps: u32,
 }
 
 /// A player's position within a batch.
@@ -62,7 +87,13 @@ pub struct PlayerBalance {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MarketResult {
     pub market_id: H256,
+    /// Human-readable asset identifier (for settlement recording)
+    pub asset_id: String,
     pub outcome: MarketOutcome,
+    /// Start price at tick open
+    pub start_price: f64,
+    /// End price at tick close
+    pub end_price: f64,
     pub pct_change: f64,
     pub player_results: Vec<PlayerMarketResult>,
 }

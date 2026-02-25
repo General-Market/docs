@@ -83,6 +83,7 @@ impl TickResolver {
     /// Resolve a single tick for a batch.
     ///
     /// See module-level docs for the full pipeline.
+    /// `market_configs` provides per-market resolution_type + threshold from off-chain config.
     pub async fn resolve_tick(
         &self,
         batch: &Batch,
@@ -90,6 +91,7 @@ impl TickResolver {
         players: &[PlayerPosition],
         prices: &MarketPrices,
         now: u64,
+        market_configs: &[MarketConfig],
     ) -> Result<TickResult, ResolverError> {
         let tick_duration = batch.tick_duration;
         let tick_start_time = (batch.created_at_tick + tick_id) * tick_duration;
@@ -130,19 +132,24 @@ impl TickResolver {
         let mult_map: HashMap<Address, &PlayerMultiplier> =
             multipliers.iter().map(|m| (m.player, m)).collect();
 
-        // 4. Resolve each market
+        // 4. Resolve each market using market_configs
         let mut market_results = Vec::new();
         let mut player_deltas: HashMap<Address, i128> = HashMap::new();
 
-        for (market_idx, market_id) in batch.market_ids.iter().enumerate() {
+        for (market_idx, mc) in market_configs.iter().enumerate() {
+            let market_id = mc.market_id;
+
             // Get prices
-            let (start_price, end_price) = match prices.get_prices(market_id) {
+            let (start_price, end_price) = match prices.get_prices(&market_id) {
                 Some(p) => p,
                 None => {
-                    // No price data -> cancelled market
+                    // No price data -> cancelled market (skipped, no weight redistribution)
                     market_results.push(MarketResult {
-                        market_id: *market_id,
+                        market_id,
+                        asset_id: mc.asset_id.clone(),
                         outcome: MarketOutcome::Cancelled,
+                        start_price: 0.0,
+                        end_price: 0.0,
                         pct_change: 0.0,
                         player_results: vec![],
                     });
@@ -151,10 +158,13 @@ impl TickResolver {
             };
 
             // Check staleness
-            if prices.is_stale(market_id, self.config.staleness_threshold_secs, now) {
+            if prices.is_stale(&market_id, self.config.staleness_threshold_secs, now) {
                 market_results.push(MarketResult {
-                    market_id: *market_id,
+                    market_id,
+                    asset_id: mc.asset_id.clone(),
                     outcome: MarketOutcome::Cancelled,
+                    start_price,
+                    end_price,
                     pct_change: 0.0,
                     player_results: vec![],
                 });
@@ -168,13 +178,9 @@ impl TickResolver {
                 0.0
             };
 
-            // Determine outcome based on resolution type
-            let resolution_type = batch.resolution_types[market_idx];
-            let threshold = batch
-                .custom_thresholds
-                .get(market_idx)
-                .map(|t| t.as_u64() as f64 / 100.0) // threshold stored as basis points
-                .unwrap_or(0.0);
+            // Determine outcome from MarketConfig resolution_type + threshold_bps
+            let resolution_type = mc.resolution_type;
+            let threshold = mc.threshold_bps as f64 / 100.0; // bps -> percentage
             let outcome = resolve_outcome(pct_change, resolution_type, threshold);
 
             // Decode bitmaps -> player sides for this market
@@ -219,8 +225,11 @@ impl TickResolver {
                 .collect();
 
             market_results.push(MarketResult {
-                market_id: *market_id,
+                market_id,
+                asset_id: mc.asset_id.clone(),
                 outcome,
+                start_price,
+                end_price,
                 pct_change,
                 player_results,
             });
@@ -381,22 +390,47 @@ mod tests {
         VisionConfig::default()
     }
 
-    fn make_batch(
-        id: u64,
-        market_ids: Vec<H256>,
-        resolution_types: Vec<u8>,
-        tick_duration: u64,
-    ) -> Batch {
+    fn make_batch(id: u64, tick_duration: u64) -> Batch {
         Batch {
             id,
             creator: Address::zero(),
-            market_ids,
-            resolution_types,
+            source_id: H256::zero(),
+            config_hash: H256::zero(),
+            next_config_hash: H256::zero(),
             tick_duration,
-            custom_thresholds: vec![],
+            lock_offset: 0,
+            next_lock_offset: 0,
             created_at_tick: 0,
+            last_promotion_tick: 0,
             paused: false,
         }
+    }
+
+    /// Build MarketConfig entries from asset names and resolution types.
+    fn make_market_configs(
+        assets: &[(&str, u8)],
+    ) -> Vec<MarketConfig> {
+        assets.iter().map(|(name, res_type)| {
+            MarketConfig {
+                asset_id: name.to_string(),
+                market_id: H256::from(keccak256(name.as_bytes())),
+                resolution_type: *res_type,
+                threshold_bps: 0,
+            }
+        }).collect()
+    }
+
+    fn make_market_configs_with_threshold(
+        assets: &[(&str, u8, u32)],
+    ) -> Vec<MarketConfig> {
+        assets.iter().map(|(name, res_type, bps)| {
+            MarketConfig {
+                asset_id: name.to_string(),
+                market_id: H256::from(keccak256(name.as_bytes())),
+                resolution_type: *res_type,
+                threshold_bps: *bps,
+            }
+        }).collect()
     }
 
     fn make_player(
@@ -578,8 +612,9 @@ mod tests {
         let config = default_config();
         let resolver = TickResolver::new(store.clone(), config);
 
-        let market_id = H256::random();
-        let batch = make_batch(1, vec![market_id], vec![0], 600); // UP_0 resolution
+        let market_configs = make_market_configs(&[("testmarket", 0)]); // UP_0 resolution
+        let market_id = market_configs[0].market_id;
+        let batch = make_batch(1, 600);
 
         let player_a = addr(1);
         let player_b = addr(2);
@@ -602,7 +637,7 @@ mod tests {
         prices.insert(market_id, 100.0, 105.0, 1000);
 
         let result = resolver
-            .resolve_tick(&batch, 0, &players, &prices, 1000)
+            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
             .await
             .expect("resolve should succeed");
 
@@ -657,8 +692,9 @@ mod tests {
         let config = default_config();
         let resolver = TickResolver::new(store.clone(), config);
 
-        let market_id = H256::random();
-        let batch = make_batch(1, vec![market_id], vec![0], 600);
+        let market_configs = make_market_configs(&[("testmarket", 0)]);
+        let market_id = market_configs[0].market_id;
+        let batch = make_batch(1, 600);
 
         let player_a = addr(1);
         let player_b = addr(2);
@@ -678,7 +714,7 @@ mod tests {
         prices.insert(market_id, 100.0, 102.0, 1000);
 
         let result = resolver
-            .resolve_tick(&batch, 0, &players, &prices, 1000)
+            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
             .await
             .expect("resolve should succeed");
 
@@ -715,8 +751,8 @@ mod tests {
         let config = default_config();
         let resolver = TickResolver::new(store.clone(), config);
 
-        let market_id = H256::random();
-        let batch = make_batch(1, vec![market_id], vec![0], 600);
+        let market_configs = make_market_configs(&[("testmarket", 0)]);
+        let batch = make_batch(1, 600);
 
         let player_a = addr(1);
         let player_b = addr(2);
@@ -733,7 +769,7 @@ mod tests {
         let prices = MarketPrices::new();
 
         let result = resolver
-            .resolve_tick(&batch, 0, &players, &prices, 1000)
+            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
             .await
             .expect("resolve should succeed");
 
@@ -763,8 +799,9 @@ mod tests {
         config.staleness_threshold_secs = 300;
         let resolver = TickResolver::new(store.clone(), config);
 
-        let market_id = H256::random();
-        let batch = make_batch(1, vec![market_id], vec![0], 600);
+        let market_configs = make_market_configs(&[("testmarket", 0)]);
+        let market_id = market_configs[0].market_id;
+        let batch = make_batch(1, 600);
 
         store_bitmap(&store, addr(1), 1, vec![0b1000_0000]).await;
         store_bitmap(&store, addr(2), 1, vec![0b0000_0000]).await;
@@ -779,7 +816,7 @@ mod tests {
         prices.insert(market_id, 100.0, 105.0, 100);
 
         let result = resolver
-            .resolve_tick(&batch, 0, &players, &prices, 1000)
+            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
             .await
             .expect("resolve should succeed");
 
@@ -798,8 +835,8 @@ mod tests {
         let config = default_config();
         let resolver = TickResolver::new(store.clone(), config);
 
-        let market_id = H256::random();
-        let batch = make_batch(1, vec![market_id], vec![0], 600);
+        let market_configs = make_market_configs(&[("testmarket", 0)]);
+        let batch = make_batch(1, 600);
 
         // All players have zero balance
         let players = vec![
@@ -810,7 +847,7 @@ mod tests {
         let prices = MarketPrices::new();
 
         let result = resolver
-            .resolve_tick(&batch, 0, &players, &prices, 1000)
+            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
             .await;
 
         assert!(result.is_err());
@@ -829,9 +866,10 @@ mod tests {
         let config = default_config();
         let resolver = TickResolver::new(store.clone(), config);
 
-        let market_a = H256::random();
-        let market_b = H256::random();
-        let batch = make_batch(1, vec![market_a, market_b], vec![0, 0], 600);
+        let market_configs = make_market_configs(&[("market_a", 0), ("market_b", 0)]);
+        let market_a = market_configs[0].market_id;
+        let market_b = market_configs[1].market_id;
+        let batch = make_batch(1, 600);
 
         let player_1 = addr(1);
         let player_2 = addr(2);
@@ -854,7 +892,7 @@ mod tests {
         prices.insert(market_b, 100.0, 90.0, 1000); // DOWN 10%
 
         let result = resolver
-            .resolve_tick(&batch, 0, &players, &prices, 1000)
+            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
             .await
             .expect("resolve should succeed");
 
