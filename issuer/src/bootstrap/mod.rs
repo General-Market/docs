@@ -62,6 +62,12 @@ pub struct BootstrapParams {
     pub p2p_rate_limit: f64,
     /// Rate burst: maximum burst size / token bucket capacity (default: 100).
     pub p2p_rate_burst: f64,
+    /// Path to consensus Write-Ahead Log file.
+    pub wal_path: Option<std::path::PathBuf>,
+    /// WAL sync mode: "fdatasync", "fsync", or "none".
+    pub wal_sync_mode: Option<String>,
+    /// Skip WAL replay on startup.
+    pub skip_wal_replay: bool,
 }
 
 /// Main bootstrap orchestrator

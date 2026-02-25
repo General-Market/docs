@@ -3008,6 +3008,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         p2p_max_per_ip: args.p2p_max_per_ip,
         p2p_rate_limit: args.p2p_rate_limit,
         p2p_rate_burst: args.p2p_rate_burst,
+        wal_path: args.wal_path.clone(),
+        wal_sync_mode: args.wal_sync_mode.clone(),
+        skip_wal_replay: args.skip_wal_replay,
     };
 
     // Deprecation warning for --signature-threshold
@@ -3268,6 +3271,55 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     } else {
         debug!(node_id, "Vision subsystem not configured");
+    }
+
+    // WAL replay: re-ingest messages from the current cycle's WAL entries before starting
+    // the consensus loop. This recovers partial-cycle state after a crash/restart.
+    if !args.skip_wal_replay {
+        if let Some(ref wal_path) = args.wal_path {
+            if let Some(ref protocol) = components.consensus.protocol {
+                match issuer::p2p::wal::ConsensusWAL::open(wal_path, issuer::p2p::wal::WalSyncMode::None) {
+                    Ok(wal) => {
+                        let current_cycle = components.consensus.cycle_manager.get_current_cycle();
+                        match wal.read_cycle(current_cycle) {
+                            Ok(entries) if !entries.is_empty() => {
+                                info!(
+                                    node_id,
+                                    cycle = current_cycle,
+                                    count = entries.len(),
+                                    "Replaying WAL entries for current cycle"
+                                );
+                                protocol.set_replay_mode(true);
+                                for entry in entries {
+                                    match rmp_serde::from_slice::<P2PMessage>(&entry.message_bytes) {
+                                        Ok(message) => {
+                                            if let Err(e) = protocol.handle_message(entry.from, message).await {
+                                                debug!(error = %e, "WAL replay message failed (non-fatal)");
+                                            }
+                                        }
+                                        Err(e) => {
+                                            debug!(error = %e, "WAL replay: failed to deserialize message, skipping");
+                                        }
+                                    }
+                                }
+                                protocol.set_replay_mode(false);
+                                info!(node_id, cycle = current_cycle, "WAL replay complete");
+                            }
+                            Ok(_) => {
+                                debug!(node_id, "WAL replay: no entries for current cycle");
+                            }
+                            Err(e) => {
+                                warn!(node_id, error = %e, "WAL replay: failed to read cycle entries");
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        warn!(node_id, error = %e, wal_path = %wal_path.display(),
+                              "WAL replay: failed to open WAL file, skipping replay");
+                    }
+                }
+            }
+        }
     }
 
     if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr, vision_api_router).await {

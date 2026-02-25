@@ -618,6 +618,25 @@ impl<'a> ConsensusBuilder<'a> {
         protocol = protocol.with_peer_scorer(p2p_transport.peer_scorer().clone());
         info!(self.node_id, "ConsensusProtocol with peer scorer for leader verification");
 
+        // Attach WAL if configured
+        if let Some(ref wal_path) = self.params.wal_path {
+            let sync_mode = match self.params.wal_sync_mode.as_deref() {
+                Some("fsync") => crate::p2p::wal::WalSyncMode::Fsync,
+                Some("none") => crate::p2p::wal::WalSyncMode::None,
+                _ => crate::p2p::wal::WalSyncMode::Fdatasync, // default
+            };
+            match crate::p2p::wal::ConsensusWAL::open(wal_path, sync_mode) {
+                Ok(wal) => {
+                    protocol = protocol.with_wal(wal);
+                    info!(self.node_id, wal_path = %wal_path.display(), "ConsensusProtocol with WAL");
+                }
+                Err(e) => {
+                    warn!(self.node_id, error = %e, wal_path = %wal_path.display(),
+                          "Failed to open WAL, continuing without WAL");
+                }
+            }
+        }
+
         let protocol = Arc::new(protocol);
 
         // Set ITP creation config

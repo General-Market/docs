@@ -310,6 +310,10 @@ where
     /// Equivocation detector: tracks (peer, cycle, phase) -> content_hash to
     /// detect peers that send conflicting votes/signatures in the same round.
     equivocation_detector: EquivocationDetector,
+    /// Optional Write-Ahead Log for crash recovery
+    wal: Option<std::sync::Mutex<crate::p2p::wal::ConsensusWAL>>,
+    /// When true, suppress P2P broadcasts (during WAL replay)
+    replay_mode: std::sync::atomic::AtomicBool,
 }
 
 impl<P, C, K, F> ConsensusProtocol<P, C, K, F>
@@ -359,6 +363,8 @@ where
             peer_registry: Arc::new(RwLock::new(peers)),
             peer_scorer: None,
             equivocation_detector: EquivocationDetector::new(),
+            wal: None,
+            replay_mode: std::sync::atomic::AtomicBool::new(false),
         }
     }
 
@@ -451,6 +457,28 @@ where
     pub fn with_peer_scorer(mut self, scorer: Arc<PeerScorer>) -> Self {
         self.peer_scorer = Some(scorer);
         self
+    }
+
+    /// Set the Write-Ahead Log for crash recovery.
+    ///
+    /// When set, all incoming consensus messages are persisted to the WAL
+    /// before being processed, enabling replay after a crash.
+    pub fn with_wal(mut self, wal: crate::p2p::wal::ConsensusWAL) -> Self {
+        self.wal = Some(std::sync::Mutex::new(wal));
+        self
+    }
+
+    /// Enable or disable replay mode.
+    ///
+    /// When replay mode is active, WAL appends are suppressed to avoid
+    /// re-logging messages that are already persisted.
+    pub fn set_replay_mode(&self, enabled: bool) {
+        self.replay_mode.store(enabled, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    /// Check if the protocol is currently in replay mode.
+    pub fn is_replay_mode(&self) -> bool {
+        self.replay_mode.load(std::sync::atomic::Ordering::SeqCst)
     }
 
     /// Refresh the peer_registry from the key registry.
@@ -602,6 +630,15 @@ where
 
         // GC equivocation detector: remove entries older than current_cycle - 2
         self.equivocation_detector.gc(cycle_number);
+
+        // GC WAL: retain only current cycle entries
+        if let Some(ref wal) = self.wal {
+            if let Ok(mut wal) = wal.lock() {
+                if let Err(e) = wal.gc(cycle_number) {
+                    tracing::warn!(code = "INFRA-022", error = %e, "WAL GC failed");
+                }
+            }
+        }
 
         // Replay any messages that arrived early (buffered as "future" in previous cycles).
         // Also clear stale messages to prevent unbounded buffer growth.
@@ -1062,6 +1099,28 @@ where
                     scorer.record_invalid_message(&from);
                 }
                 return Ok(());
+            }
+        }
+
+        // WAL: log the message before processing so it survives crashes
+        if let Some(ref wal_mutex) = self.wal {
+            if !self.is_replay_mode() {
+                if let Ok(mut wal) = wal_mutex.lock() {
+                    let entry = crate::p2p::wal::WALEntry {
+                        cycle_number,
+                        phase: format!("{:?}", phase),
+                        from,
+                        message_bytes: rmp_serde::to_vec(&message).unwrap_or_default(),
+                        role: crate::p2p::wal::WalRole::Follower,
+                        timestamp_ms: std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .unwrap_or_default()
+                            .as_millis() as u64,
+                    };
+                    if let Err(e) = wal.append(&entry) {
+                        tracing::warn!(code = "INFRA-022", error = %e, "WAL append failed");
+                    }
+                }
             }
         }
 
