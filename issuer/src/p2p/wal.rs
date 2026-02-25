@@ -158,3 +158,228 @@ impl ConsensusWAL {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_entry(cycle_number: u64) -> WALEntry {
+        WALEntry {
+            cycle_number,
+            phase: "Price".to_string(),
+            from: [1u8; 32],
+            message_bytes: vec![0xAA, 0xBB, 0xCC],
+            role: WalRole::Follower,
+            timestamp_ms: 1234567890,
+        }
+    }
+
+    #[test]
+    fn test_write_read_roundtrip() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("test.wal");
+        let mut wal = ConsensusWAL::open(&path, WalSyncMode::None).unwrap();
+
+        let e1 = WALEntry {
+            cycle_number: 1,
+            phase: "Price".to_string(),
+            from: [1u8; 32],
+            message_bytes: vec![0xAA, 0xBB, 0xCC],
+            role: WalRole::Follower,
+            timestamp_ms: 1000,
+        };
+        let e2 = WALEntry {
+            cycle_number: 2,
+            phase: "Commit".to_string(),
+            from: [2u8; 32],
+            message_bytes: vec![0x01, 0x02],
+            role: WalRole::Leader,
+            timestamp_ms: 2000,
+        };
+        let e3 = WALEntry {
+            cycle_number: 3,
+            phase: "Aggregate".to_string(),
+            from: [3u8; 32],
+            message_bytes: vec![0xFF],
+            role: WalRole::Follower,
+            timestamp_ms: 3000,
+        };
+
+        wal.append(&e1).unwrap();
+        wal.append(&e2).unwrap();
+        wal.append(&e3).unwrap();
+
+        let entries = wal.read_all().unwrap();
+        assert_eq!(entries.len(), 3);
+
+        assert_eq!(entries[0].cycle_number, 1);
+        assert_eq!(entries[0].phase, "Price");
+        assert_eq!(entries[0].from, [1u8; 32]);
+        assert_eq!(entries[0].message_bytes, vec![0xAA, 0xBB, 0xCC]);
+        assert_eq!(entries[0].timestamp_ms, 1000);
+
+        assert_eq!(entries[1].cycle_number, 2);
+        assert_eq!(entries[1].phase, "Commit");
+        assert_eq!(entries[1].from, [2u8; 32]);
+        assert_eq!(entries[1].message_bytes, vec![0x01, 0x02]);
+        assert_eq!(entries[1].timestamp_ms, 2000);
+
+        assert_eq!(entries[2].cycle_number, 3);
+        assert_eq!(entries[2].phase, "Aggregate");
+        assert_eq!(entries[2].from, [3u8; 32]);
+        assert_eq!(entries[2].message_bytes, vec![0xFF]);
+        assert_eq!(entries[2].timestamp_ms, 3000);
+    }
+
+    #[test]
+    fn test_read_cycle_filter() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("test.wal");
+        let mut wal = ConsensusWAL::open(&path, WalSyncMode::None).unwrap();
+
+        // Write entries for cycles 5, 6, 6, 7
+        wal.append(&make_entry(5)).unwrap();
+        wal.append(&make_entry(6)).unwrap();
+        wal.append(&make_entry(6)).unwrap();
+        wal.append(&make_entry(7)).unwrap();
+
+        let cycle6 = wal.read_cycle(6).unwrap();
+        assert_eq!(cycle6.len(), 2, "Expected exactly 2 entries for cycle 6");
+        for e in &cycle6 {
+            assert_eq!(e.cycle_number, 6);
+        }
+
+        let cycle5 = wal.read_cycle(5).unwrap();
+        assert_eq!(cycle5.len(), 1);
+
+        let cycle7 = wal.read_cycle(7).unwrap();
+        assert_eq!(cycle7.len(), 1);
+
+        let cycle99 = wal.read_cycle(99).unwrap();
+        assert_eq!(cycle99.len(), 0);
+    }
+
+    #[test]
+    fn test_crc_truncation_recovery() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("test.wal");
+
+        // Write 2 valid entries
+        {
+            let mut wal = ConsensusWAL::open(&path, WalSyncMode::None).unwrap();
+            wal.append(&make_entry(1)).unwrap();
+            wal.append(&make_entry(2)).unwrap();
+        }
+
+        // Append corrupt bytes (wrong CRC) directly to the file
+        // Format: [4-byte len][payload][4-byte CRC]
+        // We write a valid-looking length but garbage payload and wrong CRC
+        {
+            let mut file = std::fs::OpenOptions::new()
+                .append(true)
+                .open(&path)
+                .unwrap();
+
+            // Write a fake entry: 8-byte "payload" + wrong CRC
+            let fake_payload = b"GARBAGE!";
+            let fake_len = fake_payload.len() as u32;
+            let wrong_crc: u32 = 0xDEADBEEF;
+
+            file.write_all(&fake_len.to_be_bytes()).unwrap();
+            file.write_all(fake_payload).unwrap();
+            file.write_all(&wrong_crc.to_be_bytes()).unwrap();
+        }
+
+        // read_all should stop at the corrupt entry and return exactly 2
+        let wal = ConsensusWAL::open(&path, WalSyncMode::None).unwrap();
+        let entries = wal.read_all().unwrap();
+        assert_eq!(
+            entries.len(),
+            2,
+            "Expected 2 valid entries, got {}",
+            entries.len()
+        );
+        assert_eq!(entries[0].cycle_number, 1);
+        assert_eq!(entries[1].cycle_number, 2);
+    }
+
+    #[test]
+    fn test_gc_keeps_current_cycle() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("test.wal");
+        let mut wal = ConsensusWAL::open(&path, WalSyncMode::None).unwrap();
+
+        // Write entries for cycles 10, 11, 12
+        wal.append(&make_entry(10)).unwrap();
+        wal.append(&make_entry(10)).unwrap();
+        wal.append(&make_entry(11)).unwrap();
+        wal.append(&make_entry(12)).unwrap();
+        wal.append(&make_entry(12)).unwrap();
+        wal.append(&make_entry(12)).unwrap();
+
+        // GC keeping only cycle 12
+        wal.gc(12).unwrap();
+
+        let entries = wal.read_all().unwrap();
+        assert_eq!(
+            entries.len(),
+            3,
+            "Expected 3 entries for cycle 12, got {}",
+            entries.len()
+        );
+        for e in &entries {
+            assert_eq!(
+                e.cycle_number, 12,
+                "Found entry with wrong cycle: {}",
+                e.cycle_number
+            );
+        }
+    }
+
+    #[test]
+    fn test_hard_cap() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("test.wal");
+        let mut wal = ConsensusWAL::open(&path, WalSyncMode::None).unwrap();
+
+        // Write a large entry to push past MAX_WAL_SIZE (10 MB)
+        let big_entry = WALEntry {
+            cycle_number: 1,
+            phase: "Price".to_string(),
+            from: [1u8; 32],
+            // ~11 MB payload to exceed the cap in one write
+            message_bytes: vec![0u8; 11 * 1024 * 1024],
+            role: WalRole::Follower,
+            timestamp_ms: 1234567890,
+        };
+        wal.append(&big_entry).unwrap();
+
+        // Record file size after the first (large) write
+        let size_after_first = std::fs::metadata(&path).unwrap().len();
+        assert!(
+            size_after_first > MAX_WAL_SIZE,
+            "File should exceed MAX_WAL_SIZE after large write"
+        );
+
+        // Further appends should silently succeed but NOT grow the file
+        let small_entry = make_entry(2);
+        wal.append(&small_entry).unwrap(); // must return Ok(())
+        wal.append(&small_entry).unwrap();
+
+        let size_after_capped = std::fs::metadata(&path).unwrap().len();
+        assert_eq!(
+            size_after_first, size_after_capped,
+            "File must not grow after hard cap is reached"
+        );
+    }
+
+    #[test]
+    fn test_empty_wal_read() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("test.wal");
+        let wal = ConsensusWAL::open(&path, WalSyncMode::None).unwrap();
+
+        let entries = wal.read_all().unwrap();
+        assert_eq!(entries.len(), 0, "Empty WAL should return empty vec");
+    }
+}
