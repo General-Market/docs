@@ -5,6 +5,7 @@
 
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use async_trait::async_trait;
@@ -74,6 +75,7 @@ pub struct MockChain {
     state: Arc<RwLock<MockChainState>>,
     config: Arc<RwLock<MockChainConfig>>,
     event_tx: broadcast::Sender<ChainEvent>,
+    consensus_paused: AtomicBool,
 }
 
 impl MockChain {
@@ -118,6 +120,11 @@ impl MockChain {
     /// Force the next operation to fail with a specific error
     pub async fn set_next_error(&self, error: MockError) {
         self.config.write().await.next_error = Some(error);
+    }
+
+    /// Set whether consensus is paused (test helper)
+    pub fn set_consensus_paused(&self, paused: bool) {
+        self.consensus_paused.store(paused, Ordering::Relaxed);
     }
 
     /// Simulate order submission (test helper)
@@ -380,6 +387,11 @@ impl ChainReader for MockChain {
 
         Ok(Box::pin(stream))
     }
+
+    async fn is_consensus_paused(&self) -> Result<bool, Error> {
+        self.maybe_fail().await?;
+        Ok(self.consensus_paused.load(Ordering::Relaxed))
+    }
 }
 
 #[async_trait]
@@ -625,6 +637,7 @@ impl MockChainBuilder {
             state: Arc::new(RwLock::new(state)),
             config: Arc::new(RwLock::new(self.config)),
             event_tx,
+            consensus_paused: AtomicBool::new(false),
         }
     }
 }

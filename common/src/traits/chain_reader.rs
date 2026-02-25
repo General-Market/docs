@@ -201,4 +201,12 @@ pub trait ChainReader: Send + Sync {
     async fn get_aggregated_pubkey(&self) -> Result<Vec<u8>, Error> {
         Err(Error::ChainRead("get_aggregated_pubkey not implemented".to_string()))
     }
+
+    /// Check if consensus is paused on-chain (IssuerRegistry.consensusPaused()).
+    ///
+    /// Used at cycle start to skip consensus during deployment ceremonies.
+    /// Default implementation returns false for backwards compatibility.
+    async fn is_consensus_paused(&self) -> Result<bool, Error> {
+        Ok(false)
+    }
 }

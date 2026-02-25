@@ -689,6 +689,20 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                 last_cycle = current_cycle;
                 info!(cycle = current_cycle, trigger = ?trigger, "Entering consensus cycle");
 
+                // Phase -1a: On-chain consensus pause check (fail-safe: treat RPC errors as paused)
+                match consensus_chain_reader.is_consensus_paused().await {
+                    Ok(true) => {
+                        warn!(cycle = current_cycle, "Consensus paused on-chain, skipping cycle");
+                        continue;
+                    }
+                    Err(e) => {
+                        error!(cycle = current_cycle, error = %e,
+                            "Failed to check consensusPaused, treating as paused (fail-safe)");
+                        continue;
+                    }
+                    Ok(false) => {} // proceed normally
+                }
+
                 consensus_metrics.record_consensus_start();
                 let start_time = std::time::Instant::now();
 

@@ -45,6 +45,7 @@ abigen!(
         function getAggregatedPubkey() external view returns (bytes)
         function activeIssuerCount() external view returns (uint256)
         function registryNonce() external view returns (uint256)
+        function consensusPaused() external view returns (bool)
     ]"#
 );
 
@@ -850,6 +851,19 @@ where
 
         debug!(aggregated_pubkey_len = result.len(), "Fetched aggregated pubkey from IssuerRegistry");
         Ok(result.to_vec())
+    }
+
+    async fn is_consensus_paused(&self) -> Result<bool, Error> {
+        let contract = self.issuer_registry_contract();
+        let result = contract
+            .consensus_paused()
+            .call()
+            .await
+            .map_err(|e| {
+                Error::ChainRead(format!("Failed to fetch consensusPaused: {}", e))
+            })?;
+
+        Ok(result)
     }
 }
 
