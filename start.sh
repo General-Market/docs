@@ -273,6 +273,9 @@ else
     cd contracts
     export PRIVATE_KEY=$DEPLOYER_KEY
 
+    # Clean compiled artifacts to prevent stale bytecode
+    forge clean > /dev/null 2>&1
+
     # 2a: Deploy to L3
     if ! forge script script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
         --broadcast --slow --rpc-url $RPC_URL > ../logs/deploy-core-l3.log 2>&1; then
