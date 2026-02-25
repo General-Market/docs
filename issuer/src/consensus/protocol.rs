@@ -679,6 +679,7 @@ where
         cycle_number: u64,
         prices: Vec<(u32, U256)>,
     ) -> Result<(), Error> {
+        let ref_nonce = self.key_registry.registry_nonce();
         let mut retry_count = 0u8;
 
         loop {
@@ -701,7 +702,7 @@ where
                 cycle_number,
                 prices: prices.clone(),
                 proposer_signature: BLSSignature(signature.0.clone()),
-                reference_nonce: 0,
+                reference_nonce: ref_nonce,
             };
 
             debug!(cycle_number, "Broadcasting PRICE_PROPOSAL");
@@ -806,6 +807,8 @@ where
         order_ids: Vec<u64>,
         fills: Vec<Fill>,
     ) -> Result<ConsensusResult, Error> {
+        let ref_nonce = self.key_registry.registry_nonce();
+
         // Advance to BatchProposal phase
         {
             let mut state = self.state.write().await;
@@ -832,7 +835,7 @@ where
             order_ids: order_ids.clone(),
             fills: fills.clone(),
             proposer_signature: BLSSignature(signature.0.clone()),
-            reference_nonce: 0,
+            reference_nonce: ref_nonce,
         };
 
         debug!(cycle_number, "Broadcasting BATCH_PROPOSAL");
@@ -864,10 +867,9 @@ where
                         info!(cycle_number, "Empty batch, skipping on-chain submission");
                     } else {
                         // Submit to chain
-                        // TODO(consensus-hardening): pass real reference_nonce from aggregator
                         let tx_hash = self
                             .chain_writer
-                            .submit_batch(cycle_number, order_ids, aggregated_signature.0.clone(), 0, signers_bitmask)
+                            .submit_batch(cycle_number, order_ids, aggregated_signature.0.clone(), ref_nonce, signers_bitmask)
                             .await?;
 
                         info!(cycle_number, ?tx_hash, "Batch submitted on-chain");
@@ -2701,6 +2703,8 @@ where
         request: &crate::chain::events::ItpCreationRequest,
         itp_config: &ItpCreationConfig,
     ) -> Result<ItpCreationResult, ItpCreationError> {
+        let ref_nonce = self.key_registry.registry_nonce();
+
         info!(
             nonce = %request.nonce,
             name = %request.name,
@@ -2750,7 +2754,7 @@ where
             weights: request.weights.clone(),
             assets: request.assets.clone(),
             leader_signature: signature,
-            reference_nonce: 0,
+            reference_nonce: ref_nonce,
         };
 
         self.p2p
@@ -3116,6 +3120,8 @@ where
         &self,
         order: &crate::chain::CrossChainOrder,
     ) -> Result<BridgeResult, BridgeError> {
+        let ref_nonce = self.key_registry.registry_nonce();
+
         info!(
             order_id = %order.order_id,
             "Leader: Creating bridge Arb→L3 proposal"
@@ -3150,7 +3156,7 @@ where
             amount: order.amount,
             deadline: order.deadline,
             leader_signature: proposal.leader_signature.clone(),
-            reference_nonce: 0,
+            reference_nonce: ref_nonce,
         };
 
         drop(bridge_orch_guard); // Release before async P2P call
@@ -3362,6 +3368,8 @@ where
         &self,
         order: &crate::chain::CrossChainOrder,
     ) -> Result<SubmitOrderResult, BridgeError> {
+        let ref_nonce = self.key_registry.registry_nonce();
+
         info!(order_id = %order.order_id, "Leader: Creating submit order proposal");
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
@@ -3395,7 +3403,7 @@ where
             slippage_tier: U256::from(order.slippage_tier),
             deadline: order.deadline,
             leader_signature: proposal.leader_signature.clone(),
-            reference_nonce: 0,
+            reference_nonce: ref_nonce,
         };
 
         let config = {
@@ -3539,6 +3547,8 @@ where
         order_ids: Vec<U256>,
         prices: Vec<U256>,
     ) -> Result<BatchResult, BridgeError> {
+        let ref_nonce = self.key_registry.registry_nonce();
+
         info!(cycle_number, order_count = order_ids.len(), "Leader: Creating batch proposal");
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
@@ -3568,7 +3578,7 @@ where
             order_ids: order_ids.clone(),
             prices: prices.clone(),
             leader_signature: proposal.leader_signature.clone(),
-            reference_nonce: 0,
+            reference_nonce: ref_nonce,
         };
 
         let config = {
@@ -3598,7 +3608,7 @@ where
         })?;
 
         let orch = bridge_orch.write().await;
-        let _tx_hash = orch.execute_confirm_batch(cycle_number, &order_ids, &result).await?;
+        let _tx_hash = orch.execute_confirm_batch(cycle_number, &order_ids, &result, ref_nonce).await?;
         // NOTE: Do NOT call mark_orders_batched here — order_ids are L3 IDs (not Arb IDs).
         // Status updates happen in main.rs using Arb IDs (submitted_orders) to avoid
         // namespace collisions in the order_status map.
@@ -3776,6 +3786,8 @@ where
         cycle_number: u64,
         trades: Vec<AssetTrade>,
     ) -> Result<AssetTradesResult, BridgeError> {
+        let ref_nonce = self.key_registry.registry_nonce();
+
         info!(cycle_number, trade_count = trades.len(), "Leader: Creating asset trades proposal");
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
@@ -3808,7 +3820,7 @@ where
             cycle_number,
             trades_data,
             leader_signature: proposal.leader_signature.clone(),
-            reference_nonce: 0,
+            reference_nonce: ref_nonce,
         };
 
         let config = {
@@ -3914,6 +3926,8 @@ where
         cycle_number: u64,
         fills: Vec<crate::bridge::Fill>,
     ) -> Result<FillsResult, BridgeError> {
+        let ref_nonce = self.key_registry.registry_nonce();
+
         info!(cycle_number, fill_count = fills.len(), "Leader: Creating fills proposal");
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
@@ -3946,7 +3960,7 @@ where
                 fill_amount: f.fill_amount,
             }).collect(),
             leader_signature: proposal.leader_signature.clone(),
-            reference_nonce: 0,
+            reference_nonce: ref_nonce,
         };
 
         let config = {
@@ -3976,7 +3990,7 @@ where
         })?;
 
         let orch = bridge_orch.write().await;
-        let _tx_hash = orch.execute_confirm_fills(cycle_number, &fills, &result).await?;
+        let _tx_hash = orch.execute_confirm_fills(cycle_number, &fills, &result, ref_nonce).await?;
 
         info!(cycle_number, "Leader: Fills confirmed on L3");
 
@@ -4317,6 +4331,8 @@ where
         order_ids: Vec<U256>,
         total_amount: U256,
     ) -> Result<BridgeL3ToArbResult, BridgeError> {
+        let ref_nonce = self.key_registry.registry_nonce();
+
         info!(
             cycle_number,
             order_count = order_ids.len(),
@@ -4354,7 +4370,7 @@ where
             total_amount: proposal.total_amount,
             destination: proposal.destination,
             leader_signature: proposal.leader_signature.clone(),
-            reference_nonce: 0,
+            reference_nonce: ref_nonce,
         };
 
         drop(bridge_orch_guard); // Release before async P2P call
@@ -4805,6 +4821,8 @@ where
         order_ids: Vec<U256>,
         total_amount: U256,
     ) -> Result<ReleaseToVaultResult, BridgeError> {
+        let ref_nonce = self.key_registry.registry_nonce();
+
         info!(
             cycle_number,
             order_count = order_ids.len(),
@@ -4843,7 +4861,7 @@ where
             total_amount: proposal.total_amount,
             vault_address: proposal.vault_address,
             leader_signature: proposal.leader_signature.clone(),
-            reference_nonce: 0,
+            reference_nonce: ref_nonce,
         };
 
         drop(bridge_orch_guard); // Release before async P2P call
@@ -4895,7 +4913,7 @@ where
         })?;
 
         let orch = bridge_orch.write().await;
-        let tx_hash = orch.execute_release_to_vault(&proposal, &result).await?;
+        let tx_hash = orch.execute_release_to_vault(&proposal, &result, ref_nonce).await?;
 
         info!(
             cycle_number,
@@ -6071,6 +6089,8 @@ where
         cycle_number: u64,
         itp_ids: Vec<H256>,
     ) -> Result<RebalanceBatchResult, BridgeError> {
+        let ref_nonce = self.key_registry.registry_nonce();
+
         info!(
             cycle_number,
             itp_count = itp_ids.len(),
@@ -6105,7 +6125,7 @@ where
             cycle_number,
             itp_ids: itp_ids.clone(),
             leader_signature,
-            reference_nonce: 0,
+            reference_nonce: ref_nonce,
         };
 
         drop(bridge_orch_guard);
@@ -6453,6 +6473,8 @@ where
         new_inventory: Vec<U256>,
         nav: U256,
     ) -> Result<UpdateWeightsResult, BridgeError> {
+        let ref_nonce = self.key_registry.registry_nonce();
+
         info!(
             itp_id = ?itp_id,
             weight_count = new_weights.len(),
@@ -6487,7 +6509,7 @@ where
             new_inventory: new_inventory.clone(),
             nav,
             leader_signature,
-            reference_nonce: 0,
+            reference_nonce: ref_nonce,
         };
 
         drop(bridge_orch_guard);
@@ -6832,6 +6854,8 @@ where
         prices: Vec<U256>,
         quote_tokens: Vec<Address>,
     ) -> Result<RebalanceResult, BridgeError> {
+        let ref_nonce = self.key_registry.registry_nonce();
+
         info!(itp_id = ?itp_id, "Leader: Creating rebalance proposal");
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
@@ -6863,7 +6887,7 @@ where
             prices,
             quote_tokens,
             leader_signature,
-            reference_nonce: 0,
+            reference_nonce: ref_nonce,
         };
 
         drop(bridge_orch_guard);
@@ -7120,6 +7144,8 @@ where
         itp_id: H256,
         nav: U256,
     ) -> Result<SetItpNavResult, BridgeError> {
+        let ref_nonce = self.key_registry.registry_nonce();
+
         info!(itp_id = ?itp_id, nav = %nav, "Leader: Creating setItpNav proposal");
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
@@ -7147,7 +7173,7 @@ where
             itp_id,
             nav,
             leader_signature,
-            reference_nonce: 0,
+            reference_nonce: ref_nonce,
         };
 
         drop(bridge_orch_guard);
@@ -7404,6 +7430,8 @@ where
         bridged_itp_address: Address,
         amount: U256,
     ) -> Result<SellSubmitOrderResult, BridgeError> {
+        let ref_nonce = self.key_registry.registry_nonce();
+
         info!(order_id = %order_id, "Leader: Creating submit sell order proposal");
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
@@ -7435,7 +7463,7 @@ where
             bridged_itp_address,
             amount,
             leader_signature: proposal.leader_signature.clone(),
-            reference_nonce: 0,
+            reference_nonce: ref_nonce,
         };
 
         let config = {
@@ -7765,6 +7793,8 @@ where
         order_id: U256,
         usdc_proceeds: U256,
     ) -> Result<CompleteSellOrderResult, BridgeError> {
+        let ref_nonce = self.key_registry.registry_nonce();
+
         info!(order_id = %order_id, usdc_proceeds = %usdc_proceeds, "Leader: Creating complete sell order proposal");
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
@@ -7793,7 +7823,7 @@ where
             order_id,
             usdc_proceeds,
             leader_signature: proposal.leader_signature.clone(),
-            reference_nonce: 0,
+            reference_nonce: ref_nonce,
         };
 
         let config = {
@@ -8089,6 +8119,8 @@ where
         tx_type: u8,
         collateral_registry: Address,
     ) -> Result<RecordCollateralMoveResult, BridgeError> {
+        let ref_nonce = self.key_registry.registry_nonce();
+
         info!(cycle_number, "Leader: Creating RecordCollateralMove proposal");
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
@@ -8120,7 +8152,7 @@ where
             amount,
             tx_type,
             leader_signature: proposal.leader_signature.clone(),
-            reference_nonce: 0,
+            reference_nonce: ref_nonce,
         };
 
         let config = {
@@ -8381,6 +8413,8 @@ where
         amount: U256,
         bridge_proxy: Address,
     ) -> Result<MintBridgedSharesResult, BridgeError> {
+        let ref_nonce = self.key_registry.registry_nonce();
+
         info!(cycle_number, itp_id = ?itp_id, user = ?user, "Leader: Creating MintBridgedShares proposal");
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
@@ -8408,7 +8442,7 @@ where
             user,
             amount,
             leader_signature: proposal.leader_signature.clone(),
-            reference_nonce: 0,
+            reference_nonce: ref_nonce,
         };
 
         let config = {
@@ -8632,6 +8666,8 @@ where
         order_id: U256,
         vault: Address,
     ) -> Result<CompleteBuyOrderResult, BridgeError> {
+        let ref_nonce = self.key_registry.registry_nonce();
+
         info!(cycle_number, order_id = %order_id, "Leader: Creating CompleteBuyOrder proposal");
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
@@ -8658,7 +8694,7 @@ where
             order_id,
             vault,
             leader_signature: proposal.leader_signature.clone(),
-            reference_nonce: 0,
+            reference_nonce: ref_nonce,
         };
 
         let config = {

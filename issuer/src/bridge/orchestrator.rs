@@ -2127,6 +2127,7 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         order_ids: &[U256],
         aggregated: &BatchResult,
+        reference_nonce: u64,
     ) -> Result<H256, BridgeError> {
         // Check for duplicate cycle (deduplication)
         if let Some(existing_tx) = self.confirmed_batches.read().await.get(&cycle_number) {
@@ -2145,12 +2146,11 @@ impl BridgeOrchestrator {
         );
 
         // Build Index.confirmBatch() calldata using L3 order IDs
-        // TODO(consensus-hardening): pass real reference_nonce from consensus result
         let calldata = build_confirm_batch_calldata(
             cycle_number,
             order_ids,
             &aggregated.aggregated_signature.0,
-            0, // reference_nonce placeholder
+            reference_nonce,
             aggregated.signer_bitmap,
         );
 
@@ -2205,6 +2205,7 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         fills: &[Fill],
         aggregated: &FillsResult,
+        reference_nonce: u64,
     ) -> Result<H256, BridgeError> {
         // Check for duplicate cycle (deduplication)
         if let Some(existing_tx) = self.confirmed_fills.read().await.get(&cycle_number) {
@@ -2220,12 +2221,11 @@ impl BridgeOrchestrator {
         // Use them directly for the on-chain call.
 
         // Build Index.confirmFills() calldata using L3 order IDs
-        // TODO(consensus-hardening): pass real reference_nonce from consensus result
         let calldata = build_confirm_fills_calldata(
             cycle_number,
             fills,
             &aggregated.aggregated_signature.0,
-            0, // reference_nonce placeholder
+            reference_nonce,
             aggregated.signer_bitmap,
         );
 
@@ -2312,6 +2312,7 @@ impl BridgeOrchestrator {
         spender: Address,
         amount: U256,
         aggregated_signature: &BLSSignature,
+        reference_nonce: u64,
     ) -> Result<H256, BridgeError> {
         // Claim the next nonce
         let nonce = self.claim_custody_nonce(custody_address).await;
@@ -2320,13 +2321,12 @@ impl BridgeOrchestrator {
         let approve_calldata = build_erc20_approve_calldata(spender, amount);
 
         // Build BLSCustody.execute calldata
-        // TODO(consensus-hardening): pass real reference_nonce and signers_bitmask
         let execute_calldata = build_custody_execute_calldata(
             token,
             &approve_calldata,
             &aggregated_signature.0,
             nonce,
-            0, // reference_nonce placeholder
+            reference_nonce,
             U256::zero(), // signers_bitmask placeholder
         );
 
@@ -2367,18 +2367,18 @@ impl BridgeOrchestrator {
         target: Address,
         inner_calldata: &[u8],
         aggregated_signature: &BLSSignature,
+        reference_nonce: u64,
     ) -> Result<H256, BridgeError> {
         // Claim the next nonce
         let nonce = self.claim_custody_nonce(custody_address).await;
 
         // Build BLSCustody.execute calldata
-        // TODO(consensus-hardening): pass real reference_nonce and signers_bitmask
         let execute_calldata = build_custody_execute_calldata(
             target,
             inner_calldata,
             &aggregated_signature.0,
             nonce,
-            0, // reference_nonce placeholder
+            reference_nonce,
             U256::zero(), // signers_bitmask placeholder
         );
 
@@ -3429,6 +3429,7 @@ impl BridgeOrchestrator {
         &self,
         proposal: &ReleaseToVaultProposal,
         result: &ReleaseToVaultResult,
+        reference_nonce: u64,
     ) -> Result<H256, BridgeError> {
         // Check for duplicate cycle (deduplication)
         if let Some(existing_tx) = self.confirmed_releases.read().await.get(&proposal.cycle_number) {
@@ -3472,6 +3473,7 @@ impl BridgeOrchestrator {
                 self.config.arb_usdc_address,    // target (ArbUSDC)
                 &inner_calldata,                  // transfer(vault, usdc_amount_6dec)
                 &result.aggregated_signature,
+                reference_nonce,
             )
             .await
             .map_err(|e| BridgeError::CustodyReleaseFailed {

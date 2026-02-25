@@ -97,6 +97,7 @@ pub struct ArbitrationResult {
     pub aggregated_signature: Vec<u8>,
     pub signer_bitmap: U256,
     pub signer_count: usize,
+    pub reference_nonce: u64,
 }
 
 /// Phase of the 4-phase arbitration consensus

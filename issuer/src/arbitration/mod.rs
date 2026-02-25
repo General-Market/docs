@@ -163,13 +163,12 @@ impl ArbitrationSubsystem {
                             signers = result.signer_count,
                             "Submitting arbitration settlement"
                         );
-                        // TODO(consensus-hardening): pass real reference_nonce from arbitration result
                         match self.chain_writer.submit_settlement(
                             settlement_contract,
                             result.bet_id,
                             result.creator_wins,
                             result.aggregated_signature,
-                            0, // reference_nonce placeholder
+                            result.reference_nonce,
                             result.signer_bitmap,
                         ).await {
                             Ok(tx_hash) => {

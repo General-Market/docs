@@ -399,6 +399,14 @@ impl<'a> ConsensusBuilder<'a> {
                 }
 
                 if registered > 0 {
+                    // Bootstrap registry nonce from chain
+                    if let Ok(nonce) = self.chain_reader.get_registry_nonce().await {
+                        registry.set_registry_nonce(nonce);
+                        info!(registry_nonce = nonce, "Bootstrapped registry nonce from chain");
+                    } else {
+                        warn!("Failed to bootstrap registry nonce from chain, defaulting to 0");
+                    }
+
                     info!(
                         peer_count = registered,
                         active_issuers = active_issuers.len(),

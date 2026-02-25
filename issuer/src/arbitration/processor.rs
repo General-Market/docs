@@ -56,6 +56,8 @@ pub struct ArbitrationProcessor {
     bls_keypair: BLSKeyPair,
     /// This node's issuer index (for signer bitmap)
     issuer_index: u8,
+    /// Monotonic nonce counter for reference_nonce in on-chain submissions
+    next_reference_nonce: u64,
 }
 
 impl ArbitrationProcessor {
@@ -74,6 +76,7 @@ impl ArbitrationProcessor {
             bls_signer: Bn254BLSSigner::new(),
             bls_keypair,
             issuer_index,
+            next_reference_nonce: 1,
         }
     }
 
@@ -267,12 +270,16 @@ impl ArbitrationProcessor {
                     }
                 };
 
+                let nonce = self.next_reference_nonce;
+                self.next_reference_nonce += 1;
+
                 results.push(ArbitrationResult {
                     bet_id,
                     creator_wins: state.creator_wins.unwrap_or(false),
                     aggregated_signature,
                     signer_bitmap: bitmap,
                     signer_count: state.resolution_sigs.len(),
+                    reference_nonce: nonce,
                 });
             }
         }

@@ -460,8 +460,12 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
                     let _ = key_registry.unregister(&peer_id);
                 }
             }
+            // Update the registry nonce to match the on-chain event
+            key_registry.set_registry_nonce(event.nonce);
+
             debug!(
                 active = active_issuers.len(),
+                registry_nonce = event.nonce,
                 "Updated InMemoryKeyRegistry from chain"
             );
         }

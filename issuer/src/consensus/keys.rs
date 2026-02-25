@@ -26,6 +26,9 @@ pub trait KeyRegistry: Send + Sync {
 
     /// Get the number of registered peers
     fn peer_count(&self) -> usize;
+
+    /// Get the current registry nonce (monotonically increasing on each registry change)
+    fn registry_nonce(&self) -> u64 { 0 }
 }
 
 /// In-memory key registry for issuer BLS public keys
@@ -35,6 +38,8 @@ pub trait KeyRegistry: Send + Sync {
 pub struct InMemoryKeyRegistry {
     /// Map of peer ID to BLS public key
     keys: RwLock<HashMap<PeerId, BLSPublicKey>>,
+    /// Monotonically increasing nonce from on-chain IssuerRegistry
+    nonce: RwLock<u64>,
 }
 
 impl InMemoryKeyRegistry {
@@ -42,6 +47,7 @@ impl InMemoryKeyRegistry {
     pub fn new() -> Self {
         Self {
             keys: RwLock::new(HashMap::new()),
+            nonce: RwLock::new(0),
         }
     }
 
@@ -49,6 +55,7 @@ impl InMemoryKeyRegistry {
     pub fn with_keys(keys: HashMap<PeerId, BLSPublicKey>) -> Self {
         Self {
             keys: RwLock::new(keys),
+            nonce: RwLock::new(0),
         }
     }
 
@@ -74,6 +81,13 @@ impl InMemoryKeyRegistry {
         })?;
 
         Ok(keys.remove(peer_id))
+    }
+
+    /// Set the registry nonce (from on-chain IssuerRegistry)
+    pub fn set_registry_nonce(&self, nonce: u64) {
+        if let Ok(mut guard) = self.nonce.write() {
+            *guard = nonce;
+        }
     }
 
     /// Create a test registry with generated keypairs
@@ -136,6 +150,10 @@ impl KeyRegistry for InMemoryKeyRegistry {
 
     fn peer_count(&self) -> usize {
         self.keys.read().map(|keys| keys.len()).unwrap_or(0)
+    }
+
+    fn registry_nonce(&self) -> u64 {
+        self.nonce.read().map(|n| *n).unwrap_or(0)
     }
 }
 
