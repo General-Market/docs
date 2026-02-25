@@ -1,5 +1,11 @@
 # Design Decision Backlog
 
+## Session: 20260225-0830-f2x9 (Equivocation detection false-positive fix)
+
+- [FAILED] Equivocation detector used (peer, cycle, phase) as key. During BatchSigning phase, multiple different sign message types (BatchSign, ConfirmBatchSign, ConfirmFillsSign, etc.) are sent by the same peer. Different content hashes for different message types triggered false equivocation, double-penalizing peers and causing signing timeouts.
+- [DECISION] Added msg_variant_tag to key: (peer, cycle, phase, variant_tag). Each message type is now tracked independently within the same phase. The variant tag is a &'static str matching the P2PMessage enum variant name.
+- [DECISION] consensusPaused() backward compatibility: when the IssuerRegistry contract doesn't have the consensusPaused() function (old deployment), return Ok(false) instead of treating as RPC error. Check error string for "empty bytes"/"Invalid name"/"0x" patterns.
+
 ## Session: 20260225-0400-e1h5 (Phase -1e: /ready health endpoint)
 
 - [DECISION] /ready endpoint added alongside /health. /health reports operational metrics; /ready is a binary readiness gate for deployment orchestration (200 = can participate, 503 = not ready).

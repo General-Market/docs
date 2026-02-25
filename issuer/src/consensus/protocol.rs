@@ -84,7 +84,7 @@ use super::aggregator::{
     AggregationStatus, SignatureAggregator, DISAGREEMENT_PERCENT,
     MAX_PRICE_RETRIES, compute_threshold,
 };
-use super::equivocation::{content_hash, is_vote_or_sign, EquivocationDetector};
+use super::equivocation::{content_hash, is_vote_or_sign, msg_variant_tag, EquivocationDetector};
 use super::keys::KeyRegistry;
 use super::messages::{ConsensusMessageHandler, MessageHandleResult};
 use super::state::{ConsensusPhase, ConsensusState, ConsensusTimeouts, PriceVote};
@@ -1087,10 +1087,11 @@ where
         };
 
         // Equivocation detection: for vote/sign messages, check if this peer
-        // already sent a *different* payload for the same (cycle, phase).
+        // already sent a *different* payload for the same (cycle, phase, msg_type).
         if is_vote_or_sign(&message) {
             let hash = content_hash(&message);
-            if self.equivocation_detector.check(&from, cycle_number, phase, hash) {
+            let variant = msg_variant_tag(&message);
+            if self.equivocation_detector.check(&from, cycle_number, phase, variant, hash) {
                 error!(
                     code = "CONSENSUS-021",
                     ?from,

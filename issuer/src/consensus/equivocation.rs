@@ -12,13 +12,18 @@ use common::types::{P2PMessage, PeerId};
 
 use super::state::ConsensusPhase;
 
+/// Key type for equivocation tracking: (peer_id, cycle_number, phase, msg_variant_tag).
+/// The variant tag ensures different message types within the same phase
+/// (e.g. BatchSign vs ConfirmBatchSign during BatchSigning) are tracked independently.
+type DetectorKey = (PeerId, u64, ConsensusPhase, &'static str);
+
 /// Tracks the first message content hash seen from each peer per
-/// (cycle_number, phase). If a second, *different* hash arrives for
+/// (cycle_number, phase, msg_variant). If a second, *different* hash arrives for
 /// the same key, an equivocation is flagged.
 pub struct EquivocationDetector {
-    /// Key: (peer_id, cycle_number, phase)
+    /// Key: (peer_id, cycle_number, phase, variant_tag)
     /// Value: sha256 hash of first message content
-    seen: DashMap<(PeerId, u64, ConsensusPhase), [u8; 32]>,
+    seen: DashMap<DetectorKey, [u8; 32]>,
 }
 
 impl EquivocationDetector {
@@ -34,9 +39,10 @@ impl EquivocationDetector {
         peer: &PeerId,
         cycle: u64,
         phase: ConsensusPhase,
+        variant_tag: &'static str,
         content_hash: [u8; 32],
     ) -> bool {
-        let key = (*peer, cycle, phase);
+        let key = (*peer, cycle, phase, variant_tag);
         match self.seen.entry(key) {
             dashmap::mapref::entry::Entry::Vacant(e) => {
                 e.insert(content_hash);
@@ -50,7 +56,7 @@ impl EquivocationDetector {
     /// up to 2 prior cycles to handle in-flight messages.
     pub fn gc(&self, current_cycle: u64) {
         self.seen
-            .retain(|&(_, cycle, _), _| cycle >= current_cycle.saturating_sub(2));
+            .retain(|&(_, cycle, _, _), _| cycle >= current_cycle.saturating_sub(2));
     }
 
     /// Size-based GC: if entries exceed `max_entries`, drop the oldest
@@ -58,7 +64,7 @@ impl EquivocationDetector {
     pub fn gc_by_size(&self, max_entries: usize) {
         if self.seen.len() > max_entries {
             let min_cycle = self.seen.iter().map(|r| r.key().1).min().unwrap_or(0);
-            self.seen.retain(|&(_, cycle, _), _| cycle > min_cycle);
+            self.seen.retain(|&(_, cycle, _, _), _| cycle > min_cycle);
         }
     }
 
@@ -842,6 +848,60 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
     h.finalize().into()
 }
 
+/// Returns a static tag identifying the P2PMessage variant. Used as part
+/// of the equivocation detector key so different message types within the
+/// same (cycle, phase) are tracked independently.
+pub fn msg_variant_tag(msg: &P2PMessage) -> &'static str {
+    match msg {
+        P2PMessage::CycleStart { .. } => "CycleStart",
+        P2PMessage::PriceProposal { .. } => "PriceProposal",
+        P2PMessage::PriceVote { .. } => "PriceVote",
+        P2PMessage::BatchProposal { .. } => "BatchProposal",
+        P2PMessage::BatchSign { .. } => "BatchSign",
+        P2PMessage::ItpCreationProposal { .. } => "ItpCreationProposal",
+        P2PMessage::ItpCreationSign { .. } => "ItpCreationSign",
+        P2PMessage::RebalanceRequestProposal { .. } => "RebalanceRequestProposal",
+        P2PMessage::RebalanceRequestSign { .. } => "RebalanceRequestSign",
+        P2PMessage::BridgeArbToL3Proposal { .. } => "BridgeArbToL3Proposal",
+        P2PMessage::BridgeArbToL3Sign { .. } => "BridgeArbToL3Sign",
+        P2PMessage::SubmitOrderForUserProposal { .. } => "SubmitOrderForUserProposal",
+        P2PMessage::SubmitOrderForUserSign { .. } => "SubmitOrderForUserSign",
+        P2PMessage::ConfirmBatchProposal { .. } => "ConfirmBatchProposal",
+        P2PMessage::ConfirmBatchSign { .. } => "ConfirmBatchSign",
+        P2PMessage::ConfirmFillsProposal { .. } => "ConfirmFillsProposal",
+        P2PMessage::ConfirmFillsSign { .. } => "ConfirmFillsSign",
+        P2PMessage::BridgeL3ToArbProposal { .. } => "BridgeL3ToArbProposal",
+        P2PMessage::BridgeL3ToArbSign { .. } => "BridgeL3ToArbSign",
+        P2PMessage::ReleaseToVaultProposal { .. } => "ReleaseToVaultProposal",
+        P2PMessage::ReleaseToVaultSign { .. } => "ReleaseToVaultSign",
+        P2PMessage::RebalanceBatchProposal { .. } => "RebalanceBatchProposal",
+        P2PMessage::RebalanceBatchSign { .. } => "RebalanceBatchSign",
+        P2PMessage::UpdateWeightsProposal { .. } => "UpdateWeightsProposal",
+        P2PMessage::UpdateWeightsSign { .. } => "UpdateWeightsSign",
+        P2PMessage::RebalanceProposal { .. } => "RebalanceProposal",
+        P2PMessage::RebalanceSign { .. } => "RebalanceSign",
+        P2PMessage::SubmitSellOrderProposal { .. } => "SubmitSellOrderProposal",
+        P2PMessage::SubmitSellOrderSign { .. } => "SubmitSellOrderSign",
+        P2PMessage::CompleteSellOrderProposal { .. } => "CompleteSellOrderProposal",
+        P2PMessage::CompleteSellOrderSign { .. } => "CompleteSellOrderSign",
+        P2PMessage::AssetTradesProposal { .. } => "AssetTradesProposal",
+        P2PMessage::AssetTradesSign { .. } => "AssetTradesSign",
+        P2PMessage::RecordCollateralMoveProposal { .. } => "RecordCollateralMoveProposal",
+        P2PMessage::RecordCollateralMoveSign { .. } => "RecordCollateralMoveSign",
+        P2PMessage::MintBridgedSharesProposal { .. } => "MintBridgedSharesProposal",
+        P2PMessage::MintBridgedSharesSign { .. } => "MintBridgedSharesSign",
+        P2PMessage::CompleteBuyOrderProposal { .. } => "CompleteBuyOrderProposal",
+        P2PMessage::CompleteBuyOrderSign { .. } => "CompleteBuyOrderSign",
+        P2PMessage::SetItpNavProposal { .. } => "SetItpNavProposal",
+        P2PMessage::SetItpNavSign { .. } => "SetItpNavSign",
+        P2PMessage::Heartbeat { .. } => "Heartbeat",
+        P2PMessage::KickVote { .. } => "KickVote",
+        P2PMessage::ArbitrationPriceProposal { .. } => "ArbitrationPriceProposal",
+        P2PMessage::ArbitrationPriceVote { .. } => "ArbitrationPriceVote",
+        P2PMessage::ArbitrationResolutionSign { .. } => "ArbitrationResolutionSign",
+    }
+}
+
 /// Returns `true` if the message is a vote or sign variant (not a proposal
 /// or control message). Equivocation checks apply only to these.
 pub fn is_vote_or_sign(msg: &P2PMessage) -> bool {
@@ -891,9 +951,9 @@ mod tests {
         };
 
         let hash = content_hash(&msg);
-        assert!(!det.check(&peer, 10, ConsensusPhase::PriceVoting, hash));
+        assert!(!det.check(&peer, 10, ConsensusPhase::PriceVoting, "PriceVote", hash));
         // Same message again: not equivocation
-        assert!(!det.check(&peer, 10, ConsensusPhase::PriceVoting, hash));
+        assert!(!det.check(&peer, 10, ConsensusPhase::PriceVoting, "PriceVote", hash));
     }
 
     #[test]
@@ -918,9 +978,9 @@ mod tests {
         let h2 = content_hash(&msg2);
         assert_ne!(h1, h2);
 
-        assert!(!det.check(&peer, 10, ConsensusPhase::PriceVoting, h1));
+        assert!(!det.check(&peer, 10, ConsensusPhase::PriceVoting, "PriceVote", h1));
         // Second different hash → equivocation
-        assert!(det.check(&peer, 10, ConsensusPhase::PriceVoting, h2));
+        assert!(det.check(&peer, 10, ConsensusPhase::PriceVoting, "PriceVote", h2));
     }
 
     #[test]
@@ -931,9 +991,9 @@ mod tests {
         let hash_a = [0xAAu8; 32];
         let hash_b = [0xBBu8; 32];
 
-        assert!(!det.check(&peer, 10, ConsensusPhase::PriceVoting, hash_a));
+        assert!(!det.check(&peer, 10, ConsensusPhase::PriceVoting, "PriceVote", hash_a));
         // Different cycle → independent, not equivocation
-        assert!(!det.check(&peer, 11, ConsensusPhase::PriceVoting, hash_b));
+        assert!(!det.check(&peer, 11, ConsensusPhase::PriceVoting, "PriceVote", hash_b));
     }
 
     #[test]
@@ -941,8 +1001,8 @@ mod tests {
         let det = EquivocationDetector::new();
         let peer = [4u8; 32];
 
-        det.check(&peer, 5, ConsensusPhase::PriceVoting, [0xAA; 32]);
-        det.check(&peer, 10, ConsensusPhase::PriceVoting, [0xBB; 32]);
+        det.check(&peer, 5, ConsensusPhase::PriceVoting, "PriceVote", [0xAA; 32]);
+        det.check(&peer, 10, ConsensusPhase::PriceVoting, "PriceVote", [0xBB; 32]);
         assert_eq!(det.len(), 2);
 
         det.gc(10);
@@ -1015,9 +1075,9 @@ mod tests {
         let peer = [7u8; 32];
 
         // Insert entries in 3 different cycles
-        det.check(&peer, 1, ConsensusPhase::PriceVoting, [0x01; 32]);
-        det.check(&peer, 2, ConsensusPhase::PriceVoting, [0x02; 32]);
-        det.check(&peer, 3, ConsensusPhase::PriceVoting, [0x03; 32]);
+        det.check(&peer, 1, ConsensusPhase::PriceVoting, "PriceVote", [0x01; 32]);
+        det.check(&peer, 2, ConsensusPhase::PriceVoting, "PriceVote", [0x02; 32]);
+        det.check(&peer, 3, ConsensusPhase::PriceVoting, "PriceVote", [0x03; 32]);
         assert_eq!(det.len(), 3);
 
         // gc_by_size with max_entries=2 should drop cycle 1
