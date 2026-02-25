@@ -1084,13 +1084,15 @@ impl ArbitrumChainWriter {
 
     /// Mint BridgedITP shares on Arbitrum via BridgeProxy (8-step bridge Step 8)
     ///
-    /// Calls BridgeProxy.mintBridgedShares(itpId, user, amount, blsSignature)
+    /// Calls BridgeProxy.mintBridgedShares(itpId, user, amount, blsSignature, referenceNonce, signersBitmask)
     pub async fn mint_bridged_shares(
         &self,
         itp_id: H256,
         user: Address,
         amount: U256,
         bls_signature: Vec<u8>,
+        reference_nonce: u64,
+        signers_bitmask: U256,
     ) -> Result<H256, ArbitrumWriterError> {
         info!(
             itp_id = ?itp_id,
@@ -1101,7 +1103,7 @@ impl ArbitrumChainWriter {
         );
 
         let calldata = crate::bridge::build_mint_bridged_shares_calldata(
-            itp_id, user, amount, &bls_signature,
+            itp_id, user, amount, &bls_signature, reference_nonce, signers_bitmask,
         );
 
         let max_attempts = self.config.retry_config.max_retries + 1;

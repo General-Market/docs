@@ -376,6 +376,11 @@ where
         self.pending_config_update.clone()
     }
 
+    /// Get the current registry nonce for BLS reference_nonce in calldata
+    pub fn registry_nonce(&self) -> u64 {
+        self.key_registry.registry_nonce()
+    }
+
     /// Apply any pending config update at cycle start
     ///
     /// Updates leader elector (using dense node_index), signature aggregator
@@ -3909,7 +3914,7 @@ where
         })?;
 
         let orch = bridge_orch.write().await;
-        let _tx_hash = orch.execute_emit_asset_trades(cycle_number, &trades, &result).await?;
+        let _tx_hash = orch.execute_emit_asset_trades(cycle_number, &trades, &result, ref_nonce).await?;
 
         info!(cycle_number, "Leader: Asset trades emitted on L3");
 

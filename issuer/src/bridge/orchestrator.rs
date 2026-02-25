@@ -3969,6 +3969,7 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         itp_ids: &[H256],
         aggregated: &RebalanceBatchResult,
+        reference_nonce: u64,
     ) -> Result<H256, BridgeError> {
         // Deduplication check
         if let Some(existing_tx) = self.confirmed_rebalance_batches.read().await.get(&cycle_number) {
@@ -3984,6 +3985,8 @@ impl BridgeOrchestrator {
             cycle_number,
             itp_ids,
             &aggregated.aggregated_signature.0,
+            reference_nonce,
+            aggregated.signer_bitmap,
         );
 
         let tx_hash = self
@@ -4021,6 +4024,7 @@ impl BridgeOrchestrator {
         new_inventory: &[U256],
         nav: U256,
         aggregated: &UpdateWeightsResult,
+        reference_nonce: u64,
     ) -> Result<H256, BridgeError> {
         // Deduplication check
         if let Some(existing_tx) = self.confirmed_weight_updates.read().await.get(&itp_id) {
@@ -4040,6 +4044,8 @@ impl BridgeOrchestrator {
             new_inventory,
             nav,
             &aggregated.aggregated_signature.0,
+            reference_nonce,
+            aggregated.signer_bitmap,
         );
 
         let tx_hash = self
@@ -4327,6 +4333,7 @@ impl BridgeOrchestrator {
         aggregated: &RebalanceResult,
         computed_nav: U256,
         nav_bls_signature: &[u8],
+        reference_nonce: u64,
     ) -> Result<H256, BridgeError> {
         // Deduplication check (reuse confirmed_weight_updates map)
         if let Some(existing_tx) = self.confirmed_weight_updates.read().await.get(&itp_id) {
@@ -4343,7 +4350,7 @@ impl BridgeOrchestrator {
         // Push computed NAV on-chain BEFORE rebalance so that RebalanceLib
         // reads the real NAV instead of the stale _itpNavs (stuck at 1e18
         // from createITP). BLS signature obtained via setItpNav consensus.
-        let nav_calldata = build_set_itp_nav_calldata(itp_id, computed_nav, nav_bls_signature);
+        let nav_calldata = build_set_itp_nav_calldata(itp_id, computed_nav, nav_bls_signature, reference_nonce, aggregated.signer_bitmap);
         match self.l3_writer.send_transaction(
             self.config.index_address,
             nav_calldata,
@@ -4361,6 +4368,8 @@ impl BridgeOrchestrator {
             prices,
             quote_tokens,
             &aggregated.aggregated_signature.0,
+            reference_nonce,
+            aggregated.signer_bitmap,
         );
 
         let tx_hash = self
@@ -4593,6 +4602,7 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         trades: &[AssetTrade],
         aggregated: &AssetTradesResult,
+        reference_nonce: u64,
     ) -> Result<H256, BridgeError> {
         // Deduplication check
         if let Some(existing_tx) = self.confirmed_asset_trades.read().await.get(&cycle_number) {
@@ -4608,6 +4618,8 @@ impl BridgeOrchestrator {
             cycle_number,
             trades,
             &aggregated.aggregated_signature.0,
+            reference_nonce,
+            aggregated.signer_bitmap,
         );
 
         let tx_hash = self

@@ -1523,7 +1523,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                             info!(cycle = current_cycle, user = ?mapping.original_user, shares = %shares, signer_count = mint_result.signature_count, "MintBridgedShares consensus completed");
                                             // Leader executes the Arb transaction
                                             if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
-                                                match arb_writer.mint_bridged_shares(itp_h256, mapping.original_user, shares, mint_result.aggregated_signature.0.clone()).await {
+                                                match arb_writer.mint_bridged_shares(itp_h256, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
                                                     Ok(tx_hash) => {
                                                         info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted on Arb");
                                                         let orch = orchestrator.write().await;
@@ -1615,7 +1615,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                         ).await {
                                             Ok(mint_result) => {
                                                 if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
-                                                    match arb_writer.mint_bridged_shares(itp_h256, mapping.original_user, shares, mint_result.aggregated_signature.0.clone()).await {
+                                                    match arb_writer.mint_bridged_shares(itp_h256, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
                                                         Ok(tx_hash) => {
                                                             info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted (E021 path)");
                                                             let orch = orchestrator.write().await;
@@ -1661,7 +1661,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                             ).await {
                                                 Ok(mint_result) => {
                                                     if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
-                                                        match arb_writer.mint_bridged_shares(itp_h256, mapping.original_user, shares, mint_result.aggregated_signature.0.clone()).await {
+                                                        match arb_writer.mint_bridged_shares(itp_h256, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
                                                             Ok(tx_hash) => {
                                                                 info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted (already-filled path)");
                                                                 let orch = orchestrator.write().await;
@@ -2334,6 +2334,7 @@ async fn run_rebalance_processing<P, W, K, PF>(
                         }
                     };
 
+                    let ref_nonce = protocol.registry_nonce();
                     let orch = orchestrator.read().await;
                     match orch.execute_rebalance(
                         itp_h256,
@@ -2345,6 +2346,7 @@ async fn run_rebalance_processing<P, W, K, PF>(
                         &rebalance_result,
                         computed_nav,
                         &nav_sig,
+                        ref_nonce,
                     ).await {
                         Ok(tx_hash) => {
                             info!(

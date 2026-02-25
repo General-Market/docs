@@ -634,16 +634,18 @@ pub fn build_complete_sell_order_consensus_hash(
 
 /// Build calldata for ArbBridgeCustody.completeSellOrder()
 ///
-/// Selector: keccak256("completeSellOrder(uint256,uint256,bytes)")[0:4]
+/// Selector: keccak256("completeSellOrder(uint256,uint256,bytes,uint256,uint256)")[0:4]
 ///
-/// ABI encodes: orderId, usdcProceeds, blsSignature
+/// ABI encodes: orderId, usdcProceeds, blsSignature, referenceNonce, signersBitmask
 pub fn build_complete_sell_order_calldata(
     order_id: U256,
     usdc_proceeds: U256,
     bls_signature: &[u8],
+    reference_nonce: u64,
+    signers_bitmask: U256,
 ) -> Vec<u8> {
     let selector = &ethers::utils::keccak256(
-        "completeSellOrder(uint256,uint256,bytes)"
+        "completeSellOrder(uint256,uint256,bytes,uint256,uint256)"
     )[..4];
 
     let mut calldata = selector.to_vec();
@@ -658,10 +660,20 @@ pub fn build_complete_sell_order_calldata(
     usdc_proceeds.to_big_endian(&mut proceeds_bytes);
     calldata.extend_from_slice(&proceeds_bytes);
 
-    // Dynamic offset for blsSignature (3 head words * 32 = 96 = 0x60)
+    // Dynamic offset for blsSignature (5 head words * 32 = 160 = 0xa0)
     let mut offset_bytes = [0u8; 32];
-    U256::from(96).to_big_endian(&mut offset_bytes);
+    U256::from(160).to_big_endian(&mut offset_bytes);
     calldata.extend_from_slice(&offset_bytes);
+
+    // referenceNonce (32 bytes)
+    let mut nonce_bytes = [0u8; 32];
+    U256::from(reference_nonce).to_big_endian(&mut nonce_bytes);
+    calldata.extend_from_slice(&nonce_bytes);
+
+    // signersBitmask (32 bytes)
+    let mut bitmask_bytes = [0u8; 32];
+    signers_bitmask.to_big_endian(&mut bitmask_bytes);
+    calldata.extend_from_slice(&bitmask_bytes);
 
     // blsSignature bytes: length + data (padded to 32)
     let mut sig_len_bytes = [0u8; 32];
@@ -1285,7 +1297,7 @@ pub fn build_complete_buy_order_hash(
     H256::from_slice(&ethers::utils::keccak256(&data))
 }
 
-/// Build calldata for CollateralRegistry.recordCollateralMove(itpId, fromChain, toChain, amount, txType, blsSig)
+/// Build calldata for CollateralRegistry.recordCollateralMove(itpId, fromChain, toChain, amount, txType, blsSig, referenceNonce, signersBitmask)
 pub fn build_record_collateral_move_calldata(
     itp_id: H256,
     from_chain: U256,
@@ -1293,9 +1305,11 @@ pub fn build_record_collateral_move_calldata(
     amount: U256,
     tx_type: u8,
     bls_signature: &[u8],
+    reference_nonce: u64,
+    signers_bitmask: U256,
 ) -> Vec<u8> {
-    // recordCollateralMove(bytes32,uint256,uint256,uint256,uint8,bytes)
-    let selector = &ethers::utils::keccak256("recordCollateralMove(bytes32,uint256,uint256,uint256,uint8,bytes)")[..4];
+    // recordCollateralMove(bytes32,uint256,uint256,uint256,uint8,bytes,uint256,uint256)
+    let selector = &ethers::utils::keccak256("recordCollateralMove(bytes32,uint256,uint256,uint256,uint8,bytes,uint256,uint256)")[..4];
     let mut data = selector.to_vec();
 
     // itp_id (32 bytes)
@@ -1321,10 +1335,20 @@ pub fn build_record_collateral_move_calldata(
     tx_type_bytes[31] = tx_type;
     data.extend_from_slice(&tx_type_bytes);
 
-    // bls_signature offset (192 = 6 * 32)
+    // bls_signature offset (256 = 8 * 32)
     let mut offset = [0u8; 32];
-    U256::from(192).to_big_endian(&mut offset);
+    U256::from(256).to_big_endian(&mut offset);
     data.extend_from_slice(&offset);
+
+    // referenceNonce (32 bytes)
+    let mut nonce_bytes = [0u8; 32];
+    U256::from(reference_nonce).to_big_endian(&mut nonce_bytes);
+    data.extend_from_slice(&nonce_bytes);
+
+    // signersBitmask (32 bytes)
+    let mut bitmask_bytes = [0u8; 32];
+    signers_bitmask.to_big_endian(&mut bitmask_bytes);
+    data.extend_from_slice(&bitmask_bytes);
 
     // bls_signature length
     let mut len_bytes = [0u8; 32];
@@ -1339,16 +1363,17 @@ pub fn build_record_collateral_move_calldata(
     data
 }
 
-/// Build calldata for BridgeProxy.mintBridgedShares(itpId, user, amount, blsSignature)
-/// Post-BLS-unification: uses BLSVerifier (no signer_bitmap or aggregated_pubkey params)
+/// Build calldata for BridgeProxy.mintBridgedShares(itpId, user, amount, blsSignature, referenceNonce, signersBitmask)
 pub fn build_mint_bridged_shares_calldata(
     itp_id: H256,
     user: Address,
     amount: U256,
     bls_signature: &[u8],
+    reference_nonce: u64,
+    signers_bitmask: U256,
 ) -> Vec<u8> {
-    // mintBridgedShares(bytes32,address,uint256,bytes)
-    let selector = &ethers::utils::keccak256("mintBridgedShares(bytes32,address,uint256,bytes)")[..4];
+    // mintBridgedShares(bytes32,address,uint256,bytes,uint256,uint256)
+    let selector = &ethers::utils::keccak256("mintBridgedShares(bytes32,address,uint256,bytes,uint256,uint256)")[..4];
     let mut data = selector.to_vec();
 
     // itp_id (32 bytes)
@@ -1364,10 +1389,20 @@ pub fn build_mint_bridged_shares_calldata(
     amount.to_big_endian(&mut amount_bytes);
     data.extend_from_slice(&amount_bytes);
 
-    // blsSignature offset (dynamic: 4 * 32 = 128)
+    // blsSignature offset (dynamic: 6 * 32 = 192)
     let mut sig_offset = [0u8; 32];
-    U256::from(128).to_big_endian(&mut sig_offset);
+    U256::from(192).to_big_endian(&mut sig_offset);
     data.extend_from_slice(&sig_offset);
+
+    // referenceNonce (32 bytes)
+    let mut nonce_bytes = [0u8; 32];
+    U256::from(reference_nonce).to_big_endian(&mut nonce_bytes);
+    data.extend_from_slice(&nonce_bytes);
+
+    // signersBitmask (32 bytes)
+    let mut bitmask_bytes = [0u8; 32];
+    signers_bitmask.to_big_endian(&mut bitmask_bytes);
+    data.extend_from_slice(&bitmask_bytes);
 
     // blsSignature length
     let mut sig_len = [0u8; 32];
@@ -1892,32 +1927,49 @@ pub fn build_rebalance_batch_hash(
     H256::from_slice(&ethers::utils::keccak256(&data))
 }
 
-/// Build calldata for confirmRebalanceBatch(uint256,bytes32[],bytes)
+/// Build calldata for confirmRebalanceBatch(uint256,bytes32[],bytes,uint256,uint256)
 ///
 /// Story 7-14: Rebalance consensus (Task 4.2)
 pub fn build_confirm_rebalance_batch_calldata(
     cycle_number: u64,
     itp_ids: &[H256],
     bls_signature: &[u8],
+    reference_nonce: u64,
+    signers_bitmask: U256,
 ) -> Vec<u8> {
     let selector = &ethers::utils::keccak256(
-        "confirmRebalanceBatch(uint256,bytes32[],bytes)"
+        "confirmRebalanceBatch(uint256,bytes32[],bytes,uint256,uint256)"
     )[..4];
 
     let mut calldata = selector.to_vec();
+
+    // Head layout (5 words):
+    //   [0] cycleNumber (static uint256)
+    //   [1] offset to itpIds array
+    //   [2] offset to blsSignature bytes
+    //   [3] referenceNonce (static uint256)
+    //   [4] signersBitmask (static uint256)
 
     // cycleNumber as uint256
     let mut buf = [0u8; 32];
     U256::from(cycle_number).to_big_endian(&mut buf);
     calldata.extend_from_slice(&buf);
 
-    // Offset to itpIds array (3 * 32 = 96 from start of params)
-    U256::from(96).to_big_endian(&mut buf);
+    // Offset to itpIds array (5 * 32 = 160 from start of params)
+    U256::from(160).to_big_endian(&mut buf);
     calldata.extend_from_slice(&buf);
 
-    // Offset to blsSignature bytes (96 + 32 + itpIds.len() * 32)
-    let sig_offset = 96 + 32 + itp_ids.len() * 32;
+    // Offset to blsSignature bytes (160 + 32 + itpIds.len() * 32)
+    let sig_offset = 160 + 32 + itp_ids.len() * 32;
     U256::from(sig_offset).to_big_endian(&mut buf);
+    calldata.extend_from_slice(&buf);
+
+    // referenceNonce as uint256
+    U256::from(reference_nonce).to_big_endian(&mut buf);
+    calldata.extend_from_slice(&buf);
+
+    // signersBitmask as uint256
+    signers_bitmask.to_big_endian(&mut buf);
     calldata.extend_from_slice(&buf);
 
     // itpIds array: length + elements
@@ -1988,7 +2040,7 @@ pub fn build_update_weights_hash(
     H256::from_slice(&ethers::utils::keccak256(&data))
 }
 
-/// Build calldata for updateWeights(bytes32,uint256[],uint256[],uint256,bytes)
+/// Build calldata for updateWeights(bytes32,uint256[],uint256[],uint256,bytes,uint256,uint256)
 ///
 /// Story 7-14: Rebalance consensus (Task 4.3)
 pub fn build_update_weights_calldata(
@@ -1997,25 +2049,36 @@ pub fn build_update_weights_calldata(
     new_inventory: &[U256],
     nav: U256,
     bls_signature: &[u8],
+    reference_nonce: u64,
+    signers_bitmask: U256,
 ) -> Vec<u8> {
     let selector = &ethers::utils::keccak256(
-        "updateWeights(bytes32,uint256[],uint256[],uint256,bytes)"
+        "updateWeights(bytes32,uint256[],uint256[],uint256,bytes,uint256,uint256)"
     )[..4];
 
     let mut calldata = selector.to_vec();
+
+    // Head layout (7 words):
+    //   [0] itpId (bytes32, static)
+    //   [1] offset to newWeights array
+    //   [2] offset to newInventory array
+    //   [3] nav (uint256, static)
+    //   [4] offset to blsSignature bytes
+    //   [5] referenceNonce (uint256, static)
+    //   [6] signersBitmask (uint256, static)
 
     // itpId (bytes32) — static param at offset 0
     calldata.extend_from_slice(itp_id.as_bytes());
 
     let mut buf = [0u8; 32];
 
-    // Offset to newWeights array (5 * 32 = 160 from start of params)
-    // Params: itpId(0), newWeightsOffset(1), newInventoryOffset(2), nav(3), blsSigOffset(4)
-    U256::from(160).to_big_endian(&mut buf);
+    // Offset to newWeights array (7 * 32 = 224 from start of params)
+    // Params: itpId(0), newWeightsOffset(1), newInventoryOffset(2), nav(3), blsSigOffset(4), refNonce(5), bitmask(6)
+    U256::from(224).to_big_endian(&mut buf);
     calldata.extend_from_slice(&buf);
 
-    // Offset to newInventory array (160 + 32 + newWeights.len() * 32)
-    let inv_offset = 160 + 32 + new_weights.len() * 32;
+    // Offset to newInventory array (224 + 32 + newWeights.len() * 32)
+    let inv_offset = 224 + 32 + new_weights.len() * 32;
     U256::from(inv_offset).to_big_endian(&mut buf);
     calldata.extend_from_slice(&buf);
 
@@ -2026,6 +2089,14 @@ pub fn build_update_weights_calldata(
     // Offset to blsSignature bytes (inv_offset + 32 + newInventory.len() * 32)
     let sig_offset = inv_offset + 32 + new_inventory.len() * 32;
     U256::from(sig_offset).to_big_endian(&mut buf);
+    calldata.extend_from_slice(&buf);
+
+    // referenceNonce as uint256
+    U256::from(reference_nonce).to_big_endian(&mut buf);
+    calldata.extend_from_slice(&buf);
+
+    // signersBitmask as uint256
+    signers_bitmask.to_big_endian(&mut buf);
     calldata.extend_from_slice(&buf);
 
     // newWeights array: length + elements
@@ -2117,7 +2188,7 @@ pub fn build_rebalance_hash(
     H256::from_slice(&ethers::utils::keccak256(&encoded))
 }
 
-/// Build calldata for rebalance(bytes32,uint256[],address[],uint256[],uint256[],address[],bytes)
+/// Build calldata for rebalance(bytes32,uint256[],address[],uint256[],uint256[],address[],bytes,uint256,uint256)
 pub fn build_rebalance_calldata(
     itp_id: H256,
     remove_indices: &[U256],
@@ -2126,9 +2197,11 @@ pub fn build_rebalance_calldata(
     prices: &[U256],
     quote_tokens: &[Address],
     bls_signature: &[u8],
+    reference_nonce: u64,
+    signers_bitmask: U256,
 ) -> Vec<u8> {
     let selector = &ethers::utils::keccak256(
-        "rebalance(bytes32,uint256[],address[],uint256[],uint256[],address[],bytes)"
+        "rebalance(bytes32,uint256[],address[],uint256[],uint256[],address[],bytes,uint256,uint256)"
     )[..4];
 
     let params = vec![
@@ -2149,6 +2222,8 @@ pub fn build_rebalance_calldata(
             quote_tokens.iter().map(|a| ethers::abi::Token::Address(*a)).collect(),
         ),
         ethers::abi::Token::Bytes(bls_signature.to_vec()),
+        ethers::abi::Token::Uint(U256::from(reference_nonce)),
+        ethers::abi::Token::Uint(signers_bitmask),
     ];
 
     let mut calldata = selector.to_vec();
@@ -2177,14 +2252,16 @@ pub fn build_set_itp_nav_hash(
     H256::from_slice(&ethers::utils::keccak256(&encoded))
 }
 
-/// Build calldata for setItpNav(bytes32,uint256,bytes)
+/// Build calldata for setItpNav(bytes32,uint256,bytes,uint256,uint256)
 pub fn build_set_itp_nav_calldata(
     itp_id: H256,
     nav: U256,
     bls_signature: &[u8],
+    reference_nonce: u64,
+    signers_bitmask: U256,
 ) -> Vec<u8> {
     let selector = &ethers::utils::keccak256(
-        "setItpNav(bytes32,uint256,bytes)"
+        "setItpNav(bytes32,uint256,bytes,uint256,uint256)"
     )[..4];
 
     let mut calldata = selector.to_vec();
@@ -2198,8 +2275,16 @@ pub fn build_set_itp_nav_calldata(
     nav.to_big_endian(&mut buf);
     calldata.extend_from_slice(&buf);
 
-    // Offset to blsSignature bytes (3 * 32 = 96 from start of params)
-    U256::from(96).to_big_endian(&mut buf);
+    // Offset to blsSignature bytes (5 * 32 = 160 from start of params)
+    U256::from(160).to_big_endian(&mut buf);
+    calldata.extend_from_slice(&buf);
+
+    // referenceNonce (uint256)
+    U256::from(reference_nonce).to_big_endian(&mut buf);
+    calldata.extend_from_slice(&buf);
+
+    // signersBitmask (uint256)
+    signers_bitmask.to_big_endian(&mut buf);
     calldata.extend_from_slice(&buf);
 
     // blsSignature bytes: length + data (padded to 32)
@@ -2292,31 +2377,48 @@ pub fn build_emit_asset_trades_hash(
     H256::from(ethers::utils::keccak256(&encoded))
 }
 
-/// Build calldata for Index.emitAssetTrades(cycleNumber, trades[], blsSignature)
+/// Build calldata for Index.emitAssetTrades(cycleNumber, trades[], blsSignature, referenceNonce, signersBitmask)
 pub fn build_emit_asset_trades_calldata(
     cycle_number: u64,
     trades: &[AssetTrade],
     bls_signature: &[u8],
+    reference_nonce: u64,
+    signers_bitmask: U256,
 ) -> Vec<u8> {
     let selector = &ethers::utils::keccak256(
-        "emitAssetTrades(uint256,(address,uint8,uint256,uint256,address)[],bytes)"
+        "emitAssetTrades(uint256,(address,uint8,uint256,uint256,address)[],bytes,uint256,uint256)"
     )[..4];
 
     let mut calldata = selector.to_vec();
     let mut buf = [0u8; 32];
 
+    // Head layout (5 words):
+    //   [0] cycleNumber (static uint256)
+    //   [1] offset to trades array
+    //   [2] offset to blsSignature bytes
+    //   [3] referenceNonce (static uint256)
+    //   [4] signersBitmask (static uint256)
+
     // cycleNumber (uint256)
     U256::from(cycle_number).to_big_endian(&mut buf);
     calldata.extend_from_slice(&buf);
 
-    // offset to trades[] (3 * 32 = 96 from start of params, since we have cycle + offset_trades + offset_sig)
-    U256::from(96).to_big_endian(&mut buf);
+    // offset to trades[] (5 * 32 = 160 from start of params)
+    U256::from(160).to_big_endian(&mut buf);
     calldata.extend_from_slice(&buf);
 
     // offset to blsSignature — calculated after encoding trades
-    // trades start at offset 96, length: 32 (array_len) + trades.len() * 5 * 32
+    // trades start at offset 160, length: 32 (array_len) + trades.len() * 5 * 32
     let trades_encoding_len = 32 + trades.len() * 5 * 32;
-    U256::from(96 + trades_encoding_len).to_big_endian(&mut buf);
+    U256::from(160 + trades_encoding_len).to_big_endian(&mut buf);
+    calldata.extend_from_slice(&buf);
+
+    // referenceNonce as uint256
+    U256::from(reference_nonce).to_big_endian(&mut buf);
+    calldata.extend_from_slice(&buf);
+
+    // signersBitmask as uint256
+    signers_bitmask.to_big_endian(&mut buf);
     calldata.extend_from_slice(&buf);
 
     // Encode trades array
