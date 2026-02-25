@@ -8,6 +8,8 @@ use std::collections::HashMap;
 use tokio::sync::RwLock;
 
 use ethers::types::{Address, H256, U256};
+use sqlx::PgPool;
+use tracing::info;
 
 use super::types::{Batch, PlayerPosition};
 
@@ -122,6 +124,80 @@ impl TickScheduler {
             .get_mut(&player)
             .ok_or(TickSchedulerError::PlayerNotFound { batch_id, player })?;
         pos.balance = new_balance;
+        Ok(())
+    }
+
+    /// Update a batch's pending config (next_config_hash + next_lock_offset).
+    /// Called when BatchConfigUpdated event is received.
+    pub async fn on_batch_config_updated(
+        &self,
+        batch_id: u64,
+        new_config_hash: H256,
+        new_lock_offset: u64,
+    ) {
+        let mut batches = self.batches.write().await;
+        if let Some(batch) = batches.get_mut(&batch_id) {
+            batch.next_config_hash = new_config_hash;
+            batch.next_lock_offset = new_lock_offset;
+        }
+    }
+
+    /// Promote next_config_hash to active config_hash at tick boundary.
+    /// Called when BatchConfigPromoted event is received.
+    pub async fn on_batch_config_promoted(
+        &self,
+        batch_id: u64,
+        config_hash: H256,
+        promoted_at_tick: u64,
+    ) {
+        let mut batches = self.batches.write().await;
+        if let Some(batch) = batches.get_mut(&batch_id) {
+            batch.config_hash = config_hash;
+            batch.lock_offset = batch.next_lock_offset;
+            batch.last_promotion_tick = promoted_at_tick;
+            // Clear pending config since it's now active
+            batch.next_config_hash = H256::zero();
+        }
+    }
+
+    // === DB persistence for crash recovery ===
+
+    /// Load last_resolved state from DB on startup (crash recovery).
+    pub async fn load_from_db(&self, pool: &PgPool) -> Result<(), sqlx::Error> {
+        let rows: Vec<(i64, i64)> = sqlx::query_as(
+            "SELECT batch_id, last_tick_id FROM vision_last_resolved",
+        )
+        .fetch_all(pool)
+        .await?;
+
+        let mut last_resolved = self.last_resolved.write().await;
+        for (batch_id, tick_id) in &rows {
+            last_resolved.insert(*batch_id as u64, *tick_id as u64);
+        }
+
+        info!(count = rows.len(), "Loaded last_resolved from DB");
+        Ok(())
+    }
+
+    /// Mark a tick as resolved and persist to DB for crash recovery.
+    pub async fn mark_resolved_with_db(
+        &self,
+        pool: &PgPool,
+        batch_id: u64,
+        tick_id: u64,
+    ) -> Result<(), sqlx::Error> {
+        self.last_resolved.write().await.insert(batch_id, tick_id);
+
+        sqlx::query(
+            "INSERT INTO vision_last_resolved (batch_id, last_tick_id, resolved_at)
+             VALUES ($1, $2, NOW())
+             ON CONFLICT (batch_id) DO UPDATE SET last_tick_id = $2, resolved_at = NOW()",
+        )
+        .bind(batch_id as i64)
+        .bind(tick_id as i64)
+        .execute(pool)
+        .await?;
+
         Ok(())
     }
 
@@ -510,5 +586,57 @@ mod tests {
 
         scheduler.on_batch_unpaused(1).await.unwrap();
         assert_eq!(scheduler.active_batch_count().await, 2);
+    }
+
+    #[tokio::test]
+    async fn test_batch_config_updated() {
+        let scheduler = TickScheduler::new();
+        let batch = make_batch(1, 3600, 0);
+        scheduler.on_batch_created(batch).await;
+
+        let new_hash = H256::from([0xAA; 32]);
+        scheduler
+            .on_batch_config_updated(1, new_hash, 120)
+            .await;
+
+        let batch = scheduler.get_batch(1).await.unwrap();
+        assert_eq!(batch.next_config_hash, new_hash);
+        assert_eq!(batch.next_lock_offset, 120);
+        // Active config should remain unchanged
+        assert_eq!(batch.config_hash, H256::zero());
+        assert_eq!(batch.lock_offset, 0);
+    }
+
+    #[tokio::test]
+    async fn test_batch_config_promoted() {
+        let scheduler = TickScheduler::new();
+        let mut batch = make_batch(1, 3600, 0);
+        batch.next_lock_offset = 120;
+        scheduler.on_batch_created(batch).await;
+
+        let config_hash = H256::from([0xBB; 32]);
+        scheduler
+            .on_batch_config_promoted(1, config_hash, 5)
+            .await;
+
+        let batch = scheduler.get_batch(1).await.unwrap();
+        assert_eq!(batch.config_hash, config_hash);
+        assert_eq!(batch.lock_offset, 120); // promoted from next_lock_offset
+        assert_eq!(batch.last_promotion_tick, 5);
+        assert_eq!(batch.next_config_hash, H256::zero()); // cleared after promotion
+    }
+
+    #[tokio::test]
+    async fn test_config_update_on_unknown_batch_is_noop() {
+        let scheduler = TickScheduler::new();
+        // Should not panic on unknown batch
+        scheduler
+            .on_batch_config_updated(999, H256::from([0xCC; 32]), 60)
+            .await;
+        scheduler
+            .on_batch_config_promoted(999, H256::from([0xDD; 32]), 10)
+            .await;
+        // No batch exists, so nothing happened
+        assert!(scheduler.get_batch(999).await.is_none());
     }
 }

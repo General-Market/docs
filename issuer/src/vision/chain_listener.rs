@@ -39,6 +39,8 @@ struct EventTopics {
     batch_created: H256,
     batch_paused: H256,
     batch_unpaused: H256,
+    batch_config_updated: H256,
+    batch_config_promoted: H256,
     player_joined: H256,
     player_deposited: H256,
     rewards_claimed: H256,
@@ -50,13 +52,19 @@ impl EventTopics {
     fn new() -> Self {
         Self {
             batch_created: H256::from(ethers::utils::keccak256(
-                b"BatchCreated(uint256,address,uint256)",
+                b"BatchCreated(uint256,address,bytes32,uint256)",
             )),
             batch_paused: H256::from(ethers::utils::keccak256(
                 b"BatchPausedEvent(uint256)",
             )),
             batch_unpaused: H256::from(ethers::utils::keccak256(
                 b"BatchUnpaused(uint256)",
+            )),
+            batch_config_updated: H256::from(ethers::utils::keccak256(
+                b"BatchConfigUpdated(uint256,bytes32,bytes32,uint256)",
+            )),
+            batch_config_promoted: H256::from(ethers::utils::keccak256(
+                b"BatchConfigPromoted(uint256,bytes32,uint256)",
             )),
             player_joined: H256::from(ethers::utils::keccak256(
                 b"PlayerJoined(uint256,address,uint256,bytes32)",
@@ -215,6 +223,10 @@ impl ChainListener {
                     self.handle_batch_paused(&log).await;
                 } else if *topic0 == topics.batch_unpaused {
                     self.handle_batch_unpaused(&log).await;
+                } else if *topic0 == topics.batch_config_updated {
+                    self.handle_batch_config_updated(&log).await;
+                } else if *topic0 == topics.batch_config_promoted {
+                    self.handle_batch_config_promoted(&log).await;
                 } else if *topic0 == topics.player_joined {
                     self.handle_player_joined(&log).await;
                 } else if *topic0 == topics.player_deposited {
@@ -236,10 +248,10 @@ impl ChainListener {
     // Event handlers — each updates scheduler (in-memory) AND Postgres
     // =========================================================================
 
-    /// Handle `BatchCreated(uint256 indexed batchId, address indexed creator, uint256 tickDuration)`
+    /// Handle `BatchCreated(uint256 indexed batchId, address indexed creator, bytes32 indexed sourceId, uint256 tickDuration)`
     ///
-    /// The event only contains batchId, creator, tickDuration. We fetch the full
-    /// batch from the contract to get sourceId, configHash, lockOffset, etc.
+    /// The event contains batchId, creator, sourceId (all indexed) and tickDuration (data).
+    /// We fetch the full batch from the contract to get configHash, lockOffset, etc.
     async fn handle_batch_created(&self, log: &Log) {
         let batch_id = match extract_indexed_u64(log, 1) {
             Some(v) => v,
@@ -255,6 +267,11 @@ impl ChainListener {
                 return;
             }
         };
+        let source_id_from_event = log
+            .topics
+            .get(3)
+            .copied()
+            .unwrap_or(H256::zero());
         let tick_duration = match decode_single_u256(&log.data) {
             Some(v) => v.as_u64(),
             None => {
@@ -297,7 +314,7 @@ impl ChainListener {
                 Batch {
                     id: batch_id,
                     creator,
-                    source_id: H256::zero(),
+                    source_id: source_id_from_event,
                     config_hash: H256::zero(),
                     next_config_hash: H256::zero(),
                     tick_duration,
@@ -398,6 +415,105 @@ impl ChainListener {
         }
 
         info!(batch_id, "BatchUnpaused");
+    }
+
+    /// Handle `BatchConfigUpdated(uint256 indexed batchId, bytes32 indexed newConfigHash, bytes32 oldConfigHash, uint256 newLockOffset)`
+    ///
+    /// Emitted when a batch creator (or BLS consensus) updates the pending config.
+    /// Sets next_config_hash and next_lock_offset on the batch; promotion happens at tick boundary.
+    async fn handle_batch_config_updated(&self, log: &Log) {
+        let batch_id = match extract_indexed_u64(log, 1) {
+            Some(v) => v,
+            None => {
+                warn!("BatchConfigUpdated: missing batchId topic");
+                return;
+            }
+        };
+        let new_config_hash = log
+            .topics
+            .get(2)
+            .copied()
+            .unwrap_or(H256::zero());
+
+        // Data: oldConfigHash (bytes32) + newLockOffset (uint256) = 64 bytes
+        let new_lock_offset = if log.data.len() >= 64 {
+            U256::from_big_endian(&log.data[32..64]).as_u64()
+        } else {
+            0
+        };
+
+        // 1. Update in-memory scheduler
+        self.scheduler
+            .on_batch_config_updated(batch_id, new_config_hash, new_lock_offset)
+            .await;
+
+        // 2. Update Postgres
+        if let Err(e) = sqlx::query(
+            "UPDATE vision_batches SET next_config_hash = $1, next_lock_offset = $2 WHERE id = $3",
+        )
+        .bind(format!("{:?}", new_config_hash))
+        .bind(new_lock_offset as i64)
+        .bind(batch_id as i64)
+        .execute(&self.pool)
+        .await
+        {
+            warn!(batch_id, error = %e, "Failed to update batch config in Postgres");
+        }
+
+        info!(
+            batch_id,
+            new_config_hash = ?new_config_hash,
+            new_lock_offset,
+            "BatchConfigUpdated"
+        );
+    }
+
+    /// Handle `BatchConfigPromoted(uint256 indexed batchId, bytes32 indexed configHash, uint256 promotedAtTick)`
+    ///
+    /// Emitted when next_config_hash is promoted to active config_hash at a tick boundary.
+    async fn handle_batch_config_promoted(&self, log: &Log) {
+        let batch_id = match extract_indexed_u64(log, 1) {
+            Some(v) => v,
+            None => {
+                warn!("BatchConfigPromoted: missing batchId topic");
+                return;
+            }
+        };
+        let config_hash = log
+            .topics
+            .get(2)
+            .copied()
+            .unwrap_or(H256::zero());
+
+        let promoted_at_tick = match decode_single_u256(&log.data) {
+            Some(v) => v.as_u64(),
+            None => 0,
+        };
+
+        // 1. Update in-memory scheduler
+        self.scheduler
+            .on_batch_config_promoted(batch_id, config_hash, promoted_at_tick)
+            .await;
+
+        // 2. Update Postgres
+        if let Err(e) = sqlx::query(
+            "UPDATE vision_batches SET config_hash = $1, last_promotion_tick = $2 WHERE id = $3",
+        )
+        .bind(format!("{:?}", config_hash))
+        .bind(promoted_at_tick as i64)
+        .bind(batch_id as i64)
+        .execute(&self.pool)
+        .await
+        {
+            warn!(batch_id, error = %e, "Failed to update promoted config in Postgres");
+        }
+
+        info!(
+            batch_id,
+            config_hash = ?config_hash,
+            promoted_at_tick,
+            "BatchConfigPromoted"
+        );
     }
 
     /// Handle `PlayerJoined(uint256 indexed batchId, address indexed player, uint256 stakePerTick, bytes32 bitmapHash)`
@@ -959,11 +1075,17 @@ mod tests {
         assert_ne!(topics.player_joined, H256::zero());
         assert_ne!(topics.batch_paused, H256::zero());
 
+        // Verify new event topics exist
+        assert_ne!(topics.batch_config_updated, H256::zero());
+        assert_ne!(topics.batch_config_promoted, H256::zero());
+
         // All topics should be distinct
         let all = vec![
             topics.batch_created,
             topics.batch_paused,
             topics.batch_unpaused,
+            topics.batch_config_updated,
+            topics.batch_config_promoted,
             topics.player_joined,
             topics.player_deposited,
             topics.rewards_claimed,
