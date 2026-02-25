@@ -19,6 +19,200 @@ use crate::db;
 use crate::live_cache::{CachedTicker, LiveTickerCache};
 use crate::simulation;
 
+/// Cached per-source health stats, refreshed in background every 60s.
+#[derive(Clone, Default)]
+pub struct HealthStatsEntry {
+    pub total_assets: i64,
+    pub active_assets: i64,
+    pub zero_count: i64,
+    pub stale_count: i64,
+    /// Stale assets with value=0 (naturally dormant: offline streamers, resolved markets, etc.)
+    pub stale_dormant: i64,
+    pub avg_change_pct: f64,
+    pub no_change_count: i64,
+    pub newest_record: Option<DateTime<Utc>>,
+}
+
+pub struct HealthStatsCache {
+    data: RwLock<HashMap<String, HealthStatsEntry>>,
+    last_updated: RwLock<Option<DateTime<Utc>>>,
+}
+
+impl HealthStatsCache {
+    pub fn new() -> Self {
+        Self {
+            data: RwLock::new(HashMap::new()),
+            last_updated: RwLock::new(None),
+        }
+    }
+
+    pub async fn get_all(&self) -> HashMap<String, HealthStatsEntry> {
+        self.data.read().await.clone()
+    }
+}
+
+/// Spawns a background task that refreshes stale/zero/change stats every 60s.
+pub fn spawn_health_stats_refresh(pool: PgPool, cache: Arc<HealthStatsCache>) {
+    tokio::spawn(async move {
+        // Small delay to let sources register first
+        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+        // Fast initial load: just asset counts + newest records (skip heavy DISTINCT ON)
+        match refresh_health_stats_fast(&pool, &cache).await {
+            Ok(n) => tracing::info!("health stats cache fast-init ({} sources)", n),
+            Err(e) => tracing::warn!("health stats cache fast-init failed: {}", e),
+        }
+        // Full refresh with stale/zero counts
+        loop {
+            match refresh_health_stats(&pool, &cache).await {
+                Ok(n) => tracing::info!("health stats cache refreshed ({} sources)", n),
+                Err(e) => tracing::warn!("health stats cache refresh failed: {}", e),
+            }
+            tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
+        }
+    });
+}
+
+/// Fast initial cache load: only asset counts + newest records (no stale/zero scan).
+async fn refresh_health_stats_fast(
+    pool: &PgPool,
+    cache: &HealthStatsCache,
+) -> Result<usize, String> {
+    let mut stats: HashMap<String, HealthStatsEntry> = HashMap::new();
+
+    let asset_counts: Vec<(String, i64, i64)> = sqlx::query_as(
+        r#"SELECT source, COUNT(*)::bigint, COUNT(*) FILTER (WHERE is_active)::bigint FROM market_assets GROUP BY source"#,
+    )
+    .fetch_all(pool).await.map_err(|e| format!("fast init assets: {}", e))?;
+    for (source, total, active) in &asset_counts {
+        let entry = stats.entry(source.clone()).or_default();
+        entry.total_assets = *total;
+        entry.active_assets = *active;
+    }
+
+    let newest_rows: Vec<(String, DateTime<Utc>)> = sqlx::query_as(
+        "SELECT source, MAX(fetched_at) as newest FROM market_prices GROUP BY source",
+    )
+    .fetch_all(pool).await.map_err(|e| format!("fast init newest: {}", e))?;
+    for (source, newest) in newest_rows {
+        let entry = stats.entry(source.clone()).or_default();
+        entry.newest_record = Some(newest);
+    }
+
+    let count = stats.len();
+    *cache.data.write().await = stats;
+    *cache.last_updated.write().await = Some(Utc::now());
+    Ok(count)
+}
+
+async fn refresh_health_stats(
+    pool: &PgPool,
+    cache: &HealthStatsCache,
+) -> Result<usize, String> {
+    let start = std::time::Instant::now();
+    let now = Utc::now();
+
+    // Build interval lookup from SOURCE_META
+    let interval_lookup: HashMap<&str, u64> =
+        SOURCE_META.iter().map(|(id, _, iv)| (*id, *iv)).collect();
+
+    let mut stats: HashMap<String, HealthStatsEntry> = HashMap::new();
+
+    // Query A: Per-source asset counts (market_assets is small, fast)
+    tracing::info!("health cache: starting query A (asset counts)");
+    let asset_counts: Vec<(String, i64, i64)> = sqlx::query_as(
+        r#"
+        SELECT source,
+               COUNT(*)::bigint as total,
+               COUNT(*) FILTER (WHERE is_active)::bigint as active
+        FROM market_assets
+        GROUP BY source
+        "#,
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| format!("asset counts: {}", e))?;
+
+    for (source, total, active) in &asset_counts {
+        let entry = stats.entry(source.clone()).or_default();
+        entry.total_assets = *total;
+        entry.active_assets = *active;
+    }
+
+    // Query B: Per-source newest record (uses source_fetched index)
+    tracing::info!("health cache: query A done ({} sources, {:?}), starting query B", asset_counts.len(), start.elapsed());
+    let newest_rows: Vec<(String, DateTime<Utc>)> = sqlx::query_as(
+        r#"
+        SELECT source, MAX(fetched_at) as newest
+        FROM market_prices
+        GROUP BY source
+        "#,
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| format!("newest query: {}", e))?;
+
+    for (source, newest) in newest_rows {
+        let entry = stats.entry(source.clone()).or_default();
+        entry.newest_record = Some(newest);
+    }
+
+    // Query C: Latest price per (source, asset_id) for zero/stale counting (7d window)
+    tracing::info!("health cache: query B done ({:?}), starting query C (7d DISTINCT ON)", start.elapsed());
+    let rows: Vec<(String, rust_decimal::Decimal, DateTime<Utc>)> = sqlx::query_as(
+        r#"
+        SELECT source, value, fetched_at FROM (
+            SELECT DISTINCT ON (source, asset_id)
+                   source, value, fetched_at
+            FROM market_prices
+            WHERE fetched_at > NOW() - INTERVAL '7 days'
+            ORDER BY source, asset_id, fetched_at DESC
+        ) sub
+        "#,
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| format!("health stats query: {}", e))?;
+
+    // Count zeros and stale per source
+    let mut source_assets_seen: HashMap<String, i64> = HashMap::new();
+    for (source, value, fetched_at) in &rows {
+        let entry = stats.entry(source.clone()).or_default();
+        *source_assets_seen.entry(source.clone()).or_insert(0) += 1;
+
+        let is_zero = value.is_zero();
+        if is_zero {
+            entry.zero_count += 1;
+        }
+        let interval = interval_lookup.get(source.as_str()).copied().unwrap_or(600);
+        let stale_threshold = chrono::Duration::seconds((interval as i64) * 3);
+        if now - *fetched_at > stale_threshold {
+            entry.stale_count += 1;
+            if is_zero {
+                entry.stale_dormant += 1;
+            }
+        }
+    }
+
+    // For sources with active assets but NO prices in 7d window → all assets are stale
+    for (source, total, active) in &asset_counts {
+        let _ = total;
+        let seen = source_assets_seen.get(source).copied().unwrap_or(0);
+        if *active > 0 && seen == 0 {
+            let entry = stats.entry(source.clone()).or_default();
+            entry.stale_count = *active;
+        } else if *active > seen {
+            let entry = stats.entry(source.clone()).or_default();
+            entry.stale_count += *active - seen;
+        }
+    }
+
+    let count = stats.len();
+    tracing::info!("health cache: all queries done in {:?}, writing {} sources to cache", start.elapsed(), count);
+    *cache.data.write().await = stats;
+    *cache.last_updated.write().await = Some(Utc::now());
+    Ok(count)
+}
+
 pub struct AppState {
     pub pool: PgPool,
     pub collector: Arc<CollectorState>,
@@ -37,6 +231,10 @@ pub struct AppState {
     pub admin_token: Option<String>,
     /// P2.8: Allowed CORS origins (empty = allow any, with warning)
     pub cors_origins: Vec<String>,
+    /// Background-refreshed health stats (zero/stale counts per source)
+    pub health_stats_cache: Arc<HealthStatsCache>,
+    /// Auto-batch engine state (recommended + signed configs)
+    pub batch_engine: Arc<crate::batch_engine::BatchEngineState>,
 }
 
 /// In-memory TTL cache for hot endpoints.
@@ -4288,7 +4486,7 @@ async fn market_batch_history(
 /// source_id MUST match the value returned by each source's `source_id()` trait method.
 const SOURCE_META: &[(&str, &str, u64)] = &[
     // ── Original sources (21, all via MarketDataSource trait) ──────────────
-    ("crypto", "CoinGecko Crypto", 60),                   // coingecko: source_id="crypto"
+    ("crypto", "CoinGecko Crypto", 600),                   // coingecko: 10min cycle, 40 pages via /coins/markets
     ("defi", "DefiLlama DeFi", 120),                      // defillama: source_id="defi"
     ("stocks", "Stocks (Finnhub)", 600),                   // finnhub
     ("rates", "Federal Reserve (FRED)", 86400),            // fred
@@ -4384,6 +4582,106 @@ const SOURCE_META: &[(&str, &str, u64)] = &[
     // ── Drink Sources ───────────────────────────────────────────────────────
     ("yahoo_drinks", "Yahoo Drink Markets", 600),
 ];
+
+/// Per-source explanation of why assets may be stale.
+/// Shown in health UI to distinguish naturally dormant sources from broken ones.
+fn stale_reason_for(source_id: &str) -> &'static str {
+    match source_id {
+        // ── Live / streaming sources ──
+        "twitch" => "Streamers offline — not currently broadcasting",
+        "chaturbate" => "Performers offline — not currently broadcasting",
+        "aisstream" => "Ships in port or out of AIS range",
+        // ── Social / popularity ──
+        "reddit" => "Subscriber counts change slowly between syncs",
+        "hackernews" => "Story scores stabilize after leaving front page",
+        "fourchan" => "Threads archived or fallen off catalog",
+        "stackexchange" => "Question activity stabilizes within days",
+        // ── Entertainment / media ──
+        "tmdb" => "Movies/shows with stable popularity (no recent buzz)",
+        "anilist" => "Anime/manga between seasons or completed",
+        "lastfm" => "Artist listener counts change slowly",
+        "steam" => "Games with stable concurrent player counts",
+        "esports" => "No active matches or off-season tournaments",
+        "sports" => "Off-season or no scheduled games",
+        "bgg" => "Games rotate off BGG Hotness list daily",
+        // ── Markets / finance ──
+        "crypto" => "Low-cap tokens with no recent trades",
+        "defi" => "DeFi protocols with stable TVL",
+        "polymarket" => "Markets resolved or with no recent trading",
+        "pumpfun" => "Pump.fun tokens with no recent trades",
+        "stocks" => "Market closed (weekends, holidays, after-hours)",
+        "twse" => "Taiwan market closed (outside 09:00–13:30 UTC+8)",
+        "finra_short_vol" => "Short volume only available on trading days",
+        "finra" => "Short interest published bi-monthly",
+        "sec_13f" => "Quarterly filings — updates every ~3 months",
+        "sec_efts" => "EDGAR filings update during business hours",
+        "sec_insider" => "Insider trades filed irregularly",
+        "congress" => "Congressional trades disclosed with delay",
+        "bonds" => "Treasury yields only update on business days",
+        "yahoo_drinks" => "Drink commodity prices stable on weekends",
+        "bestbuy" => "Product prices don't change frequently",
+        // ── Macro / government data ──
+        "rates" => "FRED data series updated monthly/quarterly",
+        "bls" => "BLS statistics published monthly",
+        "eia" => "Energy data published weekly/monthly",
+        "ecb" => "ECB exchange rates published on business days",
+        "worldbank" => "World Bank indicators updated annually",
+        "cftc" => "CFTC data published weekly (Nasdaq WAF blocked)",
+        "futures" => "Futures settlements daily (Nasdaq WAF blocked)",
+        "opec" => "OPEC basket price published monthly (Nasdaq WAF blocked)",
+        "imf" => "IMF data published quarterly (Nasdaq WAF blocked)",
+        "bchain" => "Bitcoin on-chain metrics update daily",
+        "usa_spending" => "Defense spending data updated quarterly",
+        // ── Packages / code ──
+        "npm" => "Download counts change slowly between syncs",
+        "pypi" => "Download counts change slowly between syncs",
+        "crates_io" => "Download counts change slowly between syncs",
+        "github" => "Repository stars/forks change slowly",
+        "openalex" => "Scholarly citation counts change slowly",
+        "crossref" => "DOI citation counts change slowly",
+        "pubmed" => "Biomedical article metrics change slowly",
+        // ── Weather / environment ──
+        "weather" => "Weather stations with no recent observation",
+        "noaa_met" => "Ocean stations offline or not reporting",
+        "noaa_tides" => "Tide stations with gaps in telemetry",
+        "ndbc" => "Ocean buoys offline or out of season",
+        "nwps" => "River gauges with stable water levels",
+        "airnow" => "AQI reporting areas with no recent update",
+        "weather_alerts" => "Alert regions with no active severe weather",
+        "spaceweather" => "Solar activity indices stable or no storms",
+        "nrc_nuclear" => "Nuclear reactors in steady-state operation",
+        "usgs_water" => "Water monitoring stations with stable levels",
+        // ── Nature / wildlife ──
+        "volcano" => "Volcanoes with no current activity (alert=normal)",
+        "earthquake" => "Seismic zones with no recent significant quakes",
+        "wildfire" => "Fire perimeters fully contained or extinguished",
+        "epidemic" => "Diseases with stable or declining case counts",
+        "ebird" => "Bird observation regions with seasonal lulls",
+        "animals" => "Wildlife observations depend on migration patterns",
+        "movebank" => "Animal GPS trackers with intermittent transmission",
+        "shelter" => "Shelter populations change slowly",
+        // ── Transport / infrastructure ──
+        "flights" => "Aircraft on ground or not broadcasting ADS-B",
+        "mil_aircraft" => "Aircraft landed or transponder off",
+        "maritime" => "Ships in port or out of AIS range",
+        "citybikes" => "Bike stations with stable availability",
+        "parking" => "Parking occupancy stable during off-peak",
+        "gtfs_transit" => "Transit agencies with no schedule changes",
+        "tomtom_traffic" => "Traffic flow stable during off-peak hours",
+        "tomtom_evcharge" => "EV charger availability changes slowly",
+        "faa_delays" => "Airports with no current delays",
+        "cbp_border" => "Border crossings with stable wait times",
+        "queue_times" => "Theme parks closed or rides not operating",
+        // ── Legal / government ──
+        "courtlistener" => "Courts not in session or no new filings (needs auth)",
+        "iss" => "ISS position updates are continuous",
+        "cloudflare" => "Cloudflare domain stats change slowly",
+        "adzuna" => "Job market stats update daily",
+        "backpacktf" => "TF2 item prices change slowly",
+        "zillow" => "Real estate data updates monthly",
+        _ => "Assets not updated within expected interval",
+    }
+}
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -5246,6 +5544,12 @@ struct SourceHealthEntry {
     records_last_7d: i64,
     zero_value_assets: i64,
     stale_assets: i64,
+    /// Stale assets with value=0 — naturally dormant (offline streamers, resolved markets, etc.)
+    stale_dormant: i64,
+    /// Stale assets with value>0 — potentially concerning, may indicate broken source
+    stale_active: i64,
+    /// Human-readable explanation of why assets may be stale for this source
+    stale_reason: String,
     avg_change_pct: f64,
     assets_with_no_change_24h: i64,
     sync_gap_max_secs: i64,
@@ -5295,181 +5599,18 @@ async fn admin_force_sync(
 async fn admin_sources_health(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<SourceHealthResponse>, (StatusCode, Json<ErrorResponse>)> {
-    let pool = &state.pool;
     let now = Utc::now();
 
-    // Query 1: Per-source asset counts
-    let asset_counts: Vec<(String, i64, i64)> = sqlx::query_as(
-        r#"
-        SELECT source,
-               COUNT(*)::bigint as total,
-               COUNT(*) FILTER (WHERE is_active)::bigint as active
-        FROM market_assets
-        GROUP BY source
-        "#,
-    )
-    .fetch_all(pool)
-    .await
-    .map_err(|e| internal_error(format!("asset counts query: {}", e)))?;
-
-    let mut asset_count_map: HashMap<String, (i64, i64)> = HashMap::new();
-    for (source, total, active) in asset_counts {
-        asset_count_map.insert(source, (total, active));
-    }
-
-    // Query 2: Per-source price record counts + oldest/newest
-    let record_counts: Vec<(String, i64, Option<DateTime<Utc>>, Option<DateTime<Utc>>, i64, i64, i64)> =
-        sqlx::query_as(
-            r#"
-            SELECT source,
-                   COUNT(*)::bigint as total_records,
-                   MIN(fetched_at) as oldest,
-                   MAX(fetched_at) as newest,
-                   COUNT(*) FILTER (WHERE fetched_at > NOW() - INTERVAL '1 hour')::bigint as last_1h,
-                   COUNT(*) FILTER (WHERE fetched_at > NOW() - INTERVAL '24 hours')::bigint as last_24h,
-                   COUNT(*) FILTER (WHERE fetched_at > NOW() - INTERVAL '7 days')::bigint as last_7d
-            FROM market_prices
-            GROUP BY source
-            "#,
-        )
-        .fetch_all(pool)
-        .await
-        .map_err(|e| internal_error(format!("record counts query: {}", e)))?;
-
-    let mut record_map: HashMap<String, (i64, Option<DateTime<Utc>>, Option<DateTime<Utc>>, i64, i64, i64)> =
-        HashMap::new();
-    for (source, total, oldest, newest, last_1h, last_24h, last_7d) in record_counts {
-        record_map.insert(source, (total, oldest, newest, last_1h, last_24h, last_7d));
-    }
-
-    // Query 3: Latest price per active asset (uses idx_market_prices_asset_time)
-    // Returns one row per (source, asset_id) — the most recent price within 7 days.
-    let latest_prices: Vec<(String, rust_decimal::Decimal, Option<rust_decimal::Decimal>, DateTime<Utc>)> =
-        sqlx::query_as(
-            r#"
-            SELECT source, value, change_pct, fetched_at
-            FROM (
-                SELECT DISTINCT ON (source, asset_id)
-                       source, value, change_pct, fetched_at
-                FROM market_prices
-                WHERE fetched_at > NOW() - INTERVAL '7 days'
-                ORDER BY source, asset_id, fetched_at DESC
-            ) latest
-            "#,
-        )
-        .fetch_all(pool)
-        .await
-        .map_err(|e| internal_error(format!("latest prices query: {}", e)))?;
-
-    // Build interval lookup from SOURCE_META for per-source stale thresholds
-    let interval_lookup: HashMap<&str, u64> =
-        SOURCE_META.iter().map(|(id, _, iv)| (*id, *iv)).collect();
-
-    // Accumulate per-source stats
-    struct SourceAccum {
-        zero_count: i64,
-        stale_count: i64,
-        change_sum: f64,
-        change_count: i64,
-        no_change_count: i64,
-    }
-    let mut accum_map: HashMap<String, SourceAccum> = HashMap::new();
-
-    for (source, value, change_pct, fetched_at) in &latest_prices {
-        let a = accum_map.entry(source.clone()).or_insert(SourceAccum {
-            zero_count: 0,
-            stale_count: 0,
-            change_sum: 0.0,
-            change_count: 0,
-            no_change_count: 0,
-        });
-
-        if value.is_zero() {
-            a.zero_count += 1;
-        }
-
-        let interval = interval_lookup.get(source.as_str()).copied().unwrap_or(600);
-        let stale_threshold = chrono::Duration::seconds((interval as i64) * 3);
-        if now - *fetched_at > stale_threshold {
-            a.stale_count += 1;
-        }
-
-        if let Some(cp) = change_pct {
-            use rust_decimal::prelude::ToPrimitive;
-            let cp_f = cp.abs().to_f64().unwrap_or(0.0);
-            a.change_sum += cp_f;
-            a.change_count += 1;
-            if cp.is_zero() {
-                a.no_change_count += 1;
-            }
-        } else {
-            a.no_change_count += 1;
-        }
-    }
-
-    // Convert accumulated stats into the maps the assembly loop expects
-    let mut zero_stale_map: HashMap<String, (i64, i64)> = HashMap::new();
-    let mut change_map: HashMap<String, (f64, i64)> = HashMap::new();
-    for (source, a) in &accum_map {
-        zero_stale_map.insert(source.clone(), (a.zero_count, a.stale_count));
-        let avg = if a.change_count > 0 {
-            a.change_sum / a.change_count as f64
-        } else {
-            0.0
-        };
-        change_map.insert(source.clone(), (avg, a.no_change_count));
-    }
-
-    // Query 4: Max sync gap per source (last 24h, minute-bucketed)
-    let gap_rows: Vec<(String, Option<i64>)> = sqlx::query_as(
-        r#"
-        WITH sync_times AS (
-            SELECT source, date_trunc('minute', fetched_at) as sync_min
-            FROM market_prices
-            WHERE fetched_at > NOW() - INTERVAL '24 hours'
-            GROUP BY source, date_trunc('minute', fetched_at)
-        ),
-        with_lag AS (
-            SELECT source, sync_min,
-                   LAG(sync_min) OVER (PARTITION BY source ORDER BY sync_min) as prev_min
-            FROM sync_times
-        )
-        SELECT source,
-               MAX(EXTRACT(EPOCH FROM sync_min - prev_min))::bigint as max_gap
-        FROM with_lag
-        WHERE prev_min IS NOT NULL
-        GROUP BY source
-        "#,
-    )
-    .fetch_all(pool)
-    .await
-    .map_err(|e| internal_error(format!("gap query: {}", e)))?;
-
-    let mut gap_map: HashMap<String, i64> = HashMap::new();
-    for (source, max_gap) in gap_rows {
-        gap_map.insert(source, max_gap.unwrap_or(0));
-    }
+    // All DB stats come from background cache (refreshed every 60s)
+    let health_stats = state.health_stats_cache.get_all().await;
 
     // Assemble results for all known sources
     let mut sources = Vec::new();
     for (id, name, interval) in SOURCE_META {
-        let (total_assets, active_assets) = asset_count_map
-            .get(*id)
-            .copied()
-            .unwrap_or((0, 0));
-        let (total_records, oldest, newest, last_1h, last_24h, last_7d) = record_map
-            .get(*id)
-            .cloned()
-            .unwrap_or((0, None, None, 0, 0, 0));
-        let (zero_value, stale) = zero_stale_map
-            .get(*id)
-            .copied()
-            .unwrap_or((0, 0));
-        let (avg_change, no_change) = change_map
-            .get(*id)
-            .copied()
-            .unwrap_or((0.0, 0));
-        let max_gap = gap_map.get(*id).copied().unwrap_or(0);
+        let hs = health_stats.get(*id);
+        let total_assets = hs.map(|h| h.total_assets).unwrap_or(0);
+        let active_assets = hs.map(|h| h.active_assets).unwrap_or(0);
+        let newest = hs.and_then(|h| h.newest_record);
 
         // Record age from DB (how old is the newest price record)
         let last_sync_age_secs = newest
@@ -5501,9 +5642,8 @@ async fn admin_sources_health(
             // Has completed at least one sync
             Some(es) if es.total_syncs > 0 => {
                 if matches!(es.category, crate::market_data::error_tracker::ErrorCategory::Ok) {
-                    // Sync engine is healthy. But check if source ever produced data.
-                    if total_records == 0 && last_7d == 0 {
-                        // Completed syncs but NEVER produced any data → stub/broken
+                    // Sync engine is healthy. Check if source has any assets registered.
+                    if active_assets == 0 {
                         "dead".to_string()
                     } else {
                         "healthy".to_string()
@@ -5516,18 +5656,27 @@ async fn admin_sources_health(
                     "stale".to_string()
                 }
             }
-            // Spawned but no syncs completed yet
+            // Spawned but no syncs completed yet — if DB has assets from previous run, show healthy
             Some(es) if es.total_syncs == 0 && !matches!(es.category, crate::market_data::error_tracker::ErrorCategory::NotStarted) => {
-                "initializing".to_string()
+                if active_assets > 0 {
+                    "healthy".to_string()
+                } else {
+                    "initializing".to_string()
+                }
             }
             // No tracker state at all — just spawned
-            None => "initializing".to_string(),
+            None => {
+                if active_assets > 0 {
+                    "healthy".to_string()
+                } else {
+                    "initializing".to_string()
+                }
+            }
             // Fallback
             _ => "initializing".to_string(),
         };
 
-        // Estimated daily records = records_last_24h (direct measure)
-        let estimated_daily_records = last_24h;
+        let estimated_daily_records: i64 = 0;
 
         let (err_cat, cons_err, tot_err, last_err, last_succ, tot_syncs, ns_reason) =
             if let Some(ref es) = err_state {
@@ -5544,6 +5693,14 @@ async fn admin_sources_health(
                 ("ok".to_string(), 0, 0, None, None, 0, None)
             };
 
+        let hs = health_stats.get(*id);
+        let zero_value = hs.map(|h| h.zero_count).unwrap_or(0);
+        let stale = hs.map(|h| h.stale_count).unwrap_or(0);
+        let stale_dormant = hs.map(|h| h.stale_dormant).unwrap_or(0);
+        let stale_active = stale - stale_dormant;
+        let avg_change = hs.map(|h| h.avg_change_pct).unwrap_or(0.0);
+        let no_change = hs.map(|h| h.no_change_count).unwrap_or(0);
+
         sources.push(SourceHealthEntry {
             source_id: id.to_string(),
             display_name: name.to_string(),
@@ -5551,19 +5708,22 @@ async fn admin_sources_health(
             status,
             total_assets,
             active_assets,
-            total_price_records: total_records,
-            oldest_record: oldest,
+            total_price_records: active_assets,
+            oldest_record: None,
             newest_record: newest,
             last_sync_age_secs,
-            records_last_1h: last_1h,
-            records_last_24h: last_24h,
-            records_last_7d: last_7d,
+            records_last_1h: 0,
+            records_last_24h: 0,
+            records_last_7d: 0,
             zero_value_assets: zero_value,
             stale_assets: stale,
+            stale_dormant,
+            stale_active,
+            stale_reason: stale_reason_for(id).to_string(),
             avg_change_pct: (avg_change * 100.0).round() / 100.0,
             assets_with_no_change_24h: no_change,
-            sync_gap_max_secs: max_gap,
-            estimated_daily_records,
+            sync_gap_max_secs: 0,
+            estimated_daily_records: 0,
             error_category: err_cat,
             consecutive_errors: cons_err,
             total_errors: tot_err,
@@ -5577,43 +5737,24 @@ async fn admin_sources_health(
     // Also include any DB sources not in SOURCE_META
     let known_ids: std::collections::HashSet<&str> =
         SOURCE_META.iter().map(|(id, _, _)| *id).collect();
-    for (source, (total_records, oldest, newest, last_1h, last_24h, last_7d)) in &record_map {
+    for (source, hs_u) in &health_stats {
         if known_ids.contains(source.as_str()) {
             continue;
         }
-        let (total_assets, active_assets) = asset_count_map
-            .get(source)
-            .copied()
-            .unwrap_or((0, 0));
-        let (zero_value, stale_count) = zero_stale_map
-            .get(source)
-            .copied()
-            .unwrap_or((0, 0));
-        let (avg_change, no_change) = change_map
-            .get(source)
-            .copied()
-            .unwrap_or((0.0, 0));
-        let max_gap = gap_map.get(source).copied().unwrap_or(0);
-
+        let newest = hs_u.newest_record;
         let last_sync_age_secs = newest
-            .as_ref()
-            .map(|n| (now - *n).num_seconds().max(0))
+            .map(|n| (now - n).num_seconds().max(0))
             .unwrap_or(0);
 
-        // Unknown sources default to 600s interval for status
         let default_interval: u64 = 600;
-        let status = if *total_records == 0 {
+        let status = if hs_u.active_assets == 0 {
             "dead".to_string()
+        } else if last_sync_age_secs < (default_interval as i64) * 3 {
+            "healthy".to_string()
+        } else if last_sync_age_secs < (default_interval as i64) * 10 {
+            "stale".to_string()
         } else {
-            let threshold_stale = (default_interval as i64) * 3;
-            let threshold_dead = (default_interval as i64) * 10;
-            if last_sync_age_secs < threshold_stale {
-                "healthy".to_string()
-            } else if last_sync_age_secs < threshold_dead {
-                "stale".to_string()
-            } else {
-                "dead".to_string()
-            }
+            "dead".to_string()
         };
 
         sources.push(SourceHealthEntry {
@@ -5621,21 +5762,24 @@ async fn admin_sources_health(
             display_name: source.clone(),
             sync_interval_secs: default_interval,
             status,
-            total_assets,
-            active_assets,
-            total_price_records: *total_records,
-            oldest_record: *oldest,
-            newest_record: *newest,
+            total_assets: hs_u.total_assets,
+            active_assets: hs_u.active_assets,
+            total_price_records: hs_u.active_assets,
+            oldest_record: None,
+            newest_record: newest,
             last_sync_age_secs,
-            records_last_1h: *last_1h,
-            records_last_24h: *last_24h,
-            records_last_7d: *last_7d,
-            zero_value_assets: zero_value,
-            stale_assets: stale_count,
-            avg_change_pct: (avg_change * 100.0).round() / 100.0,
-            assets_with_no_change_24h: no_change,
-            sync_gap_max_secs: max_gap,
-            estimated_daily_records: *last_24h,
+            records_last_1h: 0,
+            records_last_24h: 0,
+            records_last_7d: 0,
+            zero_value_assets: hs_u.zero_count,
+            stale_assets: hs_u.stale_count,
+            stale_dormant: hs_u.stale_dormant,
+            stale_active: hs_u.stale_count - hs_u.stale_dormant,
+            stale_reason: stale_reason_for(source).to_string(),
+            avg_change_pct: (hs_u.avg_change_pct * 100.0).round() / 100.0,
+            assets_with_no_change_24h: hs_u.no_change_count,
+            sync_gap_max_secs: 0,
+            estimated_daily_records: 0,
             error_category: "ok".to_string(),
             consecutive_errors: 0,
             total_errors: 0,

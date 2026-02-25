@@ -1,5 +1,6 @@
 mod api;
 mod backfill;
+mod batch_engine;
 mod cg_backfill;
 mod cg_collector;
 pub mod chain_cache;
@@ -40,6 +41,12 @@ use crate::live_cache::LiveTickerCache;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Load .env file BEFORE clap parses args (clap reads env vars during parse).
+    // Try CWD/.env first, then data-node/.env (when running from project root).
+    if dotenvy::dotenv().is_err() {
+        dotenvy::from_filename("data-node/.env").ok();
+    }
+
     let cli = Cli::parse();
 
     match cli.command {
@@ -313,7 +320,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     }
 
     // 4. Treasury (bonds) — gated on treasury_api_key, schedule-aware
-    if let Some(ref key) = args.treasury_api_key {
+    if let Some(key) = args.treasury_api_key.as_ref().filter(|k| !k.trim().is_empty()) {
         std::env::set_var("NASDAQ_API_KEY", key);
         let pool_c = pool.clone();
         tokio::spawn(async move {
@@ -360,7 +367,8 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     }
 
     // 7. Nasdaq sources (CFTC, CHRIS, OPEC, IMF) — gated on nasdaq_api_key
-    if let Some(ref key) = args.nasdaq_api_key {
+    let nasdaq_key_valid = args.nasdaq_api_key.as_ref().filter(|k| !k.trim().is_empty());
+    if let Some(key) = nasdaq_key_valid {
         std::env::set_var("NASDAQ_API_KEY", key);
 
         // CFTC
@@ -699,20 +707,19 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         });
     }
 
-    // DISABLED: unimplemented stub — Zillow requires Bridge Interactive API which was never integrated.
-    // Registers assets that never get prices.
-    // {
-    //     let pool_c = pool.clone();
-    //     tokio::spawn(async move {
-    //         match market_data::sources::zillow::ZillowMarketSource::from_env() {
-    //             Ok(source) => {
-    //                 let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
-    //                 engine.run().await;
-    //             }
-    //             Err(e) => tracing::error!("Zillow init failed: {e}"),
-    //         }
-    //     });
-    // }
+    // Zillow — free public CSV data, no API key needed
+    {
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::zillow::ZillowMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Zillow init failed: {e}"),
+            }
+        });
+    }
 
     info!("No-key market data providers started (npm, PyPI, crates.io, Steam, HackerNews, 4chan, AniList, TWSE, Polymarket, DefiLlama)");
 
@@ -787,9 +794,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("backpack.tf TF2 item provider started");
     }
 
-    // GitHub — gated on token
-    if let Some(ref token) = args.github_token {
-        std::env::set_var("GITHUB_TOKEN", token);
+    // GitHub — works with or without token (unauthenticated = lower rate limits)
+    {
+        if let Some(ref token) = args.github_token {
+            std::env::set_var("GITHUB_TOKEN", token);
+        }
         let pool_c = pool.clone();
         tokio::spawn(async move {
             match market_data::sources::github::GithubMarketSource::from_env() {
@@ -819,10 +828,20 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("Cloudflare Radar internet metrics provider started");
     }
 
-    // CoinGecko market source (crypto prices via SyncEngine) — reuses existing coingecko_api_key
-    if let Some(ref cg_api_key) = args.coingecko_api_key {
-        std::env::set_var("COINGECKO_API_KEY", cg_api_key);
+    // CoinGecko market source (crypto prices via SyncEngine)
+    // Works with Pro key, Demo key (CG- prefix), or no key (free tier fallback)
+    {
+        if let Some(ref cg_api_key) = args.coingecko_api_key {
+            if !cg_api_key.trim().is_empty() {
+                std::env::set_var("COINGECKO_API_KEY", cg_api_key);
+            }
+        }
         let pool_c = pool.clone();
+        let tier_label = match args.coingecko_api_key.as_deref().map(|k| k.trim()) {
+            Some(k) if !k.is_empty() && k.starts_with("CG-") => "demo",
+            Some(k) if !k.is_empty() => "pro",
+            _ => "free (no API key)",
+        };
         tokio::spawn(async move {
             match market_data::sources::coingecko::CoinGeckoMarketSource::from_env() {
                 Ok(source) => {
@@ -832,7 +851,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
                 Err(e) => tracing::error!("CoinGecko market source init failed: {e}"),
             }
         });
-        info!("CoinGecko market source (crypto prices) started");
+        info!("CoinGecko market source (crypto prices) started — tier: {}", tier_label);
     }
 
     // ── Bet on Everything sources (10) ────────────────────────────────────
@@ -923,9 +942,8 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         });
     }
 
-    // Maritime — AIS Stream (gated on API key)
-    if let Some(ref key) = args.aisstream_api_key {
-        std::env::set_var("AISSTREAM_API_KEY", key);
+    // Maritime — Digitraffic AIS (free, no API key required)
+    {
         let pool_c = pool.clone();
         tokio::spawn(async move {
             match market_data::sources::maritime::MaritimeMarketSource::from_env() {
@@ -936,9 +954,13 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
                 Err(e) => tracing::error!("Maritime init failed: {e}"),
             }
         });
-        info!("AIS maritime vessel provider started");
+        info!("AIS maritime vessel provider started (Digitraffic)");
+    }
 
-        // AISstream WebSocket ship tracking (reuses same API key)
+    // AISstream WebSocket ship tracking (gated on API key)
+    if let Some(ref key) = args.aisstream_api_key {
+        std::env::set_var("AISSTREAM_API_KEY", key);
+
         let aisstream_key = key.clone();
         let pool_c = pool.clone();
         tokio::spawn(async move {
@@ -1084,9 +1106,8 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("USASpending.gov defense spending provider started");
     }
 
-    // Pump.fun — Helius RPC + Dexscreener (gated on API key)
-    if let Some(ref key) = args.helius_api_key {
-        std::env::set_var("HELIUS_API_KEY", key);
+    // Pump.fun — Dexscreener-only (no API key required)
+    {
         let pool_c = pool.clone();
         tokio::spawn(async move {
             match market_data::sources::pumpfun::PumpfunMarketSource::from_env() {
@@ -1097,28 +1118,28 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
                 Err(e) => tracing::error!("PumpFun init failed: {e}"),
             }
         });
-        info!("Pump.fun token tracker started (Helius + Dexscreener)");
+        info!("Pump.fun token tracker started (Dexscreener)");
     }
 
-    // Reddit — gated on client ID + secret
-    if let Some(ref client_id) = args.reddit_client_id {
-        if let Some(ref client_secret) = args.reddit_client_secret {
+    // Reddit — always-on (public JSON API fallback when no OAuth credentials)
+    {
+        if let Some(ref client_id) = args.reddit_client_id {
             std::env::set_var("REDDIT_CLIENT_ID", client_id);
-            std::env::set_var("REDDIT_CLIENT_SECRET", client_secret);
-            let pool_c = pool.clone();
-            tokio::spawn(async move {
-                match market_data::sources::reddit::RedditMarketSource::from_env() {
-                    Ok(source) => {
-                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
-                        engine.run().await;
-                    }
-                    Err(e) => tracing::error!("Reddit init failed: {e}"),
-                }
-            });
-            info!("Reddit community tracker started");
-        } else {
-            info!("Reddit skipped (REDDIT_CLIENT_SECRET not configured)");
         }
+        if let Some(ref client_secret) = args.reddit_client_secret {
+            std::env::set_var("REDDIT_CLIENT_SECRET", client_secret);
+        }
+        let pool_c = pool.clone();
+        tokio::spawn(async move {
+            match market_data::sources::reddit::RedditMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Reddit init failed: {e}"),
+            }
+        });
+        info!("Reddit community tracker started");
     }
 
     // Shelter — always-on, no auth needed (Austin Animal Center Socrata SODA)
@@ -1136,8 +1157,8 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("Animal shelter tracker started");
     }
 
-    // Chaturbate — always-on, no auth needed
-    {
+    // Chaturbate — requires CHATURBATE_WM affiliate ID
+    if std::env::var("CHATURBATE_WM").is_ok() {
         let pool_c = pool.clone();
         tokio::spawn(async move {
             match market_data::sources::chaturbate::ChaturbateMarketSource::from_env() {
@@ -1286,8 +1307,8 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("AirNow Air Quality started");
     }
 
-    // CourtListener — gated on COURTLISTENER_TOKEN env var
-    if std::env::var("COURTLISTENER_TOKEN").is_ok() {
+    // CourtListener — always-on (public API, works without auth at lower rate limits)
+    {
         let pool_c = pool.clone();
         tokio::spawn(async move {
             match market_data::sources::courtlistener::CourtListenerMarketSource::from_env() {
@@ -1421,9 +1442,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("TomTom EV charging started");
     }
 
-    // BoardGameGeek — gated on BGG_API_TOKEN
-    if let Some(ref token) = args.bgg_api_token {
-        std::env::set_var("BGG_API_TOKEN", token);
+    // BoardGameGeek — always-on, no auth needed (BGG XML API2 /hot is public)
+    {
+        if let Some(ref token) = args.bgg_api_token {
+            std::env::set_var("BGG_API_TOKEN", token);
+        }
         let pool_c = pool.clone();
         tokio::spawn(async move {
             match market_data::sources::bgg::BggMarketSource::from_env() {
@@ -1535,7 +1558,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             tracker.record_not_started("bls", "Missing --bls-api-key");
         }
         // Treasury
-        if args.treasury_api_key.is_none() {
+        if args.treasury_api_key.as_ref().filter(|k| !k.trim().is_empty()).is_none() {
             tracker.record_not_started("bonds", "Missing --treasury-api-key");
         }
         // ECB
@@ -1547,9 +1570,9 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             tracker.record_not_started("eia", "Missing --eia-api-key");
         }
         // Nasdaq family (CFTC, CHRIS, OPEC, IMF) — BCHAIN moved out, uses blockchain.info (no key)
-        if args.nasdaq_api_key.is_none() {
+        if args.nasdaq_api_key.as_ref().filter(|k| !k.trim().is_empty()).is_none() {
             for src in &["cftc", "futures", "opec", "imf"] {
-                tracker.record_not_started(src, "Missing --nasdaq-api-key");
+                tracker.record_not_started(src, "Missing --nasdaq-api-key (get a free key at https://data.nasdaq.com/sign-up)");
             }
         }
         // OpenMeteo
@@ -1572,25 +1595,20 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         if args.backpacktf_api_key.is_none() {
             tracker.record_not_started("backpacktf", "Missing --backpacktf-api-key");
         }
-        // GitHub
-        if args.github_token.is_none() {
-            tracker.record_not_started("github", "Missing --github-token");
-        }
+        // GitHub — always starts (works unauthenticated with lower rate limits)
         // Cloudflare Radar
         if args.cloudflare_radar_token.is_none() {
             tracker.record_not_started("cloudflare", "Missing --cloudflare-radar-token");
         }
-        // CoinGecko (market_data source)
-        if args.coingecko_api_key.is_none() {
-            tracker.record_not_started("crypto", "Missing --coingecko-api-key");
-        }
+        // CoinGecko (market_data source) — always starts, free tier fallback
+        // (no longer gated on API key)
         // Wildfire (NASA FIRMS)
         if args.nasa_firms_key.is_none() {
             tracker.record_not_started("wildfire", "Missing --nasa-firms-key");
         }
-        // Maritime + AISstream
+        // Maritime — always-on (Digitraffic, no key needed)
+        // AISstream (individual vessel tracking via WebSocket, needs paid API key)
         if args.aisstream_api_key.is_none() {
-            tracker.record_not_started("maritime", "Missing --aisstream-api-key");
             tracker.record_not_started("aisstream", "Missing --aisstream-api-key");
         }
         // Movebank
@@ -1605,18 +1623,13 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         if args.finra_client_id.is_none() || args.finra_client_secret.is_none() {
             tracker.record_not_started("finra", "Missing --finra-client-id / --finra-client-secret");
         }
-        // Pump.fun (Helius)
-        if args.helius_api_key.is_none() {
-            tracker.record_not_started("pumpfun", "Missing --helius-api-key");
+        // Pump.fun — always-on (Dexscreener, no key needed)
+        // Reddit — always-on (public fallback), no not_started needed
+        // Chaturbate
+        if std::env::var("CHATURBATE_WM").is_err() {
+            tracker.record_not_started("chaturbate", "Missing CHATURBATE_WM env var");
         }
-        // Reddit
-        if args.reddit_client_id.is_none() || args.reddit_client_secret.is_none() {
-            tracker.record_not_started("reddit", "Missing --reddit-client-id / --reddit-client-secret");
-        }
-        // CourtListener
-        if std::env::var("COURTLISTENER_TOKEN").is_err() {
-            tracker.record_not_started("courtlistener", "Missing COURTLISTENER_TOKEN env var");
-        }
+        // CourtListener — always-on (public API), no not_started needed
         // AirNow
         if std::env::var("AIRNOW_API_KEY").is_err() {
             tracker.record_not_started("airnow", "Missing AIRNOW_API_KEY env var");
@@ -1630,10 +1643,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             tracker.record_not_started("tomtom_traffic", "Missing TOMTOM_API_KEY env var");
             tracker.record_not_started("tomtom_evcharge", "Missing TOMTOM_API_KEY env var");
         }
-        // BoardGameGeek
-        if args.bgg_api_token.is_none() {
-            tracker.record_not_started("bgg", "Missing --bgg-api-token");
-        }
+        // BoardGameGeek — always-on (public API), no not_started needed
         // Best Buy
         if args.bestbuy_api_key.is_none() {
             tracker.record_not_started("bestbuy", "Missing --bestbuy-api-key");
@@ -1693,6 +1703,21 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Chain cache for SSE pollers
     let chain_cache = Arc::new(chain_cache::ChainCache::new());
 
+    // Background health stats cache (refreshes every 60s)
+    let health_stats_cache = Arc::new(api::HealthStatsCache::new());
+    api::spawn_health_stats_refresh(pool.clone(), Arc::clone(&health_stats_cache));
+
+    // Start batch engine
+    let batch_state = Arc::new(batch_engine::BatchEngineState::new());
+    {
+        let batch_pool = pool.clone();
+        let batch_state_clone = Arc::clone(&batch_state);
+        tokio::spawn(async move {
+            batch_engine::run(batch_pool, batch_state_clone, batch_engine::BATCH_SOURCES).await;
+        });
+        info!("BatchEngine started");
+    }
+
     // HTTP server
     let app_state = Arc::new(AppState {
         pool,
@@ -1709,6 +1734,8 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         chain_cache,
         admin_token: args.admin_token.clone(),
         cors_origins: args.cors_origin.clone(),
+        health_stats_cache,
+        batch_engine: batch_state,
     });
 
     // Spawn chain pollers (NAV=1s, Oracle=2s)
@@ -1747,7 +1774,7 @@ async fn run_sync_logos(args: config::SyncLogosArgs) -> Result<(), Box<dyn std::
 
     info!("Fetching all coins from CoinGecko for logo sync...");
 
-    let limiter = coingecko::RateLimiter::coingecko_pro();
+    let limiter = coingecko::RateLimiter::coingecko_demo();
     let client = coingecko::CoinGeckoClient::with_limiter(&args.coingecko_api_key, limiter)?;
     let coins = client.fetch_all_markets().await.map_err(|e| format!("{e}"))?;
 
