@@ -516,7 +516,6 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         if (!transferred) {
             // Park funds in escrow for user to claim later
             failedFillEscrow[orderId] += amount;
-            assert(failedFillEscrow[orderId] <= orders[orderId].amount);
             emit EventsLib.FillFailed(orderId, user, amount);
         }
     }

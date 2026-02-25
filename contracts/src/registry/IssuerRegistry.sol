@@ -167,11 +167,14 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
     /// @dev Registry snapshots by nonce
     mapping(uint256 => TypesLib.RegistrySnapshot) private _nonceSnapshots;
 
-    /// @dev Advisory missed-round count per issuer ID (public, permissionless increment)
+    /// @dev Advisory missed-round count per issuer ID
     mapping(uint256 => uint256) public issuerMissedCount;
 
-    /// @dev Storage gap for upgrade safety (reduced from 32 to 29 for lastSnapshotNonce + _nonceSnapshots + issuerMissedCount)
-    uint256[29] private __gap;
+    /// @dev Authorized callers for incrementMissedCounts (BLSVerifier-inheriting contracts)
+    mapping(address => bool) public authorizedMissedCountCallers;
+
+    /// @dev Storage gap for upgrade safety (reduced from 29 to 28 for authorizedMissedCountCallers)
+    uint256[28] private __gap;
 
     // ============ CONSTRUCTOR ============
 
@@ -846,8 +849,16 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
         return _computeActiveBitmask();
     }
 
+    /// @notice Authorize or revoke a contract for calling incrementMissedCounts
+    /// @param caller The contract address to authorize/revoke
+    /// @param authorized Whether the caller should be authorized
+    function setAuthorizedMissedCountCaller(address caller, bool authorized) external onlyAdmin {
+        authorizedMissedCountCallers[caller] = authorized;
+    }
+
     /// @inheritdoc IIssuerRegistry
     function incrementMissedCounts(uint256 nonSignersBitmask) external override {
+        if (!authorizedMissedCountCallers[msg.sender]) revert Unauthorized();
         uint256 mask = nonSignersBitmask;
         for (uint256 i = 0; i < 256 && mask != 0; i++) {
             if (mask & 1 == 1) {

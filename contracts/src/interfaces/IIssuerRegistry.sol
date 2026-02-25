@@ -109,8 +109,8 @@ interface IIssuerRegistry {
 
     /// @notice Increment missed counts for non-signing issuers
     /// @dev Advisory liveness metric. DO NOT use for automated slashing or forced removal.
-    ///      Public and permissionless — counters can be inflated by anyone.
-    ///      Governance must cross-reference with on-chain transaction history before acting.
+    ///      Restricted to authorized callers (BLSVerifier-inheriting protocol contracts).
+    ///      Register callers via setAuthorizedMissedCountCaller().
     /// @param nonSignersBitmask Bitmask of issuers that did not sign
     function incrementMissedCounts(uint256 nonSignersBitmask) external;
 

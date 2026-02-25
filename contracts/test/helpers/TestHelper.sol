@@ -103,6 +103,15 @@ abstract contract TestHelper is BLSTestHelper {
         registry.setAggregatedPubkey(aggPubkey, 3);
     }
 
+    /// @notice Authorize a protocol contract to call incrementMissedCounts on the registry
+    /// @param registry The IssuerRegistry to authorize on
+    /// @param admin The admin address
+    /// @param caller The protocol contract to authorize
+    function authorizeMissedCountCaller(IssuerRegistry registry, address admin, address caller) internal {
+        vm.prank(admin);
+        registry.setAuthorizedMissedCountCaller(caller, true);
+    }
+
     /// @notice Sign a message hash with the 3 test issuers (seeds 0,1,2)
     function signWithTestIssuers(bytes32 messageHash) internal returns (bytes memory) {
         return blsSign("0,1,2", messageHash);
