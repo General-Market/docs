@@ -8,61 +8,60 @@ import {BLSVerifier} from "../libraries/BLSVerifier.sol";
 import {IVision} from "../interfaces/IVision.sol";
 import {IIssuerRegistry} from "../interfaces/IIssuerRegistry.sol";
 
+/// @title Vision — Auto-batch prediction market
+/// @notice Resolves all 10 issues from the 3-round review.
+/// @dev Key design decisions:
+///   - Issue 1:  `createBatchAndJoin()` atomic function
+///   - Issue 2:  `joinBatch()` and `updateBitmap()` require `configHash` param
+///   - Issue 3:  Deferred promotion via `nextConfigHash`/`nextLockOffset`
+///   - Issue 4:  BLS messages use `keccak256(abi.encode(chainid, address(this), "TAG", ...))`
+///   - Issue 5:  `sourceIdToBatchId` mapping + `sourceId` in Batch struct
+///   - Issue 6:  `updateBitmap()` enforces lock window via `_requireNotLocked`
+///   - Issue 7:  `_currentTickId()` has underflow guard
+///   - Issue 8:  NO second nonce — uses existing BLSVerifier 256-nonce sliding window
+///   - Issue 9:  `updateBatchConfig()` has lock window check + "UPDATE_BATCH_CONFIG" domain tag
+///   - Issue 10: Custom errors only, no require() strings
 /// @custom:security-contact security@indexprotocol.com
 contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     using SafeERC20 for IERC20;
 
     // ============ CONSTANTS ============
+
     uint256 public constant PROTOCOL_FEE_BPS = 30; // 0.3%
     uint256 public constant MIN_STAKE_PER_TICK = 1e5; // 0.1 USDC (6 decimals)
     uint256 public constant BPS_DENOMINATOR = 10000;
     uint256 public constant MAX_TICK_DURATION = 30 days;
 
     // ============ IMMUTABLES ============
+
     IERC20 public immutable USDC;
     address public immutable issuerRegistry;
 
     // ============ STATE ============
+
     uint256 public nextBatchId;
     mapping(uint256 => Batch) internal _batches;
     mapping(uint256 => mapping(address => PlayerPosition)) internal _positions;
     uint256 public accumulatedFees;
     address public feeCollector;
 
+    /// @notice sourceId => batchId (F5/F13 idempotency + reverse lookup)
+    /// @dev A sourceId of bytes32(0) is never valid.
+    ///      Value 0 means "no batch exists for this source" since batchIds start at 0
+    ///      but we use a separate existence flag via batch.tickDuration > 0.
+    mapping(bytes32 => uint256) public sourceIdToBatchId;
+
+    /// @notice Tracks whether a sourceId has ever been assigned a batch.
+    /// @dev Needed because batchId 0 is a valid batch. Without this, we cannot
+    ///      distinguish "no batch" from "batch 0".
+    mapping(bytes32 => bool) public sourceIdHasBatch;
+
     // Bot registry state
     mapping(address => Bot) internal _bots;
     address[] internal _botAddresses;
     mapping(address => uint256) internal _botIndex;
 
-    // ============ ERRORS ============
-    error InvalidBLSSignature();
-    error BatchNotFound();
-    error BatchPaused();
-    error Unauthorized();
-    error InsufficientDeposit();
-    error StakeBelowMinimum();
-    error ArrayLengthMismatch();
-    error AlreadyJoined();
-    error NotJoined();
-    error TickAlreadyClaimed();
-    error InvalidTickRange();
-    error InvalidTickDuration();
-    error InsolventPayout();
-    error BotAlreadyRegistered();
-    error BotNotRegistered();
-    // ============ EVENTS ============
-    event BatchCreated(uint256 indexed batchId, address indexed creator, uint256 tickDuration);
-    event BatchMarketsUpdated(uint256 indexed batchId);
-    event BatchPausedEvent(uint256 indexed batchId);
-    event BatchUnpaused(uint256 indexed batchId);
-    event PlayerJoined(uint256 indexed batchId, address indexed player, uint256 stakePerTick, bytes32 bitmapHash);
-    event PlayerDeposited(uint256 indexed batchId, address indexed player, uint256 amount);
-    event RewardsClaimed(uint256 indexed batchId, address indexed player, uint256 amount);
-    event PlayerWithdrawn(uint256 indexed batchId, address indexed player, uint256 amount);
-    event ForceWithdrawn(uint256 indexed batchId, address indexed player, uint256 amount);
-    event BotRegistered(address indexed bot, string endpoint);
-    event BotDeregistered(address indexed bot);
-    event FeeCollectorUpdated(address indexed oldCollector, address indexed newCollector);
+    // ============ CONSTRUCTOR ============
 
     constructor(address _usdc, address _issuerRegistry, address _feeCollector) {
         USDC = IERC20(_usdc);
@@ -71,92 +70,281 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         __BLSVerifier_init(_issuerRegistry);
     }
 
-    // ============ BATCH MANAGEMENT ============
+    // ============ CRITICAL INTERNALS ============
 
-    function createBatch(
-        bytes32[] calldata marketIds,
-        uint8[] calldata resolutionTypes,
-        uint256 tickDuration,
-        uint256[] calldata customThresholds
-    ) external returns (uint256 batchId) {
-        if (marketIds.length != resolutionTypes.length) revert ArrayLengthMismatch();
-        if (tickDuration == 0) revert InvalidTickDuration();
-        if (tickDuration > MAX_TICK_DURATION) revert InvalidTickDuration();
+    /// @notice Lazy config promotion (Issue 3 / F3).
+    ///         If a nextConfigHash is pending AND the current tick has advanced past
+    ///         the tick at which the update was scheduled, promote next -> active.
+    /// @dev Called at the start of every user-facing function that reads config
+    ///      (joinBatch, updateBitmap, updateBatchConfig, deposit). This ensures
+    ///      the active config is always correct for the current tick without
+    ///      requiring a separate keeper transaction.
+    ///
+    ///      Promotion rule: if currentTick > lastPromotionTick, we have crossed a
+    ///      tick boundary since the last config was set. Promote.
+    ///
+    ///      After promotion, nextConfigHash is cleared (set to bytes32(0)).
+    function _promoteConfigIfNeeded(uint256 batchId) internal {
+        Batch storage b = _batches[batchId];
 
-        batchId = nextBatchId;
+        // Nothing to promote
+        if (b.nextConfigHash == bytes32(0)) return;
 
-        Batch storage batch = _batches[batchId];
-        batch.creator = msg.sender;
-        batch.marketIds = marketIds;
-        batch.resolutionTypes = resolutionTypes;
-        batch.tickDuration = tickDuration;
-        batch.customThresholds = customThresholds;
-        batch.createdAtTick = block.timestamp / tickDuration;
-        batch.paused = false;
+        uint256 currentTick = block.timestamp / b.tickDuration;
 
-        nextBatchId = batchId + 1;
+        // Only promote if we have crossed into a new tick since the update was staged
+        if (currentTick > b.lastPromotionTick) {
+            bytes32 oldHash = b.configHash;
 
-        emit BatchCreated(batchId, msg.sender, tickDuration);
+            b.configHash = b.nextConfigHash;
+            b.lockOffset = b.nextLockOffset;
+            b.lastPromotionTick = currentTick;
+
+            // Clear pending
+            b.nextConfigHash = bytes32(0);
+            b.nextLockOffset = 0;
+
+            emit BatchConfigPromoted(batchId, oldHash, b.configHash, currentTick);
+        }
     }
 
-    function updateBatchMarkets(
-        uint256 batchId,
-        bytes32[] calldata marketIds,
-        uint8[] calldata resolutionTypes,
-        bytes calldata blsSig,
+    /// @notice Current tick ID relative to batch creation, with underflow guard (Issue 7 / F14).
+    /// @dev If block.timestamp / tickDuration < createdAtTick (possible if tickDuration
+    ///      was changed in a hypothetical upgrade, or clock skew on L3), returns 0
+    ///      instead of underflowing.
+    function _currentTickId(uint256 batchId) internal view returns (uint256) {
+        Batch storage b = _batches[batchId];
+        uint256 currentTick = block.timestamp / b.tickDuration;
+        if (currentTick < b.createdAtTick) return 0;
+        return currentTick - b.createdAtTick;
+    }
+
+    /// @notice Revert if the batch is in its lock window (Issue 6 / F6).
+    /// @dev Lock window = the last `lockOffset` seconds of each tick.
+    ///      tickEnd = (currentAbsoluteTick + 1) * tickDuration
+    ///      locked if block.timestamp >= tickEnd - lockOffset
+    function _requireNotLocked(uint256 batchId) internal view {
+        Batch storage b = _batches[batchId];
+        if (b.lockOffset == 0) return; // no lock window configured
+
+        uint256 currentAbsoluteTick = block.timestamp / b.tickDuration;
+        uint256 tickEnd = (currentAbsoluteTick + 1) * b.tickDuration;
+
+        if (block.timestamp >= tickEnd - b.lockOffset) {
+            revert TickLocked();
+        }
+    }
+
+    /// @notice Revert if batch does not exist.
+    function _requireBatchExists(uint256 batchId) internal view {
+        if (_batches[batchId].tickDuration == 0) revert BatchNotFound();
+    }
+
+    // ============ BATCH MANAGEMENT ============
+
+    /// @inheritdoc IVision
+    function createBatch(
+        bytes32 sourceId,
+        bytes32 configHash,
+        uint256 tickDuration,
+        uint256 lockOffset,
+        bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external {
-        Batch storage batch = _batches[batchId];
-        if (batch.creator == address(0)) revert BatchNotFound();
-        if (msg.sender != batch.creator) revert Unauthorized();
-        if (marketIds.length != resolutionTypes.length) revert ArrayLengthMismatch();
+    ) external returns (uint256 batchId) {
+        return _createBatch(
+            sourceId, configHash, tickDuration, lockOffset,
+            blsSignature, referenceNonce, signersBitmask
+        );
+    }
 
-        // BLS verify: signature over (batchId, keccak256(marketIds), keccak256(resolutionTypes), currentTick)
-        uint256 currentTick = block.timestamp / batch.tickDuration;
+    /// @inheritdoc IVision
+    function createBatchAndJoin(
+        bytes32 sourceId,
+        bytes32 configHash,
+        uint256 tickDuration,
+        uint256 lockOffset,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask,
+        uint256 depositAmount,
+        uint256 stakePerTick,
+        bytes32 bitmapHash
+    ) external nonReentrant returns (uint256 batchId) {
+        // Step 1: Create or look up existing batch (idempotent)
+        batchId = _createBatch(
+            sourceId, configHash, tickDuration, lockOffset,
+            blsSignature, referenceNonce, signersBitmask
+        );
+
+        // Step 2: Join the batch atomically
+        _joinBatch(batchId, configHash, depositAmount, stakePerTick, bitmapHash);
+    }
+
+    /// @notice Internal idempotent batch creation (F5).
+    ///         If sourceId already has a batch, returns existing batchId without
+    ///         re-verifying BLS (the batch already passed BLS at creation).
+    function _createBatch(
+        bytes32 sourceId,
+        bytes32 configHash,
+        uint256 tickDuration,
+        uint256 lockOffset,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) internal returns (uint256 batchId) {
+        // Idempotency check (F5): if sourceId already has a batch, return it
+        if (sourceIdHasBatch[sourceId]) {
+            return sourceIdToBatchId[sourceId];
+        }
+
+        // Validate parameters
+        if (tickDuration == 0 || tickDuration > MAX_TICK_DURATION) revert InvalidTickDuration();
+        if (lockOffset >= tickDuration) revert InvalidLockOffset();
+
+        // BLS verification — proves issuers signed this config (F1/F4)
         bytes32 message = keccak256(abi.encode(
             block.chainid,
             address(this),
-            "updateBatchMarkets",
-            batchId,
-            keccak256(abi.encodePacked(marketIds)),
-            keccak256(abi.encodePacked(resolutionTypes)),
-            currentTick
+            "CREATE_BATCH",
+            sourceId,
+            configHash,
+            tickDuration,
+            lockOffset
         ));
-        _verifyBLS(message, blsSig, referenceNonce, signersBitmask);
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
-        batch.marketIds = marketIds;
-        batch.resolutionTypes = resolutionTypes;
+        // Allocate batch ID
+        batchId = nextBatchId;
+        nextBatchId = batchId + 1;
 
-        emit BatchMarketsUpdated(batchId);
+        // Initialize batch
+        Batch storage b = _batches[batchId];
+        b.creator = msg.sender;
+        b.sourceId = sourceId;
+        b.configHash = configHash;
+        b.tickDuration = tickDuration;
+        b.lockOffset = lockOffset;
+        b.createdAtTick = block.timestamp / tickDuration;
+        b.lastPromotionTick = block.timestamp / tickDuration;
+        b.paused = false;
+        // nextConfigHash, nextLockOffset default to 0 (no pending update)
+
+        // Register reverse lookup (F5/F13)
+        sourceIdToBatchId[sourceId] = batchId;
+        sourceIdHasBatch[sourceId] = true;
+
+        emit BatchCreated(batchId, sourceId, msg.sender, configHash, tickDuration, lockOffset);
     }
 
+    /// @inheritdoc IVision
+    function updateBatchConfig(
+        uint256 batchId,
+        bytes32 configHash,
+        uint256 lockOffset,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external {
+        _requireBatchExists(batchId);
+        Batch storage b = _batches[batchId];
+        if (b.paused) revert BatchPaused();
+
+        // Promote any pending config first (F3)
+        _promoteConfigIfNeeded(batchId);
+
+        // Lock window check (Issue 9) — cannot update config during lock
+        _requireNotLocked(batchId);
+
+        // If configHash == active AND no pending next, no-op
+        if (b.configHash == configHash && b.nextConfigHash == bytes32(0)) {
+            return;
+        }
+
+        // Validate lockOffset
+        if (lockOffset >= b.tickDuration) revert InvalidLockOffset();
+
+        // BLS verification with distinct domain tag (Issue 9)
+        bytes32 message = keccak256(abi.encode(
+            block.chainid,
+            address(this),
+            "UPDATE_BATCH_CONFIG",
+            batchId,
+            configHash,
+            lockOffset
+        ));
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
+
+        // Stage for next tick (F3 deferred promotion)
+        b.nextConfigHash = configHash;
+        b.nextLockOffset = lockOffset;
+
+        emit BatchConfigUpdated(batchId, configHash, lockOffset);
+    }
+
+    /// @inheritdoc IVision
     function getBatch(uint256 batchId) external view returns (Batch memory) {
         return _batches[batchId];
     }
 
+    /// @inheritdoc IVision
+    function getBatchIdBySourceId(bytes32 sourceId) external view returns (uint256) {
+        if (!sourceIdHasBatch[sourceId]) revert BatchNotFound();
+        return sourceIdToBatchId[sourceId];
+    }
+
+    /// @inheritdoc IVision
+    function currentTickId(uint256 batchId) external view returns (uint256) {
+        _requireBatchExists(batchId);
+        return _currentTickId(batchId);
+    }
+
     // ============ PLAYER OPERATIONS ============
 
+    /// @inheritdoc IVision
     function joinBatch(
         uint256 batchId,
+        bytes32 configHash,
         uint256 depositAmount,
         uint256 stakePerTick,
         bytes32 bitmapHash
     ) external nonReentrant {
-        Batch storage batch = _batches[batchId];
-        if (batch.creator == address(0)) revert BatchNotFound();
-        if (batch.paused) revert BatchPaused();
+        _joinBatch(batchId, configHash, depositAmount, stakePerTick, bitmapHash);
+    }
+
+    /// @notice Internal join logic, shared by joinBatch() and createBatchAndJoin().
+    function _joinBatch(
+        uint256 batchId,
+        bytes32 configHash,
+        uint256 depositAmount,
+        uint256 stakePerTick,
+        bytes32 bitmapHash
+    ) internal {
+        _requireBatchExists(batchId);
+        Batch storage b = _batches[batchId];
+        if (b.paused) revert BatchPaused();
+
+        // Promote pending config if needed (F3)
+        _promoteConfigIfNeeded(batchId);
+
+        // Enforce lock window (F6)
+        _requireNotLocked(batchId);
+
+        // Config binding (Issue 2): player's bitmap must match active config
+        if (b.configHash != configHash) revert BatchNotFound(); // config mismatch
+
         if (_positions[batchId][msg.sender].stakePerTick != 0) revert AlreadyJoined();
         if (stakePerTick < MIN_STAKE_PER_TICK) revert StakeBelowMinimum();
         if (depositAmount < stakePerTick) revert InsufficientDeposit();
 
         USDC.safeTransferFrom(msg.sender, address(this), depositAmount);
 
-        uint256 currentTick = block.timestamp / batch.tickDuration;
+        uint256 tickId = _currentTickId(batchId);
         _positions[batchId][msg.sender] = PlayerPosition({
             bitmapHash: bitmapHash,
+            configHash: configHash,
             stakePerTick: stakePerTick,
-            startTick: currentTick,
+            startTick: tickId,
             balance: depositAmount,
             lastClaimedTick: 0,
             joinTimestamp: block.timestamp,
@@ -164,14 +352,34 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             totalClaimed: 0
         });
 
-        emit PlayerJoined(batchId, msg.sender, stakePerTick, bitmapHash);
+        emit PlayerJoined(batchId, msg.sender, stakePerTick, bitmapHash, configHash);
     }
 
-    function updateBitmap(uint256 batchId, bytes32 newBitmapHash) external {
+    /// @inheritdoc IVision
+    function updateBitmap(
+        uint256 batchId,
+        bytes32 configHash,
+        bytes32 newBitmapHash
+    ) external {
         if (_positions[batchId][msg.sender].stakePerTick == 0) revert NotJoined();
+
+        // Promote pending config if needed (F3)
+        _promoteConfigIfNeeded(batchId);
+
+        // Enforce lock window (Issue 6 / F6)
+        _requireNotLocked(batchId);
+
+        // Config binding (Issue 2): bitmap must match active config
+        Batch storage b = _batches[batchId];
+        if (b.configHash != configHash) revert BatchNotFound(); // config mismatch
+
         _positions[batchId][msg.sender].bitmapHash = newBitmapHash;
+        _positions[batchId][msg.sender].configHash = configHash;
+
+        emit BitmapUpdated(batchId, msg.sender, newBitmapHash, configHash);
     }
 
+    /// @inheritdoc IVision
     function deposit(uint256 batchId, uint256 amount) external nonReentrant {
         PlayerPosition storage position = _positions[batchId][msg.sender];
         if (position.stakePerTick == 0) revert NotJoined();
@@ -184,6 +392,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         emit PlayerDeposited(batchId, msg.sender, amount);
     }
 
+    /// @inheritdoc IVision
     function claimRewards(
         uint256 batchId,
         uint256 fromTick,
@@ -198,7 +407,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         if (fromTick <= position.lastClaimedTick && position.lastClaimedTick != 0) revert TickAlreadyClaimed();
         if (toTick < fromTick) revert InvalidTickRange();
 
-        // BLS verify: issuers sign the new balance for this player over this tick range
+        // BLS verify: issuers sign the new balance for this player over this tick range (F1)
         bytes32 message = keccak256(abi.encode(
             block.chainid,
             address(this),
@@ -232,6 +441,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         // If newBalance <= oldBalance, losses are recorded (balance decreased), no payout
     }
 
+    /// @inheritdoc IVision
     function withdraw(
         uint256 batchId,
         uint256 finalBalance,
@@ -242,7 +452,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         PlayerPosition storage position = _positions[batchId][msg.sender];
         if (position.stakePerTick == 0) revert NotJoined();
 
-        // BLS verify: issuers sign the final balance for withdrawal
+        // BLS verify (F1)
         bytes32 message = keccak256(abi.encode(
             block.chainid,
             address(this),
@@ -264,20 +474,22 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         // Solvency check
         if (USDC.balanceOf(address(this)) < payout + accumulatedFees) revert InsolventPayout();
 
-        USDC.safeTransfer(msg.sender, payout);
-
-        // Delete position
+        // Delete position before transfer (CEI pattern)
         delete _positions[batchId][msg.sender];
+
+        USDC.safeTransfer(msg.sender, payout);
 
         emit PlayerWithdrawn(batchId, msg.sender, payout);
     }
 
+    /// @inheritdoc IVision
     function getPosition(uint256 batchId, address player) external view returns (PlayerPosition memory) {
         return _positions[batchId][player];
     }
 
     // ============ BOT REGISTRY ============
 
+    /// @inheritdoc IVision
     function registerBot(string calldata endpoint, bytes32 pubkeyHash) external nonReentrant {
         if (_bots[msg.sender].isActive || _botIndex[msg.sender] != 0) revert BotAlreadyRegistered();
 
@@ -294,15 +506,16 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         emit BotRegistered(msg.sender, endpoint);
     }
 
+    /// @inheritdoc IVision
     function deregisterBot() external nonReentrant {
         Bot storage bot = _bots[msg.sender];
         if (!bot.isActive) revert BotNotRegistered();
 
-        // Swap-and-pop removal from _botAddresses
-        uint256 idx = _botIndex[msg.sender] - 1; // convert to 0-based
+        // Swap-and-pop removal
+        uint256 idx = _botIndex[msg.sender] - 1;
         address lastBot = _botAddresses[_botAddresses.length - 1];
         _botAddresses[idx] = lastBot;
-        _botIndex[lastBot] = idx + 1; // update moved bot's 1-indexed position
+        _botIndex[lastBot] = idx + 1;
         _botAddresses.pop();
         delete _botIndex[msg.sender];
         delete _bots[msg.sender];
@@ -310,6 +523,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         emit BotDeregistered(msg.sender);
     }
 
+    /// @inheritdoc IVision
     function getAllActiveBots() external view returns (address[] memory, Bot[] memory) {
         uint256 len = _botAddresses.length;
         Bot[] memory bots = new Bot[](len);
@@ -321,6 +535,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
 
     // ============ FEE MANAGEMENT ============
 
+    /// @inheritdoc IVision
     function collectFees() external nonReentrant {
         if (msg.sender != feeCollector) revert Unauthorized();
 
@@ -330,7 +545,13 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         USDC.safeTransfer(feeCollector, fees);
     }
 
-    function updateFeeCollector(address newCollector, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
+    /// @inheritdoc IVision
+    function updateFeeCollector(
+        address newCollector,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external {
         if (newCollector == address(0)) revert Unauthorized();
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(this), "UPDATE_FEE_COLLECTOR", newCollector
@@ -343,9 +564,14 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
 
     // ============ ISSUER OPERATIONS ============
 
-    function pause(uint256 batchId, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
-        Batch storage batch = _batches[batchId];
-        if (batch.creator == address(0)) revert BatchNotFound();
+    /// @inheritdoc IVision
+    function pause(
+        uint256 batchId,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external {
+        _requireBatchExists(batchId);
 
         bytes32 message = keccak256(abi.encode(
             block.chainid,
@@ -355,14 +581,19 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         ));
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
-        batch.paused = true;
+        _batches[batchId].paused = true;
 
         emit BatchPausedEvent(batchId);
     }
 
-    function unpause(uint256 batchId, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
-        Batch storage batch = _batches[batchId];
-        if (batch.creator == address(0)) revert BatchNotFound();
+    /// @inheritdoc IVision
+    function unpause(
+        uint256 batchId,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external {
+        _requireBatchExists(batchId);
 
         bytes32 message = keccak256(abi.encode(
             block.chainid,
@@ -372,11 +603,12 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         ));
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
-        batch.paused = false;
+        _batches[batchId].paused = false;
 
         emit BatchUnpaused(batchId);
     }
 
+    /// @inheritdoc IVision
     function forceWithdraw(
         uint256 batchId,
         address player,

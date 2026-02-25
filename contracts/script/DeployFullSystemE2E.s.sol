@@ -233,7 +233,7 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         console.log("  Index authorized bridge set to BridgeProxy");
         // BridgeProxy set on ArbBridgeCustody during initialize() (avoids BLS-gated setBridgeProxy)
         console.log("  ArbBridgeCustody wired to BridgeProxy (via initialize)");
-        // Vault approves ArbBridgeCustody for USDC spending (for fundSellOrder pull)
+        // Vault approves ArbBridgeCustody for USDC spending (for completeSellOrder vault→user pull)
         MockBitgetVault(mockBitgetVault).approveSpender(arbWusdc, arbBridgeCustodyProxy, type(uint256).max);
         console.log("  MockBitgetVault: approved ArbBridgeCustody for ARB_USDC spending");
     }

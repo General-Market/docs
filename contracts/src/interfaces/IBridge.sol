@@ -140,19 +140,8 @@ interface IArbBridgeCustody {
     /// @param blsSignature Aggregated BLS signature
     function completeBuyOrder(uint256 orderId, address vault, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
-    /// @notice Fund a sell order by pulling USDC from vault into custody
-    /// @dev Called by issuers before completeSellOrder. Vault must have approved this contract.
-    /// @param orderId The sell order ID
-    /// @param vault Source vault address to pull USDC from
-    /// @param usdcAmount Amount of USDC to pull (6 decimals)
-    /// @param blsSignature Aggregated BLS signature
-    function fundSellOrder(uint256 orderId, address vault, uint256 usdcAmount, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
-
     /// @notice Emitted when a buy order is completed (USDC sent to vault)
     event BuyOrderCompleted(uint256 indexed orderId, address indexed vault, uint256 usdcAmount);
-
-    /// @notice Emitted when a sell order is funded (USDC pulled from vault)
-    event SellOrderFunded(uint256 indexed orderId, address indexed vault, uint256 usdcAmount);
 
     // ============ VIEW FUNCTIONS ============
 
@@ -214,13 +203,15 @@ interface IArbBridgeCustody {
     ) external returns (uint256 orderId);
 
     /// @notice Complete a sell order after L3 execution
-    /// @dev Called by issuers after selling on L3 and bridging USDC back
+    /// @dev Called by issuers after selling on L3. Pulls USDC from vault directly to user.
     /// @param orderId The sell order ID
     /// @param usdcProceeds USDC proceeds to send to user (6 decimals)
+    /// @param vault Source vault address to pull USDC from
     /// @param blsSignature Aggregated BLS signature
     function completeSellOrder(
         uint256 orderId,
         uint256 usdcProceeds,
+        address vault,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask

@@ -278,28 +278,6 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
         emit BuyOrderCompleted(orderId, vault, usdcAmount);
     }
 
-    /// @inheritdoc IArbBridgeCustody
-    function fundSellOrder(
-        uint256 orderId,
-        address vault,
-        uint256 usdcAmount,
-        bytes calldata blsSignature,
-        uint256 referenceNonce,
-        uint256 signersBitmask
-    ) external override {
-        TypesLib.CrossChainSellOrder storage order = crossChainSellOrders[orderId];
-        if (order.user == address(0)) revert ErrorsLib.E119_SellOrderNotFound(orderId);
-
-        bytes32 message = keccak256(abi.encode(
-            block.chainid, address(this), "fundSellOrder", orderId, vault, usdcAmount
-        ));
-        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
-
-        if (usdcAmount > 0) usdc.safeTransferFrom(vault, address(this), usdcAmount);
-
-        emit SellOrderFunded(orderId, vault, usdcAmount);
-    }
-
     // ============ VIEW FUNCTIONS ============
 
     /// @inheritdoc IArbBridgeCustody
@@ -405,6 +383,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
     function completeSellOrder(
         uint256 orderId,
         uint256 usdcProceeds,
+        address vault,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
@@ -414,9 +393,9 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
             revert ErrorsLib.E119_SellOrderNotFound(orderId);
         }
 
-        // Build message for BLS verification
+        // Build message for BLS verification (includes vault for atomic fund+complete)
         bytes32 message = keccak256(abi.encode(
-            block.chainid, address(this), "completeSellOrder", orderId, usdcProceeds
+            block.chainid, address(this), "completeSellOrder", orderId, usdcProceeds, vault
         ));
 
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
@@ -426,9 +405,9 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
         // Delete order before external calls (CEI pattern)
         delete crossChainSellOrders[orderId];
 
-        // Transfer USDC proceeds to user (6 decimals)
+        // Transfer USDC proceeds from vault directly to user (6 decimals)
         if (usdcProceeds > 0) {
-            usdc.safeTransfer(user, usdcProceeds);
+            usdc.safeTransferFrom(vault, user, usdcProceeds);
         }
 
         emit SellOrderCompleted(orderId, usdcProceeds);
