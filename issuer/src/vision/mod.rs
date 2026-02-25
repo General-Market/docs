@@ -5,6 +5,7 @@
 //! and player balance tracking.
 
 pub mod api;
+pub mod batch_config_orchestrator;
 pub mod bitmap_store;
 pub mod chain_listener;
 pub mod config;

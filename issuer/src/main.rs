@@ -3257,6 +3257,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         chain_listener.run(cl_shutdown).await;
                     });
 
+                    // Spawn BatchConfigOrchestrator (independent async task, NOT inside run_cycle)
+                    let orch_data_node_url = vision_cfg.data_node_url.clone();
+                    let orch_admin_token = vision_cfg.data_node_token.clone().unwrap_or_default();
+                    tokio::spawn(async move {
+                        let mut orchestrator = issuer::vision::batch_config_orchestrator::BatchConfigOrchestrator::new(
+                            orch_data_node_url,
+                            orch_admin_token,
+                        );
+                        orchestrator.run().await;
+                    });
+
                     let vision_state = Arc::new(issuer::vision::api::VisionState {
                         pool,
                         scheduler: scheduler.clone(),

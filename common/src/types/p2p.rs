@@ -698,6 +698,46 @@ pub enum P2PMessage {
         /// Signer's BLS signature on outcome_hash
         signature: BLSSignature,
     },
+
+    /// Leader proposes batch configs for all sources (composite hash).
+    /// Carries round number for leader rotation, NOT cycle_number.
+    /// Part of the batch config bridge orchestrator (independent from settlement cycle).
+    BatchConfigProposal {
+        round: u64,
+        /// Per-source configs proposed by leader
+        configs: Vec<ProposedBatchConfig>,
+        /// Composite hash: keccak256(concat(sorted config hashes))
+        composite_hash: H256,
+    },
+
+    /// Follower co-signs the composite batch config hash (or rejects).
+    /// Part of the batch config bridge orchestrator (independent from settlement cycle).
+    BatchConfigSign {
+        round: u64,
+        composite_hash: H256,
+        /// BLS signature over the composite hash (empty if rejecting)
+        bls_signature: Vec<u8>,
+        accepted: bool,
+        reject_reason: Option<String>,
+    },
+}
+
+/// A proposed batch config for a single source, carried in BatchConfigProposal.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ProposedBatchConfig {
+    pub source_id: String,
+    pub config_hash: H256,
+    pub tick_duration_secs: u64,
+    pub lock_offset_secs: u64,
+    pub markets: Vec<ProposedMarket>,
+}
+
+/// A single market within a ProposedBatchConfig.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ProposedMarket {
+    pub asset_id: String,
+    pub resolution_type: String,
+    pub threshold_bps: u32,
 }
 
 /// Represents a single order fill for consensus

@@ -843,6 +843,28 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update(buf);
             h.update(outcome_hash.as_bytes());
         }
+        // Batch config orchestrator (independent from settlement cycle)
+        P2PMessage::BatchConfigProposal {
+            round,
+            configs: _, // large payload, hash by composite_hash only
+            composite_hash,
+        } => {
+            h.update(b"BatchConfigProposal");
+            h.update(round.to_le_bytes());
+            h.update(composite_hash.as_bytes());
+        }
+        P2PMessage::BatchConfigSign {
+            round,
+            composite_hash,
+            bls_signature: _, // exclude BLS sig
+            accepted,
+            reject_reason: _,
+        } => {
+            h.update(b"BatchConfigSign");
+            h.update(round.to_le_bytes());
+            h.update(composite_hash.as_bytes());
+            h.update([*accepted as u8]);
+        }
     }
 
     h.finalize().into()
@@ -899,6 +921,8 @@ pub fn msg_variant_tag(msg: &P2PMessage) -> &'static str {
         P2PMessage::ArbitrationPriceProposal { .. } => "ArbitrationPriceProposal",
         P2PMessage::ArbitrationPriceVote { .. } => "ArbitrationPriceVote",
         P2PMessage::ArbitrationResolutionSign { .. } => "ArbitrationResolutionSign",
+        P2PMessage::BatchConfigProposal { .. } => "BatchConfigProposal",
+        P2PMessage::BatchConfigSign { .. } => "BatchConfigSign",
     }
 }
 
@@ -929,6 +953,7 @@ pub fn is_vote_or_sign(msg: &P2PMessage) -> bool {
             | P2PMessage::SetItpNavSign { .. }
             | P2PMessage::ArbitrationPriceVote { .. }
             | P2PMessage::ArbitrationResolutionSign { .. }
+            | P2PMessage::BatchConfigSign { .. }
     )
 }
 
