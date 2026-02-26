@@ -2494,7 +2494,6 @@ async fn itp_orderbook(
     // Fetch and aggregate
     let book = orderbook_aggregator::fetch_and_aggregate(
         &state.bitget_client,
-        &itp_id,
         &asset_inputs,
         levels,
         aggregation_bps,
