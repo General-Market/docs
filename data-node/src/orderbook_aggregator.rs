@@ -88,6 +88,9 @@ impl OrderbookCache {
     pub async fn set(&self, key: String, book: AggregatedOrderbook) {
         let mut cache = self.cache.write().await;
         cache.insert(key, (Instant::now(), book));
+        // Evict stale entries to bound memory
+        let ttl = self.ttl;
+        cache.retain(|_, (ts, _)| ts.elapsed() < ttl * 2);
     }
 }
 
@@ -250,8 +253,8 @@ pub async fn fetch_and_aggregate(
     raw_asks.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
 
     // 6. Aggregate within threshold
-    let bids = aggregate_levels(&raw_bids, aggregation_bps, levels, true);
-    let asks = aggregate_levels(&raw_asks, aggregation_bps, levels, false);
+    let bids = aggregate_levels(&raw_bids, aggregation_bps, levels);
+    let asks = aggregate_levels(&raw_asks, aggregation_bps, levels);
 
     // Compute total depths
     let total_bid_depth_usd: f64 = bids.iter().map(|l| l.usd_value).sum();
@@ -292,7 +295,6 @@ fn aggregate_levels(
     raw: &[(f64, f64, f64)],
     aggregation_bps: u64,
     max_levels: usize,
-    _is_bid: bool,
 ) -> Vec<OrderbookLevel> {
     if raw.is_empty() {
         return vec![];

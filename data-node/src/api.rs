@@ -2410,7 +2410,7 @@ async fn itp_orderbook(
 ) -> Result<Json<AggregatedOrderbook>, (StatusCode, Json<ErrorResponse>)> {
     let itp_id = params.itp_id.to_lowercase();
     let levels = params.levels.min(50).max(1);
-    let aggregation_bps = params.aggregation_bps;
+    let aggregation_bps = params.aggregation_bps.min(1000);
 
     // Check cache first
     let cache_key = format!("{}-{}-{}", itp_id, levels, aggregation_bps);
