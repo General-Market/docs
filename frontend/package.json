@@ -49,6 +49,7 @@
     "destr": "^2.0.5",
     "elliptic": "^6.6.1",
     "framer-motion": "^12.29.0",
+    "html2canvas": "^1.4.1",
     "lightweight-charts": "^5.1.0",
     "lit": "^3.3.2",
     "merge-options": "^3.0.4",
