@@ -26,6 +26,7 @@ mod trade_collector;
 mod market_data;
 mod vision_api;
 mod vision_batch_cache;
+mod vision_ws;
 
 use std::collections::HashSet;
 use std::net::SocketAddr;

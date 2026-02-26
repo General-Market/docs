@@ -374,6 +374,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/vision/snapshot", get(crate::vision_api::snapshot))
         .route("/vision/markets/active", get(crate::vision_api::active_markets))
         .route("/vision/batch/:batch_id/history", get(crate::vision_api::batch_history))
+        .route("/vision/ws", get(crate::vision_ws::ws_handler))
         // Batch config endpoints
         .route("/batches/recommended", get(batches_recommended))
         .route("/batches/config/:hash", get(batch_config_by_hash))
