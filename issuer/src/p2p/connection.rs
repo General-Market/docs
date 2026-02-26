@@ -366,11 +366,12 @@ impl PeerConnection {
         let mut backoff_ms = INITIAL_BACKOFF_MS;
 
         loop {
-            // Skip reconnection to banned peers
+            // Wait for ban to expire before attempting reconnection
             if let Some(ref scorer) = peer_scorer {
                 if scorer.is_banned(&peer_id) {
-                    debug!(?peer_id, "Skipping reconnection to banned peer");
-                    return;
+                    debug!(?peer_id, "Peer is banned, waiting before retry");
+                    tokio::time::sleep(Duration::from_secs(10)).await;
+                    continue;
                 }
             }
 
