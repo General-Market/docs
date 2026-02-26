@@ -56,6 +56,7 @@ interface SingleChartProps {
   onDeployIndex?: (runId: number, label: string) => void
   deployedItps?: DeployedItpRef[]
   onRebalanceItp?: (itpId: string) => void
+  chartContainerRef?: React.RefObject<HTMLDivElement | null>
 }
 
 interface SweepChartProps {
@@ -64,6 +65,7 @@ interface SweepChartProps {
   onDeployIndex?: (runId: number, label: string) => void
   deployedItps?: DeployedItpRef[]
   onRebalanceItp?: (itpId: string) => void
+  chartContainerRef?: React.RefObject<HTMLDivElement | null>
 }
 
 type SimPerformanceChartProps = SingleChartProps | SweepChartProps
@@ -129,9 +131,14 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
     ? props.navSeries[0]?.nav_date
     : props.variants[0]?.navSeries[0]?.nav_date
   const benchmarks = useBenchmarks(startDate)
+  const [showBtc, setShowBtc] = useState(false)
+  const [showEth, setShowEth] = useState(false)
+
+  const hasBtc = benchmarks.some(b => b.symbol === 'BTC')
+  const hasEth = benchmarks.some(b => b.symbol === 'ETH')
 
   if (props.mode === 'single') {
-    const { navSeries, runId, onDeployIndex, deployedItps, onRebalanceItp } = props
+    const { navSeries, runId, onDeployIndex, deployedItps, onRebalanceItp, chartContainerRef } = props
     if (!navSeries.length) return null
 
     const lastNav = navSeries[navSeries.length - 1]?.nav ?? 1
@@ -155,14 +162,40 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
     )
 
     return (
-      <div className="mb-6">
+      <div className="mb-6" ref={chartContainerRef}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <h3 className="text-xs font-medium uppercase tracking-widest text-text-muted">Performance</h3>
-            {benchmarks.length > 0 && (
-              <div className="flex items-center gap-2 text-xs">
-                <span style={{ color: BTC_COLOR }}>BTC</span>
-                <span style={{ color: ETH_COLOR }}>ETH</span>
+            {(hasBtc || hasEth) && (
+              <div className="flex items-center gap-1">
+                {hasBtc && (
+                  <button
+                    onClick={() => setShowBtc(v => !v)}
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all"
+                    style={{
+                      color: showBtc ? '#fff' : BTC_COLOR,
+                      backgroundColor: showBtc ? BTC_COLOR : 'transparent',
+                      borderColor: BTC_COLOR,
+                      opacity: showBtc ? 1 : 0.6,
+                    }}
+                  >
+                    BTC
+                  </button>
+                )}
+                {hasEth && (
+                  <button
+                    onClick={() => setShowEth(v => !v)}
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all"
+                    style={{
+                      color: showEth ? '#fff' : ETH_COLOR,
+                      backgroundColor: showEth ? ETH_COLOR : 'transparent',
+                      borderColor: ETH_COLOR,
+                      opacity: showEth ? 1 : 0.6,
+                    }}
+                  >
+                    ETH
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -195,12 +228,12 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
               width={60}
             />
             <ReferenceLine y={1.0} stroke="#D4D4D8" strokeDasharray="5 5" strokeOpacity={0.8} />
-            <Tooltip content={<SingleTooltip hasBenchmarks={benchmarks.length > 0} />} cursor={{ stroke: '#D4D4D8' }} />
+            <Tooltip content={<SingleTooltip hasBenchmarks={showBtc || showEth} />} cursor={{ stroke: '#D4D4D8' }} />
             <Line type="monotone" dataKey="nav" stroke={lineColor} strokeWidth={1.5} dot={false} activeDot={{ r: 4, strokeWidth: 1 }} />
-            {benchmarks.some(b => b.symbol === 'BTC') && (
+            {showBtc && hasBtc && (
               <Line type="monotone" dataKey="btc" stroke={BTC_COLOR} strokeWidth={1} strokeDasharray="4 2" dot={false} activeDot={false} connectNulls />
             )}
-            {benchmarks.some(b => b.symbol === 'ETH') && (
+            {showEth && hasEth && (
               <Line type="monotone" dataKey="eth" stroke={ETH_COLOR} strokeWidth={1} strokeDasharray="4 2" dot={false} activeDot={false} connectNulls />
             )}
           </LineChart>
@@ -210,7 +243,7 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
   }
 
   // Sweep mode
-  const { variants, onDeployIndex } = props
+  const { variants, onDeployIndex, chartContainerRef } = props
   if (!variants.length) return null
 
   // Merge all nav series + benchmarks into unified data keyed by date
@@ -238,7 +271,40 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
     .map(([date, data]) => ({ nav_date: date, ...data }))
 
   return (
-    <div className="mb-6">
+    <div className="mb-6" ref={chartContainerRef}>
+      {/* Benchmark toggles for sweep mode */}
+      {(hasBtc || hasEth) && (
+        <div className="flex items-center gap-1 mb-2">
+          {hasBtc && (
+            <button
+              onClick={() => setShowBtc(v => !v)}
+              className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all"
+              style={{
+                color: showBtc ? '#fff' : BTC_COLOR,
+                backgroundColor: showBtc ? BTC_COLOR : 'transparent',
+                borderColor: BTC_COLOR,
+                opacity: showBtc ? 1 : 0.6,
+              }}
+            >
+              BTC
+            </button>
+          )}
+          {hasEth && (
+            <button
+              onClick={() => setShowEth(v => !v)}
+              className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all"
+              style={{
+                color: showEth ? '#fff' : ETH_COLOR,
+                backgroundColor: showEth ? ETH_COLOR : 'transparent',
+                borderColor: ETH_COLOR,
+                opacity: showEth ? 1 : 0.6,
+              }}
+            >
+              ETH
+            </button>
+          )}
+        </div>
+      )}
       <div className="flex gap-4">
         {/* Chart */}
         <div className="flex-1 min-w-0">
@@ -257,11 +323,11 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
                 width={60}
               />
               <ReferenceLine y={1.0} stroke="#D4D4D8" strokeDasharray="5 5" strokeOpacity={0.8} />
-              <Tooltip content={<SweepTooltip labels={variants.map(v => v.label)} hasBenchmarks={benchmarks.length > 0} />} cursor={{ stroke: '#D4D4D8' }} />
-              {benchmarks.some(b => b.symbol === 'BTC') && (
+              <Tooltip content={<SweepTooltip labels={variants.map(v => v.label)} hasBenchmarks={showBtc || showEth} />} cursor={{ stroke: '#D4D4D8' }} />
+              {showBtc && hasBtc && (
                 <Line type="monotone" dataKey="btc" stroke={BTC_COLOR} strokeWidth={1} strokeDasharray="4 2" dot={false} activeDot={false} connectNulls />
               )}
-              {benchmarks.some(b => b.symbol === 'ETH') && (
+              {showEth && hasEth && (
                 <Line type="monotone" dataKey="eth" stroke={ETH_COLOR} strokeWidth={1} strokeDasharray="4 2" dot={false} activeDot={false} connectNulls />
               )}
               {variants.map((v, i) => (
