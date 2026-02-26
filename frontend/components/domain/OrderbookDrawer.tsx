@@ -111,24 +111,28 @@ export function OrderbookDrawer({
       </div>
 
       {/* ── Loading / Error / Empty states ── */}
-      {isLoading && !data && (
-        <div className="flex-1 flex items-center justify-center text-text-muted text-[11px]">
-          Loading depth...
-        </div>
-      )}
       {error && !data && (
         <div className="flex-1 flex items-center justify-center text-red-500 text-[11px] px-2 text-center">
           {error}
         </div>
       )}
-      {!isLoading && !error && !data && (
-        <div className="flex-1 flex items-center justify-center text-text-muted text-[11px]">
-          No depth data
+      {!error && (!data || (data.bids.length === 0 && data.asks.length === 0)) && (
+        <div className="flex-1 flex flex-col items-center justify-center text-text-muted text-[11px] gap-3">
+          {data && data.mid_price > 0 && (
+            <div className="text-center">
+              <div className="text-[14px] font-bold text-black">{formatPrice(data.mid_price)}</div>
+              <div className="text-[9px] text-text-muted mt-0.5">{data.assets_included} assets priced</div>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <div className="w-3.5 h-3.5 border-2 border-gray-300 border-t-gray-500 rounded-full animate-spin" />
+            Loading depth...
+          </div>
         </div>
       )}
 
       {/* ── Orderbook body ── */}
-      {data && (
+      {data && data.bids.length > 0 && data.asks.length > 0 && (
         <div className="flex-1 flex flex-col min-h-0">
           {/* Column headers */}
           <div className="flex items-center px-2.5 py-1 text-[9px] text-text-muted uppercase tracking-wider border-b border-border-light">
