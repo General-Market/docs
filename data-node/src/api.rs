@@ -244,6 +244,8 @@ pub struct AppState {
     pub orderbook_cache: Arc<OrderbookCache>,
     /// Price broadcast hub for WebSocket streaming
     pub price_broadcast: Arc<crate::market_data::broadcast::PriceBroadcastHub>,
+    /// Batch config cache for Vision WebSocket/history endpoints
+    pub vision_batch_cache: Arc<crate::vision_batch_cache::VisionBatchCache>,
 }
 
 /// In-memory TTL cache for hot endpoints.

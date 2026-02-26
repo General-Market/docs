@@ -25,6 +25,7 @@ mod simulation;
 mod trade_collector;
 mod market_data;
 mod vision_api;
+mod vision_batch_cache;
 
 use std::collections::HashSet;
 use std::net::SocketAddr;
@@ -1848,6 +1849,10 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         bitget_client,
         orderbook_cache,
         price_broadcast: broadcast_hub.clone(),
+        vision_batch_cache: Arc::new(crate::vision_batch_cache::VisionBatchCache::new(
+            std::env::var("ISSUER_URL").unwrap_or_else(|_| "http://localhost:8100".to_string()),
+            format!("http://{}:{}", args.bind, args.port),
+        )),
     });
 
     // Spawn chain pollers (NAV=1s, Oracle=2s)
