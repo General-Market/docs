@@ -45,6 +45,7 @@ export default function TweetGateModal({
   const [imageReady, setImageReady] = useState(false)
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null)
   const imageBlobRef = useRef<Blob | null>(null)
+  const imageUrlRef = useRef<string | null>(null)
 
   const nextTier = tier + 1
   const tweetText = getTweetText(nextTier, stats)
@@ -55,12 +56,25 @@ export default function TweetGateModal({
     exportChartAsImage(chartRef.current).then((blob) => {
       imageBlobRef.current = blob
       setImageReady(!!blob)
-      if (blob) setImagePreviewUrl(URL.createObjectURL(blob))
+      if (blob) {
+        const url = URL.createObjectURL(blob)
+        imageUrlRef.current = url
+        setImagePreviewUrl(url)
+      }
     })
     return () => {
-      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl)
+      if (imageUrlRef.current) URL.revokeObjectURL(imageUrlRef.current)
     }
-  }, [chartRef]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [chartRef])
+
+  // Close on Escape key
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [onClose])
 
   // Countdown timer after tweet is opened
   useEffect(() => {

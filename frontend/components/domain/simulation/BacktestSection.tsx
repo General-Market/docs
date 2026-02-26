@@ -339,7 +339,6 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
           onUnlock={async () => {
             const success = await quota.unlock()
             if (success) {
-              setShowGateModal(false)
               quota.consume()
               if (isSweep) sweep.run()
               else sim.run()

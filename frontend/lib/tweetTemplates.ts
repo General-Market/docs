@@ -23,7 +23,7 @@ export function getTweetText(tier: number, stats: SimStats): string {
       return [
         'Should I tokenize this one too?',
         '',
-        `${stats.totalSimsRun} backtests deep. Best so far: ${stats.bestStrategy} at ${stats.bestReturn}%.`,
+        `${stats.totalSimsRun} backtests deep. Best so far: ${stats.bestStrategy ?? 'N/A'} at ${stats.bestReturn ?? '0'}%.`,
       ].join('\n')
 
     case 3:

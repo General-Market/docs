@@ -1,5 +1,3 @@
-import html2canvas from 'html2canvas'
-
 const WATERMARK_TEXT = 'indexvision.com'
 const WATERMARK_FONT = '14px Inter, system-ui, sans-serif'
 const WATERMARK_COLOR = 'rgba(255, 255, 255, 0.5)'
@@ -9,6 +7,7 @@ export async function exportChartAsImage(
   chartElement: HTMLElement
 ): Promise<Blob | null> {
   try {
+    const { default: html2canvas } = await import('html2canvas')
     const canvas = await html2canvas(chartElement, {
       backgroundColor: '#09090b', // matches bg-card / zinc-950
       scale: 2,
@@ -44,7 +43,10 @@ export function downloadBlob(blob: Blob, filename: string) {
   a.href = url
   a.download = filename
   document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+  try {
+    a.click()
+  } finally {
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
 }

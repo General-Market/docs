@@ -56,10 +56,12 @@ export function useSimQuota() {
 
   const consume = useCallback(() => {
     if (isUnlimited) return
-    const next = { ...quota, used: quota.used + 1 }
-    saveQuota(storageKey, next)
-    setQuota(next)
-  }, [quota, storageKey, isUnlimited])
+    setQuota((prev) => {
+      const next = { ...prev, used: prev.used + 1 }
+      saveQuota(storageKey, next)
+      return next
+    })
+  }, [storageKey, isUnlimited])
 
   const unlock = useCallback(async (): Promise<boolean> => {
     if (!isConnected || !address) return false
