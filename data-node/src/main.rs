@@ -18,6 +18,7 @@ mod itp_collector;
 mod kline_collector;
 mod liquidity_collector;
 mod listing_sync;
+mod orderbook_aggregator;
 pub mod live_cache;
 mod logo_downloader;
 mod simulation;
@@ -193,6 +194,19 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!(symbols = symbol_count, poll_secs = liq_poll_interval, "Liquidity collector started");
     }
 
+    // Shared CoinGecko rate limiter — used by BOTH the market source (crypto prices)
+    // and cg_collector (snapshots, backfill, categories) to avoid 429 collisions.
+    let cg_limiter = {
+        let is_pro = args.coingecko_api_key.as_deref()
+            .map(|k| !k.trim().is_empty() && !k.starts_with("CG-"))
+            .unwrap_or(false);
+        if is_pro {
+            coingecko::RateLimiter::coingecko_pro()
+        } else {
+            coingecko::RateLimiter::coingecko_demo()
+        }
+    };
+
     // Start CoinGecko market-cap collector (if API key configured)
     let logos_dir = std::path::PathBuf::from(&args.logos_dir);
     if let Some(ref cg_api_key) = args.coingecko_api_key {
@@ -201,8 +215,9 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         let cg_key = cg_api_key.clone();
         let cg_poll = args.cg_poll_interval;
         let cg_logos_dir = logos_dir.clone();
+        let cg_lim = cg_limiter.clone();
         tokio::spawn(async move {
-            cg_collector::run(cg_pool, cg_state, cg_key, cg_poll, cg_logos_dir).await;
+            cg_collector::run(cg_pool, cg_state, cg_key, cg_poll, cg_logos_dir, cg_lim).await;
         });
         info!("CoinGecko market-cap collector started");
     } else {
@@ -548,21 +563,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         });
     }
 
-    // World Bank
-    {
-        let pool_c = pool.clone();
-        tokio::spawn(async move {
-            match market_data::sources::worldbank::WorldBankMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
-                    engine.run().await;
-                }
-                Err(e) => tracing::error!("World Bank init failed: {e}"),
-            }
-        });
-    }
-
-    info!("Free market data providers started (SEC EFTS, SEC Insider, Congress, World Bank)");
+    info!("Free market data providers started (SEC EFTS, SEC Insider, Congress)");
 
     // ── New market data providers (from AA market-data-lib) ─────────────
     // 10. No-key sources — always enabled
@@ -837,13 +838,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             }
         }
         let pool_c = pool.clone();
+        let cg_lim = cg_limiter.clone();
         let tier_label = match args.coingecko_api_key.as_deref().map(|k| k.trim()) {
             Some(k) if !k.is_empty() && k.starts_with("CG-") => "demo",
             Some(k) if !k.is_empty() => "pro",
             _ => "free (no API key)",
         };
         tokio::spawn(async move {
-            match market_data::sources::coingecko::CoinGeckoMarketSource::from_env() {
+            match market_data::sources::coingecko::CoinGeckoMarketSource::from_env(cg_lim) {
                 Ok(source) => {
                     let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
                     engine.run().await;
@@ -1718,6 +1720,29 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("BatchEngine started");
     }
 
+    // Bitget read-only client (env config → real client, fallback → mock)
+    let bitget_client: Arc<dyn common::BitgetReadOnlyClient + Send + Sync> = {
+        use common::integrations::bitget::{BitgetReadOnlyClientImpl, BitgetReadOnlyConfig};
+        match BitgetReadOnlyConfig::from_env() {
+            Ok(config) => match BitgetReadOnlyClientImpl::new(config) {
+                Ok(c) => {
+                    info!("Bitget read-only client initialized (real)");
+                    Arc::new(c)
+                }
+                Err(e) => {
+                    tracing::warn!(?e, "Failed to create Bitget client, using mock");
+                    Arc::new(common::MockBitgetReadOnlyClient::new())
+                }
+            },
+            Err(e) => {
+                tracing::warn!(?e, "No Bitget config found, using mock client");
+                Arc::new(common::MockBitgetReadOnlyClient::new())
+            }
+        }
+    };
+
+    let orderbook_cache = Arc::new(orderbook_aggregator::OrderbookCache::new(5)); // 5s TTL
+
     // HTTP server
     let app_state = Arc::new(AppState {
         pool,
@@ -1736,6 +1761,8 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         cors_origins: args.cors_origin.clone(),
         health_stats_cache,
         batch_engine: batch_state,
+        bitget_client,
+        orderbook_cache,
     });
 
     // Spawn chain pollers (NAV=1s, Oracle=2s)

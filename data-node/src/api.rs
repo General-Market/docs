@@ -14,9 +14,12 @@ use sqlx::PgPool;
 use tokio::sync::RwLock;
 use tower_http::cors::{Any, CorsLayer};
 
+use common::BitgetReadOnlyClient;
+
 use crate::collector::CollectorState;
 use crate::db;
 use crate::live_cache::{CachedTicker, LiveTickerCache};
+use crate::orderbook_aggregator::{self, AggregatedOrderbook, OrderbookCache};
 use crate::simulation;
 
 /// Cached per-source health stats, refreshed in background every 60s.
@@ -235,6 +238,10 @@ pub struct AppState {
     pub health_stats_cache: Arc<HealthStatsCache>,
     /// Auto-batch engine state (recommended + signed configs)
     pub batch_engine: Arc<crate::batch_engine::BatchEngineState>,
+    /// Bitget read-only client for orderbook fetches
+    pub bitget_client: Arc<dyn BitgetReadOnlyClient + Send + Sync>,
+    /// Orderbook aggregation cache (5s TTL)
+    pub orderbook_cache: Arc<OrderbookCache>,
 }
 
 /// In-memory TTL cache for hot endpoints.
@@ -320,6 +327,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/fast-prices", get(fast_prices))
         .route("/fast-prices-by-address", get(fast_prices_by_address))
         .route("/itp-bid-ask", get(itp_bid_ask))
+        .route("/itp-orderbook", get(itp_orderbook))
         .route("/liquidity", get(liquidity))
         .route("/liquidity/alerts", get(liquidity_alerts))
         .route("/user-state", get(user_state))
@@ -2380,6 +2388,125 @@ async fn itp_bid_ask(
     }))
 }
 
+// ---- /itp-orderbook ----
+
+#[derive(Deserialize)]
+struct ItpOrderbookQuery {
+    itp_id: String,
+    /// Number of aggregated levels per side (default 15, max 50)
+    #[serde(default = "default_ob_levels")]
+    levels: usize,
+    /// Aggregation threshold in basis points (default 10)
+    #[serde(default = "default_ob_agg_bps")]
+    aggregation_bps: u64,
+}
+
+fn default_ob_levels() -> usize { 15 }
+fn default_ob_agg_bps() -> u64 { 10 }
+
+async fn itp_orderbook(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<ItpOrderbookQuery>,
+) -> Result<Json<AggregatedOrderbook>, (StatusCode, Json<ErrorResponse>)> {
+    let itp_id = params.itp_id.to_lowercase();
+    let levels = params.levels.min(50).max(1);
+    let aggregation_bps = params.aggregation_bps;
+
+    // Check cache first
+    let cache_key = format!("{}-{}-{}", itp_id, levels, aggregation_bps);
+    if let Some(cached) = state.orderbook_cache.get(&cache_key).await {
+        return Ok(Json(cached));
+    }
+
+    // Find the latest snapshot for this ITP
+    let snapshot = db::query_itp_snapshot_at(&state.pool, &itp_id, Utc::now())
+        .await
+        .map_err(|e| db_error(e))?;
+
+    let snapshot = match snapshot {
+        Some(s) => s,
+        None => {
+            return Err((
+                StatusCode::NOT_FOUND,
+                Json(ErrorResponse {
+                    error: format!("No snapshot found for ITP '{}'", itp_id),
+                }),
+            ));
+        }
+    };
+
+    if snapshot.assets.len() != snapshot.inventory.len() {
+        return Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse {
+                error: "Snapshot has mismatched assets/inventory lengths".into(),
+            }),
+        ));
+    }
+
+    // Map asset addresses to Bitget symbols with inventory and weight_bps
+    let mut asset_inputs: Vec<orderbook_aggregator::AssetInput> = Vec::new();
+
+    // Compute total weight for normalization
+    let total_weight: f64 = snapshot.weights.iter()
+        .filter_map(|w| w.parse::<f64>().ok())
+        .sum();
+
+    for (i, asset_addr) in snapshot.assets.iter().enumerate() {
+        let inv_val: f64 = snapshot.inventory[i].parse().unwrap_or(0.0);
+        let wt_val: f64 = snapshot.weights.get(i)
+            .and_then(|w| w.parse().ok())
+            .unwrap_or(0.0);
+
+        if let Some(pair) = state.symbol_map.get(&asset_addr.to_lowercase()) {
+            // Check if we already have this symbol (dedup)
+            if let Some(existing) = asset_inputs.iter_mut().find(|a| a.symbol == *pair) {
+                existing.inventory += inv_val;
+                existing.weight_bps += if total_weight > 0.0 {
+                    ((wt_val / total_weight) * 10000.0) as u64
+                } else {
+                    0
+                };
+            } else {
+                let weight_bps = if total_weight > 0.0 {
+                    ((wt_val / total_weight) * 10000.0) as u64
+                } else {
+                    0
+                };
+                asset_inputs.push(orderbook_aggregator::AssetInput {
+                    symbol: pair.clone(),
+                    inventory: inv_val,
+                    weight_bps,
+                });
+            }
+        }
+    }
+
+    if asset_inputs.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: "No mapped Bitget symbols found for this ITP".into(),
+            }),
+        ));
+    }
+
+    // Fetch and aggregate
+    let book = orderbook_aggregator::fetch_and_aggregate(
+        &state.bitget_client,
+        &itp_id,
+        &asset_inputs,
+        levels,
+        aggregation_bps,
+    )
+    .await;
+
+    // Cache result
+    state.orderbook_cache.set(cache_key, book.clone()).await;
+
+    Ok(Json(book))
+}
+
 // ---- /liquidity ----
 
 #[derive(Deserialize)]
@@ -3941,9 +4068,115 @@ async fn sim_sweep_stream(
                 }
             }).collect()
         }
+        "fng_regime" => {
+            let weighting = simulation::Weighting::from_str(&params.weighting)
+                .unwrap_or(simulation::Weighting::Equal);
+            // Sweep through FNG modes: off, contrarian, risk_toggle, cash_shift
+            let fear = params.fng_fear_threshold.unwrap_or(25);
+            let greed = params.fng_greed_threshold.unwrap_or(75);
+            let cash = params.fng_cash_pct.unwrap_or(0.4);
+            let fng_modes: Vec<(&str, Option<simulation::FngRegime>)> = vec![
+                ("off", None),
+                ("contrarian", Some(simulation::FngRegime {
+                    mode: "contrarian".into(), fear_threshold: fear, greed_threshold: greed, cash_pct_greed: cash,
+                })),
+                ("risk_toggle", Some(simulation::FngRegime {
+                    mode: "risk_toggle".into(), fear_threshold: fear, greed_threshold: greed, cash_pct_greed: cash,
+                })),
+                ("cash_shift", Some(simulation::FngRegime {
+                    mode: "cash_shift".into(), fear_threshold: fear, greed_threshold: greed, cash_pct_greed: cash,
+                })),
+            ];
+            fng_modes.into_iter().map(|(_label, regime)| {
+                simulation::SimConfig {
+                    category_id: params.category_id.clone(),
+                    top_n: params.top_n,
+                    weighting: weighting.clone(),
+                    rebalance_days: params.rebalance_days,
+                    base_fee_pct: params.base_fee_pct,
+                    spread_multiplier: params.spread_multiplier,
+                    threshold_rebalance_pct: params.threshold_pct,
+                    start_date: params.start_date,
+                    vc_mode: vc_mode.clone(),
+                    vc_investors: vc_investors.clone(),
+                    vc_min_amount_m,
+                    vc_round_types: vc_round_types.clone(),
+                    fng_regime: regime,
+                    dominance_regime: dominance_regime.clone(),
+                }
+            }).collect()
+        }
+        "dom_regime" => {
+            let weighting = simulation::Weighting::from_str(&params.weighting)
+                .unwrap_or(simulation::Weighting::Equal);
+            // Sweep through DOM modes: off, alts_when_low, alts_when_falling, btc_when_high
+            let lookback = params.dom_lookback.unwrap_or(30);
+            let dom_modes: Vec<(&str, Option<simulation::DominanceRegime>)> = vec![
+                ("off", None),
+                ("alts_when_low", Some(simulation::DominanceRegime {
+                    mode: "alts_when_low".into(), lookback_days: lookback,
+                })),
+                ("alts_when_falling", Some(simulation::DominanceRegime {
+                    mode: "alts_when_falling".into(), lookback_days: lookback,
+                })),
+                ("btc_when_high", Some(simulation::DominanceRegime {
+                    mode: "btc_when_high".into(), lookback_days: lookback,
+                })),
+            ];
+            dom_modes.into_iter().map(|(_label, regime)| {
+                simulation::SimConfig {
+                    category_id: params.category_id.clone(),
+                    top_n: params.top_n,
+                    weighting: weighting.clone(),
+                    rebalance_days: params.rebalance_days,
+                    base_fee_pct: params.base_fee_pct,
+                    spread_multiplier: params.spread_multiplier,
+                    threshold_rebalance_pct: params.threshold_pct,
+                    start_date: params.start_date,
+                    vc_mode: vc_mode.clone(),
+                    vc_investors: vc_investors.clone(),
+                    vc_min_amount_m,
+                    vc_round_types: vc_round_types.clone(),
+                    fng_regime: fng_regime.clone(),
+                    dominance_regime: regime,
+                }
+            }).collect()
+        }
+        "defi_weight" => {
+            // Sweep through DeFi weighting strategies
+            let defi_weightings = vec![
+                simulation::Weighting::TvlWeight,
+                simulation::Weighting::TvlCapped { cap_pct: 10.0 },
+                simulation::Weighting::TvlSqrt,
+                simulation::Weighting::FeesWeight,
+                simulation::Weighting::RevenueWeight,
+                simulation::Weighting::VolumeWeight,
+                simulation::Weighting::TvlMomentum { lookback_days: 90 },
+                simulation::Weighting::FeeEfficiency,
+                simulation::Weighting::YieldWeight,
+            ];
+            defi_weightings.into_iter().map(|w| {
+                simulation::SimConfig {
+                    category_id: params.category_id.clone(),
+                    top_n: params.top_n,
+                    weighting: w,
+                    rebalance_days: params.rebalance_days,
+                    base_fee_pct: params.base_fee_pct,
+                    spread_multiplier: params.spread_multiplier,
+                    threshold_rebalance_pct: params.threshold_pct,
+                    start_date: params.start_date,
+                    vc_mode: vc_mode.clone(),
+                    vc_investors: vc_investors.clone(),
+                    vc_min_amount_m,
+                    vc_round_types: vc_round_types.clone(),
+                    fng_regime: fng_regime.clone(),
+                    dominance_regime: dominance_regime.clone(),
+                }
+            }).collect()
+        }
         other => {
             return Err((StatusCode::BAD_REQUEST, Json(ErrorResponse {
-                error: format!("Invalid sweep dimension '{}', use 'top_n', 'weighting', 'rebalance', 'threshold', or 'category'", other),
+                error: format!("Invalid sweep dimension '{}', use 'top_n', 'weighting', 'rebalance', 'threshold', 'category', 'fng_regime', 'dom_regime', or 'defi_weight'", other),
             })));
         }
     };
@@ -3973,6 +4206,15 @@ async fn sim_sweep_stream(
                     }
                 }
                 "category" => config.category_id.clone(),
+                "fng_regime" => match &config.fng_regime {
+                    None => "off".into(),
+                    Some(r) => r.mode.clone(),
+                },
+                "dom_regime" => match &config.dominance_regime {
+                    None => "off".into(),
+                    Some(r) => r.mode.clone(),
+                },
+                "defi_weight" => format!("weighting={}", config.weighting.as_str()),
                 _ => format!("variant_{}", idx),
             };
 
@@ -5531,8 +5773,18 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
     }
     let avg_fill_time_seconds = if fill_count > 0 { fill_sum / fill_count as f64 } else { 0.0 };
 
-    // Vault assets
-    let (vault_assets, vault_usd_total) = build_vault_snapshot(state, arb).await;
+    // Vault USD total: sum of pending (unfilled) order amounts
+    // This reflects actual "orders in" — collateral awaiting settlement
+    let mut vault_usd_total = 0.0f64;
+    for (evt, _) in &order_logs {
+        if !fill_map.contains_key(&evt.order_id.as_u64()) {
+            let amount_f64: f64 = evt.amount.to_string().parse().unwrap_or(0.0);
+            vault_usd_total += amount_f64 / 1e18;
+        }
+    }
+
+    // Vault asset breakdown (top holdings chart)
+    let (vault_assets, _) = build_vault_snapshot(state, arb).await;
 
     let is_healthy = active_issuers > 0 && last_cycle_number > 0;
 
