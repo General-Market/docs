@@ -2491,17 +2491,36 @@ async fn itp_orderbook(
         ));
     }
 
-    // Fetch and aggregate
-    let book = orderbook_aggregator::fetch_and_aggregate(
-        &state.bitget_client,
-        &asset_inputs,
-        levels,
-        aggregation_bps,
-    )
-    .await;
+    // Fast path: return synthetic orderbook from live ticker cache instantly,
+    // then spawn background fetch for real depth data.
+    let sym_refs: Vec<&str> = asset_inputs.iter().map(|a| a.symbol.as_str()).collect();
+    let tickers = state.live_cache.get_prices(&sym_refs).await;
+    let synthetic = orderbook_aggregator::synthetic_from_tickers(&asset_inputs, &tickers);
 
-    // Cache result
-    state.orderbook_cache.set(cache_key, book.clone()).await;
+    // Spawn background fetch for real depth (populates cache for next request)
+    {
+        let bg_client = Arc::clone(&state.bitget_client);
+        let bg_cache = Arc::clone(&state.orderbook_cache);
+        let bg_cache_key = cache_key.clone();
+        let bg_inputs: Vec<orderbook_aggregator::AssetInput> = asset_inputs.iter().map(|a| {
+            orderbook_aggregator::AssetInput {
+                symbol: a.symbol.clone(),
+                inventory: a.inventory,
+                weight_bps: a.weight_bps,
+            }
+        }).collect();
+        tokio::spawn(async move {
+            let book = orderbook_aggregator::fetch_and_aggregate(
+                &bg_client,
+                &bg_inputs,
+                levels,
+                aggregation_bps,
+            ).await;
+            bg_cache.set(bg_cache_key, book).await;
+        });
+    }
+
+    let book = synthetic;
 
     Ok(Json(book))
 }
@@ -4085,6 +4104,15 @@ async fn sim_sweep_stream(
                 ("cash_shift", Some(simulation::FngRegime {
                     mode: "cash_shift".into(), fear_threshold: fear, greed_threshold: greed, cash_pct_greed: cash,
                 })),
+                ("graduated_cash", Some(simulation::FngRegime {
+                    mode: "graduated_cash".into(), fear_threshold: fear, greed_threshold: greed, cash_pct_greed: cash,
+                })),
+                ("quality_rotation", Some(simulation::FngRegime {
+                    mode: "quality_rotation".into(), fear_threshold: fear, greed_threshold: greed, cash_pct_greed: cash,
+                })),
+                ("trend_follow", Some(simulation::FngRegime {
+                    mode: "trend_follow".into(), fear_threshold: fear, greed_threshold: greed, cash_pct_greed: cash,
+                })),
             ];
             fng_modes.into_iter().map(|(_label, regime)| {
                 simulation::SimConfig {
@@ -4120,6 +4148,12 @@ async fn sim_sweep_stream(
                 })),
                 ("btc_when_high", Some(simulation::DominanceRegime {
                     mode: "btc_when_high".into(), lookback_days: lookback,
+                })),
+                ("combo", Some(simulation::DominanceRegime {
+                    mode: "combo".into(), lookback_days: lookback,
+                })),
+                ("momentum", Some(simulation::DominanceRegime {
+                    mode: "momentum".into(), lookback_days: lookback,
                 })),
             ];
             dom_modes.into_iter().map(|(_label, regime)| {

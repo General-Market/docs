@@ -37,6 +37,7 @@ interface CacheEntry {
 
 const CACHE_TTL_MS = 5_000
 const DEBOUNCE_MS = 200
+const POLL_INTERVAL_MS = 3_000
 
 // Module-level cache shared across hook instances
 const cache = new Map<string, CacheEntry>()
@@ -123,7 +124,7 @@ export function useItpOrderbook(
       })
   }, [itpId, levels, aggregationBps])
 
-  // Debounced fetch on enable / parameter change
+  // Debounced fetch on enable, then poll every 3s while enabled
   useEffect(() => {
     if (!enabled || !itpId) {
       cancel()
@@ -140,17 +141,25 @@ export function useItpOrderbook(
       setData(cached.data)
       setIsLoading(false)
       setError(null)
-      return
+    } else {
+      setIsLoading(true)
     }
 
-    setIsLoading(true)
-
+    // Initial debounced fetch
     debounceRef.current = setTimeout(() => {
       doFetch()
     }, DEBOUNCE_MS)
 
+    // Poll every 3s for live updates (cache busts after 5s TTL)
+    const interval = setInterval(() => {
+      // Invalidate client cache so we re-fetch from server
+      cache.delete(cacheKey)
+      doFetch()
+    }, POLL_INTERVAL_MS)
+
     return () => {
       cancel()
+      clearInterval(interval)
     }
   }, [enabled, itpId, levels, aggregationBps, doFetch, cancel])
 

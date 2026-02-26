@@ -94,6 +94,64 @@ impl OrderbookCache {
     }
 }
 
+/// Build an instant "lite" orderbook from ticker bid/ask data (no depth, just spread).
+/// Used as fast fallback while real orderbook fetch runs in background.
+pub fn synthetic_from_tickers(
+    assets: &[AssetInput],
+    tickers: &std::collections::HashMap<String, crate::live_cache::CachedTicker>,
+) -> AggregatedOrderbook {
+    let mut index_mid = 0.0_f64;
+    let mut per_asset: Vec<AssetOrderbookSummary> = Vec::new();
+    let mut assets_failed: Vec<String> = Vec::new();
+
+    for asset in assets {
+        if let Some(ticker) = tickers.get(&asset.symbol) {
+            let bid: f64 = ticker.best_bid.parse().unwrap_or(0.0);
+            let ask: f64 = ticker.best_ask.parse().unwrap_or(0.0);
+            let mid = (bid + ask) / 2.0;
+            if mid <= 0.0 {
+                assets_failed.push(asset.symbol.clone());
+                continue;
+            }
+            index_mid += asset.inventory * mid;
+            let spread_bps = (ask - bid) / mid * 10_000.0;
+            per_asset.push(AssetOrderbookSummary {
+                symbol: asset.symbol.clone(),
+                mid_price: mid,
+                spread_bps,
+                bid_depth_usd: 0.0,
+                ask_depth_usd: 0.0,
+                weight_bps: asset.weight_bps,
+            });
+        } else {
+            assets_failed.push(asset.symbol.clone());
+        }
+    }
+
+    index_mid /= 1e18;
+    let assets_included = per_asset.len();
+
+    // Compute aggregate spread from weighted per-asset spreads
+    let total_weight: f64 = per_asset.iter().map(|a| a.weight_bps as f64).sum();
+    let agg_spread = if total_weight > 0.0 {
+        per_asset.iter().map(|a| a.spread_bps * a.weight_bps as f64).sum::<f64>() / total_weight
+    } else {
+        0.0
+    };
+
+    AggregatedOrderbook {
+        mid_price: index_mid,
+        spread_bps: agg_spread,
+        bids: vec![],
+        asks: vec![],
+        total_bid_depth_usd: 0.0,
+        total_ask_depth_usd: 0.0,
+        assets_included,
+        assets_failed,
+        per_asset,
+    }
+}
+
 /// Input for a single asset in the ITP.
 pub struct AssetInput {
     /// Bitget trading pair symbol (e.g., "BTCUSDT")
