@@ -1763,6 +1763,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         batch_engine: batch_state,
         bitget_client,
         orderbook_cache,
+        price_broadcast: Arc::new(crate::market_data::broadcast::PriceBroadcastHub::new()),
     });
 
     // Spawn chain pollers (NAV=1s, Oracle=2s)

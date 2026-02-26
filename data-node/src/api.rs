@@ -242,6 +242,8 @@ pub struct AppState {
     pub bitget_client: Arc<dyn BitgetReadOnlyClient + Send + Sync>,
     /// Orderbook aggregation cache (5s TTL)
     pub orderbook_cache: Arc<OrderbookCache>,
+    /// Price broadcast hub for WebSocket streaming
+    pub price_broadcast: Arc<crate::market_data::broadcast::PriceBroadcastHub>,
 }
 
 /// In-memory TTL cache for hot endpoints.

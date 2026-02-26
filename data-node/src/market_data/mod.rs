@@ -1,5 +1,6 @@
 //! Market data provider framework (ported from AA market-data-lib)
 
+pub mod broadcast;
 pub mod error_tracker;
 pub mod models;
 pub mod queries;
