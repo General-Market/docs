@@ -12,11 +12,13 @@ import { ChartModal } from './ChartModal'
 import { RebalanceModal } from './RebalanceModal'
 import { YouTubeLite as YouTubeLiteShared, extractYouTubeId as extractYouTubeIdShared } from '@/components/ui/YouTubeLite'
 import { CostBasisCard } from './CostBasisCard'
+import { OrderbookDrawer } from './OrderbookDrawer'
 import { useItpNav } from '@/hooks/useItpNav'
 import { useUserItpShares } from '@/hooks/useUserItpShares'
 import { useItpMetadata } from '@/hooks/useItpMetadata'
 import { useDeployerName } from '@/hooks/useDeployerName'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { useItpOrderbook } from '@/hooks/useItpOrderbook'
 import { hasLendingMarket } from '@/lib/contracts/morpho-markets-registry'
 import blacklistedItps from '@/lib/config/blacklisted-itps.json'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
@@ -352,6 +354,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
   const [editDesc, setEditDesc] = useState('')
   const [editUrl, setEditUrl] = useState('')
   const [editVideo, setEditVideo] = useState('')
+  const [isHovered, setIsHovered] = useState(false)
 
   const { metadata, refetch: refetchMetadata } = useItpMetadata(itp.itpId as `0x${string}` | undefined)
   const { name: deployerName } = useDeployerName(itp.admin as `0x${string}` | undefined)
@@ -399,6 +402,14 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
   const effectiveArbAddress = itp.arbAddress ?? undefined
 
   const isActive = itp.source === 'index' || itp.completed
+
+  const {
+    data: orderbookData,
+    isLoading: orderbookLoading,
+    error: orderbookError,
+    aggregationBps,
+    setAggregationBps,
+  } = useItpOrderbook(itp.itpId, isHovered && isActive)
 
   const createdDate = itp.createdAt > 0 ? new Date(itp.createdAt * 1000) : null
   const timeAgo = createdDate ? getTimeAgo(createdDate) : ''
@@ -491,7 +502,12 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
   }, [showDetails, publicClient, effectiveArbAddress])
 
   return (
-    <div id={itp.itpId ? `itp-card-${itp.itpId}` : undefined} className="bg-white border-r border-b border-border-light overflow-hidden">
+    <div
+      id={itp.itpId ? `itp-card-${itp.itpId}` : undefined}
+      className="relative overflow-visible bg-white border-r border-b border-border-light"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {/* Video — click-to-play YouTube thumbnail */}
       {(() => {
         const rawUrl = metadata?.videoUrl
@@ -731,6 +747,19 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
       )}
 
       </div>{/* end p-6 wrapper */}
+
+      {/* Orderbook depth drawer — appears on hover */}
+      {isHovered && isActive && (
+        <div className="absolute top-0 left-full z-50 h-full shadow-lg">
+          <OrderbookDrawer
+            data={orderbookData}
+            isLoading={orderbookLoading}
+            error={orderbookError}
+            aggregationBps={aggregationBps}
+            onAggregationChange={setAggregationBps}
+          />
+        </div>
+      )}
     </div>
   )
 }
