@@ -43,6 +43,7 @@ export default function TweetGateModal({
   const [countdown, setCountdown] = useState(TIMER_SECONDS)
   const [unlocking, setUnlocking] = useState(false)
   const [imageReady, setImageReady] = useState(false)
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null)
   const imageBlobRef = useRef<Blob | null>(null)
 
   const nextTier = tier + 1
@@ -54,8 +55,12 @@ export default function TweetGateModal({
     exportChartAsImage(chartRef.current).then((blob) => {
       imageBlobRef.current = blob
       setImageReady(!!blob)
+      if (blob) setImagePreviewUrl(URL.createObjectURL(blob))
     })
-  }, [chartRef])
+    return () => {
+      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl)
+    }
+  }, [chartRef]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Countdown timer after tweet is opened
   useEffect(() => {
@@ -129,6 +134,15 @@ export default function TweetGateModal({
               <div className="bg-surface rounded-lg p-4 text-sm text-text-primary whitespace-pre-line border border-border-light">
                 {tweetText}
               </div>
+
+              {/* Chart image preview */}
+              {imagePreviewUrl && (
+                <img
+                  src={imagePreviewUrl}
+                  alt="Backtest chart preview"
+                  className="w-full rounded-lg border border-border-light"
+                />
+              )}
 
               {/* Action buttons */}
               <div className="flex gap-3">
