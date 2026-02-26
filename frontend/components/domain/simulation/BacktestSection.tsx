@@ -10,6 +10,8 @@ import { SimHoldingsTable } from './SimHoldingsTable'
 import { SimSweepStatsTable } from './SimSweepStatsTable'
 import { useSimulation } from '@/hooks/useSimulation'
 import { useSimSweep } from '@/hooks/useSimSweep'
+import { useSimQuota } from '@/hooks/useSimQuota'
+import TweetGateModal from './TweetGateModal'
 import { DATA_NODE_URL } from '@/lib/config'
 
 interface DeployedItpRef {
@@ -38,7 +40,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
     sweep: 'none',
     sweep_categories: [],
     threshold_pct: null,
-    start_date: '',
+    start_date: '2020-01-01',
     fng_mode: '',
     fng_fear: 25,
     fng_greed: 75,
@@ -51,6 +53,9 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
     vc_round_types: 'series_a, seed, series_b',
   })
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [showGateModal, setShowGateModal] = useState(false)
+  const chartContainerRef = useRef<HTMLDivElement>(null)
+  const quota = useSimQuota()
 
   const isSweep = filters.sweep !== 'none'
   const isCategorySweep = filters.sweep === 'category'
@@ -138,15 +143,20 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
 
   const handleRun = useCallback(() => {
     if (isLoading) {
-      // Cancel
       if (isSweep) sweep.cancel()
       else sim.cancel()
-    } else {
-      // Run
-      if (isSweep) sweep.run()
-      else sim.run()
+      return
     }
-  }, [isSweep, isLoading, sim, sweep])
+
+    if (!quota.canRun) {
+      setShowGateModal(true)
+      return
+    }
+
+    quota.consume()
+    if (isSweep) sweep.run()
+    else sim.run()
+  }, [isSweep, isLoading, sim, sweep, quota])
 
   // Fetch holdings for a run_id and call onDeployIndex with symbol+weight
   const handleDeployIndex = useCallback(async (runId: number, _label: string) => {
@@ -201,6 +211,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
               onDeployIndex={handleDeployIndex}
               deployedItps={deployedItps}
               onRebalanceItp={onRebalanceItp}
+              chartContainerRef={chartContainerRef}
             />
           )}
           {sim.result?.run_id && (
@@ -243,6 +254,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
               onDeployIndex={handleDeployIndex}
               deployedItps={deployedItps}
               onRebalanceItp={onRebalanceItp}
+              chartContainerRef={chartContainerRef}
             />
           )}
         </>
@@ -289,6 +301,17 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
             isLoading={isLoading}
           />
         </div>
+        {!quota.isUnlimited ? (
+          <p className="text-xs text-text-muted mt-2 text-right">
+            {quota.remaining === 0
+              ? 'Time to pay... with a tweet'
+              : quota.remaining === 1
+                ? 'Last free sim'
+                : `${quota.remaining} sims left`}
+          </p>
+        ) : (
+          <p className="text-xs text-text-muted mt-2 text-right">Unlimited</p>
+        )}
 
         {/* Fullscreen toggle */}
         {hasResults && !isFullscreen && (
@@ -309,6 +332,39 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
           </div>
         )}
       </div>
+
+      {showGateModal && (
+        <TweetGateModal
+          onClose={() => setShowGateModal(false)}
+          onUnlock={async () => {
+            const success = await quota.unlock()
+            if (success) {
+              setShowGateModal(false)
+              quota.consume()
+              if (isSweep) sweep.run()
+              else sim.run()
+            }
+            return success
+          }}
+          tier={quota.tier}
+          chartRef={chartContainerRef}
+          stats={{
+            topN: filters.top_n,
+            category: filters.category_id,
+            totalReturn: sim.result?.stats
+              ? sim.result.stats.total_return_pct.toFixed(1)
+              : '0',
+            sharpe: sim.result?.stats
+              ? sim.result.stats.sharpe_ratio.toFixed(2)
+              : '0',
+            totalSimsRun: quota.used,
+            bestStrategy: filters.weighting,
+            bestReturn: sim.result?.stats
+              ? sim.result.stats.total_return_pct.toFixed(1)
+              : undefined,
+          }}
+        />
+      )}
     </>
   )
 }
