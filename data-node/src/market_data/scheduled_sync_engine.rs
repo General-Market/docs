@@ -13,8 +13,10 @@ use anyhow::Result;
 use chrono::{Duration as ChronoDuration, Utc};
 use sqlx::PgPool;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 use tracing::{debug, error, info, warn};
 
+use super::broadcast::{PriceBroadcast, PriceBroadcastHub, SourcePriceBatch};
 use super::rate_limiter::SlidingWindowRateLimiter;
 use crate::market_data::traits::ScheduledMarketDataSource;
 
@@ -32,11 +34,12 @@ pub struct ScheduledSyncEngine {
     rate_limiter: SlidingWindowRateLimiter,
     sync_count: AtomicU64,
     retention_days: i64,
+    broadcast_hub: Arc<PriceBroadcastHub>,
 }
 
 impl ScheduledSyncEngine {
     /// Create a new scheduled sync engine for the given source
-    pub fn new(pool: PgPool, source: Box<dyn ScheduledMarketDataSource>) -> Self {
+    pub fn new(pool: PgPool, source: Box<dyn ScheduledMarketDataSource>, broadcast_hub: Arc<PriceBroadcastHub>) -> Self {
         let retention_days = std::env::var("MARKET_DATA_RETENTION_DAYS")
             .ok()
             .and_then(|v| v.parse().ok())
@@ -48,6 +51,7 @@ impl ScheduledSyncEngine {
             rate_limiter,
             sync_count: AtomicU64::new(0),
             retention_days,
+            broadcast_hub,
         }
     }
 
@@ -391,6 +395,26 @@ impl ScheduledSyncEngine {
                     errors += 1;
                 }
             }
+        }
+
+        // Broadcast updated prices to WebSocket subscribers
+        if updated > 0 {
+            let batch = Arc::new(SourcePriceBatch {
+                source: source_id.to_string(),
+                prices: prices.iter().map(|p| PriceBroadcast {
+                    source: source_id.to_string(),
+                    asset_id: p.asset_id.clone(),
+                    symbol: p.symbol.clone(),
+                    value: p.value,
+                    change_pct: p.change_pct,
+                    volume_24h: p.volume_24h,
+                    market_cap: p.market_cap,
+                    fetched_at: p.fetched_at,
+                }).collect(),
+                timestamp: Utc::now(),
+            });
+            let tx = self.broadcast_hub.sender(source_id).await;
+            let _ = tx.send(batch);
         }
 
         let total_elapsed = sync_start.elapsed();

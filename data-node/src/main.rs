@@ -282,6 +282,9 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     market_data::error_tracker::init_global();
     market_data::sync_registry::init_global();
 
+    // Price broadcast hub — shared by all sync engines and AppState for WebSocket streaming
+    let broadcast_hub = Arc::new(crate::market_data::broadcast::PriceBroadcastHub::new());
+
     // Each provider is gated on its config key. We use SyncEngine (fixed interval)
     // for simple sources and ScheduledSyncEngine for schedule-aware sources.
 
@@ -290,10 +293,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         std::env::set_var("FINNHUB_API_KEY", key);
         std::env::set_var("FINNHUB_SYNC_INTERVAL_SECS", args.finnhub_sync_interval.to_string());
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::finnhub::FinnhubClient::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Finnhub init failed: {e}"),
@@ -306,10 +310,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     if let Some(ref key) = args.fred_api_key {
         std::env::set_var("FRED_API_KEY", key);
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::fred::FredMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("FRED init failed: {e}"),
@@ -322,10 +327,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     if let Some(ref key) = args.bls_api_key {
         std::env::set_var("BLS_API_KEY", key);
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::bls::BlsMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("BLS init failed: {e}"),
@@ -338,10 +344,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     if let Some(key) = args.treasury_api_key.as_ref().filter(|k| !k.trim().is_empty()) {
         std::env::set_var("NASDAQ_API_KEY", key);
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::treasury::TreasuryMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Treasury init failed: {e}"),
@@ -353,10 +360,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // 5. ECB (euro rates) — gated on ecb_enabled flag, schedule-aware
     if args.ecb_enabled {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::ecb::EcbMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("ECB init failed: {e}"),
@@ -369,10 +377,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     if let Some(ref key) = args.eia_api_key {
         std::env::set_var("EIA_API_KEY", key);
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::eia::EiaMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("EIA init failed: {e}"),
@@ -388,10 +397,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
 
         // CFTC
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::nasdaq::CftcMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("CFTC init failed: {e}"),
@@ -400,10 +410,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
 
         // CHRIS (continuous futures)
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::nasdaq::ChrisMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("CHRIS init failed: {e}"),
@@ -412,10 +423,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
 
         // OPEC
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::nasdaq::OpecMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("OPEC init failed: {e}"),
@@ -424,10 +436,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
 
         // IMF
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::nasdaq::ImfMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("IMF init failed: {e}"),
@@ -441,10 +454,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Previously gated behind nasdaq_api_key by mistake.
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::nasdaq::BchainMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("BCHAIN init failed: {e}"),
@@ -457,10 +471,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     if args.openmeteo_sync_interval > 0 {
         std::env::set_var("OPENMETEO_SYNC_INTERVAL_SECS", args.openmeteo_sync_interval.to_string());
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::openmeteo::OpenMeteoMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("OpenMeteo init failed: {e}"),
@@ -473,10 +488,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // SEC EDGAR 13F Filings (no auth, User-Agent only)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::sec_edgar::SecEdgarMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("SEC EDGAR init failed: {e}"),
@@ -487,10 +503,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // SEC EFTS Filing Counts (no auth required)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::sec_efts::SecEftsMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("SEC EFTS init failed: {e}"),
@@ -501,10 +518,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // SEC Form 4 Insider Trading (no auth required)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::sec_insider::SecInsiderMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("SEC Insider init failed: {e}"),
@@ -518,10 +536,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             std::env::set_var("FINRA_CLIENT_ID", id);
             std::env::set_var("FINRA_CLIENT_SECRET", secret);
             let pool_c = pool.clone();
+            let bh = broadcast_hub.clone();
             tokio::spawn(async move {
                 match market_data::sources::finra::FinraMarketSource::from_env() {
                     Ok(source) => {
-                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                         engine.run().await;
                     }
                     Err(e) => tracing::error!("FINRA init failed: {e}"),
@@ -538,10 +557,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // FINRA Daily Short Volume (public endpoint, no API key needed)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::finra_short_vol::FinraShortVolMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("FINRA Short Volume init failed: {e}"),
@@ -552,10 +572,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Congress (requires CONGRESS_API_KEY — skip silently if not set)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::congress::CongressMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::warn!("Congress provider skipped: {e}"),
@@ -571,10 +592,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // npm package downloads
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::npm::NpmMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("npm init failed: {e}"),
@@ -585,10 +607,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // PyPI package downloads
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::pypi::PypiMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("PyPI init failed: {e}"),
@@ -599,10 +622,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // crates.io Rust package downloads
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::crates_io::CratesIoMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("crates.io init failed: {e}"),
@@ -613,10 +637,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Steam concurrent player counts
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::steam::SteamMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Steam init failed: {e}"),
@@ -627,10 +652,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Hacker News story scores
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::hackernews::HackerNewsMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("HackerNews init failed: {e}"),
@@ -641,10 +667,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // 4chan board activity
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::fourchan::FourchanMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("4chan init failed: {e}"),
@@ -655,10 +682,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // AniList anime/manga popularity
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::anilist::AniListMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("AniList init failed: {e}"),
@@ -669,10 +697,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // TWSE (Taiwan Stock Exchange)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::twse::TwseMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("TWSE init failed: {e}"),
@@ -683,10 +712,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Polymarket prediction markets
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::polymarket::PolymarketMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Polymarket init failed: {e}"),
@@ -697,10 +727,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // DefiLlama (chain TVL, protocol TVL, DEX volumes)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::defillama::DefiLlamaMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("DefiLlama market source init failed: {e}"),
@@ -711,10 +742,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Zillow — free public CSV data, no API key needed
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::zillow::ZillowMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Zillow init failed: {e}"),
@@ -732,10 +764,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             std::env::set_var("TWITCH_CLIENT_ID", client_id);
             std::env::set_var("TWITCH_CLIENT_SECRET", client_secret);
             let pool_c = pool.clone();
+            let bh = broadcast_hub.clone();
             tokio::spawn(async move {
                 match market_data::sources::twitch::TwitchMarketSource::from_env() {
                     Ok(source) => {
-                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                         engine.run().await;
                     }
                     Err(e) => tracing::error!("Twitch init failed: {e}"),
@@ -751,10 +784,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     if let Some(ref key) = args.tmdb_api_key {
         std::env::set_var("TMDB_API_KEY", key);
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::tmdb::TmdbMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("TMDb init failed: {e}"),
@@ -767,10 +801,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     if let Some(ref key) = args.lastfm_api_key {
         std::env::set_var("LASTFM_API_KEY", key);
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::lastfm::LastfmMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Last.fm init failed: {e}"),
@@ -783,10 +818,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     if let Some(ref key) = args.backpacktf_api_key {
         std::env::set_var("BACKPACKTF_API_KEY", key);
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::backpacktf::BackpackTfMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("backpack.tf init failed: {e}"),
@@ -801,10 +837,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             std::env::set_var("GITHUB_TOKEN", token);
         }
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::github::GithubMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("GitHub init failed: {e}"),
@@ -817,10 +854,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     if let Some(ref token) = args.cloudflare_radar_token {
         std::env::set_var("CLOUDFLARE_RADAR_TOKEN", token);
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::cloudflare::CloudflareRadarMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Cloudflare Radar init failed: {e}"),
@@ -838,6 +876,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             }
         }
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         let cg_lim = cg_limiter.clone();
         let tier_label = match args.coingecko_api_key.as_deref().map(|k| k.trim()) {
             Some(k) if !k.is_empty() && k.starts_with("CG-") => "demo",
@@ -847,7 +886,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         tokio::spawn(async move {
             match market_data::sources::coingecko::CoinGeckoMarketSource::from_env(cg_lim) {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("CoinGecko market source init failed: {e}"),
@@ -861,10 +900,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Volcano — USGS (no key)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::volcano::VolcanoMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Volcano init failed: {e}"),
@@ -875,10 +915,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Earthquake — USGS (no key)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::earthquake::EarthquakeMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Earthquake init failed: {e}"),
@@ -889,10 +930,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Space Weather — NOAA (no key)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::spaceweather::SpaceweatherMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Space Weather init failed: {e}"),
@@ -904,10 +946,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     if let Some(ref key) = args.nasa_firms_key {
         std::env::set_var("NASA_FIRMS_MAP_KEY", key);
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::wildfire::WildfireMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Wildfire init failed: {e}"),
@@ -919,10 +962,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Flights — adsb.lol (no key, single-call strategy)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::flights::FlightsMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Flights init failed: {e}"),
@@ -933,10 +977,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Military Aircraft — adsb.lol (no key, community ADS-B API)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::mil_aircraft::MilAircraftMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("MilAircraft init failed: {e}"),
@@ -947,10 +992,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Maritime — Digitraffic AIS (free, no API key required)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::maritime::MaritimeMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Maritime init failed: {e}"),
@@ -965,9 +1011,10 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
 
         let aisstream_key = key.clone();
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             let source = market_data::sources::aisstream::AisStreamMarketSource::new(aisstream_key);
-            let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+            let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
             engine.run().await;
         });
         info!("AISstream ship tracking provider started");
@@ -976,10 +1023,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Epidemic — disease.sh (no key)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::epidemic::EpidemicMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Epidemic init failed: {e}"),
@@ -990,10 +1038,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Sports — ESPN (no key)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::sports::SportsMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Sports init failed: {e}"),
@@ -1004,10 +1053,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // ISS Position — Open Notify (no key)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::iss::IssMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("ISS init failed: {e}"),
@@ -1018,10 +1068,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Weather Alerts — NWS (no key, User-Agent only)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::weather_alerts::WeatherAlertsMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Weather Alerts init failed: {e}"),
@@ -1032,10 +1083,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Animals — GBIF + iNaturalist (no key)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::animals::AnimalsMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Animals init failed: {e}"),
@@ -1049,10 +1101,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             let mb_user_c = mb_user.clone();
             let mb_pass_c = mb_pass.clone();
             let pool_c = pool.clone();
+            let bh = broadcast_hub.clone();
             tokio::spawn(async move {
                 match market_data::sources::movebank::MovebankMarketSource::new(mb_user_c, mb_pass_c) {
                     Ok(source) => {
-                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                         engine.run().await;
                     }
                     Err(e) => tracing::error!("Movebank init failed: {e}"),
@@ -1068,10 +1121,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     if let Some(ref key) = args.ebird_api_key {
         std::env::set_var("EBIRD_API_KEY", key);
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::ebird::EbirdMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("eBird init failed: {e}"),
@@ -1085,9 +1139,10 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // GTFS-RT Transit (NYC MTA Subway, BART — no API key needed)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             let source = market_data::sources::gtfs_rt::GtfsRtMarketSource::new();
-            let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+            let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
             engine.run().await;
         });
         info!("GTFS-RT transit provider started");
@@ -1096,10 +1151,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // USASpending.gov — US federal defense spending (no key needed)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::usa_spending::UsaSpendingMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("USASpending init failed: {e}"),
@@ -1111,10 +1167,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Pump.fun — Dexscreener-only (no API key required)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::pumpfun::PumpfunMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("PumpFun init failed: {e}"),
@@ -1132,10 +1189,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             std::env::set_var("REDDIT_CLIENT_SECRET", client_secret);
         }
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::reddit::RedditMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Reddit init failed: {e}"),
@@ -1147,10 +1205,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Shelter — always-on, no auth needed (Austin Animal Center Socrata SODA)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::shelter::ShelterMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Shelter init failed: {e}"),
@@ -1162,10 +1221,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Chaturbate — requires CHATURBATE_WM affiliate ID
     if std::env::var("CHATURBATE_WM").is_ok() {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::chaturbate::ChaturbateMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Chaturbate init failed: {e}"),
@@ -1177,10 +1237,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // PandaScore Esports — always-on (token hardcoded in source, overridable via env)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::pandascore::PandascoreMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("PandaScore esports init failed: {e}"),
@@ -1192,10 +1253,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // USGS Water — no key needed
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::usgs_water::UsgsWaterMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("USGS Water init failed: {e}"),
@@ -1207,10 +1269,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // NOAA Tides — no key needed
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::noaa_tides::NoaaTidesMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("NOAA Tides init failed: {e}"),
@@ -1222,10 +1285,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // NRC Nuclear Reactors — no key needed (daily data, hourly sync)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::nrc_nuclear::NrcNuclearMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("NRC Nuclear init failed: {e}"),
@@ -1237,10 +1301,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // CityBikes — no key needed
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::citybikes::CityBikesMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("CityBikes init failed: {e}"),
@@ -1252,10 +1317,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // NDBC Ocean Buoys — no key needed
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::ndbc::NdbcMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("NDBC Buoys init failed: {e}"),
@@ -1267,10 +1333,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // NOAA Ocean Meteorology — no key needed
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::noaa_met::NoaaMetMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("NOAA Met init failed: {e}"),
@@ -1282,10 +1349,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // NWPS River Gauges — no key needed
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::nwps::NwpsMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("NWPS River Gauges init failed: {e}"),
@@ -1297,10 +1365,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // AirNow AQI — gated on AIRNOW_API_KEY env var
     if std::env::var("AIRNOW_API_KEY").is_ok() {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::airnow::AirnowMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("AirNow AQI init failed: {e}"),
@@ -1312,10 +1381,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // CourtListener — always-on (public API, works without auth at lower rate limits)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::courtlistener::CourtListenerMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("CourtListener init failed: {e}"),
@@ -1327,10 +1397,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // OpenAlex Scholarly Works — no key needed (email optional via OPENALEX_EMAIL env)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::openalex::OpenAlexMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("OpenAlex init failed: {e}"),
@@ -1342,10 +1413,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Crossref DOI Registry — no key needed (email optional via CROSSREF_EMAIL env)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::crossref::CrossrefMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Crossref init failed: {e}"),
@@ -1357,10 +1429,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // PubMed Biomedical Research — no key needed (API key optional via NCBI_API_KEY env)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::pubmed::PubMedMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("PubMed init failed: {e}"),
@@ -1372,10 +1445,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Stack Exchange — gated on STACKEXCHANGE_KEY env var
     if std::env::var("STACKEXCHANGE_KEY").is_ok() {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::stackexchange::StackExchangeMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Stack Exchange init failed: {e}"),
@@ -1387,10 +1461,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Queue-Times — theme park wait times (no key)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::queue_times::QueueTimesMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Queue-Times init failed: {e}"),
@@ -1402,10 +1477,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // ParkAPI Parking Garages — no key needed
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::parking::ParkingMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("ParkAPI Parking init failed: {e}"),
@@ -1417,10 +1493,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // TomTom Traffic Flow — gated on TOMTOM_API_KEY env var
     if std::env::var("TOMTOM_API_KEY").is_ok() {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::tomtom_traffic::TomtomTrafficMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("TomTom Traffic init failed: {e}"),
@@ -1432,10 +1509,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // TomTom EV Charging — gated on TOMTOM_API_KEY env var
     if std::env::var("TOMTOM_API_KEY").is_ok() {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::tomtom_evcharge::TomtomEvchargeMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("TomTom EV Charging init failed: {e}"),
@@ -1450,10 +1528,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             std::env::set_var("BGG_API_TOKEN", token);
         }
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::bgg::BggMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("BGG init failed: {e}"),
@@ -1466,10 +1545,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     if let Some(ref key) = args.bestbuy_api_key {
         std::env::set_var("BESTBUY_API_KEY", key);
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::bestbuy::BestBuyMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Best Buy init failed: {e}"),
@@ -1484,10 +1564,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             std::env::set_var("ADZUNA_APP_ID", app_id);
             std::env::set_var("ADZUNA_APP_KEY", app_key);
             let pool_c = pool.clone();
+            let bh = broadcast_hub.clone();
             tokio::spawn(async move {
                 match market_data::sources::adzuna::AdzunaMarketSource::from_env() {
                     Ok(source) => {
-                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                         engine.run().await;
                     }
                     Err(e) => tracing::error!("Adzuna init failed: {e}"),
@@ -1502,10 +1583,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // CBP Border Wait Times — no key needed (US government API)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::cbp_border::CbpBorderMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("CBP Border Wait Times init failed: {e}"),
@@ -1517,10 +1599,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // FAA Airport Delays — no key needed (US government API)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::faa_delays::FaaDelaysMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("FAA Airport Delays init failed: {e}"),
@@ -1532,10 +1615,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Yahoo Finance Drink Markets — no key needed (unofficial API)
     {
         let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
         tokio::spawn(async move {
             match market_data::sources::yahoo_drinks::YahooDrinksMarketSource::from_env() {
                 Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
                     engine.run().await;
                 }
                 Err(e) => tracing::error!("Yahoo Drink Markets init failed: {e}"),
@@ -1763,7 +1847,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         batch_engine: batch_state,
         bitget_client,
         orderbook_cache,
-        price_broadcast: Arc::new(crate::market_data::broadcast::PriceBroadcastHub::new()),
+        price_broadcast: broadcast_hub.clone(),
     });
 
     // Spawn chain pollers (NAV=1s, Oracle=2s)
