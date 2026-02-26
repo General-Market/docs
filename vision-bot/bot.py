@@ -21,6 +21,7 @@ from framework.chain import (
     load_deployment,
     submit_bitmap,
 )
+from framework.feed import VisionFeed
 from framework.tracker import Tracker
 
 logging.basicConfig(
@@ -33,10 +34,10 @@ log = logging.getLogger("vision-bot")
 DECIMALS = 6
 
 
-def run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn):
+def run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn, feed):
     """One poll cycle: join new batches, then check existing positions."""
     issuer_urls = issuer_urls_fn()
-    batches = fetch_batches(cfg["vision_api"])
+    batches = fetch_batches(cfg["vision_api"], executor=executor)
 
     for batch in batches:
         batch_id = batch.get("id", batch.get("batch_id"))
@@ -58,13 +59,46 @@ def run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn):
             log.warning("Insufficient USDC for batch %d", batch_id)
             continue
 
-        # Get market data and predict
-        market_ids = batch.get("market_ids", [])
-        markets = fetch_markets(cfg["data_node"], market_ids)
-        bets = strategy.predict(markets)
+        # Get configHash — from batch data or read from chain
+        config_hash = batch.get("config_hash")
+        if config_hash and isinstance(config_hash, str):
+            config_hash = bytes.fromhex(config_hash.replace("0x", ""))
+        if not config_hash:
+            try:
+                info = executor.get_batch_info(batch_id)
+                config_hash = info["configHash"]
+            except Exception as e:
+                log.warning("Batch %d: cannot read configHash: %s", batch_id, e)
+                continue
 
-        # Encode, hash, approve, join, submit
-        market_count = len(market_ids) if market_ids else batch.get("market_count", 10)
+        # Predict with strategy (market_count from batch or default)
+        market_count = batch.get("market_count", cfg.get("market_count", 10))
+        market_ids = batch.get("market_ids", [])
+        if market_ids:
+            # Subscribe to batch if not already subscribed
+            feed.subscribe([str(batch_id)], history_days=7)
+            # Get latest prices from live feed
+            raw_prices = feed.prices(str(batch_id))
+            if raw_prices:
+                markets = [
+                    {
+                        "id": mid,
+                        "price": raw_prices.get(mid, {}).get("price", 0),
+                        "change": raw_prices.get(mid, {}).get("change_pct"),
+                        "volume": raw_prices.get(mid, {}).get("volume_24h"),
+                        "market_cap": None,
+                    }
+                    for mid in market_ids
+                ]
+            else:
+                # Fallback to HTTP if WS hasn't received data yet
+                markets = fetch_markets(cfg["data_node"], market_ids)
+            bets = strategy.predict(markets)
+        else:
+            # Hash-based design: no market_ids, generate bets for market_count
+            dummy_markets = [{"id": f"m{i}", "price": 0, "change": None, "volume": None, "market_cap": None} for i in range(market_count)]
+            bets = strategy.predict(dummy_markets)
+
         bitmap = encode_bitmap(bets, market_count)
         bm_hash = hash_bitmap(bitmap)
 
@@ -75,9 +109,9 @@ def run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn):
 
         executor.approve_usdc(deposit_wei)
         stake_wei = cfg["stake"] * 10**DECIMALS
-        executor.join_batch(batch_id, deposit_wei, stake_wei, bm_hash)
+        executor.join_batch(batch_id, config_hash, deposit_wei, stake_wei, bm_hash)
 
-        time.sleep(6)  # wait for block confirmation
+        time.sleep(2)  # wait for block confirmation
         submit_bitmap(issuer_urls, executor.bot_addr, batch_id, bitmap, bm_hash)
 
         tracker.on_join(batch_id, deposit_wei, bitmap, bets)
@@ -121,6 +155,7 @@ def main():
     log.info("  RPC:          %s", cfg["rpc_url"])
     log.info("  Deposit:      %d USDC", cfg["deposit"])
     log.info("  Stake/tick:   %d USDC", cfg["stake"])
+    log.info("  Max batches:  %d", cfg["max_batches"])
 
     # Check connectivity
     try:
@@ -140,17 +175,29 @@ def main():
     except Exception as e:
         log.warning("Bot registration failed: %s", e)
 
+    # Create WebSocket feed with HTTP fallback
+    feed = VisionFeed(
+        ws_url=cfg["data_node"].replace("http://", "ws://").replace("https://", "wss://") + "/vision/ws",
+        http_url=cfg["data_node"],
+    )
+
     # Run
     if "--once" in sys.argv:
-        run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn)
+        run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn, feed)
+        feed.close()
         return
 
-    while True:
-        try:
-            run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn)
-        except Exception as e:
-            log.error("Cycle error: %s", e)
-        time.sleep(cfg["poll_interval"])
+    try:
+        while True:
+            try:
+                run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn, feed)
+            except Exception as e:
+                log.error("Cycle error: %s", e)
+            time.sleep(cfg["poll_interval"])
+    except KeyboardInterrupt:
+        log.info("Shutting down...")
+    finally:
+        feed.close()
 
 
 if __name__ == "__main__":
