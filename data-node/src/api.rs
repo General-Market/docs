@@ -12,6 +12,7 @@ use ethers::prelude::*;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use tokio::sync::RwLock;
+use tower_http::compression::CompressionLayer;
 use tower_http::cors::{Any, CorsLayer};
 
 use common::BitgetReadOnlyClient;
@@ -372,6 +373,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         // Vision market data endpoints
         .route("/vision/snapshot", get(crate::vision_api::snapshot))
         .route("/vision/markets/active", get(crate::vision_api::active_markets))
+        .route("/vision/batch/:batch_id/history", get(crate::vision_api::batch_history))
         // Batch config endpoints
         .route("/batches/recommended", get(batches_recommended))
         .route("/batches/config/:hash", get(batch_config_by_hash))
@@ -389,6 +391,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/admin/sources/:source_id/force-sync", axum::routing::post(admin_force_sync))
         .route("/sse/system-status", get(sse_system_status))
         .route("/sse/stream", get(sse_stream))
+        .layer(CompressionLayer::new())
         .layer(cors)
         .with_state(state)
 }

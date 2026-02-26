@@ -17,6 +17,9 @@ tokio.workspace = true
 # CLI
 clap = { version = "4", features = ["derive", "env"] }
 
+# .env file loading
+dotenvy = "0.15"
+
 # Serialization
 serde.workspace = true
 serde_json.workspace = true
@@ -30,7 +33,7 @@ tracing-subscriber.workspace = true
 
 # Web framework
 axum = "0.7"
-tower-http = { version = "0.5", features = ["cors"] }
+tower-http = { version = "0.5", features = ["cors", "compression-gzip"] }
 
 # SSE streaming
 tokio-stream = "0.1"

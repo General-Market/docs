@@ -3,9 +3,10 @@
 //! Serves raw market/price data for Vision strategy scripts.
 //! Batch state, history, and backtest endpoints live on the issuer.
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
-use axum::extract::{Query, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::Json;
 use chrono::{DateTime, Utc};
@@ -146,4 +147,89 @@ pub async fn active_markets(
         limit: Some(50_000),
     };
     snapshot(State(state), Query(full_params)).await
+}
+
+// ---- GET /vision/batch/:batch_id/history ----
+
+#[derive(Deserialize)]
+pub struct BatchHistoryQuery {
+    pub days: Option<i64>,
+}
+
+/// Price history for all markets in a given batch.
+///
+/// Returns up to 7 days of price data grouped by asset_id.
+pub async fn batch_history(
+    State(state): State<Arc<AppState>>,
+    Path(batch_id): Path<u64>,
+    Query(params): Query<BatchHistoryQuery>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let days = params.days.unwrap_or(7).min(7);
+    let cutoff = Utc::now() - chrono::Duration::days(days);
+
+    // Resolve batch → source + market_ids
+    let batch_info = state
+        .vision_batch_cache
+        .get(batch_id)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::NOT_FOUND,
+                Json(ErrorResponse {
+                    error: e.to_string(),
+                }),
+            )
+        })?;
+
+    // Query price history for all markets in the batch
+    let rows: Vec<(
+        String,          // asset_id
+        String,          // symbol
+        Decimal,         // value
+        Option<Decimal>, // change_pct
+        Option<Decimal>, // volume_24h
+        Option<Decimal>, // market_cap
+        DateTime<Utc>,   // fetched_at
+    )> = sqlx::query_as(
+        r#"
+        SELECT asset_id, symbol, value, change_pct, volume_24h, market_cap, fetched_at
+        FROM market_prices
+        WHERE source = $1
+          AND asset_id = ANY($2)
+          AND fetched_at >= $3
+        ORDER BY asset_id, fetched_at ASC
+        "#,
+    )
+    .bind(&batch_info.source)
+    .bind(&batch_info.market_ids)
+    .bind(cutoff)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(internal_error)?;
+
+    // Group by asset_id
+    let mut markets: HashMap<String, serde_json::Value> = HashMap::new();
+    for (asset_id, symbol, value, change_pct, volume_24h, _market_cap, fetched_at) in rows {
+        let entry = markets.entry(asset_id.clone()).or_insert_with(|| {
+            serde_json::json!({
+                "id": asset_id,
+                "symbol": symbol,
+                "prices": []
+            })
+        });
+        if let Some(prices) = entry["prices"].as_array_mut() {
+            prices.push(serde_json::json!({
+                "ts": fetched_at,
+                "price": value.to_string(),
+                "changePct": change_pct.map(|v| v.to_string()),
+                "volume24h": volume_24h.map(|v| v.to_string()),
+            }));
+        }
+    }
+
+    Ok(Json(serde_json::json!({
+        "batchId": batch_id,
+        "source": batch_info.source,
+        "markets": markets.into_values().collect::<Vec<_>>(),
+    })))
 }
