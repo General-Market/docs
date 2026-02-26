@@ -40,7 +40,7 @@ pub struct PeerScore {
 /// All mutation is via atomics or a short `Mutex` on the ban timestamp,
 /// so callers never need to hold an external lock.
 pub struct PeerScorer {
-    scores: DashMap<PeerId, PeerScore>,
+    pub scores: DashMap<PeerId, PeerScore>,
     startup_time: Instant,
 }
 
@@ -63,10 +63,16 @@ impl PeerScorer {
 
     // ── Negative events ──────────────────────────────────────────────
 
-    /// -10.0 score (invalid BLS sig, wrong cycle, etc.)
+    /// -2.0 during startup grace period (first 60 s), -10.0 after.
+    /// Reduced penalty during startup tolerates simultaneous restart race conditions.
     pub fn record_invalid_message(&self, peer: &PeerId) {
         let entry = self.get_or_create(peer);
-        entry.score.fetch_sub(1000, Ordering::Relaxed);
+        let penalty = if self.startup_time.elapsed().as_secs() < 60 {
+            200 // -2.0 during startup grace
+        } else {
+            1000 // -10.0 normal operation
+        };
+        entry.score.fetch_sub(penalty, Ordering::Relaxed);
         entry.invalid_messages.fetch_add(1, Ordering::Relaxed);
     }
 
@@ -150,7 +156,23 @@ impl PeerScorer {
             return to_ban; // empty — no bans during partition
         }
 
-        // 3. Ban peers below -50.0 (stored as -5000)
+        // 3. Reset score for peers whose ban has expired (break re-ban loop)
+        for entry in self.scores.iter() {
+            if let Ok(banned_until) = entry.value().banned_until.lock() {
+                if let Some(until) = *banned_until {
+                    if Instant::now() >= until {
+                        // Ban expired — give peer a clean slate
+                        entry.value().score.store(0, Ordering::Relaxed);
+                        drop(banned_until);
+                        if let Ok(mut b) = entry.value().banned_until.lock() {
+                            *b = None;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. Ban peers below -50.0 (stored as -5000)
         for entry in self.scores.iter() {
             let score = entry.value().score.load(Ordering::Relaxed);
             if score < -5000 {
@@ -175,6 +197,17 @@ impl PeerScorer {
         }
 
         to_ban
+    }
+
+    // ── Test helpers ─────────────────────────────────────────────────
+
+    /// Create a scorer with a custom startup time (for testing post-grace behavior).
+    #[cfg(test)]
+    fn with_startup_time(startup_time: Instant) -> Self {
+        Self {
+            scores: DashMap::new(),
+            startup_time,
+        }
     }
 
     // ── Internal ─────────────────────────────────────────────────────
@@ -222,8 +255,9 @@ mod tests {
         let scorer = PeerScorer::new();
         let peer = test_peer(2);
 
+        // During startup grace (first 60s), penalty is -2.0 not -10.0
         scorer.record_invalid_message(&peer);
-        assert!((scorer.score_of(&peer) - (-10.0)).abs() < f64::EPSILON);
+        assert!((scorer.score_of(&peer) - (-2.0)).abs() < f64::EPSILON);
     }
 
     #[test]
@@ -240,8 +274,9 @@ mod tests {
         let scorer = PeerScorer::new();
         let peer = test_peer(4);
 
-        // 6 invalid messages = -60.0, well below -50.0 threshold
-        for _ in 0..6 {
+        // During startup grace, penalty is -2.0 each.
+        // 26 invalid messages = -52.0, below -50.0 threshold
+        for _ in 0..26 {
             scorer.record_invalid_message(&peer);
         }
 
@@ -282,5 +317,74 @@ mod tests {
         // Tick with empty connected list -> peer gets -5.0 heartbeat penalty
         let _ = scorer.tick(&[]);
         assert!((scorer.score_of(&peer) - (-4.9)).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn score_resets_after_ban_expiry() {
+        let scorer = PeerScorer::new();
+        let peer = test_peer(10);
+
+        // Drive score below ban threshold
+        for _ in 0..26 {
+            scorer.record_invalid_message(&peer);
+        }
+        let banned = scorer.tick(&[peer]);
+        assert!(banned.contains(&peer));
+        assert!(scorer.is_banned(&peer));
+
+        // Simulate ban expiry by setting banned_until to the past
+        if let Some(entry) = scorer.scores.get(&peer) {
+            if let Ok(mut b) = entry.banned_until.lock() {
+                *b = Some(Instant::now() - std::time::Duration::from_secs(1));
+            }
+        }
+
+        // Tick should reset score to 0 and clear ban
+        let re_banned = scorer.tick(&[peer]);
+        assert!(re_banned.is_empty(), "Peer should NOT be re-banned after expiry");
+        assert!(!scorer.is_banned(&peer));
+        assert!((scorer.score_of(&peer) - 0.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn startup_grace_reduces_invalid_message_penalty() {
+        // During startup (first 60s), penalty is -2.0
+        let scorer = PeerScorer::new();
+        let peer = test_peer(11);
+        scorer.record_invalid_message(&peer);
+        assert!((scorer.score_of(&peer) - (-2.0)).abs() < f64::EPSILON);
+
+        // After startup grace (simulate by creating scorer with old startup time),
+        // penalty is -10.0
+        let old_scorer = PeerScorer::with_startup_time(
+            Instant::now() - std::time::Duration::from_secs(120),
+        );
+        let peer2 = test_peer(12);
+        old_scorer.record_invalid_message(&peer2);
+        assert!((old_scorer.score_of(&peer2) - (-10.0)).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn good_messages_counteract_bad() {
+        let scorer = PeerScorer::new();
+        let peer = test_peer(13);
+
+        // 5 invalid messages during grace = -10.0 total
+        for _ in 0..5 {
+            scorer.record_invalid_message(&peer);
+        }
+        assert!((scorer.score_of(&peer) - (-10.0)).abs() < f64::EPSILON);
+
+        // 100 good messages = +10.0
+        for _ in 0..100 {
+            scorer.record_good_message(&peer);
+        }
+
+        // Net score: -10.0 + 10.0 = 0.0
+        assert!((scorer.score_of(&peer) - 0.0).abs() < f64::EPSILON);
+
+        // Score stays above ban threshold
+        let banned = scorer.tick(&[peer]);
+        assert!(banned.is_empty());
     }
 }

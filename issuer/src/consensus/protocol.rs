@@ -89,6 +89,19 @@ use super::keys::KeyRegistry;
 use super::messages::{ConsensusMessageHandler, MessageHandleResult};
 use super::state::{ConsensusPhase, ConsensusState, ConsensusTimeouts, PriceVote};
 
+/// Extract `cycle_number` from a consensus message.
+/// Used as fallback when local state has no current round (e.g. during startup).
+fn message_cycle_number(msg: &P2PMessage) -> Option<u64> {
+    match msg {
+        P2PMessage::CycleStart { cycle_number, .. }
+        | P2PMessage::PriceProposal { cycle_number, .. }
+        | P2PMessage::PriceVote { cycle_number, .. }
+        | P2PMessage::BatchProposal { cycle_number, .. }
+        | P2PMessage::BatchSign { cycle_number, .. } => Some(*cycle_number),
+        _ => None,
+    }
+}
+
 /// Config update pushed by RegistrySyncHandler when the issuer set changes.
 ///
 /// Contains all the information needed to reconfigure the consensus protocol
@@ -1082,7 +1095,10 @@ where
             if let Some(round) = state.current_round() {
                 (round.cycle_number, round.phase)
             } else {
-                (0, ConsensusPhase::Idle)
+                // Use message's cycle number instead of 0 when local state
+                // isn't initialized (e.g. during simultaneous startup)
+                let msg_cycle = message_cycle_number(&message).unwrap_or(0);
+                (msg_cycle, ConsensusPhase::Idle)
             }
         };
 
@@ -1150,6 +1166,15 @@ where
                 return Ok(());
             }
         }
+
+        // Track whether message was successfully processed (for peer scoring reward)
+        let is_actionable = !matches!(
+            result,
+            MessageHandleResult::Ignored
+                | MessageHandleResult::Stale
+                | MessageHandleResult::Buffered
+                | MessageHandleResult::UnexpectedPhase
+        );
 
         match result {
             MessageHandleResult::ProcessPriceVote {
@@ -2384,6 +2409,14 @@ where
                 warn!(code = "INFRA-007", "Message received in unexpected phase");
             }
             MessageHandleResult::Ignored => {}
+        }
+
+        // Reward peer for valid consensus participation (scores only went down
+        // before this fix — now good messages counteract penalties)
+        if is_actionable {
+            if let Some(ref scorer) = self.peer_scorer {
+                scorer.record_good_message(&from);
+            }
         }
 
         Ok(())
