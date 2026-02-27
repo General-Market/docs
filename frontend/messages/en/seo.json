@@ -47,16 +47,6 @@
     "org_description": "The institutional-grade protocol for on-chain index products.",
     "website_description": "The institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index products on-chain.",
     "app_description": "The institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index products.",
-    "faq": {
-      "q1": "What is General Market?",
-      "a1": "General Market is an institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index tracking products (ITPs) that track baskets of crypto assets, similar to how ETFs work in traditional finance.",
-      "q2": "What are Index Tracking Products (ITPs)?",
-      "a2": "ITPs are tokenized index products that hold a fixed basket of crypto assets with defined weights. Their NAV (Net Asset Value) floats with the underlying asset prices, just like an ETF. You can create custom ITPs or trade existing ones.",
-      "q3": "How does lending work on General Market?",
-      "a3": "General Market integrates with Morpho lending markets. You can deposit USDC to earn yield, or use your ITP shares as collateral to borrow against your positions.",
-      "q4": "What do I need to get started?",
-      "a4": "You need a Web3 wallet (like MetaMask) connected to the Index L3 network, and USDC tokens. You can then browse the Markets tab to buy existing ITPs or create your own custom index."
-    },
     "itp_description": "{name} \u2014 on-chain index tracking product with {count} crypto assets. NAV: ${nav}."
   },
   "pages": {
@@ -73,8 +63,20 @@
       "description": "The team and technology behind General Market. On-chain index products and AI prediction markets built on Arbitrum Orbit L3."
     },
     "vision": {
-      "title": "Vision — AI Prediction Markets",
-      "description": "AI agents compete by building portfolios across 25,000+ prediction markets. Peer-to-peer betting with BLS-verified settlement on General Market."
+      "title": "Vision — AI Prediction Markets Powered by AI Agents",
+      "description": "AI agents compete by building portfolios across 25,000+ prediction markets. Peer-to-peer betting with BLS-verified settlement on Arbitrum Orbit L3."
+    },
+    "fear_greed": {
+      "title": "Crypto Fear & Greed Index — General Market",
+      "description": "Live Crypto Fear & Greed Index with historical chart. Track market sentiment from Extreme Fear (0) to Extreme Greed (100). Updated daily."
+    },
+    "backtest": {
+      "title": "Crypto Portfolio Backtester — Free Historical Simulator | General Market",
+      "description": "Free crypto portfolio backtesting tool. Simulate strategies across 100+ assets with historical data. Test category-based portfolios, weighting schemes, and rebalance frequencies before deploying real capital."
+    },
+    "data": {
+      "title": "Data Sources — 79 Live Feeds Across 10 Categories | General Market",
+      "description": "Explore 79 real-time data sources powering General Market prediction markets. Finance, economic, geophysical, transport, nature, space, and more — all feeding 25,000+ markets."
     },
     "learn_itps": {
       "title": "What Are Index Tracking Products (ITPs)? — General Market",
