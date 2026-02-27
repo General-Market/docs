@@ -205,7 +205,7 @@ impl TomtomEvchargeMarketSource {
         charging_park_id: &str,
     ) -> Result<u32, SourceError> {
         let url = format!(
-            "{}?chargingPark={}&key={}",
+            "{}?chargingAvailability={}&key={}",
             CHARGING_AVAILABILITY_URL, charging_park_id, self.api_key
         );
 
@@ -399,8 +399,8 @@ mod tests {
         let entries = load_all_asset_entries(ASSET_JSON).unwrap();
         assert_eq!(
             entries.len(),
-            25,
-            "Expected 25 EV charging stations, got {}",
+            11,
+            "Expected 11 EV charging stations, got {}",
             entries.len()
         );
     }
@@ -410,8 +410,8 @@ mod tests {
         let assets = load_assets_from_json(ASSET_JSON).unwrap();
         assert_eq!(
             assets.len(),
-            25,
-            "Expected 25 active assets, got {}",
+            11,
+            "Expected 11 active assets, got {}",
             assets.len()
         );
     }

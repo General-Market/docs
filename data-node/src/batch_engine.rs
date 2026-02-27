@@ -133,6 +133,7 @@ pub const BATCH_SOURCES: &[SourceMeta] = &[
 ];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BatchMarket {
     pub asset_id: String,
     /// Always "up_x" for auto-batches. Users choose direction via bitmap.
@@ -144,6 +145,7 @@ pub struct BatchMarket {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BatchConfig {
     pub source_id: String,
     pub display_name: String,
@@ -557,8 +559,8 @@ pub async fn run(pool: PgPool, state: Arc<BatchEngineState>, sources: &[SourceMe
     // Load signed configs from DB (crash recovery)
     state.load_signed_from_db(&pool).await;
 
-    // Initial delay — let sources complete first sync
-    tokio::time::sleep(std::time::Duration::from_secs(120)).await;
+    // Initial delay — let sources complete first sync (5s on restart, uses DB data)
+    tokio::time::sleep(std::time::Duration::from_secs(5)).await;
 
     loop {
         let mut configs = Vec::new();

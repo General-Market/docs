@@ -26,7 +26,7 @@ use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 const ASSET_JSON: &str = include_str!("../../../config/crates_io.json");
 const API_URL: &str = "https://crates.io/api/v1";
 const PER_PAGE: usize = 100;
-const MAX_PAGES: usize = 200;
+const MAX_PAGES: usize = 200; // 200 pages × 100 = 20k crates
 const INTER_REQUEST_DELAY_MS: u64 = 1100; // >1s to respect 1 req/s
 
 #[derive(Debug, Deserialize)]
@@ -67,7 +67,7 @@ impl CratesIoMarketSource {
             }],
         };
         let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(30))
+            .timeout(Duration::from_secs(45))
             .user_agent("market-data-lib (github.com/agiarena)")
             .build()?;
         let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());

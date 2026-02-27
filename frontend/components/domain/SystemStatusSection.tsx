@@ -1,12 +1,46 @@
 'use client'
 
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { formatUnits } from 'viem'
 import { useTranslations } from 'next-intl'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { useSystemStatus } from '@/hooks/useSystemStatus'
+import { useApBalances } from '@/hooks/useApBalances'
+import { useInventoryRanking } from '@/hooks/useInventoryRanking'
 import type { DeployedItpRef } from '@/components/domain/ItpListing'
 
 const NODE_NAMES = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta']
+const VAULT_PAGE_SIZE = 6
+const VAULT_ROTATE_MS = 2000
+
+/** Value that flashes green/red on change */
+function LiveValue({ value, format, className = '' }: { value: number; format: (v: number) => string; className?: string }) {
+  const prevRef = useRef(value)
+  const [flash, setFlash] = useState<'up' | 'down' | null>(null)
+
+  useEffect(() => {
+    if (prevRef.current !== value && prevRef.current !== 0) {
+      setFlash(value > prevRef.current ? 'up' : 'down')
+      const timer = setTimeout(() => setFlash(null), 600)
+      prevRef.current = value
+      return () => clearTimeout(timer)
+    }
+    prevRef.current = value
+  }, [value])
+
+  return (
+    <span
+      className={className}
+      style={{
+        transition: 'color 0.3s ease, text-shadow 0.3s ease',
+        color: flash === 'up' ? '#16a34a' : flash === 'down' ? '#dc2626' : undefined,
+        textShadow: flash ? `0 0 6px ${flash === 'up' ? 'rgba(22,163,74,0.4)' : 'rgba(220,38,38,0.4)'}` : 'none',
+      }}
+    >
+      {format(value)}
+    </span>
+  )
+}
 
 /** Format large USD values compactly: $1.2B, $345M, $12.3K, $1,234.56 */
 function formatUsdCompact(value: number): string {
@@ -37,6 +71,19 @@ function formatTime(unix: number): string {
   return new Date(unix * 1000).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
 }
 
+function formatUptime(registeredAtUnix: number): string {
+  if (!registeredAtUnix) return '—'
+  const diffMs = Date.now() - registeredAtUnix * 1000
+  if (diffMs < 0) return '—'
+  const totalSec = Math.floor(diffMs / 1000)
+  const days = Math.floor(totalSec / 86400)
+  const hours = Math.floor((totalSec % 86400) / 3600)
+  const mins = Math.floor((totalSec % 3600) / 60)
+  if (days > 0) return `${days}d ${hours}h`
+  if (hours > 0) return `${hours}h ${mins}m`
+  return `${mins}m`
+}
+
 interface SystemStatusSectionProps {
   deployedItps?: DeployedItpRef[]
 }
@@ -44,6 +91,17 @@ interface SystemStatusSectionProps {
 export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) {
   const t = useTranslations('system')
   const sys = useSystemStatus()
+  const vault = useApBalances()
+  const ranking = useInventoryRanking(650, 0) // fetch once — ratios are frozen, useApBalances handles live prices
+
+  // Coin logos from CoinGecko coin-map
+  const [coinMap, setCoinMap] = useState<Record<string, { id: string; image: string }>>({})
+  useEffect(() => {
+    fetch('/coin-map.json')
+      .then(r => r.ok ? r.json() : {})
+      .then(data => setCoinMap(data))
+      .catch(() => {})
+  }, [])
 
   // Build ITP name lookup: itpId → display name
   const itpNameMap = new Map<string, string>()
@@ -55,6 +113,69 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
   }
 
   const activeNodes = sys.nodes.filter(n => n.status === 1)
+
+  // Correction ratios — frozen at first load so live price changes flow through.
+  // ratio = ranking_aum / vault_usd_at_that_moment (computed once)
+  // Then: corrected_live = vault_usd_live × ratio
+  //     = vault_usd_live × (ranking_aum / vault_usd_initial)
+  //     = ranking_aum × (live_price / initial_price)   ← ticks with price
+  const ratiosRef = useRef<Map<string, number> | null>(null)
+  if (
+    ratiosRef.current === null &&
+    ranking.snapshots.length > 0 &&
+    vault.assets.length > 0
+  ) {
+    const latestSnap = ranking.snapshots[ranking.snapshots.length - 1]
+    if (latestSnap?.ranked) {
+      const vaultBySymbol = new Map(vault.assets.map(a => [a.symbol, a.usdValue]))
+      const ratios = new Map<string, number>()
+      for (const r of latestSnap.ranked) {
+        const vaultUsd = vaultBySymbol.get(r.symbol)
+        if (vaultUsd && vaultUsd > 0 && r.aum > 0) {
+          ratios.set(r.symbol, r.aum / vaultUsd)
+        }
+      }
+      ratiosRef.current = ratios
+    }
+  }
+
+  // Inventory: live vault values × frozen correction ratios = correct AUM with live ticks
+  const inventoryAssets = useMemo(() => {
+    const ratios = ratiosRef.current
+    if (!ratios || vault.assets.length === 0) return []
+    return vault.assets
+      .map(a => {
+        const ratio = ratios.get(a.symbol)
+        if (!ratio) return null
+        return { symbol: a.symbol, usdValue: a.usdValue * ratio }
+      })
+      .filter((a): a is { symbol: string; usdValue: number } => a !== null && a.usdValue > 0)
+      .sort((a, b) => b.usdValue - a.usdValue)
+  }, [vault.assets])
+  const inventoryTotalAum = inventoryAssets.reduce((s, a) => s + a.usdValue, 0)
+
+  // Tick uptime every 60s
+  const [, setUptimeTick] = useState(0)
+  useEffect(() => {
+    const timer = setInterval(() => setUptimeTick(n => n + 1), 60_000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // Auto-rotating vault token pages
+  const [vaultPage, setVaultPage] = useState(0)
+  const vaultTotalPages = Math.max(1, Math.ceil(inventoryAssets.length / VAULT_PAGE_SIZE))
+  const vaultPageAssets = useMemo(() => {
+    const start = vaultPage * VAULT_PAGE_SIZE
+    return inventoryAssets.slice(start, start + VAULT_PAGE_SIZE)
+  }, [inventoryAssets, vaultPage])
+
+  useEffect(() => {
+    if (vaultTotalPages <= 1) return
+    const timer = setInterval(() => {
+      setVaultPage(p => (p + 1) % vaultTotalPages)
+    }, VAULT_ROTATE_MS)
+    return () => clearInterval(timer)
+  }, [vaultTotalPages])
 
   const stats = [
     {
@@ -129,13 +250,21 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
                   { label: t('issuer_network.node_details.bls_pubkey'), value: node.blsPubkeyShort },
                   { label: t('issuer_network.node_details.registered'), value: formatTimestamp(node.registeredAt) },
                   { label: t('issuer_network.node_details.status'), value: t('issuer_network.status_active'), color: 'text-color-up' },
-                  { label: t('issuer_network.node_details.ap_vault'), value: formatUsdCompact(sys.vaultUsdValue), color: 'text-color-up' },
+                  { label: 'Uptime', value: formatUptime(node.registeredAt), color: 'text-color-up' },
                 ].map(row => (
                   <div key={row.label} className="flex justify-between items-center py-[3px]">
                     <span className="text-[11px] text-text-muted font-medium">{row.label}</span>
                     <span className={`text-[11px] font-semibold font-mono ${row.color || 'text-black'}`}>{row.value}</span>
                   </div>
                 ))}
+                <div className="flex justify-between items-center py-[3px]">
+                  <span className="text-[11px] text-text-muted font-medium">{t('issuer_network.node_details.ap_vault')}</span>
+                  <LiveValue
+                    value={inventoryTotalAum}
+                    format={formatUsdCompact}
+                    className="text-[11px] font-semibold font-mono text-color-up"
+                  />
+                </div>
               </div>
             </div>
           ))}
@@ -176,48 +305,71 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
             </div>
           </div>
 
-          {/* Inventory — top vault holdings */}
+          {/* Inventory — horizontal bar chart, auto-rotating pages */}
           <div>
             <div className="section-bar">
               <div>
                 <div className="section-bar-title">{t('inventory.section_title')}</div>
-                <div className="section-bar-value">{t('inventory.section_subtitle')}</div>
+                <div className="section-bar-value flex items-center gap-2">
+                  {inventoryAssets.length > 0
+                    ? <><span>{inventoryAssets.length} tokens — page {vaultPage + 1}/{vaultTotalPages}</span><LiveValue value={inventoryTotalAum} format={(v) => `AUM ${formatUsdCompact(v)}`} className="text-[10px] font-mono text-color-up" /></>
+                    : t('inventory.section_subtitle')}
+                </div>
               </div>
             </div>
-            <div className="border border-border-light border-t-0 bg-surface h-[220px] flex items-center justify-center overflow-hidden">
-              {sys.topVaultAssets.length === 0 ? (
-                sys.isLoading ? <ChartSkeleton bars={6} horizontal /> : (
-                  <span className="text-[13px] text-text-muted">{t('inventory.no_data')}</span>
-                )
+            <div className="border border-border-light border-t-0 bg-surface h-[220px] flex flex-col overflow-hidden">
+              {inventoryAssets.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center">
+                  {(ranking.isLoading || vault.isLoading) ? <ChartSkeleton bars={6} horizontal /> : (
+                    <span className="text-[13px] text-text-muted">{t('inventory.no_data')}</span>
+                  )}
+                </div>
               ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={sys.topVaultAssets} layout="vertical" margin={{ top: 8, right: 24, bottom: 4, left: 4 }}>
-                    <XAxis
-                      type="number"
-                      tick={{ fontSize: 10, fill: '#888' }}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(v: number) => formatUsdCompact(v)}
-                    />
-                    <YAxis
-                      type="category"
-                      dataKey="symbol"
-                      tick={{ fontSize: 10, fill: '#888' }}
-                      tickLine={false}
-                      axisLine={false}
-                      width={52}
-                    />
-                    <Tooltip
-                      contentStyle={{ fontSize: 12, border: '1px solid #e5e5e5', borderRadius: 4 }}
-                      formatter={(v: number) => [formatUsdCompact(v), t('inventory.tooltip_label')]}
-                    />
-                    <Bar dataKey="usdValue" radius={[0, 3, 3, 0]} maxBarSize={18}>
-                      {sys.topVaultAssets.map((_, i) => (
-                        <Cell key={i} fill="#3b82f6" />
+                <>
+                  <div className="flex-1 overflow-hidden">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={vaultPageAssets} layout="vertical" margin={{ top: 8, right: 24, bottom: 4, left: 4 }}>
+                        <XAxis
+                          type="number"
+                          tick={{ fontSize: 10, fill: '#888' }}
+                          tickLine={false}
+                          axisLine={false}
+                          tickFormatter={(v: number) => formatUsdCompact(v)}
+                        />
+                        <YAxis
+                          type="category"
+                          dataKey="symbol"
+                          tick={<VaultYAxisTick coinMap={coinMap} />}
+                          tickLine={false}
+                          axisLine={false}
+                          width={76}
+                          interval={0}
+                        />
+                        <Tooltip
+                          contentStyle={{ fontSize: 12, border: '1px solid #e5e5e5', borderRadius: 4 }}
+                          formatter={(v: number) => [formatUsdCompact(v), t('inventory.tooltip_label')]}
+                        />
+                        <Bar dataKey="usdValue" radius={[0, 3, 3, 0]} maxBarSize={18} isAnimationActive animationDuration={400} animationEasing="ease-out">
+                          {vaultPageAssets.map((_, i) => (
+                            <Cell key={i} fill="#3b82f6" />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  {/* Page dots */}
+                  {vaultTotalPages > 1 && (
+                    <div className="flex items-center justify-center gap-1 py-1.5 border-t border-border-light shrink-0">
+                      {Array.from({ length: vaultTotalPages }, (_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setVaultPage(i)}
+                          className={`w-1.5 h-1.5 rounded-full transition-colors ${i === vaultPage ? 'bg-black' : 'bg-border-light'}`}
+                        />
                       ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -290,6 +442,28 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
         </div>
       </div>
     </div>
+  )
+}
+
+/* ── Custom Y-axis tick with coin logo ── */
+function VaultYAxisTick({ x, y, payload, coinMap }: any) {
+  const symbol: string = payload?.value || ''
+  const entry = coinMap?.[symbol.toUpperCase()]
+  const size = 14
+  return (
+    <foreignObject x={0} y={y - 10} width={76} height={20}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'flex-start', height: '100%', paddingLeft: 8 }}>
+        {entry?.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={entry.image} alt="" width={size} height={size} style={{ borderRadius: '50%', flexShrink: 0 }} />
+        ) : (
+          <span style={{ width: size, height: size, borderRadius: '50%', background: '#e5e5e5', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontFamily: 'monospace', color: '#888', flexShrink: 0 }}>
+            {symbol.slice(0, 2)}
+          </span>
+        )}
+        <span style={{ fontSize: 10, color: '#888', whiteSpace: 'nowrap' }}>{symbol}</span>
+      </div>
+    </foreignObject>
   )
 }
 

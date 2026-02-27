@@ -23,6 +23,9 @@ export interface SourceHealth {
   recordsLast7d: number
   zeroValueAssets: number
   staleAssets: number
+  staleDormant: number
+  staleActive: number
+  staleReason: string
   avgChangePct: number
   assetsWithNoChange24h: number
   syncGapMaxSecs: number

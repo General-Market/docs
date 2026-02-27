@@ -61,6 +61,10 @@
     "buy_filled_shares": "买入已成交 -- 收到 {shares} {name} 份额",
     "buy_filled": "买入已成交 -- 收到 {name} 份额"
   },
+  "stall": {
+    "title": "订单已在Arbitrum上提交",
+    "description": "您的订单正在中继到L3进行处理。这可能需要几分钟。您可以安全关闭此对话框——订单将继续处理并显示在您的投资组合中。"
+  },
   "error": {
     "title": "错误"
   }

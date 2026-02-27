@@ -24,8 +24,8 @@ pub async fn run(args: CgBackfillArgs) -> Result<(), Box<dyn std::error::Error>>
     let pool = db::create_pool(&args.database_url).await?;
     db::run_migrations(&pool).await?;
 
-    // Single shared rate limiter for ALL workers — respects Pro plan 500 req/min
-    let limiter = RateLimiter::coingecko_pro();
+    // Single shared rate limiter for ALL workers — respects Demo plan ~30 req/min
+    let limiter = RateLimiter::coingecko_demo();
     let client = CoinGeckoClient::with_limiter(&args.coingecko_api_key, limiter.clone())?;
 
     // Step 1: Fetch all coins with market cap using /coins/markets

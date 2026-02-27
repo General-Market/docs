@@ -1,0 +1,83 @@
+[
+  {
+    "asset_id": "shelter_austin_stray_total",
+    "symbol": "SHLT/TOTAL",
+    "name": "Austin Strays Total",
+    "category": "animals",
+    "subcategory": "shelter",
+    "api_ref": "austin_stray:total",
+    "active": true
+  },
+  {
+    "asset_id": "shelter_austin_stray_dogs",
+    "symbol": "SHLT/DOG",
+    "name": "Austin Stray Dogs",
+    "category": "animals",
+    "subcategory": "shelter",
+    "api_ref": "austin_stray:Dog",
+    "active": true
+  },
+  {
+    "asset_id": "shelter_austin_stray_cats",
+    "symbol": "SHLT/CAT",
+    "name": "Austin Stray Cats",
+    "category": "animals",
+    "subcategory": "shelter",
+    "api_ref": "austin_stray:Cat",
+    "active": true
+  },
+  {
+    "asset_id": "shelter_austin_at_shelter",
+    "symbol": "SHLT/AT",
+    "name": "Austin At Shelter",
+    "category": "animals",
+    "subcategory": "shelter",
+    "api_ref": "austin_stray:at_aac_yes",
+    "active": true
+  },
+  {
+    "asset_id": "shelter_austin_not_at_shelter",
+    "symbol": "SHLT/AWAY",
+    "name": "Austin Not At Shelter",
+    "category": "animals",
+    "subcategory": "shelter",
+    "api_ref": "austin_stray:at_aac_no",
+    "active": true
+  },
+  {
+    "asset_id": "shelter_austin_dogs_at_shelter",
+    "symbol": "SHLT/DOG-AT",
+    "name": "Austin Dogs At Shelter",
+    "category": "animals",
+    "subcategory": "shelter",
+    "api_ref": "austin_stray:Dog_at",
+    "active": true
+  },
+  {
+    "asset_id": "shelter_austin_cats_at_shelter",
+    "symbol": "SHLT/CAT-AT",
+    "name": "Austin Cats At Shelter",
+    "category": "animals",
+    "subcategory": "shelter",
+    "api_ref": "austin_stray:Cat_at",
+    "active": true
+  },
+  {
+    "asset_id": "shelter_austin_dogs_not_at_shelter",
+    "symbol": "SHLT/DOG-AW",
+    "name": "Austin Dogs Not At Shelter",
+    "category": "animals",
+    "subcategory": "shelter",
+    "api_ref": "austin_stray:Dog_not_at",
+    "active": true
+  },
+  {
+    "asset_id": "shelter_austin_cats_not_at_shelter",
+    "symbol": "SHLT/CAT-AW",
+    "name": "Austin Cats Not At Shelter",
+    "category": "animals",
+    "subcategory": "shelter",
+    "api_ref": "austin_stray:Cat_not_at",
+    "active": true
+  }
+]

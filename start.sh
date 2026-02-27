@@ -57,6 +57,13 @@ RPC_URL="http://localhost:8545"
 ARB_CHAIN_ID=421611337
 ARB_RPC_URL="http://localhost:8546"
 
+# Unset production contract addresses from system.env — local dev reads from deployment file
+# (env vars have higher priority than --deployment-file, so stale prod addresses break local dev)
+unset ISSUER_INDEX_ADDRESS ISSUER_GOVERNANCE_ADDRESS ISSUER_ISSUER_REGISTRY_ADDRESS
+unset ISSUER_COLLATERAL_REGISTRY_ADDRESS ISSUER_BLS_CUSTODY_ADDRESS ISSUER_L3_BRIDGE_CUSTODY_ADDRESS
+unset ISSUER_BRIDGE_PROXY_ADDRESS ISSUER_BITGET_VAULT ISSUER_ARB_CUSTODY
+unset ISSUER_RPC_URL ISSUER_ARBITRUM_RPC_URL ISSUER_ARBITRUM_CHAIN_ID ISSUER_LOG_LEVEL
+
 # Add Foundry to PATH if not already available
 if ! command -v anvil &>/dev/null && [ -d "$HOME/.foundry/bin" ]; then
     export PATH="$HOME/.foundry/bin:$PATH"
@@ -83,6 +90,7 @@ print_help() {
     echo "  --skip-deploy   Skip ALL contract deployment (use existing chain)"
     echo "  --no-tail       Don't tail logs after startup"
     echo "  --stress        Stress-test log profile (warn level, consensus/cycle at info)"
+    echo "  --vision        Vision-only mode: skip ITP/Bitget/Morpho/AP, deploy all 81 batches"
     echo "  --help          Show this help message"
     echo ""
     echo "What gets deployed:"
@@ -115,7 +123,9 @@ while [[ $# -gt 0 ]]; do
         --issuers) ISSUER_COUNT="$2"; shift 2;;
         --skip-deploy) SKIP_DEPLOY=true; shift;;
         --no-tail) NO_TAIL=true; shift;;
+        --no-test) NO_TEST=true; shift;;
         --stress) LOG_LEVEL=warn; export RUST_LOG="warn,issuer::consensus=info,issuer::cycle=info"; shift;;
+        --vision) VISION_ONLY=true; shift;;
         *) echo -e "${RED}Unknown option: $1${NC}"; exit 1;;
     esac
 done
@@ -124,10 +134,22 @@ if ! [[ "$ISSUER_COUNT" =~ ^[0-9]+$ ]] || [ "$ISSUER_COUNT" -lt 1 ] || [ "$ISSUE
     echo -e "${RED}Error: --issuers must be 1-20${NC}"; exit 1
 fi
 
-print_banner
+VISION_ONLY=${VISION_ONLY:-false}
+
+if [ "$VISION_ONLY" = true ]; then
+    echo -e "${CYAN}"
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║         VISION-ONLY LOCAL ENVIRONMENT                      ║"
+    echo "║  Core + Vision + 81 Batches + Data-Node + E2E              ║"
+    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo -e "${NC}"
+    TOTAL_STEPS=12
+else
+    print_banner
+fi
 
 echo -e "${YELLOW}Configuration:${NC}"
-echo "  Issuers: $ISSUER_COUNT | Skip deploy: $SKIP_DEPLOY | Tail logs: $([[ "$NO_TAIL" == "true" ]] && echo "no" || echo "yes") | Log level: $LOG_LEVEL | Exchange: $EXCHANGE_MODE"
+echo "  Issuers: $ISSUER_COUNT | Skip deploy: $SKIP_DEPLOY | Tail logs: $([[ "$NO_TAIL" == "true" ]] && echo "no" || echo "yes") | Log level: $LOG_LEVEL | Exchange: $EXCHANGE_MODE | Vision-only: $VISION_ONLY"
 echo ""
 
 # ============ Prerequisites ============
@@ -217,12 +239,12 @@ fi
 
 # ============ STEP 1: Anvil (L3 + Arbitrum) ============
 echo -e "${BLUE}[1/$TOTAL_STEPS] Starting Anvil chains (L3: $CHAIN_ID, Arbitrum: $ARB_CHAIN_ID)...${NC}"
-anvil --chain-id $CHAIN_ID --host 0.0.0.0 --port 8545 --accounts 100 -q > /dev/null 2>&1 &
+nohup anvil --chain-id $CHAIN_ID --host 0.0.0.0 --port 8545 --accounts 100 -q > /dev/null 2>&1 &
 ANVIL_L3_PID=$!
 echo $ANVIL_L3_PID >> .pids
 echo "anvil-l3:$ANVIL_L3_PID" >> .pids.info
 
-anvil --chain-id $ARB_CHAIN_ID --host 0.0.0.0 --port 8546 --accounts 100 -q > /dev/null 2>&1 &
+nohup anvil --chain-id $ARB_CHAIN_ID --host 0.0.0.0 --port 8546 --accounts 100 -q > /dev/null 2>&1 &
 ANVIL_ARB_PID=$!
 echo $ANVIL_ARB_PID >> .pids
 echo "anvil-arb:$ANVIL_ARB_PID" >> .pids.info
@@ -343,6 +365,10 @@ else
     cast send --private-key $DEPLOYER_KEY $ARB_USDC "mint(address,uint256)" $VISION_BOT2_ADDRESS 50000000000 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
     echo -e "  ${GREEN}Vision bot 2 $VISION_BOT2_ADDRESS funded with 100 ETH + 50k ARB_USDC (Arb)${NC}"
 
+    if [ "$VISION_ONLY" = true ]; then
+        echo -e "${BLUE}[3-5/$TOTAL_STEPS] Skipping ITP/Bitget/Morpho (--vision mode)${NC}"
+    else
+
     # ============ STEP 3: 100-asset ITP ============
     echo -e "${BLUE}[3/$TOTAL_STEPS] Deploying 100-asset ITP...${NC}"
 
@@ -377,6 +403,11 @@ else
     cast send --private-key $DEPLOYER_KEY $MOCK_BITGET_VAULT "setSpread(uint256)" 0 --rpc-url $RPC_URL > /dev/null 2>&1
     cast send --private-key $DEPLOYER_KEY $MOCK_BITGET_VAULT "setSpread(uint256)" 0 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
     echo -e "  ${GREEN}MockBitgetVault: spread=0 (real bid/ask applied by AP from /fast-prices)${NC}"
+
+    # Fund vault with ARB_USDC on Arb chain (needed for fundSellOrder to pay users)
+    # 1M USDC (6 decimals) = 1_000_000 * 10^6 = 1000000000000
+    cast send --private-key $DEPLOYER_KEY $ARB_USDC "mint(address,uint256)" $MOCK_BITGET_VAULT 1000000000000 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+    echo -e "  ${GREEN}MockBitgetVault: funded with 1M ARB_USDC on Arb (for sell order payouts)${NC}"
 
     # Fetch real Bitget prices for ITP creation (so NAV starts at ~$1, not ~$730)
     CREATION_PRICES_FILE="data/creation-prices.json"
@@ -612,37 +643,57 @@ print(f'  Merged 100 ITP tokens into symbol map ({updated} pair corrections, tot
 "
 
     # Regenerate assets.json from symbol-map so the collector tracks ALL symbols
+    # Deduplicate by base symbol: prefer USDC pair over USDT
     python3 -c "
 import json
 sm = json.load(open('data/symbol-map.json'))
-assets = [{'address': addr, 'bitget': info['pair']}
-          for addr, info in sm.items()
-          if isinstance(info, dict) and 'pair' in info]
+by_symbol = {}
+for addr, info in sm.items():
+    if not isinstance(info, dict) or 'pair' not in info:
+        continue
+    pair = info['pair']
+    for suffix in ['USDC', 'USDT']:
+        if pair.endswith(suffix):
+            base = pair[:-len(suffix)]
+            break
+    else:
+        base = pair
+    # Prefer USDC over USDT
+    if base in by_symbol:
+        existing_pair = by_symbol[base]['bitget']
+        if existing_pair.endswith('USDC'):
+            continue
+    by_symbol[base] = {'address': addr, 'bitget': pair}
+assets = sorted(by_symbol.values(), key=lambda x: x['bitget'])
 json.dump(assets, open('assets.json', 'w'), indent=2)
-print(f'  Generated assets.json with {len(assets)} symbols from symbol-map')
+print(f'  Generated assets.json with {len(assets)} unique symbols from symbol-map')
 "
 
     # Regenerate frontend deployed-assets.json from symbol-map (after ITP merge so addresses are current)
+    # Deduplicate by base symbol: prefer USDC pair over USDT
     python3 -c "
 import json
 sm = json.load(open('data/symbol-map.json'))
-seen = set()
-assets = []
+by_symbol = {}
 for addr, info in sorted(sm.items()):
     if not isinstance(info, dict) or 'pair' not in info:
         continue
     pair = info['pair']
-    # Extract symbol from pair (e.g. BTCUSDC -> BTC, ETHUSDT -> ETH)
     for suffix in ['USDC', 'USDT']:
         if pair.endswith(suffix):
             sym = pair[:-len(suffix)]
             break
     else:
         sym = pair
-    assets.append({'address': addr, 'symbol': sym})
-assets.sort(key=lambda x: x['symbol'])
+    # Prefer USDC over USDT
+    if sym in by_symbol:
+        existing_pair = by_symbol[sym]['_pair']
+        if existing_pair.endswith('USDC'):
+            continue
+    by_symbol[sym] = {'address': addr, 'symbol': sym, '_pair': pair}
+assets = [{'address': v['address'], 'symbol': v['symbol']} for v in sorted(by_symbol.values(), key=lambda x: x['symbol'])]
 json.dump(assets, open('frontend/public/deployed-assets.json', 'w'), indent=2)
-print(f'  Regenerated frontend/public/deployed-assets.json with {len(assets)} assets')
+print(f'  Regenerated frontend/public/deployed-assets.json with {len(assets)} unique assets')
 "
 
     # ============ STEP 5: Morpho lending ============
@@ -701,6 +752,16 @@ print(f'  Regenerated frontend/public/deployed-assets.json with {len(assets)} as
     set -e
     cd ..
 
+    fi  # end VISION_ONLY skip of steps 3-5
+
+    # In --vision mode, ITP deploy is skipped so symbol-map.json is never generated.
+    # Data-node needs this file to start — create empty map so it can boot.
+    if [ "$VISION_ONLY" = true ] && [ ! -f "data/symbol-map.json" ]; then
+        echo '{}' > data/symbol-map.json
+        echo '[]' > assets.json
+        echo -e "  ${YELLOW}Created empty symbol-map.json + assets.json (--vision mode, no ITP)${NC}"
+    fi
+
     # ============ STEP 6: Vision on Arbitrum ============
     echo -e "${BLUE}[6/$TOTAL_STEPS] Deploying Vision contract on Arbitrum...${NC}"
 
@@ -740,6 +801,33 @@ json.dump(deploy, open('../deployments/active-deployment.json', 'w'), indent=2)
     fi
     set -e
     cd ..
+
+    # ============ STEP 6b: Deploy all Vision batches (BLS-signed) ============
+    echo -e "${BLUE}[6b/$TOTAL_STEPS] Deploying all Vision batches (BLS-signed, 1-2 tx via bulk helper)...${NC}"
+
+    VISION_ADDR_BATCH=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts'].get('Vision',''))" 2>/dev/null || echo "")
+    if [ -n "$VISION_ADDR_BATCH" ] && [ "$VISION_ADDR_BATCH" != "" ]; then
+        cd contracts
+        set +e
+        VISION_ADDRESS=$VISION_ADDR_BATCH \
+        forge script script/DeployAllVisionBatches.s.sol:DeployAllVisionBatches \
+            --broadcast --slow --rpc-url $ARB_RPC_URL > ../logs/deploy-vision-batches.log 2>&1
+
+        if [ $? -eq 0 ]; then
+            BATCH_COUNT=$(python3 -c "import json; print(json.load(open('../deployments/vision-batches.json')).get('batchCount',0))" 2>/dev/null || echo "0")
+            echo -e "  ${GREEN}$BATCH_COUNT Vision batches deployed in 2 txs${NC}"
+
+            # Copy batch mapping to frontend
+            cp ../deployments/vision-batches.json ../frontend/lib/contracts/vision-batches.json 2>/dev/null || true
+        else
+            echo -e "${RED}Error: Vision batch deployment failed${NC}"
+            tail -20 ../logs/deploy-vision-batches.log
+        fi
+        set -e
+        cd ..
+    else
+        echo -e "${YELLOW}  Warning: Vision address not found, skipping batch deployment${NC}"
+    fi
 fi
 
 # ============ STEP 7: Sync frontend addresses ============
@@ -772,11 +860,7 @@ echo -e "  ${GREEN}Test user $TEST_USER impersonated on both Anvils${NC}"
 # Anvil automine only creates blocks on transactions; this loop creates empty blocks
 # every 1 second so issuers reliably detect cross-chain events between transactions.
 # Must be AFTER all deployments (automine handles those instantly).
-(while true; do
-    cast rpc evm_mine --rpc-url $RPC_URL > /dev/null 2>&1
-    cast rpc evm_mine --rpc-url $ARB_RPC_URL > /dev/null 2>&1
-    sleep 1
-done) &
+nohup bash -c "while true; do cast rpc evm_mine --rpc-url $RPC_URL > /dev/null 2>&1; cast rpc evm_mine --rpc-url $ARB_RPC_URL > /dev/null 2>&1; sleep 1; done" > /dev/null 2>&1 &
 MINER_PID=$!
 echo $MINER_PID >> .pids
 echo "block-miner:$MINER_PID" >> .pids.info
@@ -868,7 +952,7 @@ for i in $(seq 1 $ISSUER_COUNT); do
         ISSUER_ARGS="$ISSUER_ARGS --vision-reveal-window-secs 0"
         ISSUER_ARGS="$ISSUER_ARGS --vision-tick-poll-interval-ms 500"
     fi
-    ./target/release/issuer $ISSUER_ARGS > logs/issuer-$i.log 2>&1 &
+    nohup ./target/release/issuer $ISSUER_ARGS > logs/issuer-$i.log 2>&1 &
     ISSUER_PID=$!
     echo $ISSUER_PID >> .pids
     echo "issuer-$i:$ISSUER_PID" >> .pids.info
@@ -901,7 +985,7 @@ else
         RESET_SESSION_FLAG="--reset-session"
     fi
 
-    ./target/release/data-node serve \
+    nohup ./target/release/data-node serve \
         --database-url postgres://localhost/index_prices \
         --symbol-map "$SCRIPT_DIR/data/symbol-map.json" \
         --rpc-url $RPC_URL \
@@ -945,15 +1029,13 @@ else
     DATA_NODE_RUNNING=true
 fi
 
-# Create default HackerNews batch — deferred until after NAV is ready
-# (data-node needs ~30s to fetch HN data from API)
-CREATE_DEFAULT_BATCH=false
-VISION_ADDR=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts'].get('Vision',''))" 2>/dev/null || echo "")
-if [ -n "$VISION_ADDR" ] && [ "$VISION_ADDR" != "" ] && [ "$DATA_NODE_RUNNING" = true ] && [ "$SKIP_DEPLOY" = false ]; then
-    CREATE_DEFAULT_BATCH=true
-fi
+# Vision batches are now always deployed by DeployAllVisionBatches.s.sol in Step 6b
+# (BLS-signed, no need for deferred creation)
 
 # ============ STEP 10: Launch AP ============
+if [ "$VISION_ONLY" = true ]; then
+    echo -e "${BLUE}[10/$TOTAL_STEPS] Skipping AP (--vision mode)${NC}"
+else
 echo -e "${BLUE}[10/$TOTAL_STEPS] Starting AP with real Bitget price proxy...${NC}"
 
 AP_ARGS="--port 9100 --rpc $RPC_URL --exchange-mode $EXCHANGE_MODE"
@@ -971,6 +1053,7 @@ AP_PID=$!
 echo $AP_PID >> .pids
 echo "ap:$AP_PID" >> .pids.info
 echo -e "  AP on port 9100 (PID: $AP_PID)"
+fi  # end VISION_ONLY AP skip
 
 # Wait for services to start
 sleep 3
@@ -995,6 +1078,9 @@ if [ -n "$VISION_ADDR_BOT" ] && [ "$VISION_ADDR_BOT" != "" ] && [ -f "$SCRIPT_DI
         BOT_ADDRESS="$VISION_BOT_ADDRESS" \
         BOT_PRIVATE_KEY="$VISION_BOT_KEY" \
         POLL_INTERVAL=5 \
+        MAX_BATCHES=50 \
+        MAX_EXPOSURE=1000 \
+        PNL_FILE="pnl-bot1.json" \
         python3 vision-bot/bot.py > logs/vision-bot-1.log 2>&1
     ) &
     VBOT1_PID=$!
@@ -1011,6 +1097,9 @@ if [ -n "$VISION_ADDR_BOT" ] && [ "$VISION_ADDR_BOT" != "" ] && [ -f "$SCRIPT_DI
         BOT_ADDRESS="$VISION_BOT2_ADDRESS" \
         BOT_PRIVATE_KEY="$VISION_BOT2_KEY" \
         POLL_INTERVAL=5 \
+        MAX_BATCHES=50 \
+        MAX_EXPOSURE=1000 \
+        PNL_FILE="pnl-bot2.json" \
         python3 vision-bot/bot.py > logs/vision-bot-2.log 2>&1
     ) &
     VBOT2_PID=$!
@@ -1035,84 +1124,46 @@ echo -e "${BLUE}[11/$TOTAL_STEPS] Starting frontend & running E2E browser tests.
 
 set +e  # Don't exit on E2E test failures
 
-# Extract ITP ID for service readiness check
-ITP_ID=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['itpId'])")
-
-# Wait for issuers + data-node to initialize (E2E buy test needs live NAV)
-echo -e "  Waiting for issuers + data-node to initialize..."
-NAV_READY=false
-for attempt in $(seq 1 90); do
-    NAV_RESP=$(curl -sf "http://localhost:8200/itp-price?itp_id=$ITP_ID" 2>/dev/null || echo "")
-    if [ -n "$NAV_RESP" ]; then
-        NAV_VAL=$(echo "$NAV_RESP" | python3 -c "import sys,json; print(json.loads(sys.stdin.read()).get('nav','0'))" 2>/dev/null || echo "0")
-        if [ "$NAV_VAL" != "0" ] && [ -n "$NAV_VAL" ]; then
-            NAV_DISPLAY=$(echo "$NAV_RESP" | python3 -c "import sys,json; print(json.loads(sys.stdin.read()).get('nav_display','?'))" 2>/dev/null || echo "?")
-            echo -e "  ${GREEN}Data-node ready! NAV: \$$NAV_DISPLAY (${attempt}s)${NC}"
-            NAV_READY=true
-            break
-        fi
-    fi
-    sleep 1
-done
-if [ "$NAV_READY" != true ]; then
-    echo -e "  ${YELLOW}Data-node not ready after 90s — continuing anyway${NC}"
-fi
-
-# Deferred: Create default HackerNews batch now that data-node has had time to fetch
-if [ "$CREATE_DEFAULT_BATCH" = true ]; then
-    echo -e "${BLUE}  Creating default HackerNews batch...${NC}"
-    HN_MARKETS=""
-    HN_COUNT=0
-    for attempt in $(seq 1 90); do
-        HN_MARKETS=$(curl -sf "http://localhost:8200/vision/markets/active?source=hackernews" 2>/dev/null || echo "")
-        HN_COUNT=$(echo "$HN_MARKETS" | python3 -c "import sys,json; print(json.loads(sys.stdin.read()).get('count',0))" 2>/dev/null || echo "0")
-        if [ "$HN_COUNT" -gt 0 ] 2>/dev/null; then
+if [ "$VISION_ONLY" = true ]; then
+    # In vision mode, wait for data-node health instead of ITP NAV
+    echo -e "  Waiting for data-node to initialize..."
+    DN_READY=false
+    for attempt in $(seq 1 60); do
+        if curl -sf "http://localhost:8200/health" > /dev/null 2>&1; then
+            echo -e "  ${GREEN}Data-node ready! (${attempt}s)${NC}"
+            DN_READY=true
             break
         fi
         sleep 1
     done
+    if [ "$DN_READY" != true ]; then
+        echo -e "  ${YELLOW}Data-node not ready after 60s — continuing anyway${NC}"
+    fi
+else
+    # Extract ITP ID for service readiness check
+    ITP_ID=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['itpId'])")
 
-    if [ "$HN_COUNT" -gt 0 ] 2>/dev/null; then
-        BATCH_DATA=$(echo "$HN_MARKETS" | python3 -c "
-import sys, json, subprocess
-data = json.loads(sys.stdin.read())
-snapshots = data.get('snapshots', [])
-if not snapshots:
-    sys.exit(1)
-market_ids = []
-for s in snapshots:
-    aid = s.get('assetId') or s.get('asset_id', '')
-    if not aid:
-        continue
-    utf8 = subprocess.run(['cast', '--from-utf8', aid], capture_output=True, text=True).stdout.strip()
-    if not utf8:
-        continue
-    kh = subprocess.run(['cast', 'keccak', utf8], capture_output=True, text=True).stdout.strip()
-    market_ids.append(kh)
-n = len(market_ids)
-print('[' + ','.join(market_ids) + ']|[' + ','.join(['0']*n) + ']|[' + ','.join(['0']*n) + ']|' + str(n))
-" 2>/dev/null || echo "")
-
-        if [ -n "$BATCH_DATA" ]; then
-            IFS='|' read -r MARKET_IDS_ARR RES_TYPES_ARR THRESHOLDS_ARR MARKET_N <<< "$BATCH_DATA"
-            set +e
-            BATCH_TX=$(cast send --private-key $DEPLOYER_KEY "$VISION_ADDR" \
-                "createBatch(bytes32[],uint8[],uint256,uint256[])" \
-                "$MARKET_IDS_ARR" "$RES_TYPES_ARR" 30 "$THRESHOLDS_ARR" \
-                --rpc-url $ARB_RPC_URL 2>&1)
-            if [ $? -eq 0 ]; then
-                echo -e "  ${GREEN}Default HackerNews batch created ($MARKET_N markets, 30s ticks)${NC}"
-            else
-                echo -e "  ${YELLOW}Warning: Default batch creation failed${NC}"
+    # Wait for issuers + data-node to initialize (E2E buy test needs live NAV)
+    echo -e "  Waiting for issuers + data-node to initialize..."
+    NAV_READY=false
+    for attempt in $(seq 1 90); do
+        NAV_RESP=$(curl -sf "http://localhost:8200/itp-price?itp_id=$ITP_ID" 2>/dev/null || echo "")
+        if [ -n "$NAV_RESP" ]; then
+            NAV_VAL=$(echo "$NAV_RESP" | python3 -c "import sys,json; print(json.loads(sys.stdin.read()).get('nav','0'))" 2>/dev/null || echo "0")
+            if [ "$NAV_VAL" != "0" ] && [ -n "$NAV_VAL" ]; then
+                NAV_DISPLAY=$(echo "$NAV_RESP" | python3 -c "import sys,json; print(json.loads(sys.stdin.read()).get('nav_display','?'))" 2>/dev/null || echo "?")
+                echo -e "  ${GREEN}Data-node ready! NAV: \$$NAV_DISPLAY (${attempt}s)${NC}"
+                NAV_READY=true
+                break
             fi
-            set -e
-        else
-            echo -e "  ${YELLOW}Warning: Could not prepare batch data${NC}"
         fi
-    else
-        echo -e "  ${YELLOW}Warning: No HackerNews markets found after 90s (skipping default batch)${NC}"
+        sleep 1
+    done
+    if [ "$NAV_READY" != true ]; then
+        echo -e "  ${YELLOW}Data-node not ready after 90s — continuing anyway${NC}"
     fi
 fi
+
 sleep 2
 
 # Install frontend deps + Playwright browser
@@ -1137,7 +1188,7 @@ ENVEOF
 
 # Start Next.js dev server
 echo -e "  Starting Next.js dev server on port 3000..."
-npm run dev > ../logs/frontend-dev.log 2>&1 &
+nohup npm run dev > ../logs/frontend-dev.log 2>&1 &
 FRONTEND_PID=$!
 echo $FRONTEND_PID >> ../.pids
 echo "frontend:$FRONTEND_PID" >> ../.pids.info
@@ -1173,34 +1224,51 @@ fi
 
 # Run Playwright E2E tests (health → connect → buy → lending → sell)
 echo -e ""
-echo -e "  ${BLUE}Running Playwright E2E tests...${NC}"
-echo -e "  Tests: health-check → connect-wallet → buy-itp → lending-cycle → sell-itp"
-echo -e ""
-cd frontend
-npm run e2e 2>&1 | tee ../logs/e2e-results.log
-E2E_EXIT=$?
-cd ..
-
-echo ""
-if [ $E2E_EXIT -eq 0 ]; then
-    echo -e "  ${GREEN}╔════════════════════════════════╗${NC}"
-    echo -e "  ${GREEN}║   E2E BROWSER TESTS PASSED     ║${NC}"
-    echo -e "  ${GREEN}╚════════════════════════════════╝${NC}"
+if [ "$NO_TEST" = true ]; then
+    echo -e "  ${YELLOW}Skipping E2E tests (--no-test)${NC}"
+    E2E_EXIT=0
 else
-    echo -e "  ${RED}╔════════════════════════════════╗${NC}"
-    echo -e "  ${RED}║   E2E BROWSER TESTS FAILED     ║${NC}"
-    echo -e "  ${RED}╚════════════════════════════════╝${NC}"
-    echo -e "  ${YELLOW}Exit code: $E2E_EXIT${NC}"
-    echo -e "  ${YELLOW}Full log:  logs/e2e-results.log${NC}"
-    echo -e "  ${YELLOW}Debug:     cd frontend && npm run e2e:headed${NC}"
+    if [ "$VISION_ONLY" = true ]; then
+        echo -e "  ${BLUE}Running Vision E2E tests only...${NC}"
+        echo -e "  Tests: vision → vision-sources"
+        echo -e ""
+        cd frontend
+        npx playwright test --config=e2e/playwright.config.ts e2e/tests/10-vision.spec.ts e2e/tests/11-vision-sources.spec.ts 2>&1 | tee ../logs/e2e-results.log
+        E2E_EXIT=$?
+        cd ..
+    else
+        echo -e "  ${BLUE}Running Playwright E2E tests...${NC}"
+        echo -e "  Tests: health-check → connect-wallet → buy-itp → lending-cycle → sell-itp"
+        echo -e ""
+        cd frontend
+        npm run e2e 2>&1 | tee ../logs/e2e-results.log
+        E2E_EXIT=$?
+        cd ..
+    fi
+
+    echo ""
+    if [ $E2E_EXIT -eq 0 ]; then
+        echo -e "  ${GREEN}╔════════════════════════════════╗${NC}"
+        echo -e "  ${GREEN}║   E2E BROWSER TESTS PASSED     ║${NC}"
+        echo -e "  ${GREEN}╚════════════════════════════════╝${NC}"
+    else
+        echo -e "  ${RED}╔════════════════════════════════╗${NC}"
+        echo -e "  ${RED}║   E2E BROWSER TESTS FAILED     ║${NC}"
+        echo -e "  ${RED}╚════════════════════════════════╝${NC}"
+        echo -e "  ${YELLOW}Exit code: $E2E_EXIT${NC}"
+        echo -e "  ${YELLOW}Full log:  logs/e2e-results.log${NC}"
+        echo -e "  ${YELLOW}Debug:     cd frontend && npm run e2e:headed${NC}"
+    fi
+    echo ""
 fi
-echo ""
 
 set -e
 
 # ============ STEP 12b: Vision 2-Bot Trading Verification ============
 VISION_ADDR_VERIFY=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts'].get('Vision',''))" 2>/dev/null || echo "")
-if [ -n "$VISION_ADDR_VERIFY" ] && [ "$VISION_ADDR_VERIFY" != "" ] && [ "$DATA_NODE_RUNNING" = true ]; then
+if [ "$NO_TEST" = true ]; then
+    true  # skip vision verification when --no-test
+elif [ -n "$VISION_ADDR_VERIFY" ] && [ "$VISION_ADDR_VERIFY" != "" ] && [ "$DATA_NODE_RUNNING" = true ]; then
     echo -e "${BLUE}[12b/$TOTAL_STEPS] Vision 2-Bot Trading Verification...${NC}"
 
     # Wait for both bots to join the batch

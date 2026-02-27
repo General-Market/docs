@@ -47,14 +47,19 @@ pub async fn run(
     api_key: String,
     poll_interval_secs: u64,
     logos_dir: PathBuf,
+    limiter: RateLimiter,
 ) {
-    let limiter = RateLimiter::coingecko_pro();
-
     info!(
         poll_secs = poll_interval_secs,
         backfill_interval_secs = BACKFILL_INTERVAL_SECS,
         "CoinGecko collector started (snapshot + backfill + categories)"
     );
+
+    // Wait 15 minutes before starting — let the market source complete its
+    // initial price fetch first.  The shared rate limiter prevents collisions,
+    // but staggering avoids the first sweep competing for bandwidth at all.
+    info!("cg_collector: waiting 15 min before first run (letting market source fetch first)");
+    tokio::time::sleep(Duration::from_secs(900)).await;
 
     // Spawn category sync as an independent task so it doesn't wait behind
     // the slow logo sync / backfill.

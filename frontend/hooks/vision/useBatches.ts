@@ -4,6 +4,7 @@ import { VISION_API_URL } from '@/lib/config'
 export interface BatchInfo {
   id: number
   creator: string
+  sourceId: string
   marketIds: string[]
   resolutionTypes: number[]
   tickDuration: number
@@ -26,6 +27,7 @@ export function useBatches() {
       return raw.map((b: any) => ({
         id: b.id,
         creator: b.creator ?? '',
+        sourceId: b.source_id ?? b.sourceId ?? '',
         marketIds: b.market_ids ?? b.marketIds ?? [],
         resolutionTypes: b.resolution_types ?? b.resolutionTypes ?? [],
         tickDuration: b.tick_duration ?? b.tickDuration ?? 0,

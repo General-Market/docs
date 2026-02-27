@@ -22,16 +22,23 @@ use super::types::MarketConfig;
 /// Maps market_id (H256) -> price value (f64).
 type ReferencePrices = Arc<RwLock<HashMap<H256, f64>>>;
 
+/// How long to suppress retry for missing configs (batch engine may generate them later).
+const MISSING_CONFIG_TTL: std::time::Duration = std::time::Duration::from_secs(300);
+
 /// Cache of fetched configs to avoid re-fetching within same tick.
-/// Maps config_hash (H256) -> Vec<MarketConfig>.
+/// Maps config_hash (H256) -> (source_id, Vec<MarketConfig>).
 struct ConfigCache {
-    configs: RwLock<HashMap<H256, Vec<MarketConfig>>>,
+    configs: RwLock<HashMap<H256, (String, Vec<MarketConfig>)>>,
+    /// Config hashes that returned 404 — downgrade to debug after first WARN.
+    /// Entries expire after MISSING_CONFIG_TTL so configs generated later can be retried.
+    known_missing: RwLock<HashMap<H256, std::time::Instant>>,
 }
 
 impl ConfigCache {
     fn new() -> Self {
         Self {
             configs: RwLock::new(HashMap::new()),
+            known_missing: RwLock::new(HashMap::new()),
         }
     }
 
@@ -39,12 +46,12 @@ impl ConfigCache {
         &self,
         data_node_url: &str,
         config_hash: &H256,
-    ) -> Result<Vec<MarketConfig>, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<(String, Vec<MarketConfig>), Box<dyn std::error::Error + Send + Sync>> {
         // Check cache first
         {
             let cache = self.configs.read().await;
-            if let Some(configs) = cache.get(config_hash) {
-                return Ok(configs.clone());
+            if let Some(entry) = cache.get(config_hash) {
+                return Ok(entry.clone());
             }
         }
 
@@ -53,6 +60,7 @@ impl ConfigCache {
         let batch = batch_config_orchestrator::fetch_config_by_hash(data_node_url, &hash_hex)
             .await?;
 
+        let source_id = batch.source_id.clone();
         let market_configs: Vec<MarketConfig> = batch
             .markets
             .iter()
@@ -64,13 +72,26 @@ impl ConfigCache {
             })
             .collect();
 
-        // Cache it
+        // Cache it and clear from known_missing (config now available)
         self.configs
             .write()
             .await
-            .insert(*config_hash, market_configs.clone());
+            .insert(*config_hash, (source_id.clone(), market_configs.clone()));
+        self.known_missing.write().await.remove(config_hash);
 
-        Ok(market_configs)
+        Ok((source_id, market_configs))
+    }
+
+    async fn is_known_missing(&self, config_hash: &H256) -> bool {
+        let map = self.known_missing.read().await;
+        match map.get(config_hash) {
+            Some(ts) if ts.elapsed() < MISSING_CONFIG_TTL => true,
+            _ => false,
+        }
+    }
+
+    async fn mark_missing(&self, config_hash: &H256) {
+        self.known_missing.write().await.insert(*config_hash, std::time::Instant::now());
     }
 }
 
@@ -102,23 +123,44 @@ fn asset_id_to_market_id(asset_id: &str) -> H256 {
 /// end prices from the current snapshot.
 ///
 /// Returns Result instead of silently returning empty on failure.
-async fn fetch_market_prices(
+/// Parsed snapshot data for a source: (market_id -> value, market_id -> changePct)
+type SnapshotData = (HashMap<H256, f64>, HashMap<H256, f64>);
+
+/// Per-tick-cycle cache: Ok(data) for successful fetches, Err for failed ones.
+/// Prevents both redundant fetches AND redundant timeout waits.
+type SnapshotCache = HashMap<String, Result<SnapshotData, String>>;
+
+/// Fetch and parse snapshot data for a source, using cache if available.
+async fn fetch_snapshot_data(
     data_node_url: &str,
-    batch_market_ids: &[H256],
-    reference_prices: &ReferencePrices,
-    now: u64,
-) -> Result<MarketPrices, Box<dyn std::error::Error + Send + Sync>> {
-    let mut prices = MarketPrices::new();
+    source_id: &str,
+    cache: &mut SnapshotCache,
+) -> Result<SnapshotData, Box<dyn std::error::Error + Send + Sync>> {
+    if let Some(cached) = cache.get(source_id) {
+        return match cached {
+            Ok(data) => Ok(data.clone()),
+            Err(msg) => Err(msg.clone().into()),
+        };
+    }
 
-    let url = format!("{}/vision/snapshot?source=hackernews&limit=10000", data_node_url);
-    let client = reqwest::Client::new();
+    let result = fetch_snapshot_data_inner(data_node_url, source_id).await;
+    match &result {
+        Ok(data) => { cache.insert(source_id.to_string(), Ok(data.clone())); }
+        Err(e) => { cache.insert(source_id.to_string(), Err(e.to_string())); }
+    }
+    result
+}
 
-    let response = client
-        .get(&url)
-        .timeout(std::time::Duration::from_secs(10))
-        .send()
-        .await?;
+async fn fetch_snapshot_data_inner(
+    data_node_url: &str,
+    source_id: &str,
+) -> Result<SnapshotData, Box<dyn std::error::Error + Send + Sync>> {
+    let url = format!("{}/vision/snapshot?source={}&limit=10000", data_node_url, source_id);
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()?;
 
+    let response = client.get(&url).send().await?;
     let json: serde_json::Value = response.json().await?;
 
     let snapshots = json
@@ -126,11 +168,8 @@ async fn fetch_market_prices(
         .and_then(|s| s.as_array())
         .ok_or("data-node snapshot response missing 'snapshots' array")?;
 
-    // Build a set of batch market_ids for fast lookup
-    let batch_ids: std::collections::HashSet<H256> = batch_market_ids.iter().copied().collect();
-
-    // Map asset_ids to current values
     let mut current_values: HashMap<H256, f64> = HashMap::new();
+    let mut change_pcts: HashMap<H256, f64> = HashMap::new();
 
     for snap in snapshots {
         let asset_id = snap
@@ -145,11 +184,6 @@ async fn fetch_market_prices(
 
         let market_id = asset_id_to_market_id(asset_id);
 
-        if !batch_ids.contains(&market_id) {
-            continue;
-        }
-
-        // Parse the value (current price/score)
         let value = snap
             .get("value")
             .and_then(|v| {
@@ -166,28 +200,69 @@ async fn fetch_market_prices(
         if value > 0.0 {
             current_values.insert(market_id, value);
         }
+
+        let change_pct = snap
+            .get("change_pct")
+            .or_else(|| snap.get("changePct"))
+            .and_then(|v| {
+                if let Some(f) = v.as_f64() {
+                    Some(f)
+                } else if let Some(s) = v.as_str() {
+                    s.parse::<f64>().ok()
+                } else {
+                    None
+                }
+            });
+        if let Some(pct) = change_pct {
+            change_pcts.insert(market_id, pct);
+        }
     }
 
-    // Build MarketPrices: start from reference, end from current
+    tracing::info!(
+        source_id,
+        total_snapshots = snapshots.len(),
+        "Cached snapshot data for source"
+    );
+
+    Ok((current_values, change_pcts))
+}
+
+/// Build MarketPrices from cached snapshot data for a specific batch's markets.
+async fn build_market_prices(
+    snapshot_data: &SnapshotData,
+    batch_market_ids: &[H256],
+    reference_prices: &ReferencePrices,
+    now: u64,
+) -> MarketPrices {
+    let mut prices = MarketPrices::new();
+    let (current_values, change_pcts) = snapshot_data;
     let ref_prices = reference_prices.read().await;
 
     let mut matched = 0;
     for &market_id in batch_market_ids {
         if let Some(&end_price) = current_values.get(&market_id) {
-            let start_price = ref_prices.get(&market_id).copied().unwrap_or(end_price);
+            let mut start_price = ref_prices.get(&market_id).copied().unwrap_or(end_price);
+
+            if (start_price - end_price).abs() < f64::EPSILON {
+                if let Some(&pct) = change_pcts.get(&market_id) {
+                    if pct.abs() > 0.001 {
+                        start_price = end_price / (1.0 + pct / 100.0);
+                    }
+                }
+            }
+
             prices.insert(market_id, start_price, end_price, now);
             matched += 1;
         }
     }
 
     tracing::info!(
-        total_snapshots = snapshots.len(),
         matched_markets = matched,
         batch_markets = batch_market_ids.len(),
-        "Fetched market prices from data-node"
+        "Built market prices from cached snapshot"
     );
 
-    Ok(prices)
+    prices
 }
 
 /// Update reference prices with current values after a tick is resolved.
@@ -299,6 +374,18 @@ pub async fn run(
     let config_cache = ConfigCache::new();
     let admin_token = config.data_node_token.clone().unwrap_or_default();
 
+    // Connect to Postgres for persisting balance updates and resolved ticks
+    let db_pool = match sqlx::PgPool::connect(&config.database_url).await {
+        Ok(pool) => {
+            tracing::info!("Vision engine connected to Postgres for balance persistence");
+            Some(pool)
+        }
+        Err(e) => {
+            tracing::warn!(error = %e, "Vision engine failed to connect to Postgres — balance updates will be in-memory only");
+            None
+        }
+    };
+
     tracing::info!(
         poll_interval_ms = config.tick_poll_interval_ms,
         reveal_window_secs = config.reveal_window_secs,
@@ -333,35 +420,71 @@ pub async fn run(
                     "Found due batches"
                 );
 
-                for batch_id in due_batches {
+                // === Phase 1: Prepare batches and pre-fetch sources in parallel ===
+                // Collect batch info and unique sources needed
+                struct BatchWork {
+                    batch_id: u64,
+                    tick_id: u64,
+                    batch: super::types::Batch,
+                    players: Vec<super::types::PlayerPosition>,
+                    source_id: String,
+                    market_configs: Vec<MarketConfig>,
+                    market_ids: Vec<H256>,
+                }
+
+                let mut work_items: Vec<BatchWork> = Vec::new();
+                let mut sources_needed: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+                for &batch_id in &due_batches {
                     let tick_id = scheduler.next_tick_for_batch(batch_id).await;
 
                     match scheduler.get_batch_state(batch_id).await {
                         Some((batch, players)) => {
                             if players.is_empty() {
-                                tracing::debug!(
-                                    batch_id,
-                                    tick_id,
-                                    "Skipping tick -- no players in batch"
-                                );
-                                // Mark resolved so we advance past empty ticks
                                 scheduler.mark_resolved(batch_id, tick_id).await;
                                 continue;
                             }
 
-                            // Fetch market configs from data-node by config_hash
-                            let market_configs = match config_cache
+                            // Skip backlog
+                            if batch.tick_duration > 0 {
+                                let current_tick = now / batch.tick_duration;
+                                let latest_resolvable = if current_tick > batch.created_at_tick {
+                                    current_tick - batch.created_at_tick - 1
+                                } else {
+                                    0
+                                };
+                                if tick_id < latest_resolvable {
+                                    tracing::info!(
+                                        batch_id,
+                                        skipped_from = tick_id,
+                                        skipped_to = latest_resolvable,
+                                        "Skipping backlog ticks to latest"
+                                    );
+                                    for skip_tick in tick_id..latest_resolvable {
+                                        scheduler.mark_resolved(batch_id, skip_tick).await;
+                                    }
+                                    continue;
+                                }
+                            }
+
+                            // Fetch market configs
+                            let (source_id, market_configs) = match config_cache
                                 .get_or_fetch(&config.data_node_url, &batch.config_hash)
                                 .await
                             {
-                                Ok(mc) => mc,
+                                Ok(entry) => entry,
                                 Err(e) => {
-                                    tracing::warn!(
-                                        batch_id,
-                                        tick_id,
-                                        error = %e,
-                                        "Failed to fetch market config, skipping tick"
-                                    );
+                                    if config_cache.is_known_missing(&batch.config_hash).await {
+                                        tracing::debug!(batch_id, tick_id, "Config still missing, skipping tick");
+                                    } else {
+                                        tracing::warn!(
+                                            batch_id,
+                                            tick_id,
+                                            error = %e,
+                                            "Failed to fetch market config, skipping tick"
+                                        );
+                                        config_cache.mark_missing(&batch.config_hash).await;
+                                    }
                                     continue;
                                 }
                             };
@@ -369,34 +492,123 @@ pub async fn run(
                             let market_ids: Vec<H256> =
                                 market_configs.iter().map(|m| m.market_id).collect();
 
-                            tracing::info!(
+                            sources_needed.insert(source_id.clone());
+                            work_items.push(BatchWork {
                                 batch_id,
                                 tick_id,
-                                player_count = players.len(),
-                                market_count = market_configs.len(),
-                                "Processing due tick"
-                            );
+                                batch,
+                                players,
+                                source_id,
+                                market_configs,
+                                market_ids,
+                            });
+                        }
+                        None => {}
+                    }
+                }
 
-                            // Fetch prices from data-node for each market_id.
-                            let prices = match fetch_market_prices(
-                                &config.data_node_url,
-                                &market_ids,
-                                &reference_prices,
-                                now,
-                            )
-                            .await
+                if work_items.is_empty() {
+                    continue;
+                }
+
+                // === Phase 2: Parallel pre-fetch all unique sources ===
+                let sources_vec: Vec<String> = sources_needed.into_iter().collect();
+                tracing::info!(
+                    sources = sources_vec.len(),
+                    batches = work_items.len(),
+                    "Pre-fetching snapshot sources in parallel"
+                );
+
+                // Limit concurrent fetches to avoid overwhelming the data-node DB pool
+                let semaphore = Arc::new(tokio::sync::Semaphore::new(5));
+                let fetch_futures: Vec<_> = sources_vec
+                    .iter()
+                    .map(|src| {
+                        let url = config.data_node_url.clone();
+                        let source = src.clone();
+                        let sem = semaphore.clone();
+                        async move {
+                            let _permit = sem.acquire().await.unwrap();
+                            let result = fetch_snapshot_data_inner(&url, &source).await;
+                            (source, result)
+                        }
+                    })
+                    .collect();
+
+                let fetch_results = futures::future::join_all(fetch_futures).await;
+
+                let mut snapshot_cache: SnapshotCache = HashMap::new();
+                let mut ok_count = 0;
+                let mut fail_count = 0;
+                for (source, result) in fetch_results {
+                    match result {
+                        Ok(data) => {
+                            snapshot_cache.insert(source, Ok(data));
+                            ok_count += 1;
+                        }
+                        Err(e) => {
+                            tracing::warn!(source = %source, error = %e, "Source fetch failed");
+                            snapshot_cache.insert(source, Err(e.to_string()));
+                            fail_count += 1;
+                        }
+                    }
+                }
+                tracing::info!(ok = ok_count, failed = fail_count, "Source pre-fetch complete");
+
+                // === Phase 3: Resolve ticks using cached data ===
+                for item in work_items {
+                    let batch_id = item.batch_id;
+                    let tick_id = item.tick_id;
+                    let batch = item.batch;
+                    let players = item.players;
+                    let market_ids = item.market_ids;
+                    let market_configs = item.market_configs;
+
+                    tracing::info!(
+                        batch_id,
+                        tick_id,
+                        player_count = players.len(),
+                        market_count = market_configs.len(),
+                        "Processing due tick"
+                    );
+
+                    // Get snapshot from cache (already pre-fetched)
+                    let snapshot_data = match snapshot_cache.get(&item.source_id) {
+                        Some(Ok(data)) => data.clone(),
+                        Some(Err(_)) | None => {
+                            continue; // Already logged during pre-fetch
+                        }
+                    };
+
+                    let prices = build_market_prices(
+                        &snapshot_data,
+                        &market_ids,
+                        &reference_prices,
+                        now,
+                    )
+                    .await;
+
+                    // Debug: log bitmap info before resolution
                             {
-                                Ok(p) => p,
-                                Err(e) => {
+                                let bitmaps = resolver.bitmap_store.get_all_for_batch(batch.id).await;
+                                for bm in &bitmaps {
+                                    tracing::info!(
+                                        batch_id,
+                                        player = %bm.player,
+                                        bitmap_hex = %hex::encode(&bm.bitmap),
+                                        bitmap_len = bm.bitmap.len(),
+                                        "Bitmap for resolution"
+                                    );
+                                }
+                                if bitmaps.len() < 2 {
                                     tracing::warn!(
                                         batch_id,
-                                        tick_id,
-                                        error = %e,
-                                        "Failed to fetch market prices, skipping tick"
+                                        bitmap_count = bitmaps.len(),
+                                        player_count = players.len(),
+                                        "Missing bitmaps — players will be voided"
                                     );
-                                    continue;
                                 }
-                            };
+                            }
 
                             match resolver
                                 .resolve_tick(
@@ -492,6 +704,34 @@ pub async fn run(
                                     )
                                     .await;
 
+                                    // Apply balance updates to scheduler
+                                    if !result.player_balances.is_empty() {
+                                        if let Some(ref pool) = db_pool {
+                                            if let Err(e) = scheduler
+                                                .apply_tick_balances_with_db(
+                                                    pool,
+                                                    batch_id,
+                                                    &result.player_balances,
+                                                )
+                                                .await
+                                            {
+                                                tracing::warn!(
+                                                    batch_id,
+                                                    tick_id,
+                                                    error = %e,
+                                                    "Failed to persist balance updates to DB"
+                                                );
+                                            }
+                                        } else {
+                                            scheduler
+                                                .apply_tick_balances(
+                                                    batch_id,
+                                                    &result.player_balances,
+                                                )
+                                                .await;
+                                        }
+                                    }
+
                                     // Update reference prices for next tick
                                     update_reference_prices(
                                         &reference_prices,
@@ -500,7 +740,24 @@ pub async fn run(
                                     )
                                     .await;
 
-                                    scheduler.mark_resolved(batch_id, tick_id).await;
+                                    // Persist resolved tick to DB
+                                    if let Some(ref pool) = db_pool {
+                                        if let Err(e) = scheduler
+                                            .mark_resolved_with_db(pool, batch_id, tick_id)
+                                            .await
+                                        {
+                                            tracing::warn!(
+                                                batch_id,
+                                                tick_id,
+                                                error = %e,
+                                                "Failed to persist resolved tick to DB"
+                                            );
+                                            // Fall back to in-memory only
+                                            scheduler.mark_resolved(batch_id, tick_id).await;
+                                        }
+                                    } else {
+                                        scheduler.mark_resolved(batch_id, tick_id).await;
+                                    }
                                 }
                                 Err(e) => {
                                     tracing::warn!(
@@ -512,14 +769,6 @@ pub async fn run(
                                     // Don't mark resolved -- retry on next poll
                                 }
                             }
-                        }
-                        None => {
-                            tracing::warn!(
-                                batch_id,
-                                "Due batch not found in scheduler state"
-                            );
-                        }
-                    }
                 }
             }
         }

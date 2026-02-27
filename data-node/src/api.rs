@@ -1006,10 +1006,17 @@ async fn nav_series(
             }
         }
 
+        // Track consecutive minutes without kline data; stop emitting
+        // candles once we've gone 5+ minutes with no real data to avoid
+        // stale flat candles that diverge from the live NAV.
+        let mut consecutive_empty_minutes: i64 = 0;
+        const MAX_EMPTY_MINUTES: i64 = 5;
+
         let mut minute_ts = start_minute;
         while minute_ts <= end_minute {
             // If klines exist for this minute, update last-known prices
             if let Some(klines) = minute_klines.get(&minute_ts) {
+                consecutive_empty_minutes = 0;
                 for kline in klines {
                     if let Ok(o) = kline.open.parse::<f64>() {
                         last_open.insert(kline.symbol.clone(), o);
@@ -1025,6 +1032,12 @@ async fn nav_series(
                     }
                 }
             } else {
+                consecutive_empty_minutes += 1;
+                if consecutive_empty_minutes > MAX_EMPTY_MINUTES {
+                    // Too long without real data — stop emitting stale candles
+                    minute_ts += 60;
+                    continue;
+                }
                 // No klines for this minute — collapse OHLC to last close (flat candle)
                 for sym in &symbols {
                     if let Some(&c) = last_close.get(sym) {
@@ -2499,36 +2512,17 @@ async fn itp_orderbook(
         ));
     }
 
-    // Fast path: return synthetic orderbook from live ticker cache instantly,
-    // then spawn background fetch for real depth data.
-    let sym_refs: Vec<&str> = asset_inputs.iter().map(|a| a.symbol.as_str()).collect();
-    let tickers = state.live_cache.get_prices(&sym_refs).await;
-    let synthetic = orderbook_aggregator::synthetic_from_tickers(&asset_inputs, &tickers);
+    // Fetch real depth directly — parallel Bitget fetches typically complete in ~1s.
+    // Result is cached (5s TTL), so subsequent requests are instant.
+    let client = Arc::clone(&state.bitget_client);
+    let book = orderbook_aggregator::fetch_and_aggregate(
+        &client,
+        &asset_inputs,
+        levels,
+        aggregation_bps,
+    ).await;
 
-    // Spawn background fetch for real depth (populates cache for next request)
-    {
-        let bg_client = Arc::clone(&state.bitget_client);
-        let bg_cache = Arc::clone(&state.orderbook_cache);
-        let bg_cache_key = cache_key.clone();
-        let bg_inputs: Vec<orderbook_aggregator::AssetInput> = asset_inputs.iter().map(|a| {
-            orderbook_aggregator::AssetInput {
-                symbol: a.symbol.clone(),
-                inventory: a.inventory,
-                weight_bps: a.weight_bps,
-            }
-        }).collect();
-        tokio::spawn(async move {
-            let book = orderbook_aggregator::fetch_and_aggregate(
-                &bg_client,
-                &bg_inputs,
-                levels,
-                aggregation_bps,
-            ).await;
-            bg_cache.set(bg_cache_key, book).await;
-        });
-    }
-
-    let book = synthetic;
+    state.orderbook_cache.set(cache_key, book.clone()).await;
 
     Ok(Json(book))
 }
@@ -5282,10 +5276,10 @@ async fn batch_config_by_hash(
     let signed = state.batch_engine.signed_configs.read().await;
     if let Some(s) = signed.iter().find(|s| s.config_hash == hash) {
         return Ok(Json(serde_json::json!({
-            "source_id": s.source_id,
-            "config_hash": s.config_hash,
-            "tick_duration_secs": s.tick_duration_secs,
-            "lock_offset_secs": s.lock_offset_secs,
+            "sourceId": s.source_id,
+            "configHash": s.config_hash,
+            "tickDurationSecs": s.tick_duration_secs,
+            "lockOffsetSecs": s.lock_offset_secs,
             "markets": s.markets,
         })));
     }
@@ -5306,17 +5300,70 @@ async fn batch_config_by_hash(
 
     match row {
         Some((markets, tick_dur, lock_off, source_id, created_at)) => {
-            Ok(Json(serde_json::json!({
-                "source_id": source_id,
-                "config_hash": hash,
-                "tick_duration_secs": tick_dur,
-                "lock_offset_secs": lock_off,
+            return Ok(Json(serde_json::json!({
+                "sourceId": source_id,
+                "configHash": hash,
+                "tickDurationSecs": tick_dur,
+                "lockOffsetSecs": lock_off,
                 "markets": markets,
-                "created_at": created_at,
-            })))
+                "createdAt": created_at,
+            })));
         }
-        None => Err(StatusCode::NOT_FOUND),
+        None => {}
     }
+
+    // Final fallback: reverse-compute the deploy-script placeholder hash for each
+    // recommended config. The deploy script computes:
+    //   sourceId = keccak256(sourceName)
+    //   configHash = keccak256(abi.encode(sourceId, "default_config_v1"))
+    // Match against both the batch engine source_id and known deploy aliases.
+    let hash_clean2 = hash.trim_start_matches("0x");
+    let target_bytes = hex::decode(hash_clean2).unwrap_or_default();
+    if target_bytes.len() == 32 {
+        // Deploy aliases: batch_engine_source_id → deploy_script_source_names
+        const DEPLOY_ALIASES: &[(&str, &[&str])] = &[
+            ("crypto", &["coingecko"]),
+            ("defi", &["defillama"]),
+            ("stocks", &["finnhub"]),
+            ("rates", &["fred"]),
+            ("bonds", &["treasury"]),
+            ("sec_efts", &["sec"]),
+            ("sec_13f", &["sec"]),
+            ("sec_insider", &["sec"]),
+            ("esports", &["pandascore"]),
+            ("gtfs_transit", &["gtfs_rt"]),
+            ("weather", &["openmeteo"]),
+        ];
+
+        let configs = state.batch_engine.configs.read().await;
+        for c in configs.iter() {
+            // Collect all names to try: the source_id itself + any deploy aliases
+            let mut names_to_try = vec![c.source_id.as_str()];
+            for &(engine_id, aliases) in DEPLOY_ALIASES {
+                if engine_id == c.source_id {
+                    names_to_try.extend(aliases.iter().copied());
+                }
+            }
+            for name in names_to_try {
+                let source_id_hash = ethers::core::utils::keccak256(name.as_bytes());
+                let encoded = ethers::abi::encode(&[
+                    ethers::abi::Token::FixedBytes(source_id_hash.to_vec()),
+                    ethers::abi::Token::String("default_config_v1".to_string()),
+                ]);
+                let deploy_hash = ethers::core::utils::keccak256(&encoded);
+                if deploy_hash[..] == target_bytes[..] {
+                    tracing::info!(
+                        source_id = %c.source_id,
+                        deploy_name = name,
+                        "Matched config via deploy-hash reverse lookup"
+                    );
+                    return Ok(Json(serde_json::json!(c)));
+                }
+            }
+        }
+    }
+
+    Err(StatusCode::NOT_FOUND)
 }
 
 /// GET /batches/signed — frontend reads this to build user transactions.

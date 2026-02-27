@@ -1,3 +1,0 @@
-{"timestamp":"2026-02-05T21:16:00.137327Z","level":"INFO","fields":{"message":"AP service starting","port":9100,"rpc":"http://localhost:8545","bitget_mode":"mock","chain_mode":"real","has_bitget_credentials":true,"timestamp":"2026-02-05T21:16:00.137008+00:00"},"target":"ap"}
-{"timestamp":"2026-02-05T21:16:00.138229Z","level":"INFO","fields":{"message":"APMetrics initialized (orders, queue, buffer, violations, timeouts)"},"target":"ap"}
-{"timestamp":"2026-02-05T21:16:00.139140Z","level":"ERROR","fields":{"message":"AP service error","code":"E008","error":"Failed to load deployment config: INFRA-001: Chain read error: Failed to read deployment file \"deployments/e2e-full-system.json\": No such file or directory (os error 2)"},"target":"ap"}

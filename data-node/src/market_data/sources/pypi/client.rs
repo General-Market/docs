@@ -30,7 +30,7 @@ const ASSET_JSON: &str = include_str!("../../../config/pypi.json");
 const HUGOVK_URL: &str =
     "https://hugovk.github.io/top-pypi-packages/top-pypi-packages-30-days.min.json";
 const PYPISTATS_URL: &str = "https://pypistats.org/api/packages";
-const MAX_PACKAGES: usize = 250; // 85% of 30 req/min × 10 min = 255
+const MAX_PACKAGES: usize = 100; // Keep init under 5 min (100 × 2.5s = 250s)
 const INTER_REQUEST_DELAY_MS: u64 = 2500; // 30 req/min × 85% ≈ 1 per 2.4s
 
 #[derive(Debug, Deserialize)]

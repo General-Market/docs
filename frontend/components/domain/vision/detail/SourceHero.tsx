@@ -26,23 +26,10 @@ export function SourceHero({ source, sourceSchedule, marketCount }: SourceHeroPr
   const categoryLabel = getCategoryLabel(source.category)
 
   return (
-    <div className="rounded-lg border border-border-light overflow-hidden bg-white">
-      {/* Brand image area */}
-      <div
-        className="h-[140px] flex items-center justify-center relative"
-        style={{ background: source.brandBg }}
-      >
-        <img
-          src={source.logo}
-          alt={source.name}
-          className="max-h-[70px] max-w-[75%] object-contain"
-        />
-      </div>
-
-      {/* Info section */}
-      <div className="bg-surface px-5 py-4">
-        {/* Badge row */}
-        <div className="flex items-center gap-2 mb-2">
+    <div className="border border-border-light overflow-hidden bg-white flex">
+      {/* Left half — info */}
+      <div className="flex-1 px-5 py-4 flex flex-col justify-center">
+        <div className="flex items-center gap-2 mb-1.5">
           <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-[0.08em] bg-black/5 text-text-secondary">
             {categoryLabel}
           </span>
@@ -64,52 +51,27 @@ export function SourceHero({ source, sourceSchedule, marketCount }: SourceHeroPr
           )}
         </div>
 
-        {/* Title */}
-        <h1 className="text-[24px] font-black tracking-[-0.02em] text-black leading-tight">
+        <h1 className="text-[22px] font-black tracking-[-0.02em] text-black leading-tight">
           {source.name}
         </h1>
 
-        {/* Description */}
         {source.description && (
-          <p className="text-[13px] text-text-muted leading-relaxed mt-1.5">
+          <p className="text-[12px] text-text-muted leading-snug mt-1.5">
             {source.description}
           </p>
         )}
+      </div>
 
-        {/* Stats row */}
-        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border-light">
-          {marketCount !== undefined && marketCount > 0 && (
-            <div className="text-[12px]">
-              <span className="text-text-muted font-medium">Markets </span>
-              <span className="font-bold text-black font-mono tabular-nums">{marketCount}</span>
-            </div>
-          )}
-          {sourceSchedule && (
-            <>
-              <div className="flex items-center gap-1.5 text-[12px]">
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    isLive ? 'bg-green-500' : 'bg-zinc-300'
-                  }`}
-                />
-                <span className="text-text-muted font-medium">
-                  {isLive ? 'Healthy' : sourceSchedule.status}
-                </span>
-              </div>
-              {sourceSchedule.lastSync && (
-                <div className="text-[12px]">
-                  <span className="text-text-muted font-medium">Synced </span>
-                  <span className="font-semibold text-text-primary">
-                    {formatLastSync(sourceSchedule.lastSync)}
-                  </span>
-                </div>
-              )}
-            </>
-          )}
-          <span className="ml-auto inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-[0.08em] bg-black text-white">
-            API
-          </span>
-        </div>
+      {/* Right half — brand logo */}
+      <div
+        className="w-1/2 min-h-[100px] flex items-center justify-center"
+        style={{ background: source.brandBg }}
+      >
+        <img
+          src={source.logo}
+          alt={source.name}
+          className="max-h-[64px] max-w-[80%] object-contain"
+        />
       </div>
     </div>
   )

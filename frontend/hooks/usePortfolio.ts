@@ -46,7 +46,6 @@ interface UsePortfolioReturn {
   history: PortfolioHistoryPoint[]
   trades: PortfolioTrade[]
   isLoading: boolean
-  error: string | null
   refetch: () => void
 }
 
@@ -60,13 +59,11 @@ export function usePortfolio(userAddress: string | undefined): UsePortfolioRetur
   const [history, setHistory] = useState<PortfolioHistoryPoint[]>([])
   const [trades, setTrades] = useState<PortfolioTrade[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   const fetchAll = useCallback(async (initial = false) => {
     if (!userAddress) return
 
     if (initial) setIsLoading(true)
-    setError(null)
 
     try {
       const [summaryRes, historyRes, tradesRes] = await Promise.all([
@@ -90,11 +87,10 @@ export function usePortfolio(userAddress: string | undefined): UsePortfolioRetur
         const data = await tradesRes.json()
         setTrades(data.trades || [])
       }
-    } catch (e: any) {
-      // Only show error on initial load — on refresh failures, keep existing data
-      if (initial) {
-        setError(e.message || 'Failed to fetch portfolio data')
-      }
+    } catch {
+      // Silently fail — keep whatever data we had from last successful fetch.
+      // The component shows the empty/skeleton state on initial load;
+      // on subsequent refreshes the stale data stays visible.
     } finally {
       setIsLoading(false)
     }
@@ -114,5 +110,5 @@ export function usePortfolio(userAddress: string | undefined): UsePortfolioRetur
     return () => clearInterval(interval)
   }, [userAddress, fetchAll])
 
-  return { summary, history, trades, isLoading, error, refetch: fetchAll }
+  return { summary, history, trades, isLoading, refetch: fetchAll }
 }

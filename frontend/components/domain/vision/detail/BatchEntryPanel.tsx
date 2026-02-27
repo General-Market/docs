@@ -1,12 +1,17 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useReadContract } from 'wagmi'
 import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useJoinBatch } from '@/hooks/vision/useJoinBatch'
 import { useSubmitBitmap } from '@/hooks/vision/useSubmitBitmap'
+import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import type { BetDirection } from '@/lib/vision/bitmap'
+import { getTickState, getMultiplier } from '@/lib/vision/tick'
 import StrategyList from './StrategyList'
+
+const VISION_ADDRESS = (process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000') as `0x${string}`
 
 interface BatchEntryPanelProps {
   bitmapEditor: BitmapEditor
@@ -40,6 +45,16 @@ export default function BatchEntryPanel({
   const { data: batches } = useBatches()
   const activeBatch = batches?.[0] ?? null
 
+  // -- Read configHash from on-chain batch state --
+  const { data: onChainBatch } = useReadContract({
+    address: VISION_ADDRESS,
+    abi: VISION_ABI,
+    functionName: 'getBatch',
+    args: activeBatch ? [BigInt(activeBatch.id)] : undefined,
+    query: { enabled: !!activeBatch && VISION_ADDRESS !== '0x0000000000000000000000000000000000000000' },
+  })
+  const configHash = (onChainBatch as any)?.configHash as `0x${string}` | undefined
+
   // -- Join + submit hooks --
   const {
     join,
@@ -60,37 +75,21 @@ export default function BatchEntryPanel({
 
   // -- Local state --
   const [stakeInput, setStakeInput] = useState('')
-  const [countdown, setCountdown] = useState(0)
+
+  // -- Epoch-based tick timer (synced, survives reload) --
+  const [tickState, setTickState] = useState(() => getTickState())
+  useEffect(() => {
+    const interval = setInterval(() => setTickState(getTickState()), 1000)
+    return () => clearInterval(interval)
+  }, [])
+  const multiplier = getMultiplier(tickState.elapsed)
 
   // -- Derived --
-  const counts = bitmapEditor.getCounts(sourceId)
+  const counts = bitmapEditor.getCounts(sourceId, marketIds)
   const stakeValue = parseFloat(stakeInput) || 0
   const hasStake = stakeValue > 0
   const hasPredictions = bitmapEditor.setCount > 0
-  const canSubmit = hasStake && hasPredictions && joinStep === 'idle'
-
-  // -- Countdown timer --
-  // Initialize countdown from batch tickDuration and reset when batch data changes
-  useEffect(() => {
-    if (!activeBatch) return
-    // Use tickDuration as the countdown period.
-    // In practice this resets each time batch data refreshes (every 10s from useBatches).
-    setCountdown(activeBatch.tickDuration)
-  }, [activeBatch?.id, activeBatch?.currentTick, activeBatch?.tickDuration])
-
-  useEffect(() => {
-    if (countdown <= 0) return
-    const interval = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval)
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [countdown])
+  const canSubmit = hasStake && hasPredictions && joinStep === 'idle' && !tickState.isLocked && !!configHash
 
   // -- After on-chain join succeeds, submit bitmap to issuers --
   useEffect(() => {
@@ -106,7 +105,7 @@ export default function BatchEntryPanel({
 
   // -- Enter batch handler --
   const handleEnterBatch = useCallback(() => {
-    if (!activeBatch || !canSubmit) return
+    if (!activeBatch || !canSubmit || !configHash) return
 
     // Convert USDC amount to 6-decimal bigint (USDC = 6 decimals)
     const depositAmount = BigInt(Math.round(stakeValue * 1e6))
@@ -121,12 +120,13 @@ export default function BatchEntryPanel({
 
     join({
       batchId: BigInt(activeBatch.id),
+      configHash,
       depositAmount,
       stakePerTick: depositAmount, // stake entire deposit per tick for now
       bets,
       marketCount: marketIds.length,
     })
-  }, [activeBatch, canSubmit, stakeValue, marketIds, bitmapEditor.state, join])
+  }, [activeBatch, canSubmit, configHash, stakeValue, marketIds, bitmapEditor.state, join])
 
   // -- Quick-stake buttons --
   const quickAmounts = [1, 5, 10, 50, 100]
@@ -146,40 +146,37 @@ export default function BatchEntryPanel({
 
   return (
     <div>
-      <div className="rounded-xl border border-neutral-200 bg-white p-5">
-        {/* Header */}
-        <div className="flex items-baseline justify-between mb-4">
-          <h2 className="text-base font-semibold text-neutral-900">Enter Batch</h2>
-          {activeBatch && (
-            <span className="text-xs text-neutral-400 font-mono">
-              #{activeBatch.id}
-            </span>
-          )}
-        </div>
-
-        {/* Timer */}
-        <div className="mb-2">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">
-            Time Remaining
+      <div className="border border-neutral-200 bg-white px-4 py-3">
+        {/* Header + Timer — single compact row */}
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <div className="flex items-baseline gap-2">
+              <h2 className="text-sm font-semibold text-neutral-900">Enter Batch</h2>
+              {activeBatch && (
+                <span className="text-[10px] text-neutral-400 font-mono">#{activeBatch.id}</span>
+              )}
+            </div>
+            <p className="text-[10px] text-text-muted">
+              {tickState.isLocked
+                ? 'Bets locked — resolving...'
+                : activeBatch
+                  ? `Tick ${activeBatch.currentTick} · ${multiplier.label}`
+                  : `Multiplier ${multiplier.label}`}
+            </p>
           </div>
-          <p className="text-[32px] font-mono font-black text-black tracking-tight leading-none">
-            {formatCountdown(countdown)}
-          </p>
-          <p className="text-[11px] text-text-muted mt-1">
-            {activeBatch
-              ? `Tick ${activeBatch.currentTick} \u00B7 ${Math.floor(activeBatch.tickDuration / 60)} min ticks`
-              : 'waiting for next batch'}
+          <p className={`text-[24px] font-mono font-black tracking-tight leading-none ${tickState.isLocked ? 'text-red-600' : 'text-black'}`}>
+            {formatCountdown(tickState.remaining)}
           </p>
         </div>
 
         {/* Bitmap summary — visual bar + labels */}
-        <div className="mb-5">
-          <div className="flex items-center justify-between text-[10px] font-semibold mb-1.5">
+        <div className="mb-3">
+          <div className="flex items-center justify-between text-[10px] font-semibold mb-1">
             <span className="text-color-up">{counts.up} UP</span>
             <span className="text-color-down">{counts.down} DN</span>
             <span className="text-text-muted">{counts.empty} unset</span>
           </div>
-          <div className="flex h-2 rounded-full overflow-hidden bg-border-light">
+          <div className="flex h-1.5 rounded-full overflow-hidden bg-border-light">
             {counts.up > 0 && (
               <div
                 className="bg-color-up transition-all"
@@ -195,11 +192,8 @@ export default function BatchEntryPanel({
           </div>
         </div>
 
-        {/* Stake input */}
-        <div className="mb-4">
-          <label className="block text-xs font-medium text-neutral-600 mb-1.5">
-            Stake
-          </label>
+        {/* Stake input + quick buttons */}
+        <div className="mb-3">
           <div className="relative">
             <input
               type="number"
@@ -208,21 +202,19 @@ export default function BatchEntryPanel({
               placeholder="0.00"
               value={stakeInput}
               onChange={(e) => setStakeInput(e.target.value)}
-              className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2.5 pr-14 text-sm text-neutral-900 placeholder-neutral-300 focus:border-neutral-400 focus:outline-none focus:ring-0 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="w-full rounded-md border border-neutral-200 bg-white px-3 py-1.5 pr-14 text-sm text-neutral-900 placeholder-neutral-300 focus:border-neutral-400 focus:outline-none focus:ring-0 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-neutral-400">
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-neutral-400">
               USDC
             </span>
           </div>
-
-          {/* Quick buttons */}
-          <div className="flex gap-1.5 mt-2">
+          <div className="flex gap-1 mt-1.5">
             {quickAmounts.map((amt) => (
               <button
                 key={amt}
                 type="button"
                 onClick={() => setStakeInput(String(amt))}
-                className="flex-1 rounded-md border border-neutral-200 py-1 text-xs font-medium text-neutral-600 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
+                className="flex-1 rounded border border-neutral-200 py-0.5 text-[11px] font-medium text-neutral-600 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
               >
                 ${amt}
               </button>
@@ -232,7 +224,7 @@ export default function BatchEntryPanel({
 
         {/* Error display */}
         {(joinError || submitError) && (
-          <p className="text-xs text-red-600 mb-3 line-clamp-2">
+          <p className="text-[11px] text-red-600 mb-2 line-clamp-2">
             {joinError || submitError}
           </p>
         )}
@@ -242,14 +234,14 @@ export default function BatchEntryPanel({
           type="button"
           onClick={handleEnterBatch}
           disabled={!canSubmit || isProcessing}
-          className="w-full rounded-lg bg-neutral-900 py-3 text-sm font-semibold text-white hover:bg-neutral-800 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed transition-colors"
+          className="w-full rounded-lg bg-neutral-900 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed transition-colors"
         >
           {buttonLabel}
         </button>
 
         {/* Batch info footer */}
         {activeBatch && (
-          <div className="mt-3 flex items-center justify-between text-[11px] text-neutral-400">
+          <div className="mt-2 flex items-center justify-between text-[10px] text-neutral-400">
             <span>{activeBatch.playerCount} players</span>
             <span>{activeBatch.marketCount} markets</span>
           </div>

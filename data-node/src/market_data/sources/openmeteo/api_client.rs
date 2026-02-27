@@ -5,10 +5,9 @@
 //! ## Rate Limit Strategy
 //!
 //! - Free tier: 10,000 calls/day
-//! - Smart sync: ~6 fetches/day (only when data updates, min 1h interval)
-//! - Budget per fetch: 10,000 / 6 ≈ 1,666 calls
-//! - With 5,000 cities: 50 batches × 2 APIs = 100 calls per fetch
-//! - Daily usage: 100 × 6 = 600 calls (6% of limit)
+//! - Smart sync: ~11 fetches/day (only when data updates, min 45min interval)
+//! - With ~32k cities: 322 batches × 2 APIs = 644 calls per fetch
+//! - Daily usage: 644 × 11 ≈ 7,100 calls (~71-77% of limit)
 //! - Hard stop when daily budget exceeds 80%
 //!
 //! ## Optimizations

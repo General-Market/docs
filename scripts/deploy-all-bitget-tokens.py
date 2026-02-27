@@ -62,14 +62,34 @@ def load_all_pairs():
     """Always fetch fresh from Bitget API (volume filter requires live data)."""
     return fetch_bitget_pairs()
 
+def _base_symbol(pair):
+    """Extract base symbol from pair: BTCUSDC -> BTC, ETHUSDT -> ETH."""
+    for suffix in ("USDC", "USDT"):
+        if pair.endswith(suffix):
+            return pair[:-len(suffix)]
+    return pair
+
 def find_new_pairs(existing_map, all_pairs):
     existing_symbols = set()
+    existing_bases = set()
     for v in existing_map.values():
-        if isinstance(v, dict):
-            existing_symbols.add(v.get("pair", ""))
-        else:
-            existing_symbols.add(v)
-    return [p for p in all_pairs if p not in existing_symbols]
+        pair = v.get("pair", "") if isinstance(v, dict) else v
+        existing_symbols.add(pair)
+        existing_bases.add(_base_symbol(pair))
+
+    # Deduplicate: only deploy one pair per base symbol, prefer USDC
+    seen_bases = set(existing_bases)
+    new = []
+    # Sort so USDC pairs come first (alphabetically before USDT)
+    for p in sorted(all_pairs):
+        if p in existing_symbols:
+            continue
+        base = _base_symbol(p)
+        if base in seen_bases:
+            continue
+        seen_bases.add(base)
+        new.append(p)
+    return new
 
 def generate_forge_script(pairs, script_path):
     """Generate a Solidity script that deploys MockERC20 for each pair."""
@@ -187,18 +207,22 @@ def main():
     print(f"Deployment record: {record_path}")
 
     # Write frontend/public/deployed-assets.json for CreateItpSection dynamic loading
-    deployed_assets = []
+    # Deduplicate by base symbol: prefer USDC over USDT
+    by_symbol = {}
     def _get_pair(v):
         return v.get("pair", "") if isinstance(v, dict) else v
     for addr, val in sorted(merged.items(), key=lambda x: _get_pair(x[1])):
-        symbol = _get_pair(val)
-        base = symbol.replace("USDC", "").replace("USDT", "")
-        deployed_assets.append({"address": addr, "symbol": base})
+        pair = _get_pair(val)
+        base = _base_symbol(pair)
+        if base in by_symbol and by_symbol[base]["_pair"].endswith("USDC"):
+            continue
+        by_symbol[base] = {"address": addr, "symbol": base, "_pair": pair}
+    deployed_assets = [{"address": v["address"], "symbol": v["symbol"]} for v in sorted(by_symbol.values(), key=lambda x: x["symbol"])]
     frontend_path = os.path.join(ROOT, "frontend", "public", "deployed-assets.json")
     os.makedirs(os.path.dirname(frontend_path), exist_ok=True)
     with open(frontend_path, 'w') as f:
         json.dump(deployed_assets, f, indent=2)
-    print(f"Frontend assets: {frontend_path} ({len(deployed_assets)} entries)")
+    print(f"Frontend assets: {frontend_path} ({len(deployed_assets)} unique entries)")
 
 if __name__ == "__main__":
     main()

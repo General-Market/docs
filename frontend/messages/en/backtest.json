@@ -10,6 +10,28 @@
     "exit": "ESC",
     "enter": "Fullscreen"
   },
+  "quota": {
+    "sims_left": "{remaining} sims left",
+    "last_free": "Last free sim",
+    "pay_with_tweet": "Time to pay... with a tweet",
+    "unlimited": "Unlimited"
+  },
+  "gate": {
+    "title": "Simulations aren't free. But almost.",
+    "subtitle": "One tweet = more backtests. We're basically giving these away.",
+    "connect_wallet": "Connect your wallet to unlock more simulations.",
+    "download_image": "Download Image",
+    "open_x": "Open X",
+    "sign_wallet": "Sign with wallet...",
+    "countdown": "Okay we trust you. Probably. ({countdown}s)",
+    "i_posted": "I posted",
+    "unlocked": "Unlocked!",
+    "signature_failed": "Signature failed. Try again.",
+    "chart_alt": "Backtest chart preview",
+    "tier1_toast": "5 more unlocked. Marketing intern.",
+    "tier2_toast": "10 more. Employee of the month.",
+    "tier3_toast": "Unlimited. Basically a co-founder."
+  },
   "holdings": {
     "title": "Holdings (Latest Rebalance)",
     "loading": "Loading holdings...",

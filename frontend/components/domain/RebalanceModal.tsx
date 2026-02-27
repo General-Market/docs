@@ -12,6 +12,40 @@ import { getCoinGeckoUrl } from '@/lib/coingecko'
 import { useTranslations } from 'next-intl'
 import { DATA_NODE_URL, ARB_RPC_URL as ARB_RPC, L3_RPC_URL as L3_RPC } from '@/lib/config'
 import { usePostHogTracker } from '@/hooks/usePostHog'
+
+interface CoinEntry { id: string; image: string }
+
+/** Tiny coin logo — loads CoinGecko image with graceful fallback */
+function CoinLogo({ symbol, coinMap, size = 18 }: { symbol: string; coinMap: Record<string, CoinEntry>; size?: number }) {
+  const entry = coinMap[symbol.toUpperCase()]
+  if (!entry?.image) {
+    return (
+      <span
+        className="inline-flex items-center justify-center rounded-full bg-muted text-text-muted font-mono text-[9px] flex-shrink-0"
+        style={{ width: size, height: size }}
+      >
+        {symbol.slice(0, 2)}
+      </span>
+    )
+  }
+  return (
+    <img
+      src={entry.image}
+      alt={symbol}
+      width={size}
+      height={size}
+      className="rounded-full flex-shrink-0 object-cover"
+      onError={(e) => {
+        const span = document.createElement('span')
+        span.className = 'inline-flex items-center justify-center rounded-full bg-muted text-text-muted font-mono text-[9px]'
+        span.style.width = `${size}px`
+        span.style.height = `${size}px`
+        span.textContent = symbol.slice(0, 2)
+        ;(e.target as HTMLElement).replaceWith(span)
+      }}
+    />
+  )
+}
 const L3_INDEX = '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6'
 const DEPLOYER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
 
@@ -103,6 +137,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
   // Search bar state for adding new assets
   const [searchTerm, setSearchTerm] = useState('')
   const [availableAssets, setAvailableAssets] = useState<{ address: string; symbol: string }[]>([])
+  const [coinMap, setCoinMap] = useState<Record<string, CoinEntry>>({})
 
   // wagmi hooks for Step 1: requestRebalance on BridgeProxy (through MetaMask)
   const {
@@ -120,7 +155,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
     removedIndices: bigint[]
   } | null>(null)
 
-  // Load available assets from deployed-assets.json
+  // Load available assets from deployed-assets.json + coin logos from coin-map.json
   useEffect(() => {
     fetch('/deployed-assets.json')
       .then(res => res.ok ? res.json() : Promise.reject('not found'))
@@ -129,6 +164,10 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
           setAvailableAssets(data)
         }
       })
+      .catch(() => {})
+    fetch('/coin-map.json')
+      .then(r => r.ok ? r.json() : {})
+      .then(data => setCoinMap(data))
       .catch(() => {})
   }, [])
 
@@ -160,9 +199,15 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
 
         if (cancelled) return
 
+        // Build secondary symbol map from deployed-assets.json
+        const deployedMap: Record<string, string> = {}
+        for (const a of availableAssets) {
+          deployedMap[a.address.toLowerCase()] = a.symbol
+        }
+
         const rows: AssetRow[] = state.assets.map((addr, i) => ({
           address: addr,
-          symbol: symbolMap[addr.toLowerCase()] || `Asset ${i}`,
+          symbol: symbolMap[addr.toLowerCase()] || deployedMap[addr.toLowerCase()] || `Asset ${i}`,
           currentWeight: state.weights[i],
           newWeight: (Number(state.weights[i]) / 1e16).toFixed(2),
         }))
@@ -178,7 +223,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
 
     load()
     return () => { cancelled = true }
-  }, [itpId])
+  }, [itpId, availableAssets])
 
   // Handle writeError from wagmi
   useEffect(() => {
@@ -423,8 +468,9 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
                       <div key={asset.address} className="relative group">
                         <button
                           onClick={() => addAsset(asset)}
-                          className="px-2 py-0.5 pr-5 bg-card border border-border-medium rounded text-xs text-text-primary hover:border-zinc-500 transition-colors"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 pr-5 bg-card border border-border-medium rounded text-xs text-text-primary hover:border-zinc-500 transition-colors"
                         >
+                          <CoinLogo symbol={asset.symbol} coinMap={coinMap} size={14} />
                           + {asset.symbol}
                         </button>
                         <a
@@ -435,7 +481,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
                           className="absolute top-0 right-0 px-1 py-0.5 text-text-muted hover:text-text-primary text-xs transition-colors"
                           title={`View ${asset.symbol} on CoinGecko`}
                         >
-                          &nearr;
+                          ↗
                         </a>
                       </div>
                     ))}
@@ -478,17 +524,20 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
                     {assets.map((asset, i) => (
                       <tr key={asset.address} className={`border-t border-border-light hover:bg-card-hover ${asset.isNew ? 'bg-surface-up/30' : ''}`}>
                         <td className="p-2">
-                          <span className="text-text-secondary">{asset.symbol}</span>
-                          <a
-                            href={getCoinGeckoUrl(asset.symbol)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="ml-1 text-text-muted hover:text-text-primary text-xs transition-colors"
-                            title={`View ${asset.symbol} on CoinGecko`}
-                          >
-                            &nearr;
-                          </a>
-                          {asset.isNew && <span className="ml-1 text-color-up text-xs">{t('rebalance.table.new_tag')}</span>}
+                          <div className="flex items-center gap-1.5">
+                            <CoinLogo symbol={asset.symbol} coinMap={coinMap} size={18} />
+                            <span className="text-text-secondary">{asset.symbol}</span>
+                            <a
+                              href={getCoinGeckoUrl(asset.symbol)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-text-muted hover:text-text-primary text-xs transition-colors"
+                              title={`View ${asset.symbol} on CoinGecko`}
+                            >
+                              ↗
+                            </a>
+                            {asset.isNew && <span className="text-color-up text-xs">{t('rebalance.table.new_tag')}</span>}
+                          </div>
                         </td>
                         <td className="p-2 text-right text-text-muted font-mono">
                           {asset.isNew ? '—' : `${(Number(asset.currentWeight) / 1e16).toFixed(2)}%`}

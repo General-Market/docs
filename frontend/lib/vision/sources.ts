@@ -40,6 +40,9 @@ export const VISION_SOURCES: VisionSource[] = [
   { id: 'zillow', name: 'Zillow Real Estate', description: 'US housing market data — home values, rent indices, inventory, and price-to-rent ratios.', category: 'finance', logo: '/source-imgs/zillow.svg', brandBg: '#1b1b1b', prefixes: ['zillow_'] },
   { id: 'polymarket', name: 'Polymarket Predictions', description: 'Prediction market data — real-time odds and volumes for events across politics, crypto, sports.', category: 'finance', logo: '/source-imgs/new-polymarket.png', brandBg: '#1b1b1b', prefixes: ['poly_'] },
   { id: 'finra', name: 'FINRA Short Interest', description: 'Short selling data — daily short volume and total volume for all US exchange-listed securities.', category: 'finance', logo: '/source-imgs/finra.svg', brandBg: '#e8edf4', prefixes: ['finra_'] },
+  { id: 'finra_short_vol', name: 'FINRA Short Volume', description: 'Daily short volume and total volume for exchange-listed securities from FINRA reports.', category: 'finance', logo: '/source-imgs/finra.svg', brandBg: '#e8edf4', prefixes: ['finra_short_vol_'] },
+  { id: 'futures', name: 'Continuous Futures', description: 'Continuous front-month futures contracts — commodities, indices, currencies, and interest rates.', category: 'finance', logo: '/source-imgs/new-fred.png', brandBg: '#1b1b1b', prefixes: ['futures_'] },
+  { id: 'bchain', name: 'Bitcoin On-Chain', description: 'Bitcoin blockchain metrics — hashrate, difficulty, block size, miner revenue, transaction volume.', category: 'finance', logo: '/source-imgs/new-coingecko.png', brandBg: '#f7931a', prefixes: ['bchain_'] },
   { id: 'yahoo_drinks', name: 'Yahoo Drinks', description: 'Coffee, sugar, cocoa, OJ futures and major beverage company stock prices via Yahoo Finance.', category: 'finance', logo: '/source-imgs/new-yahoodrinks.png', brandBg: '#f5f5f5', prefixes: ['yahoo_drinks_'] },
   { id: 'twse', name: 'Taiwan Stock Exchange', description: 'TWSE market data — daily OHLCV, foreign investor flows, margin trading for Taiwanese equities.', category: 'finance', logo: '/source-imgs/new-twse.svg', brandBg: '#f5f5f5', prefixes: ['twse_'] },
   { id: 'bestbuy', name: 'Best Buy Products', description: 'Consumer electronics pricing — real-time sale prices across 7 categories from top-selling products.', category: 'finance', logo: '/source-imgs/new-bestbuy.png', brandBg: '#f5f5f5', prefixes: ['bestbuy_'] },
@@ -47,12 +50,15 @@ export const VISION_SOURCES: VisionSource[] = [
   // ── Economic ──
   { id: 'fred', name: 'FRED Interest Rates', description: 'Federal Reserve Economic Data — interest rates, yield curves, money supply, employment, inflation.', category: 'economic', logo: '/source-imgs/new-fred.png', brandBg: '#f5f5f5', prefixes: ['fred_'] },
   { id: 'eia', name: 'EIA Energy Data', description: 'Energy Information Administration — crude oil, natural gas, electricity, renewable energy.', category: 'economic', logo: '/source-imgs/new-eia.png', brandBg: '#00526e', prefixes: ['eia_'] },
-  { id: 'treasury', name: 'US Treasury Yields', description: 'Daily yield curve rates — T-bills, notes, and bonds from 1-month to 30-year maturities.', category: 'economic', logo: '/source-imgs/new-treasury.svg', brandBg: '#0057b7', prefixes: ['treasury_'] },
+  { id: 'treasury', name: 'US Treasury Yields', description: 'Daily yield curve rates — T-bills, notes, and bonds from 1-month to 30-year maturities.', category: 'economic', logo: '/source-imgs/new-treasury.svg', brandBg: '#0057b7', prefixes: ['treasury_', 'tsy_'] },
   { id: 'ecb', name: 'ECB Exchange Rates', description: 'European Central Bank — exchange rates, monetary aggregates, bank lending, euro area indicators.', category: 'economic', logo: '/source-imgs/new-ecb.svg', brandBg: '#f0f2f5', prefixes: ['ecb_'] },
   { id: 'worldbank', name: 'World Bank Indicators', description: 'Development indicators — GDP, population, poverty, health, education for 200+ countries.', category: 'economic', logo: '/source-imgs/new-worldbank.svg', brandBg: '#f5f5f5', prefixes: ['worldbank_'] },
   { id: 'bls', name: 'Bureau of Labor Stats', description: 'Bureau of Labor Statistics — CPI, unemployment, job openings, producer prices, wage data.', category: 'economic', logo: '/source-imgs/new-bls.svg', brandBg: '#f5f5f5', prefixes: ['bls_'] },
   { id: 'adzuna', name: 'Adzuna Jobs', description: 'Job vacancy counts and average advertised salaries across US, UK, Germany, and France.', category: 'economic', logo: '/source-imgs/new-adzuna.png', brandBg: '#f5f5f5', prefixes: ['adzuna_'] },
   { id: 'usa_spending', name: 'Federal Spending', description: 'Federal spending — contracts, grants, loans, and government outlays by agency and program.', category: 'economic', logo: '/source-imgs/usaspending.png', brandBg: '#f5f5f5', prefixes: ['usa_spending_'] },
+  { id: 'imf', name: 'IMF Indicators', description: 'International Monetary Fund — GDP, trade, debt, reserves, and fiscal indicators for 190+ countries.', category: 'economic', logo: '/source-imgs/new-worldbank.svg', brandBg: '#002244', prefixes: ['imf_'] },
+  { id: 'opec', name: 'OPEC Oil Data', description: 'OPEC reference basket price and production data for global oil market analysis.', category: 'economic', logo: '/source-imgs/new-eia.png', brandBg: '#005fa3', prefixes: ['opec_'] },
+  { id: 'cftc', name: 'CFTC Commitments', description: 'Commitments of Traders — weekly positions of commercial and speculative traders in futures markets.', category: 'economic', logo: '/source-imgs/new-fred.png', brandBg: '#f5f5f5', prefixes: ['cftc_'] },
 
   // ── Regulatory ──
   { id: 'sec', name: 'SEC Filings', description: 'Institutional investment disclosures — 13F holdings, EDGAR filings, and insider transactions.', category: 'regulatory', logo: '/source-imgs/new-sec.svg', brandBg: '#0a3055', prefixes: ['sec_edgar_', 'sec_efts_', 'sec_insider_'] },
@@ -142,4 +148,61 @@ export function getSourceIds(): string[] {
 export function getSourceForMarket(marketId: string): VisionSource | undefined {
   const lower = marketId.toLowerCase()
   return VISION_SOURCES.find(s => s.prefixes.some(p => lower.startsWith(p)))
+}
+
+/**
+ * Maps VISION_SOURCES IDs to data-node source IDs where they differ.
+ * Needed because some sources use different IDs in the data-node vs frontend.
+ */
+const VISION_TO_DATANODE: Record<string, string[]> = {
+  coingecko: ['crypto'],
+  defillama: ['defi'],
+  finnhub: ['stocks'],
+  fred: ['rates'],
+  treasury: ['bonds'],
+  sec: ['sec_13f', 'sec_efts', 'sec_insider'],
+  pandascore: ['esports'],
+  gtfs_rt: ['gtfs_transit'],
+  openmeteo: ['weather'],
+  weather: ['weather_stations'],
+}
+
+/** Get the primary data-node source ID for a VISION_SOURCE */
+export function getDataNodeSourceId(visionSourceId: string): string {
+  const mapped = VISION_TO_DATANODE[visionSourceId]
+  return mapped ? mapped[0] : visionSourceId
+}
+
+/** Get all data-node source IDs for a VISION_SOURCE */
+export function getDataNodeSourceIds(visionSourceId: string): string[] {
+  return VISION_TO_DATANODE[visionSourceId] ?? [visionSourceId]
+}
+
+/** Look up asset count for a VISION_SOURCE using data-node keyed counts */
+export function getAssetCountForSource(sourceId: string, assetCounts: Record<string, number>): number {
+  let total = assetCounts[sourceId] ?? 0
+  const dnIds = VISION_TO_DATANODE[sourceId]
+  if (dnIds) {
+    for (const dnId of dnIds) {
+      total += assetCounts[dnId] ?? 0
+    }
+  }
+  return total
+}
+
+/** Look up status for a VISION_SOURCE from data-node source list */
+export function getSourceStatusFromMeta(
+  sourceId: string,
+  sources: Array<{ sourceId: string; status: string }>,
+): string {
+  const direct = sources.find(s => s.sourceId === sourceId)
+  if (direct) return direct.status
+  const dnIds = VISION_TO_DATANODE[sourceId]
+  if (dnIds) {
+    for (const dnId of dnIds) {
+      const found = sources.find(s => s.sourceId === dnId)
+      if (found) return found.status
+    }
+  }
+  return 'unknown'
 }

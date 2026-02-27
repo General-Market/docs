@@ -39,7 +39,7 @@ if [ -n "${ADMIN_ADDRESS:-}" ]; then
 fi
 
 # RPC URL
-RPC_URL="${TESTNET_RPC:-https://index.rpc.zeeve.net}"
+RPC_URL="${TESTNET_RPC:-http://142.132.164.24/}"
 
 # Parse flags
 DRY_RUN=false

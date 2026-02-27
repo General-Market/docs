@@ -1,6 +1,6 @@
 {
   "chainId": 111222333,
-  "rpcUrl": "https://index.rpc.zeeve.net",
+  "rpcUrl": "http://142.132.164.24/",
   "deployer": "0xC0D3Cb0c97CbF87F103a9901100D8f6D3e94D42A",
   "contracts": {
     "Index": "0x6CCcB99208A6AFfe4F3a14237bC2C9B540774177",

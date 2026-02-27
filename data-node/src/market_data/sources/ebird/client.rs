@@ -36,6 +36,9 @@ const API_BASE: &str = "https://api.ebird.org/v2";
 /// Delay between API requests (2 seconds)
 const REQUEST_DELAY: Duration = Duration::from_secs(2);
 
+/// How many days back to look for observations (1 day misses data if run early in the day)
+const OBS_BACK_DAYS: u8 = 3;
+
 // ============================================================================
 // API RESPONSE TYPES
 // ============================================================================
@@ -146,8 +149,13 @@ impl EbirdMarketSource {
         Ok(Self { http, api_key })
     }
 
-    /// Fetch regional stats for a given region code and today's date
+    /// Fetch regional stats for a given region code.
+    /// Tries today first, falls back to yesterday if today has no species data
+    /// (common early in the day or for regions with low activity).
     async fn fetch_stats(&self, region: &str) -> Result<EbirdStats, SourceError> {
+        let headers = [("X-eBird-Api-Token", self.api_key.as_str())];
+
+        // Try today first
         let today = Utc::now();
         let url = format!(
             "{}/product/stats/{}/{}/{}/{}",
@@ -157,17 +165,35 @@ impl EbirdMarketSource {
             today.format("%-m"),
             today.format("%-d"),
         );
-        let headers = [("X-eBird-Api-Token", self.api_key.as_str())];
+        match self.http.get_json_with_headers::<EbirdStats>(&url, &headers).await {
+            Ok(stats) if stats.num_species.unwrap_or(0) > 0 => return Ok(stats),
+            Ok(_) => {
+                debug!("eBird stats for {} today returned 0 species, trying yesterday", region);
+            }
+            Err(e) => return Err(e),
+        }
+
+        // Fall back to yesterday
+        tokio::time::sleep(REQUEST_DELAY).await;
+        let yesterday = today - chrono::Duration::days(1);
+        let url = format!(
+            "{}/product/stats/{}/{}/{}/{}",
+            API_BASE,
+            region,
+            yesterday.format("%Y"),
+            yesterday.format("%-m"),
+            yesterday.format("%-d"),
+        );
         self.http
             .get_json_with_headers::<EbirdStats>(&url, &headers)
             .await
     }
 
-    /// Fetch recent observations for a region (last 1 day)
+    /// Fetch recent observations for a region (last OBS_BACK_DAYS days)
     async fn fetch_obs(&self, region: &str) -> Result<Vec<EbirdObservation>, SourceError> {
         let url = format!(
-            "{}/data/obs/{}/recent?back=1",
-            API_BASE, region,
+            "{}/data/obs/{}/recent?back={}",
+            API_BASE, region, OBS_BACK_DAYS,
         );
         let headers = [("X-eBird-Api-Token", self.api_key.as_str())];
         self.http
@@ -175,15 +201,15 @@ impl EbirdMarketSource {
             .await
     }
 
-    /// Fetch notable/rare observations for a region (last 1 day)
+    /// Fetch notable/rare observations for a region (last OBS_BACK_DAYS days)
     async fn fetch_notable(&self, region: &str) -> Result<Vec<EbirdObservation>, SourceError> {
         // "world" is a special pseudo-region — aggregate notable from top birding regions
         if region == "world" {
             return self.fetch_global_notable().await;
         }
         let url = format!(
-            "{}/data/obs/{}/recent/notable?back=1",
-            API_BASE, region,
+            "{}/data/obs/{}/recent/notable?back={}",
+            API_BASE, region, OBS_BACK_DAYS,
         );
         let headers = [("X-eBird-Api-Token", self.api_key.as_str())];
         self.http
@@ -212,8 +238,8 @@ impl EbirdMarketSource {
     /// Raw notable fetch for a single region (no "world" handling)
     async fn fetch_notable_raw(&self, region: &str) -> Result<Vec<EbirdObservation>, SourceError> {
         let url = format!(
-            "{}/data/obs/{}/recent/notable?back=1",
-            API_BASE, region,
+            "{}/data/obs/{}/recent/notable?back={}",
+            API_BASE, region, OBS_BACK_DAYS,
         );
         let headers = [("X-eBird-Api-Token", self.api_key.as_str())];
         self.http
@@ -307,8 +333,13 @@ impl MarketDataSource for EbirdMarketSource {
             }
         }
 
-        // Fetch each unique endpoint with a 2s delay between requests
+        // Fetch each unique endpoint with a 2s delay between requests.
+        // If we get an auth error (403), abort early to avoid wasting requests.
+        let mut auth_failed = false;
         for (key, ref api_ref) in &needed_endpoints {
+            if auth_failed {
+                break;
+            }
             tokio::time::sleep(REQUEST_DELAY).await;
 
             match api_ref {
@@ -318,6 +349,10 @@ impl MarketDataSource for EbirdMarketSource {
                             debug!("eBird stats for {}: species={:?}, checklists={:?}",
                                 region, stats.num_species, stats.num_checklists);
                             stats_cache.insert(key.clone(), stats);
+                        }
+                        Err(SourceError::AuthFailed(ref msg)) => {
+                            warn!("eBird: auth failed (API key expired/invalid?): {}", msg);
+                            auth_failed = true;
                         }
                         Err(e) => {
                             warn!("eBird: failed to fetch stats for {}: {:?}", region, e);
@@ -330,6 +365,10 @@ impl MarketDataSource for EbirdMarketSource {
                             debug!("eBird obs for {}: {} observations", region, obs.len());
                             obs_cache.insert(key.clone(), obs);
                         }
+                        Err(SourceError::AuthFailed(ref msg)) => {
+                            warn!("eBird: auth failed (API key expired/invalid?): {}", msg);
+                            auth_failed = true;
+                        }
                         Err(e) => {
                             warn!("eBird: failed to fetch obs for {}: {:?}", region, e);
                         }
@@ -341,12 +380,20 @@ impl MarketDataSource for EbirdMarketSource {
                             debug!("eBird notable for {}: {} sightings", region, obs.len());
                             notable_cache.insert(key.clone(), obs);
                         }
+                        Err(SourceError::AuthFailed(ref msg)) => {
+                            warn!("eBird: auth failed (API key expired/invalid?): {}", msg);
+                            auth_failed = true;
+                        }
                         Err(e) => {
                             warn!("eBird: failed to fetch notable for {}: {:?}", region, e);
                         }
                     }
                 }
             }
+        }
+
+        if auth_failed {
+            warn!("eBird: EBIRD_API_KEY is invalid/expired — skipping remaining endpoints. Get a new key at https://ebird.org/api/keygen");
         }
 
         // Build results

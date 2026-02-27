@@ -1,22 +1,22 @@
 //! FAA Airport Delays client implementing MarketDataSource
 //!
-//! Tracks US airport delay status from the FAA Airport Status Web Service.
+//! Tracks US airport delay status from the FAA NAS Status API.
 //! Each airport is an asset; its value is 0 (no delay) or 1 (delay active).
 //!
 //! Assets are static -- defined in config/faa_delays.json (~30 major airports).
-//! Uses rolling cursor pattern (Pattern D) since the API accepts one airport per request.
-//! At 600s interval and 10 per batch, all 30 airports update every ~1800s (30 minutes).
 //!
-//! API: https://soa.smext.faa.gov/asws/api/airport/status/{IATA}
+//! Strategy: ONE call to the XML endpoint fetches all current delays/closures,
+//! then we check each tracked airport against the delayed set.
+//!
+//! API: https://nasstatus.faa.gov/api/airport-status-information
 //! Auth: None
 //! Rate limit: None documented (US government)
+//! Format: XML (parsed via string matching -- no XML crate dependency needed)
 
 use anyhow::Result;
 use chrono::Utc;
 use rust_decimal::Decimal;
-use serde::Deserialize;
-use std::collections::HashMap;
-use std::sync::Mutex;
+use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
@@ -33,27 +33,8 @@ use crate::market_data::traits::{
 /// Asset configuration -- 30 major US airports
 const ASSET_JSON: &str = include_str!("../../../config/faa_delays.json");
 
-/// FAA Airport Status Web Service base URL
-const API_BASE: &str = "https://soa.smext.faa.gov/asws/api/airport/status";
-
-/// Number of airports to fetch per sync cycle (rolling cursor)
-const BATCH_SIZE: usize = 10;
-
-// ============================================================================
-// API RESPONSE TYPES
-// ============================================================================
-
-/// FAA Airport Status response
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct FaaAirportStatus {
-    #[allow(dead_code)]
-    name: Option<String>,
-    #[allow(dead_code)]
-    #[serde(alias = "IATA")]
-    iata: Option<String>,
-    delay: Option<bool>,
-}
+/// FAA NAS Status API endpoint (returns XML with all delays/closures)
+const API_URL: &str = "https://nasstatus.faa.gov/api/airport-status-information";
 
 // ============================================================================
 // SOURCE IMPLEMENTATION
@@ -61,27 +42,47 @@ struct FaaAirportStatus {
 
 /// FAA Airport Delays market data source.
 ///
-/// Tracks delay status for ~30 major US airports via the FAA ASWS API.
+/// Tracks delay status for ~30 major US airports via the FAA NAS Status API.
 /// Source ID is `"faa_delays"`.
 pub struct FaaDelaysMarketSource {
     http: SourceHttpClient,
-    batch_cursor: Mutex<usize>,
 }
 
 impl FaaDelaysMarketSource {
     pub fn from_env() -> Result<Self> {
         let rate_limit = RateLimitConfig {
             windows: vec![RateWindow {
-                max_requests: 30,
+                max_requests: 10,
                 duration: Duration::from_secs(60),
             }],
         };
         let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
-        info!("FAA Airport Delays source initialized");
-        Ok(Self {
-            http,
-            batch_cursor: Mutex::new(0),
-        })
+        info!("FAA Airport Delays source initialized (NAS Status API)");
+        Ok(Self { http })
+    }
+
+    /// Extract all airport IATA codes mentioned in the XML delay/closure data.
+    /// Parses <ARPT>XXX</ARPT> tags from the XML response.
+    fn extract_delayed_airports(xml: &str) -> HashSet<String> {
+        let mut delayed = HashSet::new();
+        let tag = "<ARPT>";
+        let end_tag = "</ARPT>";
+
+        let mut search_pos = 0;
+        while let Some(start) = xml[search_pos..].find(tag) {
+            let abs_start = search_pos + start + tag.len();
+            if let Some(end) = xml[abs_start..].find(end_tag) {
+                let code = xml[abs_start..abs_start + end].trim();
+                if !code.is_empty() && code.len() <= 4 {
+                    delayed.insert(code.to_uppercase());
+                }
+                search_pos = abs_start + end + end_tag.len();
+            } else {
+                break;
+            }
+        }
+
+        delayed
     }
 }
 
@@ -106,7 +107,7 @@ impl MarketDataSource for FaaDelaysMarketSource {
     fn rate_limit_config(&self) -> RateLimitConfig {
         RateLimitConfig {
             windows: vec![RateWindow {
-                max_requests: 30,
+                max_requests: 10,
                 duration: Duration::from_secs(60),
             }],
         }
@@ -128,20 +129,6 @@ impl MarketDataSource for FaaDelaysMarketSource {
 
         let now = Utc::now();
 
-        // Rolling cursor -- only fetch BATCH_SIZE airports per sync
-        let start = {
-            let mut cursor = self.batch_cursor.lock().unwrap();
-            let s = *cursor;
-            *cursor = if s + BATCH_SIZE >= asset_ids.len() {
-                0
-            } else {
-                s + BATCH_SIZE
-            };
-            s
-        };
-        let end = (start + BATCH_SIZE).min(asset_ids.len());
-        let batch = &asset_ids[start..end];
-
         // Load config to get IATA codes from api_ref
         let entries: Vec<AssetEntry> = serde_json::from_str(ASSET_JSON)?;
         let ref_map: HashMap<String, String> = entries
@@ -149,9 +136,27 @@ impl MarketDataSource for FaaDelaysMarketSource {
             .map(|e| (e.asset_id.clone(), e.api_ref.clone()))
             .collect();
 
-        let mut results = Vec::with_capacity(batch.len());
+        // ONE call to get all current delays/closures as XML
+        let xml = match self.http.get_raw(API_URL).await {
+            Ok(text) => text,
+            Err(e) => {
+                warn!("FAA: failed to fetch NAS status: {:?}", e);
+                return Ok(Vec::new());
+            }
+        };
 
-        for asset_id in batch {
+        // Extract set of all currently delayed/closed airports
+        let delayed_airports = Self::extract_delayed_airports(&xml);
+        debug!(
+            "FAA: {} airports with active delays/closures: {:?}",
+            delayed_airports.len(),
+            delayed_airports
+        );
+
+        // Check each tracked airport against the delayed set
+        let mut results = Vec::with_capacity(asset_ids.len());
+
+        for asset_id in asset_ids {
             let iata = match ref_map.get(asset_id) {
                 Some(code) => code,
                 None => {
@@ -160,22 +165,14 @@ impl MarketDataSource for FaaDelaysMarketSource {
                 }
             };
 
-            let url = format!("{}/{}", API_BASE, iata);
-            let status: FaaAirportStatus = match self.http.get_json(&url).await {
-                Ok(data) => data,
-                Err(e) => {
-                    warn!("Error fetching FAA status for {}: {:?}", iata, e);
-                    continue;
-                }
-            };
-
-            let value = if status.delay.unwrap_or(false) {
+            let has_delay = delayed_airports.contains(&iata.to_uppercase());
+            let value = if has_delay {
                 Decimal::from(1)
             } else {
                 Decimal::ZERO
             };
 
-            debug!("FAA {} delay={}", iata, status.delay.unwrap_or(false));
+            debug!("FAA {} delay={}", iata, has_delay);
 
             results.push(PriceUpdate {
                 asset_id: asset_id.clone(),
@@ -190,12 +187,10 @@ impl MarketDataSource for FaaDelaysMarketSource {
         }
 
         info!(
-            "Fetched {}/{} prices from FAA (batch {}-{} of {})",
+            "Fetched {}/{} prices from FAA (1 XML call, {} airports delayed)",
             results.len(),
-            batch.len(),
-            start,
-            end,
-            asset_ids.len()
+            asset_ids.len(),
+            delayed_airports.len()
         );
         Ok(results)
     }
@@ -347,61 +342,6 @@ mod tests {
     }
 
     #[test]
-    fn test_api_response_deserialization_no_delay() {
-        let json = r#"{
-            "Name": "John F Kennedy International",
-            "City": "New York",
-            "State": "NY",
-            "IATA": "JFK",
-            "ICAO": "KJFK",
-            "Delay": false,
-            "Status": [{"Reason": "No known delays for this airport"}],
-            "Weather": {"Temp": ["34F (1C)"], "Wind": ["North at 15 mph"]}
-        }"#;
-
-        let status: FaaAirportStatus = serde_json::from_str(json).unwrap();
-        assert_eq!(status.delay, Some(false));
-        assert_eq!(status.iata.as_deref(), Some("JFK"));
-        assert_eq!(status.name.as_deref(), Some("John F Kennedy International"));
-    }
-
-    #[test]
-    fn test_api_response_deserialization_with_delay() {
-        let json = r#"{
-            "Name": "Chicago O'Hare International",
-            "IATA": "ORD",
-            "Delay": true,
-            "Status": [{"Type": "Ground Delay", "AvgDelay": "2 hours and 5 minutes", "Reason": "WEATHER / LOW CEILINGS"}]
-        }"#;
-
-        let status: FaaAirportStatus = serde_json::from_str(json).unwrap();
-        assert_eq!(status.delay, Some(true));
-
-        let value = if status.delay.unwrap_or(false) {
-            Decimal::from(1)
-        } else {
-            Decimal::ZERO
-        };
-        assert_eq!(value, Decimal::from(1));
-    }
-
-    #[test]
-    fn test_api_response_deserialization_missing_delay() {
-        // Some airports may return minimal JSON without the Delay field
-        let json = r#"{"Name": "Test Airport"}"#;
-        let status: FaaAirportStatus = serde_json::from_str(json).unwrap();
-        assert_eq!(status.delay, None);
-
-        // Missing delay should default to "no delay" (0)
-        let value = if status.delay.unwrap_or(false) {
-            Decimal::from(1)
-        } else {
-            Decimal::ZERO
-        };
-        assert_eq!(value, Decimal::ZERO);
-    }
-
-    #[test]
     fn test_entry_count() {
         let entries = load_all_asset_entries(ASSET_JSON).unwrap();
         assert_eq!(
@@ -410,5 +350,63 @@ mod tests {
             "Expected exactly 30 airport entries, got {}",
             entries.len()
         );
+    }
+
+    #[test]
+    fn test_extract_delayed_airports_basic() {
+        let xml = r#"<AIRPORT_STATUS_INFORMATION>
+            <Delay_type><Name>Ground Delay Programs</Name>
+            <Ground_Delay_List>
+                <Ground_Delay><ARPT>JFK</ARPT><Reason>snow</Reason></Ground_Delay>
+                <Ground_Delay><ARPT>ORD</ARPT><Reason>wind</Reason></Ground_Delay>
+            </Ground_Delay_List></Delay_type>
+            <Delay_type><Name>General Arrival/Departure Delay Info</Name>
+            <Arrival_Departure_Delay_List>
+                <Delay><ARPT>DEN</ARPT><Reason>WX:Wind</Reason></Delay>
+            </Arrival_Departure_Delay_List></Delay_type>
+        </AIRPORT_STATUS_INFORMATION>"#;
+
+        let delayed = FaaDelaysMarketSource::extract_delayed_airports(xml);
+        assert!(delayed.contains("JFK"), "JFK should be delayed");
+        assert!(delayed.contains("ORD"), "ORD should be delayed");
+        assert!(delayed.contains("DEN"), "DEN should be delayed");
+        assert!(!delayed.contains("LAX"), "LAX should NOT be delayed");
+        assert_eq!(delayed.len(), 3);
+    }
+
+    #[test]
+    fn test_extract_delayed_airports_closures() {
+        let xml = r#"<Delay_type><Name>Airport Closures</Name>
+            <Airport_Closure_List>
+                <Airport><ARPT>MVY</ARPT><Reason>closed</Reason></Airport>
+                <Airport><ARPT>SNA</ARPT><Reason>closed</Reason></Airport>
+            </Airport_Closure_List></Delay_type>"#;
+
+        let delayed = FaaDelaysMarketSource::extract_delayed_airports(xml);
+        assert!(delayed.contains("MVY"));
+        assert!(delayed.contains("SNA"));
+        assert_eq!(delayed.len(), 2);
+    }
+
+    #[test]
+    fn test_extract_delayed_airports_empty() {
+        let xml = r#"<AIRPORT_STATUS_INFORMATION>
+            <Update_Time>Mon Jan 01 00:00:00 2024 GMT</Update_Time>
+        </AIRPORT_STATUS_INFORMATION>"#;
+
+        let delayed = FaaDelaysMarketSource::extract_delayed_airports(xml);
+        assert!(delayed.is_empty(), "No delays should produce empty set");
+    }
+
+    #[test]
+    fn test_extract_delayed_airports_duplicates() {
+        // Airport can appear in multiple delay types
+        let xml = r#"<Ground_Delay><ARPT>JFK</ARPT></Ground_Delay>
+            <Delay><ARPT>JFK</ARPT></Delay>
+            <Airport><ARPT>JFK</ARPT></Airport>"#;
+
+        let delayed = FaaDelaysMarketSource::extract_delayed_airports(xml);
+        assert!(delayed.contains("JFK"));
+        assert_eq!(delayed.len(), 1, "Duplicates should be deduplicated");
     }
 }

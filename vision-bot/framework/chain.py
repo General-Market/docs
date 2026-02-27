@@ -44,6 +44,7 @@ VISION_ABI = [
         "stateMutability": "nonpayable",
         "inputs": [
             {"name": "batchId", "type": "uint256"},
+            {"name": "configHash", "type": "bytes32"},
             {"name": "depositAmount", "type": "uint256"},
             {"name": "stakePerTick", "type": "uint256"},
             {"name": "bitmapHash", "type": "bytes32"},
@@ -96,15 +97,25 @@ VISION_ABI = [
                 "type": "tuple",
                 "components": [
                     {"name": "creator", "type": "address"},
-                    {"name": "marketIds", "type": "bytes32[]"},
-                    {"name": "resolutionTypes", "type": "uint8[]"},
+                    {"name": "sourceId", "type": "bytes32"},
+                    {"name": "configHash", "type": "bytes32"},
+                    {"name": "nextConfigHash", "type": "bytes32"},
                     {"name": "tickDuration", "type": "uint256"},
-                    {"name": "customThresholds", "type": "uint256[]"},
+                    {"name": "lockOffset", "type": "uint256"},
+                    {"name": "nextLockOffset", "type": "uint256"},
                     {"name": "createdAtTick", "type": "uint256"},
+                    {"name": "lastPromotionTick", "type": "uint256"},
                     {"name": "paused", "type": "bool"},
                 ],
             }
         ],
+    },
+    {
+        "name": "nextBatchId",
+        "type": "function",
+        "stateMutability": "view",
+        "inputs": [],
+        "outputs": [{"name": "", "type": "uint256"}],
     },
     {
         "name": "claimRewards",
@@ -136,6 +147,7 @@ VISION_ABI = [
         "stateMutability": "nonpayable",
         "inputs": [
             {"name": "batchId", "type": "uint256"},
+            {"name": "configHash", "type": "bytes32"},
             {"name": "newHash", "type": "bytes32"},
         ],
         "outputs": [],
@@ -240,10 +252,22 @@ class Executor:
             "totalClaimed": raw[7],
         }
 
-    def get_batch_market_count(self, batch_id: int) -> int:
-        """Return the number of markets in a batch."""
+    def get_batch_info(self, batch_id: int) -> dict:
+        """Read batch struct from chain."""
         info = self.vision.functions.getBatch(batch_id).call()
-        return len(info[1])  # marketIds array
+        return {
+            "creator": info[0],
+            "sourceId": info[1],
+            "configHash": info[2],
+            "nextConfigHash": info[3],
+            "tickDuration": info[4],
+            "lockOffset": info[5],
+            "paused": info[9],
+        }
+
+    def next_batch_id(self) -> int:
+        """Return the next batch ID (= total count of batches)."""
+        return self.vision.functions.nextBatchId().call()
 
     # ── write: join flow ──
 
@@ -256,11 +280,11 @@ class Executor:
         logger.info("USDC approved: %d", amount)
 
     def join_batch(
-        self, batch_id: int, deposit: int, stake: int, bitmap_hash: bytes
+        self, batch_id: int, config_hash: bytes, deposit: int, stake: int, bitmap_hash: bytes
     ):
         """Call Vision.joinBatch on-chain."""
         tx = self.vision.functions.joinBatch(
-            batch_id, deposit, stake, bitmap_hash
+            batch_id, config_hash, deposit, stake, bitmap_hash
         ).build_transaction(self._build_tx(gas=500_000))
         tx_hash = self._sign_and_send(tx)
         logger.info("Joined batch %d (tx: %s)", batch_id, tx_hash.hex()[:16])
@@ -305,10 +329,10 @@ class Executor:
         tx_hash = self._sign_and_send(tx)
         logger.info("Withdraw batch=%d (tx: %s)", batch_id, tx_hash.hex()[:16])
 
-    def update_bitmap(self, batch_id: int, new_hash: bytes):
+    def update_bitmap(self, batch_id: int, config_hash: bytes, new_hash: bytes):
         """Update bitmap hash on-chain."""
         tx = self.vision.functions.updateBitmap(
-            batch_id, new_hash
+            batch_id, config_hash, new_hash
         ).build_transaction(self._build_tx(gas=300_000))
         tx_hash = self._sign_and_send(tx)
         logger.info(
@@ -404,7 +428,14 @@ def submit_bitmap(
                 if resp.ok:
                     accepted += 1
                     break
-            except requests.RequestException:
+                else:
+                    logger.warning(
+                        "Bitmap rejected by %s: %d %s",
+                        url, resp.status_code, resp.text[:200],
+                    )
+                    break  # don't retry non-connection errors
+            except requests.RequestException as e:
+                logger.warning("Bitmap POST to %s failed: %s", url, e)
                 if attempt < retries - 1:
                     time.sleep(1)
     logger.info(
@@ -416,16 +447,103 @@ def submit_bitmap(
 # ── Batch fetching ─────────────────────────────────────────────
 
 
-def fetch_batches(api_url: str) -> list[dict]:
-    """GET /vision/batches from issuer API."""
+def load_batch_mapping() -> dict:
+    """Load vision-batches.json produced by DeployAllVisionBatches."""
+    paths = [
+        "deployments/vision-batches.json",
+        "../deployments/vision-batches.json",
+        os.path.join(os.path.dirname(__file__), "..", "..", "deployments", "vision-batches.json"),
+    ]
+    for p in paths:
+        if os.path.exists(p):
+            with open(p) as f:
+                return json.load(f)
+    return {}
+
+
+def fetch_batches(api_url: str, executor=None) -> list[dict]:
+    """
+    Get available batches. Tries issuer API first, then falls back to
+    vision-batches.json + on-chain reads.
+    """
+    # Try issuer API
     try:
         resp = requests.get(f"{api_url}/vision/batches", timeout=10)
         if resp.ok:
             data = resp.json()
-            return data.get("batches", data if isinstance(data, list) else [])
+            batches = data.get("batches", data if isinstance(data, list) else [])
+            if batches:
+                return batches
     except requests.RequestException:
         pass
+
+    # Fallback: vision-batches.json (always available after DeployAllVisionBatches)
+    mapping = load_batch_mapping()
+    if mapping and mapping.get("batches"):
+        batches = []
+        for source_name, entry in mapping["batches"].items():
+            if source_name.startswith("e2e_test_"):
+                continue  # skip E2E test batches
+            batches.append({
+                "id": entry["batchId"],
+                "batch_id": entry["batchId"],
+                "source_name": source_name,
+                "config_hash": entry["configHash"],
+                "market_count": 10,  # default for hash-based design
+                "paused": False,
+            })
+        if batches:
+            logger.info("Loaded %d batches from vision-batches.json", len(batches))
+            return batches
+
+    # Last resort: on-chain scan
+    if executor:
+        try:
+            count = executor.next_batch_id()
+            batches = []
+            for i in range(count):
+                try:
+                    info = executor.get_batch_info(i)
+                    if info["creator"] != "0x" + "0" * 40 and not info["paused"]:
+                        batches.append({
+                            "id": i,
+                            "batch_id": i,
+                            "config_hash": "0x" + info["configHash"].hex(),
+                            "market_count": 10,
+                            "paused": False,
+                        })
+                except Exception:
+                    pass
+            if batches:
+                logger.info("Loaded %d batches from chain", len(batches))
+                return batches
+        except Exception as e:
+            logger.warning("On-chain batch scan failed: %s", e)
+
     return []
+
+
+# ── Batch config fetching ─────────────────────────────────────
+
+
+def fetch_batch_config(data_node_url: str, config_hash: str):
+    """
+    Fetch batch config from data-node by configHash.
+    Returns dict with 'markets' (list of asset dicts) and 'sourceId', or None on failure.
+    """
+    if not config_hash:
+        return None
+    if not config_hash.startswith("0x"):
+        config_hash = "0x" + config_hash
+    try:
+        resp = requests.get(
+            f"{data_node_url}/batches/config/{config_hash}", timeout=10
+        )
+        if resp.ok:
+            return resp.json()
+    except requests.RequestException as e:
+        logger.debug("Failed to fetch config %s: %s", config_hash[:18], e)
+    return None
 
 
 # ── Market data fetching ──────────────────────────────────────

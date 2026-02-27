@@ -1,0 +1,200 @@
+---
+title: "Risks & Operations"
+description: "What can go wrong when trading or running a bot on Vision, and how to avoid it"
+---
+
+# Risks & Operations
+
+Vision is a sealed parimutuel prediction market. You bet real USDC against other participants. This page covers what you need to understand before putting capital at risk.
+
+---
+
+## Capital Risks
+
+### You Can Lose Your Entire Deposit
+
+Vision is zero-sum minus fees. For every dollar someone wins, someone else loses. If your predictions are consistently wrong, your balance trends to zero. There is no stop-loss mechanism — your `stakePerTick` is deducted every tick regardless of your accuracy.
+
+### House Edge
+
+The protocol takes 0.3% of profits. This means even a perfectly 50/50 strategy loses money over time due to fee drag. You need a win rate or edge that exceeds the fee to break even.
+
+```
+Break-even win rate ≈ 50.15% (with 0.3% fee on profits)
+```
+
+### Stake Burn Rate
+
+Every tick, you risk `stakePerTick` USDC. Your deposit depletes at this rate if you lose every tick:
+
+```
+Ticks until depleted = deposit / stakePerTick
+Example: 100 USDC deposit, 1 USDC/tick stake → 100 ticks max
+At 5-minute ticks = ~8 hours of runway
+At 1-hour ticks = ~4 days of runway
+```
+
+<Warning>
+If you set a high `stakePerTick` relative to your deposit, you can burn through your capital in hours. Start with a low stake-to-deposit ratio (e.g., 1:50 or lower) until you've validated your strategy.
+</Warning>
+
+### Correlated Markets
+
+Many markets in a batch may be correlated (e.g., BTC and ETH tend to move together). If you bet all-UP on a correlated batch and the market drops, you lose on nearly every market simultaneously.
+
+---
+
+## Operational Risks
+
+### Bitmap Not Submitted
+
+If your bot joins a batch on-chain but fails to submit the bitmap to issuers (step 8 in the [lifecycle](/vision/bots/lifecycle)), your predictions are never revealed. You still lose `stakePerTick` per tick (default: all-DOWN), but you won't benefit from correct predictions. This is the single most common bot failure.
+
+**Fix:** Always verify the bitmap submission response is `{"accepted": true}`. Implement retries with a 3-second backoff.
+
+### Indexer Lag
+
+After calling `joinBatch()` on-chain, the issuer needs ~6 seconds to detect the `PlayerJoined` event. Submitting the bitmap too early returns `404: Player not found`.
+
+**Fix:** Wait at least 6 seconds between `joinBatch()` and `POST /vision/bitmap`. Retry on 404.
+
+### Nonce Collisions
+
+If your bot sends multiple transactions in rapid succession without tracking nonces, they can collide and revert.
+
+**Fix:** Track nonces locally: `nonce = w3.eth.get_transaction_count(address)` before each transaction, increment manually for back-to-back sends.
+
+### RPC Failures
+
+The Arbitrum RPC endpoint can be temporarily unreachable. A single failed transaction mid-cycle can leave the bot in an inconsistent state (e.g., USDC approved but batch not joined).
+
+**Fix:** Wrap every on-chain call in retry logic. On restart, check on-chain state (has the bot already joined this batch?) before re-attempting.
+
+### Gas Exhaustion
+
+Every on-chain action costs gas (ETH). If your wallet runs out of ETH, all transactions will fail silently.
+
+**Fix:** Monitor ETH balance alongside USDC. Set an alert threshold (e.g., 0.01 ETH).
+
+### BLS Proof Unavailability
+
+Claiming rewards requires a BLS-signed proof from issuer nodes. If issuers are temporarily down or the proof hasn't been computed yet, the claim will fail.
+
+**Fix:** Retry claim attempts with exponential backoff. Don't panic — unclaimed rewards don't expire. They accumulate until you claim.
+
+---
+
+## Smart Contract Risks
+
+### Immutable Code
+
+Vision contracts are deployed on Arbitrum. While upgradeable patterns may be used, any bugs in the contract logic could result in loss of funds.
+
+### Solvency
+
+The contract includes a solvency check (`InsolventPayout` error) — if the contract's USDC balance is insufficient to cover a payout, the claim will revert. This could happen in extreme edge cases.
+
+### BLS Key Rotation
+
+If the issuer set rotates BLS keys, old proofs may become invalid. Claim rewards promptly rather than accumulating indefinitely.
+
+---
+
+## Pre-Flight Checklist
+
+Run through this before starting a bot or placing your first bet.
+
+<Steps>
+  <Step title="Fund Your Wallet">
+    Your wallet needs both **USDC** (for deposits) and **ETH** (for gas) on Arbitrum.
+    - USDC: At least 2x your planned deposit (to cover joins + additional deposits)
+    - ETH: At least 0.05 ETH for gas (dozens of transactions)
+  </Step>
+
+  <Step title="Verify Contract Addresses">
+    Double-check the Vision contract address and USDC address match the [contract reference](/vision/reference/contract-addresses). Do not trust addresses from unofficial sources.
+  </Step>
+
+  <Step title="Test with Minimum Stake">
+    Join one batch with the minimum: 0.1 USDC deposit, 0.1 USDC stake. Verify the full cycle works (join → submit bitmap → claim) before scaling up.
+  </Step>
+
+  <Step title="Validate Bitmap Submission">
+    After `joinBatch()`, confirm you receive `{"accepted": true}` from the bitmap endpoint. Check the issuer API: `GET /vision/balance/{batch_id}/{your_address}` — it should show your position.
+  </Step>
+
+  <Step title="Set Exposure Limits">
+    Decide your max total exposure across all batches. The reference bot uses `max_exposure` and `max_batches` config fields for this.
+  </Step>
+
+  <Step title="Monitor Claim Cycle">
+    Verify that `claimRewards()` succeeds at least once before increasing your deposit. A successful claim proves the full pipeline (predictions → resolution → BLS proofs → on-chain payout) is working.
+  </Step>
+</Steps>
+
+---
+
+## Bot Operator Checklist
+
+For running a bot in production.
+
+<Steps>
+  <Step title="Process Management">
+    Run the bot under a process manager (`systemd`, `pm2`, `supervisor`). It should auto-restart on crash.
+  </Step>
+
+  <Step title="Log & Alert">
+    Log every join, bitmap submission, claim, and error. Set up alerts for: repeated failures, low USDC balance, low ETH balance, bitmap rejection.
+  </Step>
+
+  <Step title="Balance Monitoring">
+    Track your USDC balance over time. If it's steadily declining, your strategy has no edge. Stop the bot and re-evaluate.
+  </Step>
+
+  <Step title="State Recovery on Restart">
+    On restart, the bot should check which batches it has already joined on-chain (via `getPosition()`) and rebuild its `joined_batches` set. Never duplicate-join.
+  </Step>
+
+  <Step title="Periodic Withdrawal">
+    Don't let profits accumulate indefinitely in the contract. Withdraw periodically to your own wallet. Claimed rewards are yours; unclaimed rewards depend on issuer availability.
+  </Step>
+
+  <Step title="Strategy Validation">
+    Backtest your strategy against historical tick data before running live. Use `POST /vision/backtest` from the [strategies guide](/vision/bots/strategies#backtesting) to simulate.
+  </Step>
+
+  <Step title="Multiple Issuer Endpoints">
+    Submit your bitmap to all known issuer nodes, not just one. If one issuer is down, the others still store your bitmap. The bot needs at least 2/3 of issuers to accept the bitmap for it to participate in resolution.
+  </Step>
+</Steps>
+
+---
+
+## Common Failure Modes & Recovery
+
+| Failure | Symptom | Recovery |
+|---------|---------|----------|
+| Bitmap not submitted | Balance decreases every tick despite good predictions | Check bitmap submission logs, verify `accepted: true` |
+| Submitted too early | `404 Player not found` | Wait 6+ seconds after `joinBatch()`, retry |
+| Wrong bitmap hash | `400 Hash mismatch` | Recompute: `keccak256(bitmap_bytes)` must match `joinBatch(bitmapHash)` |
+| Nonce collision | Transaction reverts | Track nonces locally, don't rely solely on `get_transaction_count` |
+| Out of gas (ETH) | All txns fail | Top up ETH, set balance alert at 0.01 ETH |
+| Out of USDC | `InsufficientDeposit` revert | Top up USDC, reduce `max_batches` |
+| Issuer unreachable | Bitmap submission timeout | Retry other issuer URLs, check network |
+| Stale BLS proof | `InvalidBLSSignature` on claim | Re-fetch proof from issuer API |
+| Bot already registered | `BotAlreadyRegistered` revert | Skip registration (idempotent, catch error) |
+| Batch paused | `BatchPaused` revert | Filter out paused batches in poll loop |
+
+---
+
+## Risk Summary
+
+| Risk | Severity | Mitigation |
+|------|----------|------------|
+| Losing deposit | **High** | Start small, validate strategy with backtests |
+| Fee drag | Low | Maintain win rate above 50.15% |
+| Bitmap failure | **High** | Verify `accepted: true`, retry logic |
+| RPC downtime | Medium | Retry with backoff, check state on restart |
+| Gas exhaustion | Medium | Monitor ETH balance, set alerts |
+| Contract bug | Low | Limited to deposited amount |
+| BLS proof delay | Low | Retries; unclaimed rewards don't expire |

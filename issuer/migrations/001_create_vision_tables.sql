@@ -1,12 +1,21 @@
+-- Drop old schema (start.sh truncates data each session anyway)
+DROP TABLE IF EXISTS vision_tick_results CASCADE;
+DROP TABLE IF EXISTS vision_positions CASCADE;
+DROP TABLE IF EXISTS vision_batches CASCADE;
+DROP TABLE IF EXISTS vision_kv_store CASCADE;
+
 -- Vision batch state (indexed from Vision.sol events by the issuer's chain listener)
 CREATE TABLE IF NOT EXISTS vision_batches (
     id BIGINT PRIMARY KEY,
     creator TEXT NOT NULL,
-    market_count INT NOT NULL DEFAULT 0,
-    market_ids TEXT[] NOT NULL DEFAULT '{}',
     tick_duration BIGINT NOT NULL,
     created_at_tick BIGINT NOT NULL DEFAULT 0,
     paused BOOLEAN NOT NULL DEFAULT false,
+    source_id TEXT NOT NULL DEFAULT '',
+    config_hash TEXT NOT NULL DEFAULT '',
+    next_config_hash TEXT NOT NULL DEFAULT '',
+    next_lock_offset BIGINT NOT NULL DEFAULT 0,
+    last_promotion_tick BIGINT NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

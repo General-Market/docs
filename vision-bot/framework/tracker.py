@@ -53,7 +53,7 @@ class Tracker:
         6. Log summary
         """
         if not self._positions:
-            return
+            return []
 
         to_remove = []
         for batch_id, pos in list(self._positions.items()):
@@ -84,6 +84,8 @@ class Tracker:
         if self._positions:
             total_pnl = sum(p["pnl"] for p in self._positions.values())
             log.info("Tracking %d positions, total PnL: %d", len(self._positions), total_pnl)
+
+        return to_remove
 
     def _try_claim(self, batch_id: int, pos: dict):
         """
@@ -157,7 +159,8 @@ class Tracker:
             player = self._executor.bot_addr
             resp = requests.get(f"{urls[0]}/vision/balance/{batch_id}/{player}", timeout=10)
             if resp.ok:
-                return resp.json().get("balance")
+                val = resp.json().get("balance")
+                return int(val) if val is not None else None
         except requests.RequestException:
             pass
         return None

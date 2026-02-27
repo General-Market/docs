@@ -28,6 +28,7 @@
     "borrow_usdc": "USDCを借入",
     "repay": "返済",
     "borrow": "借入",
+    "manage_position": "ポジション管理",
     "cancel": "キャンセル",
     "max": "MAX"
   },

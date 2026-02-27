@@ -2053,17 +2053,19 @@ where
                 leader_id,
                 order_id,
                 usdc_proceeds,
+                vault,
                 leader_signature,
             } => {
                 debug!(
                     ?from,
                     order_id = %order_id,
                     usdc_proceeds = %usdc_proceeds,
+                    ?vault,
                     "Received CompleteSellOrderProposal - routing to handler"
                 );
                 if let Err(e) = self
                     .handle_complete_sell_order_proposal(
-                        from, leader_id, order_id, usdc_proceeds, leader_signature,
+                        from, leader_id, order_id, usdc_proceeds, vault, leader_signature,
                     )
                     .await
                 {
@@ -7855,11 +7857,13 @@ where
         &self,
         order_id: U256,
         usdc_proceeds: U256,
+        vault: Address,
         am_leader: bool,
     ) -> Result<CompleteSellOrderResult, BridgeError> {
         info!(
             order_id = %order_id,
             usdc_proceeds = %usdc_proceeds,
+            ?vault,
             am_leader,
             "Starting complete sell order consensus"
         );
@@ -7873,7 +7877,7 @@ where
 
         if am_leader {
             drop(bridge_orch_guard);
-            self.run_complete_sell_order_as_leader(order_id, usdc_proceeds).await
+            self.run_complete_sell_order_as_leader(order_id, usdc_proceeds, vault).await
         } else {
             drop(bridge_orch_guard);
             // Follower participates via handle_complete_sell_order_proposal
@@ -7890,10 +7894,11 @@ where
         &self,
         order_id: U256,
         usdc_proceeds: U256,
+        vault: Address,
     ) -> Result<CompleteSellOrderResult, BridgeError> {
         let ref_nonce = self.key_registry.registry_nonce();
 
-        info!(order_id = %order_id, usdc_proceeds = %usdc_proceeds, "Leader: Creating complete sell order proposal");
+        info!(order_id = %order_id, usdc_proceeds = %usdc_proceeds, ?vault, "Leader: Creating complete sell order proposal");
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
@@ -7905,7 +7910,7 @@ where
         // Step 1: Create proposal
         let proposal = {
             let orch = bridge_orch.read().await;
-            orch.propose_complete_sell_order(order_id, usdc_proceeds).await?
+            orch.propose_complete_sell_order(order_id, usdc_proceeds, vault).await?
         };
         let leader_signature = proposal.leader_signature.clone();
 
@@ -7920,6 +7925,7 @@ where
             leader_id: self.config.peer_id,
             order_id,
             usdc_proceeds,
+            vault,
             leader_signature: proposal.leader_signature.clone(),
             reference_nonce: ref_nonce,
         };
@@ -7988,11 +7994,13 @@ where
         leader_id: PeerId,
         order_id: U256,
         usdc_proceeds: U256,
+        vault: Address,
         leader_signature: BLSSignature,
     ) -> Result<(), Error> {
         info!(
             order_id = %order_id,
             usdc_proceeds = %usdc_proceeds,
+            ?vault,
             "Follower: Received complete sell order proposal"
         );
 
@@ -8015,6 +8023,7 @@ where
                 config.arb_custody_address,
                 order_id,
                 usdc_proceeds,
+                vault,
             );
 
             let hash_bytes: [u8; 32] = message_hash.into();
@@ -8055,7 +8064,7 @@ where
                 usdc_proceeds,
                 leader_signature: leader_signature.clone(),
                 message_hash: build_complete_sell_order_consensus_hash(
-                    config.arbitrum_chain_id, config.arb_custody_address, order_id, usdc_proceeds,
+                    config.arbitrum_chain_id, config.arb_custody_address, order_id, usdc_proceeds, vault,
                 ),
             }
         };

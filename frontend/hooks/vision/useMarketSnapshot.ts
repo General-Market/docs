@@ -37,6 +37,8 @@ export interface SnapshotResponse {
 export interface SnapshotMetaResponse {
   generatedAt: string
   totalAssets: number
+  totalSources: number
+  totalCategories: number
   sources: SourceSchedule[]
   assetCounts: Record<string, number>
 }
@@ -101,6 +103,26 @@ export function useMarketSnapshotMeta() {
     staleTime: 15_000,
     retry: 2,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10_000),
+  })
+}
+
+/** Per-source snapshot — fetches markets for a single data-node source */
+export function useSourceSnapshot(dataNodeSourceId: string | undefined) {
+  return useQuery<SnapshotResponse>({
+    queryKey: ['source-snapshot', dataNodeSourceId],
+    enabled: !!dataNodeSourceId,
+    queryFn: async () => {
+      const res = await fetchWithTimeout(
+        `${VISION_API_URL}/api/vision/snapshot?source=${encodeURIComponent(dataNodeSourceId!)}`,
+        45_000,
+      )
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return res.json()
+    },
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+    retry: 1,
+    retryDelay: 5_000,
   })
 }
 

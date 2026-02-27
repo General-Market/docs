@@ -54,7 +54,7 @@ pub struct ServeArgs {
     pub symbol_map: String,
 
     /// RPC endpoint for the Index chain
-    #[arg(long, default_value = "https://index.rpc.zeeve.net", env = "INDEX_RPC_URL")]
+    #[arg(long, default_value = "http://142.132.164.24/", env = "INDEX_RPC_URL")]
     pub rpc_url: String,
 
     /// Index contract address

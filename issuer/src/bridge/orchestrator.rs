@@ -5023,12 +5023,14 @@ impl BridgeOrchestrator {
         &self,
         order_id: U256,
         usdc_proceeds: U256,
+        vault: Address,
     ) -> Result<CompleteSellProposal, BridgeError> {
         let message_hash = build_complete_sell_order_consensus_hash(
             self.config.arbitrum_chain_id,
             self.config.arb_custody_address,
             order_id,
             usdc_proceeds,
+            vault,
         );
 
         let hash_bytes: [u8; 32] = message_hash.into();

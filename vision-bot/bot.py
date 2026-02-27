@@ -16,6 +16,7 @@ from framework.core import (
 from framework.chain import (
     Executor,
     discover_issuers,
+    fetch_batch_config,
     fetch_batches,
     fetch_markets,
     load_deployment,
@@ -43,6 +44,8 @@ def run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn, feed):
         batch_id = batch.get("id", batch.get("batch_id"))
         if batch_id is None:
             continue
+        if batch_id < cfg.get("min_batch_id", 0):
+            continue
         if batch_id in tracker.active_ids:
             continue
         if cfg["batch_ids"] and batch_id not in cfg["batch_ids"]:
@@ -51,6 +54,15 @@ def run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn, feed):
             continue
         if tracker.active_count >= cfg["max_batches"]:
             break
+
+        # Skip if already joined on-chain (e.g. from a previous run)
+        try:
+            pos = executor.get_position(batch_id)
+            if pos["joinTimestamp"] > 0:
+                log.debug("Batch %d: already joined on-chain, skipping", batch_id)
+                continue
+        except Exception:
+            pass  # batch may not exist yet, proceed
 
         deposit_wei = cfg["deposit"] * 10**DECIMALS
         if not risk.can_join(deposit_wei):
@@ -71,9 +83,21 @@ def run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn, feed):
                 log.warning("Batch %d: cannot read configHash: %s", batch_id, e)
                 continue
 
-        # Predict with strategy (market_count from batch or default)
-        market_count = batch.get("market_count", cfg.get("market_count", 10))
-        market_ids = batch.get("market_ids", [])
+        # Fetch real market config from data-node to get actual market count
+        if isinstance(config_hash, bytes):
+            config_hash_hex = "0x" + config_hash.hex()
+        elif isinstance(config_hash, str):
+            config_hash_hex = config_hash if config_hash.startswith("0x") else "0x" + config_hash
+        else:
+            config_hash_hex = ""
+        batch_cfg = fetch_batch_config(cfg["data_node"], config_hash_hex)
+        if batch_cfg and batch_cfg.get("markets"):
+            market_ids = [m["assetId"] for m in batch_cfg["markets"]]
+            market_count = len(market_ids)
+        else:
+            market_ids = batch.get("market_ids", [])
+            market_count = batch.get("market_count", cfg.get("market_count", 10))
+
         if market_ids:
             # Subscribe to batch if not already subscribed
             feed.subscribe([str(batch_id)], history_days=7)
@@ -111,14 +135,16 @@ def run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn, feed):
         stake_wei = cfg["stake"] * 10**DECIMALS
         executor.join_batch(batch_id, config_hash, deposit_wei, stake_wei, bm_hash)
 
-        time.sleep(2)  # wait for block confirmation
+        time.sleep(5)  # wait for block confirmation + chain listener sync
         submit_bitmap(issuer_urls, executor.bot_addr, batch_id, bitmap, bm_hash)
 
         tracker.on_join(batch_id, deposit_wei, bitmap, bets)
         risk.record_join(batch_id, deposit_wei)
 
     # Lifecycle: check balances, auto-claim, auto-withdraw
-    tracker.check_all()
+    exited = tracker.check_all()
+    for bid in exited:
+        risk.record_exit(bid)
 
 
 def main():

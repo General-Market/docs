@@ -69,6 +69,9 @@ pub async fn snapshot(
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
     let limit = params.limit.unwrap_or(10_000).min(100_000);
 
+    // Use market_prices_latest cache table for fast lookups instead of
+    // expensive DISTINCT ON against the 12GB market_prices table.
+    // Falls back to the slow query if cache table is empty/missing.
     let rows: Vec<(
         String,         // asset_id
         String,         // source
@@ -82,16 +85,13 @@ pub async fn snapshot(
         DateTime<Utc>,   // fetched_at
     )> = sqlx::query_as(
         r#"
-        SELECT DISTINCT ON (a.source, a.asset_id)
-            a.asset_id, a.source, a.symbol, a.name,
-            p.value, p.change_pct, p.volume_24h, p.market_cap,
-            a.category, p.fetched_at
-        FROM market_assets a
-        JOIN market_prices p ON a.source = p.source AND a.asset_id = p.asset_id
-        WHERE a.is_active = true
-          AND ($1::TEXT IS NULL OR a.source = $1)
-          AND ($2::TEXT IS NULL OR a.category = $2)
-        ORDER BY a.source, a.asset_id, p.fetched_at DESC
+        SELECT asset_id, source, symbol, name,
+            value, change_pct, volume_24h, market_cap,
+            category, fetched_at
+        FROM market_prices_latest
+        WHERE ($1::TEXT IS NULL OR source = $1)
+          AND ($2::TEXT IS NULL OR category = $2)
+        ORDER BY source, asset_id
         LIMIT $3
         "#,
     )

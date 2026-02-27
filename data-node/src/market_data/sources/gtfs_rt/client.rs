@@ -390,7 +390,7 @@ impl MarketDataSource for GtfsRtMarketSource {
     }
 
     fn sync_interval(&self) -> Duration {
-        Duration::from_secs(120)
+        Duration::from_secs(120) // Rolling protobuf feed
     }
 
     fn rate_limit_config(&self) -> RateLimitConfig {
@@ -1247,25 +1247,29 @@ mod tests {
         // All 4 entities have vehicle positions
         assert_eq!(metrics.vehicle_position_count, 4);
 
-        // But only 3 have vehicle descriptors with IDs
+        // All 4 have positions — code falls back to entity.id when no vehicle descriptor
         assert_eq!(
             metrics.individual_vehicles.len(),
-            3,
-            "Should collect 3 vehicles (1 without descriptor is skipped)"
+            4,
+            "All 4 have positions and IDs (descriptor.id, entity.id fallback, descriptor.label, descriptor.id)"
         );
 
-        // Verify first vehicle
+        // vp1: descriptor.id = "VEH001", route "L"
         assert_eq!(metrics.individual_vehicles[0].vehicle_id, "VEH001");
         assert_eq!(metrics.individual_vehicles[0].route_id, "L");
         assert!((metrics.individual_vehicles[0].lat - 40.7128).abs() < 0.001);
 
-        // Verify label-only vehicle
-        assert_eq!(metrics.individual_vehicles[1].vehicle_id, "Express99");
-        assert_eq!(metrics.individual_vehicles[1].route_id, "7");
+        // vp2: no descriptor, falls back to entity.id = "vp2", no trip → UNK
+        assert_eq!(metrics.individual_vehicles[1].vehicle_id, "vp2");
+        assert_eq!(metrics.individual_vehicles[1].route_id, "UNK");
 
-        // Verify no-route vehicle defaults to UNK
-        assert_eq!(metrics.individual_vehicles[2].vehicle_id, "VEH999");
-        assert_eq!(metrics.individual_vehicles[2].route_id, "UNK");
+        // vp3: descriptor.label = "Express99", route "7"
+        assert_eq!(metrics.individual_vehicles[2].vehicle_id, "Express99");
+        assert_eq!(metrics.individual_vehicles[2].route_id, "7");
+
+        // vp4: descriptor.id = "VEH999", no trip → UNK
+        assert_eq!(metrics.individual_vehicles[3].vehicle_id, "VEH999");
+        assert_eq!(metrics.individual_vehicles[3].route_id, "UNK");
     }
 
     #[test]

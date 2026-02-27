@@ -21,7 +21,7 @@ export function TopPlayers() {
   return (
     <div className="mt-6">
       {/* Section bar */}
-      <div className="section-bar rounded-t-lg">
+      <div className="section-bar">
         <div>
           <div className="section-bar-title">Top Players</div>
           <div className="section-bar-value">Leaderboard</div>
@@ -29,7 +29,7 @@ export function TopPlayers() {
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-t-0 border-border-light rounded-b-lg overflow-hidden">
+      <div className="bg-white border border-t-0 border-border-light overflow-hidden">
         {/* Header */}
         <div className="grid grid-cols-[40px_1fr_80px_100px] items-center px-4 py-2 border-b border-border-light text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
           <div>#</div>

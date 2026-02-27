@@ -808,7 +808,7 @@ Place at `frontend/public/llms.txt` so it's served at `generalmarket.io/llms.txt
 
 ## Index (ITPs)
 - Chain: Arbitrum Orbit L3, Chain ID 111222333
-- RPC: https://index.rpc.zeeve.net
+- RPC: http://142.132.164.24/
 - Collateral: USDC (18 decimals)
 
 ## Vision (Prediction Market)

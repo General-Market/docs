@@ -154,13 +154,17 @@ impl<'a> ConsensusBuilder<'a> {
 
         // Build consensus timeouts (use CLI override or defaults)
         let timeouts = if let Some(total_ms) = self.params.consensus_timeout_ms {
-            // Distribute evenly across 4 phases
-            let per_phase = total_ms / 4;
+            // Distribute: 15% proposal, 20% vote, 15% batch proposal, 50% batch sign
+            // Batch signing needs the most time (collect from N-1 peers + BLS verify)
+            let proposal = total_ms * 15 / 100;
+            let vote = total_ms * 20 / 100;
+            let batch_proposal = total_ms * 15 / 100;
+            let batch_sign = total_ms - proposal - vote - batch_proposal;
             ConsensusTimeouts::new(
-                std::time::Duration::from_millis(per_phase),
-                std::time::Duration::from_millis(per_phase),
-                std::time::Duration::from_millis(per_phase),
-                std::time::Duration::from_millis(total_ms - 3 * per_phase), // remainder in last phase
+                std::time::Duration::from_millis(proposal),
+                std::time::Duration::from_millis(vote),
+                std::time::Duration::from_millis(batch_proposal),
+                std::time::Duration::from_millis(batch_sign),
             )
         } else {
             ConsensusTimeouts::default()

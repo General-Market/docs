@@ -351,9 +351,14 @@ async fn poll_user_orders_once(state: &AppState) -> Result<(), Box<dyn std::erro
     let reader = UserSharesReader::new(index_addr, Arc::clone(&state.l3_provider));
 
     for (user_addr, user_cache) in &user_list {
-        // Query DB for active orders for this user
+        // Query DB for active + recently filled orders for this user.
+        // Include filled/cancelled (status 2,3) from last 5 min so frontend
+        // can see the fill transition and display them in portfolio.
         let rows = sqlx::query_as::<_, (i64,)>(
-            "SELECT order_id FROM trades WHERE LOWER(user_address) = $1 AND status IN (0, 1)"
+            "SELECT order_id FROM trades WHERE LOWER(user_address) = $1 \
+             AND (status IN (0, 1) OR (status IN (2, 3) AND fill_timestamp > NOW() - INTERVAL '5 minutes') \
+             OR order_timestamp > NOW() - INTERVAL '5 minutes') \
+             ORDER BY order_id DESC LIMIT 50"
         )
         .bind(user_addr)
         .fetch_all(&state.pool)

@@ -10,6 +10,28 @@
     "exit": "ESC",
     "enter": "全屏"
   },
+  "quota": {
+    "sims_left": "剩余{remaining}次",
+    "last_free": "最后一次免费模拟",
+    "pay_with_tweet": "用一条推文来支付吧",
+    "unlimited": "无限制"
+  },
+  "gate": {
+    "title": "模拟不是免费的。但几乎是。",
+    "subtitle": "一条推文 = 更多回测。我们几乎在白送。",
+    "connect_wallet": "连接钱包以解锁更多模拟。",
+    "download_image": "下载图片",
+    "open_x": "打开 X",
+    "sign_wallet": "钱包签名中...",
+    "countdown": "好吧，我们相信你。大概。({countdown}秒)",
+    "i_posted": "已发布",
+    "unlocked": "已解锁！",
+    "signature_failed": "签名失败，请重试。",
+    "chart_alt": "回测图表预览",
+    "tier1_toast": "再解锁5次。营销实习生。",
+    "tier2_toast": "再解锁10次。月度最佳员工。",
+    "tier3_toast": "无限制。基本上是联合创始人了。"
+  },
   "holdings": {
     "title": "持仓 (最近一次再平衡)",
     "loading": "Loading holdings...",

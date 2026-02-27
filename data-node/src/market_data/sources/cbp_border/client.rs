@@ -28,7 +28,11 @@ const API_URL: &str = "https://bwt.cbp.gov/api/waittimes";
 // API RESPONSE TYPES
 // ============================================================================
 
-/// A single port entry from the CBP wait times API
+/// A single port entry from the CBP wait times API.
+///
+/// NOTE: The CBP API returns ALL numeric fields as JSON strings (e.g. "45" not 45),
+/// and empty strings for absent values. We use `serde(default)` and custom parsing
+/// to handle this gracefully.
 #[derive(Debug, Deserialize)]
 struct CbpPort {
     port_number: String,
@@ -37,30 +41,57 @@ struct CbpPort {
     crossing_name: Option<String>,
     #[allow(dead_code)]
     port_status: Option<String>,
+    #[serde(default)]
     passenger_vehicle_lanes: Option<CbpLaneGroup>,
     #[allow(dead_code)]
+    #[serde(default)]
     pedestrian_lanes: Option<CbpLaneGroup>,
     #[allow(dead_code)]
+    #[serde(default)]
     commercial_vehicle_lanes: Option<CbpLaneGroup>,
 }
 
-/// Lane group containing standard, NEXUS/SENTRI, and ready lanes
+/// Lane group containing standard, NEXUS/SENTRI, and ready lanes.
+/// Uses `serde(default)` for all fields since the API may omit them.
 #[derive(Debug, Deserialize)]
 struct CbpLaneGroup {
+    #[serde(default)]
     standard_lanes: Option<CbpLane>,
     #[allow(dead_code)]
-    #[serde(alias = "NEXUS_SENTRI_lanes")]
+    #[serde(alias = "NEXUS_SENTRI_lanes", default)]
     nexus_sentri_lanes: Option<CbpLane>,
     #[allow(dead_code)]
+    #[serde(default)]
     ready_lanes: Option<CbpLane>,
 }
 
-/// A single lane type with delay and lanes open
+/// A single lane type with delay and lanes open.
+///
+/// The CBP API returns these as strings: "45" for 45 minutes, "" for no data.
+/// We deserialize strings and parse to u64 via a helper.
 #[derive(Debug, Deserialize)]
 struct CbpLane {
+    #[serde(default, deserialize_with = "deserialize_string_u64")]
     delay_minutes: Option<u64>,
     #[allow(dead_code)]
+    #[serde(default, deserialize_with = "deserialize_string_u64")]
     lanes_open: Option<u64>,
+}
+
+/// Deserialize a numeric string (or empty string) into Option<u64>.
+/// CBP API sends "45" or "" for numeric fields.
+fn deserialize_string_u64<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s: Option<String> = Option::deserialize(deserializer)?;
+    match s {
+        Some(ref val) if !val.is_empty() => match val.parse::<u64>() {
+            Ok(n) => Ok(Some(n)),
+            Err(_) => Ok(None),
+        },
+        _ => Ok(None),
+    }
 }
 
 // ============================================================================
@@ -267,6 +298,7 @@ mod tests {
 
     #[test]
     fn test_cbp_port_deserialization() {
+        // Real CBP API returns ALL numeric values as strings
         let json = r#"[{
             "port_number": "250401",
             "port_name": "San Ysidro",
@@ -274,29 +306,42 @@ mod tests {
             "crossing_name": "San Ysidro",
             "port_status": "Open",
             "passenger_vehicle_lanes": {
+                "maximum_lanes": "20",
                 "standard_lanes": {
-                    "delay_minutes": 45,
-                    "lanes_open": 12
+                    "update_time": "At Noon PST",
+                    "operational_status": "delay",
+                    "delay_minutes": "45",
+                    "lanes_open": "12"
                 },
                 "NEXUS_SENTRI_lanes": {
-                    "delay_minutes": 10,
-                    "lanes_open": 3
+                    "update_time": "At Noon PST",
+                    "operational_status": "no delay",
+                    "delay_minutes": "10",
+                    "lanes_open": "3"
                 },
                 "ready_lanes": {
-                    "delay_minutes": 20,
-                    "lanes_open": 4
+                    "update_time": "",
+                    "operational_status": "N/A",
+                    "delay_minutes": "",
+                    "lanes_open": ""
                 }
             },
             "pedestrian_lanes": {
+                "maximum_lanes": "5",
                 "standard_lanes": {
-                    "delay_minutes": 30,
-                    "lanes_open": 5
+                    "update_time": "",
+                    "operational_status": "N/A",
+                    "delay_minutes": "",
+                    "lanes_open": ""
                 }
             },
             "commercial_vehicle_lanes": {
+                "maximum_lanes": "8",
                 "standard_lanes": {
-                    "delay_minutes": 15,
-                    "lanes_open": 8
+                    "update_time": "At Noon PST",
+                    "operational_status": "no delay",
+                    "delay_minutes": "15",
+                    "lanes_open": "8"
                 }
             }
         }]"#;
@@ -313,6 +358,36 @@ mod tests {
             .and_then(|lane| lane.delay_minutes)
             .unwrap_or(0);
         assert_eq!(delay, 45);
+    }
+
+    #[test]
+    fn test_cbp_port_empty_string_delay() {
+        // CBP API returns "" for absent numeric values, not null
+        let json = r#"[{
+            "port_number": "999999",
+            "port_name": "Closed Port",
+            "port_status": "Closed",
+            "passenger_vehicle_lanes": {
+                "maximum_lanes": "0",
+                "standard_lanes": {
+                    "update_time": "",
+                    "operational_status": "N/A",
+                    "delay_minutes": "",
+                    "lanes_open": ""
+                }
+            }
+        }]"#;
+
+        let ports: Vec<CbpPort> = serde_json::from_str(json).unwrap();
+        assert_eq!(ports.len(), 1);
+
+        let delay = ports[0]
+            .passenger_vehicle_lanes
+            .as_ref()
+            .and_then(|lanes| lanes.standard_lanes.as_ref())
+            .and_then(|lane| lane.delay_minutes)
+            .unwrap_or(0);
+        assert_eq!(delay, 0, "Empty string delay should parse as None -> default 0");
     }
 
     #[test]

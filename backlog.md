@@ -1,5 +1,170 @@
 # Design Decision Backlog
 
+## Session: 20260227-0115-b4f9 (Vision balance persistence fix)
+
+- [DECISION] Engine creates its own PgPool from VisionConfig.database_url for balance persistence — avoids refactoring main.rs startup order where engine spawns before pool is created
+- [DECISION] apply_tick_balances updates in-memory scheduler state AND persists to vision_positions table — crash recovery loads correct balances from DB
+- [DECISION] mark_resolved_with_db called from engine to persist last_resolved to DB — previously only in-memory, causing re-resolution after restart
+- [FAILED] Balance API returned stale initial deposit values because engine never called scheduler to apply tick resolution deltas — root cause was missing apply_tick_balances call after resolver produces player_balances
+
+## Session: 20260226-1800-x3k7 (Orbit L3 Sonic Testnet deployment)
+
+- [DECISION] Deployed Orbit L3 (chain ID 111222333) on Sonic Testnet (chain ID 14601) instead of Arbitrum Sepolia — Orbit works on any EVM chain, Sonic testnet gives free 10 S gas.
+- [DECISION] Used ETH (native S) as L3 gas token instead of WIND ERC20 — simpler for testnet, avoids ERC20 deployment + approval complexity.
+- [DECISION] nitro-contracts v2.1.1-beta.0 deployed with dev mode (isDevDeployment=true) — reads config from env vars, sets 20 block confirm period for fast testing.
+- [DECISION] L3 RPC exposed via existing nginx on VPS 2 port 80 → Docker port 3001 → container 8547. Can't modify firewall/nginx config (no sudo), so reused existing proxy_pass to port 3001 (killed mini-backend that was still running).
+- [DECISION] Nitro private keys in config without `0x` prefix — node rejects `0x` prefixed keys ("invalid hex character 'x'").
+- [DECISION] Docker DNS set to 8.8.8.8/1.1.1.1 — default Hetzner DNS unreachable from Docker bridge network.
+- [DECISION] Private network access between VPS 1 and VPS 2 on 10.2.0.x works — external access blocked by Hetzner Cloud Firewall on non-standard ports.
+- [DECISION] Blockscout explorer and JSON-RPC coexist on same port 3001 via nginx request method routing: POST → sequencer:8547, GET → blockscout:4001. Assets load correctly.
+- [DECISION] SSH access to VPS 2 requires bastion jump: `ssh index-maker/prod/postgres` (user max, port 3189, bastion 65.109.10.32). Direct SSH port 22 is closed.
+- [DECISION] Deployed WETH9 on Sonic Testnet (0xF6E271BE9740403fa68B5138491F61c4642F9452) — needed as BASECHAIN_WETH for token bridge creator.
+- [DECISION] Token bridge gas estimation for L2 contracts fails on Sonic (Create2 revert in template simulation). Hardcoded 25M gas fallback — retryable tickets succeeded.
+- [DECISION] Token bridge v1.2.5 fully deployed: L1TokenBridgeCreator + all gateway contracts on both Sonic and L3. Total cost ~0.11 S for bridge deployment.
+
+## Session: 20260226-1730-v9q1 (Full system test + vision config fix)
+
+- [DECISION] Added `#[serde(rename_all = "camelCase")]` to `BatchConfig` and `BatchMarket` in data-node batch_engine.rs — issuers expect camelCase (via `RecommendedBatch` with `#[serde(rename_all = "camelCase")]`) but data-node served snake_case.
+- [DECISION] Fixed manual JSON construction in `batch_config_by_hash` API (signed config response + DB fallback) to use camelCase keys matching the serde-derived format.
+- [DECISION] Deploy-hash reverse lookup fallback (added in prior session) works: maps on-chain placeholder hashes back to batch engine configs with alias table (e.g., finnhub→stocks, coingecko→crypto).
+- [FAILED] Vision tick resolution for batch 1 shows all 256 markets "cancelled" — no reference prices exist for pumpfun tokens since this is the first tick. Need to handle first-tick gracefully (use snapshot prices as reference).
+- [DECISION] Node ban+rejoin test PASSED — killed issuer, heartbeat detected 120+ misses, kick votes proposed (not auto-executed), restarted issuer bootstraps from chain state in <100ms, P2P reconnects, consensus participation resumes immediately.
+- [FAILED] Batch signing consistently 2/3 (times out before 3rd signature) — pre-existing timing issue with 40ms batch signing phase. Not related to ban/rejoin.
+
+## Session: 20260226-2300-q7b2 (Fix 4 vision/consensus bugs)
+
+- [DECISION] Bug 3: Parameterized hardcoded `source=hackernews` in vision engine `fetch_market_prices()`. Source_id now flows from batch config through `ConfigCache::get_or_fetch()`.
+- [FAILED] Plan assumed collectors use different source_ids (coingecko, finnhub, fred) than batch engine (crypto, stocks, rates). Wrong — collectors already use the same IDs as batch engine. Removed incorrect `SOURCE_ID_TO_SNAPSHOT` mapping. Direct passthrough is correct.
+- [DECISION] Bug 1: Changed consensus timeout distribution from even 25%/25%/25%/25% to weighted 15%/20%/15%/50%. Batch signing gets 75ms instead of 39ms at `--consensus-timeout-ms 150`.
+- [DECISION] Bug 2: Fixed misleading "ITP creation consensus succeeded" log for zero-signature follower placeholders. Added `itp_first_seen` HashMap to skip stale requests >1h old.
+- [DECISION] Bug 2 extended: Found same misleading log in Bridge Arb→L3 and Submit Order phases. Fixed both to check signature_count before logging "completed".
+- [DECISION] Bug 4: Added `known_missing` HashSet to ConfigCache. First 404 logs WARN, subsequent occurrences downgrade to debug. Prevents e2e_test batch log spam.
+
+## Session: 20260226-2100-m8x3 (Better backtest strategies + tooltips)
+
+- [DECISION] Fixed `cash_shift` bug: backend checked for `"cash"` but frontend sent `"cash_shift"` — mode was dead code. Now accepts both `"cash" | "cash_shift"`.
+- [DECISION] Added 3 new FNG modes: `graduated_cash` (proportional cash ramp between thresholds), `quality_rotation` (fear→top5+MinVar, greed→50+Momentum), `trend_follow` (14d FNG direction: rising→Momentum, falling→InvVol). Rationale: existing FNG modes barely moved results because contrarian weight nudges are O(1/N), risk_toggle only activates at extremes, and cash_shift was bugged.
+- [DECISION] Exposed 2 existing but hidden DOM modes in frontend: `combo` (4-quadrant FNG×DOM matrix) and `momentum` (trend-based strategy switch). Were already implemented in simulation.rs but never wired to frontend or sweep.
+- [DECISION] Added detailed multi-line tooltips to all strategy buttons (weighting, FNG, DOM, VC). Each tooltip describes the strategy in 3-4 lines covering mechanics, when it works, and tradeoffs.
+
+## Session: 20260226-1700-k4f2 (Backtest sweep: FNG/DOM/DeFi WT)
+
+- [DECISION] Added `fng_regime`, `dom_regime`, `defi_weight` sweep types to data-node `sim_sweep_stream`. Frontend already had buttons for these but backend returned 400 "Invalid sweep dimension". FNG sweep iterates off/contrarian/risk_toggle/cash_shift. DOM sweep iterates off/alts_when_low/alts_when_falling/btc_when_high. DeFi weight sweep iterates all 9 DeFi weighting strategies (tvl, tvl_cap, tvl_sqrt, fees_w, revenue_w, volume_w, tvl_mom, fee_eff, yield_w).
+
+## Session: 20260226-1030-e2t9 (E2E test fixes + parallel vision)
+
+- [DECISION] Split Playwright config into two projects: `itp` (tests 00-06) and `vision` (tests 10-19) with `workers: 2`. Vision tests now run in parallel with ITP flow, reducing total E2E time from ~7min to ~2min.
+- [DECISION] Excluded resilience test (07) from E2E suite via testMatch patterns — it kills issuers which breaks all subsequent tests.
+- [DECISION] Vision batches now always deployed via `DeployAllVisionBatches.s.sol` (BLS-signed) — removed stale manual `createBatch` call from start.sh that used wrong function signature.
+- [FAILED] Vision two-player join test returned `balance=7n` instead of `10000000n` — `PlayerPosition` struct in IVision.sol added `configHash` field between `bitmapHash` and `stakePerTick`, shifting all field indices. Fixed ABI + decoding in `vision-api.ts`.
+- [FAILED] Vision "page loads" test looking for `getByRole('heading', { name: /vision/i })` — no h1/h2 heading exists on the page. "SOURCES" text uses CSS `uppercase` on "Sources" — Playwright matches DOM text, not visual. Fixed to use `getByText(/Sources/i)`.
+- [FAILED] Vision `fullJoinBatch` reverted because PLAYER1 had 0 ARB_USDC — start.sh mint might fail silently. Added `ensureUsdcBalance()` to vision-api.ts that mints via deployer if needed.
+- [FAILED] Sell order #2 stuck: BLS consensus race condition — followers processed the CrossChainSellOrder event before the leader broadcast the proposal. Issuers 1&2 completed with `signer_count=0` and moved on, leader got 2/3 signatures and timed out. The sell was never submitted to L3. Root cause: followers don't wait for leader proposal before "completing" their local processing.
+
+## Session: 20260226-0015-cg4r (CoinGecko rate limit fix)
+
+- [DECISION] Shared RateLimiter between CoinGeckoMarketSource and cg_collector — both were independently rate-limiting against the same Demo API key, causing constant 429s and only 17% price coverage. Single limiter at 3s intervals (~20 req/min) shared via Arc.
+- [DECISION] Increased cg_collector startup delay from 5min to 15min — ensures market source completes its initial 40-page sweep before collector starts competing for rate budget.
+- [DECISION] Demo tier interval increased from 2.2s (collector) / 4s (market source) to unified 3s — conservative enough to avoid 429s while still completing 40-page sweep in ~120s within the 10-min sync interval.
+
+## Session: 20260225-1200-r8q5 (L3 Removal Design Audit — 3 parallel agents + reactive settlement redesign)
+
+### CYCLE COLLAPSE + MIGRATION REMOVAL
+- [DECISION] Collapsed 5-phase cycle (ProcessFills → Netting → InventoryCheck → GenerateBatch → SignSubmit) into single settlement loop on 1s timer. Eliminates `cycle/` module (`phase.rs`, `manager.rs`), wall-clock alignment, demand-driven fast cycle triggers. One function: read orders → compute fills → net across ITPs → execute on Bitget (blocking, ~3-8s) → BLS sign → submit. Total ~5-10s per batch (Bitget dominates).
+- [DECISION] Removed all migration/backward-compatibility content from design doc. No live system to migrate from — fresh deploy on Arbitrum. Removed: Migration Plan (Pre-Migration, USDC Consolidation, Migration Execution, Rollback Plan), Storage Cleanup section, Contracts Deleted section, legacy function lists, BATCHED status (renumbered enum), upgrade reinitializer framing. Replaced with simple Deployment Plan.
+- [DECISION] Bitget integration unchanged — AP/market-maker execution venue stays.
+
+### CRITICAL FIXES APPLIED TO DESIGN DOC
+- [DECISION] C1: Try/catch catch block must populate `failedFillEscrow` for BUY and restore `_userShares` for SELL. Original design only set status=FAILED + emitted event, causing permanent fund/share loss on any fill failure. Fixed in doc.
+- [DECISION] C2: SELL fill USDC payout must go through `ItpCustody.withdraw()`, not `_transferUsdcOut` (which transfers from Investment, empty post-migration). BUY fills use `ItpCustody.depositFrom()`. Two distinct outflow paths. Fixed in doc.
+- [DECISION] C3: ItpCustody.depositFrom() made atomic — does `transferFrom` + balance increment in single call. Prevents USDC/accounting desync. Fixed in doc.
+- [DECISION] C4: Fill price banding added on-chain — `fillPrice` must be within `MAX_NAV_DELTA_PCT` of `_itpNavs`. Prevents colluding supermajority from setting arbitrary fill prices (circuit breaker previously only constrained informational navUpdates, not fills). Fixed in doc.
+- [DECISION] cancelOrder must branch on BUY/SELL — BUY returns USDC, SELL restores shares. Original design said "refunds escrowed USDC" for both sides. Fixed in doc.
+- [DECISION] claimExpired must branch on BUY/SELL — same pattern. Fixed in doc.
+- [DECISION] claimFailed condition changed from `status == FAILED` to `failedFillEscrow > 0 AND status ∈ {FAILED, FILLED}` — covers partial fill remainder failures and pre-migration legacy escrow entries. Fixed in doc.
+- [DECISION] _executeFill status check must be FIRST operation — `if (order.status != PENDING) return;` then `order.status = FILLED;` atomically before any state changes. Prevents race conditions. Fixed in doc.
+- [DECISION] MAX_FILL_GAS=500k explicit gas cap on try/catch external call — reserves gas for catch block, prevents gas griefing via malicious vault. Fixed in doc.
+
+### ARCHITECTURE CHANGE: REACTIVE SETTLEMENT (replaces cycle-based accumulator)
+- [DECISION] Eliminated 1s consensus cycles and 5s accumulator flush. New model: event-driven propose-sign-submit. Proposer builds batch on OrderSubmitted event, broadcasts via P2P, collects BLS partial sigs, submits on threshold. Typical latency <1s.
+- [DECISION] Proposer election uses `keccak256(lastBatchHash, batchNonce) % num_issuers` — unpredictable (depends on previous tx hash) unlike old round-robin `batchNonce % num_issuers` which was deterministic and attackable.
+- [DECISION] No shared buffer eliminates the accumulator divergence/deadlock problem (audit H3). Each proposer builds fresh from on-chain PENDING state. Worst case is delay, not deadlock.
+- [DECISION] Quiescent mode: zero gas cost when no orders pending. System only runs event watcher during idle periods.
+- [DECISION] 500ms optional batching window for gas efficiency during high volume. Single-fill batches acceptable during low volume.
+
+### SINGLE ItpCustody + NATIVE 6-DEC REJECTION
+- [DECISION] ItpCustody changed from N proxies (one per ITP via CREATE2 factory) to single contract with `mapping(itpId => balance)`. Same bytecode across N proxies = same bug, no real isolation. Single contract saves: N deployments, N cross-contract calls (~500 gas/fill), factory contract, N migration transfers, N addresses in deployment.json.
+- [FAILED] "Drop 18-dec internal math, go native 6" — rejected. Moving to 6-dec USDC internally doesn't eliminate the 1e12 scaling, it moves it from 3 boundary sites into every formula that crosses USDC↔shares boundary. `shares = amount_6dec * 1e30 / fillPrice_18dec` is worse than `shares = amount_18dec * 1e18 / fillPrice_18dec` + boundary conversion. The boundary conversion table IS the feature.
+
+### NONCE GAP TOLERANCE + CIRCUIT BREAKER REMOVAL + _userShares FIX
+- [DECISION] batchNonce changed from strict `== +1` to gap-tolerant `> lastBatchNonce && <= lastBatchNonce + 5`. Prevents bricking from single lost nonce (sequencer hiccup, monitoring desync). Small gaps tolerable, unbounded jumps blocked.
+- [DECISION] NAV circuit breaker removed entirely (both navUpdate banding and fillPrice banding). BLS committee trust is the sole defense. If compromised, governance emergency-withdraws all funds in 1 tx. Circuit breakers added gas/complexity for a threat model they couldn't actually prevent (compounding bypassed them in <60s).
+- [DECISION] `_userShares` dual accounting eliminated. ERC20 balance is sole source of truth for sell eligibility. SELL submitOrder now does `ITP.transferFrom(user, Investment, amount)` to escrow shares. All cancel/expire/fail paths transfer shares back via `ITP.transfer`. DEX-acquired tokens are now fully sellable. SELL flow adds one approve tx (same UX pattern as BUY). This is the one-shot fix — deferring would require another UUPS upgrade + audit.
+
+### PERMISSIONLESS OUT-OF-RANGE CANCEL
+- [DECISION] Added `cancelOutOfRange(orderId)` — user can cancel own PENDING order without BLS when on-chain `_itpNavs` proves the order is unfillable (BUY: NAV > limitPrice, SELL: NAV < limitPrice). Owner-only to prevent griefing. Safe against settleBatch race (same status-check pattern as claimExpired).
+
+### OTHER AUDIT FIXES APPLIED
+- [DECISION] BLSVerifier staleness switched from `block.number` to `block.timestamp` — Arbitrum block times are elastic, block-number-based check unreliable. Added `timestamp` field to RegistrySnapshot.
+- [DECISION] Dual issuerRegistry storage risk documented — reinitializer MUST update both `issuerRegistry` (InvestmentStorage) and `_blsIssuerRegistry` (BLSVerifier).
+
+### REMAINING HIGH-SEVERITY ITEMS (not yet fixed in doc)
+- [DECISION] MIN_BATCH_INTERVAL should be 5s not 3s to match documented compounding math.
+- [OBSOLETE] Cross-chain order drain, ItpCustody seeding, BridgedITP deadline, IssuerRegistry history carry-forward, migrationMode flag, pre-existing failedFillEscrow — all removed. No live system to migrate from (fresh deploy).
+
+## Session: 20260226-0100-s7a3 (Smart Contract Security Audit — 3 rounds + cross-validation)
+
+### CRITICAL
+- [DECISION] C-1: BridgeProxy.mintBridgedShares/burnBridgedShares have NO replay protection — BLS message has no nonce, BLSVerifier doesn't track used signatures. Same sig replays unlimited times within snapshot window (~3.5 days). Confirmed 3/3 validators. Fix: add nonce mapping like BLSCustody.usedNonces or ArbBridgeCustody.bridgeCompleted.
+
+### HIGH
+- [DECISION] H-1: ITP.sol inherits ERC20 but never overrides transfer()/transferFrom(). Investment.sol tracks _userShares separately. ERC20 transfer desyncs from _userShares → user submits SELL that passes _userShares check but reverts on vault.burn() → DOSes entire confirmFills batch. Fix: override transfer/transferFrom to revert.
+- [DECISION] H-3: BLSVerifier verifies against FULL aggregated pubkey but threshold check only requires 2/3+1 in bitmask. BLS math requires ALL keys to have signed. No non-signer key subtraction implemented. Net: 100% participation required, not 2/3+1. Single offline issuer freezes all operations. Fix: EigenLayer-style non-signer G2 subtraction.
+- [DECISION] H-4: ArbBridgeCustody + L3BridgeCustody lack constructor with _disableInitializers(). OZ v5 does NOT auto-disable. 6 other contracts in codebase do it correctly. Fix: add constructor.
+- [DECISION] H-6: ITPNAVOracle.updatePrice() message hash uses abi.encodePacked(itpAddress, newPrice, timestamp, cycleNumber) WITHOUT block.chainid or address(this). Only BLS function in entire codebase missing domain separation. Enables cross-chain replay → Morpho market manipulation. Fix: add chainId + address(this).
+- [DECISION] H-7: ITPNAVOracle uses BLSLib.verifyBLS() directly instead of inheriting BLSVerifier. Missing: snapshot validation, bitmask checks, threshold enforcement, liveness tracking. Fix: inherit BLSVerifier.
+- [DECISION] H-8: SELL submitOrder (line 254) decrements _userShares but NOT totalSupply. All 3 refund paths (lines 593, 1049, 1113) increment BOTH. Each SELL-then-refund cycle inflates totalSupply permanently. Fix: decrement totalSupply on SELL submit or don't increment on refund.
+- [DECISION] H-10: ArbBridgeCustody.completeBridge sends USDC to msg.sender but BLS message doesn't include recipient. Front-runner on L1 force-inclusion path can steal bridged USDC. Fix: add recipient to BLS message.
+
+### MEDIUM
+- [DECISION] M-1: Investment.sol _processFill SELL branch (lines 479-484) silently skips totalSupply/totalValue decrement on underflow instead of reverting. Requires pre-existing broken state. Defensive but hides corruption.
+- [DECISION] M-2: L3BridgeCustody.reverseLock signerCount parameter not validated against popcount(signersBitmask). Gap between BLSVerifier threshold (14) and REVERSAL_THRESHOLD (15). signerCount is in BLS message so issuers must sign over it.
+- [DECISION] M-3: rebalance/setItpNav have no per-call nonce. Replay possible within snapshot window but requires valid BLS signature. Idempotent for same params; stale NAV rollback is theoretical risk.
+
+### FALSIFIED (investigated, dismissed with evidence)
+- [FAILED] Vision.sol withdraw() double-pay after claimRewards — falsified because finalBalance is BLS-signed by issuers who account for prior claims, not read from position.balance.
+- [FAILED] Vision.sol withdraw() double-fee — depends on above; issuers sign correct remaining balance.
+- [FAILED] ERC4626 inflation attack on ITP — deposit()/mint() revert unconditionally; shares only minted via Investment._processFill.
+- [FAILED] Reentrancy in BLS-gated functions — incrementMissedCounts is advisory on trusted contract; no profitable reentry path.
+
+## Session: 20260225-2200-v3m8 (start.sh --vision + bulk batch deploy)
+
+- [DECISION] Added `--vision` flag to start.sh that skips ITP/Bitget/Morpho/AP steps, only runs Vision pipeline (deploy, bulk batch creation, data-node, issuers, frontend, E2E).
+- [DECISION] Bulk batch creation via ephemeral `VisionBulkCreate` helper contract deployed by Forge script. Loops `vision.createBatch()` for all 81 sources (79 data sources + 2 E2E test batches) in a single transaction. Total: 2 txs (deploy helper + createAll call).
+- [DECISION] Config hashes use deterministic formula: `keccak256(abi.encode(sourceId, "default_config_v1"))`. This allows any component to reconstruct the configHash from just the sourceId without needing the deployment artifact.
+- [DECISION] E2E test batches (e2e_test_1..e2e_test_5) are pre-created by the Forge script alongside real source batches. Tests use `findAvailableE2eBatch()` to find unused ones rather than trying to call `createBatch` directly (which requires BLS signatures).
+- [DECISION] Complete ABI rewrite of `vision-abi.ts` and `vision-api.ts` to match new hash-based Vision.sol design (sourceId + configHash + BLS). Old ABI used `marketIds[]`, `resolutionTypes[]`, `customThresholds[]` which no longer exist.
+- [FAILED] E2E tests calling `createBatchOnChain()` directly — createBatch now requires BLS signatures which can't be produced from browser/Node.js E2E context. Replaced with pre-created batch lookup.
+
+## Session: 20260225-2130-f4x7 (ABI mismatch fix + sell pipeline)
+
+- [DECISION] Merged fundSellOrder into completeSellOrder at contract level — completeSellOrder now accepts a `vault` address and does `safeTransferFrom(vault, user, usdcProceeds)` atomically. Avoids needing a separate BLS consensus phase for funding.
+- [DECISION] Added `referenceNonce` + `signersBitmask` to all 5 remaining `build_*_tx` ABIs in arbitrum_writer.rs. These were missing from all BLS-verified calls (completeCreateItp, completeRebalance, completeSellOrder, refundSellOrder, completeBuyOrder), causing function selector mismatches on-chain.
+- [DECISION] Added `vault: Address` to P2P `CompleteSellOrderProposal` message so followers compute the correct message hash (which now includes vault) when co-signing.
+
+## Session: 20260225-1645-b9k3 (Batch config consensus architecture)
+
+- [DECISION] Batch config consensus runs as independent async task (BatchConfigOrchestrator), NOT inside run_cycle(). The 1s settlement cycle has only 200ms remaining after price+batch phases (800ms total timeouts). HTTP to data-node + BLS collection would blow the budget.
+- [DECISION] Follows BridgeOrchestrator pattern: per-round SignatureCollector instances, NOT the shared SignatureAggregator. This prevents signature cross-contamination between settlement and batch config consensus.
+- [DECISION] All sources batched into single composite hash per round (not sequential per-source). 82+ sources x 200ms = 16.4s sequential is impossible. Instead: keccak256(abi.encode(sorted_config_hashes)) produces one hash, one BLS round.
+- [DECISION] New P2PMessage variants: BatchConfigProposal + BatchConfigSign. Cannot reuse settlement PriceProposal/BatchSign because they carry cycle_number which the ConsensusMessageHandler uses for routing, and the batch config orchestrator uses its own monotonic round counter.
+- [DECISION] Leader election for batch config: round % num_issuers == node_index. Same formula as settlement but keyed on the orchestrator's own round counter, so batch config leader rotates independently from settlement leader.
+- [DECISION] Crash recovery via file-persisted state: signed config written to disk before POST to data-node. On startup, if last_posted=false, retry the POST. This covers the window between BLS aggregation and HTTP delivery.
+- [DECISION] Config replication (F9/F17): followers POST leader's config hashes to their OWN data-node after co-signing. This ensures every data-node can serve the signed config at settlement time regardless of which issuer was leader.
+- [DECISION] Pile-up prevention: run() loop is sequential (execute_round must complete before next sleep starts). consecutive_failures counter + exponential backoff prevents thundering-herd retries.
+- [FAILED] Option A from F18 (piggyback on run_cycle): rejected because (1) blows 1s budget, (2) shared SignatureAggregator corruption, (3) ConsensusPhase::Complete terminates follower loop before any batch config phase could run, (4) frequency mismatch (configs change every 30s+, not every 1s).
+- Full design: docs/plans/batch-config-consensus-design.md
+
 ## Session: 20260225-0830-f2x9 (Equivocation detection false-positive fix)
 
 - [FAILED] Equivocation detector used (peer, cycle, phase) as key. During BatchSigning phase, multiple different sign message types (BatchSign, ConfirmBatchSign, ConfirmFillsSign, etc.) are sent by the same peer. Different content hashes for different message types triggered false equivocation, double-penalizing peers and causing signing timeouts.
@@ -712,7 +877,7 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 - [FAILED] Axum 0.7 route syntax: used {param} (Axum 0.8 style) instead of :param — caused 404s on all path-parameter routes. Fixed by switching to :param syntax.
 - [FAILED] Docker cross-compile from macOS: Docker Desktop wasn't running locally. Solved by building on VPS via `docker run rust:latest` with volume-mounted source.
 - [FAILED] Rust 1.83 too old: `time-core 0.1.8` requires edition2024 (Rust 1.85+). Switched from `rust:1.83-bookworm` to `rust:latest`.
-- [DECISION] Deployed to index-maker/prod/be (116.203.156.98). PostgreSQL at postgres://datanode:datanode123@localhost:5432/index_prices. Binary at ~/index-data-node, work dir at ~/index-dn-work.
+- [DECISION] Deployed to index-maker/prod/be. See vps.md for server details.
 
 ## Session: 20260220-1730-e2ef
 
@@ -4043,3 +4208,31 @@ The backtester currently supports one rebalance method: **periodic time-based re
 [DECISION] Arc<P2PMetrics> created at API state construction time in run_main_loop(), not threaded through bootstrap. The metrics are consumed only by the health endpoint for now; wiring individual counters into rate_limit, wal, peer_scoring, etc. is deferred to when those subsystems actively need to increment them.
 
 [DECISION] Error codes verified non-colliding: INFRA-020 (rate limit), INFRA-021 (connection limit), INFRA-022 (WAL), INFRA-023 (peer ban/partition), CONSENSUS-020 (non-leader proposal), CONSENSUS-021 (equivocation). All are used exclusively within the P2P hardening code — no overlap with existing INFRA-001..019 or CONSENSUS-001..019 error codes.
+
+## Session: 20260225-1800-v3k9 (Vision chain listener fixes + bot trading E2E)
+
+### CHAIN LISTENER EVENT DECODING FIXES
+[FAILED] Reading non-indexed event params from log.topics — Solidity only puts `indexed` params into topics. `BatchConfigUpdated(uint256 indexed batchId, bytes32 nextConfigHash, uint256 nextLockOffset)` has `nextConfigHash` in `log.data[0..32]`, not `log.topics[2]`. Same bug in `BatchConfigPromoted`. Fixed both handlers.
+
+[DECISION] `getPosition` struct decode updated — Vision.sol added `bytes32 configHash` after `bitmapHash`, shifting all tuple indices by 1. Balance moved from `tuple[3]` to `tuple[4]`. Added `FixedBytes(32)` for configHash to the ABI decode tuple.
+
+### CHAIN LISTENER RPC URL (ROOT CAUSE)
+[FAILED] Chain listener used `components.chain.rpc_url` (L3 at port 8545) instead of `vision_cfg.rpc_ws_url` (Arbitrum at port 8546). Vision contract is deployed on Arbitrum, not L3. Chain listener was polling the wrong chain — found 0 events because the Vision contract doesn't exist on L3. Fixed in main.rs to use `vision_cfg.rpc_ws_url`.
+
+### MIGRATION SCHEMA FIXES
+[DECISION] Added `DROP TABLE IF EXISTS vision_kv_store CASCADE` to migration — stale bookmark from previous Anvil run caused chain listener to start scanning from block 147 while new Anvil only had ~141 blocks. Chain listener silently skipped all blocks because `cursor > tip`.
+
+[DECISION] Added missing columns to `vision_batches` table: `next_config_hash`, `next_lock_offset`, `last_promotion_tick`. These were written by handlers but didn't exist in the schema.
+
+### FRONTEND PROXY ROUTE
+[DECISION] Created `frontend/app/api/vision/batches/route.ts` — proxies to issuer health port (`localhost:10001`). Frontend's `useBatches` hook calls `/api/vision/batches` but no Next.js route existed. 5s revalidate, 10s timeout, 502 fallback.
+
+### BOT CONFIGURATION
+[FAILED] Vision bot started with `VISION_API_URL=http://localhost:9001` (P2P port) — should be `http://localhost:10001` (health/API port). Issuer port layout: P2P = base port, health/API = base + 1000.
+
+[FAILED] Bot stale `pnl.json` from previous Anvil run — bots thought they had 50 positions but those don't exist on fresh chain. Must delete state file between Anvil restarts.
+
+### DATA-NODE CRASH IN VISION MODE
+[FAILED] data-node crashes with `Error: Os { code: 2, kind: NotFound }` when started via `--vision` mode — `start.sh` deletes `data/symbol-map.json` on fresh deploy (line 228), then steps 3-5 (ITP deploy) normally regenerate it. But `--vision` skips steps 3-5, so the file is never recreated. data-node's `api::load_symbol_map()` uses `?` propagation, crashes main on missing file.
+
+[DECISION] Added guard after vision-only skip block: if `--vision` and `data/symbol-map.json` doesn't exist, create empty `{}` for symbol-map and `[]` for assets.json. Data-node boots with 0 tracked symbols (fine for vision — it only needs market_data providers, not ITP price collector).

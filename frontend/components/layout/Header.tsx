@@ -3,15 +3,17 @@
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, usePathname } from '@/i18n/routing'
-import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain } from 'wagmi'
+import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain, useReadContract } from 'wagmi'
 import { truncateAddress } from '@/lib/utils/address'
 import { indexL3 } from '@/lib/wagmi'
 import { usePostHogTracker } from '@/hooks/usePostHog'
+import { USDC_ADDRESS, USDC_DECIMALS } from '@/lib/contracts/addresses'
+import { LanguageSwitcher } from './LanguageSwitcher'
 
 export function Header() {
   const t = useTranslations('common')
   const pathname = usePathname()
-  const isVision = pathname === '/' || pathname.startsWith('/source/')
+  const isVision = pathname === '/' || pathname.startsWith('/source/') || pathname === '/points'
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const INVESTMENT_NAV = [
@@ -32,16 +34,27 @@ export function Header() {
   const { capture, identify, reset: resetPostHog } = usePostHogTracker()
   const [activeSection, setActiveSection] = useState(isVision ? 'vision' : 'markets')
 
-  // Wallet
   const [mounted, setMounted] = useState(false)
-  const { address, isConnected, isConnecting, isReconnecting } = useAccount()
-  const { connect, connectors, isPending } = useConnect()
+
+  // Wagmi state
+  const { address, isConnected } = useAccount()
+  const authenticated = isConnected
+  const { connect, connectors } = useConnect()
   const { disconnect } = useDisconnect()
+  const injectedConnector = connectors.find(c => c.id === 'injected')
   const chainId = useChainId()
   const { switchChain, isPending: isSwitching } = useSwitchChain()
-  const injectedConnector = connectors.find(c => c.id === 'injected')
   const isWrongNetwork = isConnected && chainId !== indexL3.id
-  const isLoading = isConnecting || isReconnecting || isPending
+
+  // USDC balance
+  const { data: usdcRaw } = useReadContract({
+    address: USDC_ADDRESS,
+    abi: [{ name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ name: '', type: 'uint256' }] }] as const,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address && isConnected && !isWrongNetwork, refetchInterval: 15_000 },
+  })
+  const usdcBalance = usdcRaw !== undefined ? Number(usdcRaw) / 10 ** USDC_DECIMALS : null
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -52,24 +65,48 @@ export function Header() {
   }, [isConnected, isWrongNetwork, isSwitching, switchChain])
 
   useEffect(() => {
-    if (isConnected && address) {
-      identify(address, { wallet_type: injectedConnector?.name || 'injected', chain_id: chainId })
+    if (authenticated && address) {
+      identify(address, { login_method: 'injected', chain_id: chainId })
       capture('wallet_connected', { wallet_address: address, chain_id: chainId })
     }
-  }, [isConnected, address])
+  }, [authenticated, address])
 
-  const handleConnect = async () => {
-    if (!injectedConnector) return
-    capture('wallet_connect_clicked', { source: 'header' })
-    const chainIdHex = `0x${indexL3.id.toString(16)}`
-    if (typeof window !== 'undefined' && window.ethereum) {
-      try { await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId: chainIdHex, chainName: indexL3.name, nativeCurrency: indexL3.nativeCurrency, rpcUrls: [indexL3.rpcUrls.default.http[0]] }] }) } catch {}
-      try { await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: chainIdHex }] }) } catch {}
-    }
-    connect({ connector: injectedConnector, chainId: indexL3.id })
+  const chainIdHex = `0x${indexL3.id.toString(16)}`
+
+  const addAndSwitchChain = async () => {
+    if (typeof window === 'undefined' || !window.ethereum) return
+    try {
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: chainIdHex,
+          chainName: indexL3.name,
+          nativeCurrency: indexL3.nativeCurrency,
+          rpcUrls: [indexL3.rpcUrls.default.http[0]],
+        }],
+      })
+    } catch {}
+    try {
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: chainIdHex }],
+      })
+    } catch {}
   }
 
-  const handleDisconnect = () => { capture('wallet_disconnected'); resetPostHog(); disconnect() }
+  const handleLogin = async () => {
+    capture('login_clicked', { source: 'header' })
+    if (injectedConnector) {
+      await addAndSwitchChain()
+      connect({ connector: injectedConnector, chainId: indexL3.id })
+    }
+  }
+
+  const handleLogout = () => {
+    capture('wallet_disconnected')
+    resetPostHog()
+    disconnect()
+  }
 
   const navLinks = isVision ? VISION_NAV : INVESTMENT_NAV
 
@@ -151,14 +188,33 @@ export function Header() {
 
             {/* Right side — Wallet + Hamburger */}
             <div className="flex items-center gap-3 shrink-0">
-              {mounted && isConnected && address ? (
-                <button
-                  onClick={handleDisconnect}
-                  className="group px-3 py-2 bg-muted border border-border-medium text-text-primary text-sm font-mono rounded-lg transition-all hover:bg-red-950/20 hover:border-red-400/30 hover:text-red-400"
-                >
-                  <span className="group-hover:hidden">{truncateAddress(address)}</span>
-                  <span className="hidden group-hover:inline">{t('actions.disconnect')}</span>
-                </button>
+              {mounted && authenticated && address ? (
+                <div className="flex items-center gap-2">
+                  {/* USDC balance or Deposit button */}
+                  {usdcBalance !== null && usdcBalance > 0 ? (
+                    <span className="text-[13px] font-bold font-mono tabular-nums text-black">
+                      {usdcBalance < 0.01 ? '<0.01' : usdcBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <span className="text-text-muted font-medium ml-1">USDC</span>
+                    </span>
+                  ) : usdcBalance !== null ? (
+                    <a
+                      href={`https://onramp.money/main/buy/?appId=1&coinCode=usdc&network=arbitrum&walletAddress=${address}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-[12px] font-bold rounded hover:bg-green-700 transition-colors"
+                    >
+                      Deposit
+                    </a>
+                  ) : null}
+                  {/* Wallet address */}
+                  <button
+                    onClick={handleLogout}
+                    className="group px-3 py-2 bg-muted border border-border-medium text-text-primary text-sm font-mono rounded-lg transition-all hover:bg-red-950/20 hover:border-red-400/30 hover:text-red-400"
+                  >
+                    <span className="group-hover:hidden">{truncateAddress(address)}</span>
+                    <span className="hidden group-hover:inline">{t('actions.disconnect')}</span>
+                  </button>
+                </div>
               ) : mounted && isWrongNetwork ? (
                 <button
                   onClick={() => switchChain({ chainId: indexL3.id })}
@@ -170,18 +226,16 @@ export function Header() {
               ) : (
                 <>
                   <button
-                    onClick={handleConnect}
-                    disabled={isLoading || !injectedConnector}
-                    className="hidden sm:inline-flex items-center px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleLogin}
+                    className="hidden sm:inline-flex items-center px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors"
                   >
-                    {isLoading ? t('wallet.connecting') : t('wallet.login')}
+                    {t('wallet.login')}
                   </button>
                   <button
-                    onClick={handleConnect}
-                    disabled={isLoading || !injectedConnector}
-                    className="hidden sm:inline-flex items-center px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleLogin}
+                    className="hidden sm:inline-flex items-center px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors"
                   >
-                    {isLoading ? t('wallet.connecting') : 'Sign Up'}
+                    Sign Up
                   </button>
                 </>
               )}
@@ -222,10 +276,16 @@ export function Header() {
                       </Link>
                     </div>
 
+                    <Link href="/points" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors font-semibold">Points</Link>
                     <a href="/docs" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.docs')}</a>
                     <a href="https://discord.gg/xsfgzwR6" target="_blank" rel="noopener noreferrer" className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.discord')}</a>
                     <Link href="/privacy" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.privacy_policy')}</Link>
                     <Link href="/terms" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.terms_of_service')}</Link>
+
+                    {/* Language switcher */}
+                    <div className="px-3 pt-2 mt-1 border-t border-border-light">
+                      <LanguageSwitcher />
+                    </div>
                   </div>
                 )}
               </div>

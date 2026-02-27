@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from '@/i18n/routing'
-import { getSource } from '@/lib/vision/sources'
-import { useMarketSnapshot } from '@/hooks/vision/useMarketSnapshot'
+import { getSource, getAssetCountForSource, getSourceStatusFromMeta, getDataNodeSourceId } from '@/lib/vision/sources'
+import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
+import { getTickState, getMultiplier } from '@/lib/vision/tick'
 import { SourceHero } from './SourceHero'
 import { MarketsTable } from './MarketsTable'
 import { TopPlayers } from './TopPlayers'
@@ -16,8 +17,10 @@ interface SourceDetailProps {
 }
 
 function formatTvl(tvl: string): string {
-  const num = parseFloat(tvl)
-  if (isNaN(num) || num === 0) return '$0'
+  const raw = parseFloat(tvl)
+  if (isNaN(raw) || raw === 0) return '$0'
+  // Raw value is in USDC smallest units (6 decimals)
+  const num = raw / 1e6
   if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(2)}M`
   if (num >= 1_000) return `$${(num / 1_000).toFixed(1)}K`
   return `$${num.toFixed(2)}`
@@ -26,48 +29,42 @@ function formatTvl(tvl: string): string {
 export function SourceDetail({ sourceId }: SourceDetailProps) {
   const router = useRouter()
   const source = getSource(sourceId)
-  const { data: snapshotData } = useMarketSnapshot()
+  const dataNodeId = source ? getDataNodeSourceId(sourceId) : undefined
+  const { data: snapshotData } = useSourceSnapshot(dataNodeId)
+  const { data: meta } = useMarketSnapshotMeta()
   const { data: batches } = useBatches()
   const bitmapEditor = useBitmapEditor()
 
-  // Find source schedule from snapshot
+  // Find source schedule from meta
   const sourceSchedule = useMemo(() => {
-    if (!snapshotData?.sources) return undefined
-    return snapshotData.sources.find((s) => s.sourceId === sourceId)
-  }, [snapshotData?.sources, sourceId])
+    if (!meta?.sources) return undefined
+    return meta.sources.find((s) => s.sourceId === sourceId || s.sourceId === dataNodeId)
+  }, [meta?.sources, sourceId, dataNodeId])
 
-  // Get markets for this source from snapshot prices
-  const sourceMarkets = useMemo(() => {
-    if (!snapshotData?.prices || !source) return []
-    const prefixes = source.prefixes
-    return snapshotData.prices.filter((p) => {
-      const id = p.assetId.toLowerCase()
-      return prefixes.some((prefix) => id.startsWith(prefix))
-    })
-  }, [snapshotData?.prices, source])
+  // Markets come directly from the per-source snapshot (already filtered server-side)
+  const sourceMarkets = snapshotData?.prices ?? []
 
-  const marketCount = sourceMarkets.length || undefined
+  // Use meta for accurate total count, fall back to snapshot
+  const metaCount = meta?.assetCounts ? getAssetCountForSource(sourceId, meta.assetCounts) : 0
+  const marketCount = metaCount > 0 ? metaCount : (sourceMarkets.length || undefined)
   const marketIds = useMemo(() => sourceMarkets.map(p => p.assetId), [sourceMarkets])
 
-  // Pick the first active batch for the batch bar
+  // Pick the first active batch matching this source
   const activeBatch = useMemo(() => {
     if (!batches || batches.length === 0) return null
-    return batches[0]
-  }, [batches])
+    // Match by source key or data-node source ID
+    return batches.find(b =>
+      b.sourceId === sourceId || b.sourceId === dataNodeId
+    ) ?? null
+  }, [batches, sourceId, dataNodeId])
 
-  // Batch timer countdown
-  const [tickElapsed, setTickElapsed] = useState(0)
+  // Epoch-based tick timer (synced, survives reload)
+  const [tickState, setTickState] = useState(() => getTickState())
   useEffect(() => {
-    if (!activeBatch) return
-    const interval = setInterval(() => {
-      setTickElapsed((prev) => {
-        const next = prev + 1
-        if (next >= activeBatch.tickDuration) return 0
-        return next
-      })
-    }, 1000)
+    const interval = setInterval(() => setTickState(getTickState()), 1000)
     return () => clearInterval(interval)
-  }, [activeBatch])
+  }, [])
+  const multiplier = getMultiplier(tickState.elapsed)
 
   if (!source) {
     return (
@@ -88,10 +85,6 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
     )
   }
 
-  const timeRemaining = activeBatch
-    ? Math.max(activeBatch.tickDuration - tickElapsed, 0)
-    : 0
-
   const formatTime = (secs: number): string => {
     const m = Math.floor(secs / 60)
     const s = secs % 60
@@ -99,29 +92,18 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
   }
 
   // Bitmap counts for this source
-  const counts = bitmapEditor.getCounts(sourceId)
+  const counts = bitmapEditor.getCounts(sourceId, marketIds)
   const totalMarkets = marketIds.length
   const totalSet = counts.up + counts.down
 
   return (
     <div className="px-6 lg:px-12 py-6">
       <div className="max-w-site mx-auto">
-        {/* Back link */}
-        <button
-          onClick={() => router.push('/')}
-          className="inline-flex items-center gap-1 text-[13px] font-semibold text-text-secondary hover:text-black transition-colors mb-4"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Sources
-        </button>
-
         {/* Source Hero */}
         <SourceHero source={source} sourceSchedule={sourceSchedule} marketCount={marketCount} />
 
-        {/* Batch bar — light gray like mockup */}
-        <div className="mt-4 bg-[var(--surface)] border border-border-light rounded-lg px-5 py-3 flex items-center gap-6">
+        {/* Batch bar */}
+        <div className="mt-4 bg-[var(--surface)] border border-border-light px-5 py-3 flex items-center gap-6">
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
               Batch
@@ -148,11 +130,20 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
           </div>
           {/* Progress bar */}
           <div className="flex-1">
-            <div className="h-1.5 bg-border-light rounded-full overflow-hidden">
+            <div className="h-1.5 bg-border-light overflow-hidden">
               <div
-                className="h-full bg-black rounded-full transition-all duration-1000"
-                style={{ width: activeBatch ? `${Math.min((tickElapsed / activeBatch.tickDuration) * 100, 100)}%` : '0%' }}
+                className={`h-full transition-all duration-1000 ${tickState.isLocked ? 'bg-red-500' : 'bg-black'}`}
+                style={{ width: `${(tickState.elapsed / 30) * 100}%` }}
               />
+            </div>
+          </div>
+          {/* Multiplier */}
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+              Multiplier
+            </div>
+            <div className={`text-[16px] font-bold font-mono ${tickState.isLocked ? 'text-red-600' : 'text-color-up'}`}>
+              {multiplier.label}
             </div>
           </div>
           {/* Set status */}
@@ -169,8 +160,8 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
               Timer
             </div>
-            <div className="text-[16px] font-bold font-mono tabular-nums text-black">
-              {formatTime(timeRemaining)}
+            <div className={`text-[16px] font-bold font-mono tabular-nums ${tickState.isLocked ? 'text-red-600' : 'text-black'}`}>
+              {formatTime(tickState.remaining)}
             </div>
           </div>
         </div>

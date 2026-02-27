@@ -2,10 +2,10 @@
 
 import { useState, useMemo } from 'react'
 import type { SourceCategory, VisionSource } from '@/lib/vision/sources'
-import { VISION_SOURCES } from '@/lib/vision/sources'
+import { VISION_SOURCES, getAssetCountForSource, getSourceStatusFromMeta, getDataNodeSourceIds } from '@/lib/vision/sources'
 import { getSourcesByCategory } from '@/lib/vision/source-categories'
 import { SOURCE_CATEGORIES } from '@/lib/vision/source-categories'
-import { useMarketSnapshot } from '@/hooks/vision/useMarketSnapshot'
+import { useMarketSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { CategoryNav } from './CategoryNav'
 import { NextBatches } from './NextBatches'
@@ -13,13 +13,16 @@ import { SourceCard } from './SourceCard'
 
 /**
  * Groups snapshot prices by source, producing a map of sourceId -> market list.
- * Matches each price's assetId against source prefixes.
+ * Matches on the price's `source` field (data-node source ID) using VISION_TO_DATANODE mapping,
+ * with prefix fallback for any unmatched entries.
  */
+export interface SourceMarket { id: string; symbol: string; name: string }
+
 function groupMarketsBySource(
-  prices: { assetId: string; symbol: string }[] | undefined,
+  prices: { assetId: string; symbol: string; name: string; source?: string }[] | undefined,
   sources: VisionSource[],
-): Record<string, { id: string; symbol: string }[]> {
-  const result: Record<string, { id: string; symbol: string }[]> = {}
+): Record<string, SourceMarket[]> {
+  const result: Record<string, SourceMarket[]> = {}
 
   // Initialize all sources with empty arrays
   for (const src of sources) {
@@ -28,11 +31,32 @@ function groupMarketsBySource(
 
   if (!prices) return result
 
+  // Build reverse map: data-node source ID → vision source ID
+  const dnToVision: Record<string, string> = {}
+  for (const src of sources) {
+    // Direct match: vision source id is also a valid data-node source id
+    dnToVision[src.id] = src.id
+    // Mapped aliases from VISION_TO_DATANODE
+    const dnIds = getDataNodeSourceIds(src.id)
+    for (const dnId of dnIds) {
+      dnToVision[dnId] = src.id
+    }
+  }
+
   for (const p of prices) {
+    // Primary: match on source field (reliable, no prefix guessing)
+    if (p.source) {
+      const visionId = dnToVision[p.source]
+      if (visionId && result[visionId]) {
+        result[visionId].push({ id: p.assetId, symbol: p.symbol, name: p.name })
+        continue
+      }
+    }
+    // Fallback: prefix matching on assetId
     const lower = p.assetId.toLowerCase()
     for (const src of sources) {
       if (src.prefixes.some(pfx => lower.startsWith(pfx))) {
-        result[src.id].push({ id: p.assetId, symbol: p.symbol })
+        result[src.id].push({ id: p.assetId, symbol: p.symbol, name: p.name })
         break
       }
     }
@@ -47,6 +71,7 @@ export function SourcesGrid() {
   const [showSectionBar, setShowSectionBar] = useState(true)
 
   const { data: snapshot } = useMarketSnapshot()
+  const { data: meta } = useMarketSnapshotMeta()
   const bitmapEditor = useBitmapEditor()
 
   // Group markets by source
@@ -62,15 +87,16 @@ export function SourcesGrid() {
   )
 
 
-  const totalMarkets = snapshot?.totalAssets ?? 0
-  const totalPrices = snapshot?.prices?.length ?? 0
-  const sourceCount = VISION_SOURCES.length
-  const categoryCount = SOURCE_CATEGORIES.length
-  const marketDisplay = totalMarkets > 0
-    ? totalMarkets.toLocaleString()
-    : totalPrices > 0
-    ? totalPrices.toLocaleString()
-    : '30,000+'
+  // Dynamic stats from live meta endpoint, with static fallbacks
+  const liveSourceCount = meta?.totalSources ?? 0
+  const liveCategoryCount = meta?.totalCategories ?? 0
+  const liveAssetCount = meta?.totalAssets ?? snapshot?.totalAssets ?? 0
+
+  const sourceCount = liveSourceCount > 0 ? liveSourceCount : VISION_SOURCES.length
+  const categoryCount = liveCategoryCount > 0 ? liveCategoryCount : SOURCE_CATEGORIES.length
+  const marketDisplay = liveAssetCount > 0
+    ? liveAssetCount.toLocaleString()
+    : '—'
 
   return (
     <div className="flex flex-col">
@@ -138,6 +164,8 @@ export function SourcesGrid() {
                 source={source}
                 markets={marketsBySource[source.id] ?? []}
                 bitmapEditor={bitmapEditor}
+                metaAssetCount={meta?.assetCounts ? getAssetCountForSource(source.id, meta.assetCounts) : undefined}
+                metaStatus={meta?.sources ? getSourceStatusFromMeta(source.id, meta.sources) : undefined}
               />
             ))}
           </div>

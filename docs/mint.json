@@ -60,7 +60,8 @@
         "index/guides/buy-sell",
         "index/guides/create-itp",
         "index/guides/backtesting",
-        "index/guides/lending"
+        "index/guides/lending",
+        "index/guides/risks"
       ]
     },
     {
@@ -135,6 +136,10 @@
         "vision/reference/error-codes",
         "vision/reference/glossary"
       ]
+    },
+    {
+      "group": "Operations",
+      "pages": ["vision/risks"]
     },
     {
       "group": "Examples",

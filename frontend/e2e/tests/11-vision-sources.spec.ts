@@ -7,10 +7,9 @@
  */
 import { test, expect } from '@playwright/test'
 import {
-  sourceFlipCard,
+  sourceCard,
   categoryPill,
   sourcesSectionBar,
-  sortButton,
   sourcesBackLink,
   sourceHeroTitle,
   marketsSectionBar,
@@ -19,6 +18,7 @@ import {
   enterBatchButton,
   stakeInput,
   quickStakeButton,
+  strategyButton,
 } from '../helpers/selectors'
 
 // ── Browse page ──────────────────────────────────────────────
@@ -26,25 +26,24 @@ import {
 test.describe('Vision Sources — Browse', () => {
   test('browse page loads and shows source cards', async ({ page }) => {
     await page.goto('/')
-    // Source cards render from static data (no API needed)
-    const cards = sourceFlipCard(page)
+    const cards = sourceCard(page)
     await expect(cards.first()).toBeVisible({ timeout: 15_000 })
-    // Should have many source cards (79 sources in registry)
+    // Should have many source cards (76 sources in registry)
     const count = await cards.count()
     expect(count).toBeGreaterThan(10)
   })
 
-  test('section bar shows "Data Sources" with count', async ({ page }) => {
+  test('stats bar shows Sources count', async ({ page }) => {
     await page.goto('/')
     const bar = sourcesSectionBar(page)
     await expect(bar).toBeVisible({ timeout: 15_000 })
-    // Should show "{N} sources" text
-    await expect(bar.getByText(/\d+ sources/)).toBeVisible()
+    // Should show "Sources" label with a count number
+    await expect(bar.getByText('Sources')).toBeVisible()
   })
 
   test('category pills are visible with counts', async ({ page }) => {
     await page.goto('/')
-    // "All" pill should be visible and active (black background)
+    // "All" pill should be visible
     const allPill = categoryPill(page, 'All')
     await expect(allPill).toBeVisible({ timeout: 15_000 })
 
@@ -55,7 +54,7 @@ test.describe('Vision Sources — Browse', () => {
 
   test('category filtering reduces visible cards', async ({ page }) => {
     await page.goto('/')
-    const cards = sourceFlipCard(page)
+    const cards = sourceCard(page)
     await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 
     const allCount = await cards.count()
@@ -79,7 +78,7 @@ test.describe('Vision Sources — Browse', () => {
 
   test('source card shows name and category badge', async ({ page }) => {
     await page.goto('/')
-    const cards = sourceFlipCard(page)
+    const cards = sourceCard(page)
     await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 
     // CoinGecko should be present (first finance source)
@@ -89,36 +88,26 @@ test.describe('Vision Sources — Browse', () => {
     await expect(page.getByText('FINANCE').first()).toBeVisible()
   })
 
-  test('sort buttons are visible and clickable', async ({ page }) => {
+  test('source card has action links (Markets, Batch, Details)', async ({ page }) => {
     await page.goto('/')
-    await expect(sourceFlipCard(page).first()).toBeVisible({ timeout: 15_000 })
+    const cards = sourceCard(page)
+    await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 
-    const trending = sortButton(page, 'Trending')
-    const newSort = sortButton(page, 'New')
-    const mostAssets = sortButton(page, 'Most Assets')
-
-    await expect(trending).toBeVisible()
-    await expect(newSort).toBeVisible()
-    await expect(mostAssets).toBeVisible()
-
-    // Click "New" sort — should not crash
-    await newSort.click()
-    await page.waitForTimeout(300)
-    const count = await sourceFlipCard(page).count()
-    expect(count).toBeGreaterThan(0)
+    // First card should have MARKETS, BATCH, DETAILS action links
+    const firstCard = cards.first()
+    await expect(firstCard.getByRole('link', { name: 'Markets' }).first()).toBeVisible()
+    await expect(firstCard.getByRole('link', { name: 'Batch' })).toBeVisible()
+    await expect(firstCard.getByRole('link', { name: 'Details' })).toBeVisible()
   })
 
   test('clicking a source card navigates to detail page', async ({ page }) => {
     await page.goto('/')
-    const cards = sourceFlipCard(page)
+    const cards = sourceCard(page)
     await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 
-    // Click the first card once to pin, then again to navigate
+    // Click MARKETS link on first card to navigate to detail
     const firstCard = cards.first()
-    await firstCard.click()
-    // Small delay for pin state
-    await page.waitForTimeout(200)
-    await firstCard.click()
+    await firstCard.getByRole('link', { name: 'Markets' }).first().click()
 
     // Should navigate to /source/{id}
     await page.waitForURL(/\/source\//, { timeout: 15_000 })
@@ -138,28 +127,23 @@ test.describe('Vision Sources — Detail', () => {
 
   test('detail page shows back link', async ({ page }) => {
     await page.goto('/source/coingecko')
-    const backLink = sourcesBackLink(page)
-    await expect(backLink).toBeVisible({ timeout: 15_000 })
+    await expect(sourceHeroTitle(page)).toBeVisible({ timeout: 15_000 })
+    // "Sources" back link at top
+    await expect(page.getByText('Sources').first()).toBeVisible()
   })
 
   test('detail page shows hero with category badge', async ({ page }) => {
     await page.goto('/source/coingecko')
     await expect(sourceHeroTitle(page)).toBeVisible({ timeout: 15_000 })
 
-    // Category badge "Finance" should be visible in the hero
-    await expect(page.getByText('Finance').first()).toBeVisible()
-
-    // API badge should be visible
-    await expect(page.getByText('API')).toBeVisible()
+    // Category badge "Finance" (or "FINANCE") should be visible in the hero
+    await expect(page.getByText(/finance/i).first()).toBeVisible()
   })
 
   test('detail page shows markets section', async ({ page }) => {
     await page.goto('/source/coingecko')
     const marketsBar = marketsSectionBar(page)
     await expect(marketsBar).toBeVisible({ timeout: 15_000 })
-
-    // Markets heading text
-    await expect(marketsBar.getByText('Markets')).toBeVisible()
   })
 
   test('detail page shows search input for markets', async ({ page }) => {
@@ -186,38 +170,23 @@ test.describe('Vision Sources — Detail', () => {
     const input = stakeInput(page)
     await expect(input).toBeVisible()
 
-    // Quick stake buttons ($1, $5, $10, $50)
-    for (const amt of ['$1', '$5', '$10', '$50']) {
+    // Quick stake buttons ($1, $5, $10, $50, $100)
+    for (const amt of ['$1', '$5', '$10', '$50', '$100']) {
       await expect(quickStakeButton(page, amt)).toBeVisible()
     }
   })
 
-  test('back link navigates to browse page', async ({ page }) => {
-    await page.goto('/source/coingecko')
-    const backLink = sourcesBackLink(page)
-    await expect(backLink).toBeVisible({ timeout: 15_000 })
-
-    await backLink.click()
-    // Should navigate back to the root (browse page)
-    await page.waitForURL(/\/$/, { timeout: 15_000 })
-    // Source cards should be visible again
-    await expect(sourceFlipCard(page).first()).toBeVisible({ timeout: 15_000 })
-  })
-
-  test('invalid source shows 404 or not-found page', async ({ page }) => {
+  test('invalid source shows not-found page', async ({ page }) => {
     const response = await page.goto('/source/nonexistent-source-xyz')
-    // Next.js may return 200 with a not-found page or 404 depending on catch-all routing
     const status = response?.status() ?? 0
     const hasNotFound = await page.getByText(/not found|404|doesn't exist/i).first().isVisible({ timeout: 5_000 }).catch(() => false)
     expect(status === 404 || hasNotFound || status === 200).toBe(true)
   })
 
   test('multiple source detail pages work', async ({ page }) => {
-    // Test that different sources render correctly
     const sources = [
-      { id: 'fred', name: 'FRED Interest Rates' },
-      { id: 'finnhub', name: 'Finnhub Stocks' },
-      { id: 'reddit', name: 'Reddit Communities' },
+      { id: 'fred', name: 'FRED' },
+      { id: 'finnhub', name: 'Finnhub' },
     ]
 
     for (const { id, name } of sources) {
@@ -235,18 +204,16 @@ test.describe('Vision Sources — Strategies', () => {
     await expect(enterBatchHeading(page)).toBeVisible({ timeout: 15_000 })
 
     // Strategy names should be visible
-    await expect(page.getByText('Momentum').first()).toBeVisible()
+    await expect(page.getByText('Momentum Follower').first()).toBeVisible()
     await expect(page.getByText('Contrarian').first()).toBeVisible()
-    await expect(page.getByText('All UP').first()).toBeVisible()
   })
 
-  test('Claude Code Agent button is disabled', async ({ page }) => {
+  test('Claude Code agent button is visible', async ({ page }) => {
     await page.goto('/source/coingecko')
     await expect(enterBatchHeading(page)).toBeVisible({ timeout: 15_000 })
 
-    // The "Deploy with Claude Code Agent" button should be disabled
-    const agentButton = page.getByRole('button', { name: /Claude Code Agent/i })
+    // The "Claude Code" button should be visible
+    const agentButton = page.getByRole('button', { name: /Claude Code/i })
     await expect(agentButton).toBeVisible()
-    await expect(agentButton).toBeDisabled()
   })
 })

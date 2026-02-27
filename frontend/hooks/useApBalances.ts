@@ -53,13 +53,30 @@ export function useApBalances(): UseApBalancesReturn {
       const result = await fetchVaultBalances()
       if (!result) return
 
-      const mapped: VaultAssetBalance[] = result.assets.map(a => ({
+      const raw: VaultAssetBalance[] = result.assets.map(a => ({
         address: a.address.toLowerCase(),
         symbol: a.symbol,
         balance: BigInt(a.balance),
         price: BigInt(a.price),
         usdValue: a.usd_value,
       }))
+
+      // Deduplicate by symbol — merge balances, keep highest-value address
+      const bySymbol = new Map<string, VaultAssetBalance>()
+      for (const a of raw) {
+        const existing = bySymbol.get(a.symbol)
+        if (existing) {
+          existing.usdValue += a.usdValue
+          existing.balance += a.balance
+          if (a.usdValue > existing.usdValue - a.usdValue) {
+            existing.address = a.address
+            existing.price = a.price
+          }
+        } else {
+          bySymbol.set(a.symbol, { ...a })
+        }
+      }
+      const mapped = Array.from(bySymbol.values())
 
       setAssets(mapped)
       setTotalTokenCount(result.token_count)

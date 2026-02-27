@@ -35,7 +35,7 @@ pub mod lastfm;
 pub mod treasury;
 pub mod twitch;
 pub mod twse;
-pub mod worldbank;
+
 pub mod zillow;
 
 // Bet on Everything sources (14)
@@ -122,7 +122,7 @@ pub use lastfm::LastfmMarketSource;
 pub use treasury::TreasuryMarketSource;
 pub use twitch::TwitchMarketSource;
 pub use twse::TwseMarketSource;
-pub use worldbank::WorldBankMarketSource;
+
 pub use zillow::ZillowMarketSource;
 
 // Re-exports — Bet on Everything sources

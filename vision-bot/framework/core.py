@@ -122,8 +122,8 @@ def load_config(path=None):
         "strategy": "random",
         "deposit": 10,
         "stake": 1,
-        "max_batches": 5,
-        "max_exposure": 100,
+        "max_batches": 50,
+        "max_exposure": 1000,
         "poll_interval": 30,
         "auto_claim": True,
         "auto_withdraw": True,
@@ -170,4 +170,12 @@ def load_config(path=None):
                 defaults[conf_key] = int(val)
             else:
                 defaults[conf_key] = val
+    # BATCH_IDS: comma-separated list of ints
+    if "BATCH_IDS" in os.environ:
+        defaults["batch_ids"] = [int(x.strip()) for x in os.environ["BATCH_IDS"].split(",") if x.strip()]
+    # MIN_BATCH_ID: skip batches below this ID (useful after redeployments)
+    if "MIN_BATCH_ID" in os.environ:
+        defaults["min_batch_id"] = int(os.environ["MIN_BATCH_ID"])
+    else:
+        defaults["min_batch_id"] = 0
     return defaults

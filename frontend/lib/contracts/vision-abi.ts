@@ -1,16 +1,19 @@
 /**
- * Vision.sol ABI — derived from IVision.sol interface
- * Used for createBatch and other Vision contract interactions.
+ * Vision.sol ABI — matches hash-based contract (sourceId + configHash design).
+ * Derived from IVision.sol interface after 3-round review fixes.
  */
 
 export const VISION_ABI = [
   // ============ BATCH MANAGEMENT ============
   {
     inputs: [
-      { name: 'marketIds', type: 'bytes32[]' },
-      { name: 'resolutionTypes', type: 'uint8[]' },
+      { name: 'sourceId', type: 'bytes32' },
+      { name: 'configHash', type: 'bytes32' },
       { name: 'tickDuration', type: 'uint256' },
-      { name: 'customThresholds', type: 'uint256[]' },
+      { name: 'lockOffset', type: 'uint256' },
+      { name: 'blsSignature', type: 'bytes' },
+      { name: 'referenceNonce', type: 'uint256' },
+      { name: 'signersBitmask', type: 'uint256' },
     ],
     name: 'createBatch',
     outputs: [{ name: 'batchId', type: 'uint256' }],
@@ -19,12 +22,32 @@ export const VISION_ABI = [
   },
   {
     inputs: [
-      { name: 'batchId', type: 'uint256' },
-      { name: 'marketIds', type: 'bytes32[]' },
-      { name: 'resolutionTypes', type: 'uint8[]' },
-      { name: 'blsSig', type: 'bytes' },
+      { name: 'sourceId', type: 'bytes32' },
+      { name: 'configHash', type: 'bytes32' },
+      { name: 'tickDuration', type: 'uint256' },
+      { name: 'lockOffset', type: 'uint256' },
+      { name: 'blsSignature', type: 'bytes' },
+      { name: 'referenceNonce', type: 'uint256' },
+      { name: 'signersBitmask', type: 'uint256' },
+      { name: 'depositAmount', type: 'uint256' },
+      { name: 'stakePerTick', type: 'uint256' },
+      { name: 'bitmapHash', type: 'bytes32' },
     ],
-    name: 'updateBatchMarkets',
+    name: 'createBatchAndJoin',
+    outputs: [{ name: 'batchId', type: 'uint256' }],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { name: 'batchId', type: 'uint256' },
+      { name: 'configHash', type: 'bytes32' },
+      { name: 'lockOffset', type: 'uint256' },
+      { name: 'blsSignature', type: 'bytes' },
+      { name: 'referenceNonce', type: 'uint256' },
+      { name: 'signersBitmask', type: 'uint256' },
+    ],
+    name: 'updateBatchConfig',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',
@@ -38,15 +61,46 @@ export const VISION_ABI = [
         type: 'tuple',
         components: [
           { name: 'creator', type: 'address' },
-          { name: 'marketIds', type: 'bytes32[]' },
-          { name: 'resolutionTypes', type: 'uint8[]' },
+          { name: 'sourceId', type: 'bytes32' },
+          { name: 'configHash', type: 'bytes32' },
+          { name: 'nextConfigHash', type: 'bytes32' },
           { name: 'tickDuration', type: 'uint256' },
-          { name: 'customThresholds', type: 'uint256[]' },
+          { name: 'lockOffset', type: 'uint256' },
+          { name: 'nextLockOffset', type: 'uint256' },
           { name: 'createdAtTick', type: 'uint256' },
+          { name: 'lastPromotionTick', type: 'uint256' },
           { name: 'paused', type: 'bool' },
         ],
       },
     ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: 'sourceId', type: 'bytes32' }],
+    name: 'getBatchIdBySourceId',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: 'batchId', type: 'uint256' }],
+    name: 'currentTickId',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: 'sourceId', type: 'bytes32' }],
+    name: 'sourceIdToBatchId',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: 'sourceId', type: 'bytes32' }],
+    name: 'sourceIdHasBatch',
+    outputs: [{ name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
   },
@@ -55,6 +109,7 @@ export const VISION_ABI = [
   {
     inputs: [
       { name: 'batchId', type: 'uint256' },
+      { name: 'configHash', type: 'bytes32' },
       { name: 'depositAmount', type: 'uint256' },
       { name: 'stakePerTick', type: 'uint256' },
       { name: 'bitmapHash', type: 'bytes32' },
@@ -67,6 +122,7 @@ export const VISION_ABI = [
   {
     inputs: [
       { name: 'batchId', type: 'uint256' },
+      { name: 'configHash', type: 'bytes32' },
       { name: 'newBitmapHash', type: 'bytes32' },
     ],
     name: 'updateBitmap',
@@ -120,6 +176,7 @@ export const VISION_ABI = [
         type: 'tuple',
         components: [
           { name: 'bitmapHash', type: 'bytes32' },
+          { name: 'configHash', type: 'bytes32' },
           { name: 'stakePerTick', type: 'uint256' },
           { name: 'startTick', type: 'uint256' },
           { name: 'balance', type: 'uint256' },
@@ -186,6 +243,8 @@ export const VISION_ABI = [
     inputs: [
       { name: 'batchId', type: 'uint256' },
       { name: 'blsSignature', type: 'bytes' },
+      { name: 'referenceNonce', type: 'uint256' },
+      { name: 'signersBitmask', type: 'uint256' },
     ],
     name: 'pause',
     outputs: [],
@@ -196,6 +255,8 @@ export const VISION_ABI = [
     inputs: [
       { name: 'batchId', type: 'uint256' },
       { name: 'blsSignature', type: 'bytes' },
+      { name: 'referenceNonce', type: 'uint256' },
+      { name: 'signersBitmask', type: 'uint256' },
     ],
     name: 'unpause',
     outputs: [],
@@ -208,6 +269,8 @@ export const VISION_ABI = [
       { name: 'player', type: 'address' },
       { name: 'finalBalance', type: 'uint256' },
       { name: 'blsSignature', type: 'bytes' },
+      { name: 'referenceNonce', type: 'uint256' },
+      { name: 'signersBitmask', type: 'uint256' },
     ],
     name: 'forceWithdraw',
     outputs: [],
@@ -293,8 +356,11 @@ export const VISION_ABI = [
     anonymous: false,
     inputs: [
       { indexed: true, name: 'batchId', type: 'uint256' },
+      { indexed: true, name: 'sourceId', type: 'bytes32' },
       { indexed: true, name: 'creator', type: 'address' },
+      { indexed: false, name: 'configHash', type: 'bytes32' },
       { indexed: false, name: 'tickDuration', type: 'uint256' },
+      { indexed: false, name: 'lockOffset', type: 'uint256' },
     ],
     name: 'BatchCreated',
     type: 'event',
@@ -352,8 +418,23 @@ export const VISION_ABI = [
   },
   {
     anonymous: false,
-    inputs: [{ indexed: true, name: 'batchId', type: 'uint256' }],
-    name: 'BatchMarketsUpdated',
+    inputs: [
+      { indexed: true, name: 'batchId', type: 'uint256' },
+      { indexed: false, name: 'configHash', type: 'bytes32' },
+      { indexed: false, name: 'lockOffset', type: 'uint256' },
+    ],
+    name: 'BatchConfigUpdated',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'batchId', type: 'uint256' },
+      { indexed: false, name: 'oldConfigHash', type: 'bytes32' },
+      { indexed: false, name: 'newConfigHash', type: 'bytes32' },
+      { indexed: false, name: 'tick', type: 'uint256' },
+    ],
+    name: 'BatchConfigPromoted',
     type: 'event',
   },
   {

@@ -669,6 +669,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         let mut last_cycle: u64 = 0;
         let mut last_signature = common::types::BLSSignature(vec![0u8; 64]);
         let mut first_seen_orders: HashMap<u64, std::time::Instant> = HashMap::new();
+        let mut itp_first_seen: std::collections::HashMap<ethers::types::U256, std::time::Instant> = std::collections::HashMap::new();
 
         loop {
             if consensus_shutdown.load(Ordering::Relaxed) {
@@ -833,6 +834,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         run_itp_creation_phase(
                             &protocol, arb_reader, arb_writer, &consensus_chain_writer_for_task,
                             itp_config, current_cycle, node_index_for_task, consensus_config.num_issuers,
+                            &mut itp_first_seen,
                         ).await;
                     }
 
@@ -1187,12 +1189,16 @@ async fn run_itp_creation_phase<P, W, K, PF>(
     current_cycle: u64,
     node_index: u8,
     num_issuers: u8,
+    first_seen: &mut std::collections::HashMap<ethers::types::U256, std::time::Instant>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
     K: issuer::KeyRegistry + Send + Sync + 'static,
     PF: issuer::PriceFetcher + Send + Sync + 'static,
 {
+    /// Max age before skipping a stale ITP creation request (1 hour)
+    const MAX_REQUEST_AGE: std::time::Duration = std::time::Duration::from_secs(3600);
+
     match arb_reader.get_all_pending_requests().await {
         Ok(pending_requests) => {
             if !pending_requests.is_empty() {
@@ -1201,11 +1207,27 @@ async fn run_itp_creation_phase<P, W, K, PF>(
                 let am_leader = calculate_bridge_leader(current_cycle, num_issuers, node_index);
 
                 for request in pending_requests {
+                    // Track first-seen time for staleness detection
+                    let seen_at = *first_seen
+                        .entry(request.nonce)
+                        .or_insert_with(std::time::Instant::now);
+                    if seen_at.elapsed() > MAX_REQUEST_AGE {
+                        debug!(nonce = %request.nonce, age_secs = seen_at.elapsed().as_secs(),
+                               "Skipping stale ITP creation request (>1h old)");
+                        continue;
+                    }
+
                     info!(nonce = %request.nonce, admin = ?request.admin, name = %request.name, am_leader, "Processing ITP creation request");
 
                     match protocol.run_itp_creation_phase(&request, itp_config, am_leader).await {
                         Ok(result) => {
-                            info!(nonce = %result.nonce, signer_count = result.signature_count, "ITP creation consensus succeeded");
+                            if result.signature_count == 0 {
+                                debug!(nonce = %result.nonce, am_leader,
+                                       "ITP creation: no signatures collected (follower placeholder)");
+                            } else {
+                                info!(nonce = %result.nonce, signer_count = result.signature_count,
+                                      "ITP creation consensus succeeded");
+                            }
 
                             if am_leader && !result.aggregated_signature.is_empty() {
                                 // Step 1: Create ITP on L3 first (Index.sol only exists on L3)
@@ -1238,6 +1260,7 @@ async fn run_itp_creation_phase<P, W, K, PF>(
                                     match arb_writer.complete_create_itp_and_wait(
                                         result.nonce, itp_id,
                                         result.aggregated_signature.clone(),
+                                        protocol.registry_nonce(), result.signer_bitmap,
                                         RECEIPT_TIMEOUT_SECS,
                                     ).await {
                                         Ok(receipt) => {
@@ -1325,25 +1348,23 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                 let chain_id = arb_reader.config().chain_id;
                 match protocol.run_bridge_arb_to_l3_phase(&order, am_leader).await {
                     Ok(result) => {
-                        info!(order_id = %order.order_id, signer_count = result.signature_count, "Bridge Arb→L3 consensus completed");
-
                         // Only advance to submit phase if BLS consensus actually happened.
                         // signer_count==0 means no proposal was received (follower raced ahead
                         // of leader), so advancing would cause status collisions when the
                         // leader's proposal arrives later.
                         if result.signature_count == 0 {
-                            debug!(order_id = %order.order_id, "Bridge phase had no signers, skipping submit (will retry next cycle)");
+                            debug!(order_id = %order.order_id, am_leader, "Bridge Arb→L3: no signatures collected (follower placeholder)");
                             continue;
                         }
+                        info!(order_id = %order.order_id, signer_count = result.signature_count, "Bridge Arb→L3 consensus completed");
 
                         match protocol.run_submit_order_phase(&order, am_leader).await {
                             Ok(submit_result) => {
-                                info!(order_id = %order.order_id, signer_count = submit_result.signature_count, "Submit order consensus completed");
-
                                 if submit_result.signature_count == 0 {
-                                    debug!(order_id = %order.order_id, "Submit phase had no signers, skipping advancement (will retry next cycle)");
+                                    debug!(order_id = %order.order_id, am_leader, "Submit order: no signatures collected (follower placeholder)");
                                     continue;
                                 }
+                                info!(order_id = %order.order_id, signer_count = submit_result.signature_count, "Submit order consensus completed");
 
                                 // Mark as processed so it won't be retried
                                 arb_reader.mark_order_processed(chain_id, order.order_id).await;
@@ -1474,7 +1495,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                             Ok(cbo_result) => {
                                 info!(cycle = current_cycle, order_id = %order_id, signer_count = cbo_result.signature_count, "CompleteBuyOrder consensus completed");
                                 if batch_am_leader && !cbo_result.aggregated_signature.0.is_empty() {
-                                    match arb_writer.complete_buy_order(*order_id, vault, cbo_result.aggregated_signature.0.clone()).await {
+                                    match arb_writer.complete_buy_order(*order_id, vault, cbo_result.aggregated_signature.0.clone(), protocol.registry_nonce(), cbo_result.signer_bitmap).await {
                                         Ok(tx_hash) => info!(?tx_hash, order_id = %order_id, "completeBuyOrder submitted"),
                                         Err(e) => warn!(error = %e, order_id = %order_id, "completeBuyOrder failed"),
                                     }
@@ -1574,7 +1595,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                 Ok(cbo_result) => {
                                     info!(cycle = current_cycle, order_id = %order_id, signer_count = cbo_result.signature_count, "CompleteBuyOrder consensus (E021 path)");
                                     if batch_am_leader && !cbo_result.aggregated_signature.0.is_empty() {
-                                        match arb_writer.complete_buy_order(*order_id, vault, cbo_result.aggregated_signature.0.clone()).await {
+                                        match arb_writer.complete_buy_order(*order_id, vault, cbo_result.aggregated_signature.0.clone(), protocol.registry_nonce(), cbo_result.signer_bitmap).await {
                                             Ok(tx_hash) => info!(?tx_hash, order_id = %order_id, "completeBuyOrder submitted (E021 path)"),
                                             Err(e) => info!(error = %e, order_id = %order_id, "completeBuyOrder already done or failed (E021 path)"),
                                         }
@@ -2003,16 +2024,9 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
             "Phase C: Completing sell order on Arbitrum"
         );
 
-        // fundSellOrder: vault → ArbBridgeCustody (pull USDC before completeSellOrder pays user)
-        if am_leader {
-            let vault = orchestrator.read().await.config().bitget_vault;
-            match arb_writer.fund_sell_order(order_id, vault, usdc_proceeds, vec![]).await {
-                Ok(tx_hash) => info!(?tx_hash, order_id = %order_id, "fundSellOrder submitted"),
-                Err(e) => warn!(error = %e, order_id = %order_id, "fundSellOrder failed"),
-            }
-        }
+        let vault = orchestrator.read().await.config().bitget_vault;
 
-        match protocol.run_complete_sell_order_phase(order_id, usdc_proceeds, am_leader).await {
+        match protocol.run_complete_sell_order_phase(order_id, usdc_proceeds, vault, am_leader).await {
             Ok(result) => {
                 info!(
                     order_id = %order_id,
@@ -2020,12 +2034,15 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                     "Complete sell order consensus succeeded"
                 );
 
-                // Leader: call arb_writer.complete_sell_order
+                // Leader: call arb_writer.complete_sell_order (atomically pulls from vault→user)
                 if am_leader && !result.aggregated_signature.0.is_empty() {
                     match arb_writer.complete_sell_order(
                         order_id,
                         usdc_proceeds,
+                        vault,
                         result.aggregated_signature.0.clone(),
+                        protocol.registry_nonce(),
+                        result.signer_bitmap,
                     ).await {
                         Ok(tx_hash) => {
                             info!(
@@ -3236,14 +3253,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Initialize Postgres pool, chain listener, and API routes
             match sqlx::PgPool::connect(&vision_cfg.database_url).await {
                 Ok(pool) => {
+                    // Restore scheduler state from DB (crash recovery)
+                    if let Err(e) = scheduler.load_from_db(&pool).await {
+                        tracing::warn!(error = %e, "Failed to restore vision scheduler from DB");
+                    }
+                    // Restore bitmaps from DB (crash recovery)
+                    if let Err(e) = bitmap_store.load_from_db(&pool).await {
+                        tracing::warn!(error = %e, "Failed to restore vision bitmaps from DB");
+                    }
+
                     // Spawn chain listener (unified event indexer: scheduler + Postgres)
                     let vision_address: ethers::types::Address = vision_cfg.vision_address
                         .parse()
                         .expect("valid Vision contract address");
-                    let l3_rpc_url = components.chain.rpc_url.clone();
+                    let vision_rpc_url = vision_cfg.rpc_ws_url.clone();
                     let cl_provider = Arc::new(
-                        ethers::providers::Provider::<ethers::providers::Http>::try_from(&l3_rpc_url)
-                            .expect("valid L3 RPC URL for chain listener")
+                        ethers::providers::Provider::<ethers::providers::Http>::try_from(&vision_rpc_url)
+                            .expect("valid Vision RPC URL for chain listener")
                     );
                     let chain_listener = issuer::vision::chain_listener::ChainListener::new(
                         cl_provider,

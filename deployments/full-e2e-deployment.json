@@ -1,6 +1,6 @@
 {
   "chainId": 111222333,
-  "rpc": "https://index.rpc.zeeve.net",
+  "rpc": "http://142.132.164.24/",
   "Governance": "0x0161634f8E827c305bF251c201F4956898Bb47B3",
   "IssuerRegistry": "0xae3DcC43AC2E735C43b2a2bCd9C25FcA00441785",
   "AssetPairRegistry": "0x9705f5D06C229FAb0A284aBB12aA521eF7E8E070",

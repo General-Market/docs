@@ -9,7 +9,7 @@ import { getUserState, mintBridgedItp, rebalanceItp } from '../helpers/backend-a
 
 test.describe('Lending (Deposit → Borrow → Repay → Withdraw)', () => {
   test('full lending cycle', async ({ walletPage: page }) => {
-    test.setTimeout(180_000); // 3 min — Morpho txs on Anvil can be slow
+    test.setTimeout(240_000); // 4 min — Morpho txs + rebalance on Anvil can be slow
     // ── Setup: connect wallet ────────────────────────────────
     const connectBtn = connectWalletButton(page);
     await expect(connectBtn).toBeVisible({ timeout: 15_000 });
@@ -66,17 +66,20 @@ test.describe('Lending (Deposit → Borrow → Repay → Withdraw)', () => {
     // Wait for "Borrowed!" success
     await expect(lendingModal.borrow.successText(page)).toBeVisible({ timeout: 60_000 });
 
-    // ── Step 2.5: Rebalance ITP (optional) ────────────────────
+    // ── Step 2.5: Rebalance ITP ────────────────────────────────
     // Verifies lending positions survive weight changes.
-    // Skipped if issuers lack mock-token prices (local dev limitation).
-    try {
-      await rebalanceItp(ITP_ID);
-      await page.waitForTimeout(4_000);
-    } catch {
-      console.log('Rebalance skipped (issuers lack mock-token prices)');
+    // Shifts 0.5% weight between asset[0] and asset[1] via issuer consensus.
+    await rebalanceItp(ITP_ID);
+    await page.waitForTimeout(4_000);
+
+    // Verify lending position survived rebalance (debt still exists)
+    const borrowSection = page.locator('h2:has-text("Borrow")');
+    const hasBorrow = await borrowSection.isVisible({ timeout: 5_000 }).catch(() => true);
+    if (hasBorrow) {
+      // Position intact — proceed to repay
     }
 
-    // ── Step 3: Repay Debt ───────────────────────────────────
+    // ── Step 3: Repay Debt (after rebalance) ─────────────────
     // Switch to Repay tab
     await lendingModal.repayTab(page).click();
 

@@ -499,15 +499,15 @@ pub struct SimConfig {
 
 #[derive(Debug, Clone, Serialize, Default)]
 pub struct FngRegime {
-    pub mode: String,           // "trigger"|"cash"|"risk_toggle"|"top_n_scaler"|"contrarian"|"frequency"
+    pub mode: String,           // "trigger"|"cash"|"cash_shift"|"risk_toggle"|"top_n_scaler"|"contrarian"|"frequency"|"graduated_cash"|"quality_rotation"|"trend_follow"
     pub fear_threshold: i32,    // default 25
     pub greed_threshold: i32,   // default 75
-    pub cash_pct_greed: f64,    // for "cash" mode (default 0.4)
+    pub cash_pct_greed: f64,    // for "cash"/"cash_shift"/"graduated_cash" modes (default 0.4)
 }
 
 #[derive(Debug, Clone, Serialize, Default)]
 pub struct DominanceRegime {
-    pub mode: String,           // "alt_rotator"|"trend_filter"|"weighted_split"|"breadth"|"momentum"|"combo"
+    pub mode: String,           // "alts_when_low"|"alts_when_falling"|"btc_when_high"|"combo"|"momentum"|"alt_rotator"|"trend_filter"|"weighted_split"|"breadth"
     pub lookback_days: i32,     // default 30
 }
 
@@ -517,6 +517,7 @@ pub struct DominanceRegime {
 struct DayRegimeSignals {
     fng_value: Option<i32>,
     fng_zone: FngZone,
+    fng_trend: f64,             // 14d FNG delta (positive = sentiment improving)
     btc_dom: Option<f64>,
     btc_dom_trend: f64,
     dom_zone: DomZone,
@@ -1064,9 +1065,11 @@ pub async fn run_simulation(
     let eligible_set: HashSet<String> = eligible_coin_ids.iter().cloned().collect();
 
     // Build price_history for momentum/vol strategies from cached data
-    // Also needed if FNG contrarian/risk_toggle may switch to momentum-based strategies
+    // Also needed if FNG/DOM regime may switch to momentum/vol-based strategies
     let needs_price_hist = config.weighting.needs_history()
-        || config.fng_regime.as_ref().map(|r| matches!(r.mode.as_str(), "contrarian" | "risk_toggle")).unwrap_or(false)
+        || config.fng_regime.as_ref().map(|r| matches!(r.mode.as_str(),
+            "contrarian" | "risk_toggle" | "quality_rotation" | "trend_follow"
+        )).unwrap_or(false)
         || config.dominance_regime.as_ref().map(|r| matches!(r.mode.as_str(), "momentum" | "combo")).unwrap_or(false);
     let price_history: Option<HashMap<String, Vec<(NaiveDate, f64)>>> =
         if needs_price_hist {
@@ -1088,10 +1091,13 @@ pub async fn run_simulation(
     };
 
     // Find start date: use override if provided, otherwise earliest date with >= 1 eligible coin.
+    // Clamp to 2020-01-01 minimum — data before that is too sparse.
+    let min_start = chrono::NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
+    let effective_start = config.start_date.map(|sd| sd.max(min_start)).or(Some(min_start));
     let mut start_idx = None;
     for (i, date) in cache.all_dates.iter().enumerate() {
         // If start_date override is set, skip dates before it
-        if let Some(sd) = config.start_date {
+        if let Some(sd) = effective_start {
             if *date < sd { continue; }
         }
         let eligible = count_eligible_coins_mem(
@@ -1140,6 +1146,7 @@ pub async fn run_simulation(
     let mut last_target_weights: HashMap<String, f64> = HashMap::new();
     let mut fng_prev: Option<i32> = None;
     let mut cash_fraction = 0.0_f64;
+    let mut cash_balance = 0.0_f64; // Explicit cash tracking (earns 0%)
 
     for (i, date) in sim_dates.iter().enumerate() {
         // Send progress every ~100 dates
@@ -1176,10 +1183,12 @@ pub async fn run_simulation(
         let btc_dom_today = preloaded.btc_dominance.get(date).copied();
         let dom_lookback = config.dominance_regime.as_ref().map(|r| r.lookback_days).unwrap_or(30);
         let btc_trend = btc_dom_trend(preloaded.btc_dominance, *date, dom_lookback);
+        let fng_trend_val = fng_trend(preloaded.fng_index, *date);
 
         let signals = DayRegimeSignals {
             fng_value: fng_today,
             fng_zone: classify_fng(fng_today, config.fng_regime.as_ref()),
+            fng_trend: fng_trend_val,
             btc_dom: btc_dom_today,
             btc_dom_trend: btc_trend,
             dom_zone: classify_dom(btc_trend),
@@ -1202,7 +1211,11 @@ pub async fn run_simulation(
         cash_fraction = params.cash_fraction;
 
         if should_rebalance {
-            let investable_value = portfolio_value * (1.0 - cash_fraction);
+            // Total portfolio = holdings NAV + explicit cash balance
+            let total_value = portfolio_value + cash_balance;
+            let investable_value = total_value * (1.0 - cash_fraction);
+            // Park the rest in cash (earns 0% between rebalances)
+            cash_balance = total_value * cash_fraction;
 
             // Get mcap-ranked coins at this date
             let all_coins = preloaded.mcap_rankings.get(date);
@@ -1304,12 +1317,8 @@ pub async fn run_simulation(
             n
         };
 
-        // FNG cash mode: total portfolio = invested portion + cash portion
-        let total_nav = if cash_fraction > 0.0 {
-            nav + (portfolio_value * cash_fraction / (1.0 - cash_fraction).max(0.01))
-        } else {
-            nav
-        };
+        // Total portfolio = holdings NAV + explicit cash balance
+        let total_nav = nav + cash_balance;
 
         if total_nav > peak_nav {
             peak_nav = total_nav;
@@ -2331,7 +2340,7 @@ fn resolve_effective_params(
         if !top_n_set {
             if let Some(btc_dom) = signals.btc_dom {
                 match regime.mode.as_str() {
-                    "breadth" | "alt_rotator" => {
+                    "breadth" | "alt_rotator" | "alts_when_low" => {
                         if btc_dom < 50.0 {
                             top_n = base_top_n.max(50);
                             top_n_set = true;
@@ -2342,6 +2351,21 @@ fn resolve_effective_params(
                     }
                     "trend_filter" => {
                         if signals.dom_zone == DomZone::Rising {
+                            top_n = 5;
+                            top_n_set = true;
+                        }
+                    }
+                    "alts_when_falling" => {
+                        if signals.dom_zone == DomZone::Falling {
+                            top_n = base_top_n.max(50);
+                            top_n_set = true;
+                        } else if signals.dom_zone == DomZone::Rising {
+                            top_n = 5;
+                            top_n_set = true;
+                        }
+                    }
+                    "btc_when_high" => {
+                        if btc_dom > 55.0 {
                             top_n = 5;
                             top_n_set = true;
                         }
@@ -2384,9 +2408,48 @@ fn resolve_effective_params(
             }
         }
 
-        // cash: FNG-only concept, never conflicts with DOM
-        if regime.mode == "cash" && fng >= regime.greed_threshold {
+        // quality_rotation: concentrate + defensive in fear, expand + momentum in greed
+        if regime.mode == "quality_rotation" {
+            if fng <= regime.fear_threshold {
+                if !top_n_set { top_n = 5; }
+                if !weighting_set { weighting = Weighting::MinVariance { lookback_days: 60 }; }
+            } else if fng >= regime.greed_threshold {
+                if !top_n_set { top_n = base_top_n.max(50); }
+                if !weighting_set { weighting = Weighting::Momentum { lookback_days: 90 }; }
+            }
+        }
+
+        // trend_follow: use 14d FNG direction, not absolute level
+        if !weighting_set && regime.mode == "trend_follow" {
+            let ft = signals.fng_trend;
+            if ft > 5.0 {
+                // Sentiment improving → ride momentum
+                weighting = Weighting::Momentum { lookback_days: 90 };
+            } else if ft < -5.0 {
+                // Sentiment deteriorating → get defensive
+                weighting = Weighting::InverseVolatility { lookback_days: 60 };
+            }
+        }
+
+        // cash / cash_shift: binary cash allocation at greed threshold
+        if matches!(regime.mode.as_str(), "cash" | "cash_shift") && fng >= regime.greed_threshold {
             cash_fraction = regime.cash_pct_greed.clamp(0.0, 0.95);
+        }
+
+        // graduated_cash: proportional cash ramp between fear and greed thresholds
+        if regime.mode == "graduated_cash" {
+            let f = regime.fear_threshold as f64;
+            let g = regime.greed_threshold as f64;
+            let fng_f = fng as f64;
+            if fng_f <= f {
+                cash_fraction = 0.0;
+            } else if fng_f >= g {
+                cash_fraction = regime.cash_pct_greed.clamp(0.0, 0.95);
+            } else {
+                // Linear interpolation between thresholds
+                cash_fraction = ((fng_f - f) / (g - f)) * regime.cash_pct_greed;
+                cash_fraction = cash_fraction.clamp(0.0, 0.95);
+            }
         }
     }
 
@@ -2444,9 +2507,11 @@ fn apply_weight_modifiers(
     if n == 0 { return; }
 
     let dom_is_weighted_split = config.dominance_regime.as_ref()
-        .map(|r| r.mode == "weighted_split").unwrap_or(false);
+        .map(|r| matches!(r.mode.as_str(), "weighted_split" | "alts_when_low")).unwrap_or(false);
     let dom_is_trend_filter = config.dominance_regime.as_ref()
-        .map(|r| r.mode == "trend_filter").unwrap_or(false);
+        .map(|r| matches!(r.mode.as_str(), "trend_filter" | "btc_when_high")).unwrap_or(false);
+    let dom_is_alts_falling = config.dominance_regime.as_ref()
+        .map(|r| r.mode == "alts_when_falling").unwrap_or(false);
 
     // 1. VC multiplier (eligibility already handled in Stage 3)
     if let Some(ref vc_mode) = config.vc_mode {
@@ -2487,6 +2552,30 @@ fn apply_weight_modifiers(
         if sum > 0.0 {
             for w in weights.iter_mut() {
                 *w /= sum;
+            }
+        }
+    }
+
+    // 5. DOM alts_when_falling — weighted_split when falling, trend_filter when rising
+    if dom_is_alts_falling {
+        if signals.dom_zone == DomZone::Falling {
+            if let Some(btc_dom) = signals.btc_dom {
+                dom_weighted_split(weights, coins, btc_dom);
+            }
+        } else if signals.dom_zone == DomZone::Rising {
+            if let Some(btc_idx) = coins.iter().position(|c| c.coin_id == "bitcoin") {
+                if weights[btc_idx] < 0.4 {
+                    weights[btc_idx] = 0.4;
+                }
+            }
+            for i in 5..n {
+                weights[i] = 0.0;
+            }
+            let sum: f64 = weights.iter().sum();
+            if sum > 0.0 {
+                for w in weights.iter_mut() {
+                    *w /= sum;
+                }
             }
         }
     }
@@ -2579,6 +2668,16 @@ fn fng_contrarian_adjust(
 }
 
 // ---- Dominance Regime Helpers ----
+
+/// Rolling delta of FNG index over 14 days.
+fn fng_trend(fng_index: &HashMap<NaiveDate, i32>, date: NaiveDate) -> f64 {
+    let past = date - chrono::Duration::days(14);
+    let fng_now = fng_index.get(&date).copied().unwrap_or(50) as f64;
+    let fng_past = (0..5).filter_map(|offset| {
+        fng_index.get(&(past + chrono::Duration::days(offset)))
+    }).next().copied().unwrap_or(50) as f64;
+    fng_now - fng_past
+}
 
 /// Rolling delta of BTC dominance over lookback days.
 fn btc_dom_trend(btc_dominance: &HashMap<NaiveDate, f64>, date: NaiveDate, lookback: i32) -> f64 {

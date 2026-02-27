@@ -621,6 +621,7 @@ impl ConsensusMessageHandler {
                 leader_id,
                 order_id,
                 usdc_proceeds,
+                vault,
                 reference_nonce: _,
                 leader_signature,
             } => {
@@ -629,6 +630,7 @@ impl ConsensusMessageHandler {
                     ?leader_id,
                     order_id = %order_id,
                     usdc_proceeds = %usdc_proceeds,
+                    ?vault,
                     "Received CompleteSellOrderProposal"
                 );
                 MessageHandleResult::ProcessCompleteSellOrderProposal {
@@ -636,6 +638,7 @@ impl ConsensusMessageHandler {
                     leader_id,
                     order_id,
                     usdc_proceeds,
+                    vault,
                     leader_signature,
                 }
             }
@@ -1349,6 +1352,7 @@ pub enum MessageHandleResult {
         leader_id: PeerId,
         order_id: U256,
         usdc_proceeds: U256,
+        vault: Address,
         leader_signature: P2PBLSSignature,
     },
     /// Process a complete sell order signature from a follower (cross-chain sell)

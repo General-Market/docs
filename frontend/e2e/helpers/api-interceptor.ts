@@ -264,26 +264,30 @@ async function handleMorphoPosition(route: Route): Promise<void> {
       }),
     });
   } catch (err) {
-    // Fallback to zeros on error
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        collateral: '0',
-        borrow_shares: '0',
-        debt_amount: '0',
-        oracle_price: '1000000000000000000',
-        health_factor: '999999999',
-        max_borrow: '0',
-        max_withdraw: '0',
-        market: {
-          total_supply_assets: '0',
-          total_supply_shares: '0',
-          total_borrow_assets: '0',
-          total_borrow_shares: '0',
-        },
-      }),
-    });
+    // Fallback to zeros on error — guard against route already handled
+    try {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          collateral: '0',
+          borrow_shares: '0',
+          debt_amount: '0',
+          oracle_price: '1000000000000000000',
+          health_factor: '999999999',
+          max_borrow: '0',
+          max_withdraw: '0',
+          market: {
+            total_supply_assets: '0',
+            total_supply_shares: '0',
+            total_borrow_assets: '0',
+            total_borrow_shares: '0',
+          },
+        }),
+      });
+    } catch {
+      // Route already handled by try block — ignore
+    }
   }
 }
 

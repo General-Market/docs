@@ -54,6 +54,27 @@ impl WeatherMetric {
         }
     }
 
+    /// Human-readable name for asset generation
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            WeatherMetric::Temperature2m => "Temperature",
+            WeatherMetric::Rain => "Rain",
+            WeatherMetric::WindSpeed10m => "Wind Speed",
+            WeatherMetric::Pm25 => "PM2.5",
+            WeatherMetric::Ozone => "Ozone",
+        }
+    }
+
+    /// Subcategory for asset metadata
+    pub fn subcategory(&self) -> &'static str {
+        match self {
+            WeatherMetric::Temperature2m => "temperature",
+            WeatherMetric::Rain => "precipitation",
+            WeatherMetric::WindSpeed10m => "wind",
+            WeatherMetric::Pm25 | WeatherMetric::Ozone => "air_quality",
+        }
+    }
+
     /// All supported weather metrics
     pub fn all() -> &'static [WeatherMetric] {
         &[

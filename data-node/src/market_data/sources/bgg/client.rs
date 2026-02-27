@@ -7,13 +7,13 @@
 //! Assets are dynamic — discovered from the /hot endpoint every sync.
 //!
 //! API: https://boardgamegeek.com/xmlapi2
-//! Auth: BGG Authorization token (free registration)
+//! Auth: Bearer token required (register at https://boardgamegeek.com/using_the_xml_api)
+//! Env: BGG_API_TOKEN (required)
 //! Rate limit: 12 req/min (5-second wait between requests)
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use chrono::Utc;
 use rust_decimal::Decimal;
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::time::Duration;
 use tracing::{info, warn};
@@ -44,13 +44,17 @@ struct HotItem {
 
 pub struct BggMarketSource {
     http: SourceHttpClient,
+    /// BGG API Bearer token — required since BGG enforced auth on XML API2.
+    /// Register at https://boardgamegeek.com/using_the_xml_api to obtain one.
     api_token: String,
 }
 
 impl BggMarketSource {
     pub fn from_env() -> Result<Self> {
-        let api_token = std::env::var("BGG_API_TOKEN")
-            .map_err(|_| anyhow::anyhow!("BGG_API_TOKEN not set"))?;
+        let api_token = std::env::var("BGG_API_TOKEN").unwrap_or_default();
+        if api_token.is_empty() {
+            anyhow::bail!("BGG_API_TOKEN not set — BGG now requires auth, register at https://boardgamegeek.com/using_the_xml_api");
+        }
 
         let rate_limit = RateLimitConfig {
             windows: vec![RateWindow {
@@ -60,7 +64,7 @@ impl BggMarketSource {
         };
         let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
 
-        info!("BoardGameGeek source initialized");
+        info!("BoardGameGeek source initialized (auth=bearer_token)");
         Ok(Self { http, api_token })
     }
 
@@ -112,17 +116,30 @@ impl BggMarketSource {
         Some(chunk[start..end].to_string())
     }
 
-    /// Fetch the hot list XML from BGG API
+    /// Fetch the hot list XML from BGG API.
+    /// Uses Bearer token auth (required since BGG enforced API authorization).
     async fn fetch_hot_xml(&self) -> Result<String, crate::market_data::sources::error::SourceError> {
         let url = format!("{}/hot?type=boardgame", API_BASE);
-        let client = reqwest::Client::new();
-        let resp = client
+        let bearer = format!("Bearer {}", self.api_token);
+
+        // Use the inner client directly with the rate limiter for XML (non-JSON) response.
+        self.http.rate_limiter().wait_for_permit().await;
+
+        let resp = self
+            .http
+            .inner()
             .get(&url)
-            .header("Authorization", format!("Bearer {}", self.api_token))
+            .header("Authorization", &bearer)
             .header("User-Agent", "IndexDataNode/1.0")
             .send()
             .await
             .map_err(|e| crate::market_data::sources::error::SourceError::Transient(e.to_string()))?;
+
+        if resp.status().as_u16() == 401 {
+            return Err(crate::market_data::sources::error::SourceError::AuthFailed(
+                "BGG API returned 401 Unauthorized — check BGG_API_TOKEN".to_string(),
+            ));
+        }
 
         if !resp.status().is_success() {
             return Err(crate::market_data::sources::error::SourceError::Transient(

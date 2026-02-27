@@ -225,7 +225,7 @@ def encode_bitmap(bets: list[str], market_count: int) -> bytes:
 
 ### Blockchain Layer
 - **Chain**: Arbitrum Orbit L3 (Chain ID: 111222333)
-- **RPC**: https://index.rpc.zeeve.net
+- **RPC**: http://142.132.164.24/
 - **Collateral**: USDC (WUSDC on L3, 18 decimals)
 
 ### Smart Contracts — ITP
@@ -345,7 +345,7 @@ Base URL: `https://generalmarket.io/api` (proxied to data node)
 | Frontend | Next.js 15, React 19, wagmi, viem, TailwindCSS |
 | Exchange | Bitget API (HMAC auth, rate limited) |
 | Lending | Morpho Protocol |
-| Hosting | Vercel (frontend), Contabo/Hetzner VPS (backend) |
+| Hosting | Vercel (frontend) |
 
 ---
 

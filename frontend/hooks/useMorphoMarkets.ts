@@ -89,12 +89,11 @@ export function useMorphoMarkets(market?: MorphoMarketEntry): UseMorphoMarketsRe
       marketState.totalSupplyAssets
     )
 
-    // Compute APY from CuratorRateIRM rate (1-ray = 1e27 per second)
+    // Compute APY from CuratorRateIRM rate (WAD per second, 1e18 scale)
     const borrowApy = sseOracle?.borrow_rate_ray && sseOracle.borrow_rate_ray !== '0'
       ? (() => {
-          const ratePerSec = Number(BigInt(sseOracle.borrow_rate_ray)) / 1e27
-          // APY = (1 + ratePerSec)^(365.25*86400) - 1, approximated for small rates
-          return ratePerSec * 365.25 * 86400
+          const ratePerSec = Number(BigInt(sseOracle.borrow_rate_ray)) / 1e18
+          return ratePerSec * 365.25 * 86400 * 100 // convert to percentage
         })()
       : utilization * 0.15 // fallback if rate not available
 

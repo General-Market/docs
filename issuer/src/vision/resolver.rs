@@ -68,7 +68,7 @@ pub enum ResolverError {
 
 /// Tick resolver: orchestrates settlement of a single tick.
 pub struct TickResolver {
-    bitmap_store: Arc<BitmapStore>,
+    pub(crate) bitmap_store: Arc<BitmapStore>,
     config: VisionConfig,
 }
 
@@ -197,6 +197,24 @@ impl TickResolver {
                 }
             }
 
+            // Debug: log per-market side assignments for non-flat outcomes
+            if !matches!(outcome, MarketOutcome::Flat | MarketOutcome::Cancelled) {
+                let sides_str: Vec<String> = side_inputs.iter().map(|s| {
+                    format!("{}={:?}({})", &format!("{:?}", s.player)[..8], s.side, s.effective_stake)
+                }).collect();
+                tracing::info!(
+                    batch_id = batch.id,
+                    market_idx,
+                    asset = %mc.asset_id,
+                    outcome = ?outcome,
+                    start_price = %format!("{:.8}", start_price),
+                    end_price = %format!("{:.8}", end_price),
+                    pct_change = %format!("{:.4}", pct_change),
+                    sides = %sides_str.join(", "),
+                    "Market side assignment"
+                );
+            }
+
             // Run side matching
             let match_results = side_matching::match_sides(&side_inputs, outcome.clone());
 
@@ -208,6 +226,23 @@ impl TickResolver {
                     result.payout.as_u128() as i128 + result.refund.as_u128() as i128;
                 let stake = result.effective_stake.as_u128() as i128;
                 let delta = payout_plus_refund - stake;
+
+                // Trace per-market deltas for non-flat outcomes
+                if !matches!(outcome, MarketOutcome::Flat | MarketOutcome::Cancelled) {
+                    tracing::info!(
+                        batch_id = batch.id,
+                        market_idx,
+                        player = %result.player,
+                        side = ?result.side,
+                        effective_stake = %result.effective_stake,
+                        matched_stake = %result.matched_stake,
+                        payout = %result.payout,
+                        refund = %result.refund,
+                        delta,
+                        "Per-market player result"
+                    );
+                }
+
                 *player_deltas.entry(result.player).or_insert(0) += delta;
             }
 

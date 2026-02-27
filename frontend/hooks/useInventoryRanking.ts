@@ -31,9 +31,9 @@ interface UseInventoryRankingReturn {
   error: string | null
 }
 
-const TOP_N = 10
+const DEFAULT_TOP_N = 10
 
-export function useInventoryRanking(): UseInventoryRankingReturn {
+export function useInventoryRanking(topN: number = DEFAULT_TOP_N, pollMs: number = 30_000): UseInventoryRankingReturn {
   const [snapshots, setSnapshots] = useState<RankingSnapshot[]>([])
   const [allAssets, setAllAssets] = useState<Map<string, string>>(new Map())
   const [maxRank, setMaxRank] = useState(0)
@@ -42,7 +42,7 @@ export function useInventoryRanking(): UseInventoryRankingReturn {
 
   const fetchData = useCallback(async () => {
     try {
-      const response = await fetch(`${DATA_NODE_URL}/aum-ranking?top_n=${TOP_N}`)
+      const response = await fetch(`${DATA_NODE_URL}/aum-ranking?top_n=${topN}`)
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
@@ -86,13 +86,15 @@ export function useInventoryRanking(): UseInventoryRankingReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [topN])
 
   useEffect(() => {
     fetchData()
-    const interval = setInterval(fetchData, 30_000)
-    return () => clearInterval(interval)
-  }, [fetchData])
+    if (pollMs > 0) {
+      const interval = setInterval(fetchData, pollMs)
+      return () => clearInterval(interval)
+    }
+  }, [fetchData, pollMs])
 
   return { snapshots, allAssets, maxRank, isLoading, error }
 }

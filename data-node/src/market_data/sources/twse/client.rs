@@ -30,8 +30,10 @@ const ASSET_JSON: &str = include_str!("../../../config/twse.json");
 /// TWSE OpenAPI base URL (HTTPS, for listing data)
 const TWSE_OPENAPI_URL: &str = "https://openapi.twse.com.tw/v1/opendata/t187ap03_L";
 
-/// TWSE MIS API base URL (HTTP, for real-time quotes)
-/// TWSE MIS API (HTTPS — HTTP returns 301)
+/// TWSE daily closing prices — works 24/7 (unlike the real-time MIS API)
+const TWSE_DAILY_URL: &str = "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL";
+
+/// TWSE MIS API base URL (real-time quotes, only during market hours 09:00-13:30 UTC+8)
 const TWSE_MIS_URL: &str = "https://mis.twse.com.tw/stock/api/getStockInfo.jsp";
 
 /// Delay between sequential batch price fetches (ms)
@@ -76,6 +78,22 @@ struct TwseMisQuote {
     /// Accumulated volume
     #[serde(default)]
     v: Option<String>,
+}
+
+/// Daily closing price entry from STOCK_DAY_ALL endpoint
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+struct TwseDailyEntry {
+    #[serde(rename = "Code")]
+    code: String,
+    #[serde(rename = "Name")]
+    name: String,
+    #[serde(rename = "ClosingPrice")]
+    closing_price: String,
+    #[serde(rename = "Change")]
+    change: String,
+    #[serde(rename = "TradeVolume")]
+    trade_volume: String,
 }
 
 // ============================================================================
@@ -135,6 +153,12 @@ impl TwseMarketSource {
         let url = format!("{}?ex_ch={}&json=1&delay=0", TWSE_MIS_URL, ex_ch);
         let resp: TwseMisResponse = self.http.get_json(&url).await?;
         Ok(resp.msg_array)
+    }
+
+    /// Fetch ALL daily closing prices in a single request.
+    /// This endpoint works 24/7 and returns the most recent trading day's data.
+    async fn fetch_daily_all(&self) -> Result<Vec<TwseDailyEntry>, SourceError> {
+        self.http.get_json(TWSE_DAILY_URL).await
     }
 }
 
@@ -225,7 +249,11 @@ impl MarketDataSource for TwseMarketSource {
             })
             .collect();
 
-        // Batch fetch prices (BATCH_SIZE codes per request)
+        // Build a set of requested codes for filtering
+        let requested_codes: std::collections::HashSet<&str> =
+            codes.iter().map(|s| s.as_str()).collect();
+
+        // Try MIS (real-time) first — only works during market hours
         for chunk in codes.chunks(BATCH_SIZE) {
             let code_refs: Vec<&str> = chunk.iter().map(|s| s.as_str()).collect();
 
@@ -234,7 +262,7 @@ impl MarketDataSource for TwseMarketSource {
             match self.fetch_batch_prices(&code_refs).await {
                 Ok(quotes) => {
                     for q in quotes {
-                        // Parse current price — skip if "-" (no trade yet)
+                        // Parse current price — skip if "-" (no trade yet / outside hours)
                         let value = match &q.z {
                             Some(z) if z != "-" && !z.is_empty() => {
                                 match Decimal::from_str(z) {
@@ -278,10 +306,68 @@ impl MarketDataSource for TwseMarketSource {
                 }
                 Err(e) => {
                     warn!(
-                        "Failed to fetch TWSE batch prices for {} codes: {:?}",
+                        "Failed to fetch TWSE MIS batch for {} codes: {:?}",
                         code_refs.len(),
                         e
                     );
+                }
+            }
+        }
+
+        // If MIS returned < 10% of requested prices, fall back to daily closing prices.
+        // This handles outside-market-hours, weekends, and holidays.
+        if results.len() * 10 < asset_ids.len() {
+            info!(
+                "TWSE MIS returned only {}/{} prices — falling back to daily closing data",
+                results.len(),
+                asset_ids.len()
+            );
+
+            // Clear partial MIS results since daily data is more complete
+            results.clear();
+
+            match self.fetch_daily_all().await {
+                Ok(daily_entries) => {
+                    for entry in daily_entries {
+                        if !requested_codes.contains(entry.code.as_str()) {
+                            continue;
+                        }
+
+                        let value = match Decimal::from_str(entry.closing_price.trim()) {
+                            Ok(d) if !d.is_zero() => d,
+                            _ => continue,
+                        };
+
+                        let change = Decimal::from_str(entry.change.trim()).ok();
+                        // Compute prev_close from closing_price - change
+                        let prev_close = change.map(|c| value - c);
+
+                        let change_pct = prev_close
+                            .filter(|pc| !pc.is_zero())
+                            .map(|pc| ((value - pc) / pc) * Decimal::from(100));
+
+                        let volume = entry
+                            .trade_volume
+                            .trim()
+                            .replace(',', "")
+                            .parse::<u64>()
+                            .ok()
+                            .map(Decimal::from);
+
+                        results.push(PriceUpdate {
+                            asset_id: format!("twse_{}", entry.code),
+                            symbol: format!("TWSE#{}", entry.code),
+                            value,
+                            prev_close,
+                            change_pct,
+                            volume_24h: volume,
+                            market_cap: None,
+                            fetched_at: now,
+                        });
+                    }
+                }
+                Err(e) => {
+                    warn!("Failed to fetch TWSE daily closing data: {:?}", e);
                 }
             }
         }

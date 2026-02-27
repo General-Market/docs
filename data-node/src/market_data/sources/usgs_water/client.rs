@@ -266,12 +266,59 @@ impl MarketDataSource for UsgsWaterMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        let assets = load_assets_from_json(ASSET_JSON)?;
+        // Try static config first
+        let static_assets = load_assets_from_json(ASSET_JSON)?;
+        if !static_assets.is_empty() {
+            info!(
+                "USGS Water fetch_assets: {} assets loaded from config",
+                static_assets.len()
+            );
+            return Ok(static_assets);
+        }
+
+        // Config is empty — do live discovery from USGS API
+        info!("USGS Water config empty, performing live asset discovery across {} states", STATES.len());
+
+        let mut all_assets = Vec::new();
+        let mut seen_sites = HashSet::new();
+
+        for (i, state) in STATES.iter().enumerate() {
+            if i > 0 {
+                tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
+            }
+
+            let readings = self.fetch_state(state).await;
+
+            for reading in &readings {
+                if !seen_sites.insert(reading.site_no.clone()) {
+                    continue;
+                }
+
+                all_assets.push(AssetUpdate {
+                    asset_id: format!("usgs_water_{}", reading.site_no),
+                    symbol: format!("WATER/{}", reading.site_no),
+                    name: reading.site_name.clone(),
+                    category: Some("environment".to_string()),
+                    metadata: serde_json::json!({
+                        "api_ref": reading.site_no,
+                        "subcategory": "water",
+                        "active": true,
+                        "extra": {
+                            "latitude": reading.latitude,
+                            "longitude": reading.longitude,
+                        },
+                    }),
+                });
+            }
+        }
+
         info!(
-            "USGS Water fetch_assets: {} assets loaded from config",
-            assets.len()
+            "USGS Water: discovered {} unique stations across {} states",
+            all_assets.len(),
+            STATES.len()
         );
-        Ok(assets)
+
+        Ok(all_assets)
     }
 
     async fn fetch_prices(&self, asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {

@@ -3,7 +3,9 @@
 import { useAccount, useReadContract } from 'wagmi'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import { METAMORPHO_VAULT_ABI, MORPHO_ABI } from '@/lib/contracts/morpho-abi'
+import { CURATOR_RATE_IRM_ABI } from '@/lib/contracts/curator-rate-irm-abi'
 import { VaultInfo, VaultPosition, calculateUtilization } from '@/lib/types/morpho'
+import { useSSEOracle } from './useSSE'
 
 interface UseMetaMorphoVaultReturn {
   /** Vault information */
@@ -110,6 +112,9 @@ export function useMetaMorphoVault(): UseMetaMorphoVaultReturn {
     },
   })
 
+  // SSE oracle for borrow rate
+  const sseOracle = useSSEOracle()
+
   // Fetch market data for utilization calculation
   const {
     data: marketData,
@@ -119,6 +124,19 @@ export function useMetaMorphoVault(): UseMetaMorphoVaultReturn {
     address: MORPHO_ADDRESSES.morpho,
     abi: MORPHO_ABI,
     functionName: 'market',
+    args: [MORPHO_ADDRESSES.marketId],
+    query: {
+      refetchInterval: 15000,
+    },
+  })
+
+  // Read stored borrow rate from IRM contract as fallback
+  const {
+    data: irmStoredRate,
+  } = useReadContract({
+    address: MORPHO_ADDRESSES.curatorRateIrm,
+    abi: CURATOR_RATE_IRM_ABI,
+    functionName: 'rates',
     args: [MORPHO_ADDRESSES.marketId],
     query: {
       refetchInterval: 15000,
@@ -136,10 +154,20 @@ export function useMetaMorphoVault(): UseMetaMorphoVaultReturn {
 
     const utilization = calculateUtilization(totalBorrowAssets, totalSupplyAssets)
 
-    // Estimate APY based on utilization (simplified)
-    // In production, this would be calculated from actual interest accrual
-    const borrowApy = utilization * 0.15 // 15% at 100% utilization
-    const supplyApy = borrowApy * (utilization / 100) // Supply APY = borrow APY * utilization
+    // Compute borrow APY from CuratorRateIRM rate (WAD per second, 1e18 scale)
+    // Priority: SSE borrow_rate → on-chain IRM rates() → linear fallback
+    let borrowApy: number
+    const sseBorrowRate = sseOracle?.borrow_rate_ray
+    if (sseBorrowRate && sseBorrowRate !== '0') {
+      const ratePerSec = Number(BigInt(sseBorrowRate)) / 1e18
+      borrowApy = ratePerSec * 365.25 * 86400 * 100
+    } else if (irmStoredRate && irmStoredRate > 0n) {
+      const ratePerSec = Number(irmStoredRate) / 1e18
+      borrowApy = ratePerSec * 365.25 * 86400 * 100
+    } else {
+      borrowApy = utilization * 0.15
+    }
+    const supplyApy = borrowApy * (utilization / 100)
 
     vaultInfo = {
       address: MORPHO_ADDRESSES.metaMorphoVault,

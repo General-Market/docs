@@ -117,6 +117,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const [initialBridgedItp, setInitialBridgedItp] = useState<string | null>(null)
   const [initialSharesBn, setInitialSharesBn] = useState<bigint | null>(null)
   const [skippedApproval, setSkippedApproval] = useState(false)
+  const [relayStalled, setRelayStalled] = useState(false)
 
   // Saved tx hashes
   const [savedApproveHash, setSavedApproveHash] = useState<string | null>(null)
@@ -335,14 +336,30 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
       setMicro(BuyMicro.BRIDGE_TO_L3) // Cross-chain: start bridging
     }
     resetBuy()
+    // Persist pending order so portfolio shows it even if modal is closed
+    try {
+      const pending = JSON.parse(localStorage.getItem('index-pending-orders') || '[]')
+      pending.push({ itpId, side: 0, amount, timestamp: Date.now(), arbTxHash: buyHash })
+      localStorage.setItem('index-pending-orders', JSON.stringify(pending))
+    } catch {}
     // Signal portfolio to refetch orders immediately
     window.dispatchEvent(new Event('portfolio-refresh'))
-  }, [isBuySuccess, buyReceipt, resetBuy])
+  }, [isBuySuccess, buyReceipt, resetBuy, itpId, amount, buyHash])
 
   // BRIDGE_TO_L3: timer-based advance (bridge takes ~3s after submit)
   useEffect(() => {
     if (micro !== BuyMicro.BRIDGE_TO_L3) return
     const timer = setTimeout(() => setMicro(BuyMicro.RELAY), 3000)
+    return () => clearTimeout(timer)
+  }, [micro])
+
+  // Stall detection: show "safe to close" message after 60s at RELAY/BATCH/FILL
+  useEffect(() => {
+    if (micro < BuyMicro.RELAY || micro >= BuyMicro.RECORD_COLLATERAL) {
+      setRelayStalled(false)
+      return
+    }
+    const timer = setTimeout(() => setRelayStalled(true), 60_000)
     return () => clearTimeout(timer)
   }, [micro])
 
@@ -438,6 +455,13 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     }
 
     if (increased) {
+      // Clean up pending order from localStorage
+      try {
+        const pending = JSON.parse(localStorage.getItem('index-pending-orders') || '[]')
+        localStorage.setItem('index-pending-orders', JSON.stringify(
+          pending.filter((o: any) => o.arbTxHash !== savedBuyHash)
+        ))
+      } catch {}
       if (micro < BuyMicro.MINT_SHARES) {
         setMicro(BuyMicro.MINT_SHARES)
         setTimeout(() => setMicro(BuyMicro.DONE), 1000)
@@ -445,7 +469,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
         setMicro(BuyMicro.DONE)
       }
     }
-  }, [micro, sseBalances, initialBridgedItp, userShares, initialSharesBn])
+  }, [micro, sseBalances, initialBridgedItp, userShares, initialSharesBn, savedBuyHash])
 
   // Toast notification on fill
   useEffect(() => {
@@ -756,6 +780,12 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                 stepRanges={adjustedRanges}
                 txRefs={txRefs}
               />
+              {relayStalled && (
+                <div className="bg-muted border border-border-light rounded-lg p-4 text-sm">
+                  <p className="font-medium text-text-primary mb-1">{t('stall.title')}</p>
+                  <p className="text-text-secondary">{t('stall.description')}</p>
+                </div>
+              )}
               {renderFillDetails()}
 
               {userShares > 0n && (
@@ -779,7 +809,14 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                 >
                   {tc('actions.cancel')}
                 </button>
-              ) : null}
+              ) : (
+                <button
+                  onClick={handleClose}
+                  className="w-full text-center text-sm text-text-muted hover:text-text-primary py-2 transition-colors"
+                >
+                  {tc('actions.close')}
+                </button>
+              )}
 
               {stuckWarning && (
                 <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-orange-500 text-sm">

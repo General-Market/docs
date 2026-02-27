@@ -28,10 +28,17 @@ const ASSET_JSON: &str = include_str!("../../../config/anilist.json");
 const ANILIST_API_URL: &str = "https://graphql.anilist.co";
 
 /// Delay between sequential GraphQL requests (ms)
-const INTER_REQUEST_DELAY_MS: u64 = 1200;
+/// AniList rate limit is 90 req/min; 1500ms gives us max 40 req/min (safe margin)
+const INTER_REQUEST_DELAY_MS: u64 = 1500;
 
 /// How many discovery pages per media type (50 items/page)
 const DISCOVERY_PAGES: u32 = 10;
+
+/// Max retries for rate-limited GraphQL requests
+const MAX_GRAPHQL_RETRIES: u32 = 3;
+
+/// Base delay for GraphQL retry backoff (ms)
+const GRAPHQL_RETRY_BASE_MS: u64 = 5000;
 
 /// Items per page
 const PAGE_SIZE: u32 = 50;
@@ -130,58 +137,117 @@ impl AniListMarketSource {
         Ok(Self { http })
     }
 
-    /// Execute a GraphQL query against the AniList API
+    /// Execute a GraphQL query against the AniList API with retry on 429/5xx
     async fn graphql_query<T: serde::de::DeserializeOwned>(
         &self,
         query: &str,
         variables: serde_json::Value,
     ) -> Result<T, SourceError> {
-        // Wait for rate limit
-        self.http.rate_limiter().wait_for_permit().await;
-
         let body = serde_json::json!({
             "query": query,
             "variables": variables,
         });
 
-        let response = self
-            .http
-            .inner()
-            .post(ANILIST_API_URL)
-            .header("Content-Type", "application/json")
-            .header("Accept", "application/json")
-            .json(&body)
-            .send()
-            .await
-            .map_err(|e| SourceError::Transient(format!("AniList request failed: {}", e)))?;
+        let mut last_error = None;
 
-        let status = response.status().as_u16();
+        for attempt in 0..=MAX_GRAPHQL_RETRIES {
+            // Wait for rate limit
+            self.http.rate_limiter().wait_for_permit().await;
 
-        if status == 429 {
-            return Err(SourceError::RateLimited(Some(Duration::from_secs(60))));
+            let response = match self
+                .http
+                .inner()
+                .post(ANILIST_API_URL)
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
+                .json(&body)
+                .send()
+                .await
+            {
+                Ok(r) => r,
+                Err(e) => {
+                    let err = SourceError::Transient(format!("AniList request failed: {}", e));
+                    if attempt < MAX_GRAPHQL_RETRIES {
+                        let delay = Duration::from_millis(GRAPHQL_RETRY_BASE_MS * 2u64.pow(attempt));
+                        warn!(
+                            "AniList request error (attempt {}/{}), retrying in {:?}: {}",
+                            attempt + 1, MAX_GRAPHQL_RETRIES, delay, e
+                        );
+                        tokio::time::sleep(delay).await;
+                        last_error = Some(err);
+                        continue;
+                    }
+                    return Err(err);
+                }
+            };
+
+            let status = response.status().as_u16();
+
+            // Rate limited — retry with backoff
+            if status == 429 {
+                let retry_after = response
+                    .headers()
+                    .get("Retry-After")
+                    .and_then(|v| v.to_str().ok())
+                    .and_then(|s| s.parse::<u64>().ok())
+                    .unwrap_or(GRAPHQL_RETRY_BASE_MS / 1000 * 2u64.pow(attempt));
+                let delay = Duration::from_secs(retry_after.max(5));
+
+                if attempt < MAX_GRAPHQL_RETRIES {
+                    warn!(
+                        "AniList rate limited (attempt {}/{}), waiting {:?}",
+                        attempt + 1, MAX_GRAPHQL_RETRIES, delay
+                    );
+                    tokio::time::sleep(delay).await;
+                    last_error = Some(SourceError::RateLimited(Some(delay)));
+                    continue;
+                }
+                return Err(SourceError::RateLimited(Some(delay)));
+            }
+
+            if status == 401 || status == 403 {
+                let body = response.text().await.unwrap_or_default();
+                return Err(SourceError::AuthFailed(format!("HTTP {}: {}", status, body)));
+            }
+
+            // Server error — retry
+            if status >= 500 {
+                let body = response.text().await.unwrap_or_default();
+                let err = SourceError::Transient(format!("AniList HTTP {}: {}", status, body));
+                if attempt < MAX_GRAPHQL_RETRIES {
+                    let delay = Duration::from_millis(GRAPHQL_RETRY_BASE_MS * 2u64.pow(attempt));
+                    warn!(
+                        "AniList server error {} (attempt {}/{}), retrying in {:?}",
+                        status, attempt + 1, MAX_GRAPHQL_RETRIES, delay
+                    );
+                    tokio::time::sleep(delay).await;
+                    last_error = Some(err);
+                    continue;
+                }
+                return Err(err);
+            }
+
+            if !response.status().is_success() {
+                let body = response.text().await.unwrap_or_default();
+                return Err(SourceError::Transient(format!(
+                    "AniList HTTP {}: {}",
+                    status, body
+                )));
+            }
+
+            let gql_resp: GqlResponse<T> = response
+                .json()
+                .await
+                .map_err(|e| SourceError::DataError(format!("JSON parse error: {}", e)))?;
+
+            return gql_resp.data.ok_or_else(|| {
+                SourceError::DataError("AniList returned null data".to_string())
+            });
         }
 
-        if status == 401 || status == 403 {
-            let body = response.text().await.unwrap_or_default();
-            return Err(SourceError::AuthFailed(format!("HTTP {}: {}", status, body)));
-        }
-
-        if !response.status().is_success() {
-            let body = response.text().await.unwrap_or_default();
-            return Err(SourceError::Transient(format!(
-                "AniList HTTP {}: {}",
-                status, body
-            )));
-        }
-
-        let gql_resp: GqlResponse<T> = response
-            .json()
-            .await
-            .map_err(|e| SourceError::DataError(format!("JSON parse error: {}", e)))?;
-
-        gql_resp.data.ok_or_else(|| {
-            SourceError::DataError("AniList returned null data".to_string())
-        })
+        Err(last_error.unwrap_or_else(|| {
+            SourceError::Transient("AniList: max retries exceeded".to_string())
+        }))
     }
 
     /// Discover popular media of a given type (ANIME or MANGA), paginated

@@ -110,13 +110,16 @@ impl MarketDataSource for OpenAlexMarketSource {
             .collect();
 
         // One API call: group_by field to get counts per field
+        // Note: from_created_date now requires API key; use from_publication_date instead.
+        // Note: group_by=primary_topic.field.display_name was removed; use field.id
+        //       (response still includes key_display_name for matching).
         let mailto_param = if self.mailto.is_empty() {
             String::new()
         } else {
             format!("&mailto={}", self.mailto)
         };
         let url = format!(
-            "{}/works?filter=from_created_date:{}&group_by=primary_topic.field.display_name&per_page=200{}",
+            "{}/works?filter=from_publication_date:{}&group_by=primary_topic.field.id&per_page=200{}",
             API_BASE, today, mailto_param
         );
 
@@ -230,11 +233,13 @@ mod tests {
 
     #[test]
     fn test_response_deserialize() {
+        // Response from group_by=primary_topic.field.id (key is URL, key_display_name is field name)
         let json = r#"{"meta":{"count":50000,"db_response_time_ms":100,"page":1,"per_page":200,"groups_count":25},"results":[],"group_by":[{"key":"https://openalex.org/fields/17","key_display_name":"Computer Science","count":5234},{"key":"https://openalex.org/fields/27","key_display_name":"Medicine","count":12000}]}"#;
         let resp: OpenAlexResponse = serde_json::from_str(json).unwrap();
         assert_eq!(resp.meta.count, 50000);
         let groups = resp.group_by.unwrap();
         assert_eq!(groups.len(), 2);
+        // key_display_name still provides the human-readable field name for matching
         assert_eq!(groups[0].key_display_name, "Computer Science");
         assert_eq!(groups[0].count, 5234);
     }

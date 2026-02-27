@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'
 
 interface BitmapOverlayProps {
@@ -11,7 +11,8 @@ interface BitmapOverlayProps {
 }
 
 export function BitmapOverlay({ sourceId, sourceName, markets, bitmapEditor }: BitmapOverlayProps) {
-  const counts = bitmapEditor.getCounts(sourceId)
+  const marketIds = useMemo(() => markets.map(m => m.id), [markets])
+  const counts = bitmapEditor.getCounts(sourceId, marketIds)
 
   const handleCellClick = useCallback(
     (e: React.MouseEvent, marketId: string) => {

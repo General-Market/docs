@@ -1,4 +1,4 @@
-//! CoinGecko Pro API client for market cap data.
+//! CoinGecko Demo API client for market cap data.
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -10,9 +10,12 @@ use tokio::sync::Mutex;
 use tokio::time::Instant;
 use tracing::{debug, warn};
 
-const BASE_URL: &str = "https://pro-api.coingecko.com/api/v3";
-/// Pro plan: 500 req/min ≈ 8.3/s — stay at 7/s
-const MIN_INTERVAL: Duration = Duration::from_millis(143);
+const BASE_URL: &str = "https://api.coingecko.com/api/v3";
+/// Demo plan: ~30 req/min.  Shared by CoinGeckoMarketSource AND cg_collector,
+/// so 3 s ≈ 20 req/min leaves headroom for 429-retry bursts.
+const MIN_INTERVAL_DEMO: Duration = Duration::from_millis(3000);
+/// Pro plan: ~500 req/min — 150 ms between requests.
+const MIN_INTERVAL_PRO: Duration = Duration::from_millis(150);
 
 // ---------- response types ----------
 
@@ -89,9 +92,14 @@ impl RateLimiter {
         }
     }
 
-    /// Default rate limiter for CoinGecko Pro plan (7 req/s).
+    /// Rate limiter for CoinGecko Demo plan (~20 req/min, shared).
+    pub fn coingecko_demo() -> Self {
+        Self::new(MIN_INTERVAL_DEMO)
+    }
+
+    /// Rate limiter for CoinGecko Pro plan (~400 req/min, shared).
     pub fn coingecko_pro() -> Self {
-        Self::new(MIN_INTERVAL)
+        Self::new(MIN_INTERVAL_PRO)
     }
 
     /// Reserve the next request slot and sleep until it's time.
@@ -123,18 +131,19 @@ impl CoinGeckoClient {
     /// Create a client with its own private rate limiter.
     /// Use `with_limiter` for shared rate limiting across workers.
     pub fn new(api_key: &str) -> Result<Self, reqwest::Error> {
-        Self::with_limiter(api_key, RateLimiter::coingecko_pro())
+        Self::with_limiter(api_key, RateLimiter::coingecko_demo())
     }
 
     /// Create a client that shares the given rate limiter.
     pub fn with_limiter(api_key: &str, limiter: RateLimiter) -> Result<Self, reqwest::Error> {
         let mut headers = HeaderMap::new();
         headers.insert(
-            "x-cg-pro-api-key",
+            "x-cg-demo-key",
             HeaderValue::from_str(api_key).expect("invalid API key"),
         );
         let client = reqwest::Client::builder()
             .default_headers(headers)
+            .user_agent("IndexDataNode/1.0 (market-data-collector)")
             .timeout(Duration::from_secs(60))
             .build()?;
 

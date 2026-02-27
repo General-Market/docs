@@ -2,22 +2,23 @@
 //!
 //! Tracks aircraft counts across 25 global airspace regions and airport areas.
 //!
-//! Strategy: ONE call to `https://api.adsb.lol/v2/all` fetches all aircraft globally,
-//! then counts per bounding box region in-memory. This replaces the old OpenSky approach
-//! which needed 25 separate calls with 11s delays (275s total per sync).
+//! Strategy: Per-region queries via `https://api.adsb.lol/v2/lat/{lat}/lon/{lon}/dist/{dist}`.
+//! The old `/v2/all` endpoint was removed. We now compute the center and radius for each
+//! bounding box and query individually. Airport areas use small radii (15-25nm) while
+//! large regions use multiple overlapping queries stitched together.
 //!
 //! Each region is defined by a bounding box. The value for each asset is the
 //! count of aircraft currently in that airspace.
 //!
-//! API: https://api.adsb.lol/v2/all
+//! API: https://api.adsb.lol/v2/lat/{lat}/lon/{lon}/dist/{dist}
 //! Auth: None (community API, no key required)
-//! Rate limit: generous (~60 req/min)
+//! Rate limit: generous (~60 req/min), max radius 250nm
 
 use anyhow::Result;
 use chrono::Utc;
 use rust_decimal::Decimal;
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
@@ -29,8 +30,17 @@ use crate::market_data::traits::{
 /// Asset configuration — 25 global airspace monitoring regions
 const ASSET_JSON: &str = include_str!("../../../config/flights.json");
 
-/// adsb.lol global aircraft endpoint (fetches everything once)
-const API_URL: &str = "https://api.adsb.lol/v2/all";
+/// adsb.lol geographic query endpoint (max 250nm radius)
+const API_BASE: &str = "https://api.adsb.lol/v2/lat";
+
+/// Maximum query radius in nautical miles (API limit)
+const MAX_RADIUS_NM: f64 = 250.0;
+
+/// Approximate nautical miles per degree of latitude
+const NM_PER_DEG_LAT: f64 = 60.0;
+
+/// Delay between requests in ms
+const INTER_REQUEST_DELAY_MS: u64 = 500;
 
 // ============================================================================
 // API RESPONSE TYPES
@@ -50,6 +60,9 @@ struct AdsbLolResponse {
 /// Minimal aircraft position — only extract what we need for counting
 #[derive(Debug, Deserialize)]
 struct AircraftPosition {
+    /// ICAO hex identifier for deduplication across overlapping queries
+    #[serde(default)]
+    hex: Option<String>,
     #[serde(default)]
     lat: Option<f64>,
     #[serde(default)]
@@ -71,6 +84,32 @@ impl BBox {
         lat >= self.lat_min && lat <= self.lat_max
             && lon >= self.lon_min && lon <= self.lon_max
     }
+
+    /// Get center point of the bounding box
+    fn center(&self) -> (f64, f64) {
+        (
+            (self.lat_min + self.lat_max) / 2.0,
+            (self.lon_min + self.lon_max) / 2.0,
+        )
+    }
+
+    /// Compute the radius in nautical miles needed to cover this bounding box from center.
+    /// Uses the diagonal half-distance.
+    fn radius_nm(&self) -> f64 {
+        let (center_lat, center_lon) = self.center();
+        let dlat = (self.lat_max - center_lat) * NM_PER_DEG_LAT;
+        let cos_lat = (center_lat.to_radians()).cos();
+        let dlon = (self.lon_max - center_lon) * NM_PER_DEG_LAT * cos_lat;
+        (dlat * dlat + dlon * dlon).sqrt()
+    }
+}
+
+/// A query point: center lat/lon and radius
+#[derive(Debug, Clone)]
+struct QueryPoint {
+    lat: f64,
+    lon: f64,
+    dist: u32, // nm, capped at 250
 }
 
 // ============================================================================
@@ -89,11 +128,11 @@ pub struct FlightsMarketSource {
 impl FlightsMarketSource {
     pub fn from_env() -> Result<Self> {
         let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(60)) // Large response, generous timeout
+            .timeout(Duration::from_secs(30))
             .gzip(true)
             .build()?;
 
-        info!("adsb.lol flights source initialized (25 regions, single-call strategy)");
+        info!("adsb.lol flights source initialized (25 regions, per-region strategy)");
 
         Ok(Self { client })
     }
@@ -115,6 +154,83 @@ impl FlightsMarketSource {
             lon_max: parts[3].trim().parse().map_err(|e| format!("lon_max: {}", e))?,
         })
     }
+
+    /// Generate query points to cover a bounding box.
+    /// Small regions (radius <= 250nm) use a single center query.
+    /// Large regions are subdivided into a grid of overlapping 250nm queries.
+    fn coverage_queries(bbox: &BBox) -> Vec<QueryPoint> {
+        let radius = bbox.radius_nm();
+        if radius <= MAX_RADIUS_NM {
+            let (lat, lon) = bbox.center();
+            return vec![QueryPoint {
+                lat,
+                lon,
+                dist: (radius.ceil() as u32).max(1).min(250),
+            }];
+        }
+
+        // For large regions, create a grid of 250nm queries
+        let cos_lat = ((bbox.lat_min + bbox.lat_max) / 2.0).to_radians().cos().max(0.1);
+        let step_lat = (MAX_RADIUS_NM * 1.5) / NM_PER_DEG_LAT; // ~1.5x radius overlap
+        let step_lon = step_lat / cos_lat;
+
+        let mut points = Vec::new();
+        let mut lat = bbox.lat_min + step_lat / 2.0;
+        while lat < bbox.lat_max {
+            let mut lon = bbox.lon_min + step_lon / 2.0;
+            while lon < bbox.lon_max {
+                points.push(QueryPoint {
+                    lat,
+                    lon,
+                    dist: 250,
+                });
+                lon += step_lon;
+            }
+            lat += step_lat;
+        }
+
+        if points.is_empty() {
+            let (lat, lon) = bbox.center();
+            points.push(QueryPoint { lat, lon, dist: 250 });
+        }
+
+        points
+    }
+
+    /// Fetch aircraft from a single lat/lon/dist query
+    async fn fetch_region(&self, qp: &QueryPoint) -> Result<Vec<AircraftPosition>> {
+        let url = format!(
+            "{}/{}/lon/{}/dist/{}",
+            API_BASE, qp.lat, qp.lon, qp.dist
+        );
+
+        let resp = self
+            .client
+            .get(&url)
+            .header("Accept", "application/json")
+            .send()
+            .await;
+
+        match resp {
+            Ok(r) => {
+                if !r.status().is_success() {
+                    warn!("Flights: adsb.lol returned {} for ({},{})", r.status(), qp.lat, qp.lon);
+                    return Ok(Vec::new());
+                }
+                match r.json::<AdsbLolResponse>().await {
+                    Ok(data) => Ok(data.ac),
+                    Err(e) => {
+                        warn!("Flights: parse error for ({},{}): {:?}", qp.lat, qp.lon, e);
+                        Ok(Vec::new())
+                    }
+                }
+            }
+            Err(e) => {
+                warn!("Flights: fetch error for ({},{}): {:?}", qp.lat, qp.lon, e);
+                Ok(Vec::new())
+            }
+        }
+    }
 }
 
 #[async_trait::async_trait]
@@ -132,13 +248,13 @@ impl MarketDataSource for FlightsMarketSource {
     }
 
     fn sync_interval(&self) -> Duration {
-        Duration::from_secs(300) // 5 minutes (single call, no rate limit pressure)
+        Duration::from_secs(300) // 5 minutes
     }
 
     fn rate_limit_config(&self) -> RateLimitConfig {
         RateLimitConfig {
             windows: vec![RateWindow {
-                max_requests: 10,
+                max_requests: 50,
                 duration: Duration::from_secs(60),
             }],
         }
@@ -164,59 +280,9 @@ impl MarketDataSource for FlightsMarketSource {
             .map(|e| (e.asset_id.as_str(), e.api_ref.as_str()))
             .collect();
 
-        // ONE call to get ALL aircraft globally
-        let resp = self
-            .client
-            .get(API_URL)
-            .header("Accept", "application/json")
-            .send()
-            .await;
-
-        let response: AdsbLolResponse = match resp {
-            Ok(r) => {
-                if !r.status().is_success() {
-                    let status = r.status();
-                    warn!("Flights: adsb.lol returned {}", status);
-                    return Ok(Vec::new());
-                }
-                match r.json().await {
-                    Ok(data) => data,
-                    Err(e) => {
-                        warn!("Flights: failed to parse adsb.lol response: {:?}", e);
-                        return Ok(Vec::new());
-                    }
-                }
-            }
-            Err(e) => {
-                warn!("Flights: failed to fetch adsb.lol: {:?}", e);
-                return Ok(Vec::new());
-            }
-        };
-
-        // Extract valid positions
-        let positions: Vec<(f64, f64)> = response
-            .ac
-            .iter()
-            .filter_map(|ac| {
-                match (ac.lat, ac.lon) {
-                    (Some(lat), Some(lon)) if lat.is_finite() && lon.is_finite() => {
-                        Some((lat, lon))
-                    }
-                    _ => None,
-                }
-            })
-            .collect();
-
-        debug!(
-            "Flights: {} aircraft with positions out of {} total",
-            positions.len(),
-            response.total
-        );
-
-        // Count aircraft per requested region
         let mut results = Vec::new();
 
-        for asset_id in asset_ids {
+        for (i, asset_id) in asset_ids.iter().enumerate() {
             let bbox_str = match bbox_map.get(asset_id.as_str()) {
                 Some(b) => *b,
                 None => {
@@ -233,12 +299,41 @@ impl MarketDataSource for FlightsMarketSource {
                 }
             };
 
-            let count = positions
-                .iter()
-                .filter(|&&(lat, lon)| bbox.contains(lat, lon))
-                .count();
+            // Generate query points to cover this region
+            let queries = Self::coverage_queries(&bbox);
 
-            debug!("Flights {}: {} aircraft (bbox={})", asset_id, count, bbox_str);
+            // Collect unique aircraft across all queries for this region
+            // (large regions use multiple overlapping queries; deduplicate by hex)
+            let mut seen_hex: HashSet<String> = HashSet::new();
+            let mut count: u64 = 0;
+
+            for qp in &queries {
+                // Rate limit between requests
+                if i > 0 || !seen_hex.is_empty() {
+                    tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
+                }
+
+                let aircraft = self.fetch_region(qp).await.unwrap_or_default();
+                for ac in &aircraft {
+                    if let (Some(lat), Some(lon)) = (ac.lat, ac.lon) {
+                        if lat.is_finite() && lon.is_finite() && bbox.contains(lat, lon) {
+                            // Deduplicate by hex if available, otherwise count directly
+                            if let Some(hex) = &ac.hex {
+                                if seen_hex.insert(hex.clone()) {
+                                    count += 1;
+                                }
+                            } else {
+                                count += 1;
+                            }
+                        }
+                    }
+                }
+            }
+
+            debug!(
+                "Flights {}: {} aircraft ({} queries, bbox={})",
+                asset_id, count, queries.len(), bbox_str
+            );
 
             let symbol = all_entries
                 .iter()
@@ -249,7 +344,7 @@ impl MarketDataSource for FlightsMarketSource {
             results.push(PriceUpdate {
                 asset_id: asset_id.clone(),
                 symbol,
-                value: Decimal::from(count as u64),
+                value: Decimal::from(count),
                 prev_close: None,
                 change_pct: None,
                 volume_24h: None,
@@ -259,10 +354,9 @@ impl MarketDataSource for FlightsMarketSource {
         }
 
         info!(
-            "Flights: counted {}/{} regions from {} aircraft (adsb.lol)",
+            "Flights: counted {}/{} regions (adsb.lol per-region)",
             results.len(),
             asset_ids.len(),
-            positions.len()
         );
 
         Ok(results)
@@ -397,6 +491,43 @@ mod tests {
         assert!(bbox.contains(-89.99, -179.99));
         assert!(bbox.contains(40.64, -73.78)); // JFK
         assert!(bbox.contains(-33.87, 151.21)); // Sydney
+    }
+
+    #[test]
+    fn test_bbox_center() {
+        let bbox = FlightsMarketSource::parse_bbox("40.4,40.9,-74,-73.5").unwrap();
+        let (lat, lon) = bbox.center();
+        assert!((lat - 40.65).abs() < 0.01);
+        assert!((lon - (-73.75)).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_bbox_radius_nm_small_region() {
+        // JFK area — small box, should be well under 250nm
+        let bbox = FlightsMarketSource::parse_bbox("40.4,40.9,-74,-73.5").unwrap();
+        let radius = bbox.radius_nm();
+        assert!(radius < 50.0, "JFK area radius should be small, got {}", radius);
+        assert!(radius > 5.0, "JFK area radius should be > 5nm, got {}", radius);
+    }
+
+    #[test]
+    fn test_coverage_queries_small_region() {
+        // Airport-sized region — should use single query
+        let bbox = FlightsMarketSource::parse_bbox("40.4,40.9,-74,-73.5").unwrap();
+        let queries = FlightsMarketSource::coverage_queries(&bbox);
+        assert_eq!(queries.len(), 1, "Small region should use single query");
+        assert!(queries[0].dist <= 250);
+    }
+
+    #[test]
+    fn test_coverage_queries_large_region() {
+        // US Airspace — too large for single query, needs grid
+        let bbox = FlightsMarketSource::parse_bbox("24.5,49.5,-125,-66.5").unwrap();
+        let queries = FlightsMarketSource::coverage_queries(&bbox);
+        assert!(queries.len() > 1, "US airspace should need multiple queries, got {}", queries.len());
+        for qp in &queries {
+            assert_eq!(qp.dist, 250, "Large region queries should use max radius");
+        }
     }
 
     #[test]

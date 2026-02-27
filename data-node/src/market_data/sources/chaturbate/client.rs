@@ -26,7 +26,7 @@ use crate::market_data::traits::{
 /// Asset configuration loaded from JSON at compile time
 const ASSET_JSON: &str = include_str!("../../../config/chaturbate.json");
 
-/// Chaturbate public API base
+/// Chaturbate public affiliates API base
 const API_BASE: &str = "https://chaturbate.com/api/public/affiliates/onlinerooms/";
 
 /// Results per page (max 500)
@@ -53,6 +53,14 @@ const RETENTION_DAYS: i64 = 30;
 // ============================================================================
 // API RESPONSE TYPES
 // ============================================================================
+
+/// Paginated API response wrapper (API returns `{"results": [...], "count": N}`)
+#[derive(Debug, Clone, Deserialize)]
+pub struct ChaturbateApiResponse {
+    pub results: Vec<ChaturbateRoom>,
+    #[allow(dead_code)]
+    pub count: Option<u64>,
+}
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ChaturbateRoom {
@@ -105,21 +113,27 @@ pub struct ChaturbateMarketSource {
     last_request: Arc<Mutex<std::time::Instant>>,
     /// Peak viewer cache: username -> CachedModel.
     seen_models: Arc<Mutex<HashMap<String, CachedModel>>>,
+    /// Chaturbate affiliate webmaster ID (required by API).
+    wm: String,
 }
 
 impl ChaturbateMarketSource {
     pub fn from_env() -> Result<Self> {
+        let wm = std::env::var("CHATURBATE_WM")
+            .context("CHATURBATE_WM environment variable is required (affiliate webmaster ID)")?;
+
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
             .build()
             .context("Failed to build HTTP client")?;
 
-        info!("Chaturbate source initialized (no auth required)");
+        info!("Chaturbate source initialized (wm={})", wm);
 
         Ok(Self {
             client,
             last_request: Arc::new(Mutex::new(std::time::Instant::now())),
             seen_models: Arc::new(Mutex::new(HashMap::new())),
+            wm,
         })
     }
 
@@ -137,8 +151,14 @@ impl ChaturbateMarketSource {
     }
 
     /// Fetch a page of online rooms with retries.
+    ///
+    /// The Chaturbate API requires `wm` (affiliate ID) and `client_ip` params.
+    /// Response is paginated: `{"results": [...], "count": N}`.
     async fn fetch_page(&self, offset: usize) -> Result<Vec<ChaturbateRoom>> {
-        let url = format!("{}?format=json&limit={}&offset={}", API_BASE, PAGE_SIZE, offset);
+        let url = format!(
+            "{}?format=json&limit={}&offset={}&wm={}&client_ip=0.0.0.0",
+            API_BASE, PAGE_SIZE, offset, self.wm
+        );
         let mut last_error = None;
 
         for attempt in 0..MAX_RETRIES {
@@ -147,8 +167,8 @@ impl ChaturbateMarketSource {
             match self.client.get(&url).send().await {
                 Ok(resp) => {
                     if resp.status().is_success() {
-                        match resp.json::<Vec<ChaturbateRoom>>().await {
-                            Ok(rooms) => return Ok(rooms),
+                        match resp.json::<ChaturbateApiResponse>().await {
+                            Ok(api_resp) => return Ok(api_resp.results),
                             Err(e) => {
                                 warn!(
                                     "Failed to parse Chaturbate response (attempt {}/{}): {:?}",

@@ -28,6 +28,7 @@
     "borrow_usdc": "借入 USDC",
     "repay": "还款",
     "borrow": "借款",
+    "manage_position": "管理仓位",
     "cancel": "取消",
     "max": "最大"
   },

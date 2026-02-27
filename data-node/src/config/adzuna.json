@@ -1,0 +1,74 @@
+[
+  {
+    "asset_id": "adzuna_us_vacancies",
+    "symbol": "ADZUNA/US/VACANCIES",
+    "name": "US Job Vacancies (Total)",
+    "category": "government",
+    "subcategory": "labor",
+    "api_ref": "us:vacancies",
+    "active": true
+  },
+  {
+    "asset_id": "adzuna_us_salary",
+    "symbol": "ADZUNA/US/SALARY",
+    "name": "US Mean Advertised Salary",
+    "category": "government",
+    "subcategory": "labor",
+    "api_ref": "us:salary",
+    "active": true
+  },
+  {
+    "asset_id": "adzuna_gb_vacancies",
+    "symbol": "ADZUNA/GB/VACANCIES",
+    "name": "UK Job Vacancies (Total)",
+    "category": "government",
+    "subcategory": "labor",
+    "api_ref": "gb:vacancies",
+    "active": true
+  },
+  {
+    "asset_id": "adzuna_gb_salary",
+    "symbol": "ADZUNA/GB/SALARY",
+    "name": "UK Mean Advertised Salary",
+    "category": "government",
+    "subcategory": "labor",
+    "api_ref": "gb:salary",
+    "active": true
+  },
+  {
+    "asset_id": "adzuna_de_vacancies",
+    "symbol": "ADZUNA/DE/VACANCIES",
+    "name": "Germany Job Vacancies (Total)",
+    "category": "government",
+    "subcategory": "labor",
+    "api_ref": "de:vacancies",
+    "active": true
+  },
+  {
+    "asset_id": "adzuna_de_salary",
+    "symbol": "ADZUNA/DE/SALARY",
+    "name": "Germany Mean Advertised Salary",
+    "category": "government",
+    "subcategory": "labor",
+    "api_ref": "de:salary",
+    "active": true
+  },
+  {
+    "asset_id": "adzuna_fr_vacancies",
+    "symbol": "ADZUNA/FR/VACANCIES",
+    "name": "France Job Vacancies (Total)",
+    "category": "government",
+    "subcategory": "labor",
+    "api_ref": "fr:vacancies",
+    "active": true
+  },
+  {
+    "asset_id": "adzuna_fr_salary",
+    "symbol": "ADZUNA/FR/SALARY",
+    "name": "France Mean Advertised Salary",
+    "category": "government",
+    "subcategory": "labor",
+    "api_ref": "fr:salary",
+    "active": true
+  }
+]

@@ -52,7 +52,7 @@ impl EventTopics {
     fn new() -> Self {
         Self {
             batch_created: H256::from(ethers::utils::keccak256(
-                b"BatchCreated(uint256,address,bytes32,uint256)",
+                b"BatchCreated(uint256,bytes32,address,bytes32,uint256,uint256)",
             )),
             batch_paused: H256::from(ethers::utils::keccak256(
                 b"BatchPausedEvent(uint256)",
@@ -61,13 +61,13 @@ impl EventTopics {
                 b"BatchUnpaused(uint256)",
             )),
             batch_config_updated: H256::from(ethers::utils::keccak256(
-                b"BatchConfigUpdated(uint256,bytes32,bytes32,uint256)",
+                b"BatchConfigUpdated(uint256,bytes32,uint256)",
             )),
             batch_config_promoted: H256::from(ethers::utils::keccak256(
-                b"BatchConfigPromoted(uint256,bytes32,uint256)",
+                b"BatchConfigPromoted(uint256,bytes32,bytes32,uint256)",
             )),
             player_joined: H256::from(ethers::utils::keccak256(
-                b"PlayerJoined(uint256,address,uint256,bytes32)",
+                b"PlayerJoined(uint256,address,uint256,bytes32,bytes32)",
             )),
             player_deposited: H256::from(ethers::utils::keccak256(
                 b"PlayerDeposited(uint256,address,uint256)",
@@ -253,6 +253,7 @@ impl ChainListener {
     /// The event contains batchId, creator, sourceId (all indexed) and tickDuration (data).
     /// We fetch the full batch from the contract to get configHash, lockOffset, etc.
     async fn handle_batch_created(&self, log: &Log) {
+        // Event: BatchCreated(uint256 indexed batchId, bytes32 indexed sourceId, address indexed creator, bytes32 configHash, uint256 tickDuration, uint256 lockOffset)
         let batch_id = match extract_indexed_u64(log, 1) {
             Some(v) => v,
             None => {
@@ -260,23 +261,39 @@ impl ChainListener {
                 return;
             }
         };
-        let creator = match extract_indexed_address(log, 2) {
+        let source_id_from_event = log
+            .topics
+            .get(2)
+            .copied()
+            .unwrap_or(H256::zero());
+        let creator = match extract_indexed_address(log, 3) {
             Some(v) => v,
             None => {
                 warn!(batch_id, "BatchCreated: missing creator topic");
                 return;
             }
         };
-        let source_id_from_event = log
-            .topics
-            .get(3)
-            .copied()
-            .unwrap_or(H256::zero());
-        let tick_duration = match decode_single_u256(&log.data) {
-            Some(v) => v.as_u64(),
-            None => {
-                warn!(batch_id, "BatchCreated: failed to decode tickDuration from data");
-                return;
+        // data = configHash (bytes32) + tickDuration (uint256) + lockOffset (uint256)
+        let tick_duration = if log.data.len() >= 64 {
+            // tickDuration is the second word in data (bytes 32..64)
+            let tuple = ethers::abi::decode(
+                &[ethers::abi::ParamType::FixedBytes(32), ethers::abi::ParamType::Uint(256), ethers::abi::ParamType::Uint(256)],
+                &log.data,
+            );
+            match tuple {
+                Ok(tokens) => tokens[1].clone().into_uint().map(|v| v.as_u64()).unwrap_or(0),
+                Err(_) => {
+                    warn!(batch_id, "BatchCreated: failed to decode data tuple");
+                    return;
+                }
+            }
+        } else {
+            match decode_single_u256(&log.data) {
+                Some(v) => v.as_u64(),
+                None => {
+                    warn!(batch_id, "BatchCreated: failed to decode tickDuration from data");
+                    return;
+                }
             }
         };
 
@@ -417,7 +434,7 @@ impl ChainListener {
         info!(batch_id, "BatchUnpaused");
     }
 
-    /// Handle `BatchConfigUpdated(uint256 indexed batchId, bytes32 indexed newConfigHash, bytes32 oldConfigHash, uint256 newLockOffset)`
+    /// Handle `BatchConfigUpdated(uint256 indexed batchId, bytes32 nextConfigHash, uint256 nextLockOffset)`
     ///
     /// Emitted when a batch creator (or BLS consensus) updates the pending config.
     /// Sets next_config_hash and next_lock_offset on the batch; promotion happens at tick boundary.
@@ -429,18 +446,14 @@ impl ChainListener {
                 return;
             }
         };
-        let new_config_hash = log
-            .topics
-            .get(2)
-            .copied()
-            .unwrap_or(H256::zero());
 
-        // Data: oldConfigHash (bytes32) + newLockOffset (uint256) = 64 bytes
-        let new_lock_offset = if log.data.len() >= 64 {
-            U256::from_big_endian(&log.data[32..64]).as_u64()
-        } else {
-            0
-        };
+        // Data: nextConfigHash (bytes32) + nextLockOffset (uint256) = 64 bytes
+        if log.data.len() < 64 {
+            warn!(batch_id, "BatchConfigUpdated: data too short");
+            return;
+        }
+        let new_config_hash = H256::from_slice(&log.data[0..32]);
+        let new_lock_offset = U256::from_big_endian(&log.data[32..64]).as_u64();
 
         // 1. Update in-memory scheduler
         self.scheduler
@@ -468,7 +481,7 @@ impl ChainListener {
         );
     }
 
-    /// Handle `BatchConfigPromoted(uint256 indexed batchId, bytes32 indexed configHash, uint256 promotedAtTick)`
+    /// Handle `BatchConfigPromoted(uint256 indexed batchId, bytes32 oldConfigHash, bytes32 newConfigHash, uint256 atTick)`
     ///
     /// Emitted when next_config_hash is promoted to active config_hash at a tick boundary.
     async fn handle_batch_config_promoted(&self, log: &Log) {
@@ -479,16 +492,14 @@ impl ChainListener {
                 return;
             }
         };
-        let config_hash = log
-            .topics
-            .get(2)
-            .copied()
-            .unwrap_or(H256::zero());
 
-        let promoted_at_tick = match decode_single_u256(&log.data) {
-            Some(v) => v.as_u64(),
-            None => 0,
-        };
+        // Data: oldConfigHash (bytes32) + newConfigHash (bytes32) + atTick (uint256) = 96 bytes
+        if log.data.len() < 96 {
+            warn!(batch_id, "BatchConfigPromoted: data too short");
+            return;
+        }
+        let config_hash = H256::from_slice(&log.data[32..64]); // newConfigHash
+        let promoted_at_tick = U256::from_big_endian(&log.data[64..96]).as_u64();
 
         // 1. Update in-memory scheduler
         self.scheduler
@@ -516,7 +527,7 @@ impl ChainListener {
         );
     }
 
-    /// Handle `PlayerJoined(uint256 indexed batchId, address indexed player, uint256 stakePerTick, bytes32 bitmapHash)`
+    /// Handle `PlayerJoined(uint256 indexed batchId, address indexed player, uint256 stakePerTick, bytes32 bitmapHash, bytes32 configHash)`
     async fn handle_player_joined(&self, log: &Log) {
         let batch_id = match extract_indexed_u64(log, 1) {
             Some(v) => v,
@@ -956,18 +967,19 @@ impl ChainListener {
         };
 
         // Decode PlayerPosition struct:
-        // (bytes32 bitmapHash, uint256 stakePerTick, uint256 startTick, uint256 balance,
-        //  uint256 lastClaimedTick, uint256 joinTimestamp, uint256 totalDeposited, uint256 totalClaimed)
+        // (bytes32 bitmapHash, bytes32 configHash, uint256 stakePerTick, uint256 startTick,
+        //  uint256 balance, uint256 lastClaimedTick, uint256 joinTimestamp, uint256 totalDeposited, uint256 totalClaimed)
         let tokens = match abi::decode(
             &[abi::ParamType::Tuple(vec![
-                abi::ParamType::FixedBytes(32),
-                abi::ParamType::Uint(256),
-                abi::ParamType::Uint(256),
-                abi::ParamType::Uint(256),
-                abi::ParamType::Uint(256),
-                abi::ParamType::Uint(256),
-                abi::ParamType::Uint(256),
-                abi::ParamType::Uint(256),
+                abi::ParamType::FixedBytes(32),  // bitmapHash
+                abi::ParamType::FixedBytes(32),  // configHash
+                abi::ParamType::Uint(256),       // stakePerTick
+                abi::ParamType::Uint(256),       // startTick
+                abi::ParamType::Uint(256),       // balance
+                abi::ParamType::Uint(256),       // lastClaimedTick
+                abi::ParamType::Uint(256),       // joinTimestamp
+                abi::ParamType::Uint(256),       // totalDeposited
+                abi::ParamType::Uint(256),       // totalClaimed
             ])],
             &result,
         ) {
@@ -983,8 +995,8 @@ impl ChainListener {
             _ => return None,
         };
 
-        // tuple[3] = balance
-        match &tuple[3] {
+        // tuple[4] = balance
+        match &tuple[4] {
             Token::Uint(v) => Some(*v),
             _ => None,
         }

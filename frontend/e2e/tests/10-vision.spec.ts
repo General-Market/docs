@@ -18,8 +18,9 @@ import {
   getBatchState,
   waitForBatches,
   ensureBatchExists,
-  createBatchOnChain,
+  findAvailableE2eBatch,
   getBatchesFromChain,
+  getBatchConfigHash,
   fullJoinBatch,
   getPosition,
   getL3UsdcBalance,
@@ -58,66 +59,57 @@ test.describe('Vision', () => {
     // Vision is now the root page
     await page.goto('/')
 
-    // Wait for page to hydrate — the VISION heading always renders
-    await page.getByRole('heading', { name: /vision/i }).waitFor({ timeout: 30_000 })
+    // Wait for page to hydrate — "Sources" text (CSS uppercase renders as "SOURCES")
+    await page.getByText(/Sources/i).first().waitFor({ timeout: 30_000 })
 
-    // Wait for batch content (batch card)
-    const batchVisible = await page
-      .locator('[data-testid="batch-card"]')
+    // Wait for batch content (batch card or NEXT BATCHES label)
+    const hasBatches = await page
+      .getByText(/Next Batches|LIVE|Batch #/i)
       .first()
       .isVisible({ timeout: 15_000 })
       .catch(() => false)
 
-    // Also check for text indicators
-    const hasMarkets = await page
-      .getByText(/prediction market/i)
-      .first()
-      .isVisible({ timeout: 5_000 })
-      .catch(() => false)
-
-    const hasTvl = await page
-      .getByText(/tvl|player|tick/i)
+    // Also check for source cards
+    const hasSources = await page
+      .getByText(/CoinGecko|Pump\.fun|Finnhub/i)
       .first()
       .isVisible({ timeout: 5_000 })
       .catch(() => false)
 
     // At least one indicator should be visible (page loaded with vision content)
-    expect(batchVisible || hasMarkets || hasTvl).toBe(true)
+    expect(hasBatches || hasSources).toBe(true)
   })
 
   // ── Two-player join + settlement verification ────────────
 
   test('two players join batch and deposits settle correctly', async () => {
-    // 1. Create a FRESH batch to avoid AlreadyJoined from previous runs
-    await createBatchOnChain(5, 30)
-    const allBatches = await getBatchesFromChain()
-    const batch = allBatches[allBatches.length - 1] // use the latest
-    const batchId = batch.id
-    const marketCount = batch.market_count || 5
+    // 1. Find a pre-created E2E test batch (deployed by DeployAllVisionBatches)
+    const { batchId, configHash } = await findAvailableE2eBatch()
+    const marketCount = 5 // E2E test batches use 5 markets by convention
 
-    // 3. Record initial balances
+    // 2. Record initial balances
     const [p1BalBefore, p2BalBefore, visionBalBefore] = await Promise.all([
       getL3UsdcBalance(PLAYER1),
       getL3UsdcBalance(PLAYER2),
       getVisionUsdcBalance(),
     ])
 
-    // 4. Generate bets — Player 1 random, Player 2 opposite
+    // 3. Generate bets — Player 1 random, Player 2 opposite
     const deposit = BigInt(10) * BigInt(10 ** 6) // 10 USDC (6 decimals, ARB_USDC)
     const stakePerTick = BigInt(10 ** 6)          // 1 USDC per tick
 
     const p1Bets = randomBets(marketCount)
     const p2Bets = oppositeBets(p1Bets)
 
-    // 5. Player 1 joins
-    const p1Result = await fullJoinBatch(PLAYER1, batchId, deposit, stakePerTick, p1Bets, marketCount)
+    // 4. Player 1 joins
+    const p1Result = await fullJoinBatch(PLAYER1, batchId, configHash, deposit, stakePerTick, p1Bets, marketCount)
     expect(p1Result.bitmapHash).toBeTruthy()
 
-    // 6. Player 2 joins (bot)
-    const p2Result = await fullJoinBatch(PLAYER2, batchId, deposit, stakePerTick, p2Bets, marketCount)
+    // 5. Player 2 joins (bot)
+    const p2Result = await fullJoinBatch(PLAYER2, batchId, configHash, deposit, stakePerTick, p2Bets, marketCount)
     expect(p2Result.bitmapHash).toBeTruthy()
 
-    // 7. Verify positions exist on-chain
+    // 6. Verify positions exist on-chain
     const [pos1, pos2] = await Promise.all([
       getPosition(batchId, PLAYER1),
       getPosition(batchId, PLAYER2),
@@ -133,7 +125,7 @@ test.describe('Vision', () => {
     expect(pos2.totalDeposited).toBe(deposit)
     expect(pos2.bitmapHash).toBe(p2Result.bitmapHash)
 
-    // 8. Verify USDC moved from players to Vision contract
+    // 7. Verify USDC moved from players to Vision contract
     const [p1BalAfter, p2BalAfter, visionBalAfter] = await Promise.all([
       getL3UsdcBalance(PLAYER1),
       getL3UsdcBalance(PLAYER2),
@@ -144,8 +136,7 @@ test.describe('Vision', () => {
     expect(p2BalBefore - p2BalAfter).toBe(deposit)
     expect(visionBalAfter - visionBalBefore).toBe(deposit * 2n)
 
-    // 9. Verify bitmaps were submitted to issuers
-    // In local dev, issuers may not index vision batches — bitmap acceptance is best-effort
+    // 8. Verify bitmaps were submitted to issuers
     if (p1Result.bitmapAccepted < 2 || p2Result.bitmapAccepted < 2) {
       console.log(`Bitmap acceptance: P1=${p1Result.bitmapAccepted}/3, P2=${p2Result.bitmapAccepted}/3 (issuers may not be indexing vision events)`)
     } else {

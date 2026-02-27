@@ -50,16 +50,28 @@ pub struct VisionState {
     // pub bls_signer: ...,
 }
 
+/// Decode a bytes32 hex string (e.g. "0x636f696e6765636b6f00...") to a UTF-8 string,
+/// stripping trailing null bytes. Returns the hex as-is if decoding fails.
+fn bytes32_hex_to_string(hex: &str) -> String {
+    let hex = hex.strip_prefix("0x").unwrap_or(hex);
+    if let Ok(bytes) = hex::decode(hex) {
+        let trimmed: Vec<u8> = bytes.into_iter().take_while(|&b| b != 0).collect();
+        String::from_utf8(trimmed).unwrap_or_else(|_| format!("0x{hex}"))
+    } else {
+        format!("0x{hex}")
+    }
+}
+
 /// Build the axum router for all Vision API endpoints.
 pub fn routes(state: Arc<VisionState>) -> axum::Router {
     axum::Router::new()
         .route("/vision/batches", get(list_batches))
-        .route("/vision/batch/{id}/state", get(batch_state))
-        .route("/vision/batch/{id}/history", get(batch_history))
+        .route("/vision/batch/:id/state", get(batch_state))
+        .route("/vision/batch/:id/history", get(batch_history))
         .route("/vision/backtest", post(backtest))
         .route("/vision/bitmap", post(submit_bitmap))
-        .route("/vision/balance/{batch_id}/{player}", get(get_balance))
-        .route("/vision/reveal/{batch_id}/{tick_id}", get(get_reveals))
+        .route("/vision/balance/:batch_id/:player", get(get_balance))
+        .route("/vision/reveal/:batch_id/:tick_id", get(get_reveals))
         .route("/vision/markets", get(markets))
         .route("/vision/leaderboard", get(vision_leaderboard))
         .with_state(state)
@@ -235,7 +247,7 @@ async fn list_batches(
                 summaries.push(BatchSummary {
                     id: batch_id,
                     creator: row.creator,
-                    source_id: row.source_id.unwrap_or_default(),
+                    source_id: bytes32_hex_to_string(&row.source_id.unwrap_or_default()),
                     config_hash: row.config_hash.unwrap_or_default(),
                     tick_duration: row.tick_duration as u64,
                     player_count,
@@ -297,7 +309,7 @@ async fn batch_state(
             let response = BatchStateResponse {
                 id: batch.id,
                 creator: format!("{:?}", batch.creator),
-                source_id: format!("{:?}", batch.source_id),
+                source_id: bytes32_hex_to_string(&format!("{:?}", batch.source_id)),
                 config_hash: format!("{:?}", batch.config_hash),
                 tick_duration: batch.tick_duration,
                 created_at_tick: batch.created_at_tick,
@@ -610,10 +622,13 @@ async fn submit_bitmap(
     // Store the bitmap (BitmapStore verifies keccak256(bitmap) == expected_hash)
     match state
         .bitmap_store
-        .store(player, req.batch_id, bitmap, expected_hash)
+        .store(player, req.batch_id, bitmap.clone(), expected_hash)
         .await
     {
         Ok(()) => {
+            // Persist to DB for crash recovery
+            state.bitmap_store.persist_to_db(&state.pool, req.batch_id, player, &bitmap, &expected_hash).await;
+
             info!(
                 player = ?player,
                 batch_id = req.batch_id,
@@ -844,33 +859,42 @@ async fn vision_leaderboard(
     // Aggregate player data across all batches
     let batch_ids = state.scheduler.get_all_batch_ids().await;
 
-    // player -> (total_balance, total_deposited, batches_joined, largest_batch_markets)
+    // player -> (total_balance, total_deposited, batches_joined, largest_batch_markets, batch_wins)
     let mut player_data: std::collections::HashMap<
         Address,
-        (u128, u128, usize, usize),
+        (u128, u128, usize, usize, usize),
     > = std::collections::HashMap::new();
 
     for batch_id in &batch_ids {
-        if let Some((_batch, players)) = state.scheduler.get_batch_state(*batch_id).await {
+        if let Some((batch, players)) = state.scheduler.get_batch_state(*batch_id).await {
+            // Skip paused batches — they have stale balances
+            if batch.paused {
+                continue;
+            }
             for p in &players {
-                let entry = player_data.entry(p.player).or_insert((0, 0, 0, 0));
-                entry.0 += p.balance.as_u128(); // current balance
+                let entry = player_data.entry(p.player).or_insert((0, 0, 0, 0, 0));
+                let balance = p.balance.as_u128();
+                entry.0 += balance; // current balance
                 // Approximate initial deposit from stake_per_tick * 10 (heuristic)
                 // since we don't track total_deposited in scheduler
                 let initial = p.stake_per_tick.as_u128() * 10;
                 entry.1 += initial;
                 entry.2 += 1; // batches joined
-                // Market count is no longer stored on-chain in batch struct;
-                // config is fetched from data-node by config_hash.
+                // Win = player is in profit for this batch
+                if balance > initial {
+                    entry.4 += 1;
+                }
             }
         }
     }
 
-    // Also query Postgres for initial deposits
+    // Also query Postgres for initial deposits (stake_per_tick as proxy)
     if let Ok(rows) = sqlx::query_as::<_, DepositRow>(
-        "SELECT player, SUM(balance::bigint) as total_deposited
-         FROM vision_positions
-         GROUP BY player"
+        "SELECT vp.player, SUM(vp.stake_per_tick::bigint * 10) as total_deposited
+         FROM vision_positions vp
+         JOIN vision_batches vb ON vp.batch_id = vb.id
+         WHERE vb.paused = false
+         GROUP BY vp.player"
     )
     .fetch_all(&state.pool)
     .await
@@ -878,17 +902,20 @@ async fn vision_leaderboard(
         for row in rows {
             if let Ok(addr) = row.player.parse::<Address>() {
                 if let Some(entry) = player_data.get_mut(&addr) {
-                    // Use actual initial deposit from Postgres
-                    entry.1 = row.total_deposited.unwrap_or(0) as u128;
+                    if let Some(dep) = row.total_deposited {
+                        if dep > 0 {
+                            entry.1 = dep as u128;
+                        }
+                    }
                 }
             }
         }
     }
 
     // Build ranked entries
-    let mut entries: Vec<(Address, u128, u128, usize, usize)> = player_data
+    let mut entries: Vec<(Address, u128, u128, usize, usize, usize)> = player_data
         .into_iter()
-        .map(|(addr, (bal, dep, batches, largest))| (addr, bal, dep, batches, largest))
+        .map(|(addr, (bal, dep, batches, largest, wins))| (addr, bal, dep, batches, largest, wins))
         .collect();
 
     // Sort by PnL descending (current_balance - initial_deposit)
@@ -902,20 +929,25 @@ async fn vision_leaderboard(
     let leaderboard: Vec<LeaderboardEntry> = entries
         .iter()
         .enumerate()
-        .map(|(i, (addr, bal, dep, batches, largest))| {
+        .map(|(i, (addr, bal, dep, batches, _largest, wins))| {
             let pnl = (*bal as i128 - *dep as i128) as f64 / decimals;
             let deposited = *dep as f64 / decimals;
             let roi = if deposited > 0.0 { pnl / deposited * 100.0 } else { 0.0 };
+            let win_rate = if *batches > 0 {
+                *wins as f64 / *batches as f64 * 100.0
+            } else {
+                0.0
+            };
             LeaderboardEntry {
                 rank: i + 1,
                 wallet_address: format!("{:?}", addr),
                 pnl: (pnl * 100.0).round() / 100.0,
-                win_rate: 0.0, // Not tracked per-player yet
+                win_rate: (win_rate * 10.0).round() / 10.0,
                 roi: (roi * 100.0).round() / 100.0,
                 total_volume: (deposited * 100.0).round() / 100.0,
                 portfolio_bets: *batches,
                 avg_portfolio_size: 0.0,
-                largest_portfolio: *largest,
+                largest_portfolio: 0,
             }
         })
         .collect();

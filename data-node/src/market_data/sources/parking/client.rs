@@ -42,18 +42,18 @@ struct CuratedCity {
 }
 
 /// ~20 European cities available on ParkAPI, curated by size and availability.
+/// Note: ParkAPI URLs require capitalized city names (e.g. "Zuerich" not "zuerich").
+/// The `api_name` field holds the capitalized form used in URLs.
+/// Cities removed (no longer on ParkAPI): frankfurt, muenchen, essen, duesseldorf.
+/// Replacements added: mannheim, nuernberg, heilbronn, regensburg.
 const CURATED_CITIES: &[CuratedCity] = &[
     CuratedCity { id: "zuerich", name: "Zuerich", country: "Switzerland" },
     CuratedCity { id: "dresden", name: "Dresden", country: "Germany" },
     CuratedCity { id: "hamburg", name: "Hamburg", country: "Germany" },
-    CuratedCity { id: "frankfurt", name: "Frankfurt", country: "Germany" },
-    CuratedCity { id: "muenchen", name: "Muenchen", country: "Germany" },
     CuratedCity { id: "koeln", name: "Koeln", country: "Germany" },
     CuratedCity { id: "bonn", name: "Bonn", country: "Germany" },
     CuratedCity { id: "aachen", name: "Aachen", country: "Germany" },
-    CuratedCity { id: "essen", name: "Essen", country: "Germany" },
     CuratedCity { id: "dortmund", name: "Dortmund", country: "Germany" },
-    CuratedCity { id: "duesseldorf", name: "Duesseldorf", country: "Germany" },
     CuratedCity { id: "wiesbaden", name: "Wiesbaden", country: "Germany" },
     CuratedCity { id: "karlsruhe", name: "Karlsruhe", country: "Germany" },
     CuratedCity { id: "freiburg", name: "Freiburg", country: "Germany" },
@@ -63,6 +63,10 @@ const CURATED_CITIES: &[CuratedCity] = &[
     CuratedCity { id: "konstanz", name: "Konstanz", country: "Germany" },
     CuratedCity { id: "oldenburg", name: "Oldenburg", country: "Germany" },
     CuratedCity { id: "luebeck", name: "Luebeck", country: "Germany" },
+    CuratedCity { id: "mannheim", name: "Mannheim", country: "Germany" },
+    CuratedCity { id: "nuernberg", name: "Nuernberg", country: "Germany" },
+    CuratedCity { id: "heilbronn", name: "Heilbronn", country: "Germany" },
+    CuratedCity { id: "regensburg", name: "Regensburg", country: "Germany" },
 ];
 
 // ============================================================================
@@ -209,8 +213,11 @@ impl MarketDataSource for ParkingMarketSource {
         for (i, asset_id) in asset_ids.iter().enumerate() {
             let city_id = Self::extract_city_id(asset_id);
 
-            // Build the city detail URL
-            let url = format!("{}/{}", API_BASE, city_id);
+            // ParkAPI requires capitalized city names in URLs
+            let city_api_name = Self::find_city(city_id)
+                .map(|c| c.name)
+                .unwrap_or(city_id);
+            let url = format!("{}/{}", API_BASE, city_api_name);
 
             debug!("ParkAPI: fetching city {} ({}/{})", city_id, i + 1, asset_ids.len());
 
@@ -436,8 +443,8 @@ mod tests {
         assert!(ids.contains(&"zuerich"), "Should contain Zuerich");
         assert!(ids.contains(&"dresden"), "Should contain Dresden");
         assert!(ids.contains(&"hamburg"), "Should contain Hamburg");
-        assert!(ids.contains(&"muenchen"), "Should contain Muenchen");
         assert!(ids.contains(&"koeln"), "Should contain Koeln");
+        assert!(ids.contains(&"mannheim"), "Should contain Mannheim");
     }
 
     #[test]

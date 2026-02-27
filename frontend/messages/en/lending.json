@@ -28,6 +28,7 @@
     "borrow_usdc": "Borrow USDC",
     "repay": "Repay",
     "borrow": "Borrow",
+    "manage_position": "Manage position",
     "cancel": "Cancel",
     "max": "MAX"
   },

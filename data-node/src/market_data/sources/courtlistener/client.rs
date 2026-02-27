@@ -56,25 +56,39 @@ struct PaginatedResponse {
 ///
 /// Tracks daily filing counts (opinions, docket entries, new cases) for
 /// 34 federal courts. Source ID is `"courtlistener"`.
+///
+/// Works without auth (5 req/min) but much better with a token (5000 req/hr).
+/// Free registration at https://www.courtlistener.com/sign-in/
 pub struct CourtListenerMarketSource {
     http: SourceHttpClient,
-    api_token: String,
+    /// Optional API token — unauthenticated access works at lower rate limits.
+    api_token: Option<String>,
 }
 
 impl CourtListenerMarketSource {
     pub fn from_env() -> Result<Self> {
         let api_token = std::env::var("COURTLISTENER_TOKEN")
-            .map_err(|_| anyhow::anyhow!("COURTLISTENER_TOKEN env var not set"))?;
+            .ok()
+            .filter(|s| !s.is_empty());
 
+        // Unauthenticated: 5 req/min; Authenticated: 5000 req/hr
+        let max_req = if api_token.is_some() { 4000 } else { 4 };
         let rate_limit = RateLimitConfig {
             windows: vec![RateWindow {
-                max_requests: 4000,
-                duration: Duration::from_secs(3600),
+                max_requests: max_req,
+                duration: if api_token.is_some() {
+                    Duration::from_secs(3600)
+                } else {
+                    Duration::from_secs(60)
+                },
             }],
         };
         let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
 
-        info!("CourtListener Federal Courts source initialized");
+        info!(
+            "CourtListener Federal Courts source initialized (auth={})",
+            if api_token.is_some() { "token" } else { "none (public, 5 req/min)" }
+        );
 
         Ok(Self { http, api_token })
     }
@@ -95,14 +109,23 @@ impl MarketDataSource for CourtListenerMarketSource {
     }
 
     fn sync_interval(&self) -> Duration {
-        Duration::from_secs(600) // 10 minutes
+        if self.api_token.is_some() {
+            Duration::from_secs(600) // 10 minutes with auth
+        } else {
+            Duration::from_secs(3600) // 1 hour without auth (5 req/min limit)
+        }
     }
 
     fn rate_limit_config(&self) -> RateLimitConfig {
+        let (max_req, dur) = if self.api_token.is_some() {
+            (4000, Duration::from_secs(3600))
+        } else {
+            (4, Duration::from_secs(60))
+        };
         RateLimitConfig {
             windows: vec![RateWindow {
-                max_requests: 4000,
-                duration: Duration::from_secs(3600),
+                max_requests: max_req,
+                duration: dur,
             }],
         }
     }
@@ -146,13 +169,19 @@ impl MarketDataSource for CourtListenerMarketSource {
             }
 
             let url = build_api_url(court_id, metric, &today_et);
-            let auth_header = format!("Token {}", self.api_token);
+
+            let headers: Vec<(&str, String)> = if let Some(ref token) = self.api_token {
+                vec![("Authorization", format!("Token {}", token))]
+            } else {
+                vec![]
+            };
+            let header_refs: Vec<(&str, &str)> = headers.iter().map(|(k, v)| (*k, v.as_str())).collect();
 
             let count = match self
                 .http
                 .get_json_with_headers::<PaginatedResponse>(
                     &url,
-                    &[("Authorization", &auth_header)],
+                    &header_refs,
                 )
                 .await
             {

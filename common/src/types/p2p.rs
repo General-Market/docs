@@ -516,6 +516,8 @@ pub enum P2PMessage {
         order_id: U256,
         /// USDC proceeds to return to user
         usdc_proceeds: U256,
+        /// Vault address to pull USDC from (for atomic fund+complete)
+        vault: Address,
         /// Registry snapshot nonce for historical BLS verification
         reference_nonce: u64,
         /// Leader's BLS signature

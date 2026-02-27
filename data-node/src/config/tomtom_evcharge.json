@@ -1,32 +1,5 @@
 [
   {
-    "asset_id": "tomtom_evcharge_tesla_sc_barstow",
-    "symbol": "EVC/TESLA-SC-BARSTOW",
-    "name": "Tesla Supercharger Barstow CA",
-    "category": "transport",
-    "subcategory": "ev_charging",
-    "api_ref": "35.0284,-117.0145",
-    "active": true
-  },
-  {
-    "asset_id": "tomtom_evcharge_tesla_sc_kettleman",
-    "symbol": "EVC/TESLA-SC-KETTLEMAN",
-    "name": "Tesla Supercharger Kettleman City CA",
-    "category": "transport",
-    "subcategory": "ev_charging",
-    "api_ref": "35.9894,-119.9622",
-    "active": true
-  },
-  {
-    "asset_id": "tomtom_evcharge_tesla_sc_primm",
-    "symbol": "EVC/TESLA-SC-PRIMM",
-    "name": "Tesla Supercharger Primm NV",
-    "category": "transport",
-    "subcategory": "ev_charging",
-    "api_ref": "35.6109,-115.3869",
-    "active": true
-  },
-  {
     "asset_id": "tomtom_evcharge_tesla_sc_tejon",
     "symbol": "EVC/TESLA-SC-TEJON",
     "name": "Tesla Supercharger Tejon Ranch CA",
@@ -45,39 +18,12 @@
     "active": true
   },
   {
-    "asset_id": "tomtom_evcharge_ea_brea",
-    "symbol": "EVC/EA-BREA",
-    "name": "Electrify America Brea CA",
-    "category": "transport",
-    "subcategory": "ev_charging",
-    "api_ref": "33.9172,-117.8648",
-    "active": true
-  },
-  {
-    "asset_id": "tomtom_evcharge_chargepoint_lax",
-    "symbol": "EVC/CP-LAX",
-    "name": "ChargePoint LAX CA",
-    "category": "transport",
-    "subcategory": "ev_charging",
-    "api_ref": "33.9416,-118.4085",
-    "active": true
-  },
-  {
     "asset_id": "tomtom_evcharge_tesla_sc_wawa_nj",
     "symbol": "EVC/TESLA-SC-WAWA-NJ",
     "name": "Tesla Supercharger Wawa NJ",
     "category": "transport",
     "subcategory": "ev_charging",
     "api_ref": "39.9526,-75.1652",
-    "active": true
-  },
-  {
-    "asset_id": "tomtom_evcharge_evgo_atlanta",
-    "symbol": "EVC/EVGO-ATLANTA",
-    "name": "EVgo Atlanta GA",
-    "category": "transport",
-    "subcategory": "ev_charging",
-    "api_ref": "33.7490,-84.3880",
     "active": true
   },
   {
@@ -117,87 +63,6 @@
     "active": true
   },
   {
-    "asset_id": "tomtom_evcharge_ionity_paris",
-    "symbol": "EVC/IONITY-PARIS",
-    "name": "Ionity Paris Area FR",
-    "category": "transport",
-    "subcategory": "ev_charging",
-    "api_ref": "48.8534,2.3488",
-    "active": true
-  },
-  {
-    "asset_id": "tomtom_evcharge_tesla_sc_dietikon",
-    "symbol": "EVC/TESLA-SC-DIETIKON",
-    "name": "Tesla Supercharger Dietikon CH",
-    "category": "transport",
-    "subcategory": "ev_charging",
-    "api_ref": "47.4005,8.3905",
-    "active": true
-  },
-  {
-    "asset_id": "tomtom_evcharge_enbw_karlsruhe",
-    "symbol": "EVC/ENBW-KARLSRUHE",
-    "name": "EnBW Karlsruhe DE",
-    "category": "transport",
-    "subcategory": "ev_charging",
-    "api_ref": "49.0069,8.4037",
-    "active": true
-  },
-  {
-    "asset_id": "tomtom_evcharge_tesla_sc_kinmen",
-    "symbol": "EVC/TESLA-SC-KINMEN",
-    "name": "Tesla Supercharger Kinmen TW",
-    "category": "transport",
-    "subcategory": "ev_charging",
-    "api_ref": "24.4324,118.3170",
-    "active": true
-  },
-  {
-    "asset_id": "tomtom_evcharge_tesla_sc_shanghai",
-    "symbol": "EVC/TESLA-SC-SHANGHAI",
-    "name": "Tesla Supercharger Shanghai CN",
-    "category": "transport",
-    "subcategory": "ev_charging",
-    "api_ref": "31.2304,121.4737",
-    "active": true
-  },
-  {
-    "asset_id": "tomtom_evcharge_tesla_sc_sydney",
-    "symbol": "EVC/TESLA-SC-SYDNEY",
-    "name": "Tesla Supercharger Sydney AU",
-    "category": "transport",
-    "subcategory": "ev_charging",
-    "api_ref": "-33.8352,151.0885",
-    "active": true
-  },
-  {
-    "asset_id": "tomtom_evcharge_tesla_sc_mississauga",
-    "symbol": "EVC/TESLA-SC-MISSISSAUGA",
-    "name": "Tesla Supercharger Mississauga CA",
-    "category": "transport",
-    "subcategory": "ev_charging",
-    "api_ref": "43.5890,-79.6441",
-    "active": true
-  },
-  {
-    "asset_id": "tomtom_evcharge_tesla_sc_las_vegas",
-    "symbol": "EVC/TESLA-SC-LAS-VEGAS",
-    "name": "Tesla Supercharger Las Vegas NV",
-    "category": "transport",
-    "subcategory": "ev_charging",
-    "api_ref": "36.1699,-115.1398",
-    "active": true
-  },
-  {
-    "asset_id": "tomtom_evcharge_ea_baker",
-    "symbol": "EVC/EA-BAKER",
-    "name": "Electrify America Baker CA",
-    "category": "transport",
-    "subcategory": "ev_charging",
-    "api_ref": "35.2661,-116.0741",
-    "active": true
-  },
-  {
     "asset_id": "tomtom_evcharge_tesla_sc_oslo",
     "symbol": "EVC/TESLA-SC-OSLO",
     "name": "Tesla Supercharger Oslo NO",
@@ -216,12 +81,21 @@
     "active": true
   },
   {
-    "asset_id": "tomtom_evcharge_tesla_sc_denver",
-    "symbol": "EVC/TESLA-SC-DENVER",
-    "name": "Tesla Supercharger Denver CO",
+    "asset_id": "tomtom_evcharge_tesla_sc_sydney",
+    "symbol": "EVC/TESLA-SC-SYDNEY",
+    "name": "Tesla Supercharger Sydney AU",
     "category": "transport",
     "subcategory": "ev_charging",
-    "api_ref": "39.7392,-104.9903",
+    "api_ref": "-33.8352,151.0885",
+    "active": true
+  },
+  {
+    "asset_id": "tomtom_evcharge_enbw_karlsruhe",
+    "symbol": "EVC/ENBW-KARLSRUHE",
+    "name": "EnBW Karlsruhe DE",
+    "category": "transport",
+    "subcategory": "ev_charging",
+    "api_ref": "49.0069,8.4037",
     "active": true
   }
 ]

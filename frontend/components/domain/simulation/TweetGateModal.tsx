@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import { useAccount } from 'wagmi'
 import { exportChartAsImage, downloadBlob } from '@/lib/chartExport'
 import { getTweetText, buildTweetIntentUrl } from '@/lib/tweetTemplates'
@@ -24,10 +25,10 @@ interface TweetGateModalProps {
 
 const TIMER_SECONDS = 15
 
-const TIER_MESSAGES: Record<number, string> = {
-  1: '5 more unlocked. Marketing intern.',
-  2: '10 more. Employee of the month.',
-  3: 'Unlimited. Basically a co-founder.',
+const TIER_TOAST_KEYS: Record<number, string> = {
+  1: 'gate.tier1_toast',
+  2: 'gate.tier2_toast',
+  3: 'gate.tier3_toast',
 }
 
 export default function TweetGateModal({
@@ -37,6 +38,7 @@ export default function TweetGateModal({
   chartRef,
   stats,
 }: TweetGateModalProps) {
+  const t = useTranslations('backtest')
   const { isConnected } = useAccount()
   const { showSuccess, showError } = useToast()
   const [tweetOpened, setTweetOpened] = useState(false)
@@ -101,12 +103,13 @@ export default function TweetGateModal({
     const success = await onUnlock()
     setUnlocking(false)
     if (success) {
-      showSuccess(TIER_MESSAGES[nextTier] || 'Unlocked!')
+      const toastKey = TIER_TOAST_KEYS[nextTier]
+      showSuccess(toastKey ? t(toastKey) : t('gate.unlocked'))
       onClose()
     } else {
-      showError('Signature failed. Try again.')
+      showError(t('gate.signature_failed'))
     }
-  }, [onUnlock, onClose, nextTier, showSuccess, showError])
+  }, [onUnlock, onClose, nextTier, showSuccess, showError, t])
 
   const canConfirm = tweetOpened && countdown <= 0 && !unlocking
 
@@ -123,10 +126,10 @@ export default function TweetGateModal({
         <div className="flex items-center justify-between p-5 border-b border-border-light">
           <div>
             <h3 className="text-lg font-semibold text-text-primary">
-              Simulations aren&apos;t free. But almost.
+              {t('gate.title')}
             </h3>
             <p className="text-sm text-text-secondary mt-1">
-              One tweet = more backtests. We&apos;re basically giving these away.
+              {t('gate.subtitle')}
             </p>
           </div>
           <button
@@ -141,7 +144,7 @@ export default function TweetGateModal({
         <div className="p-5 space-y-4">
           {!isConnected ? (
             <p className="text-sm text-text-secondary">
-              Connect your wallet to unlock more simulations.
+              {t('gate.connect_wallet')}
             </p>
           ) : (
             <>
@@ -153,7 +156,7 @@ export default function TweetGateModal({
               {imagePreviewUrl && (
                 <img
                   src={imagePreviewUrl}
-                  alt="Backtest chart preview"
+                  alt={t('gate.chart_alt')}
                   className="w-full rounded-lg border border-border-light"
                 />
               )}
@@ -165,13 +168,13 @@ export default function TweetGateModal({
                   disabled={!imageReady}
                   className="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg border border-border-light text-text-primary hover:bg-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Download Image
+                  {t('gate.download_image')}
                 </button>
                 <button
                   onClick={handleOpenTweet}
                   className="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 transition-colors"
                 >
-                  Open X
+                  {t('gate.open_x')}
                 </button>
               </div>
 

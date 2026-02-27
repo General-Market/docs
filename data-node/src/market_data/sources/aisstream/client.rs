@@ -152,7 +152,7 @@ impl MarketDataSource for AisStreamMarketSource {
     }
 
     fn sync_interval(&self) -> Duration {
-        Duration::from_secs(60) // Reads from memory, cheap
+        Duration::from_secs(60) // Reads from memory, cheap — rolling WS data
     }
 
     fn rate_limit_config(&self) -> RateLimitConfig {

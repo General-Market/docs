@@ -17,6 +17,7 @@ const VISION_ADDRESS = (process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x00000000000
 
 export interface UseJoinBatchParams {
   batchId: bigint
+  configHash: `0x${string}`
   depositAmount: bigint
   stakePerTick: bigint
   bets: BetDirection[]
@@ -52,7 +53,7 @@ export interface UseJoinBatchReturn {
  * Flow:
  * 1. Encode bets into bitmap, compute keccak256 hash
  * 2. Check USDC allowance; approve Vision contract if needed
- * 3. Call Vision.joinBatch(batchId, depositAmount, stakePerTick, bitmapHash)
+ * 3. Call Vision.joinBatch(batchId, configHash, depositAmount, stakePerTick, bitmapHash)
  *
  * After joinBatch succeeds, the caller should use useSubmitBitmap to reveal
  * the actual bitmap bytes to the issuer nodes.
@@ -135,7 +136,7 @@ export function useJoinBatch(): UseJoinBatchReturn {
         address: VISION_ADDRESS,
         abi: VISION_ABI,
         functionName: 'joinBatch',
-        args: [params.batchId, params.depositAmount, params.stakePerTick, hash],
+        args: [params.batchId, params.configHash, params.depositAmount, params.stakePerTick, hash],
       })
     } else {
       // Need approval first
@@ -163,6 +164,7 @@ export function useJoinBatch(): UseJoinBatchReturn {
         functionName: 'joinBatch',
         args: [
           pendingParams.batchId,
+          pendingParams.configHash,
           pendingParams.depositAmount,
           pendingParams.stakePerTick,
           bitmapHash,

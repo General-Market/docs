@@ -370,7 +370,7 @@ Each sub-skill is **prescriptive** (tells the agent what to do, in order) not de
 
 ## Index (ITPs)
 - Chain: Arbitrum Orbit L3, Chain ID 111222333
-- RPC: https://index.rpc.zeeve.net
+- RPC: http://142.132.164.24/
 - Collateral: USDC (18 decimals)
 
 ## Vision (Prediction Market)

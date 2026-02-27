@@ -545,7 +545,7 @@ impl MarketDataSource for TwitchMarketSource {
     }
 
     fn sync_interval(&self) -> Duration {
-        Duration::from_secs(60) // 1 minute — full refresh every cycle
+        Duration::from_secs(60) // Rolling refresh cycle
     }
 
     fn rate_limit_config(&self) -> RateLimitConfig {

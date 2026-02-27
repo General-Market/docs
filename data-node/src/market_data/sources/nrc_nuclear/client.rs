@@ -24,7 +24,7 @@ use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
 use crate::market_data::traits::{AssetUpdate, MarketDataSource, PriceUpdate};
 
 /// NRC Power Reactor Status Report URL (last 365 days)
-const DATA_URL: &str = "https://www.nrc.gov/reading-rm/doc-collections/event-status/reactor-status/powerreactorstatusforlast365days.txt";
+const DATA_URL: &str = "https://www.nrc.gov/reading-rm/doc-collections/event-status/reactor-status/PowerReactorStatusForLast365Days.txt";
 
 // ============================================================================
 // SOURCE IMPLEMENTATION
@@ -46,7 +46,23 @@ impl NrcNuclearMarketSource {
                 duration: Duration::from_secs(60),
             }],
         };
-        let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
+
+        // Use a custom client with User-Agent header — government sites
+        // may block requests without one. Also use a longer timeout since
+        // the NRC server has had transient DNS/connectivity issues.
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(45))
+            .user_agent("IndexDataNode/1.0 (contact: data@index.markets)")
+            .build()
+            .expect("Failed to create NRC HTTP client");
+
+        let retry = RetryConfig {
+            max_retries: 4,          // extra retry for transient DNS issues
+            base_delay_ms: 500,      // longer base delay for gov site
+            max_delay_ms: 10_000,
+        };
+
+        let http = SourceHttpClient::with_client(client, rate_limit, retry);
 
         info!("NRC Nuclear Reactors source initialized");
 

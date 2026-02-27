@@ -1,26 +1,28 @@
 //! AIS Maritime vessel tracking client implementing MarketDataSource
 //!
 //! Tracks vessel counts across 25 global ports and shipping lanes using the
-//! AISStream.io REST API.
+//! Finnish Digitraffic AIS API (free, no auth, ~18k vessels).
+//!
+//! Strategy: ONE call to the Digitraffic AIS locations endpoint fetches all
+//! vessel positions as GeoJSON, then counts per bounding box region in-memory.
 //!
 //! Each region is defined by a bounding box. The value for each asset is the
 //! count of vessels detected in that area.
 //!
-//! API: POST https://api.aisstream.io/v0/rest/vessel-positions
-//! Auth: AISSTREAM_API_KEY env var (sent as Api-Key header)
-//! Rate limit: Conservative — 6 req/min
+//! API: GET https://meri.digitraffic.fi/api/ais/v1/locations
+//! Auth: None (public API)
+//! Rate limit: Requires Accept-Encoding: gzip
+//! Note: Response is GeoJSON with coordinates in [lon, lat] order.
 
 use anyhow::Result;
 use chrono::Utc;
 use rust_decimal::Decimal;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
-use crate::market_data::sources::error::SourceError;
-use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
 use crate::market_data::traits::{
     load_assets_from_json, AssetEntry, AssetUpdate, MarketDataSource, PriceUpdate,
 };
@@ -28,41 +30,51 @@ use crate::market_data::traits::{
 /// Asset configuration — 25 global ports and shipping lanes
 const ASSET_JSON: &str = include_str!("../../../config/maritime.json");
 
-/// AISStream REST API endpoint
-const API_URL: &str = "https://api.aisstream.io/v0/rest/vessel-positions";
-
-/// Delay between sequential region fetches (ms)
-const INTER_REQUEST_DELAY_MS: u64 = 10000;
+/// Digitraffic AIS locations endpoint (returns all vessels as GeoJSON)
+const API_URL: &str = "https://meri.digitraffic.fi/api/ais/v1/locations";
 
 // ============================================================================
-// API REQUEST/RESPONSE TYPES
+// API RESPONSE TYPES (GeoJSON format from Digitraffic)
 // ============================================================================
 
-/// AISStream REST API request body
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "PascalCase")]
-struct AisStreamRequest {
-    /// Bounding boxes to query — each is [[lat_min, lon_min], [lat_max, lon_max]]
-    bounding_boxes: Vec<[[f64; 2]; 2]>,
-}
-
-/// AISStream REST API response
-/// The response is a JSON array of vessel position objects.
+/// GeoJSON FeatureCollection response from Digitraffic AIS
 #[derive(Debug, Deserialize)]
-struct AisStreamResponse {
-    /// Vessel positions — count of elements = vessel count
+#[serde(rename_all = "camelCase")]
+struct AisGeoJsonResponse {
+    /// Array of vessel features
     #[serde(default)]
-    positions: Option<Vec<serde_json::Value>>,
+    features: Vec<AisFeature>,
 }
 
-/// Fallback: if the response is just an array at the top level
+/// A single vessel GeoJSON feature
 #[derive(Debug, Deserialize)]
-#[serde(untagged)]
-enum AisResponse {
-    /// Response with named field
-    Named(AisStreamResponse),
-    /// Response as direct array
-    Array(Vec<serde_json::Value>),
+struct AisFeature {
+    /// Point geometry with [lon, lat] coordinates
+    geometry: Option<AisGeometry>,
+}
+
+/// GeoJSON Point geometry
+#[derive(Debug, Deserialize)]
+struct AisGeometry {
+    /// Coordinates in [longitude, latitude] order (GeoJSON standard)
+    coordinates: Option<Vec<f64>>,
+}
+
+/// Parsed bounding box for vessel counting
+#[derive(Debug, Clone)]
+struct BBox {
+    lon_min: f64,
+    lat_min: f64,
+    lon_max: f64,
+    lat_max: f64,
+}
+
+impl BBox {
+    /// Check if a (lat, lon) point is inside this bounding box
+    fn contains(&self, lat: f64, lon: f64) -> bool {
+        lat >= self.lat_min && lat <= self.lat_max
+            && lon >= self.lon_min && lon <= self.lon_max
+    }
 }
 
 // ============================================================================
@@ -71,48 +83,28 @@ enum AisResponse {
 
 /// AIS maritime vessel tracking market data source.
 ///
-/// Tracks vessel counts across 25 global ports and shipping lanes.
-/// Source ID is `"maritime"`.
+/// Tracks vessel counts across 25 global ports and shipping lanes
+/// using the Digitraffic AIS API. Source ID is `"maritime"`.
 pub struct MaritimeMarketSource {
-    http: SourceHttpClient,
-    /// Raw reqwest client for POST requests (SourceHttpClient only supports GET)
     client: reqwest::Client,
-    api_key: String,
 }
 
 impl MaritimeMarketSource {
     pub fn from_env() -> Result<Self> {
-        let api_key = std::env::var("AISSTREAM_API_KEY").map_err(|_| {
-            anyhow::anyhow!(
-                "AISSTREAM_API_KEY env var not set — required for AIS maritime source"
-            )
-        })?;
-
-        let rate_limit = RateLimitConfig {
-            windows: vec![RateWindow {
-                max_requests: 6,
-                duration: Duration::from_secs(60),
-            }],
-        };
-        let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
-
+        // No API key required for Digitraffic
+        // Accept AISSTREAM_API_KEY silently for backward compat but don't require it
         let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(30))
-            .build()
-            .expect("Failed to create HTTP client");
+            .timeout(Duration::from_secs(60)) // Large GeoJSON response
+            .gzip(true)
+            .build()?;
 
-        info!("AIS maritime source initialized (25 ports/lanes)");
+        info!("AIS maritime source initialized (Digitraffic API, 25 ports/lanes)");
 
-        Ok(Self {
-            http,
-            client,
-            api_key,
-        })
+        Ok(Self { client })
     }
 
     /// Parse bounding box from config format "lon_min,lat_min,lon_max,lat_max"
-    /// into AISStream format [[lat_min, lon_min], [lat_max, lon_max]].
-    fn parse_bbox(bbox_str: &str) -> Result<[[f64; 2]; 2], String> {
+    fn parse_bbox(bbox_str: &str) -> Result<BBox, String> {
         let parts: Vec<&str> = bbox_str.split(',').collect();
         if parts.len() != 4 {
             return Err(format!(
@@ -121,62 +113,12 @@ impl MaritimeMarketSource {
                 bbox_str
             ));
         }
-        let lon_min: f64 = parts[0].trim().parse().map_err(|e| format!("lon_min: {}", e))?;
-        let lat_min: f64 = parts[1].trim().parse().map_err(|e| format!("lat_min: {}", e))?;
-        let lon_max: f64 = parts[2].trim().parse().map_err(|e| format!("lon_max: {}", e))?;
-        let lat_max: f64 = parts[3].trim().parse().map_err(|e| format!("lat_max: {}", e))?;
-        Ok([[lat_min, lon_min], [lat_max, lon_max]])
-    }
-
-    /// Fetch vessel count for a bounding box via POST request.
-    async fn fetch_vessel_count(&self, bbox: [[f64; 2]; 2]) -> Result<u64, SourceError> {
-        let body = AisStreamRequest {
-            bounding_boxes: vec![bbox],
-        };
-
-        let response = self
-            .client
-            .post(API_URL)
-            .header("Api-Key", &self.api_key)
-            .header("Content-Type", "application/json")
-            .json(&body)
-            .send()
-            .await
-            .map_err(|e| SourceError::Transient(format!("AIS request failed: {}", e)))?;
-
-        let status = response.status().as_u16();
-        if !response.status().is_success() {
-            let body_text = response.text().await.unwrap_or_default();
-            return Err(SourceError::from_status(status, &body_text));
-        }
-
-        let text = response
-            .text()
-            .await
-            .map_err(|e| SourceError::DataError(format!("Read response body: {}", e)))?;
-
-        // Try parsing as different response formats
-        let count = match serde_json::from_str::<AisResponse>(&text) {
-            Ok(AisResponse::Named(resp)) => resp.positions.map(|p| p.len()).unwrap_or(0),
-            Ok(AisResponse::Array(arr)) => arr.len(),
-            Err(_) => {
-                // Last resort: try to parse as a generic JSON value and count entries
-                match serde_json::from_str::<serde_json::Value>(&text) {
-                    Ok(serde_json::Value::Array(arr)) => arr.len(),
-                    Ok(serde_json::Value::Object(obj)) => {
-                        // Look for any array field in the response
-                        obj.values()
-                            .filter_map(|v| v.as_array())
-                            .map(|a| a.len())
-                            .max()
-                            .unwrap_or(0)
-                    }
-                    _ => 0,
-                }
-            }
-        };
-
-        Ok(count as u64)
+        Ok(BBox {
+            lon_min: parts[0].trim().parse().map_err(|e| format!("lon_min: {}", e))?,
+            lat_min: parts[1].trim().parse().map_err(|e| format!("lat_min: {}", e))?,
+            lon_max: parts[2].trim().parse().map_err(|e| format!("lon_max: {}", e))?,
+            lat_max: parts[3].trim().parse().map_err(|e| format!("lat_max: {}", e))?,
+        })
     }
 }
 
@@ -219,7 +161,6 @@ impl MarketDataSource for MaritimeMarketSource {
         }
 
         let now = Utc::now();
-        let mut results = Vec::new();
 
         // Load asset config to get bounding boxes
         let all_entries: Vec<AssetEntry> = serde_json::from_str(ASSET_JSON)?;
@@ -228,11 +169,61 @@ impl MarketDataSource for MaritimeMarketSource {
             .map(|e| (e.asset_id.as_str(), e.api_ref.as_str()))
             .collect();
 
+        // ONE call to get ALL vessel positions as GeoJSON
+        let resp = self
+            .client
+            .get(API_URL)
+            .header("Accept", "application/json")
+            .header("Accept-Encoding", "gzip")
+            .send()
+            .await;
+
+        let response: AisGeoJsonResponse = match resp {
+            Ok(r) => {
+                if !r.status().is_success() {
+                    let status = r.status();
+                    warn!("Maritime: Digitraffic AIS returned {}", status);
+                    return Ok(Vec::new());
+                }
+                match r.json().await {
+                    Ok(data) => data,
+                    Err(e) => {
+                        warn!("Maritime: failed to parse Digitraffic response: {:?}", e);
+                        return Ok(Vec::new());
+                    }
+                }
+            }
+            Err(e) => {
+                warn!("Maritime: failed to fetch Digitraffic AIS: {:?}", e);
+                return Ok(Vec::new());
+            }
+        };
+
+        // Extract valid positions (GeoJSON: coordinates = [lon, lat])
+        let positions: Vec<(f64, f64)> = response
+            .features
+            .iter()
+            .filter_map(|f| {
+                let coords = f.geometry.as_ref()?.coordinates.as_ref()?;
+                if coords.len() >= 2 {
+                    let lon = coords[0];
+                    let lat = coords[1];
+                    if lat.is_finite() && lon.is_finite() {
+                        return Some((lat, lon));
+                    }
+                }
+                None
+            })
+            .collect();
+
         debug!(
-            "Maritime fetch_prices: fetching {} ports/lanes (expect ~{}s total due to rate limit)",
-            asset_ids.len(),
-            asset_ids.len() * 10
+            "Maritime: {} vessels with positions out of {} features",
+            positions.len(),
+            response.features.len()
         );
+
+        // Count vessels per requested region
+        let mut results = Vec::new();
 
         for asset_id in asset_ids {
             let bbox_str = match bbox_map.get(asset_id.as_str()) {
@@ -254,46 +245,39 @@ impl MarketDataSource for MaritimeMarketSource {
                 }
             };
 
-            // Rate limit between requests
-            tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
+            let count = positions
+                .iter()
+                .filter(|&&(lat, lon)| bbox.contains(lat, lon))
+                .count();
 
-            match self.fetch_vessel_count(bbox).await {
-                Ok(vessel_count) => {
-                    debug!(
-                        "Maritime {}: {} vessels (bbox={})",
-                        asset_id, vessel_count, bbox_str
-                    );
+            debug!(
+                "Maritime {}: {} vessels (bbox={})",
+                asset_id, count, bbox_str
+            );
 
-                    let symbol = all_entries
-                        .iter()
-                        .find(|e| e.asset_id == *asset_id)
-                        .map(|e| e.symbol.clone())
-                        .unwrap_or_else(|| format!("AIS/{}", asset_id));
+            let symbol = all_entries
+                .iter()
+                .find(|e| e.asset_id == *asset_id)
+                .map(|e| e.symbol.clone())
+                .unwrap_or_else(|| format!("AIS/{}", asset_id));
 
-                    results.push(PriceUpdate {
-                        asset_id: asset_id.clone(),
-                        symbol,
-                        value: Decimal::from(vessel_count),
-                        prev_close: None,
-                        change_pct: None,
-                        volume_24h: None,
-                        market_cap: None,
-                        fetched_at: now,
-                    });
-                }
-                Err(e) => {
-                    warn!(
-                        "Error fetching maritime data for {} (bbox={}): {:?}",
-                        asset_id, bbox_str, e
-                    );
-                }
-            }
+            results.push(PriceUpdate {
+                asset_id: asset_id.clone(),
+                symbol,
+                value: Decimal::from(count as u64),
+                prev_close: None,
+                change_pct: None,
+                volume_24h: None,
+                market_cap: None,
+                fetched_at: now,
+            });
         }
 
         info!(
-            "Fetched {}/{} prices from AISStream",
+            "Maritime: counted {}/{} regions from {} vessels (Digitraffic AIS)",
             results.len(),
-            asset_ids.len()
+            asset_ids.len(),
+            positions.len()
         );
 
         Ok(results)
@@ -391,11 +375,10 @@ mod tests {
     #[test]
     fn test_parse_bbox_valid() {
         let bbox = MaritimeMarketSource::parse_bbox("103.5,1.0,104.2,1.5").unwrap();
-        // Format: [[lat_min, lon_min], [lat_max, lon_max]]
-        assert!((bbox[0][0] - 1.0).abs() < 0.001); // lat_min
-        assert!((bbox[0][1] - 103.5).abs() < 0.001); // lon_min
-        assert!((bbox[1][0] - 1.5).abs() < 0.001); // lat_max
-        assert!((bbox[1][1] - 104.2).abs() < 0.001); // lon_max
+        assert!((bbox.lon_min - 103.5).abs() < 0.001);
+        assert!((bbox.lat_min - 1.0).abs() < 0.001);
+        assert!((bbox.lon_max - 104.2).abs() < 0.001);
+        assert!((bbox.lat_max - 1.5).abs() < 0.001);
     }
 
     #[test]
@@ -408,10 +391,24 @@ mod tests {
     #[test]
     fn test_parse_bbox_negative_coords() {
         let bbox = MaritimeMarketSource::parse_bbox("-118.4,33.6,-118.0,33.9").unwrap();
-        assert!((bbox[0][0] - 33.6).abs() < 0.001); // lat_min
-        assert!((bbox[0][1] - (-118.4)).abs() < 0.001); // lon_min
-        assert!((bbox[1][0] - 33.9).abs() < 0.001); // lat_max
-        assert!((bbox[1][1] - (-118.0)).abs() < 0.001); // lon_max
+        assert!((bbox.lon_min - (-118.4)).abs() < 0.001);
+        assert!((bbox.lat_min - 33.6).abs() < 0.001);
+        assert!((bbox.lon_max - (-118.0)).abs() < 0.001);
+        assert!((bbox.lat_max - 33.9).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_bbox_contains() {
+        let bbox = BBox {
+            lon_min: 103.5,
+            lat_min: 1.0,
+            lon_max: 104.2,
+            lat_max: 1.5,
+        };
+        // Inside Singapore
+        assert!(bbox.contains(1.3, 103.8));
+        // Outside
+        assert!(!bbox.contains(40.0, -74.0));
     }
 
     #[test]
@@ -462,12 +459,45 @@ mod tests {
     }
 
     #[test]
-    fn test_ais_request_serialization() {
-        let req = AisStreamRequest {
-            bounding_boxes: vec![[[1.0, 103.5], [1.5, 104.2]]],
-        };
-        let json = serde_json::to_string(&req).unwrap();
-        assert!(json.contains("BoundingBoxes"));
-        assert!(json.contains("103.5"));
+    fn test_geojson_response_parsing() {
+        let json = r#"{
+            "type": "FeatureCollection",
+            "dataUpdatedTime": "2026-02-24T20:00:00Z",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [103.8, 1.3]
+                    },
+                    "properties": {
+                        "mmsi": 123456789,
+                        "sog": 12.5
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [104.0, 1.2]
+                    },
+                    "properties": {
+                        "mmsi": 987654321,
+                        "sog": 0.0
+                    }
+                }
+            ]
+        }"#;
+
+        let response: AisGeoJsonResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(response.features.len(), 2);
+
+        let coords0 = response.features[0].geometry.as_ref().unwrap().coordinates.as_ref().unwrap();
+        assert!((coords0[0] - 103.8).abs() < 0.001); // lon
+        assert!((coords0[1] - 1.3).abs() < 0.001);   // lat
+
+        let coords1 = response.features[1].geometry.as_ref().unwrap().coordinates.as_ref().unwrap();
+        assert!((coords1[0] - 104.0).abs() < 0.001); // lon
+        assert!((coords1[1] - 1.2).abs() < 0.001);   // lat
     }
 }

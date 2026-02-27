@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 
 // Use env vars with fallback to hardcoded values
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '0xE44c20fbac58Eb1ca4115AC7890F28271aD94364'
-const EXPLORER_BASE = process.env.NEXT_PUBLIC_EXPLORER_URL || 'https://index.explorer.zeeve.net/address'
+const EXPLORER_BASE = process.env.NEXT_PUBLIC_EXPLORER_URL || 'http://142.132.164.24/address'
 const EXPLORER_URL = `${EXPLORER_BASE}/${CONTRACT_ADDRESS}`
 const STORAGE_KEY = 'gm-how-it-works-collapsed'
 

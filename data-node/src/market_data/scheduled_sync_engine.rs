@@ -389,7 +389,34 @@ impl ScheduledSyncEngine {
             .await;
 
             match result {
-                Ok(_) => updated += 1,
+                Ok(_) => {
+                    updated += 1;
+                    // Update latest prices cache for fast vision snapshots
+                    let _ = sqlx::query(
+                        r#"
+                        INSERT INTO market_prices_latest (
+                            source, asset_id, symbol, name, value,
+                            change_pct, volume_24h, market_cap, category, fetched_at
+                        ) VALUES ($1, $2, $3, '', $4, $5, $6, $7, NULL, $8)
+                        ON CONFLICT (source, asset_id) DO UPDATE SET
+                            value = EXCLUDED.value,
+                            change_pct = EXCLUDED.change_pct,
+                            volume_24h = EXCLUDED.volume_24h,
+                            market_cap = EXCLUDED.market_cap,
+                            fetched_at = EXCLUDED.fetched_at
+                        "#,
+                    )
+                    .bind(source_id)
+                    .bind(&price.asset_id)
+                    .bind(&price.symbol)
+                    .bind(price.value)
+                    .bind(change_pct)
+                    .bind(price.volume_24h)
+                    .bind(price.market_cap)
+                    .bind(price.fetched_at)
+                    .execute(&self.pool)
+                    .await;
+                }
                 Err(e) => {
                     debug!("Failed to insert price for {}: {:?}", price.asset_id, e);
                     errors += 1;

@@ -587,11 +587,12 @@ pub fn build_complete_sell_order_consensus_hash(
     custody_address: Address,
     order_id: U256,
     usdc_proceeds: U256,
+    vault: Address,
 ) -> H256 {
-    // abi.encode(uint256, address, string, uint256, uint256)
-    // Head: 5 slots (chain_id, address, string_offset, order_id, usdc_proceeds)
+    // abi.encode(uint256, address, string, uint256, uint256, address)
+    // Head: 6 slots (chain_id, address, string_offset, order_id, usdc_proceeds, vault)
     // Tail: string length + padded data for "completeSellOrder"
-    let mut data = Vec::with_capacity(256);
+    let mut data = Vec::with_capacity(288);
 
     // chain_id as uint256 (32 bytes)
     let mut chain_id_bytes = [0u8; 32];
@@ -603,9 +604,9 @@ pub fn build_complete_sell_order_consensus_hash(
     addr_bytes[12..32].copy_from_slice(custody_address.as_bytes());
     data.extend_from_slice(&addr_bytes);
 
-    // string offset (points to dynamic data area: 5 * 32 = 160)
+    // string offset (points to dynamic data area: 6 * 32 = 192)
     let mut offset_bytes = [0u8; 32];
-    U256::from(160).to_big_endian(&mut offset_bytes);
+    U256::from(192).to_big_endian(&mut offset_bytes);
     data.extend_from_slice(&offset_bytes);
 
     // order_id as uint256 (32 bytes)
@@ -617,6 +618,11 @@ pub fn build_complete_sell_order_consensus_hash(
     let mut proceeds_bytes = [0u8; 32];
     usdc_proceeds.to_big_endian(&mut proceeds_bytes);
     data.extend_from_slice(&proceeds_bytes);
+
+    // vault as address (32 bytes, left-padded)
+    let mut vault_bytes = [0u8; 32];
+    vault_bytes[12..32].copy_from_slice(vault.as_bytes());
+    data.extend_from_slice(&vault_bytes);
 
     // Dynamic string "completeSellOrder" (17 bytes)
     let s = b"completeSellOrder";
@@ -634,18 +640,19 @@ pub fn build_complete_sell_order_consensus_hash(
 
 /// Build calldata for ArbBridgeCustody.completeSellOrder()
 ///
-/// Selector: keccak256("completeSellOrder(uint256,uint256,bytes,uint256,uint256)")[0:4]
+/// Selector: keccak256("completeSellOrder(uint256,uint256,address,bytes,uint256,uint256)")[0:4]
 ///
-/// ABI encodes: orderId, usdcProceeds, blsSignature, referenceNonce, signersBitmask
+/// ABI encodes: orderId, usdcProceeds, vault, blsSignature, referenceNonce, signersBitmask
 pub fn build_complete_sell_order_calldata(
     order_id: U256,
     usdc_proceeds: U256,
+    vault: Address,
     bls_signature: &[u8],
     reference_nonce: u64,
     signers_bitmask: U256,
 ) -> Vec<u8> {
     let selector = &ethers::utils::keccak256(
-        "completeSellOrder(uint256,uint256,bytes,uint256,uint256)"
+        "completeSellOrder(uint256,uint256,address,bytes,uint256,uint256)"
     )[..4];
 
     let mut calldata = selector.to_vec();
@@ -660,9 +667,14 @@ pub fn build_complete_sell_order_calldata(
     usdc_proceeds.to_big_endian(&mut proceeds_bytes);
     calldata.extend_from_slice(&proceeds_bytes);
 
-    // Dynamic offset for blsSignature (5 head words * 32 = 160 = 0xa0)
+    // vault as address (32 bytes, left-padded)
+    let mut vault_bytes = [0u8; 32];
+    vault_bytes[12..32].copy_from_slice(vault.as_bytes());
+    calldata.extend_from_slice(&vault_bytes);
+
+    // Dynamic offset for blsSignature (6 head words * 32 = 192 = 0xc0)
     let mut offset_bytes = [0u8; 32];
-    U256::from(160).to_big_endian(&mut offset_bytes);
+    U256::from(192).to_big_endian(&mut offset_bytes);
     calldata.extend_from_slice(&offset_bytes);
 
     // referenceNonce (32 bytes)

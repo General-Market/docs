@@ -1,18 +1,17 @@
-//! CoinGecko Pro API client implementing MarketDataSource
+//! CoinGecko API client implementing MarketDataSource
 //!
-//! Fetches cryptocurrency prices from https://pro-api.coingecko.com/api/v3
-//! Handles rate limiting, retries, and batched requests.
+//! Fetches cryptocurrency prices via /coins/markets (250 coins/page).
+//! Demo tier: 40 pages × 3s = ~120s per sweep, fits in 10-min cycle.
+//! Rate limiter is shared with cg_collector to prevent 429 collisions.
 
 use anyhow::{Context, Result};
 use chrono::Utc;
 use rust_decimal::Decimal;
 use serde::Deserialize;
-use std::collections::HashMap;
-use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::Mutex;
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 
+use crate::coingecko::RateLimiter;
 use crate::market_data::traits::{load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate};
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
@@ -27,25 +26,39 @@ const COINGECKO_DEMO_URL: &str = "https://api.coingecko.com/api/v3";
 /// Request timeout in seconds
 const REQUEST_TIMEOUT_SECS: u64 = 30;
 
-/// Maximum coins per batch request
-/// Note: CoinGecko limit is 500, but with long coin IDs the URL can exceed limits
-/// Using 100 to stay safe with URI length limits
-const BATCH_SIZE: usize = 100;
-
-/// Maximum retries per request
+/// Maximum retries per request (non-429 errors)
 const MAX_RETRIES: u32 = 3;
 
-/// Rate limit: minimum delay between API requests (ms)
-/// CoinGecko Pro allows ~500 requests/minute, we use 150ms to stay safe
-const MIN_REQUEST_DELAY_MS: u64 = 150;
+/// Maximum retries specifically for 429 (rate limit) responses.
+/// 429s are transient — we just need to wait long enough.
+const MAX_429_RETRIES: u32 = 6;
 
-/// Price data response from CoinGecko /simple/price endpoint
-#[derive(Debug, Deserialize)]
-pub struct PriceData {
-    pub usd: Option<f64>,
-    pub usd_market_cap: Option<f64>,
-    pub usd_24h_vol: Option<f64>,
-    pub usd_24h_change: Option<f64>,
+// Rate limiting is handled by the shared RateLimiter from coingecko.rs,
+// which coordinates with cg_collector to avoid 429s on Demo tier.
+
+/// Base backoff delay (in seconds) when we receive HTTP 429 Too Many Requests.
+/// We use exponential backoff: BASE * 2^attempt (5s, 10s, 20s).
+const RATE_LIMIT_BACKOFF_BASE_SECS: u64 = 5;
+
+/// API key tier determines endpoint URL, auth header, and rate limits
+#[derive(Debug, Clone, PartialEq)]
+enum ApiTier {
+    /// Paid Pro API key — fast rate limits, pro endpoint
+    Pro,
+    /// Demo API key (CG- prefix) — moderate rate limits, demo endpoint
+    Demo,
+    /// No API key — free tier with aggressive rate limiting
+    Free,
+}
+
+/// Result of fetching a single page from /coins/markets
+enum PageResult {
+    /// Successfully fetched coins (may be empty = end of data)
+    Ok(Vec<MarketCoin>),
+    /// All 429 retries exhausted — skip page, keep paginating
+    RateLimited,
+    /// Non-recoverable error — stop pagination
+    Fatal(String),
 }
 
 /// Market coin data from /coins/markets endpoint
@@ -70,75 +83,96 @@ pub struct MarketCoin {
 pub struct CoinGeckoMarketSource {
     client: reqwest::Client,
     api_key: String,
-    /// Whether this is a demo API key (CG- prefix) vs pro key
-    is_demo: bool,
+    /// API tier determines endpoint, auth, and rate limits
+    tier: ApiTier,
     sync_interval_secs: u64,
-    /// Last request timestamp for internal rate limiting
-    last_request: Arc<Mutex<std::time::Instant>>,
+    /// Shared rate limiter — coordinates with cg_collector
+    limiter: RateLimiter,
     /// Number of top coins to track (0 = all with prices)
     top_coins_count: usize,
 }
 
 impl CoinGeckoMarketSource {
-    /// Create a new CoinGecko market source
-    pub fn new(api_key: String, sync_interval_secs: u64, top_coins_count: usize) -> Result<Self> {
+    /// Detect API tier from the key string
+    fn detect_tier(api_key: &str) -> ApiTier {
+        let key = api_key.trim();
+        if key.is_empty() {
+            ApiTier::Free
+        } else if key.starts_with("CG-") {
+            ApiTier::Demo
+        } else if std::env::var("COINGECKO_DEMO").is_ok() {
+            // Explicit override: treat any key as demo tier
+            ApiTier::Demo
+        } else {
+            ApiTier::Pro
+        }
+    }
+
+    /// Create a new CoinGecko market source with a shared rate limiter.
+    pub fn new(api_key: String, sync_interval_secs: u64, top_coins_count: usize, limiter: RateLimiter) -> Result<Self> {
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
+            .user_agent("index-data-node/1.0 (market data aggregator)")
             .build()
             .context("Failed to create HTTP client")?;
 
-        let is_demo = std::env::var("COINGECKO_DEMO").is_ok();
+        let tier = Self::detect_tier(&api_key);
+
+        info!(
+            "CoinGecko API tier: {:?} (key {})",
+            tier,
+            if api_key.trim().is_empty() { "empty" } else { "present" }
+        );
 
         Ok(Self {
             client,
             api_key,
-            is_demo,
+            tier,
             sync_interval_secs,
-            last_request: Arc::new(Mutex::new(std::time::Instant::now())),
+            limiter,
             top_coins_count,
         })
     }
 
-    /// Create from environment variables
-    pub fn from_env() -> Result<Self> {
-        let api_key = std::env::var("COINGECKO_API_KEY")
-            .context("COINGECKO_API_KEY environment variable must be set")?;
+    /// Create from environment variables with a shared rate limiter.
+    /// Works with or without COINGECKO_API_KEY — falls back to free tier.
+    pub fn from_env(limiter: RateLimiter) -> Result<Self> {
+        let api_key = std::env::var("COINGECKO_API_KEY").unwrap_or_default();
 
         let sync_interval_secs = std::env::var("COINGECKO_SYNC_INTERVAL_SECS")
             .ok()
             .and_then(|s| s.parse::<u64>().ok())
-            .unwrap_or(60);
+            .unwrap_or(600);
 
         let top_coins_count = std::env::var("COINGECKO_TOP_COINS")
             .ok()
             .and_then(|s| s.parse::<usize>().ok())
             .unwrap_or(0); // 0 = all coins with prices
 
-        Self::new(api_key, sync_interval_secs, top_coins_count)
+        Self::new(api_key, sync_interval_secs, top_coins_count, limiter)
     }
 
     /// Get the base URL depending on key type
     fn base_url(&self) -> &str {
-        if self.is_demo { COINGECKO_DEMO_URL } else { COINGECKO_PRO_URL }
-    }
-
-    /// Get the auth header name depending on key type
-    fn auth_header(&self) -> &str {
-        if self.is_demo { "x-cg-demo-api-key" } else { "x-cg-pro-api-key" }
-    }
-
-    /// Enforce rate limiting before making a request
-    async fn rate_limit(&self) {
-        let mut last = self.last_request.lock().await;
-        let elapsed = last.elapsed();
-        let min_delay = Duration::from_millis(MIN_REQUEST_DELAY_MS);
-
-        if elapsed < min_delay {
-            let sleep_time = min_delay - elapsed;
-            tokio::time::sleep(sleep_time).await;
+        match self.tier {
+            ApiTier::Pro => COINGECKO_PRO_URL,
+            ApiTier::Demo | ApiTier::Free => COINGECKO_DEMO_URL,
         }
+    }
 
-        *last = std::time::Instant::now();
+    /// Build a request with appropriate auth (or no auth for free tier)
+    fn authenticated_get(&self, url: &str) -> reqwest::RequestBuilder {
+        let req = self.client.get(url);
+        match self.tier {
+            ApiTier::Pro => req.header("x-cg-pro-api-key", &self.api_key),
+            ApiTier::Demo => req.header("x-cg-demo-key", &self.api_key),
+            ApiTier::Free => req, // no auth header
+        }
+    }
+
+    /// Enforce rate limiting before making a request (shared with cg_collector).
+    async fn rate_limit(&self) {
+        self.limiter.wait().await;
     }
 
     /// Fetch coins by market cap with retries
@@ -146,11 +180,17 @@ impl CoinGeckoMarketSource {
     /// Uses /coins/markets endpoint for richer data.
     /// If limit is usize::MAX, fetches ALL coins with prices.
     ///
+    /// 429 handling: rate-limit responses get up to 6 retries with aggressive
+    /// backoff (10s, 20s, 40s, 60s, 60s, 60s). After exhausting 429 retries on
+    /// a page we skip that page and continue (partial data is better than none).
+    /// Only non-429 errors (auth failures, server errors) stop pagination.
+    ///
     /// Public so SnapshotService can call it for trade list generation.
     pub async fn fetch_top_coins(&self, limit: usize) -> Result<Vec<MarketCoin>> {
         let mut all_coins = Vec::new();
         let fetch_all = limit == usize::MAX;
         let mut page = 1;
+        let mut consecutive_failures = 0u32;
 
         loop {
             let url = format!(
@@ -160,94 +200,59 @@ impl CoinGeckoMarketSource {
 
             self.rate_limit().await;
 
-            let mut last_error = None;
+            let page_result = self.fetch_page_with_retry(&url, page).await;
 
-            for attempt in 0..MAX_RETRIES {
-                match self
-                    .client
-                    .get(&url)
-                    .header(self.auth_header(), &self.api_key)
-                    .send()
-                    .await
-                {
-                    Ok(response) => {
-                        if response.status().is_success() {
-                            match response.json::<Vec<MarketCoin>>().await {
-                                Ok(coins) => {
-                                    if coins.is_empty() {
-                                        // No more results
-                                        info!(
-                                            "Fetched {} coins with prices from CoinGecko",
-                                            all_coins.len()
-                                        );
-                                        return Ok(all_coins);
-                                    }
-
-                                    all_coins.extend(coins);
-
-                                    // Check if we've reached the limit
-                                    if !fetch_all && all_coins.len() >= limit {
-                                        all_coins.truncate(limit);
-                                        info!(
-                                            "Fetched {} coins (limit: {}) from CoinGecko",
-                                            all_coins.len(),
-                                            limit
-                                        );
-                                        return Ok(all_coins);
-                                    }
-
-                                    break; // Success, continue to next page
-                                }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to parse coins page {} (attempt {}/{}): {:?}",
-                                        page,
-                                        attempt + 1,
-                                        MAX_RETRIES,
-                                        e
-                                    );
-                                    last_error = Some(e.to_string());
-                                }
-                            }
-                        } else {
-                            warn!(
-                                "CoinGecko API error page {} (attempt {}/{}): status {}",
-                                page,
-                                attempt + 1,
-                                MAX_RETRIES,
-                                response.status()
-                            );
-                            last_error = Some(format!("HTTP {}", response.status()));
-                        }
-                    }
-                    Err(e) => {
-                        warn!(
-                            "Request failed page {} (attempt {}/{}): {:?}",
-                            page,
-                            attempt + 1,
-                            MAX_RETRIES,
-                            e
+            match page_result {
+                PageResult::Ok(coins) => {
+                    if coins.is_empty() {
+                        // No more results — we've reached the end
+                        info!(
+                            "Fetched {} coins with prices from CoinGecko ({:?} tier, {} pages)",
+                            all_coins.len(), self.tier, page
                         );
-                        last_error = Some(e.to_string());
+                        return Ok(all_coins);
+                    }
+
+                    all_coins.extend(coins);
+                    consecutive_failures = 0;
+
+                    // Check if we've reached the limit
+                    if !fetch_all && all_coins.len() >= limit {
+                        all_coins.truncate(limit);
+                        info!(
+                            "Fetched {} coins (limit: {}) from CoinGecko",
+                            all_coins.len(), limit
+                        );
+                        return Ok(all_coins);
                     }
                 }
-
-                // Exponential backoff
-                if attempt < MAX_RETRIES - 1 {
-                    let delay = Duration::from_secs(2u64.pow(attempt));
-                    tokio::time::sleep(delay).await;
+                PageResult::RateLimited => {
+                    // 429 exhausted — skip this page but keep going.
+                    // Next page's rate_limit() call will add delay.
+                    consecutive_failures += 1;
+                    warn!(
+                        "Skipping page {} after 429 retries exhausted ({} consecutive failures)",
+                        page, consecutive_failures
+                    );
+                    // If 3+ consecutive pages all 429, stop — we're genuinely rate-blocked
+                    if consecutive_failures >= 3 {
+                        warn!(
+                            "Stopping pagination at page {} — {} consecutive 429 failures",
+                            page, consecutive_failures
+                        );
+                        break;
+                    }
                 }
-            }
-
-            // If we exhausted retries, stop pagination
-            if last_error.is_some() {
-                warn!("Stopping coin fetch at page {} due to errors", page);
-                break;
+                PageResult::Fatal(err) => {
+                    // Non-recoverable error (auth, server error) — stop
+                    warn!("Stopping coin fetch at page {} due to error: {}", page, err);
+                    break;
+                }
             }
 
             page += 1;
 
-            // Safety limit to avoid infinite loops (CoinGecko has ~15k coins max)
+            // Safety limit (CoinGecko has ~15k coins max = 60 pages)
             if page > 100 {
                 warn!("Reached page limit (100), stopping coin fetch");
                 break;
@@ -261,80 +266,82 @@ impl CoinGeckoMarketSource {
         Ok(all_coins)
     }
 
-    /// Fetch prices for a batch of coins (up to BATCH_SIZE)
-    async fn fetch_prices_batch(&self, coin_ids: &[String]) -> Result<HashMap<String, PriceData>> {
-        let ids = coin_ids.join(",");
-        let url = format!(
-            "{}/simple/price?ids={}&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true",
-            self.base_url(), ids
-        );
+    /// Attempt to fetch a single page with retries.
+    /// Returns Ok(coins), RateLimited (429 exhausted), or Fatal (non-recoverable).
+    async fn fetch_page_with_retry(&self, url: &str, page: u32) -> PageResult {
+        let mut rate_limit_attempts = 0u32;
+        let mut other_attempts = 0u32;
 
-        let mut last_error = None;
-
-        for attempt in 0..MAX_RETRIES {
-            self.rate_limit().await;
-
-            match self
-                .client
-                .get(&url)
-                .header(self.auth_header(), &self.api_key)
-                .send()
-                .await
-            {
+        loop {
+            match self.authenticated_get(url).send().await {
                 Ok(response) => {
                     if response.status().is_success() {
-                        match response.json::<HashMap<String, PriceData>>().await {
-                            Ok(prices) => {
-                                debug!(
-                                    "Fetched {} prices from batch of {}",
-                                    prices.len(),
-                                    coin_ids.len()
-                                );
-                                return Ok(prices);
-                            }
+                        match response.json::<Vec<MarketCoin>>().await {
+                            Ok(coins) => return PageResult::Ok(coins),
                             Err(e) => {
+                                other_attempts += 1;
                                 warn!(
-                                    "Failed to parse prices (attempt {}/{}): {:?}",
-                                    attempt + 1,
-                                    MAX_RETRIES,
-                                    e
+                                    "Failed to parse coins page {} (attempt {}/{}): {:?}",
+                                    page, other_attempts, MAX_RETRIES, e
                                 );
-                                last_error = Some(e.to_string());
+                                if other_attempts >= MAX_RETRIES {
+                                    return PageResult::Fatal(e.to_string());
+                                }
+                                let delay = Duration::from_secs(2u64.pow(other_attempts - 1));
+                                tokio::time::sleep(delay).await;
                             }
                         }
                     } else {
+                        let status = response.status().as_u16();
+
+                        if status == 429 {
+                            rate_limit_attempts += 1;
+                            // Aggressive backoff: 10s, 20s, 40s, 60s, 60s, 60s
+                            let backoff_secs = match rate_limit_attempts {
+                                1 => 10,
+                                2 => 20,
+                                3 => 40,
+                                _ => 60,
+                            };
+                            if rate_limit_attempts <= MAX_429_RETRIES {
+                                warn!(
+                                    "Rate limited (429) on page {}, attempt {}/{}, waiting {}s",
+                                    page, rate_limit_attempts, MAX_429_RETRIES, backoff_secs
+                                );
+                                tokio::time::sleep(Duration::from_secs(backoff_secs)).await;
+                                continue;
+                            } else {
+                                return PageResult::RateLimited;
+                            }
+                        }
+
+                        // Non-429 HTTP error
+                        other_attempts += 1;
                         warn!(
-                            "CoinGecko API error (attempt {}/{}): status {}",
-                            attempt + 1,
-                            MAX_RETRIES,
-                            response.status()
+                            "CoinGecko API error page {} (attempt {}/{}): HTTP {}",
+                            page, other_attempts, MAX_RETRIES, status
                         );
-                        last_error = Some(format!("HTTP {}", response.status()));
+                        if other_attempts >= MAX_RETRIES {
+                            return PageResult::Fatal(format!("HTTP {}", status));
+                        }
+                        let delay = Duration::from_secs(2u64.pow(other_attempts - 1));
+                        tokio::time::sleep(delay).await;
                     }
                 }
                 Err(e) => {
+                    other_attempts += 1;
                     warn!(
-                        "Request failed (attempt {}/{}): {:?}",
-                        attempt + 1,
-                        MAX_RETRIES,
-                        e
+                        "Request failed page {} (attempt {}/{}): {:?}",
+                        page, other_attempts, MAX_RETRIES, e
                     );
-                    last_error = Some(e.to_string());
+                    if other_attempts >= MAX_RETRIES {
+                        return PageResult::Fatal(e.to_string());
+                    }
+                    let delay = Duration::from_secs(2u64.pow(other_attempts - 1));
+                    tokio::time::sleep(delay).await;
                 }
             }
-
-            // Exponential backoff
-            if attempt < MAX_RETRIES - 1 {
-                let delay = Duration::from_secs(2u64.pow(attempt));
-                tokio::time::sleep(delay).await;
-            }
         }
-
-        Err(anyhow::anyhow!(
-            "Failed to fetch prices after {} retries: {:?}",
-            MAX_RETRIES,
-            last_error
-        ))
     }
 
     /// Determine the category based on market cap rank
@@ -367,9 +374,13 @@ impl MarketDataSource for CoinGeckoMarketSource {
     }
 
     fn rate_limit_config(&self) -> RateLimitConfig {
+        let max_requests = match self.tier {
+            ApiTier::Pro => 400,  // conservative: stay under 500/min
+            ApiTier::Demo | ApiTier::Free => 18, // shared 3s limiter ≈ 20 req/min
+        };
         RateLimitConfig {
             windows: vec![RateWindow {
-                max_requests: 400, // conservative: stay under 500/min
+                max_requests,
                 duration: Duration::from_secs(60),
             }],
         }
@@ -385,64 +396,46 @@ impl MarketDataSource for CoinGeckoMarketSource {
         }
 
         let now = Utc::now();
+
+        // Use /coins/markets (250 coins/page) — 40 pages for ~10k coins.
+        // Much more efficient than /simple/price (50 coins/batch = 200 calls).
+        let all_coins = self.fetch_top_coins(usize::MAX).await?;
+
+        // Build lookup of requested asset_ids for O(1) matching
+        let requested: std::collections::HashSet<&str> =
+            asset_ids.iter().map(|s| s.as_str()).collect();
+
         let mut results = Vec::new();
-        let total_batches = (asset_ids.len() + BATCH_SIZE - 1) / BATCH_SIZE;
-        let mut failed_batches = 0u32;
+        for coin in &all_coins {
+            if !requested.contains(coin.id.as_str()) {
+                continue;
+            }
+            if let Some(price_usd) = coin.current_price {
+                let price = Decimal::try_from(price_usd).unwrap_or_default();
+                let volume = coin.total_volume.and_then(|v| Decimal::try_from(v).ok());
+                let market_cap = coin.market_cap.and_then(|v| Decimal::try_from(v).ok());
+                let change_pct = coin
+                    .price_change_percentage_24h
+                    .and_then(|v| Decimal::try_from(v).ok());
 
-        // Batch requests to respect API limits
-        for chunk in asset_ids.chunks(BATCH_SIZE) {
-            let chunk_vec: Vec<String> = chunk.to_vec();
-            match self.fetch_prices_batch(&chunk_vec).await {
-                Ok(prices) => {
-                    for (coin_id, price_data) in prices {
-                        if let Some(value) = price_data.usd {
-                            let price = Decimal::try_from(value).unwrap_or_default();
-                            let volume = price_data
-                                .usd_24h_vol
-                                .and_then(|v| Decimal::try_from(v).ok());
-                            let market_cap = price_data
-                                .usd_market_cap
-                                .and_then(|v| Decimal::try_from(v).ok());
-                            let change_pct = price_data
-                                .usd_24h_change
-                                .and_then(|v| Decimal::try_from(v).ok());
-
-                            // Find the original symbol for this coin_id
-                            // (we don't have it from /simple/price, use coin_id as fallback)
-                            let symbol = coin_id.to_uppercase();
-
-                            results.push(PriceUpdate {
-                                asset_id: coin_id,
-                                symbol,
-                                value: price,
-                                prev_close: None, // CoinGecko doesn't provide prev_close
-                                change_pct,
-                                volume_24h: volume,
-                                market_cap,
-                                fetched_at: now,
-                            });
-                        }
-                    }
-                }
-                Err(e) => {
-                    warn!("Error fetching CoinGecko batch: {:?}", e);
-                    failed_batches += 1;
-                }
+                results.push(PriceUpdate {
+                    asset_id: coin.id.clone(),
+                    symbol: coin.symbol.to_uppercase(),
+                    value: price,
+                    prev_close: None,
+                    change_pct,
+                    volume_24h: volume,
+                    market_cap,
+                    fetched_at: now,
+                });
             }
         }
 
-        if failed_batches > 0 {
-            let estimated_missing = failed_batches as usize * BATCH_SIZE;
-            warn!(
-                "CoinGecko: {}/{} batches failed, ~{}/{} assets may be missing",
-                failed_batches, total_batches, estimated_missing, asset_ids.len()
-            );
-        }
-
         info!(
-            "Fetched {}/{} crypto prices from CoinGecko ({}/{} batches ok)",
-            results.len(), asset_ids.len(),
-            total_batches - failed_batches as usize, total_batches
+            "Fetched {}/{} crypto prices via /coins/markets ({} pages)",
+            results.len(),
+            asset_ids.len(),
+            (all_coins.len() + 249) / 250
         );
 
         Ok(results)
@@ -485,6 +478,14 @@ mod tests {
         assert!(subcats.contains(&"large_cap"));
         assert!(subcats.contains(&"mid_cap"));
         assert!(subcats.contains(&"small_cap"));
+    }
+
+    #[test]
+    fn test_tier_detection() {
+        assert_eq!(CoinGeckoMarketSource::detect_tier(""), ApiTier::Free);
+        assert_eq!(CoinGeckoMarketSource::detect_tier("  "), ApiTier::Free);
+        assert_eq!(CoinGeckoMarketSource::detect_tier("CG-abc123"), ApiTier::Demo);
+        assert_eq!(CoinGeckoMarketSource::detect_tier("some-pro-key"), ApiTier::Pro);
     }
 
     #[test]

@@ -32,8 +32,8 @@ export interface BitmapEditor {
   /** Get bitmap state filtered to a specific source */
   getSourceBitmap(sourceId: string): Record<string, CellState>
 
-  /** Get counts, optionally filtered by source */
-  getCounts(sourceId?: string): BitmapCounts
+  /** Get counts, optionally filtered by source or explicit market ID list */
+  getCounts(sourceId?: string, marketIds?: string[]): BitmapCounts
 
   /** Bulk-apply a strategy function */
   applyStrategy(fn: (marketIds: string[]) => Record<string, 'up' | 'down'>): void
@@ -117,10 +117,17 @@ export function useBitmapEditor(): BitmapEditor {
     return result
   }, [state])
 
-  const getCounts = useCallback((sourceId?: string): BitmapCounts => {
-    const entries = sourceId
-      ? Object.entries(state).filter(([mId]) => getSourceForMarket(mId)?.id === sourceId)
-      : Object.entries(state)
+  const getCounts = useCallback((sourceId?: string, marketIds?: string[]): BitmapCounts => {
+    let entries: [string, CellState][]
+
+    if (marketIds) {
+      // Use explicit market ID list — most reliable for per-source pages
+      entries = marketIds.map(id => [id, state[id] ?? 'empty'])
+    } else if (sourceId) {
+      entries = Object.entries(state).filter(([mId]) => getSourceForMarket(mId)?.id === sourceId)
+    } else {
+      entries = Object.entries(state)
+    }
 
     let up = 0, down = 0, empty = 0
     for (const [, v] of entries) {

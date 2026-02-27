@@ -262,6 +262,86 @@ export async function mintBridgedItp(
   }
 }
 
+/**
+ * Mint L3 ITP shares for a user via anvil_setStorageAt.
+ * Sets _userShares[itpId][user] and increases _itps[itpId].totalSupply
+ * on the L3 Index contract. Also mints ITP vault ERC20 tokens so that
+ * confirmFills can burn them during SELL processing.
+ *
+ * Storage layout (InvestmentStorage.sol):
+ *   _userShares at slot 18: mapping(bytes32 itpId => mapping(address user => uint256))
+ *   _itps at slot 5: mapping(bytes32 itpId => ITPCore)
+ *     ITPCore.totalSupply is at struct offset 6
+ */
+export async function mintL3Shares(
+  user: string,
+  itpId: string,
+  amount: bigint,
+): Promise<void> {
+  // Compute _userShares[itpId][user] storage slot
+  // inner = keccak256(abi.encode(itpId, 18))
+  const slot18 = '0x' + BigInt(18).toString(16).padStart(64, '0');
+  const itpIdPadded = itpId.replace('0x', '').padStart(64, '0');
+  const innerInput = '0x' + itpIdPadded + slot18.replace('0x', '');
+  const innerSlot = await keccak256Hex(innerInput);
+  // final = keccak256(abi.encode(user, innerSlot))
+  const userPadded = user.replace('0x', '').toLowerCase().padStart(64, '0');
+  const finalInput = '0x' + userPadded + innerSlot.replace('0x', '');
+  const shareSlot = await keccak256Hex(finalInput);
+
+  const amountHex = '0x' + amount.toString(16).padStart(64, '0');
+  await l3RpcCall('anvil_setStorageAt', [L3_INDEX, shareSlot, amountHex]);
+
+  // Compute _itps[itpId].totalSupply storage slot
+  // base = keccak256(abi.encode(itpId, 5))
+  const slot5 = '0x' + BigInt(5).toString(16).padStart(64, '0');
+  const baseInput = '0x' + itpIdPadded + slot5.replace('0x', '');
+  const baseSlot = await keccak256Hex(baseInput);
+  const totalSupplySlot = '0x' + (BigInt(baseSlot) + 6n).toString(16).padStart(64, '0');
+
+  // Read current totalSupply and add the new shares
+  const currentHex = await l3RpcCall('eth_getStorageAt', [L3_INDEX, totalSupplySlot, 'latest']) as string;
+  const current = BigInt(currentHex);
+  const newSupply = current + amount;
+  const newSupplyHex = '0x' + newSupply.toString(16).padStart(64, '0');
+  await l3RpcCall('anvil_setStorageAt', [L3_INDEX, totalSupplySlot, newSupplyHex]);
+
+  // Mint ITP vault ERC20 tokens (required for confirmFills SELL burn)
+  // Read vault address via itpVaults(bytes32) on L3 Index
+  // itpVaults is at slot 14 in InvestmentStorage
+  const slot14 = '0x' + BigInt(14).toString(16).padStart(64, '0');
+  const vaultSlotInput = '0x' + itpIdPadded + slot14.replace('0x', '');
+  const vaultSlot = await keccak256Hex(vaultSlotInput);
+  const vaultHex = await l3RpcCall('eth_getStorageAt', [L3_INDEX, vaultSlot, 'latest']) as string;
+  const vaultAddr = '0x' + BigInt(vaultHex).toString(16).padStart(40, '0');
+
+  if (BigInt(vaultHex) !== 0n) {
+    // ITP vault has onlyIndex modifier, so impersonate Index contract
+    await l3RpcCall('anvil_setBalance', [L3_INDEX, '0x56BC75E2D63100000']); // 100 ETH
+    await l3RpcCall('anvil_impersonateAccount', [L3_INDEX]);
+    try {
+      // mint(address,uint256) selector = 0x40c10f19
+      const mintUserPadded = user.replace('0x', '').toLowerCase().padStart(64, '0');
+      const mintAmountHex = amount.toString(16).padStart(64, '0');
+      const mintData = `0x40c10f19${mintUserPadded}${mintAmountHex}`;
+      await l3RpcCall('eth_sendTransaction', [{
+        from: L3_INDEX,
+        to: vaultAddr,
+        data: mintData,
+        gas: '0x100000',
+      }]);
+    } finally {
+      await l3RpcCall('anvil_stopImpersonatingAccount', [L3_INDEX]);
+    }
+  }
+}
+
+/** Compute keccak256 of hex data using eth RPC (avoids JS crypto dependency) */
+async function keccak256Hex(data: string): Promise<string> {
+  // Use L3 Anvil's web3_sha3 method
+  return await l3RpcCall('web3_sha3', [data]) as string;
+}
+
 // ── L3 RPC helpers (rebalance operates on L3 directly) ──────────────────
 
 const L3_RPC = 'http://localhost:8545';
@@ -821,6 +901,50 @@ export async function assertBalanceUnchanged(
     }
     await new Promise(r => setTimeout(r, 2_000));
   }
+}
+
+/**
+ * Mint USDC to a user via Anvil deployer.
+ * Test USDC allows the deployer to call mint(address,uint256) directly.
+ */
+export async function mintUsdc(
+  user: string,
+  amount: bigint,
+): Promise<void> {
+  // mint(address,uint256) selector = 0x40c10f19
+  const userPadded = user.replace('0x', '').toLowerCase().padStart(64, '0');
+  const amountHex = amount.toString(16).padStart(64, '0');
+  const data = `0x40c10f19${userPadded}${amountHex}`;
+
+  await rpcCall('eth_sendTransaction', [{
+    from: DEPLOYER,
+    to: ARB_USDC,
+    data,
+    gas: '0x100000', // 1M gas
+  }]);
+}
+
+/**
+ * Mine empty blocks on Arb Anvil.
+ * Issuers require `confirmations` (default: 2) blocks after an event
+ * before they consider it confirmed. On Anvil with auto-mine, blocks
+ * only advance when txs are submitted, so events may never become
+ * "confirmed" without this helper.
+ */
+export async function mineArbBlocks(count: number): Promise<void> {
+  await rpcCall('anvil_mine', [`0x${count.toString(16)}`]);
+}
+
+/**
+ * Start a periodic Arb Anvil block miner.
+ * Returns a cleanup function to stop mining.
+ * Useful during sell/buy flows where issuers need blocks to advance.
+ */
+export function startArbBlockMiner(intervalMs = 1000): () => void {
+  const timer = setInterval(() => {
+    rpcCall('anvil_mine', ['0x1']).catch(() => {});
+  }, intervalMs);
+  return () => clearInterval(timer);
 }
 
 /** Expose erc20BalanceOf and contract addresses for direct use in tests */

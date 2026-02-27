@@ -31,6 +31,31 @@ const TEST_ADDRESS = '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4';
 const ITP_ID = '0x0000000000000000000000000000000000000000000000000000000000000001';
 
 test.describe.serial('Issuer Resilience', () => {
+  // Always restore all 3 issuers so subsequent tests (Vision, etc.) aren't broken
+  test.afterAll(async () => {
+    console.log('Restoring all 3 issuers after resilience tests...');
+    for (const id of [1, 2, 3]) {
+      try {
+        const health = await getIssuerHealth(id);
+        if (!health) {
+          console.log(`Issuer-${id} dead, restarting...`);
+          await restartIssuer(id);
+        }
+      } catch {
+        await restartIssuer(id).catch(() => {});
+      }
+    }
+    // Give issuers time to start and connect
+    for (const id of [1, 2, 3]) {
+      try {
+        await waitForIssuerHealthy(id, 30_000);
+        console.log(`Issuer-${id} restored.`);
+      } catch {
+        console.warn(`Issuer-${id} didn't become healthy in afterAll — subsequent tests may fail`);
+      }
+    }
+  });
+
   // Kill ALL issuers and restart with consistent config (threshold=2, generous timeout).
   // start.sh uses threshold=3 by default, which requires all 3 nodes. We need threshold=2
   // so that killing 1 node still allows consensus with the remaining 2.

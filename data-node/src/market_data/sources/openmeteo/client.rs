@@ -21,19 +21,16 @@ use tracing::{debug, info};
 
 use super::api_client::OpenMeteoClient;
 use super::models::{CityForecast, HourlyDataPoint, WeatherCity, WeatherMetric};
-use crate::market_data::traits::{load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate};
+use crate::market_data::traits::{AssetUpdate, MarketDataSource, PriceUpdate};
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
-
-/// Asset configuration loaded from JSON at compile time
-const ASSET_JSON: &str = include_str!("../../../config/weather.json");
 
 /// Default sync interval: 5 minutes (checks metadata, only fetches on update)
 const DEFAULT_SYNC_INTERVAL_SECS: u64 = 300;
 
 /// Minimum time between actual data fetches (even if metadata says new data)
-/// OpenMeteo updates roughly every 1-3 hours, so 1 hour minimum is safe
-/// and keeps us well under the 10,000 calls/day free tier limit
-const MIN_FETCH_INTERVAL_SECS: u64 = 3600;
+/// 45 minutes — targets ~75% of OpenMeteo's 10,000 calls/day free tier
+/// with ~32k cities (323 batches × 2 endpoints = 646 calls/fetch × ~11 fetches/day ≈ 7,100)
+const MIN_FETCH_INTERVAL_SECS: u64 = 2700;
 
 /// Embedded cities.json
 const CITIES_JSON: &str = include_str!("cities.json");
@@ -260,9 +257,8 @@ impl MarketDataSource for OpenMeteoMarketSource {
 
     fn rate_limit_config(&self) -> RateLimitConfig {
         // Open-Meteo free tier: 10,000 calls/day
-        // With smart sync (~6 fetches/day), we can be more generous per fetch
-        // 10,000 / 6 = ~1,666 calls per fetch session
-        // Allow 300 req/min burst for fast batch processing
+        // ~32k cities = 322 batches × 2 = 644 calls/fetch, ~11 fetches/day ≈ 7,100/day (71%)
+        // 300 req/min burst for fast batch processing
         RateLimitConfig {
             windows: vec![RateWindow {
                 max_requests: 300,
@@ -272,7 +268,40 @@ impl MarketDataSource for OpenMeteoMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        load_assets_from_json(ASSET_JSON)
+        // Generate assets dynamically from cities × metrics (no static JSON needed)
+        let metrics = WeatherMetric::all();
+        let mut assets = Vec::with_capacity(self.cities.len() * metrics.len());
+
+        for city in &self.cities {
+            for metric in metrics {
+                let asset_id = format!("{}:{}", city.city_id, metric.as_str());
+                let name = format!("{} {}", city.name, metric.display_name());
+                let subcategory = metric.subcategory();
+
+                assets.push(AssetUpdate {
+                    asset_id: asset_id.clone(),
+                    symbol: asset_id,
+                    name,
+                    category: Some("weather".to_string()),
+                    metadata: serde_json::json!({
+                        "api_ref": format!("{},{},{}", city.latitude, city.longitude, metric.as_str()),
+                        "subcategory": subcategory,
+                        "active": true,
+                        "extra": {
+                            "country_code": city.country_code,
+                            "population": city.population,
+                            "rank": city.rank,
+                        },
+                    }),
+                });
+            }
+        }
+
+        info!(
+            "Generated {} weather assets ({} cities × {} metrics)",
+            assets.len(), self.cities.len(), metrics.len()
+        );
+        Ok(assets)
     }
 
     async fn fetch_prices(&self, asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
@@ -385,12 +414,12 @@ fn parse_cities_json(json_str: &str) -> Result<Vec<CityInfo>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::market_data::traits::load_all_asset_entries;
 
     #[test]
     fn test_parse_cities_json() {
         let cities = parse_cities_json(CITIES_JSON).expect("Failed to parse");
         assert!(!cities.is_empty(), "Should have cities");
+        assert!(cities.len() > 30000, "Expected 30k+ cities from GeoNames, got {}", cities.len());
 
         let first = &cities[0];
         assert!(!first.city_id.is_empty());
@@ -399,28 +428,28 @@ mod tests {
     }
 
     #[test]
-    fn test_asset_count() {
-        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
-        assert_eq!(entries.len(), 25000, "Expected 25000 weather assets (5000 cities × 5 metrics)");
+    fn test_dynamic_asset_generation() {
+        let source = OpenMeteoMarketSource::new(300).unwrap();
+        let metrics = WeatherMetric::all();
+        let expected = source.cities.len() * metrics.len();
+        // Verify the count matches cities × metrics
+        assert!(expected > 150000, "Expected 150k+ assets (32k cities × 5 metrics), got {}", expected);
     }
 
     #[test]
-    fn test_fetch_assets_filters_active() {
-        let assets = load_assets_from_json(ASSET_JSON).unwrap();
-        assert!(!assets.is_empty());
-        for asset in &assets {
-            assert_eq!(asset.category, Some("weather".to_string()));
-        }
-    }
-
-    #[test]
-    fn test_subcategories() {
-        let entries = load_all_asset_entries(ASSET_JSON).unwrap();
-        let subcats: Vec<&str> = entries.iter().map(|e| e.subcategory.as_str()).collect();
-        assert!(subcats.contains(&"temperature"));
-        assert!(subcats.contains(&"precipitation"));
-        assert!(subcats.contains(&"wind"));
-        assert!(subcats.contains(&"air_quality"));
+    fn test_budget_targeting() {
+        // Verify we target ~75% of 10,000 calls/day free tier
+        // 32k cities / 100 batch = 322 batches × 2 endpoints = 644 calls/fetch
+        // MIN_FETCH_INTERVAL = 2700s → ~11-12 fetches/day
+        // 644 × 11 = 7,084 (71%), 644 × 12 = 7,728 (77%)
+        let source = OpenMeteoMarketSource::new(300).unwrap();
+        let batches = (source.cities.len() + 99) / 100; // BATCH_SIZE = 100
+        let calls_per_fetch = batches * 2; // forecast + air quality
+        // Conservative: 10 fetches/day, aggressive: 14 fetches/day
+        let daily_low = calls_per_fetch * 10;
+        let daily_high = calls_per_fetch * 14;
+        assert!(daily_low >= 5000, "Budget usage too low: {} calls at 10 fetches/day", daily_low);
+        assert!(daily_high <= 10000, "Budget would exceed limit: {} calls at 14 fetches/day", daily_high);
     }
 
     #[test]

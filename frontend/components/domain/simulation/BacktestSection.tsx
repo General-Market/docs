@@ -304,13 +304,13 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
         {!quota.isUnlimited ? (
           <p className="text-xs text-text-muted mt-2 text-right">
             {quota.remaining === 0
-              ? 'Time to pay... with a tweet'
+              ? t('quota.pay_with_tweet')
               : quota.remaining === 1
-                ? 'Last free sim'
-                : `${quota.remaining} sims left`}
+                ? t('quota.last_free')
+                : t('quota.sims_left', { remaining: quota.remaining })}
           </p>
         ) : (
-          <p className="text-xs text-text-muted mt-2 text-right">Unlimited</p>
+          <p className="text-xs text-text-muted mt-2 text-right">{t('quota.unlimited')}</p>
         )}
 
         {/* Fullscreen toggle */}

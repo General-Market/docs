@@ -26,6 +26,9 @@ impl NasdaqClient {
     /// Create from environment variable NASDAQ_API_KEY
     pub fn from_env() -> Result<Self> {
         let api_key = std::env::var("NASDAQ_API_KEY").context("NASDAQ_API_KEY not set")?;
+        if api_key.trim().is_empty() {
+            anyhow::bail!("NASDAQ_API_KEY is set but empty — get a free key at https://data.nasdaq.com/sign-up");
+        }
         Self::new(api_key)
     }
 
@@ -91,6 +94,14 @@ impl NasdaqClient {
             let status = resp.status();
             let body = resp.text().await.unwrap_or_default();
 
+            // Auth failure — likely invalid API key
+            if status.as_u16() == 400 || status.as_u16() == 403 {
+                anyhow::bail!(
+                    "Nasdaq API auth error for {} (HTTP {}): {} — check NASDAQ_API_KEY is valid",
+                    dataset_code, status, body
+                );
+            }
+
             // Retry on rate limit (429)
             if status.as_u16() == 429 && attempt < MAX_RETRIES {
                 attempt += 1;
@@ -106,9 +117,11 @@ impl NasdaqClient {
         }
     }
 
-    /// Check if API key is configured
+    /// Check if API key is configured (non-empty)
     pub fn is_configured() -> bool {
-        std::env::var("NASDAQ_API_KEY").is_ok()
+        std::env::var("NASDAQ_API_KEY")
+            .map(|k| !k.trim().is_empty())
+            .unwrap_or(false)
     }
 }
 

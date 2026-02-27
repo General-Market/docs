@@ -32,17 +32,17 @@ const TMDB_API_URL: &str = "https://api.themoviedb.org/3";
 /// Delay between individual detail fetches (ms) — ~25 req/s
 const INTER_REQUEST_DELAY_MS: u64 = 40;
 
-/// How many pages of popular movies to fetch (20 items/page, 500 pages = 10k)
-const MOVIE_DISCOVERY_PAGES: u32 = 500;
+/// How many pages of popular movies to fetch (20 items/page, 50 pages = 1k)
+const MOVIE_DISCOVERY_PAGES: u32 = 50;
 
-/// How many pages of popular TV shows to fetch (20 items/page, 500 pages = 10k)
-const TV_DISCOVERY_PAGES: u32 = 500;
+/// How many pages of popular TV shows to fetch (20 items/page, 50 pages = 1k)
+const TV_DISCOVERY_PAGES: u32 = 50;
 
-/// How many pages of trending people to fetch (20 items/page, 100 pages = 2k)
-const PERSON_TRENDING_PAGES: u32 = 100;
+/// How many pages of trending people to fetch (20 items/page, 20 pages = 400)
+const PERSON_TRENDING_PAGES: u32 = 20;
 
-/// How many pages of popular people to fetch (20 items/page, 500 pages = 10k)
-const PERSON_POPULAR_PAGES: u32 = 500;
+/// How many pages of popular people to fetch (20 items/page, 50 pages = 1k)
+const PERSON_POPULAR_PAGES: u32 = 50;
 
 // ============================================================================
 // API RESPONSE TYPES

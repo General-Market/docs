@@ -11,7 +11,7 @@ use ethers::types::{Address, H256, U256};
 use sqlx::PgPool;
 use tracing::info;
 
-use super::types::{Batch, PlayerPosition};
+use super::types::{Batch, PlayerBalance, PlayerPosition};
 
 /// Tick scheduler: tracks active batches and determines when ticks are due.
 pub struct TickScheduler {
@@ -127,6 +127,42 @@ impl TickScheduler {
         Ok(())
     }
 
+    /// Apply balance updates from tick resolution.
+    /// Updates in-memory player balances after a tick is resolved.
+    pub async fn apply_tick_balances(&self, batch_id: u64, balances: &[PlayerBalance]) {
+        let mut players = self.players.write().await;
+        if let Some(batch_players) = players.get_mut(&batch_id) {
+            for pb in balances {
+                if let Some(pos) = batch_players.get_mut(&pb.player) {
+                    pos.balance = pb.new_balance;
+                }
+            }
+        }
+    }
+
+    /// Apply balance updates and persist to Postgres.
+    pub async fn apply_tick_balances_with_db(
+        &self,
+        pool: &PgPool,
+        batch_id: u64,
+        balances: &[PlayerBalance],
+    ) -> Result<(), sqlx::Error> {
+        self.apply_tick_balances(batch_id, balances).await;
+
+        for pb in balances {
+            sqlx::query(
+                "UPDATE vision_positions SET balance = $1 WHERE batch_id = $2 AND player = $3",
+            )
+            .bind(pb.new_balance.as_u128() as i64)
+            .bind(batch_id as i64)
+            .bind(format!("{:?}", pb.player))
+            .execute(pool)
+            .await?;
+        }
+
+        Ok(())
+    }
+
     /// Update a batch's pending config (next_config_hash + next_lock_offset).
     /// Called when BatchConfigUpdated event is received.
     pub async fn on_batch_config_updated(
@@ -162,20 +198,84 @@ impl TickScheduler {
 
     // === DB persistence for crash recovery ===
 
-    /// Load last_resolved state from DB on startup (crash recovery).
+    /// Load all state from DB on startup (crash recovery).
+    /// Restores batches, player positions, and last_resolved ticks.
     pub async fn load_from_db(&self, pool: &PgPool) -> Result<(), sqlx::Error> {
-        let rows: Vec<(i64, i64)> = sqlx::query_as(
+        // 1. Load batches
+        let batch_rows: Vec<(i64, String, i64, i64, bool, String, String, String, i64, i64)> =
+            sqlx::query_as(
+                "SELECT id, creator, tick_duration, created_at_tick, paused, \
+                 source_id, config_hash, next_config_hash, next_lock_offset, last_promotion_tick \
+                 FROM vision_batches WHERE NOT paused",
+            )
+            .fetch_all(pool)
+            .await?;
+
+        {
+            let mut batches = self.batches.write().await;
+            for (id, creator, tick_duration, created_at_tick, paused, source_id, config_hash, next_config_hash, next_lock_offset, last_promotion_tick) in &batch_rows {
+                let batch = Batch {
+                    id: *id as u64,
+                    creator: creator.parse().unwrap_or_default(),
+                    source_id: source_id.parse().unwrap_or_default(),
+                    config_hash: config_hash.parse().unwrap_or_default(),
+                    next_config_hash: next_config_hash.parse().unwrap_or_default(),
+                    tick_duration: *tick_duration as u64,
+                    lock_offset: 0,
+                    next_lock_offset: *next_lock_offset as u64,
+                    created_at_tick: *created_at_tick as u64,
+                    last_promotion_tick: *last_promotion_tick as u64,
+                    paused: *paused,
+                };
+                batches.insert(batch.id, batch);
+            }
+        }
+        info!(count = batch_rows.len(), "Loaded batches from DB");
+
+        // 2. Load player positions (only active: balance > 0)
+        // Cast numeric columns to text to avoid BigDecimal dependency
+        let pos_rows: Vec<(i64, String, String, String, i64, String, i64)> =
+            sqlx::query_as(
+                "SELECT batch_id, player, bitmap_hash, stake_per_tick::text, start_tick, balance::text, join_timestamp \
+                 FROM vision_positions WHERE balance > 0",
+            )
+            .fetch_all(pool)
+            .await?;
+
+        {
+            let mut players = self.players.write().await;
+            for (batch_id, player, bitmap_hash, stake_per_tick, start_tick, balance, join_timestamp) in &pos_rows {
+                let position = PlayerPosition {
+                    player: player.parse().unwrap_or_default(),
+                    bitmap_hash: bitmap_hash.parse().unwrap_or_default(),
+                    stake_per_tick: U256::from_dec_str(stake_per_tick).unwrap_or_default(),
+                    start_tick: *start_tick as u64,
+                    balance: U256::from_dec_str(balance).unwrap_or_default(),
+                    join_timestamp: *join_timestamp as u64,
+                };
+                players
+                    .entry(*batch_id as u64)
+                    .or_default()
+                    .insert(position.player, position);
+            }
+        }
+        info!(count = pos_rows.len(), "Loaded player positions from DB");
+
+        // 3. Load last_resolved ticks
+        let resolved_rows: Vec<(i64, i64)> = sqlx::query_as(
             "SELECT batch_id, last_tick_id FROM vision_last_resolved",
         )
         .fetch_all(pool)
         .await?;
 
-        let mut last_resolved = self.last_resolved.write().await;
-        for (batch_id, tick_id) in &rows {
-            last_resolved.insert(*batch_id as u64, *tick_id as u64);
+        {
+            let mut last_resolved = self.last_resolved.write().await;
+            for (batch_id, tick_id) in &resolved_rows {
+                last_resolved.insert(*batch_id as u64, *tick_id as u64);
+            }
         }
+        info!(count = resolved_rows.len(), "Loaded last_resolved from DB");
 
-        info!(count = rows.len(), "Loaded last_resolved from DB");
         Ok(())
     }
 

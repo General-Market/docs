@@ -1,0 +1,11 @@
+{
+  "bridge": "0xE5939Ef9a7dBc0D50D4C016c4022c23423acD822",
+  "inbox": "0xb821962682614Ff395bDf5e0371ba594d5ED80Cf",
+  "sequencer-inbox": "0x5b128313221DC6760Dd0979c36bfD1601d4FFa1a",
+  "deployed-at": 12127732,
+  "rollup": "0xd7a2fE4c534cD0F4488a373eEB221d162083a42B",
+  "native-token": "0x0000000000000000000000000000000000000000",
+  "upgrade-executor": "0x018c085B73732B71E15d5A81505ef4Af5b0b4135",
+  "validator-utils": "0xC458095Cd0DbA5e06c547E937561B347Fc79d0aB",
+  "validator-wallet-creator": "0x3087009358BFf0dA7b2B9e391AeDAc0D7E3e1d66"
+}

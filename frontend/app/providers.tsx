@@ -3,7 +3,7 @@
 import { WagmiProvider } from 'wagmi'
 import { useAccount } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { getWagmiConfig } from '@/lib/wagmi'
+import { wagmiConfig } from '@/lib/wagmi'
 import { ToastProvider } from '@/lib/contexts/ToastContext'
 import { SSEProvider } from '@/hooks/useSSE'
 import { ChainGuard } from '@/components/ChainGuard'
@@ -31,11 +31,10 @@ function SSEWrapper({ children }: { children: ReactNode }) {
 }
 
 export function Providers({ children }: { children: ReactNode }) {
-  // Create QueryClient inside component to prevent state leaking between requests
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 5 * 1000, // 5 seconds
+        staleTime: 5 * 1000,
         refetchOnWindowFocus: false,
       },
     },
@@ -43,7 +42,7 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <PostHogProvider>
-      <WagmiProvider config={getWagmiConfig()}>
+      <WagmiProvider config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
           <ToastProvider>
             <SSEWrapper>

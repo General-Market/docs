@@ -5,8 +5,10 @@
 
 use ethers::core::utils::keccak256;
 use ethers::types::{Address, H256};
+use sqlx::PgPool;
 use std::collections::HashMap;
 use tokio::sync::RwLock;
+use tracing::info;
 
 use super::types::StoredBitmap;
 
@@ -80,6 +82,58 @@ impl BitmapStore {
     /// Remove a bitmap (after player withdraws).
     pub async fn remove(&self, batch_id: u64, player: Address) {
         self.bitmaps.write().await.remove(&(batch_id, player));
+    }
+
+    /// Persist a bitmap to Postgres (fire-and-forget, errors logged).
+    pub async fn persist_to_db(&self, pool: &PgPool, batch_id: u64, player: Address, bitmap: &[u8], hash: &H256) {
+        let player_str = format!("{:?}", player);
+        let hash_str = format!("{:?}", hash);
+        if let Err(e) = sqlx::query(
+            "INSERT INTO vision_bitmaps (batch_id, player, bitmap, bitmap_hash)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (batch_id, player) DO UPDATE SET bitmap = $3, bitmap_hash = $4",
+        )
+        .bind(batch_id as i64)
+        .bind(&player_str)
+        .bind(bitmap)
+        .bind(&hash_str)
+        .execute(pool)
+        .await
+        {
+            tracing::warn!(batch_id, player = %player, error = %e, "Failed to persist bitmap to DB");
+        }
+    }
+
+    /// Load all bitmaps from Postgres on startup (crash recovery).
+    pub async fn load_from_db(&self, pool: &PgPool) -> Result<(), sqlx::Error> {
+        let rows: Vec<(i64, String, Vec<u8>, String)> = sqlx::query_as(
+            "SELECT batch_id, player, bitmap, bitmap_hash FROM vision_bitmaps",
+        )
+        .fetch_all(pool)
+        .await?;
+
+        let mut bitmaps = self.bitmaps.write().await;
+        for (batch_id, player_str, bitmap, hash_str) in &rows {
+            let player: Address = player_str.parse().unwrap_or_default();
+            let hash: H256 = hash_str.parse().unwrap_or_default();
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs();
+            bitmaps.insert(
+                (*batch_id as u64, player),
+                StoredBitmap {
+                    player,
+                    batch_id: *batch_id as u64,
+                    bitmap: bitmap.clone(),
+                    hash,
+                    received_at: now,
+                },
+            );
+        }
+
+        info!(count = rows.len(), "Loaded bitmaps from DB");
+        Ok(())
     }
 }
 

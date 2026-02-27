@@ -609,6 +609,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             leader_id,
             order_id,
             usdc_proceeds,
+            vault,
             reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
@@ -619,6 +620,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update(buf);
             usdc_proceeds.to_little_endian(&mut buf);
             h.update(buf);
+            h.update(vault.as_bytes());
         }
         P2PMessage::CompleteSellOrderSign {
             signer_id,

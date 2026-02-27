@@ -61,6 +61,10 @@
     "buy_filled_shares": "Buy filled \u2014 {shares} {name} shares received",
     "buy_filled": "Buy filled \u2014 {name} shares received"
   },
+  "stall": {
+    "title": "Order submitted on Arbitrum",
+    "description": "Your order is being relayed to L3 for processing. This can take a few minutes. You can safely close this dialog — your order will continue processing and appear in your portfolio."
+  },
   "error": {
     "title": "Error"
   }

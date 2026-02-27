@@ -1,0 +1,34 @@
+{
+  "l2Network": {
+    "isTestnet": false,
+    "chainId": 111222333,
+    "confirmPeriodBlocks": 20,
+    "ethBridge": {
+      "bridge": "0xE5939Ef9a7dBc0D50D4C016c4022c23423acD822",
+      "inbox": "0xb821962682614Ff395bDf5e0371ba594d5ED80Cf",
+      "outbox": "0xFB47C6504e1cDAe1f305FD0a8FD27E025ce4B01c",
+      "rollup": "0xd7a2fE4c534cD0F4488a373eEB221d162083a42B",
+      "sequencerInbox": "0x5b128313221DC6760Dd0979c36bfD1601d4FFa1a"
+    },
+    "isCustom": true,
+    "name": "OrbitChain",
+    "parentChainId": 14601,
+    "retryableLifetimeSeconds": 604800,
+    "tokenBridge": {
+      "parentCustomGateway": "0xb8AFcF7Adbbb296f9bB971aDb514230cB8205576",
+      "parentErc20Gateway": "0xafe2C8B6c3c0D338628221C9F0946fFfe380299a",
+      "parentGatewayRouter": "0xe15c56068641AE5C69c2f7a22647b951704F3553",
+      "parentMultiCall": "0xcb6C040bd4E1742840AD5542C6fDDaF74dB73AF6",
+      "parentProxyAdmin": "0xefD41EB50906d4B4E84845AccCb5078551a4c4DD",
+      "parentWeth": "0xF6E271BE9740403fa68B5138491F61c4642F9452",
+      "parentWethGateway": "0x18e5Fd4d22126a144A4763C87F9B6420FEb1DC43",
+      "childCustomGateway": "0x11ee25972CdEB0A7135c24c5dB90C958643B437b",
+      "childErc20Gateway": "0x88604350ce419d5712027F5663D08Af8EE63e83e",
+      "childGatewayRouter": "0x07c9dDE053210710BE5EFc01cD1CCCD9BB71E32f",
+      "childMultiCall": "0xFAAdD0b27F523DD0ee7aD23FbD41fAf0ee9374ba",
+      "childProxyAdmin": "0x5e42Ce1b5367F66E2D83A07Fa7773f12169c93C7",
+      "childWeth": "0x6B0809dCBa8735d8A9f6Ecb92bF744c612Fd658E",
+      "childWethGateway": "0x702153Ce84a0203cdB16c6526a9fF33090246063"
+    }
+  }
+}

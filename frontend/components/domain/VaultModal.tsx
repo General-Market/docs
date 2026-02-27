@@ -15,6 +15,7 @@ import { LendItpModal } from './LendItpModal'
 import { BRIDGED_ITP_ABI } from '@/lib/contracts/index-protocol-abi'
 import { getAllMorphoMarkets, getMorphoMarketForItp } from '@/lib/contracts/morpho-markets-registry'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
+import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import { useTranslations } from 'next-intl'
 
 // Note: Error fallback uses static English because it renders outside i18n context
@@ -249,6 +250,11 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
       <MarketsTableInline
         liveMarkets={markets}
         onBorrow={(arbAddress, name) => setBorrowModalItp({ arbAddress, name })}
+        activeBorrowCollaterals={
+          position?.debtAmount && position.debtAmount > 0n
+            ? new Set([MORPHO_ADDRESSES.collateralToken.toLowerCase()])
+            : new Set()
+        }
       />
 
       {/* Borrow modal opened from markets table row */}
@@ -302,9 +308,10 @@ import type { MarketInfo } from '@/lib/types/morpho'
 interface MarketsTableInlineProps {
   liveMarkets: MarketInfo[]
   onBorrow: (collateralToken: string, itpName: string) => void
+  activeBorrowCollaterals: Set<string>
 }
 
-function MarketsTableInline({ liveMarkets, onBorrow }: MarketsTableInlineProps) {
+function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: MarketsTableInlineProps) {
   const t = useTranslations('lending')
   const { address } = useAccount()
   const publicClient = usePublicClient()
@@ -454,7 +461,9 @@ function MarketsTableInline({ liveMarkets, onBorrow }: MarketsTableInlineProps) 
                       onClick={() => onBorrow(row.collateralToken, row.name)}
                       className="px-3 py-1.5 bg-zinc-900 text-white text-[11px] font-bold uppercase tracking-[0.04em] hover:bg-zinc-800 transition-colors"
                     >
-                      {t('actions.borrow')}
+                      {activeBorrowCollaterals.has(row.collateralToken.toLowerCase())
+                        ? t('actions.manage_position')
+                        : t('actions.borrow')}
                     </WalletActionButton>
                   </td>
                 </tr>

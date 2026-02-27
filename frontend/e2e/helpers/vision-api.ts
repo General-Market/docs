@@ -75,27 +75,17 @@ const VISION_GET_BATCH_ABI = [{
     type: 'tuple',
     components: [
       { name: 'creator', type: 'address' },
-      { name: 'marketIds', type: 'bytes32[]' },
-      { name: 'resolutionTypes', type: 'uint8[]' },
+      { name: 'sourceId', type: 'bytes32' },
+      { name: 'configHash', type: 'bytes32' },
+      { name: 'nextConfigHash', type: 'bytes32' },
       { name: 'tickDuration', type: 'uint256' },
-      { name: 'customThresholds', type: 'uint256[]' },
+      { name: 'lockOffset', type: 'uint256' },
+      { name: 'nextLockOffset', type: 'uint256' },
       { name: 'createdAtTick', type: 'uint256' },
+      { name: 'lastPromotionTick', type: 'uint256' },
       { name: 'paused', type: 'bool' },
     ],
   }],
-}] as const
-
-const VISION_CREATE_BATCH_ABI = [{
-  name: 'createBatch',
-  type: 'function',
-  stateMutability: 'nonpayable',
-  inputs: [
-    { name: 'marketIds', type: 'bytes32[]' },
-    { name: 'resolutionTypes', type: 'uint8[]' },
-    { name: 'tickDuration', type: 'uint256' },
-    { name: 'customThresholds', type: 'uint256[]' },
-  ],
-  outputs: [{ name: 'batchId', type: 'uint256' }],
 }] as const
 
 const VISION_JOIN_ABI = [{
@@ -104,6 +94,7 @@ const VISION_JOIN_ABI = [{
   stateMutability: 'nonpayable',
   inputs: [
     { name: 'batchId', type: 'uint256' },
+    { name: 'configHash', type: 'bytes32' },
     { name: 'depositAmount', type: 'uint256' },
     { name: 'stakePerTick', type: 'uint256' },
     { name: 'bitmapHash', type: 'bytes32' },
@@ -124,6 +115,7 @@ const VISION_POSITION_ABI = [{
     type: 'tuple',
     components: [
       { name: 'bitmapHash', type: 'bytes32' },
+      { name: 'configHash', type: 'bytes32' },
       { name: 'stakePerTick', type: 'uint256' },
       { name: 'startTick', type: 'uint256' },
       { name: 'balance', type: 'uint256' },
@@ -166,7 +158,14 @@ async function l3SendTx(from: string, to: string, data: string): Promise<string>
     const receipt = await l3RpcCall('eth_getTransactionReceipt', [txHash]) as { status: string } | null
     if (receipt) {
       if (receipt.status === '0x0') {
-        throw new Error(`Transaction reverted: ${txHash} (from=${from}, to=${to})`)
+        // Try to get revert reason via eth_call simulation
+        let revertReason = 'unknown'
+        try {
+          await l3RpcCall('eth_call', [{ from, to, data, gas: '0x200000' }, 'latest'])
+        } catch (e: unknown) {
+          revertReason = e instanceof Error ? e.message : String(e)
+        }
+        throw new Error(`Transaction reverted: ${txHash} (from=${from}, to=${to}, reason=${revertReason})`)
       }
       return txHash
     }
@@ -180,6 +179,83 @@ async function l3SendTx(from: string, to: string, data: string): Promise<string>
 
 async function impersonateAccount(address: string): Promise<void> {
   await l3RpcCall('anvil_impersonateAccount', [address])
+}
+
+// ── USDC minting (via deployer) ─────────────────────────────
+
+/** Anvil deployer — can call mint() on test ERC20 contracts */
+const DEPLOYER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+
+/**
+ * Wait until the batch's tick lock window passes.
+ * Vision batches lock the last `lockOffset` seconds of each `tickDuration` tick.
+ * On Anvil (auto-mine), block.timestamp = wall clock, so just sleep past the lock.
+ */
+async function waitForUnlock(batchId: number): Promise<void> {
+  const data = encodeFunctionData({
+    abi: VISION_GET_BATCH_ABI,
+    functionName: 'getBatch',
+    args: [BigInt(batchId)],
+  })
+  const result = await l3EthCall(getVisionAddress(), data)
+  const hex = result.replace('0x', '')
+  const words: string[] = []
+  for (let w = 0; w < hex.length; w += 64) words.push(hex.slice(w, w + 64))
+
+  const tickDuration = Number(BigInt('0x' + words[4]))
+  const lockOffset = Number(BigInt('0x' + words[5]))
+  if (tickDuration === 0 || lockOffset === 0) return
+
+  const SAFETY_MARGIN = 3 // seconds before lock window to also wait (tx mining delay)
+  const now = Math.floor(Date.now() / 1000)
+  const posInTick = now % tickDuration
+  const lockStart = tickDuration - lockOffset
+
+  if (posInTick >= lockStart - SAFETY_MARGIN) {
+    const waitSecs = tickDuration - posInTick + 2 // wait until next tick + 2s safety
+    await new Promise(r => setTimeout(r, waitSecs * 1000))
+  }
+}
+
+/**
+ * Clear a player's position on-chain via Anvil storage manipulation.
+ * _positions is at storage slot 4.  For _positions[batchId][player]:
+ *   baseSlot = keccak256(abi.encode(player, keccak256(abi.encode(batchId, 4))))
+ * PlayerPosition has 9 fields = 9 consecutive storage slots.
+ */
+async function clearPosition(batchId: number, player: string): Promise<void> {
+  const visionAddr = getVisionAddress()
+  // keccak256(abi.encode(batchId, 4))
+  const innerSlot = keccak256(
+    ('0x' +
+      BigInt(batchId).toString(16).padStart(64, '0') +
+      BigInt(4).toString(16).padStart(64, '0')) as `0x${string}`,
+  )
+  // keccak256(abi.encode(player, innerSlot))
+  const baseSlot = keccak256(
+    ('0x' +
+      player.replace('0x', '').toLowerCase().padStart(64, '0') +
+      innerSlot.replace('0x', '')) as `0x${string}`,
+  )
+  const base = BigInt(baseSlot)
+  const zero = '0x' + '0'.repeat(64)
+  for (let i = 0; i < 9; i++) {
+    const slot = '0x' + (base + BigInt(i)).toString(16).padStart(64, '0')
+    await l3RpcCall('anvil_setStorageAt', [visionAddr, slot, zero])
+  }
+}
+
+/** Mint ARB_USDC to an address via deployer. Ensures player has enough for deposits. */
+async function ensureUsdcBalance(address: string, minAmount: bigint): Promise<void> {
+  const balance = await getL3UsdcBalance(address)
+  if (balance >= minAmount) return
+
+  const mintAmount = minAmount * 10n // Mint 10x the minimum to avoid repeated mints
+  const addrPadded = address.replace('0x', '').toLowerCase().padStart(64, '0')
+  const amountHex = mintAmount.toString(16).padStart(64, '0')
+  const data = `0x40c10f19${addrPadded}${amountHex}` // mint(address,uint256)
+
+  await l3SendTx(DEPLOYER, getL3UsdcAddress(), data)
 }
 
 // ── ERC20 helpers ────────────────────────────────────────────
@@ -245,6 +321,7 @@ export function oppositeBets(bets: BetDirection[]): BetDirection[] {
 export async function joinBatch(
   from: string,
   batchId: number,
+  configHash: `0x${string}`,
   depositAmount: bigint,
   stakePerTick: bigint,
   bitmapHash: `0x${string}`,
@@ -252,13 +329,14 @@ export async function joinBatch(
   const data = encodeFunctionData({
     abi: VISION_JOIN_ABI,
     functionName: 'joinBatch',
-    args: [BigInt(batchId), depositAmount, stakePerTick, bitmapHash],
+    args: [BigInt(batchId), configHash, depositAmount, stakePerTick, bitmapHash],
   })
   await l3SendTx(from, getVisionAddress(), data)
 }
 
 export interface PlayerPosition {
   bitmapHash: string
+  configHash: string
   stakePerTick: bigint
   startTick: bigint
   balance: bigint
@@ -276,7 +354,7 @@ export async function getPosition(batchId: number, player: string): Promise<Play
   })
   const result = await l3EthCall(getVisionAddress(), data)
 
-  // Decode: 8 words of 32 bytes each
+  // Decode: 9 words of 32 bytes each (configHash added between bitmapHash and stakePerTick)
   const hex = result.replace('0x', '')
   const words = []
   for (let i = 0; i < hex.length; i += 64) {
@@ -285,13 +363,14 @@ export async function getPosition(batchId: number, player: string): Promise<Play
 
   return {
     bitmapHash: '0x' + words[0],
-    stakePerTick: BigInt('0x' + words[1]),
-    startTick: BigInt('0x' + words[2]),
-    balance: BigInt('0x' + words[3]),
-    lastClaimedTick: BigInt('0x' + words[4]),
-    joinTimestamp: BigInt('0x' + words[5]),
-    totalDeposited: BigInt('0x' + words[6]),
-    totalClaimed: BigInt('0x' + words[7]),
+    configHash: '0x' + words[1],
+    stakePerTick: BigInt('0x' + words[2]),
+    startTick: BigInt('0x' + words[3]),
+    balance: BigInt('0x' + words[4]),
+    lastClaimedTick: BigInt('0x' + words[5]),
+    joinTimestamp: BigInt('0x' + words[6]),
+    totalDeposited: BigInt('0x' + words[7]),
+    totalClaimed: BigInt('0x' + words[8]),
   }
 }
 
@@ -381,10 +460,12 @@ export interface JoinResult {
 
 /**
  * Complete join flow: approve USDC → joinBatch on-chain → submit bitmap to issuers.
+ * @param configHash  Active configHash for the batch (read from chain or vision-batches.json)
  */
 export async function fullJoinBatch(
   player: string,
   batchId: number,
+  configHash: `0x${string}`,
   depositAmount: bigint,
   stakePerTick: bigint,
   bets: BetDirection[],
@@ -392,6 +473,12 @@ export async function fullJoinBatch(
 ): Promise<JoinResult> {
   // 0. Ensure player is impersonated on Anvil
   await impersonateAccount(player)
+
+  // 0.1. Clear any existing position (idempotent across test re-runs)
+  await clearPosition(batchId, player)
+
+  // 0.5. Ensure player has enough USDC (mint via deployer if needed)
+  await ensureUsdcBalance(player, depositAmount)
 
   // 1. Encode bitmap
   const bitmap = encodeBitmap(bets, marketCount)
@@ -401,10 +488,13 @@ export async function fullJoinBatch(
   // 2. Approve USDC
   await approveVision(player, depositAmount)
 
-  // 3. Join batch on-chain
-  await joinBatch(player, batchId, depositAmount, stakePerTick, bmHash)
+  // 3. Wait for tick lock window to pass (last lockOffset seconds of each tick are locked)
+  await waitForUnlock(batchId)
 
-  // 4. Submit bitmap to issuers
+  // 4. Join batch on-chain (requires configHash binding)
+  await joinBatch(player, batchId, configHash, depositAmount, stakePerTick, bmHash)
+
+  // 5. Submit bitmap to issuers
   const { accepted } = await submitBitmapToIssuers(player, batchId, bmHex, bmHash)
 
   return { bitmap, bitmapHash: bmHash, bitmapHex: bmHex, bitmapAccepted: accepted }
@@ -419,6 +509,9 @@ export async function getVisionUsdcBalance(): Promise<bigint> {
 
 /**
  * Read batch count and info directly from the Vision contract (bypasses issuer API).
+ * The new Batch struct is all fixed-size fields (no dynamic arrays):
+ *   creator, sourceId, configHash, nextConfigHash, tickDuration,
+ *   lockOffset, nextLockOffset, createdAtTick, lastPromotionTick, paused
  */
 export async function getBatchesFromChain(): Promise<BatchInfo[]> {
   const data = encodeFunctionData({
@@ -439,42 +532,27 @@ export async function getBatchesFromChain(): Promise<BatchInfo[]> {
         args: [BigInt(i)],
       })
       const batchResult = await l3EthCall(getVisionAddress(), batchData)
-      // Parse creator from the first 32-byte word (padded address)
       const hex = batchResult.replace('0x', '')
-      const creator = '0x' + hex.slice(24, 64)
-      // The struct has dynamic arrays so full decoding is complex.
-      // For BatchInfo we just need id and market_count.
-      // tickDuration is at a fixed offset (word index 3 in the struct header).
-      // Market count: read marketIds array length.
-      // The struct is ABI-encoded as a tuple with offset pointers for dynamic fields.
-      // Word 0: offset to tuple data (0x20)
-      // Tuple data starts at word 1:
-      //   word 1: creator (address, padded)
-      //   word 2: offset to marketIds (relative to tuple start)
-      //   word 3: offset to resolutionTypes
-      //   word 4: tickDuration
-      //   word 5: offset to customThresholds
-      //   word 6: createdAtTick
-      //   word 7: paused
-      // Then dynamic arrays follow
       const words: string[] = []
       for (let w = 0; w < hex.length; w += 64) words.push(hex.slice(w, w + 64))
-      // Tuple starts at word 1 (after offset pointer at word 0)
-      const tupleBase = 1
-      const tickDuration = Number(BigInt('0x' + words[tupleBase + 3]))
-      // marketIds offset is at word tupleBase+1, relative to tuple start
-      const marketIdsOffset = Number(BigInt('0x' + words[tupleBase + 1])) / 32
-      const marketCount = Number(BigInt('0x' + words[tupleBase + marketIdsOffset]))
+      // ABI decode: struct with all fixed-size fields is returned inline (no offset pointer)
+      // Tuple: creator(0), sourceId(1), configHash(2), nextConfigHash(3),
+      //        tickDuration(4), lockOffset(5), nextLockOffset(6),
+      //        createdAtTick(7), lastPromotionTick(8), paused(9)
+      const tupleBase = 0
+      const creator = '0x' + words[tupleBase + 0].slice(24)
+      const tickDuration = Number(BigInt('0x' + words[tupleBase + 4]))
+      const paused = BigInt('0x' + words[tupleBase + 9]) !== 0n
 
       if (creator !== '0x' + '0'.repeat(40)) {
         batches.push({
           id: i,
           creator,
-          market_count: marketCount,
+          market_count: 0, // market detail is off-chain in hash-based design
           tick_duration: tickDuration,
           player_count: 0,
           tvl: '0',
-          paused: BigInt('0x' + words[tupleBase + 6]) !== 0n,
+          paused,
         })
       }
     } catch {
@@ -485,41 +563,65 @@ export async function getBatchesFromChain(): Promise<BatchInfo[]> {
 }
 
 /**
- * Create a batch on the Vision contract via Anvil impersonation.
- * Uses deployer account (Anvil account 0) to call createBatch directly.
+ * Read the configHash of a batch from the Vision contract.
+ * Needed for joinBatch which requires configHash binding.
  */
-export async function createBatchOnChain(marketCount = 5, tickDuration = 30): Promise<void> {
-  const deployer = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
-
-  // Generate dummy market IDs (keccak hashes of "market_0", "market_1", etc.)
-  const marketIds: `0x${string}`[] = []
-  for (let i = 0; i < marketCount; i++) {
-    marketIds.push(keccak256(toHex(`e2e_market_${i}`)))
-  }
-
-  const resolutionTypes = new Array(marketCount).fill(0)
-  const customThresholds = new Array(marketCount).fill(BigInt(0))
-
+export async function getBatchConfigHash(batchId: number): Promise<`0x${string}`> {
   const data = encodeFunctionData({
-    abi: VISION_CREATE_BATCH_ABI,
-    functionName: 'createBatch',
-    args: [
-      marketIds,
-      resolutionTypes,
-      BigInt(tickDuration),
-      customThresholds,
-    ],
+    abi: VISION_GET_BATCH_ABI,
+    functionName: 'getBatch',
+    args: [BigInt(batchId)],
   })
-
-  await l3SendTx(deployer, getVisionAddress(), data)
-
-  // Wait for issuers to index the event
-  await new Promise(r => setTimeout(r, 5_000))
+  const result = await l3EthCall(getVisionAddress(), data)
+  const hex = result.replace('0x', '')
+  const words: string[] = []
+  for (let w = 0; w < hex.length; w += 64) words.push(hex.slice(w, w + 64))
+  // configHash is at tuple index 2 (struct fields: creator, sourceId, configHash, ...)
+  return ('0x' + words[2]) as `0x${string}`
 }
 
 /**
- * Ensure at least one batch exists; create one if needed.
+ * Find a pre-created E2E test batch that nobody has joined yet.
+ * The deploy script creates e2e_test_0..e2e_test_4 batches specifically for tests.
+ * Returns { batchId, configHash } of the first available one.
+ */
+export async function findAvailableE2eBatch(): Promise<{ batchId: number; configHash: `0x${string}` }> {
+  // Read vision-batches.json for pre-created batch mappings
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const batches = require('../../../deployments/vision-batches.json')
+    for (let i = 0; i <= 4; i++) {
+      const key = `e2e_test_${i}`
+      const entry = batches.batches?.[key]
+      if (entry) {
+        // Check if anyone has joined this batch
+        try {
+          const pos = await getPosition(entry.batchId, PLAYER1)
+          if (pos.stakePerTick === 0n) {
+            return { batchId: entry.batchId, configHash: entry.configHash as `0x${string}` }
+          }
+        } catch {
+          // Position read failed = nobody joined
+          return { batchId: entry.batchId, configHash: entry.configHash as `0x${string}` }
+        }
+      }
+    }
+  } catch {
+    // vision-batches.json not available, fall back to on-chain scan
+  }
+
+  // Fallback: scan batches from chain, pick one with high ID (likely unused)
+  const allBatches = await getBatchesFromChain()
+  if (allBatches.length === 0) throw new Error('No batches found on chain')
+  const batch = allBatches[allBatches.length - 1]
+  const configHash = await getBatchConfigHash(batch.id)
+  return { batchId: batch.id, configHash }
+}
+
+/**
+ * Ensure at least one batch exists.
  * Checks API first, then falls back to on-chain reading.
+ * Batches should be pre-created by DeployAllVisionBatches.s.sol.
  */
 export async function ensureBatchExists(): Promise<BatchInfo[]> {
   // Try API first
@@ -530,14 +632,7 @@ export async function ensureBatchExists(): Promise<BatchInfo[]> {
   batches = await getBatchesFromChain()
   if (batches.length > 0) return batches
 
-  // No batches anywhere — create one on-chain
-  await createBatchOnChain()
-
-  // Read from chain directly (don't rely on issuer API)
-  batches = await getBatchesFromChain()
-  if (batches.length > 0) return batches
-
-  throw new Error('Failed to create batch on Vision contract')
+  throw new Error('No batches found — run DeployAllVisionBatches.s.sol first')
 }
 
 /**

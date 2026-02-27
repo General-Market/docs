@@ -10,6 +10,28 @@
     "exit": "ESC",
     "enter": "全画面表示"
   },
+  "quota": {
+    "sims_left": "残り{remaining}回",
+    "last_free": "最後の無料シミュレーション",
+    "pay_with_tweet": "ツイートで支払いましょう",
+    "unlimited": "無制限"
+  },
+  "gate": {
+    "title": "シミュレーションは無料じゃない。でもほぼ無料。",
+    "subtitle": "1ツイート = もっとバックテスト。ほぼ無料で配ってます。",
+    "connect_wallet": "ウォレットを接続してシミュレーションをアンロック。",
+    "download_image": "画像をダウンロード",
+    "open_x": "Xを開く",
+    "sign_wallet": "ウォレットで署名中...",
+    "countdown": "信じてますよ。たぶん。({countdown}秒)",
+    "i_posted": "投稿しました",
+    "unlocked": "アンロック！",
+    "signature_failed": "署名に失敗しました。もう一度お試しください。",
+    "chart_alt": "バックテストチャートプレビュー",
+    "tier1_toast": "5回追加アンロック。マーケティングインターン。",
+    "tier2_toast": "10回追加。月間MVP。",
+    "tier3_toast": "無制限。もはや共同創業者。"
+  },
   "holdings": {
     "title": "保有銘柄（最新リバランス）",
     "loading": "Loading holdings...",

@@ -4,8 +4,9 @@
 //! Discovery via search API (sorted by stars), prices via individual repo calls.
 //!
 //! API: https://api.github.com/repos/{owner}/{repo}
-//! Auth: GITHUB_TOKEN (zero-scope PAT, free)
-//! Rate limit: 5,000 req/hr = 833/10min, 85% = 708
+//! Auth: GITHUB_TOKEN (optional zero-scope PAT, free)
+//!   - Authenticated: 5,000 req/hr = 833/10min
+//!   - Unauthenticated: 60 req/hr = 10/10min (sufficient for ~669 repos with config)
 
 use anyhow::Result;
 use chrono::Utc;
@@ -27,7 +28,12 @@ const ASSET_JSON: &str = include_str!("../../../config/github.json");
 const API_URL: &str = "https://api.github.com";
 const MAX_REPOS: usize = 700;
 const SEARCH_PER_PAGE: usize = 100;
+/// Unauthenticated rate limit: 60 req/hr = 10 req/10min, 85% = 8
+const UNAUTH_RATE_LIMIT: u32 = 8;
+/// Authenticated rate limit: 5000 req/hr = 833/10min, 85% = 708
+const AUTH_RATE_LIMIT: u32 = 708;
 const INTER_REQUEST_DELAY_MS: u64 = 850; // 708 calls in 600s ≈ 846ms each
+const INTER_REQUEST_DELAY_UNAUTH_MS: u64 = 6500; // 8 calls in 600s ≈ 6s each
 
 #[derive(Debug, Deserialize)]
 struct SearchResponse {
@@ -50,23 +56,45 @@ struct RepoInfo {
 
 pub struct GithubMarketSource {
     http: SourceHttpClient,
-    token: String,
+    /// None = unauthenticated (lower rate limits, public repos only)
+    token: Option<String>,
 }
 
 impl GithubMarketSource {
     pub fn from_env() -> Result<Self> {
-        let token = std::env::var("GITHUB_TOKEN")
-            .map_err(|_| anyhow::anyhow!("GITHUB_TOKEN env var not set"))?;
+        let token = std::env::var("GITHUB_TOKEN").ok().filter(|t| !t.is_empty());
 
+        let rate = if token.is_some() { AUTH_RATE_LIMIT } else { UNAUTH_RATE_LIMIT };
         let rate_limit = RateLimitConfig {
             windows: vec![RateWindow {
-                max_requests: 708,
+                max_requests: rate,
                 duration: Duration::from_secs(600),
             }],
         };
         let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
-        info!("GitHub source initialized");
+        if token.is_some() {
+            info!("GitHub source initialized (authenticated, {} req/10min)", rate);
+        } else {
+            warn!("GitHub source initialized WITHOUT token — using unauthenticated rate limits ({} req/10min). Set GITHUB_TOKEN for higher limits.", rate);
+        }
         Ok(Self { http, token })
+    }
+
+    /// Build common headers — includes Authorization only if token is set
+    fn api_headers(&self) -> Vec<(&'static str, String)> {
+        let mut headers = vec![
+            ("Accept", "application/vnd.github+json".to_string()),
+            ("User-Agent", "market-data-lib".to_string()),
+            ("X-GitHub-Api-Version", "2022-11-28".to_string()),
+        ];
+        if let Some(ref token) = self.token {
+            headers.push(("Authorization", format!("Bearer {}", token)));
+        }
+        headers
+    }
+
+    fn inter_request_delay(&self) -> u64 {
+        if self.token.is_some() { INTER_REQUEST_DELAY_MS } else { INTER_REQUEST_DELAY_UNAUTH_MS }
     }
 
     /// Search for top repos by stars
@@ -77,22 +105,22 @@ impl GithubMarketSource {
         // Search API max 1000 results (10 pages of 100)
         let pages_needed = pages_needed.min(10);
 
+        let headers = self.api_headers();
+        let header_refs: Vec<(&str, &str)> = headers.iter().map(|(k, v)| (*k, v.as_str())).collect();
+
         for page in 1..=pages_needed {
             let url = format!(
                 "{}/search/repositories?q=stars:>5000&sort=stars&order=desc&per_page={}&page={}",
                 API_URL, SEARCH_PER_PAGE, page
             );
 
-            tokio::time::sleep(Duration::from_millis(2100)).await; // Search API: 30/min
+            // Search API: 30/min authenticated, 10/min unauthenticated
+            let search_delay = if self.token.is_some() { 2100 } else { 6500 };
+            tokio::time::sleep(Duration::from_millis(search_delay)).await;
 
             match self.http.get_json_with_headers::<SearchResponse>(
                 &url,
-                &[
-                    ("Authorization", &format!("Bearer {}", self.token)),
-                    ("Accept", "application/vnd.github+json"),
-                    ("User-Agent", "market-data-lib"),
-                    ("X-GitHub-Api-Version", "2022-11-28"),
-                ],
+                &header_refs,
             ).await {
                 Ok(resp) => {
                     let count = resp.items.len();
@@ -116,14 +144,11 @@ impl GithubMarketSource {
     /// Fetch a single repo's details
     async fn fetch_repo(&self, full_name: &str) -> Result<RepoInfo, SourceError> {
         let url = format!("{}/repos/{}", API_URL, full_name);
+        let headers = self.api_headers();
+        let header_refs: Vec<(&str, &str)> = headers.iter().map(|(k, v)| (*k, v.as_str())).collect();
         self.http.get_json_with_headers(
             &url,
-            &[
-                ("Authorization", &format!("Bearer {}", self.token)),
-                ("Accept", "application/vnd.github+json"),
-                ("User-Agent", "market-data-lib"),
-                ("X-GitHub-Api-Version", "2022-11-28"),
-            ],
+            &header_refs,
         ).await
     }
 }
@@ -163,9 +188,10 @@ impl MarketDataSource for GithubMarketSource {
     }
 
     fn rate_limit_config(&self) -> RateLimitConfig {
+        let rate = if self.token.is_some() { AUTH_RATE_LIMIT } else { UNAUTH_RATE_LIMIT };
         RateLimitConfig {
             windows: vec![RateWindow {
-                max_requests: 708,
+                max_requests: rate,
                 duration: Duration::from_secs(600),
             }],
         }
@@ -234,7 +260,7 @@ impl MarketDataSource for GithubMarketSource {
                 }
             };
 
-            tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
+            tokio::time::sleep(Duration::from_millis(self.inter_request_delay())).await;
 
             match self.fetch_repo(&full_name).await {
                 Ok(repo) => {

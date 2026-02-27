@@ -137,6 +137,12 @@ struct SubredditData {
     public_description: Option<String>,
 }
 
+/// Response from /r/{sub}/about.json (public, unauthenticated endpoint)
+#[derive(Debug, Deserialize)]
+struct SubredditAboutResponse {
+    data: SubredditData,
+}
+
 // ============================================================================
 // CACHED TOKEN
 // ============================================================================
@@ -155,21 +161,31 @@ struct CachedToken {
 /// Tracks subscriber count and active user count for ~200 curated subreddits.
 /// Two assets per subreddit: `_subscribers` and `_active`.
 ///
+/// Supports two modes:
+/// - **Authenticated** (OAuth2): fast batch API via /api/info (needs REDDIT_CLIENT_ID + SECRET)
+/// - **Public** (no auth): per-subreddit JSON API at /r/{sub}/about.json (10 req/min)
+///
 /// Source ID is `"reddit"`.
 pub struct RedditMarketSource {
     client: reqwest::Client,
-    client_id: String,
-    client_secret: String,
+    client_id: Option<String>,
+    client_secret: Option<String>,
     token: Arc<Mutex<Option<CachedToken>>>,
     last_request: Arc<Mutex<std::time::Instant>>,
+    /// Whether we have OAuth credentials.
+    authenticated: bool,
 }
 
 impl RedditMarketSource {
     pub fn from_env() -> Result<Self> {
         let client_id = std::env::var("REDDIT_CLIENT_ID")
-            .context("REDDIT_CLIENT_ID environment variable must be set")?;
+            .ok()
+            .filter(|s| !s.is_empty());
         let client_secret = std::env::var("REDDIT_CLIENT_SECRET")
-            .context("REDDIT_CLIENT_SECRET environment variable must be set")?;
+            .ok()
+            .filter(|s| !s.is_empty());
+
+        let authenticated = client_id.is_some() && client_secret.is_some();
 
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
@@ -178,7 +194,8 @@ impl RedditMarketSource {
             .context("Failed to build HTTP client")?;
 
         info!(
-            "Reddit source initialized, tracking {} subreddits ({} assets)",
+            "Reddit source initialized (auth={}), tracking {} subreddits ({} assets)",
+            if authenticated { "OAuth2" } else { "public (no auth, 10 req/min)" },
             SUBREDDITS.len(),
             SUBREDDITS.len() * 2
         );
@@ -189,17 +206,24 @@ impl RedditMarketSource {
             client_secret,
             token: Arc::new(Mutex::new(None)),
             last_request: Arc::new(Mutex::new(std::time::Instant::now())),
+            authenticated,
         })
     }
 
     /// Get a valid access token, refreshing if needed.
-    async fn get_token(&self) -> Result<String> {
+    /// Returns None if not authenticated.
+    async fn get_token(&self) -> Result<Option<String>> {
+        let (client_id, client_secret) = match (&self.client_id, &self.client_secret) {
+            (Some(id), Some(secret)) => (id, secret),
+            _ => return Ok(None),
+        };
+
         let mut token_guard = self.token.lock().await;
 
         // Return cached token if still valid (with 60s buffer)
         if let Some(ref cached) = *token_guard {
             if cached.expires_at > std::time::Instant::now() + Duration::from_secs(60) {
-                return Ok(cached.access_token.clone());
+                return Ok(Some(cached.access_token.clone()));
             }
         }
 
@@ -207,7 +231,7 @@ impl RedditMarketSource {
         let resp = self
             .client
             .post(TOKEN_URL)
-            .basic_auth(&self.client_id, Some(&self.client_secret))
+            .basic_auth(client_id, Some(client_secret))
             .form(&[("grant_type", "client_credentials")])
             .send()
             .await
@@ -235,7 +259,7 @@ impl RedditMarketSource {
         });
 
         debug!("Reddit access token refreshed, expires in {}s", token_resp.expires_in);
-        Ok(access_token)
+        Ok(Some(access_token))
     }
 
     /// Enforce rate limiting between requests.
@@ -251,7 +275,8 @@ impl RedditMarketSource {
         *last = std::time::Instant::now();
     }
 
-    /// Make an authenticated GET request to the Reddit OAuth API with retries.
+    /// Make a GET request to the Reddit API with retries.
+    /// Uses OAuth if authenticated, plain request otherwise.
     async fn api_get(&self, url: &str) -> Result<RedditListing> {
         let mut last_error = None;
 
@@ -260,13 +285,12 @@ impl RedditMarketSource {
 
             let token = self.get_token().await?;
 
-            match self
-                .client
-                .get(url)
-                .header("Authorization", format!("Bearer {}", token))
-                .send()
-                .await
-            {
+            let mut req = self.client.get(url);
+            if let Some(ref tok) = token {
+                req = req.header("Authorization", format!("Bearer {}", tok));
+            }
+
+            match req.send().await {
                 Ok(resp) => {
                     if resp.status().is_success() {
                         match resp.json::<RedditListing>().await {
@@ -331,7 +355,7 @@ impl RedditMarketSource {
         ))
     }
 
-    /// Fetch subreddit info in batches of 100 via /api/info.
+    /// Fetch subreddit info in batches of 100 via OAuth /api/info (authenticated mode only).
     async fn fetch_subreddit_batch(&self, subs: &[&str]) -> Result<Vec<SubredditData>> {
         let sr_names = subs.join(",");
         let url = format!("{}/api/info?sr_name={}", API_BASE, sr_names);
@@ -344,6 +368,56 @@ impl RedditMarketSource {
             .into_iter()
             .map(|c| c.data)
             .collect())
+    }
+
+    /// Fetch a single subreddit's info via the public JSON API (no auth needed).
+    /// Uses https://www.reddit.com/r/{sub}/about.json
+    async fn fetch_subreddit_public(&self, sub: &str) -> Result<SubredditData> {
+        self.rate_limit().await;
+        let url = format!("https://www.reddit.com/r/{}/about.json", sub);
+
+        let mut last_error = None;
+        for attempt in 0..MAX_RETRIES {
+            if attempt > 0 {
+                self.rate_limit().await;
+            }
+
+            match self.client.get(&url).send().await {
+                Ok(resp) => {
+                    if resp.status().is_success() {
+                        match resp.json::<SubredditAboutResponse>().await {
+                            Ok(data) => return Ok(data.data),
+                            Err(e) => {
+                                warn!("Failed to parse Reddit about.json for r/{} (attempt {}/{}): {:?}",
+                                    sub, attempt + 1, MAX_RETRIES, e);
+                                last_error = Some(e.to_string());
+                            }
+                        }
+                    } else if resp.status().as_u16() == 429 {
+                        let retry_after = resp.headers()
+                            .get("Retry-After")
+                            .and_then(|v| v.to_str().ok())
+                            .and_then(|s| s.parse::<u64>().ok())
+                            .unwrap_or(10);
+                        warn!("Reddit public API rate limited for r/{}, waiting {}s", sub, retry_after);
+                        tokio::time::sleep(Duration::from_secs(retry_after)).await;
+                        last_error = Some("Rate limited".to_string());
+                    } else {
+                        let status = resp.status();
+                        last_error = Some(format!("HTTP {}", status));
+                    }
+                }
+                Err(e) => {
+                    last_error = Some(e.to_string());
+                }
+            }
+
+            if attempt < MAX_RETRIES - 1 {
+                tokio::time::sleep(Duration::from_secs(2u64.pow(attempt))).await;
+            }
+        }
+
+        Err(anyhow::anyhow!("Reddit public API failed for r/{}: {:?}", sub, last_error))
     }
 
     /// Deduplicated subreddit list
@@ -372,15 +446,28 @@ impl MarketDataSource for RedditMarketSource {
     }
 
     fn sync_interval(&self) -> Duration {
-        Duration::from_secs(600) // 10 minutes
+        if self.authenticated {
+            Duration::from_secs(600) // 10 minutes with OAuth
+        } else {
+            Duration::from_secs(3600) // 1 hour with public API (slower due to rate limits)
+        }
     }
 
     fn rate_limit_config(&self) -> RateLimitConfig {
-        RateLimitConfig {
-            windows: vec![RateWindow {
-                max_requests: 50,
-                duration: Duration::from_secs(60),
-            }],
+        if self.authenticated {
+            RateLimitConfig {
+                windows: vec![RateWindow {
+                    max_requests: 50,
+                    duration: Duration::from_secs(60),
+                }],
+            }
+        } else {
+            RateLimitConfig {
+                windows: vec![RateWindow {
+                    max_requests: 8, // ~10 req/min public limit, stay under
+                    duration: Duration::from_secs(60),
+                }],
+            }
         }
     }
 
@@ -454,24 +541,44 @@ impl MarketDataSource for RedditMarketSource {
             return Ok(Vec::new());
         }
 
-        // Fetch in batches of 100
         let subs_vec: Vec<String> = subs_needed.into_iter().collect();
         let mut sub_data: std::collections::HashMap<String, (u64, u64)> = std::collections::HashMap::new();
 
-        for chunk in subs_vec.chunks(BATCH_SIZE) {
-            let chunk_refs: Vec<&str> = chunk.iter().map(|s| s.as_str()).collect();
-            match self.fetch_subreddit_batch(&chunk_refs).await {
-                Ok(data) => {
-                    for sub in data {
-                        let name = sub.display_name.to_lowercase();
-                        let subscribers = sub.subscribers.unwrap_or(0);
-                        let active = sub.accounts_active.unwrap_or(0);
-                        sub_data.insert(name, (subscribers, active));
+        if self.authenticated {
+            // Authenticated mode: batch fetch via OAuth /api/info
+            for chunk in subs_vec.chunks(BATCH_SIZE) {
+                let chunk_refs: Vec<&str> = chunk.iter().map(|s| s.as_str()).collect();
+                match self.fetch_subreddit_batch(&chunk_refs).await {
+                    Ok(data) => {
+                        for sub in data {
+                            let name = sub.display_name.to_lowercase();
+                            let subscribers = sub.subscribers.unwrap_or(0);
+                            let active = sub.accounts_active.unwrap_or(0);
+                            sub_data.insert(name, (subscribers, active));
+                        }
+                    }
+                    Err(e) => {
+                        warn!("Failed to fetch Reddit batch: {:?}", e);
                     }
                 }
-                Err(e) => {
-                    warn!("Failed to fetch Reddit batch: {:?}", e);
+            }
+        } else {
+            // Public mode: fetch one subreddit at a time via /r/{sub}/about.json
+            // Rate limit is ~10 req/min so we add inter-request delays
+            for sub in &subs_vec {
+                match self.fetch_subreddit_public(sub).await {
+                    Ok(data) => {
+                        let name = data.display_name.to_lowercase();
+                        let subscribers = data.subscribers.unwrap_or(0);
+                        let active = data.accounts_active.unwrap_or(0);
+                        sub_data.insert(name, (subscribers, active));
+                    }
+                    Err(e) => {
+                        debug!("Failed to fetch r/{} (public): {:?}", sub, e);
+                    }
                 }
+                // 6-second delay to stay well under 10 req/min public limit
+                tokio::time::sleep(Duration::from_secs(6)).await;
             }
         }
 
@@ -510,10 +617,11 @@ impl MarketDataSource for RedditMarketSource {
         }
 
         info!(
-            "Fetched {}/{} Reddit metrics ({} subreddits queried)",
+            "Fetched {}/{} Reddit metrics ({} subreddits queried, mode={})",
             results.len(),
             asset_ids.len(),
-            sub_data.len()
+            sub_data.len(),
+            if self.authenticated { "oauth" } else { "public" }
         );
         Ok(results)
     }

@@ -1,16 +1,17 @@
 //! AirNow Air Quality Index (AQI) client implementing MarketDataSource
 //!
-//! Tracks real-time air quality data from the EPA AirNow API.
+//! Tracks real-time air quality data from AirNow/EPA.
 //! Each reporting area (city/metro) is an asset; its value is the maximum
 //! AQI across all measured pollutants (PM2.5, OZONE, PM10, etc.).
 //!
-//! **API**: https://www.airnowapi.org/aq/observation/current/1/
-//! - Requires free API key: env var `AIRNOW_API_KEY`
-//! - 500 requests per hour per endpoint
-//! - Data updates hourly (~10-30 min past the hour)
+//! **Data source**: https://files.airnowtech.org/airnow/today/reportingarea.dat
+//! - Public pipe-delimited text file, no API key required
+//! - Contains all US (and some international) reporting areas in a single file
+//! - Updated hourly (~10-30 min past the hour)
 //!
-//! We use 3 bounding box requests (Continental US, Alaska, Hawaii) to fetch
-//! all monitoring stations in bulk. Each sync cycle is only 3 API calls.
+//! Previously used the bbox JSON API at www.airnowapi.org/aq/observation/current/1/
+//! which now redirects to the documentation site (broken). Switched to the bulk
+//! reportingarea.dat file which is more reliable and efficient (1 request vs 3).
 //!
 //! AQI scale:
 //! - 0-50: Good
@@ -20,10 +21,9 @@
 //! - 201-300: Very Unhealthy
 //! - 301-500: Hazardous
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use chrono::Utc;
 use rust_decimal::Decimal;
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::time::Duration;
 use tracing::{debug, info, warn};
@@ -36,109 +36,103 @@ use crate::market_data::traits::{AssetUpdate, MarketDataSource, PriceUpdate};
 // CONSTANTS
 // ============================================================================
 
-/// AirNow API base URL for current observations
-const API_BASE: &str = "https://www.airnowapi.org/aq/observation/current/1/";
-
-/// User-Agent for AirNow API
-const USER_AGENT: &str = "IndexDataNode/1.0 (contact: data@index.markets)";
-
-/// Delay between bounding box requests (ms)
-const INTER_REQUEST_DELAY_MS: u64 = 2000;
+/// AirNow bulk data file URL — all reporting areas in one pipe-delimited file.
+/// This replaces the broken bbox JSON API at www.airnowapi.org.
+const DATA_URL: &str = "https://files.airnowtech.org/airnow/today/reportingarea.dat";
 
 /// Maximum number of reporting areas to track
 const MAX_AREAS: usize = 300;
 
-/// Distance parameter for bbox queries (miles)
-const DISTANCE_MILES: u32 = 100;
-
 // ============================================================================
-// BOUNDING BOXES
+// PARSED OBSERVATION TYPE
 // ============================================================================
 
-/// A geographic bounding box for bulk AQI fetching
-struct BBox {
-    name: &'static str,
-    min_lon: f64,
-    min_lat: f64,
-    max_lon: f64,
-    max_lat: f64,
-}
-
-/// The 3 bounding boxes covering all US monitoring stations
-const BBOXES: &[BBox] = &[
-    BBox {
-        name: "Continental US",
-        min_lon: -125.0,
-        min_lat: 24.5,
-        max_lon: -66.9,
-        max_lat: 49.5,
-    },
-    BBox {
-        name: "Alaska",
-        min_lon: -180.0,
-        min_lat: 51.0,
-        max_lon: -129.0,
-        max_lat: 72.0,
-    },
-    BBox {
-        name: "Hawaii",
-        min_lon: -161.0,
-        min_lat: 18.0,
-        max_lon: -154.0,
-        max_lat: 23.0,
-    },
-];
-
-// ============================================================================
-// API RESPONSE TYPES
-// ============================================================================
-
-/// A single observation from the AirNow API
-#[derive(Debug, Clone, Deserialize)]
-#[allow(dead_code)]
+/// A single observation parsed from the reportingarea.dat file.
+/// Kept compatible with the old JSON-based AirnowObservation so that
+/// group_observations and downstream logic remain unchanged.
+#[derive(Debug, Clone)]
 pub(crate) struct AirnowObservation {
-    /// Date of observation (e.g., "2024-01-15")
-    #[serde(rename = "DateObserved")]
-    pub date_observed: String,
-    /// Hour of observation (0-23)
-    #[serde(rename = "HourObserved")]
-    pub hour_observed: i32,
-    /// Local timezone abbreviation (e.g., "EST")
-    #[serde(rename = "LocalTimeZone")]
-    pub local_time_zone: String,
     /// Reporting area name (e.g., "Washington")
-    #[serde(rename = "ReportingArea")]
     pub reporting_area: String,
     /// State code (e.g., "DC")
-    #[serde(rename = "StateCode")]
     pub state_code: String,
     /// Latitude
-    #[serde(rename = "Latitude")]
     pub latitude: f64,
     /// Longitude
-    #[serde(rename = "Longitude")]
     pub longitude: f64,
     /// Pollutant name (e.g., "PM2.5", "OZONE")
-    #[serde(rename = "ParameterName")]
     pub parameter_name: String,
     /// AQI value (0-500)
-    #[serde(rename = "AQI")]
     pub aqi: i32,
-    /// AQI category
-    #[serde(rename = "Category")]
-    pub category: AirnowCategory,
+    /// AQI category name (e.g., "Good", "Moderate")
+    pub category_name: String,
 }
 
-/// AQI category from AirNow API
-#[derive(Debug, Clone, Deserialize)]
-#[allow(dead_code)]
-pub(crate) struct AirnowCategory {
-    /// Category number (1-6)
-    #[serde(rename = "Number")]
-    pub number: i32,
-    /// Category name (e.g., "Good", "Moderate")
-    #[serde(rename = "Name")]
-    pub name: String,
+// ============================================================================
+// PARSING
+// ============================================================================
+
+/// Parse the pipe-delimited reportingarea.dat file into observations.
+///
+/// File format (pipe-delimited, no header):
+/// ```text
+/// IssueDate|ValidDate|ValidTime|TimeZone|RecordSeq|DataType|Primary|ReportingArea|StateCode|Lat|Lon|Parameter|AQI|Category|ActionDay|Discussion|Agency
+/// ```
+///
+/// We only keep rows where DataType == "O" (observed/current).
+/// Forecast rows (DataType == "F") and yesterday rows ("Y") are skipped.
+fn parse_reporting_area_dat(body: &str) -> Vec<AirnowObservation> {
+    let mut observations = Vec::new();
+
+    for (i, line) in body.lines().enumerate() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+
+        let parts: Vec<&str> = line.split('|').collect();
+        if parts.len() < 14 {
+            debug!("Skipping malformed AirNow line {}: too few columns ({})", i + 1, parts.len());
+            continue;
+        }
+
+        // Column 5 (index 5): DataType — only keep "O" (observed)
+        let data_type = parts[5].trim();
+        if data_type != "O" {
+            continue;
+        }
+
+        let reporting_area = parts[7].trim().to_string();
+        let state_code = parts[8].trim().to_string();
+
+        if reporting_area.is_empty() {
+            continue;
+        }
+
+        let latitude = parts[9].trim().parse::<f64>().unwrap_or(0.0);
+        let longitude = parts[10].trim().parse::<f64>().unwrap_or(0.0);
+        let parameter_name = parts[11].trim().to_string();
+        let aqi = match parts[12].trim().parse::<i32>() {
+            Ok(v) => v,
+            Err(_) => {
+                debug!("Non-numeric AQI '{}' for {} on line {}", parts[12].trim(), reporting_area, i + 1);
+                continue;
+            }
+        };
+        let category_name = parts[13].trim().to_string();
+
+        observations.push(AirnowObservation {
+            reporting_area,
+            state_code,
+            latitude,
+            longitude,
+            parameter_name,
+            aqi,
+            category_name,
+        });
+    }
+
+    observations
 }
 
 // ============================================================================
@@ -202,81 +196,50 @@ fn group_observations(
 /// Source ID is `"airnow"`.
 pub struct AirnowMarketSource {
     http: SourceHttpClient,
-    api_key: String,
 }
 
 impl AirnowMarketSource {
     pub fn from_env() -> Result<Self> {
-        let api_key = std::env::var("AIRNOW_API_KEY")
-            .context("AIRNOW_API_KEY environment variable is required for AirNow source")?;
+        // Note: AIRNOW_API_KEY is no longer required — the bulk file is public.
+        // We log a notice if the env var is set (it's unused now).
+        if std::env::var("AIRNOW_API_KEY").is_ok() {
+            info!("AIRNOW_API_KEY is set but no longer needed — using public bulk data file");
+        }
 
         let rate_limit = RateLimitConfig {
             windows: vec![RateWindow {
-                max_requests: 60,
+                max_requests: 10,
                 duration: Duration::from_secs(60),
             }],
         };
 
-        // Build custom reqwest client with User-Agent header
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(30))
-            .user_agent(USER_AGENT)
+            .user_agent("IndexDataNode/1.0 (contact: data@index.markets)")
             .build()?;
 
         let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());
 
-        info!("AirNow Air Quality source initialized");
+        info!("AirNow Air Quality source initialized (bulk file mode)");
 
-        Ok(Self { http, api_key })
+        Ok(Self { http })
     }
 
-    /// Build the API URL for fetching current observations in a bounding box
-    fn bbox_url(&self, bbox: &BBox) -> String {
-        format!(
-            "{}?format=application/json&distance={}&bbox={},{},{},{}&API_KEY={}",
-            API_BASE,
-            DISTANCE_MILES,
-            bbox.min_lon,
-            bbox.min_lat,
-            bbox.max_lon,
-            bbox.max_lat,
-            self.api_key,
-        )
-    }
-
-    /// Fetch all observations from all 3 bounding boxes
+    /// Fetch all current observations from the bulk reportingarea.dat file.
     async fn fetch_all_observations(&self) -> Result<Vec<AirnowObservation>> {
-        let mut all_observations = Vec::new();
+        let body = self.http.get_raw(DATA_URL).await.map_err(|e| {
+            anyhow::anyhow!("Failed to fetch AirNow reporting area data: {:?}", e)
+        })?;
 
-        for (i, bbox) in BBOXES.iter().enumerate() {
-            // Add delay between requests (skip before first)
-            if i > 0 {
-                tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
-            }
+        let observations = parse_reporting_area_dat(&body);
 
-            let url = self.bbox_url(bbox);
-            debug!("Fetching AirNow observations for {}", bbox.name);
-
-            let observations: Vec<AirnowObservation> = match self.http.get_json(&url).await {
-                Ok(data) => data,
-                Err(e) => {
-                    warn!(
-                        "Error fetching AirNow data for {}: {:?}",
-                        bbox.name, e
-                    );
-                    continue;
-                }
-            };
-
-            debug!(
-                "AirNow {}: {} observations",
-                bbox.name,
-                observations.len()
-            );
-            all_observations.extend(observations);
+        if observations.is_empty() {
+            warn!("AirNow: reportingarea.dat returned 0 observed records — data may be stale");
+        } else {
+            debug!("AirNow: parsed {} observed records from reportingarea.dat", observations.len());
         }
 
-        Ok(all_observations)
+        Ok(observations)
     }
 }
 
@@ -301,7 +264,7 @@ impl MarketDataSource for AirnowMarketSource {
     fn rate_limit_config(&self) -> RateLimitConfig {
         RateLimitConfig {
             windows: vec![RateWindow {
-                max_requests: 60,
+                max_requests: 10,
                 duration: Duration::from_secs(60),
             }],
         }
@@ -406,6 +369,17 @@ impl MarketDataSource for AirnowMarketSource {
 mod tests {
     use super::*;
 
+    /// Sample reportingarea.dat content for testing.
+    /// Format: IssueDate|ValidDate|ValidTime|TZ|RecordSeq|DataType|Primary|Area|State|Lat|Lon|Param|AQI|Category|ActionDay|Discussion|Agency
+    const SAMPLE_DAT: &str = "\
+02/24/26|02/24/26|17:00|EST|0|O|Y|Washington|DC|38.9190|-77.0130|PM2.5|55|Moderate|No||EPA
+02/24/26|02/24/26|17:00|EST|0|O|N|Washington|DC|38.9190|-77.0130|OZONE|42|Good|No||EPA
+02/24/26|02/24/26|14:00|PST|0|O|Y|Los Angeles|CA|34.0522|-118.2437|PM2.5|80|Moderate|No||SCAQMD
+02/24/26|02/24/26|14:00|PST|0|O|N|Los Angeles|CA|34.0522|-118.2437|PM10|60|Moderate|No||SCAQMD
+02/24/26|02/24/26|14:00|PST|0|O|N|Los Angeles|CA|34.0522|-118.2437|OZONE|70|Moderate|No||SCAQMD
+02/24/26|02/23/26||CST|-1|Y|Y|Washington|DC|38.9190|-77.0130|PM2.5|45|Good|No||EPA
+02/25/26|02/25/26||EST|1|F|Y|Washington|DC|38.9190|-77.0130|PM2.5|50|Good|No||EPA";
+
     /// Helper to create a test observation
     fn make_observation(
         reporting_area: &str,
@@ -414,67 +388,51 @@ mod tests {
         aqi: i32,
     ) -> AirnowObservation {
         AirnowObservation {
-            date_observed: "2024-01-15 ".to_string(),
-            hour_observed: 12,
-            local_time_zone: "EST".to_string(),
             reporting_area: reporting_area.to_string(),
             state_code: state_code.to_string(),
             latitude: 38.9,
             longitude: -77.0,
             parameter_name: parameter.to_string(),
             aqi,
-            category: AirnowCategory {
-                number: 1,
-                name: "Good".to_string(),
-            },
+            category_name: "Good".to_string(),
         }
     }
 
     #[test]
-    fn test_parse_observation_response() {
-        let json = r#"[
-            {
-                "DateObserved": "2024-01-15 ",
-                "HourObserved": 12,
-                "LocalTimeZone": "EST",
-                "ReportingArea": "Washington",
-                "StateCode": "DC",
-                "Latitude": 38.9,
-                "Longitude": -77.0,
-                "ParameterName": "PM2.5",
-                "AQI": 55,
-                "Category": {
-                    "Number": 2,
-                    "Name": "Moderate"
-                }
-            },
-            {
-                "DateObserved": "2024-01-15 ",
-                "HourObserved": 12,
-                "LocalTimeZone": "EST",
-                "ReportingArea": "Washington",
-                "StateCode": "DC",
-                "Latitude": 38.9,
-                "Longitude": -77.0,
-                "ParameterName": "OZONE",
-                "AQI": 42,
-                "Category": {
-                    "Number": 1,
-                    "Name": "Good"
-                }
-            }
-        ]"#;
+    fn test_parse_reporting_area_dat() {
+        let observations = parse_reporting_area_dat(SAMPLE_DAT);
 
-        let observations: Vec<AirnowObservation> = serde_json::from_str(json).unwrap();
-        assert_eq!(observations.len(), 2);
+        // Should only include DataType=O rows (5 of them), not Y or F rows
+        assert_eq!(observations.len(), 5);
+
         assert_eq!(observations[0].reporting_area, "Washington");
         assert_eq!(observations[0].state_code, "DC");
         assert_eq!(observations[0].parameter_name, "PM2.5");
         assert_eq!(observations[0].aqi, 55);
-        assert_eq!(observations[0].category.number, 2);
-        assert_eq!(observations[0].category.name, "Moderate");
+        assert_eq!(observations[0].category_name, "Moderate");
+
+        assert_eq!(observations[1].reporting_area, "Washington");
         assert_eq!(observations[1].parameter_name, "OZONE");
         assert_eq!(observations[1].aqi, 42);
+
+        assert_eq!(observations[2].reporting_area, "Los Angeles");
+        assert_eq!(observations[2].state_code, "CA");
+        assert_eq!(observations[2].parameter_name, "PM2.5");
+        assert_eq!(observations[2].aqi, 80);
+    }
+
+    #[test]
+    fn test_parse_filters_forecast_and_yesterday() {
+        let observations = parse_reporting_area_dat(SAMPLE_DAT);
+
+        // No forecast or yesterday rows
+        for obs in &observations {
+            // All should have valid AQI (we filtered non-O rows)
+            assert!(obs.aqi >= 0);
+        }
+
+        // Exactly 5 observed rows
+        assert_eq!(observations.len(), 5);
     }
 
     #[test]
@@ -597,19 +555,13 @@ mod tests {
         let mut observations = Vec::new();
         for i in 0..350 {
             observations.push(AirnowObservation {
-                date_observed: "2024-01-15 ".to_string(),
-                hour_observed: 12,
-                local_time_zone: "EST".to_string(),
                 reporting_area: format!("Area{}", i),
                 state_code: "XX".to_string(),
                 latitude: 38.9,
                 longitude: -77.0,
                 parameter_name: "PM2.5".to_string(),
                 aqi: 50,
-                category: AirnowCategory {
-                    number: 2,
-                    name: "Moderate".to_string(),
-                },
+                category_name: "Moderate".to_string(),
             });
         }
 
@@ -709,7 +661,55 @@ mod tests {
     }
 
     #[test]
-    fn test_bbox_count() {
-        assert_eq!(BBOXES.len(), 3, "Should have 3 bounding boxes (CONUS, Alaska, Hawaii)");
+    fn test_parse_malformed_lines() {
+        let data = "\
+02/24/26|02/24/26|17:00|EST|0|O|Y|Washington|DC|38.9|-77.0|PM2.5|55|Moderate|No||EPA
+bad line without pipes
+02/24/26|02/24/26|14:00|PST|0|O|Y|Seattle|WA|47.6|-122.3|OZONE|30|Good|No||PSCAA
+02/24/26|02/24/26||EST|0|O|Y||DC|38.9|-77.0|PM2.5|40|Good|No||EPA";
+
+        let observations = parse_reporting_area_dat(data);
+
+        // "bad line" has too few columns -> skipped
+        // Empty reporting area -> skipped
+        assert_eq!(observations.len(), 2);
+        assert_eq!(observations[0].reporting_area, "Washington");
+        assert_eq!(observations[1].reporting_area, "Seattle");
+    }
+
+    #[test]
+    fn test_parse_non_numeric_aqi() {
+        let data = "\
+02/24/26|02/24/26|17:00|EST|0|O|Y|Washington|DC|38.9|-77.0|PM2.5|N/A|Unknown|No||EPA
+02/24/26|02/24/26|17:00|EST|0|O|Y|Seattle|WA|47.6|-122.3|PM2.5|42|Good|No||PSCAA";
+
+        let observations = parse_reporting_area_dat(data);
+
+        // "N/A" AQI -> skipped
+        assert_eq!(observations.len(), 1);
+        assert_eq!(observations[0].reporting_area, "Seattle");
+    }
+
+    #[test]
+    fn test_parse_empty_body() {
+        let observations = parse_reporting_area_dat("");
+        assert!(observations.is_empty());
+    }
+
+    #[test]
+    fn test_grouped_from_dat_sample() {
+        let observations = parse_reporting_area_dat(SAMPLE_DAT);
+        let area_map = group_observations(&observations);
+
+        // Should have Washington DC and Los Angeles CA
+        assert_eq!(area_map.len(), 2);
+
+        // Washington: max(55 PM2.5, 42 OZONE) = 55
+        let (max_aqi, _, _) = area_map.get("airnow_dc_washington").unwrap();
+        assert_eq!(*max_aqi, 55);
+
+        // Los Angeles: max(80 PM2.5, 60 PM10, 70 OZONE) = 80
+        let (max_aqi, _, _) = area_map.get("airnow_ca_los_angeles").unwrap();
+        assert_eq!(*max_aqi, 80);
     }
 }

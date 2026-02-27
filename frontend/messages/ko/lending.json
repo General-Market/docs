@@ -28,6 +28,7 @@
     "borrow_usdc": "USDC 대출",
     "repay": "상환",
     "borrow": "대출",
+    "manage_position": "포지션 관리",
     "cancel": "취소",
     "max": "MAX"
   },

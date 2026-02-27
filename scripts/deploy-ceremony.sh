@@ -30,8 +30,8 @@ set -euo pipefail
 
 # ==== Configuration ====
 DEPLOYMENT_FILE="${DEPLOYMENT_FILE:-deployments/active-deployment.json}"
-RPC="${RPC_URL:-https://index.rpc.zeeve.net}"
-BASTION="65.109.10.32"
+RPC="${RPC_URL:-http://142.132.164.24/}"
+BASTION="bastion"  # See vps.md for connection details
 BASTION_USER="${BASTION_USER:-max}"
 ISSUER_BINARY="${ISSUER_BINARY:-./target/release/issuer}"
 MAX_WAIT_SECS=120

@@ -115,6 +115,14 @@ function hasHighZeroRate(source: SourceHealth): boolean {
   return (source.zeroValueAssets / source.activeAssets) > 0.2
 }
 
+function getFrequencyLabel(secs: number): { label: string; color: string } {
+  if (secs <= 120) return { label: 'RT', color: 'bg-color-up/15 text-color-up' }        // real-time (<=2min)
+  if (secs <= 900) return { label: '10m', color: 'bg-color-info/15 text-color-info' }    // <=15min
+  if (secs <= 7200) return { label: '1h', color: 'bg-color-warning/15 text-color-warning' }  // <=2h
+  if (secs <= 172800) return { label: '1d', color: 'bg-text-muted/15 text-text-muted' }  // <=48h
+  return { label: '1w+', color: 'bg-text-muted/10 text-text-muted' }                     // weekly+
+}
+
 // ── API key signup links ──
 
 const API_KEY_LINKS: Record<string, { url: string; label: string }> = {
@@ -416,7 +424,17 @@ export function SourceHealthTable({
 
                     {/* Cycle (sync interval) */}
                     <TableCell className="text-right font-mono tabular-nums text-[12px]">
-                      <span className="text-text-secondary">{formatAge(source.syncIntervalSecs)}</span>
+                      {(() => {
+                        const freq = getFrequencyLabel(source.syncIntervalSecs)
+                        return (
+                          <div className="flex flex-col items-end gap-0.5">
+                            <span className={`inline-block px-1.5 py-0 rounded text-[10px] font-bold uppercase tracking-wider ${freq.color}`}>
+                              {freq.label}
+                            </span>
+                            <span className="text-[9px] text-text-muted">{formatAge(source.syncIntervalSecs)}</span>
+                          </div>
+                        )
+                      })()}
                     </TableCell>
 
                     {/* Records */}
@@ -446,11 +464,22 @@ export function SourceHealthTable({
                       </span>
                     </TableCell>
 
-                    {/* Stale */}
+                    {/* Stale (with dormant/active breakdown + reason) */}
                     <TableCell className="text-right font-mono tabular-nums text-[12px]">
-                      <span className={source.staleAssets > 0 ? 'text-color-warning font-semibold' : ''}>
-                        {source.staleAssets}
-                      </span>
+                      {source.staleAssets > 0 ? (
+                        <div className="flex flex-col items-end leading-tight" title={source.staleReason}>
+                          <span className={source.staleActive > 0 ? 'text-color-warning font-semibold' : 'text-muted-foreground'}>
+                            {source.staleAssets}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground max-w-[140px] truncate">
+                            {source.staleDormant > 0
+                              ? `${source.staleDormant} dormant`
+                              : source.staleReason}
+                          </span>
+                        </div>
+                      ) : (
+                        <span>0</span>
+                      )}
                     </TableCell>
 
                     {/* Avg Change */}

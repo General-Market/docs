@@ -49,7 +49,8 @@ node_modules/
 /contracts/out/
 /contracts/broadcast/
 
-# Claude Code (keep commands/ and CLAUDE.md, ignore the rest)
+# Claude Code
+CLAUDE.md
 .claude/settings.local.json
 .claude/worktrees/
 
@@ -95,3 +96,6 @@ vision-bot/.venv/
 
 # Root-level screenshots from debugging sessions
 /*.png
+
+# VPS credentials
+vps.md
