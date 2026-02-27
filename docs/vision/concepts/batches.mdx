@@ -3,39 +3,38 @@ title: "Batches"
 description: "How prediction market batches work in Vision"
 ---
 
-A **batch** is a collection of prediction markets that share the same tick duration and resolve together. Batches are the fundamental organizational unit in Vision -- every player joins a batch, stakes USDC, and competes against other players in that batch.
+## Quick Start: Join a Batch
+
+Fetch active batches and join one with a USDC deposit:
+
+```bash
+# 1. List active batches
+curl https://generalmarket.io/api/vision/batches
+
+# 2. Join on-chain (Solidity)
+vision.joinBatch(batchId, depositAmount, stakePerTick, bitmapHash)
+```
+
+See [Bot Quickstart](/vision/bots/quickstart) for a full working example.
+
+## Batch Lifecycle
+
+```mermaid
+flowchart LR
+    A[Create Batch] --> B[Players Join]
+    B --> C[Tick Resolves]
+    C --> D{More Ticks?}
+    D -->|Yes| C
+    D -->|Paused| E[Paused]
+    E --> C
+    C --> F[Claim / Withdraw]
+```
 
 ## What Is a Batch?
 
 A batch groups multiple markets (e.g., BTC-USD, ETH-USD, SOL-USD) into a single prediction game. Every tick, all markets in the batch resolve simultaneously, and players win or lose based on how many markets they predicted correctly.
 
 Think of it like a sports parlay card: you pick UP or DOWN for each market, and your payout depends on how your picks compare to other players' picks across all markets.
-
-## Batch Struct
-
-On-chain, a batch is stored as:
-
-```solidity
-struct Batch {
-    address creator;           // Wallet that created the batch
-    bytes32[] marketIds;       // keccak256 hashes of asset IDs (e.g., keccak256("BTC-USD"))
-    uint8[] resolutionTypes;   // How each market is resolved (see Resolution Types)
-    uint256 tickDuration;      // Seconds between resolutions
-    uint256[] customThresholds; // Custom thresholds in basis points (for _X types)
-    uint256 createdAtTick;     // block.timestamp / tickDuration at creation
-    bool paused;               // Whether the batch is currently paused
-}
-```
-
-| Field | Description |
-|-------|-------------|
-| `creator` | The address that called `createBatch`. Only the creator can set metadata and update markets. |
-| `marketIds` | Array of `bytes32` market identifiers. Each is `keccak256(assetId)` where `assetId` is a UTF-8 string like `"BTC-USD"`. |
-| `resolutionTypes` | Parallel array to `marketIds`. Each entry is a `uint8` from the `ResolutionType` enum (0-7). See [Resolution Types](/vision/concepts/resolution-types). |
-| `tickDuration` | How often the batch resolves, in seconds. Must be between 1 second and 30 days (`MAX_TICK_DURATION`). |
-| `customThresholds` | Parallel array for resolution types that use custom thresholds (`UP_X`, `DOWN_X`, `FLAT_X`). Values are in basis points. |
-| `createdAtTick` | The tick number when the batch was created, computed as `block.timestamp / tickDuration`. |
-| `paused` | When `true`, no new players can join. Requires a BLS-signed issuer consensus to pause or unpause. |
 
 ## Creating a Batch
 
@@ -88,7 +87,7 @@ The tick duration controls how often markets in the batch resolve. Common config
 `tickDuration` must be greater than 0 and at most `MAX_TICK_DURATION` (30 days = 2,592,000 seconds). Passing 0 or exceeding the maximum reverts with `InvalidTickDuration`.
 </Warning>
 
-## Batch Lifecycle
+## Batch States
 
 A batch moves through the following states:
 
@@ -104,29 +103,6 @@ Created --> Running --> Paused (optional) --> Running
 <Info>
 Pausing and unpausing require BLS signatures from 2/3+ of registered issuers. This prevents any single party from disrupting a batch.
 </Info>
-
-## Batch Metadata
-
-Batch creators can attach metadata to make their batch discoverable:
-
-```solidity
-function setBatchMetadata(
-    uint256 batchId,
-    string calldata name,          // max 64 bytes
-    string calldata description,   // max 280 bytes
-    string calldata websiteUrl,    // max 128 bytes
-    string calldata videoUrl,      // max 256 bytes
-    string calldata imageUrl       // max 256 bytes
-) external;
-```
-
-Only the batch creator can set metadata. Exceeding any string length limit reverts with `StringTooLong`.
-
-Creators can also set a display name for themselves:
-
-```solidity
-function setDeployerName(string calldata name) external; // max 64 bytes
-```
 
 ## Updating Markets
 
@@ -161,3 +137,54 @@ function joinBatch(
 </Tip>
 
 See [Bitmaps](/vision/concepts/bitmaps) for how to construct and commit predictions.
+
+## Technical Details
+
+### Batch Struct
+
+On-chain, a batch is stored as:
+
+```solidity
+struct Batch {
+    address creator;           // Wallet that created the batch
+    bytes32[] marketIds;       // keccak256 hashes of asset IDs (e.g., keccak256("BTC-USD"))
+    uint8[] resolutionTypes;   // How each market is resolved (see Resolution Types)
+    uint256 tickDuration;      // Seconds between resolutions
+    uint256[] customThresholds; // Custom thresholds in basis points (for _X types)
+    uint256 createdAtTick;     // block.timestamp / tickDuration at creation
+    bool paused;               // Whether the batch is currently paused
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `creator` | The address that called `createBatch`. Only the creator can set metadata and update markets. |
+| `marketIds` | Array of `bytes32` market identifiers. Each is `keccak256(assetId)` where `assetId` is a UTF-8 string like `"BTC-USD"`. |
+| `resolutionTypes` | Parallel array to `marketIds`. Each entry is a `uint8` from the `ResolutionType` enum (0-7). See [Resolution Types](/vision/concepts/resolution-types). |
+| `tickDuration` | How often the batch resolves, in seconds. Must be between 1 second and 30 days (`MAX_TICK_DURATION`). |
+| `customThresholds` | Parallel array for resolution types that use custom thresholds (`UP_X`, `DOWN_X`, `FLAT_X`). Values are in basis points. |
+| `createdAtTick` | The tick number when the batch was created, computed as `block.timestamp / tickDuration`. |
+| `paused` | When `true`, no new players can join. Requires a BLS-signed issuer consensus to pause or unpause. |
+
+### Batch Metadata
+
+Batch creators can attach metadata to make their batch discoverable:
+
+```solidity
+function setBatchMetadata(
+    uint256 batchId,
+    string calldata name,          // max 64 bytes
+    string calldata description,   // max 280 bytes
+    string calldata websiteUrl,    // max 128 bytes
+    string calldata videoUrl,      // max 256 bytes
+    string calldata imageUrl       // max 256 bytes
+) external;
+```
+
+Only the batch creator can set metadata. Exceeding any string length limit reverts with `StringTooLong`.
+
+Creators can also set a display name for themselves:
+
+```solidity
+function setDeployerName(string calldata name) external; // max 64 bytes
+```

@@ -3,7 +3,17 @@ title: "Ticks"
 description: "How tick-based resolution cycles work in Vision"
 ---
 
-A **tick** is one resolution interval in a Vision batch. At the end of each tick, issuers fetch prices, determine market outcomes, match winning and losing sides, and update player balances. Ticks are the heartbeat of the Vision system.
+## What Happens Every Tick
+
+Every tick, the system resolves all markets in a batch:
+
+1. Fetch start/end prices for each market
+2. Determine outcome (UP / DOWN / FLAT)
+3. Match winners against losers (parimutuel)
+4. Update player balances
+5. BLS-sign results across issuers
+
+Check your balance after resolution: `GET /vision/balance/{batchId}/{playerAddress}`
 
 ## What Is a Tick?
 
@@ -30,28 +40,18 @@ Tick numbers are computed from Unix timestamps: `currentTick = block.timestamp /
 
 When a tick becomes due for resolution, the issuer engine runs the following pipeline:
 
-```
-1. Check due batches
-       |
-2. Filter active players (balance > 0)
-       |
-3. Check bitmap reveals (unrevealed -> voided)
-       |
-4. Compute multipliers (early + commitment)
-       |
-5. For each market:
-   a. Fetch start/end prices
-   b. Check staleness
-   c. Compute % change
-   d. Determine outcome (Up/Down/Flat/Cancelled)
-   e. Decode bitmaps to player sides
-   f. Run parimutuel side matching
-       |
-6. Aggregate per-player balance changes
-       |
-7. BLS consensus with other issuers
-       |
-8. Submit signed result on-chain
+```mermaid
+flowchart TD
+    A[Tick Ends] --> B[Filter Active Players]
+    B --> C[Check Bitmap Reveals]
+    C --> D[Compute Multipliers]
+    D --> E[For Each Market]
+    E --> F[Fetch Prices]
+    F --> G[Determine Outcome]
+    G --> H[Parimutuel Matching]
+    H --> I[Aggregate Balance Changes]
+    I --> J[BLS Consensus]
+    J --> K[Submit On-Chain]
 ```
 
 ### Step by Step
