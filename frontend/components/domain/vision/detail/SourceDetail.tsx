@@ -6,7 +6,8 @@ import { getSource, getAssetCountForSource, getSourceStatusFromMeta, getDataNode
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
-import { getTickState, getMultiplier } from '@/lib/vision/tick'
+import { getTickState, getMultiplier, getSourceKeyForBatch } from '@/lib/vision/tick'
+import batchConfig from '@/lib/contracts/vision-batches.json'
 import { Link } from '@/i18n/routing'
 import { SourceHero } from './SourceHero'
 import { MarketsTable } from './MarketsTable'
@@ -50,10 +51,15 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
   const marketCount = metaCount > 0 ? metaCount : (sourceMarkets.length || undefined)
   const marketIds = useMemo(() => sourceMarkets.map(p => p.assetId), [sourceMarkets])
 
-  // Pick the first active batch matching this source
+  // Pick the active batch matching this source via static config (batchId lookup)
   const activeBatch = useMemo(() => {
     if (!batches || batches.length === 0) return null
-    // Match by source key or data-node source ID
+    // Use vision-batches.json to find the batchId for this source
+    const entry = (batchConfig.batches as Record<string, { batchId: number }>)[sourceId]
+    if (entry) {
+      return batches.find(b => b.id === entry.batchId) ?? null
+    }
+    // Fallback: try matching by source_id string (for dynamically created batches)
     return batches.find(b =>
       b.sourceId === sourceId || b.sourceId === dataNodeId
     ) ?? null

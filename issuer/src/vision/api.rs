@@ -92,6 +92,7 @@ pub struct BatchSummary {
     pub player_count: usize,
     pub tvl: String,
     pub paused: bool,
+    pub current_tick: u64,
 }
 
 /// Full batch state response.
@@ -244,6 +245,8 @@ async fn list_batches(
                     U256::zero()
                 };
 
+                let current_tick = state.scheduler.next_tick_for_batch(batch_id).await;
+
                 summaries.push(BatchSummary {
                     id: batch_id,
                     creator: row.creator,
@@ -253,6 +256,7 @@ async fn list_batches(
                     player_count,
                     tvl: tvl.to_string(),
                     paused: row.paused,
+                    current_tick,
                 });
             }
             (StatusCode::OK, Json(serde_json::json!({ "batches": summaries }))).into_response()

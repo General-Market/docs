@@ -9,6 +9,7 @@ import { useSubmitBitmap } from '@/hooks/vision/useSubmitBitmap'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import type { BetDirection } from '@/lib/vision/bitmap'
 import { getTickState, getMultiplier } from '@/lib/vision/tick'
+import batchConfig from '@/lib/contracts/vision-batches.json'
 import StrategyList from './StrategyList'
 
 const VISION_ADDRESS = (process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000') as `0x${string}`
@@ -43,7 +44,15 @@ export default function BatchEntryPanel({
 }: BatchEntryPanelProps) {
   // -- Batch data --
   const { data: batches } = useBatches()
-  const activeBatch = batches?.[0] ?? null
+  const activeBatch = useMemo(() => {
+    if (!batches || batches.length === 0) return null
+    // Use vision-batches.json to find the batchId for this source
+    const entry = (batchConfig.batches as Record<string, { batchId: number }>)[sourceId]
+    if (entry) {
+      return batches.find(b => b.id === entry.batchId) ?? null
+    }
+    return batches[0] ?? null
+  }, [batches, sourceId])
 
   // -- Read configHash from on-chain batch state --
   const { data: onChainBatch } = useReadContract({
