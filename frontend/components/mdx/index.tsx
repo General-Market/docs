@@ -5,19 +5,21 @@ import { ComparisonTable } from "./ComparisonTable";
 import { CodeBlock } from "./CodeBlock";
 
 export const mdxComponents: MDXComponents = {
-  // Headings — match frontend/app/[locale]/learn/what-are-itps/page.tsx exactly
+  // Headings
   h1: ({ children }) => (
     <h1 className="text-[32px] md:text-[40px] font-black tracking-[-0.02em] text-black leading-[1.1] mb-4">
       {children}
     </h1>
   ),
   h2: ({ children }) => (
-    <h2 className="text-[22px] font-black tracking-[-0.01em] mt-12 mb-4 text-black">
+    <h2 className="border-t-[3px] border-black pt-8 mt-16 mb-6 text-[24px] md:text-[28px] font-black tracking-[-0.02em] text-black leading-[1.1]">
       {children}
     </h2>
   ),
   h3: ({ children }) => (
-    <h3 className="text-[17px] font-bold mt-6 mb-2 text-black">{children}</h3>
+    <h3 className="text-[18px] font-bold tracking-[-0.01em] text-black mt-8 mb-3">
+      {children}
+    </h3>
   ),
 
   // Text
@@ -32,23 +34,24 @@ export const mdxComponents: MDXComponents = {
 
   // Lists
   ul: ({ children }) => (
-    <ul className="space-y-3 text-[15px] text-text-secondary leading-relaxed mb-4">
+    <ul className="list-disc ml-5 space-y-2 text-[15px] text-text-secondary leading-relaxed mb-4 marker:text-text-muted">
       {children}
     </ul>
   ),
   ol: ({ children }) => (
-    <ol className="list-decimal ml-6 space-y-3 text-[15px] text-text-secondary leading-relaxed mb-4">
+    <ol className="list-decimal ml-5 space-y-2 text-[15px] text-text-secondary leading-relaxed mb-4 marker:text-text-muted marker:font-mono marker:font-bold">
       {children}
     </ol>
   ),
+  li: ({ children }) => <li className="pl-1.5">{children}</li>,
 
-  // Links — use next-intl Link for internal, regular <a> for external
+  // Links
   a: ({ href, children, ...props }) => {
     if (href && href.startsWith("/")) {
       return (
         <Link
           href={href}
-          className="text-black font-bold underline hover:no-underline"
+          className="text-black font-semibold border-b border-black/30 hover:border-black transition-colors"
         >
           {children}
         </Link>
@@ -59,7 +62,7 @@ export const mdxComponents: MDXComponents = {
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-black font-bold underline hover:no-underline"
+        className="text-black font-semibold border-b border-black/30 hover:border-black transition-colors"
         {...props}
       >
         {children}
@@ -69,37 +72,37 @@ export const mdxComponents: MDXComponents = {
 
   // Table
   table: ({ children }) => (
-    <div className="border border-border-light overflow-x-auto my-6">
+    <div className="border border-border-light overflow-x-auto my-8">
       <table className="w-full text-[14px]">{children}</table>
     </div>
   ),
   thead: ({ children }) => <thead>{children}</thead>,
   th: ({ children }) => (
-    <th className="text-left px-4 py-3 font-bold text-black bg-surface">
+    <th className="text-left bg-black text-white text-[11px] font-semibold tracking-[0.1em] uppercase px-5 py-3">
       {children}
     </th>
   ),
   td: ({ children }) => (
-    <td className="px-4 py-3 text-text-secondary border-t border-border-light">
+    <td className="px-5 py-3.5 text-[14px] text-text-secondary border-t border-border-light">
       {children}
     </td>
   ),
 
   // Code
   code: ({ children }) => (
-    <code className="bg-surface/50 text-[13px] font-mono px-1.5 py-0.5 text-black">
+    <code className="bg-zinc-100 text-[13px] font-mono px-1.5 py-0.5 text-zinc-800 rounded-sm border border-zinc-200">
       {children}
     </code>
   ),
   pre: ({ children }) => (
-    <pre className="bg-surface/30 border border-border-light overflow-x-auto p-4 my-6 text-[13px] font-mono leading-relaxed">
+    <pre className="bg-zinc-950 text-zinc-100 border border-zinc-800 overflow-x-auto p-5 my-8 text-[13px] font-mono leading-relaxed rounded-sm">
       {children}
     </pre>
   ),
 
   // Blockquote
   blockquote: ({ children }) => (
-    <blockquote className="border-l-4 border-black bg-surface/50 px-5 py-4 my-6 text-[15px] text-text-secondary leading-relaxed">
+    <blockquote className="border-l-[3px] border-black bg-surface/50 px-6 py-5 my-8 text-[16px] text-text-secondary leading-relaxed italic">
       {children}
     </blockquote>
   ),

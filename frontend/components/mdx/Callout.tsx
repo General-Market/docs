@@ -3,18 +3,33 @@ interface CalloutProps {
   children: React.ReactNode;
 }
 
-const styles = {
-  info: "border-l-4 border-black bg-surface/50",
-  warning: "border-l-4 border-yellow-500 bg-yellow-50",
-  tip: "border-l-4 border-green-600 bg-green-50",
+const config = {
+  info: {
+    border: "border border-border-light bg-surface/50 border-l-[3px] border-l-black",
+    label: "Note",
+  },
+  warning: {
+    border: "border border-yellow-200 bg-yellow-50/50 border-l-[3px] border-l-yellow-500",
+    label: "Warning",
+  },
+  tip: {
+    border: "border border-green-200 bg-green-50/50 border-l-[3px] border-l-green-600",
+    label: "Tip",
+  },
 };
 
 export function Callout({ type = "info", children }: CalloutProps) {
+  const { border, label } = config[type];
   return (
     <div
-      className={`${styles[type]} px-5 py-4 my-6 text-[15px] text-text-secondary leading-relaxed`}
+      className={`${border} px-5 py-4 my-8`}
     >
-      {children}
+      <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-text-muted mb-2">
+        {label}
+      </div>
+      <div className="text-[15px] text-text-secondary leading-relaxed">
+        {children}
+      </div>
     </div>
   );
 }

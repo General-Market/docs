@@ -125,12 +125,22 @@ export default async function LearnArticlePage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
 
-      <article className="max-w-3xl mx-auto px-6 py-12 md:py-16 w-full">
-        {/* Label */}
-        <div className="text-[13px] text-text-secondary font-medium tracking-wide mb-4">
-          {frontmatter.category} &middot; {frontmatter.readingTime}
+      {/* Hero-band article header */}
+      <div className="hero-band">
+        <div className="hero-band-inner">
+          <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-3">
+            {frontmatter.category}
+          </div>
+          <h1 className="text-[28px] md:text-[42px] font-black tracking-[-0.03em] text-black leading-[1.1] mb-3">
+            {frontmatter.title}
+          </h1>
+          <div className="text-[14px] text-text-secondary">
+            {frontmatter.readingTime} &middot; {frontmatter.date}
+          </div>
         </div>
+      </div>
 
+      <article className="max-w-3xl mx-auto px-6 py-12 md:py-16 w-full">
         {/* MDX Content */}
         <MDXRemote
           source={content}

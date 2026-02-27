@@ -82,24 +82,29 @@ export default async function LearnPage() {
             No articles yet. Check back soon.
           </p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border border-border-light mt-6">
             {articles.map((article) => (
               <Link
                 key={article.frontmatter.slug}
                 href={`/learn/${article.frontmatter.slug}`}
-                className="border border-border-light p-6 hover:border-black transition-colors group"
+                className="border-r border-b border-border-light p-6 hover:border-black transition-colors group flex flex-col"
               >
                 <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-text-muted mb-3">
                   {article.frontmatter.category}
                 </div>
-                <div className="text-[17px] font-bold text-black leading-snug mb-2 group-hover:underline">
+                <div className="text-[16px] font-extrabold tracking-[-0.01em] text-black leading-snug mb-2">
                   {article.frontmatter.title}
                 </div>
-                <div className="text-[14px] text-text-secondary leading-relaxed mb-3">
+                <div className="text-[14px] text-text-secondary leading-relaxed mb-4 flex-1">
                   {article.frontmatter.description}
                 </div>
-                <div className="text-[12px] text-text-muted">
-                  {article.frontmatter.readingTime}
+                <div className="flex items-center justify-between">
+                  <div className="text-[12px] text-text-muted">
+                    {article.frontmatter.readingTime}
+                  </div>
+                  <div className="text-[12px] font-bold uppercase tracking-[0.04em] text-black group-hover:underline">
+                    Read
+                  </div>
                 </div>
               </Link>
             ))}

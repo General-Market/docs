@@ -5,14 +5,14 @@ interface ComparisonTableProps {
 
 export function ComparisonTable({ headers, rows }: ComparisonTableProps) {
   return (
-    <div className="border border-border-light overflow-x-auto my-6">
+    <div className="border border-border-light overflow-x-auto my-8">
       <table className="w-full text-[14px]">
         <thead>
-          <tr className="bg-surface">
+          <tr>
             {headers.map((h) => (
               <th
                 key={h}
-                className="text-left px-4 py-3 font-bold text-black"
+                className="text-left bg-black text-white text-[11px] font-semibold tracking-[0.1em] uppercase px-5 py-3"
               >
                 {h}
               </th>
@@ -23,12 +23,12 @@ export function ComparisonTable({ headers, rows }: ComparisonTableProps) {
           {rows.map((row, i) => (
             <tr
               key={i}
-              className={`border-t border-border-light ${i % 2 === 1 ? "bg-surface/40" : ""}`}
+              className={`border-t border-border-light ${i % 2 === 1 ? "bg-surface/50" : "bg-white"}`}
             >
               {row.map((cell, j) => (
                 <td
                   key={j}
-                  className={`px-4 py-3 ${j === 0 ? "font-medium text-black" : "text-text-secondary"}`}
+                  className={`px-5 py-3.5 ${j === 0 ? "font-medium text-black" : "text-text-secondary"}`}
                 >
                   {cell}
                 </td>
