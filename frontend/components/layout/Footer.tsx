@@ -30,7 +30,7 @@ export function Footer() {
                 </svg>
               </a>
               <a
-                href="https://x.com"
+                href="https://x.com/otc_max"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-white/40 hover:text-white transition-colors"

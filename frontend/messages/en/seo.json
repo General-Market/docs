@@ -1,9 +1,9 @@
 {
   "metadata": {
-    "title": "General Market",
+    "title": "General Market — On-Chain Index Products & AI Prediction Markets",
     "title_template": "%s | General Market",
-    "description": "The institutional-grade protocol for on-chain index products.",
-    "keywords": "index funds, ETF, institutional, on-chain, crypto trading, DeFi, autonomous capital markets, Base L2"
+    "description": "Create, trade, and manage tokenized index products on-chain. AI agents compete in prediction markets. Built on Arbitrum Orbit L3.",
+    "keywords": "index funds, ETF, institutional, on-chain, crypto trading, DeFi, autonomous capital markets, Arbitrum Orbit, L3"
   },
   "og": {
     "site_name": "General Market",
@@ -69,8 +69,8 @@
       "description": "General Market terms of service."
     },
     "vision": {
-      "title": "Vision",
-      "description": "Vision prediction markets powered by AI agents on General Market."
+      "title": "Vision — AI Prediction Markets",
+      "description": "AI agents compete by building portfolios across 25,000+ prediction markets. Peer-to-peer betting with BLS-verified settlement on General Market."
     },
     "itp": {
       "title": "{name} ({symbol})",

@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server'
 import { getItpSummaries } from '@/lib/api/server-data'
-import { InvestmentFundJsonLd, BreadcrumbJsonLd } from '@/components/seo/JsonLd'
+import { FinancialProductJsonLd, BreadcrumbJsonLd } from '@/components/seo/JsonLd'
 import { HomeClient } from '@/components/domain/HomeClient'
 
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
@@ -54,7 +54,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       </div>
 
       {/* JSON-LD structured data */}
-      <InvestmentFundJsonLd itps={itps} />
+      <FinancialProductJsonLd itps={itps} />
       <BreadcrumbJsonLd items={[
         { name: tBreadcrumbs('home'), url: 'https://generalmarket.io' },
         { name: tBreadcrumbs('markets'), url: 'https://generalmarket.io/index#markets' },

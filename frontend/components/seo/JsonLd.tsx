@@ -38,11 +38,6 @@ export function WebsiteJsonLd({ description }: { description?: string }) {
     url: "https://generalmarket.io",
     description:
       description ?? "The institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index products on-chain.",
-    potentialAction: {
-      "@type": "SearchAction",
-      target: "https://generalmarket.io/?search={search_term_string}",
-      "query-input": "required name=search_term_string",
-    },
   }
 
   return (
@@ -82,55 +77,7 @@ export function SoftwareApplicationJsonLd({ description }: { description?: strin
   )
 }
 
-export interface FAQItem {
-  question: string
-  answer: string
-}
-
-export function FAQJsonLd({ items }: { items?: FAQItem[] }) {
-  const defaultItems: FAQItem[] = [
-    {
-      question: "What is General Market?",
-      answer: "General Market is an institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index tracking products (ITPs) that track baskets of crypto assets, similar to how ETFs work in traditional finance.",
-    },
-    {
-      question: "What are Index Tracking Products (ITPs)?",
-      answer: "ITPs are tokenized index products that hold a fixed basket of crypto assets with defined weights. Their NAV (Net Asset Value) floats with the underlying asset prices, just like an ETF. You can create custom ITPs or trade existing ones.",
-    },
-    {
-      question: "How does lending work on General Market?",
-      answer: "General Market integrates with Morpho lending markets. You can deposit USDC to earn yield, or use your ITP shares as collateral to borrow against your positions.",
-    },
-    {
-      question: "What do I need to get started?",
-      answer: "You need a Web3 wallet (like MetaMask) connected to the Index L3 network, and USDC tokens. You can then browse the Markets tab to buy existing ITPs or create your own custom index.",
-    },
-  ]
-
-  const faqItems = items ?? defaultItems
-
-  const data = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faqItems.map((item) => ({
-      "@type": "Question",
-      name: item.question,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: item.answer,
-      },
-    })),
-  }
-
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
-    />
-  )
-}
-
-export function InvestmentFundJsonLd({ itps, descriptionTemplate }: { itps: ItpSummary[]; descriptionTemplate?: (itp: ItpSummary) => string }) {
+export function FinancialProductJsonLd({ itps, descriptionTemplate }: { itps: ItpSummary[]; descriptionTemplate?: (itp: ItpSummary) => string }) {
   if (itps.length === 0) return null
 
   const defaultTemplate = (itp: ItpSummary) =>
@@ -140,7 +87,8 @@ export function InvestmentFundJsonLd({ itps, descriptionTemplate }: { itps: ItpS
 
   const data = itps.map((itp) => ({
     "@context": "https://schema.org",
-    "@type": "InvestmentFund",
+    "@type": "FinancialProduct",
+    "category": "Index Fund",
     name: itp.name,
     tickerSymbol: itp.symbol,
     description: getDescription(itp),

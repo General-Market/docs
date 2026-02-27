@@ -157,7 +157,7 @@
     "positions_count": "{count} positions",
     "portfolio_hint": "Click \"View Full Portfolio\" below to see all trades with virtual scroll.",
     "view_full_portfolio": "View Full Portfolio",
-    "view_on_basescan": "View on BaseScan",
+    "view_on_explorer": "エクスプローラーで表示",
     "signature_collection": "Signature Collection",
     "resolution": "Resolution"
   }

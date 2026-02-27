@@ -11,9 +11,12 @@ function localeUrl(path: string, locale: string): string {
 
 function alternatesForPath(path: string) {
   return {
-    languages: Object.fromEntries(
-      locales.map((l) => [l, localeUrl(path, l)])
-    ),
+    languages: {
+      ...Object.fromEntries(
+        locales.map((l) => [l, localeUrl(path, l)])
+      ),
+      'x-default': localeUrl(path, defaultLocale),
+    },
   }
 }
 
@@ -22,39 +25,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticRoutes: { path: string; changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency']; priority: number }[] = [
     { path: '', changeFrequency: 'daily', priority: 1 },
-    { path: '/docs', changeFrequency: 'weekly', priority: 0.8 },
     { path: '/index', changeFrequency: 'daily', priority: 0.9 },
+    { path: '/sources', changeFrequency: 'daily', priority: 0.5 },
+    { path: '/points', changeFrequency: 'daily', priority: 0.5 },
     { path: '/privacy', changeFrequency: 'monthly', priority: 0.3 },
     { path: '/terms', changeFrequency: 'monthly', priority: 0.3 },
   ]
 
   const entries: MetadataRoute.Sitemap = []
 
-  // Static pages — one entry per locale
+  // Static pages — one entry per route with locale alternates
   for (const route of staticRoutes) {
-    for (const locale of locales) {
-      entries.push({
-        url: localeUrl(route.path, locale),
-        lastModified: new Date(),
-        changeFrequency: route.changeFrequency,
-        priority: route.priority,
-        alternates: alternatesForPath(route.path),
-      })
-    }
+    entries.push({
+      url: localeUrl(route.path, defaultLocale),
+      lastModified: new Date('2026-02-27'),
+      changeFrequency: route.changeFrequency,
+      priority: route.priority,
+      alternates: alternatesForPath(route.path),
+    })
   }
 
-  // ITP detail pages — one entry per locale per ITP
+  // ITP detail pages — one entry per ITP with locale alternates
   for (const itp of itps) {
     const path = `/itp/${itp.itpId}`
-    for (const locale of locales) {
-      entries.push({
-        url: localeUrl(path, locale),
-        lastModified: new Date(),
-        changeFrequency: 'daily',
-        priority: 0.7,
-        alternates: alternatesForPath(path),
-      })
-    }
+    entries.push({
+      url: localeUrl(path, defaultLocale),
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.7,
+      alternates: alternatesForPath(path),
+    })
   }
 
   return entries

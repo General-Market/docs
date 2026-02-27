@@ -48,6 +48,7 @@ export const wagmiConfig = createConfig({
   transports: {
     [indexL3.id]: chainTransport,
   },
+  ssr: true,
 })
 
 // Export the active chain for use in components
