@@ -144,6 +144,14 @@ else
     else
         echo -e "  ${YELLOW}Skipped (psql not found)${NC}"
     fi
+
+    # Clear bot PNL tracking files so bots start fresh
+    for f in pnl-bot*.json pnl.json; do
+        if [ -f "$f" ]; then
+            echo '{"active":[],"history":[]}' > "$f"
+            echo -e "  ${GREEN}Reset $f${NC}"
+        fi
+    done
 fi
 
 # Check for orphan processes on known ports

@@ -7,6 +7,9 @@
 - [DECISION] DEV-2: Derive num_committed_ticks in resolver (not chain_listener) — bitmap isn't available at join time, and num_markets from batch config needed to compute ticks from bitmap length
 - [DECISION] DEV-3: Tick-major bitmap indexing: bit_index = tick_offset * num_markets + market_idx — matches brief's encoding spec. Single-tick bitmaps gracefully degrade (out-of-bounds returns Side::Down)
 - [DECISION] Zero-sum test allows ±num_markets tolerance — pre-existing integer truncation in parimutuel matched_stake computation (floor division) loses up to 1 wei per market
+- [DECISION] stop.sh clears pnl-bot*.json files — stale PNL files cause bots to think they're at max_batches capacity (50 tracked from previous session), preventing them from joining new batches. Bots need empty PNL files to start fresh after a chain reset.
+- [VERIFIED] Per-tick zero-sum: 392 tick-batch pairs checked, 86 with non-zero activity, 0 violations. sum(deltas) == 0 on every tick.
+- [VERIFIED] Aggregate +11.11 USDC leak is from deployment sequence (start.sh re-joins bots into pre-existing batches with stale bitmap hashes) — not a resolver bug. Clean deployments are zero-sum.
 
 ## Session: 20260227-1400-q8m3 (Vision scalability fix — all batches resolving)
 
