@@ -179,8 +179,8 @@ pub fn compute_threshold(active_count: u64) -> u64 {
     if active_count == 0 {
         return 0;
     }
-    // Strict BFT: floor(2n/3) + 1
-    (active_count * 2 / 3) + 1
+    // BFT: ceil(2n/3)
+    (active_count * 2 + 2) / 3
 }
 
 // ============================================================================
@@ -1177,10 +1177,10 @@ mod tests {
         assert_eq!(compute_threshold(0), 0);
         assert_eq!(compute_threshold(1), 1); // 1 issuer needs 1 sig
         assert_eq!(compute_threshold(2), 2); // 2 issuers need 2 sigs
-        assert_eq!(compute_threshold(3), 3); // 3 issuers need 3 sigs (2/3*3 + 1 = 3)
+        assert_eq!(compute_threshold(3), 2); // 3 issuers need 2 sigs (ceil(2*3/3) = 2)
         assert_eq!(compute_threshold(4), 3); // 4 issuers need 3 sigs
         assert_eq!(compute_threshold(5), 4); // 5 issuers need 4 sigs
-        assert_eq!(compute_threshold(6), 5); // 6 issuers need 5 sigs
+        assert_eq!(compute_threshold(6), 4); // 6 issuers need 4 sigs (ceil(2*6/3) = 4)
         assert_eq!(compute_threshold(20), 14); // 20 issuers need 14 sigs
     }
 

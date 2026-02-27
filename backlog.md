@@ -1,5 +1,15 @@
 # Design Decision Backlog
 
+## Session: 20260227-2330-c7x1 (Issuer Concurrency Overhaul)
+
+- [DECISION] compute_threshold changed from floor(2n/3)+1 to ceil(2n/3) — for n=3, threshold drops from 3→2. Allows 2/3 fault tolerance instead of requiring all issuers.
+- [DECISION] Both BridgeConfig and ItpCreationConfig timeouts changed from 10s→2s — P2P between local nodes is <100ms, 2s is generous.
+- [DECISION] All 5 processing phases (ITP creation, cross-chain buy, sell, L3-native, rebalance) spawned as concurrent tokio tasks instead of running sequentially — eliminates 30-50s blocking per cycle.
+- [DECISION] AtomicBool in-flight guards prevent duplicate spawns of same phase — if a phase is still running from the previous cycle, the next cycle skips it rather than stacking.
+- [DECISION] Per-order parallelism for buy/sell: each order spawned into its own tokio task within run_cross_chain_processing/run_cross_chain_sell_processing. L3-native kept sequential (processes batches collectively, not individually).
+- [DECISION] CycleManager signal checks AtomicBool flags OR orchestrator in-flight orders — ensures fast cycles continue while spawned tasks run.
+- [DECISION] registry_sync compute_threshold also updated to ceil(2n/3) — same formula everywhere for consistency.
+
 ## Session: 20260227-2200-f4k9 (Vision P2Pool brief alignment — 3 deviation fixes)
 
 - [DECISION] DEV-1: Split effective_stake / num_markets per market in resolver — fixes zero-sum violation where total exposure = N × effective_stake exceeded balance

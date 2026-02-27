@@ -477,8 +477,8 @@ impl<'a> ConsensusBuilder<'a> {
         Some(ItpCreationConfig {
             arbitrum_chain_id,
             bridge_proxy_address: bp_str.parse().unwrap_or_default(),
-            proposal_timeout_ms: 10000,
-            sign_timeout_ms: 10000,
+            proposal_timeout_ms: 2000,
+            sign_timeout_ms: 2000,
             min_signatures: sig_threshold,
         })
     }
@@ -526,8 +526,8 @@ impl<'a> ConsensusBuilder<'a> {
                 .map(|c| c.index)
                 .unwrap_or_default(),
             min_signatures: sig_threshold,
-            proposal_timeout_ms: 10000,
-            sign_timeout_ms: 10000,
+            proposal_timeout_ms: 2000,
+            sign_timeout_ms: 2000,
             issuer_custody_arb: self.config.effective_issuer_custody_arb().unwrap_or_default(),
             arb_usdc_address: self.config.effective_arb_usdc().unwrap_or_default(),
             bitget_vault: self.config.effective_bitget_vault()

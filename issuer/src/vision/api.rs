@@ -1006,6 +1006,7 @@ mod tests {
             player_count: 10,
             tvl: "1000000000000000000".into(),
             paused: false,
+            current_tick: 0,
         };
         let json = serde_json::to_string(&summary).unwrap();
         assert!(json.contains("\"id\":1"));

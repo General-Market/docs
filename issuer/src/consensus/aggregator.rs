@@ -17,11 +17,11 @@ pub const DISAGREEMENT_PERCENT: u8 = 20; // 20% disagree triggers retry
 pub const MAX_PRICE_RETRIES: u8 = 3;
 pub const MAX_BATCH_RETRIES: u8 = 3;
 
-/// BFT threshold: floor(2n/3) + 1. Requires >2/3 of issuers to sign.
-/// For n=20: threshold=14. For n=3: threshold=3.
+/// BFT threshold: ceil(2n/3). Requires >=2/3 of issuers to sign.
+/// For n=20: threshold=14. For n=3: threshold=2.
 pub fn compute_threshold(num_issuers: usize) -> usize {
     if num_issuers == 0 { return 1; }
-    (num_issuers * 2 / 3) + 1
+    (num_issuers * 2 + 2) / 3
 }
 
 /// Status of signature aggregation
@@ -250,7 +250,7 @@ mod tests {
     #[test]
     fn test_aggregator_new() {
         let aggregator = SignatureAggregator::new(compute_threshold(20));
-        assert_eq!(aggregator.required_signatures(), 14); // BFT: floor(2*20/3)+1 = 14
+        assert_eq!(aggregator.required_signatures(), 14); // BFT: ceil(2*20/3) = 14
         assert_eq!(aggregator.collected_count(), 0);
         assert!(!aggregator.is_threshold_reached());
     }
@@ -403,33 +403,33 @@ mod tests {
 
     #[test]
     fn test_compute_threshold_3_nodes() {
-        // BFT: floor(2*3/3)+1 = 3
-        assert_eq!(compute_threshold(3), 3);
+        // BFT: ceil(2*3/3) = 2
+        assert_eq!(compute_threshold(3), 2);
     }
 
     #[test]
     fn test_compute_threshold_5_nodes() {
-        // BFT: floor(2*5/3)+1 = floor(10/3)+1 = 3+1 = 4
+        // BFT: ceil(2*5/3) = ceil(10/3) = 4
         assert_eq!(compute_threshold(5), 4);
     }
 
     #[test]
     fn test_compute_threshold_10_nodes() {
-        // BFT: floor(2*10/3)+1 = floor(20/3)+1 = 6+1 = 7
+        // BFT: ceil(2*10/3) = ceil(20/3) = 7
         assert_eq!(compute_threshold(10), 7);
     }
 
     #[test]
     fn test_compute_threshold_20_nodes() {
-        // BFT: floor(2*20/3)+1 = floor(40/3)+1 = 13+1 = 14
+        // BFT: ceil(2*20/3) = ceil(40/3) = 14
         assert_eq!(compute_threshold(20), 14);
     }
 
     #[test]
     fn test_compute_threshold_small_values() {
-        // 1 node: floor(2/3)+1 = 0+1 = 1
+        // 1 node: ceil(2/3) = 1
         assert_eq!(compute_threshold(1), 1);
-        // 2 nodes: floor(4/3)+1 = 1+1 = 2
+        // 2 nodes: ceil(4/3) = 2
         assert_eq!(compute_threshold(2), 2);
     }
 

@@ -668,8 +668,15 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         let mut state_rx = cycle_state_rx;
         let mut last_cycle: u64 = 0;
         let mut last_signature = common::types::BLSSignature(vec![0u8; 64]);
-        let mut first_seen_orders: HashMap<u64, std::time::Instant> = HashMap::new();
-        let mut itp_first_seen: std::collections::HashMap<ethers::types::U256, std::time::Instant> = std::collections::HashMap::new();
+        let first_seen_orders: Arc<tokio::sync::Mutex<HashMap<u64, std::time::Instant>>> = Arc::new(tokio::sync::Mutex::new(HashMap::new()));
+        let itp_first_seen: Arc<tokio::sync::Mutex<std::collections::HashMap<ethers::types::U256, std::time::Instant>>> = Arc::new(tokio::sync::Mutex::new(std::collections::HashMap::new()));
+
+        // In-flight guards: prevent duplicate spawns of the same processing phase
+        let buy_active = Arc::new(AtomicBool::new(false));
+        let sell_active = Arc::new(AtomicBool::new(false));
+        let l3_active = Arc::new(AtomicBool::new(false));
+        let itp_active = Arc::new(AtomicBool::new(false));
+        let rebalance_active = Arc::new(AtomicBool::new(false));
 
         loop {
             if consensus_shutdown.load(Ordering::Relaxed) {
@@ -827,19 +834,9 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         continue;
                     }
 
-                    // ITP creation phase
-                    if let (Some(ref arb_reader), Some(ref arb_writer), Some(ref itp_config)) =
-                        (&arbitrum_reader_for_task, &arbitrum_writer_for_task, &itp_creation_config_for_task)
-                    {
-                        run_itp_creation_phase(
-                            &protocol, arb_reader, arb_writer, &consensus_chain_writer_for_task,
-                            itp_config, current_cycle, node_index_for_task, consensus_config.num_issuers,
-                            &mut itp_first_seen,
-                        ).await;
-                    }
-
                     // Compute local NAV from on-chain inventory + Bitget prices.
                     // Used as fallback when data-node backend is unavailable (e.g. no PostgreSQL).
+                    // Stays inline because it's fast and the result is needed by spawned tasks.
                     let local_nav_fallback = {
                         let itp_bytes: [u8; 32] = {
                             let hex = itp_id_for_task.trim_start_matches("0x");
@@ -900,73 +897,134 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         }
                     };
 
-                    // Cross-chain order processing
-                    if let (Some(ref arb_reader), Some(ref orchestrator), Some(ref arb_writer)) =
-                        (&arbitrum_reader_for_task, &bridge_orchestrator_for_task, &arbitrum_writer_for_task)
-                    {
-                        run_cross_chain_processing(
-                            &protocol, arb_reader, orchestrator, arb_writer,
-                            &consensus_chain_reader,
-                            current_cycle, node_index_for_task, consensus_config.num_issuers,
-                            &data_node_url_for_task, &itp_id_for_task,
-                            local_nav_fallback,
-                            &quote_tokens_for_task,
-                        ).await;
-                    } else if arbitrum_reader_for_task.is_some() && bridge_orchestrator_for_task.is_none() {
-                        if current_cycle % 100 == 1 {
-                            debug!(cycle = current_cycle, "Skipping cross-chain: BridgeOrchestrator not initialized");
+                    // ITP creation — spawn if not already running
+                    if !itp_active.load(Ordering::Relaxed) {
+                        if let (Some(ref arb_reader), Some(ref arb_writer), Some(ref itp_config)) =
+                            (&arbitrum_reader_for_task, &arbitrum_writer_for_task, &itp_creation_config_for_task)
+                        {
+                            itp_active.store(true, Ordering::Relaxed);
+                            let flag = itp_active.clone();
+                            let p = protocol.clone();
+                            let ar = Arc::clone(arb_reader);
+                            let aw = Arc::clone(arb_writer);
+                            let cw = consensus_chain_writer_for_task.clone();
+                            let ic = itp_config.clone();
+                            let fs = itp_first_seen.clone();
+                            let cycle = current_cycle;
+                            let ni = node_index_for_task;
+                            let nu = consensus_config.num_issuers;
+                            tokio::spawn(async move {
+                                run_itp_creation_phase(p, ar, aw, cw, ic, cycle, ni, nu, fs).await;
+                                flag.store(false, Ordering::Relaxed);
+                            });
                         }
                     }
 
-                    // Cross-chain SELL order processing
-                    if let (Some(ref arb_reader), Some(ref orchestrator), Some(ref arb_writer)) =
-                        (&arbitrum_reader_for_task, &bridge_orchestrator_for_task, &arbitrum_writer_for_task)
-                    {
-                        run_cross_chain_sell_processing(
-                            &protocol, arb_reader, orchestrator, arb_writer,
-                            &consensus_chain_reader,
-                            current_cycle, node_index_for_task, consensus_config.num_issuers,
-                            &data_node_url_for_task, &itp_id_for_task,
-                            local_nav_fallback,
-                            &quote_tokens_for_task,
-                        ).await;
-                    }
-
-                    // L3-native order processing (sell orders, direct L3 buys)
-                    if let Some(ref orchestrator) = bridge_orchestrator_for_task {
-                        if let Some(ref protocol) = consensus_protocol_for_task {
-                            run_l3_native_order_processing(
-                                protocol,
-                                orchestrator,
-                                &consensus_chain_reader,
-                                current_cycle,
-                                node_index_for_task,
-                                consensus_config.num_issuers,
-                                &mut first_seen_orders,
-                                &data_node_url_for_task,
-                                &itp_id_for_task,
-                                local_nav_fallback,
-                                &quote_tokens_for_task,
-                            ).await;
-                        }
-                    }
-
-                    // Rebalance processing: ONLY on heartbeat cycles (not rushed by fast cycles)
-                    if is_heartbeat {
-                        if let Some(ref orchestrator) = bridge_orchestrator_for_task {
-                            if let Some(ref protocol) = consensus_protocol_for_task {
-                                run_rebalance_processing(
-                                    protocol,
-                                    orchestrator,
-                                    &consensus_chain_reader,
-                                    current_cycle,
-                                    node_index_for_task,
-                                    consensus_config.num_issuers,
-                                    &price_fetcher_for_task,
-                                    &symbol_map_for_task,
-                                    &quote_tokens_for_task,
+                    // Cross-chain BUY — spawn if not already running
+                    if !buy_active.load(Ordering::Relaxed) {
+                        if let (Some(ref arb_reader), Some(ref orchestrator), Some(ref arb_writer)) =
+                            (&arbitrum_reader_for_task, &bridge_orchestrator_for_task, &arbitrum_writer_for_task)
+                        {
+                            buy_active.store(true, Ordering::Relaxed);
+                            let flag = buy_active.clone();
+                            let p = protocol.clone();
+                            let ar = Arc::clone(arb_reader);
+                            let orch = Arc::clone(orchestrator);
+                            let aw = Arc::clone(arb_writer);
+                            let cr = consensus_chain_reader.clone();
+                            let dnu = data_node_url_for_task.clone();
+                            let iid = itp_id_for_task.clone();
+                            let nav = local_nav_fallback;
+                            let qt = quote_tokens_for_task.clone();
+                            let cycle = current_cycle;
+                            let ni = node_index_for_task;
+                            let nu = consensus_config.num_issuers;
+                            tokio::spawn(async move {
+                                run_cross_chain_processing(
+                                    p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt,
                                 ).await;
-                            }
+                                flag.store(false, Ordering::Relaxed);
+                            });
+                        }
+                    }
+
+                    // Cross-chain SELL — spawn if not already running
+                    if !sell_active.load(Ordering::Relaxed) {
+                        if let (Some(ref arb_reader), Some(ref orchestrator), Some(ref arb_writer)) =
+                            (&arbitrum_reader_for_task, &bridge_orchestrator_for_task, &arbitrum_writer_for_task)
+                        {
+                            sell_active.store(true, Ordering::Relaxed);
+                            let flag = sell_active.clone();
+                            let p = protocol.clone();
+                            let ar = Arc::clone(arb_reader);
+                            let orch = Arc::clone(orchestrator);
+                            let aw = Arc::clone(arb_writer);
+                            let cr = consensus_chain_reader.clone();
+                            let dnu = data_node_url_for_task.clone();
+                            let iid = itp_id_for_task.clone();
+                            let nav = local_nav_fallback;
+                            let qt = quote_tokens_for_task.clone();
+                            let cycle = current_cycle;
+                            let ni = node_index_for_task;
+                            let nu = consensus_config.num_issuers;
+                            tokio::spawn(async move {
+                                run_cross_chain_sell_processing(
+                                    p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt,
+                                ).await;
+                                flag.store(false, Ordering::Relaxed);
+                            });
+                        }
+                    }
+
+                    // L3-native — spawn if not already running
+                    if !l3_active.load(Ordering::Relaxed) {
+                        if let (Some(ref orchestrator), Some(ref protocol)) =
+                            (&bridge_orchestrator_for_task, &consensus_protocol_for_task)
+                        {
+                            l3_active.store(true, Ordering::Relaxed);
+                            let flag = l3_active.clone();
+                            let p = Arc::clone(protocol);
+                            let orch = Arc::clone(orchestrator);
+                            let cr = consensus_chain_reader.clone();
+                            let fso = first_seen_orders.clone();
+                            let dnu = data_node_url_for_task.clone();
+                            let iid = itp_id_for_task.clone();
+                            let nav = local_nav_fallback;
+                            let qt = quote_tokens_for_task.clone();
+                            let cycle = current_cycle;
+                            let ni = node_index_for_task;
+                            let nu = consensus_config.num_issuers;
+                            tokio::spawn(async move {
+                                run_l3_native_order_processing(
+                                    p, orch, cr, cycle, ni, nu, fso, dnu, iid, nav, qt,
+                                ).await;
+                                flag.store(false, Ordering::Relaxed);
+                            });
+                        }
+                    }
+
+                    // Rebalance — spawn on heartbeat if not already running
+                    if is_heartbeat && !rebalance_active.load(Ordering::Relaxed) {
+                        if let (Some(ref orchestrator), Some(ref protocol)) =
+                            (&bridge_orchestrator_for_task, &consensus_protocol_for_task)
+                        {
+                            rebalance_active.store(true, Ordering::Relaxed);
+                            let flag = rebalance_active.clone();
+                            let p = Arc::clone(protocol);
+                            let orch = Arc::clone(orchestrator);
+                            let cr = consensus_chain_reader.clone();
+                            let pf = price_fetcher_for_task.clone();
+                            let sm = symbol_map_for_task.clone();
+                            let qt = quote_tokens_for_task.clone();
+                            let cycle = current_cycle;
+                            let ni = node_index_for_task;
+                            let nu = consensus_config.num_issuers;
+                            tokio::spawn(async move {
+                                run_rebalance_processing(
+                                    p, orch, cr, cycle, ni, nu, pf, sm, qt,
+                                ).await;
+                                flag.store(false, Ordering::Relaxed);
+                            });
                         }
                     }
 
@@ -1012,8 +1070,13 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         }
                     }
 
-                    // Signal CycleManager: has pending work → trigger fast cycle
-                    let has_pending = if let Some(ref orch) = bridge_orchestrator_for_task {
+                    // Signal CycleManager: check if any phase is still running or has pending work
+                    let has_spawned = buy_active.load(Ordering::Relaxed)
+                        || sell_active.load(Ordering::Relaxed)
+                        || l3_active.load(Ordering::Relaxed)
+                        || itp_active.load(Ordering::Relaxed)
+                        || rebalance_active.load(Ordering::Relaxed);
+                    let has_pending = has_spawned || if let Some(ref orch) = bridge_orchestrator_for_task {
                         orch.read().await.has_in_flight_orders().await
                     } else {
                         false
@@ -1181,15 +1244,15 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
 }
 
 async fn run_itp_creation_phase<P, W, K, PF>(
-    protocol: &Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
-    arb_reader: &Arc<issuer::ArbitrumChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
-    arb_writer: &Arc<issuer::ArbitrumChainWriter>,
-    l3_writer: &Option<Arc<issuer::EthersChainWriter>>,
-    itp_config: &issuer::ItpCreationConfig,
+    protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
+    arb_reader: Arc<issuer::ArbitrumChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
+    arb_writer: Arc<issuer::ArbitrumChainWriter>,
+    l3_writer: Option<Arc<issuer::EthersChainWriter>>,
+    itp_config: issuer::ItpCreationConfig,
     current_cycle: u64,
     node_index: u8,
     num_issuers: u8,
-    first_seen: &mut std::collections::HashMap<ethers::types::U256, std::time::Instant>,
+    first_seen: Arc<tokio::sync::Mutex<std::collections::HashMap<ethers::types::U256, std::time::Instant>>>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -1208,9 +1271,10 @@ async fn run_itp_creation_phase<P, W, K, PF>(
 
                 for request in pending_requests {
                     // Track first-seen time for staleness detection
-                    let seen_at = *first_seen
-                        .entry(request.nonce)
-                        .or_insert_with(std::time::Instant::now);
+                    let seen_at = {
+                        let mut fs = first_seen.lock().await;
+                        *fs.entry(request.nonce).or_insert_with(std::time::Instant::now)
+                    };
                     if seen_at.elapsed() > MAX_REQUEST_AGE {
                         debug!(nonce = %request.nonce, age_secs = seen_at.elapsed().as_secs(),
                                "Skipping stale ITP creation request (>1h old)");
@@ -1219,7 +1283,7 @@ async fn run_itp_creation_phase<P, W, K, PF>(
 
                     info!(nonce = %request.nonce, admin = ?request.admin, name = %request.name, am_leader, "Processing ITP creation request");
 
-                    match protocol.run_itp_creation_phase(&request, itp_config, am_leader).await {
+                    match protocol.run_itp_creation_phase(&request, &itp_config, am_leader).await {
                         Ok(result) => {
                             if result.signature_count == 0 {
                                 debug!(nonce = %result.nonce, am_leader,
@@ -1287,18 +1351,18 @@ async fn run_itp_creation_phase<P, W, K, PF>(
 }
 
 async fn run_cross_chain_processing<P, W, K, PF>(
-    protocol: &Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
-    arb_reader: &Arc<issuer::ArbitrumChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
-    orchestrator: &Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
-    arb_writer: &Arc<issuer::ArbitrumChainWriter>,
-    chain_reader: &Arc<dyn common::traits::ChainReader>,
+    protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
+    arb_reader: Arc<issuer::ArbitrumChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
+    orchestrator: Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
+    arb_writer: Arc<issuer::ArbitrumChainWriter>,
+    chain_reader: Arc<dyn common::traits::ChainReader>,
     current_cycle: u64,
     node_index: u8,
     num_issuers: u8,
-    data_node_url_for_task: &Option<String>,
-    itp_id_for_task: &str,
+    data_node_url_for_task: Option<String>,
+    itp_id_for_task: String,
     local_nav_fallback: ethers::types::U256,
-    quote_tokens: &Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
+    quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -1332,76 +1396,77 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                 info!(cycle = current_cycle, order_count = new_orders.len(), from_block, to_block = confirmed_block, "Found cross-chain orders");
             }
 
-            for order in new_orders {
-                // Use order_id for leader election (not cycle) — all nodes detect the same order
-                // at potentially different cycles, so cycle-based election causes no-leader scenarios.
-                let am_leader = calculate_bridge_leader(order.order_id.as_u64(), num_issuers, node_index);
-                info!(order_id = %order.order_id, itp_id = ?order.itp_id, user = ?order.user, amount = %order.amount, am_leader, "Processing cross-chain order");
-
-                {
-                    let orch_write = orchestrator.write().await;
+            // Set initial status for all orders before spawning (serialized write lock)
+            {
+                let orch_write = orchestrator.write().await;
+                for order in &new_orders {
                     orch_write.set_order_amount(order.order_id, order.amount).await;
                     orch_write.set_order_limit_price(order.order_id, order.limit_price, 0).await; // 0 = BUY
                     orch_write.set_order_status(order.order_id, issuer::BridgeOrderStatus::Pending).await;
                 }
+            }
 
-                let chain_id = arb_reader.config().chain_id;
-                match protocol.run_bridge_arb_to_l3_phase(&order, am_leader).await {
-                    Ok(result) => {
-                        // Only advance to submit phase if BLS consensus actually happened.
-                        // signer_count==0 means no proposal was received (follower raced ahead
-                        // of leader), so advancing would cause status collisions when the
-                        // leader's proposal arrives later.
-                        if result.signature_count == 0 {
-                            debug!(order_id = %order.order_id, am_leader, "Bridge Arb→L3: no signatures collected (follower placeholder)");
-                            continue;
-                        }
-                        info!(order_id = %order.order_id, signer_count = result.signature_count, "Bridge Arb→L3 consensus completed");
+            let chain_id = arb_reader.config().chain_id;
+            let mut handles = Vec::new();
+            for order in new_orders {
+                let am_leader = calculate_bridge_leader(order.order_id.as_u64(), num_issuers, node_index);
+                info!(order_id = %order.order_id, itp_id = ?order.itp_id, user = ?order.user, amount = %order.amount, am_leader, "Processing cross-chain order");
 
-                        match protocol.run_submit_order_phase(&order, am_leader).await {
-                            Ok(submit_result) => {
-                                if submit_result.signature_count == 0 {
-                                    debug!(order_id = %order.order_id, am_leader, "Submit order: no signatures collected (follower placeholder)");
-                                    continue;
+                let p = protocol.clone();
+                let ar = arb_reader.clone();
+                let orch = orchestrator.clone();
+                let cid = chain_id;
+
+                handles.push(tokio::spawn(async move {
+                    match p.run_bridge_arb_to_l3_phase(&order, am_leader).await {
+                        Ok(result) => {
+                            if result.signature_count == 0 {
+                                debug!(order_id = %order.order_id, am_leader, "Bridge Arb→L3: no signatures collected (follower placeholder)");
+                                return;
+                            }
+                            info!(order_id = %order.order_id, signer_count = result.signature_count, "Bridge Arb→L3 consensus completed");
+
+                            match p.run_submit_order_phase(&order, am_leader).await {
+                                Ok(submit_result) => {
+                                    if submit_result.signature_count == 0 {
+                                        debug!(order_id = %order.order_id, am_leader, "Submit order: no signatures collected (follower placeholder)");
+                                        return;
+                                    }
+                                    info!(order_id = %order.order_id, signer_count = submit_result.signature_count, "Submit order consensus completed");
+
+                                    ar.mark_order_processed(cid, order.order_id).await;
+                                    {
+                                        let orch_w = orch.write().await;
+                                        orch_w.set_order_status(order.order_id, issuer::BridgeOrderStatus::SubmittedOnL3).await;
+                                        orch_w.set_order_amount(order.order_id, order.amount).await;
+                                        let l3_id = submit_result.l3_order_id.unwrap_or(order.order_id);
+                                        orch_w.store_order_mapping(issuer::bridge::OrderMapping {
+                                            arb_order_id: order.order_id,
+                                            l3_order_id: l3_id,
+                                            original_user: order.user,
+                                            created_at: std::time::SystemTime::now()
+                                                .duration_since(std::time::UNIX_EPOCH)
+                                                .unwrap_or_default()
+                                                .as_secs(),
+                                        }).await;
+                                    }
                                 }
-                                info!(order_id = %order.order_id, signer_count = submit_result.signature_count, "Submit order consensus completed");
-
-                                // Mark as processed so it won't be retried
-                                arb_reader.mark_order_processed(chain_id, order.order_id).await;
-                                // ALL nodes must advance to SubmittedOnL3 so that:
-                                // 1. get_submitted_bridged_orders() returns the order on all nodes
-                                // 2. The L3-native guard sees it and skips (prevents double-registration)
-                                // 3. Batch leader election uses the same batch_key everywhere
-                                // (Leader already set this in protocol.rs, but followers haven't.)
-                                {
-                                    let orch = orchestrator.write().await;
-                                    orch.set_order_status(order.order_id, issuer::BridgeOrderStatus::SubmittedOnL3).await;
-                                    orch.set_order_amount(order.order_id, order.amount).await;
-                                    // Store mapping on ALL nodes (leader already stored via execute_submit_order,
-                                    // but followers need it too for mintBridgedShares user lookup).
-                                    let l3_id = submit_result.l3_order_id.unwrap_or(order.order_id);
-                                    orch.store_order_mapping(issuer::bridge::OrderMapping {
-                                        arb_order_id: order.order_id,
-                                        l3_order_id: l3_id,
-                                        original_user: order.user,
-                                        created_at: std::time::SystemTime::now()
-                                            .duration_since(std::time::UNIX_EPOCH)
-                                            .unwrap_or_default()
-                                            .as_secs(),
-                                    }).await;
+                                Err(e) => {
+                                    warn!(order_id = %order.order_id, error = %e, "Submit order consensus failed");
+                                    ar.increment_retry_count(cid, order.order_id).await;
                                 }
                             }
-                            Err(e) => {
-                                warn!(order_id = %order.order_id, error = %e, "Submit order consensus failed");
-                                arb_reader.increment_retry_count(chain_id, order.order_id).await;
-                            }
+                        }
+                        Err(e) => {
+                            warn!(order_id = %order.order_id, error = %e, am_leader, "Bridge Arb→L3 consensus failed");
+                            ar.increment_retry_count(cid, order.order_id).await;
                         }
                     }
-                    Err(e) => {
-                        warn!(order_id = %order.order_id, error = %e, am_leader, "Bridge Arb→L3 consensus failed");
-                        arb_reader.increment_retry_count(chain_id, order.order_id).await;
-                    }
-                }
+                }));
+            }
+            // Wait for all order tasks to complete
+            for handle in handles {
+                let _ = handle.await;
             }
         }
         Ok(_) => { debug!(cycle = current_cycle, "No new cross-chain orders"); }
@@ -1471,7 +1536,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                         trades
                     };
 
-                    match protocol.run_asset_trades_phase(current_cycle, &asset_trade_orders, chain_reader, batch_am_leader, quote_tokens.as_ref()).await {
+                    match protocol.run_asset_trades_phase(current_cycle, &asset_trade_orders, &chain_reader, batch_am_leader, quote_tokens.as_ref()).await {
                         Ok(at_result) => {
                             info!(
                                 cycle = current_cycle,
@@ -1738,18 +1803,18 @@ async fn run_cross_chain_processing<P, W, K, PF>(
 /// Phase B: Batch/trades/fills (reuse existing consensus phases)
 /// Phase C: Complete sell on Arb (consensus) — completeSellOrder()
 async fn run_cross_chain_sell_processing<P, W, K, PF>(
-    protocol: &Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
-    arb_reader: &Arc<issuer::ArbitrumChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
-    orchestrator: &Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
-    arb_writer: &Arc<issuer::ArbitrumChainWriter>,
-    chain_reader: &Arc<dyn common::traits::ChainReader>,
+    protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
+    arb_reader: Arc<issuer::ArbitrumChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
+    orchestrator: Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
+    arb_writer: Arc<issuer::ArbitrumChainWriter>,
+    chain_reader: Arc<dyn common::traits::ChainReader>,
     current_cycle: u64,
     node_index: u8,
     num_issuers: u8,
-    data_node_url_for_task: &Option<String>,
-    itp_id_for_task: &str,
+    data_node_url_for_task: Option<String>,
+    itp_id_for_task: String,
     local_nav_fallback: ethers::types::U256,
-    quote_tokens: &Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
+    quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -1783,6 +1848,17 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                 info!(cycle = current_cycle, order_count = new_sell_orders.len(), from_block, to_block = confirmed_block, "Found cross-chain sell orders");
             }
 
+            // Set initial status for all sell orders before spawning
+            {
+                let orch_write = orchestrator.write().await;
+                for sell_order in &new_sell_orders {
+                    orch_write.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellPending).await;
+                    orch_write.set_sell_order_amount(sell_order.order_id, sell_order.amount).await;
+                }
+            }
+
+            let chain_id = arb_reader.config().chain_id;
+            let mut handles = Vec::new();
             for sell_order in new_sell_orders {
                 let am_leader = calculate_bridge_leader(sell_order.order_id.as_u64(), num_issuers, node_index);
                 info!(
@@ -1795,43 +1871,42 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                     "Processing cross-chain sell order"
                 );
 
-                // Mark as SellPending and store amount
-                {
-                    let orch_write = orchestrator.write().await;
-                    orch_write.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellPending).await;
-                    orch_write.set_sell_order_amount(sell_order.order_id, sell_order.amount).await;
-                }
+                let p = protocol.clone();
+                let ar = arb_reader.clone();
+                let orch = orchestrator.clone();
+                let cid = chain_id;
 
-                let chain_id = arb_reader.config().chain_id;
-
-                // Phase A: Submit sell order on L3 via consensus
-                match protocol.run_submit_sell_order_phase(
-                    sell_order.order_id,
-                    sell_order.itp_id,
-                    sell_order.user,
-                    sell_order.bridged_itp_address,
-                    sell_order.amount,
-                    am_leader,
-                ).await {
-                    Ok(submit_result) => {
-                        info!(
-                            order_id = %sell_order.order_id,
-                            signer_count = submit_result.signature_count,
-                            "Submit sell order consensus completed"
-                        );
-                        // Mark as SellSubmittedOnL3 and mark processed in arb_reader
-                        {
-                            let orch_write = orchestrator.write().await;
-                            orch_write.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellSubmittedOnL3).await;
+                handles.push(tokio::spawn(async move {
+                    match p.run_submit_sell_order_phase(
+                        sell_order.order_id,
+                        sell_order.itp_id,
+                        sell_order.user,
+                        sell_order.bridged_itp_address,
+                        sell_order.amount,
+                        am_leader,
+                    ).await {
+                        Ok(submit_result) => {
+                            info!(
+                                order_id = %sell_order.order_id,
+                                signer_count = submit_result.signature_count,
+                                "Submit sell order consensus completed"
+                            );
+                            {
+                                let orch_write = orch.write().await;
+                                orch_write.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellSubmittedOnL3).await;
+                            }
+                            ar.mark_sell_order_processed(cid, sell_order.order_id).await;
                         }
-                        arb_reader.mark_sell_order_processed(chain_id, sell_order.order_id).await;
+                        Err(e) => {
+                            warn!(order_id = %sell_order.order_id, error = %e, am_leader, "Submit sell order consensus failed");
+                            ar.mark_sell_order_processed(cid, sell_order.order_id).await;
+                        }
                     }
-                    Err(e) => {
-                        warn!(order_id = %sell_order.order_id, error = %e, am_leader, "Submit sell order consensus failed");
-                        arb_reader.mark_sell_order_processed(chain_id, sell_order.order_id).await;
-                        // Mark to avoid re-processing (will retry on next detection)
-                    }
-                }
+                }));
+            }
+            // Wait for all sell order tasks to complete
+            for handle in handles {
+                let _ = handle.await;
             }
         }
         Ok(_) => { debug!(cycle = current_cycle, "No new cross-chain sell orders"); }
@@ -1866,7 +1941,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
             submitted_sell_orders.clone()
         };
 
-        let nav = fetch_nav(data_node_url_for_task, itp_id_for_task, local_nav_fallback).await;
+        let nav = fetch_nav(&data_node_url_for_task, &itp_id_for_task, local_nav_fallback).await;
         info!(cycle = current_cycle, nav = %nav, "NAV for sell batch/fills");
         let prices: Vec<ethers::types::U256> = order_ids_for_batch.iter()
             .map(|_| nav)
@@ -1889,7 +1964,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                         trades
                     };
 
-                    match protocol.run_asset_trades_phase(current_cycle, &asset_trade_orders, chain_reader, batch_am_leader, quote_tokens.as_ref()).await {
+                    match protocol.run_asset_trades_phase(current_cycle, &asset_trade_orders, &chain_reader, batch_am_leader, quote_tokens.as_ref()).await {
                         Ok(at_result) => {
                             info!(
                                 cycle = current_cycle,
@@ -2011,7 +2086,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
             let o = orchestrator.read().await;
             let amount = o.get_sell_order_amount(&order_id).await
                 .unwrap_or(ethers::types::U256::exp10(18));
-            let nav = fetch_nav(data_node_url_for_task, itp_id_for_task, local_nav_fallback).await;
+            let nav = fetch_nav(&data_node_url_for_task, &itp_id_for_task, local_nav_fallback).await;
             // proceeds_18dec = amount * nav / 1e18, then convert to 6dec
             let proceeds_18dec = amount * nav / ethers::types::U256::exp10(18);
             proceeds_18dec / ethers::types::U256::exp10(12)
@@ -2099,15 +2174,15 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
 /// Scans L3 for RebalanceRequested events via chain_reader and runs a single
 /// consensus phase per ITP, calling `rebalance()` on-chain (matches contract).
 async fn run_rebalance_processing<P, W, K, PF>(
-    protocol: &Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
-    orchestrator: &Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
-    chain_reader: &Arc<dyn common::traits::ChainReader>,
+    protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
+    orchestrator: Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
+    chain_reader: Arc<dyn common::traits::ChainReader>,
     current_cycle: u64,
     node_index: u8,
     num_issuers: u8,
-    price_fetcher: &Arc<dyn PriceFetcher>,
-    symbol_map: &issuer::SymbolMap,
-    quote_tokens: &Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
+    price_fetcher: Arc<dyn PriceFetcher>,
+    _symbol_map: issuer::SymbolMap,
+    quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -2437,17 +2512,17 @@ fn fill_price_respects_limit(
 /// confirmFills via BLS consensus for any pending orders not already tracked by
 /// the BridgeOrchestrator.
 async fn run_l3_native_order_processing<P, W, K, PF>(
-    protocol: &Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
-    orchestrator: &Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
-    chain_reader: &Arc<dyn common::traits::ChainReader>,
+    protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
+    orchestrator: Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
+    chain_reader: Arc<dyn common::traits::ChainReader>,
     current_cycle: u64,
     node_index: u8,
     num_issuers: u8,
-    first_seen_orders: &mut HashMap<u64, std::time::Instant>,
-    data_node_url_for_task: &Option<String>,
-    itp_id_for_task: &str,
+    first_seen_orders: Arc<tokio::sync::Mutex<HashMap<u64, std::time::Instant>>>,
+    data_node_url_for_task: Option<String>,
+    itp_id_for_task: String,
     local_nav_fallback: ethers::types::U256,
-    quote_tokens: &Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
+    quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -2499,7 +2574,10 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     let l3_cycle = min_order_id + 500_000_000;
 
     // 4. Leader election with infinite failover rotation
-    let detected_at = *first_seen_orders.entry(l3_cycle).or_insert_with(std::time::Instant::now);
+    let detected_at = {
+        let mut fso = first_seen_orders.lock().await;
+        *fso.entry(l3_cycle).or_insert_with(std::time::Instant::now)
+    };
     let attempt = detected_at.elapsed().as_secs() / LEADER_TIMEOUT_SECS;
     let am_leader = calculate_bridge_leader_with_failover(l3_cycle, num_issuers, node_index, attempt);
 
@@ -2543,7 +2621,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
                 .map(|o| (o.itp_id, o.side as u8, o.amount))
                 .collect();
 
-            match protocol.run_asset_trades_phase(l3_cycle, &asset_trade_orders, chain_reader, am_leader, quote_tokens.as_ref()).await {
+            match protocol.run_asset_trades_phase(l3_cycle, &asset_trade_orders, &chain_reader, am_leader, quote_tokens.as_ref()).await {
                 Ok(at_result) => {
                     info!(
                         cycle = current_cycle, l3_cycle,
@@ -2590,7 +2668,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
                         orch.set_order_status(*oid, issuer::BridgeOrderStatus::Filled).await;
                     }
                     drop(orch);
-                    first_seen_orders.remove(&l3_cycle);
+                    first_seen_orders.lock().await.remove(&l3_cycle);
                 }
                 Err(e) => {
                     warn!(cycle = current_cycle, l3_cycle, error = %e, "L3-native fills confirmation failed");
@@ -2624,7 +2702,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
                             orch.set_order_status(*oid, issuer::BridgeOrderStatus::Filled).await;
                         }
                         drop(orch);
-                        first_seen_orders.remove(&l3_cycle);
+                        first_seen_orders.lock().await.remove(&l3_cycle);
                     }
                     Err(e) => {
                         warn!(cycle = current_cycle, error = %e, "L3-native fills also failed");
@@ -2668,7 +2746,10 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     let min_batched_id = l3_batched_orders.iter().map(|o| o.id.as_u64()).min().unwrap();
     let fills_cycle = min_batched_id + 500_000_001;
 
-    let detected_at = *first_seen_orders.entry(fills_cycle).or_insert_with(std::time::Instant::now);
+    let detected_at = {
+        let mut fso = first_seen_orders.lock().await;
+        *fso.entry(fills_cycle).or_insert_with(std::time::Instant::now)
+    };
     let attempt = detected_at.elapsed().as_secs() / LEADER_TIMEOUT_SECS;
     let fills_am_leader = calculate_bridge_leader_with_failover(fills_cycle, num_issuers, node_index, attempt);
 
@@ -2726,7 +2807,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
                 orch.set_order_status(*oid, issuer::BridgeOrderStatus::Filled).await;
             }
             drop(orch);
-            first_seen_orders.remove(&fills_cycle);
+            first_seen_orders.lock().await.remove(&fills_cycle);
         }
         Err(e) => {
             warn!(cycle = current_cycle, fills_cycle, error = %e, "BATCHED L3-native fills confirmation failed");
