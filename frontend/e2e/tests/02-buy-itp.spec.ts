@@ -24,15 +24,19 @@ test.describe('Buy ITP', () => {
     await expect(page.getByRole('heading', { name: /^Buy\s/ })).toBeVisible({ timeout: 10_000 });
 
     // 5. If USDC balance is 0, mint test USDC
-    // Wait for balance to load first — mint button flashes briefly while balance is undefined
+    // Wait for balance to fully load (not the initial 0.00 flash)
     await expect(page.getByText(/Balance:.*USDC/)).toBeVisible({ timeout: 10_000 });
-    const mintBtn = buyModal.mintTestUsdcButton(page);
-    if (await mintBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
-      // Mint button can flash briefly while balance loads — use short click timeout
-      const clicked = await mintBtn.click({ timeout: 5_000 }).then(() => true).catch(() => false);
-      if (clicked) {
-        await expect(buyModal.mintedBadge(page)).toBeVisible({ timeout: 30_000 });
-        await page.waitForTimeout(6_000);
+    await page.waitForTimeout(3_000); // let RPC balance query settle
+    const balanceText = await page.getByText(/Balance:.*USDC/).textContent();
+    const balanceNum = parseFloat(balanceText?.replace(/[^0-9.]/g, '') || '0');
+    if (balanceNum < 100) {
+      const mintBtn = buyModal.mintTestUsdcButton(page);
+      if (await mintBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+        const clicked = await mintBtn.click({ timeout: 5_000 }).then(() => true).catch(() => false);
+        if (clicked) {
+          await expect(buyModal.mintedBadge(page)).toBeVisible({ timeout: 30_000 });
+          await page.waitForTimeout(6_000);
+        }
       }
     }
 

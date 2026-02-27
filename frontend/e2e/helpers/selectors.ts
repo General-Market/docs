@@ -8,7 +8,7 @@ import { type Page, type Locator } from '@playwright/test';
 // ── Wallet ──────────────────────────────────────────────────
 
 export function connectWalletButton(page: Page): Locator {
-  return page.getByRole('button', { name: /Log\s?In|Login on Base/ });
+  return page.getByRole('button', { name: /Connect Wallet|Log\s?In|Login on Base/ });
 }
 
 export function disconnectButton(page: Page): Locator {

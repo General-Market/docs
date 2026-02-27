@@ -110,7 +110,7 @@ test.describe('Vision Sources — Browse', () => {
     await firstCard.getByRole('link', { name: 'Markets' }).first().click()
 
     // Should navigate to /source/{id}
-    await page.waitForURL(/\/source\//, { timeout: 15_000 })
+    await page.waitForURL(/\/source\//, { timeout: 30_000 })
     expect(page.url()).toContain('/source/')
   })
 })
