@@ -1,0 +1,751 @@
+{
+  "updated_at": "2026-02-27T11:10:52Z",
+  "total_sources": 81,
+  "categories": [
+    "academic",
+    "economic",
+    "entertainment",
+    "finance",
+    "geophysical",
+    "nature",
+    "regulatory",
+    "space",
+    "tech",
+    "transport"
+  ],
+  "sources": [
+    {
+      "id": "coingecko",
+      "name": "CoinGecko Crypto",
+      "category": "finance",
+      "prefixes": [
+        "crypto_"
+      ],
+      "description": "Cryptocurrency market data \u2014 prices, volumes, market caps for thousands of tokens."
+    },
+    {
+      "id": "pumpfun",
+      "name": "Pump.fun Tokens",
+      "category": "finance",
+      "prefixes": [
+        "pumpfun_"
+      ],
+      "description": "Solana memecoin launchpad \u2014 real-time prices, volumes, and market caps for recently launched tokens."
+    },
+    {
+      "id": "defillama",
+      "name": "DefiLlama DeFi",
+      "category": "finance",
+      "prefixes": [
+        "defi_"
+      ],
+      "description": "DeFi protocol analytics \u2014 TVL, yields, fees, volumes across all major chains and protocols."
+    },
+    {
+      "id": "finnhub",
+      "name": "Finnhub Stocks",
+      "category": "finance",
+      "prefixes": [
+        "stock_",
+        "stocks_"
+      ],
+      "description": "Real-time stock market data \u2014 US equities, forex, and crypto with company fundamentals."
+    },
+    {
+      "id": "nasdaq",
+      "name": "Nasdaq Listings",
+      "category": "finance",
+      "prefixes": [
+        "nasdaq_"
+      ],
+      "description": "Official Nasdaq exchange data \u2014 listed securities, ETFs, and index constituents."
+    },
+    {
+      "id": "zillow",
+      "name": "Zillow Real Estate",
+      "category": "finance",
+      "prefixes": [
+        "zillow_"
+      ],
+      "description": "US housing market data \u2014 home values, rent indices, inventory, and price-to-rent ratios."
+    },
+    {
+      "id": "polymarket",
+      "name": "Polymarket Predictions",
+      "category": "finance",
+      "prefixes": [
+        "poly_"
+      ],
+      "description": "Prediction market data \u2014 real-time odds and volumes for events across politics, crypto, sports."
+    },
+    {
+      "id": "finra",
+      "name": "FINRA Short Interest",
+      "category": "finance",
+      "prefixes": [
+        "finra_"
+      ],
+      "description": "Short selling data \u2014 daily short volume and total volume for all US exchange-listed securities."
+    },
+    {
+      "id": "finra_short_vol",
+      "name": "FINRA Short Volume",
+      "category": "finance",
+      "prefixes": [
+        "finra_short_vol_"
+      ],
+      "description": "Daily short volume and total volume for exchange-listed securities from FINRA reports."
+    },
+    {
+      "id": "futures",
+      "name": "Continuous Futures",
+      "category": "finance",
+      "prefixes": [
+        "futures_"
+      ],
+      "description": "Continuous front-month futures contracts \u2014 commodities, indices, currencies, and interest rates."
+    },
+    {
+      "id": "bchain",
+      "name": "Bitcoin On-Chain",
+      "category": "finance",
+      "prefixes": [
+        "bchain_"
+      ],
+      "description": "Bitcoin blockchain metrics \u2014 hashrate, difficulty, block size, miner revenue, transaction volume."
+    },
+    {
+      "id": "yahoo_drinks",
+      "name": "Yahoo Drinks",
+      "category": "finance",
+      "prefixes": [
+        "yahoo_drinks_"
+      ],
+      "description": "Coffee, sugar, cocoa, OJ futures and major beverage company stock prices via Yahoo Finance."
+    },
+    {
+      "id": "twse",
+      "name": "Taiwan Stock Exchange",
+      "category": "finance",
+      "prefixes": [
+        "twse_"
+      ],
+      "description": "TWSE market data \u2014 daily OHLCV, foreign investor flows, margin trading for Taiwanese equities."
+    },
+    {
+      "id": "bestbuy",
+      "name": "Best Buy Products",
+      "category": "finance",
+      "prefixes": [
+        "bestbuy_"
+      ],
+      "description": "Consumer electronics pricing \u2014 real-time sale prices across 7 categories from top-selling products."
+    },
+    {
+      "id": "fred",
+      "name": "FRED Interest Rates",
+      "category": "economic",
+      "prefixes": [
+        "fred_"
+      ],
+      "description": "Federal Reserve Economic Data \u2014 interest rates, yield curves, money supply, employment, inflation."
+    },
+    {
+      "id": "eia",
+      "name": "EIA Energy Data",
+      "category": "economic",
+      "prefixes": [
+        "eia_"
+      ],
+      "description": "Energy Information Administration \u2014 crude oil, natural gas, electricity, renewable energy."
+    },
+    {
+      "id": "treasury",
+      "name": "US Treasury Yields",
+      "category": "economic",
+      "prefixes": [
+        "treasury_",
+        "tsy_"
+      ],
+      "description": "Daily yield curve rates \u2014 T-bills, notes, and bonds from 1-month to 30-year maturities."
+    },
+    {
+      "id": "ecb",
+      "name": "ECB Exchange Rates",
+      "category": "economic",
+      "prefixes": [
+        "ecb_"
+      ],
+      "description": "European Central Bank \u2014 exchange rates, monetary aggregates, bank lending, euro area indicators."
+    },
+    {
+      "id": "worldbank",
+      "name": "World Bank Indicators",
+      "category": "economic",
+      "prefixes": [
+        "worldbank_"
+      ],
+      "description": "Development indicators \u2014 GDP, population, poverty, health, education for 200+ countries."
+    },
+    {
+      "id": "bls",
+      "name": "Bureau of Labor Stats",
+      "category": "economic",
+      "prefixes": [
+        "bls_"
+      ],
+      "description": "Bureau of Labor Statistics \u2014 CPI, unemployment, job openings, producer prices, wage data."
+    },
+    {
+      "id": "adzuna",
+      "name": "Adzuna Jobs",
+      "category": "economic",
+      "prefixes": [
+        "adzuna_"
+      ],
+      "description": "Job vacancy counts and average advertised salaries across US, UK, Germany, and France."
+    },
+    {
+      "id": "usa_spending",
+      "name": "Federal Spending",
+      "category": "economic",
+      "prefixes": [
+        "usa_spending_"
+      ],
+      "description": "Federal spending \u2014 contracts, grants, loans, and government outlays by agency and program."
+    },
+    {
+      "id": "imf",
+      "name": "IMF Indicators",
+      "category": "economic",
+      "prefixes": [
+        "imf_"
+      ],
+      "description": "International Monetary Fund \u2014 GDP, trade, debt, reserves, and fiscal indicators for 190+ countries."
+    },
+    {
+      "id": "opec",
+      "name": "OPEC Oil Data",
+      "category": "economic",
+      "prefixes": [
+        "opec_"
+      ],
+      "description": "OPEC reference basket price and production data for global oil market analysis."
+    },
+    {
+      "id": "cftc",
+      "name": "CFTC Commitments",
+      "category": "economic",
+      "prefixes": [
+        "cftc_"
+      ],
+      "description": "Commitments of Traders \u2014 weekly positions of commercial and speculative traders in futures markets."
+    },
+    {
+      "id": "sec",
+      "name": "SEC Filings",
+      "category": "regulatory",
+      "prefixes": [
+        "sec_edgar_",
+        "sec_efts_",
+        "sec_insider_"
+      ],
+      "description": "Institutional investment disclosures \u2014 13F holdings, EDGAR filings, and insider transactions."
+    },
+    {
+      "id": "congress",
+      "name": "Congress Votes",
+      "category": "regulatory",
+      "prefixes": [
+        "congress_"
+      ],
+      "description": "US legislative data \u2014 bill introductions, votes, committee actions, congressional metrics."
+    },
+    {
+      "id": "courtlistener",
+      "name": "Federal Courts",
+      "category": "regulatory",
+      "prefixes": [
+        "court_"
+      ],
+      "description": "Daily federal court filing counts \u2014 opinions, docket entries, and new cases across 34 courts."
+    },
+    {
+      "id": "github",
+      "name": "GitHub Repositories",
+      "category": "tech",
+      "prefixes": [
+        "github_"
+      ],
+      "description": "Open source activity \u2014 stars, forks, issues, commits, and contributor metrics."
+    },
+    {
+      "id": "npm",
+      "name": "npm Packages",
+      "category": "tech",
+      "prefixes": [
+        "npm_"
+      ],
+      "description": "JavaScript ecosystem \u2014 daily/weekly download counts and framework adoption trends."
+    },
+    {
+      "id": "pypi",
+      "name": "PyPI Packages",
+      "category": "tech",
+      "prefixes": [
+        "pypi_"
+      ],
+      "description": "Python package index \u2014 download statistics, version releases, and adoption metrics."
+    },
+    {
+      "id": "crates_io",
+      "name": "Crates.io Rust",
+      "category": "tech",
+      "prefixes": [
+        "crates_io_"
+      ],
+      "description": "Rust ecosystem \u2014 crate downloads, versions, and dependency metrics."
+    },
+    {
+      "id": "stackexchange",
+      "name": "StackOverflow",
+      "category": "tech",
+      "prefixes": [
+        "stackexchange_"
+      ],
+      "description": "Developer activity \u2014 daily new question counts by popular tag tracking framework and language adoption."
+    },
+    {
+      "id": "cloudflare",
+      "name": "Cloudflare DNS",
+      "category": "tech",
+      "prefixes": [
+        "cloudflare_"
+      ],
+      "description": "Internet traffic insights \u2014 domain popularity, traffic trends, and attack analytics."
+    },
+    {
+      "id": "openalex",
+      "name": "OpenAlex Papers",
+      "category": "academic",
+      "prefixes": [
+        "openalex_"
+      ],
+      "description": "Scholarly work tracker \u2014 daily new publication counts by research field across 25 academic disciplines."
+    },
+    {
+      "id": "crossref",
+      "name": "Crossref Citations",
+      "category": "academic",
+      "prefixes": [
+        "crossref_"
+      ],
+      "description": "Scholarly publishing \u2014 daily new DOI registrations by document type tracking research output trends."
+    },
+    {
+      "id": "pubmed",
+      "name": "PubMed Medical",
+      "category": "academic",
+      "prefixes": [
+        "pubmed_"
+      ],
+      "description": "NCBI biomedical literature \u2014 daily new article counts by topic across 24 medical research areas."
+    },
+    {
+      "id": "twitch",
+      "name": "Twitch Streaming",
+      "category": "entertainment",
+      "prefixes": [
+        "twitch_"
+      ],
+      "description": "Live streaming metrics \u2014 viewer counts, active streams, top categories, channel growth."
+    },
+    {
+      "id": "tmdb",
+      "name": "Movies & TV",
+      "category": "entertainment",
+      "prefixes": [
+        "tmdb_"
+      ],
+      "description": "Film and television \u2014 box office, ratings, popularity scores, and trending titles."
+    },
+    {
+      "id": "lastfm",
+      "name": "Last.fm Music",
+      "category": "entertainment",
+      "prefixes": [
+        "lastfm_"
+      ],
+      "description": "Music analytics \u2014 top artist listener counts, playcounts, and chart trends from Last.fm."
+    },
+    {
+      "id": "steam",
+      "name": "Steam Gaming",
+      "category": "entertainment",
+      "prefixes": [
+        "steam_"
+      ],
+      "description": "PC gaming \u2014 concurrent players, game releases, review scores, and player count trends."
+    },
+    {
+      "id": "anilist",
+      "name": "AniList Anime",
+      "category": "entertainment",
+      "prefixes": [
+        "anilist_"
+      ],
+      "description": "Anime and manga \u2014 popularity, ratings, seasonal rankings, community engagement."
+    },
+    {
+      "id": "reddit",
+      "name": "Reddit Communities",
+      "category": "entertainment",
+      "prefixes": [
+        "reddit_"
+      ],
+      "description": "Community analytics \u2014 subscriber counts and active users across 100+ curated subreddits."
+    },
+    {
+      "id": "chaturbate",
+      "name": "Chaturbate Live",
+      "category": "entertainment",
+      "prefixes": [
+        "cb_model_"
+      ],
+      "description": "Adult streaming metrics \u2014 live viewer counts for top models from the public affiliate API."
+    },
+    {
+      "id": "bgg",
+      "name": "Board Games",
+      "category": "entertainment",
+      "prefixes": [
+        "bgg_"
+      ],
+      "description": "Board game trends \u2014 hotness rankings for top 50 board games from the BGG community."
+    },
+    {
+      "id": "backpacktf",
+      "name": "Backpack.tf Trading",
+      "category": "entertainment",
+      "prefixes": [
+        "backpacktf_"
+      ],
+      "description": "TF2 economy \u2014 item prices, unusual hat values, and virtual item trading volume."
+    },
+    {
+      "id": "fourchan",
+      "name": "4chan Boards",
+      "category": "entertainment",
+      "prefixes": [
+        "fourchan_"
+      ],
+      "description": "Imageboard sentiment \u2014 post volumes, trending topics across /biz/, /pol/, and more."
+    },
+    {
+      "id": "sports",
+      "name": "Sports Stats",
+      "category": "entertainment",
+      "prefixes": [
+        "sport_"
+      ],
+      "description": "Live sports data \u2014 scores, standings, schedules, stats across NFL, NBA, MLB, NHL."
+    },
+    {
+      "id": "pandascore",
+      "name": "Esports",
+      "category": "entertainment",
+      "prefixes": [
+        "esport_"
+      ],
+      "description": "Esports match tracking \u2014 live scores across CS2, LoL, Dota 2, Valorant, and more."
+    },
+    {
+      "id": "queue_times",
+      "name": "Theme Park Waits",
+      "category": "entertainment",
+      "prefixes": [
+        "queue_times_"
+      ],
+      "description": "Average ride wait times across 30+ major theme parks worldwide \u2014 Disney, Universal, and more."
+    },
+    {
+      "id": "earthquake",
+      "name": "USGS Earthquakes",
+      "category": "geophysical",
+      "prefixes": [
+        "earthquake_"
+      ],
+      "description": "Seismic event data \u2014 real-time magnitudes, depths, and locations from the seismic network."
+    },
+    {
+      "id": "volcano",
+      "name": "Volcano Activity",
+      "category": "geophysical",
+      "prefixes": [
+        "volcano_"
+      ],
+      "description": "Volcanic activity monitoring \u2014 alert levels, eruption status, hazard assessments worldwide."
+    },
+    {
+      "id": "weather",
+      "name": "NOAA Weather",
+      "category": "geophysical",
+      "prefixes": [
+        "weather_"
+      ],
+      "description": "Official NWS forecasts \u2014 point forecasts, area discussions, and observation data across the US."
+    },
+    {
+      "id": "weather_alerts",
+      "name": "Weather Alerts",
+      "category": "geophysical",
+      "prefixes": [
+        "weather_alert_"
+      ],
+      "description": "National Weather Service \u2014 warnings, watches, advisories for severe weather across the US."
+    },
+    {
+      "id": "openmeteo",
+      "name": "Open-Meteo",
+      "category": "geophysical",
+      "prefixes": [
+        "openmeteo_"
+      ],
+      "description": "Global weather forecasts \u2014 temperature, precipitation, wind, and historical climate data."
+    },
+    {
+      "id": "airnow",
+      "name": "Air Quality",
+      "category": "geophysical",
+      "prefixes": [
+        "airnow_"
+      ],
+      "description": "EPA air quality index \u2014 real-time AQI readings across 300+ US metropolitan reporting areas."
+    },
+    {
+      "id": "usgs_water",
+      "name": "USGS Water",
+      "category": "geophysical",
+      "prefixes": [
+        "usgs_water_"
+      ],
+      "description": "River discharge monitoring \u2014 real-time streamflow data from USGS stations across 15 US states."
+    },
+    {
+      "id": "noaa_met",
+      "name": "NOAA Ocean Met",
+      "category": "geophysical",
+      "prefixes": [
+        "noaa_met_"
+      ],
+      "description": "Water temperature and wind speed from 59 major US coastal meteorological stations."
+    },
+    {
+      "id": "noaa_tides",
+      "name": "NOAA Tides",
+      "category": "geophysical",
+      "prefixes": [
+        "noaa_tide_"
+      ],
+      "description": "Real-time water levels from 59 major US tide stations relative to MLLW datum."
+    },
+    {
+      "id": "ndbc",
+      "name": "NDBC Ocean Buoys",
+      "category": "geophysical",
+      "prefixes": [
+        "ndbc_"
+      ],
+      "description": "Wave height and ocean conditions from NDBC buoys across US coastal and offshore waters."
+    },
+    {
+      "id": "nwps",
+      "name": "River Gauges",
+      "category": "geophysical",
+      "prefixes": [
+        "nwps_"
+      ],
+      "description": "Real-time river gauge heights and flood stage data from 68 major US waterway monitoring points."
+    },
+    {
+      "id": "nrc_nuclear",
+      "name": "NRC Nuclear",
+      "category": "geophysical",
+      "prefixes": [
+        "nrc_"
+      ],
+      "description": "Daily power output percentage for all 93 US commercial nuclear reactors from NRC reports."
+    },
+    {
+      "id": "wildfire",
+      "name": "Wildfire Tracking",
+      "category": "geophysical",
+      "prefixes": [
+        "wildfire_"
+      ],
+      "description": "Satellite fire detection \u2014 real-time active fire data from MODIS and VIIRS instruments."
+    },
+    {
+      "id": "epidemic",
+      "name": "Disease Tracking",
+      "category": "geophysical",
+      "prefixes": [
+        "epidemic_"
+      ],
+      "description": "Global disease tracking \u2014 case counts, deaths, vaccination rates by country."
+    },
+    {
+      "id": "flights",
+      "name": "Global Flights",
+      "category": "transport",
+      "prefixes": [
+        "flights_"
+      ],
+      "description": "Aviation tracking \u2014 live flight counts, airport traffic, airline ops, airspace congestion."
+    },
+    {
+      "id": "gtfs_rt",
+      "name": "Transit Realtime",
+      "category": "transport",
+      "prefixes": [
+        "gtfs_"
+      ],
+      "description": "Public transit feeds \u2014 real-time bus/rail positions, service alerts, schedule adherence."
+    },
+    {
+      "id": "citybikes",
+      "name": "CityBikes",
+      "category": "transport",
+      "prefixes": [
+        "citybikes_"
+      ],
+      "description": "Available bikes across 30 major bike-sharing networks worldwide \u2014 real-time station data."
+    },
+    {
+      "id": "parking",
+      "name": "Parking Availability",
+      "category": "transport",
+      "prefixes": [
+        "parking_"
+      ],
+      "description": "Real-time free parking space counts across 20+ European cities from municipal sensors."
+    },
+    {
+      "id": "tomtom_traffic",
+      "name": "TomTom Traffic",
+      "category": "transport",
+      "prefixes": [
+        "tomtom_traffic_"
+      ],
+      "description": "Real-time road congestion ratios for 20+ highway corridors \u2014 current speed vs free-flow speed."
+    },
+    {
+      "id": "tomtom_evcharge",
+      "name": "EV Charging",
+      "category": "transport",
+      "prefixes": [
+        "tomtom_evcharge_"
+      ],
+      "description": "Available EV charging connectors at 25+ major charging hubs worldwide \u2014 real-time availability."
+    },
+    {
+      "id": "cbp_border",
+      "name": "Border Wait Times",
+      "category": "transport",
+      "prefixes": [
+        "cbp_border_"
+      ],
+      "description": "US Customs and Border Protection \u2014 real-time passenger and commercial wait times at all ports of entry."
+    },
+    {
+      "id": "faa_delays",
+      "name": "Airport Delays",
+      "category": "transport",
+      "prefixes": [
+        "faa_delays_"
+      ],
+      "description": "Real-time delay status for 30 major US airports from the FAA Airport Status Web Service."
+    },
+    {
+      "id": "aisstream",
+      "name": "Ship Tracking",
+      "category": "transport",
+      "prefixes": [
+        "aisstream_"
+      ],
+      "description": "Real-time AIS stream \u2014 live vessel positions, speeds, and routes from AIS receivers."
+    },
+    {
+      "id": "maritime",
+      "name": "Port Data",
+      "category": "transport",
+      "prefixes": [
+        "maritime_"
+      ],
+      "description": "Ship tracking \u2014 vessel positions, port traffic, shipping lane activity, cargo movements."
+    },
+    {
+      "id": "ebird",
+      "name": "eBird Observations",
+      "category": "nature",
+      "prefixes": [
+        "ebird_"
+      ],
+      "description": "Global birding data \u2014 species checklists, hotspot activity, migration timing from Cornell Lab."
+    },
+    {
+      "id": "animals",
+      "name": "Wildlife Tracking",
+      "category": "nature",
+      "prefixes": [
+        "animals_"
+      ],
+      "description": "Citizen science biodiversity \u2014 species sightings, observation counts, ecological trends."
+    },
+    {
+      "id": "movebank",
+      "name": "Animal Migration",
+      "category": "nature",
+      "prefixes": [
+        "movebank_"
+      ],
+      "description": "Animal movement tracking \u2014 GPS telemetry for wildlife migration studies worldwide."
+    },
+    {
+      "id": "shelter",
+      "name": "Animal Shelters",
+      "category": "nature",
+      "prefixes": [
+        "shelter_"
+      ],
+      "description": "Stray animal counts at shelters by species and status \u2014 dogs and cats via Socrata open data."
+    },
+    {
+      "id": "spaceweather",
+      "name": "Space Weather",
+      "category": "space",
+      "prefixes": [
+        "spaceweather_"
+      ],
+      "description": "Solar activity \u2014 solar flares, geomagnetic storms, Kp index, space weather alerts."
+    },
+    {
+      "id": "iss",
+      "name": "ISS Tracker",
+      "category": "space",
+      "prefixes": [
+        "iss_"
+      ],
+      "description": "International Space Station \u2014 real-time orbital position, crew count, pass predictions."
+    },
+    {
+      "id": "mil_aircraft",
+      "name": "Military Aircraft",
+      "category": "space",
+      "prefixes": [
+        "mil_aircraft_"
+      ],
+      "description": "Defense aviation \u2014 military flights, tanker ops, surveillance movements via ADS-B."
+    }
+  ]
+}
