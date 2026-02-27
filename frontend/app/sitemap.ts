@@ -28,8 +28,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/index', changeFrequency: 'daily', priority: 0.9 },
     { path: '/sources', changeFrequency: 'daily', priority: 0.5 },
     { path: '/points', changeFrequency: 'daily', priority: 0.5 },
+    { path: '/about', changeFrequency: 'monthly' as const, priority: 0.7 },
     { path: '/privacy', changeFrequency: 'monthly', priority: 0.3 },
     { path: '/terms', changeFrequency: 'monthly', priority: 0.3 },
+    { path: '/learn/what-are-itps', changeFrequency: 'monthly' as const, priority: 0.8 },
   ]
 
   const entries: MetadataRoute.Sitemap = []

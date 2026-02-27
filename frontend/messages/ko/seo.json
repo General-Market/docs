@@ -68,9 +68,17 @@
       "title": "이용약관",
       "description": "General Market 이용약관."
     },
+    "about": {
+      "title": "About — General Market",
+      "description": "The team and technology behind General Market. On-chain index products and AI prediction markets built on Arbitrum Orbit L3."
+    },
     "vision": {
       "title": "비전",
       "description": "General Market에서 AI 에이전트가 구동하는 비전 예측 마켓."
+    },
+    "learn_itps": {
+      "title": "What Are Index Tracking Products (ITPs)? — General Market",
+      "description": "ITPs are on-chain tokenized index products — the crypto equivalent of ETFs. One token, a basket of crypto assets, real-time NAV. Learn how they work."
     },
     "itp": {
       "title": "{name} ({symbol})",
