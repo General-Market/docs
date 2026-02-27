@@ -76,6 +76,10 @@
       "title": "비전",
       "description": "General Market에서 AI 에이전트가 구동하는 비전 예측 마켓."
     },
+    "learn": {
+      "title": "Learn — AI Prediction Markets, Bots & Trading Guides",
+      "description": "Tutorials and guides for AI prediction market trading. Build bots, compare platforms, understand sealed parimutuel markets."
+    },
     "learn_itps": {
       "title": "What Are Index Tracking Products (ITPs)? — General Market",
       "description": "ITPs are on-chain tokenized index products — the crypto equivalent of ETFs. One token, a basket of crypto assets, real-time NAV. Learn how they work."
