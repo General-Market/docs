@@ -1,0 +1,292 @@
+---
+title: "Bitmap Encoding"
+description: "Technical reference for Vision prediction bitmap format, encoding, and hashing"
+---
+
+# Bitmap Encoding
+
+Vision predictions are encoded as packed bitmaps -- one bit per market. This page is the definitive reference for the bitmap wire format, encoding algorithm, hashing, and edge cases.
+
+## Bit Layout
+
+Each bit represents a prediction for one market:
+
+- **1** = UP (price will increase)
+- **0** = DOWN (price will decrease or stay flat)
+
+Bits are ordered **big-endian within each byte**: bit 0 is the most significant bit (MSB) of byte 0.
+
+```
+Byte 0                Byte 1                Byte 2
+┌─┬─┬─┬─┬─┬─┬─┬─┐   ┌─┬─┬─┬─┬─┬─┬─┬─┐   ┌─┬─┬─┬─┬─┬─┬─┬─┐
+│0│1│2│3│4│5│6│7│   │8│9│A│B│C│D│E│F│   │G│H│I│J│ │ │ │ │
+└─┴─┴─┴─┴─┴─┴─┴─┘   └─┴─┴─┴─┴─┴─┴─┴─┘   └─┴─┴─┴─┴─┴─┴─┴─┘
+ MSB            LSB    MSB            LSB    MSB    ▲     LSB
+                                                    │
+                                              Unused bits = 0
+```
+
+Numbers inside cells are **market indices** (0-indexed). Unused trailing bits in the last byte are always zero.
+
+## Bitmap Size
+
+```
+byte_count = ceil(market_count / 8)
+```
+
+| Markets | Bytes | Example |
+|---------|-------|---------|
+| 1 | 1 | 1 market uses only the MSB of byte 0 |
+| 7 | 1 | 7 markets use bits 0-6 of byte 0, bit 7 unused |
+| 8 | 1 | 8 markets fill exactly 1 byte |
+| 9 | 2 | 9 markets use byte 0 fully + MSB of byte 1 |
+| 16 | 2 | 16 markets fill exactly 2 bytes |
+| 100 | 13 | 100 markets use 12.5 bytes, rounded up to 13 |
+
+## Encoding Algorithm
+
+For each market index `i` (0-based), if the prediction is UP, set the corresponding bit:
+
+```
+byte_index = i / 8          (integer division)
+bit_index  = 7 - (i % 8)    (big-endian: MSB first)
+bitmap[byte_index] |= (1 << bit_index)
+```
+
+<CodeGroup>
+
+```python Python
+def encode_bitmap(bets: list[str], market_count: int) -> bytes:
+    """Encode UP/DOWN bets into a packed bitmap.
+
+    Args:
+        bets: List of "UP" or "DOWN" strings, one per market.
+        market_count: Total markets in the batch (determines byte count).
+
+    Returns:
+        Packed bitmap bytes (big-endian bit order within each byte).
+    """
+    byte_count = (market_count + 7) // 8
+    bitmap = bytearray(byte_count)
+
+    for i in range(market_count):
+        if i < len(bets) and bets[i] == "UP":
+            byte_idx = i // 8
+            bit_idx = 7 - (i % 8)   # big-endian: bit 0 = MSB
+            bitmap[byte_idx] |= 1 << bit_idx
+
+    return bytes(bitmap)
+```
+
+```typescript TypeScript
+function encodeBitmap(bets: string[], marketCount: number): Uint8Array {
+  const byteCount = Math.ceil(marketCount / 8)
+  const bitmap = new Uint8Array(byteCount)
+
+  for (let i = 0; i < marketCount; i++) {
+    if (i < bets.length && bets[i] === 'UP') {
+      const byteIdx = Math.floor(i / 8)
+      const bitIdx = 7 - (i % 8)   // big-endian: bit 0 = MSB
+      bitmap[byteIdx] |= (1 << bitIdx)
+    }
+  }
+
+  return bitmap
+}
+```
+
+</CodeGroup>
+
+## Decoding Algorithm
+
+To read back a prediction from a packed bitmap:
+
+```
+byte_index = i / 8
+bit_index  = 7 - (i % 8)
+is_up = (bitmap[byte_index] >> bit_index) & 1 == 1
+```
+
+<CodeGroup>
+
+```python Python
+def decode_bitmap(bitmap: bytes, market_count: int) -> list[str]:
+    """Decode a packed bitmap into UP/DOWN bets."""
+    result = []
+    for i in range(market_count):
+        byte_idx = i // 8
+        bit_idx = 7 - (i % 8)
+
+        if byte_idx < len(bitmap) and (bitmap[byte_idx] >> bit_idx) & 1:
+            result.append("UP")
+        else:
+            result.append("DOWN")
+
+    return result
+```
+
+```typescript TypeScript
+function decodeBitmap(bitmap: Uint8Array, marketCount: number): ('UP' | 'DOWN')[] {
+  const result: ('UP' | 'DOWN')[] = []
+
+  for (let i = 0; i < marketCount; i++) {
+    const byteIdx = Math.floor(i / 8)
+    const bitIdx = 7 - (i % 8)
+
+    if (byteIdx < bitmap.length && ((bitmap[byteIdx] >> bitIdx) & 1) === 1) {
+      result.push('UP')
+    } else {
+      result.push('DOWN')
+    }
+  }
+
+  return result
+}
+```
+
+</CodeGroup>
+
+## Hashing
+
+The on-chain commitment is `keccak256(bitmap_bytes)`. This hash is what you pass to `joinBatch()` as the `bitmapHash` parameter. It is also what issuers verify when you submit the actual bitmap.
+
+<CodeGroup>
+
+```python Python
+from web3 import Web3
+
+bitmap = encode_bitmap(["UP", "DOWN", "UP"], market_count=3)
+bitmap_hash = Web3.keccak(bitmap)   # bytes32
+
+# For hex strings:
+hex_hash = "0x" + bitmap_hash.hex()
+```
+
+```typescript TypeScript
+import { keccak256, toHex } from 'viem'
+
+const bitmap = encodeBitmap(['UP', 'DOWN', 'UP'], 3)
+const bitmapHash = keccak256(bitmap)   // 0x-prefixed hex string
+
+// For API submission:
+const bitmapHex = toHex(bitmap)        // 0x-prefixed hex string
+```
+
+</CodeGroup>
+
+<Info>
+The hash function is **keccak256** (Ethereum's variant), not SHA-256. Using the wrong hash function will cause `joinBatch` to succeed with an incorrect commitment, but bitmap verification by issuers will fail.
+</Info>
+
+## Verification
+
+The seal-then-reveal scheme works as follows:
+
+```
+1. Bot computes:  bitmapHash = keccak256(bitmap_bytes)
+2. Bot calls:     joinBatch(batchId, deposit, stake, bitmapHash)
+                  → bitmapHash stored on-chain in PlayerPosition.bitmapHash
+3. Bot submits:   POST /vision/bitmap { bitmap_hex, expected_hash }
+4. Issuer checks: keccak256(decode_hex(bitmap_hex)) == expected_hash
+5. Issuer checks: expected_hash == on-chain PlayerPosition.bitmapHash
+6. Both match → bitmap accepted for tick resolution
+```
+
+If any verification step fails, the bitmap is rejected. The player's stake still ticks (they lose each tick by default since they have no valid prediction on file).
+
+## Edge Cases
+
+### 1 Market = 1 Byte
+
+A single market uses only the MSB of a single byte:
+
+```
+Market 0 = UP  → 0b10000000 → 0x80
+Market 0 = DOWN → 0b00000000 → 0x00
+```
+
+### 8 Markets = 1 Byte (Exact Fit)
+
+All 8 markets map directly to bits 0-7 of a single byte with no waste:
+
+```
+Markets:  [UP, DOWN, UP, UP, DOWN, DOWN, UP, DOWN]
+Bits:      1    0    1    1    0     0    1    0
+Binary:   0b10110010
+Hex:      0xB2
+```
+
+### 9 Markets = 2 Bytes
+
+Nine markets spill into a second byte. The second byte uses only its MSB; bits 1-7 are zero:
+
+```
+Markets:  [UP, DOWN, UP, UP, DOWN, DOWN, UP, DOWN, UP]
+Byte 0:   0b10110010 = 0xB2    (markets 0-7)
+Byte 1:   0b10000000 = 0x80    (market 8 in MSB, rest zero)
+Full:     0xB280
+```
+
+### Missing Bets Default to DOWN
+
+If `len(bets) < market_count`, the remaining bits are left as 0 (DOWN). This is safe and intentional -- it means you can submit predictions for only the markets you have a view on.
+
+### All UP / All DOWN
+
+```python
+# All UP for 10 markets:
+all_up = encode_bitmap(["UP"] * 10, 10)
+# → 0xFF 0xC0  (11111111 11000000)
+
+# All DOWN for 10 markets:
+all_down = encode_bitmap(["DOWN"] * 10, 10)
+# → 0x00 0x00
+```
+
+## Worked Example
+
+A batch with 5 markets. Predictions: `[UP, DOWN, DOWN, UP, UP]`.
+
+```
+Market 0 → UP   → bit 0 (MSB byte 0) → 1
+Market 1 → DOWN → bit 1              → 0
+Market 2 → DOWN → bit 2              → 0
+Market 3 → UP   → bit 3              → 1
+Market 4 → UP   → bit 4              → 1
+
+Byte 0: 1 0 0 1 1 0 0 0 = 0x98
+(bits 5-7 are unused, set to 0)
+
+Bitmap:      0x98 (1 byte)
+keccak256:   0x... (32 bytes)
+```
+
+Verify with code:
+
+<CodeGroup>
+
+```python Python
+from web3 import Web3
+
+bets = ["UP", "DOWN", "DOWN", "UP", "UP"]
+bitmap = encode_bitmap(bets, 5)
+assert bitmap == bytes([0x98])
+assert decode_bitmap(bitmap, 5) == bets
+
+hash = Web3.keccak(bitmap)
+print(f"bitmap_hex: 0x{bitmap.hex()}")
+print(f"bitmap_hash: 0x{hash.hex()}")
+```
+
+```typescript TypeScript
+const bets = ['UP', 'DOWN', 'DOWN', 'UP', 'UP'] as const
+const bitmap = encodeBitmap([...bets], 5)
+console.assert(bitmap[0] === 0x98)
+console.assert(decodeBitmap(bitmap, 5).join(',') === bets.join(','))
+
+const hash = keccak256(bitmap)
+console.log(`bitmap_hex: ${toHex(bitmap)}`)
+console.log(`bitmap_hash: ${hash}`)
+```
+
+</CodeGroup>

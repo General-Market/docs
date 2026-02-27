@@ -1,0 +1,160 @@
+---
+title: "Batches & Markets"
+description: "List active batches and supported markets"
+---
+
+# Batches & Markets
+
+Retrieve active prediction batches and the issuer-curated list of supported markets.
+
+---
+
+## List Batches
+
+`GET /vision/batches`
+
+Returns all active (non-paused) batches with live player counts and TVL. Results are ordered by batch ID descending, limited to the 100 most recent batches.
+
+No parameters required.
+
+<Tabs>
+<Tab title="cURL">
+```bash
+curl https://generalmarket.io/api/vision/batches
+```
+</Tab>
+<Tab title="Python">
+```python
+import requests
+
+response = requests.get("https://generalmarket.io/api/vision/batches")
+data = response.json()
+
+for batch in data["batches"]:
+    print(f"Batch {batch['id']}: {batch['player_count']} players, TVL: {batch['tvl']}")
+```
+</Tab>
+<Tab title="TypeScript">
+```typescript
+const res = await fetch("https://generalmarket.io/api/vision/batches");
+const { batches } = await res.json();
+
+for (const batch of batches) {
+  console.log(`Batch ${batch.id}: ${batch.player_count} players, TVL: ${batch.tvl}`);
+}
+```
+</Tab>
+</Tabs>
+
+<Expandable title="Response">
+```json
+{
+  "batches": [
+    {
+      "id": 1,
+      "creator": "0xAbC123...def",
+      "market_ids": ["BTC-USD", "ETH-USD", "SOL-USD"],
+      "market_count": 3,
+      "tick_duration": 3600,
+      "player_count": 12,
+      "tvl": "5400000000000000000",
+      "paused": false
+    },
+    {
+      "id": 2,
+      "creator": "0x789Abc...012",
+      "market_ids": ["BTC-USD", "ETH-USD"],
+      "market_count": 2,
+      "tick_duration": 600,
+      "player_count": 5,
+      "tvl": "1200000000000000000",
+      "paused": false
+    }
+  ]
+}
+```
+</Expandable>
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | number | Unique batch identifier |
+| `creator` | string | Ethereum address of the batch creator |
+| `market_ids` | string[] | List of market identifiers included in the batch |
+| `market_count` | number | Number of markets in the batch |
+| `tick_duration` | number | Seconds between tick resolutions |
+| `player_count` | number | Current number of active players (from live in-memory state) |
+| `tvl` | string | Total value locked across all players, in wei |
+| `paused` | boolean | Whether the batch is currently paused by issuer consensus |
+
+---
+
+## List Markets
+
+`GET /vision/markets`
+
+Returns the issuer-curated whitelist of supported markets. Batch creators must select markets from this list when creating new batches.
+
+No parameters required.
+
+<Tabs>
+<Tab title="cURL">
+```bash
+curl https://generalmarket.io/api/vision/markets
+```
+</Tab>
+<Tab title="Python">
+```python
+import requests
+
+response = requests.get("https://generalmarket.io/api/vision/markets")
+markets = response.json()["markets"]
+
+for m in markets:
+    print(f"{m['symbol']}: {m['display_name']} ({m['market_id']})")
+```
+</Tab>
+<Tab title="TypeScript">
+```typescript
+const res = await fetch("https://generalmarket.io/api/vision/markets");
+const { markets } = await res.json();
+
+markets.forEach((m: any) =>
+  console.log(`${m.symbol}: ${m.display_name} (${m.market_id})`)
+);
+```
+</Tab>
+</Tabs>
+
+<Expandable title="Response">
+```json
+{
+  "markets": [
+    {
+      "market_id": "BTC-USD",
+      "symbol": "BTC",
+      "display_name": "Bitcoin / USD"
+    },
+    {
+      "market_id": "ETH-USD",
+      "symbol": "ETH",
+      "display_name": "Ethereum / USD"
+    },
+    {
+      "market_id": "SOL-USD",
+      "symbol": "SOL",
+      "display_name": "Solana / USD"
+    }
+  ]
+}
+```
+</Expandable>
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `market_id` | string | Unique market identifier (e.g., `BTC-USD`) |
+| `symbol` | string | Short ticker symbol (e.g., `BTC`) |
+| `display_name` | string | Human-readable market name (e.g., `Bitcoin / USD`) |

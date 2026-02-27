@@ -1,0 +1,310 @@
+---
+title: "Ticks & Backtesting"
+description: "Tick history, bitmap reveals, and strategy backtesting"
+---
+
+# Ticks & Backtesting
+
+Query historical tick results, view revealed bitmaps after a tick closes, and backtest prediction strategies against simulated market outcomes.
+
+---
+
+## Get Tick History
+
+`GET /vision/batch/{id}/history`
+
+Returns the most recent tick results for a batch (up to 100 ticks). Each entry includes the resolution outcomes, number of participating players, and total matched volume.
+
+<ParamField path="id" type="number" required>
+  The batch ID to fetch tick history for.
+</ParamField>
+
+<Tabs>
+<Tab title="cURL">
+```bash
+curl https://generalmarket.io/api/vision/batch/1/history
+```
+</Tab>
+<Tab title="Python">
+```python
+import requests
+
+batch_id = 1
+response = requests.get(f"https://generalmarket.io/api/vision/batch/{batch_id}/history")
+history = response.json()["history"]
+
+for tick in history:
+    print(f"Tick {tick['tick_id']}: {tick['player_count']} players, matched: {tick['total_matched']}")
+```
+</Tab>
+<Tab title="TypeScript">
+```typescript
+const batchId = 1;
+const res = await fetch(`https://generalmarket.io/api/vision/batch/${batchId}/history`);
+const { history } = await res.json();
+
+for (const tick of history) {
+  console.log(`Tick ${tick.tick_id}: ${tick.player_count} players, matched: ${tick.total_matched}`);
+}
+```
+</Tab>
+</Tabs>
+
+<Expandable title="Response">
+```json
+{
+  "history": [
+    {
+      "batch_id": 1,
+      "tick_id": 142,
+      "resolved_at": "2026-02-22T12:00:00",
+      "player_count": 8,
+      "total_matched": "3200000000000000000",
+      "results_json": {
+        "markets": [
+          { "market_id": "BTC-USD", "outcome": "Up", "pct_change": 0.42 },
+          { "market_id": "ETH-USD", "outcome": "Down", "pct_change": -1.15 },
+          { "market_id": "SOL-USD", "outcome": "Up", "pct_change": 2.03 }
+        ]
+      }
+    },
+    {
+      "batch_id": 1,
+      "tick_id": 141,
+      "resolved_at": "2026-02-22T11:00:00",
+      "player_count": 7,
+      "total_matched": "2800000000000000000",
+      "results_json": null
+    }
+  ]
+}
+```
+</Expandable>
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `batch_id` | number | The batch ID |
+| `tick_id` | number | Sequential tick number within the batch |
+| `resolved_at` | string \| null | ISO 8601 timestamp when the tick was resolved |
+| `player_count` | number \| null | Number of players who participated in this tick |
+| `total_matched` | string \| null | Total volume matched between winners and losers, in wei |
+| `results_json` | object \| null | Detailed per-market results including outcomes and percentage changes |
+
+### Errors
+
+| Status | Condition |
+|--------|-----------|
+| `500` | Database query failure |
+
+---
+
+## Get Revealed Bitmaps
+
+`GET /vision/reveal/{batch_id}/{tick_id}`
+
+Returns all player bitmaps for a completed tick. Bitmaps are only available **after the reveal window has expired** -- this prevents players from seeing opponents' predictions before committing their own.
+
+<ParamField path="batch_id" type="number" required>
+  The batch ID to query reveals for.
+</ParamField>
+
+<ParamField path="tick_id" type="number" required>
+  The tick number to fetch revealed bitmaps for. Must be a completed tick past the reveal window.
+</ParamField>
+
+<Tabs>
+<Tab title="cURL">
+```bash
+curl https://generalmarket.io/api/vision/reveal/1/142
+```
+</Tab>
+<Tab title="Python">
+```python
+import requests
+
+batch_id = 1
+tick_id = 142
+response = requests.get(
+    f"https://generalmarket.io/api/vision/reveal/{batch_id}/{tick_id}"
+)
+data = response.json()
+
+for bm in data["bitmaps"]:
+    print(f"Player {bm['player']}: {bm['bitmap_hex']}")
+```
+</Tab>
+<Tab title="TypeScript">
+```typescript
+const batchId = 1;
+const tickId = 142;
+const res = await fetch(
+  `https://generalmarket.io/api/vision/reveal/${batchId}/${tickId}`
+);
+const data = await res.json();
+
+for (const bm of data.bitmaps) {
+  console.log(`Player ${bm.player}: ${bm.bitmap_hex}`);
+}
+```
+</Tab>
+</Tabs>
+
+<Expandable title="Response">
+```json
+{
+  "batch_id": 1,
+  "tick_id": 142,
+  "bitmaps": [
+    {
+      "player": "0x1111...aaaa",
+      "bitmap_hex": "0xff00ab",
+      "hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+    },
+    {
+      "player": "0x2222...bbbb",
+      "bitmap_hex": "0xe3c71f",
+      "hash": "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+    }
+  ]
+}
+```
+</Expandable>
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `batch_id` | number | The batch ID |
+| `tick_id` | number | The tick number |
+| `bitmaps` | object[] | Array of revealed player bitmaps |
+| `bitmaps[].player` | string | Player's Ethereum address |
+| `bitmaps[].bitmap_hex` | string | The raw bitmap as a hex string |
+| `bitmaps[].hash` | string | The keccak256 hash of the bitmap (matches on-chain commitment) |
+
+### Errors
+
+| Status | Condition |
+|--------|-----------|
+| `403` | The reveal window has not yet expired for this tick. The error message includes the deadline timestamp. |
+| `404` | Batch does not exist |
+
+<Warning>
+The reveal window is a configurable delay after a tick ends, during which bitmaps remain sealed. Requesting reveals before the window expires returns a `403` with the deadline timestamp so you can retry after it passes.
+</Warning>
+
+---
+
+## Backtest a Strategy
+
+`POST /vision/backtest`
+
+Simulate a bitmap strategy against deterministic pseudo-random market outcomes. Useful for validating strategy logic before committing real capital.
+
+The backtest engine uses a deterministic PRNG seeded from market IDs and tick numbers, producing a consistent 50/50 base outcome distribution.
+
+<ParamField body="batch_id" type="number" required>
+  The batch ID to simulate against. The batch must exist so the engine knows which markets to simulate.
+</ParamField>
+
+<ParamField body="bitmap_hex" type="string" required>
+  The prediction bitmap to test, as a hex string with `0x` prefix. Each bit represents UP (1) or DOWN (0) for the corresponding market.
+</ParamField>
+
+<ParamField body="code" type="string">
+  Optional Python strategy code. This field is accepted but currently ignored server-side -- strategy code is executed client-side via Pyodide. Reserved for future server-side execution.
+</ParamField>
+
+<ParamField body="ticks" type="number">
+  Number of ticks to simulate. Defaults to `50`, maximum `200`.
+</ParamField>
+
+<Tabs>
+<Tab title="cURL">
+```bash
+curl -X POST https://generalmarket.io/api/vision/backtest \
+  -H "Content-Type: application/json" \
+  -d '{
+    "batch_id": 1,
+    "bitmap_hex": "0xff00ab",
+    "ticks": 100
+  }'
+```
+</Tab>
+<Tab title="Python">
+```python
+import requests
+
+response = requests.post(
+    "https://generalmarket.io/api/vision/backtest",
+    json={
+        "batch_id": 1,
+        "bitmap_hex": "0xff00ab",
+        "ticks": 100,
+    },
+)
+result = response.json()
+
+print(f"Win rate: {result['win_rate']:.2%}")
+print(f"Total PnL: {result['total_pnl']}")
+print(f"Simulated {len(result['pnl_curve'])} ticks")
+```
+</Tab>
+<Tab title="TypeScript">
+```typescript
+const res = await fetch("https://generalmarket.io/api/vision/backtest", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    batch_id: 1,
+    bitmap_hex: "0xff00ab",
+    ticks: 100,
+  }),
+});
+const result = await res.json();
+
+console.log(`Win rate: ${(result.win_rate * 100).toFixed(1)}%`);
+console.log(`Total PnL: ${result.total_pnl}`);
+console.log(`Simulated ${result.pnl_curve.length} ticks`);
+```
+</Tab>
+</Tabs>
+
+<Expandable title="Response">
+```json
+{
+  "win_rate": 0.5233,
+  "pnl_curve": [
+    { "tick": 0, "pnl": 0.333 },
+    { "tick": 1, "pnl": 0.0 },
+    { "tick": 2, "pnl": 0.667 },
+    { "tick": 3, "pnl": 0.333 }
+  ],
+  "total_pnl": 2.35
+}
+```
+</Expandable>
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `win_rate` | number | Fraction of individual market bets that were correct (0.0 to 1.0), rounded to 4 decimal places |
+| `pnl_curve` | object[] | Cumulative PnL at each tick |
+| `pnl_curve[].tick` | number | Tick number in the simulation |
+| `pnl_curve[].pnl` | number | Cumulative PnL at this tick, normalized to a +/-1 range per tick |
+| `total_pnl` | number | Final cumulative PnL after all simulated ticks |
+
+### Errors
+
+| Status | Condition |
+|--------|-----------|
+| `400` | Missing `bitmap_hex` field |
+| `400` | Invalid hex encoding in `bitmap_hex` |
+| `400` | Batch has no markets configured |
+| `404` | Batch does not exist |
+
+<Info>
+The backtest uses a **deterministic simulation** -- running the same bitmap against the same batch and tick count always produces identical results. This makes it useful for comparing strategies, but the simulated outcomes do not reflect actual historical prices.
+</Info>

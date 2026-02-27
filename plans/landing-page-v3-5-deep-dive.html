@@ -1,0 +1,3068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vision — One Market Deep Dive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════ */
+:root {
+  --bg: #0a0a0a;
+  --bg2: #111;
+  --bg3: #141414;
+  --bg4: #1a1a1a;
+  --border: #222;
+  --border2: #333;
+  --green: #00ff88;
+  --green-dim: #00cc6a;
+  --green-glow: #00ff8840;
+  --green-deep: #00ff8815;
+  --red: #ff4466;
+  --red-dim: #cc3355;
+  --red-glow: #ff446640;
+  --orange: #ff6b35;
+  --orange-dim: #cc5528;
+  --orange-glow: #ff6b3540;
+  --orange-deep: #ff6b3510;
+  --lava: #ff4500;
+  --amber: #ffaa00;
+  --blue: #4488ff;
+  --purple: #aa66ff;
+  --text: #f0f0f0;
+  --text2: #999;
+  --text3: #666;
+  --text4: #444;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Inter', sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  overflow-x: hidden;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ═══════════════════════════════════════
+   UTILITY
+═══════════════════════════════════════ */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.container-narrow {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.section {
+  padding: 120px 0;
+  position: relative;
+}
+
+.section-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-label::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: var(--orange);
+}
+
+/* ═══════════════════════════════════════
+   SCROLL REVEAL ANIMATIONS
+═══════════════════════════════════════ */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.9s ease, transform 0.9s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-slow {
+  opacity: 0;
+  transform: translateY(60px);
+  transition: opacity 1.4s ease, transform 1.4s ease;
+}
+
+.reveal-slow.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-fade {
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+
+.reveal-fade.visible {
+  opacity: 1;
+}
+
+.reveal-left {
+  opacity: 0;
+  transform: translateX(-60px);
+  transition: opacity 0.9s ease, transform 0.9s ease;
+}
+
+.reveal-left.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.reveal-right {
+  opacity: 0;
+  transform: translateX(60px);
+  transition: opacity 0.9s ease, transform 0.9s ease;
+}
+
+.reveal-right.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.stagger-1 { transition-delay: 0.1s; }
+.stagger-2 { transition-delay: 0.2s; }
+.stagger-3 { transition-delay: 0.3s; }
+.stagger-4 { transition-delay: 0.4s; }
+.stagger-5 { transition-delay: 0.5s; }
+.stagger-6 { transition-delay: 0.6s; }
+.stagger-7 { transition-delay: 0.7s; }
+.stagger-8 { transition-delay: 0.8s; }
+
+/* ═══════════════════════════════════════
+   SECTION 1: THE HOOK — HERO
+═══════════════════════════════════════ */
+#hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  padding: 60px 24px;
+}
+
+/* Volcanic glow at bottom */
+#hero::before {
+  content: '';
+  position: absolute;
+  bottom: -200px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120%;
+  height: 500px;
+  background: radial-gradient(ellipse at center, var(--orange-glow) 0%, var(--lava) 10%, transparent 60%);
+  opacity: 0.3;
+  filter: blur(80px);
+  pointer-events: none;
+  animation: volcGlow 6s ease-in-out infinite alternate;
+}
+
+#hero::after {
+  content: '';
+  position: absolute;
+  bottom: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 300px;
+  background: radial-gradient(ellipse at center, var(--lava) 0%, transparent 70%);
+  opacity: 0.12;
+  filter: blur(60px);
+  pointer-events: none;
+  animation: volcGlow 4s ease-in-out 1s infinite alternate;
+}
+
+@keyframes volcGlow {
+  0% { opacity: 0.15; transform: translateX(-50%) scaleX(1); }
+  100% { opacity: 0.35; transform: translateX(-50%) scaleX(1.1); }
+}
+
+/* Particle embers */
+.ember {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: var(--orange);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  animation: emberRise linear infinite;
+}
+
+@keyframes emberRise {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(1);
+  }
+  10% {
+    opacity: 0.8;
+  }
+  80% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-500px) translateX(var(--drift)) scale(0.2);
+  }
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 900px;
+}
+
+.hero-line {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.hero-line.animate-in {
+  animation: heroFadeUp 1.2s ease forwards;
+}
+
+@keyframes heroFadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-time {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--orange-dim);
+  letter-spacing: 3px;
+  margin-bottom: 40px;
+}
+
+.hero-headline {
+  font-size: clamp(32px, 5vw, 60px);
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 24px;
+  color: var(--text);
+}
+
+.hero-headline .highlight-orange {
+  background: linear-gradient(135deg, var(--orange) 0%, var(--amber) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-pause {
+  font-size: clamp(20px, 3vw, 36px);
+  font-weight: 300;
+  color: var(--text2);
+  margin-bottom: 48px;
+  line-height: 1.4;
+}
+
+.hero-pause .count {
+  color: var(--orange);
+  font-weight: 700;
+  font-family: var(--mono);
+}
+
+.hero-payout {
+  font-size: clamp(28px, 4vw, 52px);
+  font-weight: 800;
+  font-family: var(--mono);
+  background: linear-gradient(135deg, var(--orange) 0%, var(--amber) 50%, #fff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 60px;
+}
+
+/* Sparkline chart in hero */
+.hero-sparkline-wrapper {
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto 48px;
+  position: relative;
+}
+
+.hero-sparkline-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.hero-sparkline {
+  width: 100%;
+  height: 120px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.hero-sparkline canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.sparkline-spike-label {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--orange);
+  background: rgba(255, 107, 53, 0.15);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 107, 53, 0.3);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.sparkline-spike-label.show {
+  opacity: 1;
+}
+
+.hero-scroll-hint {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text4);
+  letter-spacing: 2px;
+  animation: scrollHint 2s ease-in-out infinite;
+}
+
+.hero-scroll-hint::after {
+  content: '';
+  display: block;
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(to bottom, var(--text4), transparent);
+  margin: 12px auto 0;
+}
+
+@keyframes scrollHint {
+  0%, 100% { opacity: 0.4; transform: translateX(-50%) translateY(0); }
+  50% { opacity: 0.8; transform: translateX(-50%) translateY(8px); }
+}
+
+/* ═══════════════════════════════════════
+   SECTION 2: THE STORY
+═══════════════════════════════════════ */
+#story {
+  padding: 160px 0;
+  position: relative;
+}
+
+.story-block {
+  margin-bottom: 160px;
+  position: relative;
+}
+
+.story-block:last-child {
+  margin-bottom: 0;
+}
+
+.story-text {
+  font-size: clamp(20px, 2.5vw, 28px);
+  font-weight: 300;
+  line-height: 1.7;
+  color: var(--text2);
+  max-width: 700px;
+}
+
+.story-text em {
+  color: var(--text);
+  font-style: normal;
+  font-weight: 500;
+}
+
+.story-text .orange {
+  color: var(--orange);
+}
+
+.story-text .green {
+  color: var(--green);
+}
+
+/* Market card — large detailed version */
+.market-card-large {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 600px;
+  margin: 60px auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.market-card-large::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--orange), var(--amber), var(--orange));
+}
+
+.market-card-large .mc-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.market-card-large .mc-source {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--orange);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: var(--orange-deep);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 107, 53, 0.2);
+}
+
+.market-card-large .mc-time {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text3);
+}
+
+.market-card-large .mc-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.market-card-large .mc-desc {
+  font-size: 14px;
+  color: var(--text2);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.market-card-large .mc-sparkline {
+  width: 100%;
+  height: 80px;
+  background: var(--bg2);
+  border-radius: 8px;
+  margin-bottom: 24px;
+  overflow: hidden;
+  position: relative;
+}
+
+.market-card-large .mc-sparkline canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.market-card-large .mc-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.mc-stat {
+  text-align: center;
+}
+
+.mc-stat-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.mc-stat-value {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.mc-stat-value.up { color: var(--green); }
+.mc-stat-value.down { color: var(--red); }
+.mc-stat-value.neutral { color: var(--text); }
+
+.market-card-large .mc-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.mc-btn {
+  padding: 14px 20px;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 1px;
+}
+
+.mc-btn-up {
+  background: rgba(0, 255, 136, 0.1);
+  color: var(--green);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+}
+
+.mc-btn-up:hover {
+  background: rgba(0, 255, 136, 0.2);
+  box-shadow: 0 0 20px var(--green-glow);
+}
+
+.mc-btn-down {
+  background: rgba(255, 68, 102, 0.1);
+  color: var(--red);
+  border: 1px solid rgba(255, 68, 102, 0.3);
+}
+
+.mc-btn-down:hover {
+  background: rgba(255, 68, 102, 0.2);
+  box-shadow: 0 0 20px var(--red-glow);
+}
+
+/* Code snippet styling */
+.code-block {
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin: 40px auto;
+  max-width: 650px;
+  overflow-x: auto;
+  position: relative;
+}
+
+.code-block::before {
+  content: 'bot.py';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.code-block pre {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.7;
+  color: #c9d1d9;
+  margin-top: 32px;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.code-block .kw { color: #ff7b72; }
+.code-block .fn { color: #d2a8ff; }
+.code-block .str { color: #a5d6ff; }
+.code-block .cmt { color: #8b949e; }
+.code-block .num { color: #79c0ff; }
+.code-block .var { color: #ffa657; }
+
+/* Story emphasis block */
+.story-emphasis {
+  font-size: clamp(24px, 3vw, 40px);
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.4;
+  padding: 80px 0;
+  color: var(--text);
+}
+
+.story-emphasis .sub {
+  display: block;
+  font-size: clamp(16px, 2vw, 22px);
+  font-weight: 300;
+  color: var(--text3);
+  margin-top: 16px;
+}
+
+/* Horizontal rule */
+.story-divider {
+  width: 60px;
+  height: 2px;
+  background: var(--border2);
+  margin: 0 auto;
+}
+
+/* ═══════════════════════════════════════
+   SECTION 3: THE MECHANIC
+═══════════════════════════════════════ */
+#mechanic {
+  padding: 160px 0;
+  background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 50%, var(--bg) 100%);
+}
+
+.mechanic-title {
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 80px;
+}
+
+.timeline {
+  position: relative;
+  max-width: 800px;
+  margin: 0 auto;
+  padding-left: 60px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 24px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--orange), var(--green));
+}
+
+.timeline-step {
+  position: relative;
+  margin-bottom: 80px;
+  padding-left: 40px;
+}
+
+.timeline-step:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -40px;
+  top: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 2px solid var(--orange);
+  z-index: 2;
+  transition: all 0.3s ease;
+}
+
+.timeline-step.active .timeline-dot,
+.timeline-step:hover .timeline-dot {
+  background: var(--orange);
+  box-shadow: 0 0 20px var(--orange-glow);
+}
+
+.timeline-step.step-green .timeline-dot {
+  border-color: var(--green);
+}
+
+.timeline-step.step-green.active .timeline-dot,
+.timeline-step.step-green:hover .timeline-dot {
+  background: var(--green);
+  box-shadow: 0 0 20px var(--green-glow);
+}
+
+.timeline-time {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--orange);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.timeline-step.step-green .timeline-time {
+  color: var(--green);
+}
+
+.timeline-heading {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.timeline-desc {
+  font-size: 16px;
+  color: var(--text2);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+/* Hash animation */
+.hash-animation {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  font-family: var(--mono);
+  font-size: 13px;
+  overflow: hidden;
+  margin-top: 16px;
+}
+
+.hash-input {
+  color: var(--text2);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hash-input .label {
+  color: var(--text3);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  min-width: 70px;
+}
+
+.hash-arrow {
+  color: var(--text4);
+  text-align: center;
+  margin: 8px 0;
+  font-size: 18px;
+}
+
+.hash-output {
+  color: var(--orange);
+  word-break: break-all;
+  font-size: 12px;
+  padding: 12px;
+  background: var(--orange-deep);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 107, 53, 0.15);
+}
+
+.hash-output .label {
+  color: var(--text3);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* Payout breakdown */
+.payout-visual {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 16px;
+}
+
+.payout-bar-wrapper {
+  margin-bottom: 16px;
+}
+
+.payout-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.payout-bar-label .side { color: var(--text3); }
+.payout-bar-label .amount { color: var(--text); }
+
+.payout-bar {
+  height: 32px;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  background: var(--bg2);
+}
+
+.payout-bar .up-portion {
+  background: linear-gradient(90deg, rgba(0, 255, 136, 0.3), rgba(0, 255, 136, 0.15));
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--green);
+  transition: width 1s ease;
+}
+
+.payout-bar .down-portion {
+  background: linear-gradient(90deg, rgba(255, 68, 102, 0.15), rgba(255, 68, 102, 0.3));
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 12px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--red);
+  transition: width 1s ease;
+}
+
+.payout-result {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.payout-result-text {
+  font-size: 14px;
+  color: var(--text2);
+}
+
+.payout-result-text strong {
+  color: var(--green);
+  font-family: var(--mono);
+}
+
+.payout-fee {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+  background: var(--bg2);
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+/* ═══════════════════════════════════════
+   SECTION 4: THE ZOOM OUT
+═══════════════════════════════════════ */
+#zoom-out {
+  padding: 160px 0 80px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+}
+
+.zoom-reveal-text {
+  font-size: clamp(28px, 4vw, 56px);
+  font-weight: 800;
+  margin-bottom: 20px;
+  line-height: 1.2;
+}
+
+.zoom-sub {
+  font-size: clamp(16px, 2vw, 22px);
+  color: var(--text2);
+  font-weight: 300;
+  margin-bottom: 60px;
+}
+
+.zoom-count {
+  font-family: var(--mono);
+  font-size: clamp(48px, 8vw, 96px);
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--green) 0%, #00ccff 50%, var(--green) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 16px;
+  line-height: 1;
+}
+
+.zoom-count-label {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--text3);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 80px;
+}
+
+/* Category pills that fly in */
+.category-pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 80px;
+}
+
+.cat-pill {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 18px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text2);
+  opacity: 0;
+  transform: scale(0.7) translateY(20px);
+  transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: default;
+}
+
+.cat-pill.visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.cat-pill:hover {
+  border-color: var(--green);
+  color: var(--green);
+  background: var(--green-deep);
+}
+
+/* Story cards — 8 vivid examples */
+.story-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.story-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: default;
+}
+
+.story-card:hover {
+  border-color: var(--border2);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.story-card .sc-icon {
+  font-size: 28px;
+  margin-bottom: 12px;
+}
+
+.story-card .sc-source {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.story-card .sc-market {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  line-height: 1.3;
+}
+
+.story-card .sc-story {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.story-card .sc-pool {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--green);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.story-card .sc-pool::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s ease infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* ═══════════════════════════════════════
+   SECTION 5: THE MARKET GRID
+═══════════════════════════════════════ */
+#grid {
+  padding: 120px 0;
+  background: var(--bg2);
+}
+
+.grid-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.grid-title {
+  font-size: clamp(24px, 3vw, 36px);
+  font-weight: 700;
+}
+
+.grid-subtitle {
+  font-size: 15px;
+  color: var(--text2);
+  margin-top: 8px;
+}
+
+/* Category tabs */
+.grid-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.grid-tab {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.grid-tab:hover {
+  color: var(--text);
+  border-color: var(--border2);
+}
+
+.grid-tab.active {
+  color: var(--green);
+  border-color: var(--green);
+  background: var(--green-deep);
+}
+
+/* Market grid */
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+/* Market card — compact */
+.market-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.market-card:hover {
+  border-color: var(--border2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+.market-card .card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.market-card .card-source {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.market-card .card-source .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.market-card .card-timer {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--orange);
+}
+
+.market-card .card-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  line-height: 1.3;
+}
+
+.market-card .card-sparkline {
+  width: 100%;
+  height: 48px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.market-card .card-sparkline canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.market-card .card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.card-pool {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.card-pool strong {
+  color: var(--text);
+}
+
+.card-change {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.card-change.positive { color: var(--green); }
+.card-change.negative { color: var(--red); }
+
+.market-card .card-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.card-btn {
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.5px;
+}
+
+.card-btn-up {
+  background: rgba(0, 255, 136, 0.08);
+  color: var(--green);
+  border: 1px solid rgba(0, 255, 136, 0.2);
+}
+
+.card-btn-up:hover {
+  background: rgba(0, 255, 136, 0.15);
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.15);
+}
+
+.card-btn-down {
+  background: rgba(255, 68, 102, 0.08);
+  color: var(--red);
+  border: 1px solid rgba(255, 68, 102, 0.2);
+}
+
+.card-btn-down:hover {
+  background: rgba(255, 68, 102, 0.15);
+  box-shadow: 0 0 15px rgba(255, 68, 102, 0.15);
+}
+
+/* Detail panel */
+.detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.detail-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.detail-panel {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  max-width: 520px;
+  width: 90%;
+  padding: 32px;
+  transform: translateY(20px) scale(0.95);
+  transition: transform 0.3s ease;
+}
+
+.detail-overlay.open .detail-panel {
+  transform: translateY(0) scale(1);
+}
+
+.detail-close {
+  float: right;
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.detail-close:hover { color: var(--text); }
+
+.detail-panel .dp-source {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--green);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.detail-panel .dp-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.detail-panel .dp-desc {
+  font-size: 14px;
+  color: var(--text2);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.detail-panel .dp-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.detail-panel .dp-stat {
+  text-align: center;
+  padding: 12px;
+  background: var(--bg2);
+  border-radius: 8px;
+}
+
+.detail-panel .dp-stat-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.detail-panel .dp-stat-value {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.detail-panel .dp-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Connect modal */
+.connect-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(12px);
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.connect-modal.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.connect-box {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.connect-modal.open .connect-box {
+  transform: scale(1);
+}
+
+.connect-box h3 {
+  font-size: 20px;
+  margin-bottom: 12px;
+}
+
+.connect-box p {
+  color: var(--text2);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.connect-wallet-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--green);
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 12px;
+}
+
+.connect-wallet-btn:hover {
+  box-shadow: 0 0 30px var(--green-glow);
+  transform: translateY(-2px);
+}
+
+.connect-dismiss {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.connect-dismiss:hover { color: var(--text); }
+
+/* ═══════════════════════════════════════
+   SECTION 6: THE PITCH
+═══════════════════════════════════════ */
+#pitch {
+  padding: 160px 0;
+  text-align: center;
+}
+
+.pitch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 32px;
+  max-width: 1000px;
+  margin: 0 auto 80px;
+  padding: 0 24px;
+}
+
+.pitch-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 32px 20px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  transition: all 0.3s ease;
+}
+
+.pitch-item:hover {
+  border-color: var(--green);
+  transform: translateY(-4px);
+}
+
+.pitch-icon {
+  font-size: 32px;
+  margin-bottom: 16px;
+}
+
+.pitch-label {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.pitch-desc {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+/* SDK preview */
+.sdk-preview {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.sdk-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: -1px;
+  position: relative;
+  z-index: 2;
+}
+
+.sdk-tab {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 8px 20px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  color: var(--text3);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sdk-tab.active {
+  color: var(--green);
+  background: #0d1117;
+  border-color: var(--border);
+}
+
+.sdk-code {
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 0 12px 12px 12px;
+  padding: 24px;
+  display: none;
+}
+
+.sdk-code.active {
+  display: block;
+}
+
+.sdk-code pre {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.7;
+  color: #c9d1d9;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+/* ═══════════════════════════════════════
+   SECTION 7: FINAL CTA
+═══════════════════════════════════════ */
+#cta {
+  padding: 160px 0 120px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Green glow at bottom of CTA */
+#cta::before {
+  content: '';
+  position: absolute;
+  bottom: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 400px;
+  background: radial-gradient(ellipse at center, var(--green-glow) 0%, transparent 70%);
+  opacity: 0.2;
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+.cta-poetic {
+  font-size: clamp(18px, 2.5vw, 26px);
+  font-weight: 300;
+  color: var(--text2);
+  line-height: 1.8;
+  max-width: 700px;
+  margin: 0 auto 48px;
+}
+
+.cta-poetic em {
+  color: var(--text);
+  font-style: italic;
+}
+
+.cta-question {
+  font-size: clamp(22px, 3vw, 38px);
+  font-weight: 700;
+  margin-bottom: 48px;
+  line-height: 1.3;
+}
+
+.cta-button-wrapper {
+  margin-bottom: 40px;
+}
+
+.cta-button {
+  display: inline-block;
+  padding: 20px 56px;
+  background: var(--green);
+  color: #000;
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.cta-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 40px var(--green-glow), 0 0 80px rgba(0, 255, 136, 0.15);
+}
+
+.cta-button::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 14px;
+  background: var(--green);
+  opacity: 0.15;
+  filter: blur(20px);
+  z-index: -1;
+}
+
+/* Risk pills */
+.risk-pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.risk-pill {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text2);
+  padding: 6px 16px;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  background: var(--bg3);
+}
+
+.cta-secondary {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--text3);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--text4);
+  padding-bottom: 2px;
+  transition: all 0.2s ease;
+}
+
+.cta-secondary:hover {
+  color: var(--green);
+  border-color: var(--green);
+}
+
+/* ═══════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════ */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.footer-links a {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text3);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-links a:hover { color: var(--green); }
+
+.footer-copy {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text4);
+}
+
+/* ═══════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  .section { padding: 80px 0; }
+  #story { padding: 100px 0; }
+  #mechanic { padding: 100px 0; }
+  .story-block { margin-bottom: 100px; }
+
+  .market-card-large .mc-stats {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .timeline {
+    padding-left: 40px;
+  }
+
+  .timeline::before {
+    left: 14px;
+  }
+
+  .timeline-step {
+    padding-left: 24px;
+  }
+
+  .timeline-dot {
+    left: -30px;
+  }
+
+  .market-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .story-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .pitch-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .grid-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .grid-tabs {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+
+  .hero-sparkline { height: 80px; }
+}
+
+@media (max-width: 480px) {
+  .container, .container-narrow { padding: 0 16px; }
+  .market-card-large { padding: 20px; }
+  .code-block { padding: 16px; }
+}
+
+/* ═══════════════════════════════════════
+   PARALLAX HELPER
+═══════════════════════════════════════ */
+.parallax-layer {
+  will-change: transform;
+}
+
+/* ═══════════════════════════════════════
+   GRID ZOOM ANIMATION
+═══════════════════════════════════════ */
+.zoom-card-anchor {
+  display: inline-block;
+  transition: all 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.zoom-card-anchor.shrunk {
+  transform: scale(0.18);
+  opacity: 0.7;
+}
+
+/* Mini grid that appears around the anchor */
+.zoom-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 6px;
+  max-width: 1100px;
+  margin: 0 auto;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all 1s ease 0.4s;
+}
+
+.zoom-mini-grid.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.mini-card {
+  aspect-ratio: 1.4;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.mini-card.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.mini-card.highlight {
+  border-color: var(--orange);
+  background: var(--orange-deep);
+}
+
+/* Smooth accent color transition */
+.accent-transition {
+  transition: color 1s ease;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 1: THE HOOK — HERO
+═══════════════════════════════════════════════ -->
+<section id="hero">
+  <!-- Ember particles (injected by JS) -->
+  <div id="ember-container"></div>
+
+  <div class="hero-content">
+    <div class="hero-line hero-line-1">
+      <div class="hero-time">USGS VOLCANO ALERT — FEBRUARY 12, 2026</div>
+    </div>
+
+    <div class="hero-line hero-line-2">
+      <h1 class="hero-headline">
+        At 3:47 AM, Kilauea's<br>
+        alert level <span class="highlight-orange">changed.</span>
+      </h1>
+    </div>
+
+    <div class="hero-line hero-line-3">
+      <p class="hero-pause">
+        <span class="count">14</span> traders saw it coming.
+      </p>
+    </div>
+
+    <div class="hero-line hero-line-4">
+      <div class="hero-sparkline-wrapper">
+        <div class="hero-sparkline-label">Kilauea alert level — 30 day history</div>
+        <div class="hero-sparkline">
+          <canvas id="hero-chart"></canvas>
+          <div class="sparkline-spike-label" id="spike-label">ALERT ELEVATED</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-line hero-line-5">
+      <div class="hero-payout">They split $4,200.</div>
+    </div>
+  </div>
+
+  <div class="hero-scroll-hint">SCROLL</div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 2: THE STORY
+═══════════════════════════════════════════════ -->
+<section id="story">
+  <div class="container-narrow">
+
+    <!-- Story block 1: The geology student -->
+    <div class="story-block reveal">
+      <p class="story-text">
+        One of them was a <em>geology student in Honolulu</em>. She'd been watching
+        the harmonic tremor data for weeks. Subtle shifts in magma pressure
+        that don't make headlines but light up a seismograph like a
+        Christmas tree.
+      </p>
+    </div>
+
+    <div class="story-block reveal">
+      <p class="story-text" style="margin-bottom: 20px;">
+        She opened Vision, found the Kilauea market, and committed
+        <span class="orange">UP</span> with 50 USDC. Five minutes before resolution.
+      </p>
+      <!-- Large market card -->
+      <div class="market-card-large reveal stagger-2">
+        <div class="mc-header">
+          <div class="mc-source">USGS VOLCANOES</div>
+          <div class="mc-time">Resolves in 4:38</div>
+        </div>
+        <div class="mc-title">Kilauea alert level change</div>
+        <div class="mc-desc">
+          Will the USGS volcanic alert level for Kilauea (Hawaii) be higher
+          at resolution than at market open?
+        </div>
+        <div class="mc-sparkline">
+          <canvas id="card-chart-kilauea"></canvas>
+        </div>
+        <div class="mc-stats">
+          <div class="mc-stat">
+            <div class="mc-stat-label">Pool</div>
+            <div class="mc-stat-value neutral">$1,847</div>
+          </div>
+          <div class="mc-stat">
+            <div class="mc-stat-label">Current</div>
+            <div class="mc-stat-value up">WATCH</div>
+          </div>
+          <div class="mc-stat">
+            <div class="mc-stat-label">Resolution</div>
+            <div class="mc-stat-value neutral">5 min</div>
+          </div>
+        </div>
+        <div class="mc-actions">
+          <button class="mc-btn mc-btn-up" onclick="openConnect()">UP</button>
+          <button class="mc-btn mc-btn-down" onclick="openConnect()">DOWN</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="story-divider"></div>
+
+    <!-- Story block 2: The bot -->
+    <div class="story-block reveal" style="margin-top: 80px;">
+      <p class="story-text">
+        Another was a <em>Python script running on a $5/month VPS</em>. It checked
+        USGS earthquake data every 30 seconds, looking for the specific
+        tremor pattern that precedes alert level changes.
+      </p>
+    </div>
+
+    <div class="story-block reveal">
+      <div class="code-block">
+        <pre>
+<span class="kw">import</span> requests, hashlib, time
+<span class="kw">from</span> web3 <span class="kw">import</span> Web3
+
+<span class="cmt"># Check USGS every 30 seconds</span>
+<span class="kw">def</span> <span class="fn">check_kilauea</span>():
+    r = requests.<span class="fn">get</span>(<span class="str">"https://volcanoes.usgs.gov/api/kilauea"</span>)
+    data = r.<span class="fn">json</span>()
+
+    <span class="cmt"># Harmonic tremor above threshold = alert incoming</span>
+    <span class="kw">if</span> data[<span class="str">"tremor_amplitude"</span>] > <span class="num">4.2</span>:
+        <span class="cmt"># Commit sealed prediction: UP</span>
+        salt = hashlib.<span class="fn">sha256</span>(os.<span class="fn">urandom</span>(<span class="num">32</span>)).<span class="fn">hexdigest</span>()
+        commit = Web3.<span class="fn">keccak</span>(
+            text=<span class="str">f"UP:</span><span class="var">{salt}</span><span class="str">"</span>
+        )
+        vision.<span class="fn">commit_prediction</span>(
+            market_id=<span class="num">847</span>,
+            hash=commit,
+            amount=<span class="num">200</span>  <span class="cmt"># 200 USDC</span>
+        )
+        <span class="kw">return</span> <span class="str">"committed"</span>
+
+<span class="kw">while</span> <span class="kw">True</span>:
+    <span class="fn">check_kilauea</span>()
+    time.<span class="fn">sleep</span>(<span class="num">30</span>)</pre>
+      </div>
+    </div>
+
+    <div class="story-block reveal">
+      <p class="story-text">
+        Both predicted <span class="green">UP</span>. Both were right.
+        Both got paid.
+      </p>
+    </div>
+
+    <div class="story-block">
+      <div class="story-emphasis reveal">
+        Neither knew the other existed.<br>
+        <span class="sub">That's the point.</span>
+      </div>
+    </div>
+
+    <div class="story-divider"></div>
+
+    <!-- Story block 3: The why -->
+    <div class="story-block reveal" style="margin-top: 80px;">
+      <p class="story-text">
+        In a traditional market, the bot would front-run the student. The student
+        would see the bot's order and second-guess herself. The bot would see
+        the student's hesitation and adjust. Information leaks. Edges evaporate.
+      </p>
+    </div>
+
+    <div class="story-block reveal">
+      <p class="story-text">
+        On Vision, <em>every bet is sealed</em>. Committed as a keccak256 hash.
+        Nobody sees your prediction. Nobody copies your strategy. Nobody
+        front-runs your edge.
+      </p>
+    </div>
+
+    <div class="story-block reveal">
+      <p class="story-text">
+        The geology student and the Python script both found the same signal
+        through completely different methods. Both committed in silence.
+        Both got paid in proportion.
+      </p>
+    </div>
+
+    <div class="story-block">
+      <div class="story-emphasis reveal">
+        Your edge is yours alone.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 3: THE MECHANIC (through the Kilauea story)
+═══════════════════════════════════════════════ -->
+<section id="mechanic">
+  <div class="container">
+
+    <div class="mechanic-title reveal">Here's how it worked.</div>
+
+    <div class="timeline">
+
+      <!-- Step 1: Market opens -->
+      <div class="timeline-step reveal stagger-1">
+        <div class="timeline-dot"></div>
+        <div class="timeline-time">T-5:00 — Market opens</div>
+        <div class="timeline-heading">Kilauea market goes live</div>
+        <div class="timeline-desc">
+          Vision's data node pulls Kilauea's current alert level from USGS.
+          A 5-minute market opens: "Will the alert level be higher at resolution?"
+          The pool starts empty. The clock starts ticking.
+        </div>
+      </div>
+
+      <!-- Step 2: Predictions sealed -->
+      <div class="timeline-step reveal stagger-2">
+        <div class="timeline-dot"></div>
+        <div class="timeline-time">T-4:38 — Predictions sealed</div>
+        <div class="timeline-heading">Bets committed as hashes</div>
+        <div class="timeline-desc">
+          The geology student commits her prediction. Her wallet sends a keccak256
+          hash to the contract. Not "UP" or "DOWN" — just an opaque 32-byte hash.
+          Nobody can reverse it. Nobody can read it. Not other traders. Not Vision.
+          Not even the chain validators.
+        </div>
+        <div class="hash-animation reveal stagger-3">
+          <div class="hash-input">
+            <span class="label">Prediction</span>
+            <span style="color: var(--green);">UP</span>
+          </div>
+          <div class="hash-input">
+            <span class="label">Salt</span>
+            <span style="color: var(--text3);">a7f2e9...</span>
+          </div>
+          <div class="hash-arrow">keccak256</div>
+          <div class="hash-output">
+            <span class="label">On-chain commit</span>
+            0x8b4a7c2e1f9d3a6b5c0e8f7d4a2b1c9e6f3d8a7b5c4e2f1a0d9c8b7e6f5a4d
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: The bot commits -->
+      <div class="timeline-step reveal stagger-3">
+        <div class="timeline-dot"></div>
+        <div class="timeline-time">T-3:12 — Another prediction</div>
+        <div class="timeline-heading">The bot commits too</div>
+        <div class="timeline-desc">
+          The Python script detects elevated tremor amplitude and fires its own
+          sealed commit. 200 USDC on UP. A third trader commits DOWN — 180 USDC.
+          In total, the pool reaches $1,847 across all participants. Nobody
+          knows the distribution. Nobody knows what anyone else picked.
+        </div>
+      </div>
+
+      <!-- Step 4: Commit window closes -->
+      <div class="timeline-step reveal stagger-4">
+        <div class="timeline-dot"></div>
+        <div class="timeline-time">T-1:00 — Commit window closes</div>
+        <div class="timeline-heading">No more bets</div>
+        <div class="timeline-desc">
+          The contract locks. No new predictions accepted. The 14 committed
+          hashes sit on-chain like sealed envelopes. The USGS data will
+          determine who was right.
+        </div>
+      </div>
+
+      <!-- Step 5: Resolution -->
+      <div class="timeline-step step-green reveal stagger-5">
+        <div class="timeline-dot"></div>
+        <div class="timeline-time">T-0:00 — Resolution</div>
+        <div class="timeline-heading">USGS confirms: alert level elevated</div>
+        <div class="timeline-desc">
+          Vision's data node pulls the new alert level. Kilauea has been upgraded
+          from WATCH to WARNING. The outcome is UP. Traders reveal their
+          predictions by submitting their original plaintext + salt. The contract
+          verifies each hash matches.
+        </div>
+      </div>
+
+      <!-- Step 6: Payout -->
+      <div class="timeline-step step-green reveal stagger-6">
+        <div class="timeline-dot"></div>
+        <div class="timeline-time">T+0:01 — Payout</div>
+        <div class="timeline-heading">Winners split the pot</div>
+        <div class="timeline-desc">
+          Parimutuel settlement. Everyone who predicted UP splits the total pool
+          in proportion to their stake. The 0.3% fee applies only to profit,
+          not the original stake.
+        </div>
+        <div class="payout-visual reveal stagger-7">
+          <div class="payout-bar-wrapper">
+            <div class="payout-bar-label">
+              <span class="side" style="color: var(--green);">UP pool</span>
+              <span class="amount">$1,204</span>
+            </div>
+            <div class="payout-bar-label">
+              <span class="side" style="color: var(--red);">DOWN pool</span>
+              <span class="amount">$643</span>
+            </div>
+            <div class="payout-bar">
+              <div class="up-portion" style="width: 65%;">65% UP</div>
+              <div class="down-portion" style="width: 35%;">35% DOWN</div>
+            </div>
+          </div>
+          <div class="payout-result">
+            <div class="payout-result-text">
+              Winners receive <strong>1.53x</strong> their stake
+            </div>
+            <div class="payout-fee">0.3% on profit only</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 4: THE ZOOM OUT
+═══════════════════════════════════════════════ -->
+<section id="zoom-out">
+  <div class="container">
+
+    <div class="reveal">
+      <p class="zoom-reveal-text">Kilauea is just one market.</p>
+    </div>
+
+    <!-- Mini grid animation placeholder -->
+    <div id="mini-grid-container" style="margin: 60px auto; max-width: 1000px; padding: 0 24px;">
+      <div class="zoom-mini-grid" id="zoom-grid">
+        <!-- 72 mini cards injected by JS -->
+      </div>
+    </div>
+
+    <div class="reveal stagger-2">
+      <div class="zoom-count" id="market-counter">0</div>
+      <div class="zoom-count-label">active markets on Vision</div>
+    </div>
+
+    <div class="reveal stagger-3">
+      <div class="category-pills" id="category-pills">
+        <span class="cat-pill">Crypto</span>
+        <span class="cat-pill">4chan</span>
+        <span class="cat-pill">Weather</span>
+        <span class="cat-pill">Space</span>
+        <span class="cat-pill">Tech</span>
+        <span class="cat-pill">Anime</span>
+        <span class="cat-pill">Congress</span>
+        <span class="cat-pill">SEC Filings</span>
+        <span class="cat-pill">npm</span>
+        <span class="cat-pill">PyPI</span>
+        <span class="cat-pill">HackerNews</span>
+        <span class="cat-pill">Steam</span>
+        <span class="cat-pill">Transport</span>
+        <span class="cat-pill">Volcanoes</span>
+      </div>
+    </div>
+
+    <!-- 8 vivid story cards -->
+    <div class="story-cards">
+
+      <div class="story-card reveal stagger-1">
+        <div class="sc-icon">📡</div>
+        <div class="sc-source">4chan / /biz/</div>
+        <div class="sc-market">/biz/ post volume next hour</div>
+        <div class="sc-story">
+          A degen on /biz/ realized that post volume spikes 20 minutes before
+          token pumps get coordinated. He turned shitpost tracking into a
+          consistent edge.
+        </div>
+        <div class="sc-pool">$890 pool</div>
+      </div>
+
+      <div class="story-card reveal stagger-2">
+        <div class="sc-icon">🛰</div>
+        <div class="sc-source">ISS Tracking</div>
+        <div class="sc-market">ISS altitude drift in 6 hours</div>
+        <div class="sc-story">
+          An aerospace engineer noticed that ISS reboost schedules follow
+          predictable patterns before crew missions. She trades orbital
+          mechanics for fun.
+        </div>
+        <div class="sc-pool">$2,150 pool</div>
+      </div>
+
+      <div class="story-card reveal stagger-3">
+        <div class="sc-icon">📦</div>
+        <div class="sc-source">npm</div>
+        <div class="sc-market">React daily downloads change</div>
+        <div class="sc-story">
+          A dev who follows the React release calendar knows download spikes
+          happen within hours of major releases. He checks the canary branch
+          before committing.
+        </div>
+        <div class="sc-pool">$1,340 pool</div>
+      </div>
+
+      <div class="story-card reveal stagger-4">
+        <div class="sc-icon">🎮</div>
+        <div class="sc-source">Steam</div>
+        <div class="sc-market">Counter-Strike 2 peak CCU change</div>
+        <div class="sc-story">
+          A gamer who lives on r/GlobalOffensive knows that major update
+          announcements predictably spike concurrent users within 24 hours.
+          Patch notes are alpha.
+        </div>
+        <div class="sc-pool">$3,400 pool</div>
+      </div>
+
+      <div class="story-card reveal stagger-5">
+        <div class="sc-icon">🌡</div>
+        <div class="sc-source">OpenMeteo</div>
+        <div class="sc-market">Tokyo temperature change (24h)</div>
+        <div class="sc-story">
+          A weather nerd in Japan cross-references JMA forecasts with
+          OpenMeteo. The model disagreements are where the edge lives.
+          Cold fronts pay well.
+        </div>
+        <div class="sc-pool">$670 pool</div>
+      </div>
+
+      <div class="story-card reveal stagger-6">
+        <div class="sc-icon">📊</div>
+        <div class="sc-source">HackerNews</div>
+        <div class="sc-market">Top story points in 1 hour</div>
+        <div class="sc-story">
+          A startup founder who refreshes HN every 15 minutes noticed that
+          "Show HN" posts about AI tools hit 500 points within 2 hours,
+          consistently.
+        </div>
+        <div class="sc-pool">$1,120 pool</div>
+      </div>
+
+      <div class="story-card reveal stagger-7">
+        <div class="sc-icon">🏛</div>
+        <div class="sc-source">Congress</div>
+        <div class="sc-market">New Congressional trades this week</div>
+        <div class="sc-story">
+          A political junkie tracks Congressional disclosure filings. When
+          members of certain committees start buying defense stocks, the
+          signal is clear.
+        </div>
+        <div class="sc-pool">$5,800 pool</div>
+      </div>
+
+      <div class="story-card reveal stagger-8">
+        <div class="sc-icon">🎌</div>
+        <div class="sc-source">AniList</div>
+        <div class="sc-market">AniList #1 trending anime change</div>
+        <div class="sc-story">
+          An anime fan who reads Japanese social media knows which shows are
+          about to trend 12 hours before Western platforms catch up. Cultural
+          arbitrage.
+        </div>
+        <div class="sc-pool">$480 pool</div>
+      </div>
+
+    </div>
+
+    <div class="reveal" style="margin-top: 80px;">
+      <p style="font-size: 20px; color: var(--text2); font-weight: 300;">
+        Every market has a story. Every story has an edge.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 5: THE INTERACTIVE GRID
+═══════════════════════════════════════════════ -->
+<section id="grid">
+  <div class="container">
+
+    <div class="grid-header reveal">
+      <div>
+        <div class="section-label" style="color: var(--green);">
+          <span style="background: var(--green);" class="section-label::before"></span>
+          LIVE MARKETS
+        </div>
+        <h2 class="grid-title">Explore All Markets</h2>
+        <p class="grid-subtitle">Click any market to see details. Place predictions with UP / DOWN.</p>
+      </div>
+      <div class="grid-tabs" id="grid-tabs">
+        <button class="grid-tab active" data-cat="all">All</button>
+        <button class="grid-tab" data-cat="crypto">Crypto</button>
+        <button class="grid-tab" data-cat="social">4chan</button>
+        <button class="grid-tab" data-cat="tech">Tech</button>
+        <button class="grid-tab" data-cat="weather">Weather</button>
+        <button class="grid-tab" data-cat="space">Space</button>
+        <button class="grid-tab" data-cat="finance">Finance</button>
+        <button class="grid-tab" data-cat="culture">Culture</button>
+      </div>
+    </div>
+
+    <div class="market-grid" id="market-grid">
+      <!-- Injected by JS -->
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 6: THE PITCH
+═══════════════════════════════════════════════ -->
+<section id="pitch">
+  <div class="container">
+
+    <div class="section-label reveal" style="justify-content: center; color: var(--green);">
+      WHY VISION
+    </div>
+
+    <h2 class="reveal" style="font-size: clamp(28px, 4vw, 44px); font-weight: 800; margin-bottom: 60px;">
+      Built different, on purpose.
+    </h2>
+
+    <div class="pitch-grid">
+      <div class="pitch-item reveal stagger-1">
+        <div class="pitch-icon">🔒</div>
+        <div class="pitch-label">Sealed bets</div>
+        <div class="pitch-desc">
+          Nobody copies. Your edge stays yours. Every prediction is committed
+          as a keccak256 hash — invisible until resolution.
+        </div>
+      </div>
+      <div class="pitch-item reveal stagger-2">
+        <div class="pitch-icon">⚖️</div>
+        <div class="pitch-label">Parimutuel pools</div>
+        <div class="pitch-desc">
+          Winners split losers' stakes. No market maker. No order book.
+          No liquidity problems. Pure skill vs. the crowd.
+        </div>
+      </div>
+      <div class="pitch-item reveal stagger-3">
+        <div class="pitch-icon">📡</div>
+        <div class="pitch-label">44 data sources</div>
+        <div class="pitch-desc">
+          CoinGecko. 4chan. npm. Steam. USGS. Congress. SEC. ISS. AniList.
+          Every source is an edge nobody else is trading.
+        </div>
+      </div>
+      <div class="pitch-item reveal stagger-4">
+        <div class="pitch-icon">🤖</div>
+        <div class="pitch-label">Bots welcome</div>
+        <div class="pitch-desc">
+          SDK in Python and TypeScript. Run your strategy on a $5 VPS.
+          Sealed bets mean bots can't front-run each other.
+        </div>
+      </div>
+    </div>
+
+    <!-- SDK code preview -->
+    <div class="sdk-preview reveal">
+      <div class="sdk-tabs">
+        <button class="sdk-tab active" onclick="switchSDK('python')">Python</button>
+        <button class="sdk-tab" onclick="switchSDK('typescript')">TypeScript</button>
+      </div>
+      <div class="sdk-code active" id="sdk-python">
+        <pre>
+<span class="kw">from</span> vision <span class="kw">import</span> Client
+
+client = Client(private_key=<span class="str">"0x..."</span>)
+
+<span class="cmt"># Find a market</span>
+markets = client.<span class="fn">get_markets</span>(source=<span class="str">"usgs_volcanoes"</span>)
+market = markets[<span class="num">0</span>]
+
+<span class="cmt"># Commit a sealed prediction</span>
+receipt = client.<span class="fn">predict</span>(
+    market_id=market.id,
+    direction=<span class="str">"UP"</span>,
+    amount=<span class="num">50.0</span>,      <span class="cmt"># USDC</span>
+)
+
+<span class="fn">print</span>(<span class="str">f"Committed: </span><span class="var">{receipt.tx_hash}</span><span class="str">"</span>)
+<span class="fn">print</span>(<span class="str">f"Salt saved locally (for reveal): </span><span class="var">{receipt.salt}</span><span class="str">"</span>)
+
+<span class="cmt"># Auto-reveal happens at resolution</span>
+<span class="cmt"># Payout is automatic if you win</span></pre>
+      </div>
+      <div class="sdk-code" id="sdk-typescript">
+        <pre>
+<span class="kw">import</span> { VisionClient } <span class="kw">from</span> <span class="str">"@vision/sdk"</span>;
+
+<span class="kw">const</span> client = <span class="kw">new</span> <span class="fn">VisionClient</span>({
+  privateKey: <span class="str">"0x..."</span>,
+  rpc: <span class="str">"http://142.132.164.24/"</span>,
+});
+
+<span class="cmt">// Find a market</span>
+<span class="kw">const</span> markets = <span class="kw">await</span> client.<span class="fn">getMarkets</span>({
+  source: <span class="str">"usgs_volcanoes"</span>,
+});
+
+<span class="cmt">// Commit a sealed prediction</span>
+<span class="kw">const</span> receipt = <span class="kw">await</span> client.<span class="fn">predict</span>({
+  marketId: markets[<span class="num">0</span>].id,
+  direction: <span class="str">"UP"</span>,
+  amount: <span class="num">50.0</span>,  <span class="cmt">// USDC</span>
+});
+
+console.<span class="fn">log</span>(<span class="str">`Committed: </span><span class="var">${receipt.txHash}</span><span class="str">`</span>);
+console.<span class="fn">log</span>(<span class="str">`Salt: </span><span class="var">${receipt.salt}</span><span class="str">`</span>);
+
+<span class="cmt">// Auto-reveal at resolution</span>
+<span class="cmt">// Payout is automatic</span></pre>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 7: FINAL CTA
+═══════════════════════════════════════════════ -->
+<section id="cta">
+  <div class="container">
+
+    <div class="reveal">
+      <p class="cta-poetic">
+        Kilauea's alert level will change again.<br>
+        The ISS will drift. /biz/ will shitpost.<br>
+        React will ship. <em>Tokyo will cool.</em>
+      </p>
+    </div>
+
+    <div class="reveal stagger-2">
+      <p class="cta-question">
+        The only question is: will you be in<br>
+        the market when it happens?
+      </p>
+    </div>
+
+    <div class="reveal stagger-3">
+      <div class="cta-button-wrapper">
+        <a href="#" class="cta-button" onclick="openConnect(); return false;">Start Trading</a>
+      </div>
+    </div>
+
+    <div class="reveal stagger-4">
+      <div class="risk-pills">
+        <span class="risk-pill">0.1 USDC min</span>
+        <span class="risk-pill">No KYC</span>
+        <span class="risk-pill">5-min resolution</span>
+        <span class="risk-pill">Sealed bets</span>
+        <span class="risk-pill">On-chain</span>
+        <span class="risk-pill">0.3% on profit only</span>
+      </div>
+    </div>
+
+    <div class="reveal stagger-5">
+      <a href="#grid" class="cta-secondary">Explore All Markets</a>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════════ -->
+<footer>
+  <div class="footer-links">
+    <a href="#">Docs</a>
+    <a href="#">SDK</a>
+    <a href="#">GitHub</a>
+    <a href="#">Discord</a>
+    <a href="#">Twitter</a>
+    <a href="#">Arbitrum Orbit</a>
+  </div>
+  <div class="footer-copy">Vision Protocol — Sealed prediction markets on Arbitrum</div>
+</footer>
+
+
+<!-- ═══════════════════════════════════════════════
+     DETAIL PANEL (shared)
+═══════════════════════════════════════════════ -->
+<div class="detail-overlay" id="detail-overlay" onclick="closeDetail(event)">
+  <div class="detail-panel" onclick="event.stopPropagation()">
+    <button class="detail-close" onclick="closeDetailForce()">&times;</button>
+    <div class="dp-source" id="dp-source">COINGECKO</div>
+    <div class="dp-title" id="dp-title">Bitcoin price change (1h)</div>
+    <div class="dp-desc" id="dp-desc">
+      Will the price of BTC be higher at resolution than at market open?
+    </div>
+    <div class="dp-stats">
+      <div class="dp-stat">
+        <div class="dp-stat-label">Pool</div>
+        <div class="dp-stat-value" id="dp-pool">$2,450</div>
+      </div>
+      <div class="dp-stat">
+        <div class="dp-stat-label">Resolution</div>
+        <div class="dp-stat-value" id="dp-res">30 min</div>
+      </div>
+      <div class="dp-stat">
+        <div class="dp-stat-label">Source</div>
+        <div class="dp-stat-value" id="dp-src-name" style="font-size: 12px;">CoinGecko</div>
+      </div>
+    </div>
+    <div class="dp-actions">
+      <button class="mc-btn mc-btn-up" onclick="openConnect()">PREDICT UP</button>
+      <button class="mc-btn mc-btn-down" onclick="openConnect()">PREDICT DOWN</button>
+    </div>
+  </div>
+</div>
+
+<!-- Connect modal -->
+<div class="connect-modal" id="connect-modal" onclick="closeConnect(event)">
+  <div class="connect-box" onclick="event.stopPropagation()">
+    <h3>Connect Wallet</h3>
+    <p>Connect your wallet to place sealed predictions on Vision markets.</p>
+    <button class="connect-wallet-btn" onclick="alert('Demo — wallet connection not available on this page.')">
+      Connect Wallet
+    </button>
+    <button class="connect-dismiss" onclick="closeConnectForce()">Maybe later</button>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════ -->
+<script>
+/* ═══════════════════════════════════════
+   MARKET DATA
+═══════════════════════════════════════ */
+const MARKETS = [
+  { cat: 'crypto', source: 'CoinGecko', title: 'Bitcoin price change (1h)', pool: 4280, timer: '14:23', change: '+2.4%', changeDir: 'positive', desc: 'Will BTC/USD be higher at resolution than at market open?' },
+  { cat: 'crypto', source: 'CoinGecko', title: 'Ethereum gas price spike', pool: 1920, timer: '8:41', change: '+12.1%', changeDir: 'positive', desc: 'Will ETH gas (gwei) exceed 50 at resolution?' },
+  { cat: 'crypto', source: 'CoinGecko', title: 'Solana price change (30m)', pool: 3150, timer: '22:07', change: '-1.8%', changeDir: 'negative', desc: 'Will SOL/USD be higher at resolution?' },
+  { cat: 'social', source: '4chan /biz/', title: '/biz/ post volume next hour', pool: 890, timer: '47:12', change: '+8.3%', changeDir: 'positive', desc: 'Will /biz/ post volume be higher in the next hour vs. the previous hour?' },
+  { cat: 'social', source: '4chan /pol/', title: '/pol/ thread velocity change', pool: 620, timer: '31:55', change: '-3.1%', changeDir: 'negative', desc: 'Will new thread creation rate on /pol/ increase at resolution?' },
+  { cat: 'social', source: '4chan /g/', title: '/g/ daily unique posters', pool: 340, timer: '5:18:30', change: '+1.2%', changeDir: 'positive', desc: 'Will /g/ unique poster count be higher at resolution?' },
+  { cat: 'tech', source: 'npm', title: 'React daily downloads change', pool: 1340, timer: '3:42:15', change: '+5.7%', changeDir: 'positive', desc: 'Will react npm downloads today exceed yesterday?' },
+  { cat: 'tech', source: 'PyPI', title: 'FastAPI weekly downloads', pool: 780, timer: '2d 4h', change: '+3.2%', changeDir: 'positive', desc: 'Will fastapi PyPI downloads this week exceed last week?' },
+  { cat: 'tech', source: 'HackerNews', title: 'Top story points (1h)', pool: 1120, timer: '38:44', change: '+420pts', changeDir: 'positive', desc: 'Will the current #1 HN story exceed 500 points at resolution?' },
+  { cat: 'tech', source: 'Steam', title: 'CS2 peak CCU change (24h)', pool: 3400, timer: '18:22:00', change: '-2.1%', changeDir: 'negative', desc: 'Will CS2 peak concurrent users today exceed yesterday?' },
+  { cat: 'weather', source: 'OpenMeteo', title: 'Tokyo temperature change (24h)', pool: 670, timer: '20:15:33', change: '-1.3C', changeDir: 'negative', desc: 'Will Tokyo temperature be higher in 24h than now?' },
+  { cat: 'weather', source: 'OpenMeteo', title: 'NYC precipitation next 6h', pool: 440, timer: '5:48:22', change: '0mm', changeDir: 'positive', desc: 'Will there be measurable precipitation in NYC in the next 6 hours?' },
+  { cat: 'space', source: 'ISS Tracking', title: 'ISS altitude drift (6h)', pool: 2150, timer: '5:12:44', change: '+0.3km', changeDir: 'positive', desc: 'Will ISS orbital altitude be higher in 6 hours than now?' },
+  { cat: 'space', source: 'USGS Volcanoes', title: 'Kilauea alert level change', pool: 1847, timer: '4:38', change: 'WATCH', changeDir: 'positive', desc: 'Will Kilauea volcanic alert level be elevated at resolution?' },
+  { cat: 'finance', source: 'Congress', title: 'New Congressional trades this week', pool: 5800, timer: '4d 12h', change: '+7', changeDir: 'positive', desc: 'Will there be more Congressional stock trades disclosed this week vs. last?' },
+  { cat: 'finance', source: 'SEC', title: 'SEC filings volume (daily)', pool: 920, timer: '14:32:00', change: '+12', changeDir: 'positive', desc: 'Will SEC filing count today exceed the 30-day average?' },
+  { cat: 'culture', source: 'AniList', title: 'AniList #1 trending anime change', pool: 480, timer: '11:22:18', change: 'Solo Leveling', changeDir: 'positive', desc: 'Will the #1 trending anime on AniList change at resolution?' },
+  { cat: 'culture', source: 'TWSE', title: 'TWSE daily volume change', pool: 1560, timer: '6:15:00', change: '+4.8%', changeDir: 'positive', desc: 'Will Taiwan Stock Exchange volume today exceed yesterday?' },
+  { cat: 'crypto', source: 'Polymarket', title: 'Polymarket daily volume change', pool: 2870, timer: '16:44', change: '+18.3%', changeDir: 'positive', desc: 'Will Polymarket 24h trading volume be higher at resolution?' },
+  { cat: 'weather', source: 'USGS Earthquakes', title: 'Earthquake M4+ next 24h (Pacific)', pool: 1230, timer: '22:33:11', change: '3 events', changeDir: 'positive', desc: 'Will there be an M4+ earthquake in the Pacific Ring of Fire in the next 24h?' },
+];
+
+
+/* ═══════════════════════════════════════
+   HERO SEQUENCING
+═══════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  const lines = document.querySelectorAll('.hero-line');
+  const delays = [300, 1200, 2800, 4000, 5500];
+  lines.forEach((line, i) => {
+    setTimeout(() => line.classList.add('animate-in'), delays[i]);
+  });
+
+  // Show spike label after chart appears
+  setTimeout(() => {
+    document.getElementById('spike-label').classList.add('show');
+  }, 4800);
+
+  // Init everything
+  initEmbers();
+  drawHeroChart();
+  drawKilaueaCard();
+  buildMiniGrid();
+  buildMarketGrid();
+  initScrollReveals();
+  initCategoryPills();
+  initGridTabs();
+});
+
+
+/* ═══════════════════════════════════════
+   EMBER PARTICLES
+═══════════════════════════════════════ */
+function initEmbers() {
+  const container = document.getElementById('ember-container');
+  const count = window.innerWidth < 768 ? 12 : 25;
+  for (let i = 0; i < count; i++) {
+    const ember = document.createElement('div');
+    ember.classList.add('ember');
+    const left = 30 + Math.random() * 40; // center 30-70%
+    const duration = 4 + Math.random() * 6;
+    const delay = Math.random() * 8;
+    const size = 2 + Math.random() * 3;
+    const drift = (Math.random() - 0.5) * 100;
+    ember.style.left = left + '%';
+    ember.style.bottom = '0';
+    ember.style.width = size + 'px';
+    ember.style.height = size + 'px';
+    ember.style.animationDuration = duration + 's';
+    ember.style.animationDelay = delay + 's';
+    ember.style.setProperty('--drift', drift + 'px');
+    ember.style.background = Math.random() > 0.5 ? 'var(--orange)' : 'var(--amber)';
+    container.appendChild(ember);
+  }
+}
+
+
+/* ═══════════════════════════════════════
+   SPARKLINE CHART DRAWING
+═══════════════════════════════════════ */
+function generateSparkData(count, base, variance, spikeAt, spikeAmount) {
+  const data = [];
+  let val = base;
+  for (let i = 0; i < count; i++) {
+    if (spikeAt !== undefined && i === spikeAt) {
+      val += spikeAmount;
+    } else {
+      val += (Math.random() - 0.5) * variance;
+    }
+    val = Math.max(0, val);
+    data.push(val);
+  }
+  return data;
+}
+
+function drawSparkline(canvasId, data, color, fillColor, animated) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  const w = rect.width;
+  const h = rect.height;
+
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const pad = 4;
+
+  function x(i) { return pad + (i / (data.length - 1)) * (w - pad * 2); }
+  function y(v) { return pad + (1 - (v - min) / range) * (h - pad * 2); }
+
+  // Fill
+  ctx.beginPath();
+  ctx.moveTo(x(0), h);
+  data.forEach((v, i) => ctx.lineTo(x(i), y(v)));
+  ctx.lineTo(x(data.length - 1), h);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, fillColor || 'rgba(255,107,53,0.15)');
+  grad.addColorStop(1, 'rgba(255,107,53,0)');
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  data.forEach((v, i) => {
+    if (i === 0) ctx.moveTo(x(i), y(v));
+    else ctx.lineTo(x(i), y(v));
+  });
+  ctx.strokeStyle = color || '#ff6b35';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Spike dot
+  if (data.length > 5) {
+    const lastIdx = data.length - 1;
+    const last = data[lastIdx];
+    const prev = data[lastIdx - 3];
+    if (last > prev * 1.1) {
+      ctx.beginPath();
+      ctx.arc(x(lastIdx), y(last), 4, 0, Math.PI * 2);
+      ctx.fillStyle = color || '#ff6b35';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x(lastIdx), y(last), 8, 0, Math.PI * 2);
+      ctx.strokeStyle = color || '#ff6b35';
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.3;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+
+function drawHeroChart() {
+  const data = generateSparkData(60, 1, 0.08, 55, 1.8);
+  drawSparkline('hero-chart', data, '#ff6b35', 'rgba(255,107,53,0.2)');
+}
+
+function drawKilaueaCard() {
+  const data = generateSparkData(40, 1, 0.1, 36, 1.5);
+  drawSparkline('card-chart-kilauea', data, '#ff6b35', 'rgba(255,107,53,0.15)');
+}
+
+// Sparklines for market grid cards
+function drawCardSparkline(canvas, positive) {
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  const w = rect.width;
+  const h = rect.height;
+
+  const points = 30;
+  const data = [];
+  let val = 50;
+  for (let i = 0; i < points; i++) {
+    val += (Math.random() - (positive ? 0.4 : 0.6)) * 8;
+    val = Math.max(10, Math.min(90, val));
+    data.push(val);
+  }
+
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+
+  function x(i) { return (i / (points - 1)) * w; }
+  function y(v) { return 4 + (1 - (v - min) / range) * (h - 8); }
+
+  const color = positive ? '#00ff88' : '#ff4466';
+  const fillTop = positive ? 'rgba(0,255,136,0.1)' : 'rgba(255,68,102,0.1)';
+
+  // Fill
+  ctx.beginPath();
+  ctx.moveTo(x(0), h);
+  data.forEach((v, i) => ctx.lineTo(x(i), y(v)));
+  ctx.lineTo(x(points - 1), h);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, fillTop);
+  grad.addColorStop(1, 'transparent');
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  data.forEach((v, i) => {
+    if (i === 0) ctx.moveTo(x(i), y(v));
+    else ctx.lineTo(x(i), y(v));
+  });
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+
+/* ═══════════════════════════════════════
+   MINI GRID (zoom-out animation)
+═══════════════════════════════════════ */
+function buildMiniGrid() {
+  const grid = document.getElementById('zoom-grid');
+  const total = 72;
+  const highlightIdx = 38; // Kilauea card position
+  for (let i = 0; i < total; i++) {
+    const card = document.createElement('div');
+    card.classList.add('mini-card');
+    if (i === highlightIdx) card.classList.add('highlight');
+    grid.appendChild(card);
+  }
+}
+
+function animateMiniGrid() {
+  const cards = document.querySelectorAll('.mini-card');
+  const grid = document.getElementById('zoom-grid');
+  grid.classList.add('visible');
+  cards.forEach((card, i) => {
+    setTimeout(() => card.classList.add('visible'), 30 * i + Math.random() * 200);
+  });
+}
+
+
+/* ═══════════════════════════════════════
+   MARKET COUNTER ANIMATION
+═══════════════════════════════════════ */
+function animateCounter(targetEl, target) {
+  let current = 0;
+  const duration = 2000;
+  const start = performance.now();
+
+  function step(timestamp) {
+    const elapsed = timestamp - start;
+    const progress = Math.min(elapsed / duration, 1);
+    // Ease out cubic
+    const eased = 1 - Math.pow(1 - progress, 3);
+    current = Math.round(eased * target);
+    targetEl.textContent = current.toLocaleString();
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+
+/* ═══════════════════════════════════════
+   CATEGORY PILLS ANIMATION
+═══════════════════════════════════════ */
+function initCategoryPills() {
+  // Triggered by scroll observer
+}
+
+function animatePills() {
+  const pills = document.querySelectorAll('.cat-pill');
+  pills.forEach((pill, i) => {
+    setTimeout(() => pill.classList.add('visible'), 100 * i);
+  });
+}
+
+
+/* ═══════════════════════════════════════
+   BUILD MARKET GRID
+═══════════════════════════════════════ */
+function buildMarketGrid(filterCat) {
+  const grid = document.getElementById('market-grid');
+  grid.innerHTML = '';
+
+  const filtered = filterCat && filterCat !== 'all'
+    ? MARKETS.filter(m => m.cat === filterCat)
+    : MARKETS;
+
+  filtered.forEach((m, idx) => {
+    const card = document.createElement('div');
+    card.classList.add('market-card');
+    card.setAttribute('data-cat', m.cat);
+    card.onclick = (e) => {
+      if (e.target.closest('.card-btn')) return;
+      openDetail(m);
+    };
+
+    card.innerHTML = `
+      <div class="card-top">
+        <div class="card-source"><span class="dot"></span>${m.source}</div>
+        <div class="card-timer">${m.timer}</div>
+      </div>
+      <div class="card-title">${m.title}</div>
+      <div class="card-sparkline"><canvas id="spark-${idx}-${filterCat || 'all'}"></canvas></div>
+      <div class="card-meta">
+        <div class="card-pool">Pool: <strong>$${m.pool.toLocaleString()}</strong></div>
+        <div class="card-change ${m.changeDir}">${m.change}</div>
+      </div>
+      <div class="card-actions">
+        <button class="card-btn card-btn-up" onclick="openConnect()">UP</button>
+        <button class="card-btn card-btn-down" onclick="openConnect()">DOWN</button>
+      </div>
+    `;
+
+    grid.appendChild(card);
+
+    // Draw sparkline after append
+    requestAnimationFrame(() => {
+      const canvas = document.getElementById(`spark-${idx}-${filterCat || 'all'}`);
+      if (canvas) drawCardSparkline(canvas, m.changeDir === 'positive');
+    });
+  });
+}
+
+
+/* ═══════════════════════════════════════
+   GRID TABS
+═══════════════════════════════════════ */
+function initGridTabs() {
+  const tabs = document.querySelectorAll('.grid-tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      buildMarketGrid(tab.dataset.cat);
+    });
+  });
+}
+
+
+/* ═══════════════════════════════════════
+   DETAIL PANEL
+═══════════════════════════════════════ */
+function openDetail(market) {
+  document.getElementById('dp-source').textContent = market.source.toUpperCase();
+  document.getElementById('dp-title').textContent = market.title;
+  document.getElementById('dp-desc').textContent = market.desc;
+  document.getElementById('dp-pool').textContent = '$' + market.pool.toLocaleString();
+  document.getElementById('dp-res').textContent = market.timer;
+  document.getElementById('dp-src-name').textContent = market.source;
+  document.getElementById('detail-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDetail(e) {
+  if (e.target === document.getElementById('detail-overlay')) {
+    closeDetailForce();
+  }
+}
+
+function closeDetailForce() {
+  document.getElementById('detail-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+
+/* ═══════════════════════════════════════
+   CONNECT MODAL
+═══════════════════════════════════════ */
+function openConnect() {
+  closeDetailForce();
+  document.getElementById('connect-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeConnect(e) {
+  if (e.target === document.getElementById('connect-modal')) {
+    closeConnectForce();
+  }
+}
+
+function closeConnectForce() {
+  document.getElementById('connect-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+
+/* ═══════════════════════════════════════
+   SDK TAB SWITCH
+═══════════════════════════════════════ */
+function switchSDK(lang) {
+  document.querySelectorAll('.sdk-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.sdk-code').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('sdk-' + lang).classList.add('active');
+}
+
+
+/* ═══════════════════════════════════════
+   SCROLL REVEAL (IntersectionObserver)
+═══════════════════════════════════════ */
+function initScrollReveals() {
+  const revealClasses = ['.reveal', '.reveal-slow', '.reveal-fade', '.reveal-left', '.reveal-right'];
+  const allReveals = document.querySelectorAll(revealClasses.join(','));
+
+  // Track special elements for one-time animations
+  let miniGridAnimated = false;
+  let counterAnimated = false;
+  let pillsAnimated = false;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+
+        // Mini grid animation
+        if (entry.target.closest('#zoom-out') && !miniGridAnimated) {
+          miniGridAnimated = true;
+          setTimeout(animateMiniGrid, 300);
+        }
+
+        // Counter animation
+        const counterEl = document.getElementById('market-counter');
+        if (entry.target.contains(counterEl) && !counterAnimated) {
+          counterAnimated = true;
+          setTimeout(() => animateCounter(counterEl, 1047), 200);
+        }
+
+        // Pills animation
+        if (entry.target.querySelector('.cat-pill') && !pillsAnimated) {
+          pillsAnimated = true;
+          setTimeout(animatePills, 400);
+        }
+
+        observer.unobserve(entry.target);
+      }
+    });
+  }, {
+    threshold: 0.15,
+    rootMargin: '0px 0px -50px 0px'
+  });
+
+  allReveals.forEach(el => observer.observe(el));
+
+  // Also observe the zoom-out section container
+  const zoomSection = document.getElementById('zoom-out');
+  if (zoomSection) {
+    const zoomObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !miniGridAnimated) {
+          miniGridAnimated = true;
+          setTimeout(animateMiniGrid, 600);
+          zoomObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    zoomObserver.observe(zoomSection);
+  }
+}
+
+
+/* ═══════════════════════════════════════
+   PARALLAX SCROLLING (subtle)
+═══════════════════════════════════════ */
+let ticking = false;
+window.addEventListener('scroll', () => {
+  if (!ticking) {
+    requestAnimationFrame(() => {
+      const scrollY = window.scrollY;
+
+      // Hero parallax — content moves slower
+      const heroContent = document.querySelector('.hero-content');
+      if (heroContent && scrollY < window.innerHeight) {
+        heroContent.style.transform = `translateY(${scrollY * 0.3}px)`;
+        heroContent.style.opacity = 1 - (scrollY / window.innerHeight) * 0.8;
+      }
+
+      // Ember container parallax
+      const embers = document.getElementById('ember-container');
+      if (embers && scrollY < window.innerHeight) {
+        embers.style.transform = `translateY(${scrollY * 0.15}px)`;
+      }
+
+      ticking = false;
+    });
+    ticking = true;
+  }
+});
+
+
+/* ═══════════════════════════════════════
+   KEYBOARD SHORTCUTS
+═══════════════════════════════════════ */
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeDetailForce();
+    closeConnectForce();
+  }
+});
+
+
+/* ═══════════════════════════════════════
+   RESIZE HANDLER (redraw sparklines)
+═══════════════════════════════════════ */
+let resizeTimeout;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    drawHeroChart();
+    drawKilaueaCard();
+    // Rebuild grid to redraw sparklines
+    const activeTab = document.querySelector('.grid-tab.active');
+    if (activeTab) buildMarketGrid(activeTab.dataset.cat);
+  }, 250);
+});
+</script>
+
+</body>
+</html>

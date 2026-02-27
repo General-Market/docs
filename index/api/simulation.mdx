@@ -1,0 +1,363 @@
+---
+title: "Simulation API"
+description: "Backtest index strategies against historical data"
+---
+
+# Simulation API
+
+Run backtest simulations against historical crypto data from 2020 to today. All endpoints are **GET** requests with query parameters. No authentication required.
+
+**Base URL:** `https://generalmarket.io/api`
+
+---
+
+## List Categories
+
+Returns available asset categories for backtesting.
+
+```
+GET /sim/categories
+```
+
+<CodeGroup>
+```bash cURL
+curl "https://generalmarket.io/api/sim/categories"
+```
+
+```python Python
+import requests
+resp = requests.get("https://generalmarket.io/api/sim/categories")
+for cat in resp.json()["categories"]:
+    print(f"{cat['id']:30s} {cat['name']:30s} ({cat['coin_count']} coins)")
+```
+
+```javascript JavaScript
+const res = await fetch("https://generalmarket.io/api/sim/categories");
+const { categories } = await res.json();
+categories.forEach(c => console.log(`${c.id} — ${c.name} (${c.coin_count} coins)`));
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+{
+  "categories": [
+    { "id": "layer-1", "name": "Layer 1", "coin_count": 45, "source": "coingecko" },
+    { "id": "dl-dexes", "name": "Decentralized Exchanges", "coin_count": 32, "source": "defillama" },
+    { "id": "meme-token", "name": "Meme Coins", "coin_count": 120, "source": "coingecko" },
+    { "id": "artificial-intelligence", "name": "AI & Big Data", "coin_count": 38, "source": "coingecko" }
+  ]
+}
+```
+</Expandable>
+
+---
+
+## Run Backtest
+
+Run a single simulation with specified parameters. Returns cached results if available.
+
+```
+GET /sim/run
+```
+
+<CodeGroup>
+```bash cURL
+curl "https://generalmarket.io/api/sim/run?\
+category_id=layer-1&\
+top_n=10&\
+weighting=mcap&\
+rebalance_days=30&\
+base_fee_pct=0.1&\
+spread_multiplier=1.0"
+```
+
+```python Python
+import requests
+
+resp = requests.get("https://generalmarket.io/api/sim/run", params={
+    "category_id": "layer-1",
+    "top_n": 10,
+    "weighting": "mcap",
+    "rebalance_days": 30,
+    "base_fee_pct": 0.1,
+    "spread_multiplier": 1.0,
+})
+result = resp.json()
+print(f"Run #{result['run_id']}: {result['stats']['total_return_pct']:.1f}% return, "
+      f"Sharpe {result['stats']['sharpe_ratio']:.2f}")
+```
+
+```javascript JavaScript
+const params = new URLSearchParams({
+  category_id: "layer-1",
+  top_n: "10",
+  weighting: "mcap",
+  rebalance_days: "30",
+  base_fee_pct: "0.1",
+  spread_multiplier: "1.0",
+});
+const res = await fetch(`https://generalmarket.io/api/sim/run?${params}`);
+const result = await res.json();
+console.log(`Run #${result.run_id}: ${result.stats.total_return_pct}% return`);
+```
+</CodeGroup>
+
+### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `category_id` | string | Yes | — | Category slug from `/sim/categories` |
+| `top_n` | int | Yes | — | Number of top assets by market cap |
+| `weighting` | string | Yes | — | Weighting scheme (see [Backtesting Guide](/index/guides/backtesting#weighting-strategies)) |
+| `rebalance_days` | int | Yes | — | Days between rebalances |
+| `base_fee_pct` | float | No | `0.1` | Fee percentage per rebalance |
+| `spread_multiplier` | float | No | `1.0` | Slippage multiplier |
+| `start_date` | string | No | Earliest data | ISO date `YYYY-MM-DD` |
+| `force` | bool | No | `false` | Skip cache, recompute |
+| `threshold_pct` | float | No | — | Drift-based rebalance threshold (%) |
+| `fng_mode` | string | No | — | Fear & Greed regime (`fear`, `greed`, `both`) |
+| `fng_fear_threshold` | int | No | `25` | FNG below this = fear regime |
+| `fng_greed_threshold` | int | No | `75` | FNG above this = greed regime |
+| `fng_cash_pct` | float | No | `0.4` | % to stables during greed |
+| `dom_mode` | string | No | — | Dominance regime (`btc`, `eth`, `inverse`) |
+| `dom_lookback` | int | No | `30` | Lookback days for dominance trend |
+| `vc_mode` | string | No | — | VC filter mode |
+| `vc_investors` | string | No | — | Comma-separated investor names |
+| `vc_min_amount_m` | float | No | — | Min funding amount ($M) |
+| `vc_round_types` | string | No | — | Comma-separated round types |
+
+### Response
+
+<Expandable title="Full Response Schema">
+```json
+{
+  "run_id": 4821,
+  "config": {
+    "category_id": "layer-1",
+    "top_n": 10,
+    "weighting": "mcap",
+    "rebalance_days": 30,
+    "base_fee_pct": 0.1,
+    "spread_multiplier": 1.0
+  },
+  "stats": {
+    "total_return_pct": 312.45,
+    "annualized_return": 32.8,
+    "max_drawdown_pct": -72.1,
+    "sharpe_ratio": 0.94,
+    "total_fees_pct": 1.8,
+    "total_trades": 248,
+    "total_rebalances": 72,
+    "total_delistings": 5,
+    "start_date": "2020-01-01",
+    "end_date": "2026-02-27"
+  },
+  "nav_series": [
+    { "date": "2020-01-01", "nav": 1.0 },
+    { "date": "2020-01-02", "nav": 1.012 }
+  ],
+  "cached": true,
+  "computed_in_ms": 0
+}
+```
+</Expandable>
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `run_id` | int | Unique ID for fetching holdings or comparing runs |
+| `stats.total_return_pct` | float | Cumulative return (e.g., `312.45` = 312.45%) |
+| `stats.annualized_return` | float | Annualized return % |
+| `stats.max_drawdown_pct` | float | Maximum peak-to-trough decline (negative) |
+| `stats.sharpe_ratio` | float | Risk-adjusted return metric |
+| `stats.total_fees_pct` | float | Cumulative fees across all rebalances |
+| `stats.total_trades` | int | Number of individual trades executed |
+| `stats.total_rebalances` | int | Number of rebalance events |
+| `stats.total_delistings` | int | Assets removed mid-backtest |
+| `nav_series` | array | Daily NAV points starting at 1.0 |
+| `cached` | bool | Whether the result was served from cache |
+| `computed_in_ms` | int | Computation time (0 if cached) |
+
+---
+
+## Run Backtest (Streaming)
+
+Same parameters as `/sim/run`, but returns results as Server-Sent Events with progress updates.
+
+```
+GET /sim/run-stream
+```
+
+<CodeGroup>
+```bash cURL
+curl -N "https://generalmarket.io/api/sim/run-stream?\
+category_id=layer-1&top_n=10&weighting=mcap&rebalance_days=30"
+```
+
+```python Python
+import requests, json
+
+resp = requests.get(
+    "https://generalmarket.io/api/sim/run-stream",
+    params={"category_id": "layer-1", "top_n": 10, "weighting": "mcap", "rebalance_days": 30},
+    stream=True,
+)
+for line in resp.iter_lines():
+    if line and line.startswith(b"data: "):
+        event = json.loads(line[6:])
+        if event["type"] == "progress":
+            print(f"  {event['pct']}% — {event['current_date']}")
+        elif event["type"] == "result":
+            print(f"Done: {event['stats']['total_return_pct']:.1f}% return")
+```
+
+```javascript JavaScript
+const url = new URL("https://generalmarket.io/api/sim/run-stream");
+url.searchParams.set("category_id", "layer-1");
+url.searchParams.set("top_n", "10");
+url.searchParams.set("weighting", "mcap");
+url.searchParams.set("rebalance_days", "30");
+
+const es = new EventSource(url);
+es.onmessage = (e) => {
+  const data = JSON.parse(e.data);
+  if (data.type === "progress") console.log(`${data.pct}%`);
+  if (data.type === "result") {
+    console.log(`Return: ${data.stats.total_return_pct}%`);
+    es.close();
+  }
+};
+```
+</CodeGroup>
+
+**SSE event types:**
+
+| Type | Fields | Description |
+|------|--------|-------------|
+| `progress` | `pct`, `current_date` | Simulation progress (0–100%) |
+| `result` | Same as `/sim/run` response | Final result |
+| `error` | `error` | Error message if simulation fails |
+
+---
+
+## Sweep Stream
+
+Compare multiple configurations by sweeping one parameter. Returns SSE events with one result per variant.
+
+```
+GET /sim/sweep-stream
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `sweep` | string | Yes | Dimension to sweep: `top_n`, `weighting`, `rebalance`, `category`, `threshold` |
+| `category_id` | string | Yes | Category slug |
+| `categories` | string | No | Comma-separated category IDs (for `sweep=category`) |
+| All `/sim/run` params | — | Varies | Base configuration (the non-swept param values) |
+
+<CodeGroup>
+```bash Sweep top_n
+curl -N "https://generalmarket.io/api/sim/sweep-stream?\
+sweep=top_n&category_id=layer-1&weighting=mcap&rebalance_days=30"
+```
+
+```bash Sweep weighting strategies
+curl -N "https://generalmarket.io/api/sim/sweep-stream?\
+sweep=weighting&category_id=layer-1&top_n=10&rebalance_days=30"
+```
+
+```bash Sweep rebalance frequency
+curl -N "https://generalmarket.io/api/sim/sweep-stream?\
+sweep=rebalance&category_id=layer-1&top_n=10&weighting=mcap"
+```
+</CodeGroup>
+
+**Sweep values per dimension:**
+
+| Sweep | Values Tested |
+|-------|--------------|
+| `top_n` | 5, 10, 20, 30, 50, 100, 200 |
+| `weighting` | All available schemes (11 base + 9 DeFi for `dl-*` categories) |
+| `rebalance` | 14d, 30d, 60d, 90d, 180d + drift bands at 3%, 5%, 10%, 15% |
+
+---
+
+## Get Holdings
+
+Fetch the portfolio composition for a completed backtest run.
+
+```
+GET /sim/holdings
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `run_id` | int | Yes | Run ID from a backtest result |
+| `date` | string | No | Specific rebalance date (`YYYY-MM-DD`). Defaults to latest. |
+
+<CodeGroup>
+```bash cURL
+curl "https://generalmarket.io/api/sim/holdings?run_id=4821"
+```
+
+```python Python
+resp = requests.get("https://generalmarket.io/api/sim/holdings", params={"run_id": 4821})
+for h in resp.json()["holdings"]:
+    print(f"{h['symbol']:>6s}  {h['weight_pct']:.1f}%  ${h['price']:.2f}")
+```
+</CodeGroup>
+
+---
+
+## Compare Runs
+
+Fetch NAV series for multiple runs to overlay on a chart.
+
+```
+GET /sim/compare
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `run_ids` | string | Yes | Comma-separated run IDs (e.g., `4821,4822,4823`) |
+
+```bash
+curl "https://generalmarket.io/api/sim/compare?run_ids=4821,4822,4823"
+```
+
+---
+
+## List Cached Results
+
+Fetch all previously computed backtest results, optionally filtered by category.
+
+```
+GET /sim/results
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `category_id` | string | No | Filter by category |
+
+```bash
+curl "https://generalmarket.io/api/sim/results?category_id=layer-1"
+```
+
+---
+
+## Get Benchmarks
+
+Fetch BTC and ETH price series normalized to 1.0 at the start date. Useful for chart overlays.
+
+```
+GET /sim/benchmarks
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `start_date` | string | Yes | ISO date `YYYY-MM-DD` |
+| `end_date` | string | No | ISO date (defaults to today) |
+
+```bash
+curl "https://generalmarket.io/api/sim/benchmarks?start_date=2020-01-01"
+```

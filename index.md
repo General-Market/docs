@@ -134,7 +134,7 @@ ap --deployment-file ./deployments/local.json  # Real chain mode
 | Network | Chain ID | RPC | Collateral |
 |---------|----------|-----|------------|
 | Local (Anvil) | 111222333 | http://localhost:8545 | ETH |
-| Index L3 Testnet | 111222333 | https://index.rpc.zeeve.net | WIND (18 dec) |
+| Index L3 Testnet | 111222333 | http://142.132.164.24/ | GM (18 dec) |
 
 ---
 

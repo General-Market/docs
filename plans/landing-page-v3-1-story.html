@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vision — Your Internet Addiction Finally Pays Off</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════ */
+:root {
+  --bg: #0a0a0a;
+  --bg2: #111;
+  --bg3: #181818;
+  --border: #222;
+  --green: #00ff88;
+  --green-dim: #00cc6a;
+  --green-glow: #00ff8840;
+  --red: #ff4466;
+  --blue: #4488ff;
+  --text: #f0f0f0;
+  --text2: #aaa;
+  --text3: #666;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Inter', sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  overflow-x: hidden;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ═══════════════════════════════════════
+   UTILITY
+═══════════════════════════════════════ */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.section {
+  padding: 120px 0;
+  position: relative;
+}
+
+.section-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-label::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: var(--green);
+}
+
+.section-title {
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -1.5px;
+  margin-bottom: 24px;
+}
+
+.section-subtitle {
+  font-size: 18px;
+  color: var(--text2);
+  max-width: 640px;
+  line-height: 1.7;
+}
+
+.green { color: var(--green); }
+.red { color: var(--red); }
+.blue { color: var(--blue); }
+.mono { font-family: var(--mono); }
+
+/* Scroll reveal */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-left {
+  opacity: 0;
+  transform: translateX(-60px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.reveal-left.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ═══════════════════════════════════════
+   NAV
+═══════════════════════════════════════ */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  background: rgba(10, 10, 10, 0.8);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-logo {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--green);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.nav-links {
+  display: flex;
+  gap: 32px;
+  list-style: none;
+}
+
+.nav-links a {
+  color: var(--text3);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover {
+  color: var(--text);
+}
+
+.nav-cta {
+  padding: 8px 20px;
+  border: 1px solid var(--green);
+  color: var(--green) !important;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 13px !important;
+  transition: all 0.2s !important;
+}
+
+.nav-cta:hover {
+  background: var(--green) !important;
+  color: var(--bg) !important;
+}
+
+/* ═══════════════════════════════════════
+   SECTION 1: HERO
+═══════════════════════════════════════ */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding-top: 80px;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.hero-grid {
+  position: absolute;
+  inset: -100px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: 12px;
+  transform: perspective(800px) rotateX(8deg) rotateY(-3deg) scale(1.1);
+  opacity: 0.08;
+}
+
+.hero-tile {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  animation: tilePulse 4s ease-in-out infinite;
+}
+
+.hero-tile .tile-label {
+  margin-bottom: 4px;
+  opacity: 0.6;
+}
+
+.hero-tile .tile-value {
+  font-size: 14px;
+  color: var(--green-dim);
+}
+
+@keyframes tilePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.hero-tile:nth-child(odd) { animation-delay: 0.5s; }
+.hero-tile:nth-child(3n) { animation-delay: 1s; }
+.hero-tile:nth-child(5n) { animation-delay: 1.5s; }
+.hero-tile:nth-child(7n) { animation-delay: 2s; }
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  max-width: 900px;
+  padding: 0 24px;
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 32px;
+  padding: 8px 20px;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  background: rgba(0, 255, 136, 0.03);
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--green);
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--green-glow); }
+  50% { box-shadow: 0 0 0 8px transparent; }
+}
+
+.hero h1 {
+  font-size: clamp(40px, 7vw, 80px);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -3px;
+  margin-bottom: 24px;
+}
+
+.hero-sub {
+  font-size: clamp(16px, 2vw, 20px);
+  color: var(--text2);
+  line-height: 1.7;
+  max-width: 700px;
+  margin: 0 auto 48px;
+  font-weight: 300;
+}
+
+.hero-ctas {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 36px;
+  background: var(--green);
+  color: var(--bg);
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 15px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  background: #00ffaa;
+  box-shadow: 0 0 30px var(--green-glow);
+  transform: translateY(-2px);
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 36px;
+  background: transparent;
+  color: var(--text2);
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 15px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn-outline:hover {
+  border-color: var(--text3);
+  color: var(--text);
+}
+
+.hero-gradient {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 300px;
+  background: linear-gradient(to top, var(--bg), transparent);
+  z-index: 1;
+}
+
+/* ═══════════════════════════════════════
+   SECTION 2: FOUR PERSONAS
+═══════════════════════════════════════ */
+.personas {
+  background: var(--bg);
+}
+
+.personas-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-top: 48px;
+}
+
+.persona-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px;
+  transition: all 0.4s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.persona-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--green), transparent);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.persona-card:hover {
+  border-color: #333;
+  transform: translateY(-4px);
+}
+
+.persona-card:hover::before {
+  opacity: 1;
+}
+
+.persona-emoji {
+  font-size: 48px;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.persona-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+
+.persona-text {
+  font-size: 15px;
+  color: var(--text2);
+  line-height: 1.8;
+}
+
+.persona-text strong {
+  color: var(--green);
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════
+   SECTION 3: THE MAPPING
+═══════════════════════════════════════ */
+.mapping {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.mapping-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 60px;
+  margin-top: 48px;
+}
+
+.mapping-title {
+  font-family: var(--mono);
+  font-size: clamp(18px, 3vw, 28px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 48px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.mapping-title::before,
+.mapping-title::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(90deg, var(--green), transparent);
+}
+
+.mapping-title::after {
+  background: linear-gradient(270deg, var(--green), transparent);
+}
+
+.mapping-row {
+  display: flex;
+  align-items: center;
+  padding: 20px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  gap: 16px;
+}
+
+.mapping-row:last-child {
+  border-bottom: none;
+}
+
+.mapping-left {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text);
+  text-align: right;
+}
+
+.mapping-arrow {
+  width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mapping-arrow svg {
+  width: 100%;
+  height: 2px;
+}
+
+.mapping-right {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--green);
+  font-family: var(--mono);
+}
+
+.mapping-footer {
+  margin-top: 48px;
+  text-align: center;
+}
+
+.mapping-compare {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--text3);
+  margin-bottom: 16px;
+}
+
+.mapping-compare .num-green {
+  color: var(--green);
+}
+
+.mapping-compare .num-red {
+  color: var(--red);
+}
+
+.mapping-tagline {
+  font-size: 20px;
+  color: var(--text2);
+  font-weight: 400;
+}
+
+.mapping-tagline .green {
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════
+   SECTION 4: THE SCREEN (Market Grid)
+═══════════════════════════════════════ */
+.screen {
+  background: var(--bg);
+}
+
+.category-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  margin-top: 48px;
+}
+
+.cat-tab {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text3);
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
+}
+
+.cat-tab.active {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(0, 255, 136, 0.05);
+}
+
+.cat-tab:hover {
+  border-color: var(--text3);
+  color: var(--text2);
+}
+
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 48px;
+}
+
+.market-tile {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.market-tile:hover {
+  border-color: #333;
+  transform: translateY(-2px);
+}
+
+.market-tile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.market-tile-name {
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.market-tile-name .emoji {
+  font-size: 18px;
+}
+
+.market-tile-cat {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.05);
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.market-tile-value {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.market-tile-value.up { color: var(--green); }
+.market-tile-value.down { color: var(--red); }
+
+.market-tile-sparkline {
+  height: 32px;
+  width: 100%;
+}
+
+.market-tile-sparkline svg {
+  width: 100%;
+  height: 100%;
+}
+
+.screen-footer {
+  text-align: center;
+  font-size: 16px;
+  color: var(--text2);
+  font-weight: 300;
+}
+
+.screen-footer strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════
+   SECTION 5: HOW IT WORKS
+═══════════════════════════════════════ */
+.how-it-works {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 48px;
+}
+
+.step-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px;
+  position: relative;
+}
+
+.step-number {
+  font-family: var(--mono);
+  font-size: 64px;
+  font-weight: 800;
+  color: rgba(0, 255, 136, 0.08);
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  line-height: 1;
+}
+
+.step-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  margin-top: 8px;
+}
+
+.step-text {
+  font-size: 15px;
+  color: var(--text2);
+  line-height: 1.7;
+}
+
+.how-footer {
+  text-align: center;
+  margin-top: 48px;
+  font-size: 16px;
+  color: var(--text3);
+  font-family: var(--mono);
+  letter-spacing: 0.5px;
+}
+
+/* ═══════════════════════════════════════
+   SECTION 6: COMPARISON TABLE
+═══════════════════════════════════════ */
+.comparison {
+  background: var(--bg);
+}
+
+.comp-table-wrap {
+  margin-top: 48px;
+  overflow-x: auto;
+}
+
+.comp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.comp-table th {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 16px 24px;
+  text-align: left;
+  border-bottom: 2px solid var(--border);
+}
+
+.comp-table th:first-child {
+  color: var(--text3);
+}
+
+.comp-table th.col-binance { color: var(--text3); }
+.comp-table th.col-poly { color: var(--text3); }
+.comp-table th.col-vision { color: var(--green); }
+
+.comp-table td {
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  vertical-align: middle;
+}
+
+.comp-table tr:last-child td {
+  border-bottom: none;
+}
+
+.comp-table td:first-child {
+  font-weight: 600;
+  color: var(--text2);
+}
+
+.comp-table td.muted {
+  color: var(--text3);
+}
+
+.comp-table td.highlight {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.comp-table td .x-mark {
+  color: var(--red);
+  opacity: 0.5;
+}
+
+.comp-table td .check-mark {
+  color: var(--green);
+}
+
+.comp-vision-col {
+  background: rgba(0, 255, 136, 0.03);
+}
+
+/* ═══════════════════════════════════════
+   SECTION 7: BUILT FOR BOTS
+═══════════════════════════════════════ */
+.bots {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.code-block {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  margin-top: 48px;
+  overflow-x: auto;
+  position: relative;
+}
+
+.code-block::before {
+  content: 'vision-bot.py';
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.code-block pre {
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--text2);
+}
+
+.code-block .kw { color: var(--blue); }
+.code-block .fn { color: var(--green); }
+.code-block .str { color: #ffaa44; }
+.code-block .cm { color: var(--text3); }
+.code-block .num { color: var(--red); }
+.code-block .dec { color: #cc77ff; }
+
+.bots-tools {
+  display: flex;
+  gap: 16px;
+  margin-top: 32px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.tool-pill {
+  padding: 8px 20px;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.bots-tagline {
+  text-align: center;
+  margin-top: 32px;
+  font-size: 18px;
+  color: var(--text2);
+}
+
+.bots-tagline em {
+  font-style: normal;
+  color: var(--green);
+}
+
+/* ═══════════════════════════════════════
+   SECTION 8: LIVE DATA
+═══════════════════════════════════════ */
+.live-data {
+  background: var(--bg);
+}
+
+.live-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-top: 48px;
+}
+
+.live-stats {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: var(--text2);
+}
+
+.stat-value {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--green);
+}
+
+.live-feed {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px;
+  overflow: hidden;
+  position: relative;
+}
+
+.live-feed-title {
+  font-family: var(--mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text3);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-feed-title .pulse-dot-sm {
+  width: 6px;
+  height: 6px;
+  background: var(--green);
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.feed-item {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text2);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  animation: feedSlide 0.5s ease-out;
+}
+
+@keyframes feedSlide {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.feed-item .feed-icon { font-size: 14px; }
+.feed-item .feed-action { color: var(--text3); }
+.feed-item .feed-dir-up { color: var(--green); font-weight: 600; }
+.feed-item .feed-dir-down { color: var(--red); font-weight: 600; }
+.feed-item .feed-market { color: var(--text); }
+.feed-item .feed-time { color: var(--text3); margin-left: auto; }
+.feed-item .feed-amount { color: var(--green); font-weight: 600; }
+
+.live-feed::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(to top, var(--bg2), transparent);
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════
+   SECTION 9: FINAL CTA
+═══════════════════════════════════════ */
+.final-cta {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  text-align: center;
+  padding: 140px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.final-cta::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, var(--green-glow), transparent 70%);
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+.final-cta h2 {
+  font-size: clamp(28px, 5vw, 48px);
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  margin-bottom: 16px;
+  line-height: 1.2;
+  position: relative;
+}
+
+.final-cta .sub {
+  font-size: 20px;
+  color: var(--text2);
+  margin-bottom: 48px;
+  font-weight: 300;
+  position: relative;
+}
+
+.final-cta .btn-primary {
+  font-size: 18px;
+  padding: 20px 48px;
+  position: relative;
+}
+
+.final-pills {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 32px;
+  position: relative;
+}
+
+.final-pill {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text3);
+  padding: 6px 16px;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 100px;
+}
+
+/* ═══════════════════════════════════════
+   SECTION 10: FOOTER
+═══════════════════════════════════════ */
+footer {
+  padding: 40px 0;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.footer-links {
+  display: flex;
+  gap: 32px;
+  justify-content: center;
+  list-style: none;
+}
+
+.footer-links a {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text3);
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: color 0.2s;
+}
+
+.footer-links a:hover {
+  color: var(--text);
+}
+
+.footer-brand {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--green);
+  font-weight: 700;
+  letter-spacing: 3px;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════ */
+@media (max-width: 900px) {
+  .personas-grid {
+    grid-template-columns: 1fr;
+  }
+  .market-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .steps {
+    grid-template-columns: 1fr;
+  }
+  .live-grid {
+    grid-template-columns: 1fr;
+  }
+  .mapping-row {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+  }
+  .mapping-left {
+    text-align: center;
+  }
+  .mapping-arrow {
+    width: 40px;
+    transform: rotate(90deg);
+  }
+  .nav-links {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .market-grid {
+    grid-template-columns: 1fr;
+  }
+  .hero h1 {
+    letter-spacing: -1.5px;
+  }
+  .persona-card {
+    padding: 28px;
+  }
+  .mapping-card {
+    padding: 32px;
+  }
+  .comp-table {
+    font-size: 13px;
+  }
+  .comp-table th,
+  .comp-table td {
+    padding: 12px 12px;
+  }
+  .section {
+    padding: 80px 0;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     NAV
+═══════════════════════════════════════ -->
+<nav>
+  <div class="nav-logo">VISION</div>
+  <ul class="nav-links">
+    <li><a href="#personas">Who It's For</a></li>
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#compare">Compare</a></li>
+    <li><a href="#bots">Bots</a></li>
+    <li><a href="#" class="nav-cta">Enter Vision</a></li>
+  </ul>
+</nav>
+
+<!-- ═══════════════════════════════════════
+     SECTION 1: HERO
+═══════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-bg">
+    <div class="hero-grid" id="heroGrid"></div>
+    <div class="hero-gradient"></div>
+  </div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">
+      <span class="pulse-dot"></span>
+      LIVE &middot; 1,047 markets &middot; 44 data feeds
+    </div>
+    <h1>Your Internet Addiction<br>Finally Pays Off</h1>
+    <p class="hero-sub">
+      You spend hours on 4chan, HackerNews, tracking npm downloads, watching anime.
+      That knowledge is worthless on Binance. <span class="green">Not here.</span>
+    </p>
+    <div class="hero-ctas">
+      <a href="#" class="btn-primary">Enter Vision &rarr;</a>
+      <a href="#personas" class="btn-outline">See How It Works &darr;</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     SECTION 2: THE FOUR PERSONAS
+═══════════════════════════════════════ -->
+<section class="section personas" id="personas">
+  <div class="container">
+    <div class="section-label">Who this is for</div>
+    <h2 class="section-title">Four types of people<br>who've been waiting for this.</h2>
+    <div class="personas-grid">
+
+      <div class="persona-card reveal">
+        <span class="persona-emoji">&#129424;</span>
+        <h3 class="persona-title">The /biz/ Degen</h3>
+        <p class="persona-text">
+          You've been on /biz/ since 2017. You know the board rhythms &mdash; when threads spike, when bait posts flood, when genuine alpha drops. On Binance, that knowledge is useless. On Vision, <strong>/biz/ post velocity is a market</strong>. Greentext ratios, thread counts, reply speeds &mdash; all tradeable. You've been reading the tape for years. Now the tape pays.
+        </p>
+      </div>
+
+      <div class="persona-card reveal" style="transition-delay:0.1s">
+        <span class="persona-emoji">&#128187;</span>
+        <h3 class="persona-title">The Developer</h3>
+        <p class="persona-text">
+          You watch npm downloads like a hawk. You know when a React RFC will bump install counts. You track PyPI trends, GitHub stars, Cloudflare traffic. None of this maps to any financial market. <strong>Until now.</strong> npm react weekly downloads. PyPI torch installs. GitHub star velocity. Your package.json is your trading thesis.
+        </p>
+      </div>
+
+      <div class="persona-card reveal" style="transition-delay:0.2s">
+        <span class="persona-emoji">&#127916;</span>
+        <h3 class="persona-title">The Anime Fan</h3>
+        <p class="persona-text">
+          You track seasonal rankings, know which shows will spike on AniList, follow the fan discourse across Reddit and Twitter. That obsession never had a financial outlet. Now <strong>AniList ratings are a market</strong>. Frieren's score. Solo Leveling's ranking. Your taste is your alpha.
+        </p>
+      </div>
+
+      <div class="persona-card reveal" style="transition-delay:0.3s">
+        <span class="persona-emoji">&#128240;</span>
+        <h3 class="persona-title">The News Junkie</h3>
+        <p class="persona-text">
+          First on HackerNews every morning. You know which stories will hit the front page, which topics will spike engagement. You track Congress votes, SEC filings, weather patterns. <strong>All tradeable.</strong> HN story scores, Senate vote counts, Tokyo temperature &mdash; every feed you already watch is a market here.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     SECTION 3: THE MAPPING
+═══════════════════════════════════════ -->
+<section class="section mapping" id="mapping">
+  <div class="container">
+    <div class="section-label">The translation</div>
+    <h2 class="section-title">Your knowledge already has a price.</h2>
+    <div class="mapping-card">
+      <div class="mapping-title">What You Know &rarr; What You Trade</div>
+
+      <div class="mapping-row reveal-left">
+        <div class="mapping-left">Weather patterns</div>
+        <div class="mapping-arrow">
+          <svg viewBox="0 0 120 2"><line x1="0" y1="1" x2="110" y2="1" stroke="#00ff88" stroke-width="1.5"/><polygon points="110,0 120,1 110,2" fill="#00ff88"/></svg>
+        </div>
+        <div class="mapping-right">Tokyo temperature</div>
+      </div>
+
+      <div class="mapping-row reveal-left" style="transition-delay:0.1s">
+        <div class="mapping-left">npm trends</div>
+        <div class="mapping-arrow">
+          <svg viewBox="0 0 120 2"><line x1="0" y1="1" x2="110" y2="1" stroke="#00ff88" stroke-width="1.5"/><polygon points="110,0 120,1 110,2" fill="#00ff88"/></svg>
+        </div>
+        <div class="mapping-right">npm downloads</div>
+      </div>
+
+      <div class="mapping-row reveal-left" style="transition-delay:0.2s">
+        <div class="mapping-left">4chan culture</div>
+        <div class="mapping-arrow">
+          <svg viewBox="0 0 120 2"><line x1="0" y1="1" x2="110" y2="1" stroke="#00ff88" stroke-width="1.5"/><polygon points="110,0 120,1 110,2" fill="#00ff88"/></svg>
+        </div>
+        <div class="mapping-right">/biz/ post velocity</div>
+      </div>
+
+      <div class="mapping-row reveal-left" style="transition-delay:0.3s">
+        <div class="mapping-left">Anime seasons</div>
+        <div class="mapping-arrow">
+          <svg viewBox="0 0 120 2"><line x1="0" y1="1" x2="110" y2="1" stroke="#00ff88" stroke-width="1.5"/><polygon points="110,0 120,1 110,2" fill="#00ff88"/></svg>
+        </div>
+        <div class="mapping-right">AniList ratings</div>
+      </div>
+
+      <div class="mapping-row reveal-left" style="transition-delay:0.4s">
+        <div class="mapping-left">HN community</div>
+        <div class="mapping-arrow">
+          <svg viewBox="0 0 120 2"><line x1="0" y1="1" x2="110" y2="1" stroke="#00ff88" stroke-width="1.5"/><polygon points="110,0 120,1 110,2" fill="#00ff88"/></svg>
+        </div>
+        <div class="mapping-right">HN story scores</div>
+      </div>
+
+      <div class="mapping-row reveal-left" style="transition-delay:0.5s">
+        <div class="mapping-left">Earthquake tracking</div>
+        <div class="mapping-arrow">
+          <svg viewBox="0 0 120 2"><line x1="0" y1="1" x2="110" y2="1" stroke="#00ff88" stroke-width="1.5"/><polygon points="110,0 120,1 110,2" fill="#00ff88"/></svg>
+        </div>
+        <div class="mapping-right">USGS seismic index</div>
+      </div>
+
+      <div class="mapping-footer">
+        <div class="mapping-compare">
+          <span class="num-green">6 of 6</span> on Vision.
+          <span class="num-red">0</span> on Polymarket.
+          <span class="num-red">0</span> on Binance.
+        </div>
+        <p class="mapping-tagline">
+          You're not learning new markets. You're trading <span class="green">what you already know</span>.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     SECTION 4: THE SCREEN (Market Grid)
+═══════════════════════════════════════ -->
+<section class="section screen" id="screen">
+  <div class="container">
+    <div class="section-label">The markets</div>
+    <h2 class="section-title">This is what 1,000 markets looks like.</h2>
+
+    <div class="category-tabs">
+      <button class="cat-tab active">All</button>
+      <button class="cat-tab">Crypto</button>
+      <button class="cat-tab">Tech</button>
+      <button class="cat-tab">4chan</button>
+      <button class="cat-tab">Weather</button>
+      <button class="cat-tab">Space</button>
+      <button class="cat-tab">Entertainment</button>
+      <button class="cat-tab">Macro</button>
+    </div>
+
+    <div class="market-grid" id="marketGrid">
+      <!-- JS-generated market tiles -->
+    </div>
+
+    <p class="screen-footer">
+      From volcanoes to anime. From 4chan to the ISS.<br>
+      <strong>44 data feeds.</strong> Updated every 5 minutes.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     SECTION 5: HOW IT WORKS
+═══════════════════════════════════════ -->
+<section class="section how-it-works" id="how">
+  <div class="container">
+    <div class="section-label">How it works</div>
+    <h2 class="section-title">Three steps. No complexity.</h2>
+
+    <div class="steps">
+      <div class="step-card reveal">
+        <div class="step-number">01</div>
+        <h3 class="step-title">Pick your markets</h3>
+        <p class="step-text">
+          Choose from 1,000+ markets across 44 data feeds. Filter by category. Pick what you know. Crypto, 4chan boards, npm packages, anime ratings, weather, earthquakes, space &mdash; everything has a market.
+        </p>
+      </div>
+      <div class="step-card reveal" style="transition-delay:0.15s">
+        <div class="step-number">02</div>
+        <h3 class="step-title">Predict up or down</h3>
+        <p class="step-text">
+          Your bet is sealed &mdash; hashed on-chain. Nobody can see your prediction until the market resolves. No front-running. No copying. No peeking at the order book. Your edge stays yours.
+        </p>
+      </div>
+      <div class="step-card reveal" style="transition-delay:0.3s">
+        <div class="step-number">03</div>
+        <h3 class="step-title">Winners split the pot</h3>
+        <p class="step-text">
+          Parimutuel: winners split the losers' stakes. 0.3% fee on profit only. Not on losses. Not on entry. You only pay when you win. The house doesn't bet against you.
+        </p>
+      </div>
+    </div>
+
+    <div class="how-footer">
+      No order books. No leverage. No liquidation. No market makers betting against you.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     SECTION 6: THE COMPARISON
+═══════════════════════════════════════ -->
+<section class="section comparison" id="compare">
+  <div class="container">
+    <div class="section-label">Why Vision</div>
+    <h2 class="section-title">Three platforms. One question:<br>where does your knowledge matter?</h2>
+
+    <div class="comp-table-wrap">
+      <table class="comp-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th class="col-binance">Binance</th>
+            <th class="col-poly">Polymarket</th>
+            <th class="col-vision">Vision</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Markets</td>
+            <td class="muted">BTC / ETH / SOL</td>
+            <td class="muted">~50 (politics)</td>
+            <td class="highlight comp-vision-col">1,000+ (everything)</td>
+          </tr>
+          <tr>
+            <td>Your knowledge</td>
+            <td class="muted"><span class="x-mark">&#10007;</span> irrelevant</td>
+            <td class="muted"><span class="x-mark">&#10007;</span> mostly no</td>
+            <td class="highlight comp-vision-col"><span class="check-mark">&#10003;</span> direct match</td>
+          </tr>
+          <tr>
+            <td>Resolution</td>
+            <td class="muted">continuous</td>
+            <td class="muted">weeks &ndash; months</td>
+            <td class="highlight comp-vision-col">5 min &ndash; 30 days</td>
+          </tr>
+          <tr>
+            <td>Bet privacy</td>
+            <td class="muted">visible</td>
+            <td class="muted">visible order book</td>
+            <td class="highlight comp-vision-col">sealed (hashed)</td>
+          </tr>
+          <tr>
+            <td>Bots</td>
+            <td class="muted">banned</td>
+            <td class="muted">tolerated</td>
+            <td class="highlight comp-vision-col">built for them</td>
+          </tr>
+          <tr>
+            <td>Fee</td>
+            <td class="muted">0.1% per trade</td>
+            <td class="muted">maker / taker</td>
+            <td class="highlight comp-vision-col">0.3% on profit only</td>
+          </tr>
+          <tr>
+            <td>Min bet</td>
+            <td class="muted">$10+</td>
+            <td class="muted">$1</td>
+            <td class="highlight comp-vision-col">0.1 USDC</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     SECTION 7: BUILT FOR BOTS
+═══════════════════════════════════════ -->
+<section class="section bots" id="bots">
+  <div class="container">
+    <div class="section-label">For developers</div>
+    <h2 class="section-title">If you can code, you can automate.</h2>
+    <p class="section-subtitle">Most platforms ban bots. We built the platform for them.</p>
+
+    <div class="code-block">
+      <pre><span class="kw">from</span> <span class="fn">vision</span> <span class="kw">import</span> Bot
+
+bot = Bot(<span class="str">"my-strategy"</span>)
+bot.watch([<span class="str">"4chan-biz-velocity"</span>, <span class="str">"npm-react"</span>,
+           <span class="str">"iss-altitude"</span>, <span class="str">"tokyo-temp"</span>])
+
+<span class="dec">@bot.rule</span>
+<span class="kw">def</span> <span class="fn">predict</span>(market):
+    <span class="kw">if</span> market.momentum > <span class="num">0</span>:
+        <span class="kw">return</span> <span class="str">"UP"</span>
+    <span class="kw">return</span> <span class="str">"DOWN"</span>
+
+bot.run()  <span class="cm"># trades 24/7 across all markets</span></pre>
+    </div>
+
+    <div class="bots-tools">
+      <span class="tool-pill">Python SDK</span>
+      <span class="tool-pill">TypeScript SDK</span>
+      <span class="tool-pill">REST API</span>
+      <span class="tool-pill">Backtesting</span>
+      <span class="tool-pill">In-browser editor</span>
+    </div>
+
+    <p class="bots-tagline">
+      Most platforms ban bots. We <em>built the platform for them</em>.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     SECTION 8: LIVE DATA
+═══════════════════════════════════════ -->
+<section class="section live-data" id="live">
+  <div class="container">
+    <div class="section-label">Right now</div>
+    <h2 class="section-title">The platform never sleeps.</h2>
+
+    <div class="live-grid">
+      <div class="live-stats reveal">
+        <div class="stat-row">
+          <span class="stat-label">Markets live</span>
+          <span class="stat-value">1,047</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Predictions today</span>
+          <span class="stat-value">12,384</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Data feeds active</span>
+          <span class="stat-value">44 / 44</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Avg resolution time</span>
+          <span class="stat-value">8m 23s</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Last payout</span>
+          <span class="stat-value">14s ago</span>
+        </div>
+      </div>
+
+      <div class="live-feed reveal" style="transition-delay:0.15s">
+        <div class="live-feed-title">
+          <span class="pulse-dot-sm"></span>
+          Live Activity
+        </div>
+        <div id="feedContainer">
+          <!-- JS-generated feed items -->
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     SECTION 9: FINAL CTA
+═══════════════════════════════════════ -->
+<section class="final-cta">
+  <h2>Your internet obsessions<br>finally have a price tag.</h2>
+  <p class="sub">You already know the markets. You just couldn't trade them until now.</p>
+  <a href="#" class="btn-primary">Enter Vision &rarr;</a>
+  <div class="final-pills">
+    <span class="final-pill">0.1 USDC min</span>
+    <span class="final-pill">No KYC</span>
+    <span class="final-pill">5-min resolution</span>
+    <span class="final-pill">No leverage</span>
+    <span class="final-pill">No liquidation</span>
+    <span class="final-pill">On-chain</span>
+    <span class="final-pill">Sealed bets</span>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     SECTION 10: FOOTER
+═══════════════════════════════════════ -->
+<footer>
+  <div class="container">
+    <div class="footer-brand">VISION</div>
+    <ul class="footer-links">
+      <li><a href="#">Markets</a></li>
+      <li><a href="#">Docs</a></li>
+      <li><a href="#">API</a></li>
+      <li><a href="#">Leaderboard</a></li>
+      <li><a href="#">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  /* ── Hero Grid Tiles ── */
+  const heroTiles = [
+    {label:'BTC/USD',val:'+2.4%'},{label:'/biz/ vel',val:'+12%'},{label:'ISS alt',val:'412km'},
+    {label:'npm react',val:'+3.2%'},{label:'Kilauea',val:'Alert 2'},{label:'Tokyo',val:'34.1C'},
+    {label:'CS2 CCU',val:'847k'},{label:'HN top',val:'487pts'},{label:'Solar',val:'487km/s'},
+    {label:'AniList',val:'8.7'},{label:'Suez',val:'47 ships'},{label:'Senate',val:'+3'},
+    {label:'ETH gas',val:'-12gwei'},{label:'PyPI torch',val:'+8%'},{label:'NYC rain',val:'12mm'},
+    {label:'AAVE TVL',val:'+$4M'},{label:'/pol/ gt',val:'8%'},{label:'Sunspots',val:'127'},
+    {label:'UNI vol',val:'+18%'},{label:'Twitch',val:'1.2M'},{label:'FRED rate',val:'5.25%'},
+    {label:'CPI',val:'+0.3%'},{label:'10Y yield',val:'4.42%'},{label:'Kp-index',val:'4'},
+    {label:'London',val:'23km/h'},{label:'Sydney UV',val:'8'},{label:'NASA hot',val:'+340'},
+    {label:'GitHub',val:'+120'},{label:'SOL/USD',val:'+5.1%'},{label:'DOGE',val:'-1.2%'}
+  ];
+  const heroGrid = document.getElementById('heroGrid');
+  heroTiles.forEach(function(t, i) {
+    const div = document.createElement('div');
+    div.className = 'hero-tile';
+    div.style.animationDelay = (i * 0.15) + 's';
+    div.innerHTML = '<div class="tile-label">' + t.label + '</div><div class="tile-value">' + t.val + '</div>';
+    heroGrid.appendChild(div);
+  });
+
+  /* ── Market Grid ── */
+  const markets = [
+    {emoji:'&#127755;',name:'Kilauea Alert',value:'2',dir:'up',cat:'earth',spark:[20,35,28,45,42,55,60,52,65,70]},
+    {emoji:'&#128225;',name:'/biz/ Velocity',value:'+12%/hr',dir:'up',cat:'4chan',spark:[30,45,50,48,55,70,65,80,75,88]},
+    {emoji:'&#128752;',name:'ISS Altitude',value:'412km',dir:'down',cat:'space',spark:[80,78,75,72,70,68,65,63,60,58]},
+    {emoji:'&#128230;',name:'npm react',value:'+3.2%',dir:'up',cat:'tech',spark:[40,42,45,50,48,52,55,58,60,63]},
+    {emoji:'&#127918;',name:'CS2 CCU',value:'847k',dir:'up',cat:'entertainment',spark:[50,55,60,58,65,70,75,72,80,85]},
+    {emoji:'&#127777;',name:'Tokyo',value:'34.1\u00B0C',dir:'up',cat:'weather',spark:[28,30,32,31,33,34,33,34,35,34]},
+    {emoji:'&#9728;',name:'Solar Wind',value:'487km/s',dir:'up',cat:'space',spark:[350,380,400,420,450,460,470,480,490,487]},
+    {emoji:'&#128240;',name:'HN Top Story',value:'487pts',dir:'up',cat:'tech',spark:[100,150,200,250,300,350,380,420,460,487]},
+    {emoji:'&#128674;',name:'Suez Traffic',value:'47 ships',dir:'down',cat:'macro',spark:[55,52,50,48,50,49,48,47,48,47]},
+    {emoji:'&#127963;',name:'Senate Votes',value:'+3',dir:'up',cat:'macro',spark:[0,0,1,1,2,2,2,3,3,3]},
+    {emoji:'&#127916;',name:'AniList Frieren',value:'8.7',dir:'up',cat:'entertainment',spark:[8.2,8.3,8.4,8.5,8.5,8.6,8.6,8.7,8.7,8.7]},
+    {emoji:'&#127783;',name:'NYC Rainfall',value:'12mm',dir:'down',cat:'weather',spark:[2,4,6,8,10,11,12,12,12,12]}
+  ];
+
+  function generateSparkSVG(data, color) {
+    var min = Math.min.apply(null, data);
+    var max = Math.max.apply(null, data);
+    var range = max - min || 1;
+    var w = 120, h = 32;
+    var points = data.map(function(v, i) {
+      return (i / (data.length - 1) * w) + ',' + (h - ((v - min) / range * h));
+    }).join(' ');
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
+      '<polyline points="' + points + '" fill="none" stroke="' + color + '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<linearGradient id="sg-' + color.replace('#','') + '" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0%" stop-color="' + color + '" stop-opacity="0.2"/>' +
+        '<stop offset="100%" stop-color="' + color + '" stop-opacity="0"/>' +
+      '</linearGradient>' +
+      '<polygon points="0,' + h + ' ' + points + ' ' + w + ',' + h + '" fill="url(#sg-' + color.replace('#','') + ')"/>' +
+      '</svg>';
+  }
+
+  var marketGrid = document.getElementById('marketGrid');
+  markets.forEach(function(m) {
+    var color = m.dir === 'up' ? '#00ff88' : '#ff4466';
+    var tile = document.createElement('div');
+    tile.className = 'market-tile reveal';
+    tile.innerHTML =
+      '<div class="market-tile-header">' +
+        '<div class="market-tile-name"><span class="emoji">' + m.emoji + '</span> ' + m.name + '</div>' +
+        '<span class="market-tile-cat">' + m.cat + '</span>' +
+      '</div>' +
+      '<div class="market-tile-value ' + m.dir + '">' + m.value + '</div>' +
+      '<div class="market-tile-sparkline">' + generateSparkSVG(m.spark, color) + '</div>';
+    marketGrid.appendChild(tile);
+  });
+
+  /* ── Live Feed ── */
+  var feedData = [
+    {icon:'&#129302;',name:'alpha-v3',action:'predicted',dir:'UP',dirClass:'feed-dir-up',market:'/biz/ velocity',time:'3s ago'},
+    {icon:'&#129302;',name:'seismic-bot',action:'predicted',dir:'DOWN',dirClass:'feed-dir-down',market:'Kilauea alert',time:'6s ago'},
+    {icon:'&#128100;',name:'0xab3...f7',action:'predicted',dir:'UP',dirClass:'feed-dir-up',market:'npm react',time:'11s ago'},
+    {icon:'&#129302;',name:'biz-momentum',action:'claimed',dir:'$42.80',dirClass:'feed-amount',market:'Tokyo weather',time:'18s ago'},
+    {icon:'&#128100;',name:'0x91c...2d',action:'predicted',dir:'DOWN',dirClass:'feed-dir-down',market:'ISS altitude',time:'25s ago'},
+    {icon:'&#129302;',name:'weather-ml',action:'predicted',dir:'UP',dirClass:'feed-dir-up',market:'NYC rainfall',time:'31s ago'},
+    {icon:'&#128100;',name:'0xf4e...a1',action:'predicted',dir:'UP',dirClass:'feed-dir-up',market:'AniList Frieren',time:'38s ago'},
+    {icon:'&#129302;',name:'stack-tracker',action:'predicted',dir:'DOWN',dirClass:'feed-dir-down',market:'npm vue',time:'44s ago'},
+    {icon:'&#128100;',name:'0x2b1...c9',action:'claimed',dir:'$18.40',dirClass:'feed-amount',market:'Solar wind',time:'52s ago'},
+    {icon:'&#129302;',name:'hn-sentiment',action:'predicted',dir:'UP',dirClass:'feed-dir-up',market:'HN top story',time:'1m ago'}
+  ];
+
+  var feedContainer = document.getElementById('feedContainer');
+  feedData.forEach(function(f) {
+    var div = document.createElement('div');
+    div.className = 'feed-item';
+    div.innerHTML =
+      '<span class="feed-icon">' + f.icon + '</span> ' +
+      '<span>' + f.name + '</span> ' +
+      '<span class="feed-action">' + f.action + '</span> ' +
+      '<span class="' + f.dirClass + '">' + f.dir + '</span> ' +
+      '<span class="feed-action">on</span> ' +
+      '<span class="feed-market">' + f.market + '</span>' +
+      '<span class="feed-time">' + f.time + '</span>';
+    feedContainer.appendChild(div);
+  });
+
+  /* ── Scroll Reveal ── */
+  var revealElements = document.querySelectorAll('.reveal, .reveal-left');
+  var revealObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  revealElements.forEach(function(el) {
+    revealObserver.observe(el);
+  });
+
+  /* ── Simulated live feed rotation ── */
+  var feedActions = [
+    {icon:'&#129302;',name:'quant-v7',action:'predicted',dir:'UP',dirClass:'feed-dir-up',market:'/pol/ greentext'},
+    {icon:'&#128100;',name:'0xd3f...b2',action:'predicted',dir:'DOWN',dirClass:'feed-dir-down',market:'CS2 CCU'},
+    {icon:'&#129302;',name:'geo-pulse',action:'claimed',dir:'$27.60',dirClass:'feed-amount',market:'Suez traffic'},
+    {icon:'&#128100;',name:'0x7a2...e8',action:'predicted',dir:'UP',dirClass:'feed-dir-up',market:'Senate votes'},
+    {icon:'&#129302;',name:'anime-ml',action:'predicted',dir:'UP',dirClass:'feed-dir-up',market:'AniList score'},
+    {icon:'&#128100;',name:'0xc1b...44',action:'predicted',dir:'DOWN',dirClass:'feed-dir-down',market:'Tokyo temp'},
+    {icon:'&#129302;',name:'iss-watch',action:'predicted',dir:'DOWN',dirClass:'feed-dir-down',market:'ISS altitude'},
+    {icon:'&#128100;',name:'0xe5f...91',action:'claimed',dir:'$55.20',dirClass:'feed-amount',market:'npm downloads'}
+  ];
+  var feedIdx = 0;
+
+  setInterval(function() {
+    var f = feedActions[feedIdx % feedActions.length];
+    var timeNow = (feedIdx + 1) + 's ago';
+    var div = document.createElement('div');
+    div.className = 'feed-item';
+    div.innerHTML =
+      '<span class="feed-icon">' + f.icon + '</span> ' +
+      '<span>' + f.name + '</span> ' +
+      '<span class="feed-action">' + f.action + '</span> ' +
+      '<span class="' + f.dirClass + '">' + f.dir + '</span> ' +
+      '<span class="feed-action">on</span> ' +
+      '<span class="feed-market">' + f.market + '</span>' +
+      '<span class="feed-time">' + timeNow + '</span>';
+
+    if (feedContainer.children.length > 10) {
+      feedContainer.removeChild(feedContainer.lastChild);
+    }
+    feedContainer.insertBefore(div, feedContainer.firstChild);
+    feedIdx++;
+  }, 3000);
+
+  /* ── Category tab interaction (visual only) ── */
+  var catTabs = document.querySelectorAll('.cat-tab');
+  catTabs.forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      catTabs.forEach(function(t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+    });
+  });
+
+})();
+</script>
+</body>
+</html>

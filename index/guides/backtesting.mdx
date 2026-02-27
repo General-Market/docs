@@ -1,0 +1,417 @@
+---
+title: "Backtesting"
+description: "Simulate portfolio performance with historical data before deploying an ITP"
+---
+
+General Market's backtesting engine simulates how a portfolio strategy would have performed from 2020 to today. Test a thesis, compare configurations via sweep mode, and deploy the result as a live ITP — all from the UI or API.
+
+<Warning>
+**Past performance does not guarantee future results.** Backtesting uses historical data and cannot account for future market conditions, liquidity changes, or black swan events. See [Risks](/index/guides/risks) before committing capital.
+</Warning>
+
+---
+
+## Backtesting via the UI
+
+Navigate to the **Backtest** section from the main menu.
+
+<Steps>
+  <Step title="Select a Category">
+    Choose an asset category to define the token universe. Categories include Layer 1s, DeFi Blue Chips, AI Tokens, Memecoins, Made in China, and 50+ more from CoinGecko and DefiLlama.
+
+    Only coins that were listed on Bitget at some point are eligible — this ensures realistic tradeability.
+  </Step>
+
+  <Step title="Configure Parameters">
+    | Parameter | Description | Example |
+    |-----------|-------------|---------|
+    | **Top N** | Number of assets by market cap | `10` |
+    | **Weighting** | Allocation scheme (see below) | `mcap` |
+    | **Rebalance** | Days between rebalances | `30` |
+    | **Fee** | Simulated trading fee per rebalance | `0.1%` |
+    | **Spread** | Slippage multiplier | `1.0` |
+  </Step>
+
+  <Step title="Run & Review">
+    Click **Run Backtest**. Results include total return, Sharpe ratio, max drawdown, annualized return, a NAV chart, and final holdings.
+  </Step>
+</Steps>
+
+---
+
+## Backtesting via the API
+
+All simulation endpoints are **GET** requests with query parameters. No authentication required.
+
+**Base URL:** `https://generalmarket.io/api`
+
+### Run a Single Backtest
+
+<CodeGroup>
+
+```bash cURL
+curl "https://generalmarket.io/api/sim/run?\
+category_id=layer-1&\
+top_n=10&\
+weighting=mcap&\
+rebalance_days=30&\
+base_fee_pct=0.1&\
+spread_multiplier=1.0"
+```
+
+```python Python
+import requests
+
+resp = requests.get("https://generalmarket.io/api/sim/run", params={
+    "category_id": "layer-1",
+    "top_n": 10,
+    "weighting": "mcap",
+    "rebalance_days": 30,
+    "base_fee_pct": 0.1,
+    "spread_multiplier": 1.0,
+})
+result = resp.json()
+
+print(f"Return: {result['stats']['total_return_pct']:.1f}%")
+print(f"Sharpe: {result['stats']['sharpe_ratio']:.2f}")
+print(f"Max DD: {result['stats']['max_drawdown_pct']:.1f}%")
+print(f"Run ID: {result['run_id']} (use for holdings lookup)")
+```
+
+```javascript JavaScript
+const params = new URLSearchParams({
+  category_id: "layer-1",
+  top_n: "10",
+  weighting: "mcap",
+  rebalance_days: "30",
+  base_fee_pct: "0.1",
+  spread_multiplier: "1.0",
+});
+
+const res = await fetch(`https://generalmarket.io/api/sim/run?${params}`);
+const result = await res.json();
+
+console.log(`Return: ${result.stats.total_return_pct.toFixed(1)}%`);
+console.log(`Sharpe: ${result.stats.sharpe_ratio.toFixed(2)}`);
+console.log(`Run ID: ${result.run_id}`);
+```
+
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+{
+  "run_id": 4821,
+  "config": {
+    "category_id": "layer-1",
+    "top_n": 10,
+    "weighting": "mcap",
+    "rebalance_days": 30,
+    "base_fee_pct": 0.1,
+    "spread_multiplier": 1.0
+  },
+  "stats": {
+    "total_return_pct": 312.45,
+    "annualized_return": 32.8,
+    "max_drawdown_pct": -72.1,
+    "sharpe_ratio": 0.94,
+    "total_fees_pct": 1.8,
+    "total_trades": 248,
+    "total_rebalances": 72,
+    "total_delistings": 5,
+    "start_date": "2020-01-01",
+    "end_date": "2026-02-27"
+  },
+  "nav_series": [
+    { "date": "2020-01-01", "nav": 1.0 },
+    { "date": "2020-01-02", "nav": 1.012 },
+    "..."
+  ],
+  "cached": true,
+  "computed_in_ms": 0
+}
+```
+</Expandable>
+
+### Query Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `category_id` | string | Yes | — | Category slug (from `/sim/categories`) |
+| `top_n` | int | Yes | — | Number of top assets by market cap |
+| `weighting` | string | Yes | — | Weighting scheme (see table below) |
+| `rebalance_days` | int | Yes | — | Days between rebalances |
+| `base_fee_pct` | float | No | `0.1` | Fee % per rebalance |
+| `spread_multiplier` | float | No | `1.0` | Slippage multiplier |
+| `start_date` | string | No | `2020-01-01` | ISO date (YYYY-MM-DD) |
+| `force` | bool | No | `false` | Skip cache, force recompute |
+| `threshold_pct` | float | No | — | Drift-based rebalance threshold (%) |
+| `fng_mode` | string | No | — | Fear & Greed regime: `fear`, `greed`, or `both` |
+| `fng_fear_threshold` | int | No | `25` | FNG index below this = fear |
+| `fng_greed_threshold` | int | No | `75` | FNG index above this = greed |
+| `fng_cash_pct` | float | No | `0.4` | % to move to stables during greed |
+| `dom_mode` | string | No | — | Dominance regime: `btc`, `eth`, or `inverse` |
+| `dom_lookback` | int | No | `30` | Lookback days for dominance trend |
+| `vc_mode` | string | No | — | VC filter mode |
+| `vc_investors` | string | No | — | Comma-separated investor names |
+| `vc_min_amount_m` | float | No | — | Min funding round in $M |
+| `vc_round_types` | string | No | — | Comma-separated round types |
+
+---
+
+## Weighting Strategies
+
+| Weighting | Query Value | Description |
+|-----------|-------------|-------------|
+| Equal | `equal` | 1/N allocation across all assets |
+| Market Cap | `mcap` | Proportional to market cap |
+| Capped Market Cap | `capped_mcap_10` | Market cap with 10% single-asset cap |
+| Square Root Market Cap | `sqrt_mcap` | Dampened market cap weighting |
+| Momentum | `momentum_90` | Top by 90-day momentum score |
+| Inverse Volatility | `invvol_60` | Lower volatility = higher weight |
+| Dual Momentum | `dual_mom_180` | Combined momentum/volatility signal |
+| Risk Parity | `risk_parity_60` | Equal risk contribution per asset |
+| Min Variance | `min_var_60` | Minimize portfolio variance |
+| Multi-Factor | `multi_factor_90` | Composite momentum + vol + mcap |
+| Low Volatility | `low_vol_60` | Over-weight low-vol assets |
+
+**DeFi-only strategies** (for `dl-*` categories):
+
+| Weighting | Query Value | Description |
+|-----------|-------------|-------------|
+| TVL Weight | `tvl` | Proportional to Total Value Locked |
+| TVL Capped | `tvl_capped_10` | TVL with 10% cap |
+| TVL Sqrt | `tvl_sqrt` | Dampened TVL |
+| Fees Weight | `fees` | Weight by protocol fee revenue |
+| Revenue Weight | `revenue` | Weight by protocol revenue |
+| Volume Weight | `volume` | Weight by trading volume |
+| TVL Momentum | `tvl_momentum_90` | TVL trend-following |
+| Fee Efficiency | `fee_efficiency` | Fees-to-TVL ratio |
+| Yield Weight | `yield` | Weight by yield |
+
+---
+
+## Sweep Mode
+
+Compare multiple configurations in a single request. Sweep mode varies one parameter and streams results for each variant.
+
+**Sweep dimensions:** `top_n`, `weighting`, `rebalance`, `category`, `threshold`
+
+<CodeGroup>
+
+```bash cURL — sweep top_n
+curl -N "https://generalmarket.io/api/sim/sweep-stream?\
+sweep=top_n&\
+category_id=layer-1&\
+weighting=mcap&\
+rebalance_days=30"
+```
+
+```bash cURL — sweep weighting strategies
+curl -N "https://generalmarket.io/api/sim/sweep-stream?\
+sweep=weighting&\
+category_id=layer-1&\
+top_n=10&\
+rebalance_days=30"
+```
+
+```python Python — sweep top_n with SSE
+import requests
+
+resp = requests.get(
+    "https://generalmarket.io/api/sim/sweep-stream",
+    params={
+        "sweep": "top_n",
+        "category_id": "layer-1",
+        "weighting": "mcap",
+        "rebalance_days": 30,
+    },
+    stream=True,
+)
+
+for line in resp.iter_lines():
+    if line and line.startswith(b"data: "):
+        import json
+        event = json.loads(line[6:])
+        if event["type"] == "result":
+            s = event["stats"]
+            print(f"top_{event['config']['top_n']:>3d}  "
+                  f"return={s['total_return_pct']:>8.1f}%  "
+                  f"sharpe={s['sharpe_ratio']:.2f}  "
+                  f"drawdown={s['max_drawdown_pct']:.1f}%")
+```
+
+</CodeGroup>
+
+<Expandable title="SSE Event Stream">
+```
+data: {"type":"progress","pct":14,"message":"Running top_n=5..."}
+
+data: {"type":"result","run_id":4822,"config":{"category_id":"layer-1","top_n":5,"weighting":"mcap","rebalance_days":30},"stats":{"total_return_pct":245.3,"sharpe_ratio":0.87,"max_drawdown_pct":-68.2,...}}
+
+data: {"type":"result","run_id":4823,"config":{"top_n":10,...},"stats":{...}}
+
+data: {"type":"result","run_id":4824,"config":{"top_n":20,...},"stats":{...}}
+```
+</Expandable>
+
+| Sweep | What It Varies | Values |
+|-------|---------------|--------|
+| `top_n` | Number of holdings | 5, 10, 20, 30, 50, 100, 200 |
+| `weighting` | All weighting schemes | equal, mcap, momentum, invvol, etc. |
+| `rebalance` | Rebalance frequency | 14d, 30d, 60d, 90d, 180d + drift bands (3%, 5%, 10%, 15%) |
+| `category` | Multiple categories | Pass `categories=layer-1,defi,ai` |
+| `threshold` | Drift rebalance bands | 3%, 5%, 10%, 15%, 20% |
+
+<Tip>
+Sweep mode is the fastest way to find optimal parameters. One call tests all variants, and results stream back as they complete.
+</Tip>
+
+---
+
+## Fetch Holdings from a Backtest
+
+After running a backtest, fetch the portfolio composition to deploy or analyze:
+
+<CodeGroup>
+
+```bash cURL
+curl "https://generalmarket.io/api/sim/holdings?run_id=4821"
+```
+
+```python Python
+resp = requests.get("https://generalmarket.io/api/sim/holdings", params={"run_id": 4821})
+holdings = resp.json()["holdings"]
+for h in holdings:
+    print(f"{h['symbol']:>6s}  {h['weight_pct']:.1f}%")
+```
+
+</CodeGroup>
+
+Pass an optional `date` parameter (YYYY-MM-DD) to get holdings at a specific rebalance date.
+
+---
+
+## Compare Benchmarks
+
+Fetch BTC and ETH price series normalized to 1.0 at the start date for chart overlays:
+
+```bash
+curl "https://generalmarket.io/api/sim/benchmarks?start_date=2020-01-01"
+```
+
+---
+
+## Market Signal Integrations
+
+Layer additional signals into any backtest:
+
+### Fear & Greed Index
+
+Shift allocation between crypto and stablecoins based on market sentiment.
+
+```bash
+curl "https://generalmarket.io/api/sim/run?\
+category_id=layer-1&top_n=10&weighting=mcap&rebalance_days=30&\
+fng_mode=both&fng_fear_threshold=25&fng_greed_threshold=75&fng_cash_pct=0.4"
+```
+
+When FNG > 75 (greed), 40% of the portfolio moves to stables. When FNG < 25 (fear), fully deployed in crypto.
+
+### BTC/ETH Dominance
+
+Adjust crypto allocation based on Bitcoin or Ethereum dominance trends.
+
+```bash
+curl "https://generalmarket.io/api/sim/run?\
+category_id=layer-1&top_n=10&weighting=mcap&rebalance_days=30&\
+dom_mode=btc&dom_lookback=30"
+```
+
+### VC Funding Filter
+
+Filter assets by venture capital backing:
+
+```bash
+curl "https://generalmarket.io/api/sim/run?\
+category_id=layer-1&top_n=10&weighting=mcap&rebalance_days=30&\
+vc_mode=include&vc_investors=a16z,paradigm&vc_min_amount_m=10"
+```
+
+---
+
+## Understanding Results
+
+### Key Metrics
+
+| Metric | What It Tells You |
+|--------|-------------------|
+| **Total Return %** | Cumulative gain/loss over the full period |
+| **Annualized Return** | Return normalized to a yearly rate |
+| **Max Drawdown %** | Largest peak-to-trough decline — worst-case pain |
+| **Sharpe Ratio** | Risk-adjusted return. >1.0 is decent, >2.0 is strong |
+| **Total Fees %** | Cumulative fees paid across all rebalances |
+| **Total Trades** | Number of individual asset trades executed |
+| **Total Delistings** | Assets removed mid-backtest (delisted from exchange) |
+
+### What the NAV Series Represents
+
+The `nav_series` starts at `1.0` and tracks portfolio value over time. A NAV of `3.12` means the strategy returned 212% from the start date.
+
+---
+
+## Deploy as ITP
+
+A well-performing backtest can be deployed as a live on-chain ITP directly from the results.
+
+<Steps>
+  <Step title="Review Final Holdings">
+    Check the holdings table to confirm the weights match your thesis.
+  </Step>
+
+  <Step title="Click Deploy Index">
+    The button pre-fills the ITP creation form with the backtested assets and weights.
+  </Step>
+
+  <Step title="Confirm On-Chain">
+    Add a name, confirm the transaction. The strategy is now live and tradable.
+  </Step>
+</Steps>
+
+<Warning>
+The deployed ITP uses the weights from the final rebalance. It does **not** auto-rebalance — you must trigger rebalances manually or through the protocol mechanism.
+</Warning>
+
+---
+
+## Checklist: Running a Good Backtest
+
+<Steps>
+  <Step title="Pick a Category That Matches Your Thesis">
+    Don't backtest "all crypto" if you want a DeFi strategy. Narrower categories give cleaner signal.
+  </Step>
+
+  <Step title="Start with Equal Weight">
+    Equal weight is the fairest baseline. If mcap-weighted can't beat equal-weighted, concentration risk is hurting you.
+  </Step>
+
+  <Step title="Use Realistic Fees">
+    Default fee is 0.1%. If you're trading illiquid altcoins, bump `spread_multiplier` to 2.0+. Under-estimating fees is the #1 backtesting mistake.
+  </Step>
+
+  <Step title="Run a Sweep Before Committing">
+    Use `sweep=top_n` and `sweep=weighting` to find optimal params. Don't cherry-pick the one configuration that looks best.
+  </Step>
+
+  <Step title="Check Drawdown, Not Just Return">
+    A 500% return with -90% max drawdown means you would have lost 90% of your money at some point. Could you stomach that?
+  </Step>
+
+  <Step title="Look at Delistings">
+    High `total_delistings` means the category contains flaky assets. The backtest handles this gracefully, but in live trading, delistings are painful.
+  </Step>
+
+  <Step title="Compare Against BTC">
+    If your strategy can't beat holding BTC on a risk-adjusted basis (Sharpe), it may not be worth the complexity.
+  </Step>
+</Steps>

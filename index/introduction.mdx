@@ -1,0 +1,72 @@
+---
+title: "Introduction"
+description: "Decentralized protocol for on-chain index products"
+---
+
+# Index
+
+General Market Index lets anyone create, buy, and sell **Index Tracking Products (ITPs)** -- tokenized baskets of crypto assets, functioning like on-chain ETFs. Built on an Arbitrum Orbit L3, each ITP is backed by real exchange execution and priced via a Net Asset Value (NAV) formula.
+
+## What Index Does
+
+Index Tracking Products (ITPs) are tokenized baskets of up to 100 crypto assets. Each ITP is backed by real exchange execution and priced via a Net Asset Value (NAV) formula. You buy one token and get diversified exposure to an entire basket.
+
+<Info>
+ITPs work like ETFs. You buy one token and get diversified exposure to an entire basket. The NAV floats with underlying asset prices -- that is the whole point.
+</Info>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Index Tracking Products" icon="chart-pie">
+    Buy and sell tokenized baskets of up to 100 crypto assets. Each ITP is an ERC-4626 vault token with transparent NAV pricing.
+  </Card>
+  <Card title="Create Custom Indexes" icon="sliders">
+    Build your own ITP with custom weights and asset selection. Set a fee tier and earn protocol fees as the deployer.
+  </Card>
+  <Card title="Lending (Morpho)" icon="building-columns">
+    Deposit USDC to earn yield from borrowers, or use your ITP shares as collateral to borrow USDC through Morpho-powered lending markets.
+  </Card>
+  <Card title="Backtesting" icon="clock-rotate-left">
+    Simulate ITP performance against historical price data before committing real capital. Test your thesis before you deploy.
+  </Card>
+  <Card title="Exchange-Backed Execution" icon="shield-check">
+    Orders are batched by issuer nodes with BLS consensus, then executed on Bitget by Authorized Participants (APs) -- no AMM slippage.
+  </Card>
+  <Card title="On-Chain Settlement" icon="link">
+    All ITP tokens are ERC-4626 vault tokens on the Index L3. Fully composable with other DeFi protocols.
+  </Card>
+</CardGroup>
+
+## Who Is Index For?
+
+| Audience | Use Case |
+|----------|----------|
+| **Individual traders** | Buy diversified crypto exposure with a single transaction instead of managing dozens of positions |
+| **Fund managers** | Create and manage custom indexes with configurable weights, earn deployer fees |
+| **DAOs & treasuries** | Diversify treasury holdings into on-chain index products with NAV-based pricing |
+| **DeFi power users** | Use ITP positions as collateral for lending, combine with other DeFi strategies |
+
+## How It Works (30-Second Version)
+
+1. **Browse** available ITPs on the Markets tab -- each ITP shows live NAV, composition, and performance.
+2. **Buy** with USDC. The buy order is batched by issuer nodes, executed on a real exchange, and ITP tokens are minted to the buyer's wallet.
+3. **Hold or sell** anytime. The ITP's NAV tracks the underlying basket. Sell to redeem USDC at the current NAV.
+4. **Earn more** by depositing ITP tokens as collateral in lending markets, or supply USDC to earn yield.
+
+## Quick Links
+
+<CardGroup cols={2}>
+  <Card title="Getting Started" icon="rocket" href="/index/getting-started">
+    Set up your wallet and make your first ITP trade in under 5 minutes.
+  </Card>
+  <Card title="How ITPs Work" icon="book" href="/index/concepts/itps">
+    Understand the NAV pricing model, per-share quantities, and rebalancing mechanics.
+  </Card>
+  <Card title="Order Lifecycle" icon="arrows-spin" href="/index/concepts/order-lifecycle">
+    Follow an ITP order from submission through BLS consensus to settlement.
+  </Card>
+  <Card title="Lending" icon="hand-holding-dollar" href="/index/concepts/lending">
+    Earn yield or borrow against ITP positions via Morpho.
+  </Card>
+</CardGroup>

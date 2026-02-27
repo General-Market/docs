@@ -1,0 +1,157 @@
+---
+title: "Risks"
+description: "What to understand before buying, creating, or lending against ITPs"
+---
+
+# Risks
+
+Index Tracking Products (ITPs) track baskets of crypto assets. They are not risk-free. This page covers every material risk you should understand before committing capital.
+
+---
+
+## Market Risks
+
+### NAV Fluctuation
+
+An ITP's Net Asset Value (NAV) floats with the prices of its underlying assets. If the basket drops 50%, your ITP is worth 50% less. There is no floor or guaranteed value.
+
+```
+NAV = sum(qty[i] * price[i]) / 1e18
+```
+
+The NAV formula is transparent and deterministic — but it moves in real time with crypto markets.
+
+### Concentration Risk
+
+An ITP with few assets (e.g., 3 tokens) has high concentration risk. If one token collapses, the impact is significant. Market-cap-weighted ITPs naturally concentrate into the largest assets, which can be better or worse depending on market conditions.
+
+<Tip>
+Use equal-weight or capped-market-cap strategies to limit single-asset exposure. The backtesting engine lets you compare concentration vs. diversification before deploying.
+</Tip>
+
+### Drawdown
+
+Crypto markets routinely experience -50% to -80% drawdowns. An ITP holding altcoins can draw down even more. Check the `max_drawdown_pct` from backtesting before deploying — it tells you the worst historical pain.
+
+### Delistings
+
+If an asset in the basket gets delisted from exchanges, it becomes illiquid. The ITP still holds it, but the price feed may freeze or drop to zero. This affects NAV directly.
+
+---
+
+## Structural Risks
+
+### No Auto-Rebalance
+
+After deploying an ITP, it does **not** auto-rebalance. The quantities are fixed until someone triggers a rebalance through the protocol. If the market shifts significantly and nobody rebalances, the ITP drifts from its target weights.
+
+### Rebalance Costs
+
+Each rebalance incurs trading fees (spread + gas). Frequent rebalancing in volatile markets can erode returns. The backtesting engine's `total_fees_pct` metric shows cumulative fee impact.
+
+### Price Feed Risk
+
+ITP NAV depends on price feeds from CoinGecko, Binance, and other sources aggregated by the data-node. If a price feed is stale or manipulated, the NAV computation will be incorrect. The issuer nodes have a 0.1% price tolerance to catch deviations.
+
+---
+
+## Smart Contract Risks
+
+### BLS Consensus Dependency
+
+All ITP operations (buy, sell, rebalance) require BLS multi-signature consensus from the issuer set. If fewer than 2/3 of issuers are online, operations stall. The protocol doesn't halt — it just can't process new orders until quorum is restored.
+
+### Contract Bugs
+
+The smart contracts (Index.sol, ITP.sol, BridgeProxy) are deployed on Arbitrum. Any bugs could result in loss of funds. Review the [contract architecture](/index/architecture/contracts) for details on the security model.
+
+### Bridge Risk
+
+If using bridged assets from L1 or other chains, the bridge introduces additional trust assumptions. Bridge failures or exploits can result in depegged collateral.
+
+---
+
+## Lending Risks (Morpho)
+
+### Liquidation
+
+If you borrow USDC against ITP collateral via Morpho, you're subject to liquidation if the ITP's value drops below the required health factor. Crypto can move fast — monitor positions actively.
+
+### Health Factor
+
+```
+health_factor = (collateral_value * LTV) / debt
+```
+
+When `health_factor < 1.0`, the position is liquidatable. There is no grace period.
+
+### Oracle Risk
+
+Morpho relies on oracle prices. If oracle prices diverge from market reality, liquidations can be triggered incorrectly (or fail to trigger when they should).
+
+---
+
+## Checklist: Before Buying an ITP
+
+<Steps>
+  <Step title="Read the Holdings">
+    Check what assets are in the basket and their weights. A "DeFi Index" could hold anything — look at the actual composition via the portfolio view or API.
+  </Step>
+
+  <Step title="Check the Backtest">
+    Run or review a backtest with the same category and weighting strategy. Pay attention to max drawdown and Sharpe ratio, not just total return.
+  </Step>
+
+  <Step title="Understand the Rebalance Schedule">
+    Who triggers rebalances? How often? An ITP with no rebalance activity drifts from its target allocation over time.
+  </Step>
+
+  <Step title="Size Your Position">
+    Don't put more into an ITP than you can afford to lose entirely. Start with a small position and scale up after observing the product's behavior across market conditions.
+  </Step>
+
+  <Step title="Monitor After Buying">
+    Check the NAV periodically. The portfolio page shows current value, PnL, and asset breakdown. Set your own mental stop-loss.
+  </Step>
+</Steps>
+
+---
+
+## Checklist: Before Creating an ITP
+
+<Steps>
+  <Step title="Backtest the Strategy">
+    Use the [backtesting guide](/index/guides/backtesting) to simulate performance. Run a sweep across weighting strategies and top_n values.
+  </Step>
+
+  <Step title="Check Asset Availability">
+    All assets must have active price feeds. Use `/sim/categories` to see which assets are in the tradeable universe.
+  </Step>
+
+  <Step title="Set Realistic Fees">
+    When backtesting, use `spread_multiplier: 2.0` for illiquid altcoins. The default 0.1% underestimates real-world slippage on thin order books.
+  </Step>
+
+  <Step title="Plan Your Rebalance Cadence">
+    Decide upfront how often you'll trigger rebalances. Monthly is a common baseline. Threshold-based (drift > 5%) is more capital-efficient but requires active monitoring.
+  </Step>
+
+  <Step title="Communicate to Buyers">
+    Add a clear name and description. Buyers need to understand the thesis (e.g., "Top 10 L1s by market cap, monthly rebalance") without diving into the contract.
+  </Step>
+</Steps>
+
+---
+
+## Risk Summary
+
+| Risk | Severity | Mitigation |
+|------|----------|------------|
+| Market downturn | **High** | Diversify, check max drawdown in backtests |
+| Concentration risk | Medium | Use equal-weight or capped strategies |
+| Delistings | Medium | Prefer large-cap assets, monitor holdings |
+| No auto-rebalance | Medium | Set reminders, check weight drift periodically |
+| Price feed staleness | Low | Issuer 0.1% tolerance catches most issues |
+| Contract bug | Low | Limited to deposited amount |
+| Lending liquidation | **High** | Monitor health factor, keep buffer above 1.5x |
+| Bridge risk | Medium | Prefer native assets where possible |

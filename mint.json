@@ -1,0 +1,153 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "General Market",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#18181B",
+    "light": "#71717A",
+    "dark": "#09090B",
+    "anchors": {
+      "from": "#18181B",
+      "to": "#3F3F46"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "Launch App",
+      "url": "https://generalmarket.io"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Launch App",
+    "url": "https://generalmarket.io"
+  },
+  "tabs": [
+    { "name": "Index", "url": "index" },
+    { "name": "Vision", "url": "vision" }
+  ],
+  "anchors": [
+    {
+      "name": "Discord",
+      "icon": "discord",
+      "url": "https://discord.gg/xsfgzwR6"
+    },
+    {
+      "name": "App",
+      "icon": "arrow-up-right-from-square",
+      "url": "https://generalmarket.io"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": ["index/introduction", "index/getting-started"]
+    },
+    {
+      "group": "Concepts",
+      "pages": [
+        "index/concepts/itps",
+        "index/concepts/order-lifecycle",
+        "index/concepts/lending"
+      ]
+    },
+    {
+      "group": "Guides",
+      "pages": [
+        "index/guides/buy-sell",
+        "index/guides/create-itp",
+        "index/guides/backtesting",
+        "index/guides/lending",
+        "index/guides/risks"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "index/api/overview",
+        "index/api/prices",
+        "index/api/itps",
+        "index/api/portfolio",
+        "index/api/simulation",
+        "index/api/morpho"
+      ]
+    },
+    {
+      "group": "Architecture",
+      "pages": [
+        "index/architecture/contracts",
+        "index/architecture/issuer-nodes",
+        "index/architecture/data-node"
+      ]
+    },
+    {
+      "group": "Reference",
+      "pages": [
+        "index/reference/error-codes",
+        "index/reference/contract-addresses",
+        "index/reference/glossary"
+      ]
+    },
+    {
+      "group": "Getting Started",
+      "pages": ["vision/introduction", "vision/getting-started"]
+    },
+    {
+      "group": "Concepts",
+      "pages": [
+        "vision/concepts/batches",
+        "vision/concepts/bitmaps",
+        "vision/concepts/ticks",
+        "vision/concepts/resolution-types",
+        "vision/concepts/balance-proofs",
+        "vision/concepts/fees"
+      ]
+    },
+    {
+      "group": "Bot Development",
+      "pages": [
+        "vision/bots/overview",
+        "vision/bots/quickstart",
+        "vision/bots/bitmap-encoding",
+        "vision/bots/strategies",
+        "vision/bots/lifecycle"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "vision/api/overview",
+        "vision/api/batches",
+        "vision/api/state",
+        "vision/api/bitmap",
+        "vision/api/balance",
+        "vision/api/ticks",
+        "vision/api/leaderboard"
+      ]
+    },
+    {
+      "group": "Reference",
+      "pages": [
+        "vision/reference/resolution-types",
+        "vision/reference/contract-addresses",
+        "vision/reference/error-codes",
+        "vision/reference/glossary"
+      ]
+    },
+    {
+      "group": "Operations",
+      "pages": ["vision/risks"]
+    },
+    {
+      "group": "Examples",
+      "pages": ["vision/examples"]
+    }
+  ],
+  "footerSocials": {
+    "x": "https://x.com/otc_max",
+    "discord": "https://discord.gg/xsfgzwR6"
+  }
+}

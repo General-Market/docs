@@ -1,0 +1,67 @@
+---
+title: "Introduction"
+description: "Sealed parimutuel prediction market on Arbitrum"
+---
+
+# Vision
+
+Vision is a **sealed parimutuel prediction market** where players bet on whether asset prices move UP or DOWN over fixed time intervals. Winners split the losers' stakes, minus a 0.3% fee. All commitments are sealed on-chain to prevent front-running, and every claim is verified with BLS aggregate signatures.
+
+## How It Works
+
+1. **Pick a batch** -- Browse active batches, each tracking a set of markets (crypto pairs, stocks, etc.) with a fixed tick duration.
+2. **Place your bets** -- For each market in the batch, predict UP or DOWN. Your predictions are encoded into a compact bitmap and sealed as a hash on-chain.
+3. **Tick resolves** -- At the end of each tick interval, issuers fetch real prices and determine outcomes. Winners on each market split the losers' stakes proportionally.
+4. **Claim rewards** -- Withdraw your winnings at any time with a BLS-verified balance proof.
+
+<Info>
+Your predictions are **sealed** -- you submit a hash of your bitmap on-chain, then reveal the actual bytes to issuers off-chain. Nobody can see or copy your bets before the tick closes.
+</Info>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Sealed Commitments" icon="lock">
+    Players submit `keccak256(bitmap)` on-chain before revealing actual predictions to issuers. No front-running, no copying.
+  </Card>
+  <Card title="Bot-Friendly" icon="robot">
+    Free registration with `registerBot()`. Poll for batches, encode bitmaps, and join programmatically -- no collateral required to register.
+  </Card>
+  <Card title="Low Fees" icon="percent">
+    0.3% fee on profits only. If you lose, you pay nothing extra. If you win, the fee is deducted from your winnings before payout.
+  </Card>
+  <Card title="BLS-Verified Claims" icon="shield-check">
+    Every claim and withdrawal requires a valid aggregated BLS signature from the issuer network. Cryptographic proof that your balance is correct.
+  </Card>
+  <Card title="Flexible Batches" icon="layer-group">
+    Anyone can create a batch with custom market selections, tick durations (5 minutes to 30 days), and resolution types. Trade what matters to you.
+  </Card>
+  <Card title="Backtesting" icon="clock-rotate-left">
+    Test your prediction strategies against historical price data before committing real USDC. Simulate bitmap outcomes over past ticks.
+  </Card>
+</CardGroup>
+
+## Who Is Vision For?
+
+| Audience | Use Case |
+|----------|----------|
+| **Bot developers** | Build automated prediction strategies. Free registration, full API access, programmatic bitmap encoding and batch joining. |
+| **Manual traders** | Browse batches in the web UI, pick UP/DOWN per market, and deposit USDC. No coding required. |
+| **Quant researchers** | Backtest bitmap strategies against historical tick data. Validate edge before deploying capital. |
+
+## Quick Links
+
+<CardGroup cols={2}>
+  <Card title="Getting Started" icon="rocket" href="/vision/getting-started">
+    Place your first bet in under 5 minutes.
+  </Card>
+  <Card title="Batches & Bitmaps" icon="book" href="/vision/concepts/batches">
+    Understand how batches, bitmaps, and ticks work together.
+  </Card>
+  <Card title="Build a Bot" icon="robot" href="/vision/bots/quickstart">
+    Register a bot and automate your prediction strategy.
+  </Card>
+  <Card title="API Reference" icon="code" href="/vision/api/overview">
+    Full endpoint documentation for programmatic access.
+  </Card>
+</CardGroup>

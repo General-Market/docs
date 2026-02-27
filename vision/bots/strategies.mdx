@@ -1,0 +1,273 @@
+---
+title: "Example Strategies"
+description: "Prediction strategies for Vision bots with code examples and backtesting"
+---
+
+# Example Strategies
+
+This page provides three baseline prediction strategies -- random, momentum, and mean reversion -- each with complete Python code. Use the backtest API to evaluate your strategy against historical data before deploying capital.
+
+<Info>
+All strategies here generate a list of `"UP"` / `"DOWN"` bets per market. Pass the result to `encode_bitmap()` from the [Bitmap Encoding](/vision/bots/bitmap-encoding) reference to produce the packed bytes.
+</Info>
+
+## Random (Baseline)
+
+The simplest strategy: pick UP or DOWN with equal probability for each market. This is the baseline against which to compare all other strategies. Expected win rate over time: ~50%.
+
+```python
+import random
+
+def random_strategy(market_count: int) -> list[str]:
+    """Pure random: 50/50 UP/DOWN for each market."""
+    return [random.choice(["UP", "DOWN"]) for _ in range(market_count)]
+
+# Usage
+bets = random_strategy(10)
+# e.g. ['UP', 'DOWN', 'UP', 'UP', 'DOWN', 'DOWN', 'UP', 'DOWN', 'UP', 'DOWN']
+```
+
+**When to use:** As a benchmark. If your strategy cannot consistently beat random, it has no edge.
+
+## Momentum
+
+Bet that the current trend continues. If an asset has been going UP recently, bet UP. If DOWN, bet DOWN. The lookback window controls sensitivity.
+
+```python
+import requests
+
+def momentum_strategy(
+    market_ids: list[str],
+    data_node_url: str = "https://generalmarket.io/api",
+    lookback: int = 5,
+) -> list[str]:
+    """Momentum: bet in the direction of the recent trend.
+
+    Args:
+        market_ids: List of market IDs (e.g. ["BTC-USD", "ETH-USD"]).
+        data_node_url: Base URL for the data-node price API.
+        lookback: Number of recent price points to evaluate.
+
+    Returns:
+        List of "UP" or "DOWN" bets for each market.
+    """
+    bets = []
+    for market_id in market_ids:
+        try:
+            resp = requests.get(
+                f"{data_node_url}/prices/{market_id}/history",
+                params={"limit": lookback + 1},
+                timeout=5,
+            )
+            prices = [p["price"] for p in resp.json()["prices"]]
+
+            if len(prices) >= 2 and prices[-1] > prices[0]:
+                bets.append("UP")
+            else:
+                bets.append("DOWN")
+        except Exception:
+            bets.append("UP")  # default to UP on error
+
+    return bets
+
+# Usage
+bets = momentum_strategy(["BTC-USD", "ETH-USD", "SOL-USD"])
+```
+
+**When to use:** Works well in trending markets. Underperforms in choppy / mean-reverting conditions.
+
+## Mean Reversion
+
+Bet against the recent trend, expecting prices to snap back. If an asset has been going UP, bet DOWN. If DOWN, bet UP.
+
+```python
+import requests
+
+def mean_reversion_strategy(
+    market_ids: list[str],
+    data_node_url: str = "https://generalmarket.io/api",
+    lookback: int = 5,
+    threshold: float = 0.02,
+) -> list[str]:
+    """Mean reversion: bet against the recent direction.
+
+    Only triggers when the recent move exceeds `threshold` (2% default).
+    Below threshold, defaults to DOWN (neutral/conservative).
+
+    Args:
+        market_ids: List of market IDs.
+        data_node_url: Base URL for price API.
+        lookback: Number of recent price points.
+        threshold: Minimum move (as fraction) to trigger a reversal bet.
+
+    Returns:
+        List of "UP" or "DOWN" bets for each market.
+    """
+    bets = []
+    for market_id in market_ids:
+        try:
+            resp = requests.get(
+                f"{data_node_url}/prices/{market_id}/history",
+                params={"limit": lookback + 1},
+                timeout=5,
+            )
+            prices = [p["price"] for p in resp.json()["prices"]]
+
+            if len(prices) >= 2:
+                change = (prices[-1] - prices[0]) / prices[0]
+                if change > threshold:
+                    bets.append("DOWN")   # went up a lot → expect reversal
+                elif change < -threshold:
+                    bets.append("UP")     # went down a lot → expect bounce
+                else:
+                    bets.append("DOWN")   # no strong signal
+            else:
+                bets.append("DOWN")
+        except Exception:
+            bets.append("DOWN")
+
+    return bets
+
+# Usage
+bets = mean_reversion_strategy(
+    ["BTC-USD", "ETH-USD", "SOL-USD"],
+    threshold=0.015,
+)
+```
+
+**When to use:** Works well in range-bound / choppy markets. Underperforms in strong trends.
+
+## Strategy Comparison
+
+| Strategy | Complexity | Best Conditions | Risk |
+|----------|-----------|----------------|------|
+| **Random** | None | Benchmark only | Neutral (50% expected) |
+| **Momentum** | Low | Trending markets | Whipsaws in choppy markets |
+| **Mean Reversion** | Low | Range-bound markets | Strong trends blow through |
+
+<Tip>
+Combine strategies: use momentum when volatility is low (trending) and mean reversion when volatility spikes (choppy). Detect regime using a rolling standard deviation of recent price changes.
+</Tip>
+
+## Backtesting
+
+Use the Vision backtest API to simulate a bitmap against historical tick outcomes before committing real capital.
+
+### Request
+
+```
+POST /vision/backtest
+```
+
+```json
+{
+  "batch_id": 42,
+  "bitmap_hex": "0xB280",
+  "ticks": 100
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `batch_id` | `u64` | Yes | Batch to simulate against |
+| `bitmap_hex` | `string` | Yes | 0x-prefixed hex bitmap |
+| `ticks` | `u64` | No | Number of ticks to simulate (default: 50, max: 200) |
+
+### Response
+
+```json
+{
+  "win_rate": 0.5230,
+  "pnl_curve": [
+    { "tick": 0, "pnl": 0.2 },
+    { "tick": 1, "pnl": -0.1 },
+    { "tick": 2, "pnl": 0.4 }
+  ],
+  "total_pnl": 2.35
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `win_rate` | `f64` | Fraction of correct predictions across all ticks and markets (0.0 to 1.0) |
+| `pnl_curve` | `PnlPoint[]` | Cumulative PnL at each tick, normalized to +/-1 USDC range per tick |
+| `total_pnl` | `f64` | Final cumulative PnL after all simulated ticks |
+
+### Backtest Example
+
+```python
+import requests
+from web3 import Web3
+
+def backtest_bitmap(batch_id: int, bets: list[str], market_count: int) -> dict:
+    """Backtest a set of bets against historical outcomes."""
+    bitmap = encode_bitmap(bets, market_count)
+
+    resp = requests.post(
+        "https://generalmarket.io/api/vision/backtest",
+        json={
+            "batch_id": batch_id,
+            "bitmap_hex": "0x" + bitmap.hex(),
+            "ticks": 100,
+        },
+        timeout=30,
+    )
+    return resp.json()
+
+# Compare strategies
+for name, strategy_fn in [
+    ("Random", lambda n: random_strategy(n)),
+    ("Momentum", lambda n: momentum_strategy(market_ids[:n])),
+    ("Mean Reversion", lambda n: mean_reversion_strategy(market_ids[:n])),
+]:
+    bets = strategy_fn(market_count)
+    result = backtest_bitmap(batch_id, bets, market_count)
+    print(f"{name:20s} | win_rate: {result['win_rate']:.2%} | pnl: {result['total_pnl']:+.2f}")
+```
+
+<Warning>
+Backtests use deterministic pseudo-random market outcomes seeded from market IDs and tick indices. They indicate whether a bitmap has structural edge (e.g., correctly correlated predictions), but do not perfectly predict live performance.
+</Warning>
+
+## Building Your Own Strategy
+
+A strategy function takes market metadata and returns a list of bets. The interface is simple:
+
+```python
+def my_strategy(market_ids: list[str], market_count: int, **kwargs) -> list[str]:
+    """
+    Args:
+        market_ids: List of market IDs in the batch.
+        market_count: Total number of markets.
+
+    Returns:
+        List of "UP" or "DOWN", one per market.
+        Length must equal market_count.
+    """
+    bets = []
+    for market_id in market_ids:
+        # Your logic here
+        bets.append("UP" if some_condition else "DOWN")
+    return bets
+```
+
+Plug the result into the standard pipeline:
+
+```python
+bets = my_strategy(market_ids, market_count)
+bitmap = encode_bitmap(bets, market_count)
+bitmap_hash = Web3.keccak(bitmap)
+# → joinBatch(batchId, deposit, stake, bitmap_hash)
+# → POST /vision/bitmap { bitmap_hex, expected_hash }
+```
+
+## Try It Yourself
+
+<CardGroup cols={2}>
+  <Card title="Python Strategy Examples" icon="python" href="https://github.com/General-Market/examples/tree/main/vision-bot-python">
+    Full strategy implementations with backtesting, logging, and configuration.
+  </Card>
+  <Card title="TypeScript Strategy Examples" icon="js" href="https://github.com/General-Market/examples/tree/main/vision-bot-typescript">
+    Type-safe strategy framework with viem integration and test harness.
+  </Card>
+</CardGroup>

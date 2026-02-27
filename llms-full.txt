@@ -1,0 +1,354 @@
+# General Market -- Vision API Complete Reference
+
+Base URL: https://generalmarket.io/api/vision
+Authentication: None (public API). Player identity is determined by Ethereum addresses in parameters.
+Token amounts: String-encoded wei values. USDC uses 6 decimals (divide by 1e6).
+Error format: { "error": "Human-readable message" }
+
+---
+
+## GET /vision/batches
+
+List all active (non-paused) batches. Returns up to 100 most recent, ordered by batch ID descending.
+
+Parameters: None
+
+Response:
+{
+  "batches": [
+    {
+      "id": "number -- Unique batch identifier",
+      "creator": "string -- Ethereum address of the batch creator",
+      "market_ids": "string[] -- List of market identifiers (e.g. BTC-USD, ETH-USD)",
+      "market_count": "number -- Number of markets in the batch",
+      "tick_duration": "number -- Seconds between tick resolutions",
+      "player_count": "number -- Current number of active players",
+      "tvl": "string -- Total value locked across all players, in wei",
+      "paused": "boolean -- Whether the batch is paused"
+    }
+  ]
+}
+
+---
+
+## GET /vision/markets
+
+List the issuer-curated whitelist of supported markets.
+
+Parameters: None
+
+Response:
+{
+  "markets": [
+    {
+      "market_id": "string -- Unique market identifier (e.g. BTC-USD)",
+      "symbol": "string -- Short ticker symbol (e.g. BTC)",
+      "display_name": "string -- Human-readable name (e.g. Bitcoin / USD)"
+    }
+  ]
+}
+
+---
+
+## GET /vision/batch/{id}/state
+
+Full live state of a single batch including all player positions.
+
+Parameters:
+- id (number, required): Batch ID. Path parameter.
+
+Response:
+{
+  "id": "number -- Batch ID",
+  "creator": "string -- Batch creator address",
+  "market_ids": "string[] -- Market identifiers",
+  "tick_duration": "number -- Seconds between ticks",
+  "created_at_tick": "number -- Tick number when batch was created",
+  "paused": "boolean -- Whether paused",
+  "player_count": "number -- Number of active players",
+  "next_tick": "number -- Unix timestamp of next tick resolution",
+  "players": [
+    {
+      "address": "string -- Player Ethereum address",
+      "stake_per_tick": "string -- Amount staked per tick per market, in wei",
+      "balance": "string -- Current balance in wei",
+      "start_tick": "number -- Tick number when player joined",
+      "has_bitmap": "boolean -- Whether player has submitted bitmap for current tick"
+    }
+  ]
+}
+
+Errors:
+- 404: Batch does not exist
+
+---
+
+## POST /vision/bitmap
+
+Submit a prediction bitmap off-chain. Issuer verifies keccak256(bitmap) matches on-chain commitment.
+
+Request body:
+{
+  "player": "string -- Player Ethereum address (checksummed, 0x-prefixed)",
+  "batch_id": "number -- Batch ID the bitmap is for",
+  "bitmap_hex": "string -- Raw prediction bitmap as hex (0x-prefixed). 1=UP, 0=DOWN per market.",
+  "expected_hash": "string -- keccak256 hash of bitmap bytes (0x-prefixed, 66 chars)"
+}
+
+Response:
+{
+  "accepted": "boolean -- Whether bitmap was accepted and stored",
+  "batch_id": "number -- Batch ID",
+  "player": "string -- Player address"
+}
+
+Errors:
+- 400: Invalid player address, malformed bitmap hex, or invalid expected_hash format
+- 400: expected_hash does not match on-chain commitment
+- 400: keccak256(bitmap_bytes) does not match expected_hash
+- 404: Player is not registered in the specified batch
+
+Flow:
+1. Encode predictions into bitmap bytes (see bitmap encoding spec)
+2. Call joinBatch(batchId, deposit, stakePerTick, keccak256(bitmap)) on-chain
+3. Submit raw bitmap to POST /vision/bitmap
+
+---
+
+## GET /vision/balance/{batch_id}/{player}
+
+Player balance within a batch. Balance reflects all tick resolutions (wins, losses, fees).
+
+Parameters:
+- batch_id (number, required): Batch ID. Path parameter.
+- player (string, required): Player Ethereum address (checksummed, 0x-prefixed). Path parameter.
+
+Response:
+{
+  "batch_id": "number -- Batch ID",
+  "player": "string -- Player address",
+  "balance": "string -- Current balance in wei (total claimable amount)",
+  "stake_per_tick": "string -- Amount risked per tick per market, in wei"
+}
+
+Note: In production, this endpoint will also return BLS signature fields (bls_signature, issuer_id, pubkey) for on-chain withdrawal proofs. Players aggregate signatures from 2/3+ issuers.
+
+Errors:
+- 400: Invalid player address format
+- 404: Batch does not exist
+- 404: Player not registered in batch
+
+---
+
+## GET /vision/batch/{id}/history
+
+Most recent tick results for a batch (up to 100 ticks).
+
+Parameters:
+- id (number, required): Batch ID. Path parameter.
+
+Response:
+{
+  "history": [
+    {
+      "batch_id": "number -- Batch ID",
+      "tick_id": "number -- Sequential tick number",
+      "resolved_at": "string|null -- ISO 8601 timestamp of resolution",
+      "player_count": "number|null -- Players who participated",
+      "total_matched": "string|null -- Volume matched between winners/losers, in wei",
+      "results_json": {
+        "markets": [
+          {
+            "market_id": "string -- Market identifier",
+            "outcome": "string -- 'Up' or 'Down'",
+            "pct_change": "number -- Percentage price change"
+          }
+        ]
+      }
+    }
+  ]
+}
+
+Errors:
+- 500: Database query failure
+
+---
+
+## GET /vision/reveal/{batch_id}/{tick_id}
+
+Revealed player bitmaps for a completed tick. Only available after reveal window expires.
+
+Parameters:
+- batch_id (number, required): Batch ID. Path parameter.
+- tick_id (number, required): Tick number. Path parameter. Must be a completed tick past the reveal window.
+
+Response:
+{
+  "batch_id": "number -- Batch ID",
+  "tick_id": "number -- Tick number",
+  "bitmaps": [
+    {
+      "player": "string -- Player address",
+      "bitmap_hex": "string -- Raw bitmap as hex",
+      "hash": "string -- keccak256 hash of bitmap (matches on-chain commitment)"
+    }
+  ]
+}
+
+Errors:
+- 403: Reveal window has not expired (response includes deadline timestamp)
+- 404: Batch does not exist
+
+---
+
+## POST /vision/backtest
+
+Simulate a bitmap strategy against deterministic pseudo-random market outcomes.
+
+Request body:
+{
+  "batch_id": "number -- Batch ID to simulate against (must exist)",
+  "bitmap_hex": "string -- Prediction bitmap as hex (0x-prefixed)",
+  "code": "string (optional) -- Python strategy code (reserved, currently ignored server-side)",
+  "ticks": "number (optional) -- Number of ticks to simulate. Default 50, max 200."
+}
+
+Response:
+{
+  "win_rate": "number -- Fraction of market bets correct (0.0 to 1.0)",
+  "pnl_curve": [
+    {
+      "tick": "number -- Tick number in simulation",
+      "pnl": "number -- Cumulative PnL at this tick (normalized +/-1 per tick)"
+    }
+  ],
+  "total_pnl": "number -- Final cumulative PnL"
+}
+
+Errors:
+- 400: Missing bitmap_hex field
+- 400: Invalid hex encoding
+- 400: Batch has no markets configured
+- 404: Batch does not exist
+
+Note: Deterministic simulation -- same inputs always produce same outputs. Does not use real historical prices.
+
+---
+
+## GET /vision/leaderboard
+
+Global player rankings aggregated across all active batches, ranked by PnL.
+
+Parameters: None
+
+Response:
+{
+  "leaderboard": [
+    {
+      "rank": "number -- Position (1-indexed)",
+      "walletAddress": "string -- Player Ethereum address",
+      "pnl": "number -- Total PnL in USDC (balance minus deposits)",
+      "winRate": "number -- Fraction of market bets won (0.0 to 1.0). Currently 0.0 while tracking is implemented.",
+      "roi": "number -- Return on investment percentage (PnL / deposited * 100)",
+      "totalVolume": "number -- Total USDC deposited across all batches",
+      "portfolioBets": "number -- Number of batches joined",
+      "avgPortfolioSize": "number -- Average markets per batch",
+      "largestPortfolio": "number -- Most markets in any single batch"
+    }
+  ],
+  "updatedAt": "string -- ISO 8601 timestamp of last computation"
+}
+
+---
+
+## Smart Contract: Vision (0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20)
+
+Chain ID: 421611337
+Collateral: USDC (6 decimals)
+Fee: 0.3% on profits (30 bps)
+Min stake: 100000 (0.1 USDC)
+
+### createBatch(bytes32[] marketIds, uint8[] resolutionTypes, uint256 tickDuration, uint256[] customThresholds) returns (uint256 batchId)
+Create a new prediction batch. Arrays must be same length.
+
+### joinBatch(uint256 batchId, uint256 depositAmount, uint256 stakePerTick, bytes32 bitmapHash)
+Join a batch. depositAmount >= stakePerTick. bitmapHash = keccak256(bitmap_bytes).
+
+### updateBitmap(uint256 batchId, bytes32 newBitmapHash)
+Change bitmap commitment. Takes effect next tick.
+
+### deposit(uint256 batchId, uint256 amount)
+Add funds to existing position.
+
+### claimRewards(uint256 batchId, uint256 fromTick, uint256 toTick, uint256 newBalance, bytes blsSignature)
+Claim winnings. Requires aggregated BLS signature from 2/3+ issuers.
+
+### withdraw(uint256 batchId, uint256 finalBalance, bytes blsSignature)
+Full exit. Deletes position, transfers remaining USDC.
+
+### getPosition(uint256 batchId, address player) returns (PlayerPosition)
+PlayerPosition { bitmapHash, stakePerTick, startTick, balance, lastClaimedTick, joinTimestamp, totalDeposited, totalClaimed }
+
+### getBatch(uint256 batchId) returns (Batch)
+Batch { creator, marketIds, resolutionTypes, tickDuration, customThresholds, createdAtTick, paused }
+
+### registerBot(string endpoint, bytes32 pubkeyHash)
+Register as a bot. One bot per address.
+
+### deregisterBot()
+Remove bot registration.
+
+### getAllActiveBots() returns (address[], Bot[])
+Bot { endpoint, pubkeyHash, registeredAt, isActive }
+
+### setBatchMetadata(uint256 batchId, string name, string description, string websiteUrl, string videoUrl, string imageUrl)
+Set batch display metadata. Creator only.
+
+### setDeployerName(string name)
+Set display name for deployer address.
+
+---
+
+## Resolution Types (enum)
+
+0 = UP_0: UP wins when price > 0%
+1 = UP_30: UP wins when price >= 0.30%
+2 = UP_X: UP wins when price >= X bps (custom threshold)
+3 = DOWN_0: UP wins when price < 0%
+4 = DOWN_30: UP wins when price <= -0.30%
+5 = DOWN_X: UP wins when price <= -X bps (custom threshold)
+6 = FLAT_0: UP wins when price == 0%
+7 = FLAT_X: UP wins when abs(price change) <= X bps (custom threshold)
+
+---
+
+## Bitmap Encoding
+
+Big-endian bit packing. 1 = UP, 0 = DOWN.
+Byte count: ceil(market_count / 8).
+Bit 0 = MSB of byte 0. Bit 7 = LSB of byte 0. Bit 8 = MSB of byte 1.
+Unused trailing bits padded with 0 (ignored during resolution).
+Commitment: bitmapHash = keccak256(bitmap_bytes).
+
+Example: 5 markets [UP, DOWN, UP, UP, DOWN] = bits 10110000 = 0xB0
+
+---
+
+## Contract Errors
+
+InvalidBLSSignature: BLS verification failed. Re-fetch balance proof.
+BatchNotFound: batchId does not exist.
+BatchPaused: Batch suspended by issuers.
+Unauthorized: Caller not batch creator or fee collector.
+InsufficientDeposit: depositAmount < stakePerTick.
+StakeBelowMinimum: stakePerTick < 100000 (0.1 USDC).
+AlreadyJoined: Already in batch. Use deposit() or updateBitmap().
+NotJoined: Not in batch. Call joinBatch() first.
+TickAlreadyClaimed: fromTick <= lastClaimedTick.
+InvalidTickRange: toTick < fromTick.
+InvalidTickDuration: tickDuration is 0 or > 30 days.
+InsolventPayout: Contract lacks USDC for payout.
+ArrayLengthMismatch: marketIds and resolutionTypes arrays differ in length.
+BotAlreadyRegistered: Address already has a bot. Deregister first.
+BotNotRegistered: Not registered.
+StringTooLong: Metadata string exceeds byte limit.

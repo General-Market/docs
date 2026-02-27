@@ -43,7 +43,7 @@ Register the bot on-chain so issuer nodes can identify automated participants:
 ```python Python (Web3.py)
 from web3 import Web3
 
-w3 = Web3(Web3.HTTPProvider("https://index.rpc.zeeve.net"))
+w3 = Web3(Web3.HTTPProvider("http://142.132.164.24/"))
 vision = w3.eth.contract(address=VISION_ADDRESS, abi=VISION_ABI)
 
 # Registration is free — no collateral required
@@ -63,7 +63,7 @@ import { createWalletClient, http, keccak256, toBytes } from 'viem';
 
 const client = createWalletClient({
   chain: indexL3,
-  transport: http('https://index.rpc.zeeve.net'),
+  transport: http('http://142.132.164.24/'),
 });
 
 // Registration is free — no collateral required
@@ -334,7 +334,7 @@ async function claimRewards(batchId: number, fromTick: number, toTick: number) {
 cd vision-bot
 
 # Configure environment
-export L3_RPC_URL="https://index.rpc.zeeve.net"
+export L3_RPC_URL="http://142.132.164.24/"
 export P2POOL_API_URL="http://localhost:10001"
 export DATA_NODE_URL="http://localhost:8200"
 export BOT_PRIVATE_KEY="0x..."

@@ -1,0 +1,211 @@
+---
+title: "Error Codes"
+description: "Vision smart contract error codes with actionable resolutions"
+---
+
+# Error Codes
+
+Vision uses custom Solidity errors for gas-efficient reverts. Unlike numbered error codes, these are named errors defined directly in `Vision.sol`. Each error below includes the revert condition and a concrete fix.
+
+<Info>
+Custom errors are decoded from transaction revert data using the contract ABI. If you see a raw hex revert, decode it with `decodeErrorResult` from viem or ethers to get the error name.
+</Info>
+
+## BLS Errors
+
+### InvalidBLSSignature
+
+**Reverts when:** BLS signature verification fails during `claimRewards`, `withdraw`, `forceWithdraw`, `pause`, `unpause`, or `updateBatchMarkets`.
+
+**Fix:** Request a fresh balance proof from `GET /vision/balance/{batchId}/{player}`. BLS proofs can become stale if issuers have rotated their keys or the aggregated public key has been updated in the IssuerRegistry. Always fetch the proof immediately before submitting the on-chain transaction. If the error persists, verify that the chain ID in the signed message matches the chain you are submitting to (chain ID `421611337`).
+
+---
+
+## Batch Errors
+
+### BatchNotFound
+
+**Reverts when:** The provided `batchId` does not correspond to any created batch. Specifically, `batch.creator == address(0)`.
+
+**Fix:** Verify the batch ID is correct by calling `getBatch(batchId)` first. Batch IDs are sequential integers starting from 0. If you are using a batch ID from the API, confirm it matches the chain you are connected to. A batch ID valid on one chain will not exist on another.
+
+---
+
+### BatchPaused
+
+**Reverts when:** A player tries to call `joinBatch` on a batch that has been paused by the issuer network.
+
+**Fix:** The batch has been temporarily suspended by issuer consensus (via BLS-signed `pause`). Wait for the issuers to unpause the batch. You can monitor batch status by polling `getBatch(batchId)` and checking the `paused` field. If you believe the pause is in error, contact the batch creator or the issuer operators.
+
+---
+
+## Authorization Errors
+
+### Unauthorized
+
+**Reverts when:** The caller does not have the required permission for the operation. This applies to:
+- `updateBatchMarkets`: caller is not the batch creator.
+- `setBatchMetadata`: caller is not the batch creator.
+- `collectFees`: caller is not the designated `feeCollector` address.
+
+**Fix:** Ensure you are calling the function from the correct address. For batch operations, only the address that created the batch can update its markets or metadata. For fee collection, only the `feeCollector` address (set at contract deployment) can call `collectFees`. If you need to act on behalf of a batch creator, the creator must submit the transaction themselves.
+
+---
+
+## Deposit and Stake Errors
+
+### InsufficientDeposit
+
+**Reverts when:** The `depositAmount` passed to `joinBatch` is less than the `stakePerTick` value. Every player must deposit at least one tick's worth of stake.
+
+**Fix:** Increase the `depositAmount` so it is at least equal to `stakePerTick`. For example, if your `stakePerTick` is 1,000,000 (1 USDC), your deposit must be at least 1,000,000. It is recommended to deposit enough to cover multiple ticks so your position does not immediately run out of balance.
+
+---
+
+### StakeBelowMinimum
+
+**Reverts when:** The `stakePerTick` value passed to `joinBatch` is less than `MIN_STAKE_PER_TICK` (100,000 = 0.1 USDC with 6 decimals).
+
+**Fix:** Set `stakePerTick` to at least `100000` (0.1 USDC). The minimum exists to prevent dust attacks. If you want a small position, 0.1 USDC per tick is the floor.
+
+---
+
+## Player Position Errors
+
+### AlreadyJoined
+
+**Reverts when:** A player tries to call `joinBatch` for a batch they have already joined. Checked by `_positions[batchId][msg.sender].stakePerTick != 0`.
+
+**Fix:** You can only join a batch once per address. If you need to increase your balance, call `deposit(batchId, amount)` instead. If you need to change your bitmap, call `updateBitmap(batchId, newBitmapHash)`. If you want to rejoin after leaving, you must first call `withdraw` to clear your position.
+
+---
+
+### NotJoined
+
+**Reverts when:** A player tries to call `deposit`, `updateBitmap`, `claimRewards`, or `withdraw` on a batch they have not joined. Checked by `_positions[batchId][msg.sender].stakePerTick == 0`.
+
+**Fix:** Call `joinBatch` first before performing any player operations. Verify you are connected with the same wallet address that joined the batch. If you previously withdrew from the batch, your position was deleted and you must rejoin with `joinBatch`.
+
+---
+
+## Tick Errors
+
+### TickAlreadyClaimed
+
+**Reverts when:** The `fromTick` parameter in `claimRewards` is less than or equal to the player's `lastClaimedTick` (when `lastClaimedTick != 0`). This prevents double-claiming the same tick range.
+
+**Fix:** Read the player's current position with `getPosition(batchId, playerAddress)` and check the `lastClaimedTick` field. Set `fromTick` to `lastClaimedTick + 1`. If you are using the issuer API, request a balance proof for the tick range starting after your last claimed tick.
+
+---
+
+### InvalidTickRange
+
+**Reverts when:** The `toTick` parameter in `claimRewards` is less than `fromTick`.
+
+**Fix:** Ensure `toTick >= fromTick`. A single-tick claim uses `fromTick == toTick`. If you are computing tick ranges programmatically, add a guard: `if (toTick < fromTick) throw new Error("Invalid tick range")`.
+
+---
+
+### InvalidTickDuration
+
+**Reverts when:** The `tickDuration` parameter in `createBatch` is either `0` or greater than `MAX_TICK_DURATION` (30 days = 2,592,000 seconds).
+
+**Fix:** Set `tickDuration` to a value between 1 second and 2,592,000 seconds (30 days). Common values: 300 (5 minutes), 3600 (1 hour), 86400 (1 day). The tick duration is immutable after batch creation, so choose carefully.
+
+---
+
+## Solvency Errors
+
+### InsolventPayout
+
+**Reverts when:** The Vision contract does not hold enough USDC to cover the payout plus accumulated fees. Checked by `USDC.balanceOf(address(this)) < payout + accumulatedFees`.
+
+**Fix:** This error indicates a critical solvency issue in the contract. Under normal operation, this should never happen because deposits from losers fund payouts to winners. If you encounter this error, it may indicate a bug in balance proof computation by the issuers. Do not retry the transaction -- report the issue to the protocol operators with the batch ID, your address, and the claim parameters.
+
+---
+
+## Array Errors
+
+### ArrayLengthMismatch
+
+**Reverts when:** The `marketIds` and `resolutionTypes` arrays passed to `createBatch` or `updateBatchMarkets` have different lengths.
+
+**Fix:** Ensure both arrays are the same length. Each market needs exactly one resolution type. For example, if you have 5 market IDs, you must provide exactly 5 resolution types. Double-check your array construction -- a common mistake is appending to one array but not the other.
+
+---
+
+## Bot Registry Errors
+
+### BotAlreadyRegistered
+
+**Reverts when:** An address calls `registerBot` but is already registered in the bot registry. Checked by `_bots[msg.sender].isActive || _botIndex[msg.sender] != 0`.
+
+**Fix:** Each address can only register one bot. If you need to update your bot's endpoint or public key hash, call `deregisterBot()` first, then call `registerBot` again with the new parameters.
+
+---
+
+### BotNotRegistered
+
+**Reverts when:** An address calls `deregisterBot` but is not registered or has already been deregistered. Checked by `!bot.isActive`.
+
+**Fix:** Verify your address is registered by calling `getAllActiveBots()` and checking if your address appears in the returned array. If you have already deregistered, you cannot deregister again. To re-register, call `registerBot` with your new endpoint and public key hash.
+
+---
+
+## Metadata Errors
+
+### StringTooLong
+
+**Reverts when:** A string parameter passed to `setBatchMetadata` or `setDeployerName` exceeds the maximum allowed byte length.
+
+**Fix:** Trim your strings to fit within the limits:
+
+| Field | Max Bytes |
+|-------|-----------|
+| Batch name | 64 |
+| Batch description | 280 |
+| Website URL | 128 |
+| Video URL | 256 |
+| Image URL | 256 |
+| Deployer name | 64 |
+
+Note: The limit is in **bytes**, not characters. Multi-byte characters (e.g., CJK, emoji) consume 2-4 bytes each. Use `new TextEncoder().encode(str).length` in JavaScript to check the byte length before submitting.
+
+---
+
+## Decoding Errors in the Frontend
+
+Custom errors are decoded using the contract ABI. Here is an example using viem:
+
+```typescript
+import { decodeErrorResult } from "viem";
+import { visionAbi } from "@/lib/contracts/abi";
+
+try {
+  await writeContract(/* ... */);
+} catch (err) {
+  const decoded = decodeErrorResult({
+    abi: visionAbi,
+    data: err.data,
+  });
+  console.error(`Contract reverted: ${decoded.errorName}`);
+  // decoded.errorName -> "StakeBelowMinimum", "BatchNotFound", etc.
+}
+```
+
+## Decoding Errors in Python
+
+For bots written in Python using web3.py:
+
+```python
+from web3 import Web3
+from web3.exceptions import ContractLogicError
+
+try:
+    tx = vision_contract.functions.joinBatch(
+        batch_id, deposit_amount, stake_per_tick, bitmap_hash
+    ).transact()
+except ContractLogicError as e:
+    # e.message contains the decoded error name
+    print(f"Contract reverted: {e.message}")
+```

@@ -1,0 +1,145 @@
+---
+title: "Index Tracking Products (ITPs)"
+description: "How ITPs work -- the on-chain equivalent of ETFs"
+---
+
+# Index Tracking Products (ITPs)
+
+An Index Tracking Product (ITP) is a tokenized basket of crypto assets -- the on-chain equivalent of an ETF. When you hold an ITP token, you hold proportional exposure to every asset in the ITP's basket. The token's value (the ITP's NAV) floats with the underlying asset prices.
+
+## What Makes Up an ITP
+
+Each ITP consists of:
+
+- **A basket of assets** -- up to 100 crypto assets with defined weights
+- **Fixed per-share quantities** -- each share represents a fixed amount of each underlying asset
+- **An ERC-4626 vault token** -- standard vault interface for composability with other DeFi protocols
+- **A deployer** -- the address that configured the basket and earns protocol fees
+
+<Info>
+ITPs support up to **100 assets** per basket. This enables broad-market indexes (like a "Top 100 Crypto" product) or focused sector plays (like a "DeFi Blue Chips" basket with 10 assets).
+</Info>
+
+## NAV Pricing
+
+Every ITP has a **Net Asset Value (NAV)** -- the fair value of one share based on the current prices of all underlying assets. NAV is the core pricing mechanism for ITPs.
+
+### NAV Computation Formula
+
+```solidity
+NAV = sum(qty[i] * price[i]) / 1e18
+```
+
+Where:
+- `qty[i]` is the fixed per-share quantity of asset `i`
+- `price[i]` is the current market price of asset `i`
+- The division by `1e18` normalizes to a human-readable value
+
+NAV is computed identically across all layers of the system: on-chain in `Index.sol`, off-chain in the issuer nodes, and in the frontend. The NAV formula is the single source of truth for ITP pricing.
+
+## ITP Creation: How Quantities Are Set
+
+When an ITP is created, the ITP starts at a NAV of **$1** (represented as `1e18` in contract math). The deployer specifies percentage weights for each asset, and the protocol converts those weights into fixed per-share quantities:
+
+```solidity
+qty[i] = (weight[i] * 1e18) / price[i]
+```
+
+### Three-Asset Creation Example
+
+Suppose a deployer creates an ITP with 3 assets at equal weight:
+
+| Asset | Weight | Price | Quantity per Share |
+|-------|--------|-------|--------------------|
+| BTC | 33.33% | $50,000 | 0.000006666 BTC |
+| ETH | 33.33% | $3,000 | 0.000111100 ETH |
+| SOL | 33.34% | $100 | 0.003334000 SOL |
+
+At creation, the ITP's NAV = $1.00. Each share represents exactly these quantities of each asset.
+
+```solidity
+NAV = (0.000006666 * 50000) + (0.000111100 * 3000) + (0.003334000 * 100)
+    = 0.3333 + 0.3333 + 0.3334
+    = $1.00
+```
+
+## ITP Key Invariants
+
+These rules are fundamental to how ITPs work:
+
+<Note>
+**Quantities only change on rebalance.** Buying and selling ITP shares does NOT alter the per-share quantities. Buy/sell operations mint or burn shares proportionally -- the basket composition stays the same.
+</Note>
+
+1. **Buy/sell = mint/burn shares.** When a buyer purchases $100 of an ITP at NAV $1.05, the buyer receives ~95.24 shares. The per-share quantities do not change.
+
+2. **NAV drifts from $1 over time.** If the basket appreciates, the ITP's NAV goes above $1. If the basket drops, the NAV goes below $1. The NAV reflects real market movement of the underlying assets.
+
+3. **Quantities are stored on-chain.** The `_itpInventory` mapping in `IndexStorage.sol` stores the definitive per-share quantities for each ITP.
+
+## ITP Rebalancing
+
+A rebalance changes the per-share quantities to reflect new target weights while preserving the current NAV. Rebalancing adjusts an ITP's composition without affecting the ITP's value per share.
+
+### Rebalance Quantity Formula
+
+```solidity
+qty_new[i] = (w_new[i] * currentNAV) / price[i]
+```
+
+Where:
+- `w_new[i]` is the new target weight for asset `i`
+- `currentNAV` is the NAV at the moment of rebalance
+- `price[i]` is the current price of asset `i`
+
+### Rebalance Worked Example
+
+Continuing the earlier creation example, suppose BTC has risen to $60,000, ETH to $3,500, and SOL to $120. The ITP's current NAV is now:
+
+```solidity
+NAV = (0.000006666 * 60000) + (0.000111100 * 3500) + (0.003334000 * 120)
+    = 0.3999 + 0.3889 + 0.4001
+    = $1.1889
+```
+
+The deployer rebalances to new weights: BTC 50%, ETH 30%, SOL 20%.
+
+| Asset | New Weight | Price | New Quantity |
+|-------|-----------|-------|-------------|
+| BTC | 50% | $60,000 | 0.000009908 |
+| ETH | 30% | $3,500 | 0.000101906 |
+| SOL | 20% | $120 | 0.001981500 |
+
+Post-rebalance NAV check:
+
+```solidity
+NAV = (0.000009908 * 60000) + (0.000101906 * 3500) + (0.001981500 * 120)
+    = 0.5945 + 0.3567 + 0.2378
+    = $1.1890  (same as before, within rounding)
+```
+
+<Warning>
+Rebalancing preserves NAV but changes the per-share quantities. After a rebalance, the ITP has different exposure to each asset even though the total value per share is unchanged.
+</Warning>
+
+## ITP ERC-4626 Vault Tokens
+
+Every ITP is implemented as an [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) vault. The ERC-4626 standard interface means ITPs are composable with any DeFi protocol that supports ERC-4626 -- including lending protocols like Morpho.
+
+Key properties of ITP tokens:
+
+- **Fungible** -- all shares of the same ITP are identical
+- **Transferable** -- you can send ITP tokens to any address
+- **Collateralizable** -- ITP tokens can be used as collateral in [lending markets](/index/concepts/lending)
+- **Decimal precision** -- 18 decimals, matching standard ERC-20 conventions
+
+## Implementation Reference
+
+| Layer | Location | Function |
+|-------|----------|----------|
+| Contract | `Index.sol` | `createITP()` -- computes initial quantities from weights and prices |
+| Contract | `Index.sol` | `_getCurrentPrice()` -- computes NAV from stored inventory |
+| Contract | `Index.sol` | `updateWeights()` -- rebalance: recalculates quantities preserving NAV |
+| Storage | `IndexStorage.sol` | `_itpInventory[itpId]` -- canonical per-share quantities |
+| Issuer | `nav.rs` | `calculate_nav()` -- reads inventory via `getITPState` |
+| Frontend | `useItpNav.ts` | Inventory-first calculation, weight fallback for legacy ITPs |

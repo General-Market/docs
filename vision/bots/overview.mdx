@@ -1,0 +1,116 @@
+---
+title: "Bot Overview"
+description: "Architecture and concepts for building autonomous Vision prediction bots"
+---
+
+# Bot Overview
+
+Vision bots are autonomous programs that join prediction batches, submit sealed bitmaps, and claim rewards without human intervention. Registration is free, requires no collateral, and the full lifecycle can be automated with a few API calls and on-chain transactions.
+
+## Architecture
+
+```
+                              Vision Bot
+                     ┌─────────────────────────┐
+                     │  1. Poll /vision/batches │
+                     │  2. Generate predictions │
+                     │  3. Encode bitmap        │
+                     │  4. keccak256(bitmap)     │
+                     └────────┬────────┬────────┘
+                              │        │
+              On-chain        │        │  Off-chain
+         ┌────────────────────┘        └────────────────────┐
+         │                                                  │
+         ▼                                                  ▼
+┌─────────────────┐                              ┌─────────────────────┐
+│  Vision Contract │                              │   Issuer Nodes (3)  │
+│  (Arbitrum)      │                              │                     │
+│                  │   5. joinBatch(bitmapHash)   │  POST /vision/bitmap│
+│  - registerBot() │◄────────────────────────────│  (reveal actual     │
+│  - joinBatch()   │                              │   bitmap bytes)     │
+│  - updateBitmap()│                              │                     │
+│  - claimRewards()│   BLS-signed balance proofs  │  GET /vision/balance│
+│  - withdraw()    │◄────────────────────────────│  (claim proofs)     │
+└─────────────────┘                              └─────────────────────┘
+         │                                                  │
+         │            Tick Resolution                       │
+         │     Issuers fetch prices, compare to             │
+         │     revealed bitmaps, compute payoffs,           │
+         │     sign balance proofs with BLS keys            │
+         └──────────────────────────────────────────────────┘
+```
+
+## What a Vision Bot Does
+
+A Vision bot automates the complete prediction lifecycle:
+
+1. **Registers** on the Vision contract (one-time, free, no collateral).
+2. **Polls** the issuer API for active batches.
+3. **Generates predictions** -- UP or DOWN for each market in a batch.
+4. **Encodes** predictions into a packed bitmap and hashes it with keccak256.
+5. **Joins** the batch on-chain with a USDC deposit and the sealed bitmap hash.
+6. **Reveals** the actual bitmap bytes to issuer nodes off-chain.
+7. **Claims rewards** periodically using BLS-signed balance proofs from issuers.
+8. **Withdraws** remaining balance when exiting a batch.
+
+<Info>
+Bot registration is **free**. Calling `registerBot()` costs only gas. There is no staking requirement or collateral to register -- you only deposit USDC when joining a batch.
+</Info>
+
+## Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `RPC_URL` | Yes | -- | Arbitrum RPC endpoint |
+| `VISION_API_URL` | No | `https://generalmarket.io/api/vision` | Issuer Vision API base URL |
+| `BOT_PRIVATE_KEY` | Yes | -- | Wallet private key (controls USDC deposits) |
+| `VISION_ADDRESS` | No | `0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20` | Vision contract address |
+| `DEPOSIT_AMOUNT` | No | `10` | USDC to deposit per batch (whole tokens) |
+| `STAKE_PER_TICK` | No | `1` | USDC to stake per tick (whole tokens) |
+| `POLL_INTERVAL` | No | `30` | Seconds between batch polling cycles |
+
+<Warning>
+**USDC uses 6 decimals, not 18.** When calling contract functions, multiply token amounts by `10^6`. For example, 10 USDC = `10_000_000` (not `10_000_000_000_000_000_000`). Getting this wrong will either deposit dust or revert with insufficient balance.
+</Warning>
+
+## Contract Details
+
+| Property | Value |
+|----------|-------|
+| **Contract** | `Vision.sol` at `0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20` |
+| **Network** | Arbitrum |
+| **Collateral** | USDC (6 decimals) |
+| **Protocol fee** | 0.3% on profits only |
+| **Min stake per tick** | 0.1 USDC (`100_000` raw) |
+
+## Bot Registration
+
+Registration stores a public metadata struct on-chain:
+
+```solidity
+struct Bot {
+    string endpoint;       // Your bot's webhook URL
+    bytes32 pubkeyHash;   // keccak256 of your bot's public key
+    uint256 registeredAt; // Block timestamp of registration
+    bool isActive;        // Active status
+}
+```
+
+Call `registerBot(endpoint, pubkeyHash)` once. Call `deregisterBot()` to remove your registration.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/vision/bots/quickstart">
+    Register and run your first bot in under 10 minutes.
+  </Card>
+  <Card title="Bot Lifecycle" icon="arrows-spin" href="/vision/bots/lifecycle">
+    Detailed walkthrough of every step from registration to withdrawal.
+  </Card>
+  <Card title="Bitmap Encoding" icon="binary" href="/vision/bots/bitmap-encoding">
+    Technical reference for the bitmap format, encoding, and hashing.
+  </Card>
+  <Card title="Example Strategies" icon="brain" href="/vision/bots/strategies">
+    Momentum, mean reversion, and random baseline strategies with code.
+  </Card>
+</CardGroup>

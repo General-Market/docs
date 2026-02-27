@@ -1,0 +1,236 @@
+---
+title: "Balance Proofs"
+description: "How BLS-signed balance proofs enable trustless claiming and withdrawal in Vision"
+---
+
+Vision uses **BLS-signed balance proofs** to bridge off-chain tick resolution results back on-chain. Issuers independently compute player balances, sign the results with their BLS keys, and players aggregate these signatures to claim rewards or withdraw funds trustlessly.
+
+## Why Off-Chain Balance Tracking?
+
+Resolving every tick on-chain for every player in every market would be prohibitively expensive. Instead, Vision uses a hybrid architecture:
+
+- **On-chain**: Deposits, withdrawals, bitmap commitments, and BLS-verified claims.
+- **Off-chain**: Tick resolution, bitmap reveals, balance computation, and BLS signing.
+
+This means the contract does not know each player's balance after every tick. Instead, it trusts the issuer consensus: if 2/3+ of registered issuers agree on a player's balance, the contract accepts it.
+
+## BLS Signature Flow
+
+The balance proof lifecycle follows 5 steps:
+
+### Step 1: Player Requests Balance Proof
+
+The player queries an issuer node for their current balance:
+
+```bash
+GET /vision/balance/{batchId}/{playerAddress}
+```
+
+**Response:**
+
+```json
+{
+  "batch_id": 1,
+  "player": "0xAbC...123",
+  "balance": "15000000",
+  "stake_per_tick": "100000"
+}
+```
+
+<Info>
+In the full implementation, each issuer returns a partial BLS signature. The player collects signatures from multiple issuers to aggregate.
+</Info>
+
+### Step 2: Issuers Compute Balance
+
+Each issuer independently:
+
+1. Tracks all tick results since the player's last claim.
+2. Sums deposits + winnings - losses - fees.
+3. Arrives at the player's `newBalance`.
+
+Since all issuers run the same deterministic resolution logic on the same price feeds and bitmaps, they should arrive at the same balance.
+
+### Step 3: Issuers BLS-Sign the Balance
+
+Each issuer signs the following message:
+
+```solidity
+bytes32 message = keccak256(abi.encode(
+    chainId,            // Chain ID (prevents cross-chain replay)
+    contractAddress,    // Vision contract address
+    "CLAIM",            // Action tag
+    batchId,            // Batch ID
+    playerAddress,      // Player's address
+    fromTick,           // First tick in the claim range
+    toTick,             // Last tick in the claim range
+    newBalance          // Computed balance after all ticks
+));
+```
+
+The player collects BLS partial signatures from at least 2/3 of registered issuers.
+
+### Step 4: Player Aggregates and Submits
+
+The player aggregates the partial BLS signatures into a single aggregated signature and submits it on-chain:
+
+```solidity
+function claimRewards(
+    uint256 batchId,
+    uint256 fromTick,
+    uint256 toTick,
+    uint256 newBalance,
+    bytes calldata blsSignature  // Aggregated BLS signature
+) external;
+```
+
+### Step 5: Contract Verifies and Pays
+
+The contract:
+
+1. Reconstructs the same message hash from the parameters.
+2. Verifies the aggregated BLS signature against the issuer registry's aggregated public key.
+3. If valid:
+   - Compares `newBalance` to `oldBalance`.
+   - If `newBalance > oldBalance`: computes winnings, deducts the 0.3% fee, and transfers the payout.
+   - If `newBalance <= oldBalance`: records the loss (balance decreased), no payout.
+4. Updates `position.lastClaimedTick = toTick`.
+
+```solidity
+if (newBalance > oldBalance) {
+    uint256 winnings = newBalance - oldBalance;
+    uint256 fee = (winnings * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
+    accumulatedFees += fee;
+    uint256 payout = winnings - fee;
+    USDC.safeTransfer(msg.sender, payout);
+}
+```
+
+<Warning>
+BLS verification is never bypassed. Not in local development, not in tests, not anywhere. If BLS verification is blocking your workflow, fix the BLS pipeline -- do not add bypass flags.
+</Warning>
+
+## Claiming vs. Withdrawing
+
+Vision has two ways for players to get funds out:
+
+### Claiming (Partial)
+
+`claimRewards` lets a player claim accumulated winnings while staying in the batch:
+
+```solidity
+claimRewards(batchId, fromTick, toTick, newBalance, blsSig)
+```
+
+- Pays out the difference between old and new balance (minus fees).
+- The player remains in the batch and continues playing.
+- `lastClaimedTick` is updated to prevent double-claims.
+
+### Withdrawing (Full Exit)
+
+`withdraw` removes the player from the batch entirely:
+
+```solidity
+function withdraw(
+    uint256 batchId,
+    uint256 finalBalance,
+    bytes calldata blsSignature
+) external;
+```
+
+The BLS message for withdrawal uses the `"WITHDRAW"` action tag:
+
+```solidity
+bytes32 message = keccak256(abi.encode(
+    chainId, contractAddress, "WITHDRAW",
+    batchId, playerAddress, finalBalance
+));
+```
+
+On withdrawal:
+- Fees are calculated on **total profit** (finalBalance - totalDeposited), not just the last claim.
+- The player's position is deleted from storage.
+- All remaining USDC is transferred to the player.
+
+### Force Withdraw
+
+Issuers can force-withdraw a player via BLS consensus (e.g., if a player's bot is misbehaving):
+
+```solidity
+function forceWithdraw(
+    uint256 batchId,
+    address player,
+    uint256 finalBalance,
+    bytes calldata blsSignature
+) external;
+```
+
+The BLS message uses the `"FORCE_WITHDRAW"` action tag. This is an issuer-level operation that requires consensus.
+
+## Claim Guards
+
+The contract enforces several safety checks:
+
+| Check | Error | Description |
+|-------|-------|-------------|
+| Player must have joined | `NotJoined` | `stakePerTick == 0` means not in batch |
+| No double-claiming | `TickAlreadyClaimed` | `fromTick` must be after `lastClaimedTick` |
+| Valid tick range | `InvalidTickRange` | `toTick >= fromTick` |
+| BLS signature valid | `InvalidBLSSignature` | Aggregated signature must verify |
+| Solvency | `InsolventPayout` | Contract must hold enough USDC |
+
+## Code Example: Requesting a Proof
+
+Here is a complete example of requesting a balance proof and submitting a claim:
+
+```typescript
+import { ethers } from "ethers";
+
+const VISION_ABI = [
+  "function claimRewards(uint256 batchId, uint256 fromTick, uint256 toTick, uint256 newBalance, bytes blsSignature)",
+  "function getPosition(uint256 batchId, address player) view returns (tuple(bytes32 bitmapHash, uint256 stakePerTick, uint256 startTick, uint256 balance, uint256 lastClaimedTick, uint256 joinTimestamp, uint256 totalDeposited, uint256 totalClaimed))",
+];
+
+async function claimRewards(
+  visionContract: ethers.Contract,
+  batchId: number,
+  issuerUrls: string[],
+  playerAddress: string
+) {
+  // 1. Get current position
+  const position = await visionContract.getPosition(batchId, playerAddress);
+  const lastClaimed = position.lastClaimedTick.toNumber();
+
+  // 2. Request balance proof from issuers
+  const proofs = await Promise.all(
+    issuerUrls.map(async (url) => {
+      const resp = await fetch(`${url}/vision/balance/${batchId}/${playerAddress}`);
+      return resp.json();
+    })
+  );
+
+  // 3. Verify issuers agree on balance
+  const balances = proofs.map((p) => p.balance);
+  const agreed = balances.every((b) => b === balances[0]);
+  if (!agreed) throw new Error("Issuers disagree on balance");
+
+  // 4. Aggregate BLS signatures (simplified)
+  const aggregatedSig = aggregateBLSSignatures(proofs.map((p) => p.bls_signature));
+
+  // 5. Submit claim on-chain
+  const fromTick = lastClaimed > 0 ? lastClaimed + 1 : position.startTick.toNumber();
+  const toTick = proofs[0].to_tick;
+  const newBalance = proofs[0].balance;
+
+  const tx = await visionContract.claimRewards(
+    batchId, fromTick, toTick, newBalance, aggregatedSig
+  );
+  await tx.wait();
+
+  console.log(`Claimed rewards for ticks ${fromTick}-${toTick}`);
+}
+```
+
+<Tip>
+In practice, the Vision frontend and bot SDK handle BLS aggregation automatically. You do not need to implement BLS signature aggregation from scratch unless building a custom integration.
+</Tip>
