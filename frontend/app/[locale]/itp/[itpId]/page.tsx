@@ -4,6 +4,8 @@ import { getTranslations } from 'next-intl/server'
 import { getItpDetail, getItpSummaries } from '@/lib/api/server-data'
 import { BreadcrumbJsonLd } from '@/components/seo/JsonLd'
 
+export const revalidate = 60
+
 interface Props {
   params: Promise<{ locale: string; itpId: string }>
 }
@@ -74,7 +76,8 @@ export default async function ItpPage({ params }: Props) {
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             "@context": "https://schema.org",
-            "@type": "InvestmentFund",
+            "@type": "FinancialProduct",
+            "category": "Index Fund",
             name: itp.name,
             tickerSymbol: itp.symbol,
             description: t('description', {

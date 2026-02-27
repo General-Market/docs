@@ -55,7 +55,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} className={`${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
-        <link rel="canonical" href="https://generalmarket.io" />
+        <link rel="preconnect" href="https://us.i.posthog.com" />
       </head>
       <body className="bg-page text-text-primary font-sans antialiased">
         <ClientProviders>
