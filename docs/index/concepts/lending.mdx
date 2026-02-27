@@ -5,7 +5,36 @@ description: "Earn yield or borrow against ITP positions using Morpho"
 
 # Lending and Borrowing Concepts
 
-General Market integrates with **Morpho** to offer lending and borrowing on Index Tracking Product (ITP) positions. Lenders can deposit USDC to earn yield from borrowers, or borrowers can use ITP shares as collateral to borrow USDC.
+## Quick Start: Earn Yield on USDC
+
+1. Go to the **Lending** section on [generalmarket.io](https://generalmarket.io)
+2. Pick a lending market (each corresponds to an ITP)
+3. Deposit USDC — you start earning interest immediately
+4. Withdraw anytime — no lock-up
+
+See [Lending Guide](/index/guides/lending) for the full walkthrough.
+
+## How It Works
+
+```mermaid
+flowchart LR
+    subgraph Lender
+        A[Deposit USDC]
+    end
+    subgraph Morpho["Morpho Market"]
+        B[Lending Pool]
+    end
+    subgraph Borrower
+        C[Deposit ITP Collateral]
+        D[Borrow USDC]
+    end
+
+    A --> B
+    C --> B
+    B --> D
+    B -->|"Interest"| A
+    D -->|"Repay + Interest"| B
+```
 
 <Info>
 Morpho lending markets are available for select Index Tracking Products (ITPs) that have been configured with a Morpho market. Not all ITPs have lending enabled -- check the ITP detail page to see if a Morpho market is available for a given ITP.

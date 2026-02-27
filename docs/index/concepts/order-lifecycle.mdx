@@ -67,9 +67,17 @@ The sell flow mirrors the buy flow in reverse:
 
 The issuer nodes operate in continuous **1-second cycles**, each divided into 5 phases:
 
-```text
-|--- COLLECT ---|--- PROPOSE ---|--- SIGN_SUBMIT ---|--- CONFIRM ---|--- REBALANCE ---|
-     200ms           200ms            200ms              200ms            200ms
+```mermaid
+gantt
+    title 1-Second Consensus Cycle
+    dateFormat X
+    axisFormat %L ms
+    section Phases
+    COLLECT    :a, 0, 200
+    PROPOSE    :b, 200, 400
+    SIGN       :c, 400, 600
+    CONFIRM    :d, 600, 800
+    REBALANCE  :e, 800, 1000
 ```
 
 | Phase | Duration | What Happens |
@@ -88,10 +96,14 @@ The 1-second cycle means an order is typically batched within 1-2 seconds of sub
 
 Each order transitions through these states:
 
-```text
-PENDING  -->  BATCHED  -->  FILLED
-   |
-   +-------->  TIMEOUT  (after 60s, up to 3 retries)
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: submitOrder()
+    PENDING --> BATCHED: BLS consensus
+    BATCHED --> FILLED: AP confirms fills
+    PENDING --> TIMEOUT: 60s elapsed
+    TIMEOUT --> PENDING: retry (up to 3x)
+    TIMEOUT --> [*]: refund after 3 retries
 ```
 
 | State | Description |

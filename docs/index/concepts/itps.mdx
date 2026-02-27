@@ -5,7 +5,30 @@ description: "How ITPs work -- the on-chain equivalent of ETFs"
 
 # Index Tracking Products (ITPs)
 
-An Index Tracking Product (ITP) is a tokenized basket of crypto assets -- the on-chain equivalent of an ETF. When you hold an ITP token, you hold proportional exposure to every asset in the ITP's basket. The token's value (the ITP's NAV) floats with the underlying asset prices.
+## Quick Start: Buy an ITP
+
+```bash
+# Check ITP price (NAV)
+curl https://generalmarket.io/api/prices/{itpId}
+
+# Buy on-chain
+index.submitOrder(itpId, usdcAmount, OrderType.BUY)
+```
+
+See [Buy & Sell Guide](/index/guides/buy-sell) for the full step-by-step.
+
+## ITP Lifecycle
+
+```mermaid
+flowchart LR
+    A[Create ITP] -->|"weights → quantities"| B[ITP Live]
+    B --> C[Buy / Sell]
+    C -->|"mint / burn shares"| B
+    B --> D[NAV Floats]
+    D -->|"prices change"| B
+    B --> E[Rebalance]
+    E -->|"new quantities, same NAV"| B
+```
 
 ## What Makes Up an ITP
 
@@ -133,7 +156,9 @@ Key properties of ITP tokens:
 - **Collateralizable** -- ITP tokens can be used as collateral in [lending markets](/index/concepts/lending)
 - **Decimal precision** -- 18 decimals, matching standard ERC-20 conventions
 
-## Implementation Reference
+## Technical Details
+
+### Implementation Reference
 
 | Layer | Location | Function |
 |-------|----------|----------|
