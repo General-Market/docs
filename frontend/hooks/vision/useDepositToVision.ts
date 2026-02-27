@@ -21,6 +21,7 @@ export type DepositToVisionStep =
   | 'approving'
   | 'depositing'
   | 'polling'
+  | 'bridging'
   | 'done'
   | 'error'
 
@@ -235,8 +236,8 @@ export function useDepositToVision(): UseDepositToVisionReturn {
         clearInterval(pollRef.current)
         pollRef.current = null
       }
-      // Don't error — the deposit is locked on Arb and will be credited eventually
-      setStep('done')
+      // Deposit is locked on Arb and will be credited eventually — show bridging state
+      setStep('bridging')
     }, 120_000)
 
     return () => clearTimeout(timeout)

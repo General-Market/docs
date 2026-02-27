@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
+import { decodeEventLog } from 'viem'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { VISION_ADDRESS } from '@/lib/vision/constants'
@@ -26,14 +27,18 @@ export interface UseWithdrawToArbReturn {
  * Hook to withdraw from virtualBalance on Vision.sol (L3).
  * This triggers issuers to release USDC from ArbBridgeCustody on Arbitrum.
  * Only debits virtualBalance — use useWithdrawBalance for realBalance.
+ *
+ * After L3 tx confirms, polls issuer API for Arb-side completion.
  */
 export function useWithdrawToArb(): UseWithdrawToArbReturn {
   const { address } = useAccount()
 
   const [step, setStep] = useState<WithdrawToArbStep>('idle')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [withdrawId, setWithdrawId] = useState<string | null>(null)
 
   const withdrawHandled = useRef(false)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const {
     writeContract: writeWithdraw,
@@ -43,14 +48,15 @@ export function useWithdrawToArb(): UseWithdrawToArbReturn {
     reset: resetWithdraw,
   } = useChainWriteContract()
   const {
-    isLoading: isWithdrawConfirming,
     isSuccess: isWithdrawSuccess,
+    data: withdrawReceipt,
   } = useWaitForTransactionReceipt({ hash: txHash })
 
   const withdraw = useCallback((amount: bigint) => {
     if (!address) return
 
     setErrorMsg(null)
+    setWithdrawId(null)
     withdrawHandled.current = false
     setStep('withdrawing')
 
@@ -62,18 +68,78 @@ export function useWithdrawToArb(): UseWithdrawToArbReturn {
     })
   }, [address, writeWithdraw])
 
-  // On-chain success -> poll for Arb-side completion
+  // On-chain success -> extract withdrawId, start polling issuer API
   useEffect(() => {
-    if (!isWithdrawSuccess || withdrawHandled.current) return
+    if (!isWithdrawSuccess || !withdrawReceipt || withdrawHandled.current) return
     withdrawHandled.current = true
 
-    // The L3 tx succeeded (virtualBalance debited).
-    // Issuers will now call ArbBridgeCustody.releaseVisionWithdrawal().
-    // We could poll an API here, but for now just mark done since the L3 side is complete.
-    // The user's Arb USDC will arrive asynchronously.
-    setStep('done')
+    // Extract withdrawId from WithdrawToArbRequested event
+    for (const log of withdrawReceipt.logs) {
+      try {
+        const decoded = decodeEventLog({
+          abi: VISION_ABI,
+          data: log.data,
+          topics: log.topics,
+        })
+        if (decoded.eventName === 'WithdrawToArbRequested') {
+          setWithdrawId(String((decoded.args as any).withdrawId))
+          break
+        }
+      } catch {
+        // Not the right event
+      }
+    }
+
+    setStep('polling')
     resetWithdraw()
-  }, [isWithdrawSuccess, resetWithdraw])
+  }, [isWithdrawSuccess, withdrawReceipt, resetWithdraw])
+
+  // Poll issuer API for withdraw completion
+  useEffect(() => {
+    if (step !== 'polling' || !withdrawId) return
+
+    const poll = async () => {
+      for (const url of VISION_ISSUER_URLS) {
+        try {
+          const res = await fetch(`${url}/vision/withdraw/${withdrawId}/status`)
+          if (res.ok) {
+            const data = await res.json()
+            if (data.status === 'completed') {
+              if (pollRef.current) {
+                clearInterval(pollRef.current)
+                pollRef.current = null
+              }
+              setStep('done')
+              return
+            }
+            return // got a response, don't try other issuers
+          }
+        } catch {
+          // Try next issuer
+        }
+      }
+    }
+
+    poll()
+    pollRef.current = setInterval(poll, 5000)
+
+    // Timeout after 5 minutes — mark done (USDC will arrive eventually)
+    const timeout = setTimeout(() => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current)
+        pollRef.current = null
+      }
+      setStep('done')
+    }, 300_000)
+
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current)
+        pollRef.current = null
+      }
+      clearTimeout(timeout)
+    }
+  }, [step, withdrawId])
 
   // Error handling
   useEffect(() => {
@@ -86,8 +152,13 @@ export function useWithdrawToArb(): UseWithdrawToArbReturn {
   }, [withdrawError, resetWithdraw])
 
   const reset = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current)
+      pollRef.current = null
+    }
     setStep('idle')
     setErrorMsg(null)
+    setWithdrawId(null)
     resetWithdraw()
   }, [resetWithdraw])
 

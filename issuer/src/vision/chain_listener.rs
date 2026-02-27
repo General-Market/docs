@@ -51,6 +51,7 @@ struct EventTopics {
     balance_deposited: H256,
     real_balance_withdrawn: H256,
     withdraw_to_arb_requested: H256,
+    balance_debited: H256,
 }
 
 impl EventTopics {
@@ -98,6 +99,9 @@ impl EventTopics {
             )),
             withdraw_to_arb_requested: H256::from(ethers::utils::keccak256(
                 b"WithdrawToArbRequested(address,uint256,uint256)",
+            )),
+            balance_debited: H256::from(ethers::utils::keccak256(
+                b"BalanceDebited(address,uint256,uint256)",
             )),
         }
     }
@@ -265,6 +269,8 @@ impl ChainListener {
                     self.handle_real_balance_withdrawn(&log).await;
                 } else if *topic0 == topics.withdraw_to_arb_requested {
                     self.handle_withdraw_to_arb_requested(&log).await;
+                } else if *topic0 == topics.balance_debited {
+                    self.handle_balance_debited(&log).await;
                 }
             }
         }
@@ -631,9 +637,8 @@ impl ChainListener {
         // 1. Update in-memory scheduler (per-batch position)
         self.scheduler.on_player_joined(batch_id, position).await;
 
-        // 1b. Implicit dual-balance update: joinBatch debits from user's global balance
-        //     (virtual first, then real — mirrors _debitBalance in Vision.sol)
-        self.scheduler.on_batch_join_debit(player, balance).await;
+        // 1b. Dual-balance debit is now handled by the BalanceDebited event
+        //     (emitted by _debitBalance in Vision.sol with exact fromVirtual/fromReal amounts)
 
         // 2. Write to Postgres (position)
         if let Err(e) = sqlx::query(
@@ -1102,15 +1107,70 @@ impl ChainListener {
     }
 
     // =========================================================================
-    // Implicit balance updates from existing events (AUDIT FIX round 3)
+    // BalanceDebited event — authoritative dual-balance debit from _debitBalance
+    // =========================================================================
+
+    /// Handle BalanceDebited(address indexed user, uint256 fromVirtual, uint256 fromReal)
+    ///
+    /// Emitted by Vision._debitBalance whenever joinBatch or deposit debits from
+    /// the user's global balance. Provides exact per-pool amounts, replacing the
+    /// previous local computation in on_batch_join_debit.
+    async fn handle_balance_debited(&self, log: &ethers::types::Log) {
+        if log.topics.len() < 2 || log.data.len() < 64 {
+            warn!("BalanceDebited log too short, skipping");
+            return;
+        }
+
+        let user = Address::from(log.topics[1]);
+        let from_virtual = U256::from_big_endian(&log.data[0..32]);
+        let from_real = U256::from_big_endian(&log.data[32..64]);
+
+        // Update in-memory scheduler with exact debit amounts
+        if !from_virtual.is_zero() {
+            self.scheduler.on_virtual_balance_withdrawn(user, from_virtual).await;
+        }
+        if !from_real.is_zero() {
+            self.scheduler.on_real_balance_withdrawn(user, from_real).await;
+        }
+
+        // Persist to Postgres
+        if let Err(e) = sqlx::query(
+            "INSERT INTO vision_user_balances (user_address, real_balance, virtual_balance, updated_at)
+             VALUES ($1,
+                     (COALESCE((SELECT real_balance FROM vision_user_balances WHERE user_address = $1), '0')::numeric - $2::numeric)::text,
+                     (COALESCE((SELECT virtual_balance FROM vision_user_balances WHERE user_address = $1), '0')::numeric - $3::numeric)::text,
+                     NOW())
+             ON CONFLICT (user_address) DO UPDATE SET
+                 real_balance = (EXCLUDED.real_balance::numeric)::text,
+                 virtual_balance = (EXCLUDED.virtual_balance::numeric)::text,
+                 updated_at = NOW()"
+        )
+        .bind(format!("{:?}", user))
+        .bind(from_real.to_string())
+        .bind(from_virtual.to_string())
+        .execute(&self.pool)
+        .await
+        {
+            warn!(user = %user, error = %e, "Failed to persist BalanceDebited to Postgres");
+        }
+
+        debug!(
+            user = %user,
+            from_virtual = %from_virtual,
+            from_real = %from_real,
+            "BalanceDebited"
+        );
+    }
+
+    // =========================================================================
+    // Implicit balance updates from existing events
     // =========================================================================
     //
-    // PlayerJoined, RewardsClaimed, PlayerWithdrawn, ForceWithdrawn also change
-    // the user's global Vision balance, but don't emit dedicated balance events.
-    // These are handled in the existing handlers above with additional calls to
-    // the tick_scheduler's dual-balance methods.
+    // RewardsClaimed, PlayerWithdrawn, ForceWithdrawn credit realBalance via
+    // batch payouts. These are still handled in the existing handlers above
+    // with calls to tick_scheduler.on_batch_payout.
     //
-    // See handle_player_joined: calls on_batch_join_debit
+    // PlayerJoined debit is NOW handled by BalanceDebited event above.
     // See handle_rewards_claimed: calls on_batch_payout
     // See handle_player_withdrawn: calls on_batch_payout
     // See handle_force_withdrawn: calls on_batch_payout
@@ -1388,6 +1448,7 @@ mod tests {
         assert_ne!(topics.balance_deposited, H256::zero());
         assert_ne!(topics.real_balance_withdrawn, H256::zero());
         assert_ne!(topics.withdraw_to_arb_requested, H256::zero());
+        assert_ne!(topics.balance_debited, H256::zero());
 
         // All topics should be distinct
         let all = vec![
@@ -1405,6 +1466,7 @@ mod tests {
             topics.balance_deposited,
             topics.real_balance_withdrawn,
             topics.withdraw_to_arb_requested,
+            topics.balance_debited,
         ];
         let unique: std::collections::HashSet<_> = all.iter().collect();
         assert_eq!(unique.len(), all.len(), "All event topics must be unique");

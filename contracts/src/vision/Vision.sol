@@ -766,5 +766,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         totalVirtualBalance -= fromVirtual;
         realBalance[user] -= fromReal;
         totalRealBalance -= fromReal;
+
+        emit BalanceDebited(user, fromVirtual, fromReal);
     }
 }

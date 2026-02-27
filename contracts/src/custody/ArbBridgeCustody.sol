@@ -526,6 +526,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
         // Delete before external calls (CEI pattern)
         delete visionDeposits[orderId];
 
+        if (usdcAmount > visionReserve) usdcAmount = visionReserve; // truncation guard
         visionReserve -= usdcAmount;
 
         if (usdcAmount > 0) {
@@ -555,6 +556,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
         withdrawProcessed[withdrawId] = true;
 
         uint256 usdcAmount = DecimalLib.toUsdc(amount);
+        if (usdcAmount > visionReserve) usdcAmount = visionReserve; // truncation guard
         visionReserve -= usdcAmount;
 
         if (usdcAmount > 0) {

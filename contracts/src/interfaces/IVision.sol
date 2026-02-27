@@ -144,6 +144,9 @@ interface IVision {
     /// @notice Emitted when virtual balance withdrawal to Arbitrum is requested
     event WithdrawToArbRequested(address indexed user, uint256 amount, uint256 indexed withdrawId);
 
+    /// @notice Emitted when _debitBalance draws from user's dual balance pools
+    event BalanceDebited(address indexed user, uint256 fromVirtual, uint256 fromReal);
+
     // ============ BATCH MANAGEMENT ============
 
     /// @notice Create a new batch for a sourceId. Idempotent: if sourceId already has
