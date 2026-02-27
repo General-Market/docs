@@ -2,6 +2,7 @@ import { MetadataRoute } from 'next'
 import { locales, defaultLocale } from '@/i18n/config'
 import { getItpSummaries } from '@/lib/api/server-data'
 import { getSourceIds } from '@/lib/vision/sources'
+import { getArticleSlugs, getArticle } from '@/lib/learn/articles'
 
 const baseUrl = 'https://generalmarket.io'
 
@@ -32,7 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/about', changeFrequency: 'monthly' as const, priority: 0.7 },
     { path: '/privacy', changeFrequency: 'monthly', priority: 0.3 },
     { path: '/terms', changeFrequency: 'monthly', priority: 0.3 },
-    { path: '/learn/what-are-itps', changeFrequency: 'monthly' as const, priority: 0.8 },
+    { path: '/learn', changeFrequency: 'weekly' as const, priority: 0.8 },
   ]
 
   const entries: MetadataRoute.Sitemap = []
@@ -68,6 +69,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: 'daily' as const,
       priority: 0.6,
+      alternates: alternatesForPath(path),
+    })
+  }
+
+  // Learn articles — one entry per MDX article with locale alternates
+  for (const slug of getArticleSlugs()) {
+    const article = getArticle(slug)
+    const path = `/learn/${slug}`
+    entries.push({
+      url: localeUrl(path, defaultLocale),
+      lastModified: article ? new Date(article.frontmatter.date) : new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
       alternates: alternatesForPath(path),
     })
   }

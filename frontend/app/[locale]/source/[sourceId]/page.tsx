@@ -44,9 +44,38 @@ export default async function SourcePage({ params }: Props) {
     notFound()
   }
 
+  const category = getCategoryLabel(source.category)
+
+  const datasetJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Dataset',
+    name: `${source.name} — Vision Market Data`,
+    description: `Live prediction market data feed for ${source.name}. ${source.prefixes.length} market series in the ${category} category. Updated in real-time on Vision (General Market).`,
+    creator: {
+      '@type': 'Organization',
+      name: 'General Market',
+      url: 'https://www.generalmarket.io',
+    },
+    temporalCoverage: '2025/..',
+    license: 'https://www.generalmarket.io/terms',
+    keywords: [source.name, category, 'prediction market', 'market data', 'Vision'],
+  }
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.generalmarket.io' },
+      { '@type': 'ListItem', position: 2, name: 'Data Sources', item: 'https://www.generalmarket.io/sources' },
+      { '@type': 'ListItem', position: 3, name: source.name },
+    ],
+  }
+
   return (
     <main className="min-h-screen bg-page flex flex-col">
       <Header />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(datasetJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <SourceDetailCategoryNav sourceCategory={source.category} />
       <div className="flex-1 overflow-x-clip">
         <SourceDetail sourceId={sourceId} />
