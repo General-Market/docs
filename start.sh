@@ -347,13 +347,14 @@ else
     cast send --private-key $DEPLOYER_KEY $ARB_USDC "mint(address,uint256)" $TEST_USER 50000000000 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
     echo -e "  ${GREEN}Test user funded with 50k L3_WUSDC (L3) + 50k ARB_USDC (both chains)${NC}"
 
-    # Fund Vision bots (Players for Vision) — Vision lives on Arbitrum
-    cast send --private-key $DEPLOYER_KEY --value 100ether $VISION_BOT_ADDRESS --rpc-url $ARB_RPC_URL > /dev/null 2>&1
-    cast send --private-key $DEPLOYER_KEY $ARB_USDC "mint(address,uint256)" $VISION_BOT_ADDRESS 50000000000 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
-    echo -e "  ${GREEN}Vision bot 1 $VISION_BOT_ADDRESS funded with 100 ETH + 50k ARB_USDC (Arb)${NC}"
-    cast send --private-key $DEPLOYER_KEY --value 100ether $VISION_BOT2_ADDRESS --rpc-url $ARB_RPC_URL > /dev/null 2>&1
-    cast send --private-key $DEPLOYER_KEY $ARB_USDC "mint(address,uint256)" $VISION_BOT2_ADDRESS 50000000000 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
-    echo -e "  ${GREEN}Vision bot 2 $VISION_BOT2_ADDRESS funded with 100 ETH + 50k ARB_USDC (Arb)${NC}"
+    # Fund Vision bots (Players for Vision) — Vision now lives on L3
+    # Fund with GM (native) for gas + L3_WUSDC (18 dec) for deposits
+    cast send --private-key $DEPLOYER_KEY --value 100ether $VISION_BOT_ADDRESS --rpc-url $RPC_URL > /dev/null 2>&1
+    cast send --private-key $DEPLOYER_KEY $L3_WUSDC "mint(address,uint256)" $VISION_BOT_ADDRESS 50000000000000000000000 --rpc-url $RPC_URL > /dev/null 2>&1
+    echo -e "  ${GREEN}Vision bot 1 $VISION_BOT_ADDRESS funded with 100 GM + 50k L3_WUSDC (L3)${NC}"
+    cast send --private-key $DEPLOYER_KEY --value 100ether $VISION_BOT2_ADDRESS --rpc-url $RPC_URL > /dev/null 2>&1
+    cast send --private-key $DEPLOYER_KEY $L3_WUSDC "mint(address,uint256)" $VISION_BOT2_ADDRESS 50000000000000000000000 --rpc-url $RPC_URL > /dev/null 2>&1
+    echo -e "  ${GREEN}Vision bot 2 $VISION_BOT2_ADDRESS funded with 100 GM + 50k L3_WUSDC (L3)${NC}"
 
     # ============ STEP 3: 100-asset ITP ============
     echo -e "${BLUE}[3/$TOTAL_STEPS] Deploying 100-asset ITP...${NC}"
@@ -738,19 +739,19 @@ print(f'  Regenerated frontend/public/deployed-assets.json with {len(assets)} un
     set -e
     cd ..
 
-    # ============ STEP 6: Vision on Arbitrum ============
+    # ============ STEP 6: Vision on L3 (dual-balance architecture) ============
     if [ "$VISION_ENABLED" = true ]; then
-    echo -e "${BLUE}[6/$TOTAL_STEPS] Deploying Vision contract on Arbitrum...${NC}"
+    echo -e "${BLUE}[6/$TOTAL_STEPS] Deploying Vision contract on L3...${NC}"
 
     ISSUER_REG_ADDR=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['IssuerRegistry'])")
-    ARB_USDC_ADDR=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['ARB_USDC'])")
+    L3_WUSDC_ADDR=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['L3_WUSDC'])")
 
     cd contracts
     set +e
     ISSUER_REGISTRY=$ISSUER_REG_ADDR \
-    USDC_ADDRESS=$ARB_USDC_ADDR \
+    USDC_ADDRESS=$L3_WUSDC_ADDR \
     forge script script/DeployVision.s.sol:DeployVision \
-        --broadcast --slow --rpc-url $ARB_RPC_URL > ../logs/deploy-vision.log 2>&1
+        --broadcast --slow --rpc-url $RPC_URL > ../logs/deploy-vision.log 2>&1
 
     if [ $? -eq 0 ]; then
         echo -e "  ${GREEN}Vision contract deployed${NC}"
@@ -788,7 +789,7 @@ json.dump(deploy, open('../deployments/active-deployment.json', 'w'), indent=2)
         set +e
         VISION_ADDRESS=$VISION_ADDR_BATCH \
         forge script script/DeployAllVisionBatches.s.sol:DeployAllVisionBatches \
-            --broadcast --slow --rpc-url $ARB_RPC_URL > ../logs/deploy-vision-batches.log 2>&1
+            --broadcast --slow --rpc-url $RPC_URL > ../logs/deploy-vision-batches.log 2>&1
 
         if [ $? -eq 0 ]; then
             BATCH_COUNT=$(python3 -c "import json; print(json.load(open('../deployments/vision-batches.json')).get('batchCount',0))" 2>/dev/null || echo "0")
@@ -872,10 +873,6 @@ ISSUER_KEYS=(
     "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"  # Account 9
 )
 
-SIG_THRESHOLD=$((ISSUER_COUNT * 2 / 3 + 1))
-if [ $SIG_THRESHOLD -lt 2 ]; then SIG_THRESHOLD=2; fi
-if [ $SIG_THRESHOLD -gt $ISSUER_COUNT ]; then SIG_THRESHOLD=$ISSUER_COUNT; fi
-
 for i in $(seq 1 $ISSUER_COUNT); do
     PORT=$((9000 + i))
     BLS_IDX=$((i - 1))
@@ -883,7 +880,7 @@ for i in $(seq 1 $ISSUER_COUNT); do
     ISSUER_ARGS="--node-id $i --port $PORT --rpc $RPC_URL"
     ISSUER_ARGS="$ISSUER_ARGS --cycle-duration-ms 200 --min-cycle-gap-ms 20 --consensus-timeout-ms 150 --no-tls"
     ISSUER_ARGS="$ISSUER_ARGS --test-key-seeds --bls-key-seed-index $BLS_IDX"
-    ISSUER_ARGS="$ISSUER_ARGS --signature-threshold $SIG_THRESHOLD --num-issuers $ISSUER_COUNT"
+    ISSUER_ARGS="$ISSUER_ARGS --num-issuers $ISSUER_COUNT"
     ISSUER_ARGS="$ISSUER_ARGS --registry-sync"
     ISSUER_ARGS="$ISSUER_ARGS --ntp-server \"\""
     ISSUER_ARGS="$ISSUER_ARGS --log-level ${LOG_LEVEL}"
@@ -929,7 +926,9 @@ for i in $(seq 1 $ISSUER_COUNT); do
         ISSUER_ARGS="$ISSUER_ARGS --vision-address $VISION_ADDR_CHECK"
         ISSUER_ARGS="$ISSUER_ARGS --vision-database-url postgres://localhost/index_prices"
         ISSUER_ARGS="$ISSUER_ARGS --vision-data-node-url http://localhost:8200"
-        ISSUER_ARGS="$ISSUER_ARGS --vision-rpc-ws-url $ARB_RPC_URL"
+        ISSUER_ARGS="$ISSUER_ARGS --vision-rpc-ws-url $RPC_URL"
+        ISSUER_ARGS="$ISSUER_ARGS --vision-arb-rpc-url $ARB_RPC_URL"
+        ISSUER_ARGS="$ISSUER_ARGS --vision-arb-bridge-custody $ARB_CUSTODY"
         ISSUER_ARGS="$ISSUER_ARGS --vision-reveal-window-secs 0"
         ISSUER_ARGS="$ISSUER_ARGS --vision-tick-poll-interval-ms 500"
     fi
@@ -1049,7 +1048,7 @@ if [ -n "$VISION_ADDR_BOT" ] && [ "$VISION_ADDR_BOT" != "" ] && [ -f "$SCRIPT_DI
     # Bot 1: poll mode (joins batches as they appear)
     (
         cd "$SCRIPT_DIR"
-        L3_RPC_URL="$ARB_RPC_URL" \
+        L3_RPC_URL="$RPC_URL" \
         VISION_API_URL="http://localhost:10001" \
         DATA_NODE_URL="http://localhost:8200" \
         BOT_ADDRESS="$VISION_BOT_ADDRESS" \
@@ -1071,7 +1070,7 @@ if [ -n "$VISION_ADDR_BOT" ] && [ "$VISION_ADDR_BOT" != "" ] && [ -f "$SCRIPT_DI
     # Bot 2: poll mode (joins batches as they appear)
     (
         cd "$SCRIPT_DIR"
-        L3_RPC_URL="$ARB_RPC_URL" \
+        L3_RPC_URL="$RPC_URL" \
         VISION_API_URL="http://localhost:10001" \
         DATA_NODE_URL="http://localhost:8200" \
         BOT_ADDRESS="$VISION_BOT2_ADDRESS" \

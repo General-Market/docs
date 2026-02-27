@@ -9,10 +9,9 @@ import { useSubmitBitmap } from '@/hooks/vision/useSubmitBitmap'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import type { BetDirection } from '@/lib/vision/bitmap'
 import { getTickState, getMultiplier } from '@/lib/vision/tick'
+import { VISION_USDC_DECIMALS, VISION_ADDRESS } from '@/lib/vision/constants'
 import batchConfig from '@/lib/contracts/vision-batches.json'
 import StrategyList from './StrategyList'
-
-const VISION_ADDRESS = (process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000') as `0x${string}`
 
 interface BatchEntryPanelProps {
   bitmapEditor: BitmapEditor
@@ -116,8 +115,8 @@ export default function BatchEntryPanel({
   const handleEnterBatch = useCallback(() => {
     if (!activeBatch || !canSubmit || !configHash) return
 
-    // Convert USDC amount to 6-decimal bigint (USDC = 6 decimals)
-    const depositAmount = BigInt(Math.round(stakeValue * 1e6))
+    // Convert USDC amount to 18-decimal bigint (L3 USDC = 18 decimals)
+    const depositAmount = BigInt(Math.round(stakeValue * 1e18))
 
     // Build bets array from bitmap state in market order
     const bets: BetDirection[] = marketIds.map((id) => {
@@ -145,7 +144,7 @@ export default function BatchEntryPanel({
     if (isSubmitting) return 'Submitting...'
     if (isJoinConfirming) return 'Confirming...'
     if (isJoinPending) return 'Waiting for wallet...'
-    if (joinStep === 'approving') return 'Approving USDC...'
+    if (joinStep === 'checking-balance') return 'Checking balance...'
     if (joinStep === 'joining') return 'Joining batch...'
     if (stakeValue > 0) return `Enter Batch \u2014 ${stakeValue} USDC`
     return 'Enter Batch'

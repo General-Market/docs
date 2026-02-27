@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { useAccount } from 'wagmi'
 import { formatUnits } from 'viem'
+import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 import type { BatchInfo } from '@/hooks/vision/useBatches'
 import { useBatchHistory } from '@/hooks/vision/useBatchHistory'
 import { useBatchMetadata } from '@/hooks/vision/useBatchMetadata'
@@ -122,14 +123,14 @@ export function ExpandedBatch({ batchId, batch }: ExpandedBatchProps) {
     }
 
     const pnl = position.balance - position.totalDeposited + position.totalClaimed
-    const pnlNum = parseFloat(formatUnits(pnl, 6))
+    const pnlNum = parseFloat(formatUnits(pnl, VISION_USDC_DECIMALS))
     const multiplier = position.totalDeposited > 0n
       ? Number(((position.balance + position.totalClaimed) * 10000n) / position.totalDeposited) / 10000
       : 0
 
     return {
-      balance: `$${parseFloat(formatUnits(position.balance, 6)).toFixed(2)}`,
-      stake: `$${parseFloat(formatUnits(position.stakePerTick, 6)).toFixed(2)}`,
+      balance: `$${parseFloat(formatUnits(position.balance, VISION_USDC_DECIMALS)).toFixed(2)}`,
+      stake: `$${parseFloat(formatUnits(position.stakePerTick, VISION_USDC_DECIMALS)).toFixed(2)}`,
       pnl: `${pnlNum >= 0 ? '+' : ''}$${pnlNum.toFixed(2)}`,
       pnlClass: pnlNum >= 0 ? 'text-color-up' : 'text-color-down',
       multiplier: `${multiplier.toFixed(2)}x`,

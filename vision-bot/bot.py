@@ -32,7 +32,7 @@ logging.basicConfig(
 )
 log = logging.getLogger("vision-bot")
 
-DECIMALS = 6
+DECIMALS = 18
 
 
 def run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn, feed):
@@ -131,7 +131,9 @@ def run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn, feed):
             batch_id, market_count, bets.count("UP"), bets.count("DOWN"),
         )
 
+        # Dual-balance flow: deposit USDC into Vision balance, then joinBatch pulls from it
         executor.approve_usdc(deposit_wei)
+        executor.deposit_balance(deposit_wei)
         stake_wei = cfg["stake"] * 10**DECIMALS
         executor.join_batch(batch_id, config_hash, deposit_wei, stake_wei, bm_hash)
 
@@ -163,9 +165,10 @@ def main():
         sys.exit(1)
 
     # Load deployment addresses
+    # Vision.sol now lives on L3, uses L3_WUSDC (18 decimals)
     deploy = load_deployment()
     vision_addr = deploy["contracts"]["Vision"]
-    usdc_addr = deploy["contracts"]["ARB_USDC"]
+    usdc_addr = deploy["contracts"]["L3_WUSDC"]
 
     executor = Executor(cfg["rpc_url"], private_key, vision_addr, usdc_addr)
     risk = RiskCheck(cfg["max_batches"], cfg["max_exposure"] * 10**DECIMALS)

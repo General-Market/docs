@@ -9,6 +9,10 @@
 - [DECISION] Per-order parallelism for buy/sell: each order spawned into its own tokio task within run_cross_chain_processing/run_cross_chain_sell_processing. L3-native kept sequential (processes batches collectively, not individually).
 - [DECISION] CycleManager signal checks AtomicBool flags OR orchestrator in-flight orders — ensures fast cycles continue while spawned tasks run.
 - [DECISION] registry_sync compute_threshold also updated to ceil(2n/3) — same formula everywhere for consistency.
+- [FAILED] start.sh computed its own threshold using old floor(2n/3)+1 formula and passed it via `--signature-threshold` CLI override, masking the code fix. Bridge was using min_signatures=3 instead of 2. Fixed by removing the CLI override — issuer now uses its own compute_threshold(on_chain_active).
+- [DECISION] Removed SIG_THRESHOLD computation and --signature-threshold flag from start.sh — threshold is now always computed by the issuer binary from on-chain activeIssuerCount.
+- [FAILED] BLSVerifier.sol and IssuerRegistry.sol on-chain threshold check still used old formula `activeCount * 2 / 3 + 1 = 3` for n=3 issuers — issuer submitted tx with 2 sigs (passing its own threshold) but contract reverted with BLSVerifier__BelowThreshold. Fixed by changing both to `(activeCount * 2 + 2) / 3` (ceil(2n/3) = 2 for n=3).
+- [DECISION] Threshold formula now consistent across all 3 layers: issuer Rust code, Solidity BLSVerifier, Solidity IssuerRegistry — all use ceil(2n/3).
 
 ## Session: 20260227-2200-f4k9 (Vision P2Pool brief alignment — 3 deviation fixes)
 
@@ -4264,3 +4268,14 @@ The backtester currently supports one rebalance method: **periodic time-based re
 [FAILED] data-node crashes with `Error: Os { code: 2, kind: NotFound }` when started via `--vision` mode — `start.sh` deletes `data/symbol-map.json` on fresh deploy (line 228), then steps 3-5 (ITP deploy) normally regenerate it. But `--vision` skips steps 3-5, so the file is never recreated. data-node's `api::load_symbol_map()` uses `?` propagation, crashes main on missing file.
 
 [DECISION] Added guard after vision-only skip block: if `--vision` and `data/symbol-map.json` doesn't exist, create empty `{}` for symbol-map and `[]` for assets.json. Data-node boots with 0 tracked symbols (fine for vision — it only needs market_data providers, not ITP price collector).
+
+## Session: 20260227-2345-d9b2 (Vision First Deposit — Frontend, Bot, start.sh)
+
+- [DECISION] Created centralized constants file `frontend/lib/vision/constants.ts` — single source of truth for VISION_USDC_DECIMALS (18), ARB_USDC_DECIMALS (6), contract addresses, chain IDs, and gas thresholds. All components/hooks import from here instead of hardcoding.
+- [DECISION] useDepositToVision uses raw wagmi `useWriteContract` instead of custom `useChainWriteContract` — the cross-chain deposit targets Arbitrum, but useChainWriteContract always injects `activeChainId` (L3). Raw hook allows explicit `chainId: arbChainId`.
+- [DECISION] useDepositToVision polls L3 virtualBalance every 3s with 2min timeout to detect issuer credit — simpler than WebSocket subscription, matches the existing polling pattern in the codebase.
+- [DECISION] useJoinBatch (both vision/ and p2pool/) completely removed approve flow — under dual-balance, joinBatch pulls from Vision internal balance. Hook now reads `balanceOf(address)` and rejects if insufficient with "Deposit USDC first" message.
+- [DECISION] Bot adds `executor.deposit_balance(deposit_wei)` before `join_batch()` — L3 direct deposit flow: approve L3 USDC → depositBalance → joinBatch. Bot manages its own Vision balance.
+- [DECISION] start.sh bot funding changed from Arb USDC (6 dec) to L3 WUSDC (18 dec) — amounts updated from 50000000000 (50k * 1e6) to 50000000000000000000000 (50k * 1e18).
+- [DECISION] wagmi.ts multi-chain config: L3 as primary chain (activeChain) + Arbitrum as secondary — transports configured separately for each chain ID. Allows cross-chain deposit UI.
+- [DECISION] All formatUnits/parseUnits calls across vision and p2pool components changed from hardcoded `6` to `VISION_USDC_DECIMALS` (18) — centralized constant prevents decimal mismatch bugs.

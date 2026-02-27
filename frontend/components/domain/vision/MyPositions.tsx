@@ -6,13 +6,14 @@ import { useAccount } from 'wagmi'
 import { formatUnits } from 'viem'
 import { usePlayerBatches, type PlayerBatchPosition } from '@/hooks/vision/usePlayerBatches'
 import { useBatchMetadata } from '@/hooks/vision/useBatchMetadata'
+import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 
-function fmtUsdc(value: bigint, decimals = 6): string {
+function fmtUsdc(value: bigint, decimals = VISION_USDC_DECIMALS): string {
   if (value === 0n) return '0.00'
   return parseFloat(formatUnits(value, decimals)).toFixed(2)
 }
 
-function fmtPnl(value: bigint, decimals = 6): string {
+function fmtPnl(value: bigint, decimals = VISION_USDC_DECIMALS): string {
   const num = parseFloat(formatUnits(value, decimals))
   return `${num >= 0 ? '+' : ''}${num.toFixed(2)}`
 }

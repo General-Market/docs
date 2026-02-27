@@ -2,20 +2,16 @@
 
 import { useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { useAccount, useReadContract } from 'wagmi'
+import { useAccount } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
 import { useDeposit } from '@/hooks/vision/useDeposit'
-import { VISION_ABI } from '@/lib/contracts/vision-abi'
-import { ERC20_ABI } from '@/lib/contracts/index-protocol-abi'
+import { useVisionBalance } from '@/hooks/vision/useVisionBalance'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
-
-const VISION_ADDRESS = (
-  process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000'
-) as `0x${string}`
+import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 
 interface DepositModalProps {
   batchId: number
-  /** Current on-chain balance in the batch (USDC, 6 decimals) */
+  /** Current on-chain balance in the batch (USDC, 18 decimals) */
   currentBalance?: string
   onClose: () => void
 }
@@ -40,25 +36,11 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
     reset,
   } = useDeposit()
 
-  // Read USDC address from Vision contract
-  const { data: usdcAddress } = useReadContract({
-    address: VISION_ADDRESS,
-    abi: VISION_ABI,
-    functionName: 'USDC',
-    query: { enabled: VISION_ADDRESS !== '0x0000000000000000000000000000000000000000' },
-  })
+  // Read user's Vision balance (dual-balance architecture)
+  const { total: visionBalance } = useVisionBalance()
 
-  // Read user's USDC balance
-  const { data: usdcBalance } = useReadContract({
-    address: usdcAddress as `0x${string}` | undefined,
-    abi: ERC20_ABI,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    query: { enabled: !!address && !!usdcAddress },
-  })
-
-  const parsedAmount = amount ? parseUnits(amount, 6) : 0n
-  const balance = (usdcBalance as bigint | undefined) ?? 0n
+  const parsedAmount = amount ? parseUnits(amount, VISION_USDC_DECIMALS) : 0n
+  const balance = visionBalance
   const insufficientBalance = parsedAmount > 0n && parsedAmount > balance
 
   const handleDeposit = useCallback(() => {
@@ -136,7 +118,7 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
                 <div className="bg-muted border border-border-light rounded-xl p-4 flex justify-between items-center">
                   <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('deposit_modal.batch_balance')}</span>
                   <span className="text-lg font-bold text-text-primary tabular-nums font-mono">
-                    {parseFloat(formatUnits(BigInt(currentBalance), 6)).toFixed(2)} USDC
+                    {parseFloat(formatUnits(BigInt(currentBalance), VISION_USDC_DECIMALS)).toFixed(2)} USDC
                   </span>
                 </div>
               )}
@@ -146,7 +128,7 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
                 <div className="flex justify-between items-center mb-2">
                   <label className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('deposit_modal.amount_label')}</label>
                   <span className="text-xs text-text-muted font-mono">
-                    {t('deposit_modal.balance_label', { amount: balance > 0n ? parseFloat(formatUnits(balance, 6)).toFixed(2) : '0.00' })}
+                    {t('deposit_modal.balance_label', { amount: balance > 0n ? parseFloat(formatUnits(balance, VISION_USDC_DECIMALS)).toFixed(2) : '0.00' })}
                   </span>
                 </div>
                 <input

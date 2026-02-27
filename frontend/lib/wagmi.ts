@@ -2,12 +2,25 @@ import { createConfig, http, fallback } from 'wagmi'
 import { type Chain } from 'wagmi/chains'
 import { injected } from 'wagmi/connectors'
 
-// RPC URL from environment - defaults to localhost for local dev
+// RPC URLs from environment
 const envRpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'
+const envL3RpcUrl = process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
 
-// Chain definition — frontend connects to Arbitrum only; L3 bridging is backend-side
+// Chain definition — L3 (Index Orbit chain where Vision.sol lives)
 export const indexL3: Chain = {
-  id: Number(process.env.NEXT_PUBLIC_CHAIN_ID) || 421611337,
+  id: Number(process.env.NEXT_PUBLIC_L3_CHAIN_ID) || Number(process.env.NEXT_PUBLIC_CHAIN_ID) || 421611337,
+  name: 'Index L3',
+  nativeCurrency: { name: 'General Market', symbol: 'GM', decimals: 18 },
+  rpcUrls: {
+    default: { http: [envL3RpcUrl] },
+    public: { http: [envL3RpcUrl] },
+  },
+  testnet: true,
+}
+
+// Chain definition — Arbitrum (for cross-chain deposits via ArbBridgeCustody)
+export const arbitrumChain: Chain = {
+  id: Number(process.env.NEXT_PUBLIC_ARB_CHAIN_ID) || 42161,
   name: 'Index Arbitrum',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
   rpcUrls: {
@@ -17,12 +30,34 @@ export const indexL3: Chain = {
   testnet: true,
 }
 
-// RPC configuration with fallback support
+// RPC configuration with fallback support — L3
+const l3RpcUrl = process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
+const l3FallbackRpcUrl = process.env.NEXT_PUBLIC_L3_RPC_FALLBACK_URL
+
+const l3Transport = l3FallbackRpcUrl
+  ? fallback([
+      http(l3RpcUrl, {
+        timeout: 5_000,
+        retryCount: 2,
+        retryDelay: 1_000
+      }),
+      http(l3FallbackRpcUrl, {
+        timeout: 5_000,
+        retryCount: 2,
+        retryDelay: 1_000
+      })
+    ])
+  : http(l3RpcUrl, {
+      timeout: 10_000,
+      retryCount: 3,
+      retryDelay: 1_000
+    })
+
+// RPC configuration — Arbitrum
 const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'
 const fallbackRpcUrl = process.env.NEXT_PUBLIC_RPC_FALLBACK_URL
 
-// Build transport with fallback if configured
-const chainTransport = fallbackRpcUrl
+const arbTransport = fallbackRpcUrl
   ? fallback([
       http(rpcUrl, {
         timeout: 5_000,
@@ -41,16 +76,18 @@ const chainTransport = fallbackRpcUrl
       retryDelay: 1_000
     })
 
-// Plain wagmi config with injected connector (MetaMask, etc.)
+// Multi-chain wagmi config: L3 (primary) + Arbitrum (for deposits)
 export const wagmiConfig = createConfig({
-  chains: [indexL3],
+  chains: [indexL3, arbitrumChain],
   connectors: [injected()],
   transports: {
-    [indexL3.id]: chainTransport,
+    [indexL3.id]: l3Transport,
+    [arbitrumChain.id]: arbTransport,
   },
   ssr: true,
 })
 
-// Export the active chain for use in components
+// Export the active chain for use in components (L3 is the primary chain)
 export const activeChain = indexL3
 export const activeChainId = indexL3.id
+export const arbChainId = arbitrumChain.id

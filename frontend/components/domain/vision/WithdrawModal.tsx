@@ -9,10 +9,7 @@ import { useClaim } from '@/hooks/vision/useClaim'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { usePostHogTracker } from '@/hooks/usePostHog'
-
-const VISION_ADDRESS = (
-  process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000'
-) as `0x${string}`
+import { VISION_ADDRESS, VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 
 type Mode = 'choose' | 'withdraw' | 'claim'
 
@@ -117,7 +114,7 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
   const hasClaimableTicks = lastClaimedTick < (batchInfo?.createdAtTick ?? 0n) + 100n // rough check
 
   const handleWithdraw = useCallback(() => {
-    capture('vision_withdraw_submitted', { batch_id: batchId, amount: onChainBalance > 0n ? formatUnits(onChainBalance, 6) : '0' })
+    capture('vision_withdraw_submitted', { batch_id: batchId, amount: onChainBalance > 0n ? formatUnits(onChainBalance, VISION_USDC_DECIMALS) : '0' })
     setMode('withdraw')
     withdraw(BigInt(batchId))
   }, [batchId, withdraw, capture, onChainBalance])
@@ -175,7 +172,7 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
                 </p>
                 {mode === 'withdraw' && withdrawProof && (
                   <p className="text-text-secondary text-sm">
-                    {t('withdraw_modal.usdc_returned', { amount: parseFloat(formatUnits(BigInt(withdrawProof.balance), 6)).toFixed(2) })}
+                    {t('withdraw_modal.usdc_returned', { amount: parseFloat(formatUnits(BigInt(withdrawProof.balance), VISION_USDC_DECIMALS)).toFixed(2) })}
                   </p>
                 )}
                 {mode === 'claim' && claimProof && (
@@ -209,13 +206,13 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.on_chain_balance')}</span>
                   <span className="text-lg font-bold text-text-primary tabular-nums font-mono">
-                    {onChainBalance > 0n ? parseFloat(formatUnits(onChainBalance, 6)).toFixed(2) : '0.00'} USDC
+                    {onChainBalance > 0n ? parseFloat(formatUnits(onChainBalance, VISION_USDC_DECIMALS)).toFixed(2) : '0.00'} USDC
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.total_deposited')}</span>
                   <span className="text-sm text-text-secondary tabular-nums font-mono">
-                    {totalDeposited > 0n ? parseFloat(formatUnits(totalDeposited, 6)).toFixed(2) : '0.00'} USDC
+                    {totalDeposited > 0n ? parseFloat(formatUnits(totalDeposited, VISION_USDC_DECIMALS)).toFixed(2) : '0.00'} USDC
                   </span>
                 </div>
                 {profit > 0n && (
@@ -223,13 +220,13 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.profit')}</span>
                       <span className="text-sm text-color-up tabular-nums font-mono">
-                        +{parseFloat(formatUnits(profit, 6)).toFixed(2)} USDC
+                        +{parseFloat(formatUnits(profit, VISION_USDC_DECIMALS)).toFixed(2)} USDC
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.est_fee')}</span>
                       <span className="text-sm text-text-muted tabular-nums font-mono">
-                        -{parseFloat(formatUnits(estimatedFee, 6)).toFixed(2)} USDC
+                        -{parseFloat(formatUnits(estimatedFee, VISION_USDC_DECIMALS)).toFixed(2)} USDC
                       </span>
                     </div>
                   </>

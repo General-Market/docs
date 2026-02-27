@@ -162,6 +162,38 @@ VISION_ABI = [
         ],
         "outputs": [],
     },
+    {
+        "name": "depositBalance",
+        "type": "function",
+        "stateMutability": "nonpayable",
+        "inputs": [
+            {"name": "amount", "type": "uint256"},
+        ],
+        "outputs": [],
+    },
+    {
+        "name": "withdrawBalance",
+        "type": "function",
+        "stateMutability": "nonpayable",
+        "inputs": [
+            {"name": "amount", "type": "uint256"},
+        ],
+        "outputs": [],
+    },
+    {
+        "name": "balanceOf",
+        "type": "function",
+        "stateMutability": "view",
+        "inputs": [{"name": "user", "type": "address"}],
+        "outputs": [{"name": "", "type": "uint256"}],
+    },
+    {
+        "name": "realBalance",
+        "type": "function",
+        "stateMutability": "view",
+        "inputs": [{"name": "user", "type": "address"}],
+        "outputs": [{"name": "", "type": "uint256"}],
+    },
 ]
 
 ISSUER_REGISTRY_ABI = [
@@ -349,6 +381,19 @@ class Executor:
             "Deposited %d more into batch=%d (tx: %s)",
             amount, batch_id, tx_hash.hex()[:16],
         )
+
+    def deposit_balance(self, amount: int):
+        """Deposit USDC into Vision balance (dual-balance architecture).
+        Must approve USDC first. Credits realBalance[bot]."""
+        tx = self.vision.functions.depositBalance(
+            amount
+        ).build_transaction(self._build_tx(gas=300_000))
+        tx_hash = self._sign_and_send(tx)
+        logger.info("depositBalance %d (tx: %s)", amount, tx_hash.hex()[:16])
+
+    def vision_balance(self) -> int:
+        """Read total Vision balance (realBalance + virtualBalance)."""
+        return self.vision.functions.balanceOf(self.bot_addr).call()
 
 
 # ── Issuer discovery ───────────────────────────────────────────

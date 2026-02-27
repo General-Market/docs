@@ -129,7 +129,7 @@ def load_config(path=None):
         "auto_withdraw": True,
         "claim_above": 5,
         "withdraw_below": 2,
-        "rpc_url": "http://localhost:8546",
+        "rpc_url": "http://localhost:8545",
         "vision_api": "http://localhost:10001",
         "data_node": "http://localhost:8200",
         "issuer_discovery": "static",
