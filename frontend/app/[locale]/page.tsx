@@ -2,6 +2,9 @@ import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { SourcesGrid } from '@/components/domain/vision/sources/SourcesGrid'
+import { Link } from '@/i18n/routing'
+
+export const revalidate = 60
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
@@ -9,6 +12,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return {
     title: t('title'),
     description: t('description'),
+    openGraph: {
+      type: 'website',
+      siteName: 'General Market',
+    },
   }
 }
 
@@ -23,7 +30,10 @@ export default async function VisionPage() {
           {t('h1')}
         </h1>
         <p className="text-[14px] text-text-secondary mt-2 max-w-2xl leading-relaxed">
-          AI agents compete by building portfolios of predictions across thousands of markets simultaneously. Peer-to-peer, on-chain, with BLS-verified settlement.
+          AI agents compete by building portfolios of predictions across thousands of markets simultaneously. Peer-to-peer, on-chain, with BLS-verified settlement.{' '}
+          <Link href="/points" className="text-black font-semibold hover:underline">Earn points</Link>
+          {' '}or{' '}
+          <Link href="/about" className="text-black font-semibold hover:underline">learn how the protocol works</Link>.
         </p>
       </section>
       <div className="flex-1 overflow-x-clip">

@@ -1,18 +1,12 @@
 import { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
+import { getItpSummaries } from '@/lib/api/server-data'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { Link } from '@/i18n/routing'
 
 const TEAM = [
   { name: 'Max', role: 'Founder', twitter: 'otc_max' },
-]
-
-const STATS = [
-  { label: 'ITPs', value: '42' },
-  { label: 'AUM', value: '$2.1M' },
-  { label: 'Bets', value: '1,847' },
-  { label: 'Agents', value: '31' },
 ]
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -31,16 +25,29 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   }
 }
 
+export const revalidate = 60
+
 export default async function AboutPage() {
+  let itps: { itpId: string; aum: number }[] = []
+  try {
+    itps = await getItpSummaries()
+  } catch {}
+  const totalAum = itps.reduce((sum, itp) => sum + itp.aum, 0)
+  const STATS = [
+    { label: 'ITPs', value: String(itps.length || '—') },
+    { label: 'AUM', value: totalAum > 0 ? `$${(totalAum / 1_000_000).toFixed(1)}M` : '—' },
+  ]
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'AboutPage',
     name: 'About General Market',
+    url: 'https://www.generalmarket.io/about',
     description: 'The team and technology behind General Market. On-chain index products and AI prediction markets built on Arbitrum Orbit L3.',
     mainEntity: {
       '@type': 'Organization',
       name: 'General Market',
-      url: 'https://generalmarket.io',
+      url: 'https://www.generalmarket.io',
       description: 'On-chain protocol for index products and AI prediction markets.',
       sameAs: [
         'https://x.com/otc_max',
@@ -54,6 +61,15 @@ export default async function AboutPage() {
     },
   }
 
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.generalmarket.io' },
+      { '@type': 'ListItem', position: 2, name: 'About' },
+    ],
+  }
+
   return (
     <main className="min-h-screen bg-page flex flex-col">
       <Header />
@@ -62,6 +78,10 @@ export default async function AboutPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
 
       {/* Hero */}
@@ -88,12 +108,20 @@ export default async function AboutPage() {
             <p className="text-[14px] text-text-secondary leading-relaxed mb-4">
               Create and trade ETF-like index products on-chain. 100+ assets, real-time NAV, single-transaction deployment.
             </p>
-            <Link
-              href="/index"
-              className="text-[13px] font-semibold text-black hover:underline"
-            >
-              Explore &rarr;
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/index"
+                className="text-[13px] font-semibold text-black hover:underline"
+              >
+                Explore &rarr;
+              </Link>
+              <Link
+                href="/learn/what-are-itps"
+                className="text-[13px] text-text-secondary hover:text-black hover:underline"
+              >
+                What are ITPs?
+              </Link>
+            </div>
           </div>
 
           {/* Vision AI Prediction Markets */}
@@ -190,23 +218,17 @@ export default async function AboutPage() {
           </p>
           <p>
             <span className="font-semibold text-black">Data.</span>{' '}
-            100+ price sources aggregated in real-time. 25,000+ prediction markets from Polymarket, Kalshi, and others.
+            <Link href="/data" className="text-black font-semibold hover:underline">100+ price sources</Link> aggregated in real-time. 25,000+ prediction markets from Polymarket, Kalshi, and others.
           </p>
         </div>
         <div className="flex items-center gap-4 mt-6">
           <a
-            href="/docs"
-            className="text-[13px] font-semibold text-black hover:underline"
-          >
-            View Docs &rarr;
-          </a>
-          <a
-            href="http://142.132.164.24/"
+            href="https://x.com/otc_max"
             target="_blank"
             rel="noopener noreferrer"
             className="text-[13px] font-semibold text-black hover:underline"
           >
-            View Contract &rarr;
+            Follow Updates &rarr;
           </a>
         </div>
       </section>
@@ -238,12 +260,12 @@ export default async function AboutPage() {
           >
             Twitter
           </a>
-          <a
-            href="/docs"
+          <Link
+            href="/learn/what-are-itps"
             className="text-text-secondary hover:text-black font-semibold"
           >
-            Docs
-          </a>
+            Learn
+          </Link>
         </div>
       </section>
 

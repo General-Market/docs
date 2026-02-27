@@ -51,6 +51,7 @@ export function Footer() {
               <li><a href="/#simulation" className="hover:text-white transition-colors">{t('footer.simulation')}</a></li>
               <li><a href="/#lending" className="hover:text-white transition-colors">{t('footer.lending')}</a></li>
               <li><a href="/#create-itp" className="hover:text-white transition-colors">{t('footer.create_itp')}</a></li>
+              <li><Link href="/data" className="hover:text-white transition-colors">Data Sources</Link></li>
             </ul>
           </div>
 
@@ -61,6 +62,7 @@ export function Footer() {
               <li><a href="/docs" className="hover:text-white transition-colors">{t('footer.docs')}</a></li>
               <li><a href="https://discord.gg/xsfgzwR6" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">{t('footer.discord')}</a></li>
               <li><Link href="/about" className="hover:text-white transition-colors">About</Link></li>
+              <li><Link href="/points" className="hover:text-white transition-colors">Points — Season 1</Link></li>
               <li><Link href="/privacy" className="hover:text-white transition-colors">{t('footer.privacy_policy')}</Link></li>
               <li><Link href="/terms" className="hover:text-white transition-colors">{t('footer.terms_of_service')}</Link></li>
               <li><Link href="/learn/what-are-itps" className="hover:text-white transition-colors">What are ITPs?</Link></li>

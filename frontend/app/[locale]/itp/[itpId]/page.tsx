@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { getItpDetail, getItpSummaries } from '@/lib/api/server-data'
 import { BreadcrumbJsonLd } from '@/components/seo/JsonLd'
+import { Link } from '@/i18n/routing'
 
 export const revalidate = 60
 
@@ -36,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: ogTitle,
       description,
-      url: `https://generalmarket.io/itp/${itpId}`,
+      url: `https://www.generalmarket.io/itp/${itpId}`,
     },
     twitter: {
       card: 'summary_large_image',
@@ -66,9 +67,9 @@ export default async function ItpPage({ params }: Props) {
   return (
     <main className="min-h-screen bg-page">
       <BreadcrumbJsonLd items={[
-        { name: tBreadcrumbs('home'), url: 'https://generalmarket.io' },
-        { name: tBreadcrumbs('markets'), url: 'https://generalmarket.io/#markets' },
-        { name: itp.name, url: `https://generalmarket.io/itp/${itpId}` },
+        { name: tBreadcrumbs('home'), url: 'https://www.generalmarket.io' },
+        { name: tBreadcrumbs('markets'), url: 'https://www.generalmarket.io/#markets' },
+        { name: itp.name, url: `https://www.generalmarket.io/itp/${itpId}` },
       ]} />
 
       <script
@@ -86,11 +87,11 @@ export default async function ItpPage({ params }: Props) {
               count: itp.assetCount,
               nav: itp.nav.toFixed(4),
             }),
-            url: `https://generalmarket.io/itp/${itpId}`,
+            url: `https://www.generalmarket.io/itp/${itpId}`,
             provider: {
               "@type": "Organization",
               name: "General Market",
-              url: "https://generalmarket.io",
+              url: "https://www.generalmarket.io",
             },
           }),
         }}
@@ -101,7 +102,7 @@ export default async function ItpPage({ params }: Props) {
           <nav className="text-sm text-text-muted mb-6">
             <a href="/" className="hover:text-black transition-colors">{tBreadcrumbs('home')}</a>
             <span className="mx-2">/</span>
-            <a href="/#markets" className="hover:text-black transition-colors">{tBreadcrumbs('markets')}</a>
+            <a href="/index" className="hover:text-black transition-colors">{tBreadcrumbs('markets')}</a>
             <span className="mx-2">/</span>
             <span className="text-text-primary">{itp.name}</span>
           </nav>
@@ -156,6 +157,13 @@ export default async function ItpPage({ params }: Props) {
             </section>
           )}
 
+          <p className="mt-6 text-[13px] text-text-secondary leading-relaxed">
+            NAV is calculated from live price feeds.{' '}
+            <Link href="/data" className="text-black font-semibold hover:underline">View all data sources</Link>
+            {' '}or{' '}
+            <Link href="/learn/what-are-itps" className="text-black font-semibold hover:underline">learn how ITPs work</Link>.
+          </p>
+
           <div className="mt-8 flex gap-3">
             <a
               href="/#markets"
@@ -163,12 +171,12 @@ export default async function ItpPage({ params }: Props) {
             >
               {t('trade_this')}
             </a>
-            <a
-              href="/docs/concepts/itps"
+            <Link
+              href="/learn/what-are-itps"
               className="px-6 py-3 border-2 border-black text-sm font-bold rounded-md hover:bg-black hover:text-white transition-colors"
             >
               {t('learn_about')}
-            </a>
+            </Link>
           </div>
         </div>
       </div>

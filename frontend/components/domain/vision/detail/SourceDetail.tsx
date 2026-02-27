@@ -7,6 +7,7 @@ import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMark
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { getTickState, getMultiplier } from '@/lib/vision/tick'
+import { Link } from '@/i18n/routing'
 import { SourceHero } from './SourceHero'
 import { MarketsTable } from './MarketsTable'
 import { TopPlayers } from './TopPlayers'
@@ -184,6 +185,14 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
               />
             </div>
           </div>
+        </div>
+
+        {/* Related links */}
+        <div className="mt-8 pt-6 border-t border-border-light flex flex-wrap gap-4 text-[12px] text-text-secondary">
+          <Link href="/" className="hover:text-black transition-colors">All Sources</Link>
+          <Link href="/data" className="hover:text-black transition-colors">Data Coverage</Link>
+          <Link href="/points" className="hover:text-black transition-colors">Earn Points</Link>
+          <Link href="/about" className="hover:text-black transition-colors">About</Link>
         </div>
       </div>
     </div>
