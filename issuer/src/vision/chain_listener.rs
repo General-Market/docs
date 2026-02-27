@@ -595,6 +595,7 @@ impl ChainListener {
             stake_per_tick,
             start_tick,
             balance,
+            initial_deposit: balance,
             join_timestamp,
             num_committed_ticks,
         };

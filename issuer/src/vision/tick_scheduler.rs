@@ -71,6 +71,11 @@ impl TickScheduler {
         let pos = batch_players
             .get_mut(&player)
             .ok_or(TickSchedulerError::PlayerNotFound { batch_id, player })?;
+        // Track additional deposit in initial_deposit
+        if new_balance > pos.balance {
+            let deposit_amount = new_balance - pos.balance;
+            pos.initial_deposit = pos.initial_deposit + deposit_amount;
+        }
         pos.balance = new_balance;
         Ok(())
     }
@@ -245,12 +250,14 @@ impl TickScheduler {
         {
             let mut players = self.players.write().await;
             for (batch_id, player, bitmap_hash, stake_per_tick, start_tick, balance, join_timestamp) in &pos_rows {
+                let bal = U256::from_dec_str(balance).unwrap_or_default();
                 let position = PlayerPosition {
                     player: player.parse().unwrap_or_default(),
                     bitmap_hash: bitmap_hash.parse().unwrap_or_default(),
                     stake_per_tick: U256::from_dec_str(stake_per_tick).unwrap_or_default(),
                     start_tick: *start_tick as u64,
-                    balance: U256::from_dec_str(balance).unwrap_or_default(),
+                    balance: bal,
+                    initial_deposit: bal,
                     join_timestamp: *join_timestamp as u64,
                     num_committed_ticks: 1, // Updated from bitmap at resolution time
                 };
@@ -442,6 +449,7 @@ mod tests {
             stake_per_tick: U256::from(stake),
             start_tick: 0,
             balance: U256::from(stake * 100),
+            initial_deposit: U256::from(stake * 100),
             join_timestamp: 1000,
             num_committed_ticks: 1,
         }

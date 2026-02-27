@@ -1080,6 +1080,9 @@ if [ -n "$VISION_ADDR_BOT" ] && [ "$VISION_ADDR_BOT" != "" ] && [ -f "$SCRIPT_DI
         POLL_INTERVAL=5 \
         MAX_BATCHES=50 \
         MAX_EXPOSURE=1000 \
+        STRATEGY=momentum \
+        DEPOSIT_AMOUNT=20 \
+        STAKE_PER_TICK=3 \
         PNL_FILE="pnl-bot1.json" \
         python3 vision-bot/bot.py > logs/vision-bot-1.log 2>&1
     ) &
@@ -1099,6 +1102,9 @@ if [ -n "$VISION_ADDR_BOT" ] && [ "$VISION_ADDR_BOT" != "" ] && [ -f "$SCRIPT_DI
         POLL_INTERVAL=5 \
         MAX_BATCHES=50 \
         MAX_EXPOSURE=1000 \
+        STRATEGY=random \
+        DEPOSIT_AMOUNT=10 \
+        STAKE_PER_TICK=1 \
         PNL_FILE="pnl-bot2.json" \
         python3 vision-bot/bot.py > logs/vision-bot-2.log 2>&1
     ) &

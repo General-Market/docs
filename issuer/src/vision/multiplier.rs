@@ -120,6 +120,7 @@ mod tests {
             stake_per_tick: U256::from(stake_per_tick),
             start_tick,
             balance: U256::from(balance),
+            initial_deposit: U256::from(balance),
             join_timestamp,
             num_committed_ticks,
         }

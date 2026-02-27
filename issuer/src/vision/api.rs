@@ -875,9 +875,7 @@ async fn vision_leaderboard(
                 let entry = player_data.entry(p.player).or_insert((0, 0, 0, 0, 0));
                 let balance = p.balance.as_u128();
                 entry.0 += balance; // current balance
-                // Approximate initial deposit from stake_per_tick * 10 (heuristic)
-                // since we don't track total_deposited in scheduler
-                let initial = p.stake_per_tick.as_u128() * 10;
+                let initial = p.initial_deposit.as_u128();
                 entry.1 += initial;
                 entry.2 += 1; // batches joined
                 // Win = player is in profit for this batch
