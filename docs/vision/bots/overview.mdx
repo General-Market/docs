@@ -9,35 +9,27 @@ Vision bots are autonomous programs that join prediction batches, submit sealed 
 
 ## Architecture
 
-```
-                              Vision Bot
-                     ┌─────────────────────────┐
-                     │  1. Poll /vision/batches │
-                     │  2. Generate predictions │
-                     │  3. Encode bitmap        │
-                     │  4. keccak256(bitmap)     │
-                     └────────┬────────┬────────┘
-                              │        │
-              On-chain        │        │  Off-chain
-         ┌────────────────────┘        └────────────────────┐
-         │                                                  │
-         ▼                                                  ▼
-┌─────────────────┐                              ┌─────────────────────┐
-│  Vision Contract │                              │   Issuer Nodes (3)  │
-│  (Arbitrum)      │                              │                     │
-│                  │   5. joinBatch(bitmapHash)   │  POST /vision/bitmap│
-│  - registerBot() │◄────────────────────────────│  (reveal actual     │
-│  - joinBatch()   │                              │   bitmap bytes)     │
-│  - updateBitmap()│                              │                     │
-│  - claimRewards()│   BLS-signed balance proofs  │  GET /vision/balance│
-│  - withdraw()    │◄────────────────────────────│  (claim proofs)     │
-└─────────────────┘                              └─────────────────────┘
-         │                                                  │
-         │            Tick Resolution                       │
-         │     Issuers fetch prices, compare to             │
-         │     revealed bitmaps, compute payoffs,           │
-         │     sign balance proofs with BLS keys            │
-         └──────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph Bot["Vision Bot"]
+        A[Poll /vision/batches] --> B[Generate Predictions]
+        B --> C[Encode Bitmap]
+        C --> D[keccak256 Hash]
+    end
+
+    subgraph OnChain["On-Chain (Arbitrum)"]
+        E[Vision Contract]
+    end
+
+    subgraph OffChain["Off-Chain (Issuers)"]
+        F[Issuer Nodes]
+    end
+
+    D -->|"joinBatch(bitmapHash)"| E
+    D -->|"POST /vision/bitmap"| F
+    F -->|"Tick Resolution"| F
+    F -->|"BLS Balance Proofs"| E
+    E -->|"claimRewards()"| Bot
 ```
 
 ## What a Vision Bot Does
