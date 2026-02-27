@@ -123,15 +123,21 @@ else
             echo -e "  ${GREEN}ITP snapshots + trades cleaned${NC}" || \
             echo -e "  ${YELLOW}Skipped ITP tables (DB not available)${NC}"
 
-        # Flush all vision batch data (positions, bitmaps, ticks, etc.)
-        # CASCADE handles FK constraints (vision_positions, vision_tick_results -> vision_batches)
+        # Flush all vision data (batch state, configs, settlements)
+        # Only PRESERVE raw API price data: market_prices, market_assets, market_prices_latest, klines, coingecko
+        #
+        # Issuer session state:
+        #   vision_tick_results, vision_positions, vision_bitmaps, vision_batches, vision_kv_store
+        # Data-node state:
+        #   vision_last_resolved, vision_reference_prices
+        #   batch_configs, batch_settlements, signed_batch_configs
         $PSQL_BIN index_prices -c "
             TRUNCATE vision_tick_results, vision_positions, vision_bitmaps,
                      vision_reference_prices, vision_last_resolved, vision_kv_store CASCADE;
             TRUNCATE vision_batches CASCADE;
             TRUNCATE batch_configs, batch_settlements, signed_batch_configs CASCADE;
         " 2>/dev/null && \
-            echo -e "  ${GREEN}Vision batch data flushed (batches, positions, bitmaps, ticks)${NC}" || \
+            echo -e "  ${GREEN}Vision data flushed (batches, positions, ticks, configs, settlements)${NC}" || \
             echo -e "  ${YELLOW}Skipped vision flush (tables may not exist)${NC}"
 
         echo -e "  ${GREEN}Preserved: market_prices, market_assets, market_prices_latest, klines, coingecko${NC}"
