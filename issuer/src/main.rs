@@ -3386,6 +3386,58 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         chain_listener.run(cl_shutdown).await;
                     });
 
+                    // Spawn VisionDepositWatcher (cross-chain deposit/withdraw orchestrator)
+                    {
+                        let arb_rpc_url = vision_cfg.arb_rpc_url.clone();
+                        let arb_custody_address: ethers::types::Address = vision_cfg
+                            .arb_bridge_custody_address
+                            .parse()
+                            .unwrap_or_else(|_| {
+                                warn!("Invalid arb_bridge_custody_address, deposit watcher will have zeroed address");
+                                ethers::types::Address::zero()
+                            });
+
+                        let dw_arb_provider = Arc::new(
+                            ethers::providers::Provider::<ethers::providers::Http>::try_from(&arb_rpc_url)
+                                .expect("valid Arb RPC URL for deposit watcher"),
+                        );
+                        let dw_l3_provider = Arc::new(
+                            ethers::providers::Provider::<ethers::providers::Http>::try_from(&vision_cfg.rpc_ws_url)
+                                .expect("valid L3 RPC URL for deposit watcher"),
+                        );
+
+                        // BLS keypair for signing cross-chain operations
+                        let dw_bls_keypair = components.consensus.keys.bls_keypair.clone();
+                        // L3 chain writer for creditBalance + gas drip
+                        let dw_l3_writer: Option<Arc<dyn common::traits::ChainWriter>> =
+                            components.chain.writer.clone().map(|w| w as Arc<dyn common::traits::ChainWriter>);
+                        // Arb chain writer: ArbitrumChainWriter doesn't impl ChainWriter trait,
+                        // so Arb operations (completeVisionDeposit, refund, completeWithdraw) will
+                        // be wired when the Arb ChainWriter adapter is implemented.
+                        let dw_arb_writer: Option<Arc<dyn common::traits::ChainWriter>> = None;
+                        let dw_node_index = components.consensus.keys.node_index;
+
+                        let deposit_watcher = issuer::vision::deposit_watcher::VisionDepositWatcher::new(
+                            dw_arb_provider,
+                            dw_l3_provider,
+                            vision_address,
+                            arb_custody_address,
+                            pool.clone(),
+                            vision_cfg.clone(),
+                            dw_bls_keypair,
+                            dw_l3_writer,
+                            dw_arb_writer,
+                            dw_node_index,
+                            None, // gas_drip_wallet_key: uses L3 chain writer for drips
+                        );
+
+                        let dw_shutdown = components.shutdown.clone();
+                        tokio::spawn(async move {
+                            deposit_watcher.run(dw_shutdown).await;
+                        });
+                        info!(node_id, "VisionDepositWatcher spawned");
+                    }
+
                     // Spawn BatchConfigOrchestrator (independent async task, NOT inside run_cycle)
                     let orch_data_node_url = vision_cfg.data_node_url.clone();
                     let orch_admin_token = vision_cfg.data_node_token.clone().unwrap_or_default();
