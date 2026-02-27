@@ -90,7 +90,7 @@ print_help() {
     echo "  --skip-deploy   Skip ALL contract deployment (use existing chain)"
     echo "  --no-tail       Don't tail logs after startup"
     echo "  --stress        Stress-test log profile (warn level, consensus/cycle at info)"
-    echo "  --vision        Vision-only mode: skip ITP/Bitget/Morpho/AP, deploy all 81 batches"
+    echo "  --vision        Enable Vision subsystem (batches + bots) alongside Index"
     echo "  --help          Show this help message"
     echo ""
     echo "What gets deployed:"
@@ -125,7 +125,7 @@ while [[ $# -gt 0 ]]; do
         --no-tail) NO_TAIL=true; shift;;
         --no-test) NO_TEST=true; shift;;
         --stress) LOG_LEVEL=warn; export RUST_LOG="warn,issuer::consensus=info,issuer::cycle=info"; shift;;
-        --vision) VISION_ONLY=true; shift;;
+        --vision) VISION_ENABLED=true; shift;;
         *) echo -e "${RED}Unknown option: $1${NC}"; exit 1;;
     esac
 done
@@ -134,22 +134,12 @@ if ! [[ "$ISSUER_COUNT" =~ ^[0-9]+$ ]] || [ "$ISSUER_COUNT" -lt 1 ] || [ "$ISSUE
     echo -e "${RED}Error: --issuers must be 1-20${NC}"; exit 1
 fi
 
-VISION_ONLY=${VISION_ONLY:-false}
+VISION_ENABLED=${VISION_ENABLED:-false}
 
-if [ "$VISION_ONLY" = true ]; then
-    echo -e "${CYAN}"
-    echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║         VISION-ONLY LOCAL ENVIRONMENT                      ║"
-    echo "║  Core + Vision + 81 Batches + Data-Node + E2E              ║"
-    echo "╚══════════════════════════════════════════════════════════════╝"
-    echo -e "${NC}"
-    TOTAL_STEPS=12
-else
-    print_banner
-fi
+print_banner
 
 echo -e "${YELLOW}Configuration:${NC}"
-echo "  Issuers: $ISSUER_COUNT | Skip deploy: $SKIP_DEPLOY | Tail logs: $([[ "$NO_TAIL" == "true" ]] && echo "no" || echo "yes") | Log level: $LOG_LEVEL | Exchange: $EXCHANGE_MODE | Vision-only: $VISION_ONLY"
+echo "  Issuers: $ISSUER_COUNT | Skip deploy: $SKIP_DEPLOY | Tail logs: $([[ "$NO_TAIL" == "true" ]] && echo "no" || echo "yes") | Log level: $LOG_LEVEL | Exchange: $EXCHANGE_MODE | Vision: $VISION_ENABLED"
 echo ""
 
 # ============ Prerequisites ============
@@ -364,10 +354,6 @@ else
     cast send --private-key $DEPLOYER_KEY --value 100ether $VISION_BOT2_ADDRESS --rpc-url $ARB_RPC_URL > /dev/null 2>&1
     cast send --private-key $DEPLOYER_KEY $ARB_USDC "mint(address,uint256)" $VISION_BOT2_ADDRESS 50000000000 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
     echo -e "  ${GREEN}Vision bot 2 $VISION_BOT2_ADDRESS funded with 100 ETH + 50k ARB_USDC (Arb)${NC}"
-
-    if [ "$VISION_ONLY" = true ]; then
-        echo -e "${BLUE}[3-5/$TOTAL_STEPS] Skipping ITP/Bitget/Morpho (--vision mode)${NC}"
-    else
 
     # ============ STEP 3: 100-asset ITP ============
     echo -e "${BLUE}[3/$TOTAL_STEPS] Deploying 100-asset ITP...${NC}"
@@ -752,17 +738,8 @@ print(f'  Regenerated frontend/public/deployed-assets.json with {len(assets)} un
     set -e
     cd ..
 
-    fi  # end VISION_ONLY skip of steps 3-5
-
-    # In --vision mode, ITP deploy is skipped so symbol-map.json is never generated.
-    # Data-node needs this file to start — create empty map so it can boot.
-    if [ "$VISION_ONLY" = true ] && [ ! -f "data/symbol-map.json" ]; then
-        echo '{}' > data/symbol-map.json
-        echo '[]' > assets.json
-        echo -e "  ${YELLOW}Created empty symbol-map.json + assets.json (--vision mode, no ITP)${NC}"
-    fi
-
     # ============ STEP 6: Vision on Arbitrum ============
+    if [ "$VISION_ENABLED" = true ]; then
     echo -e "${BLUE}[6/$TOTAL_STEPS] Deploying Vision contract on Arbitrum...${NC}"
 
     ISSUER_REG_ADDR=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['IssuerRegistry'])")
@@ -828,7 +805,11 @@ json.dump(deploy, open('../deployments/active-deployment.json', 'w'), indent=2)
     else
         echo -e "${YELLOW}  Warning: Vision address not found, skipping batch deployment${NC}"
     fi
-fi
+    else
+        echo -e "${BLUE}[6/$TOTAL_STEPS] Skipping Vision deployment (use --vision to enable)${NC}"
+    fi  # end VISION_ENABLED
+
+fi  # end SKIP_DEPLOY
 
 # ============ STEP 7: Sync frontend addresses ============
 echo -e "${BLUE}[7/$TOTAL_STEPS] Syncing frontend addresses...${NC}"
@@ -1033,9 +1014,6 @@ fi
 # (BLS-signed, no need for deferred creation)
 
 # ============ STEP 10: Launch AP ============
-if [ "$VISION_ONLY" = true ]; then
-    echo -e "${BLUE}[10/$TOTAL_STEPS] Skipping AP (--vision mode)${NC}"
-else
 echo -e "${BLUE}[10/$TOTAL_STEPS] Starting AP with real Bitget price proxy...${NC}"
 
 AP_ARGS="--port 9100 --rpc $RPC_URL --exchange-mode $EXCHANGE_MODE"
@@ -1053,7 +1031,6 @@ AP_PID=$!
 echo $AP_PID >> .pids
 echo "ap:$AP_PID" >> .pids.info
 echo -e "  AP on port 9100 (PID: $AP_PID)"
-fi  # end VISION_ONLY AP skip
 
 # Wait for services to start
 sleep 3
@@ -1130,22 +1107,6 @@ echo -e "${BLUE}[11/$TOTAL_STEPS] Starting frontend & running E2E browser tests.
 
 set +e  # Don't exit on E2E test failures
 
-if [ "$VISION_ONLY" = true ]; then
-    # In vision mode, wait for data-node health instead of ITP NAV
-    echo -e "  Waiting for data-node to initialize..."
-    DN_READY=false
-    for attempt in $(seq 1 60); do
-        if curl -sf "http://localhost:8200/health" > /dev/null 2>&1; then
-            echo -e "  ${GREEN}Data-node ready! (${attempt}s)${NC}"
-            DN_READY=true
-            break
-        fi
-        sleep 1
-    done
-    if [ "$DN_READY" != true ]; then
-        echo -e "  ${YELLOW}Data-node not ready after 60s — continuing anyway${NC}"
-    fi
-else
     # Extract ITP ID for service readiness check
     ITP_ID=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['itpId'])")
 
@@ -1168,7 +1129,6 @@ else
     if [ "$NAV_READY" != true ]; then
         echo -e "  ${YELLOW}Data-node not ready after 90s — continuing anyway${NC}"
     fi
-fi
 
 sleep 2
 
@@ -1234,23 +1194,16 @@ if [ "$NO_TEST" = true ]; then
     echo -e "  ${YELLOW}Skipping E2E tests (--no-test)${NC}"
     E2E_EXIT=0
 else
-    if [ "$VISION_ONLY" = true ]; then
-        echo -e "  ${BLUE}Running Vision E2E tests only...${NC}"
-        echo -e "  Tests: vision → vision-sources"
-        echo -e ""
-        cd frontend
-        npx playwright test --config=e2e/playwright.config.ts e2e/tests/10-vision.spec.ts e2e/tests/11-vision-sources.spec.ts 2>&1 | tee ../logs/e2e-results.log
-        E2E_EXIT=$?
-        cd ..
-    else
         echo -e "  ${BLUE}Running Playwright E2E tests...${NC}"
         echo -e "  Tests: health-check → connect-wallet → buy-itp → lending-cycle → sell-itp"
+        if [ "$VISION_ENABLED" = true ]; then
+            echo -e "  + vision → vision-sources"
+        fi
         echo -e ""
         cd frontend
         npm run e2e 2>&1 | tee ../logs/e2e-results.log
         E2E_EXIT=$?
         cd ..
-    fi
 
     echo ""
     if [ $E2E_EXIT -eq 0 ]; then
