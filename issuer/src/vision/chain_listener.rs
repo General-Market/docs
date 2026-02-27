@@ -571,7 +571,8 @@ impl ChainListener {
         // Compute initial balance: for the join event, the depositAmount IS the initial balance.
         // However, the event emits stakePerTick, not depositAmount. The on-chain deposit was
         // handled separately. We fetch the actual position to get the balance.
-        let balance = match self.fetch_position_balance(batch_id, player).await {
+        let at_block = log.block_number.map(|n| ethers::types::BlockId::Number(n.into()));
+        let balance = match self.fetch_position_balance(batch_id, player, at_block).await {
             Some(b) => b,
             None => {
                 // Fallback: we don't know the initial balance from the event alone.
@@ -649,8 +650,9 @@ impl ChainListener {
             }
         };
 
-        // Fetch the new balance from the contract (amount is the deposit, not new total)
-        let new_balance = match self.fetch_position_balance(batch_id, player).await {
+        // Fetch the new balance from the contract at event block (amount is the deposit, not new total)
+        let at_block = log.block_number.map(|n| ethers::types::BlockId::Number(n.into()));
+        let new_balance = match self.fetch_position_balance(batch_id, player, at_block).await {
             Some(b) => b,
             None => {
                 // Fallback: we can't just add 'amount' because we might not have the previous balance.
@@ -715,7 +717,7 @@ impl ChainListener {
         };
 
         // Fetch new balance from contract since the on-chain claimRewards updates balance
-        let new_balance = match self.fetch_position_balance(batch_id, player).await {
+        let new_balance = match self.fetch_position_balance(batch_id, player, None).await {
             Some(b) => b,
             None => {
                 warn!(batch_id, player = %player, "RewardsClaimed: could not fetch new balance");
@@ -948,7 +950,7 @@ impl ChainListener {
     }
 
     /// Fetch a player's current balance from Vision.getPosition(uint256,address).
-    async fn fetch_position_balance(&self, batch_id: u64, player: Address) -> Option<U256> {
+    async fn fetch_position_balance(&self, batch_id: u64, player: Address, at_block: Option<ethers::types::BlockId>) -> Option<U256> {
         // getPosition(uint256,address) selector
         let selector =
             &ethers::utils::keccak256(b"getPosition(uint256,address)")[..4];
@@ -965,7 +967,7 @@ impl ChainListener {
             .to(self.vision_address)
             .data(calldata);
 
-        let result = match self.provider.call(&tx.into(), None).await {
+        let result = match self.provider.call(&tx.into(), at_block).await {
             Ok(r) => r,
             Err(e) => {
                 warn!(batch_id, player = %player, error = %e, "getPosition call failed");

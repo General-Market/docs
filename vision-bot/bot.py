@@ -135,8 +135,8 @@ def run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn, feed):
         stake_wei = cfg["stake"] * 10**DECIMALS
         executor.join_batch(batch_id, config_hash, deposit_wei, stake_wei, bm_hash)
 
-        time.sleep(5)  # wait for block confirmation + chain listener sync
-        submit_bitmap(issuer_urls, executor.bot_addr, batch_id, bitmap, bm_hash)
+        time.sleep(2)  # initial wait for block confirmation
+        submit_bitmap(issuer_urls, executor.bot_addr, batch_id, bitmap, bm_hash, retries=5)
 
         tracker.on_join(batch_id, deposit_wei, bitmap, bets)
         risk.record_join(batch_id, deposit_wei)

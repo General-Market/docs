@@ -433,7 +433,10 @@ def submit_bitmap(
                         "Bitmap rejected by %s: %d %s",
                         url, resp.status_code, resp.text[:200],
                     )
-                    break  # don't retry non-connection errors
+                    if resp.status_code == 404 and attempt < retries - 1:
+                        time.sleep(2 ** attempt)  # 1s, 2s, 4s backoff
+                        continue
+                    break  # don't retry other errors (400, 500)
             except requests.RequestException as e:
                 logger.warning("Bitmap POST to %s failed: %s", url, e)
                 if attempt < retries - 1:
