@@ -360,6 +360,18 @@ library TypesLib {
     /// @notice Basis points denominator (10000 = 100%)
     uint256 constant BASIS_POINTS = 10000;
 
+    // ============ VISION DEPOSIT STRUCTS ============
+
+    /// @notice Vision cross-chain deposit from Arbitrum
+    /// @param user Address that deposited on Arb
+    /// @param amount Amount in 18 decimals (converted from 6-dec input)
+    /// @param createdAt Timestamp when deposit was created
+    struct VisionDeposit {
+        address user;
+        uint256 amount;
+        uint256 createdAt;
+    }
+
     // ============ VISION (BILATERAL P2P) ENUMS ============
 
     /// @notice Bet status lifecycle for bilateral P2P trading

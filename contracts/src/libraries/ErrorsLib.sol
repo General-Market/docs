@@ -765,4 +765,14 @@ library ErrorsLib {
     /// @param batchedAt Timestamp when order was batched
     /// @param currentTime Current block timestamp
     error E130_BatchedTimeoutNotReached(uint256 orderId, uint256 batchedAt, uint256 currentTime);
+
+    // ============ VISION DEPOSIT/WITHDRAW ERRORS ============
+
+    /// @notice E131: Vision deposit not found (orderId has no deposit or was already processed)
+    /// @param orderId The order ID that was not found
+    error E131_VisionDepositNotFound(uint256 orderId);
+
+    /// @notice E132: Vision withdrawal already processed (replay protection)
+    /// @param withdrawId The withdraw ID that was already processed
+    error E132_VisionWithdrawAlreadyProcessed(uint256 withdrawId);
 }

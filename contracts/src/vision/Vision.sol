@@ -61,6 +61,28 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     address[] internal _botAddresses;
     mapping(address => uint256) internal _botIndex;
 
+    // ============ DUAL-BALANCE STATE ============
+
+    /// @notice Per-user L3 USDC balance — backed by real L3 USDC in the contract
+    mapping(address => uint256) public realBalance;
+
+    /// @notice Per-user virtual balance — backed by USDC locked in ArbBridgeCustody on Arb
+    mapping(address => uint256) public virtualBalance;
+
+    /// @notice Aggregate tracking for solvency invariants
+    uint256 public totalRealBalance;    // sum(realBalance[all users])
+    uint256 public totalVirtualBalance; // sum(virtualBalance[all users])
+
+    /// @notice Processed cross-chain deposit IDs (idempotency — survives issuer restarts)
+    mapping(uint256 => bool) public depositProcessed;
+
+    /// @notice Auto-incrementing withdraw request ID
+    uint256 public withdrawNonce;
+
+    // INVARIANT: USDC.balanceOf(this) >= totalRealBalance + sum(active batch deposits) + accumulatedFees
+    // INVARIANT: totalRealBalance == sum(realBalance[all users])
+    // INVARIANT: totalVirtualBalance == sum(virtualBalance[all users])
+
     // ============ CONSTRUCTOR ============
 
     constructor(address _usdc, address _issuerRegistry, address _feeCollector) {
@@ -337,7 +359,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         if (stakePerTick < MIN_STAKE_PER_TICK) revert StakeBelowMinimum();
         if (depositAmount < stakePerTick) revert InsufficientDeposit();
 
-        USDC.safeTransferFrom(msg.sender, address(this), depositAmount);
+        _debitBalance(msg.sender, depositAmount);
 
         uint256 tickId = _currentTickId(batchId);
         _positions[batchId][msg.sender] = PlayerPosition({
@@ -384,7 +406,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         PlayerPosition storage position = _positions[batchId][msg.sender];
         if (position.stakePerTick == 0) revert NotJoined();
 
-        USDC.safeTransferFrom(msg.sender, address(this), amount);
+        _debitBalance(msg.sender, amount);
 
         position.balance += amount;
         position.totalDeposited += amount;
@@ -430,10 +452,10 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             accumulatedFees += fee;
             uint256 payout = winnings - fee;
 
-            // Solvency check
-            if (USDC.balanceOf(address(this)) < payout + accumulatedFees) revert InsolventPayout();
-
-            USDC.safeTransfer(msg.sender, payout);
+            // Payouts ALWAYS credit realBalance because the batch pool is real L3 USDC.
+            // (When users join, their virtual balance was "converted" to batch pool USDC.)
+            realBalance[msg.sender] += payout;
+            totalRealBalance += payout;
             position.totalClaimed += payout;
 
             emit RewardsClaimed(batchId, msg.sender, payout);
@@ -471,13 +493,12 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
 
         accumulatedFees += fee;
 
-        // Solvency check
-        if (USDC.balanceOf(address(this)) < payout + accumulatedFees) revert InsolventPayout();
-
-        // Delete position before transfer (CEI pattern)
+        // Delete position before balance credit (CEI pattern)
         delete _positions[batchId][msg.sender];
 
-        USDC.safeTransfer(msg.sender, payout);
+        // Batch payouts ALWAYS credit realBalance — batch pool holds real L3 USDC
+        realBalance[msg.sender] += payout;
+        totalRealBalance += payout;
 
         emit PlayerWithdrawn(batchId, msg.sender, payout);
     }
@@ -542,7 +563,12 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         uint256 fees = accumulatedFees;
         accumulatedFees = 0;
 
-        USDC.safeTransfer(feeCollector, fees);
+        // Fees credited to feeCollector's realBalance (not transferred out).
+        // feeCollector can withdrawBalance() or withdrawToArb() to extract.
+        // This fixes the solvency issue where collectFees tried to transfer USDC
+        // that didn't exist when all deposits were Arb-bridged.
+        realBalance[feeCollector] += fees;
+        totalRealBalance += fees;
     }
 
     /// @inheritdoc IVision
@@ -638,14 +664,107 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
 
         accumulatedFees += fee;
 
-        // Solvency check
-        if (USDC.balanceOf(address(this)) < payout + accumulatedFees) revert InsolventPayout();
-
-        // Delete position before transfer (CEI pattern)
+        // Delete position before balance credit (CEI pattern)
         delete _positions[batchId][player];
 
-        USDC.safeTransfer(player, payout);
+        // ForceWithdraw returns from batch pool (real USDC) → credits realBalance
+        realBalance[player] += payout;
+        totalRealBalance += payout;
 
         emit ForceWithdrawn(batchId, player, payout);
+    }
+
+    // ============ DUAL-BALANCE OPERATIONS ============
+
+    /// @inheritdoc IVision
+    function creditBalance(
+        address user,
+        uint256 amount,
+        uint256 depositId,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external nonReentrant {
+        if (depositProcessed[depositId]) revert AlreadyProcessed();
+        if (user == address(0)) revert ZeroAddress();
+        if (amount == 0) revert ZeroAmount();
+
+        bytes32 message = keccak256(abi.encode(
+            block.chainid,
+            address(this),
+            "creditBalance",
+            user,
+            amount,
+            depositId
+        ));
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
+
+        depositProcessed[depositId] = true;
+        virtualBalance[user] += amount;
+        totalVirtualBalance += amount;
+
+        emit BalanceCredited(user, amount, depositId);
+    }
+
+    /// @inheritdoc IVision
+    function depositBalance(uint256 amount) external nonReentrant {
+        if (amount == 0) revert ZeroAmount();
+
+        USDC.safeTransferFrom(msg.sender, address(this), amount);
+
+        realBalance[msg.sender] += amount;
+        totalRealBalance += amount;
+
+        emit BalanceDeposited(msg.sender, amount);
+    }
+
+    /// @inheritdoc IVision
+    function withdrawBalance(uint256 amount) external nonReentrant {
+        if (amount == 0) revert ZeroAmount();
+        if (realBalance[msg.sender] < amount) revert InsufficientBalance();
+
+        realBalance[msg.sender] -= amount;
+        totalRealBalance -= amount;
+
+        USDC.safeTransfer(msg.sender, amount);
+
+        emit RealBalanceWithdrawn(msg.sender, amount);
+    }
+
+    /// @inheritdoc IVision
+    function withdrawToArb(uint256 amount) external nonReentrant {
+        if (amount == 0) revert ZeroAmount();
+        if (virtualBalance[msg.sender] < amount) revert InsufficientBalance();
+
+        uint256 wId = withdrawNonce++;
+        virtualBalance[msg.sender] -= amount;
+        totalVirtualBalance -= amount;
+
+        emit WithdrawToArbRequested(msg.sender, amount, wId);
+    }
+
+    /// @inheritdoc IVision
+    function balanceOf(address user) public view returns (uint256) {
+        return realBalance[user] + virtualBalance[user];
+    }
+
+    // ============ INTERNAL: DUAL-BALANCE DEBIT ============
+
+    /// @dev Debit `amount` from user's total balance. Virtual first, then real.
+    ///      This ensures users who deposited from Arb don't accumulate real balance
+    ///      they can't use, and users who deposited on L3 keep their real balance
+    ///      as long as possible.
+    function _debitBalance(address user, uint256 amount) internal {
+        uint256 total = virtualBalance[user] + realBalance[user];
+        if (total < amount) revert InsufficientBalance();
+
+        // Debit virtual first
+        uint256 fromVirtual = amount > virtualBalance[user] ? virtualBalance[user] : amount;
+        uint256 fromReal = amount - fromVirtual;
+
+        virtualBalance[user] -= fromVirtual;
+        totalVirtualBalance -= fromVirtual;
+        realBalance[user] -= fromReal;
+        totalRealBalance -= fromReal;
     }
 }

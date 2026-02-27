@@ -79,11 +79,22 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
     /// @notice Mapping of orderId => cross-chain sell order details
     mapping(uint256 => TypesLib.CrossChainSellOrder) public crossChainSellOrders;
 
+    // ============ VISION DEPOSIT/WITHDRAW STATE ============
+
+    /// @notice Vision deposit tracking: orderId => deposit details
+    mapping(uint256 => TypesLib.VisionDeposit) public visionDeposits;
+
+    /// @notice Replay protection for Vision withdrawals
+    mapping(uint256 => bool) public withdrawProcessed;
+
+    /// @notice USDC reserve tracker for Vision pool (6 decimals, tracks Arb-side USDC)
+    uint256 public visionReserve;
+
     /// @notice Storage gap for future upgrades
     /// @dev Used: issuerRegistry, usdc, l3Index, bridgeCompleted, crossChainOrderId,
     ///      crossChainOrders, pendingUpgradeImpl, pendingUpgradeProposedAt, pendingUpgradeIsEmergency,
-    ///      bridgeProxy, crossChainSellOrders = 11 slots
-    uint256[39] private __gap;
+    ///      bridgeProxy, crossChainSellOrders, visionDeposits, withdrawProcessed, visionReserve = 14 slots
+    uint256[36] private __gap;
 
     // ============ INITIALIZER ============
 
@@ -448,6 +459,115 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
     /// @inheritdoc IArbBridgeCustody
     function getCrossChainSellOrder(uint256 orderId) external view override returns (TypesLib.CrossChainSellOrder memory order) {
         return crossChainSellOrders[orderId];
+    }
+
+    // ============ VISION DEPOSIT/WITHDRAW ============
+
+    /// @inheritdoc IArbBridgeCustody
+    function depositToVision(uint256 usdcAmount) external override returns (uint256 orderId) {
+        if (usdcAmount < MIN_USDC_AMOUNT) {
+            revert ErrorsLib.E07F_UsdcAmountTooSmall(usdcAmount, MIN_USDC_AMOUNT);
+        }
+
+        usdc.safeTransferFrom(msg.sender, address(this), usdcAmount);
+        uint256 internalAmount = DecimalLib.toInternal(usdcAmount);
+        visionReserve += usdcAmount;
+
+        orderId = crossChainOrderId;
+        crossChainOrderId = orderId + 1;
+
+        visionDeposits[orderId] = TypesLib.VisionDeposit({
+            user: msg.sender,
+            amount: internalAmount,
+            createdAt: block.timestamp
+        });
+
+        emit VisionDepositCreated(orderId, msg.sender, internalAmount);
+    }
+
+    /// @inheritdoc IArbBridgeCustody
+    function completeVisionDeposit(
+        uint256 orderId,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external override {
+        TypesLib.VisionDeposit storage dep = visionDeposits[orderId];
+        if (dep.user == address(0)) revert ErrorsLib.E131_VisionDepositNotFound(orderId);
+
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(this), "completeVisionDeposit", orderId
+        ));
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
+
+        delete visionDeposits[orderId];
+
+        emit VisionDepositCompleted(orderId);
+    }
+
+    /// @inheritdoc IArbBridgeCustody
+    function refundVisionDeposit(
+        uint256 orderId,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external override {
+        TypesLib.VisionDeposit storage dep = visionDeposits[orderId];
+        if (dep.user == address(0)) revert ErrorsLib.E131_VisionDepositNotFound(orderId);
+
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(this), "refundVisionDeposit", orderId
+        ));
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
+
+        address user = dep.user;
+        uint256 usdcAmount = DecimalLib.toUsdc(dep.amount);
+
+        // Delete before external calls (CEI pattern)
+        delete visionDeposits[orderId];
+
+        visionReserve -= usdcAmount;
+
+        if (usdcAmount > 0) {
+            usdc.safeTransfer(user, usdcAmount);
+        }
+
+        emit VisionDepositRefunded(orderId, user, usdcAmount);
+    }
+
+    /// @inheritdoc IArbBridgeCustody
+    function completeVisionWithdraw(
+        uint256 withdrawId,
+        address user,
+        uint256 amount,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external override {
+        if (withdrawProcessed[withdrawId]) revert ErrorsLib.E132_VisionWithdrawAlreadyProcessed(withdrawId);
+
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(this), "completeVisionWithdraw",
+            withdrawId, user, amount
+        ));
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
+
+        withdrawProcessed[withdrawId] = true;
+
+        uint256 usdcAmount = DecimalLib.toUsdc(amount);
+        visionReserve -= usdcAmount;
+
+        if (usdcAmount > 0) {
+            usdc.safeTransfer(user, usdcAmount); // sends to USER, not msg.sender
+        }
+
+        emit VisionWithdrawCompleted(withdrawId, user, usdcAmount);
+    }
+
+    /// @inheritdoc IArbBridgeCustody
+    function getVisionDeposit(uint256 orderId) external view override returns (address user, uint256 amount, uint256 createdAt) {
+        TypesLib.VisionDeposit storage dep = visionDeposits[orderId];
+        return (dep.user, dep.amount, dep.createdAt);
     }
 
     // ============ UPGRADE MANAGEMENT ============

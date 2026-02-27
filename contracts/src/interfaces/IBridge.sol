@@ -259,6 +259,77 @@ interface IArbBridgeCustody {
     /// @notice Emitted when a sell order is refunded
     /// @param orderId The sell order ID
     event SellOrderRefunded(uint256 indexed orderId);
+
+    // ============ VISION DEPOSIT/WITHDRAW ============
+
+    /// @notice Deposit USDC for Vision on L3 (locks on Arb, credited on L3)
+    /// @param usdcAmount Amount of USDC in 6 decimals
+    /// @return orderId The unique order ID for this deposit
+    function depositToVision(uint256 usdcAmount) external returns (uint256 orderId);
+
+    /// @notice Mark a Vision deposit as completed (issuers call after L3 credit confirmed)
+    /// @param orderId The deposit order ID
+    /// @param blsSignature Aggregated BLS signature
+    /// @param referenceNonce BLSVerifier snapshot nonce
+    /// @param signersBitmask Bitmask of signing issuers
+    function completeVisionDeposit(
+        uint256 orderId,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external;
+
+    /// @notice Refund a failed Vision deposit (issuers call if L3 credit fails)
+    /// @param orderId The deposit order ID
+    /// @param blsSignature Aggregated BLS signature
+    /// @param referenceNonce BLSVerifier snapshot nonce
+    /// @param signersBitmask Bitmask of signing issuers
+    function refundVisionDeposit(
+        uint256 orderId,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external;
+
+    /// @notice Release USDC to user after Vision.withdrawToArb on L3
+    /// @dev Sends USDC to `user`, NOT to msg.sender. Has replay protection.
+    /// @param withdrawId The withdraw ID from Vision.sol
+    /// @param user User address to receive USDC
+    /// @param amount Amount in 18 decimals (internal format)
+    /// @param blsSignature Aggregated BLS signature
+    /// @param referenceNonce BLSVerifier snapshot nonce
+    /// @param signersBitmask Bitmask of signing issuers
+    function completeVisionWithdraw(
+        uint256 withdrawId,
+        address user,
+        uint256 amount,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external;
+
+    /// @notice Get a Vision deposit by order ID
+    function getVisionDeposit(uint256 orderId) external view returns (address user, uint256 amount, uint256 createdAt);
+
+    /// @notice Whether a Vision withdraw has been processed
+    function withdrawProcessed(uint256 withdrawId) external view returns (bool);
+
+    /// @notice USDC reserve tracker for Vision pool
+    function visionReserve() external view returns (uint256);
+
+    // ============ VISION EVENTS ============
+
+    /// @notice Emitted when a Vision deposit is created (USDC locked on Arb)
+    event VisionDepositCreated(uint256 indexed orderId, address indexed user, uint256 amount);
+
+    /// @notice Emitted when a Vision deposit is completed (L3 credit confirmed)
+    event VisionDepositCompleted(uint256 indexed orderId);
+
+    /// @notice Emitted when a Vision deposit is refunded (L3 credit failed)
+    event VisionDepositRefunded(uint256 indexed orderId, address indexed user, uint256 usdcAmount);
+
+    /// @notice Emitted when a Vision withdrawal is completed (USDC sent to user on Arb)
+    event VisionWithdrawCompleted(uint256 indexed withdrawId, address indexed user, uint256 usdcAmount);
 }
 
 /// @title IBridge - Combined bridge interface for convenience

@@ -1,5 +1,18 @@
 # Design Decision Backlog
 
+## Session: 20260228-0200-k8p2 (Vision First Deposit — Solidity Implementation)
+
+- [DECISION] Vision.sol: dual-balance architecture with `realBalance` and `virtualBalance` mappings. `_debitBalance` internal helper debits virtual first, then real. Batch payouts (claimRewards/withdraw/forceWithdraw) always credit `realBalance` since batch pool holds real L3 USDC.
+- [DECISION] Vision.sol: `collectFees` credits `realBalance[feeCollector]` instead of `USDC.safeTransfer`. Fixes solvency issue when 100% of deposits are Arb-bridged (virtual) and no real USDC exists in the contract.
+- [DECISION] Vision.sol: `withdrawToArb` is a virtual debit only — no L3 USDC moves, no L3BridgeCustody involvement. Issuers detect `WithdrawToArbRequested` event and call `ArbBridgeCustody.completeVisionWithdraw` on Arb.
+- [DECISION] ArbBridgeCustody.sol: `visionReserve` tracks Vision-specific USDC separately from ITP flows. Prevents accounting confusion between ITP buy/sell custody and Vision deposit/withdraw custody.
+- [DECISION] ArbBridgeCustody.sol: `completeVisionWithdraw` sends to `user` param, not `msg.sender`. Separate from `completeBridge` which sends to `msg.sender`. `withdrawProcessed` mapping provides replay protection.
+- [DECISION] ArbBridgeCustody.sol: New storage (visionDeposits, withdrawProcessed, visionReserve) reduces `__gap` from 39 to 36 slots (3 new slots used).
+- [DECISION] ErrorsLib: Added E131_VisionDepositNotFound and E132_VisionWithdrawAlreadyProcessed for ArbBridgeCustody Vision operations.
+- [DECISION] TypesLib: Added VisionDeposit struct (user, amount, createdAt) for cross-chain deposit tracking.
+- [DECISION] IVision.sol: New custom errors `InsufficientBalance`, `AlreadyProcessed`, `ZeroAddress`, `ZeroAmount` defined in the interface (not ErrorsLib) to match existing Vision error pattern.
+- [DECISION] DeployVision.s.sol: Removed ARB_CHAIN_ID from allowed local chains — Vision deploys only on L3.
+
 ## Session: 20260228-0100-v3d7 (Vision First Deposit — Issuer Implementation)
 
 - [DECISION] Dual-balance tracking (user_real_balances + user_virtual_balances) lives in TickScheduler as RwLock<HashMap<Address, U256>> — separate from per-batch position tracking. Keeps batch resolution unchanged.

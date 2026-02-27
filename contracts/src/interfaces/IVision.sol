@@ -72,6 +72,10 @@ interface IVision {
     error BotNotRegistered();
     error TickLocked();                  // bet/update during lock window — F6
     error InvalidBLSSignature();         // kept for backwards compat event decoding
+    error InsufficientBalance();         // withdrawBalance/withdrawToArb amount exceeds balance
+    error AlreadyProcessed();            // depositProcessed[depositId] already true
+    error ZeroAddress();                 // creditBalance with user == address(0)
+    error ZeroAmount();                  // depositBalance/withdrawBalance/withdrawToArb with amount == 0
 
     // ============ EVENTS ============
 
@@ -125,6 +129,20 @@ interface IVision {
     event BotRegistered(address indexed bot, string endpoint);
     event BotDeregistered(address indexed bot);
     event FeeCollectorUpdated(address indexed oldCollector, address indexed newCollector);
+
+    // ============ DUAL-BALANCE EVENTS ============
+
+    /// @notice Emitted when virtual balance is credited via cross-chain deposit
+    event BalanceCredited(address indexed user, uint256 amount, uint256 indexed depositId);
+
+    /// @notice Emitted when real balance is deposited directly on L3
+    event BalanceDeposited(address indexed user, uint256 amount);
+
+    /// @notice Emitted when real balance is withdrawn to L3 wallet
+    event RealBalanceWithdrawn(address indexed user, uint256 amount);
+
+    /// @notice Emitted when virtual balance withdrawal to Arbitrum is requested
+    event WithdrawToArbRequested(address indexed user, uint256 amount, uint256 indexed withdrawId);
 
     // ============ BATCH MANAGEMENT ============
 
@@ -299,4 +317,58 @@ interface IVision {
         uint256 referenceNonce,
         uint256 signersBitmask
     ) external;
+
+    // ============ DUAL-BALANCE OPERATIONS ============
+
+    /// @notice Credit virtual balance after cross-chain deposit (BLS-gated, issuers only)
+    /// @dev No L3 USDC enters the contract. Backed by ArbBridgeCustody on Arb.
+    /// @param user        User to credit
+    /// @param amount      Amount in 18 decimals
+    /// @param depositId   Cross-chain deposit ID (for idempotency)
+    /// @param blsSignature Aggregated BLS signature
+    /// @param referenceNonce BLSVerifier snapshot nonce
+    /// @param signersBitmask Bitmask of signing issuers
+    function creditBalance(
+        address user,
+        uint256 amount,
+        uint256 depositId,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external;
+
+    /// @notice Direct deposit from L3 (user already has USDC on L3)
+    /// @param amount Amount in 18 decimals (L3 USDC)
+    function depositBalance(uint256 amount) external;
+
+    /// @notice Withdraw real balance to caller's L3 wallet
+    /// @param amount Amount in 18 decimals
+    function withdrawBalance(uint256 amount) external;
+
+    /// @notice Withdraw virtual balance back to Arbitrum via issuer bridge
+    /// @param amount Amount in 18 decimals
+    function withdrawToArb(uint256 amount) external;
+
+    /// @notice Total available balance for a user (real + virtual)
+    /// @param user User address
+    /// @return Total balance in 18 decimals
+    function balanceOf(address user) external view returns (uint256);
+
+    /// @notice Per-user L3 USDC balance — backed by real L3 USDC in the contract
+    function realBalance(address user) external view returns (uint256);
+
+    /// @notice Per-user virtual balance — backed by USDC locked in ArbBridgeCustody on Arb
+    function virtualBalance(address user) external view returns (uint256);
+
+    /// @notice Aggregate real balance tracking for solvency invariants
+    function totalRealBalance() external view returns (uint256);
+
+    /// @notice Aggregate virtual balance tracking for solvency invariants
+    function totalVirtualBalance() external view returns (uint256);
+
+    /// @notice Whether a cross-chain deposit ID has been processed
+    function depositProcessed(uint256 depositId) external view returns (bool);
+
+    /// @notice Auto-incrementing withdraw request ID
+    function withdrawNonce() external view returns (uint256);
 }

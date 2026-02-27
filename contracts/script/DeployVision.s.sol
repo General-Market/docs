@@ -7,17 +7,18 @@ import "forge-std/console.sol";
 import "../src/vision/Vision.sol";
 import "./helpers/DeployBLSHelper.sol";
 
-/// @title DeployVision - Deploy Vision.sol (P2Pool prediction market)
-/// @notice Deploys Vision contract for local E2E or testnet use.
-///         Reads USDC + IssuerRegistry from active deployment.
+/// @title DeployVision - Deploy Vision.sol (P2Pool prediction market) on L3
+/// @notice Deploys Vision contract on L3 (Index Orbit chain).
+///         Vision uses dual-balance architecture with real + virtual balances.
+///         USDC is L3 USDC (18 decimals). No L3BridgeCustody needed — withdrawToArb
+///         is a virtual debit, and issuers release from ArbBridgeCustody on Arb.
 ///
-/// Required env vars (read from active-deployment.json or env):
-///   - ISSUER_REGISTRY: address of IssuerRegistry (for BLS verification)
-///   - USDC_ADDRESS: address of USDC token (L3_WUSDC on L3, ARB_USDC on Arb)
+/// Required env vars:
+///   - ISSUER_REGISTRY: address of IssuerRegistry on L3 (for BLS verification)
+///   - USDC_ADDRESS: address of L3 USDC token (18 decimals)
 ///   - FEE_COLLECTOR: (optional) fee collector address; defaults to deployer
 contract DeployVision is DeployBLSHelper {
     uint256 public constant LOCAL_CHAIN_ID = 111222333;
-    uint256 public constant ARB_CHAIN_ID = 421611337;
 
     address public visionAddress;
 
@@ -62,7 +63,7 @@ contract DeployVision is DeployBLSHelper {
 
     function _getDeployerKey() internal view returns (uint256) {
         uint256 DEFAULT_KEY = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
-        if (block.chainid == LOCAL_CHAIN_ID || block.chainid == ARB_CHAIN_ID) {
+        if (block.chainid == LOCAL_CHAIN_ID) {
             return vm.envOr("PRIVATE_KEY", DEFAULT_KEY);
         }
         uint256 key = vm.envUint("PRIVATE_KEY");
