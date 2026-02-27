@@ -113,10 +113,10 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
         <div className="mt-4 bg-[var(--surface)] border border-border-light px-5 py-3 flex items-center gap-6">
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-              Batch
+              Tick
             </div>
             <div className="text-[16px] font-bold font-mono text-black">
-              {activeBatch ? `#${activeBatch.id.toLocaleString()}` : '—'}
+              {activeBatch ? `#${activeBatch.currentTick}` : '—'}
             </div>
           </div>
           <div>
@@ -129,7 +129,7 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
           </div>
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-              TVL
+              Pool
             </div>
             <div className="text-[16px] font-bold font-mono text-color-up">
               {activeBatch ? formatTvl(activeBatch.tvl) : '—'}
