@@ -2,13 +2,14 @@
 //!
 //! Implements the peer-to-peer prediction market system (Vision).
 //! This module handles batch management, bitmap storage, tick settlement,
-//! and player balance tracking.
+//! player balance tracking, and cross-chain deposit/withdraw orchestration.
 
 pub mod api;
 pub mod batch_config_orchestrator;
 pub mod bitmap_store;
 pub mod chain_listener;
 pub mod config;
+pub mod deposit_watcher;
 pub mod engine;
 pub mod multiplier;
 pub mod resolver;

@@ -140,3 +140,116 @@ pub enum Side {
     Up,
     Down,
 }
+
+// =============================================================================
+// Dual-balance deposit/withdraw types (Vision First Deposit)
+// =============================================================================
+
+/// Status of a cross-chain deposit order (Arb → L3 Vision).
+///
+/// State machine: Pending → CreditedOnL3 → CompletedOnArb
+///                Pending → Refunded (on failure, only from Pending)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum DepositStatus {
+    /// Deposit detected on Arb, waiting for finality + L3 credit.
+    Pending,
+    /// creditBalance() confirmed on L3, waiting for completeVisionDeposit() on Arb.
+    CreditedOnL3,
+    /// Full round-trip complete: L3 credited + Arb marked done.
+    CompletedOnArb,
+    /// Deposit refunded on Arb (only from Pending state).
+    Refunded,
+}
+
+impl DepositStatus {
+    /// Parse from database string representation.
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "pending" => Some(Self::Pending),
+            "credited_on_l3" => Some(Self::CreditedOnL3),
+            "completed" => Some(Self::CompletedOnArb),
+            "refunded" => Some(Self::Refunded),
+            _ => None,
+        }
+    }
+
+    /// Convert to database string representation.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Pending => "pending",
+            Self::CreditedOnL3 => "credited_on_l3",
+            Self::CompletedOnArb => "completed",
+            Self::Refunded => "refunded",
+        }
+    }
+}
+
+impl std::fmt::Display for DepositStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+/// A pending cross-chain deposit order tracked by the issuer.
+///
+/// Persisted to `vision_deposit_orders` table for crash recovery.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PendingVisionDeposit {
+    /// Cross-chain order ID from ArbBridgeCustody.
+    pub order_id: u64,
+    /// User address (depositor).
+    pub user: Address,
+    /// Amount in 18-decimal internal format (converted from 6-dec on Arb).
+    pub amount: U256,
+    /// Unix timestamp when the deposit was detected on Arb.
+    pub created_at: u64,
+    /// Current status in the deposit state machine.
+    pub status: DepositStatus,
+}
+
+/// Status of a cross-chain withdraw order (L3 Vision → Arb).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum WithdrawStatus {
+    /// WithdrawToArbRequested detected on L3, waiting for Arb completion.
+    Pending,
+    /// completeVisionWithdraw() confirmed on Arb.
+    Completed,
+}
+
+impl WithdrawStatus {
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "pending" => Some(Self::Pending),
+            "completed" => Some(Self::Completed),
+            _ => None,
+        }
+    }
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Pending => "pending",
+            Self::Completed => "completed",
+        }
+    }
+}
+
+impl std::fmt::Display for WithdrawStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+/// A pending cross-chain withdraw order tracked by the issuer.
+///
+/// Persisted to `vision_withdraw_orders` table for crash recovery.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PendingVisionWithdraw {
+    /// Withdraw ID from Vision.sol's withdrawNonce.
+    pub withdraw_id: u64,
+    /// User address (withdrawer).
+    pub user: Address,
+    /// Amount in 18-decimal internal format.
+    pub amount: U256,
+    /// Current status.
+    pub status: WithdrawStatus,
+}

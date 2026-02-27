@@ -46,6 +46,11 @@ struct EventTopics {
     rewards_claimed: H256,
     player_withdrawn: H256,
     force_withdrawn: H256,
+    // Dual-balance events (Vision First Deposit)
+    balance_credited: H256,
+    balance_deposited: H256,
+    real_balance_withdrawn: H256,
+    withdraw_to_arb_requested: H256,
 }
 
 impl EventTopics {
@@ -80,6 +85,19 @@ impl EventTopics {
             )),
             force_withdrawn: H256::from(ethers::utils::keccak256(
                 b"ForceWithdrawn(uint256,address,uint256)",
+            )),
+            // Dual-balance events (Vision First Deposit)
+            balance_credited: H256::from(ethers::utils::keccak256(
+                b"BalanceCredited(address,uint256,uint256)",
+            )),
+            balance_deposited: H256::from(ethers::utils::keccak256(
+                b"BalanceDeposited(address,uint256)",
+            )),
+            real_balance_withdrawn: H256::from(ethers::utils::keccak256(
+                b"RealBalanceWithdrawn(address,uint256)",
+            )),
+            withdraw_to_arb_requested: H256::from(ethers::utils::keccak256(
+                b"WithdrawToArbRequested(address,uint256,uint256)",
             )),
         }
     }
@@ -237,6 +255,16 @@ impl ChainListener {
                     self.handle_player_withdrawn(&log).await;
                 } else if *topic0 == topics.force_withdrawn {
                     self.handle_force_withdrawn(&log).await;
+                }
+                // Dual-balance events (Vision First Deposit)
+                else if *topic0 == topics.balance_credited {
+                    self.handle_balance_credited(&log).await;
+                } else if *topic0 == topics.balance_deposited {
+                    self.handle_balance_deposited(&log).await;
+                } else if *topic0 == topics.real_balance_withdrawn {
+                    self.handle_real_balance_withdrawn(&log).await;
+                } else if *topic0 == topics.withdraw_to_arb_requested {
+                    self.handle_withdraw_to_arb_requested(&log).await;
                 }
             }
         }
@@ -600,10 +628,14 @@ impl ChainListener {
             num_committed_ticks,
         };
 
-        // 1. Update in-memory scheduler
+        // 1. Update in-memory scheduler (per-batch position)
         self.scheduler.on_player_joined(batch_id, position).await;
 
-        // 2. Write to Postgres
+        // 1b. Implicit dual-balance update: joinBatch debits from user's global balance
+        //     (virtual first, then real — mirrors _debitBalance in Vision.sol)
+        self.scheduler.on_batch_join_debit(player, balance).await;
+
+        // 2. Write to Postgres (position)
         if let Err(e) = sqlx::query(
             "INSERT INTO vision_positions (batch_id, player, stake_per_tick, bitmap_hash, start_tick, balance, join_timestamp)
              VALUES ($1, $2, $3::numeric, $4, $5, $6::numeric, $7)
@@ -726,7 +758,7 @@ impl ChainListener {
             }
         };
 
-        // 1. Update in-memory scheduler
+        // 1. Update in-memory scheduler (per-batch position)
         if let Err(e) = self
             .scheduler
             .on_rewards_claimed(batch_id, player, new_balance)
@@ -735,7 +767,11 @@ impl ChainListener {
             warn!(batch_id, player = %player, error = %e, "Scheduler on_rewards_claimed failed");
         }
 
-        // 2. Update Postgres
+        // 1b. Implicit dual-balance update: claimRewards credits realBalance
+        //     (batch payouts are always real L3 USDC)
+        self.scheduler.on_batch_payout(player, amount).await;
+
+        // 2. Update Postgres (position)
         if let Err(e) = sqlx::query(
             "UPDATE vision_positions SET balance = $1::numeric WHERE batch_id = $2 AND player = $3",
         )
@@ -774,9 +810,18 @@ impl ChainListener {
             }
         };
 
+        // Decode the payout amount from data for dual-balance tracking
+        let payout_amount = decode_single_u256(&log.data).unwrap_or(U256::zero());
+
         // 1. Update in-memory scheduler (removes the player)
         if let Err(e) = self.scheduler.on_player_withdrawn(batch_id, player).await {
             warn!(batch_id, player = %player, error = %e, "Scheduler on_player_withdrawn failed");
+        }
+
+        // 1b. Implicit dual-balance update: withdraw credits realBalance
+        //     (batch payouts are always real L3 USDC)
+        if !payout_amount.is_zero() {
+            self.scheduler.on_batch_payout(player, payout_amount).await;
         }
 
         // 2. Delete from Postgres
@@ -791,12 +836,13 @@ impl ChainListener {
             warn!(batch_id, player = %player, error = %e, "Failed to delete position from Postgres");
         }
 
-        info!(batch_id, player = %player, "PlayerWithdrawn");
+        info!(batch_id, player = %player, payout = %payout_amount, "PlayerWithdrawn");
     }
 
     /// Handle `ForceWithdrawn(uint256 indexed batchId, address indexed player, uint256 amount)`
     ///
     /// Same as PlayerWithdrawn from the indexer's perspective: position is deleted.
+    /// Also credits the user's realBalance (batch payouts are always real).
     async fn handle_force_withdrawn(&self, log: &Log) {
         let batch_id = match extract_indexed_u64(log, 1) {
             Some(v) => v,
@@ -813,9 +859,17 @@ impl ChainListener {
             }
         };
 
+        // Decode the payout amount from data for dual-balance tracking
+        let payout_amount = decode_single_u256(&log.data).unwrap_or(U256::zero());
+
         // 1. Update in-memory scheduler (removes the player)
         if let Err(e) = self.scheduler.on_player_withdrawn(batch_id, player).await {
             warn!(batch_id, player = %player, error = %e, "Scheduler on_player_withdrawn (force) failed");
+        }
+
+        // 1b. Implicit dual-balance update: forceWithdraw credits realBalance
+        if !payout_amount.is_zero() {
+            self.scheduler.on_batch_payout(player, payout_amount).await;
         }
 
         // 2. Delete from Postgres
@@ -830,8 +884,236 @@ impl ChainListener {
             warn!(batch_id, player = %player, error = %e, "Failed to delete position (force) from Postgres");
         }
 
-        info!(batch_id, player = %player, "ForceWithdrawn");
+        info!(batch_id, player = %player, payout = %payout_amount, "ForceWithdrawn");
     }
+
+    // =========================================================================
+    // Dual-balance event handlers (Vision First Deposit)
+    // =========================================================================
+
+    /// Handle `BalanceCredited(address indexed user, uint256 amount, uint256 indexed depositId)`
+    ///
+    /// Emitted by Vision.creditBalance() after cross-chain deposit from Arb.
+    /// Updates the user's virtual balance in the tick scheduler and Postgres.
+    async fn handle_balance_credited(&self, log: &Log) {
+        let user = match extract_indexed_address(log, 1) {
+            Some(v) => v,
+            None => {
+                warn!("BalanceCredited: missing user topic");
+                return;
+            }
+        };
+
+        // data: amount (uint256)
+        let amount = match decode_single_u256(&log.data) {
+            Some(v) => v,
+            None => {
+                warn!(user = %user, "BalanceCredited: failed to decode amount");
+                return;
+            }
+        };
+
+        let deposit_id = match log.topics.get(2) {
+            Some(t) => U256::from(t.as_bytes()).as_u64(),
+            None => 0,
+        };
+
+        // 1. Update in-memory scheduler
+        self.scheduler.on_virtual_balance_credited(user, amount).await;
+
+        // 2. Update Postgres vision_user_balances
+        if let Err(e) = sqlx::query(
+            "INSERT INTO vision_user_balances (user_address, virtual_balance, updated_at)
+             VALUES ($1, $2, NOW())
+             ON CONFLICT (user_address) DO UPDATE SET
+                virtual_balance = (CAST(vision_user_balances.virtual_balance AS NUMERIC) + CAST($2 AS NUMERIC))::TEXT,
+                updated_at = NOW()",
+        )
+        .bind(format!("{:?}", user))
+        .bind(amount.to_string())
+        .execute(&self.pool)
+        .await
+        {
+            warn!(user = %user, error = %e, "Failed to update virtual balance in Postgres");
+        }
+
+        info!(
+            user = %user,
+            amount = %amount,
+            deposit_id,
+            "BalanceCredited (virtual)"
+        );
+    }
+
+    /// Handle `BalanceDeposited(address indexed user, uint256 amount)`
+    ///
+    /// Emitted by Vision.depositBalance() for direct L3 deposits.
+    /// Updates the user's real balance in the tick scheduler and Postgres.
+    async fn handle_balance_deposited(&self, log: &Log) {
+        let user = match extract_indexed_address(log, 1) {
+            Some(v) => v,
+            None => {
+                warn!("BalanceDeposited: missing user topic");
+                return;
+            }
+        };
+
+        let amount = match decode_single_u256(&log.data) {
+            Some(v) => v,
+            None => {
+                warn!(user = %user, "BalanceDeposited: failed to decode amount");
+                return;
+            }
+        };
+
+        // 1. Update in-memory scheduler
+        self.scheduler.on_real_balance_deposited(user, amount).await;
+
+        // 2. Update Postgres vision_user_balances
+        if let Err(e) = sqlx::query(
+            "INSERT INTO vision_user_balances (user_address, real_balance, updated_at)
+             VALUES ($1, $2, NOW())
+             ON CONFLICT (user_address) DO UPDATE SET
+                real_balance = (CAST(vision_user_balances.real_balance AS NUMERIC) + CAST($2 AS NUMERIC))::TEXT,
+                updated_at = NOW()",
+        )
+        .bind(format!("{:?}", user))
+        .bind(amount.to_string())
+        .execute(&self.pool)
+        .await
+        {
+            warn!(user = %user, error = %e, "Failed to update real balance in Postgres");
+        }
+
+        info!(user = %user, amount = %amount, "BalanceDeposited (real)");
+    }
+
+    /// Handle `RealBalanceWithdrawn(address indexed user, uint256 amount)`
+    ///
+    /// Emitted by Vision.withdrawBalance() when user withdraws real balance to L3 wallet.
+    async fn handle_real_balance_withdrawn(&self, log: &Log) {
+        let user = match extract_indexed_address(log, 1) {
+            Some(v) => v,
+            None => {
+                warn!("RealBalanceWithdrawn: missing user topic");
+                return;
+            }
+        };
+
+        let amount = match decode_single_u256(&log.data) {
+            Some(v) => v,
+            None => {
+                warn!(user = %user, "RealBalanceWithdrawn: failed to decode amount");
+                return;
+            }
+        };
+
+        // 1. Update in-memory scheduler
+        self.scheduler.on_real_balance_withdrawn(user, amount).await;
+
+        // 2. Update Postgres — decrement real balance
+        if let Err(e) = sqlx::query(
+            "UPDATE vision_user_balances SET
+                real_balance = (GREATEST(CAST(real_balance AS NUMERIC) - CAST($2 AS NUMERIC), 0))::TEXT,
+                updated_at = NOW()
+             WHERE user_address = $1",
+        )
+        .bind(format!("{:?}", user))
+        .bind(amount.to_string())
+        .execute(&self.pool)
+        .await
+        {
+            warn!(user = %user, error = %e, "Failed to decrement real balance in Postgres");
+        }
+
+        info!(user = %user, amount = %amount, "RealBalanceWithdrawn");
+    }
+
+    /// Handle `WithdrawToArbRequested(address indexed user, uint256 amount, uint256 indexed withdrawId)`
+    ///
+    /// Emitted by Vision.withdrawToArb() when user initiates Arb withdrawal.
+    /// Virtual balance already debited on-chain. We track the withdraw order
+    /// and the deposit watcher handles the Arb-side completion.
+    async fn handle_withdraw_to_arb_requested(&self, log: &Log) {
+        let user = match extract_indexed_address(log, 1) {
+            Some(v) => v,
+            None => {
+                warn!("WithdrawToArbRequested: missing user topic");
+                return;
+            }
+        };
+
+        // data: amount (uint256)
+        let amount = match decode_single_u256(&log.data) {
+            Some(v) => v,
+            None => {
+                warn!(user = %user, "WithdrawToArbRequested: failed to decode amount");
+                return;
+            }
+        };
+
+        let withdraw_id = match log.topics.get(2) {
+            Some(t) => U256::from(t.as_bytes()).as_u64(),
+            None => {
+                warn!(user = %user, "WithdrawToArbRequested: missing withdrawId topic");
+                return;
+            }
+        };
+
+        // 1. Update in-memory scheduler — debit virtual balance
+        self.scheduler.on_virtual_balance_withdrawn(user, amount).await;
+
+        // 2. Update Postgres — decrement virtual balance
+        if let Err(e) = sqlx::query(
+            "UPDATE vision_user_balances SET
+                virtual_balance = (GREATEST(CAST(virtual_balance AS NUMERIC) - CAST($2 AS NUMERIC), 0))::TEXT,
+                updated_at = NOW()
+             WHERE user_address = $1",
+        )
+        .bind(format!("{:?}", user))
+        .bind(amount.to_string())
+        .execute(&self.pool)
+        .await
+        {
+            warn!(user = %user, error = %e, "Failed to decrement virtual balance in Postgres");
+        }
+
+        // 3. Create withdraw order record
+        if let Err(e) = sqlx::query(
+            "INSERT INTO vision_withdraw_orders (withdraw_id, user_address, amount, status, created_at)
+             VALUES ($1, $2, $3, 'pending', NOW())
+             ON CONFLICT (withdraw_id) DO NOTHING",
+        )
+        .bind(withdraw_id as i64)
+        .bind(format!("{:?}", user))
+        .bind(amount.to_string())
+        .execute(&self.pool)
+        .await
+        {
+            warn!(user = %user, withdraw_id, error = %e, "Failed to insert withdraw order into Postgres");
+        }
+
+        info!(
+            user = %user,
+            amount = %amount,
+            withdraw_id,
+            "WithdrawToArbRequested"
+        );
+    }
+
+    // =========================================================================
+    // Implicit balance updates from existing events (AUDIT FIX round 3)
+    // =========================================================================
+    //
+    // PlayerJoined, RewardsClaimed, PlayerWithdrawn, ForceWithdrawn also change
+    // the user's global Vision balance, but don't emit dedicated balance events.
+    // These are handled in the existing handlers above with additional calls to
+    // the tick_scheduler's dual-balance methods.
+    //
+    // See handle_player_joined: calls on_batch_join_debit
+    // See handle_rewards_claimed: calls on_batch_payout
+    // See handle_player_withdrawn: calls on_batch_payout
+    // See handle_force_withdrawn: calls on_batch_payout
 
     // =========================================================================
     // Contract read helpers — raw ABI-encoded calls (no abigen!)
@@ -1101,6 +1383,12 @@ mod tests {
         assert_ne!(topics.batch_config_updated, H256::zero());
         assert_ne!(topics.batch_config_promoted, H256::zero());
 
+        // Verify dual-balance event topics
+        assert_ne!(topics.balance_credited, H256::zero());
+        assert_ne!(topics.balance_deposited, H256::zero());
+        assert_ne!(topics.real_balance_withdrawn, H256::zero());
+        assert_ne!(topics.withdraw_to_arb_requested, H256::zero());
+
         // All topics should be distinct
         let all = vec![
             topics.batch_created,
@@ -1113,6 +1401,10 @@ mod tests {
             topics.rewards_claimed,
             topics.player_withdrawn,
             topics.force_withdrawn,
+            topics.balance_credited,
+            topics.balance_deposited,
+            topics.real_balance_withdrawn,
+            topics.withdraw_to_arb_requested,
         ];
         let unique: std::collections::HashSet<_> = all.iter().collect();
         assert_eq!(unique.len(), all.len(), "All event topics must be unique");

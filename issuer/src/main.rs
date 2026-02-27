@@ -283,6 +283,18 @@ struct Args {
     #[arg(long)]
     vision_tick_poll_interval_ms: Option<u64>,
 
+    /// Arbitrum RPC URL for watching Vision deposit events.
+    #[arg(long)]
+    vision_arb_rpc_url: Option<String>,
+
+    /// ArbBridgeCustody contract address on Arbitrum (for Vision deposits).
+    #[arg(long)]
+    vision_arb_bridge_custody: Option<String>,
+
+    /// Arbitrum chain ID (default: 42161).
+    #[arg(long)]
+    vision_arb_chain_id: Option<u64>,
+
     /// Bearer token for authenticating data-node HTTP requests.
     /// Used by Vision, Arbitration, and NAV subsystems to authenticate with the data-node.
     #[arg(long, env = "DATA_NODE_TOKEN")]
@@ -3006,6 +3018,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 vision_cfg.tick_poll_interval_ms = ms;
             }
             vision_cfg.data_node_token = args.data_node_token.clone();
+            // Cross-chain deposit config
+            if let Some(ref url) = args.vision_arb_rpc_url {
+                vision_cfg.arb_rpc_url = url.clone();
+            }
+            if let Some(ref addr) = args.vision_arb_bridge_custody {
+                vision_cfg.arb_bridge_custody_address = addr.clone();
+            }
+            if let Some(chain_id) = args.vision_arb_chain_id {
+                vision_cfg.arb_chain_id = chain_id;
+            }
             Some(vision_cfg)
         } else {
             None

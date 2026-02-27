@@ -376,6 +376,19 @@ impl IssuerConfig {
                         staleness_threshold_secs: parse_env_var("ISSUER_VISION_STALENESS_THRESHOLD_SECS").unwrap_or(300),
                         tick_poll_interval_ms: parse_env_var("ISSUER_VISION_TICK_POLL_INTERVAL_MS").unwrap_or(1000),
                         data_node_token: std::env::var("DATA_NODE_TOKEN").ok(),
+                        // Cross-chain deposit fields (Vision First Deposit)
+                        arb_rpc_url: std::env::var("ISSUER_VISION_ARB_RPC_URL")
+                            .unwrap_or_else(|_| "https://arb1.arbitrum.io/rpc".into()),
+                        arb_bridge_custody_address: std::env::var("ISSUER_VISION_ARB_BRIDGE_CUSTODY_ADDRESS")
+                            .unwrap_or_default(),
+                        arb_chain_id: parse_env_var("ISSUER_VISION_ARB_CHAIN_ID").unwrap_or(42161),
+                        deposit_poll_interval_ms: parse_env_var("ISSUER_VISION_DEPOSIT_POLL_INTERVAL_MS").unwrap_or(5000),
+                        deposit_finality_confirmations: parse_env_var("ISSUER_VISION_DEPOSIT_FINALITY_CONFIRMATIONS").unwrap_or(15),
+                        gas_drip_amount_wei: std::env::var("ISSUER_VISION_GAS_DRIP_AMOUNT_WEI")
+                            .unwrap_or_else(|_| "10000000000000000".into()),
+                        gas_drip_threshold_wei: std::env::var("ISSUER_VISION_GAS_DRIP_THRESHOLD_WEI")
+                            .unwrap_or_else(|_| "5000000000000000".into()),
+                        deposit_auto_refund_timeout_secs: parse_env_var("ISSUER_VISION_DEPOSIT_AUTO_REFUND_TIMEOUT_SECS").unwrap_or(7200),
                     })
                 } else {
                     None

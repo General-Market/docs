@@ -1,5 +1,18 @@
 # Design Decision Backlog
 
+## Session: 20260228-0100-v3d7 (Vision First Deposit — Issuer Implementation)
+
+- [DECISION] Dual-balance tracking (user_real_balances + user_virtual_balances) lives in TickScheduler as RwLock<HashMap<Address, U256>> — separate from per-batch position tracking. Keeps batch resolution unchanged.
+- [DECISION] Dual-balance uses saturating arithmetic (saturating_add/saturating_sub) everywhere — prevents panics if chain events arrive out of order during catch-up.
+- [DECISION] on_batch_join_debit debits virtual first, then real — mirrors Vision.sol _debitBalance exactly.
+- [DECISION] Implicit balance changes from PlayerJoined/RewardsClaimed/PlayerWithdrawn/ForceWithdrawn are handled in existing chain_listener handlers with additional calls to dual-balance methods — no separate events needed since the contract doesn't emit dedicated balance events for these.
+- [DECISION] VisionDepositWatcher is a standalone background task (not part of main consensus loop) — follows same architectural pattern as chain_listener. BLS consensus integration requires wiring into the main P2P message routing loop (TODO markers added).
+- [DECISION] BLS message hashes for creditBalance/completeVisionDeposit/refundVisionDeposit/completeVisionWithdraw are implemented as standalone functions (build_*_hash) — can be called from either the deposit watcher or the consensus handler.
+- [DECISION] Auto-refund safety: before signing any refundVisionDeposit, always query Vision.depositProcessed[depositId] on L3 — prevents credit+refund double-money attack (AUDIT FIX round 3).
+- [DECISION] Postgres vision_user_balances uses TEXT for uint256 values (same pattern as existing vision_positions balance field) — avoids BigDecimal dependency.
+- [DECISION] API endpoints use in-memory scheduler for balance reads (instant) but Postgres for deposit/withdraw order status (persistent) — fast path for balance display, reliable path for order tracking.
+- [DECISION] Database migration is a separate file (002_create_vision_deposit_tables.sql) rather than modifying 001 — allows incremental migration on existing deployments.
+
 ## Session: 20260227-2330-c7x1 (Issuer Concurrency Overhaul)
 
 - [DECISION] compute_threshold changed from floor(2n/3)+1 to ceil(2n/3) — for n=3, threshold drops from 3→2. Allows 2/3 fault tolerance instead of requiring all issuers.

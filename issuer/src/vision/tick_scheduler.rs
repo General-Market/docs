@@ -14,6 +14,10 @@ use tracing::info;
 use super::types::{Batch, PlayerBalance, PlayerPosition};
 
 /// Tick scheduler: tracks active batches and determines when ticks are due.
+///
+/// Also tracks dual-balance state per user (real + virtual), separate from
+/// per-batch position balances. The dual-balance is the global Vision.sol
+/// balance available for joining batches or withdrawing.
 pub struct TickScheduler {
     /// All active batches: batch_id -> Batch
     batches: RwLock<HashMap<u64, Batch>>,
@@ -21,6 +25,13 @@ pub struct TickScheduler {
     players: RwLock<HashMap<u64, HashMap<Address, PlayerPosition>>>,
     /// Last resolved tick per batch: batch_id -> tick_id
     last_resolved: RwLock<HashMap<u64, u64>>,
+
+    // === Dual-balance state (Vision First Deposit) ===
+
+    /// Per-user real balance — backed by actual L3 USDC in Vision.sol.
+    user_real_balances: RwLock<HashMap<Address, U256>>,
+    /// Per-user virtual balance — backed by USDC locked in ArbBridgeCustody on Arb.
+    user_virtual_balances: RwLock<HashMap<Address, U256>>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -37,6 +48,8 @@ impl TickScheduler {
             batches: RwLock::new(HashMap::new()),
             players: RwLock::new(HashMap::new()),
             last_resolved: RwLock::new(HashMap::new()),
+            user_real_balances: RwLock::new(HashMap::new()),
+            user_virtual_balances: RwLock::new(HashMap::new()),
         }
     }
 
@@ -199,6 +212,114 @@ impl TickScheduler {
             // Clear pending config since it's now active
             batch.next_config_hash = H256::zero();
         }
+    }
+
+    // === Dual-balance event handlers (Vision First Deposit) ===
+    //
+    // These track the global per-user Vision balance (real + virtual),
+    // separate from per-batch position balances above.
+
+    /// Credit virtual balance after cross-chain deposit from Arb.
+    /// Called when `BalanceCredited(user, amount, depositId)` event is received.
+    pub async fn on_virtual_balance_credited(&self, user: Address, amount: U256) {
+        let mut balances = self.user_virtual_balances.write().await;
+        let entry = balances.entry(user).or_insert(U256::zero());
+        *entry = entry.saturating_add(amount);
+    }
+
+    /// Credit real balance after direct L3 deposit.
+    /// Called when `BalanceDeposited(user, amount)` event is received.
+    pub async fn on_real_balance_deposited(&self, user: Address, amount: U256) {
+        let mut balances = self.user_real_balances.write().await;
+        let entry = balances.entry(user).or_insert(U256::zero());
+        *entry = entry.saturating_add(amount);
+    }
+
+    /// Debit real balance after L3 withdrawal.
+    /// Called when `RealBalanceWithdrawn(user, amount)` event is received.
+    pub async fn on_real_balance_withdrawn(&self, user: Address, amount: U256) {
+        let mut balances = self.user_real_balances.write().await;
+        let entry = balances.entry(user).or_insert(U256::zero());
+        *entry = entry.saturating_sub(amount);
+    }
+
+    /// Debit virtual balance after withdrawToArb.
+    /// Called when `WithdrawToArbRequested(user, amount, withdrawId)` event is received.
+    pub async fn on_virtual_balance_withdrawn(&self, user: Address, amount: U256) {
+        let mut balances = self.user_virtual_balances.write().await;
+        let entry = balances.entry(user).or_insert(U256::zero());
+        *entry = entry.saturating_sub(amount);
+    }
+
+    /// Credit real balance after batch payout (claimRewards, withdraw, forceWithdraw).
+    /// Batch payouts always credit realBalance because the batch pool holds real L3 USDC.
+    pub async fn on_batch_payout(&self, user: Address, amount: U256) {
+        let mut balances = self.user_real_balances.write().await;
+        let entry = balances.entry(user).or_insert(U256::zero());
+        *entry = entry.saturating_add(amount);
+    }
+
+    /// Debit user balance after joining a batch (virtual first, then real).
+    /// Mirrors `_debitBalance` in Vision.sol.
+    pub async fn on_batch_join_debit(&self, user: Address, amount: U256) {
+        let mut virtual_balances = self.user_virtual_balances.write().await;
+        let mut real_balances = self.user_real_balances.write().await;
+
+        let virtual_bal = virtual_balances.entry(user).or_insert(U256::zero());
+        let real_bal = real_balances.entry(user).or_insert(U256::zero());
+
+        // Debit virtual first, then real (same logic as contract)
+        let from_virtual = if amount > *virtual_bal {
+            *virtual_bal
+        } else {
+            amount
+        };
+        let from_real = amount.saturating_sub(from_virtual);
+
+        *virtual_bal = virtual_bal.saturating_sub(from_virtual);
+        *real_bal = real_bal.saturating_sub(from_real);
+    }
+
+    /// Get user's dual balance (realBalance, virtualBalance).
+    pub async fn get_user_balance(&self, user: Address) -> (U256, U256) {
+        let real = self
+            .user_real_balances
+            .read()
+            .await
+            .get(&user)
+            .copied()
+            .unwrap_or(U256::zero());
+        let virtual_bal = self
+            .user_virtual_balances
+            .read()
+            .await
+            .get(&user)
+            .copied()
+            .unwrap_or(U256::zero());
+        (real, virtual_bal)
+    }
+
+    /// Get user's total balance (real + virtual).
+    pub async fn get_user_total_balance(&self, user: Address) -> U256 {
+        let (real, virtual_bal) = self.get_user_balance(user).await;
+        real.saturating_add(virtual_bal)
+    }
+
+    /// Set user balances directly (used for DB-based crash recovery).
+    pub async fn set_user_balances(
+        &self,
+        user: Address,
+        real_balance: U256,
+        virtual_balance: U256,
+    ) {
+        self.user_real_balances
+            .write()
+            .await
+            .insert(user, real_balance);
+        self.user_virtual_balances
+            .write()
+            .await
+            .insert(user, virtual_balance);
     }
 
     // === DB persistence for crash recovery ===
@@ -748,5 +869,173 @@ mod tests {
             .await;
         // No batch exists, so nothing happened
         assert!(scheduler.get_batch(999).await.is_none());
+    }
+
+    // === Dual-balance tests (Vision First Deposit) ===
+
+    #[tokio::test]
+    async fn test_dual_balance_credit_and_query() {
+        let scheduler = TickScheduler::new();
+        let user = Address::from([0xAA; 20]);
+
+        // Initially zero
+        let (real, virt) = scheduler.get_user_balance(user).await;
+        assert_eq!(real, U256::zero());
+        assert_eq!(virt, U256::zero());
+        assert_eq!(scheduler.get_user_total_balance(user).await, U256::zero());
+
+        // Credit virtual balance (cross-chain deposit from Arb)
+        scheduler
+            .on_virtual_balance_credited(user, U256::from(1000))
+            .await;
+        let (real, virt) = scheduler.get_user_balance(user).await;
+        assert_eq!(real, U256::zero());
+        assert_eq!(virt, U256::from(1000));
+        assert_eq!(
+            scheduler.get_user_total_balance(user).await,
+            U256::from(1000)
+        );
+
+        // Credit real balance (direct L3 deposit)
+        scheduler
+            .on_real_balance_deposited(user, U256::from(500))
+            .await;
+        let (real, virt) = scheduler.get_user_balance(user).await;
+        assert_eq!(real, U256::from(500));
+        assert_eq!(virt, U256::from(1000));
+        assert_eq!(
+            scheduler.get_user_total_balance(user).await,
+            U256::from(1500)
+        );
+    }
+
+    #[tokio::test]
+    async fn test_dual_balance_withdraw() {
+        let scheduler = TickScheduler::new();
+        let user = Address::from([0xBB; 20]);
+
+        scheduler
+            .on_real_balance_deposited(user, U256::from(1000))
+            .await;
+        scheduler
+            .on_virtual_balance_credited(user, U256::from(2000))
+            .await;
+
+        // Withdraw real
+        scheduler
+            .on_real_balance_withdrawn(user, U256::from(300))
+            .await;
+        let (real, virt) = scheduler.get_user_balance(user).await;
+        assert_eq!(real, U256::from(700));
+        assert_eq!(virt, U256::from(2000));
+
+        // Withdraw virtual (withdrawToArb)
+        scheduler
+            .on_virtual_balance_withdrawn(user, U256::from(500))
+            .await;
+        let (real, virt) = scheduler.get_user_balance(user).await;
+        assert_eq!(real, U256::from(700));
+        assert_eq!(virt, U256::from(1500));
+    }
+
+    #[tokio::test]
+    async fn test_dual_balance_batch_join_debit_virtual_first() {
+        let scheduler = TickScheduler::new();
+        let user = Address::from([0xCC; 20]);
+
+        // User has 600 virtual + 400 real = 1000 total
+        scheduler
+            .on_virtual_balance_credited(user, U256::from(600))
+            .await;
+        scheduler
+            .on_real_balance_deposited(user, U256::from(400))
+            .await;
+
+        // Join batch with 800 USDC — should debit 600 virtual + 200 real
+        scheduler
+            .on_batch_join_debit(user, U256::from(800))
+            .await;
+
+        let (real, virt) = scheduler.get_user_balance(user).await;
+        assert_eq!(virt, U256::zero(), "Virtual should be fully drained");
+        assert_eq!(real, U256::from(200), "Real should have 200 remaining");
+    }
+
+    #[tokio::test]
+    async fn test_dual_balance_batch_join_debit_only_virtual() {
+        let scheduler = TickScheduler::new();
+        let user = Address::from([0xDD; 20]);
+
+        scheduler
+            .on_virtual_balance_credited(user, U256::from(1000))
+            .await;
+        scheduler
+            .on_real_balance_deposited(user, U256::from(500))
+            .await;
+
+        // Join with 500 — all from virtual
+        scheduler
+            .on_batch_join_debit(user, U256::from(500))
+            .await;
+
+        let (real, virt) = scheduler.get_user_balance(user).await;
+        assert_eq!(virt, U256::from(500), "Virtual should have 500 remaining");
+        assert_eq!(real, U256::from(500), "Real should be untouched");
+    }
+
+    #[tokio::test]
+    async fn test_dual_balance_batch_payout_credits_real() {
+        let scheduler = TickScheduler::new();
+        let user = Address::from([0xEE; 20]);
+
+        // Start with only virtual balance
+        scheduler
+            .on_virtual_balance_credited(user, U256::from(1000))
+            .await;
+
+        // Batch payout always credits real
+        scheduler
+            .on_batch_payout(user, U256::from(300))
+            .await;
+
+        let (real, virt) = scheduler.get_user_balance(user).await;
+        assert_eq!(real, U256::from(300), "Payout should credit real");
+        assert_eq!(virt, U256::from(1000), "Virtual should be untouched");
+    }
+
+    #[tokio::test]
+    async fn test_dual_balance_set_and_get() {
+        let scheduler = TickScheduler::new();
+        let user = Address::from([0xFF; 20]);
+
+        scheduler
+            .set_user_balances(user, U256::from(123), U256::from(456))
+            .await;
+
+        let (real, virt) = scheduler.get_user_balance(user).await;
+        assert_eq!(real, U256::from(123));
+        assert_eq!(virt, U256::from(456));
+        assert_eq!(
+            scheduler.get_user_total_balance(user).await,
+            U256::from(579)
+        );
+    }
+
+    #[tokio::test]
+    async fn test_dual_balance_saturating_withdraw() {
+        let scheduler = TickScheduler::new();
+        let user = Address::from([0x11; 20]);
+
+        scheduler
+            .on_real_balance_deposited(user, U256::from(100))
+            .await;
+
+        // Withdraw more than available — should saturate to 0, not underflow
+        scheduler
+            .on_real_balance_withdrawn(user, U256::from(200))
+            .await;
+
+        let (real, _virt) = scheduler.get_user_balance(user).await;
+        assert_eq!(real, U256::zero(), "Should saturate to 0, not underflow");
     }
 }

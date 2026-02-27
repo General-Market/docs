@@ -74,6 +74,10 @@ pub fn routes(state: Arc<VisionState>) -> axum::Router {
         .route("/vision/reveal/:batch_id/:tick_id", get(get_reveals))
         .route("/vision/markets", get(markets))
         .route("/vision/leaderboard", get(vision_leaderboard))
+        // Dual-balance endpoints (Vision First Deposit)
+        .route("/vision/user/:address/balance", get(get_user_balance))
+        .route("/vision/deposit/:order_id/status", get(get_deposit_status))
+        .route("/vision/withdraw/:withdraw_id/status", get(get_withdraw_status))
         .with_state(state)
 }
 
@@ -969,6 +973,199 @@ async fn vision_leaderboard(
 struct DepositRow {
     player: String,
     total_deposited: Option<i64>,
+}
+
+// ---------------------------------------------------------------------------
+// GET /vision/user/:address/balance (Dual-balance — Vision First Deposit)
+// ---------------------------------------------------------------------------
+
+/// Response for user's dual Vision balance.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct UserBalanceResponse {
+    /// Real balance — backed by actual L3 USDC in Vision.sol.
+    real_balance: String,
+    /// Virtual balance — backed by USDC locked in ArbBridgeCustody on Arb.
+    virtual_balance: String,
+    /// Total balance (real + virtual) — what the user can spend.
+    total: String,
+}
+
+/// Get a user's dual Vision balance (real + virtual).
+///
+/// Reads from the in-memory tick scheduler for instant response.
+/// `realBalance` = withdrawable to L3 wallet (via `withdrawBalance`)
+/// `virtualBalance` = withdrawable to Arb wallet (via `withdrawToArb`)
+async fn get_user_balance(
+    State(state): State<Arc<VisionState>>,
+    Path(address_str): Path<String>,
+) -> impl IntoResponse {
+    let user: Address = match address_str.parse() {
+        Ok(addr) => addr,
+        Err(e) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(ApiError::new(format!("Invalid address: {e}"))),
+            )
+                .into_response();
+        }
+    };
+
+    let (real_balance, virtual_balance) = state.scheduler.get_user_balance(user).await;
+    let total = real_balance.saturating_add(virtual_balance);
+
+    (
+        StatusCode::OK,
+        Json(UserBalanceResponse {
+            real_balance: real_balance.to_string(),
+            virtual_balance: virtual_balance.to_string(),
+            total: total.to_string(),
+        }),
+    )
+        .into_response()
+}
+
+// ---------------------------------------------------------------------------
+// GET /vision/deposit/:order_id/status
+// ---------------------------------------------------------------------------
+
+/// Response for cross-chain deposit order status.
+#[derive(Debug, Serialize)]
+struct DepositStatusResponse {
+    order_id: i64,
+    status: String,
+    user_address: Option<String>,
+    amount: Option<String>,
+    created_at: Option<chrono::NaiveDateTime>,
+    completed_at: Option<chrono::NaiveDateTime>,
+}
+
+/// Row type for deposit order queries.
+#[derive(Debug, sqlx::FromRow)]
+struct DepositOrderRow {
+    order_id: i64,
+    user_address: String,
+    amount: String,
+    status: String,
+    created_at: chrono::NaiveDateTime,
+    completed_at: Option<chrono::NaiveDateTime>,
+}
+
+/// Get the status of a cross-chain deposit order.
+///
+/// Returns the current state in the deposit state machine:
+/// pending → credited_on_l3 → completed | pending → refunded
+async fn get_deposit_status(
+    State(state): State<Arc<VisionState>>,
+    Path(order_id): Path<i64>,
+) -> impl IntoResponse {
+    let row = sqlx::query_as::<_, DepositOrderRow>(
+        "SELECT order_id, user_address, amount, status, created_at, completed_at
+         FROM vision_deposit_orders
+         WHERE order_id = $1",
+    )
+    .bind(order_id)
+    .fetch_optional(&state.pool)
+    .await;
+
+    match row {
+        Ok(Some(r)) => (
+            StatusCode::OK,
+            Json(DepositStatusResponse {
+                order_id: r.order_id,
+                status: r.status,
+                user_address: Some(r.user_address),
+                amount: Some(r.amount),
+                created_at: Some(r.created_at),
+                completed_at: r.completed_at,
+            }),
+        )
+            .into_response(),
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            Json(ApiError::new(format!("Deposit order {order_id} not found"))),
+        )
+            .into_response(),
+        Err(e) => {
+            warn!(order_id, error = %e, "Failed to query deposit order");
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError::new(format!("Database error: {e}"))),
+            )
+                .into_response()
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// GET /vision/withdraw/:withdraw_id/status
+// ---------------------------------------------------------------------------
+
+/// Response for cross-chain withdraw order status.
+#[derive(Debug, Serialize)]
+struct WithdrawStatusResponse {
+    withdraw_id: i64,
+    status: String,
+    user_address: Option<String>,
+    amount: Option<String>,
+    created_at: Option<chrono::NaiveDateTime>,
+    completed_at: Option<chrono::NaiveDateTime>,
+}
+
+/// Row type for withdraw order queries.
+#[derive(Debug, sqlx::FromRow)]
+struct WithdrawOrderRow {
+    withdraw_id: i64,
+    user_address: String,
+    amount: String,
+    status: String,
+    created_at: chrono::NaiveDateTime,
+    completed_at: Option<chrono::NaiveDateTime>,
+}
+
+/// Get the status of a cross-chain withdraw order.
+///
+/// Returns the current state: pending → completed
+async fn get_withdraw_status(
+    State(state): State<Arc<VisionState>>,
+    Path(withdraw_id): Path<i64>,
+) -> impl IntoResponse {
+    let row = sqlx::query_as::<_, WithdrawOrderRow>(
+        "SELECT withdraw_id, user_address, amount, status, created_at, completed_at
+         FROM vision_withdraw_orders
+         WHERE withdraw_id = $1",
+    )
+    .bind(withdraw_id)
+    .fetch_optional(&state.pool)
+    .await;
+
+    match row {
+        Ok(Some(r)) => (
+            StatusCode::OK,
+            Json(WithdrawStatusResponse {
+                withdraw_id: r.withdraw_id,
+                status: r.status,
+                user_address: Some(r.user_address),
+                amount: Some(r.amount),
+                created_at: Some(r.created_at),
+                completed_at: r.completed_at,
+            }),
+        )
+            .into_response(),
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            Json(ApiError::new(format!("Withdraw order {withdraw_id} not found"))),
+        )
+            .into_response(),
+        Err(e) => {
+            warn!(withdraw_id, error = %e, "Failed to query withdraw order");
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError::new(format!("Database error: {e}"))),
+            )
+                .into_response()
+        }
+    }
 }
 
 #[cfg(test)]
