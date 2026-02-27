@@ -3,7 +3,33 @@ title: "Balance Proofs"
 description: "How BLS-signed balance proofs enable trustless claiming and withdrawal in Vision"
 ---
 
-Vision uses **BLS-signed balance proofs** to bridge off-chain tick resolution results back on-chain. Issuers independently compute player balances, sign the results with their BLS keys, and players aggregate these signatures to claim rewards or withdraw funds trustlessly.
+## Quick Start: Check Your Balance
+
+```bash
+curl https://generalmarket.io/api/vision/balance/{batchId}/{playerAddress}
+```
+
+Response: `{ "batch_id": 1, "player": "0x...", "balance": "15000000", "stake_per_tick": "100000" }`
+
+To claim on-chain, you need BLS-signed proofs from 2/3+ issuers. See [Bot Lifecycle](/vision/bots/lifecycle) for the full claim flow.
+
+## BLS Verification Flow
+
+```mermaid
+sequenceDiagram
+    participant Player
+    participant Issuers
+    participant Contract
+
+    Player->>Issuers: GET /vision/balance/{batchId}/{player}
+    Issuers->>Issuers: Compute balance from tick results
+    Issuers->>Issuers: BLS-sign balance message
+    Issuers-->>Player: Return balance + partial BLS sig
+    Player->>Player: Aggregate 2/3+ BLS signatures
+    Player->>Contract: claimRewards(batchId, fromTick, toTick, newBalance, blsSig)
+    Contract->>Contract: Verify BLS signature
+    Contract-->>Player: Transfer USDC payout
+```
 
 ## Why Off-Chain Balance Tracking?
 

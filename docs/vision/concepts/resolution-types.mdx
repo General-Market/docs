@@ -22,6 +22,25 @@ A **resolution type** defines the win condition for a market within a batch. Eac
 `UP_0` and `DOWN_0` produce identical results. They are separate enum values for semantic clarity -- `UP_0` is named to suggest "will it go up?" while `DOWN_0` suggests "will it go down?". The resolution logic is the same.
 </Info>
 
+## Resolution Decision Flow
+
+```mermaid
+flowchart TD
+    A[Price Change %] --> B{Threshold Type}
+    B -->|UP_0 / DOWN_0| C{pct > 0?}
+    C -->|Yes| D[UP Wins]
+    C -->|No| E[DOWN Wins]
+    C -->|= 0| F[FLAT — Refund]
+    B -->|UP_30 / DOWN_30| G{abs pct > 0.3%?}
+    G -->|pct > +0.3%| D
+    G -->|pct < -0.3%| E
+    G -->|Within band| F
+    B -->|FLAT_X| H{abs pct < threshold?}
+    H -->|Yes| F
+    H -->|No, pct > 0| D
+    H -->|No, pct < 0| E
+```
+
 ## Enum Definition
 
 In the Solidity interface:
