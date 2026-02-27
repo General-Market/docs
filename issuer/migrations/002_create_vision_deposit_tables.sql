@@ -6,6 +6,7 @@ DROP TABLE IF EXISTS vision_withdraw_orders CASCADE;
 DROP TABLE IF EXISTS vision_deposit_orders CASCADE;
 DROP TABLE IF EXISTS vision_user_balances CASCADE;
 DROP TABLE IF EXISTS vision_last_resolved CASCADE;
+DROP TABLE IF EXISTS vision_kv_store CASCADE;
 
 -- Per-user dual balance: real (backed by L3 USDC) + virtual (backed by ArbBridgeCustody)
 CREATE TABLE IF NOT EXISTS vision_user_balances (
@@ -54,4 +55,10 @@ CREATE TABLE IF NOT EXISTS vision_last_resolved (
     batch_id BIGINT PRIMARY KEY,
     last_tick_id BIGINT NOT NULL,
     resolved_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Key-value store for deposit watcher cursors
+CREATE TABLE IF NOT EXISTS vision_kv_store (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
 );

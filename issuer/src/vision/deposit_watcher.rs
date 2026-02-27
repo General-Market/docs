@@ -58,6 +58,12 @@ pub struct VisionDepositWatcher {
     vision_address: Address,
     /// ArbBridgeCustody address on Arbitrum.
     arb_custody_address: Address,
+    /// IssuerRegistry address on L3 (for reading lastSnapshotNonce for BLS referenceNonce).
+    l3_registry_address: Address,
+    /// IssuerRegistry address on Arb (for reading lastSnapshotNonce for BLS referenceNonce).
+    /// On L3 testnet where both chains share the same registry, this equals l3_registry_address.
+    /// In production with separate chains, these would differ (e.g., MirrorIssuerRegistry on Arb).
+    arb_registry_address: Address,
     /// Postgres pool for persistence.
     pool: PgPool,
     /// Configuration.
@@ -93,6 +99,8 @@ impl VisionDepositWatcher {
         l3_provider: Arc<Provider<Http>>,
         vision_address: Address,
         arb_custody_address: Address,
+        l3_registry_address: Address,
+        arb_registry_address: Address,
         pool: PgPool,
         config: VisionConfig,
         bls_keypair: Option<BLSKeyPair>,
@@ -123,6 +131,8 @@ impl VisionDepositWatcher {
             l3_provider,
             vision_address,
             arb_custody_address,
+            l3_registry_address,
+            arb_registry_address,
             pool,
             config,
             pending_deposits: HashMap::new(),
@@ -654,6 +664,32 @@ impl VisionDepositWatcher {
     // BLS signing + chain submission (Issue 2)
     // =========================================================================
 
+    /// Read `lastSnapshotNonce()` from an IssuerRegistry contract.
+    ///
+    /// The reference nonce is required as a parameter in all BLS-verified calls.
+    /// For L3 operations (creditBalance), read from L3 IssuerRegistry via `l3_provider`.
+    /// For Arb operations (completeVisionDeposit, refundVisionDeposit, completeVisionWithdraw),
+    /// read from Arb IssuerRegistry via `arb_provider`.
+    async fn get_reference_nonce(
+        &self,
+        provider: &Provider<Http>,
+        registry_address: Address,
+    ) -> Result<U256, String> {
+        let selector = &ethers::utils::keccak256(b"lastSnapshotNonce()")[..4];
+        let tx = ethers::types::TransactionRequest::new()
+            .to(registry_address)
+            .data(selector.to_vec());
+        let result = provider
+            .call(&tx.into(), None)
+            .await
+            .map_err(|e| format!("Failed to read lastSnapshotNonce: {e}"))?;
+        if result.len() >= 32 {
+            Ok(U256::from_big_endian(&result[..32]))
+        } else {
+            Err("Invalid response from lastSnapshotNonce".into())
+        }
+    }
+
     /// Sign and submit Vision.creditBalance() on L3.
     ///
     /// Builds the BLS signature, encodes calldata, and submits via the L3 chain writer.
@@ -679,13 +715,19 @@ impl VisionDepositWatcher {
         // Build signer bitmap (single issuer: bit at node_index)
         let signer_bitmap = U256::one() << self.node_index;
 
+        // Read referenceNonce from L3 IssuerRegistry (creditBalance is an L3 operation)
+        let reference_nonce = self
+            .get_reference_nonce(&self.l3_provider, self.l3_registry_address)
+            .await?;
+
         // Build creditBalance calldata:
-        // creditBalance(address user, uint256 amount, uint256 depositId, bytes blsSignature, uint256 signersBitmask)
+        // creditBalance(address user, uint256 amount, uint256 depositId, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
         let calldata = build_credit_balance_calldata(
             user,
             amount,
             deposit_id,
             &signature.0,
+            reference_nonce,
             signer_bitmap,
         );
 
@@ -716,10 +758,16 @@ impl VisionDepositWatcher {
 
         let signer_bitmap = U256::one() << self.node_index;
 
-        // completeVisionDeposit(uint256 orderId, bytes blsSignature, uint256 signersBitmask)
+        // Read referenceNonce from Arb IssuerRegistry (completeVisionDeposit is an Arb operation)
+        let reference_nonce = self
+            .get_reference_nonce(&self.arb_provider, self.arb_registry_address)
+            .await?;
+
+        // completeVisionDeposit(uint256 orderId, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
         let calldata = build_complete_deposit_calldata(
             order_id,
             &signature.0,
+            reference_nonce,
             signer_bitmap,
         );
 
@@ -750,10 +798,16 @@ impl VisionDepositWatcher {
 
         let signer_bitmap = U256::one() << self.node_index;
 
-        // refundVisionDeposit(uint256 orderId, bytes blsSignature, uint256 signersBitmask)
+        // Read referenceNonce from Arb IssuerRegistry (refundVisionDeposit is an Arb operation)
+        let reference_nonce = self
+            .get_reference_nonce(&self.arb_provider, self.arb_registry_address)
+            .await?;
+
+        // refundVisionDeposit(uint256 orderId, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
         let calldata = build_refund_deposit_calldata(
             order_id,
             &signature.0,
+            reference_nonce,
             signer_bitmap,
         );
 
@@ -786,12 +840,18 @@ impl VisionDepositWatcher {
 
         let signer_bitmap = U256::one() << self.node_index;
 
-        // completeVisionWithdraw(uint256 withdrawId, address user, uint256 amount, bytes blsSignature, uint256 signersBitmask)
+        // Read referenceNonce from Arb IssuerRegistry (completeVisionWithdraw is an Arb operation)
+        let reference_nonce = self
+            .get_reference_nonce(&self.arb_provider, self.arb_registry_address)
+            .await?;
+
+        // completeVisionWithdraw(uint256 withdrawId, address user, uint256 amount, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
         let calldata = build_complete_withdraw_calldata(
             withdraw_id,
             user,
             amount,
             &signature.0,
+            reference_nonce,
             signer_bitmap,
         );
 
@@ -1250,16 +1310,17 @@ impl VisionDepositWatcher {
 // Calldata builders for BLS-signed contract calls
 // =============================================================================
 
-/// Build calldata for Vision.creditBalance(address user, uint256 amount, uint256 depositId, bytes blsSignature, uint256 signersBitmask)
+/// Build calldata for Vision.creditBalance(address user, uint256 amount, uint256 depositId, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
 fn build_credit_balance_calldata(
     user: Address,
     amount: U256,
     deposit_id: U256,
     bls_signature: &[u8],
+    reference_nonce: U256,
     signers_bitmask: U256,
 ) -> Vec<u8> {
     let selector = &ethers::utils::keccak256(
-        b"creditBalance(address,uint256,uint256,bytes,uint256)",
+        b"creditBalance(address,uint256,uint256,bytes,uint256,uint256)",
     )[..4];
 
     let encoded_args = abi::encode(&[
@@ -1267,6 +1328,7 @@ fn build_credit_balance_calldata(
         Token::Uint(amount),
         Token::Uint(deposit_id),
         Token::Bytes(bls_signature.to_vec()),
+        Token::Uint(reference_nonce),
         Token::Uint(signers_bitmask),
     ]);
 
@@ -1276,19 +1338,21 @@ fn build_credit_balance_calldata(
     calldata
 }
 
-/// Build calldata for ArbBridgeCustody.completeVisionDeposit(uint256 orderId, bytes blsSignature, uint256 signersBitmask)
+/// Build calldata for ArbBridgeCustody.completeVisionDeposit(uint256 orderId, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
 fn build_complete_deposit_calldata(
     order_id: U256,
     bls_signature: &[u8],
+    reference_nonce: U256,
     signers_bitmask: U256,
 ) -> Vec<u8> {
     let selector = &ethers::utils::keccak256(
-        b"completeVisionDeposit(uint256,bytes,uint256)",
+        b"completeVisionDeposit(uint256,bytes,uint256,uint256)",
     )[..4];
 
     let encoded_args = abi::encode(&[
         Token::Uint(order_id),
         Token::Bytes(bls_signature.to_vec()),
+        Token::Uint(reference_nonce),
         Token::Uint(signers_bitmask),
     ]);
 
@@ -1298,19 +1362,21 @@ fn build_complete_deposit_calldata(
     calldata
 }
 
-/// Build calldata for ArbBridgeCustody.refundVisionDeposit(uint256 orderId, bytes blsSignature, uint256 signersBitmask)
+/// Build calldata for ArbBridgeCustody.refundVisionDeposit(uint256 orderId, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
 fn build_refund_deposit_calldata(
     order_id: U256,
     bls_signature: &[u8],
+    reference_nonce: U256,
     signers_bitmask: U256,
 ) -> Vec<u8> {
     let selector = &ethers::utils::keccak256(
-        b"refundVisionDeposit(uint256,bytes,uint256)",
+        b"refundVisionDeposit(uint256,bytes,uint256,uint256)",
     )[..4];
 
     let encoded_args = abi::encode(&[
         Token::Uint(order_id),
         Token::Bytes(bls_signature.to_vec()),
+        Token::Uint(reference_nonce),
         Token::Uint(signers_bitmask),
     ]);
 
@@ -1320,16 +1386,17 @@ fn build_refund_deposit_calldata(
     calldata
 }
 
-/// Build calldata for ArbBridgeCustody.completeVisionWithdraw(uint256 withdrawId, address user, uint256 amount, bytes blsSignature, uint256 signersBitmask)
+/// Build calldata for ArbBridgeCustody.completeVisionWithdraw(uint256 withdrawId, address user, uint256 amount, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
 fn build_complete_withdraw_calldata(
     withdraw_id: U256,
     user: Address,
     amount: U256,
     bls_signature: &[u8],
+    reference_nonce: U256,
     signers_bitmask: U256,
 ) -> Vec<u8> {
     let selector = &ethers::utils::keccak256(
-        b"completeVisionWithdraw(uint256,address,uint256,bytes,uint256)",
+        b"completeVisionWithdraw(uint256,address,uint256,bytes,uint256,uint256)",
     )[..4];
 
     let encoded_args = abi::encode(&[
@@ -1337,6 +1404,7 @@ fn build_complete_withdraw_calldata(
         Token::Address(user),
         Token::Uint(amount),
         Token::Bytes(bls_signature.to_vec()),
+        Token::Uint(reference_nonce),
         Token::Uint(signers_bitmask),
     ]);
 
@@ -1514,6 +1582,7 @@ mod tests {
             U256::from(1_000_000),
             U256::from(42),
             &[0u8; 64],
+            U256::from(1), // reference_nonce
             U256::one(),
         );
         assert!(calldata.len() > 4, "Calldata must include selector + args");
@@ -1524,6 +1593,7 @@ mod tests {
         let calldata = build_complete_deposit_calldata(
             U256::from(42),
             &[0u8; 64],
+            U256::from(1), // reference_nonce
             U256::one(),
         );
         assert!(calldata.len() > 4, "Calldata must include selector + args");
@@ -1534,6 +1604,7 @@ mod tests {
         let calldata = build_refund_deposit_calldata(
             U256::from(42),
             &[0u8; 64],
+            U256::from(1), // reference_nonce
             U256::one(),
         );
         assert!(calldata.len() > 4, "Calldata must include selector + args");
@@ -1546,6 +1617,7 @@ mod tests {
             Address::from([0xCD; 20]),
             U256::from(500_000),
             &[0u8; 64],
+            U256::from(1), // reference_nonce
             U256::one(),
         );
         assert!(calldata.len() > 4, "Calldata must include selector + args");

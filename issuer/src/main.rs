@@ -3417,11 +3417,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         let dw_arb_writer: Option<Arc<dyn common::traits::ChainWriter>> = None;
                         let dw_node_index = components.consensus.keys.node_index;
 
+                        // IssuerRegistry address: used for reading lastSnapshotNonce (BLS referenceNonce).
+                        // On L3 testnet the same registry is used for both chains.
+                        // In production with separate chains, arb_registry would be a MirrorIssuerRegistry.
+                        let dw_registry_address: ethers::types::Address = issuer_registry_address_str
+                            .as_ref()
+                            .and_then(|addr| addr.parse::<ethers::types::Address>().ok())
+                            .unwrap_or_else(|| {
+                                warn!("IssuerRegistry address not configured for deposit watcher, using zero address");
+                                ethers::types::Address::zero()
+                            });
+
                         let deposit_watcher = issuer::vision::deposit_watcher::VisionDepositWatcher::new(
                             dw_arb_provider,
                             dw_l3_provider,
                             vision_address,
                             arb_custody_address,
+                            dw_registry_address, // l3_registry_address
+                            dw_registry_address, // arb_registry_address (same on L3 testnet)
                             pool.clone(),
                             vision_cfg.clone(),
                             dw_bls_keypair,
