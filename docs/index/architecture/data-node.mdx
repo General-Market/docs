@@ -64,20 +64,30 @@ The Data Node continuously recomputes NAV as new prices arrive and streams updat
 
 ## Data Pipeline
 
-```text
-  Price Sources                  Data Node                    Consumers
-  ┌───────────┐            ┌─────────────────┐           ┌───────────┐
-  │ CoinGecko │──┐         │                 │──REST──►  │ Frontend  │
-  │ Binance   │──┤────►    │  Validation &   │           │           │
-  │ Exchanges │──┤         │  Normalization   │──SSE───►  │ Frontend  │
-  │ 1inch     │──┘         │       │         │           │ (realtime)│
-  │           │            │       ▼         │           └───────────┘
-  │           │            │  PostgreSQL     │           ┌───────────┐
-  │           │            │  (persistence)  │──REST──►  │  Issuer   │
-  │           │            │       │         │           │  Nodes    │
-  │           │            │       ▼         │           └───────────┘
-  │           │            │  NAV Engine     │
-  └───────────┘            └─────────────────┘
+```mermaid
+flowchart LR
+    subgraph Sources["Price Sources"]
+        S1[CoinGecko]
+        S2[Binance]
+        S3[Exchanges]
+        S4[1inch DEX]
+    end
+
+    subgraph DataNode["Data Node"]
+        V[Validation & Normalization]
+        DB[(PostgreSQL)]
+        NAV[NAV Engine]
+        V --> DB --> NAV
+    end
+
+    subgraph Consumers
+        FE[Frontend]
+        IS[Issuer Nodes]
+    end
+
+    S1 & S2 & S3 & S4 --> V
+    NAV -->|REST + SSE| FE
+    NAV -->|REST| IS
 ```
 
 **Pipeline stages:**

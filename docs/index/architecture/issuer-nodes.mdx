@@ -32,31 +32,16 @@ Issuer nodes are the consensus participants of the Index protocol. Written in Ru
 
 The issuer nodes reach agreement on each batch through a BLS signing protocol:
 
-```text
-1. Leader proposes batch of pending orders
-       │
-       ▼
-2. Peer issuer nodes validate batch contents
-   (correct orders, valid prices, proper netting)
-       │
-       ▼
-3. Each peer issuer node signs the batch hash with the node's BLS private key
-       │
-       ▼
-4. Leader aggregates BLS signatures
-   Threshold: ceil(2n/3) of registered issuers
-       │
-       ▼
-5. Leader calls confirmBatch() on Index.sol
-   with aggregated signature + batch data
-       │
-       ▼
-6. On-chain BLS verification passes
-   → TradeRequest events emitted
-       │
-       ▼
-7. AP (Authorized Participant) receives events
-   and executes the underlying trades
+```mermaid
+flowchart TD
+    A[Leader Proposes Batch] --> B[Peers Validate]
+    B --> C[Each Peer BLS-Signs]
+    C --> D[Leader Aggregates Signatures]
+    D --> E{2/3+ Threshold Met?}
+    E -->|Yes| F[confirmBatch on-chain]
+    F --> G[TradeRequest Events]
+    G --> H[AP Executes Trades]
+    E -->|No| I[Retry Next Cycle]
 ```
 
 <Info>
@@ -75,13 +60,17 @@ Each consensus cycle runs for exactly **1 second**, divided into 5 sequential ph
 | **CONFIRM** | 200ms | Leader aggregates signatures and submits the confirmed batch on-chain |
 | **REBALANCE** | 200ms | Process any pending ITP rebalance operations (weight updates → new quantities) |
 
-```text
- 0ms        200ms       400ms       600ms       800ms      1000ms
-  │ COLLECT  │ PROPOSE  │   SIGN    │ CONFIRM  │REBALANCE │
-  │◄────────►│◄────────►│◄─SUBMIT──►│◄────────►│◄────────►│
-  │          │          │           │          │          │
-  └──────────┴──────────┴───────────┴──────────┴──────────┘
-                    1-second cycle
+```mermaid
+gantt
+    title 1-Second Consensus Cycle
+    dateFormat X
+    axisFormat %L ms
+    section Phases
+    COLLECT    :a, 0, 200
+    PROPOSE    :b, 200, 400
+    SIGN_SUBMIT :c, 400, 600
+    CONFIRM    :d, 600, 800
+    REBALANCE  :e, 800, 1000
 ```
 
 ## Leader Election
