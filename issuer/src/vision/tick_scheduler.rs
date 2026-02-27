@@ -252,6 +252,7 @@ impl TickScheduler {
                     start_tick: *start_tick as u64,
                     balance: U256::from_dec_str(balance).unwrap_or_default(),
                     join_timestamp: *join_timestamp as u64,
+                    num_committed_ticks: 1, // Updated from bitmap at resolution time
                 };
                 players
                     .entry(*batch_id as u64)
@@ -442,6 +443,7 @@ mod tests {
             start_tick: 0,
             balance: U256::from(stake * 100),
             join_timestamp: 1000,
+            num_committed_ticks: 1,
         }
     }
 

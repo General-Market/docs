@@ -1,5 +1,20 @@
 # Design Decision Backlog
 
+## Session: 20260227-2200-f4k9 (Vision P2Pool brief alignment — 3 deviation fixes)
+
+- [DECISION] DEV-1: Split effective_stake / num_markets per market in resolver — fixes zero-sum violation where total exposure = N × effective_stake exceeded balance
+- [DECISION] DEV-2: Commitment multiplier uses num_committed_ticks (from bitmap length) instead of elapsed ticks — matches brief: log10(total_ticks_committed + offset), rewards upfront commitment
+- [DECISION] DEV-2: Derive num_committed_ticks in resolver (not chain_listener) — bitmap isn't available at join time, and num_markets from batch config needed to compute ticks from bitmap length
+- [DECISION] DEV-3: Tick-major bitmap indexing: bit_index = tick_offset * num_markets + market_idx — matches brief's encoding spec. Single-tick bitmaps gracefully degrade (out-of-bounds returns Side::Down)
+- [DECISION] Zero-sum test allows ±num_markets tolerance — pre-existing integer truncation in parimutuel matched_stake computation (floor division) loses up to 1 wei per market
+
+## Session: 20260227-1400-q8m3 (Vision scalability fix — all batches resolving)
+
+- [DECISION] Populate market_prices_latest via per-source shell loop (not single DO block) — single transaction locks DB for 30+ min on 32M rows; individual commits allow progress and prevent lock starvation
+- [DECISION] Kill data-node/issuers before populating — the 50+ concurrent DISTINCT ON queries from running collectors saturated the DB pool (58 active queries, 15-30min each), blocking the population inserts
+- [DECISION] market_prices_latest populated with 316k rows across 76 sources — data-node now reads from this table instead of expensive DISTINCT ON against 32M row market_prices table
+- [BUG] Both vision bots show positive PnL despite trading against each other in a zero-sum system. Root cause: the multiplier system (`multiplier.rs`) inflates `effective_stake` above `stake_per_tick` (observed 2× multiplier), and `saturating_sub` on loser's balance creates money. When loser hits balance=0, they can no longer lose, but the winner's inflated wins already exceeded the loser's total deposit. 10 inflated batches found: 22M pool where 20M expected, one at 26M. Total excess: 24M across 44 active batches (874M actual vs 850M expected). Fix needed: either cap effective_stake at stake_per_tick, or deduct effective_stake from balance before resolution (pre-fund model).
+
 ## Session: 20260227-0115-b4f9 (Vision balance persistence fix)
 
 - [DECISION] Engine creates its own PgPool from VisionConfig.database_url for balance persistence — avoids refactoring main.rs startup order where engine spawns before pool is created

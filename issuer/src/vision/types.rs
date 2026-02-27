@@ -52,6 +52,9 @@ pub struct PlayerPosition {
     pub start_tick: u64,
     pub balance: U256,
     pub join_timestamp: u64,
+    /// Number of ticks the player committed to (from bitmap length).
+    /// Used for commitment multiplier: log10(num_committed_ticks + offset).
+    pub num_committed_ticks: u64,
 }
 
 /// A bitmap stored off-chain, linking a player's predictions to their on-chain hash.

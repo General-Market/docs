@@ -118,8 +118,17 @@ impl TickResolver {
         }
 
         // 3. Compute multipliers for revealed players
+        // Derive num_committed_ticks from bitmap length: total_bits / num_markets
+        let num_markets_count = market_configs.len();
         let revealed_positions: Vec<PlayerPosition> =
-            revealed_players.iter().map(|(p, _)| (*p).clone()).collect();
+            revealed_players.iter().map(|(p, bitmap)| {
+                let mut pos = (*p).clone();
+                if num_markets_count > 0 {
+                    let total_bits = bitmap.len() * 8;
+                    pos.num_committed_ticks = (total_bits / num_markets_count) as u64;
+                }
+                pos
+            }).collect();
         let multipliers = multiplier::compute_all_multipliers(
             &revealed_positions,
             tick_id,
@@ -135,6 +144,7 @@ impl TickResolver {
         // 4. Resolve each market using market_configs
         let mut market_results = Vec::new();
         let mut player_deltas: HashMap<Address, i128> = HashMap::new();
+        let num_markets = U256::from(market_configs.len() as u64);
 
         for (market_idx, mc) in market_configs.iter().enumerate() {
             let market_id = mc.market_id;
@@ -187,12 +197,17 @@ impl TickResolver {
             let mut side_inputs = Vec::new();
             for (player, bitmap) in &revealed_players {
                 if let Some(mult) = mult_map.get(&player.player) {
-                    let bit = get_bitmap_bit(bitmap, market_idx);
+                    // DEV-3: tick-major bitmap indexing
+                    let tick_offset = tick_id.saturating_sub(player.start_tick) as usize;
+                    let bit_index = tick_offset * market_configs.len() + market_idx;
+                    let bit = get_bitmap_bit(bitmap, bit_index);
                     let side = if bit { Side::Up } else { Side::Down };
+                    // DEV-1: split effective_stake equally across all markets
+                    let per_market_stake = mult.effective_stake / num_markets;
                     side_inputs.push(SideMatchInput {
                         player: player.player,
                         side,
-                        effective_stake: mult.effective_stake,
+                        effective_stake: per_market_stake,
                     });
                 }
             }
@@ -481,6 +496,7 @@ mod tests {
             start_tick: 0,
             balance: U256::from(balance),
             join_timestamp,
+            num_committed_ticks: 1,
         }
     }
 
@@ -948,6 +964,246 @@ mod tests {
             .find(|m| m.market_id == market_b)
             .unwrap();
         assert!(matches!(mkt_b.outcome, MarketOutcome::Down));
+    }
+
+    // -------------------------------------------------------------------------
+    // Test: multi-market zero-sum (DEV-1 verification)
+    // -------------------------------------------------------------------------
+    #[tokio::test]
+    async fn test_multi_market_zero_sum() {
+        let store = Arc::new(BitmapStore::new());
+        let config = default_config();
+        let resolver = TickResolver::new(store.clone(), config);
+
+        // 5 markets, all UP_0 resolution
+        let market_configs = make_market_configs(&[
+            ("btc", 0), ("eth", 0), ("sol", 0), ("avax", 0), ("matic", 0),
+        ]);
+        let batch = make_batch(1, 600);
+
+        let player_a = addr(1);
+        let player_b = addr(2);
+
+        // Player A: UP on all 5 markets (bits 0-4 = 1)
+        // 0b11111000 = 0xF8
+        store_bitmap(&store, player_a, 1, vec![0b1111_1000u8]).await;
+
+        // Player B: DOWN on all 5 markets (bits 0-4 = 0)
+        store_bitmap(&store, player_b, 1, vec![0b0000_0000u8]).await;
+
+        let players = vec![
+            make_player(player_a, 1000, 100_000, 0),
+            make_player(player_b, 1000, 100_000, 0),
+        ];
+
+        // All markets go UP → Player A wins all, Player B loses all
+        let mut prices = MarketPrices::new();
+        for mc in &market_configs {
+            prices.insert(mc.market_id, 100.0, 110.0, 1000);
+        }
+
+        let result = resolver
+            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
+            .await
+            .expect("resolve should succeed");
+
+        // Zero-sum: sum of all deltas must be 0
+        let total_delta: i128 = result.player_balances.iter().map(|b| b.delta).sum();
+        assert_eq!(total_delta, 0, "sum of deltas must be zero (got {total_delta})");
+
+        // Balance conservation: sum of new balances == sum of old balances
+        let total_old: U256 = result.player_balances.iter().map(|b| b.old_balance).fold(U256::zero(), |a, b| a + b);
+        let total_new: U256 = result.player_balances.iter().map(|b| b.new_balance).fold(U256::zero(), |a, b| a + b);
+        assert_eq!(total_old, total_new, "total balance must be conserved");
+
+        // Winner gains, loser loses
+        let bal_a = result.player_balances.iter().find(|b| b.player == player_a).unwrap();
+        let bal_b = result.player_balances.iter().find(|b| b.player == player_b).unwrap();
+        assert!(bal_a.delta > 0, "winner should gain");
+        assert!(bal_b.delta < 0, "loser should lose");
+        assert_eq!(bal_a.delta, -bal_b.delta, "winner's gain = loser's loss");
+    }
+
+    // -------------------------------------------------------------------------
+    // Test: per-market stake matches brief example (DEV-1)
+    // -------------------------------------------------------------------------
+    #[tokio::test]
+    async fn test_per_market_stake_matches_brief_example() {
+        // Brief line 422-453: 4 players, 3 markets
+        // Stake ratios: Alice:Bob:Carol:Dave = 4:2:1:1
+        // Each player's per-market stake = effective_stake / 3
+        // Verify the splitting property and zero-sum conservation.
+
+        let store = Arc::new(BitmapStore::new());
+        let config = default_config();
+        let resolver = TickResolver::new(store.clone(), config);
+
+        let market_configs = make_market_configs(&[("mkt_a", 0), ("mkt_b", 0), ("mkt_c", 0)]);
+        let num_markets = market_configs.len();
+        let batch = make_batch(1, 600);
+
+        let alice = addr(1);
+        let bob = addr(2);
+        let carol = addr(3);
+        let dave = addr(4);
+
+        // Alice: UP on all 3 markets (bits 0,1,2 = 1) → 0b11100000
+        store_bitmap(&store, alice, 1, vec![0b1110_0000u8]).await;
+        // Bob: DOWN on all 3 (bits 0,1,2 = 0) → 0b00000000
+        store_bitmap(&store, bob, 1, vec![0b0000_0000u8]).await;
+        // Carol: UP on mkt_a, DOWN on mkt_b, UP on mkt_c → 0b10100000
+        store_bitmap(&store, carol, 1, vec![0b1010_0000u8]).await;
+        // Dave: DOWN on mkt_a, UP on mkt_b, DOWN on mkt_c → 0b01000000
+        store_bitmap(&store, dave, 1, vec![0b0100_0000u8]).await;
+
+        let players = vec![
+            make_player(alice, 1200, 1_000_000, 0),
+            make_player(bob, 600, 1_000_000, 0),
+            make_player(carol, 300, 1_000_000, 0),
+            make_player(dave, 300, 1_000_000, 0),
+        ];
+
+        // All markets go UP
+        let mut prices = MarketPrices::new();
+        for mc in &market_configs {
+            prices.insert(mc.market_id, 100.0, 110.0, 1000);
+        }
+
+        let result = resolver
+            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
+            .await
+            .expect("resolve should succeed");
+
+        // Verify per-market stakes are split by num_markets and maintain 4:2:1:1 ratio
+        let market = &result.market_results[0]; // check first market
+        let alice_stake = market.player_results.iter().find(|r| r.player == alice).unwrap().effective_stake;
+        let bob_stake = market.player_results.iter().find(|r| r.player == bob).unwrap().effective_stake;
+        let carol_stake = market.player_results.iter().find(|r| r.player == carol).unwrap().effective_stake;
+        let dave_stake = market.player_results.iter().find(|r| r.player == dave).unwrap().effective_stake;
+
+        // Ratio check: Alice=2×Bob, Bob=2×Carol, Carol=Dave
+        assert_eq!(alice_stake, bob_stake * 2, "Alice should be 2x Bob");
+        assert_eq!(bob_stake, carol_stake * 2, "Bob should be 2x Carol");
+        assert_eq!(carol_stake, dave_stake, "Carol should equal Dave");
+
+        // Per-market stake should be total_effective / num_markets
+        // Check all markets have consistent stakes (same per-market split)
+        for market in &result.market_results {
+            let a = market.player_results.iter().find(|r| r.player == alice).unwrap().effective_stake;
+            assert_eq!(a, alice_stake, "Alice's stake should be the same across all markets");
+        }
+
+        // Per-market stake × num_markets should approximately equal the total effective stake
+        // (integer division may lose up to num_markets-1 wei)
+        let alice_total = alice_stake * U256::from(num_markets);
+        // The multiplier is applied, so total_effective >= stake_per_tick
+        assert!(alice_total >= U256::from(1200u64), "alice per-market × 3 should be >= raw stake");
+
+        // Zero-sum: allow rounding tolerance from integer division in parimutuel matching
+        // (at most 1 wei per market due to floor division of matched_stake)
+        let total_delta: i128 = result.player_balances.iter().map(|b| b.delta).sum();
+        assert!(
+            total_delta.abs() <= num_markets as i128,
+            "zero-sum violated beyond rounding tolerance: {total_delta} (max allowed: {num_markets})"
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // Test: tick-major bitmap indexing (DEV-3 verification)
+    // -------------------------------------------------------------------------
+    #[tokio::test]
+    async fn test_bitmap_tick_major_indexing() {
+        // 2-tick bitmap with 3 markets = 6 bits total
+        // Tick 0: bits 0,1,2 (markets 0,1,2)
+        // Tick 1: bits 3,4,5 (markets 0,1,2)
+        //
+        // Bitmap: 0b10110100 (only first 6 bits used)
+        //   Tick 0: bit0=1(UP), bit1=0(DOWN), bit2=1(UP)
+        //   Tick 1: bit3=1(UP), bit4=0(DOWN), bit5=1(UP) ... wait
+        //
+        // Actually let's use different patterns per tick to verify:
+        //   Tick 0: UP, DOWN, UP  → bits 0,1,2 = 1,0,1
+        //   Tick 1: DOWN, UP, DOWN → bits 3,4,5 = 0,1,0
+        //   Bitmap byte: 0b10101000 = 0xA8
+        //   Actually: bit0=1, bit1=0, bit2=1, bit3=0, bit4=1, bit5=0
+        //   Byte: MSB first → bit0 is MSB of byte 0 → 0b101010_00 = 0xA8
+
+        let store = Arc::new(BitmapStore::new());
+        let config = default_config();
+        let resolver = TickResolver::new(store.clone(), config);
+
+        let market_configs = make_market_configs(&[("mkt_x", 0), ("mkt_y", 0), ("mkt_z", 0)]);
+        let batch = make_batch(1, 600);
+
+        let player_a = addr(1);
+        let player_b = addr(2);
+
+        // Player A: 2-tick bitmap
+        // Tick 0: UP(1), DOWN(0), UP(1)  → bits 0-2 = 1,0,1
+        // Tick 1: DOWN(0), UP(1), DOWN(0) → bits 3-5 = 0,1,0
+        // Big-endian bit order in byte: bit0=MSB → 10101000 = 0xA8
+        let bitmap_a = vec![0b1010_1000u8];
+        store_bitmap(&store, player_a, 1, bitmap_a).await;
+
+        // Player B: opposite of A at tick 0
+        // Tick 0: DOWN(0), UP(1), DOWN(0) → bits 0-2 = 0,1,0
+        // Tick 1: UP(1), DOWN(0), UP(1)   → bits 3-5 = 1,0,1
+        let bitmap_b = vec![0b0101_0100u8];
+        store_bitmap(&store, player_b, 1, bitmap_b).await;
+
+        let players = vec![
+            make_player(player_a, 1000, 100_000, 0),
+            make_player(player_b, 1000, 100_000, 0),
+        ];
+
+        // === Tick 0 ===
+        let mut prices = MarketPrices::new();
+        for mc in &market_configs {
+            prices.insert(mc.market_id, 100.0, 110.0, 1000); // All UP
+        }
+
+        let result_t0 = resolver
+            .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
+            .await
+            .expect("tick 0 should resolve");
+
+        // At tick 0: Player A has UP on mkt_x, DOWN on mkt_y, UP on mkt_z
+        let mkt_x = &result_t0.market_results[0];
+        let a_x = mkt_x.player_results.iter().find(|r| r.player == player_a).unwrap();
+        assert!(matches!(a_x.side, Side::Up), "tick 0, mkt_x: A should be UP");
+
+        let mkt_y = &result_t0.market_results[1];
+        let a_y = mkt_y.player_results.iter().find(|r| r.player == player_a).unwrap();
+        assert!(matches!(a_y.side, Side::Down), "tick 0, mkt_y: A should be DOWN");
+
+        let mkt_z = &result_t0.market_results[2];
+        let a_z = mkt_z.player_results.iter().find(|r| r.player == player_a).unwrap();
+        assert!(matches!(a_z.side, Side::Up), "tick 0, mkt_z: A should be UP");
+
+        // === Tick 1 ===
+        // Player A at tick 1 should have DIFFERENT sides: DOWN, UP, DOWN
+        let result_t1 = resolver
+            .resolve_tick(&batch, 1, &players, &prices, 1000, &market_configs)
+            .await
+            .expect("tick 1 should resolve");
+
+        let mkt_x_t1 = &result_t1.market_results[0];
+        let a_x_t1 = mkt_x_t1.player_results.iter().find(|r| r.player == player_a).unwrap();
+        assert!(matches!(a_x_t1.side, Side::Down), "tick 1, mkt_x: A should be DOWN (flipped from tick 0)");
+
+        let mkt_y_t1 = &result_t1.market_results[1];
+        let a_y_t1 = mkt_y_t1.player_results.iter().find(|r| r.player == player_a).unwrap();
+        assert!(matches!(a_y_t1.side, Side::Up), "tick 1, mkt_y: A should be UP (flipped from tick 0)");
+
+        let mkt_z_t1 = &result_t1.market_results[2];
+        let a_z_t1 = mkt_z_t1.player_results.iter().find(|r| r.player == player_a).unwrap();
+        assert!(matches!(a_z_t1.side, Side::Down), "tick 1, mkt_z: A should be DOWN (flipped from tick 0)");
+
+        // Zero-sum for both ticks
+        let delta_t0: i128 = result_t0.player_balances.iter().map(|b| b.delta).sum();
+        assert_eq!(delta_t0, 0, "tick 0 zero-sum violated");
+        let delta_t1: i128 = result_t1.player_balances.iter().map(|b| b.delta).sum();
+        assert_eq!(delta_t1, 0, "tick 1 zero-sum violated");
     }
 
     // -------------------------------------------------------------------------

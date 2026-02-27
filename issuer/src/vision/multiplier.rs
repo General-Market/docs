@@ -48,12 +48,8 @@ pub fn compute_multiplier(
     let capped_time = time_before_tick.min(tick_duration);
     let early_mult = 1.0 + (capped_time as f64).powi(2) / (tick_duration as f64).powi(2);
 
-    // Commitment multiplier: reward long-term participation
-    let ticks_committed = if tick_id >= player.start_tick {
-        tick_id - player.start_tick + 1
-    } else {
-        1
-    };
+    // Commitment multiplier: reward long-term commitment (from bitmap length, not elapsed ticks)
+    let ticks_committed = player.num_committed_ticks.max(1);
     let commitment_mult = ((ticks_committed + config.commitment_offset) as f64).log10();
 
     // Total multiplier
@@ -108,6 +104,16 @@ mod tests {
         stake_per_tick: u128,
         balance: u128,
     ) -> PlayerPosition {
+        make_player_with_commitment(join_timestamp, start_tick, stake_per_tick, balance, 1)
+    }
+
+    fn make_player_with_commitment(
+        join_timestamp: u64,
+        start_tick: u64,
+        stake_per_tick: u128,
+        balance: u128,
+        num_committed_ticks: u64,
+    ) -> PlayerPosition {
         PlayerPosition {
             player: Address::zero(),
             bitmap_hash: H256::zero(),
@@ -115,6 +121,7 @@ mod tests {
             start_tick,
             balance: U256::from(balance),
             join_timestamp,
+            num_committed_ticks,
         }
     }
 
@@ -198,29 +205,44 @@ mod tests {
     }
 
     #[test]
-    fn test_commitment_mult_first_tick() {
-        // tick_id = 0, start_tick = 0 -> ticks_committed = 1
+    fn test_commitment_mult_one_tick() {
+        // num_committed_ticks = 1
         // commitment_mult = log10(1 + 9) = log10(10) = 1.0
         let player = make_player(1000, 0, 1_000_000, 100_000_000);
         let config = default_config();
         let result = compute_multiplier(&player, 0, 600, 1000, &config);
         assert!(
             (result.commitment_mult - 1.0).abs() < 1e-10,
-            "commitment_mult should be 1.0 on first tick, got {}",
+            "commitment_mult should be 1.0 for 1 committed tick, got {}",
             result.commitment_mult
         );
     }
 
     #[test]
-    fn test_commitment_mult_91_ticks() {
-        // tick_id = 90, start_tick = 0 -> ticks_committed = 91
+    fn test_commitment_mult_91_committed_ticks() {
+        // num_committed_ticks = 91
         // commitment_mult = log10(91 + 9) = log10(100) = 2.0
-        let player = make_player(1000, 0, 1_000_000, 100_000_000);
+        let player = make_player_with_commitment(1000, 0, 1_000_000, 100_000_000, 91);
         let config = default_config();
-        let result = compute_multiplier(&player, 90, 600, 1000, &config);
+        // tick_id doesn't matter for commitment_mult anymore
+        let result = compute_multiplier(&player, 0, 600, 1000, &config);
         assert!(
             (result.commitment_mult - 2.0).abs() < 1e-10,
-            "commitment_mult should be 2.0 at 91 ticks, got {}",
+            "commitment_mult should be 2.0 for 91 committed ticks, got {}",
+            result.commitment_mult
+        );
+    }
+
+    #[test]
+    fn test_commitment_mult_from_bitmap_length() {
+        // Player committed to 1000 ticks upfront → log10(1000 + 9) = log10(1009) ≈ 3.0
+        let player = make_player_with_commitment(1000, 0, 1_000_000, 100_000_000, 1000);
+        let config = default_config();
+        let result = compute_multiplier(&player, 0, 600, 1000, &config);
+        let expected = (1009.0_f64).log10(); // ≈ 3.004
+        assert!(
+            (result.commitment_mult - expected).abs() < 1e-10,
+            "commitment_mult should be ~3.0 for 1000 committed ticks, got {}",
             result.commitment_mult
         );
     }
