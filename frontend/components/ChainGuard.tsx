@@ -1,19 +1,26 @@
 'use client'
 
 import { useEffect, useCallback } from 'react'
+import { usePathname } from 'next/navigation'
 import { useAccount, useChainId, useSwitchChain } from 'wagmi'
-import { indexL3 } from '@/lib/wagmi'
+import { indexL3, arbitrumChain } from '@/lib/wagmi'
 
 /**
  * Global chain enforcer — blocks all UI and forces wallet to switch
- * to Index Arbitrum whenever connected on the wrong chain.
+ * to Index L3 whenever connected on the wrong chain.
+ *
+ * Vision pages allow Arbitrum as an additional chain because cross-chain
+ * deposits (useDepositToVision) require the wallet to be on Arbitrum.
  */
 export function ChainGuard({ children }: { children: React.ReactNode }) {
   const { isConnected } = useAccount()
   const chainId = useChainId()
   const { switchChain, isPending: isSwitching } = useSwitchChain()
+  const pathname = usePathname()
 
-  const isWrongChain = isConnected && chainId !== indexL3.id
+  const isVisionPage = pathname?.includes('/vision')
+  const allowedChainIds = isVisionPage ? [indexL3.id, arbitrumChain.id] : [indexL3.id]
+  const isWrongChain = isConnected && !allowedChainIds.includes(chainId)
 
   const forceSwitch = useCallback(async () => {
     // First, try low-level wallet RPC to add + switch chain

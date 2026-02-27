@@ -11,6 +11,8 @@ import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 import { BatchCard } from './BatchCard'
 import { ExpandedBatch } from './ExpandedBatch'
 import { CreateBatchModal } from './CreateBatchModal'
+import { BalanceDepositModal } from './BalanceDepositModal'
+import { BalanceWithdrawModal } from './BalanceWithdrawModal'
 import { MyPositions } from './MyPositions'
 import { VisionLeaderboard } from './VisionLeaderboard'
 
@@ -22,6 +24,8 @@ export function VisionPage() {
   const { realBalance, virtualBalance, total, isLoading: balanceLoading } = useVisionBalance()
   const [expandedBatchId, setExpandedBatchId] = useState<number | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showDepositModal, setShowDepositModal] = useState(false)
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false)
 
   useEffect(() => {
     capture('vision_page_viewed')
@@ -47,18 +51,18 @@ export function VisionPage() {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <a
-                    href="#deposit"
+                  <button
+                    onClick={() => setShowDepositModal(true)}
                     className="px-3 py-1.5 bg-color-up text-white text-xs font-bold rounded-card hover:opacity-90 transition-opacity"
                   >
                     DEPOSIT
-                  </a>
-                  <a
-                    href="#withdraw"
+                  </button>
+                  <button
+                    onClick={() => setShowWithdrawModal(true)}
                     className="px-3 py-1.5 bg-muted text-text-secondary text-xs font-bold rounded-card border border-border-light hover:bg-surface transition-colors"
                   >
                     WITHDRAW
-                  </a>
+                  </button>
                 </div>
               </div>
             )}
@@ -142,6 +146,16 @@ export function VisionPage() {
       {/* Create Batch Modal */}
       {showCreateModal && (
         <CreateBatchModal onClose={() => setShowCreateModal(false)} />
+      )}
+
+      {/* Balance Deposit Modal */}
+      {showDepositModal && (
+        <BalanceDepositModal onClose={() => setShowDepositModal(false)} />
+      )}
+
+      {/* Balance Withdraw Modal */}
+      {showWithdrawModal && (
+        <BalanceWithdrawModal onClose={() => setShowWithdrawModal(false)} />
       )}
     </div>
   )

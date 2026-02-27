@@ -6,6 +6,7 @@ import { useAccount } from 'wagmi'
 import { formatUnits } from 'viem'
 import { usePlayerBatches, type PlayerBatchPosition } from '@/hooks/vision/usePlayerBatches'
 import { useBatchMetadata } from '@/hooks/vision/useBatchMetadata'
+import { useVisionBalance } from '@/hooks/vision/useVisionBalance'
 import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 
 function fmtUsdc(value: bigint, decimals = VISION_USDC_DECIMALS): string {
@@ -83,16 +84,41 @@ export function MyPositions({ onSelectBatch }: MyPositionsProps) {
   const t = useTranslations('vision')
   const { isConnected } = useAccount()
   const { positions, stats, isLoading } = usePlayerBatches()
+  const { realBalance, virtualBalance, total: globalBalance, isLoading: balanceLoading } = useVisionBalance()
   const [collapsed, setCollapsed] = useState(false)
 
   // Don't render if not connected or no positions (and not loading)
   if (!isConnected) return null
-  if (!isLoading && positions.length === 0) return null
+  if (!isLoading && positions.length === 0 && globalBalance === 0n) return null
 
   const totalProfitable = stats.totalPnl >= 0n
 
   return (
     <div className="mb-6">
+      {/* Global Vision balance */}
+      {!balanceLoading && globalBalance > 0n && (
+        <div className="mb-3 bg-muted border border-border-light rounded-card px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-text-muted">
+                Vision Balance
+              </p>
+              <p className="text-sm font-bold text-text-primary tabular-nums font-mono">
+                ${fmtUsdc(globalBalance)} USDC
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] text-text-muted font-mono">
+                L3: ${fmtUsdc(realBalance)}
+              </p>
+              <p className="text-[10px] text-text-muted font-mono">
+                Arb-backed: ${fmtUsdc(virtualBalance)}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header bar */}
       <button
         onClick={() => setCollapsed(!collapsed)}

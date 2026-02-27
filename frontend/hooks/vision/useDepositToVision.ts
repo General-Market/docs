@@ -14,7 +14,7 @@ import {
 import { arbChainId } from '@/lib/wagmi'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { indexL3 } from '@/lib/wagmi'
-import { VISION_ISSUER_URLS } from '@/lib/config'
+import { useDepositStatus, type DepositStatus } from '@/hooks/vision/useDepositStatus'
 
 export type DepositToVisionStep =
   | 'idle'
@@ -31,6 +31,8 @@ export interface UseDepositToVisionReturn {
   orderId: `0x${string}` | null
   /** Current step */
   step: DepositToVisionStep
+  /** Deposit status from issuer API (pending/credited/refunded/unknown) */
+  depositStatus: DepositStatus
   /** Error message if any */
   error: string | null
   /** Reset to idle state */
@@ -59,6 +61,9 @@ export function useDepositToVision(): UseDepositToVisionReturn {
   const approveHandled = useRef(false)
   const depositHandled = useRef(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // --- Deposit status from issuer API ---
+  const { status: depositStatus } = useDepositStatus(orderId)
 
   // --- Approve USDC on Arb ---
   const {
@@ -274,6 +279,7 @@ export function useDepositToVision(): UseDepositToVisionReturn {
     deposit,
     orderId,
     step,
+    depositStatus,
     error: errorMsg,
     reset,
   }

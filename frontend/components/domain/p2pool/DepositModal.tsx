@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl'
 import { useAccount } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
 import { useDeposit } from '@/hooks/vision/useDeposit'
-import { useVisionBalance } from '@/hooks/vision/useVisionBalance'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 
@@ -22,22 +21,19 @@ interface DepositModalProps {
  */
 export function DepositModal({ batchId, currentBalance, onClose }: DepositModalProps) {
   const t = useTranslations('vision')
-  const { address, isConnected } = useAccount()
+  const { isConnected } = useAccount()
   const [amount, setAmount] = useState('')
 
   const {
     deposit,
-    approveHash,
     depositHash,
     step,
     isPending,
     isConfirming,
     error,
+    visionBalance,
     reset,
   } = useDeposit()
-
-  // Read user's Vision balance (dual-balance architecture)
-  const { total: visionBalance } = useVisionBalance()
 
   const parsedAmount = amount ? parseUnits(amount, VISION_USDC_DECIMALS) : 0n
   const balance = visionBalance
@@ -57,8 +53,7 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
 
   const stepLabel = (() => {
     switch (step) {
-      case 'approving': return isPending ? 'Confirm USDC approval in wallet...' : 'Approving USDC...'
-      case 'depositing': return isPending ? 'Confirm deposit in wallet...' : 'Depositing USDC...'
+      case 'depositing': return isPending ? 'Confirm deposit in wallet...' : 'Depositing from Vision balance...'
       case 'done': return 'Deposit successful!'
       case 'error': return 'Transaction failed'
       default: return ''
@@ -66,7 +61,6 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
   })()
 
   const buttonText = (() => {
-    if (step === 'approving') return isPending ? t('deposit_modal.button_confirm') : t('deposit_modal.button_approving')
     if (step === 'depositing') return isPending ? t('deposit_modal.button_confirm') : t('deposit_modal.button_depositing')
     return t('deposit_modal.button_deposit')
   })()
@@ -153,11 +147,6 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
                     <div className="w-5 h-5 border-2 border-border-medium border-t-terminal rounded-full animate-spin" />
                     <span className="text-sm text-text-secondary">{stepLabel}</span>
                   </div>
-                  {approveHash && (
-                    <p className="text-xs text-text-muted font-mono mt-2 break-all">
-                      Approve tx: {approveHash}
-                    </p>
-                  )}
                 </div>
               )}
 
