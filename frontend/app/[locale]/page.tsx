@@ -4,18 +4,12 @@ import { Footer } from '@/components/layout/Footer'
 import { SourcesGrid } from '@/components/domain/vision/sources/SourcesGrid'
 import { Link } from '@/i18n/routing'
 
-export const revalidate = 60
-
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: 'seo.pages.vision' })
   return {
     title: t('title'),
     description: t('description'),
-    openGraph: {
-      type: 'website',
-      siteName: 'General Market',
-    },
   }
 }
 

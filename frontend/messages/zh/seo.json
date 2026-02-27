@@ -80,18 +80,6 @@
       "title": "What Are Index Tracking Products (ITPs)? — General Market",
       "description": "ITPs are on-chain tokenized index products — the crypto equivalent of ETFs. One token, a basket of crypto assets, real-time NAV. Learn how they work."
     },
-    "fear_greed": {
-      "title": "Crypto Fear & Greed Index — General Market",
-      "description": "Live Crypto Fear & Greed Index with historical chart. Track market sentiment from Extreme Fear (0) to Extreme Greed (100). Updated daily."
-    },
-    "data": {
-      "title": "Data Sources — 79 Live Feeds Across 10 Categories | General Market",
-      "description": "Explore 79 real-time data sources powering General Market prediction markets. Finance, economic, geophysical, transport, nature, space, and more — all feeding 25,000+ markets."
-    },
-    "backtest": {
-      "title": "Crypto Portfolio Backtester — Free Historical Simulator | General Market",
-      "description": "Free crypto portfolio backtesting tool. Simulate strategies across 100+ assets with historical data. Test category-based portfolios, weighting schemes, and rebalance frequencies before deploying real capital."
-    },
     "itp": {
       "title": "{name} ({symbol})",
       "description": "{name} ({symbol}) — 包含 {count} 种加密资产的链上指数跟踪产品。当前 NAV：${nav}。",

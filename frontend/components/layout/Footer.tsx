@@ -51,7 +51,7 @@ export function Footer() {
               <li><a href="/#simulation" className="hover:text-white transition-colors">{t('footer.simulation')}</a></li>
               <li><a href="/#lending" className="hover:text-white transition-colors">{t('footer.lending')}</a></li>
               <li><a href="/#create-itp" className="hover:text-white transition-colors">{t('footer.create_itp')}</a></li>
-              <li><Link href="/data" className="hover:text-white transition-colors">Data Sources</Link></li>
+              <li><Link href="/sources" className="hover:text-white transition-colors">Data Sources</Link></li>
             </ul>
           </div>
 

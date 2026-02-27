@@ -190,7 +190,7 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
         {/* Related links */}
         <div className="mt-8 pt-6 border-t border-border-light flex flex-wrap gap-4 text-[12px] text-text-secondary">
           <Link href="/" className="hover:text-black transition-colors">All Sources</Link>
-          <Link href="/data" className="hover:text-black transition-colors">Data Coverage</Link>
+          <Link href="/sources" className="hover:text-black transition-colors">Source Health</Link>
           <Link href="/points" className="hover:text-black transition-colors">Earn Points</Link>
           <Link href="/about" className="hover:text-black transition-colors">About</Link>
         </div>

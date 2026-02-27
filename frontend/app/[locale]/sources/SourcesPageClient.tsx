@@ -32,13 +32,13 @@ export default function SourcesPageClient() {
         {/* Page header */}
         <div className="pt-10 pb-0">
           <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">
-            Live Status
+            Admin
           </p>
           <h1 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">
-            Data Source Health
+            Source Monitoring
           </h1>
           <p className="text-[14px] text-text-secondary mt-1.5">
-            Real-time health monitoring for all data sources feeding prediction market prices.
+            Live health status of all data sources feeding market prices.
           </p>
         </div>
 

@@ -10,6 +10,7 @@ const isDev = process.env.NODE_ENV !== "production";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  pageExtensions: ["ts", "tsx", "md", "mdx"],
   // Webpack config to handle WalletConnect's pino-pretty optional dependency
   webpack: (config) => {
     config.resolve.fallback = {
