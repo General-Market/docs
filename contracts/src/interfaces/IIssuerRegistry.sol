@@ -133,6 +133,28 @@ interface IIssuerRegistry {
     /// @return issuerIds Array of issuer IDs that signed
     function verifySignerBitmap(uint256 signerBitmap) external view returns (uint256 signerCount, uint256[] memory issuerIds);
 
+    /// @notice Get individual BLS pubkeys for a list of issuer IDs
+    /// @param issuerIds Array of issuer IDs
+    /// @return pubkeys Array of BLS G2 public keys (128 bytes each)
+    function getIssuerPubkeys(uint256[] calldata issuerIds) external view returns (bytes[] memory pubkeys);
+
+    /// @notice Decode a bitmap into an array of set bit indices
+    /// @param bitmap The bitmap to decode
+    /// @return ids Array of indices where bits are set
+    function decodeBitmap(uint256 bitmap) external pure returns (uint256[] memory ids);
+
+    /// @notice Verify a BLS signature against individual signer pubkeys using multi-pairing
+    /// @dev Decodes bitmap, fetches pubkeys, and does e(-sig, G2) * e(H(msg), pk[0]) * ... == 1
+    /// @param signersBitmask Bitmap of issuers that signed
+    /// @param messageHash The message hash
+    /// @param blsSignature The aggregated BLS signature (64 bytes G1 point)
+    /// @return True if signature is valid
+    function verifyBLSMultiPairing(
+        uint256 signersBitmask,
+        bytes32 messageHash,
+        bytes calldata blsSignature
+    ) external view returns (bool);
+
     /// @notice Get pending key rotation details
     /// @param issuerId The issuer ID
     /// @return rotation The key rotation struct (empty if none pending)

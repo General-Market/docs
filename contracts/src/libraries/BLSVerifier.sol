@@ -28,7 +28,7 @@ abstract contract BLSVerifier {
     /// @notice Signers bitmask contains bits not in active set
     error BLSVerifier__BitmaskInvalid();
 
-    /// @notice Signer count below 2/3+1 threshold
+    /// @notice Signer count below ceil(2n/3) threshold
     error BLSVerifier__BelowThreshold();
 
     /// @notice BLS signature verification failed
@@ -81,12 +81,12 @@ abstract contract BLSVerifier {
         // Validate signers bitmask is a subset of active bitmask (no stray bits)
         if ((signersBitmask & ~snap.activeBitmask) != 0) revert BLSVerifier__BitmaskInvalid();
 
-        // Check 2/3+1 threshold
-        if (_popcount(signersBitmask) < snap.activeCount * 2 / 3 + 1) revert BLSVerifier__BelowThreshold();
+        // Check ceil(2n/3) threshold
+        if (_popcount(signersBitmask) < (snap.activeCount * 2 + 2) / 3) revert BLSVerifier__BelowThreshold();
 
-        // Verify BLS signature against snapshot's aggregated pubkey
-        bytes memory pubkey = _fixedToPubkey(snap.aggregatedPubkey);
-        if (!BLSLib.verifyBLS(pubkey, messageHash, blsSignature))
+        // Verify BLS signature against individual signer pubkeys (multi-pairing)
+        // Single external call — keeps verifyBLSMulti bytecode in IssuerRegistry, not Investment
+        if (!_blsIssuerRegistry.verifyBLSMultiPairing(signersBitmask, messageHash, blsSignature))
             revert BLSVerifier__InvalidSignature();
 
         // Liveness accounting — advisory only (see Protocol Invariant P3)

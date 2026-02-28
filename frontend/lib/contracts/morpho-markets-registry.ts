@@ -5,6 +5,7 @@
  * Loads from morpho-deployment.json (singleton) and batch-markets.json (multi-market).
  */
 import morphoDeployment from './morpho-deployment.json'
+import deployment from './deployment.json'
 
 const c = morphoDeployment.contracts as Record<string, string>
 const mp = morphoDeployment.marketParams
@@ -60,6 +61,13 @@ const MARKETS: Record<string, MorphoMarketEntry> = {
     morpho: c.MORPHO as `0x${string}`,
     vault: c.METAMORPHO_VAULT as `0x${string}`,
   },
+}
+
+// Also register under the BridgedITP address (ITP cards pass arbAddress to hasLendingMarket)
+const bridgedItp = (deployment as { contracts?: { BridgedITP?: string } }).contracts?.BridgedITP
+if (bridgedItp) {
+  const entry = MARKETS[mp.collateralToken.toLowerCase()]
+  if (entry) MARKETS[bridgedItp.toLowerCase()] = entry
 }
 
 // Load batch markets if available (optional file, won't break if missing)

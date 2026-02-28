@@ -292,4 +292,75 @@ library BLSLib {
         result[0] = _bytesToUint(data, 0);
         result[1] = _bytesToUint(data, 32);
     }
+
+    // ============ MULTI-PAIRING BLS VERIFICATION ============
+
+    /// @notice Verify a BLS signature against multiple individual signer pubkeys
+    /// @dev Uses multi-pairing: e(-sig, G2_gen) * e(H(msg), pk[0]) * ... * e(H(msg), pk[N-1]) == 1
+    ///      This correctly handles subset signing where only some issuers sign.
+    /// @param pubkeys Array of G2 public keys (each 128 bytes: [x_im, x_re, y_im, y_re])
+    /// @param message Message hash that was signed
+    /// @param signature G1 signature (64 bytes: [x, y])
+    /// @return True if signature is valid, false otherwise
+    function verifyBLSMulti(
+        bytes[] memory pubkeys,
+        bytes32 message,
+        bytes memory signature
+    ) internal view returns (bool) {
+        uint256 numSigners = pubkeys.length;
+        if (numSigners == 0) return false;
+        if (signature.length != 64) return false;
+
+        // Parse signature (G1 point)
+        uint256[2] memory sig;
+        sig[0] = _bytesToUint(signature, 0);
+        sig[1] = _bytesToUint(signature, 32);
+
+        // Validate signature is on curve
+        if (!isOnCurve(sig)) return false;
+
+        // Hash message to G1 point
+        uint256[2] memory msgPoint = hashToG1(message);
+        if (msgPoint[0] == 0 && msgPoint[1] == 0) return false;
+
+        // Negate signature for pairing check
+        uint256[2] memory sigNeg = ecNegate(sig);
+
+        // Build pairing input using Solidity-level array indexing (via_ir safe)
+        // Each pair = 6 uint256s: (G1.x, G1.y, G2.x_im, G2.x_re, G2.y_im, G2.y_re)
+        uint256 numPairs = numSigners + 1;
+        uint256[] memory input = new uint256[](numPairs * 6);
+
+        // Pair 0: (-sig, G2_generator)
+        input[0] = sigNeg[0];
+        input[1] = sigNeg[1];
+        input[2] = G2_X_IM;
+        input[3] = G2_X_RE;
+        input[4] = G2_Y_IM;
+        input[5] = G2_Y_RE;
+
+        // Pairs 1..N: (H(msg), pk[i])
+        for (uint256 i = 0; i < numSigners; i++) {
+            bytes memory pk = pubkeys[i];
+            if (pk.length != 128) return false;
+            uint256 base = (i + 1) * 6;
+            input[base]     = msgPoint[0];
+            input[base + 1] = msgPoint[1];
+            input[base + 2] = _bytesToUint(pk, 0);
+            input[base + 3] = _bytesToUint(pk, 32);
+            input[base + 4] = _bytesToUint(pk, 64);
+            input[base + 5] = _bytesToUint(pk, 96);
+        }
+
+        // Call pairing precompile — only assembly needed is for the staticcall
+        uint256[1] memory result;
+        bool success;
+        uint256 dataLen = numPairs * 192;
+        assembly {
+            success := staticcall(gas(), 0x08, add(input, 0x20), dataLen, result, 0x20)
+        }
+
+        if (!success) return false;
+        return result[0] == 1;
+    }
 }

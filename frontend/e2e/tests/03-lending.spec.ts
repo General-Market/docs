@@ -5,7 +5,7 @@ import {
   itpCard,
   lendingModal,
 } from '../helpers/selectors';
-import { getL3UserShares, mintL3Shares, rebalanceItp } from '../helpers/backend-api';
+import { getL3UserShares, mintL3Shares, mintBridgedItp, rebalanceItp } from '../helpers/backend-api';
 
 test.describe('Lending (Deposit → Borrow → Repay → Withdraw)', () => {
   test('full lending cycle', async ({ walletPage: page }) => {
@@ -26,6 +26,9 @@ test.describe('Lending (Deposit → Borrow → Repay → Withdraw)', () => {
     if (shares === 0n) {
       await mintL3Shares(TEST_ADDRESS, ITP_ID, 100n * 10n ** 18n);
     }
+
+    // Ensure user has BridgedITP on Arb (lending UI checks this balance)
+    await mintBridgedItp(TEST_ADDRESS, ITP_ID, 100n * 10n ** 18n);
 
     // ── Open Lending Modal ───────────────────────────────────
     const borrowBtn = borrowButtonOnCard(page);

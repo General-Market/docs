@@ -323,7 +323,7 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
         // Load snapshot and validate signers
         TypesLib.RegistrySnapshot memory snap = _nonceSnapshots[referenceNonce];
         if ((signersBitmask & ~snap.activeBitmask) != 0) revert InvalidBLSSignature();
-        if (_popcount(signersBitmask) < snap.activeCount * 2 / 3 + 1) revert InvalidBLSSignature();
+        if (_popcount(signersBitmask) < (snap.activeCount * 2 + 2) / 3) revert InvalidBLSSignature();
 
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(this), "removeIssuerByVote", issuerId
@@ -696,7 +696,11 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
         pubkeys = new bytes[](issuerIds.length);
         for (uint256 i = 0; i < issuerIds.length; i++) {
             TypesLib.Issuer storage issuer = _issuers[issuerIds[i]];
-            if (issuer.addr != address(0) && issuer.status == 1) {
+            // Return stored pubkey regardless of current status — the caller
+            // (BLSVerifier) already validates the bitmap against a historical
+            // snapshot's activeBitmask, so removed issuers that were active at
+            // snapshot time still need their pubkeys for BLS verification.
+            if (issuer.addr != address(0)) {
                 pubkeys[i] = issuer.blsPubkey;
             }
         }
@@ -736,6 +740,43 @@ contract IssuerRegistry is IIssuerRegistry, Initializable, UUPSUpgradeable {
         assembly {
             mstore(issuerIds, signerCount)
         }
+    }
+
+    /// @inheritdoc IIssuerRegistry
+    function decodeBitmap(uint256 bitmap) external pure override returns (uint256[] memory ids) {
+        // Count set bits
+        uint256 tempBitmap = bitmap;
+        uint256 count;
+        while (tempBitmap != 0) {
+            tempBitmap &= tempBitmap - 1;
+            count++;
+        }
+        // Decode to array
+        ids = new uint256[](count);
+        uint256 idx;
+        for (uint256 i = 0; i < 256 && bitmap != 0; i++) {
+            if (bitmap & 1 == 1) {
+                ids[idx++] = i;
+            }
+            bitmap >>= 1;
+        }
+    }
+
+    /// @inheritdoc IIssuerRegistry
+    function verifyBLSMultiPairing(
+        uint256 signersBitmask,
+        bytes32 messageHash,
+        bytes calldata blsSignature
+    ) external view override returns (bool) {
+        uint256[] memory ids = this.decodeBitmap(signersBitmask);
+        bytes[] memory pks = new bytes[](ids.length);
+        for (uint256 i = 0; i < ids.length; i++) {
+            TypesLib.Issuer storage issuer = _issuers[ids[i]];
+            if (issuer.addr != address(0)) {
+                pks[i] = issuer.blsPubkey;
+            }
+        }
+        return BLSLib.verifyBLSMulti(pks, messageHash, blsSignature);
     }
 
     /// @inheritdoc IIssuerRegistry
