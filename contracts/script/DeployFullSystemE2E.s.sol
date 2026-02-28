@@ -236,6 +236,12 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         // Vault approves ArbBridgeCustody for USDC spending (for completeSellOrder vault→user pull)
         MockBitgetVault(mockBitgetVault).approveSpender(arbWusdc, arbBridgeCustodyProxy, type(uint256).max);
         console.log("  MockBitgetVault: approved ArbBridgeCustody for ARB_USDC spending");
+        // Authorize all BLS-verifying contracts for incrementMissedCounts
+        IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(indexProxy, true);
+        IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(blsCustodyProxy, true);
+        IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(l3BridgeCustodyProxy, true);
+        IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(bridgeProxyAddr, true);
+        console.log("  IssuerRegistry: authorized BLS-verifying contracts for incrementMissedCounts");
     }
 
     function _registerIssuers() internal {

@@ -1,5 +1,11 @@
 # Design Decision Backlog
 
+## Session: 20260228-1630-k9p2 (BLS incrementMissedCounts Authorization Fix)
+
+- [DECISION] Added `setAuthorizedMissedCountCaller` to all deploy scripts. The `incrementMissedCounts` function on IssuerRegistry requires explicit authorization for each BLS-verifying contract (Index, BLSCustody, L3BridgeCustody, BridgeProxy, Vision). Without this, all batch confirmations revert with `Unauthorized()` after the multi-pairing migration.
+- [DECISION] Authorization added to: DeployFullSystemE2E.s.sol (Index + BLSCustody + L3BridgeCustody + BridgeProxy), DeployVision.s.sol (Vision), DeployRebalanceE2E.s.sol, DeployCrossChainE2E.s.sol.
+- [FAILED] Previous sessions assumed BLS signature verification was failing — the actual error (`0x82b42900` = `Unauthorized()`) was in `incrementMissedCounts`, called AFTER successful BLS verification. The multi-pairing BLS fix was working correctly all along.
+
 ## Session: 20260228-1400-m7x3 (BLS Multi-Pairing Verification)
 
 - [DECISION] BLS verification: replaced single aggregated-pubkey pairing with multi-pairing check (`e(-sig, G2) * e(H(msg), pk[0]) * ... == 1`). Handles any subset of signers correctly. Gas: ~147k vs ~113k for 2 signers.

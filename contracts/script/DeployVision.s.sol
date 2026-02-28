@@ -5,6 +5,7 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 import "../src/vision/Vision.sol";
+import "../src/registry/IssuerRegistry.sol";
 import "./helpers/DeployBLSHelper.sol";
 
 /// @title DeployVision - Deploy Vision.sol (P2Pool prediction market) on L3
@@ -47,6 +48,10 @@ contract DeployVision is DeployBLSHelper {
         Vision vision = new Vision(usdcAddress, issuerRegistry, feeCollector);
         visionAddress = address(vision);
         console.log("  Vision deployed:", visionAddress);
+
+        // Authorize Vision for incrementMissedCounts (non-signer liveness tracking)
+        IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(visionAddress, true);
+        console.log("  IssuerRegistry: authorized Vision for incrementMissedCounts");
 
         vm.stopBroadcast();
 

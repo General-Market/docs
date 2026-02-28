@@ -184,6 +184,7 @@ contract DeployRebalanceE2E is DeployBLSHelper {
     function _wireContracts() internal {
         console.log("Phase 6: Wire Contracts");
         Investment(indexProxy).setIssuerRegistry(issuerRegistry);
+        IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(indexProxy, true);
     }
 
     function _registerIssuers() internal {

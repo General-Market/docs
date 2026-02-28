@@ -64,6 +64,7 @@ contract DeployCrossChainE2E is DeployBLSHelper {
         console.log("MockBitgetVault:", mockBitgetVault);
 
         Investment(indexProxy).setIssuerRegistry(issuerRegistry);
+        IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(indexProxy, true);
 
         // Bridge Side
         address bridgeImpl = address(new BridgeProxy());
