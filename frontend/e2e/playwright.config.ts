@@ -22,9 +22,9 @@ export default defineConfig({
   },
   projects: [
     {
-      // ITP flow — runs serially (00 → 06), resilience excluded
+      // ITP flow — runs serially (00 → 09), resilience (07) excluded
       name: 'itp',
-      testMatch: '**/0[0-6]-*.spec.ts',
+      testMatch: ['**/0[0-6]-*.spec.ts', '**/0[89]-*.spec.ts'],
     },
     {
       // Vision — runs in parallel with ITP flow

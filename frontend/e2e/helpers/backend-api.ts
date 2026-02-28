@@ -592,69 +592,6 @@ export async function pollUntil<T>(
   throw new Error(`pollUntil timed out after ${timeoutMs}ms`);
 }
 
-// ── Direct ITP creation on L3 (admin bypass for E2E) ─────────────────────
-
-/**
- * Create an ITP directly on L3 via the admin (deployer).
- * Uses Anvil impersonation — no BLS needed (admin access control).
- * Picks 10 default assets with equal weights and $1 prices.
- */
-export async function createItpOnL3(name: string, symbol: string): Promise<void> {
-  await l3RpcCall('anvil_impersonateAccount', [DEPLOYER]);
-
-  // 10 assets with equal weights (10% each = 1e17)
-  const assetCount = 10;
-  const weight = BigInt(1e18) / BigInt(assetCount); // 1e17
-  const weights: bigint[] = Array.from({ length: assetCount }, (_, i) =>
-    i === assetCount - 1 ? BigInt(1e18) - weight * BigInt(assetCount - 1) : weight
-  );
-  const assets: `0x${string}`[] = Array.from({ length: assetCount }, (_, i) =>
-    ('0x' + (i + 1).toString(16).padStart(40, '0')) as `0x${string}`
-  );
-  const prices: bigint[] = Array.from({ length: assetCount }, () => BigInt(1e18)); // $1
-
-  // bridgeNonce = type(uint256).max for admin (non-bridge) calls
-  const bridgeNonce = (1n << 256n) - 1n;
-
-  const CREATE_ITP_ABI = [{
-    name: 'createITP',
-    type: 'function',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'name', type: 'string' },
-      { name: 'symbol', type: 'string' },
-      { name: 'weights', type: 'uint256[]' },
-      { name: '_assets', type: 'address[]' },
-      { name: 'prices', type: 'uint256[]' },
-      { name: 'bridgeNonce', type: 'uint256' },
-    ],
-    outputs: [{ name: 'itpId', type: 'bytes32' }],
-  }] as const;
-
-  const calldata = encodeFunctionData({
-    abi: CREATE_ITP_ABI,
-    functionName: 'createITP',
-    args: [name, symbol, weights, assets, prices, bridgeNonce],
-  });
-
-  const txHash = await l3RpcCall('eth_sendTransaction', [{
-    from: DEPLOYER,
-    to: L3_INDEX,
-    data: calldata,
-    gas: '0x500000',
-  }]) as string;
-
-  // Wait for receipt
-  for (let i = 0; i < 10; i++) {
-    const receipt = await l3RpcCall('eth_getTransactionReceipt', [txHash]) as { status: string } | null;
-    if (receipt) {
-      if (receipt.status === '0x0') throw new Error(`createItpOnL3 reverted: ${txHash}`);
-      return;
-    }
-    await new Promise(r => setTimeout(r, 200));
-  }
-}
-
 // ── Direct order placement (via Anvil impersonation) ────────────────────
 
 /**
@@ -1061,5 +998,22 @@ export function startArbBlockMiner(intervalMs = 1000): () => void {
   return () => clearInterval(timer);
 }
 
+/**
+ * Get the BridgedITP address for an ITP ID on Arb via BridgeProxy.orbitToArbitrum().
+ * Returns the zero address if no BridgedITP has been deployed for this ITP.
+ */
+export async function getBridgedItpAddress(itpId: string): Promise<string> {
+  const calldata = encodeFunctionData({
+    abi: BRIDGE_PROXY_ABI,
+    functionName: 'orbitToArbitrum',
+    args: [itpId as `0x${string}`],
+  });
+  const result = await rpcCall('eth_call', [
+    { to: BRIDGE_PROXY, data: calldata },
+    'latest',
+  ]) as string;
+  return '0x' + result.slice(26);
+}
+
 /** Expose erc20BalanceOf and contract addresses for direct use in tests */
-export { erc20BalanceOf, BRIDGED_ITP, ARB_USDC, L3_WUSDC };
+export { erc20BalanceOf, BRIDGED_ITP, ARB_USDC, ARB_CUSTODY, BRIDGE_PROXY, L3_WUSDC };
