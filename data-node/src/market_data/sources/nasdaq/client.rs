@@ -7,19 +7,18 @@ use anyhow::{Context, Result};
 use serde::de::DeserializeOwned;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::Semaphore;
 use tracing::{debug, warn};
+
+use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 
 /// Nasdaq Data Link API base URL
 pub const NASDAQ_API_URL: &str = "https://data.nasdaq.com/api/v3/datasets";
 
 /// Shared Nasdaq API client with rate limiting
-#[derive(Clone)]
 pub struct NasdaqClient {
-    client: reqwest::Client,
+    http: Arc<SourceHttpClient>,
     api_key: String,
-    /// Semaphore for concurrency control (respect 300/10sec limit)
-    request_semaphore: Arc<Semaphore>,
 }
 
 impl NasdaqClient {
@@ -40,13 +39,17 @@ impl NasdaqClient {
             .build()
             .context("Failed to build reqwest client")?;
 
-        // Allow ~20 concurrent requests to stay well under 300/10sec
-        let request_semaphore = Arc::new(Semaphore::new(20));
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 300,
+                duration: Duration::from_secs(10),
+            }],
+        };
+        let http = Arc::new(SourceHttpClient::with_client(client, rate_limit, RetryConfig::default()));
 
         Ok(Self {
-            client,
+            http,
             api_key,
-            request_semaphore,
         })
     }
 
@@ -60,12 +63,6 @@ impl NasdaqClient {
         dataset_code: &str,
         rows: u32,
     ) -> Result<T> {
-        // Acquire semaphore permit
-        let _permit = self.request_semaphore.acquire().await.unwrap();
-
-        // Small delay to smooth out request rate
-        tokio::time::sleep(Duration::from_millis(50)).await;
-
         let url = format!(
             "{}/{}.json?api_key={}&rows={}",
             NASDAQ_API_URL, dataset_code, self.api_key, rows
@@ -73,48 +70,10 @@ impl NasdaqClient {
 
         debug!("Fetching Nasdaq dataset: {}", dataset_code);
 
-        const MAX_RETRIES: u32 = 2;
-        let mut attempt = 0;
+        let data: T = self.http.get_json(&url).await
+            .with_context(|| format!("Failed to fetch Nasdaq dataset {}", dataset_code))?;
 
-        loop {
-            let resp = self
-                .client
-                .get(&url)
-                .send()
-                .await
-                .with_context(|| format!("Failed to fetch Nasdaq dataset {}", dataset_code))?;
-
-            if resp.status().is_success() {
-                let data: T = resp.json().await.with_context(|| {
-                    format!("Failed to parse Nasdaq response for {}", dataset_code)
-                })?;
-                return Ok(data);
-            }
-
-            let status = resp.status();
-            let body = resp.text().await.unwrap_or_default();
-
-            // Auth failure — likely invalid API key
-            if status.as_u16() == 400 || status.as_u16() == 403 {
-                anyhow::bail!(
-                    "Nasdaq API auth error for {} (HTTP {}): {} — check NASDAQ_API_KEY is valid",
-                    dataset_code, status, body
-                );
-            }
-
-            // Retry on rate limit (429)
-            if status.as_u16() == 429 && attempt < MAX_RETRIES {
-                attempt += 1;
-                warn!(
-                    "Nasdaq rate limit hit for {} (attempt {}/{}). Retrying in 10s...",
-                    dataset_code, attempt, MAX_RETRIES
-                );
-                tokio::time::sleep(Duration::from_secs(10)).await;
-                continue;
-            }
-
-            anyhow::bail!("Nasdaq API error for {}: {} {}", dataset_code, status, body);
-        }
+        Ok(data)
     }
 
     /// Check if API key is configured (non-empty)

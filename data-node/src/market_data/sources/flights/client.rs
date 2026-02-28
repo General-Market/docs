@@ -23,6 +23,7 @@ use std::time::Duration;
 use tracing::{debug, info, warn};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 use crate::market_data::traits::{
     load_assets_from_json, AssetEntry, AssetUpdate, MarketDataSource, PriceUpdate,
 };
@@ -38,9 +39,6 @@ const MAX_RADIUS_NM: f64 = 250.0;
 
 /// Approximate nautical miles per degree of latitude
 const NM_PER_DEG_LAT: f64 = 60.0;
-
-/// Delay between requests in ms
-const INTER_REQUEST_DELAY_MS: u64 = 500;
 
 // ============================================================================
 // API RESPONSE TYPES
@@ -122,7 +120,7 @@ struct QueryPoint {
 /// using the adsb.lol community ADS-B API.
 /// Source ID is `"flights"`.
 pub struct FlightsMarketSource {
-    client: reqwest::Client,
+    http: SourceHttpClient,
 }
 
 impl FlightsMarketSource {
@@ -132,9 +130,17 @@ impl FlightsMarketSource {
             .gzip(true)
             .build()?;
 
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 50,
+                duration: Duration::from_secs(60),
+            }],
+        };
+        let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());
+
         info!("adsb.lol flights source initialized (25 regions, per-region strategy)");
 
-        Ok(Self { client })
+        Ok(Self { http })
     }
 
     /// Parse bounding box string "lat_min,lat_max,lon_min,lon_max" into BBox.
@@ -204,32 +210,15 @@ impl FlightsMarketSource {
             API_BASE, qp.lat, qp.lon, qp.dist
         );
 
-        let resp = self
-            .client
-            .get(&url)
-            .header("Accept", "application/json")
-            .send()
-            .await;
-
-        match resp {
-            Ok(r) => {
-                if !r.status().is_success() {
-                    warn!("Flights: adsb.lol returned {} for ({},{})", r.status(), qp.lat, qp.lon);
-                    return Ok(Vec::new());
-                }
-                match r.json::<AdsbLolResponse>().await {
-                    Ok(data) => Ok(data.ac),
-                    Err(e) => {
-                        warn!("Flights: parse error for ({},{}): {:?}", qp.lat, qp.lon, e);
-                        Ok(Vec::new())
-                    }
-                }
-            }
+        let data: AdsbLolResponse = match self.http.get_json(&url).await {
+            Ok(d) => d,
             Err(e) => {
-                warn!("Flights: fetch error for ({},{}): {:?}", qp.lat, qp.lon, e);
-                Ok(Vec::new())
+                warn!("Flights: error for ({},{}): {}", qp.lat, qp.lon, e);
+                return Ok(Vec::new());
             }
-        }
+        };
+
+        Ok(data.ac)
     }
 }
 
@@ -308,11 +297,6 @@ impl MarketDataSource for FlightsMarketSource {
             let mut count: u64 = 0;
 
             for qp in &queries {
-                // Rate limit between requests
-                if i > 0 || !seen_hex.is_empty() {
-                    tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
-                }
-
                 let aircraft = self.fetch_region(qp).await.unwrap_or_default();
                 for ac in &aircraft {
                     if let (Some(lat), Some(lon)) = (ac.lat, ac.lon) {

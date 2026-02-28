@@ -23,6 +23,7 @@ use crate::market_data::traits::{
     ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 
 /// Asset configuration loaded from JSON at compile time
 const ASSET_JSON: &str = include_str!("../../../config/bchain.json");
@@ -103,46 +104,38 @@ impl BlockchainInfoStats {
 
 /// BCHAIN market data source (backed by blockchain.info stats API)
 pub struct BchainMarketSource {
-    client: reqwest::Client,
+    http: SourceHttpClient,
 }
 
 impl BchainMarketSource {
     /// Create from environment (no API key required)
     pub fn from_env() -> Result<Self> {
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(30))
-            .build()
-            .context("Failed to create HTTP client for BCHAIN")?;
+        let rate_limit = RateLimitConfig {
+            windows: vec![
+                RateWindow {
+                    max_requests: 30,
+                    duration: Duration::from_secs(60),
+                },
+                RateWindow {
+                    max_requests: 500,
+                    duration: Duration::from_secs(86400),
+                },
+            ],
+        };
+        let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
 
         let asset_count = load_assets_from_json(ASSET_JSON)
             .map(|a| a.len())
             .unwrap_or(0);
         info!("BCHAIN client initialized with {} series (blockchain.info stats API)", asset_count);
-        Ok(Self { client })
+        Ok(Self { http })
     }
 
     /// Fetch all stats from blockchain.info in a single call
     async fn fetch_stats(&self) -> Result<BlockchainInfoStats> {
-        let resp = self
-            .client
-            .get(BLOCKCHAIN_INFO_STATS_URL)
-            .send()
-            .await
-            .context("Failed to send request to blockchain.info")?;
-
-        let status = resp.status();
-        if !status.is_success() {
-            let body = resp.text().await.unwrap_or_default();
-            anyhow::bail!(
-                "blockchain.info stats API returned HTTP {}: {}",
-                status,
-                body
-            );
-        }
-
-        resp.json::<BlockchainInfoStats>()
-            .await
-            .context("Failed to parse blockchain.info stats JSON")
+        let stats: BlockchainInfoStats = self.http.get_json(BLOCKCHAIN_INFO_STATS_URL).await
+            .context("Failed to fetch blockchain.info stats")?;
+        Ok(stats)
     }
 }
 

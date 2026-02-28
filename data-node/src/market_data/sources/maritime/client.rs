@@ -23,6 +23,7 @@ use std::time::Duration;
 use tracing::{debug, info, warn};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 use crate::market_data::traits::{
     load_assets_from_json, AssetEntry, AssetUpdate, MarketDataSource, PriceUpdate,
 };
@@ -86,7 +87,7 @@ impl BBox {
 /// Tracks vessel counts across 25 global ports and shipping lanes
 /// using the Digitraffic AIS API. Source ID is `"maritime"`.
 pub struct MaritimeMarketSource {
-    client: reqwest::Client,
+    http: SourceHttpClient,
 }
 
 impl MaritimeMarketSource {
@@ -98,9 +99,17 @@ impl MaritimeMarketSource {
             .gzip(true)
             .build()?;
 
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 6,
+                duration: Duration::from_secs(60),
+            }],
+        };
+        let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());
+
         info!("AIS maritime source initialized (Digitraffic API, 25 ports/lanes)");
 
-        Ok(Self { client })
+        Ok(Self { http })
     }
 
     /// Parse bounding box from config format "lon_min,lat_min,lon_max,lat_max"
@@ -170,31 +179,10 @@ impl MarketDataSource for MaritimeMarketSource {
             .collect();
 
         // ONE call to get ALL vessel positions as GeoJSON
-        let resp = self
-            .client
-            .get(API_URL)
-            .header("Accept", "application/json")
-            .header("Accept-Encoding", "gzip")
-            .send()
-            .await;
-
-        let response: AisGeoJsonResponse = match resp {
-            Ok(r) => {
-                if !r.status().is_success() {
-                    let status = r.status();
-                    warn!("Maritime: Digitraffic AIS returned {}", status);
-                    return Ok(Vec::new());
-                }
-                match r.json().await {
-                    Ok(data) => data,
-                    Err(e) => {
-                        warn!("Maritime: failed to parse Digitraffic response: {:?}", e);
-                        return Ok(Vec::new());
-                    }
-                }
-            }
+        let response: AisGeoJsonResponse = match self.http.get_json(API_URL).await {
+            Ok(d) => d,
             Err(e) => {
-                warn!("Maritime: failed to fetch Digitraffic AIS: {:?}", e);
+                warn!("Maritime: failed to fetch Digitraffic AIS: {}", e);
                 return Ok(Vec::new());
             }
         };

@@ -15,10 +15,11 @@ use anyhow::{Context, Result};
 use chrono::Utc;
 use rust_decimal::Decimal;
 use serde::Deserialize;
-use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::Mutex;
 use tracing::{debug, info, warn};
+
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
+use crate::market_data::sources::oauth::OAuthTokenCache;
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::traits::{
@@ -39,12 +40,6 @@ const BATCH_SIZE: usize = 100;
 
 /// Request timeout
 const REQUEST_TIMEOUT_SECS: u64 = 15;
-
-/// Max retries per request
-const MAX_RETRIES: u32 = 3;
-
-/// Minimum delay between API requests (ms) — ~50/min budget
-const MIN_REQUEST_DELAY_MS: u64 = 1200;
 
 /// User-Agent (Reddit requires a descriptive one)
 const USER_AGENT: &str = "IndexDataNode/1.0 (by /u/IndexDataBot)";
@@ -144,15 +139,6 @@ struct SubredditAboutResponse {
 }
 
 // ============================================================================
-// CACHED TOKEN
-// ============================================================================
-
-struct CachedToken {
-    access_token: String,
-    expires_at: std::time::Instant,
-}
-
-// ============================================================================
 // SOURCE IMPLEMENTATION
 // ============================================================================
 
@@ -167,11 +153,13 @@ struct CachedToken {
 ///
 /// Source ID is `"reddit"`.
 pub struct RedditMarketSource {
+    /// Used for OAuth token requests (POST with basic_auth)
     client: reqwest::Client,
+    /// Used for data-fetching GET requests (with rate limiting + retry)
+    http: SourceHttpClient,
     client_id: Option<String>,
     client_secret: Option<String>,
-    token: Arc<Mutex<Option<CachedToken>>>,
-    last_request: Arc<Mutex<std::time::Instant>>,
+    token_cache: OAuthTokenCache,
     /// Whether we have OAuth credentials.
     authenticated: bool,
 }
@@ -193,6 +181,30 @@ impl RedditMarketSource {
             .build()
             .context("Failed to build HTTP client")?;
 
+        let rate_config = if authenticated {
+            RateLimitConfig {
+                windows: vec![RateWindow {
+                    max_requests: 50,
+                    duration: Duration::from_secs(60),
+                }],
+            }
+        } else {
+            RateLimitConfig {
+                windows: vec![RateWindow {
+                    max_requests: 8,
+                    duration: Duration::from_secs(60),
+                }],
+            }
+        };
+
+        let http_client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
+            .user_agent(USER_AGENT)
+            .build()
+            .context("Failed to build HTTP client for SourceHttpClient")?;
+
+        let http = SourceHttpClient::with_client(http_client, rate_config, RetryConfig::default());
+
         info!(
             "Reddit source initialized (auth={}), tracking {} subreddits ({} assets)",
             if authenticated { "OAuth2" } else { "public (no auth, 10 req/min)" },
@@ -202,10 +214,10 @@ impl RedditMarketSource {
 
         Ok(Self {
             client,
+            http,
             client_id,
             client_secret,
-            token: Arc::new(Mutex::new(None)),
-            last_request: Arc::new(Mutex::new(std::time::Instant::now())),
+            token_cache: OAuthTokenCache::new("Reddit"),
             authenticated,
         })
     }
@@ -214,145 +226,63 @@ impl RedditMarketSource {
     /// Returns None if not authenticated.
     async fn get_token(&self) -> Result<Option<String>> {
         let (client_id, client_secret) = match (&self.client_id, &self.client_secret) {
-            (Some(id), Some(secret)) => (id, secret),
+            (Some(id), Some(secret)) => (id.clone(), secret.clone()),
             _ => return Ok(None),
         };
 
-        let mut token_guard = self.token.lock().await;
+        let client = self.client.clone();
+        let token = self
+            .token_cache
+            .get_or_refresh(|| async move {
+                let resp = client
+                    .post(TOKEN_URL)
+                    .basic_auth(&client_id, Some(&client_secret))
+                    .form(&[("grant_type", "client_credentials")])
+                    .send()
+                    .await
+                    .context("Failed to request Reddit access token")?;
 
-        // Return cached token if still valid (with 60s buffer)
-        if let Some(ref cached) = *token_guard {
-            if cached.expires_at > std::time::Instant::now() + Duration::from_secs(60) {
-                return Ok(Some(cached.access_token.clone()));
-            }
-        }
+                if !resp.status().is_success() {
+                    let status = resp.status();
+                    let body = resp.text().await.unwrap_or_default();
+                    anyhow::bail!("Reddit token request failed: {} {}", status, body);
+                }
 
-        // Fetch new token via client credentials grant
-        let resp = self
-            .client
-            .post(TOKEN_URL)
-            .basic_auth(client_id, Some(client_secret))
-            .form(&[("grant_type", "client_credentials")])
-            .send()
-            .await
-            .context("Failed to request Reddit access token")?;
+                let token_resp: TokenResponse = resp
+                    .json()
+                    .await
+                    .context("Failed to parse Reddit token response")?;
 
-        if !resp.status().is_success() {
-            let status = resp.status();
-            let body = resp.text().await.unwrap_or_default();
-            anyhow::bail!("Reddit token request failed: {} {}", status, body);
-        }
+                Ok((token_resp.access_token, token_resp.expires_in))
+            })
+            .await?;
 
-        let token_resp: TokenResponse = resp
-            .json()
-            .await
-            .context("Failed to parse Reddit token response")?;
-
-        let expires_at =
-            std::time::Instant::now() + Duration::from_secs(token_resp.expires_in.saturating_sub(120));
-
-        let access_token = token_resp.access_token.clone();
-
-        *token_guard = Some(CachedToken {
-            access_token: token_resp.access_token,
-            expires_at,
-        });
-
-        debug!("Reddit access token refreshed, expires in {}s", token_resp.expires_in);
-        Ok(Some(access_token))
+        Ok(Some(token))
     }
 
-    /// Enforce rate limiting between requests.
-    async fn rate_limit(&self) {
-        let mut last = self.last_request.lock().await;
-        let elapsed = last.elapsed();
-        let min_delay = Duration::from_millis(MIN_REQUEST_DELAY_MS);
-
-        if elapsed < min_delay {
-            tokio::time::sleep(min_delay - elapsed).await;
-        }
-
-        *last = std::time::Instant::now();
-    }
-
-    /// Make a GET request to the Reddit API with retries.
-    /// Uses OAuth if authenticated, plain request otherwise.
+    /// Make a GET request to the Reddit OAuth API.
+    /// Uses SourceHttpClient for rate limiting and retry.
+    /// Handles 401 by invalidating the token cache.
     async fn api_get(&self, url: &str) -> Result<RedditListing> {
-        let mut last_error = None;
+        let token = self.get_token().await?;
 
-        for attempt in 0..MAX_RETRIES {
-            self.rate_limit().await;
+        let auth_value;
+        let headers: Vec<(&str, &str)> = if let Some(ref tok) = token {
+            auth_value = format!("Bearer {}", tok);
+            vec![("Authorization", auth_value.as_str())]
+        } else {
+            vec![]
+        };
 
-            let token = self.get_token().await?;
-
-            let mut req = self.client.get(url);
-            if let Some(ref tok) = token {
-                req = req.header("Authorization", format!("Bearer {}", tok));
+        match self.http.get_json_with_headers::<RedditListing>(url, &headers).await {
+            Ok(data) => Ok(data),
+            Err(crate::market_data::sources::error::SourceError::AuthFailed(_)) => {
+                warn!("Reddit auth failed (401), clearing token cache");
+                self.token_cache.invalidate().await;
+                Err(anyhow::anyhow!("Reddit auth failed, token cache cleared"))
             }
-
-            match req.send().await {
-                Ok(resp) => {
-                    if resp.status().is_success() {
-                        match resp.json::<RedditListing>().await {
-                            Ok(data) => return Ok(data),
-                            Err(e) => {
-                                warn!(
-                                    "Failed to parse Reddit response (attempt {}/{}): {:?}",
-                                    attempt + 1, MAX_RETRIES, e
-                                );
-                                last_error = Some(e.to_string());
-                            }
-                        }
-                    } else if resp.status().as_u16() == 429 {
-                        let retry_after = resp
-                            .headers()
-                            .get("Retry-After")
-                            .and_then(|v| v.to_str().ok())
-                            .and_then(|s| s.parse::<u64>().ok())
-                            .unwrap_or(5);
-
-                        warn!(
-                            "Reddit rate limited (attempt {}/{}), waiting {}s",
-                            attempt + 1, MAX_RETRIES, retry_after
-                        );
-                        tokio::time::sleep(Duration::from_secs(retry_after)).await;
-                        last_error = Some("Rate limited".to_string());
-                    } else if resp.status().as_u16() == 401 {
-                        warn!("Reddit auth failed (401), clearing token cache");
-                        let mut token_guard = self.token.lock().await;
-                        *token_guard = None;
-                        last_error = Some("Auth failed".to_string());
-                    } else {
-                        let status = resp.status();
-                        let body = resp.text().await.unwrap_or_default();
-                        warn!(
-                            "Reddit API error (attempt {}/{}): {} {}",
-                            attempt + 1, MAX_RETRIES, status, body
-                        );
-                        last_error = Some(format!("HTTP {}", status));
-                    }
-                }
-                Err(e) => {
-                    warn!(
-                        "Reddit request failed (attempt {}/{}): {:?}",
-                        attempt + 1, MAX_RETRIES, e
-                    );
-                    last_error = Some(e.to_string());
-                }
-            }
-
-            // Exponential backoff
-            if attempt < MAX_RETRIES - 1 {
-                let delay = Duration::from_secs(2u64.pow(attempt));
-                tokio::time::sleep(delay).await;
-            }
+            Err(e) => Err(anyhow::anyhow!("{}", e)),
         }
-
-        Err(anyhow::anyhow!(
-            "Reddit request failed after {} retries: {:?}",
-            MAX_RETRIES,
-            last_error
-        ))
     }
 
     /// Fetch subreddit info in batches of 100 via OAuth /api/info (authenticated mode only).
@@ -371,53 +301,14 @@ impl RedditMarketSource {
     }
 
     /// Fetch a single subreddit's info via the public JSON API (no auth needed).
-    /// Uses https://www.reddit.com/r/{sub}/about.json
+    /// Uses SourceHttpClient for rate limiting and retry.
     async fn fetch_subreddit_public(&self, sub: &str) -> Result<SubredditData> {
-        self.rate_limit().await;
         let url = format!("https://www.reddit.com/r/{}/about.json", sub);
 
-        let mut last_error = None;
-        for attempt in 0..MAX_RETRIES {
-            if attempt > 0 {
-                self.rate_limit().await;
-            }
+        let resp: SubredditAboutResponse = self.http.get_json(&url).await
+            .map_err(|e| anyhow::anyhow!("Reddit public API failed for r/{}: {}", sub, e))?;
 
-            match self.client.get(&url).send().await {
-                Ok(resp) => {
-                    if resp.status().is_success() {
-                        match resp.json::<SubredditAboutResponse>().await {
-                            Ok(data) => return Ok(data.data),
-                            Err(e) => {
-                                warn!("Failed to parse Reddit about.json for r/{} (attempt {}/{}): {:?}",
-                                    sub, attempt + 1, MAX_RETRIES, e);
-                                last_error = Some(e.to_string());
-                            }
-                        }
-                    } else if resp.status().as_u16() == 429 {
-                        let retry_after = resp.headers()
-                            .get("Retry-After")
-                            .and_then(|v| v.to_str().ok())
-                            .and_then(|s| s.parse::<u64>().ok())
-                            .unwrap_or(10);
-                        warn!("Reddit public API rate limited for r/{}, waiting {}s", sub, retry_after);
-                        tokio::time::sleep(Duration::from_secs(retry_after)).await;
-                        last_error = Some("Rate limited".to_string());
-                    } else {
-                        let status = resp.status();
-                        last_error = Some(format!("HTTP {}", status));
-                    }
-                }
-                Err(e) => {
-                    last_error = Some(e.to_string());
-                }
-            }
-
-            if attempt < MAX_RETRIES - 1 {
-                tokio::time::sleep(Duration::from_secs(2u64.pow(attempt))).await;
-            }
-        }
-
-        Err(anyhow::anyhow!("Reddit public API failed for r/{}: {:?}", sub, last_error))
+        Ok(resp.data)
     }
 
     /// Deduplicated subreddit list

@@ -13,6 +13,7 @@ use std::time::Duration;
 use tracing::{debug, info, warn};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 use crate::market_data::traits::{
     is_us_weekend, next_us_trading_day, today_at_eastern, AssetUpdate, MarketDataSource,
     PriceUpdate, ScheduledMarketDataSource,
@@ -107,24 +108,31 @@ struct EftsFormBucket {
 
 /// SEC EFTS Filing Counts market data source
 pub struct SecEftsMarketSource {
-    client: reqwest::Client,
+    http: SourceHttpClient,
 }
 
 impl SecEftsMarketSource {
     /// Create the SEC EFTS client
     pub fn from_env() -> Result<Self> {
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 5,
+                duration: Duration::from_secs(1),
+            }],
+        };
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(30))
             .user_agent("IndexProtocol/1.0 (contact@indexprotocol.com)")
             .build()
             .context("Failed to build reqwest client")?;
+        let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());
 
         info!(
             "SEC EFTS client initialized with {} form types",
             TRACKED_FORMS.len()
         );
 
-        Ok(Self { client })
+        Ok(Self { http })
     }
 
     /// Fetch filing counts for batchable forms using aggregation buckets
@@ -135,23 +143,13 @@ impl SecEftsMarketSource {
             forms_param, date, date
         );
 
-        let resp = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .context("Failed to fetch EFTS batch filing counts")?;
-
-        if !resp.status().is_success() {
-            let status = resp.status();
-            warn!("EFTS batch API error: {}", status);
-            return Ok(Vec::new());
-        }
-
-        let data: EftsSearchResponse = resp
-            .json()
-            .await
-            .context("Failed to parse EFTS batch response")?;
+        let data: EftsSearchResponse = match self.http.get_json(&url).await {
+            Ok(d) => d,
+            Err(e) => {
+                warn!("EFTS batch API error: {}", e);
+                return Ok(Vec::new());
+            }
+        };
 
         let mut results = Vec::new();
 
@@ -173,23 +171,13 @@ impl SecEftsMarketSource {
             encoded_form, date, date
         );
 
-        let resp = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .with_context(|| format!("Failed to fetch EFTS count for form {}", form_type))?;
-
-        if !resp.status().is_success() {
-            let status = resp.status();
-            warn!("EFTS API error for form {}: {}", form_type, status);
-            return Ok(None);
-        }
-
-        let data: EftsSearchResponse = resp
-            .json()
-            .await
-            .with_context(|| format!("Failed to parse EFTS response for form {}", form_type))?;
+        let data: EftsSearchResponse = match self.http.get_json(&url).await {
+            Ok(d) => d,
+            Err(e) => {
+                warn!("EFTS API error for form {}: {}", form_type, e);
+                return Ok(None);
+            }
+        };
 
         Ok(Some(data.hits.total.value))
     }
@@ -280,9 +268,6 @@ impl MarketDataSource for SecEftsMarketSource {
 
         // Step 2: Individual requests for forms with special characters
         for form_type in INDIVIDUAL_FORMS {
-            // Rate limit: 200ms spacing between individual requests
-            tokio::time::sleep(Duration::from_millis(200)).await;
-
             match self.fetch_individual_count(form_type, &today).await {
                 Ok(Some(count)) => {
                     if let Some(suffix) = Self::suffix_for_form(form_type) {

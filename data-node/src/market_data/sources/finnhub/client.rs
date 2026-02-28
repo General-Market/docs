@@ -21,6 +21,7 @@ use tracing::{debug, info, warn};
 
 use crate::market_data::traits::{load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate};
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 
 /// Number of stocks to fetch per sync cycle.
 /// At ~1050ms per request, 55 stocks ≈ 58 seconds per batch.
@@ -60,7 +61,7 @@ struct FinnhubQuote {
 /// `BATCH_SIZE` stocks, advancing an internal cursor. The sync engine
 /// calls this frequently (default every 5s) to produce continuous updates.
 pub struct FinnhubClient {
-    client: reqwest::Client,
+    http: SourceHttpClient,
     api_key: String,
     sync_interval_secs: u64,
     /// Cursor position in the asset list — advances by BATCH_SIZE each call
@@ -79,10 +80,17 @@ impl FinnhubClient {
             .and_then(|s| s.parse::<u64>().ok())
             .unwrap_or(5);
 
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 55,
+                duration: Duration::from_secs(60),
+            }],
+        };
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(10))
             .build()
             .context("Failed to build reqwest client")?;
+        let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());
 
         let asset_count = load_assets_from_json(ASSET_JSON)
             .map(|a| a.len())
@@ -93,7 +101,7 @@ impl FinnhubClient {
         );
 
         Ok(Self {
-            client,
+            http,
             api_key,
             sync_interval_secs,
             batch_cursor: Mutex::new(0),
@@ -107,24 +115,13 @@ impl FinnhubClient {
             symbol, self.api_key
         );
 
-        let resp = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .with_context(|| format!("Failed to fetch quote for {}", symbol))?;
-
-        if !resp.status().is_success() {
-            let status = resp.status();
-            let body = resp.text().await.unwrap_or_default();
-            warn!("Finnhub error for {}: {} {}", symbol, status, body);
-            return Ok(None);
-        }
-
-        let quote: FinnhubQuote = resp
-            .json()
-            .await
-            .with_context(|| format!("Failed to parse quote for {}", symbol))?;
+        let quote: FinnhubQuote = match self.http.get_json(&url).await {
+            Ok(q) => q,
+            Err(e) => {
+                warn!("Finnhub error for {}: {}", symbol, e);
+                return Ok(None);
+            }
+        };
 
         // Finnhub returns c=0 for invalid tickers or outside market hours on some tickers
         if quote.c.map_or(true, |c| c == 0.0) && quote.pc.map_or(true, |pc| pc == 0.0) {
@@ -193,10 +190,6 @@ impl MarketDataSource for FinnhubClient {
         let mut results = Vec::new();
 
         for symbol in &batch {
-            // Per-request throttle: 1050ms × 55 = ~58s per batch.
-            // Keeps us under Finnhub's 60 req/min free-tier limit.
-            tokio::time::sleep(Duration::from_millis(1050)).await;
-
             match self.fetch_quote(symbol).await {
                 Ok(Some(quote)) => {
                     let current = quote.c.unwrap_or(0.0);

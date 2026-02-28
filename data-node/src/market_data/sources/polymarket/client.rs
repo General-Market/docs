@@ -3,33 +3,22 @@
 //! Fetches prediction market data from https://gamma-api.polymarket.com
 //! Markets are dynamically discovered from the Gamma API (no static JSON needed).
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use chrono::Utc;
 use rust_decimal::Decimal;
 use serde::Deserialize;
-use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::Mutex;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 use crate::market_data::traits::{AssetUpdate, MarketDataSource, PriceUpdate};
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
 /// Polymarket Gamma API base URL
 const GAMMA_API_URL: &str = "https://gamma-api.polymarket.com";
 
-/// Request timeout in seconds
-const REQUEST_TIMEOUT_SECS: u64 = 30;
-
 /// Page size for paginated requests
 const PAGE_SIZE: usize = 500;
-
-/// Maximum retries per request
-const MAX_RETRIES: u32 = 3;
-
-/// Rate limit: minimum delay between API requests (ms)
-/// Polymarket allows ~10 requests/second, we use 150ms to stay safe
-const MIN_REQUEST_DELAY_MS: u64 = 150;
 
 /// Gamma API market response
 #[derive(Debug, Clone, Deserialize)]
@@ -60,8 +49,7 @@ struct GammaMarket {
 
 /// Polymarket prediction markets data source
 pub struct PolymarketMarketSource {
-    client: reqwest::Client,
-    last_request: Arc<Mutex<std::time::Instant>>,
+    http: SourceHttpClient,
     sync_interval_secs: u64,
 }
 
@@ -73,32 +61,22 @@ impl PolymarketMarketSource {
             .and_then(|s| s.parse::<u64>().ok())
             .unwrap_or(300); // 5 minutes default
 
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
-            .build()
-            .context("Failed to create HTTP client")?;
+        let http = SourceHttpClient::new(
+            RateLimitConfig {
+                windows: vec![RateWindow {
+                    max_requests: 400,
+                    duration: Duration::from_secs(60),
+                }],
+            },
+            RetryConfig::default(),
+        );
 
         info!("Polymarket client initialized");
 
         Ok(Self {
-            client,
-            last_request: Arc::new(Mutex::new(std::time::Instant::now())),
+            http,
             sync_interval_secs,
         })
-    }
-
-    /// Enforce rate limiting before making a request
-    async fn rate_limit(&self) {
-        let mut last = self.last_request.lock().await;
-        let elapsed = last.elapsed();
-        let min_delay = Duration::from_millis(MIN_REQUEST_DELAY_MS);
-
-        if elapsed < min_delay {
-            let sleep_time = min_delay - elapsed;
-            tokio::time::sleep(sleep_time).await;
-        }
-
-        *last = std::time::Instant::now();
     }
 
     /// Fetch all active markets from Gamma API with pagination
@@ -134,61 +112,9 @@ impl PolymarketMarketSource {
             GAMMA_API_URL, PAGE_SIZE, offset
         );
 
-        let mut last_error = None;
-
-        for attempt in 0..MAX_RETRIES {
-            self.rate_limit().await;
-
-            match self.client.get(&url).send().await {
-                Ok(response) => {
-                    if response.status().is_success() {
-                        match response.json::<Vec<GammaMarket>>().await {
-                            Ok(markets) => {
-                                debug!("Fetched {} markets from offset {}", markets.len(), offset);
-                                return Ok(markets);
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to parse Gamma API response (attempt {}/{}): {:?}",
-                                    attempt + 1,
-                                    MAX_RETRIES,
-                                    e
-                                );
-                                last_error = Some(e.to_string());
-                            }
-                        }
-                    } else {
-                        warn!(
-                            "Gamma API error (attempt {}/{}): status {}",
-                            attempt + 1,
-                            MAX_RETRIES,
-                            response.status()
-                        );
-                        last_error = Some(format!("HTTP {}", response.status()));
-                    }
-                }
-                Err(e) => {
-                    warn!(
-                        "Request failed (attempt {}/{}): {:?}",
-                        attempt + 1,
-                        MAX_RETRIES,
-                        e
-                    );
-                    last_error = Some(e.to_string());
-                }
-            }
-
-            if attempt < MAX_RETRIES - 1 {
-                let delay = Duration::from_secs(2u64.pow(attempt));
-                tokio::time::sleep(delay).await;
-            }
-        }
-
-        Err(anyhow::anyhow!(
-            "Failed to fetch markets after {} retries: {:?}",
-            MAX_RETRIES,
-            last_error
-        ))
+        let markets: Vec<GammaMarket> = self.http.get_json(&url).await.map_err(|e| anyhow::anyhow!("{}", e))?;
+        debug!("Fetched {} markets from offset {}", markets.len(), offset);
+        Ok(markets)
     }
 
     /// Parse outcome prices from string "[\"0.65\", \"0.35\"]" or "[0.65, 0.35]" -> (yes_price, no_price)

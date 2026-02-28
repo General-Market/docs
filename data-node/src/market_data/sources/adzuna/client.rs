@@ -17,6 +17,7 @@ use std::time::Duration;
 use tracing::{info, warn};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 use crate::market_data::traits::{
     load_all_asset_entries, load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate,
 };
@@ -40,7 +41,7 @@ struct AdzunaSearchResponse {
 /// US, GB, DE, and FR markets.
 /// Source ID is `"adzuna"`.
 pub struct AdzunaMarketSource {
-    client: reqwest::Client,
+    http: SourceHttpClient,
     app_id: String,
     app_key: String,
 }
@@ -56,9 +57,17 @@ impl AdzunaMarketSource {
             .build()
             .context("Failed to build reqwest client")?;
 
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 250,
+                duration: Duration::from_secs(60),
+            }],
+        };
+        let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());
+
         info!("Adzuna source initialized (app_id: {}...)", &app_id[..app_id.len().min(8)]);
         Ok(Self {
-            client,
+            http,
             app_id,
             app_key,
         })
@@ -71,23 +80,8 @@ impl AdzunaMarketSource {
             API_BASE, country, self.app_id, self.app_key
         );
 
-        let resp = self
-            .client
-            .get(&url)
-            .send()
-            .await
+        let data: AdzunaSearchResponse = self.http.get_json(&url).await
             .with_context(|| format!("Adzuna request failed for {}", country))?;
-
-        if !resp.status().is_success() {
-            let status = resp.status();
-            let body = resp.text().await.unwrap_or_default();
-            anyhow::bail!("Adzuna API error for {}: {} {}", country, status, body);
-        }
-
-        let data: AdzunaSearchResponse = resp
-            .json()
-            .await
-            .with_context(|| format!("Adzuna parse failed for {}", country))?;
 
         Ok((data.count.unwrap_or(0), data.mean))
     }
@@ -142,9 +136,6 @@ impl MarketDataSource for AdzunaMarketSource {
         countries.dedup();
 
         for country in &countries {
-            // Small delay between requests
-            tokio::time::sleep(Duration::from_millis(500)).await;
-
             match self.fetch_country(country).await {
                 Ok((vacancy_count, mean_salary)) => {
                     // Find matching entries for this country

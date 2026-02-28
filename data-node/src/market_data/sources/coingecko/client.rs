@@ -14,6 +14,7 @@ use tracing::{info, warn};
 use crate::coingecko::RateLimiter;
 use crate::market_data::traits::{load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate};
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 
 /// Asset configuration loaded from JSON at compile time
 const ASSET_JSON: &str = include_str!("../../../config/crypto.json");
@@ -81,7 +82,7 @@ pub struct MarketCoin {
 ///
 /// Source ID is `"crypto"` — this is the source name used everywhere in the system.
 pub struct CoinGeckoMarketSource {
-    client: reqwest::Client,
+    http: SourceHttpClient,
     api_key: String,
     /// API tier determines endpoint, auth, and rate limits
     tier: ApiTier,
@@ -110,13 +111,24 @@ impl CoinGeckoMarketSource {
 
     /// Create a new CoinGecko market source with a shared rate limiter.
     pub fn new(api_key: String, sync_interval_secs: u64, top_coins_count: usize, limiter: RateLimiter) -> Result<Self> {
+        let tier = Self::detect_tier(&api_key);
+
+        let max_requests = match tier {
+            ApiTier::Pro => 400,
+            ApiTier::Demo | ApiTier::Free => 18,
+        };
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests,
+                duration: Duration::from_secs(60),
+            }],
+        };
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
             .user_agent("index-data-node/1.0 (market data aggregator)")
             .build()
             .context("Failed to create HTTP client")?;
-
-        let tier = Self::detect_tier(&api_key);
+        let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());
 
         info!(
             "CoinGecko API tier: {:?} (key {})",
@@ -125,7 +137,7 @@ impl CoinGeckoMarketSource {
         );
 
         Ok(Self {
-            client,
+            http,
             api_key,
             tier,
             sync_interval_secs,
@@ -162,7 +174,7 @@ impl CoinGeckoMarketSource {
 
     /// Build a request with appropriate auth (or no auth for free tier)
     fn authenticated_get(&self, url: &str) -> reqwest::RequestBuilder {
-        let req = self.client.get(url);
+        let req = self.http.inner().get(url);
         match self.tier {
             ApiTier::Pro => req.header("x-cg-pro-api-key", &self.api_key),
             ApiTier::Demo => req.header("x-cg-demo-key", &self.api_key),

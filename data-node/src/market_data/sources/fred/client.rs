@@ -17,6 +17,7 @@ use crate::market_data::traits::{
     today_at_eastern, AssetUpdate, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 
 /// FRED API base URL
 const FRED_API_URL: &str = "https://api.stlouisfed.org/fred";
@@ -38,7 +39,7 @@ struct FredObservation {
 
 /// FRED market data source
 pub struct FredMarketSource {
-    client: reqwest::Client,
+    http: SourceHttpClient,
     api_key: String,
 }
 
@@ -47,18 +48,20 @@ impl FredMarketSource {
     pub fn from_env() -> Result<Self> {
         let api_key = std::env::var("FRED_API_KEY").context("FRED_API_KEY not set")?;
 
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(30))
-            .build()
-            .context("Failed to build reqwest client")?;
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 100,
+                duration: Duration::from_secs(60),
+            }],
+        };
+        let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
 
-        // Count assets from JSON
         let asset_count = load_assets_from_json(ASSET_JSON)
             .map(|a| a.len())
             .unwrap_or(0);
         info!("FRED client initialized with {} series", asset_count);
 
-        Ok(Self { client, api_key })
+        Ok(Self { http, api_key })
     }
 
     /// Fetch the latest observation for a series
@@ -68,24 +71,13 @@ impl FredMarketSource {
             FRED_API_URL, series_id, self.api_key
         );
 
-        let resp = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .with_context(|| format!("Failed to fetch FRED series {}", series_id))?;
-
-        if !resp.status().is_success() {
-            let status = resp.status();
-            let body = resp.text().await.unwrap_or_default();
-            warn!("FRED API error for {}: {} {}", series_id, status, body);
-            return Ok(None);
-        }
-
-        let data: FredObservationsResponse = resp
-            .json()
-            .await
-            .with_context(|| format!("Failed to parse FRED response for {}", series_id))?;
+        let data: FredObservationsResponse = match self.http.get_json(&url).await {
+            Ok(d) => d,
+            Err(e) => {
+                warn!("FRED API error for {}: {}", series_id, e);
+                return Ok(None);
+            }
+        };
 
         if let Some(obs) = data.observations.first() {
             // FRED uses "." for missing values
@@ -142,9 +134,6 @@ impl MarketDataSource for FredMarketSource {
         let mut results = Vec::new();
 
         for asset_id in asset_ids {
-            // Small delay between requests to be nice to the API
-            tokio::time::sleep(Duration::from_millis(100)).await;
-
             match self.fetch_series(asset_id).await {
                 Ok(Some((_date, value))) => {
                     results.push(PriceUpdate {

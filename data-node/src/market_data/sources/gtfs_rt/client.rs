@@ -26,6 +26,7 @@ use std::time::Duration;
 use tracing::{debug, info, warn};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 use crate::market_data::traits::{load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate};
 
 use super::proto::FeedMessage;
@@ -253,7 +254,7 @@ struct AgencyMetrics {
 /// Dynamic per-vehicle GPS assets are generated from VehiclePosition entities
 /// and cached in `cached_vehicles` (same pattern as MilAircraftMarketSource).
 pub struct GtfsRtMarketSource {
-    http: reqwest::Client,
+    http: SourceHttpClient,
     /// Cached vehicle states from last fetch (used by fetch_assets for dynamic assets).
     cached_vehicles: Mutex<Vec<CachedVehicle>>,
 }
@@ -261,11 +262,19 @@ pub struct GtfsRtMarketSource {
 impl GtfsRtMarketSource {
     /// Create a new GTFS-RT source. No API keys needed.
     pub fn new() -> Self {
-        let http = reqwest::Client::builder()
+        let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(30))
             .user_agent("IndexDataNode/1.0 (transit-tracker)")
             .build()
             .expect("Failed to build reqwest client");
+
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 30,
+                duration: Duration::from_secs(60),
+            }],
+        };
+        let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());
 
         info!("GTFS-RT transit source initialized ({} feeds configured)", FEEDS.len());
 
@@ -281,6 +290,7 @@ impl GtfsRtMarketSource {
 
         let response = self
             .http
+            .inner()
             .get(feed.url)
             .send()
             .await

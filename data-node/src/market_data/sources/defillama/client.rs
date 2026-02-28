@@ -5,17 +5,16 @@
 //! - Protocol TVL: /api/protocols
 //! - DEX volumes: /api/overview/dexs
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use chrono::Utc;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Deserializer};
-use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::Mutex;
 use tracing::{debug, info, warn};
 
-use crate::market_data::traits::{load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate};
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
+use crate::market_data::traits::{load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate};
 
 /// Asset configuration loaded from JSON at compile time
 const ASSET_JSON: &str = include_str!("../../../config/defi.json");
@@ -28,12 +27,6 @@ const DEFILLAMA_DEX_URL: &str = "https://api.llama.fi";
 
 /// Request timeout in seconds
 const REQUEST_TIMEOUT_SECS: u64 = 60;
-
-/// Maximum retries per request
-const MAX_RETRIES: u32 = 3;
-
-/// Minimum delay between requests (ms) - conservative for free tier
-const MIN_REQUEST_DELAY_MS: u64 = 200;
 
 // ============================================================================
 // Deserialization Helpers
@@ -133,10 +126,8 @@ pub struct DexProtocol {
 ///
 /// Source ID is `"defi"` — covers chain TVL, protocol TVL, and DEX volumes.
 pub struct DefiLlamaMarketSource {
-    client: reqwest::Client,
+    http: SourceHttpClient,
     sync_interval_secs: u64,
-    /// Last request timestamp for internal rate limiting
-    last_request: Arc<Mutex<std::time::Instant>>,
     /// Top N protocols to track (0 = all)
     top_protocols_count: usize,
     /// Top N DEXes to track (0 = all)
@@ -150,15 +141,23 @@ impl DefiLlamaMarketSource {
         top_protocols_count: usize,
         top_dex_count: usize,
     ) -> Result<Self> {
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 400,
+                duration: Duration::from_secs(60),
+            }],
+        };
+
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
             .build()
-            .context("Failed to create HTTP client")?;
+            .map_err(|e| anyhow::anyhow!("Failed to create HTTP client: {}", e))?;
+
+        let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());
 
         Ok(Self {
-            client,
+            http,
             sync_interval_secs,
-            last_request: Arc::new(Mutex::new(std::time::Instant::now())),
             top_protocols_count,
             top_dex_count,
         })
@@ -184,82 +183,10 @@ impl DefiLlamaMarketSource {
         Self::new(sync_interval_secs, top_protocols_count, top_dex_count)
     }
 
-    /// Enforce rate limiting before making a request
-    async fn rate_limit(&self) {
-        let mut last = self.last_request.lock().await;
-        let elapsed = last.elapsed();
-        let min_delay = Duration::from_millis(MIN_REQUEST_DELAY_MS);
-
-        if elapsed < min_delay {
-            let sleep_time = min_delay - elapsed;
-            tokio::time::sleep(sleep_time).await;
-        }
-
-        *last = std::time::Instant::now();
-    }
-
-    /// Generic GET request with retries
-    async fn get_json<T: serde::de::DeserializeOwned>(&self, url: &str) -> Result<T> {
-        let mut last_error = None;
-
-        for attempt in 0..MAX_RETRIES {
-            self.rate_limit().await;
-
-            match self.client.get(url).send().await {
-                Ok(response) => {
-                    if response.status().is_success() {
-                        match response.json::<T>().await {
-                            Ok(data) => return Ok(data),
-                            Err(e) => {
-                                warn!(
-                                    "Failed to parse response (attempt {}/{}): {:?}",
-                                    attempt + 1,
-                                    MAX_RETRIES,
-                                    e
-                                );
-                                last_error = Some(e.to_string());
-                            }
-                        }
-                    } else {
-                        warn!(
-                            "DefiLlama API error (attempt {}/{}): status {}",
-                            attempt + 1,
-                            MAX_RETRIES,
-                            response.status()
-                        );
-                        last_error = Some(format!("HTTP {}", response.status()));
-                    }
-                }
-                Err(e) => {
-                    warn!(
-                        "Request failed (attempt {}/{}): {:?}",
-                        attempt + 1,
-                        MAX_RETRIES,
-                        e
-                    );
-                    last_error = Some(e.to_string());
-                }
-            }
-
-            // Exponential backoff
-            if attempt < MAX_RETRIES - 1 {
-                let delay = Duration::from_secs(2u64.pow(attempt));
-                tokio::time::sleep(delay).await;
-            }
-        }
-
-        Err(anyhow::anyhow!(
-            "Failed to fetch {} after {} retries: {:?}",
-            url,
-            MAX_RETRIES,
-            last_error
-        ))
-    }
-
     /// Fetch all chain TVLs
     async fn fetch_chain_tvls(&self) -> Result<Vec<ChainTvl>> {
         let url = format!("{}/v2/chains", DEFILLAMA_API_URL);
-        let chains: Vec<ChainTvl> = self.get_json(&url).await?;
+        let chains: Vec<ChainTvl> = self.http.get_json(&url).await?;
         info!("Fetched {} chain TVLs from DefiLlama", chains.len());
         Ok(chains)
     }
@@ -267,7 +194,7 @@ impl DefiLlamaMarketSource {
     /// Fetch all protocol TVLs
     async fn fetch_protocol_tvls(&self) -> Result<Vec<ProtocolTvl>> {
         let url = format!("{}/protocols", DEFILLAMA_API_URL);
-        let protocols: Vec<ProtocolTvl> = self.get_json(&url).await?;
+        let protocols: Vec<ProtocolTvl> = self.http.get_json(&url).await?;
         info!("Fetched {} protocol TVLs from DefiLlama", protocols.len());
         Ok(protocols)
     }
@@ -278,7 +205,7 @@ impl DefiLlamaMarketSource {
             "{}/overview/dexs?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true",
             DEFILLAMA_DEX_URL
         );
-        let overview: DexOverview = self.get_json(&url).await?;
+        let overview: DexOverview = self.http.get_json(&url).await?;
         let protocols = overview.protocols.unwrap_or_default();
         info!("Fetched {} DEX volumes from DefiLlama", protocols.len());
         Ok(protocols)

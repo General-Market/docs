@@ -24,6 +24,7 @@ use crate::market_data::traits::{
     MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 
 /// BLS API base URL
 const BLS_API_URL: &str = "https://api.bls.gov/publicAPI/v2/timeseries/data/";
@@ -83,7 +84,7 @@ struct BlsObservation {
 
 /// BLS market data source
 pub struct BlsMarketSource {
-    client: reqwest::Client,
+    http: SourceHttpClient,
     api_key: String,
 }
 
@@ -92,17 +93,20 @@ impl BlsMarketSource {
     pub fn from_env() -> Result<Self> {
         let api_key = std::env::var("BLS_API_KEY").context("BLS_API_KEY not set")?;
 
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(30))
-            .build()
-            .context("Failed to build reqwest client")?;
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 50,
+                duration: Duration::from_secs(60),
+            }],
+        };
+        let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
 
         let asset_count = load_assets_from_json(ASSET_JSON)
             .map(|a| a.len())
             .unwrap_or(0);
         info!("BLS client initialized with {} series", asset_count);
 
-        Ok(Self { client, api_key })
+        Ok(Self { http, api_key })
     }
 
     /// Fetch multiple series in a single request (BLS allows up to 50)
@@ -114,8 +118,12 @@ impl BlsMarketSource {
             "latest": true,  // Get only latest observation
         });
 
+        // Use rate limiter before POST request
+        self.http.rate_limiter().wait_for_permit().await;
+
         let resp = self
-            .client
+            .http
+            .inner()
             .post(BLS_API_URL)
             .header("Content-Type", "application/json")
             .json(&body)

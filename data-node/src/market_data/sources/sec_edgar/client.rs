@@ -18,6 +18,7 @@ use crate::market_data::traits::{
     ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 
 /// Asset configuration loaded from JSON at compile time
 const ASSET_JSON: &str = include_str!("../../../config/sec_13f.json");
@@ -65,24 +66,31 @@ struct FilingItem {
 
 /// SEC EDGAR market data source
 pub struct SecEdgarMarketSource {
-    client: reqwest::Client,
+    http: SourceHttpClient,
 }
 
 impl SecEdgarMarketSource {
     /// Create the SEC EDGAR client
     pub fn from_env() -> Result<Self> {
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 5,
+                duration: Duration::from_secs(1),
+            }],
+        };
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(60))
             .user_agent("AgiArena/1.0 (contact@agiarena.com)")
             .build()
             .context("Failed to build reqwest client")?;
+        let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());
 
         let asset_count = load_assets_from_json(ASSET_JSON)
             .map(|a| a.len())
             .unwrap_or(0);
         info!("SEC EDGAR client initialized with {} assets", asset_count);
 
-        Ok(Self { client })
+        Ok(Self { http })
     }
 
     /// Parse CIK and metric from api_ref (format: "CIK:metric")
@@ -120,23 +128,13 @@ impl SecEdgarMarketSource {
         // Step 1: Fetch submissions list
         let url = format!("https://data.sec.gov/submissions/CIK{}.json", cik);
 
-        let resp = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .with_context(|| format!("Failed to fetch SEC data for CIK {}", cik))?;
-
-        if !resp.status().is_success() {
-            let status = resp.status();
-            warn!("SEC API error for CIK {}: {}", cik, status);
-            return Ok(None);
-        }
-
-        let submissions: SecSubmissions = resp
-            .json()
-            .await
-            .with_context(|| format!("Failed to parse SEC response for CIK {}", cik))?;
+        let submissions: SecSubmissions = match self.http.get_json(&url).await {
+            Ok(d) => d,
+            Err(e) => {
+                warn!("SEC API error for CIK {}: {}", cik, e);
+                return Ok(None);
+            }
+        };
 
         // Step 2: Find the most recent 13F-HR filing
         let form_index = submissions
@@ -164,25 +162,13 @@ impl SecEdgarMarketSource {
             cik_stripped, accession_no_dash
         );
 
-        // Rate-limit between SEC requests
-        tokio::time::sleep(Duration::from_millis(150)).await;
-
-        let index_resp = self
-            .client
-            .get(&index_url)
-            .send()
-            .await
-            .with_context(|| format!("Failed to fetch filing index for CIK {}", cik))?;
-
-        if !index_resp.status().is_success() {
-            warn!("Filing index error for CIK {}: {}", cik, index_resp.status());
-            return Ok(None);
-        }
-
-        let filing_index: FilingIndex = index_resp
-            .json()
-            .await
-            .with_context(|| format!("Failed to parse filing index for CIK {}", cik))?;
+        let filing_index: FilingIndex = match self.http.get_json(&index_url).await {
+            Ok(d) => d,
+            Err(e) => {
+                warn!("Filing index error for CIK {}: {}", cik, e);
+                return Ok(None);
+            }
+        };
 
         // Find the infotable XML (any .xml that's not primary_doc.xml)
         let infotable_file = filing_index
@@ -205,24 +191,13 @@ impl SecEdgarMarketSource {
             cik_stripped, accession_no_dash, infotable_name
         );
 
-        tokio::time::sleep(Duration::from_millis(150)).await;
-
-        let xml_resp = self
-            .client
-            .get(&xml_url)
-            .send()
-            .await
-            .with_context(|| format!("Failed to fetch infotable for CIK {}", cik))?;
-
-        if !xml_resp.status().is_success() {
-            warn!("Infotable error for CIK {}: {}", cik, xml_resp.status());
-            return Ok(None);
-        }
-
-        let xml_text = xml_resp
-            .text()
-            .await
-            .with_context(|| format!("Failed to read infotable for CIK {}", cik))?;
+        let xml_text = match self.http.get_raw(&xml_url).await {
+            Ok(text) => text,
+            Err(e) => {
+                warn!("Infotable error for CIK {}: {}", cik, e);
+                return Ok(None);
+            }
+        };
 
         // Parse the infotable XML
         let fund_data = Self::parse_infotable(&xml_text, filing_date);
@@ -371,9 +346,6 @@ impl MarketDataSource for SecEdgarMarketSource {
             if !seen_ciks.insert(cik.to_string()) {
                 continue;
             }
-
-            // Respect SEC rate limits
-            tokio::time::sleep(Duration::from_millis(200)).await;
 
             match self.fetch_fund_data(cik).await {
                 Ok(Some(fund_data)) => {

@@ -21,6 +21,7 @@ use serde::Deserialize;
 use tracing::{debug, info, warn};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 use crate::market_data::traits::{
     load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate,
 };
@@ -34,8 +35,6 @@ const CHART_API_BASE: &str = "https://query2.finance.yahoo.com/v8/finance/chart"
 const USER_AGENT: &str =
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)";
 
-/// Delay between per-symbol requests to avoid rate limiting (ms)
-const INTER_REQUEST_DELAY_MS: u64 = 200;
 
 // ── Yahoo v8 chart response types ──
 
@@ -67,18 +66,25 @@ struct ChartMeta {
 // ── Source implementation ──
 
 pub struct YahooDrinksMarketSource {
-    client: reqwest::Client,
+    http: SourceHttpClient,
 }
 
 impl YahooDrinksMarketSource {
     pub fn from_env() -> Result<Self> {
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 300,
+                duration: Duration::from_secs(3600),
+            }],
+        };
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(30))
             .user_agent(USER_AGENT)
             .build()
             .expect("Failed to create HTTP client");
+        let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());
         info!("Yahoo Finance drink commodities source initialized (v8 chart API)");
-        Ok(Self { client })
+        Ok(Self { http })
     }
 }
 
@@ -151,32 +157,10 @@ impl MarketDataSource for YahooDrinksMarketSource {
             // v8 chart API: one call per symbol, minimal data request
             let url = format!("{}?interval=1d&range=1d", Self::chart_url(ticker));
 
-            let resp = match self.client.get(&url).send().await {
+            let chart_resp: ChartResponse = match self.http.get_json(&url).await {
                 Ok(r) => r,
                 Err(e) => {
-                    warn!("Yahoo drinks: request failed for {}: {:?}", ticker, e);
-                    err_count += 1;
-                    continue;
-                }
-            };
-
-            if !resp.status().is_success() {
-                let status = resp.status().as_u16();
-                let body = resp.text().await.unwrap_or_default();
-                warn!(
-                    "Yahoo drinks: HTTP {} for {}: {}",
-                    status,
-                    ticker,
-                    &body[..body.len().min(200)]
-                );
-                err_count += 1;
-                continue;
-            }
-
-            let chart_resp: ChartResponse = match resp.json().await {
-                Ok(r) => r,
-                Err(e) => {
-                    warn!("Yahoo drinks: JSON parse error for {}: {:?}", ticker, e);
+                    warn!("Yahoo drinks: request failed for {}: {}", ticker, e);
                     err_count += 1;
                     continue;
                 }
@@ -240,10 +224,6 @@ impl MarketDataSource for YahooDrinksMarketSource {
                 err_count += 1;
             }
 
-            // Small delay between requests to avoid rate limiting
-            if ticker_to_assets.len() > 1 {
-                tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
-            }
         }
 
         info!(

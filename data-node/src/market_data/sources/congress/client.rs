@@ -16,6 +16,7 @@ use crate::market_data::traits::{
     ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 
 /// Congress.gov API base URL
 const CONGRESS_API_URL: &str = "https://api.congress.gov/v3";
@@ -36,7 +37,7 @@ struct CongressPagination {
 
 /// Congress market data source
 pub struct CongressMarketSource {
-    client: reqwest::Client,
+    http: SourceHttpClient,
     api_key: String,
 }
 
@@ -45,17 +46,20 @@ impl CongressMarketSource {
     pub fn from_env() -> Result<Self> {
         let api_key = std::env::var("CONGRESS_API_KEY").context("CONGRESS_API_KEY not set")?;
 
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(30))
-            .build()
-            .context("Failed to build reqwest client")?;
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 400,
+                duration: Duration::from_secs(3600),
+            }],
+        };
+        let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
 
         let asset_count = load_assets_from_json(ASSET_JSON)
             .map(|a| a.len())
             .unwrap_or(0);
         info!("Congress client initialized with {} metrics", asset_count);
 
-        Ok(Self { client, api_key })
+        Ok(Self { http, api_key })
     }
 
     /// Fetch count for a metric
@@ -65,20 +69,13 @@ impl CongressMarketSource {
             CONGRESS_API_URL, endpoint_suffix, self.api_key
         );
 
-        let resp =
-            self.client.get(&url).send().await.with_context(|| {
-                format!("Failed to fetch Congress data for {}", endpoint_suffix)
-            })?;
-
-        if !resp.status().is_success() {
-            let status = resp.status();
-            warn!("Congress API error for {}: {}", endpoint_suffix, status);
-            return Ok(None);
-        }
-
-        let data: CongressResponse = resp.json().await.with_context(|| {
-            format!("Failed to parse Congress response for {}", endpoint_suffix)
-        })?;
+        let data: CongressResponse = match self.http.get_json(&url).await {
+            Ok(d) => d,
+            Err(e) => {
+                warn!("Congress API error for {}: {}", endpoint_suffix, e);
+                return Ok(None);
+            }
+        };
 
         Ok(data.pagination.map(|p| p.count))
     }
@@ -123,8 +120,6 @@ impl MarketDataSource for CongressMarketSource {
         let entries = load_all_asset_entries(ASSET_JSON)?;
 
         for entry in &entries {
-            tokio::time::sleep(Duration::from_millis(200)).await;
-
             match self.fetch_metric(&entry.api_ref).await {
                 Ok(Some(count)) => {
                     if let Ok(value) = Decimal::from_str(&count.to_string()) {

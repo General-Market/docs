@@ -13,6 +13,7 @@ use std::time::Duration;
 use tracing::{debug, info, warn};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 use crate::market_data::sources::tracked_tickers::TRACKED_TICKERS;
 use crate::market_data::traits::{
     is_us_weekend, next_us_trading_day, today_at_eastern, AssetUpdate, MarketDataSource,
@@ -21,23 +22,30 @@ use crate::market_data::traits::{
 
 /// FINRA Daily Short Sale Volume market data source
 pub struct FinraShortVolMarketSource {
-    client: reqwest::Client,
+    http: SourceHttpClient,
 }
 
 impl FinraShortVolMarketSource {
     /// Create the FINRA Short Volume client. No env vars needed (public CDN).
     pub fn from_env() -> Result<Self> {
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 10,
+                duration: Duration::from_secs(60),
+            }],
+        };
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(60)) // Large file (~11k lines)
             .build()
             .context("Failed to build reqwest client")?;
+        let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());
 
         info!(
             "FINRA Short Volume client initialized (105 assets, {} tracked tickers)",
             TRACKED_TICKERS.len()
         );
 
-        Ok(Self { client })
+        Ok(Self { http })
     }
 
     /// Download the short volume file for a given date string (YYYYMMDD).
@@ -48,26 +56,13 @@ impl FinraShortVolMarketSource {
             date_str
         );
 
-        let resp = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .context("Failed to fetch FINRA short volume file")?;
-
-        if resp.status() == reqwest::StatusCode::NOT_FOUND {
-            return Ok(None);
+        match self.http.get_raw(&url).await {
+            Ok(text) => Ok(Some(text)),
+            Err(e) => {
+                warn!("FINRA short volume error for {}: {}", date_str, e);
+                Ok(None)
+            }
         }
-        if !resp.status().is_success() {
-            warn!("FINRA short volume HTTP error: {}", resp.status());
-            return Ok(None);
-        }
-
-        let text = resp
-            .text()
-            .await
-            .context("Failed to read FINRA short volume response")?;
-        Ok(Some(text))
     }
 
     /// Parse a single pipe-delimited line into (symbol, short_vol, exempt_vol, total_vol).
@@ -455,8 +450,14 @@ mod tests {
             .unwrap();
         let source = rt.block_on(async {
             // Build client without network — just test asset generation
+            let rate_limit = RateLimitConfig {
+                windows: vec![RateWindow {
+                    max_requests: 10,
+                    duration: Duration::from_secs(60),
+                }],
+            };
             FinraShortVolMarketSource {
-                client: reqwest::Client::new(),
+                http: SourceHttpClient::new(rate_limit, RetryConfig::default()),
             }
         });
 

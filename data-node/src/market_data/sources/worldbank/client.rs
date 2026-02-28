@@ -16,6 +16,7 @@ use crate::market_data::traits::{
     ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 
 /// World Bank API base URL
 const WB_API_URL: &str = "https://api.worldbank.org/v2";
@@ -52,16 +53,19 @@ struct WbCountryRef {
 
 /// World Bank market data source
 pub struct WorldBankMarketSource {
-    client: reqwest::Client,
+    http: SourceHttpClient,
 }
 
 impl WorldBankMarketSource {
     /// Create the World Bank client
     pub fn from_env() -> Result<Self> {
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(30))
-            .build()
-            .context("Failed to build reqwest client")?;
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 50,
+                duration: Duration::from_secs(60),
+            }],
+        };
+        let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
 
         let asset_count = load_assets_from_json(ASSET_JSON)
             .map(|a| a.len())
@@ -71,7 +75,7 @@ impl WorldBankMarketSource {
             asset_count
         );
 
-        Ok(Self { client })
+        Ok(Self { http })
     }
 
     /// Parse country and indicator from api_ref (format: "COUNTRY:INDICATOR")
@@ -96,24 +100,17 @@ impl WorldBankMarketSource {
             WB_API_URL, country, indicator
         );
 
-        let resp = self.client.get(&url).send().await.with_context(|| {
-            format!(
-                "Failed to fetch World Bank data for {} {}",
-                country, indicator
-            )
-        })?;
-
-        if !resp.status().is_success() {
-            let status = resp.status();
-            debug!(
-                "World Bank API error for {} {}: {}",
-                country, indicator, status
-            );
-            return Ok(None);
-        }
-
-        // World Bank returns [metadata, data[]] array
-        let text = resp.text().await?;
+        // World Bank returns [metadata, data[]] array — fetch as raw text and parse
+        let text = match self.http.get_raw(&url).await {
+            Ok(t) => t,
+            Err(e) => {
+                debug!(
+                    "World Bank API error for {} {}: {}",
+                    country, indicator, e
+                );
+                return Ok(None);
+            }
+        };
         let data: Vec<serde_json::Value> = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Failed to parse World Bank response for {} {}",
@@ -183,9 +180,6 @@ impl MarketDataSource for WorldBankMarketSource {
             let Some((country, indicator)) = Self::parse_api_ref(&entry.api_ref) else {
                 continue;
             };
-
-            // Be nice to the API
-            tokio::time::sleep(Duration::from_millis(200)).await;
 
             match self.fetch_indicator(country, indicator).await {
                 Ok(Some((_date, value))) => {

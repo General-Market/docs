@@ -20,6 +20,7 @@ use crate::market_data::traits::{
     today_at_eastern, AssetUpdate, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 
 /// Treasury.gov XML feed base URL
 const TREASURY_XML_BASE: &str =
@@ -98,20 +99,29 @@ fn api_ref_column_to_xml_field(dataset: &str, column: &str) -> Option<&'static s
 
 /// Treasury market data source (via Treasury.gov XML feeds)
 pub struct TreasuryMarketSource {
-    client: reqwest::Client,
+    http: SourceHttpClient,
 }
 
 impl TreasuryMarketSource {
     /// Create from environment variables (no API key needed)
     pub fn from_env() -> Result<Self> {
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(30))
-            .build()
-            .context("Failed to build reqwest client")?;
+        let rate_limit = RateLimitConfig {
+            windows: vec![
+                RateWindow {
+                    max_requests: 10,
+                    duration: Duration::from_secs(60),
+                },
+                RateWindow {
+                    max_requests: 100,
+                    duration: Duration::from_secs(86400),
+                },
+            ],
+        };
+        let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
 
         info!("Treasury client initialized (via Treasury.gov XML feeds, no API key required)");
 
-        Ok(Self { client })
+        Ok(Self { http })
     }
 
     /// Fetch a Treasury XML feed and extract the most recent entry's values.
@@ -133,34 +143,13 @@ impl TreasuryMarketSource {
 
         debug!("Fetching Treasury XML: {}", url);
 
-        let resp = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .with_context(|| format!("Failed to fetch Treasury feed {:?}", feed.data_param()))?;
-
-        if !resp.status().is_success() {
-            let status = resp.status();
-            let body = resp.text().await.unwrap_or_default();
-            warn!(
-                "Treasury.gov API error for {}: {} {}",
-                feed.data_param(),
-                status,
-                &body[..body.len().min(200)]
-            );
-            return Ok(vec![]);
-        }
-
-        let xml_text = resp
-            .text()
-            .await
-            .with_context(|| {
-                format!(
-                    "Failed to read Treasury XML body for {:?}",
-                    feed.data_param()
-                )
-            })?;
+        let xml_text = match self.http.get_raw(&url).await {
+            Ok(text) => text,
+            Err(e) => {
+                warn!("Treasury.gov API error for {}: {}", feed.data_param(), e);
+                return Ok(vec![]);
+            }
+        };
 
         // Find the last <m:properties>...</m:properties> block (most recent date)
         let last_entry = Self::find_last_properties_block(&xml_text);
@@ -297,11 +286,6 @@ impl MarketDataSource for TreasuryMarketSource {
         // Fetch each feed
         for feed in ALL_FEEDS {
             if let Some(fields) = feed_fields.get(feed.data_param()) {
-                // Small delay between feed requests
-                if !results.is_empty() {
-                    tokio::time::sleep(Duration::from_millis(500)).await;
-                }
-
                 match self.fetch_feed(*feed, fields).await {
                     Ok(values) => {
                         for (asset_id, value) in values {

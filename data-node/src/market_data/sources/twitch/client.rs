@@ -18,6 +18,9 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 use tracing::{debug, info, warn};
 
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
+use crate::market_data::sources::oauth::OAuthTokenCache;
+
 use crate::market_data::traits::{
     load_all_asset_entries, load_assets_from_json, AssetEntry, AssetUpdate, MarketDataSource,
     PriceUpdate,
@@ -51,12 +54,6 @@ const MIN_VIEWER_COUNT: u64 = 100;
 
 /// Request timeout
 const REQUEST_TIMEOUT_SECS: u64 = 15;
-
-/// Max retries per request
-const MAX_RETRIES: u32 = 3;
-
-/// Minimum delay between API requests (ms) — ~800/min budget, we use far less
-const MIN_REQUEST_DELAY_MS: u64 = 80;
 
 /// How long to retain a streamer after they were last seen live.
 /// After 30 days without appearing in the top streams, they are pruned.
@@ -116,15 +113,6 @@ struct Pagination {
 }
 
 // ============================================================================
-// CACHED TOKEN
-// ============================================================================
-
-struct CachedToken {
-    access_token: String,
-    expires_at: std::time::Instant,
-}
-
-// ============================================================================
 // STREAMER PEAK CACHE
 // ============================================================================
 
@@ -152,11 +140,13 @@ struct CachedStreamer {
 ///
 /// Source ID is `"twitch"`.
 pub struct TwitchMarketSource {
+    /// Used for OAuth token requests (POST)
     client: reqwest::Client,
+    /// Used for data-fetching GET requests (with rate limiting + retry)
+    http: SourceHttpClient,
     client_id: String,
     client_secret: String,
-    token: Arc<Mutex<Option<CachedToken>>>,
-    last_request: Arc<Mutex<std::time::Instant>>,
+    token_cache: OAuthTokenCache,
     /// Peak viewer cache: user_login -> CachedStreamer.
     /// Tracks max viewers and last_seen. Pruned after 30 days of inactivity.
     seen_streamers: Arc<Mutex<HashMap<String, CachedStreamer>>>,
@@ -174,6 +164,16 @@ impl TwitchMarketSource {
             .build()
             .context("Failed to build HTTP client")?;
 
+        let http = SourceHttpClient::new(
+            RateLimitConfig {
+                windows: vec![RateWindow {
+                    max_requests: 720, // 90% of 800/min Twitch budget
+                    duration: Duration::from_secs(60),
+                }],
+            },
+            RetryConfig::default(),
+        );
+
         let asset_count = load_assets_from_json(ASSET_JSON)
             .map(|a| a.len())
             .unwrap_or(0);
@@ -181,176 +181,83 @@ impl TwitchMarketSource {
 
         Ok(Self {
             client,
+            http,
             client_id,
             client_secret,
-            token: Arc::new(Mutex::new(None)),
-            last_request: Arc::new(Mutex::new(std::time::Instant::now())),
+            token_cache: OAuthTokenCache::new("Twitch"),
             seen_streamers: Arc::new(Mutex::new(HashMap::new())),
         })
     }
 
     /// Get a valid access token, refreshing if needed.
     async fn get_token(&self) -> Result<String> {
-        let mut token_guard = self.token.lock().await;
+        let client = self.client.clone();
+        let client_id = self.client_id.clone();
+        let client_secret = self.client_secret.clone();
 
-        // Return cached token if still valid (with 60s buffer)
-        if let Some(ref cached) = *token_guard {
-            if cached.expires_at > std::time::Instant::now() + Duration::from_secs(60) {
-                return Ok(cached.access_token.clone());
-            }
-        }
+        self.token_cache
+            .get_or_refresh(|| async move {
+                let resp = client
+                    .post(TOKEN_URL)
+                    .form(&[
+                        ("client_id", client_id.as_str()),
+                        ("client_secret", client_secret.as_str()),
+                        ("grant_type", "client_credentials"),
+                    ])
+                    .send()
+                    .await
+                    .context("Failed to request Twitch access token")?;
 
-        // Fetch new token via client credentials grant
-        let resp = self
-            .client
-            .post(TOKEN_URL)
-            .form(&[
-                ("client_id", self.client_id.as_str()),
-                ("client_secret", self.client_secret.as_str()),
-                ("grant_type", "client_credentials"),
-            ])
-            .send()
+                if !resp.status().is_success() {
+                    let status = resp.status();
+                    let body = resp.text().await.unwrap_or_default();
+                    anyhow::bail!("Twitch token request failed: {} {}", status, body);
+                }
+
+                let token_resp: TokenResponse = resp
+                    .json()
+                    .await
+                    .context("Failed to parse Twitch token response")?;
+
+                Ok((token_resp.access_token, token_resp.expires_in))
+            })
             .await
-            .context("Failed to request Twitch access token")?;
-
-        if !resp.status().is_success() {
-            let status = resp.status();
-            let body = resp.text().await.unwrap_or_default();
-            anyhow::bail!("Twitch token request failed: {} {}", status, body);
-        }
-
-        let token_resp: TokenResponse = resp
-            .json()
-            .await
-            .context("Failed to parse Twitch token response")?;
-
-        let expires_at =
-            std::time::Instant::now() + Duration::from_secs(token_resp.expires_in.saturating_sub(120));
-
-        let access_token = token_resp.access_token.clone();
-
-        *token_guard = Some(CachedToken {
-            access_token: token_resp.access_token,
-            expires_at,
-        });
-
-        debug!("Twitch access token refreshed, expires in {}s", token_resp.expires_in);
-        Ok(access_token)
     }
 
-    /// Enforce rate limiting between requests.
-    async fn rate_limit(&self) {
-        let mut last = self.last_request.lock().await;
-        let elapsed = last.elapsed();
-        let min_delay = Duration::from_millis(MIN_REQUEST_DELAY_MS);
-
-        if elapsed < min_delay {
-            tokio::time::sleep(min_delay - elapsed).await;
-        }
-
-        *last = std::time::Instant::now();
-    }
-
-    /// Make an authenticated GET request to the Helix API with retries.
+    /// Make an authenticated GET request to the Helix API.
+    /// Uses SourceHttpClient for rate limiting and retry.
+    /// Handles 401 by invalidating the token cache and retrying once.
     async fn helix_get<T: serde::de::DeserializeOwned>(
         &self,
         url: &str,
     ) -> Result<HelixResponse<T>> {
-        let mut last_error = None;
+        let token = self.get_token().await?;
+        let auth_value = format!("Bearer {}", token);
+        let headers: Vec<(&str, &str)> = vec![
+            ("Client-Id", self.client_id.as_str()),
+            ("Authorization", auth_value.as_str()),
+        ];
 
-        for attempt in 0..MAX_RETRIES {
-            self.rate_limit().await;
+        match self.http.get_json_with_headers::<HelixResponse<T>>(url, &headers).await {
+            Ok(data) => Ok(data),
+            Err(crate::market_data::sources::error::SourceError::AuthFailed(_)) => {
+                // Token expired — clear cache and retry once with a fresh token
+                warn!("Twitch auth failed (401), clearing token cache and retrying");
+                self.token_cache.invalidate().await;
 
-            let token = self.get_token().await?;
+                let new_token = self.get_token().await?;
+                let new_auth = format!("Bearer {}", new_token);
+                let new_headers: Vec<(&str, &str)> = vec![
+                    ("Client-Id", self.client_id.as_str()),
+                    ("Authorization", new_auth.as_str()),
+                ];
 
-            match self
-                .client
-                .get(url)
-                .header("Client-Id", &self.client_id)
-                .header("Authorization", format!("Bearer {}", token))
-                .send()
-                .await
-            {
-                Ok(resp) => {
-                    if resp.status().is_success() {
-                        match resp.json::<HelixResponse<T>>().await {
-                            Ok(data) => return Ok(data),
-                            Err(e) => {
-                                warn!(
-                                    "Failed to parse Twitch response (attempt {}/{}): {:?}",
-                                    attempt + 1,
-                                    MAX_RETRIES,
-                                    e
-                                );
-                                last_error = Some(e.to_string());
-                            }
-                        }
-                    } else if resp.status().as_u16() == 429 {
-                        // Rate limited — wait and retry
-                        let retry_after = resp
-                            .headers()
-                            .get("Ratelimit-Reset")
-                            .and_then(|v| v.to_str().ok())
-                            .and_then(|s| s.parse::<u64>().ok())
-                            .map(|reset| {
-                                let now = std::time::SystemTime::now()
-                                    .duration_since(std::time::UNIX_EPOCH)
-                                    .unwrap_or_default()
-                                    .as_secs();
-                                Duration::from_secs(reset.saturating_sub(now).max(1))
-                            })
-                            .unwrap_or(Duration::from_secs(5));
-
-                        warn!(
-                            "Twitch rate limited (attempt {}/{}), waiting {:?}",
-                            attempt + 1,
-                            MAX_RETRIES,
-                            retry_after
-                        );
-                        tokio::time::sleep(retry_after).await;
-                        last_error = Some("Rate limited".to_string());
-                    } else if resp.status().as_u16() == 401 {
-                        // Token expired — clear cache and retry
-                        warn!("Twitch auth failed (401), clearing token cache");
-                        let mut token_guard = self.token.lock().await;
-                        *token_guard = None;
-                        last_error = Some("Auth failed".to_string());
-                    } else {
-                        let status = resp.status();
-                        let body = resp.text().await.unwrap_or_default();
-                        warn!(
-                            "Twitch API error (attempt {}/{}): {} {}",
-                            attempt + 1,
-                            MAX_RETRIES,
-                            status,
-                            body
-                        );
-                        last_error = Some(format!("HTTP {}", status));
-                    }
-                }
-                Err(e) => {
-                    warn!(
-                        "Twitch request failed (attempt {}/{}): {:?}",
-                        attempt + 1,
-                        MAX_RETRIES,
-                        e
-                    );
-                    last_error = Some(e.to_string());
-                }
+                self.http.get_json_with_headers::<HelixResponse<T>>(url, &new_headers)
+                    .await
+                    .map_err(|e| anyhow::anyhow!("{}", e))
             }
-
-            // Exponential backoff
-            if attempt < MAX_RETRIES - 1 {
-                let delay = Duration::from_secs(2u64.pow(attempt));
-                tokio::time::sleep(delay).await;
-            }
+            Err(e) => Err(anyhow::anyhow!("{}", e)),
         }
-
-        Err(anyhow::anyhow!(
-            "Twitch request failed after {} retries: {:?}",
-            MAX_RETRIES,
-            last_error
-        ))
     }
 
     /// Fetch top N streams sorted by viewer count (paginated).

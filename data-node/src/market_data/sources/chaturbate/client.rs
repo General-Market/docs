@@ -8,7 +8,7 @@
 //! No auth required — public affiliate API.
 //! Rate limit: 30 req/min (conservative)
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::Deserialize;
@@ -19,6 +19,7 @@ use tokio::sync::Mutex;
 use tracing::{debug, info, warn};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
 use crate::market_data::traits::{
     load_assets_from_json, AssetEntry, AssetUpdate, MarketDataSource, PriceUpdate,
 };
@@ -40,12 +41,6 @@ const MIN_VIEWER_COUNT: u64 = 50;
 
 /// Request timeout
 const REQUEST_TIMEOUT_SECS: u64 = 15;
-
-/// Max retries per request
-const MAX_RETRIES: u32 = 3;
-
-/// Minimum delay between API requests (ms) — ~30/min budget
-const MIN_REQUEST_DELAY_MS: u64 = 2000;
 
 /// How long to retain a model after they were last seen live.
 const RETENTION_DAYS: i64 = 30;
@@ -109,8 +104,7 @@ struct CachedModel {
 ///
 /// Source ID is `"chaturbate"`.
 pub struct ChaturbateMarketSource {
-    client: reqwest::Client,
-    last_request: Arc<Mutex<std::time::Instant>>,
+    http: SourceHttpClient,
     /// Peak viewer cache: username -> CachedModel.
     seen_models: Arc<Mutex<HashMap<String, CachedModel>>>,
     /// Chaturbate affiliate webmaster ID (required by API).
@@ -120,37 +114,32 @@ pub struct ChaturbateMarketSource {
 impl ChaturbateMarketSource {
     pub fn from_env() -> Result<Self> {
         let wm = std::env::var("CHATURBATE_WM")
-            .context("CHATURBATE_WM environment variable is required (affiliate webmaster ID)")?;
+            .map_err(|_| anyhow::anyhow!("CHATURBATE_WM environment variable is required (affiliate webmaster ID)"))?;
+
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 30,
+                duration: Duration::from_secs(60),
+            }],
+        };
 
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
             .build()
-            .context("Failed to build HTTP client")?;
+            .map_err(|e| anyhow::anyhow!("Failed to build HTTP client: {}", e))?;
+
+        let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());
 
         info!("Chaturbate source initialized (wm={})", wm);
 
         Ok(Self {
-            client,
-            last_request: Arc::new(Mutex::new(std::time::Instant::now())),
+            http,
             seen_models: Arc::new(Mutex::new(HashMap::new())),
             wm,
         })
     }
 
-    /// Enforce rate limiting between requests.
-    async fn rate_limit(&self) {
-        let mut last = self.last_request.lock().await;
-        let elapsed = last.elapsed();
-        let min_delay = Duration::from_millis(MIN_REQUEST_DELAY_MS);
-
-        if elapsed < min_delay {
-            tokio::time::sleep(min_delay - elapsed).await;
-        }
-
-        *last = std::time::Instant::now();
-    }
-
-    /// Fetch a page of online rooms with retries.
+    /// Fetch a page of online rooms.
     ///
     /// The Chaturbate API requires `wm` (affiliate ID) and `client_ip` params.
     /// Response is paginated: `{"results": [...], "count": N}`.
@@ -159,62 +148,9 @@ impl ChaturbateMarketSource {
             "{}?format=json&limit={}&offset={}&wm={}&client_ip=0.0.0.0",
             API_BASE, PAGE_SIZE, offset, self.wm
         );
-        let mut last_error = None;
 
-        for attempt in 0..MAX_RETRIES {
-            self.rate_limit().await;
-
-            match self.client.get(&url).send().await {
-                Ok(resp) => {
-                    if resp.status().is_success() {
-                        match resp.json::<ChaturbateApiResponse>().await {
-                            Ok(api_resp) => return Ok(api_resp.results),
-                            Err(e) => {
-                                warn!(
-                                    "Failed to parse Chaturbate response (attempt {}/{}): {:?}",
-                                    attempt + 1, MAX_RETRIES, e
-                                );
-                                last_error = Some(e.to_string());
-                            }
-                        }
-                    } else if resp.status().as_u16() == 429 {
-                        warn!(
-                            "Chaturbate rate limited (attempt {}/{}), waiting 10s",
-                            attempt + 1, MAX_RETRIES
-                        );
-                        tokio::time::sleep(Duration::from_secs(10)).await;
-                        last_error = Some("Rate limited".to_string());
-                    } else {
-                        let status = resp.status();
-                        let body = resp.text().await.unwrap_or_default();
-                        warn!(
-                            "Chaturbate API error (attempt {}/{}): {} {}",
-                            attempt + 1, MAX_RETRIES, status, body
-                        );
-                        last_error = Some(format!("HTTP {}", status));
-                    }
-                }
-                Err(e) => {
-                    warn!(
-                        "Chaturbate request failed (attempt {}/{}): {:?}",
-                        attempt + 1, MAX_RETRIES, e
-                    );
-                    last_error = Some(e.to_string());
-                }
-            }
-
-            // Exponential backoff
-            if attempt < MAX_RETRIES - 1 {
-                let delay = Duration::from_secs(2u64.pow(attempt));
-                tokio::time::sleep(delay).await;
-            }
-        }
-
-        Err(anyhow::anyhow!(
-            "Chaturbate request failed after {} retries: {:?}",
-            MAX_RETRIES,
-            last_error
-        ))
+        let api_resp: ChaturbateApiResponse = self.http.get_json(&url).await?;
+        Ok(api_resp.results)
     }
 
     /// Fetch all online rooms (paginated, up to MAX_PAGES).

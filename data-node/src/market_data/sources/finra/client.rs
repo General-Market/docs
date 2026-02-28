@@ -19,9 +19,10 @@ use rust_decimal::Decimal;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::str::FromStr;
-use std::sync::Mutex;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tracing::{debug, info, warn};
+
+use crate::market_data::sources::oauth::OAuthTokenCache;
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::traits::{
@@ -85,19 +86,12 @@ struct RegShoRow {
     market_code: Option<String>,
 }
 
-/// Cached OAuth token with expiry
-struct CachedToken {
-    token: String,
-    expires_at: Instant,
-}
-
 /// FINRA market data source
 pub struct FinraMarketSource {
     client: reqwest::Client,
     client_id: String,
     client_secret: String,
-    /// Cached OAuth token (refreshed when expired)
-    token_cache: Mutex<Option<CachedToken>>,
+    token_cache: OAuthTokenCache,
 }
 
 impl FinraMarketSource {
@@ -125,63 +119,43 @@ impl FinraMarketSource {
             client,
             client_id,
             client_secret,
-            token_cache: Mutex::new(None),
+            token_cache: OAuthTokenCache::new("FINRA"),
         })
     }
 
     /// Get a valid OAuth bearer token (cached, refreshed if expired)
     async fn get_token(&self) -> Result<String> {
-        // Check cache first
-        {
-            let cache = self.token_cache.lock().unwrap();
-            if let Some(ref cached) = *cache {
-                if cached.expires_at > Instant::now() {
-                    return Ok(cached.token.clone());
+        let client = self.client.clone();
+        let client_id = self.client_id.clone();
+        let client_secret = self.client_secret.clone();
+
+        self.token_cache
+            .get_or_refresh(|| async move {
+                let credentials = format!("{}:{}", client_id, client_secret);
+                let encoded = BASE64.encode(credentials.as_bytes());
+
+                let resp = client
+                    .post(OAUTH_URL)
+                    .header("Authorization", format!("Basic {}", encoded))
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .send()
+                    .await
+                    .context("Failed to request FINRA OAuth token")?;
+
+                if !resp.status().is_success() {
+                    let status = resp.status();
+                    let body = resp.text().await.unwrap_or_default();
+                    anyhow::bail!("FINRA OAuth failed: {} {}", status, body);
                 }
-            }
-        }
 
-        // Fetch new token
-        let credentials = format!("{}:{}", self.client_id, self.client_secret);
-        let encoded = BASE64.encode(credentials.as_bytes());
+                let token_resp: OAuthTokenResponse = resp
+                    .json()
+                    .await
+                    .context("Failed to parse FINRA OAuth response")?;
 
-        let resp = self
-            .client
-            .post(OAUTH_URL)
-            .header("Authorization", format!("Basic {}", encoded))
-            .header("Content-Type", "application/x-www-form-urlencoded")
-            .send()
+                Ok((token_resp.access_token, token_resp.expires_in.unwrap_or(3600)))
+            })
             .await
-            .context("Failed to request FINRA OAuth token")?;
-
-        if !resp.status().is_success() {
-            let status = resp.status();
-            let body = resp.text().await.unwrap_or_default();
-            anyhow::bail!("FINRA OAuth failed: {} {}", status, body);
-        }
-
-        let token_resp: OAuthTokenResponse = resp
-            .json()
-            .await
-            .context("Failed to parse FINRA OAuth response")?;
-
-        let expires_in = token_resp.expires_in.unwrap_or(3600);
-        // Expire 60 seconds early to avoid edge cases
-        let expires_at = Instant::now() + Duration::from_secs(expires_in.saturating_sub(60));
-
-        let token = token_resp.access_token.clone();
-
-        // Cache the token
-        {
-            let mut cache = self.token_cache.lock().unwrap();
-            *cache = Some(CachedToken {
-                token: token_resp.access_token,
-                expires_at,
-            });
-        }
-
-        debug!("FINRA OAuth token acquired (expires in {}s)", expires_in);
-        Ok(token)
     }
 
     /// Fetch daily short volume rows for a symbol.

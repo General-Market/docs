@@ -21,6 +21,7 @@ use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 use crate::market_data::sources::tracked_tickers::TRACKED_TICKERS;
 use crate::market_data::traits::{
     is_us_weekend, next_us_trading_day, today_at_eastern, AssetUpdate, MarketDataSource,
@@ -201,18 +202,25 @@ struct CikTickerCache {
 
 /// SEC Form 4 Insider Trading market data source
 pub struct SecInsiderMarketSource {
-    client: reqwest::Client,
+    http: SourceHttpClient,
     cik_cache: Arc<RwLock<Option<CikTickerCache>>>,
 }
 
 impl SecInsiderMarketSource {
     /// Create the SEC Insider Trading client
     pub fn from_env() -> Result<Self> {
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 5,
+                duration: Duration::from_secs(1),
+            }],
+        };
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(10))
             .user_agent("IndexProtocol/1.0 (contact@indexprotocol.com)")
             .build()
             .context("Failed to build reqwest client")?;
+        let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());
 
         let total_assets = MARKET_ASSETS.len() + TRACKED_TICKERS.len() * TICKER_METRICS.len();
         info!(
@@ -223,7 +231,7 @@ impl SecInsiderMarketSource {
         );
 
         Ok(Self {
-            client,
+            http,
             cik_cache: Arc::new(RwLock::new(None)),
         })
     }
@@ -231,21 +239,9 @@ impl SecInsiderMarketSource {
     /// Load or refresh the CIK -> ticker mapping from SEC's company_tickers.json
     async fn load_cik_map(&self) -> Result<()> {
         let url = "https://www.sec.gov/files/company_tickers.json";
-        let resp = self
-            .client
-            .get(url)
-            .send()
-            .await
+
+        let entries: HashMap<String, CompanyTickerEntry> = self.http.get_json(url).await
             .context("Failed to fetch company_tickers.json")?;
-
-        if !resp.status().is_success() {
-            bail!("company_tickers.json HTTP error: {}", resp.status());
-        }
-
-        let entries: HashMap<String, CompanyTickerEntry> = resp
-            .json()
-            .await
-            .context("Failed to parse company_tickers.json")?;
 
         // Build CIK -> ticker lookup, only for our tracked tickers
         let tracked: HashSet<&str> = TRACKED_TICKERS.iter().map(|(t, _, _)| *t).collect();
@@ -313,22 +309,13 @@ impl SecInsiderMarketSource {
                 date_str, date_str, offset, page_size
             );
 
-            let resp = self
-                .client
-                .get(&url)
-                .send()
-                .await
-                .with_context(|| format!("EFTS search failed at offset {}", offset))?;
-
-            if !resp.status().is_success() {
-                warn!("EFTS search HTTP error: {}", resp.status());
-                break;
-            }
-
-            let page: EftsResponse = resp
-                .json()
-                .await
-                .with_context(|| format!("EFTS JSON parse failed at offset {}", offset))?;
+            let page: EftsResponse = match self.http.get_json(&url).await {
+                Ok(d) => d,
+                Err(e) => {
+                    warn!("EFTS search error at offset {}: {}", offset, e);
+                    break;
+                }
+            };
 
             let total = page.hits.total.value;
             let page_hits = page.hits.hits.len() as i64;
@@ -343,9 +330,6 @@ impl SecInsiderMarketSource {
             if offset >= total || offset >= hard_cap {
                 break;
             }
-
-            // Rate-limit between pages
-            tokio::time::sleep(Duration::from_millis(150)).await;
         }
 
         debug!(
@@ -366,20 +350,8 @@ impl SecInsiderMarketSource {
             doc_name
         );
 
-        let resp = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .with_context(|| format!("Failed to fetch Form 4 XML: {}", url))?;
-
-        if !resp.status().is_success() {
-            bail!("Form 4 XML HTTP error {}: {}", resp.status(), url);
-        }
-
-        resp.text()
-            .await
-            .with_context(|| format!("Failed to read Form 4 XML body: {}", url))
+        self.http.get_raw(&url).await
+            .with_context(|| format!("Failed to fetch Form 4 XML: {}", url))
     }
 }
 
@@ -582,9 +554,6 @@ impl MarketDataSource for SecInsiderMarketSource {
                     .find(|(t, _, _)| *t == ticker.as_str())
                     .map(|(_, suffix, _)| suffix.to_string())
             });
-
-            // Rate-limit between XML downloads
-            tokio::time::sleep(Duration::from_millis(150)).await;
 
             // Phase 2: Download and parse Form 4 XML
             let xml_text = match self.fetch_form4_xml(&cik, &accession, &doc_name).await {

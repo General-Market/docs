@@ -17,6 +17,7 @@ use crate::market_data::traits::{
     MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 
 /// EIA API base URL
 const EIA_API_URL: &str = "https://api.eia.gov/v2/petroleum/sum/sndw/data/";
@@ -47,7 +48,7 @@ struct EiaDataPoint {
 
 /// EIA market data source
 pub struct EiaMarketSource {
-    client: reqwest::Client,
+    http: SourceHttpClient,
     api_key: String,
 }
 
@@ -56,17 +57,20 @@ impl EiaMarketSource {
     pub fn from_env() -> Result<Self> {
         let api_key = std::env::var("EIA_API_KEY").context("EIA_API_KEY not set")?;
 
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(30))
-            .build()
-            .context("Failed to build reqwest client")?;
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 50,
+                duration: Duration::from_secs(60),
+            }],
+        };
+        let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
 
         let asset_count = load_assets_from_json(ASSET_JSON)
             .map(|a| a.len())
             .unwrap_or(0);
         info!("EIA client initialized with {} series", asset_count);
 
-        Ok(Self { client, api_key })
+        Ok(Self { http, api_key })
     }
 
     /// Fetch a petroleum series
@@ -76,24 +80,13 @@ impl EiaMarketSource {
             EIA_API_URL, self.api_key, series_id
         );
 
-        let resp = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .with_context(|| format!("Failed to fetch EIA series {}", series_id))?;
-
-        if !resp.status().is_success() {
-            let status = resp.status();
-            let body = resp.text().await.unwrap_or_default();
-            warn!("EIA API error for {}: {} {}", series_id, status, body);
-            return Ok(None);
-        }
-
-        let data: EiaResponse = resp
-            .json()
-            .await
-            .with_context(|| format!("Failed to parse EIA response for {}", series_id))?;
+        let data: EiaResponse = match self.http.get_json(&url).await {
+            Ok(d) => d,
+            Err(e) => {
+                warn!("EIA API error for {}: {}", series_id, e);
+                return Ok(None);
+            }
+        };
 
         if let Some(point) = data.response.data.first() {
             if let Some(ref value_str) = point.value {
@@ -114,24 +107,13 @@ impl EiaMarketSource {
             self.api_key
         );
 
-        let resp = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .context("Failed to fetch EIA natural gas storage")?;
-
-        if !resp.status().is_success() {
-            let status = resp.status();
-            let body = resp.text().await.unwrap_or_default();
-            warn!("EIA API error for natural gas: {} {}", status, body);
-            return Ok(None);
-        }
-
-        let data: EiaResponse = resp
-            .json()
-            .await
-            .context("Failed to parse EIA natural gas response")?;
+        let data: EiaResponse = match self.http.get_json(&url).await {
+            Ok(d) => d,
+            Err(e) => {
+                warn!("EIA API error for natural gas: {}", e);
+                return Ok(None);
+            }
+        };
 
         if let Some(point) = data.response.data.first() {
             if let Some(ref value_str) = point.value {
@@ -187,7 +169,6 @@ impl MarketDataSource for EiaMarketSource {
         for entry in &entries {
             // Natural gas storage uses different endpoint
             if entry.asset_id == "eia_natgas_storage" {
-                tokio::time::sleep(Duration::from_millis(200)).await;
                 match self.fetch_natgas_storage().await {
                     Ok(Some((_period, value))) => {
                         if let Ok(decimal_value) = Decimal::from_str(&value.to_string()) {
@@ -214,7 +195,6 @@ impl MarketDataSource for EiaMarketSource {
             }
 
             // Petroleum series
-            tokio::time::sleep(Duration::from_millis(200)).await;
             match self.fetch_petroleum_series(&entry.api_ref).await {
                 Ok(Some((_period, value))) => {
                     if let Ok(decimal_value) = Decimal::from_str(&value.to_string()) {

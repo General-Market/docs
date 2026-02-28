@@ -17,6 +17,7 @@ use crate::market_data::traits::{
     today_at_cet, AssetUpdate, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 
 /// ECB API base URL
 const ECB_API_URL: &str = "https://data-api.ecb.europa.eu/service/data";
@@ -71,23 +72,26 @@ struct EcbDimensionValue {
 
 /// ECB market data source
 pub struct EcbMarketSource {
-    client: reqwest::Client,
+    http: SourceHttpClient,
 }
 
 impl EcbMarketSource {
     /// Create a new ECB client (no API key needed)
     pub fn from_env() -> Result<Self> {
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(30))
-            .build()
-            .context("Failed to build reqwest client")?;
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 30,
+                duration: Duration::from_secs(60),
+            }],
+        };
+        let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
 
         let asset_count = load_assets_from_json(ASSET_JSON)
             .map(|a| a.len())
             .unwrap_or(0);
         info!("ECB client initialized with {} series", asset_count);
 
-        Ok(Self { client })
+        Ok(Self { http })
     }
 
     /// Fetch a single ECB series
@@ -108,30 +112,13 @@ impl EcbMarketSource {
             ECB_API_URL, flow_ref, key
         );
 
-        let resp = self
-            .client
-            .get(&url)
-            .header("Accept", "application/json")
-            .send()
-            .await
-            .with_context(|| format!("Failed to fetch ECB series {}", series_key))?;
-
-        if !resp.status().is_success() {
-            let status = resp.status();
-            // Don't log body for 404s - series might not exist
-            if status.as_u16() != 404 {
-                let body = resp.text().await.unwrap_or_default();
-                warn!("ECB API error for {}: {} {}", series_key, status, body);
-            } else {
-                debug!("ECB series {} not found (404)", series_key);
+        let data: EcbResponse = match self.http.get_json_with_headers(&url, &[("Accept", "application/json")]).await {
+            Ok(d) => d,
+            Err(e) => {
+                warn!("ECB API error for {}: {}", series_key, e);
+                return Ok(None);
             }
-            return Ok(None);
-        }
-
-        let data: EcbResponse = resp
-            .json()
-            .await
-            .with_context(|| format!("Failed to parse ECB response for {}", series_key))?;
+        };
 
         // Navigate the SDMX structure to get the value
         // dataSets[0].series["0:0:0:..."].observations["0"][0]
@@ -212,9 +199,6 @@ impl MarketDataSource for EcbMarketSource {
 
         for asset_id in asset_ids {
             if let Some(series_key) = series_lookup.get(asset_id) {
-                // Small delay between requests
-                tokio::time::sleep(Duration::from_millis(500)).await;
-
                 match self.fetch_series(series_key).await {
                     Ok(Some(value)) => {
                         results.push(PriceUpdate {

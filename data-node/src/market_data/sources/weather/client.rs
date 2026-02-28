@@ -16,6 +16,7 @@ use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 use crate::market_data::traits::{AssetUpdate, MarketDataSource, PriceUpdate};
 
 /// Open-Meteo forecast API base URL
@@ -23,9 +24,6 @@ const OPENMETEO_API: &str = "https://api.open-meteo.com/v1/forecast";
 
 /// Cache TTL: 120 seconds (shared between fetch_assets and fetch_prices)
 const CACHE_TTL_SECS: u64 = 120;
-
-/// Delay between sequential city fetches (ms) to be polite
-const INTER_REQUEST_DELAY_MS: u64 = 100;
 
 // ============================================================================
 // City definitions — 20 major cities with lat/lon
@@ -120,22 +118,25 @@ struct CacheEntry {
 
 /// Weather station data source using Open-Meteo API
 pub struct WeatherSource {
-    client: reqwest::Client,
+    http: SourceHttpClient,
     cache: Arc<RwLock<Option<CacheEntry>>>,
 }
 
 impl WeatherSource {
     /// Create a new Weather source (no API key needed)
     pub fn from_env() -> Result<Self> {
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(30))
-            .build()
-            .context("Failed to build reqwest client")?;
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 100,
+                duration: Duration::from_secs(60),
+            }],
+        };
+        let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
 
         info!("Weather source initialized (Open-Meteo API, {} cities)", CITIES.len());
 
         Ok(Self {
-            client,
+            http,
             cache: Arc::new(RwLock::new(None)),
         })
     }
@@ -173,12 +174,12 @@ impl WeatherSource {
         Ok(readings)
     }
 
-    /// Fetch weather for all cities sequentially with a small delay between requests.
+    /// Fetch weather for all cities sequentially (rate-limited by SourceHttpClient).
     async fn fetch_all_cities(&self) -> Result<Vec<CachedReading>> {
         let mut all_readings = Vec::with_capacity(CITIES.len() * 3);
         let mut failed_cities: Vec<&str> = Vec::new();
 
-        for (i, city) in CITIES.iter().enumerate() {
+        for city in CITIES.iter() {
             match self.fetch_city(city).await {
                 Ok(readings) => {
                     all_readings.extend(readings);
@@ -187,11 +188,6 @@ impl WeatherSource {
                     warn!("Weather: failed to fetch {}: {}", city.name, e);
                     failed_cities.push(city.name);
                 }
-            }
-
-            // Small delay between requests to be polite (skip after last)
-            if i < CITIES.len() - 1 {
-                tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
             }
         }
 
@@ -221,25 +217,8 @@ impl WeatherSource {
 
         debug!("Weather: fetching {} from {}", city.name, url);
 
-        let resp = self
-            .client
-            .get(&url)
-            .header("Accept", "application/json")
-            .send()
-            .await
+        let data: OpenMeteoResponse = self.http.get_json(&url).await
             .with_context(|| format!("Failed to fetch weather for {}", city.name))?;
-
-        if !resp.status().is_success() {
-            let status = resp.status();
-            let body = resp.text().await.unwrap_or_default();
-            warn!("Open-Meteo API error for {}: {} {}", city.name, status, body);
-            anyhow::bail!("Open-Meteo API returned {} for {}", status, city.name);
-        }
-
-        let data: OpenMeteoResponse = resp
-            .json()
-            .await
-            .with_context(|| format!("Failed to parse Open-Meteo response for {}", city.name))?;
 
         let current = match data.current {
             Some(c) => c,

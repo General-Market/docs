@@ -5,6 +5,7 @@
 // Shared utilities
 pub mod error;
 pub mod http_client;
+pub mod oauth;
 
 // Prod sources (29)
 pub mod anilist;

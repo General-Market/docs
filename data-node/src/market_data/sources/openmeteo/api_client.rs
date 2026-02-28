@@ -26,6 +26,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
+use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
+
 use super::models::{CityForecast, HourlyDataPoint, WeatherCity, WeatherMetric};
 
 /// Open-Meteo Forecast API URL
@@ -42,15 +45,6 @@ const REQUEST_TIMEOUT_SECS: u64 = 60;
 
 /// Maximum cities per batch request (OpenMeteo supports up to 100)
 const BATCH_SIZE: usize = 100;
-
-/// Maximum retries per request
-const MAX_RETRIES: u32 = 3;
-
-/// Base delay between API requests (ms) - increases adaptively
-const BASE_REQUEST_DELAY_MS: u64 = 100;
-
-/// Maximum delay between requests (ms) - when approaching rate limit
-const MAX_REQUEST_DELAY_MS: u64 = 2000;
 
 /// Daily API call budget (free tier)
 const DAILY_BUDGET: u64 = 10_000;
@@ -130,34 +124,38 @@ pub struct CityWeatherData {
     pub hourly_forecast: Option<CityForecast>,
 }
 
-/// Open-Meteo API client with adaptive rate limiting
-#[derive(Clone)]
+/// Open-Meteo API client with rate limiting via SourceHttpClient
 pub struct OpenMeteoClient {
-    client: reqwest::Client,
-    /// Last request timestamp for rate limiting
-    last_request: std::sync::Arc<tokio::sync::Mutex<std::time::Instant>>,
+    http: SourceHttpClient,
     /// Daily API call counter (resets at midnight UTC)
     daily_calls: std::sync::Arc<AtomicU64>,
     /// Date of last counter reset
     counter_date: std::sync::Arc<tokio::sync::RwLock<DateTime<Utc>>>,
-    /// Current adaptive delay multiplier (1.0 = normal, higher = slower)
-    delay_multiplier: std::sync::Arc<AtomicU64>,
 }
 
 impl OpenMeteoClient {
-    /// Create a new Open-Meteo API client with adaptive rate limiting
+    /// Create a new Open-Meteo API client with rate limiting
     pub fn new() -> Result<Self> {
+        // 10,000 calls/day = ~6.9/min average, but we burst in batches.
+        // Use a generous per-minute window to allow batching while staying under daily limit.
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 600,
+                duration: Duration::from_secs(60),
+            }],
+        };
+
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
             .build()
             .context("Failed to create HTTP client")?;
 
+        let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());
+
         Ok(Self {
-            client,
-            last_request: std::sync::Arc::new(tokio::sync::Mutex::new(std::time::Instant::now())),
+            http,
             daily_calls: std::sync::Arc::new(AtomicU64::new(0)),
             counter_date: std::sync::Arc::new(tokio::sync::RwLock::new(Utc::now())),
-            delay_multiplier: std::sync::Arc::new(AtomicU64::new(100)), // 1.0 as fixed point (×100)
         })
     }
 
@@ -165,24 +163,11 @@ impl OpenMeteoClient {
     /// Returns the current data timestamp if successful.
     /// This is a lightweight call that doesn't count heavily against rate limits.
     pub async fn fetch_data_timestamp(&self) -> Result<String> {
-        let response = self
-            .client
-            .get(METADATA_URL)
-            .send()
+        let metadata: MetadataResponse = self
+            .http
+            .get_json(METADATA_URL)
             .await
             .context("Failed to fetch metadata")?;
-
-        if !response.status().is_success() {
-            return Err(anyhow::anyhow!(
-                "Metadata request failed: {}",
-                response.status()
-            ));
-        }
-
-        let metadata: MetadataResponse = response
-            .json()
-            .await
-            .context("Failed to parse metadata response")?;
 
         metadata
             .current
@@ -202,7 +187,6 @@ impl OpenMeteoClient {
             if now.date_naive() != counter_date.date_naive() {
                 *counter_date = now;
                 self.daily_calls.store(0, Ordering::SeqCst);
-                self.delay_multiplier.store(100, Ordering::SeqCst);
                 info!("Daily API counter reset");
             }
         }
@@ -214,73 +198,9 @@ impl OpenMeteoClient {
         (calls as f64 / DAILY_BUDGET as f64) * 100.0
     }
 
-    /// Calculate adaptive delay based on daily budget usage
-    fn calculate_delay(&self) -> Duration {
-        let calls = self.daily_calls.load(Ordering::SeqCst);
-        let usage_pct = calls as f64 / DAILY_BUDGET as f64;
-
-        // Ramp up delay as we approach budget
-        let delay_ms = if usage_pct < 0.5 {
-            // Under 50%: minimum delay
-            BASE_REQUEST_DELAY_MS
-        } else if usage_pct < 0.7 {
-            // 50-70%: slight increase
-            BASE_REQUEST_DELAY_MS * 2
-        } else if usage_pct < 0.85 {
-            // 70-85%: moderate increase
-            BASE_REQUEST_DELAY_MS * 5
-        } else {
-            // 85%+: maximum delay
-            MAX_REQUEST_DELAY_MS
-        };
-
-        // Apply any temporary multiplier from rate limit errors
-        let multiplier = self.delay_multiplier.load(Ordering::SeqCst) as f64 / 100.0;
-        let final_delay = (delay_ms as f64 * multiplier) as u64;
-
-        Duration::from_millis(final_delay.min(MAX_REQUEST_DELAY_MS))
-    }
-
-    /// Enforce adaptive rate limiting before making a request
-    async fn rate_limit(&self) {
-        self.maybe_reset_daily_counter().await;
-
-        let mut last = self.last_request.lock().await;
-        let elapsed = last.elapsed();
-        let min_delay = self.calculate_delay();
-
-        if elapsed < min_delay {
-            let sleep_time = min_delay - elapsed;
-            debug!("Rate limiting: sleeping {}ms", sleep_time.as_millis());
-            tokio::time::sleep(sleep_time).await;
-        }
-
-        *last = std::time::Instant::now();
-    }
-
     /// Record an API call for budget tracking
     fn record_call(&self) {
         self.daily_calls.fetch_add(1, Ordering::SeqCst);
-    }
-
-    /// Handle rate limit error by increasing delay multiplier
-    fn handle_rate_limit(&self) {
-        let current = self.delay_multiplier.load(Ordering::SeqCst);
-        let new_value = (current * 2).min(1000); // Max 10x multiplier
-        self.delay_multiplier.store(new_value, Ordering::SeqCst);
-        warn!(
-            "Rate limit hit, increasing delay multiplier to {}x",
-            new_value as f64 / 100.0
-        );
-    }
-
-    /// Gradually reduce delay multiplier after successful requests
-    fn handle_success(&self) {
-        let current = self.delay_multiplier.load(Ordering::SeqCst);
-        if current > 100 {
-            let new_value = ((current as f64 * 0.9) as u64).max(100);
-            self.delay_multiplier.store(new_value, Ordering::SeqCst);
-        }
     }
 
     /// Fetch forecast data (temperature, rain, wind) for a batch of cities
@@ -311,73 +231,23 @@ impl OpenMeteoClient {
 
         debug!(url = %url, city_count = cities.len(), "Fetching forecast data");
 
-        let mut last_error = None;
+        self.maybe_reset_daily_counter().await;
+        self.record_call();
 
-        for attempt in 0..MAX_RETRIES {
-            self.rate_limit().await;
-            self.record_call();
+        let body = self.http.get_raw(&url).await
+            .context("Failed to fetch forecast data")?;
 
-            match self.client.get(&url).send().await {
-                Ok(response) => {
-                    if response.status().is_success() {
-                        self.handle_success();
-                        let body = response
-                            .text()
-                            .await
-                            .context("Failed to read response body")?;
+        // OpenMeteo returns a single object for 1 city, an array for multiple
+        let data = if cities.len() == 1 {
+            let single: ForecastResponse = serde_json::from_str(&body)
+                .context("Failed to parse single forecast response")?;
+            vec![single]
+        } else {
+            serde_json::from_str::<Vec<ForecastResponse>>(&body)
+                .context("Failed to parse batch forecast response")?
+        };
 
-                        let data = if cities.len() == 1 {
-                            let single: ForecastResponse = serde_json::from_str(&body)
-                                .context("Failed to parse single forecast response")?;
-                            vec![single]
-                        } else {
-                            serde_json::from_str::<Vec<ForecastResponse>>(&body)
-                                .context("Failed to parse batch forecast response")?
-                        };
-
-                        return Ok(self.map_forecast_responses(cities, data));
-                    } else {
-                        let status = response.status();
-                        let body = response.text().await.unwrap_or_default();
-
-                        // Check for rate limit (429) or server overload (503)
-                        if status.as_u16() == 429 || status.as_u16() == 503 {
-                            self.handle_rate_limit();
-                        }
-
-                        warn!(
-                            "Open-Meteo API error (attempt {}/{}): status {}, body: {}",
-                            attempt + 1,
-                            MAX_RETRIES,
-                            status,
-                            body
-                        );
-                        last_error = Some(format!("HTTP {}: {}", status, body));
-                    }
-                }
-                Err(e) => {
-                    warn!(
-                        "Request failed (attempt {}/{}): {:?}",
-                        attempt + 1,
-                        MAX_RETRIES,
-                        e
-                    );
-                    last_error = Some(e.to_string());
-                }
-            }
-
-            if attempt < MAX_RETRIES - 1 {
-                // Exponential backoff
-                let delay = Duration::from_secs(2u64.pow(attempt + 1));
-                tokio::time::sleep(delay).await;
-            }
-        }
-
-        Err(anyhow::anyhow!(
-            "Failed to fetch forecast after {} retries: {:?}",
-            MAX_RETRIES,
-            last_error
-        ))
+        Ok(self.map_forecast_responses(cities, data))
     }
 
     /// Fetch air quality data (pm2.5, ozone) for a batch of cities
@@ -407,73 +277,23 @@ impl OpenMeteoClient {
 
         debug!(url = %url, city_count = cities.len(), "Fetching air quality data");
 
-        let mut last_error = None;
+        self.maybe_reset_daily_counter().await;
+        self.record_call();
 
-        for attempt in 0..MAX_RETRIES {
-            self.rate_limit().await;
-            self.record_call();
+        let body = self.http.get_raw(&url).await
+            .context("Failed to fetch air quality data")?;
 
-            match self.client.get(&url).send().await {
-                Ok(response) => {
-                    if response.status().is_success() {
-                        self.handle_success();
-                        let body = response
-                            .text()
-                            .await
-                            .context("Failed to read response body")?;
+        // OpenMeteo returns a single object for 1 city, an array for multiple
+        let data = if cities.len() == 1 {
+            let single: AirQualityResponse = serde_json::from_str(&body)
+                .context("Failed to parse single air quality response")?;
+            vec![single]
+        } else {
+            serde_json::from_str::<Vec<AirQualityResponse>>(&body)
+                .context("Failed to parse batch air quality response")?
+        };
 
-                        let data = if cities.len() == 1 {
-                            let single: AirQualityResponse = serde_json::from_str(&body)
-                                .context("Failed to parse single air quality response")?;
-                            vec![single]
-                        } else {
-                            serde_json::from_str::<Vec<AirQualityResponse>>(&body)
-                                .context("Failed to parse batch air quality response")?
-                        };
-
-                        return Ok(self.map_air_quality_responses(cities, data));
-                    } else {
-                        let status = response.status();
-                        let body = response.text().await.unwrap_or_default();
-
-                        // Check for rate limit (429) or server overload (503)
-                        if status.as_u16() == 429 || status.as_u16() == 503 {
-                            self.handle_rate_limit();
-                        }
-
-                        warn!(
-                            "Open-Meteo API error (attempt {}/{}): status {}, body: {}",
-                            attempt + 1,
-                            MAX_RETRIES,
-                            status,
-                            body
-                        );
-                        last_error = Some(format!("HTTP {}: {}", status, body));
-                    }
-                }
-                Err(e) => {
-                    warn!(
-                        "Request failed (attempt {}/{}): {:?}",
-                        attempt + 1,
-                        MAX_RETRIES,
-                        e
-                    );
-                    last_error = Some(e.to_string());
-                }
-            }
-
-            if attempt < MAX_RETRIES - 1 {
-                // Exponential backoff
-                let delay = Duration::from_secs(2u64.pow(attempt + 1));
-                tokio::time::sleep(delay).await;
-            }
-        }
-
-        Err(anyhow::anyhow!(
-            "Failed to fetch air quality after {} retries: {:?}",
-            MAX_RETRIES,
-            last_error
-        ))
+        Ok(self.map_air_quality_responses(cities, data))
     }
 
     /// Fetch all weather data for cities (forecast + air quality)
@@ -742,37 +562,30 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_adaptive_delay_calculation() {
+    fn test_daily_usage_tracking() {
         let client = OpenMeteoClient::new().unwrap();
 
-        // At 0% usage, should be base delay
-        let delay = client.calculate_delay();
-        assert_eq!(delay, Duration::from_millis(BASE_REQUEST_DELAY_MS));
+        // Initially 0% usage
+        assert_eq!(client.daily_usage_pct(), 0.0);
 
-        // Simulate 60% usage
-        client.daily_calls.store(6000, Ordering::SeqCst);
-        let delay = client.calculate_delay();
-        assert!(delay > Duration::from_millis(BASE_REQUEST_DELAY_MS));
+        // Simulate some usage
+        client.daily_calls.store(5000, Ordering::SeqCst);
+        assert!((client.daily_usage_pct() - 50.0).abs() < 0.01);
 
-        // Simulate 90% usage
-        client.daily_calls.store(9000, Ordering::SeqCst);
-        let delay = client.calculate_delay();
-        assert_eq!(delay, Duration::from_millis(MAX_REQUEST_DELAY_MS));
+        // At budget limit
+        client.daily_calls.store(10_000, Ordering::SeqCst);
+        assert!((client.daily_usage_pct() - 100.0).abs() < 0.01);
     }
 
     #[test]
-    fn test_rate_limit_backoff() {
+    fn test_record_call_increments() {
         let client = OpenMeteoClient::new().unwrap();
+        assert_eq!(client.daily_calls.load(Ordering::SeqCst), 0);
 
-        // Initial multiplier is 1.0 (100 in fixed point)
-        assert_eq!(client.delay_multiplier.load(Ordering::SeqCst), 100);
+        client.record_call();
+        assert_eq!(client.daily_calls.load(Ordering::SeqCst), 1);
 
-        // After rate limit, should double
-        client.handle_rate_limit();
-        assert_eq!(client.delay_multiplier.load(Ordering::SeqCst), 200);
-
-        // Success should gradually reduce
-        client.handle_success();
-        assert!(client.delay_multiplier.load(Ordering::SeqCst) < 200);
+        client.record_call();
+        assert_eq!(client.daily_calls.load(Ordering::SeqCst), 2);
     }
 }
