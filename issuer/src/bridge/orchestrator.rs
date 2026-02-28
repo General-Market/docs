@@ -4335,18 +4335,6 @@ impl BridgeOrchestrator {
         nav_bls_signature: &[u8],
         reference_nonce: u64,
     ) -> Result<H256, BridgeError> {
-        // Deduplication check (reuse confirmed_weight_updates map)
-        if let Some(existing_tx) = self.confirmed_weight_updates.read().await.get(&itp_id) {
-            warn!(
-                itp_id = ?itp_id,
-                existing_tx = ?existing_tx,
-                "Rebalance already executed for this ITP"
-            );
-            return Err(BridgeError::ChainWriterError {
-                reason: format!("Rebalance already executed for ITP {}", itp_id),
-            });
-        }
-
         // Push computed NAV on-chain BEFORE rebalance so that RebalanceLib
         // reads the real NAV instead of the stale _itpNavs (stuck at 1e18
         // from createITP). BLS signature obtained via setItpNav consensus.
@@ -4383,11 +4371,6 @@ impl BridgeOrchestrator {
             .map_err(|e| BridgeError::ChainWriterError {
                 reason: e.to_string(),
             })?;
-
-        self.confirmed_weight_updates
-            .write()
-            .await
-            .insert(itp_id, tx_hash);
 
         info!(
             itp_id = ?itp_id,

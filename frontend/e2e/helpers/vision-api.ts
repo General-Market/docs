@@ -1,21 +1,20 @@
 /**
  * Vision E2E helpers.
- * Direct Arb RPC + issuer API calls for testing Vision contract interactions.
- * Vision lives on Arbitrum (same chain as frontend wallet).
+ * Direct L3 RPC + issuer API calls for testing Vision contract interactions.
+ * Vision lives on L3 (port 8545) and uses L3_WUSDC (18 decimals).
  */
 
 import { keccak256, encodeFunctionData, toHex } from 'viem'
 
 // ── Constants ────────────────────────────────────────────────
 
-const L3_RPC = 'http://localhost:8546'
+const L3_RPC = 'http://localhost:8545'
 const VISION_API = 'http://localhost:10001'
 
-/** Test user — funded + impersonated on Arb by start.sh */
+/** Test user — funded + impersonated on both chains by start.sh */
 export const PLAYER1 = '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4'
 
-/** Vision bot — funded + impersonated on Arb by start.sh */
-/** Vision bot 1 — funded + impersonated on Arb by start.sh */
+/** Vision bot 1 — funded + impersonated on both chains by start.sh */
 export const PLAYER2 = '0x71bE63f3384f5fb98995898A86B02Fb2426c5788'
 
 // Read addresses from deployment.json (copied by start.sh step 7)
@@ -32,8 +31,9 @@ export function getVisionAddress(): string {
   return getDeployment().contracts.Vision
 }
 
+/** Vision uses L3_WUSDC (18 decimals) on L3 */
 export function getL3UsdcAddress(): string {
-  return getDeployment().contracts.ARB_USDC
+  return getDeployment().contracts.L3_WUSDC
 }
 
 // ── ABI fragments ────────────────────────────────────────────
@@ -177,7 +177,7 @@ async function l3SendTx(from: string, to: string, data: string): Promise<string>
 
 // ── Anvil impersonation ──────────────────────────────────────
 
-async function impersonateAccount(address: string): Promise<void> {
+export async function impersonateAccount(address: string): Promise<void> {
   await l3RpcCall('anvil_impersonateAccount', [address])
 }
 
@@ -246,7 +246,7 @@ async function clearPosition(batchId: number, player: string): Promise<void> {
 }
 
 /** Mint ARB_USDC to an address via deployer. Ensures player has enough for deposits. */
-async function ensureUsdcBalance(address: string, minAmount: bigint): Promise<void> {
+export async function ensureUsdcBalance(address: string, minAmount: bigint): Promise<void> {
   const balance = await getL3UsdcBalance(address)
   if (balance >= minAmount) return
 
@@ -270,11 +270,13 @@ export async function getL3UsdcBalance(address: string): Promise<bigint> {
   return BigInt(result)
 }
 
-export async function approveVision(from: string, amount: bigint): Promise<void> {
+export async function approveVision(from: string, _amount: bigint): Promise<void> {
+  // Approve max uint256 to avoid race conditions when parallel tests share the same player
+  const MAX_UINT256 = (1n << 256n) - 1n
   const data = encodeFunctionData({
     abi: ERC20_APPROVE_ABI,
     functionName: 'approve',
-    args: [getVisionAddress() as `0x${string}`, amount],
+    args: [getVisionAddress() as `0x${string}`, MAX_UINT256],
   })
   await l3SendTx(from, getL3UsdcAddress(), data)
 }
@@ -459,7 +461,8 @@ export interface JoinResult {
 }
 
 /**
- * Complete join flow: approve USDC → joinBatch on-chain → submit bitmap to issuers.
+ * Complete join flow: deposit USDC to Vision balance → joinBatch on-chain → submit bitmap to issuers.
+ * With the dual-balance architecture, joinBatch debits from Vision balance (not direct USDC transfer).
  * @param configHash  Active configHash for the batch (read from chain or vision-batches.json)
  */
 export async function fullJoinBatch(
@@ -485,13 +488,25 @@ export async function fullJoinBatch(
   const bmHash = hashBitmap(bitmap)
   const bmHex = bitmapToHex(bitmap)
 
-  // 2. Approve USDC
+  // 2. Approve USDC and deposit to Vision balance (dual-balance architecture)
   await approveVision(player, depositAmount)
+  const depositBalanceData = encodeFunctionData({
+    abi: [{
+      name: 'depositBalance',
+      type: 'function',
+      stateMutability: 'nonpayable',
+      inputs: [{ name: 'amount', type: 'uint256' }],
+      outputs: [],
+    }] as const,
+    functionName: 'depositBalance',
+    args: [depositAmount],
+  })
+  await l3SendTx(player, getVisionAddress(), depositBalanceData)
 
   // 3. Wait for tick lock window to pass (last lockOffset seconds of each tick are locked)
   await waitForUnlock(batchId)
 
-  // 4. Join batch on-chain (requires configHash binding)
+  // 4. Join batch on-chain (debits from Vision balance, requires configHash binding)
   await joinBatch(player, batchId, configHash, depositAmount, stakePerTick, bmHash)
 
   // 5. Submit bitmap to issuers
@@ -646,4 +661,80 @@ export async function waitForBatches(timeoutMs = 30_000): Promise<BatchInfo[]> {
     await new Promise(r => setTimeout(r, 2_000))
   }
   throw new Error(`No batches found after ${timeoutMs}ms`)
+}
+
+// ── Vision balance helpers ──────────────────────────────────
+
+const VISION_DEPOSIT_BALANCE_ABI = [{
+  name: 'depositBalance',
+  type: 'function',
+  stateMutability: 'nonpayable',
+  inputs: [{ name: 'amount', type: 'uint256' }],
+  outputs: [],
+}] as const
+
+const VISION_WITHDRAW_BALANCE_ABI = [{
+  name: 'withdrawBalance',
+  type: 'function',
+  stateMutability: 'nonpayable',
+  inputs: [{ name: 'amount', type: 'uint256' }],
+  outputs: [],
+}] as const
+
+const VISION_BALANCE_OF_ABI = [{
+  name: 'balanceOf',
+  type: 'function',
+  stateMutability: 'view',
+  inputs: [{ name: 'user', type: 'address' }],
+  outputs: [{ name: '', type: 'uint256' }],
+}] as const
+
+const VISION_REAL_BALANCE_ABI = [{
+  name: 'realBalance',
+  type: 'function',
+  stateMutability: 'view',
+  inputs: [{ name: '', type: 'address' }],
+  outputs: [{ name: '', type: 'uint256' }],
+}] as const
+
+/**
+ * Deposit L3 USDC into Vision realBalance for a player.
+ * Mints USDC if needed, approves Vision, then calls depositBalance().
+ */
+export async function depositToVisionBalance(player: string, amount: bigint): Promise<void> {
+  await impersonateAccount(player)
+  await ensureUsdcBalance(player, amount)
+  await approveVision(player, amount)
+  const data = encodeFunctionData({
+    abi: VISION_DEPOSIT_BALANCE_ABI,
+    functionName: 'depositBalance',
+    args: [amount],
+  })
+  await l3SendTx(player, getVisionAddress(), data)
+}
+
+/**
+ * Read a player's total Vision balance (real + virtual).
+ */
+export async function getVisionPlayerBalance(player: string): Promise<bigint> {
+  const data = encodeFunctionData({
+    abi: VISION_BALANCE_OF_ABI,
+    functionName: 'balanceOf',
+    args: [player as `0x${string}`],
+  })
+  const result = await l3EthCall(getVisionAddress(), data)
+  return BigInt(result)
+}
+
+/**
+ * Read a player's real balance on Vision.
+ */
+export async function getVisionRealBalance(player: string): Promise<bigint> {
+  const data = encodeFunctionData({
+    abi: VISION_REAL_BALANCE_ABI,
+    functionName: 'realBalance',
+    args: [player as `0x${string}`],
+  })
+  const result = await l3EthCall(getVisionAddress(), data)
+  return BigInt(result)
 }

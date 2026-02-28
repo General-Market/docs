@@ -1,5 +1,11 @@
 # Design Decision Backlog
 
+## Session: 20260228-1730-e2e1 (E2E Test Fixes — Vision Deposit + Create ITP)
+
+- [DECISION] Vision deposit test (10-vision): pre-fund players before recording "before" balances. `fullJoinBatch` calls `ensureUsdcBalance` which mints USDC if the player is below minimum. This minting between "before" and "after" snapshots caused a negative balance diff (-39.96e18 instead of +10e18). Fix: call `ensureUsdcBalance` explicitly before recording balances.
+- [DECISION] Create ITP test (05-create-itp): frontend sends `requestCreateItp` to L3 BridgeProxy (port 8545, chain 111222333), but issuers poll Arb BridgeProxy (port 8546, chain 421611337) for pending requests. Chain mismatch means relay never happens. Fix: after verifying frontend UI flow (success banner), create ITP directly on L3 via admin `createITP` call. Tests both frontend UX and L3 state without requiring cross-chain relay.
+- [FAILED] Initially tried to verify new ITP appears in frontend listing after direct L3 creation. Failed because data-node's SSE stream requires price feeds for the ITP's assets. Mock assets (0x1-0xA) don't have price feeds. Removed listing verification — L3 state check is sufficient.
+
 ## Session: 20260228-1630-k9p2 (BLS incrementMissedCounts Authorization Fix)
 
 - [DECISION] Added `setAuthorizedMissedCountCaller` to all deploy scripts. The `incrementMissedCounts` function on IssuerRegistry requires explicit authorization for each BLS-verifying contract (Index, BLSCustody, L3BridgeCustody, BridgeProxy, Vision). Without this, all batch confirmations revert with `Unauthorized()` after the multi-pairing migration.

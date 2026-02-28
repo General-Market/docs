@@ -2,6 +2,8 @@
  * EIP-1193 mock wallet provider for E2E testing.
  * Injected via page.addInitScript() before any page JS runs.
  * Anvil auto-accepts eth_sendTransaction from known accounts — no signing needed.
+ *
+ * Supports multi-chain: Arb (8546) + L3 (8545) for Vision transactions.
  */
 
 export function getInjectWalletScript(
@@ -16,6 +18,21 @@ export function getInjectWalletScript(
   const CHAIN_ID_HEX = '0x' + CHAIN_ID.toString(16);
   const ADDRESS = ${JSON.stringify(address.toLowerCase())};
 
+  // Multi-chain RPC routing: chain ID → RPC URL
+  const L3_CHAIN_ID = 111222333;
+  const L3_RPC_URL = 'http://localhost:8545';
+  const ARB_CHAIN_ID = 421611337;
+  const ARB_RPC_URL = 'http://localhost:8546';
+
+  const CHAIN_RPCS = {
+    [CHAIN_ID]: RPC_URL,
+    [L3_CHAIN_ID]: L3_RPC_URL,
+    [ARB_CHAIN_ID]: ARB_RPC_URL,
+  };
+
+  let currentChainId = CHAIN_ID;
+  let currentChainIdHex = CHAIN_ID_HEX;
+
   const listeners = {};
 
   function emit(event, ...args) {
@@ -26,8 +43,12 @@ export function getInjectWalletScript(
     }
   }
 
+  function getCurrentRpcUrl() {
+    return CHAIN_RPCS[currentChainId] || RPC_URL;
+  }
+
   async function rpcCall(method, params) {
-    const res = await fetch(RPC_URL, {
+    const res = await fetch(getCurrentRpcUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params: params || [] }),
@@ -72,14 +93,26 @@ export function getInjectWalletScript(
           return window.__mockWalletConnected ? [ADDRESS] : [];
 
         case 'eth_chainId':
-          return CHAIN_ID_HEX;
+          return currentChainIdHex;
 
         case 'net_version':
-          return String(CHAIN_ID);
+          return String(currentChainId);
 
         case 'wallet_addEthereumChain':
-        case 'wallet_switchEthereumChain':
           return null;
+
+        case 'wallet_switchEthereumChain': {
+          // Actually switch the chain so transactions route to the correct RPC
+          const requestedChainId = parseInt(params[0].chainId, 16);
+          if (CHAIN_RPCS[requestedChainId]) {
+            currentChainId = requestedChainId;
+            currentChainIdHex = '0x' + requestedChainId.toString(16);
+            provider.chainId = currentChainIdHex;
+            provider.networkVersion = String(currentChainId);
+            emit('chainChanged', currentChainIdHex);
+          }
+          return null;
+        }
 
         case 'wallet_requestPermissions':
           return [{ parentCapability: 'eth_accounts' }];

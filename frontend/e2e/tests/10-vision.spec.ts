@@ -7,7 +7,7 @@
  * 3. Verify positions exist and USDC moved correctly
  *
  * Player 1 = TEST_USER (start.sh), Player 2 = VISION_BOT (start.sh)
- * All contract calls go to Arbitrum (Vision lives on Arb, same chain as wallet).
+ * Vision lives on L3 (port 8545), uses L3_WUSDC (18 decimals).
  */
 import { test, expect } from '../fixtures/wallet'
 import { checkRpc } from '../helpers/backend-api'
@@ -26,11 +26,13 @@ import {
   getL3UsdcBalance,
   getVisionUsdcBalance,
   getVisionAddress,
+  ensureUsdcBalance,
+  impersonateAccount,
   randomBets,
   oppositeBets,
 } from '../helpers/vision-api'
 
-const L3_RPC = 'http://localhost:8546'
+const L3_RPC = 'http://localhost:8545'
 const VISION_API = 'http://localhost:10001'
 
 // ── Health checks ────────────────────────────────────────────
@@ -87,7 +89,15 @@ test.describe('Vision', () => {
     const { batchId, configHash } = await findAvailableE2eBatch()
     const marketCount = 5 // E2E test batches use 5 markets by convention
 
-    // 2. Record initial balances
+    // 2. Pre-fund players so ensureUsdcBalance inside fullJoinBatch is a no-op
+    //    (minting between "before" and "after" would break the balance diff assertion)
+    const deposit = BigInt(10) * BigInt(10 ** 18) // 10 USDC (18 decimals, L3_WUSDC)
+    await impersonateAccount(PLAYER1)
+    await ensureUsdcBalance(PLAYER1, deposit)
+    await impersonateAccount(PLAYER2)
+    await ensureUsdcBalance(PLAYER2, deposit)
+
+    // Record initial balances (after pre-funding, before deposits)
     const [p1BalBefore, p2BalBefore, visionBalBefore] = await Promise.all([
       getL3UsdcBalance(PLAYER1),
       getL3UsdcBalance(PLAYER2),
@@ -95,8 +105,7 @@ test.describe('Vision', () => {
     ])
 
     // 3. Generate bets — Player 1 random, Player 2 opposite
-    const deposit = BigInt(10) * BigInt(10 ** 6) // 10 USDC (6 decimals, ARB_USDC)
-    const stakePerTick = BigInt(10 ** 6)          // 1 USDC per tick
+    const stakePerTick = BigInt(10 ** 18)          // 1 USDC per tick
 
     const p1Bets = randomBets(marketCount)
     const p2Bets = oppositeBets(p1Bets)

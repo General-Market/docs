@@ -21,8 +21,11 @@ export const L3_RPC_URL = 'http://localhost:8545';
 /** Data-node backend */
 export const BACKEND_URL = 'http://localhost:8200';
 
-/** Chain ID the frontend expects (NEXT_PUBLIC_CHAIN_ID) — unique dev ID to avoid MetaMask conflict with real Arbitrum */
-export const CHAIN_ID = 421611337;
+/** Chain ID the frontend expects — L3 is the primary chain (wagmi activeChain = indexL3) */
+export const CHAIN_ID = 111222333;
+
+/** Arb chain ID (secondary chain for cross-chain operations) */
+export const ARB_CHAIN_ID = 421611337;
 
 /** Known ITP ID from deployment */
 export const ITP_ID = '0x0000000000000000000000000000000000000000000000000000000000000001';
@@ -43,15 +46,29 @@ export const CONTRACTS = {
 export const test = base.extend<{ walletPage: Page }>({
   walletPage: async ({ context, page }, use) => {
     // Inject mock wallet into every page in the context (before any JS runs)
-    const script = getInjectWalletScript(RPC_URL, CHAIN_ID, TEST_ADDRESS);
+    // Use L3 as primary chain (wagmi activeChain = indexL3)
+    const script = getInjectWalletScript(L3_RPC_URL, CHAIN_ID, TEST_ADDRESS);
     await context.addInitScript({ content: script });
 
     // Intercept backend API calls that may 404 on stale binary
     await installApiInterceptors(page);
 
-    // Navigate to ITP listing to trigger the init script on the actual page.
-    // Most walletPage consumers are ITP tests; Vision tests override with page.goto('/').
-    await page.goto('/index');
+    // Navigate to a page to trigger the init script.
+    // ITP tests rely on starting at /index; Vision tests navigate away in their test body.
+    await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 }).catch(() => {
+      // If /index is slow (server under parallel test load), navigate to lightweight root
+      return page.goto('/', { waitUntil: 'domcontentloaded', timeout: 30_000 })
+    });
+
+    // Wait for React hydration — event handlers aren't attached until hydration completes.
+    // On heavy pages like /index (HomeClient with dynamic imports), this can take several seconds.
+    // Wait for Next.js __NEXT_DATA__ hydration marker to be set.
+    await page.waitForFunction(
+      () => !!(window as any).__NEXT_DATA__?.props,
+      { timeout: 15_000 }
+    ).catch(() => {});
+    // Extra buffer for wagmi connector initialization
+    await page.waitForTimeout(2_000);
 
     await use(page);
   },
