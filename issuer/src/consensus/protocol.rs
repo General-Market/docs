@@ -872,11 +872,23 @@ where
             }
         }
 
-        // Sign the batch proposal
-        let batch_bytes = self.encode_batch_proposal(cycle_number, &order_ids, &fills);
+        // Compute on-chain-compatible hash for BLS signing
+        // Must match Solidity: keccak256(abi.encode(block.chainid, address(this), cycleNumber, orderIds))
+        let (l3_chain_id, index_address) = {
+            let bridge_orch_guard = self.bridge_orchestrator.read().await;
+            let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
+                Error::BlsVerification("BridgeOrchestrator not configured for batch hash".to_string())
+            })?;
+            let orch = bridge_orch.read().await;
+            let config = orch.config();
+            (config.l3_chain_id, config.index_address)
+        };
+        let order_ids_u256: Vec<U256> = order_ids.iter().map(|&id| U256::from(id)).collect();
+        let on_chain_hash = build_confirm_batch_hash(l3_chain_id, index_address, cycle_number, &order_ids_u256);
+        let hash_bytes: [u8; 32] = on_chain_hash.into();
         let signature = self
             .bls_signer
-            .sign_with_keypair(&self.bls_keypair, &batch_bytes)?;
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)?;
 
         // Add our own signature to aggregator
         {
@@ -2578,10 +2590,23 @@ where
                 .unwrap_or(0)
         };
 
-        // Verify proposer signature using key registry
-        let batch_bytes = self.encode_batch_proposal(cycle_number, &order_ids, &fills);
+        // Compute on-chain-compatible hash for BLS verification
+        let (l3_chain_id, index_address) = {
+            let bridge_orch_guard = self.bridge_orchestrator.read().await;
+            let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
+                Error::BlsVerification("BridgeOrchestrator not configured for batch hash".to_string())
+            })?;
+            let orch = bridge_orch.read().await;
+            let config = orch.config();
+            (config.l3_chain_id, config.index_address)
+        };
+        let order_ids_u256: Vec<U256> = order_ids.iter().map(|&id| U256::from(id)).collect();
+        let on_chain_hash = build_confirm_batch_hash(l3_chain_id, index_address, cycle_number, &order_ids_u256);
+        let hash_bytes: [u8; 32] = on_chain_hash.into();
+
+        // Verify proposer signature using on-chain hash format
         if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
-            match self.bls_signer.verify(&leader_pubkey, &batch_bytes, &proposer_signature) {
+            match self.bls_signer.verify_message_hash(&leader_pubkey, &hash_bytes, &proposer_signature) {
                 Ok(true) => {
                     debug!(cycle_number, "Batch proposal signature verified");
                 }
@@ -2721,11 +2746,10 @@ where
             "Batch proposal validated, signing"
         );
 
-        // Sign the batch
-        let batch_bytes = self.encode_batch_proposal(cycle_number, &order_ids, &fills);
+        // Sign with on-chain-compatible hash (already computed above as hash_bytes)
         let signature = self
             .bls_signer
-            .sign_with_keypair(&self.bls_keypair, &batch_bytes)?;
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)?;
 
         // Send signature to leader
         let message = P2PMessage::BatchSign {

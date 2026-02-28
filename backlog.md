@@ -1,5 +1,15 @@
 # Design Decision Backlog
 
+## Session: 20260228-1400-m7x3 (BLS Multi-Pairing Verification)
+
+- [DECISION] BLS verification: replaced single aggregated-pubkey pairing with multi-pairing check (`e(-sig, G2) * e(H(msg), pk[0]) * ... == 1`). Handles any subset of signers correctly. Gas: ~147k vs ~113k for 2 signers.
+- [FAILED] Assembly-based `verifyBLSMulti` using manual `mload(0x40)` allocation — forge tests passed but E2E pairing precompile returned false. Root cause: `via_ir` optimizer conflicts with manual memory management in inline assembly. Fix: rewrote using `uint256[] memory input = new uint256[]()` with Solidity-level indexing.
+- [DECISION] Moved `decodeBitmap` and `verifyBLSMultiPairing` to external functions on IssuerRegistry instead of inline in BLSVerifier. Keeps Investment contract under EIP-170 24,576 byte limit (23,394 bytes).
+- [DECISION] Removed `issuer.status == 1` check from `getIssuerPubkeys`. BLSVerifier validates bitmask against historical snapshot's activeBitmask, so removed issuers active at snapshot time still need their pubkeys.
+- [DECISION] Threshold formula changed from `2n/3 + 1` to `ceil(2n/3)` = `(2n + 2) / 3`. For n=3: old=3 (all must sign), new=2 (2/3 sufficient).
+- [FAILED] EigenLayer G1-pubkey approach (G1 keys + G2 sigs, on-chain G1 subtraction via ecAdd precompile 0x06). Rejected in favor of multi-pairing for speed — would require changing all key/sig formats across issuer+contract stack.
+- [FAILED] All batch confirmations reverted with BLSVerifier__InvalidSignature (0x10aa8d54) after multi-pairing deployment. Root cause: consensus `leader_batch_consensus` and `handle_batch_proposal_as_follower` used `sign_with_keypair(encode_batch_proposal(...))` which signs custom P2P bytes with an extra keccak256 hash. On-chain contract expects `keccak256(abi.encode(chainId, address(this), cycleNumber, orderIds))` passed to `hashToG1`. Fix: switched to `sign_message_hash(build_confirm_batch_hash(...))` which matches the Solidity verification path exactly.
+
 ## Session: 20260228-0200-k8p2 (Vision First Deposit — Solidity Implementation)
 
 - [DECISION] Vision.sol: dual-balance architecture with `realBalance` and `virtualBalance` mappings. `_debitBalance` internal helper debits virtual first, then real. Batch payouts (claimRewards/withdraw/forceWithdraw) always credit `realBalance` since batch pool holds real L3 USDC.
