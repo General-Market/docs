@@ -4,6 +4,8 @@ import { pollUntil, getItpStateL3, getItpCountL3 } from '../helpers/backend-api'
 
 test.describe('Create ITP', () => {
   test('create ITP via frontend, issuer relays to L3', async ({ walletPage: page }) => {
+    test.setTimeout(240_000); // 4 min — issuer create pipeline takes multiple consensus cycles
+
     // 1. Connect wallet
     const connectBtn = connectWalletButton(page);
     await expect(connectBtn).toBeVisible({ timeout: 15_000 });
@@ -55,48 +57,42 @@ test.describe('Create ITP', () => {
     //     Button text changes to "Confirming..." then success banner appears
     await expect(page.getByText('ITP Request Created!').first()).toBeVisible({ timeout: 60_000 });
 
-    // 11. (Optional) Wait for the issuer to process the request and the new ITP to appear on L3.
-    //     In local dev, the issuer create pipeline may fail due to contract address
-    //     mismatches or BLS timing. The core UI flow is validated by steps 1-10.
-    try {
-      await pollUntil(
-        async () => {
-          try {
-            return await getItpCountL3();
-          } catch {
-            return itpCountBefore;
-          }
-        },
-        (count) => count > itpCountBefore,
-        90_000, // 90s timeout — issuer polls every ~5s
-        3_000,
-      );
-
-      // Verify the new ITP has assets
-      const newItpNum = (await getItpCountL3());
-      const newItpId = '0x' + newItpNum.toString(16).padStart(64, '0');
-      const newState = await getItpStateL3(newItpId);
-      expect(newState.assets.length).toBeGreaterThan(0);
-
-      // 12. Refresh and verify the new ITP appears in the listing
-      await expect(async () => {
-        await page.reload();
-        await expect(itpCard(page).first()).toBeVisible({ timeout: 10_000 });
-        const visible = await page.getByText('$E2ET').first().isVisible().catch(() => false);
-        if (!visible) {
-          const nextBtn = page.locator('button:has-text("→")').last();
-          while (await nextBtn.isEnabled().catch(() => false)) {
-            await nextBtn.click();
-            const found = await page.getByText('$E2ET').first().isVisible().catch(() => false);
-            if (found) return;
-          }
-          throw new Error('$E2ET not found on any page');
+    // 11. Wait for issuer consensus to process the create request on L3
+    await pollUntil(
+      async () => {
+        try {
+          return await getItpCountL3();
+        } catch {
+          return itpCountBefore;
         }
-      }).toPass({ timeout: 60_000, intervals: [5_000] });
+      },
+      (count) => count > itpCountBefore,
+      120_000, // 120s timeout — issuer create pipeline takes multiple consensus cycles
+      3_000,
+    );
 
-      await expect(page.getByText('$E2ET').first()).toBeVisible();
-    } catch {
-      console.log('L3 ITP creation not completed (issuer pipeline issue in local dev) — UI flow verified');
-    }
+    // 12. Verify the new ITP has assets
+    const newItpNum = (await getItpCountL3());
+    const newItpId = '0x' + newItpNum.toString(16).padStart(64, '0');
+    const newState = await getItpStateL3(newItpId);
+    expect(newState.assets.length).toBeGreaterThan(0);
+
+    // 13. Refresh and verify the new ITP appears in the listing
+    await expect(async () => {
+      await page.reload();
+      await expect(itpCard(page).first()).toBeVisible({ timeout: 10_000 });
+      const visible = await page.getByText('$E2ET').first().isVisible().catch(() => false);
+      if (!visible) {
+        const nextBtn = page.locator('button:has-text("→")').last();
+        while (await nextBtn.isEnabled().catch(() => false)) {
+          await nextBtn.click();
+          const found = await page.getByText('$E2ET').first().isVisible().catch(() => false);
+          if (found) return;
+        }
+        throw new Error('$E2ET not found on any page');
+      }
+    }).toPass({ timeout: 60_000, intervals: [5_000] });
+
+    await expect(page.getByText('$E2ET').first()).toBeVisible();
   });
 });

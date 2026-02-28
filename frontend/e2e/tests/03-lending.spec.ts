@@ -5,7 +5,7 @@ import {
   itpCard,
   lendingModal,
 } from '../helpers/selectors';
-import { getUserState, mintBridgedItp, rebalanceItp } from '../helpers/backend-api';
+import { getL3UserShares, mintL3Shares, rebalanceItp } from '../helpers/backend-api';
 
 test.describe('Lending (Deposit → Borrow → Repay → Withdraw)', () => {
   test('full lending cycle', async ({ walletPage: page }) => {
@@ -21,10 +21,10 @@ test.describe('Lending (Deposit → Borrow → Repay → Withdraw)', () => {
     // Wait for ITP listing
     await expect(itpCard(page).first()).toBeVisible({ timeout: 30_000 });
 
-    // Ensure user has ITP shares (mint if bridge relay hasn't completed)
-    const preState = await getUserState(TEST_ADDRESS, ITP_ID);
-    if (BigInt(preState.bridged_itp_balance) === 0n) {
-      await mintBridgedItp(TEST_ADDRESS, ITP_ID, 100n * 10n ** 18n);
+    // Ensure user has L3 ITP shares (mint if needed)
+    const shares = await getL3UserShares(TEST_ADDRESS, ITP_ID);
+    if (shares === 0n) {
+      await mintL3Shares(TEST_ADDRESS, ITP_ID, 100n * 10n ** 18n);
     }
 
     // ── Open Lending Modal ───────────────────────────────────

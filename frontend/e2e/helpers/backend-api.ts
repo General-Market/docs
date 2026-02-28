@@ -336,6 +336,56 @@ export async function mintL3Shares(
   }
 }
 
+/**
+ * Mint L3_WUSDC (18 decimals) to a user on L3 Anvil.
+ * Test L3_WUSDC allows the deployer to call mint(address,uint256) directly.
+ */
+export async function mintL3Usdc(
+  user: string,
+  amount: bigint,
+): Promise<void> {
+  // mint(address,uint256) selector = 0x40c10f19
+  const userPadded = user.replace('0x', '').toLowerCase().padStart(64, '0');
+  const amountHex = amount.toString(16).padStart(64, '0');
+  const data = `0x40c10f19${userPadded}${amountHex}`;
+
+  await l3RpcCall('eth_sendTransaction', [{
+    from: DEPLOYER,
+    to: L3_WUSDC,
+    data,
+    gas: '0x100000',
+  }]);
+}
+
+/**
+ * Read L3 user shares for an ITP via eth_call on L3 Index.
+ */
+export async function getL3UserShares(user: string, itpId: string): Promise<bigint> {
+  const calldata = encodeFunctionData({
+    abi: INDEX_ABI,
+    functionName: 'getUserShares',
+    args: [itpId as `0x${string}`, user as `0x${string}`],
+  });
+  const result = await l3RpcCall('eth_call', [
+    { to: L3_INDEX, data: calldata },
+    'latest',
+  ]) as string;
+  return BigInt(result);
+}
+
+/**
+ * Read L3_WUSDC balance for a user via eth_call.
+ */
+export async function getL3UsdcBalance(user: string): Promise<bigint> {
+  const paddedAddr = user.toLowerCase().replace('0x', '').padStart(64, '0');
+  const data = `0x70a08231${paddedAddr}`;
+  const result = await l3RpcCall('eth_call', [
+    { to: L3_WUSDC, data },
+    'latest',
+  ]) as string;
+  return BigInt(result);
+}
+
 /** Compute keccak256 of hex data using eth RPC (avoids JS crypto dependency) */
 async function keccak256Hex(data: string): Promise<string> {
   // Use L3 Anvil's web3_sha3 method
@@ -347,6 +397,7 @@ async function keccak256Hex(data: string): Promise<string> {
 const L3_RPC = 'http://localhost:8545';
 const L3_INDEX = _deployment?.Index ?? '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
 const L3_ISSUER_REGISTRY = _deployment?.IssuerRegistry ?? '0x610178dA211FEF7D417bC0e6FeD39F05609AD788';
+const L3_WUSDC = _deployment?.L3_WUSDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
 
 async function l3RpcCall(method: string, params: unknown[]): Promise<unknown> {
   const res = await fetch(L3_RPC, {
@@ -948,4 +999,4 @@ export function startArbBlockMiner(intervalMs = 1000): () => void {
 }
 
 /** Expose erc20BalanceOf and contract addresses for direct use in tests */
-export { erc20BalanceOf, BRIDGED_ITP, ARB_USDC };
+export { erc20BalanceOf, BRIDGED_ITP, ARB_USDC, L3_WUSDC };

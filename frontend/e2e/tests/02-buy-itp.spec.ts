@@ -1,9 +1,11 @@
 import { test, expect, TEST_ADDRESS, ITP_ID } from '../fixtures/wallet';
 import { connectWalletButton, buyButton, buyModal, itpCard } from '../helpers/selectors';
-import { mintBridgedItp } from '../helpers/backend-api';
+import { getL3UserShares } from '../helpers/backend-api';
 
 test.describe('Buy ITP', () => {
   test('full buy flow: mint USDC if needed, approve, buy, wait for fill', async ({ walletPage: page }) => {
+    test.setTimeout(240_000); // 4 min — issuer consensus can take 30-90s
+
     // 1. Connect wallet
     const connectBtn = connectWalletButton(page);
     await expect(connectBtn).toBeVisible({ timeout: 15_000 });
@@ -15,6 +17,9 @@ test.describe('Buy ITP', () => {
     // 2. Wait for ITP listing to load
     await expect(itpCard(page).first()).toBeVisible({ timeout: 30_000 });
 
+    // Record initial L3 shares before buy
+    const sharesBefore = await getL3UserShares(TEST_ADDRESS, ITP_ID);
+
     // 3. Click Buy on first ITP
     const buyBtn = buyButton(page);
     await expect(buyBtn).toBeVisible({ timeout: 10_000 });
@@ -23,8 +28,7 @@ test.describe('Buy ITP', () => {
     // 4. Buy modal should appear (heading is "Buy {itpName}")
     await expect(page.getByRole('heading', { name: /^Buy\s/ })).toBeVisible({ timeout: 10_000 });
 
-    // 5. If USDC balance is 0, mint test USDC
-    // Wait for balance to fully load (not the initial 0.00 flash)
+    // 5. If USDC balance is 0, mint test USDC (now L3_WUSDC, 18 decimals)
     await expect(page.getByText(/Balance:.*USDC/)).toBeVisible({ timeout: 10_000 });
     await page.waitForTimeout(3_000); // let RPC balance query settle
     const balanceText = await page.getByText(/Balance:.*USDC/).textContent();
@@ -55,15 +59,16 @@ test.describe('Buy ITP', () => {
     await submitBtn.click();
 
     // 9. Wait for buy tx to be confirmed (stepper enters "Process" phase)
-    await expect(page.getByText(/Relaying|Bridging|Batching/)).toBeVisible({ timeout: 30_000 });
+    // Direct L3 path: order goes to Index.submitOrder, issuers batch + fill on L3
+    await expect(page.getByText(/Batching|Filling/)).toBeVisible({ timeout: 30_000 });
 
-    // 10. Simulate the cross-chain pipeline: mint BridgedITP shares directly.
-    // In local dev, the full issuer consensus pipeline (Arb→L3 bridge, batch, fill,
-    // L3→Arb bridge) doesn't complete automatically. We mint BridgedITP directly
-    // via Anvil impersonation. The modal detects the balance increase and shows "Done".
-    await mintBridgedItp(TEST_ADDRESS, ITP_ID, 100n * 10n ** 18n);
+    // 10. Wait for real issuer consensus pipeline to fill the order.
+    // Issuers read L3 Index._orders every 200ms cycle, batch, and fill.
+    // Modal detects L3 shares increase → shows "Buy More".
+    await expect(buyModal.orderSubmittedBanner(page)).toBeVisible({ timeout: 180_000 });
 
-    // 11. Modal detects BridgedITP balance increase → shows "Buy More"
-    await expect(buyModal.orderSubmittedBanner(page)).toBeVisible({ timeout: 60_000 });
+    // 11. Verify L3 shares actually increased
+    const sharesAfter = await getL3UserShares(TEST_ADDRESS, ITP_ID);
+    expect(sharesAfter).toBeGreaterThan(sharesBefore);
   });
 });

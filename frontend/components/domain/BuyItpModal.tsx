@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { useAccount, useWaitForTransactionReceipt, usePublicClient } from 'wagmi'
+import { useAccount, useWaitForTransactionReceipt, usePublicClient, useReadContract } from 'wagmi'
 import { parseUnits, formatUnits, decodeEventLog } from 'viem'
-import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
-import { ARB_CUSTODY_ABI, ERC20_ABI, INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
+import { INDEX_PROTOCOL, COLLATERAL_DECIMALS } from '@/lib/contracts/addresses'
+import { ERC20_ABI, INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { TransactionStepper } from '@/components/ui/TransactionStepper'
@@ -20,33 +20,19 @@ import { useTranslations } from 'next-intl'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 
 /**
- * Buy flow micro-steps — 10 steps mapped to 3 visible steps + Done:
+ * Buy flow micro-steps — Direct L3 path (4 steps + Done):
  *
  * Step 1 "Submit":   APPROVE (0), SUBMIT (1)
- * Step 2 "Process":  BRIDGE_TO_L3 (2), RELAY (3), BATCH (4), FILL (5)
- * Step 3 "Deliver":  RECORD_COLLATERAL (6), BRIDGE_TO_ARB (7), COMPLETE_BRIDGE (8), MINT_SHARES (9)
- * Done:              DONE (10)
+ * Step 2 "Process":  BATCH (2), FILL (3)
+ * Done:              DONE (4)
  */
 enum BuyMicro {
   APPROVE = 0,
   SUBMIT = 1,
-  BRIDGE_TO_L3 = 2,
-  RELAY = 3,
-  BATCH = 4,
-  FILL = 5,
-  RECORD_COLLATERAL = 6,
-  BRIDGE_TO_ARB = 7,
-  COMPLETE_BRIDGE = 8,
-  MINT_SHARES = 9,
-  DONE = 10,
+  BATCH = 2,
+  FILL = 3,
+  DONE = 4,
 }
-
-// Maps visible step index → [startMicro, endMicro) range
-const STEP_RANGES: [number, number][] = [
-  [BuyMicro.APPROVE, BuyMicro.BRIDGE_TO_L3],       // Submit: 0-1
-  [BuyMicro.BRIDGE_TO_L3, BuyMicro.RECORD_COLLATERAL], // Process: 2-5
-  [BuyMicro.RECORD_COLLATERAL, BuyMicro.DONE],      // Deliver: 6-9
-]
 
 const MINT_ABI = [
   {
@@ -77,20 +63,13 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const VISIBLE_STEPS: VisibleStep[] = [
     { label: t('steps.submit') },
     { label: t('steps.process') },
-    { label: t('steps.deliver') },
   ]
 
   const MICRO_LABELS: Record<number, string | ((ctx: { isPending: boolean }) => string)> = {
     [BuyMicro.APPROVE]: (ctx) => ctx.isPending ? t('micro_steps.approve_pending') : t('micro_steps.approve_confirming'),
     [BuyMicro.SUBMIT]: (ctx) => ctx.isPending ? t('micro_steps.submit_pending') : t('micro_steps.submit_confirming'),
-    [BuyMicro.BRIDGE_TO_L3]: () => t('micro_steps.bridge_to_l3'),
-    [BuyMicro.RELAY]: () => t('micro_steps.relay'),
     [BuyMicro.BATCH]: () => t('micro_steps.batch'),
     [BuyMicro.FILL]: () => t('micro_steps.fill'),
-    [BuyMicro.RECORD_COLLATERAL]: () => t('micro_steps.record_collateral'),
-    [BuyMicro.BRIDGE_TO_ARB]: () => t('micro_steps.bridge_to_arb'),
-    [BuyMicro.COMPLETE_BRIDGE]: () => t('micro_steps.complete_bridge'),
-    [BuyMicro.MINT_SHARES]: () => t('micro_steps.mint_shares'),
     [BuyMicro.DONE]: () => t('micro_steps.shares_received'),
   }
 
@@ -100,7 +79,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     { value: 2, label: '3%', description: t('slippage_relaxed') },
   ]
 
-  // SSE-driven order & balance tracking (replaces L3 polling)
+  // SSE-driven order & balance tracking
   const sseOrders = useSSEOrders()
   const sseBalances = useSSEBalances()
 
@@ -110,27 +89,19 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const [deadlineHours, setDeadlineHours] = useState(1)
   const [micro, setMicro] = useState<number>(-1) // -1 = INPUT mode
   const [orderId, setOrderId] = useState<bigint | null>(null)
-  const [arbOrderId, setArbOrderId] = useState<bigint | null>(null)
   const [txError, setTxError] = useState<string | null>(null)
   const [fillPrice, setFillPrice] = useState<bigint | null>(null)
   const [fillAmount, setFillAmount] = useState<bigint | null>(null)
-  const [initialBridgedItp, setInitialBridgedItp] = useState<string | null>(null)
   const [initialSharesBn, setInitialSharesBn] = useState<bigint | null>(null)
   const [skippedApproval, setSkippedApproval] = useState(false)
-  const [relayStalled, setRelayStalled] = useState(false)
+  const [processStalled, setProcessStalled] = useState(false)
 
   // Saved tx hashes
   const [savedApproveHash, setSavedApproveHash] = useState<string | null>(null)
   const [savedBuyHash, setSavedBuyHash] = useState<string | null>(null)
   const [submittedLimitPrice, setSubmittedLimitPrice] = useState<string>('')
-  // Keeper tx hashes
-  const [relayTxHash, setRelayTxHash] = useState<string | null>(null)
   const [batchTxHash, setBatchTxHash] = useState<string | null>(null)
   const [fillTxHash, setFillTxHash] = useState<string | null>(null)
-  const [collateralTxHash, setCollateralTxHash] = useState<string | null>(null)
-  const [bridgeBackTxHash, setBridgeBackTxHash] = useState<string | null>(null)
-  const [completeBridgeTxHash, setCompleteBridgeTxHash] = useState<string | null>(null)
-  const [mintTxHash, setMintTxHash] = useState<string | null>(null)
 
   const {
     writeContract: writeApprove,
@@ -161,9 +132,40 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
   const { capture } = usePostHogTracker()
 
+  // Keep useUserState for ITP name/symbol (fetches from backend)
   const userState = useUserState(itpId)
   const itpName = userState.bridgedItpName || 'ITP'
   const itpSymbol = userState.bridgedItpSymbol || ''
+
+  // L3 USDC balance (18 decimals) — read directly from chain
+  const { data: l3UsdcRaw, refetch: refetchL3Usdc } = useReadContract({
+    address: INDEX_PROTOCOL.l3Usdc,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address && isConnected, refetchInterval: 5_000 },
+  })
+  const usdcBalance = (l3UsdcRaw as bigint) ?? 0n
+
+  // L3 USDC allowance for Index contract
+  const { data: l3AllowanceRaw, refetch: refetchL3Allowance } = useReadContract({
+    address: INDEX_PROTOCOL.l3Usdc,
+    abi: ERC20_ABI,
+    functionName: 'allowance',
+    args: address ? [address, INDEX_PROTOCOL.index] : undefined,
+    query: { enabled: !!address && isConnected, refetchInterval: 5_000 },
+  })
+  const usdcAllowance = (l3AllowanceRaw as bigint) ?? 0n
+
+  // L3 user shares for this ITP
+  const { data: l3SharesRaw } = useReadContract({
+    address: INDEX_PROTOCOL.index,
+    abi: INDEX_ABI,
+    functionName: 'getUserShares',
+    args: address ? [itpId as `0x${string}`, address] : undefined,
+    query: { enabled: !!address && isConnected && !!itpId, refetchInterval: 5_000 },
+  })
+  const userShares = (l3SharesRaw as bigint) ?? 0n
 
   const { navPerShare, navPerShareBn, totalAssetCount, pricedAssetCount, isLoading: isNavLoading } = useItpNav(itpId)
 
@@ -190,10 +192,10 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     }
   }, [amount]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const usdcBalance = userState.usdcBalance
-  const usdcAllowance = userState.usdcAllowanceCustody
-  const refetchAllowance = userState.refetch
-  const userShares = userState.bridgedItpBalance
+  const refetchAllowance = useCallback(async () => {
+    await refetchL3Allowance()
+    await refetchL3Usdc()
+  }, [refetchL3Allowance, refetchL3Usdc])
 
   const {
     writeContract: writeMint,
@@ -204,24 +206,25 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   } = useChainWriteContract()
   const { isSuccess: isMintSuccess } = useWaitForTransactionReceipt({ hash: mintHashTx })
 
+  // Mint L3_WUSDC (18 decimals) for testing
   const handleMintTestUsdc = useCallback(() => {
     if (!address) return
     resetMint()
     writeMint({
-      address: INDEX_PROTOCOL.arbUsdc,
+      address: INDEX_PROTOCOL.l3Usdc,
       abi: MINT_ABI,
       functionName: 'mint',
-      args: [address, parseUnits('10000', 6)],
+      args: [address, parseUnits('10000', COLLATERAL_DECIMALS)],
     })
   }, [address, writeMint, resetMint])
 
-  const parsedAmount = amount ? parseUnits(amount, 6) : 0n
-  const needsApproval = usdcAllowance !== undefined && parsedAmount > 0n && (usdcAllowance) < parsedAmount
+  // Amount in 18 decimals (L3_WUSDC)
+  const parsedAmount = amount ? parseUnits(amount, COLLATERAL_DECIMALS) : 0n
+  const needsApproval = parsedAmount > 0n && usdcAllowance < parsedAmount
 
   const snapshotBalances = useCallback(() => {
-    setInitialBridgedItp(sseBalances?.bridged_itp ?? null)
     setInitialSharesBn(userShares)
-  }, [sseBalances, userShares])
+  }, [userShares])
 
   const handleApprove = useCallback(() => {
     if (!amount) return
@@ -235,11 +238,12 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     setSkippedApproval(false)
     snapshotBalances()
     setMicro(BuyMicro.APPROVE)
+    // Approve L3_WUSDC → Index contract
     writeApprove({
-      address: INDEX_PROTOCOL.arbUsdc,
+      address: INDEX_PROTOCOL.l3Usdc,
       abi: ERC20_ABI,
       functionName: 'approve',
-      args: [INDEX_PROTOCOL.arbCustody, parsedAmount],
+      args: [INDEX_PROTOCOL.index, parsedAmount],
     })
   }, [amount, parsedAmount, writeApprove, snapshotBalances])
 
@@ -271,12 +275,14 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     const priceBn = limitPrice ? parseUnits(limitPrice, 18) : 0n
     setSubmittedLimitPrice(limitPrice)
 
+    // Direct L3: Index.submitOrder(itpId, BUY=0, amount, limitPrice, slippageTier, deadline)
     writeBuy({
-      address: INDEX_PROTOCOL.arbCustody,
-      abi: ARB_CUSTODY_ABI,
-      functionName: 'buyITPFromArbitrum',
+      address: INDEX_PROTOCOL.index,
+      abi: INDEX_ABI,
+      functionName: 'submitOrder',
       args: [
         itpId as `0x${string}`,
+        0, // side = BUY
         parsedAmount,
         priceBn,
         BigInt(slippageTier),
@@ -296,81 +302,53 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     })
   }, [isApproveSuccess, approveHash, refetchAllowance, resetApprove, handleBuy])
 
-  // Buy success -> save hash, extract Arb orderId, advance to BRIDGE_TO_L3
+  // Buy success -> save hash, extract orderId from OrderSubmitted, advance to BATCH
   useEffect(() => {
     if (!isBuySuccess || !buyReceipt || buyHandled.current) return
     buyHandled.current = true
     if (buyHash) setSavedBuyHash(buyHash)
 
-    let foundL3OrderId: bigint | null = null
+    // Extract orderId from OrderSubmitted event on Index contract
     for (const log of buyReceipt.logs) {
       if (log.address.toLowerCase() === INDEX_PROTOCOL.index.toLowerCase()) {
         try {
           const decoded = decodeEventLog({ abi: INDEX_ABI, data: log.data, topics: log.topics })
           if (decoded.eventName === 'OrderSubmitted') {
-            foundL3OrderId = (decoded.args as any).orderId as bigint
+            setOrderId((decoded.args as any).orderId as bigint)
             break
           }
         } catch {}
       }
     }
 
-    if (foundL3OrderId === null) {
-      for (const log of buyReceipt.logs) {
-        if (log.address.toLowerCase() === INDEX_PROTOCOL.arbCustody.toLowerCase()) {
-          try {
-            const decoded = decodeEventLog({ abi: ARB_CUSTODY_ABI, data: log.data, topics: log.topics })
-            if (decoded.eventName === 'CrossChainOrderCreated') {
-              setArbOrderId((decoded.args as any).orderId as bigint)
-              break
-            }
-          } catch {}
-        }
-      }
-    }
-
-    if (foundL3OrderId !== null) {
-      setOrderId(foundL3OrderId)
-      setMicro(BuyMicro.BATCH) // Already on L3, skip bridge+relay
-    } else {
-      setMicro(BuyMicro.BRIDGE_TO_L3) // Cross-chain: start bridging
-    }
+    // Direct L3 → skip straight to BATCH (order is already on L3, no bridging)
+    setMicro(BuyMicro.BATCH)
     resetBuy()
-    // Persist pending order so portfolio shows it even if modal is closed
+    // Persist pending order
     try {
       const pending = JSON.parse(localStorage.getItem('index-pending-orders') || '[]')
-      pending.push({ itpId, side: 0, amount, timestamp: Date.now(), arbTxHash: buyHash })
+      pending.push({ itpId, side: 0, amount, timestamp: Date.now(), txHash: buyHash })
       localStorage.setItem('index-pending-orders', JSON.stringify(pending))
     } catch {}
-    // Signal portfolio to refetch orders immediately
     window.dispatchEvent(new Event('portfolio-refresh'))
   }, [isBuySuccess, buyReceipt, resetBuy, itpId, amount, buyHash])
 
-  // BRIDGE_TO_L3: timer-based advance (bridge takes ~3s after submit)
+  // Stall detection: show "safe to close" message after 60s at BATCH/FILL
   useEffect(() => {
-    if (micro !== BuyMicro.BRIDGE_TO_L3) return
-    const timer = setTimeout(() => setMicro(BuyMicro.RELAY), 3000)
-    return () => clearTimeout(timer)
-  }, [micro])
-
-  // Stall detection: show "safe to close" message after 60s at RELAY/BATCH/FILL
-  useEffect(() => {
-    if (micro < BuyMicro.RELAY || micro >= BuyMicro.RECORD_COLLATERAL) {
-      setRelayStalled(false)
+    if (micro < BuyMicro.BATCH || micro >= BuyMicro.DONE) {
+      setProcessStalled(false)
       return
     }
-    const timer = setTimeout(() => setRelayStalled(true), 60_000)
+    const timer = setTimeout(() => setProcessStalled(true), 60_000)
     return () => clearTimeout(timer)
   }, [micro])
 
-  // SSE-driven order tracking: RELAY -> BATCH -> FILL -> RECORD_COLLATERAL
-  // Finds the matching order in sseOrders by order_id (if known) or by itpId + side=0 (buy)
+  // SSE-driven order tracking: BATCH -> FILL -> DONE
   const trackedOrder = useMemo((): UserOrder | undefined => {
-    if (micro < BuyMicro.RELAY || micro >= BuyMicro.RECORD_COLLATERAL) return undefined
+    if (micro < BuyMicro.BATCH || micro >= BuyMicro.DONE) return undefined
     if (orderId !== null) {
       return sseOrders.find(o => o.order_id === Number(orderId))
     }
-    // Before we know the L3 orderId, match by itpId and side=0 (buy), pick most recent
     const candidates = sseOrders
       .filter(o => o.itp_id === itpId && o.side === 0)
       .sort((a, b) => b.timestamp - a.timestamp)
@@ -378,48 +356,28 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   }, [sseOrders, orderId, micro, itpId])
 
   useEffect(() => {
-    if (!trackedOrder || micro < BuyMicro.RELAY || micro >= BuyMicro.RECORD_COLLATERAL) return
+    if (!trackedOrder || micro < BuyMicro.BATCH || micro >= BuyMicro.DONE) return
 
-    // Capture orderId when first seen
     if (orderId === null) {
       setOrderId(BigInt(trackedOrder.order_id))
     }
 
-    // Advance through RELAY -> BATCH based on order status
-    if (micro === BuyMicro.RELAY) {
-      setMicro(BuyMicro.BATCH)
-    }
-
     const status = trackedOrder.status
 
-    if (status >= 2 && micro < BuyMicro.RECORD_COLLATERAL) {
-      // FILLED — capture fill details from SSE
+    if (status >= 2 && micro < BuyMicro.DONE) {
+      // FILLED
       if (trackedOrder.fill_price) {
         try { setFillPrice(BigInt(trackedOrder.fill_price)) } catch {}
       }
       if (trackedOrder.fill_amount) {
         try { setFillAmount(BigInt(trackedOrder.fill_amount)) } catch {}
       }
-      setMicro(BuyMicro.RECORD_COLLATERAL)
+      setMicro(BuyMicro.DONE)
     } else if (status >= 1 && micro < BuyMicro.FILL) {
       // BATCHED
       setMicro(BuyMicro.FILL)
     }
   }, [trackedOrder, micro, orderId])
-
-  // RECORD_COLLATERAL: timer-based advance (~2s after fill)
-  useEffect(() => {
-    if (micro !== BuyMicro.RECORD_COLLATERAL) return
-    const timer = setTimeout(() => setMicro(BuyMicro.BRIDGE_TO_ARB), 2000)
-    return () => clearTimeout(timer)
-  }, [micro])
-
-  // BRIDGE_TO_ARB: timer-based advance
-  useEffect(() => {
-    if (micro !== BuyMicro.BRIDGE_TO_ARB) return
-    const timer = setTimeout(() => setMicro(BuyMicro.COMPLETE_BRIDGE), 3000)
-    return () => clearTimeout(timer)
-  }, [micro])
 
   // --- PostHog: buy_step_reached ---
   useEffect(() => {
@@ -431,51 +389,26 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     })
   }, [micro]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Detect BridgedITP balance increase — works at ANY processing step.
-  // Issuers may complete the entire cross-chain buy in a single batch cycle,
-  // so we check from RELAY onward, not just at COMPLETE_BRIDGE.
-  // Uses both SSE balances and REST-polled userShares as fallback.
+  // Detect L3 shares increase — completion signal (fallback when SSE unavailable)
   useEffect(() => {
-    if (micro < BuyMicro.RELAY || micro >= BuyMicro.DONE) return
+    if (micro < BuyMicro.BATCH || micro >= BuyMicro.DONE) return
 
-    let increased = false
-
-    // Check SSE balances (instant)
-    if (sseBalances && initialBridgedItp !== null) {
-      try {
-        if (BigInt(sseBalances.bridged_itp) > BigInt(initialBridgedItp)) {
-          increased = true
-        }
-      } catch {}
-    }
-
-    // Fallback: check REST-polled userShares (5s poll interval)
-    if (!increased && initialSharesBn !== null && userShares > initialSharesBn) {
-      increased = true
-    }
-
-    if (increased) {
-      // Clean up pending order from localStorage
+    if (initialSharesBn !== null && userShares > initialSharesBn) {
+      // Clean up pending order
       try {
         const pending = JSON.parse(localStorage.getItem('index-pending-orders') || '[]')
         localStorage.setItem('index-pending-orders', JSON.stringify(
-          pending.filter((o: any) => o.arbTxHash !== savedBuyHash)
+          pending.filter((o: any) => o.txHash !== savedBuyHash)
         ))
       } catch {}
-      if (micro < BuyMicro.MINT_SHARES) {
-        setMicro(BuyMicro.MINT_SHARES)
-        setTimeout(() => setMicro(BuyMicro.DONE), 1000)
-      } else {
-        setMicro(BuyMicro.DONE)
-      }
+      setMicro(BuyMicro.DONE)
     }
-  }, [micro, sseBalances, initialBridgedItp, userShares, initialSharesBn, savedBuyHash])
+  }, [micro, userShares, initialSharesBn, savedBuyHash])
 
   // Toast notification on fill
   useEffect(() => {
     if (micro === BuyMicro.DONE && !toastFired.current) {
       toastFired.current = true
-      // --- PostHog: buy_completed ---
       capture('buy_completed', {
         itp_id: itpId, amount_usd: amount,
         fill_price: fillPrice ? formatUnits(fillPrice, 18) : null,
@@ -497,7 +430,6 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     if (approveError) {
       const msg = approveError.message || 'Approval failed'
       const shortMsg = msg.includes('Details:') ? msg.split('Details:')[1].trim().slice(0, 200) : msg.slice(0, 200)
-      // --- PostHog: buy_failed (approve) ---
       capture('buy_failed', {
         itp_id: itpId, step_name: micro >= 0 ? BuyMicro[micro] : 'INPUT', step_index: micro,
         error_message: shortMsg, time_since_submit_ms: buyStartTime.current ? Date.now() - buyStartTime.current : 0,
@@ -512,7 +444,6 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     if (buyError) {
       const msg = buyError.message || 'Buy transaction failed'
       const shortMsg = msg.includes('Details:') ? msg.split('Details:')[1].trim().slice(0, 200) : msg.slice(0, 200)
-      // --- PostHog: buy_failed (buy tx) ---
       capture('buy_failed', {
         itp_id: itpId, step_name: micro >= 0 ? BuyMicro[micro] : 'INPUT', step_index: micro,
         error_message: shortMsg, time_since_submit_ms: buyStartTime.current ? Date.now() - buyStartTime.current : 0,
@@ -533,13 +464,8 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const clearTxHashes = useCallback(() => {
     setSavedApproveHash(null)
     setSavedBuyHash(null)
-    setRelayTxHash(null)
     setBatchTxHash(null)
     setFillTxHash(null)
-    setCollateralTxHash(null)
-    setBridgeBackTxHash(null)
-    setCompleteBridgeTxHash(null)
-    setMintTxHash(null)
   }, [])
 
   const handleCancel = useCallback(() => {
@@ -555,11 +481,9 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const handleReset = useCallback(() => {
     setMicro(-1)
     setOrderId(null)
-    setArbOrderId(null)
     setAmount('')
     setFillPrice(null)
     setFillAmount(null)
-    setInitialBridgedItp(null)
     setInitialSharesBn(null)
     setSkippedApproval(false)
     clearTxHashes()
@@ -573,7 +497,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     onClose()
   }, [capture, itpId, micro, amount, onClose])
 
-  const formattedBalance = usdcBalance > 0n ? formatUnits(usdcBalance, 6) : '0'
+  const formattedBalance = usdcBalance > 0n ? formatUnits(usdcBalance, COLLATERAL_DECIMALS) : '0'
   const isProcessing = isApprovePending || isApproveConfirming || isBuyPending || isBuyConfirming
   const isPending = isApprovePending || isBuyPending
   const isDone = micro === BuyMicro.DONE
@@ -592,13 +516,6 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
   // --- Stepper data ---
 
-  const effectiveMicro = useMemo(() => {
-    if (micro < 0) return 0
-    // If approval was skipped, shift micro-step 0 out
-    if (skippedApproval && micro === BuyMicro.SUBMIT) return BuyMicro.SUBMIT
-    return micro
-  }, [micro, skippedApproval])
-
   const microSteps = useMemo((): MicroStep[] => {
     const getLabel = (m: number): string => {
       const desc = MICRO_LABELS[m]
@@ -612,24 +529,15 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
       steps.push({
         label: getLabel(BuyMicro.APPROVE),
         txHash: savedApproveHash ?? undefined,
-        explorerUrl: savedApproveHash ? getTxUrl(savedApproveHash, 'arb') : undefined,
-        chain: 'arb',
+        explorerUrl: savedApproveHash ? getTxUrl(savedApproveHash, 'l3') : undefined,
+        chain: 'l3',
       })
     }
 
     steps.push({
       label: getLabel(BuyMicro.SUBMIT),
       txHash: savedBuyHash ?? undefined,
-      explorerUrl: savedBuyHash ? getTxUrl(savedBuyHash, 'arb') : undefined,
-      chain: 'arb',
-    })
-
-    steps.push({ label: getLabel(BuyMicro.BRIDGE_TO_L3), chain: 'l3' })
-
-    steps.push({
-      label: getLabel(BuyMicro.RELAY),
-      txHash: relayTxHash ?? undefined,
-      explorerUrl: relayTxHash ? getTxUrl(relayTxHash, 'l3') : undefined,
+      explorerUrl: savedBuyHash ? getTxUrl(savedBuyHash, 'l3') : undefined,
       chain: 'l3',
     })
 
@@ -647,64 +555,35 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
       chain: 'l3',
     })
 
-    steps.push({
-      label: getLabel(BuyMicro.RECORD_COLLATERAL),
-      txHash: collateralTxHash ?? undefined,
-      explorerUrl: collateralTxHash ? getTxUrl(collateralTxHash, 'l3') : undefined,
-      chain: 'l3',
-    })
-
-    steps.push({ label: getLabel(BuyMicro.BRIDGE_TO_ARB), chain: 'l3' })
-
-    steps.push({
-      label: getLabel(BuyMicro.COMPLETE_BRIDGE),
-      txHash: completeBridgeTxHash ?? undefined,
-      explorerUrl: completeBridgeTxHash ? getTxUrl(completeBridgeTxHash, 'arb') : undefined,
-      chain: 'arb',
-    })
-
-    steps.push({
-      label: getLabel(BuyMicro.MINT_SHARES),
-      txHash: mintTxHash ?? undefined,
-      explorerUrl: mintTxHash ? getTxUrl(mintTxHash, 'arb') : undefined,
-      chain: 'arb',
-    })
-
     return steps
-  }, [isPending, skippedApproval, savedApproveHash, savedBuyHash, relayTxHash, batchTxHash, fillTxHash, collateralTxHash, completeBridgeTxHash, mintTxHash])
+  }, [isPending, skippedApproval, savedApproveHash, savedBuyHash, batchTxHash, fillTxHash])
 
-  // Map internal micro enum to stepper array index (accounts for skipped approval)
   const stepperMicroIndex = useMemo(() => {
     if (isDone) return microSteps.length
     if (micro < 0) return 0
-    // If approval was skipped, subtract 1 from all indices
     const offset = skippedApproval ? -1 : 0
     return Math.max(0, micro + offset)
   }, [micro, skippedApproval, isDone, microSteps.length])
 
-  // Adjust step ranges for skipped approval
   const adjustedRanges = useMemo((): [number, number][] => {
     if (skippedApproval) {
-      // Approval was skipped: micro array is 9 items (no approve), shift ranges down by 1
+      // 3 items: submit(0), batch(1), fill(2)
       return [
-        [0, 1],    // Submit: just index 0 (submit)
-        [1, 5],    // Process: bridge(1), relay(2), batch(3), fill(4)
-        [5, 9],    // Deliver: collateral(5), bridgeArb(6), complete(7), mint(8)
+        [0, 1],    // Submit: submit(0)
+        [1, 3],    // Process: batch(1), fill(2)
       ]
     }
     return [
       [0, 2],    // Submit: approve(0), submit(1)
-      [2, 6],    // Process: bridge(2), relay(3), batch(4), fill(5)
-      [6, 10],   // Deliver: collateral(6), bridgeArb(7), complete(8), mint(9)
+      [2, 4],    // Process: batch(2), fill(3)
     ]
   }, [skippedApproval])
 
   const txRefs = useMemo(() => {
     const refs: { label: string; value: string }[] = []
-    if (arbOrderId !== null) refs.push({ label: 'Arb', value: `#${arbOrderId.toString()}` })
     if (orderId !== null) refs.push({ label: 'L3', value: `#${orderId.toString()}` })
     return refs
-  }, [arbOrderId, orderId])
+  }, [orderId])
 
   const renderFillDetails = () => {
     if (!fillPrice || !fillAmount) return null
@@ -718,7 +597,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
           </div>
           <div className="flex justify-between">
             <span className="text-text-muted">{t('fill_details.amount_filled')}</span>
-            <span className="text-text-primary tabular-nums">{parseFloat(formatUnits(fillAmount, 18)).toFixed(4)} USDC</span>
+            <span className="text-text-primary tabular-nums">{parseFloat(formatUnits(fillAmount, COLLATERAL_DECIMALS)).toFixed(4)} USDC</span>
           </div>
           {fillPrice > 0n && (
             <div className="flex justify-between">
@@ -780,7 +659,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                 stepRanges={adjustedRanges}
                 txRefs={txRefs}
               />
-              {relayStalled && (
+              {processStalled && (
                 <div className="bg-muted border border-border-light rounded-lg p-4 text-sm">
                   <p className="font-medium text-text-primary mb-1">{t('stall.title')}</p>
                   <p className="text-text-secondary">{t('stall.description')}</p>
@@ -849,11 +728,11 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                     step="1"
                     className="w-full bg-card border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg font-mono tabular-nums focus:border-zinc-600 focus:outline-none"
                   />
-                  {amount && parsedAmount > (usdcBalance ?? 0n) && (
+                  {amount && parsedAmount > usdcBalance && (
                     <p className="text-color-down text-xs mt-1">{t('insufficient_usdc')}</p>
                   )}
                 </div>
-                {(usdcBalance ?? 0n) === 0n && (
+                {usdcBalance === 0n && (
                   <div className="flex items-center gap-3 pt-2 border-t border-border-light">
                     <button
                       onClick={handleMintTestUsdc}
@@ -921,7 +800,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
               <WalletActionButton
                 onClick={needsApproval ? handleApprove : handleBuy}
-                disabled={!amount || parsedAmount === 0n || isProcessing || parsedAmount > (usdcBalance ?? 0n) || hasNonceGap}
+                disabled={!amount || parsedAmount === 0n || isProcessing || parsedAmount > usdcBalance || hasNonceGap}
                 className="w-full py-4 bg-color-up text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
               >
                 {buttonText}
