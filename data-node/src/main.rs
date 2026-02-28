@@ -1,15 +1,19 @@
 mod api;
 mod backfill;
+mod backfill_util;
 mod batch_engine;
+mod bitget_init;
 mod cg_backfill;
 mod cg_collector;
 pub mod chain_cache;
 mod chain_pollers;
 mod coingecko;
 mod collector;
+mod collector_loop;
 mod config;
 mod db;
 mod defillama;
+mod evm_init;
 mod dl_backfill;
 mod dl_collector;
 mod fng_client;
@@ -23,6 +27,7 @@ pub mod live_cache;
 mod logo_downloader;
 mod simulation;
 mod trade_collector;
+mod work_queue;
 mod market_data;
 mod vision_api;
 mod vision_batch_cache;
@@ -1827,7 +1832,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         }
     };
 
-    let orderbook_cache = Arc::new(orderbook_aggregator::OrderbookCache::new(5)); // 5s TTL
+    let orderbook_cache = Arc::new(orderbook_aggregator::OrderbookCache::new(2)); // 2s TTL for live ticking
 
     // HTTP server
     let app_state = Arc::new(AppState {
@@ -1856,15 +1861,23 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         )),
     });
 
-    // Spawn chain pollers (NAV=1s, Oracle=2s)
-    tokio::spawn(chain_pollers::poll_nav(Arc::clone(&app_state)));
-    tokio::spawn(chain_pollers::poll_oracle(Arc::clone(&app_state)));
-    // Per-user pollers (balances=1s, allowances=3s, orders=1s, positions=3s, cost_basis=5s)
-    tokio::spawn(chain_pollers::poll_user_balances(Arc::clone(&app_state)));
-    tokio::spawn(chain_pollers::poll_user_allowances(Arc::clone(&app_state)));
-    tokio::spawn(chain_pollers::poll_user_orders(Arc::clone(&app_state)));
-    tokio::spawn(chain_pollers::poll_user_positions(Arc::clone(&app_state)));
-    tokio::spawn(chain_pollers::poll_user_cost_basis(Arc::clone(&app_state)));
+    // Spawn chain pollers via run_collector_loop
+    macro_rules! spawn_poller {
+        ($name:expr, $secs:expr, $fn:path) => {{
+            let s = Arc::clone(&app_state);
+            tokio::spawn(collector_loop::run_collector_loop($name, Duration::from_secs($secs), move || {
+                let s = Arc::clone(&s);
+                async move { $fn(&s).await }
+            }));
+        }};
+    }
+    spawn_poller!("nav",          1, chain_pollers::poll_nav_once);
+    spawn_poller!("oracle",       2, chain_pollers::poll_oracle_once);
+    spawn_poller!("balances",     1, chain_pollers::poll_user_balances_once);
+    spawn_poller!("allowances",   3, chain_pollers::poll_user_allowances_once);
+    spawn_poller!("orders",       1, chain_pollers::poll_user_orders_once);
+    spawn_poller!("positions",    3, chain_pollers::poll_user_positions_once);
+    spawn_poller!("cost_basis",   5, chain_pollers::poll_user_cost_basis_once);
     info!("Chain pollers started (NAV=1s, Oracle=2s, Balances=1s, Allowances=3s, Orders=1s, Positions=3s, CostBasis=5s)");
 
     let app = api::router(app_state);

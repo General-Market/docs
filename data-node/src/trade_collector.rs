@@ -6,9 +6,10 @@ use ethers::prelude::*;
 use ethers::types::Address;
 use sqlx::PgPool;
 use tokio::sync::RwLock;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 
 use crate::db;
+use crate::evm_init::create_provider_and_address;
 
 abigen!(
     TradeIndex,
@@ -30,9 +31,6 @@ impl TradeCollectorState {
     }
 }
 
-const BACKFILL_BATCH_SIZE: u64 = 10_000;
-const MAX_RETRIES: u32 = 3;
-
 /// Backfill OrderSubmitted + FillConfirmed events in paginated batches with retry.
 async fn backfill_trade_events(
     pool: &PgPool,
@@ -40,35 +38,13 @@ async fn backfill_trade_events(
     from: u64,
     to: u64,
 ) {
-    let mut cursor = from;
-    while cursor < to {
-        let batch_end = (cursor + BACKFILL_BATCH_SIZE).min(to);
-
-        let mut success = false;
-        for attempt in 1..=MAX_RETRIES {
-            match backfill_batch(pool, contract, cursor, batch_end).await {
-                Ok(count) => {
-                    debug!(from = cursor, to = batch_end, count, "Backfilled trade batch");
-                    success = true;
-                    break;
-                }
-                Err(e) if attempt < MAX_RETRIES => {
-                    warn!(from = cursor, to = batch_end, attempt, %e, "Trade backfill batch failed, retrying");
-                    tokio::time::sleep(Duration::from_secs(2u64.pow(attempt))).await;
-                }
-                Err(e) => {
-                    error!(from = cursor, to = batch_end, %e, "Trade backfill batch failed after {MAX_RETRIES} attempts, skipping");
-                }
-            }
-        }
-
-        if success {
-            // Persist cursor after each successful batch so we don't redo it on crash
-            db::set_collector_cursor(pool, "trade_collector", batch_end).await.ok();
-        }
-
-        cursor = batch_end + 1;
-    }
+    crate::backfill_util::backfill_paginated("trade", from, to, |batch_from, batch_to| {
+        Box::pin(async move {
+            let count = backfill_batch(pool, contract, batch_from, batch_to).await?;
+            db::set_collector_cursor(pool, "trade_collector", batch_to).await.ok();
+            Ok(count)
+        })
+    }).await;
 }
 
 /// Process a single batch of blocks: query OrderSubmitted + FillConfirmed and store.
@@ -146,20 +122,9 @@ pub async fn run(
     index_address: String,
     poll_interval_secs: u64,
 ) {
-    let provider = match Provider::<Http>::try_from(&rpc_url) {
-        Ok(p) => Arc::new(p),
-        Err(e) => {
-            error!(%e, "Failed to create RPC provider for trade collector");
-            return;
-        }
-    };
-
-    let addr: Address = match index_address.parse() {
-        Ok(a) => a,
-        Err(e) => {
-            error!(%e, "Failed to parse INDEX_ADDRESS for trade collector");
-            return;
-        }
+    let (provider, addr) = match create_provider_and_address(&rpc_url, &index_address, "trade_collector") {
+        Some(pa) => pa,
+        None => return,
     };
 
     let contract = TradeIndex::new(addr, provider.clone());

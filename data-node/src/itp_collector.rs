@@ -10,6 +10,7 @@ use tokio::sync::RwLock;
 use tracing::{debug, error, info, warn};
 
 use crate::db;
+use crate::evm_init::create_provider_and_address;
 
 abigen!(
     IndexCollector,
@@ -41,8 +42,6 @@ impl ItpCollectorState {
     }
 }
 
-const BACKFILL_BATCH_SIZE: u64 = 10_000;
-const MAX_RETRIES: u32 = 3;
 
 async fn get_block_timestamp(
     _provider: &Provider<Http>,
@@ -119,44 +118,21 @@ async fn backfill_order_map(
     from: u64,
     to: u64,
 ) {
-    let mut cursor = from;
-    while cursor < to {
-        let batch_end = (cursor + BACKFILL_BATCH_SIZE).min(to);
-
-        let mut success = false;
-        for attempt in 1..=MAX_RETRIES {
-            match contract
+    crate::backfill_util::backfill_paginated("order_map", from, to, |batch_from, batch_to| {
+        Box::pin(async move {
+            let events = contract
                 .order_submitted_filter()
-                .from_block(cursor)
-                .to_block(batch_end)
+                .from_block(batch_from)
+                .to_block(batch_to)
                 .query()
-                .await
-            {
-                Ok(events) => {
-                    let mut map = order_to_itp.write().await;
-                    for event in &events {
-                        map.insert(event.order_id, H256::from_slice(&event.itp_id));
-                    }
-                    debug!(from = cursor, to = batch_end, count = events.len(), "Backfilled order map batch");
-                    success = true;
-                    break;
-                }
-                Err(e) if attempt < MAX_RETRIES => {
-                    warn!(from = cursor, to = batch_end, attempt, %e, "Order map backfill batch failed, retrying");
-                    tokio::time::sleep(Duration::from_secs(2u64.pow(attempt))).await;
-                }
-                Err(e) => {
-                    error!(from = cursor, to = batch_end, %e, "Order map backfill batch failed after {MAX_RETRIES} attempts, skipping");
-                }
+                .await?;
+            let mut map = order_to_itp.write().await;
+            for event in &events {
+                map.insert(event.order_id, H256::from_slice(&event.itp_id));
             }
-        }
-
-        if !success {
-            warn!(from = cursor, to = batch_end, "Skipped order map batch due to failures — some fills may lack ITP association");
-        }
-
-        cursor = batch_end + 1;
-    }
+            Ok(events.len())
+        })
+    }).await;
 }
 
 pub async fn run(
@@ -166,20 +142,9 @@ pub async fn run(
     index_address: String,
     poll_interval_secs: u64,
 ) {
-    let provider = match Provider::<Http>::try_from(&rpc_url) {
-        Ok(p) => Arc::new(p),
-        Err(e) => {
-            error!(%e, "Failed to create RPC provider for ITP collector");
-            return;
-        }
-    };
-
-    let addr: Address = match index_address.parse() {
-        Ok(a) => a,
-        Err(e) => {
-            error!(%e, "Failed to parse INDEX_ADDRESS");
-            return;
-        }
+    let (provider, addr) = match create_provider_and_address(&rpc_url, &index_address, "itp_collector") {
+        Some(pa) => pa,
+        None => return,
     };
 
     let contract = IndexCollector::new(addr, provider.clone());

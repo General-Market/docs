@@ -5,9 +5,10 @@ use chrono::Utc;
 use sqlx::PgPool;
 use tracing::{error, info, warn};
 
-use common::integrations::bitget::{BitgetReadOnlyClientImpl, BitgetReadOnlyConfig};
 use common::BitgetReadOnlyClient;
 
+use crate::bitget_init::create_bitget_client;
+use crate::collector_loop::PruneTimer;
 use crate::db;
 
 pub async fn run(
@@ -16,25 +17,13 @@ pub async fn run(
     poll_interval_secs: u64,
     retention_days: u32,
 ) {
-    let bitget_config = match BitgetReadOnlyConfig::from_env() {
-        Ok(c) => c,
-        Err(e) => {
-            error!(?e, "Liquidity collector: failed to load Bitget config");
-            return;
-        }
-    };
-
-    let client = match BitgetReadOnlyClientImpl::new(bitget_config) {
-        Ok(c) => c,
-        Err(e) => {
-            error!(?e, "Liquidity collector: failed to create Bitget client");
-            return;
-        }
+    let client = match create_bitget_client("liquidity_collector") {
+        Some(c) => c,
+        None => return,
     };
 
     let poll_interval = Duration::from_secs(poll_interval_secs);
-    let mut prune_counter: u64 = 0;
-    let prune_every = 86400 / poll_interval_secs; // once per day
+    let mut prune = PruneTimer::new(poll_interval_secs, 86400);
 
     info!(
         poll_interval_secs,
@@ -132,10 +121,7 @@ pub async fn run(
             }
         }
 
-        // 4. Periodic retention pruning
-        prune_counter += 1;
-        if prune_counter >= prune_every {
-            prune_counter = 0;
+        if prune.tick() {
             if let Err(e) = db::prune_old_liquidity(&pool, retention_days).await {
                 warn!(%e, "Failed to prune old liquidity records");
             }

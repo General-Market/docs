@@ -4,11 +4,11 @@ use std::time::Duration;
 
 use chrono::{TimeZone, Utc};
 use sqlx::PgPool;
-use tokio::sync::Mutex;
 use tracing::{error, info, warn};
 
-use common::integrations::bitget::{BitgetReadOnlyClientImpl, BitgetReadOnlyConfig};
+use common::integrations::bitget::BitgetReadOnlyClientImpl;
 
+use crate::bitget_init::create_bitget_client;
 use crate::db;
 
 /// Maximum backfill window (3 days). Caps how far back we'll ever look.
@@ -51,20 +51,9 @@ pub async fn run(pool: PgPool, symbol_map_path: String) {
         return;
     }
 
-    let bitget_config = match BitgetReadOnlyConfig::from_env() {
-        Ok(c) => c,
-        Err(e) => {
-            error!(?e, "Kline collector: failed to load Bitget config from env");
-            return;
-        }
-    };
-
-    let client = match BitgetReadOnlyClientImpl::new(bitget_config) {
-        Ok(c) => Arc::new(c),
-        Err(e) => {
-            error!(?e, "Kline collector: failed to create Bitget client");
-            return;
-        }
+    let client = match create_bitget_client("kline_collector") {
+        Some(c) => Arc::new(c),
+        None => return,
     };
 
     // Unified loop: always backfill in small chunks, then poll for recent data.
@@ -140,107 +129,55 @@ async fn backfill_klines(
         "Kline backfill: starting"
     );
 
-    let work_queue = Arc::new(Mutex::new(symbols.to_vec()));
-    let total_inserted = Arc::new(std::sync::atomic::AtomicU64::new(0));
+    let pool = pool.clone();
+    let client = Arc::clone(client);
 
-    let concurrency = 5;
-    let mut handles = tokio::task::JoinSet::new();
-
-    for worker_id in 0..concurrency {
-        let queue = Arc::clone(&work_queue);
-        let client = Arc::clone(client);
+    let total = crate::work_queue::run_work_queue(symbols.to_vec(), 5, move |symbol: String| {
         let pool = pool.clone();
-        let inserted_counter = Arc::clone(&total_inserted);
+        let client = Arc::clone(&client);
+        async move {
+            let mut cursor = end_ms;
+            let mut symbol_total: u64 = 0;
 
-        handles.spawn(async move {
             loop {
-                let symbol = {
-                    let mut q = queue.lock().await;
-                    q.pop()
-                };
+                match client.get_history_candles_ohlc(&symbol, "1min", cursor, 200).await {
+                    Ok(candles) => {
+                        if candles.is_empty() { break; }
+                        let oldest_ts = candles[0].0;
 
-                let symbol = match symbol {
-                    Some(s) => s,
-                    None => break,
-                };
-
-                let mut cursor = end_ms;
-                let mut symbol_total: u64 = 0;
-
-                loop {
-                    match client
-                        .get_history_candles_ohlc(&symbol, "1min", cursor, 200)
-                        .await
-                    {
-                        Ok(candles) => {
-                            if candles.is_empty() {
-                                break;
-                            }
-
-                            let oldest_ts = candles[0].0;
-
-                            let mut rows: Vec<(String, chrono::DateTime<chrono::Utc>, String, String, String, String)> = Vec::new();
-                            for (ts, open, high, low, close) in &candles {
-                                if *ts < start_ms {
-                                    continue;
-                                }
+                        let rows: Vec<_> = candles.iter()
+                            .filter(|(ts, _, _, _, _)| *ts >= start_ms)
+                            .filter_map(|(ts, open, high, low, close)| {
                                 let base_secs = (*ts / 1000) as i64;
-                                if let Some(dt) = Utc.timestamp_opt(base_secs, 0).single() {
-                                    rows.push((
-                                        symbol.clone(),
-                                        dt,
-                                        open.clone(),
-                                        high.clone(),
-                                        low.clone(),
-                                        close.clone(),
-                                    ));
-                                }
-                            }
+                                Utc.timestamp_opt(base_secs, 0).single().map(|dt| {
+                                    (symbol.clone(), dt, open.clone(), high.clone(), low.clone(), close.clone())
+                                })
+                            })
+                            .collect();
 
-                            let in_range = candles.iter().filter(|(ts, _, _, _, _)| *ts >= start_ms).count() as u64;
-                            match db::batch_upsert_klines(&pool, &rows).await {
-                                Ok(inserted) => {
-                                    symbol_total += inserted;
-                                }
-                                Err(e) => {
-                                    error!(symbol = %symbol, %e, "Kline backfill: failed to insert");
-                                    break;
-                                }
-                            }
-
-                            if oldest_ts <= start_ms || in_range == 0 {
-                                break;
-                            }
-
-                            cursor = oldest_ts - 1;
+                        let in_range = candles.iter().filter(|(ts, _, _, _, _)| *ts >= start_ms).count() as u64;
+                        match db::batch_upsert_klines(&pool, &rows).await {
+                            Ok(inserted) => { symbol_total += inserted; }
+                            Err(e) => { error!(symbol = %symbol, %e, "Kline backfill: failed to insert"); break; }
                         }
-                        Err(e) => {
-                            warn!(symbol = %symbol, %e, "Kline backfill: failed to fetch, skipping remainder");
-                            break;
-                        }
+
+                        if oldest_ts <= start_ms || in_range == 0 { break; }
+                        cursor = oldest_ts - 1;
+                    }
+                    Err(e) => {
+                        warn!(symbol = %symbol, %e, "Kline backfill: failed to fetch, skipping remainder");
+                        break;
                     }
                 }
-
-                inserted_counter.fetch_add(symbol_total, std::sync::atomic::Ordering::Relaxed);
-                if symbol_total > 0 {
-                    info!(
-                        worker = worker_id,
-                        symbol = %symbol,
-                        rows = symbol_total,
-                        "Kline backfill: symbol done"
-                    );
-                }
             }
-        });
-    }
 
-    while let Some(result) = handles.join_next().await {
-        if let Err(e) = result {
-            error!(%e, "Kline backfill: worker panicked");
+            if symbol_total > 0 {
+                info!(symbol = %symbol, rows = symbol_total, "Kline backfill: symbol done");
+            }
+            symbol_total
         }
-    }
+    }).await;
 
-    let total = total_inserted.load(std::sync::atomic::Ordering::Relaxed);
     info!(total_rows = total, "Kline backfill: complete");
 }
 
@@ -252,76 +189,33 @@ async fn fetch_recent_klines(
     now_ms: u64,
     limit: u32,
 ) {
-    let work_queue = Arc::new(Mutex::new(symbols.to_vec()));
-    let total_inserted = Arc::new(std::sync::atomic::AtomicU64::new(0));
+    let pool = pool.clone();
+    let client = Arc::clone(client);
 
-    let concurrency = 5;
-    let mut handles = tokio::task::JoinSet::new();
-
-    for _worker_id in 0..concurrency {
-        let queue = Arc::clone(&work_queue);
-        let client = Arc::clone(client);
+    let total = crate::work_queue::run_work_queue(symbols.to_vec(), 5, move |symbol: String| {
         let pool = pool.clone();
-        let inserted_counter = Arc::clone(&total_inserted);
-
-        handles.spawn(async move {
-            loop {
-                let symbol = {
-                    let mut q = queue.lock().await;
-                    q.pop()
-                };
-
-                let symbol = match symbol {
-                    Some(s) => s,
-                    None => break,
-                };
-
-                match client
-                    .get_history_candles_ohlc(&symbol, "1min", now_ms, limit)
-                    .await
-                {
-                    Ok(candles) => {
-                        let rows: Vec<_> = candles
-                            .iter()
-                            .filter_map(|(ts, open, high, low, close)| {
-                                let base_secs = (*ts / 1000) as i64;
-                                Utc.timestamp_opt(base_secs, 0).single().map(|dt| {
-                                    (
-                                        symbol.clone(),
-                                        dt,
-                                        open.clone(),
-                                        high.clone(),
-                                        low.clone(),
-                                        close.clone(),
-                                    )
-                                })
+        let client = Arc::clone(&client);
+        async move {
+            match client.get_history_candles_ohlc(&symbol, "1min", now_ms, limit).await {
+                Ok(candles) => {
+                    let rows: Vec<_> = candles
+                        .iter()
+                        .filter_map(|(ts, open, high, low, close)| {
+                            let base_secs = (*ts / 1000) as i64;
+                            Utc.timestamp_opt(base_secs, 0).single().map(|dt| {
+                                (symbol.clone(), dt, open.clone(), high.clone(), low.clone(), close.clone())
                             })
-                            .collect();
-
-                        match db::batch_upsert_klines(&pool, &rows).await {
-                            Ok(inserted) => {
-                                inserted_counter
-                                    .fetch_add(inserted, std::sync::atomic::Ordering::Relaxed);
-                            }
-                            Err(e) => {
-                                warn!(symbol = %symbol, %e, "Kline poll: failed to upsert");
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        warn!(symbol = %symbol, %e, "Kline poll: failed to fetch");
+                        })
+                        .collect();
+                    match db::batch_upsert_klines(&pool, &rows).await {
+                        Ok(inserted) => inserted,
+                        Err(e) => { warn!(symbol = %symbol, %e, "Kline poll: failed to upsert"); 0 }
                     }
                 }
+                Err(e) => { warn!(symbol = %symbol, %e, "Kline poll: failed to fetch"); 0 }
             }
-        });
-    }
-
-    while let Some(result) = handles.join_next().await {
-        if let Err(e) = result {
-            error!(%e, "Kline poll: worker panicked");
         }
-    }
+    }).await;
 
-    let total = total_inserted.load(std::sync::atomic::Ordering::Relaxed);
     info!(upserted = total, "Kline poll cycle complete");
 }

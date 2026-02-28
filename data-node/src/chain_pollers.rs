@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use std::time::Duration;
 use ethers::prelude::*;
 use tracing::warn;
 use crate::api::AppState;
@@ -70,18 +69,7 @@ abigen!(
     ]"#
 );
 
-/// Polls ITP NAV every 1s, updates chain_cache.nav
-pub async fn poll_nav(state: Arc<AppState>) {
-    let interval = Duration::from_secs(1);
-    loop {
-        if let Err(e) = poll_nav_once(&state).await {
-            warn!(%e, "NAV poller error");
-        }
-        tokio::time::sleep(interval).await;
-    }
-}
-
-async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let index_addr = crate::api::deployment_addr(&state.deployment, "Index")?;
     let reader = NavReader::new(index_addr, Arc::clone(&state.l3_provider));
 
@@ -129,20 +117,9 @@ async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::Error
     Ok(())
 }
 
-/// Polls Morpho oracle every 2s
-pub async fn poll_oracle(state: Arc<AppState>) {
-    let interval = Duration::from_secs(2);
-    loop {
-        if let Err(e) = poll_oracle_once(&state).await {
-            warn!(%e, "Oracle poller error");
-        }
-        tokio::time::sleep(interval).await;
-    }
-}
-
-async fn poll_oracle_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn poll_oracle_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let oracle_addr = crate::api::deployment_addr(&state.morpho_deployment, "MOCK_ORACLE")?;
-    let reader = OracleReader::new(oracle_addr, Arc::clone(&state.arb_provider));
+    let reader = OracleReader::new(oracle_addr, Arc::clone(&state.l3_provider));
 
     let price = reader.current_price().call().await?;
     let updated = reader.last_updated().call().await?;
@@ -165,7 +142,7 @@ async fn poll_oracle_once(state: &AppState) -> Result<(), Box<dyn std::error::Er
     market_id_arr[..len].copy_from_slice(&market_id_bytes[..len]);
 
     let borrow_rate_ray = if irm_addr != Address::zero() {
-        let irm = IrmReader::new(irm_addr, Arc::clone(&state.arb_provider));
+        let irm = IrmReader::new(irm_addr, Arc::clone(&state.l3_provider));
         irm.rates(market_id_arr).call().await.unwrap_or_default().to_string()
     } else {
         "0".to_string()
@@ -192,18 +169,7 @@ fn itp_id_bytes(n: u64) -> [u8; 32] {
 
 // ── Per-user pollers ──
 
-/// Polls user balances every 1s: ARB USDC, L3 ITP shares, ARB BridgedITP
-pub async fn poll_user_balances(state: Arc<AppState>) {
-    let interval = Duration::from_secs(1);
-    loop {
-        if let Err(e) = poll_user_balances_once(&state).await {
-            warn!(%e, "User balances poller error");
-        }
-        tokio::time::sleep(interval).await;
-    }
-}
-
-async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let users = state.chain_cache.users.read().await;
     if users.is_empty() {
         return Ok(());
@@ -224,10 +190,9 @@ async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std::er
 
     let itp_id = itp_id_bytes(1);
 
-    // Resolve bridged ITP address once (same for all users)
-    let bridge_proxy = BridgeProxyPoller::new(bridge_proxy_addr, Arc::clone(&state.arb_provider));
-    let bridged_itp_addr = bridge_proxy.get_bridged_itp(itp_id).call().await.unwrap_or_default();
-    let has_bridged_itp = bridged_itp_addr != Address::zero();
+    // Resolve vault ERC20 address from deployment (L3 vault token)
+    let vault_addr = crate::api::deployment_addr(&state.deployment, "ITP_Vault").unwrap_or_default();
+    let has_vault = vault_addr != Address::zero();
 
     for (user, user_cache) in &user_list {
         // ARB USDC balance
@@ -238,10 +203,10 @@ async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std::er
         let shares_reader = UserSharesReader::new(index_addr, Arc::clone(&state.l3_provider));
         let itp_shares = shares_reader.get_user_shares(itp_id, *user).call().await.unwrap_or_default();
 
-        // ARB BridgedITP balance
-        let bridged_bal = if has_bridged_itp {
-            let bitp = BalanceReader::new(bridged_itp_addr, Arc::clone(&state.arb_provider));
-            bitp.balance_of(*user).call().await.unwrap_or_default()
+        // L3 vault ERC20 balance (used as Morpho collateral)
+        let bridged_bal = if has_vault {
+            let vault = BalanceReader::new(vault_addr, Arc::clone(&state.l3_provider));
+            vault.balance_of(*user).call().await.unwrap_or_default()
         } else {
             U256::zero()
         };
@@ -260,18 +225,7 @@ async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std::er
     Ok(())
 }
 
-/// Polls user allowances every 3s: USDC→ArbCustody, USDC→Morpho, ITP→Morpho
-pub async fn poll_user_allowances(state: Arc<AppState>) {
-    let interval = Duration::from_secs(3);
-    loop {
-        if let Err(e) = poll_user_allowances_once(&state).await {
-            warn!(%e, "User allowances poller error");
-        }
-        tokio::time::sleep(interval).await;
-    }
-}
-
-async fn poll_user_allowances_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn poll_user_allowances_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let users = state.chain_cache.users.read().await;
     if users.is_empty() {
         return Ok(());
@@ -284,31 +238,28 @@ async fn poll_user_allowances_once(state: &AppState) -> Result<(), Box<dyn std::
         .collect();
     drop(users);
 
-    let arb_usdc_addr = crate::api::deployment_addr(&state.deployment, "ARB_USDC")?;
+    let l3_usdc_addr = crate::api::deployment_addr(&state.deployment, "L3_WUSDC")?;
     let arb_custody_addr = crate::api::deployment_addr(&state.deployment, "ArbBridgeCustody")?;
-    let bridge_proxy_addr = crate::api::deployment_addr(&state.deployment, "BridgeProxy")?;
     let morpho_addr = crate::api::deployment_addr(&state.morpho_deployment, "MORPHO")?;
 
-    let itp_id = itp_id_bytes(1);
-
-    // Resolve bridged ITP address once
-    let bridge_proxy = BridgeProxyPoller::new(bridge_proxy_addr, Arc::clone(&state.arb_provider));
-    let bridged_itp_addr = bridge_proxy.get_bridged_itp(itp_id).call().await.unwrap_or_default();
-    let has_bridged_itp = bridged_itp_addr != Address::zero();
+    // Vault ERC20 on L3 (Morpho collateral)
+    let vault_addr = crate::api::deployment_addr(&state.deployment, "ITP_Vault").unwrap_or_default();
+    let has_vault = vault_addr != Address::zero();
 
     for (user, user_cache) in &user_list {
-        let usdc = BalanceReader::new(arb_usdc_addr, Arc::clone(&state.arb_provider));
+        // L3_WUSDC allowance to Morpho (on L3)
+        let l3_usdc = BalanceReader::new(l3_usdc_addr, Arc::clone(&state.l3_provider));
+        let usdc_to_morpho = l3_usdc.allowance(*user, morpho_addr).call().await.unwrap_or_default();
 
-        // USDC allowance to ArbCustody
-        let usdc_to_custody = usdc.allowance(*user, arb_custody_addr).call().await.unwrap_or_default();
+        // ARB USDC allowance to ArbCustody (still on Arb)
+        let arb_usdc_addr = crate::api::deployment_addr(&state.deployment, "ARB_USDC").unwrap_or_default();
+        let arb_usdc = BalanceReader::new(arb_usdc_addr, Arc::clone(&state.arb_provider));
+        let usdc_to_custody = arb_usdc.allowance(*user, arb_custody_addr).call().await.unwrap_or_default();
 
-        // USDC allowance to Morpho
-        let usdc_to_morpho = usdc.allowance(*user, morpho_addr).call().await.unwrap_or_default();
-
-        // ITP allowance to Morpho (bridged ITP on ARB)
-        let itp_to_morpho = if has_bridged_itp {
-            let bitp = BalanceReader::new(bridged_itp_addr, Arc::clone(&state.arb_provider));
-            bitp.allowance(*user, morpho_addr).call().await.unwrap_or_default()
+        // Vault token allowance to Morpho (on L3)
+        let itp_to_morpho = if has_vault {
+            let vault = BalanceReader::new(vault_addr, Arc::clone(&state.l3_provider));
+            vault.allowance(*user, morpho_addr).call().await.unwrap_or_default()
         } else {
             U256::zero()
         };
@@ -325,18 +276,7 @@ async fn poll_user_allowances_once(state: &AppState) -> Result<(), Box<dyn std::
     Ok(())
 }
 
-/// Polls user orders every 1s: reads active orders from DB, fetches on-chain status + fills
-pub async fn poll_user_orders(state: Arc<AppState>) {
-    let interval = Duration::from_secs(1);
-    loop {
-        if let Err(e) = poll_user_orders_once(&state).await {
-            warn!(%e, "User orders poller error");
-        }
-        tokio::time::sleep(interval).await;
-    }
-}
-
-async fn poll_user_orders_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn poll_user_orders_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let users = state.chain_cache.users.read().await;
     if users.is_empty() {
         return Ok(());
@@ -425,18 +365,7 @@ async fn poll_user_orders_once(state: &AppState) -> Result<(), Box<dyn std::erro
 
 // ── Morpho position poller ──
 
-/// Polls Morpho position data for each cached user every 3s
-pub async fn poll_user_positions(state: Arc<AppState>) {
-    let interval = Duration::from_secs(3);
-    loop {
-        if let Err(e) = poll_user_positions_once(&state).await {
-            warn!(%e, "User positions poller error");
-        }
-        tokio::time::sleep(interval).await;
-    }
-}
-
-async fn poll_user_positions_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn poll_user_positions_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let users = state.chain_cache.users.read().await;
     if users.is_empty() {
         return Ok(());
@@ -463,7 +392,7 @@ async fn poll_user_positions_once(state: &AppState) -> Result<(), Box<dyn std::e
         arr
     };
 
-    let morpho = MorphoPoller::new(morpho_addr, Arc::clone(&state.arb_provider));
+    let morpho = MorphoPoller::new(morpho_addr, Arc::clone(&state.l3_provider));
 
     for (user, user_cache) in &user_list {
         let (supply_shares, borrow_shares, collateral) = morpho
@@ -486,18 +415,7 @@ async fn poll_user_positions_once(state: &AppState) -> Result<(), Box<dyn std::e
 
 // ── Cost basis poller ──
 
-/// Polls cost basis via incremental event scanning every 5s
-pub async fn poll_user_cost_basis(state: Arc<AppState>) {
-    let interval = Duration::from_secs(5);
-    loop {
-        if let Err(e) = poll_user_cost_basis_once(&state).await {
-            warn!(%e, "User cost basis poller error");
-        }
-        tokio::time::sleep(interval).await;
-    }
-}
-
-async fn poll_user_cost_basis_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn poll_user_cost_basis_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let users = state.chain_cache.users.read().await;
     if users.is_empty() {
         return Ok(());

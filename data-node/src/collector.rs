@@ -7,9 +7,10 @@ use sqlx::PgPool;
 use tokio::sync::RwLock;
 use tracing::{error, info, warn};
 
-use common::integrations::bitget::{BitgetReadOnlyClientImpl, BitgetReadOnlyConfig};
 use common::BitgetReadOnlyClient;
 
+use crate::bitget_init::create_bitget_client;
+use crate::collector_loop::PruneTimer;
 use crate::db;
 
 pub struct CollectorState {
@@ -56,25 +57,13 @@ pub async fn run(
 
     *state.symbols_tracked.write().await = tracked.len();
 
-    let bitget_config = match BitgetReadOnlyConfig::from_env() {
-        Ok(c) => c,
-        Err(e) => {
-            error!(?e, "Failed to load Bitget config from env, collector cannot start");
-            return;
-        }
-    };
-
-    let client = match BitgetReadOnlyClientImpl::new(bitget_config) {
-        Ok(c) => c,
-        Err(e) => {
-            error!(?e, "Failed to create Bitget client, collector cannot start");
-            return;
-        }
+    let client = match create_bitget_client("collector") {
+        Some(c) => c,
+        None => return,
     };
 
     let poll_interval = Duration::from_secs(poll_interval_secs);
-    let mut prune_counter: u64 = 0;
-    let prune_every = 3600 / poll_interval_secs; // once per hour
+    let mut prune = PruneTimer::new(poll_interval_secs, 3600);
 
     info!(
         poll_interval_secs,
@@ -110,10 +99,7 @@ pub async fn run(
             }
         }
 
-        // Periodic retention pruning
-        prune_counter += 1;
-        if prune_counter >= prune_every {
-            prune_counter = 0;
+        if prune.tick() {
             if let Err(e) = db::prune_old_prices(&pool, retention_days).await {
                 warn!(%e, "Failed to prune old prices");
             }
