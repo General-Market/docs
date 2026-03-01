@@ -48,7 +48,7 @@ pub fn compute_multiplier(
     let capped_time = time_before_tick.min(tick_duration);
     let early_mult = 1.0 + (capped_time as f64).powi(2) / (tick_duration as f64).powi(2);
 
-    // Commitment multiplier: reward long-term commitment (from bitmap length, not elapsed ticks)
+    // Commitment multiplier: reward long-term commitment (from balance coverage: balance / stake_per_tick)
     let ticks_committed = player.num_committed_ticks.max(1);
     let commitment_mult = ((ticks_committed + config.commitment_offset) as f64).log10();
 
@@ -235,7 +235,7 @@ mod tests {
     }
 
     #[test]
-    fn test_commitment_mult_from_bitmap_length() {
+    fn test_commitment_mult_from_balance_coverage() {
         // Player committed to 1000 ticks upfront → log10(1000 + 9) = log10(1009) ≈ 3.0
         let player = make_player_with_commitment(1000, 0, 1_000_000, 100_000_000, 1000);
         let config = default_config();

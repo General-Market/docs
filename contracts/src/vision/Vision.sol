@@ -359,7 +359,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         if (stakePerTick < MIN_STAKE_PER_TICK) revert StakeBelowMinimum();
         if (depositAmount < stakePerTick) revert InsufficientDeposit();
 
-        _debitBalance(msg.sender, depositAmount);
+        bool usedVirtual = _debitBalance(msg.sender, depositAmount);
 
         uint256 tickId = _currentTickId(batchId);
         _positions[batchId][msg.sender] = PlayerPosition({
@@ -371,7 +371,8 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             lastClaimedTick: 0,
             joinTimestamp: block.timestamp,
             totalDeposited: depositAmount,
-            totalClaimed: 0
+            totalClaimed: 0,
+            isVirtual: usedVirtual
         });
 
         emit PlayerJoined(batchId, msg.sender, stakePerTick, bitmapHash, configHash);
@@ -452,10 +453,15 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             accumulatedFees += fee;
             uint256 payout = winnings - fee;
 
-            // Payouts ALWAYS credit realBalance because the batch pool is real L3 USDC.
-            // (When users join, their virtual balance was "converted" to batch pool USDC.)
-            realBalance[msg.sender] += payout;
-            totalRealBalance += payout;
+            // SOL-2: Route payout back to the same balance type used to fund the position.
+            // Virtual-funded positions must not create unbacked realBalance.
+            if (position.isVirtual) {
+                virtualBalance[msg.sender] += payout;
+                totalVirtualBalance += payout;
+            } else {
+                realBalance[msg.sender] += payout;
+                totalRealBalance += payout;
+            }
             position.totalClaimed += payout;
 
             emit RewardsClaimed(batchId, msg.sender, payout);
@@ -485,20 +491,35 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         ));
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
-        // Fee on profit only
+        // Sanity: finalBalance should not exceed current position balance (with dust tolerance)
+        require(finalBalance <= position.balance + 1e4, "finalBalance exceeds position");
+
+        // Fee on profit only — exclude already-claimed (and already-taxed) amounts
         uint256 totalDeposited = position.totalDeposited;
-        uint256 profit = finalBalance > totalDeposited ? finalBalance - totalDeposited : 0;
+        uint256 alreadyClaimed = position.totalClaimed;
+        // Effective cost basis: deposits minus what was already claimed (and taxed)
+        uint256 adjustedDeposit = totalDeposited > alreadyClaimed
+            ? totalDeposited - alreadyClaimed : 0;
+        uint256 profit = finalBalance > adjustedDeposit ? finalBalance - adjustedDeposit : 0;
         uint256 fee = (profit * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
         uint256 payout = finalBalance - fee;
 
         accumulatedFees += fee;
 
+        // SOL-2: Read isVirtual BEFORE delete
+        bool isVirtual = position.isVirtual;
+
         // Delete position before balance credit (CEI pattern)
         delete _positions[batchId][msg.sender];
 
-        // Batch payouts ALWAYS credit realBalance — batch pool holds real L3 USDC
-        realBalance[msg.sender] += payout;
-        totalRealBalance += payout;
+        // SOL-2: Route payout back to the same balance type used to fund the position
+        if (isVirtual) {
+            virtualBalance[msg.sender] += payout;
+            totalVirtualBalance += payout;
+        } else {
+            realBalance[msg.sender] += payout;
+            totalRealBalance += payout;
+        }
 
         emit PlayerWithdrawn(batchId, msg.sender, payout);
     }
@@ -656,20 +677,35 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         ));
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
-        // Fee on profit only
+        // Sanity: finalBalance should not exceed current position balance (with dust tolerance)
+        require(finalBalance <= position.balance + 1e4, "finalBalance exceeds position");
+
+        // Fee on profit only — exclude already-claimed (and already-taxed) amounts
         uint256 totalDeposited = position.totalDeposited;
-        uint256 profit = finalBalance > totalDeposited ? finalBalance - totalDeposited : 0;
+        uint256 alreadyClaimed = position.totalClaimed;
+        // Effective cost basis: deposits minus what was already claimed (and taxed)
+        uint256 adjustedDeposit = totalDeposited > alreadyClaimed
+            ? totalDeposited - alreadyClaimed : 0;
+        uint256 profit = finalBalance > adjustedDeposit ? finalBalance - adjustedDeposit : 0;
         uint256 fee = (profit * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
         uint256 payout = finalBalance - fee;
 
         accumulatedFees += fee;
 
+        // SOL-2: Read isVirtual BEFORE delete
+        bool isVirtual = position.isVirtual;
+
         // Delete position before balance credit (CEI pattern)
         delete _positions[batchId][player];
 
-        // ForceWithdraw returns from batch pool (real USDC) → credits realBalance
-        realBalance[player] += payout;
-        totalRealBalance += payout;
+        // SOL-2: Route payout back to the same balance type used to fund the position
+        if (isVirtual) {
+            virtualBalance[player] += payout;
+            totalVirtualBalance += payout;
+        } else {
+            realBalance[player] += payout;
+            totalRealBalance += payout;
+        }
 
         emit ForceWithdrawn(batchId, player, payout);
     }
@@ -754,7 +790,8 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     ///      This ensures users who deposited from Arb don't accumulate real balance
     ///      they can't use, and users who deposited on L3 keep their real balance
     ///      as long as possible.
-    function _debitBalance(address user, uint256 amount) internal {
+    /// @return usedVirtual True if any virtual balance was consumed (SOL-2).
+    function _debitBalance(address user, uint256 amount) internal returns (bool usedVirtual) {
         uint256 total = virtualBalance[user] + realBalance[user];
         if (total < amount) revert InsufficientBalance();
 
@@ -766,6 +803,8 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         totalVirtualBalance -= fromVirtual;
         realBalance[user] -= fromReal;
         totalRealBalance -= fromReal;
+
+        usedVirtual = fromVirtual > 0;
 
         emit BalanceDebited(user, fromVirtual, fromReal);
     }

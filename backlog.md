@@ -4456,3 +4456,9 @@ The backtester currently supports one rebalance method: **periodic time-based re
 - [DECISION] claimRewards/withdraw/forceWithdraw route payouts based on isVirtual — virtual positions credit virtualBalance+totalVirtualBalance, real positions credit realBalance+totalRealBalance. Prevents virtual-funded positions from creating unbacked realBalance (the SOL-2 insolvency bug).
 - [DECISION] withdraw/forceWithdraw read isVirtual BEFORE `delete _positions[...]` — CEI pattern deletes position storage before crediting balance, so we cache the flag first.
 - [DECISION] deposit() (top-up) does NOT update isVirtual flag — top-ups use _debitBalance which may mix virtual/real, but the position's funding type is determined at join time. Acceptable tradeoff: top-ups are typically small relative to initial deposit, and the alternative (proportional tracking) adds significant complexity.
+
+## Session: 20260301-batch-mgmt (Batch management fixes T-22/T-23/T-24)
+
+- [DECISION] T-22: Verified get_healthy_assets() already has all 3 required filters: is_active=true, fetched_at >= 2x sync interval, value > 0. Skipped filter #4 (recently added assets) — no first_seen_at column in market_assets table.
+- [DECISION] T-23: Lock-period config freeze added to generate_batch_config() in batch_engine.rs. Uses modular time check: if remaining time in tick <= lock_offset, return None. Prevents config churn during settlement window.
+- [DECISION] T-24: Lock-period guard added at 3 points in orchestrator: (1) run_leader_round() filters out locked sources from proposals, (2) publish_to_data_node() skips publishing during lock, (3) replicate_to_own_data_node() skips replication during lock. Belt-and-suspenders: even if proposal slips through, publish/replicate won't fire.

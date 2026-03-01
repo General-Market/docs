@@ -53,7 +53,7 @@ pub struct PlayerPosition {
     pub balance: U256,
     pub initial_deposit: U256,
     pub join_timestamp: u64,
-    /// Number of ticks the player committed to (from bitmap length).
+    /// Number of ticks the player can fund (balance / stake_per_tick).
     /// Used for commitment multiplier: log10(num_committed_ticks + offset).
     pub num_committed_ticks: u64,
 }

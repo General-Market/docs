@@ -44,6 +44,7 @@ interface IVision {
         uint256 joinTimestamp;
         uint256 totalDeposited;
         uint256 totalClaimed;
+        bool isVirtual;                  // true if funded from virtualBalance (SOL-2)
     }
 
     struct Bot {

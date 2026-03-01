@@ -153,7 +153,7 @@ export function NextBatches() {
             Live Batches
           </div>
           <div className="flex items-center gap-3 text-[10px] font-semibold text-text-muted">
-            <span>{allBatches.length} batches</span>
+            <span>{sortedBatches.length} batches</span>
             {lockedCount > 0 && (
               <span className="text-red-500">{lockedCount} locked</span>
             )}

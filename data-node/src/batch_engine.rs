@@ -2,7 +2,7 @@
 //!
 //! Computes recommended Vision batch configs per data source.
 //! One rolling batch per source. Markets = all healthy assets (max 256).
-//! Thresholds adapt to recent volatility. Always up_x (direction-agnostic).
+//! Thresholds and resolution types adapt to recent volatility.
 //! Hash uses ABI encoding (ethers) to match Solidity's abi.encode.
 
 use std::collections::HashMap;
@@ -19,8 +19,8 @@ use tokio::sync::RwLock;
 use tracing::{info, warn, error};
 
 /// Lock window as % of tick duration, by source speed class.
-const LOCK_PCT_FAST: f64 = 0.15;    // 30-120s sync → lock last 15%
-const LOCK_PCT_MEDIUM: f64 = 0.15;  // 300-3600s sync → lock last 15%
+const LOCK_PCT_FAST: f64 = 0.25;    // 30-120s sync → lock last 25%
+const LOCK_PCT_MEDIUM: f64 = 0.25;  // 300-3600s sync → lock last 25%
 const LOCK_PCT_SLOW: f64 = 0.04;    // 86400s+ sync → lock last 4%
 
 /// Minimum lock offset in seconds (never less than 5s)
@@ -136,7 +136,7 @@ pub const BATCH_SOURCES: &[SourceMeta] = &[
 #[serde(rename_all = "camelCase")]
 pub struct BatchMarket {
     pub asset_id: String,
-    /// Always "up_x" for auto-batches. Users choose direction via bitmap.
+    /// Resolution type: flat_x, up_x, up_300, or up_3000 (based on volatility).
     pub resolution_type: String,
     /// Threshold in basis points (e.g. 150 = 1.5%). Clamped to 10000 (100%).
     pub threshold_bps: u32,
@@ -355,10 +355,27 @@ async fn get_healthy_assets(
     Ok(rows.into_iter().map(|(id,)| id).collect())
 }
 
+/// Pick resolution type and threshold based on observed volatility (abs change %).
+/// - <0.3% avg change  → "flat_x" with 30 bps (low volatility)
+/// - 0.3-3%            → "up_x"   with 30 bps (moderate volatility)
+/// - 3-30%             → "up_300" with 300 bps (high volatility)
+/// - 30%+              → "up_3000" with 3000 bps (extreme volatility)
+fn resolution_for_volatility(abs_change_pct: f64) -> (&'static str, u32) {
+    if abs_change_pct < 0.3 {
+        ("flat_x", 30)
+    } else if abs_change_pct < 3.0 {
+        ("up_x", 30)
+    } else if abs_change_pct < 30.0 {
+        ("up_300", 300)
+    } else {
+        ("up_3000", 3000)
+    }
+}
+
 /// Compute thresholds for all assets of a source in batch.
 /// Uses 2 queries total (not N+1).
-/// Priority: last batch settlement > 24h history > up_0.
-/// Always returns "up_x" — direction-agnostic.
+/// Priority: last batch settlement > 24h history > flat_x (no data).
+/// Resolution type adapts to observed volatility.
 async fn compute_asset_thresholds(
     pool: &PgPool,
     source_id: &str,
@@ -376,12 +393,13 @@ async fn compute_asset_thresholds(
         .map(|asset_id| {
             // Try last settlement first
             if let Some(&change_pct) = settlement_changes.get(asset_id) {
-                let bps = sanitize_threshold_bps(change_pct.abs());
-                if bps > 0 {
+                let abs_pct = change_pct.abs();
+                if abs_pct > 0.0 && !abs_pct.is_nan() && !abs_pct.is_infinite() {
+                    let (res_type, threshold_bps) = resolution_for_volatility(abs_pct);
                     return BatchMarket {
                         asset_id: asset_id.clone(),
-                        resolution_type: "up_x".to_string(),
-                        threshold_bps: bps,
+                        resolution_type: res_type.to_string(),
+                        threshold_bps,
                         threshold_source: "last_batch".to_string(),
                     };
                 }
@@ -389,22 +407,23 @@ async fn compute_asset_thresholds(
 
             // Try 24h history
             if let Some(&change_pct) = history_changes.get(asset_id) {
-                let bps = sanitize_threshold_bps(change_pct.abs());
-                if bps > 0 {
+                let abs_pct = change_pct.abs();
+                if abs_pct > 0.0 && !abs_pct.is_nan() && !abs_pct.is_infinite() {
+                    let (res_type, threshold_bps) = resolution_for_volatility(abs_pct);
                     return BatchMarket {
                         asset_id: asset_id.clone(),
-                        resolution_type: "up_x".to_string(),
-                        threshold_bps: bps,
+                        resolution_type: res_type.to_string(),
+                        threshold_bps,
                         threshold_source: "24h_history".to_string(),
                     };
                 }
             }
 
-            // Fallback: up_0
+            // Fallback: flat_x with 30 bps (no data = assume low volatility)
             BatchMarket {
                 asset_id: asset_id.clone(),
-                resolution_type: "up_0".to_string(),
-                threshold_bps: 0,
+                resolution_type: "flat_x".to_string(),
+                threshold_bps: 30,
                 threshold_source: "no_data".to_string(),
             }
         })
@@ -412,12 +431,29 @@ async fn compute_asset_thresholds(
 }
 
 /// Generate a full batch config for a source.
+/// Returns None if we're in the lock period (last portion of tick) to freeze config.
 async fn generate_batch_config(
     pool: &PgPool,
     source_id: &str,
     display_name: &str,
     sync_interval_secs: u64,
 ) -> Option<BatchConfig> {
+    // Issue #3: Don't recompute during lock period — freeze config
+    let tick_duration = sync_interval_secs;
+    let lock_offset = lock_offset_for_interval(sync_interval_secs);
+    let now_epoch = Utc::now().timestamp() as u64;
+    let elapsed = now_epoch % tick_duration;
+    let remaining = tick_duration - elapsed;
+    if remaining <= lock_offset {
+        info!(
+            source = source_id,
+            remaining_secs = remaining,
+            lock_offset_secs = lock_offset,
+            "Lock period — freezing batch config"
+        );
+        return None;
+    }
+
     let healthy = match get_healthy_assets(pool, source_id, sync_interval_secs).await {
         Ok(ids) => ids,
         Err(e) => {
@@ -582,7 +618,38 @@ pub async fn run(pool: PgPool, state: Arc<BatchEngineState>, sources: &[SourceMe
             configs.iter().map(|c| c.markets.len()).sum::<usize>()
         );
 
-        *state.configs.write().await = configs;
+        // DN-5: Merge new configs without losing active ones
+        {
+            let signed = state.signed_configs.read().await;
+            let signed_hashes: std::collections::HashSet<String> =
+                signed.iter().map(|s| s.config_hash.clone()).collect();
+
+            let mut merged = state.configs.write().await;
+            // Keep configs whose hash is referenced by a signed config
+            merged.retain(|c| signed_hashes.contains(&c.config_hash));
+            // Add new configs (deduplicated by source_id)
+            for config in configs {
+                if let Some(pos) = merged
+                    .iter()
+                    .position(|c| c.source_id == config.source_id && !signed_hashes.contains(&c.config_hash))
+                {
+                    merged[pos] = config;
+                } else if !merged.iter().any(|c| c.config_hash == config.config_hash) {
+                    merged.push(config);
+                }
+            }
+        }
+
+        // GC: delete batch configs older than 2 hours that were never signed
+        if let Err(e) = sqlx::query(
+            "DELETE FROM batch_configs WHERE created_at < NOW() - INTERVAL '2 hours' \
+             AND config_hash NOT IN (SELECT config_hash FROM signed_batch_configs)",
+        )
+        .execute(&pool)
+        .await
+        {
+            warn!(%e, "Failed to GC old batch configs");
+        }
 
         // Recompute every 60 seconds
         tokio::time::sleep(std::time::Duration::from_secs(60)).await;
@@ -595,12 +662,12 @@ mod tests {
 
     #[test]
     fn test_lock_offset_fast() {
-        assert_eq!(lock_offset_for_interval(60), 9); // 60 * 0.15 = 9
+        assert_eq!(lock_offset_for_interval(60), 15); // 60 * 0.25 = 15
     }
 
     #[test]
     fn test_lock_offset_medium() {
-        assert_eq!(lock_offset_for_interval(600), 90); // 600 * 0.15 = 90
+        assert_eq!(lock_offset_for_interval(600), 150); // 600 * 0.25 = 150
     }
 
     #[test]
@@ -610,7 +677,7 @@ mod tests {
 
     #[test]
     fn test_lock_offset_minimum() {
-        assert_eq!(lock_offset_for_interval(10), 5); // 10 * 0.15 = 1.5, clamped to MIN=5
+        assert_eq!(lock_offset_for_interval(10), 5); // 10 * 0.25 = 2.5, clamped to MIN=5
     }
 
     #[test]
@@ -718,5 +785,27 @@ mod tests {
         let h3 = compute_config_hash("stocks", 600, 90, &markets); // different source
         assert_ne!(h1, h2);
         assert_ne!(h1, h3);
+    }
+
+    #[test]
+    fn test_resolution_for_volatility() {
+        // Low volatility → flat_x 30 bps
+        assert_eq!(resolution_for_volatility(0.0), ("flat_x", 30));
+        assert_eq!(resolution_for_volatility(0.1), ("flat_x", 30));
+        assert_eq!(resolution_for_volatility(0.29), ("flat_x", 30));
+
+        // Moderate volatility → up_x 30 bps
+        assert_eq!(resolution_for_volatility(0.3), ("up_x", 30));
+        assert_eq!(resolution_for_volatility(1.5), ("up_x", 30));
+        assert_eq!(resolution_for_volatility(2.99), ("up_x", 30));
+
+        // High volatility → up_300 300 bps
+        assert_eq!(resolution_for_volatility(3.0), ("up_300", 300));
+        assert_eq!(resolution_for_volatility(15.0), ("up_300", 300));
+        assert_eq!(resolution_for_volatility(29.99), ("up_300", 300));
+
+        // Extreme volatility → up_3000 3000 bps
+        assert_eq!(resolution_for_volatility(30.0), ("up_3000", 3000));
+        assert_eq!(resolution_for_volatility(100.0), ("up_3000", 3000));
     }
 }
