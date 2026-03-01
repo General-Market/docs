@@ -94,11 +94,13 @@ pub struct MarketResult {
     /// Human-readable asset identifier (for settlement recording)
     pub asset_id: String,
     pub outcome: MarketOutcome,
-    /// Start price at tick open
+    /// Start price at tick open (f64 kept for logging/serialization)
     pub start_price: f64,
-    /// End price at tick close
+    /// End price at tick close (f64 kept for logging/serialization)
     pub end_price: f64,
-    pub pct_change: f64,
+    /// Percent change in basis points (integer, deterministic).
+    /// 100 bps = 1%, 30 bps = 0.3%, 300 bps = 3%.
+    pub pct_change_bps: i64,
     pub player_results: Vec<PlayerMarketResult>,
 }
 
@@ -125,12 +127,18 @@ pub struct PlayerMarketResult {
 }
 
 /// Multipliers applied to a player's stake based on early entry and commitment.
+///
+/// All multiplier fields are in basis points (BPS), where 10000 = 1.0x.
+/// This ensures deterministic cross-issuer agreement (no f64 non-determinism).
 #[derive(Debug, Clone)]
 pub struct PlayerMultiplier {
     pub player: Address,
-    pub early_mult: f64,
-    pub commitment_mult: f64,
-    pub total_mult: f64,
+    /// Early-entry multiplier in BPS (10000 = 1.0x, 20000 = 2.0x)
+    pub early_mult_bps: u64,
+    /// Commitment multiplier in BPS (10000 = 1.0x for log10(10))
+    pub commitment_mult_bps: u64,
+    /// Total multiplier in BPS = early * commitment / 10000
+    pub total_mult_bps: u64,
     pub effective_stake: U256,
 }
 

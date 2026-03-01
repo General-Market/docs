@@ -525,6 +525,9 @@ fn get_sender_id(message: &P2PMessage) -> Option<PeerId> {
         // Batch config orchestrator (independent from settlement cycle)
         P2PMessage::BatchConfigProposal { .. } => None, // No explicit sender field
         P2PMessage::BatchConfigSign { .. } => None,     // No explicit sender field
+        // Vision tick consensus (T-32)
+        P2PMessage::VisionTickProposal { leader_id, .. } => Some(*leader_id),
+        P2PMessage::VisionTickSign { signer_id, .. } => Some(*signer_id),
     }
 }
 

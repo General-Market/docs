@@ -2082,11 +2082,8 @@ mod tests {
 
     #[test]
     fn test_bridge_error_display() {
-        let err = BridgeError::InsufficientSignatures { got: 1, need: 2 };
-        assert_eq!(
-            err.to_string(),
-            "insufficient signatures: got 1, need 2"
-        );
+        // NOTE: InsufficientSignatures variant was removed from BridgeError.
+        // Skipping that assertion.
 
         let err = BridgeError::OrderExpired {
             deadline: 100,

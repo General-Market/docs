@@ -948,6 +948,41 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update([*signer_index]);
             h.update(nonce.to_le_bytes());
         }
+        // ── Vision tick consensus (T-32) ──────────────────────────
+        P2PMessage::VisionTickProposal {
+            leader_id,
+            batch_id,
+            tick_id,
+            result_hash,
+            player_balances,
+            reference_nonce: _, // exclude from equivocation hash
+            leader_signature: _, // exclude BLS sig
+        } => {
+            h.update(b"VisionTickProposal");
+            h.update(leader_id);
+            h.update(batch_id.to_le_bytes());
+            h.update(tick_id.to_le_bytes());
+            h.update(result_hash.as_bytes());
+            for (addr, bal) in player_balances {
+                h.update(addr.as_bytes());
+                let mut buf = [0u8; 32];
+                bal.to_little_endian(&mut buf);
+                h.update(buf);
+            }
+        }
+        P2PMessage::VisionTickSign {
+            signer_id,
+            signer_index,
+            batch_id,
+            tick_id,
+            signature: _, // exclude BLS sig
+        } => {
+            h.update(b"VisionTickSign");
+            h.update(signer_id);
+            h.update([*signer_index]);
+            h.update(batch_id.to_le_bytes());
+            h.update(tick_id.to_le_bytes());
+        }
     }
 
     h.finalize().into()
@@ -1010,6 +1045,8 @@ pub fn msg_variant_tag(msg: &P2PMessage) -> &'static str {
         P2PMessage::BatchConfigSign { .. } => "BatchConfigSign",
         P2PMessage::MirrorSyncProposal { .. } => "MirrorSyncProposal",
         P2PMessage::MirrorSyncSign { .. } => "MirrorSyncSign",
+        P2PMessage::VisionTickProposal { .. } => "VisionTickProposal",
+        P2PMessage::VisionTickSign { .. } => "VisionTickSign",
     }
 }
 
@@ -1043,6 +1080,7 @@ pub fn is_vote_or_sign(msg: &P2PMessage) -> bool {
             | P2PMessage::ArbitrationResolutionSign { .. }
             | P2PMessage::BatchConfigSign { .. }
             | P2PMessage::MirrorSyncSign { .. }
+            | P2PMessage::VisionTickSign { .. }
     )
 }
 

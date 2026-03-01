@@ -768,6 +768,41 @@ pub enum P2PMessage {
         nonce: u64,
         signature: BLSSignature,
     },
+
+    // ==================== Vision Tick Consensus (T-32) ====================
+
+    /// Leader proposes tick resolution result for BLS consensus.
+    /// Vision tick resolution must be agreed upon by 2/3 of issuers.
+    VisionTickProposal {
+        /// Leader's peer ID
+        leader_id: PeerId,
+        /// Batch ID being resolved
+        batch_id: u64,
+        /// Tick ID being resolved
+        tick_id: u64,
+        /// Hash of the tick result (keccak256 of deterministic serialization)
+        result_hash: H256,
+        /// Per-player balance updates: (player_address, new_balance)
+        player_balances: Vec<(Address, U256)>,
+        /// Registry snapshot nonce
+        reference_nonce: u64,
+        /// Leader's BLS signature
+        leader_signature: BLSSignature,
+    },
+
+    /// Follower signs tick resolution proposal.
+    VisionTickSign {
+        /// Signer's peer ID
+        signer_id: PeerId,
+        /// Signer's index in the issuer set
+        signer_index: u8,
+        /// Batch ID (identifies which proposal)
+        batch_id: u64,
+        /// Tick ID (identifies which proposal)
+        tick_id: u64,
+        /// Follower's BLS signature
+        signature: BLSSignature,
+    },
 }
 
 /// A proposed batch config for a single source, carried in BatchConfigProposal.

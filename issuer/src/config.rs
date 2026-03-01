@@ -390,6 +390,9 @@ impl IssuerConfig {
                         tick_poll_interval_ms: parse_env_var("ISSUER_VISION_TICK_POLL_INTERVAL_MS").unwrap_or(1000),
                         data_node_token: std::env::var("DATA_NODE_TOKEN").ok(),
                         snapshot_hmac_secret: std::env::var("SNAPSHOT_HMAC_SECRET").ok(),
+                        // BLS tick consensus fields (T-32)
+                        chain_id: parse_env_var("ISSUER_VISION_CHAIN_ID").unwrap_or(111222333),
+                        num_issuers: parse_env_var("ISSUER_VISION_NUM_ISSUERS").unwrap_or(1),
                         // Cross-chain deposit fields (Vision First Deposit)
                         arb_rpc_url: std::env::var("ISSUER_VISION_ARB_RPC_URL")
                             .unwrap_or_else(|_| "https://arb1.arbitrum.io/rpc".into()),
