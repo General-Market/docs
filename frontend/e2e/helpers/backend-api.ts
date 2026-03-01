@@ -238,9 +238,20 @@ async function getUserStateViaRpc(user: string, _itpId: string): Promise<UserSta
  */
 export async function mintBridgedItp(
   user: string,
-  _itpId: string,
+  itpId: string,
   amount: bigint,
 ): Promise<void> {
+  // Resolve BridgedITP address for this ITP — ITP1 uses the known constant,
+  // ITP2+ need dynamic lookup via BridgeProxy.orbitToArbitrum()
+  let bridgedToken = BRIDGED_ITP;
+  if (itpId !== '0x0000000000000000000000000000000000000000000000000000000000000001') {
+    const addr = await getBridgedItpAddress(itpId);
+    if (addr === '0x' + '0'.repeat(40)) {
+      throw new Error(`No BridgedITP deployed for itpId ${itpId}`);
+    }
+    bridgedToken = addr;
+  }
+
   // Fund BridgeProxy with ETH for gas (it's a contract with no balance)
   await rpcCall('anvil_setBalance', [BRIDGE_PROXY, '0x56BC75E2D63100000']); // 100 ETH
   // Impersonate BridgeProxy to call BridgedITP.mint(user, amount) directly
@@ -253,7 +264,7 @@ export async function mintBridgedItp(
 
     await rpcCall('eth_sendTransaction', [{
       from: BRIDGE_PROXY,
-      to: BRIDGED_ITP,
+      to: bridgedToken,
       data,
       gas: '0x100000', // 1M gas
     }]);
@@ -733,6 +744,8 @@ export async function placeSellOrderDirect(
     const deadline = BigInt(chainTimestamp + 3600);
 
     // Place sell order
+    // Re-impersonate in case parallel tests stopped impersonation (shared Anvil state)
+    await rpcCall('anvil_impersonateAccount', [user]);
     const sellData = encodeFunctionData({
       abi: SELL_ABI,
       functionName: 'sellITPFromArbitrum',
