@@ -3660,12 +3660,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let engine_resolver = resolver.clone();
             let engine_config = vision_cfg.clone();
             let engine_shutdown = components.shutdown.clone();
+            let engine_bls_keypair = components.consensus.keys.bls_keypair.clone().map(Arc::new);
             tokio::spawn(async move {
                 issuer::vision::engine::run(
                     engine_scheduler,
                     engine_resolver,
                     engine_config,
                     engine_shutdown,
+                    engine_bls_keypair,
                 ).await;
             });
 

@@ -1,5 +1,34 @@
 # Design Decision Backlog
 
+## Session: 20260301-2200-t32b (T-32: Vision tick BLS consensus - Part 2: Engine wiring)
+
+- [DECISION] Added `bls_keypair: Option<Arc<BLSKeyPair>>` parameter to engine::run() rather than embedding it in VisionConfig — keeps config serializable and matches the pattern used elsewhere in the codebase (arbitration, deposit_watcher) where BLS keypair is passed separately from config.
+- [DECISION] Consensus gate in engine: after tick resolution, single-issuer (num_issuers <= 1 or no keypair) applies balances directly; multi-issuer calls TickConsensus::create_proposal() and defers balance application to P2P message handler. Fallback to direct application on proposal creation failure (degraded mode).
+- [DECISION] Extracted `apply_balances()` as a public helper function from engine.rs so both the engine (single-issuer + degraded fallback) and future P2P consensus handler can share the same DB-persistence-or-in-memory logic.
+- [DECISION] Added `chain_id: u64` and `num_issuers: usize` to VisionConfig with defaults (111222333, 1) — these are needed by TickConsensus construction but were previously not in VisionConfig. Default num_issuers=1 means existing single-issuer deployments work unchanged.
+- [DECISION] The engine does NOT block waiting for consensus — create_proposal returns immediately, and the P2P message handler will collect signatures asynchronously. Reference prices and mark_resolved still happen immediately (even in multi-issuer mode) because re-resolution of the same tick is idempotent and reference prices should advance.
+
+## Session: 20260301-2100-t32a (T-32: Vision tick BLS consensus - Part 1)
+
+- [DECISION] Added VisionTickProposal and VisionTickSign P2P message types following existing Proposal/Sign pattern (leader_id, batch_id, tick_id, result_hash, player_balances, reference_nonce, leader_signature for proposals; signer_id, signer_index, batch_id, tick_id, signature for signs).
+- [DECISION] TickConsensus stores both Bn254BLSSigner (Arc) and BLSKeyPair (Arc) rather than just signer, matching the codebase convention where sign_message_hash requires a keypair reference.
+- [DECISION] compute_tick_result_hash sorts player_balances by address for determinism, uses two-layer keccak256: inner hash over sorted balances, outer hash including chain_id + vision_address + domain separator + batch_id + tick_id + inner_hash.
+- [DECISION] add_signature returns Option<Result<AggregationStatus, Error>> — Option layer for "round not found", Result layer for BLS aggregation errors, matching SignatureAggregator::add_signature's existing Result return type.
+- [DECISION] Added chain_id and num_issuers env var parsing to issuer config.rs (ISSUER_VISION_CHAIN_ID, ISSUER_VISION_NUM_ISSUERS) since VisionConfig struct already had these fields from prior T-32 work but config initialization was missing them.
+
+## Session: 20260301-1600-m4q8 (Vision multiplier f64 -> integer BPS)
+
+- [DECISION] Converted Vision multiplier computation from f64 to integer BPS arithmetic for deterministic cross-issuer agreement. All multiplier values now use a 10000 BPS scale (10000 = 1.0x). Early multiplier uses u128 intermediate for overflow safety. Commitment multiplier uses linear interpolation between powers of 10 (deterministic integer log10 approximation, max ~3% error within a decade vs true log10). Effective stake computed entirely via U256 integer path.
+- [DECISION] Changed `PlayerMultiplier` struct fields from `{early_mult: f64, commitment_mult: f64, total_mult: f64}` to `{early_mult_bps: u64, commitment_mult_bps: u64, total_mult_bps: u64}`. Only `multiplier.rs` and `types.rs` reference these fields; resolver.rs only uses `.player` and `.effective_stake`.
+- [DECISION] Updated resolver test `test_per_market_stake_matches_brief_example` to check ordering (Alice > Bob > Carol = Dave) instead of exact 4:2:1:1 ratio, because commitment multiplier (log10 of balance/stake) differs per player and exact ratios depend on the log10 approximation method.
+- [FAILED] Exact ratio assertions in resolver test — the test assumed 4:2:1:1 based on raw stakes, but commitment multipliers vary because balance/stake gives different committed tick counts per player.
+
+## Session: 20260301-1200-r7k3 (Vision resolver f64 -> integer BPS)
+
+- [DECISION] Converted Vision resolver from f64 floating-point arithmetic to integer basis-point (BPS) arithmetic for deterministic cross-issuer agreement. Prices converted from f64 to u128 (scaled by 1e8) once at the boundary, then all percent-change computation and outcome resolution uses integer math. `compute_pct_change_bps()` returns i64 BPS, `resolve_outcome_bps()` takes i64 BPS. This eliminates platform-dependent floating-point rounding that could cause issuers to disagree on outcomes.
+- [DECISION] Kept old `resolve_outcome()` f64 function behind `#[cfg(test)]` solely for cross-validation tests that verify integer results match f64 results for common inputs.
+- [DECISION] Changed `MarketResult.pct_change: f64` to `MarketResult.pct_change_bps: i64` in types.rs. Engine serialization updated from `changePct` to `changeBps`.
+
 ## Session: 20260302-0300-sf1 (Sell fills race condition fix)
 
 - [DECISION] Root cause of sell fills BLS error (0x10aa8d54 = BLSVerifier__InvalidSignature): `has_any_active_bridge_orders()` only checked buy-side `order_status`, not `sell_order_status`. This allowed the L3-native BATCHED path to race with the sell pipeline on the same physical orders. Both paths proposed fills with different cycle numbers, creating two concurrent BLS consensus rounds signing different message hashes. The losing race's TX reverted with InvalidSignature because the aggregated BLS signature was for a different hash than the contract computed.

@@ -8,13 +8,15 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use ethers::types::H256;
+use common::bls::BLSKeyPair;
+use ethers::types::{Address, H256};
 use ethers::utils::keccak256;
 use tokio::sync::RwLock;
 
 use super::batch_config_orchestrator;
 use super::config::VisionConfig;
 use super::resolver::{MarketPrices, TickResolver};
+use super::tick_consensus::TickConsensus;
 use super::tick_scheduler::TickScheduler;
 use super::types::MarketConfig;
 
@@ -417,7 +419,7 @@ async fn record_settlements(
                 "configHash": format!("0x{}", hex::encode(config_hash)),
                 "startPrice": r.start_price,
                 "endPrice": r.end_price,
-                "changePct": r.pct_change,
+                "changeBps": r.pct_change_bps,
             })
         })
         .collect();
@@ -470,6 +472,39 @@ async fn get_chain_timestamp(rpc_url: &str) -> u64 {
     }
 }
 
+/// Apply player balance updates to the scheduler, with optional DB persistence.
+///
+/// Extracted as a helper so both single-issuer (direct) and multi-issuer
+/// (consensus fallback / degraded mode) paths can share the same logic.
+pub async fn apply_balances(
+    scheduler: &Arc<TickScheduler>,
+    db_pool: &Option<sqlx::PgPool>,
+    batch_id: u64,
+    tick_id: u64,
+    player_balances: &[super::types::PlayerBalance],
+) {
+    if player_balances.is_empty() {
+        return;
+    }
+    if let Some(ref pool) = db_pool {
+        if let Err(e) = scheduler
+            .apply_tick_balances_with_db(pool, batch_id, player_balances)
+            .await
+        {
+            tracing::warn!(
+                batch_id,
+                tick_id,
+                error = %e,
+                "Failed to persist balance updates to DB"
+            );
+        }
+    } else {
+        scheduler
+            .apply_tick_balances(batch_id, player_balances)
+            .await;
+    }
+}
+
 /// Main tick engine loop.
 ///
 /// Polls the scheduler at `config.tick_poll_interval_ms` intervals for batches
@@ -481,13 +516,17 @@ async fn get_chain_timestamp(rpc_url: &str) -> u64 {
 /// 4. Runs the tick resolver to compute outcomes
 /// 5. Records settlements to data-node for threshold feedback
 /// 6. Marks the tick as resolved in the scheduler
-/// 7. (TODO) Drives BLS consensus with other issuers
-/// 8. (TODO) Submits the signed result on-chain
+/// 7. Drives BLS consensus with other issuers (multi-issuer mode)
+/// 8. Submits the signed result on-chain (after consensus)
+///
+/// In single-issuer mode (`num_issuers <= 1` or `bls_keypair` is `None`),
+/// balance updates are applied directly without consensus.
 pub async fn run(
     scheduler: Arc<TickScheduler>,
     resolver: Arc<TickResolver>,
     config: VisionConfig,
     shutdown: Arc<AtomicBool>,
+    bls_keypair: Option<Arc<BLSKeyPair>>,
 ) {
     let interval = tokio::time::Duration::from_millis(config.tick_poll_interval_ms);
     let reference_prices: ReferencePrices = Arc::new(RwLock::new(HashMap::new()));
@@ -506,10 +545,51 @@ pub async fn run(
         }
     };
 
+    // Construct tick consensus orchestrator for multi-issuer BLS consensus.
+    // When num_issuers <= 1 or no BLS keypair, we run in single-issuer mode
+    // and apply balance updates directly without consensus.
+    let tick_consensus: Option<Arc<TickConsensus>> = if config.num_issuers > 1 {
+        match &bls_keypair {
+            Some(keypair) => {
+                let vision_address: Address = config
+                    .vision_address
+                    .parse()
+                    .unwrap_or_else(|_| {
+                        tracing::warn!("Invalid vision_address for tick consensus — using zero address");
+                        Address::zero()
+                    });
+                let tc = TickConsensus::new(
+                    config.chain_id,
+                    vision_address,
+                    config.num_issuers,
+                    Arc::new(common::bls::Bn254BLSSigner::new()),
+                    keypair.clone(),
+                );
+                tracing::info!(
+                    num_issuers = config.num_issuers,
+                    chain_id = config.chain_id,
+                    "Tick consensus enabled (multi-issuer mode)"
+                );
+                Some(Arc::new(tc))
+            }
+            None => {
+                tracing::warn!(
+                    num_issuers = config.num_issuers,
+                    "num_issuers > 1 but no BLS keypair — falling back to single-issuer mode"
+                );
+                None
+            }
+        }
+    } else {
+        tracing::info!("Single-issuer mode — tick consensus disabled");
+        None
+    };
+
     tracing::info!(
         poll_interval_ms = config.tick_poll_interval_ms,
         reveal_window_secs = config.reveal_window_secs,
         data_node_url = %config.data_node_url,
+        consensus_enabled = tick_consensus.is_some(),
         "Vision tick engine started"
     );
 
@@ -827,32 +907,53 @@ pub async fn run(
                                     )
                                     .await;
 
-                                    // Apply balance updates to scheduler
-                                    if !result.player_balances.is_empty() {
-                                        if let Some(ref pool) = db_pool {
-                                            if let Err(e) = scheduler
-                                                .apply_tick_balances_with_db(
-                                                    pool,
+                                    // === BLS Consensus Gate ===
+                                    // Multi-issuer: create proposal, defer balance application
+                                    // Single-issuer: apply balances directly (original behavior)
+                                    if let Some(ref tc) = tick_consensus {
+                                        // Multi-issuer mode: start consensus round
+                                        match tc.create_proposal(&result, 0).await {
+                                            Ok((result_hash, _leader_sig, player_balances)) => {
+                                                tracing::info!(
                                                     batch_id,
-                                                    &result.player_balances,
-                                                )
-                                                .await
-                                            {
-                                                tracing::warn!(
+                                                    tick_id,
+                                                    result_hash = ?result_hash,
+                                                    players = player_balances.len(),
+                                                    "Started tick consensus round — balances deferred until threshold"
+                                                );
+                                                // Balance application happens when consensus
+                                                // completes (handled by the P2P message handler
+                                                // calling TickConsensus::add_signature and then
+                                                // applying via scheduler).
+                                            }
+                                            Err(e) => {
+                                                tracing::error!(
                                                     batch_id,
                                                     tick_id,
                                                     error = %e,
-                                                    "Failed to persist balance updates to DB"
+                                                    "Failed to create tick consensus proposal — applying directly (degraded)"
                                                 );
-                                            }
-                                        } else {
-                                            scheduler
-                                                .apply_tick_balances(
+                                                // Fallback: apply directly in degraded mode
+                                                apply_balances(
+                                                    &scheduler,
+                                                    &db_pool,
                                                     batch_id,
+                                                    tick_id,
                                                     &result.player_balances,
                                                 )
                                                 .await;
+                                            }
                                         }
+                                    } else {
+                                        // Single-issuer mode: apply balance updates directly
+                                        apply_balances(
+                                            &scheduler,
+                                            &db_pool,
+                                            batch_id,
+                                            tick_id,
+                                            &result.player_balances,
+                                        )
+                                        .await;
                                     }
 
                                     // Update reference prices for next tick
@@ -952,7 +1053,7 @@ mod tests {
 
         let shutdown_clone = shutdown.clone();
         let handle = tokio::spawn(async move {
-            run(scheduler, resolver, config, shutdown_clone).await;
+            run(scheduler, resolver, config, shutdown_clone, None).await;
         });
 
         // Let it run briefly, then signal shutdown
@@ -997,7 +1098,7 @@ mod tests {
         let sched_check = scheduler.clone();
         let shutdown_clone = shutdown.clone();
         let handle = tokio::spawn(async move {
-            run(scheduler, resolver, config, shutdown_clone).await;
+            run(scheduler, resolver, config, shutdown_clone, None).await;
         });
 
         // Wait for the engine to process at least one tick

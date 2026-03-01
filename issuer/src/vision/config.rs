@@ -34,6 +34,15 @@ pub struct VisionConfig {
     pub snapshot_hmac_secret: Option<String>,
 
     // =========================================================================
+    // BLS tick consensus fields (T-32)
+    // =========================================================================
+
+    /// L3 chain ID for BLS hash domain separation. Default: 111222333 (Index L3).
+    pub chain_id: u64,
+    /// Number of active issuers in the network. Default: 1 (single-issuer, no consensus).
+    pub num_issuers: usize,
+
+    // =========================================================================
     // Dual-balance / cross-chain deposit fields (Vision First Deposit)
     // =========================================================================
 
@@ -70,6 +79,9 @@ impl Default for VisionConfig {
             tick_poll_interval_ms: 1000,
             data_node_token: None,
             snapshot_hmac_secret: None,
+            // BLS tick consensus defaults
+            chain_id: 111222333,
+            num_issuers: 1,
             // Cross-chain deposit defaults
             arb_rpc_url: "https://arb1.arbitrum.io/rpc".into(),
             arb_bridge_custody_address: String::new(),

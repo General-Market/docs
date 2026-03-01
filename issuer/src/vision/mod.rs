@@ -14,5 +14,6 @@ pub mod engine;
 pub mod multiplier;
 pub mod resolver;
 pub mod side_matching;
+pub mod tick_consensus;
 pub mod tick_scheduler;
 pub mod types;
