@@ -118,14 +118,16 @@ impl TickResolver {
         }
 
         // 3. Compute multipliers for revealed players
-        // Derive num_committed_ticks from bitmap length: total_bits / num_markets
-        let num_markets_count = market_configs.len();
+        // RC-14: Derive num_committed_ticks from balance coverage, not bitmap length.
+        // This prevents gaming via zero-padded bitmaps: a player who pads their bitmap
+        // with zeros gets no multiplier benefit -- only actual financial commitment counts.
         let revealed_positions: Vec<PlayerPosition> =
-            revealed_players.iter().map(|(p, bitmap)| {
+            revealed_players.iter().map(|(p, _bitmap)| {
                 let mut pos = (*p).clone();
-                if num_markets_count > 0 {
-                    let total_bits = bitmap.len() * 8;
-                    pos.num_committed_ticks = (total_bits / num_markets_count) as u64;
+                if !pos.stake_per_tick.is_zero() {
+                    pos.num_committed_ticks = (pos.balance / pos.stake_per_tick).as_u64();
+                } else {
+                    pos.num_committed_ticks = 0;
                 }
                 pos
             }).collect();
@@ -154,6 +156,11 @@ impl TickResolver {
                 Some(p) => p,
                 None => {
                     // No price data -> cancelled market (skipped, no weight redistribution)
+                    tracing::info!(
+                        batch_id = batch.id,
+                        market_id = ?market_id,
+                        "Market resolved as Cancelled — no price data"
+                    );
                     market_results.push(MarketResult {
                         market_id,
                         asset_id: mc.asset_id.clone(),
@@ -169,6 +176,15 @@ impl TickResolver {
 
             // Check staleness
             if prices.is_stale(&market_id, self.config.staleness_threshold_secs, now) {
+                tracing::info!(
+                    batch_id = batch.id,
+                    market_id = ?market_id,
+                    last_update_age_secs = now.saturating_sub(
+                        prices.prices.get(&market_id).map(|(_, _, ts)| *ts).unwrap_or(0)
+                    ),
+                    threshold_secs = self.config.staleness_threshold_secs,
+                    "Market resolved as Cancelled — stale price data"
+                );
                 market_results.push(MarketResult {
                     market_id,
                     asset_id: mc.asset_id.clone(),
@@ -193,6 +209,17 @@ impl TickResolver {
             let threshold = mc.threshold_bps as f64 / 100.0; // bps -> percentage
             let outcome = resolve_outcome(pct_change, resolution_type, threshold);
 
+            // Log if market resolves as cancelled
+            if matches!(outcome, MarketOutcome::Cancelled) {
+                tracing::info!(
+                    batch_id = batch.id,
+                    market_id = ?market_id,
+                    resolution_type = resolution_type,
+                    pct_change = pct_change,
+                    "Market resolved as Cancelled — invalid resolution type or other condition"
+                );
+            }
+
             // Decode bitmaps -> player sides for this market
             let mut side_inputs = Vec::new();
             for (player, bitmap) in &revealed_players {
@@ -201,7 +228,12 @@ impl TickResolver {
                     let tick_offset = tick_id.saturating_sub(player.start_tick) as usize;
                     let bit_index = tick_offset * market_configs.len() + market_idx;
                     let bit = get_bitmap_bit(bitmap, bit_index);
-                    let side = if bit { Side::Up } else { Side::Down };
+                    // IS-6: if bitmap doesn't cover this market, skip the player
+                    let side = match bit {
+                        Some(true) => Side::Up,
+                        Some(false) => Side::Down,
+                        None => continue, // player didn't cover this market
+                    };
                     // DEV-1: split effective_stake equally across all markets
                     let per_market_stake = mult.effective_stake / num_markets;
                     side_inputs.push(SideMatchInput {
@@ -304,6 +336,18 @@ impl TickResolver {
             })
             .collect();
 
+        // Log summary of cancelled markets
+        let cancelled_count = market_results.iter().filter(|mr| matches!(mr.outcome, MarketOutcome::Cancelled)).count();
+        if cancelled_count > 0 {
+            tracing::warn!(
+                batch_id = batch.id,
+                tick_id = tick_id,
+                cancelled = cancelled_count,
+                total = market_results.len(),
+                "Tick had cancelled markets"
+            );
+        }
+
         Ok(TickResult {
             batch_id: batch.id,
             tick_id,
@@ -317,14 +361,20 @@ impl TickResolver {
 /// Determine market outcome from % change and resolution type.
 ///
 /// Resolution types:
-/// - 0: UP_0 — any positive move is UP
-/// - 1: UP_30 — UP requires > 0.3% move
-/// - 2: UP_X — UP requires > custom threshold %
-/// - 3: DOWN_0 — any negative move is DOWN
-/// - 4: DOWN_30 — DOWN requires > 0.3% negative move
-/// - 5: DOWN_X — DOWN requires > custom threshold % negative move
-/// - 6: FLAT_0 — flat if < 0.01% absolute move
-/// - 7: FLAT_X — flat if < custom threshold %
+/// - 0: UP_0 — any positive move is UP (ternary: Up/Down/Flat)
+/// - 1: UP_30 — UP requires > 0.3% move (binary: Up or Down)
+/// - 2: UP_X — UP requires > custom threshold % (binary: Up or Down)
+/// - 3: DOWN_0 — any negative move is DOWN (ternary: Up/Down/Flat)
+/// - 4: DOWN_30 — DOWN requires > 0.3% negative move (binary: Down or Up)
+/// - 5: DOWN_X — DOWN requires > custom threshold % negative move (binary: Down or Up)
+/// - 6: FLAT_0 — flat if < 0.01% absolute move (ternary: Flat/Up/Down)
+/// - 7: FLAT_X — flat if < custom threshold % (ternary: Flat/Up/Down)
+/// - 8: UP_300 — UP requires > 3% move (binary: Up or Down)
+/// - 9: UP_3000 — UP requires > 30% move (binary: Up or Down)
+/// - 10: DOWN_300 — DOWN requires > 3% negative (binary: Down or Up)
+/// - 11: DOWN_3000 — DOWN requires > 30% negative (binary: Down or Up)
+/// - 12: FLAT_300 — flat if < 3% absolute move (ternary: Flat/Up/Down)
+/// - 13: FLAT_3000 — flat if < 30% absolute move (ternary: Flat/Up/Down)
 fn resolve_outcome(pct_change: f64, resolution_type: u8, threshold: f64) -> MarketOutcome {
     match resolution_type {
         // UP_0: any positive is UP
@@ -337,24 +387,20 @@ fn resolve_outcome(pct_change: f64, resolution_type: u8, threshold: f64) -> Mark
                 MarketOutcome::Flat
             }
         }
-        // UP_30: UP requires > 0.3%
+        // UP_30: UP requires > 0.3% (binary: met or not)
         1 => {
             if pct_change > 0.3 {
                 MarketOutcome::Up
-            } else if pct_change < -0.3 {
-                MarketOutcome::Down
             } else {
-                MarketOutcome::Flat
+                MarketOutcome::Down
             }
         }
-        // UP_X: UP requires > threshold%
+        // UP_X: UP requires > threshold% (binary: met or not)
         2 => {
             if pct_change > threshold {
                 MarketOutcome::Up
-            } else if pct_change < -threshold {
-                MarketOutcome::Down
             } else {
-                MarketOutcome::Flat
+                MarketOutcome::Down
             }
         }
         // DOWN_0: any negative is DOWN
@@ -367,24 +413,20 @@ fn resolve_outcome(pct_change: f64, resolution_type: u8, threshold: f64) -> Mark
                 MarketOutcome::Flat
             }
         }
-        // DOWN_30: DOWN requires > 0.3% negative
+        // DOWN_30: DOWN requires > 0.3% negative (binary: met or not)
         4 => {
             if pct_change < -0.3 {
                 MarketOutcome::Down
-            } else if pct_change > 0.3 {
-                MarketOutcome::Up
             } else {
-                MarketOutcome::Flat
+                MarketOutcome::Up
             }
         }
-        // DOWN_X: DOWN requires > threshold% negative
+        // DOWN_X: DOWN requires > threshold% negative (binary: met or not)
         5 => {
             if pct_change < -threshold {
                 MarketOutcome::Down
-            } else if pct_change > threshold {
-                MarketOutcome::Up
             } else {
-                MarketOutcome::Flat
+                MarketOutcome::Up
             }
         }
         // FLAT_0: flat if < 0.01% absolute
@@ -407,6 +449,58 @@ fn resolve_outcome(pct_change: f64, resolution_type: u8, threshold: f64) -> Mark
                 MarketOutcome::Down
             }
         }
+        // UP_300: UP requires > 3% (300 bps)
+        8 => {
+            if pct_change > 3.0 {
+                MarketOutcome::Up
+            } else {
+                MarketOutcome::Down
+            }
+        }
+        // UP_3000: UP requires > 30% (3000 bps)
+        9 => {
+            if pct_change > 30.0 {
+                MarketOutcome::Up
+            } else {
+                MarketOutcome::Down
+            }
+        }
+        // DOWN_300: DOWN requires > 3% negative
+        10 => {
+            if pct_change < -3.0 {
+                MarketOutcome::Down
+            } else {
+                MarketOutcome::Up
+            }
+        }
+        // DOWN_3000: DOWN requires > 30% negative
+        11 => {
+            if pct_change < -30.0 {
+                MarketOutcome::Down
+            } else {
+                MarketOutcome::Up
+            }
+        }
+        // FLAT_300: flat if < 3%
+        12 => {
+            if pct_change.abs() < 3.0 {
+                MarketOutcome::Flat
+            } else if pct_change > 0.0 {
+                MarketOutcome::Up
+            } else {
+                MarketOutcome::Down
+            }
+        }
+        // FLAT_3000: flat if < 30%
+        13 => {
+            if pct_change.abs() < 30.0 {
+                MarketOutcome::Flat
+            } else if pct_change > 0.0 {
+                MarketOutcome::Up
+            } else {
+                MarketOutcome::Down
+            }
+        }
         // Unknown resolution type -> cancelled
         _ => MarketOutcome::Cancelled,
     }
@@ -415,13 +509,14 @@ fn resolve_outcome(pct_change: f64, resolution_type: u8, threshold: f64) -> Mark
 /// Get a specific bit from a bitmap (0-indexed, big-endian bit order within each byte).
 ///
 /// Bit 0 is the most significant bit of byte 0.
-fn get_bitmap_bit(bitmap: &[u8], index: usize) -> bool {
+/// Returns `None` if the index is out of bounds (bitmap too short to cover this market).
+fn get_bitmap_bit(bitmap: &[u8], index: usize) -> Option<bool> {
     let byte_idx = index / 8;
     let bit_idx = 7 - (index % 8); // big-endian bit order
     if byte_idx >= bitmap.len() {
-        return false;
+        return None; // Not covered by bitmap
     }
-    (bitmap[byte_idx] >> bit_idx) & 1 == 1
+    Some((bitmap[byte_idx] >> bit_idx) & 1 == 1)
 }
 
 #[cfg(test)]
@@ -517,30 +612,30 @@ mod tests {
     fn test_bitmap_bit_extraction() {
         // 0b10110000 = 0xB0 = 176
         let bitmap = vec![0b1011_0000u8];
-        assert!(get_bitmap_bit(&bitmap, 0)); // bit 7 (MSB) = 1
-        assert!(!get_bitmap_bit(&bitmap, 1)); // bit 6 = 0
-        assert!(get_bitmap_bit(&bitmap, 2)); // bit 5 = 1
-        assert!(get_bitmap_bit(&bitmap, 3)); // bit 4 = 1
-        assert!(!get_bitmap_bit(&bitmap, 4)); // bit 3 = 0
-        assert!(!get_bitmap_bit(&bitmap, 5)); // bit 2 = 0
-        assert!(!get_bitmap_bit(&bitmap, 6)); // bit 1 = 0
-        assert!(!get_bitmap_bit(&bitmap, 7)); // bit 0 = 0
+        assert_eq!(get_bitmap_bit(&bitmap, 0), Some(true));  // bit 7 (MSB) = 1
+        assert_eq!(get_bitmap_bit(&bitmap, 1), Some(false)); // bit 6 = 0
+        assert_eq!(get_bitmap_bit(&bitmap, 2), Some(true));  // bit 5 = 1
+        assert_eq!(get_bitmap_bit(&bitmap, 3), Some(true));  // bit 4 = 1
+        assert_eq!(get_bitmap_bit(&bitmap, 4), Some(false)); // bit 3 = 0
+        assert_eq!(get_bitmap_bit(&bitmap, 5), Some(false)); // bit 2 = 0
+        assert_eq!(get_bitmap_bit(&bitmap, 6), Some(false)); // bit 1 = 0
+        assert_eq!(get_bitmap_bit(&bitmap, 7), Some(false)); // bit 0 = 0
 
-        // Out of bounds returns false
-        assert!(!get_bitmap_bit(&bitmap, 8));
-        assert!(!get_bitmap_bit(&bitmap, 100));
+        // Out of bounds returns None (IS-6: bitmap doesn't cover this market)
+        assert_eq!(get_bitmap_bit(&bitmap, 8), None);
+        assert_eq!(get_bitmap_bit(&bitmap, 100), None);
 
         // Multi-byte: 0xFF 0x00 = all 1s then all 0s
         let bitmap2 = vec![0xFF, 0x00];
         for i in 0..8 {
-            assert!(get_bitmap_bit(&bitmap2, i), "bit {i} should be 1");
+            assert_eq!(get_bitmap_bit(&bitmap2, i), Some(true), "bit {i} should be Some(true)");
         }
         for i in 8..16 {
-            assert!(!get_bitmap_bit(&bitmap2, i), "bit {i} should be 0");
+            assert_eq!(get_bitmap_bit(&bitmap2, i), Some(false), "bit {i} should be Some(false)");
         }
 
         // Empty bitmap
-        assert!(!get_bitmap_bit(&[], 0));
+        assert_eq!(get_bitmap_bit(&[], 0), None);
     }
 
     // -------------------------------------------------------------------------
@@ -560,12 +655,13 @@ mod tests {
             resolve_outcome(-0.31, 1, 0.0),
             MarketOutcome::Down
         ));
-        assert!(matches!(resolve_outcome(0.29, 1, 0.0), MarketOutcome::Flat));
+        // Binary: below threshold -> Down (no Flat)
+        assert!(matches!(resolve_outcome(0.29, 1, 0.0), MarketOutcome::Down));
         assert!(matches!(
             resolve_outcome(-0.29, 1, 0.0),
-            MarketOutcome::Flat
+            MarketOutcome::Down
         ));
-        assert!(matches!(resolve_outcome(0.0, 1, 0.0), MarketOutcome::Flat));
+        assert!(matches!(resolve_outcome(0.0, 1, 0.0), MarketOutcome::Down));
     }
 
     #[test]
@@ -579,9 +675,10 @@ mod tests {
             resolve_outcome(-1.6, 2, threshold),
             MarketOutcome::Down
         ));
+        // Binary: below threshold -> Down (no Flat)
         assert!(matches!(
             resolve_outcome(1.4, 2, threshold),
-            MarketOutcome::Flat
+            MarketOutcome::Down
         ));
     }
 
@@ -600,7 +697,8 @@ mod tests {
             MarketOutcome::Down
         ));
         assert!(matches!(resolve_outcome(0.31, 4, 0.0), MarketOutcome::Up));
-        assert!(matches!(resolve_outcome(0.0, 4, 0.0), MarketOutcome::Flat));
+        // Binary: above -threshold -> Up (no Flat)
+        assert!(matches!(resolve_outcome(0.0, 4, 0.0), MarketOutcome::Up));
     }
 
     #[test]
@@ -614,9 +712,10 @@ mod tests {
             resolve_outcome(2.1, 5, threshold),
             MarketOutcome::Up
         ));
+        // Binary: above -threshold -> Up (no Flat)
         assert!(matches!(
             resolve_outcome(1.9, 5, threshold),
-            MarketOutcome::Flat
+            MarketOutcome::Up
         ));
     }
 
@@ -645,6 +744,46 @@ mod tests {
             resolve_outcome(-0.6, 7, threshold),
             MarketOutcome::Down
         ));
+    }
+
+    #[test]
+    fn test_resolve_outcome_up_300() {
+        assert!(matches!(resolve_outcome(3.5, 8, 0.0), MarketOutcome::Up));
+        assert!(matches!(resolve_outcome(2.5, 8, 0.0), MarketOutcome::Down));
+        assert!(matches!(resolve_outcome(-5.0, 8, 0.0), MarketOutcome::Down));
+    }
+
+    #[test]
+    fn test_resolve_outcome_up_3000() {
+        assert!(matches!(resolve_outcome(35.0, 9, 0.0), MarketOutcome::Up));
+        assert!(matches!(resolve_outcome(25.0, 9, 0.0), MarketOutcome::Down));
+    }
+
+    #[test]
+    fn test_resolve_outcome_down_300() {
+        assert!(matches!(resolve_outcome(-3.5, 10, 0.0), MarketOutcome::Down));
+        assert!(matches!(resolve_outcome(-2.5, 10, 0.0), MarketOutcome::Up));
+        assert!(matches!(resolve_outcome(5.0, 10, 0.0), MarketOutcome::Up));
+    }
+
+    #[test]
+    fn test_resolve_outcome_down_3000() {
+        assert!(matches!(resolve_outcome(-35.0, 11, 0.0), MarketOutcome::Down));
+        assert!(matches!(resolve_outcome(-25.0, 11, 0.0), MarketOutcome::Up));
+    }
+
+    #[test]
+    fn test_resolve_outcome_flat_300() {
+        assert!(matches!(resolve_outcome(2.5, 12, 0.0), MarketOutcome::Flat));
+        assert!(matches!(resolve_outcome(3.5, 12, 0.0), MarketOutcome::Up));
+        assert!(matches!(resolve_outcome(-3.5, 12, 0.0), MarketOutcome::Down));
+    }
+
+    #[test]
+    fn test_resolve_outcome_flat_3000() {
+        assert!(matches!(resolve_outcome(25.0, 13, 0.0), MarketOutcome::Flat));
+        assert!(matches!(resolve_outcome(35.0, 13, 0.0), MarketOutcome::Up));
+        assert!(matches!(resolve_outcome(-35.0, 13, 0.0), MarketOutcome::Down));
     }
 
     #[test]
