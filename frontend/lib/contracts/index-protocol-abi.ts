@@ -504,6 +504,22 @@ export const INDEX_ABI = [
     name: 'AuthorizedBridgeUpdated',
     type: 'event',
   },
+  // getItpCount — number of ITPs created
+  {
+    inputs: [],
+    name: 'getItpCount',
+    outputs: [{ name: 'count', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  // itpVaults — mapping from itpId to vault ERC20 address
+  {
+    inputs: [{ name: '', type: 'bytes32' }],
+    name: 'itpVaults',
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
 ] as const
 
 // BridgedItpFactory ABI - to look up deployed ITP addresses

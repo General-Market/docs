@@ -54,7 +54,7 @@ export function VaultPosition() {
 
   const sharesDecimals = vaultInfo?.decimals ?? 18
   const sharesFormatted = formatUnits(userPosition.shares, sharesDecimals)
-  const valueFormatted = formatUnits(userPosition.value, 6)
+  const valueFormatted = formatUnits(userPosition.value, 18)
 
   const isProcessing = isPending || isConfirming
 

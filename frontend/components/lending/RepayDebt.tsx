@@ -72,10 +72,10 @@ export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
 
   const [isMaxRepay, setIsMaxRepay] = useState(false)
 
-  const parsedAmount = amount ? parseUnits(amount, 6) : 0n
+  const parsedAmount = amount ? parseUnits(amount, 18) : 0n
   const needsApproval = usdcAllowanceMorpho < parsedAmount
-  const formattedBalance = usdcBalance ? formatUnits(usdcBalance, 6) : '0'
-  const formattedDebt = formatUnits(currentDebt, 6)
+  const formattedBalance = usdcBalance ? formatUnits(usdcBalance, 18) : '0'
+  const formattedDebt = formatUnits(currentDebt, 18)
 
   // Track success state
   const successHandled = useRef(false)
@@ -174,7 +174,7 @@ export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
   const handleMax = () => {
     // Set to min of debt and balance
     const maxRepay = currentDebt < usdcBalance ? currentDebt : usdcBalance
-    setAmount(formatUnits(maxRepay, 6))
+    setAmount(formatUnits(maxRepay, 18))
     setIsMaxRepay(true)
   }
 

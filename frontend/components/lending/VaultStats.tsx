@@ -21,7 +21,7 @@ export function VaultStats() {
     {
       label: t('vault_stats.total_deposits'),
       value: vaultInfo
-        ? `$${parseFloat(formatUnits(vaultInfo.totalAssets, 6)).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+        ? `$${parseFloat(formatUnits(vaultInfo.totalAssets, 18)).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
         : null,
     },
     {

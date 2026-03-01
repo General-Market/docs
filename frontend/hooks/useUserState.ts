@@ -5,7 +5,7 @@ import { useAccount } from 'wagmi'
 import { fetchUserState, type UserState } from '@/lib/api/backend'
 
 interface UseUserStateReturn {
-  /** USDC balance (6 decimals, string) */
+  /** USDC balance (18 decimals on L3, string) */
   usdcBalance: bigint
   /** USDC allowance for ArbBridgeCustody */
   usdcAllowanceCustody: bigint

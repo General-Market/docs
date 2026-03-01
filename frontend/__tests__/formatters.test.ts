@@ -97,10 +97,11 @@ describe('formatVolume', () => {
 })
 
 describe('formatUSD', () => {
-  test('formats USDC amount (6 decimals) to USD string', () => {
-    expect(formatUSD(1000000n)).toBe('$1.00')
-    expect(formatUSD(12345678n)).toBe('$12.34')
-    expect(formatUSD(1234567890n)).toBe('$1,234.56')
+  test('formats USDC amount (18 decimals on L3) to USD string', () => {
+    // 1 USDC = 1e18 on L3
+    expect(formatUSD(1_000_000_000_000_000_000n)).toBe('$1.00')
+    expect(formatUSD(12_340_000_000_000_000_000n)).toBe('$12.34')
+    expect(formatUSD(1_234_560_000_000_000_000_000n)).toBe('$1,234.56')
   })
 })
 

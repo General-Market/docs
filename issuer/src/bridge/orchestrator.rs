@@ -438,13 +438,31 @@ impl BridgeOrchestrator {
     /// Used by L3-native processing to skip entirely when cross-chain is active,
     /// preventing the race where L3-native registers the same physical order
     /// under the L3 order ID while cross-chain tracks it under the Arb order ID.
+    ///
+    /// Checks BOTH buy and sell order statuses. Without sell checks, the sell
+    /// pipeline and L3-native BATCHED path race on the same physical orders:
+    /// - Sell path batches order #N on L3, then runs confirmFills(current_cycle)
+    /// - L3-native sees order #N as BATCHED via get_batched_orders(), runs
+    ///   confirmFills(N + 500_000_001) with different cycle number
+    /// - Both sign different hashes -> BLS signatures are for different messages
+    /// - The losing race's TX reverts with BLSVerifier__InvalidSignature (0x10aa8d54)
     pub async fn has_any_active_bridge_orders(&self) -> bool {
-        let statuses = self.order_status.read().await;
-        statuses.values().any(|status| matches!(status,
+        let buy_active = self.order_status.read().await.values().any(|status| matches!(status,
             BridgeOrderStatus::Pending |
             BridgeOrderStatus::BridgedToL3 |
             BridgeOrderStatus::SubmittedOnL3 |
             BridgeOrderStatus::Batched
+        ));
+        if buy_active {
+            return true;
+        }
+        // Also check sell orders: SellPending and SellSubmittedOnL3 mean the sell
+        // pipeline is actively processing orders that will become BATCHED on L3.
+        // Without this check, L3-native picks up those same BATCHED orders and
+        // races with the sell pipeline's fills consensus.
+        self.sell_order_status.read().await.values().any(|status| matches!(status,
+            BridgeOrderStatus::SellPending |
+            BridgeOrderStatus::SellSubmittedOnL3
         ))
     }
 

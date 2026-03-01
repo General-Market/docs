@@ -35,8 +35,8 @@ export function toBaseUnits(value: string | number | undefined | null): bigint {
 }
 
 /**
- * Formats a USDC amount (6 decimals) to USD string
- * @param amount - The amount in USDC base units (6 decimals)
+ * Formats a USDC amount to USD string
+ * @param amount - The amount in USDC base units (18 decimals on L3)
  * @returns Formatted string like "$1,234.56"
  */
 export function formatUSD(amount: bigint): string {
@@ -44,8 +44,8 @@ export function formatUSD(amount: bigint): string {
 }
 
 /**
- * Formats a USDC amount (6 decimals) to a number string without currency symbol
- * @param amount - The amount in USDC base units (6 decimals)
+ * Formats a USDC amount to a number string without currency symbol
+ * @param amount - The amount in USDC base units (18 decimals on L3)
  * @returns Formatted string like "1,234.56"
  */
 export function formatUsdcAmount(amount: bigint): string {
@@ -87,7 +87,7 @@ export function formatPercentage(value: number, decimals: number = 1): string {
 }
 
 /**
- * Parses a USD string back to bigint (6 decimals)
+ * Parses a USD string back to bigint (18 decimals on L3)
  * @param usdString - String like "$100.50" or "100.50"
  * @returns bigint amount in USDC base units
  */
@@ -180,7 +180,7 @@ export function formatVolume(value: number): string {
 }
 
 /**
- * Formats a USDC string amount (6 decimals as string) to display format
+ * Formats a USDC string amount (decimal string) to display format
  * Used for API responses that return USDC amounts as strings like "199.800000"
  * @param amount - String like "199.800000" or null
  * @returns Formatted string like "$199.80"

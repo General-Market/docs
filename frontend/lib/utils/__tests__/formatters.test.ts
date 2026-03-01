@@ -13,12 +13,12 @@ import {
 
 describe('formatUSD', () => {
   test('formats 100 USDC correctly', () => {
-    // 100 USDC = 100_000_000 (6 decimals)
-    expect(formatUSD(100_000_000n)).toBe('$100.00')
+    // 100 USDC = 100 * 10^18 (18 decimals on L3)
+    expect(formatUSD(100_000_000_000_000_000_000n)).toBe('$100.00')
   })
 
   test('formats 1,234.56 USDC correctly', () => {
-    expect(formatUSD(1_234_560_000n)).toBe('$1,234.56')
+    expect(formatUSD(1_234_560_000_000_000_000_000n)).toBe('$1,234.56')
   })
 
   test('formats 0 USDC correctly', () => {
@@ -26,13 +26,13 @@ describe('formatUSD', () => {
   })
 
   test('formats fractional amounts correctly', () => {
-    // 0.50 USDC = 500_000
-    expect(formatUSD(500_000n)).toBe('$0.50')
+    // 0.50 USDC = 5 * 10^17
+    expect(formatUSD(500_000_000_000_000_000n)).toBe('$0.50')
   })
 
   test('formats large amounts with commas', () => {
-    // 1,000,000 USDC
-    expect(formatUSD(1_000_000_000_000n)).toBe('$1,000,000.00')
+    // 1,000,000 USDC = 10^24
+    expect(formatUSD(1_000_000_000_000_000_000_000_000n)).toBe('$1,000,000.00')
   })
 })
 
@@ -70,19 +70,20 @@ describe('formatPercentage', () => {
 
 describe('parseUSD', () => {
   test('parses simple dollar amount', () => {
-    expect(parseUSD('$100.00')).toBe(100_000_000n)
+    // 100 USDC = 100 * 10^18 (18 decimals on L3)
+    expect(parseUSD('$100.00')).toBe(100_000_000_000_000_000_000n)
   })
 
   test('parses amount without dollar sign', () => {
-    expect(parseUSD('100.50')).toBe(100_500_000n)
+    expect(parseUSD('100.50')).toBe(100_500_000_000_000_000_000n)
   })
 
   test('parses amount with commas', () => {
-    expect(parseUSD('$1,234.56')).toBe(1_234_560_000n)
+    expect(parseUSD('$1,234.56')).toBe(1_234_560_000_000_000_000_000n)
   })
 
   test('parses integer without decimals', () => {
-    expect(parseUSD('100')).toBe(100_000_000n)
+    expect(parseUSD('100')).toBe(100_000_000_000_000_000_000n)
   })
 })
 

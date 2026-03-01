@@ -68,7 +68,7 @@ export interface MarketInfo {
   utilization: number
   /** Current borrow APY (annualized, in percent) */
   borrowApy: number
-  /** Total borrowed (USDC, 6 decimals) */
+  /** Total borrowed (USDC, 18 decimals on L3) */
   totalBorrowed: bigint
   /** Total collateral (ITP, 18 decimals) */
   totalCollateral: bigint
@@ -80,13 +80,13 @@ export interface MarketInfo {
 export interface UserPosition {
   /** Collateral deposited (ITP, 18 decimals) */
   collateralAmount: bigint
-  /** Debt owed (USDC, 6 decimals) */
+  /** Debt owed (USDC, 18 decimals on L3) */
   debtAmount: bigint
   /** Health factor (1.0 = at liquidation threshold) */
   healthFactor: number
   /** Liquidation price (USDC per ITP, display format) */
   liquidationPrice: number
-  /** Maximum borrowable (USDC, 6 decimals) */
+  /** Maximum borrowable (USDC, 18 decimals on L3) */
   maxBorrow: bigint
   /** Available to withdraw without liquidation (ITP, 18 decimals) */
   maxWithdraw: bigint
@@ -102,7 +102,7 @@ export interface VaultInfo {
   name: string
   /** Vault symbol */
   symbol: string
-  /** Total assets in vault (USDC, 6 decimals) */
+  /** Total assets in vault (USDC, 18 decimals on L3) */
   totalAssets: bigint
   /** Current APY for depositors */
   apy: number
@@ -118,7 +118,7 @@ export interface VaultInfo {
 export interface VaultPosition {
   /** Vault shares owned */
   shares: bigint
-  /** Current value in USDC (6 decimals) */
+  /** Current value in USDC (18 decimals on L3) */
   value: bigint
 }
 
@@ -145,8 +145,8 @@ export const MORPHO_CONSTANTS = {
   WAD: BigInt('1000000000000000000'), // 1e18
   /** Price decimals (36 for Morpho oracles) */
   PRICE_DECIMALS: 36n,
-  /** USDC decimals */
-  USDC_DECIMALS: 6,
+  /** USDC decimals (18 on L3 Orbit chain) */
+  USDC_DECIMALS: 18,
   /** ITP decimals */
   ITP_DECIMALS: 18,
   /** Maximum staleness for oracle (24 hours) */
@@ -168,7 +168,7 @@ export const MORPHO_CONSTANTS = {
  *
  * @param collateralAmount - Collateral in ITP (18 decimals)
  * @param oraclePrice - Oracle price (Morpho ORACLE_PRICE_SCALE, encodes token decimal diff)
- * @param debtAmount - Debt in USDC (6 decimals)
+ * @param debtAmount - Debt in USDC (18 decimals on L3)
  * @param lltv - LLTV in WAD (18 decimals, e.g., 0.77e18 for 77%)
  * @returns Health factor as a number (1.0 = at liquidation threshold)
  */
@@ -182,7 +182,7 @@ export function calculateHealthFactor(
     return Infinity
   }
 
-  // collateralValue in USDC (6 decimals)
+  // collateralValue in USDC (same decimals as loan token)
   // Morpho oracle convention: collateral_raw * price / ORACLE_PRICE_SCALE = loan_raw
   // The oracle price already accounts for decimal differences between tokens.
   const collateralValueE6 = (collateralAmount * oraclePrice) / MORPHO_CONSTANTS.E36
@@ -202,7 +202,7 @@ export function calculateHealthFactor(
  * Then convert from Morpho price (1e24 scale for ITP/USDC) to display USD.
  *
  * @param collateralAmount - Collateral in ITP (18 decimals)
- * @param debtAmount - Debt in USDC (6 decimals)
+ * @param debtAmount - Debt in USDC (18 decimals on L3)
  * @param lltv - LLTV in WAD (18 decimals)
  * @returns Liquidation price in USDC per ITP (display format)
  */
@@ -222,8 +222,7 @@ export function calculateLiquidationPrice(
   const debtScaled = debtAmount * MORPHO_CONSTANTS.E48
   const priceRaw = (debtScaled * MORPHO_CONSTANTS.WAD) / (collateralAmount * lltv)
 
-  // priceRaw is in Morpho oracle scale; for ITP(18)/USDC(6): divide by 1e24
-  // But the formula above produces 1e36 scale, so divide by 1e36 for display
+  // priceRaw is in Morpho oracle scale; for ITP(18)/USDC(18) on L3: divide by 1e36 for display
   return Number(priceRaw) / Number(MORPHO_CONSTANTS.E36)
 }
 
@@ -261,11 +260,11 @@ export function borrowRateToApy(borrowRatePerSecond: bigint): number {
  * Format oracle price for display
  *
  * Morpho oracle convention: raw_collateral * price / 1e36 = raw_loan
- * For ITP(18dec)/USDC(6dec): price = USD_per_ITP * 10^(36 + 6 - 18) = USD_per_ITP * 10^24
+ * For ITP(18dec)/USDC(18dec) on L3: price = USD_per_ITP * 10^(36 + 18 - 18) = USD_per_ITP * 10^36
  *
  * @param price36Decimals - Raw oracle price
  * @returns Price in USD
  */
 export function formatOraclePrice(price36Decimals: bigint): number {
-  return Number(price36Decimals) / 1e24
+  return Number(price36Decimals) / 1e36
 }

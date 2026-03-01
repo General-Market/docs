@@ -12,8 +12,9 @@ import { VaultPosition } from '@/components/lending/VaultPosition'
 import { BorrowUsdc } from '@/components/lending/BorrowUsdc'
 import { RepayDebt } from '@/components/lending/RepayDebt'
 import { LendItpModal } from './LendItpModal'
-import { BRIDGED_ITP_ABI } from '@/lib/contracts/index-protocol-abi'
+import { BRIDGED_ITP_ABI, INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
 import { getAllMorphoMarkets, getMorphoMarketForItp } from '@/lib/contracts/morpho-markets-registry'
+import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import { useTranslations } from 'next-intl'
@@ -113,16 +114,16 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
 
   // Format vault TVL
   const vaultTvl = vaultInfo?.totalAssets
-    ? `$${parseFloat(formatUnits(vaultInfo.totalAssets, 6)).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+    ? `$${parseFloat(formatUnits(vaultInfo.totalAssets, 18)).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
     : '--'
 
   // User supply data
   const userDeposits = userPosition?.value
-    ? `$${parseFloat(formatUnits(userPosition.value, 6)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    ? `$${parseFloat(formatUnits(userPosition.value, 18)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
     : '$0.00'
   // Accrued interest estimate (value - original deposit, simplified)
   const accruedInterest = userPosition?.value && userPosition.value > 0n
-    ? `+$${(parseFloat(formatUnits(userPosition.value, 6)) * (supplyApy / 100)).toFixed(2)}`
+    ? `+$${(parseFloat(formatUnits(userPosition.value, 18)) * (supplyApy / 100)).toFixed(2)}`
     : '$0.00'
 
   // User borrow data
@@ -130,10 +131,10 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
     ? `$${(parseFloat(formatUnits(position.collateralAmount, 18)) * (market ? Number(market.navPrice) / 1e36 : 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
     : '$0.00'
   const outstandingDebt = position?.debtAmount
-    ? `$${parseFloat(formatUnits(position.debtAmount, 6)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    ? `$${parseFloat(formatUnits(position.debtAmount, 18)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
     : '$0.00'
   const maxBorrow = position?.maxBorrow
-    ? `$${parseFloat(formatUnits(position.maxBorrow, 6)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    ? `$${parseFloat(formatUnits(position.maxBorrow, 18)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
     : '$0.00'
   const lltvPercent = market?.lltvPercent ?? 70
 
@@ -317,17 +318,51 @@ function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: 
   const publicClient = usePublicClient()
   const [itpNames, setItpNames] = useState<Map<string, string>>(new Map())
   const [userBalances, setUserBalances] = useState<Map<string, bigint>>(new Map())
+  const [onChainVaults, setOnChainVaults] = useState<string[]>([])
   const publicClientRef = useRef(publicClient)
 
   useEffect(() => { publicClientRef.current = publicClient }, [publicClient])
 
+  // Discover all ITP vaults from the Index contract on-chain
+  useEffect(() => {
+    const discoverVaults = async () => {
+      const client = publicClientRef.current
+      if (!client) return
+      try {
+        const count = await client.readContract({
+          address: INDEX_PROTOCOL.index,
+          abi: INDEX_ABI,
+          functionName: 'getItpCount',
+        }) as bigint
+        const vaults: string[] = []
+        for (let i = 1n; i <= count; i++) {
+          const itpId = '0x' + i.toString(16).padStart(64, '0') as `0x${string}`
+          try {
+            const vault = await client.readContract({
+              address: INDEX_PROTOCOL.index,
+              abi: INDEX_ABI,
+              functionName: 'itpVaults',
+              args: [itpId],
+            }) as string
+            if (vault && vault !== '0x0000000000000000000000000000000000000000') {
+              vaults.push(vault)
+            }
+          } catch { /* skip */ }
+        }
+        setOnChainVaults(vaults)
+      } catch { /* Index contract not available */ }
+    }
+    discoverVaults()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Get all registered markets from the registry
   const allRegistryMarkets = getAllMorphoMarkets()
 
-  // Build a set of collateral tokens from both live + registry
+  // Build a set of collateral tokens from live + registry + on-chain discovered vaults
   const allCollateralTokens = Array.from(new Set([
     ...liveMarkets.map(m => m.params.collateralToken),
     ...allRegistryMarkets.map(m => m.collateralToken),
+    ...onChainVaults,
   ]))
 
   // Fetch ITP names and user balances for all collateral tokens
@@ -384,16 +419,17 @@ function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: 
       collateralToken: addr,
       name,
       userBalance: userBal,
+      hasMarket: !!registry,
       supplyApy: live && live.borrowApy > 0 ? (live.borrowApy * (live.utilization / 100)).toFixed(2) : '--',
       borrowApy: live ? live.borrowApy.toFixed(2) : '--',
       tvl: live && live.totalBorrowed > 0n
-        ? `$${(parseFloat(formatUnits(live.totalBorrowed, 6)) / (live.utilization / 100 || 1)).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+        ? `$${(parseFloat(formatUnits(live.totalBorrowed, 18)) / (live.utilization / 100 || 1)).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
         : '--',
       tvlRaw: live && live.totalBorrowed > 0n
-        ? parseFloat(formatUnits(live.totalBorrowed, 6)) / (live.utilization / 100 || 1)
+        ? parseFloat(formatUnits(live.totalBorrowed, 18)) / (live.utilization / 100 || 1)
         : 0,
       utilization: live ? `${live.utilization.toFixed(1)}%` : '--',
-      lltv: `${lltv.toFixed(0)}%`,
+      lltv: registry ? `${lltv.toFixed(0)}%` : '--',
     }
   })
 
@@ -457,14 +493,20 @@ function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: 
                   <td className="px-4 py-3 text-right font-mono tabular-nums text-text-primary">{row.tvl}</td>
                   <td className="px-4 py-3 text-right font-mono tabular-nums text-text-primary">{row.lltv}</td>
                   <td className="px-4 py-3 text-right">
-                    <WalletActionButton
-                      onClick={() => onBorrow(row.collateralToken, row.name)}
-                      className="px-3 py-1.5 bg-zinc-900 text-white text-[11px] font-bold uppercase tracking-[0.04em] hover:bg-zinc-800 transition-colors"
-                    >
-                      {activeBorrowCollaterals.has(row.collateralToken.toLowerCase())
-                        ? t('actions.manage_position')
-                        : t('actions.borrow')}
-                    </WalletActionButton>
+                    {row.hasMarket ? (
+                      <WalletActionButton
+                        onClick={() => onBorrow(row.collateralToken, row.name)}
+                        className="px-3 py-1.5 bg-zinc-900 text-white text-[11px] font-bold uppercase tracking-[0.04em] hover:bg-zinc-800 transition-colors"
+                      >
+                        {activeBorrowCollaterals.has(row.collateralToken.toLowerCase())
+                          ? t('actions.manage_position')
+                          : t('actions.borrow')}
+                      </WalletActionButton>
+                    ) : (
+                      <span className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.04em] text-text-muted">
+                        {t('markets_table.coming_soon', { defaultValue: 'Coming Soon' })}
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))

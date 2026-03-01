@@ -1,5 +1,17 @@
 # Design Decision Backlog
 
+## Session: 20260302-0300-sf1 (Sell fills race condition fix)
+
+- [DECISION] Root cause of sell fills BLS error (0x10aa8d54 = BLSVerifier__InvalidSignature): `has_any_active_bridge_orders()` only checked buy-side `order_status`, not `sell_order_status`. This allowed the L3-native BATCHED path to race with the sell pipeline on the same physical orders. Both paths proposed fills with different cycle numbers, creating two concurrent BLS consensus rounds signing different message hashes. The losing race's TX reverted with InvalidSignature because the aggregated BLS signature was for a different hash than the contract computed.
+- [DECISION] Fix: extended `has_any_active_bridge_orders()` to also check sell order statuses (SellPending, SellSubmittedOnL3). This blocks the L3-native path when sell orders are being processed, same pattern as `has_in_flight_orders()` already uses.
+- [FAILED] Considered modifying consensus or BLS verification — user constraint forbids this.
+
+## Session: 20260302-0200-ld1 (Lending page fixes)
+
+- [DECISION] Fixed USDC_DECIMALS from 6 to 18 for L3 USDC in morpho.ts. All formatUnits/parseUnits calls across lending components updated. Oracle price display fixed from /1e24 to /1e36 for ITP(18)/USDC(18).
+- [DECISION] Added on-chain ITP vault discovery to MarketsTableInline. Queries Index.getItpCount() + itpVaults(itpId) to find ALL ITP vault addresses, including dynamically-created ITPs (e.g. ITP2 from e2e tests). Markets without Morpho markets show "Coming Soon" instead of BORROW button.
+- [DECISION] Added getItpCount and itpVaults to INDEX_ABI for on-chain queries.
+
 ## Session: 20260302-0100-mi1 (Multi-ITP order processing fix)
 
 - [DECISION] Added order_itp_ids and sell_order_itp_ids HashMaps to BridgeOrchestrator. Per-order itp_id is stored when orders are first tracked (alongside amount and limit_price). This enables multi-ITP support without changing consensus protocol or BLS verification.

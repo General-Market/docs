@@ -58,7 +58,7 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
   }
 
   const collateralFormatted = formatUnits(position.collateralAmount, 18)
-  const debtFormatted = formatUnits(position.debtAmount, 6)
+  const debtFormatted = formatUnits(position.debtAmount, 18)
   const healthFactor = position.healthFactor
   const liquidationPrice = position.liquidationPrice
 
@@ -157,7 +157,7 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
           <div className="flex justify-between items-center">
             <span className="text-text-secondary text-sm">{t('position_card.available_to_borrow')}</span>
             <span className="text-color-up font-mono tabular-nums">
-              {formatUnits(position.maxBorrow, 6)} USDC
+              {formatUnits(position.maxBorrow, 18)} USDC
             </span>
           </div>
         )}

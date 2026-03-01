@@ -47,7 +47,7 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
   const { quote, isLoading: isQuoteLoading, error: quoteError, isExpired, fetchQuote } = useLendingQuote({
     itpAddress: market?.collateralToken,
     collateralAmount: position?.collateralAmount?.toString(),
-    borrowAmount: amount ? parseUnits(amount, 6).toString() : undefined,
+    borrowAmount: amount ? parseUnits(amount, 18).toString() : undefined,
     enabled: useQuoteMode && !!amount,
   })
   const {
@@ -59,7 +59,7 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
     reset: resetBundler,
   } = useBundlerExec()
 
-  const parsedAmount = amount ? parseUnits(amount, 6) : 0n
+  const parsedAmount = amount ? parseUnits(amount, 18) : 0n
   const maxBorrow = position?.maxBorrow ?? 0n
   const currentDebt = position?.debtAmount ?? 0n
   const collateralAmount = position?.collateralAmount ?? 0n
@@ -126,7 +126,7 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
     ? t('borrow_usdc.button.borrowed')
     : t('borrow_usdc.button.borrow_usdc')
 
-  const formatMaxBorrow = maxBorrow ? formatUnits(maxBorrow, 6) : '0'
+  const formatMaxBorrow = maxBorrow ? formatUnits(maxBorrow, 18) : '0'
 
   return (
     <div className="bg-white rounded-xl shadow-card border border-border-light p-6">

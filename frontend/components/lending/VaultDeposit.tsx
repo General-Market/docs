@@ -38,9 +38,9 @@ export function VaultDeposit() {
     refetchAllowance,
   } = useVaultDeposit()
 
-  const parsedAmount = amount ? parseUnits(amount, 6) : 0n
+  const parsedAmount = amount ? parseUnits(amount, 18) : 0n
   const needsApproval = isApprovalNeeded(parsedAmount)
-  const formattedBalance = usdcBalance ? formatUnits(usdcBalance as bigint, 6) : '0'
+  const formattedBalance = usdcBalance ? formatUnits(usdcBalance as bigint, 18) : '0'
   const [pendingDepositAmount, setPendingDepositAmount] = useState<bigint>(0n)
 
   const successHandled = useRef(false)
