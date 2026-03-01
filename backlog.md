@@ -1,5 +1,35 @@
 # Design Decision Backlog
 
+## Session: 20260302-0100-mi1 (Multi-ITP order processing fix)
+
+- [DECISION] Added order_itp_ids and sell_order_itp_ids HashMaps to BridgeOrchestrator. Per-order itp_id is stored when orders are first tracked (alongside amount and limit_price). This enables multi-ITP support without changing consensus protocol or BLS verification.
+- [DECISION] Cross-chain BUY: itp_id for asset trades and mint operations now comes from orchestrator's per-order storage (with fallback to CLI arg). NAV fetched per unique itp_id using HashMap cache pattern.
+- [DECISION] Cross-chain SELL: same per-order itp_id pattern. NAV for proceeds calculation uses per-order itp_id instead of hardcoded CLI arg.
+- [DECISION] L3-native orders: already had correct itp_id on LimitOrder struct for asset trades. Fixed NAV to be fetched per unique itp_id from the order. Renamed itp_id_for_task to _itp_id_for_task since L3-native no longer needs CLI fallback.
+- [DECISION] BATCHED L3-native orders: same per-order NAV fix using order.itp_id from LimitOrder.
+- [DECISION] local_nav_fallback still computed from single CLI ITP (line ~769). This is acceptable as a fallback since it's only used when data-node is unavailable. Real production uses data-node per-ITP NAV.
+- [DECISION] All E021/already-filled fallback paths also fixed to use per-order NAV and per-order itp_id for consistency.
+
+## Session: 20260301-2200-ld1 (Lending page decimal display fix)
+
+- [DECISION] Morpho lending page USDC decimals changed from 6 to 18 across all formatting/parsing. All values (totalAssets, debt, maxBorrow, vault position value, TVL) come from L3 contracts where USDC uses 18 decimals.
+- [DECISION] MORPHO_CONSTANTS.USDC_DECIMALS changed from 6 to 18. This is the root constant for morpho-related USDC formatting.
+- [DECISION] formatOraclePrice divisor changed from 1e24 to 1e36. For ITP(18dec)/USDC(18dec): price = USD_per_ITP * 10^(36+18-18) = 10^36. The old 1e24 assumed USDC was 6 decimals.
+- [DECISION] Formatter test values updated from 6-decimal to 18-decimal base units. The formatters.ts functions use COLLATERAL_DECIMALS (already 18) internally, but test fixtures were hardcoded with 6-decimal math.
+- [DECISION] Did not change content/learn/build-prediction-market-bot.mdx — that's a tutorial doc referencing external USDC, not L3 lending page formatting.
+
+## Session: 20260301-1800-bm1 (IS-6 + RC-14: Bitmap & multiplier fixes)
+
+- [DECISION] IS-6: get_bitmap_bit returns Option<bool> instead of bool. Out-of-bounds bits (bitmap too short) return None instead of defaulting to false (DOWN). Caller skips the player for that market when None, preventing automatic DOWN bets for uncovered markets.
+- [DECISION] RC-14: num_committed_ticks derived from balance/stake_per_tick instead of bitmap.len()*8/num_markets. Prevents gaming via zero-padded bitmaps — multiplier reflects actual financial commitment, not bitmap byte count.
+
+## Session: 20260301-1700-is1 (IS-1: Staleness check bypass fix)
+
+- [DECISION] fetched_at timestamps flow from data-node DB → snapshot JSON → issuer SnapshotData → build_market_prices. Using real data freshness instead of wall clock for staleness detection.
+- [DECISION] SnapshotData extended from 2-tuple to 3-tuple: (values, change_pcts, fetched_at_map). Third HashMap<H256, i64> carries per-market unix timestamps.
+- [DECISION] Staleness threshold = 2x tick_duration. Markets with price data older than this are skipped (resolve as Cancelled via missing price entry). This prevents stale data from producing incorrect outcomes.
+- [DECISION] fetched_at parsing handles both ISO 8601 strings (from serde DateTime<Utc> serialization) and raw i64 unix timestamps. Falls back to 0 for old data-nodes without the field — 0 means "unknown age, don't reject".
+
 ## Session: 20260301-1400-fix (Vision decimal + display formatting fixes)
 
 - [FAILED] E2E tests didn't catch 1e6 vs 1e18 decimal mismatch — E2E tests verify backend functionality (txs succeed, balances change) but don't check frontend display formatting (leaderboard values, error messages, TVL display)
@@ -4406,3 +4436,11 @@ The backtester currently supports one rebalance method: **periodic time-based re
 - [DECISION] wagmi.ts multi-chain config: L3 as primary chain (activeChain) + Arbitrum as secondary — transports configured separately for each chain ID. Allows cross-chain deposit UI.
 - [DECISION] All formatUnits/parseUnits calls across vision and p2pool components changed from hardcoded `6` to `VISION_USDC_DECIMALS` (18) — centralized constant prevents decimal mismatch bugs.
 [DECISION] 20260228-1907-e2eb — Arb bridge tests use 08/09 numbering (not 06/07 which are taken by backtester-smoke and issuer-resilience). Config expanded with array pattern ['**/0[0-6]-*.spec.ts', '**/0[89]-*.spec.ts'] to include new tests while keeping 07 excluded.
+
+## Session: 20260301-sol2-v1r3 (SOL-2 virtual balance insolvency fix)
+
+- [DECISION] Added `bool isVirtual` to PlayerPosition struct — tracks whether position was funded using virtual balance. If any virtual balance was consumed during _debitBalance at join time, position is marked virtual.
+- [DECISION] _debitBalance returns `bool usedVirtual` — enables caller (_joinBatch) to know whether virtual funds were used without duplicating balance-checking logic.
+- [DECISION] claimRewards/withdraw/forceWithdraw route payouts based on isVirtual — virtual positions credit virtualBalance+totalVirtualBalance, real positions credit realBalance+totalRealBalance. Prevents virtual-funded positions from creating unbacked realBalance (the SOL-2 insolvency bug).
+- [DECISION] withdraw/forceWithdraw read isVirtual BEFORE `delete _positions[...]` — CEI pattern deletes position storage before crediting balance, so we cache the flag first.
+- [DECISION] deposit() (top-up) does NOT update isVirtual flag — top-ups use _debitBalance which may mix virtual/real, but the position's funding type is determined at join time. Acceptable tradeoff: top-ups are typically small relative to initial deposit, and the alternative (proportional tracking) adds significant complexity.

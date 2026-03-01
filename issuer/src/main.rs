@@ -1521,6 +1521,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                 for order in &new_orders {
                     orch_write.set_order_amount(order.order_id, order.amount).await;
                     orch_write.set_order_limit_price(order.order_id, order.limit_price, 0).await; // 0 = BUY
+                    orch_write.set_order_itp_id(order.order_id, order.itp_id).await;
                     orch_write.set_order_status(order.order_id, issuer::BridgeOrderStatus::Pending).await;
                 }
             }
@@ -1624,13 +1625,31 @@ async fn run_cross_chain_processing<P, W, K, PF>(
         let batch_am_leader = calculate_bridge_leader(batch_key, num_issuers, node_index);
         info!(cycle = current_cycle, order_count = submitted_orders.len(), batch_am_leader, "Processing batch for SubmittedOnL3 orders");
 
-        let nav = fetch_nav(&data_node_url_for_task, &itp_id_for_task, local_nav_fallback).await;
-        info!(cycle = current_cycle, nav = %nav, local_nav_fallback = %local_nav_fallback, "NAV for batch confirm fills");
-        let prices: Vec<ethers::types::U256> = l3_order_ids.iter()
-            .map(|_| nav)
-            .collect();
+        // Fetch NAV per unique ITP (multi-ITP support)
+        let mut nav_cache: HashMap<String, ethers::types::U256> = HashMap::new();
+        let prices: Vec<ethers::types::U256> = {
+            let o = orchestrator.read().await;
+            let mut p = Vec::new();
+            for order_id in &submitted_orders {
+                let itp_id_str = if let Some(itp_h256) = o.get_order_itp_id(order_id).await {
+                    format!("{:#066x}", itp_h256)
+                } else {
+                    itp_id_for_task.clone()
+                };
+                let nav = if let Some(cached) = nav_cache.get(&itp_id_str) {
+                    *cached
+                } else {
+                    let fetched = fetch_nav(&data_node_url_for_task, &itp_id_str, local_nav_fallback).await;
+                    nav_cache.insert(itp_id_str.clone(), fetched);
+                    fetched
+                };
+                p.push(nav);
+            }
+            p
+        };
+        info!(cycle = current_cycle, nav_cache = ?nav_cache, local_nav_fallback = %local_nav_fallback, "NAV(s) for batch confirm fills");
 
-        match protocol.run_batch_confirm_phase(current_cycle, l3_order_ids.clone(), prices, batch_am_leader).await {
+        match protocol.run_batch_confirm_phase(current_cycle, l3_order_ids.clone(), prices.clone(), batch_am_leader).await {
             Ok(batch_result) => {
                 info!(cycle = current_cycle, signer_count = batch_result.signature_count, "Batch confirmation completed");
 
@@ -1642,15 +1661,17 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                     }
                 }
 
-                // Emit per-asset trades for cross-chain buy orders
-                if let Ok(itp_h256) = itp_id_for_task.parse::<ethers::types::H256>() {
+                // Emit per-asset trades for cross-chain buy orders (using each order's actual itp_id)
+                {
                     let asset_trade_orders: Vec<(ethers::types::H256, u8, ethers::types::U256)> = {
                         let o = orchestrator.read().await;
                         let mut trades = Vec::new();
                         for order_id in &submitted_orders {
+                            let order_itp = o.get_order_itp_id(order_id).await
+                                .unwrap_or_else(|| itp_id_for_task.parse::<ethers::types::H256>().unwrap_or_default());
                             let amount = o.get_order_amount(order_id).await
                                 .unwrap_or(ethers::types::U256::exp10(18));
-                            trades.push((itp_h256, 0u8 /* BUY */, amount));
+                            trades.push((order_itp, 0u8 /* BUY */, amount));
                         }
                         trades
                     };
@@ -1692,24 +1713,26 @@ async fn run_cross_chain_processing<P, W, K, PF>(
 
                 // Build fills with L3 order IDs (for BLS hash + on-chain), amounts from Arb ID lookup
                 // Filter out orders where fill price violates limit (E126 guard)
+                // Uses per-order NAV from prices vector (multi-ITP support)
                 let fills: Vec<Fill> = {
                     let o = orchestrator.read().await;
                     let mut fills = Vec::new();
-                    for (l3_id, arb_id) in l3_order_ids.iter().zip(submitted_orders.iter()) {
+                    for (i, (l3_id, arb_id)) in l3_order_ids.iter().zip(submitted_orders.iter()).enumerate() {
+                        let order_nav = prices.get(i).copied().unwrap_or(local_nav_fallback);
                         let amount = o.get_order_amount(arb_id).await
                             .unwrap_or(ethers::types::U256::exp10(18));
                         // Check limit price from orchestrator (stored when order was first tracked)
                         if let Some((limit_price, side)) = o.get_order_limit_price(arb_id).await {
                             let order_side = common::types::Side::from(side);
-                            if !fill_price_respects_limit(nav, limit_price, order_side) {
-                                warn!(order_id = %arb_id, l3_id = %l3_id, nav = %nav, limit_price = %limit_price,
+                            if !fill_price_respects_limit(order_nav, limit_price, order_side) {
+                                warn!(order_id = %arb_id, l3_id = %l3_id, nav = %order_nav, limit_price = %limit_price,
                                     "Skipping cross-chain fill: NAV violates limit price (E126 guard)");
                                 continue;
                             }
                         }
                         fills.push(Fill {
                             order_id: *l3_id, // L3 ID for on-chain confirmFills
-                            fill_price: nav,
+                            fill_price: order_nav,
                             fill_amount: amount,
                         });
                     }
@@ -1720,12 +1743,14 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                     Ok(fills_result) => {
                         info!(cycle = current_cycle, signer_count = fills_result.signature_count, "Fills confirmed");
 
-                        // Step 8: Mint BridgedITP shares on Arbitrum
-                        if let Ok(itp_h256) = itp_id_for_task.parse::<ethers::types::H256>() {
+                        // Step 8: Mint BridgedITP shares on Arbitrum (using each order's actual itp_id)
+                        {
                             let bridge_proxy = orchestrator.read().await.config().bridge_proxy;
                             for fill in &fills {
                                 // Look up original user from order mapping (using Arb ID)
                                 let arb_id = l3_to_arb.get(&fill.order_id).copied().unwrap_or(fill.order_id);
+                                let order_itp = orchestrator.read().await.get_order_itp_id(&arb_id).await
+                                    .unwrap_or_else(|| itp_id_for_task.parse::<ethers::types::H256>().unwrap_or_default());
                                 let mapping = orchestrator.read().await.get_order_mapping(&arb_id).await;
                                 if let Some(mapping) = mapping {
                                     // shares = fill_amount * 1e18 / fill_price
@@ -1736,13 +1761,13 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                     };
 
                                     match protocol.run_mint_bridged_shares_phase(
-                                        current_cycle, itp_h256, mapping.original_user, shares, bridge_proxy, batch_am_leader,
+                                        current_cycle, order_itp, mapping.original_user, shares, bridge_proxy, batch_am_leader,
                                     ).await {
                                         Ok(mint_result) => {
                                             info!(cycle = current_cycle, user = ?mapping.original_user, shares = %shares, signer_count = mint_result.signature_count, "MintBridgedShares consensus completed");
                                             // Leader executes the Arb transaction
                                             if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
-                                                match arb_writer.mint_bridged_shares(itp_h256, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
+                                                match arb_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
                                                     Ok(tx_hash) => {
                                                         info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted on Arb");
                                                         let orch = orchestrator.write().await;
@@ -1791,15 +1816,17 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                     }
 
                     // E021 fallback: use L3 IDs for fills, Arb IDs for internal tracking
+                    // Uses per-order NAV from prices vector (multi-ITP support)
                     let fills: Vec<Fill> = {
                         let o = orchestrator.read().await;
                         let mut fills = Vec::new();
-                        for (l3_id, arb_id) in l3_order_ids.iter().zip(submitted_orders.iter()) {
+                        for (i, (l3_id, arb_id)) in l3_order_ids.iter().zip(submitted_orders.iter()).enumerate() {
+                            let order_nav = prices.get(i).copied().unwrap_or(local_nav_fallback);
                             let amount = o.get_order_amount(arb_id).await
                                 .unwrap_or(ethers::types::U256::exp10(18));
                             fills.push(Fill {
                                 order_id: *l3_id, // L3 ID for on-chain confirmFills
-                                fill_price: nav,
+                                fill_price: order_nav,
                                 fill_amount: amount,
                             });
                         }
@@ -1816,11 +1843,13 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                 }
                             }
 
-                            // Step 8: Mint BridgedITP shares on Arbitrum (E021 path)
-                            if let Ok(itp_h256) = itp_id_for_task.parse::<ethers::types::H256>() {
+                            // Step 8: Mint BridgedITP shares on Arbitrum (E021 path, per-order itp_id)
+                            {
                                 let bridge_proxy = orchestrator.read().await.config().bridge_proxy;
                                 for fill in &fills {
                                     let arb_id = l3_to_arb.get(&fill.order_id).copied().unwrap_or(fill.order_id);
+                                    let order_itp = orchestrator.read().await.get_order_itp_id(&arb_id).await
+                                        .unwrap_or_else(|| itp_id_for_task.parse::<ethers::types::H256>().unwrap_or_default());
                                     let mapping = orchestrator.read().await.get_order_mapping(&arb_id).await;
                                     if let Some(mapping) = mapping {
                                         let shares = if fill.fill_price > ethers::types::U256::zero() {
@@ -1830,11 +1859,11 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                         };
 
                                         match protocol.run_mint_bridged_shares_phase(
-                                            current_cycle, itp_h256, mapping.original_user, shares, bridge_proxy, batch_am_leader,
+                                            current_cycle, order_itp, mapping.original_user, shares, bridge_proxy, batch_am_leader,
                                         ).await {
                                             Ok(mint_result) => {
                                                 if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
-                                                    match arb_writer.mint_bridged_shares(itp_h256, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
+                                                    match arb_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
                                                         Ok(tx_hash) => {
                                                             info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted (E021 path)");
                                                             let orch = orchestrator.write().await;
@@ -1862,11 +1891,13 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                     }
                                 }
 
-                                // Mint BridgedITP shares (already-filled path)
-                                if let Ok(itp_h256) = itp_id_for_task.parse::<ethers::types::H256>() {
+                                // Mint BridgedITP shares (already-filled path, per-order itp_id)
+                                {
                                     let bridge_proxy = orchestrator.read().await.config().bridge_proxy;
                                     for fill in &fills {
                                         let arb_id = l3_to_arb.get(&fill.order_id).copied().unwrap_or(fill.order_id);
+                                        let order_itp = orchestrator.read().await.get_order_itp_id(&arb_id).await
+                                            .unwrap_or_else(|| itp_id_for_task.parse::<ethers::types::H256>().unwrap_or_default());
                                         let mapping = orchestrator.read().await.get_order_mapping(&arb_id).await;
                                         if let Some(mapping) = mapping {
                                             let shares = if fill.fill_price > ethers::types::U256::zero() {
@@ -1876,11 +1907,11 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                             };
 
                                             match protocol.run_mint_bridged_shares_phase(
-                                                current_cycle, itp_h256, mapping.original_user, shares, bridge_proxy, batch_am_leader,
+                                                current_cycle, order_itp, mapping.original_user, shares, bridge_proxy, batch_am_leader,
                                             ).await {
                                                 Ok(mint_result) => {
                                                     if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
-                                                        match arb_writer.mint_bridged_shares(itp_h256, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
+                                                        match arb_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
                                                             Ok(tx_hash) => {
                                                                 info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted (already-filled path)");
                                                                 let orch = orchestrator.write().await;
@@ -1973,6 +2004,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                 for sell_order in &new_sell_orders {
                     orch_write.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellPending).await;
                     orch_write.set_sell_order_amount(sell_order.order_id, sell_order.amount).await;
+                    orch_write.set_sell_order_itp_id(sell_order.order_id, sell_order.itp_id).await;
                 }
             }
 
@@ -2060,25 +2092,45 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
             submitted_sell_orders.clone()
         };
 
-        let nav = fetch_nav(&data_node_url_for_task, &itp_id_for_task, local_nav_fallback).await;
-        info!(cycle = current_cycle, nav = %nav, "NAV for sell batch/fills");
-        let prices: Vec<ethers::types::U256> = order_ids_for_batch.iter()
-            .map(|_| nav)
-            .collect();
+        // Fetch NAV per unique ITP for sell orders (multi-ITP support)
+        let mut sell_nav_cache: HashMap<String, ethers::types::U256> = HashMap::new();
+        let prices: Vec<ethers::types::U256> = {
+            let o = orchestrator.read().await;
+            let mut p = Vec::new();
+            for order_id in &submitted_sell_orders {
+                let itp_id_str = if let Some(itp_h256) = o.get_sell_order_itp_id(order_id).await {
+                    format!("{:#066x}", itp_h256)
+                } else {
+                    itp_id_for_task.clone()
+                };
+                let nav = if let Some(cached) = sell_nav_cache.get(&itp_id_str) {
+                    *cached
+                } else {
+                    let fetched = fetch_nav(&data_node_url_for_task, &itp_id_str, local_nav_fallback).await;
+                    sell_nav_cache.insert(itp_id_str.clone(), fetched);
+                    fetched
+                };
+                p.push(nav);
+            }
+            p
+        };
+        info!(cycle = current_cycle, nav_cache = ?sell_nav_cache, "NAV(s) for sell batch/fills");
 
-        match protocol.run_batch_confirm_phase(current_cycle, order_ids_for_batch.clone(), prices, batch_am_leader).await {
+        match protocol.run_batch_confirm_phase(current_cycle, order_ids_for_batch.clone(), prices.clone(), batch_am_leader).await {
             Ok(batch_result) => {
                 info!(cycle = current_cycle, signer_count = batch_result.signature_count, "Sell batch confirmation completed");
 
-                // Emit per-asset SELL trades
-                if let Ok(itp_h256) = itp_id_for_task.parse::<ethers::types::H256>() {
+                // Emit per-asset SELL trades (using each order's actual itp_id)
+                {
                     let asset_trade_orders: Vec<(ethers::types::H256, u8, ethers::types::U256)> = {
                         let o = orchestrator.read().await;
                         let mut trades = Vec::new();
                         for order_id in &submitted_sell_orders {
+                            let order_itp = o.get_sell_order_itp_id(order_id).await
+                                .unwrap_or_else(|| itp_id_for_task.parse::<ethers::types::H256>().unwrap_or_default());
                             let amount = o.get_sell_order_amount(order_id).await
                                 .unwrap_or(ethers::types::U256::exp10(18));
-                            trades.push((itp_h256, 1u8 /* SELL */, amount));
+                            trades.push((order_itp, 1u8 /* SELL */, amount));
                         }
                         trades
                     };
@@ -2097,17 +2149,18 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                     }
                 }
 
-                // Confirm fills for sell orders
+                // Confirm fills for sell orders (per-order NAV from prices vector)
                 let fills: Vec<Fill> = {
                     let o = orchestrator.read().await;
                     let mut fills = Vec::new();
                     for (i, order_id) in order_ids_for_batch.iter().enumerate() {
                         let arb_order_id = submitted_sell_orders.get(i).unwrap_or(order_id);
+                        let order_nav = prices.get(i).copied().unwrap_or(local_nav_fallback);
                         let amount = o.get_sell_order_amount(arb_order_id).await
                             .unwrap_or(ethers::types::U256::exp10(18));
                         fills.push(Fill {
                             order_id: *order_id,
-                            fill_price: nav,
+                            fill_price: order_nav,
                             fill_amount: amount,
                         });
                     }
@@ -2145,12 +2198,13 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                     let fills: Vec<Fill> = {
                         let o = orchestrator.read().await;
                         let mut fills = Vec::new();
-                        for order_id in &order_ids_for_batch {
+                        for (i, order_id) in order_ids_for_batch.iter().enumerate() {
+                            let order_nav = prices.get(i).copied().unwrap_or(local_nav_fallback);
                             let amount = o.get_sell_order_amount(order_id).await
                                 .unwrap_or(ethers::types::U256::exp10(18));
                             fills.push(Fill {
                                 order_id: *order_id,
-                                fill_price: nav,
+                                fill_price: order_nav,
                                 fill_amount: amount,
                             });
                         }
@@ -2201,11 +2255,18 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
         // Calculate usdc_proceeds = (fill_amount * nav) / 1e18, then convert to 6 decimals
         // amount is 18-dec shares, nav is 18-dec price → result is 18-dec USDC value
         // ARB_USDC has 6 decimals, so divide by 1e12 to convert
+        // Uses per-order ITP ID for NAV fetch (multi-ITP support)
         let usdc_proceeds = {
             let o = orchestrator.read().await;
             let amount = o.get_sell_order_amount(&order_id).await
                 .unwrap_or(ethers::types::U256::exp10(18));
-            let nav = fetch_nav(&data_node_url_for_task, &itp_id_for_task, local_nav_fallback).await;
+            let itp_id_str = if let Some(itp_h256) = o.get_sell_order_itp_id(&order_id).await {
+                format!("{:#066x}", itp_h256)
+            } else {
+                itp_id_for_task.clone()
+            };
+            drop(o); // release read lock before async fetch
+            let nav = fetch_nav(&data_node_url_for_task, &itp_id_str, local_nav_fallback).await;
             // proceeds_18dec = amount * nav / 1e18, then convert to 6dec
             let proceeds_18dec = amount * nav / ethers::types::U256::exp10(18);
             proceeds_18dec / ethers::types::U256::exp10(12)
@@ -2639,7 +2700,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     num_issuers: u8,
     first_seen_orders: Arc<tokio::sync::Mutex<HashMap<u64, std::time::Instant>>>,
     data_node_url_for_task: Option<String>,
-    itp_id_for_task: String,
+    _itp_id_for_task: String,
     local_nav_fallback: ethers::types::U256,
     quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
 ) where
@@ -2717,13 +2778,26 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     }
 
     let order_ids: Vec<ethers::types::U256> = l3_native_orders.iter().map(|o| o.id).collect();
-    let nav = fetch_nav(&data_node_url_for_task, &itp_id_for_task, local_nav_fallback).await;
-    let prices: Vec<ethers::types::U256> = l3_native_orders.iter()
-        .map(|_| nav)
-        .collect();
+    // Fetch NAV per unique ITP (multi-ITP support for L3-native orders)
+    let mut l3_nav_cache: HashMap<String, ethers::types::U256> = HashMap::new();
+    let prices: Vec<ethers::types::U256> = {
+        let mut p = Vec::new();
+        for order in &l3_native_orders {
+            let itp_id_str = format!("{:#066x}", order.itp_id);
+            let nav = if let Some(cached) = l3_nav_cache.get(&itp_id_str) {
+                *cached
+            } else {
+                let fetched = fetch_nav(&data_node_url_for_task, &itp_id_str, local_nav_fallback).await;
+                l3_nav_cache.insert(itp_id_str.clone(), fetched);
+                fetched
+            };
+            p.push(nav);
+        }
+        p
+    };
 
     // 6. Run confirmBatch via BLS consensus
-    match protocol.run_batch_confirm_phase(l3_cycle, order_ids.clone(), prices, am_leader).await {
+    match protocol.run_batch_confirm_phase(l3_cycle, order_ids.clone(), prices.clone(), am_leader).await {
         Ok(batch_result) => {
             info!(
                 cycle = current_cycle, l3_cycle,
@@ -2755,15 +2829,17 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
 
             // 7. Build fills and run confirmFills via BLS consensus
             // Filter out orders where fill price would violate limit (E126 guard)
-            let fills: Vec<Fill> = l3_native_orders.iter().filter_map(|order| {
-                if !fill_price_respects_limit(nav, order.limit_price, order.side) {
-                    warn!(order_id = %order.id, nav = %nav, limit_price = %order.limit_price, side = ?order.side,
+            // Uses per-order NAV from prices vector (multi-ITP support)
+            let fills: Vec<Fill> = l3_native_orders.iter().enumerate().filter_map(|(i, order)| {
+                let order_nav = prices.get(i).copied().unwrap_or(local_nav_fallback);
+                if !fill_price_respects_limit(order_nav, order.limit_price, order.side) {
+                    warn!(order_id = %order.id, nav = %order_nav, limit_price = %order.limit_price, side = ?order.side,
                         "Skipping fill: NAV violates order limit price (E126 guard)");
                     return None;
                 }
                 Some(Fill {
                     order_id: order.id,
-                    fill_price: nav,
+                    fill_price: order_nav,
                     fill_amount: order.amount,
                 })
             }).collect();
@@ -2800,15 +2876,16 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
             if err_str.contains("E021") || err_str.contains("already") {
                 info!(cycle = current_cycle, "Orders already batched, attempting fills only");
 
-                let fills: Vec<Fill> = l3_native_orders.iter().filter_map(|order| {
-                    if !fill_price_respects_limit(nav, order.limit_price, order.side) {
-                        warn!(order_id = %order.id, nav = %nav, limit_price = %order.limit_price,
+                let fills: Vec<Fill> = l3_native_orders.iter().enumerate().filter_map(|(i, order)| {
+                    let order_nav = prices.get(i).copied().unwrap_or(local_nav_fallback);
+                    if !fill_price_respects_limit(order_nav, order.limit_price, order.side) {
+                        warn!(order_id = %order.id, nav = %order_nav, limit_price = %order.limit_price,
                             "Skipping fill (E021 retry): NAV violates limit price");
                         return None;
                     }
                     Some(Fill {
                         order_id: order.id,
-                        fill_price: nav,
+                        fill_price: order_nav,
                         fill_amount: order.amount,
                     })
                 }).collect();
@@ -2890,23 +2967,36 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
         }
     }
 
-    let mut nav = fetch_nav(&data_node_url_for_task, &itp_id_for_task, local_nav_fallback).await;
-    if nav.is_zero() {
-        warn!("NAV is zero after fetch, using local fallback");
-        nav = local_nav_fallback;
-    }
-    let fills: Vec<Fill> = l3_batched_orders.iter().filter_map(|order| {
-        if !fill_price_respects_limit(nav, order.limit_price, order.side) {
-            warn!(order_id = %order.id, nav = %nav, limit_price = %order.limit_price, side = ?order.side,
-                "Skipping BATCHED fill: NAV violates order limit price (E126 guard)");
-            return None;
+    // Fetch NAV per unique ITP for BATCHED orders (multi-ITP support)
+    let mut batched_nav_cache: HashMap<String, ethers::types::U256> = HashMap::new();
+    let fills: Vec<Fill> = {
+        let mut result = Vec::new();
+        for order in &l3_batched_orders {
+            let itp_id_str = format!("{:#066x}", order.itp_id);
+            let mut order_nav = if let Some(cached) = batched_nav_cache.get(&itp_id_str) {
+                *cached
+            } else {
+                let fetched = fetch_nav(&data_node_url_for_task, &itp_id_str, local_nav_fallback).await;
+                batched_nav_cache.insert(itp_id_str.clone(), fetched);
+                fetched
+            };
+            if order_nav.is_zero() {
+                warn!(order_id = %order.id, "NAV is zero after fetch, using local fallback");
+                order_nav = local_nav_fallback;
+            }
+            if !fill_price_respects_limit(order_nav, order.limit_price, order.side) {
+                warn!(order_id = %order.id, nav = %order_nav, limit_price = %order.limit_price, side = ?order.side,
+                    "Skipping BATCHED fill: NAV violates order limit price (E126 guard)");
+                continue;
+            }
+            result.push(Fill {
+                order_id: order.id,
+                fill_price: order_nav,
+                fill_amount: order.amount,
+            });
         }
-        Some(Fill {
-            order_id: order.id,
-            fill_price: nav,
-            fill_amount: order.amount,
-        })
-    }).collect();
+        result
+    };
 
     if fills.is_empty() {
         info!(cycle = current_cycle, fills_cycle, "No fillable BATCHED orders (all limit-violated), skipping");

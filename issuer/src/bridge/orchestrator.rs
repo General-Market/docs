@@ -149,6 +149,10 @@ pub struct BridgeOrchestrator {
     sell_order_mappings: RwLock<HashMap<U256, OrderMapping>>,
     /// Sell order amounts: order_id → amount
     sell_order_amounts: RwLock<HashMap<U256, U256>>,
+    /// Order ITP IDs: order_id → itp_id (for multi-ITP support)
+    order_itp_ids: RwLock<HashMap<U256, H256>>,
+    /// Sell order ITP IDs: order_id → itp_id (for multi-ITP support)
+    sell_order_itp_ids: RwLock<HashMap<U256, H256>>,
     /// Signature collectors for record collateral move proposals (8-step bridge)
     collateral_move_signatures: RwLock<HashMap<u64, SignatureCollector>>,
     /// Confirmed collateral moves (for deduplication)
@@ -218,6 +222,8 @@ impl BridgeOrchestrator {
             complete_sell_order_signatures: RwLock::new(HashMap::new()),
             sell_order_mappings: RwLock::new(HashMap::new()),
             sell_order_amounts: RwLock::new(HashMap::new()),
+            order_itp_ids: RwLock::new(HashMap::new()),
+            sell_order_itp_ids: RwLock::new(HashMap::new()),
             collateral_move_signatures: RwLock::new(HashMap::new()),
             confirmed_collateral_moves: RwLock::new(HashMap::new()),
             mint_shares_signatures: RwLock::new(HashMap::new()),
@@ -285,6 +291,7 @@ impl BridgeOrchestrator {
         self.order_status.write().await.remove(order_id);
         self.processed_orders.write().await.remove(order_id);
         self.order_amounts.write().await.remove(order_id);
+        self.order_itp_ids.write().await.remove(order_id);
         self.watchdog.write().await.clear(order_id);
     }
 
@@ -328,6 +335,26 @@ impl BridgeOrchestrator {
     /// Get the stored limit price and side for an order
     pub async fn get_order_limit_price(&self, order_id: &U256) -> Option<(U256, u8)> {
         self.order_limit_prices.read().await.get(order_id).copied()
+    }
+
+    /// Store the ITP ID for a buy order (for multi-ITP support)
+    pub async fn set_order_itp_id(&self, order_id: U256, itp_id: H256) {
+        self.order_itp_ids.write().await.insert(order_id, itp_id);
+    }
+
+    /// Get the stored ITP ID for a buy order
+    pub async fn get_order_itp_id(&self, order_id: &U256) -> Option<H256> {
+        self.order_itp_ids.read().await.get(order_id).copied()
+    }
+
+    /// Store the ITP ID for a sell order (for multi-ITP support)
+    pub async fn set_sell_order_itp_id(&self, order_id: U256, itp_id: H256) {
+        self.sell_order_itp_ids.write().await.insert(order_id, itp_id);
+    }
+
+    /// Get the stored ITP ID for a sell order
+    pub async fn get_sell_order_itp_id(&self, order_id: &U256) -> Option<H256> {
+        self.sell_order_itp_ids.read().await.get(order_id).copied()
     }
 
     // ========================================================================
