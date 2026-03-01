@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useAccount, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
+import { formatUnits } from 'viem'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { VISION_ADDRESS } from '@/lib/vision/constants'
@@ -97,7 +98,7 @@ export function useJoinBatch(): UseJoinBatchReturn {
     // 2. Check balance (no approve needed — joinBatch pulls from Vision balance internally)
     const balance = (visionBalance as bigint | undefined) ?? 0n
     if (balance < params.depositAmount) {
-      setErrorMsg(`Insufficient Vision balance. Have ${balance}, need ${params.depositAmount}. Deposit USDC first.`)
+      setErrorMsg(`Insufficient Vision balance. Have ${formatUnits(balance, 18)}, need ${formatUnits(params.depositAmount, 18)} USDC. Deposit USDC first.`)
       setStep('error')
       return
     }

@@ -5,7 +5,7 @@ import { usePlayerBatches, type PlayerBatchPosition } from './usePlayerBatches'
 import { useBatches } from './useBatches'
 
 const POINTS_PER_TICK_PER_BATCH = 100
-const USDC_DECIMALS = 6
+const USDC_DECIMALS = 18
 
 export interface BatchPointsBreakdown {
   batchId: number
@@ -53,10 +53,9 @@ export function useVisionPoints(): VisionPointsResult {
       if (!batch) continue
 
       const myBalanceUsd = Number(pos.balance) / 10 ** USDC_DECIMALS
-      // TVL from API: could be raw string (in USDC smallest unit) or formatted
+      // TVL from API: raw string in L3 USDC smallest units (18 decimals)
       const tvlRaw = parseFloat(batch.tvl)
-      // If TVL > 1e9, it's in raw units (6 decimals). Otherwise treat as formatted USD.
-      const batchTvlUsd = tvlRaw > 1e9 ? tvlRaw / 10 ** USDC_DECIMALS : tvlRaw
+      const batchTvlUsd = tvlRaw / 10 ** USDC_DECIMALS
 
       if (batchTvlUsd <= 0) continue
 

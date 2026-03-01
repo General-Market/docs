@@ -38,7 +38,7 @@ function truncateAddress(addr: string): string {
 export function BatchCard({ batch, onClick }: BatchCardProps) {
   const t = useTranslations('vision')
   const marketCount = batch.marketCount || batch.marketIds.length
-  const tvlUsdc = parseFloat(batch.tvl) / 1e6
+  const tvlUsdc = parseFloat(batch.tvl) / 1e18
   const { metadata } = useBatchMetadata(batch.id)
   const { name: deployerName } = useVisionDeployerName(
     batch.creator ? (batch.creator as `0x${string}`) : undefined

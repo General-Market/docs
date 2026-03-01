@@ -21,8 +21,8 @@ interface SourceDetailProps {
 function formatTvl(tvl: string): string {
   const raw = parseFloat(tvl)
   if (isNaN(raw) || raw === 0) return '$0'
-  // Raw value is in USDC smallest units (6 decimals)
-  const num = raw / 1e6
+  // Raw value is in L3 USDC smallest units (18 decimals)
+  const num = raw / 1e18
   if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(2)}M`
   if (num >= 1_000) return `$${(num / 1_000).toFixed(1)}K`
   return `$${num.toFixed(2)}`

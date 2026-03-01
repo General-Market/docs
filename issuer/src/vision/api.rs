@@ -931,7 +931,7 @@ async fn vision_leaderboard(
         pnl_b.cmp(&pnl_a)
     });
 
-    let decimals = 1_000_000.0_f64; // USDC 6 decimals
+    let decimals = 1e18_f64; // 18 decimals (on-chain internal format)
     let leaderboard: Vec<LeaderboardEntry> = entries
         .iter()
         .enumerate()
