@@ -135,7 +135,7 @@ export function ExpandedBatch({ batchId, batch }: ExpandedBatchProps) {
     return {
       balance: `$${parseFloat(formatUnits(position.balance, VISION_USDC_DECIMALS)).toFixed(2)}`,
       stake: `$${parseFloat(formatUnits(position.stakePerTick, VISION_USDC_DECIMALS)).toFixed(2)}`,
-      pnl: `${pnlNum >= 0 ? '+' : ''}$${pnlNum.toFixed(2)}`,
+      pnl: `${pnlNum >= 0 ? '+' : '-'}$${Math.abs(pnlNum).toFixed(2)}`,
       pnlClass: pnlNum >= 0 ? 'text-color-up' : 'text-color-down',
       multiplier: `${multiplier.toFixed(2)}x`,
       winRate: hitRate ? `${hitRate.hitRate.toFixed(1)}%` : '--',

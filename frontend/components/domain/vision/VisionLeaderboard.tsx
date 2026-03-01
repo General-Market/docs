@@ -60,13 +60,13 @@ export function VisionLeaderboard() {
                     {entry.walletAddress.slice(0, 6)}...{entry.walletAddress.slice(-4)}
                   </td>
                   <td className={`py-3 pr-4 font-mono text-xs text-right font-bold ${pnlPositive ? 'text-color-up' : 'text-color-down'}`}>
-                    {pnlPositive ? '+' : ''}{entry.pnl.toFixed(2)}
+                    {pnlPositive ? '+' : '-'}${Math.abs(entry.pnl).toFixed(2)}
                   </td>
                   <td className={`py-3 pr-4 font-mono text-xs text-right ${entry.roi >= 0 ? 'text-color-up' : 'text-color-down'}`}>
                     {entry.roi >= 0 ? '+' : ''}{entry.roi.toFixed(1)}%
                   </td>
                   <td className="py-3 pr-4 font-mono text-xs text-right text-text-secondary">
-                    {entry.totalVolume.toFixed(2)}
+                    ${entry.totalVolume.toFixed(2)}
                   </td>
                   <td className="py-3 font-mono text-xs text-right text-text-secondary">
                     {entry.portfolioBets}
