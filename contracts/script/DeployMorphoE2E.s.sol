@@ -11,7 +11,7 @@ import {MockERC20} from "../src/mocks/MockERC20.sol";
 import {Morpho} from "@morpho-blue/Morpho.sol";
 import {AdaptiveCurveIrm} from "@morpho-blue-irm/adaptive-curve-irm/AdaptiveCurveIrm.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+// ERC1967Proxy no longer needed — oracle uses the main IssuerRegistry
 import "./helpers/DeployBLSHelper.sol";
 
 /// @title DeployMorphoE2E - Deploy Morpho Blue + MetaMorpho for E2E testing (Phase 1)
@@ -61,19 +61,14 @@ contract DeployMorphoE2E is DeployBLSHelper {
         // Read existing deployment addresses
         address arbUSDC = vm.envAddress("ARB_USDC");
         address itpVault = vm.envAddress("ITP_VAULT");
+        // Use the MAIN IssuerRegistry for the oracle — keeps nonces in sync
+        // when registry syncs happen during ITP creation/rebalance
+        address mainRegistry = vm.envAddress("ISSUER_REGISTRY");
 
         console.log("Deployer:", deployer);
         console.log("ArbUSDC:", arbUSDC);
         console.log("ITP Vault (collateral):", itpVault);
-
-        // Generate BLS keys via FFI (deterministic seeds 0,1,2 — same as DeployFullSystemE2E)
-        bytes memory aggPubkey = blsAggPubkey("0,1,2");
-        bytes[] memory issuerPubkeys = new bytes[](ISSUER_COUNT);
-        uint256[] memory issuerIds = new uint256[](ISSUER_COUNT);
-        for (uint8 i = 0; i < ISSUER_COUNT; i++) {
-            issuerPubkeys[i] = blsPubkey(i);
-            issuerIds[i] = i;
-        }
+        console.log("IssuerRegistry (shared):", mainRegistry);
 
         vm.startBroadcast(anvilKey);
 
@@ -85,58 +80,27 @@ contract DeployMorphoE2E is DeployBLSHelper {
         AdaptiveCurveIrm irm = new AdaptiveCurveIrm(address(morpho));
         console.log("AdaptiveCurveIRM deployed:", address(irm));
 
-        // 3a. Deploy MirrorIssuerRegistry (UUPS proxy)
-        // initialize(aggPubkey, threshold, activeCount, admin)
-        MirrorIssuerRegistry registryImpl = new MirrorIssuerRegistry();
-        bytes memory initData = abi.encodeCall(
-            MirrorIssuerRegistry.initialize,
-            (aggPubkey, BLS_THRESHOLD, ISSUER_COUNT, deployer)
-        );
-        ERC1967Proxy registryProxy = new ERC1967Proxy(address(registryImpl), initData);
-        address mirrorRegistry = address(registryProxy);
-        console.log("MirrorIssuerRegistry impl:", address(registryImpl));
-        console.log("MirrorIssuerRegistry proxy:", mirrorRegistry);
-
-        // 3b. Sync MirrorIssuerRegistry with individual pubkeys (TOFU bootstrap)
-        // First sync verifies against aggregated pubkey, then stores individual keys + snapshot
-        uint256 syncNonce = 1;
-        uint256 activeBitmask = (1 << ISSUER_COUNT) - 1; // 0x07 for 3 issuers
-        bytes32 syncHash = keccak256(
-            abi.encode(
-                "REGISTRY_SYNC",
-                block.chainid,
-                mirrorRegistry,
-                syncNonce,
-                keccak256(abi.encode(issuerPubkeys, issuerIds)),
-                activeBitmask,
-                ISSUER_COUNT,
-                BLS_THRESHOLD
-            )
-        );
-        bytes memory syncSig = blsSign("0,1,2", syncHash);
-        MirrorIssuerRegistry(mirrorRegistry).sync(
-            issuerPubkeys, issuerIds, activeBitmask, ISSUER_COUNT, BLS_THRESHOLD,
-            syncNonce, syncSig, 0, 0
-        );
-        console.log("MirrorIssuerRegistry synced with individual pubkeys (TOFU bootstrap)");
-
-        // 3c. Deploy ITPNAVOracle
-        // constructor(issuerRegistry, itpAddress, initialPrice)
-        ITPNAVOracle oracle = new ITPNAVOracle(mirrorRegistry, itpVault, INITIAL_ORACLE_PRICE);
+        // 3. Deploy ITPNAVOracle using the main IssuerRegistry
+        // (no separate MirrorIssuerRegistry — avoids nonce desync when
+        //  registry syncs happen during ITP create/rebalance consensus)
+        ITPNAVOracle oracle = new ITPNAVOracle(mainRegistry, itpVault, INITIAL_ORACLE_PRICE);
         console.log("ITPNAVOracle deployed:", address(oracle));
         console.log("  Initial price:", INITIAL_ORACLE_PRICE, "(1:1 ITP/USDC, 36 decimal precision)");
 
-        // 3d. Authorize ITPNAVOracle for incrementMissedCounts on MirrorIssuerRegistry
-        MirrorIssuerRegistry(mirrorRegistry).setAuthorizedMissedCountCaller(address(oracle), true);
+        // Authorize ITPNAVOracle for incrementMissedCounts on main registry
+        MirrorIssuerRegistry(mainRegistry).setAuthorizedMissedCountCaller(address(oracle), true);
         console.log("  ITPNAVOracle authorized for incrementMissedCounts");
 
-        // 3e. Push initial BLS-signed price update so oracle is not stale
+        // Push initial BLS-signed price update so oracle is not stale
+        // Use the main registry's current nonce for BLS verification
+        uint256 registryNonce = MirrorIssuerRegistry(mainRegistry).lastSnapshotNonce();
+        uint256 activeBitmask = (1 << ISSUER_COUNT) - 1; // 0x07 for 3 issuers
         bytes32 navHash = keccak256(
             abi.encode(block.chainid, address(oracle), itpVault, INITIAL_ORACLE_PRICE, block.timestamp, uint256(1))
         );
         bytes memory navSig = blsSign("0,1,2", navHash);
-        oracle.updatePrice(INITIAL_ORACLE_PRICE, block.timestamp, 1, navSig, syncNonce, activeBitmask);
-        console.log("  Initial BLS-signed price pushed to oracle");
+        oracle.updatePrice(INITIAL_ORACLE_PRICE, block.timestamp, 1, navSig, registryNonce, activeBitmask);
+        console.log("  Initial BLS-signed price pushed to oracle (nonce:", registryNonce, ")");
 
         // 4. Enable IRM and LLTV on Morpho
         morpho.enableIrm(address(irm));
@@ -186,7 +150,7 @@ contract DeployMorphoE2E is DeployBLSHelper {
         string memory p2 = string.concat(
             '    "MORPHO": "', vm.toString(address(morpho)),
             '",\n    "ADAPTIVE_IRM": "', vm.toString(address(irm)),
-            '",\n    "MIRROR_REGISTRY": "', vm.toString(mirrorRegistry),
+            '",\n    "MIRROR_REGISTRY": "', vm.toString(mainRegistry),
             '",\n    "ITP_NAV_ORACLE": "', vm.toString(address(oracle)),
             '",\n    "METAMORPHO_VAULT": "', vm.toString(vaultAddr),
             '",\n    "MARKET_ID": "', vm.toString(Id.unwrap(marketId)),

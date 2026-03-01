@@ -22,14 +22,14 @@ export default defineConfig({
   },
   projects: [
     {
-      // ITP flow — runs serially (00 → 09), resilience (07) excluded
+      // ITP flow — runs serially (00 → 09), plus regression tests (16+)
       name: 'itp',
-      testMatch: ['**/0[0-6]-*.spec.ts', '**/0[89]-*.spec.ts'],
+      testMatch: ['**/0[0-6]-*.spec.ts', '**/0[89]-*.spec.ts', '**/1[6-9]-*.spec.ts'],
     },
     {
-      // Vision — runs in parallel with ITP flow
+      // Vision — runs in parallel with ITP flow (10-15 only; 16+ are itp regression)
       name: 'vision',
-      testMatch: '**/1[0-9]-*.spec.ts',
+      testMatch: '**/1[0-5]-*.spec.ts',
     },
   ],
 });

@@ -551,9 +551,11 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
             <span className="text-[15px] font-bold text-black font-mono tabular-nums">{totalAssetCount || '—'}</span>
           </div>
           <div className="py-2.5 pl-3 border-l border-border-light">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('itp_card.balance')}</div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">TVL</div>
             <span className="text-[15px] font-bold text-black font-mono tabular-nums">
-              {address && userShares > 0n ? parseFloat(formatUnits(userShares, 18)).toFixed(2) : '—'}
+              {itp.totalValue && itp.totalValue > 0n
+                ? `$${parseFloat(formatUnits(itp.totalValue, 18)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                : '—'}
             </span>
           </div>
         </div>

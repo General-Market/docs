@@ -30,8 +30,11 @@ contract ITPNAVOracle is IITPNAVOracle, IOracle, BLSVerifier {
     /// @notice Maximum price deviation per update (10% = 1000 bps)
     uint256 public constant MAX_DEVIATION_BPS = 1000;
 
-    /// @notice Maximum cycle gap allowed (prevents unbounded skip)
-    uint256 public constant MAX_CYCLE_GAP = 10000;
+    /// @notice Maximum cycle gap — unused, kept for ABI compatibility.
+    /// Cycle-gap enforcement removed: issuer cycle numbers are wall-clock-based
+    /// (unix_ms / cycle_duration_ms), producing large gaps after restarts.
+    /// BLS verification + price deviation check provide the real safety.
+    uint256 public constant MAX_CYCLE_GAP = type(uint256).max;
 
     // ============ IMMUTABLES ============
 
@@ -89,11 +92,6 @@ contract ITPNAVOracle is IITPNAVOracle, IOracle, BLSVerifier {
         // where another user may have already pushed the same price)
         if (cycleNumber <= lastCycleNumber) {
             return;
-        }
-
-        // Reject unbounded cycle skips
-        if (cycleNumber > lastCycleNumber + MAX_CYCLE_GAP) {
-            revert ErrorsLib.E133_CycleGapTooLarge();
         }
 
         // Price deviation check (skip on first update when lastCycleNumber == 0)

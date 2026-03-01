@@ -116,7 +116,7 @@ contract ITPNAVOracleTest is TestHelper {
         assertEq(oracle.PRICE_DECIMALS(), 36);
         assertEq(oracle.MAX_STALENESS(), 24 hours);
         assertEq(oracle.MAX_DEVIATION_BPS(), 1000);
-        assertEq(oracle.MAX_CYCLE_GAP(), 10000);
+        assertEq(oracle.MAX_CYCLE_GAP(), type(uint256).max);
     }
 
     function test_constructor_revertsOnZeroInitialPrice() public {
@@ -327,17 +327,12 @@ contract ITPNAVOracleTest is TestHelper {
 
     // ============ CYCLE GAP TESTS ============
 
-    function test_updatePrice_revertsCycleGapTooLarge() public {
-        // Cycle gap > MAX_CYCLE_GAP (10000) should revert
-        vm.expectRevert(ErrorsLib.E133_CycleGapTooLarge.selector);
-        oracle.updatePrice(1.05e36, block.timestamp, 10001, new bytes(64), SYNC_NONCE, SIGNERS_BITMASK_3);
-    }
-
-    function test_updatePrice_maxCycleGapAllowed() public {
-        // Cycle gap == MAX_CYCLE_GAP should be allowed (0 + 10000 = 10000)
-        bytes memory sig = _signNavUpdate(1.05e36, block.timestamp, 10000);
-        oracle.updatePrice(1.05e36, block.timestamp, 10000, sig, SYNC_NONCE, SIGNERS_BITMASK_3);
-        assertEq(oracle.lastCycleNumber(), 10000);
+    function test_updatePrice_largeCycleGapAllowed() public {
+        // MAX_CYCLE_GAP is type(uint256).max — any forward jump is allowed
+        // (BLS signature + price deviation check provide the real safety)
+        bytes memory sig = _signNavUpdate(1.05e36, block.timestamp, 8_861_868_271);
+        oracle.updatePrice(1.05e36, block.timestamp, 8_861_868_271, sig, SYNC_NONCE, SIGNERS_BITMASK_3);
+        assertEq(oracle.lastCycleNumber(), 8_861_868_271);
     }
 
     // ============ PRICE DEVIATION TESTS ============

@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount, useReadContract } from 'wagmi'
 import { useSSEOrders } from '@/hooks/useSSE'
+import { USDC_ADDRESS, USDC_DECIMALS } from '@/lib/contracts/addresses'
+import { indexL3 } from '@/lib/wagmi'
 import {
   AreaChart,
   Area,
@@ -16,7 +18,6 @@ import {
 } from 'recharts'
 import { formatUnits, parseUnits } from 'viem'
 import { usePortfolio, PortfolioHistoryPoint } from '@/hooks/usePortfolio'
-import { useUsdcBalance } from '@/hooks/useUsdcBalance'
 import { DeployedItpRef } from '@/components/domain/ItpListing'
 import { useTranslations } from 'next-intl'
 
@@ -80,7 +81,17 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
   const tc = useTranslations('common')
   const { address } = useAccount()
   const { summary, history, trades, isLoading, refetch } = usePortfolio(address?.toLowerCase())
-  const { formatted: usdcFormatted } = useUsdcBalance()
+  const chainId = typeof window !== 'undefined' ? indexL3.id : undefined
+  const isWrongNetwork = false // Header handles chain switching
+  const { data: usdcRaw } = useReadContract({
+    address: USDC_ADDRESS,
+    abi: [{ name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ name: '', type: 'uint256' }] }] as const,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address, refetchInterval: 15_000 },
+  })
+  const usdcNum = usdcRaw !== undefined ? Number(usdcRaw) / 10 ** USDC_DECIMALS : 0
+  const usdcFormatted = usdcNum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   const [activeTab, setActiveTab] = useState<Tab>('positions')
 
   // --- Orders from SSE (real-time, data-node polls L3 chain) ---
@@ -153,9 +164,12 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
 
   const activeCount = orders.filter(o => o.status < 2).length
   const totalPnl = summary ? parseFloat(summary.total_pnl) : 0
-  const usdcNum = parseFloat(usdcFormatted?.replace(/,/g, '') || '0') || 0
   const positionsValue = summary ? parseFloat(summary.total_value) : 0
-  const totalValue = positionsValue + usdcNum
+  // Include pending/batched order amounts in total value
+  const pendingOrderValue = orders
+    .filter(o => o.status < 2) // Pending or Batched
+    .reduce((sum, o) => sum + parseFloat(formatUnits(o.amount, 18)), 0)
+  const totalValue = positionsValue + usdcNum + pendingOrderValue
   const hasAnyBalance = totalValue > 0.01 || (summary && summary.positions.length > 0)
   const subtitle = summary
     ? t('heading.subtitle_with_data', { count: summary.positions.length, plural: summary.positions.length !== 1 ? 's' : '', value: summary.total_value })
@@ -233,7 +247,9 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
               </div>
               <div className="py-3 px-4 md:px-6 md:border-l border-border-light">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('stats.total_invested')}</div>
-                <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">${summary?.total_invested || '0.00'}</div>
+                <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">
+                  ${((summary ? parseFloat(summary.total_invested) : 0) + pendingOrderValue).toFixed(2)}
+                </div>
               </div>
               <div className="py-3 px-4 md:px-6 md:border-l border-t md:border-t-0 border-border-light">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('stats.positions')}</div>

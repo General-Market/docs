@@ -700,8 +700,11 @@ print(f'  Regenerated frontend/public/deployed-assets.json with {len(assets)} un
         echo -e "${YELLOW}  Warning: ITP_Vault not found in deployment, skipping Morpho${NC}"
     else
         # Phase 1: Deploy Morpho core on L3 (Morpho Blue + IRM + Oracle + MetaMorpho vault)
+        # Oracle uses the MAIN IssuerRegistry (not a separate mirror) to avoid nonce desync
+        MAIN_REGISTRY=$(python3 -c "import json; print(json.load(open('../deployments/active-deployment.json'))['contracts']['IssuerRegistry'])" 2>/dev/null || echo "")
         ITP_VAULT=$VAULT_TOKEN \
         ARB_USDC=$L3_WUSDC_ADDR \
+        ISSUER_REGISTRY=$MAIN_REGISTRY \
         forge script script/DeployMorphoE2E.s.sol:DeployMorphoE2E \
             --broadcast --slow --rpc-url $RPC_URL > ../logs/deploy-morpho-phase1.log 2>&1
 
