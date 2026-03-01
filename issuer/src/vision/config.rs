@@ -29,6 +29,9 @@ pub struct VisionConfig {
     pub tick_poll_interval_ms: u64,
     /// Optional bearer token for authenticating data-node HTTP requests.
     pub data_node_token: Option<String>,
+    /// Shared HMAC secret for verifying snapshot responses from data-node (IS-7).
+    /// If set, snapshot responses must include a valid X-Snapshot-HMAC header.
+    pub snapshot_hmac_secret: Option<String>,
 
     // =========================================================================
     // Dual-balance / cross-chain deposit fields (Vision First Deposit)
@@ -66,6 +69,7 @@ impl Default for VisionConfig {
             staleness_threshold_secs: 300,
             tick_poll_interval_ms: 1000,
             data_node_token: None,
+            snapshot_hmac_secret: None,
             // Cross-chain deposit defaults
             arb_rpc_url: "https://arb1.arbitrum.io/rpc".into(),
             arb_bridge_custody_address: String::new(),

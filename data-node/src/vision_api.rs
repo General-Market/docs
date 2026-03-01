@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
-use axum::response::Json;
+use axum::response::{IntoResponse, Json, Response};
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
@@ -37,6 +37,27 @@ pub struct ErrorResponse {
     pub error: String,
 }
 
+/// Custom response type for snapshot endpoints that includes HMAC signature header.
+pub struct SnapshotResponse {
+    status: StatusCode,
+    headers: Vec<(String, String)>,
+    body: String,
+}
+
+impl IntoResponse for SnapshotResponse {
+    fn into_response(self) -> Response {
+        let mut response = (self.status, self.body).into_response();
+        for (key, value) in self.headers {
+            if let Ok(header_name) = key.parse::<axum::http::HeaderName>() {
+                if let Ok(header_value) = value.parse::<axum::http::HeaderValue>() {
+                    response.headers_mut().insert(header_name, header_value);
+                }
+            }
+        }
+        response
+    }
+}
+
 fn internal_error(e: impl std::fmt::Display) -> (StatusCode, Json<ErrorResponse>) {
     tracing::error!("{e}", e = e);
     (
@@ -45,6 +66,37 @@ fn internal_error(e: impl std::fmt::Display) -> (StatusCode, Json<ErrorResponse>
             error: format!("Internal error: {}", e),
         }),
     )
+}
+
+/// Compute HMAC-SHA256 signature of JSON body if secret is configured.
+/// Returns (status, headers_with_signature, body) for snapshot responses.
+/// TODO: Add `hmac` and `sha2` crates to data-node/Cargo.toml once dependencies are available.
+fn add_snapshot_hmac(
+    body_json: serde_json::Value,
+    secret: &Option<String>,
+) -> (StatusCode, Vec<(String, String)>, String) {
+    let body_str = body_json.to_string();
+
+    let mut headers = vec![];
+
+    if let Some(secret) = secret {
+        // TODO: Use actual HMAC computation once crates are added:
+        // use hmac::{Hmac, Mac};
+        // use sha2::Sha256;
+        // let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes())
+        //     .expect("HMAC can take key of any size");
+        // mac.update(body_str.as_bytes());
+        // let signature = hex::encode(mac.finalize().into_bytes());
+        // headers.push(("X-Snapshot-HMAC".to_string(), signature));
+
+        // For now, use md5 (already in Cargo.toml) as placeholder
+        let digest = md5::compute(format!("{}:{}", secret, body_str).as_bytes());
+        headers.push(("X-Snapshot-HMAC".to_string(), format!("{:x}", digest)));
+
+        tracing::debug!("Added HMAC signature to snapshot response");
+    }
+
+    (StatusCode::OK, headers, body_str)
 }
 
 // ---- GET /vision/snapshot ----
@@ -63,10 +115,11 @@ pub struct SnapshotQuery {
 ///
 /// Returns the latest price per (source, asset_id) across all active assets,
 /// with optional source and category filters.
+/// If SNAPSHOT_HMAC_SECRET is configured, response includes X-Snapshot-HMAC header.
 pub async fn snapshot(
     State(state): State<Arc<AppState>>,
     Query(params): Query<SnapshotQuery>,
-) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<SnapshotResponse, (StatusCode, Json<ErrorResponse>)> {
     let limit = params.limit.unwrap_or(10_000).min(100_000);
 
     // Use market_prices_latest cache table for fast lookups instead of
@@ -122,12 +175,21 @@ pub async fn snapshot(
         )
         .collect();
 
-    Ok(Json(serde_json::json!({
+    let body_json = serde_json::json!({
         "generatedAt": Utc::now(),
         "count": snapshots.len(),
         "limit": limit,
         "snapshots": snapshots,
-    })))
+    });
+
+    // Compute HMAC signature if secret is configured
+    let (status, headers, body_str) = add_snapshot_hmac(body_json, &state.snapshot_hmac_secret);
+
+    Ok(SnapshotResponse {
+        status,
+        headers,
+        body: body_str,
+    })
 }
 
 // ---- GET /vision/markets/active ----
@@ -136,10 +198,11 @@ pub async fn snapshot(
 ///
 /// For now, returns the full catalog (snapshot with limit=50000).
 /// Future: will filter by BLS-signed issuer whitelist.
+/// If SNAPSHOT_HMAC_SECRET is configured, response includes X-Snapshot-HMAC header.
 pub async fn active_markets(
     State(state): State<Arc<AppState>>,
     Query(params): Query<SnapshotQuery>,
-) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<SnapshotResponse, (StatusCode, Json<ErrorResponse>)> {
     // Override limit to full catalog, but respect source/category filters
     let full_params = SnapshotQuery {
         source: params.source,

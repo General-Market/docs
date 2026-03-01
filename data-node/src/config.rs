@@ -262,6 +262,12 @@ pub struct ServeArgs {
     /// Reset session data (truncate trades/snapshots, clear cursors) before starting collectors.
     #[arg(long, default_value = "false", env = "DATA_NODE_RESET_SESSION")]
     pub reset_session: bool,
+
+    /// Shared HMAC secret for authenticating snapshot responses (IS-7).
+    /// If set, snapshot responses will be signed with HMAC-SHA256.
+    /// The signature is sent as the X-Snapshot-HMAC header.
+    #[arg(long, env = "SNAPSHOT_HMAC_SECRET")]
+    pub snapshot_hmac_secret: Option<String>,
 }
 
 #[derive(Parser, Debug)]

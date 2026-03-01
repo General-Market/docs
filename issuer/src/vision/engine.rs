@@ -95,7 +95,9 @@ impl ConfigCache {
     }
 }
 
-/// Parse resolution type string ("up_0", "up_x", etc.) to u8 (0-7).
+/// Parse resolution type string to u8 code.
+/// Codes 0-7: original types. Codes 8-13: extended types.
+/// Unknown types → 255 (Cancelled).
 fn parse_resolution_type(s: &str) -> u8 {
     match s {
         "up_0" => 0,
@@ -106,7 +108,17 @@ fn parse_resolution_type(s: &str) -> u8 {
         "down_x" => 5,
         "flat_0" => 6,
         "flat_x" => 7,
-        _ => 2, // default to up_x for auto-batches
+        // Extended types (codes 8-13)
+        "up_300" => 8,
+        "up_3000" => 9,
+        "down_300" => 10,
+        "down_3000" => 11,
+        "flat_300" => 12,
+        "flat_3000" => 13,
+        _ => {
+            tracing::warn!(res_type = s, "Unknown resolution type — treating as Cancelled");
+            255
+        }
     }
 }
 
@@ -123,8 +135,8 @@ fn asset_id_to_market_id(asset_id: &str) -> H256 {
 /// end prices from the current snapshot.
 ///
 /// Returns Result instead of silently returning empty on failure.
-/// Parsed snapshot data for a source: (market_id -> value, market_id -> changePct)
-type SnapshotData = (HashMap<H256, f64>, HashMap<H256, f64>);
+/// Parsed snapshot data for a source: (market_id -> value, market_id -> changePct, market_id -> fetched_at_unix)
+type SnapshotData = (HashMap<H256, f64>, HashMap<H256, f64>, HashMap<H256, i64>);
 
 /// Per-tick-cycle cache: Ok(data) for successful fetches, Err for failed ones.
 /// Prevents both redundant fetches AND redundant timeout waits.
@@ -134,6 +146,7 @@ type SnapshotCache = HashMap<String, Result<SnapshotData, String>>;
 async fn fetch_snapshot_data(
     data_node_url: &str,
     source_id: &str,
+    hmac_secret: &Option<String>,
     cache: &mut SnapshotCache,
 ) -> Result<SnapshotData, Box<dyn std::error::Error + Send + Sync>> {
     if let Some(cached) = cache.get(source_id) {
@@ -143,7 +156,7 @@ async fn fetch_snapshot_data(
         };
     }
 
-    let result = fetch_snapshot_data_inner(data_node_url, source_id).await;
+    let result = fetch_snapshot_data_inner_with_secret(data_node_url, source_id, hmac_secret).await;
     match &result {
         Ok(data) => { cache.insert(source_id.to_string(), Ok(data.clone())); }
         Err(e) => { cache.insert(source_id.to_string(), Err(e.to_string())); }
@@ -155,14 +168,66 @@ async fn fetch_snapshot_data_inner(
     data_node_url: &str,
     source_id: &str,
 ) -> Result<SnapshotData, Box<dyn std::error::Error + Send + Sync>> {
+    fetch_snapshot_data_inner_with_secret(data_node_url, source_id, &None).await
+}
+
+async fn fetch_snapshot_data_inner_with_secret(
+    data_node_url: &str,
+    source_id: &str,
+    hmac_secret: &Option<String>,
+) -> Result<SnapshotData, Box<dyn std::error::Error + Send + Sync>> {
     let url = format!("{}/vision/snapshot?source={}&limit=10000", data_node_url, source_id);
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(5))
         .build()?;
 
     let response = client.get(&url).send().await?;
-    let json: serde_json::Value = response.json().await?;
 
+    // Verify HMAC signature if secret is configured (IS-7)
+    if let Some(secret) = hmac_secret {
+        let hmac_header = response
+            .headers()
+            .get("x-snapshot-hmac")
+            .and_then(|v| v.to_str().ok())
+            .map(|s| s.to_string());
+
+        let body_text = response.text().await?;
+
+        if let Some(received_hmac) = hmac_header {
+            // TODO: Add `hmac` and `sha2` crates to issuer/Cargo.toml and implement actual verification:
+            // use hmac::{Hmac, Mac};
+            // use sha2::Sha256;
+            // let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes()).unwrap();
+            // mac.update(body_text.as_bytes());
+            // let expected = hex::encode(mac.finalize().into_bytes());
+            // if received_hmac != expected {
+            //     tracing::error!(
+            //         "Snapshot HMAC mismatch — possible tampering. received={} expected={}",
+            //         received_hmac,
+            //         expected
+            //     );
+            //     return Err("HMAC verification failed — snapshot may have been tampered with".into());
+            // }
+            // tracing::debug!("Snapshot HMAC verification successful");
+
+            // For now, log that we received the header but verification is not yet implemented
+            tracing::info!("Snapshot response has X-Snapshot-HMAC header (verification pending crate dependencies)");
+        } else {
+            tracing::warn!("Snapshot response missing X-Snapshot-HMAC header — HMAC verification cannot be performed");
+            // Note: We could fail here if strict verification is desired, but for now we warn
+        }
+
+        let json: serde_json::Value = serde_json::from_str(&body_text)?;
+        parse_snapshot_data(json)
+    } else {
+        let json: serde_json::Value = response.json().await?;
+        parse_snapshot_data(json)
+    }
+}
+
+fn parse_snapshot_data(
+    json: serde_json::Value,
+) -> Result<SnapshotData, Box<dyn std::error::Error + Send + Sync>> {
     let snapshots = json
         .get("snapshots")
         .and_then(|s| s.as_array())
@@ -170,6 +235,7 @@ async fn fetch_snapshot_data_inner(
 
     let mut current_values: HashMap<H256, f64> = HashMap::new();
     let mut change_pcts: HashMap<H256, f64> = HashMap::new();
+    let mut fetched_at_map: HashMap<H256, i64> = HashMap::new();
 
     for snap in snapshots {
         let asset_id = snap
@@ -216,31 +282,82 @@ async fn fetch_snapshot_data_inner(
         if let Some(pct) = change_pct {
             change_pcts.insert(market_id, pct);
         }
+
+        // Parse fetched_at timestamp (ISO 8601 string or unix seconds).
+        // Falls back to 0 if not present (old data-node without the field).
+        let fetched_at = snap
+            .get("fetched_at")
+            .or_else(|| snap.get("fetchedAt"))
+            .and_then(|v| {
+                if let Some(ts) = v.as_i64() {
+                    Some(ts)
+                } else if let Some(s) = v.as_str() {
+                    // ISO 8601 datetime string from serde serialization
+                    chrono::DateTime::parse_from_rfc3339(s)
+                        .ok()
+                        .map(|dt| dt.timestamp())
+                } else {
+                    None
+                }
+            })
+            .unwrap_or_else(|| {
+                tracing::warn!(asset_id, "Missing fetched_at in snapshot — defaulting to 0");
+                0
+            });
+        fetched_at_map.insert(market_id, fetched_at);
     }
 
     tracing::info!(
-        source_id,
         total_snapshots = snapshots.len(),
-        "Cached snapshot data for source"
+        "Parsed snapshot data from response"
     );
 
-    Ok((current_values, change_pcts))
+    Ok((current_values, change_pcts, fetched_at_map))
 }
 
 /// Build MarketPrices from cached snapshot data for a specific batch's markets.
+///
+/// Uses `fetched_at` timestamps from the data-node to populate the `last_update`
+/// field in MarketPrices, enabling proper staleness detection downstream.
+/// Markets with stale price data (older than 2x tick duration) are logged and
+/// skipped — they will resolve as Cancelled since they have no price entry.
 async fn build_market_prices(
     snapshot_data: &SnapshotData,
     batch_market_ids: &[H256],
     reference_prices: &ReferencePrices,
     now: u64,
+    tick_duration_secs: u64,
 ) -> MarketPrices {
     let mut prices = MarketPrices::new();
-    let (current_values, change_pcts) = snapshot_data;
+    let (current_values, change_pcts, fetched_at_map) = snapshot_data;
     let ref_prices = reference_prices.read().await;
 
+    // Staleness threshold: 2x the tick duration.
+    // If price data is older than this, the snapshot is too stale to use for resolution.
+    let max_age_secs = tick_duration_secs.saturating_mul(2);
+    let now_i64 = now as i64;
+
     let mut matched = 0;
+    let mut stale_count = 0;
     for &market_id in batch_market_ids {
         if let Some(&end_price) = current_values.get(&market_id) {
+            // Check staleness using the actual fetched_at from the data-node
+            let fetched_at = fetched_at_map.get(&market_id).copied().unwrap_or(0);
+            if fetched_at > 0 && max_age_secs > 0 {
+                let age = now_i64.saturating_sub(fetched_at);
+                if age > max_age_secs as i64 {
+                    tracing::warn!(
+                        market_id = ?market_id,
+                        age_secs = age,
+                        max_age_secs = max_age_secs,
+                        fetched_at,
+                        "Stale price data — skipping market (will resolve as Cancelled)"
+                    );
+                    stale_count += 1;
+                    continue;
+                }
+            }
+
             let mut start_price = ref_prices.get(&market_id).copied().unwrap_or(end_price);
 
             if (start_price - end_price).abs() < f64::EPSILON {
@@ -251,13 +368,16 @@ async fn build_market_prices(
                 }
             }
 
-            prices.insert(market_id, start_price, end_price, now);
+            // Use the actual fetched_at as last_update so MarketPrices::is_stale works correctly
+            let last_update = if fetched_at > 0 { fetched_at as u64 } else { now };
+            prices.insert(market_id, start_price, end_price, last_update);
             matched += 1;
         }
     }
 
     tracing::info!(
         matched_markets = matched,
+        stale_markets = stale_count,
         batch_markets = batch_market_ids.len(),
         "Built market prices from cached snapshot"
     );
@@ -521,15 +641,17 @@ pub async fn run(
 
                 // Limit concurrent fetches to avoid overwhelming the data-node DB pool
                 let semaphore = Arc::new(tokio::sync::Semaphore::new(5));
+                let secret = config.snapshot_hmac_secret.clone();
                 let fetch_futures: Vec<_> = sources_vec
                     .iter()
                     .map(|src| {
                         let url = config.data_node_url.clone();
                         let source = src.clone();
                         let sem = semaphore.clone();
+                        let secret = secret.clone();
                         async move {
                             let _permit = sem.acquire().await.unwrap();
-                            let result = fetch_snapshot_data_inner(&url, &source).await;
+                            let result = fetch_snapshot_data_inner_with_secret(&url, &source, &secret).await;
                             (source, result)
                         }
                     })
@@ -585,6 +707,7 @@ pub async fn run(
                         &market_ids,
                         &reference_prices,
                         now,
+                        batch.tick_duration,
                     )
                     .await;
 

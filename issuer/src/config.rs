@@ -389,6 +389,7 @@ impl IssuerConfig {
                         staleness_threshold_secs: parse_env_var("ISSUER_VISION_STALENESS_THRESHOLD_SECS").unwrap_or(300),
                         tick_poll_interval_ms: parse_env_var("ISSUER_VISION_TICK_POLL_INTERVAL_MS").unwrap_or(1000),
                         data_node_token: std::env::var("DATA_NODE_TOKEN").ok(),
+                        snapshot_hmac_secret: std::env::var("SNAPSHOT_HMAC_SECRET").ok(),
                         // Cross-chain deposit fields (Vision First Deposit)
                         arb_rpc_url: std::env::var("ISSUER_VISION_ARB_RPC_URL")
                             .unwrap_or_else(|_| "https://arb1.arbitrum.io/rpc".into()),

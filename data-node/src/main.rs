@@ -1848,7 +1848,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         logos_dir,
         sim_cache,
         chain_cache,
-        admin_token: args.admin_token.clone(),
+        admin_token: args.admin_token.clone().filter(|t| !t.is_empty()),
         cors_origins: args.cors_origin.clone(),
         health_stats_cache,
         batch_engine: batch_state,
@@ -1859,6 +1859,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             std::env::var("ISSUER_URL").unwrap_or_else(|_| "http://localhost:8100".to_string()),
             format!("http://{}:{}", args.bind, args.port),
         )),
+        snapshot_hmac_secret: args.snapshot_hmac_secret.clone().filter(|s| !s.is_empty()),
     });
 
     // Spawn chain pollers via run_collector_loop

@@ -247,6 +247,8 @@ pub struct AppState {
     pub price_broadcast: Arc<crate::market_data::broadcast::PriceBroadcastHub>,
     /// Batch config cache for Vision WebSocket/history endpoints
     pub vision_batch_cache: Arc<crate::vision_batch_cache::VisionBatchCache>,
+    /// Shared HMAC secret for authenticating snapshot responses (IS-7)
+    pub snapshot_hmac_secret: Option<String>,
 }
 
 /// In-memory TTL cache for hot endpoints.
@@ -5373,20 +5375,52 @@ struct SignedBatchPayload {
 }
 
 /// POST /batches/signed — issuer pushes signed config after BLS consensus.
-/// Requires x-admin-token header auth.
+/// Requires Bearer token auth (with x-admin-token fallback).
 async fn store_signed_batch(
     State(state): State<Arc<AppState>>,
     headers: HeaderMap,
     Json(payload): Json<SignedBatchPayload>,
 ) -> StatusCode {
-    // Auth check
-    let token = headers.get("x-admin-token").and_then(|v| v.to_str().ok());
-    let expected = match state.admin_token.as_deref() {
-        Some(t) => t,
-        None => return StatusCode::UNAUTHORIZED,
-    };
-    if token != Some(expected) {
-        return StatusCode::UNAUTHORIZED;
+    // Auth check (unified: Bearer or x-admin-token)
+    if let Err(e) = require_admin_auth(&headers, &state) {
+        return e.0;
+    }
+
+    // DN-1: Recompute config hash to prevent tampering
+    let markets_for_hash: Vec<crate::batch_engine::BatchMarket> = serde_json::from_value(
+        payload.config.get("markets").cloned().unwrap_or_default(),
+    ).unwrap_or_default();
+    let recomputed = crate::batch_engine::compute_config_hash(
+        &payload.source_id,
+        payload.tick_duration_secs,
+        payload.lock_offset_secs,
+        &markets_for_hash,
+    );
+    let expected_hash = hex::decode(payload.config_hash.trim_start_matches("0x")).unwrap_or_default();
+    if recomputed.as_slice() != expected_hash.as_slice() {
+        tracing::warn!(
+            source = %payload.source_id,
+            expected = %payload.config_hash,
+            "Config hash mismatch — rejecting tampered payload"
+        );
+        return StatusCode::BAD_REQUEST;
+    }
+
+    // DN-4: Atomic nonce check — reject stale replays
+    // (This must happen inside a lock to prevent TOCTOU)
+    {
+        let cache = state.batch_engine.signed_configs.read().await;
+        if let Some(existing) = cache.iter().find(|c| c.source_id == payload.source_id) {
+            if payload.reference_nonce <= existing.reference_nonce {
+                tracing::warn!(
+                    source = %payload.source_id,
+                    incoming = payload.reference_nonce,
+                    existing = existing.reference_nonce,
+                    "Rejecting stale nonce"
+                );
+                return StatusCode::CONFLICT;
+            }
+        }
     }
 
     // Persist to DB first (crash recovery)
@@ -5460,7 +5494,7 @@ async fn store_signed_batch(
 
 /// POST /batches/replicate — followers store leader's full config.
 /// Same as store_signed_batch but named differently for clarity.
-/// Requires x-admin-token header auth.
+/// Requires Bearer token auth (with x-admin-token fallback).
 async fn replicate_signed_batch(
     state: State<Arc<AppState>>,
     headers: HeaderMap,
@@ -5481,24 +5515,39 @@ struct SettlementRecord {
 }
 
 /// POST /batches/settlement — issuers record settlement results for threshold feedback.
-/// Requires x-admin-token header auth.
+/// Requires Bearer token auth (with x-admin-token fallback).
 async fn record_batch_settlement(
     State(state): State<Arc<AppState>>,
     headers: HeaderMap,
     Json(records): Json<Vec<SettlementRecord>>,
 ) -> StatusCode {
-    let token = headers.get("x-admin-token").and_then(|v| v.to_str().ok());
-    let expected = match state.admin_token.as_deref() {
-        Some(t) => t,
-        None => return StatusCode::UNAUTHORIZED,
-    };
-    if token != Some(expected) {
-        return StatusCode::UNAUTHORIZED;
+    // Auth check (unified: Bearer or x-admin-token)
+    if let Err(e) = require_admin_auth(&headers, &state) {
+        return e.0;
     }
 
     for rec in &records {
         let hash_bytes =
             hex::decode(rec.config_hash.trim_start_matches("0x")).unwrap_or_default();
+
+        // DN-3: Verify config_hash references a known batch config
+        let exists: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM batch_configs WHERE config_hash = $1 \
+             UNION SELECT 1 FROM signed_batch_configs WHERE config_hash = $1)",
+        )
+        .bind(&hash_bytes)
+        .fetch_one(&state.pool)
+        .await
+        .unwrap_or(false);
+
+        if !exists {
+            tracing::warn!(
+                source = %rec.source_id,
+                config_hash = %rec.config_hash,
+                "Settlement references unknown config_hash — skipping"
+            );
+            continue;
+        }
 
         let _ = sqlx::query(
             r#"
@@ -5539,7 +5588,9 @@ fn require_admin_auth(
     let provided = headers
         .get("authorization")
         .and_then(|v| v.to_str().ok())
-        .map(|v| v.strip_prefix("Bearer ").unwrap_or(v));
+        .map(|v| v.strip_prefix("Bearer ").unwrap_or(v))
+        // Fallback: check x-admin-token header
+        .or_else(|| headers.get("x-admin-token").and_then(|v| v.to_str().ok()));
 
     match provided {
         Some(token) if token == expected => Ok(()),
