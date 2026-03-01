@@ -11,6 +11,17 @@ Max 3 agents running at the same time.
 |---------|----------|-----|------------|
 | Index L3 (Orbit) | 111222333 | http://142.132.164.24/ | GM (18 dec) |
 
+## USDC Decimals by Chain
+
+**Critical: L3 and Arb use different USDC decimals. Never assume 6 everywhere.**
+
+| Chain | USDC Decimals | Where |
+|-------|--------------|-------|
+| **L3 (Orbit)** | **18** | Vision balances, TVL, PnL, leaderboard, batch pools, VisionReserve |
+| **Arbitrum** | **6** | Arb USDC deposits, AP keeper balances, bridge custody |
+
+When formatting amounts: check which chain the value comes from. Issuer APIs return L3 values (18 dec). Arb wallet reads return 6 dec.
+
 ## ITP Pricing Model (ETF)
 
 An ITP is a fixed basket of assets, like an ETF. NAV floats with underlying prices.

@@ -1,5 +1,11 @@
 # Design Decision Backlog
 
+## Session: 20260301-1400-fix (Vision decimal + display formatting fixes)
+
+- [FAILED] E2E tests didn't catch 1e6 vs 1e18 decimal mismatch — E2E tests verify backend functionality (txs succeed, balances change) but don't check frontend display formatting (leaderboard values, error messages, TVL display)
+- [DECISION] All Vision values (balance, TVL, PnL, volume) use L3 USDC with 18 decimals. Arb USDC uses 6 decimals. Frontend must distinguish chains for formatting.
+- [DECISION] Issuer leaderboard API must divide by 1e18, not 1e6 — balances from VisionReserve are on L3
+
 ## Session: 20260301-0300-s10 (Step 10: Wire price task to oracle submission)
 
 - [DECISION] Added send_transaction and static_call to ArbitrumChainWriter — ArbitrumChainWriter didn't implement the ChainWriter trait, needed generic tx submission for oracle updates and Step 12's mirror sync. Added both as direct methods instead of implementing the full trait.
