@@ -27,6 +27,8 @@ use ethers::types::{Address, U256};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use crate::abi::AbiEncoder;
+
 /// Request parameters for NAV signing endpoint
 #[derive(Debug, Clone, Deserialize)]
 pub struct NavSignRequest {
@@ -320,30 +322,14 @@ pub fn build_nav_message_hash(
     timestamp: u64,
     cycle_number: u64,
 ) -> [u8; 32] {
-    use ethers::abi::Token;
-
     // abi.encodePacked packs tightly without padding
-    let mut packed = Vec::new();
-
-    // Address: 20 bytes
-    packed.extend_from_slice(itp_address.as_bytes());
-
-    // U256 price: 32 bytes big-endian
-    let mut price_bytes = [0u8; 32];
-    price.to_big_endian(&mut price_bytes);
-    packed.extend_from_slice(&price_bytes);
-
-    // timestamp as U256: 32 bytes big-endian
-    let mut ts_bytes = [0u8; 32];
-    U256::from(timestamp).to_big_endian(&mut ts_bytes);
-    packed.extend_from_slice(&ts_bytes);
-
-    // cycleNumber as U256: 32 bytes big-endian
-    let mut cycle_bytes = [0u8; 32];
-    U256::from(cycle_number).to_big_endian(&mut cycle_bytes);
-    packed.extend_from_slice(&cycle_bytes);
-
-    ethers::utils::keccak256(&packed)
+    let hash = AbiEncoder::with_capacity(116)
+        .address_packed(itp_address)
+        .u256(price)
+        .u256(U256::from(timestamp))
+        .u256(U256::from(cycle_number))
+        .keccak256();
+    *hash.as_fixed_bytes()
 }
 
 /// Parses an HTTP request and handles the NAV sign endpoint

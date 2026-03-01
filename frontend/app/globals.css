@@ -194,6 +194,9 @@ input[type="number"] {
 ::-webkit-scrollbar-thumb { background: #A1A1AA; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #555555; }
 
+/* ── ARTICLE HEADING ANCHORS ── */
+[id] { scroll-margin-top: 6rem; }
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .skeleton,
@@ -208,6 +211,7 @@ input[type="number"] {
   }
   .bitmap-cell { transition: none; }
   .bitmap-cell:hover { transform: none; }
+  [data-fade-in] { opacity: 1 !important; transform: none !important; }
   tr[data-wallet] {
     will-change: auto;
     transition: none !important;

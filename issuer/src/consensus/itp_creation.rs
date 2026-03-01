@@ -22,6 +22,9 @@
 use ethers::types::{Address, H256, U256};
 use tracing::debug;
 
+use super::ConsensusError;
+use crate::abi::AbiEncoder;
+pub use crate::abi::compute_weights_hash;
 use crate::chain::events::ItpCreationRequest;
 
 /// Build the message hash for BLS signing (must match BridgeProxy.sol exactly)
@@ -67,33 +70,7 @@ pub fn build_message_hash(
     // - assets_hash: 32 bytes
     // Total: 168 bytes
 
-    let mut data = Vec::with_capacity(168);
-
-    // chain_id as uint256 (32 bytes, big endian)
-    let mut chain_id_bytes = [0u8; 32];
-    U256::from(chain_id).to_big_endian(&mut chain_id_bytes);
-    data.extend_from_slice(&chain_id_bytes);
-
-    // bridge_proxy as address (20 bytes, packed)
-    data.extend_from_slice(bridge_proxy.as_bytes());
-
-    // admin as address (20 bytes, packed)
-    data.extend_from_slice(admin.as_bytes());
-
-    // nonce as uint256 (32 bytes, big endian)
-    let mut nonce_bytes = [0u8; 32];
-    nonce.to_big_endian(&mut nonce_bytes);
-    data.extend_from_slice(&nonce_bytes);
-
-    // weights_hash as bytes32 (32 bytes)
-    data.extend_from_slice(weights_hash.as_bytes());
-
-    // assets_hash as bytes32 (32 bytes)
-    data.extend_from_slice(assets_hash.as_bytes());
-
-    // Debug: log the packed data length
     debug!(
-        data_len = data.len(),
         chain_id = chain_id,
         bridge_proxy = ?bridge_proxy,
         admin = ?admin,
@@ -103,33 +80,25 @@ pub fn build_message_hash(
         "Building message hash"
     );
 
-    // keccak256 hash
-    H256::from_slice(&ethers::utils::keccak256(&data))
-}
-
-/// Compute weights hash: keccak256(abi.encodePacked(weights))
-/// Each weight is uint256 (32 bytes, big endian)
-pub fn compute_weights_hash(weights: &[U256]) -> H256 {
-    let mut data = Vec::with_capacity(weights.len() * 32);
-    for w in weights {
-        let mut bytes = [0u8; 32];
-        w.to_big_endian(&mut bytes);
-        data.extend_from_slice(&bytes);
-    }
-    H256::from_slice(&ethers::utils::keccak256(&data))
+    AbiEncoder::with_capacity(168)
+        .u256(U256::from(chain_id))
+        .address_packed(bridge_proxy)
+        .address_packed(admin)
+        .u256(nonce)
+        .h256(weights_hash)
+        .h256(assets_hash)
+        .keccak256()
 }
 
 /// Compute assets hash: keccak256(abi.encodePacked(assets))
 /// For address[], Solidity's abi.encodePacked uses 32 bytes per address (left-padded with zeros).
 /// This differs from individual addresses in abi.encodePacked which use 20 bytes.
 pub fn compute_assets_hash(assets: &[Address]) -> H256 {
-    let mut data = Vec::with_capacity(assets.len() * 32);
+    let mut enc = AbiEncoder::with_capacity(assets.len() * 32);
     for a in assets {
-        // Left-pad address to 32 bytes (12 zero bytes + 20 address bytes)
-        data.extend_from_slice(&[0u8; 12]);
-        data.extend_from_slice(a.as_bytes());
+        enc = enc.address_padded(*a);
     }
-    H256::from_slice(&ethers::utils::keccak256(&data))
+    enc.keccak256()
 }
 
 /// Verify that a proposal matches the on-chain request
@@ -197,14 +166,8 @@ pub struct ItpCreationResult {
 /// Errors for ITP creation operations
 #[derive(Debug, thiserror::Error)]
 pub enum ItpCreationError {
-    #[error("insufficient signatures: got {got}, need {need}")]
-    InsufficientSignatures { got: usize, need: usize },
-
-    #[error("proposal timeout: no response within {timeout_ms}ms")]
-    ProposalTimeout { timeout_ms: u64 },
-
-    #[error("signing timeout: {received} signatures within {timeout_ms}ms")]
-    SigningTimeout { received: usize, timeout_ms: u64 },
+    #[error(transparent)]
+    Consensus(#[from] ConsensusError),
 
     #[error("L3 ITP creation failed: {reason}")]
     L3CreationFailed { reason: String },
@@ -214,15 +177,6 @@ pub enum ItpCreationError {
 
     #[error("invalid proposal: {reason}")]
     InvalidProposal { reason: String },
-
-    #[error("chain reader error: {reason}")]
-    ChainReaderError { reason: String },
-
-    #[error("chain writer error: {reason}")]
-    ChainWriterError { reason: String },
-
-    #[error("BLS signing error: {reason}")]
-    BlsSigningError { reason: String },
 }
 
 #[cfg(test)]

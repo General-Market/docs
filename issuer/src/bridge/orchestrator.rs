@@ -22,6 +22,7 @@ use common::traits::{BLSSigner, ChainWriter};
 use common::types::{BLSSignature, PeerId};
 
 use crate::chain::{CrossChainOrder, CrossChainOrderData};
+use crate::consensus::ConsensusError;
 
 use super::types::{
     build_bridge_arb_to_l3_hash, build_bridge_l3_to_arb_hash, build_confirm_batch_calldata,
@@ -500,7 +501,7 @@ impl BridgeOrchestrator {
         let leader_signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -552,7 +553,7 @@ impl BridgeOrchestrator {
         // 1. Check deadline not passed
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .map_err(|e| BridgeError::ChainReaderError {
+            .map_err(|e| ConsensusError::ChainReaderError {
                 reason: format!("Failed to get current time: {}", e),
             })?
             .as_secs();
@@ -575,7 +576,7 @@ impl BridgeOrchestrator {
             .arbitrum_reader
             .get_cross_chain_order(proposal.order_id)
             .await
-            .map_err(|e| BridgeError::ChainReaderError {
+            .map_err(|e| ConsensusError::ChainReaderError {
                 reason: e.to_string(),
             })?;
 
@@ -668,7 +669,7 @@ impl BridgeOrchestrator {
         let signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -748,7 +749,7 @@ impl BridgeOrchestrator {
             let aggregated_signature = self
                 .bls_signer
                 .aggregate_signatures(signatures)
-                .map_err(|e| BridgeError::BlsSigningError {
+                .map_err(|e| ConsensusError::BlsSigningError {
                     reason: e.to_string(),
                 })?;
 
@@ -877,7 +878,7 @@ impl BridgeOrchestrator {
                 U256::zero(), // no ETH value
             )
             .await
-            .map_err(|e| BridgeError::ChainWriterError {
+            .map_err(|e| ConsensusError::ChainWriterError {
                 reason: e.to_string(),
             })?;
 
@@ -998,7 +999,7 @@ impl BridgeOrchestrator {
         let leader_signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -1095,7 +1096,7 @@ impl BridgeOrchestrator {
         // 3. Check deadline not passed
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .map_err(|e| BridgeError::ChainReaderError {
+            .map_err(|e| ConsensusError::ChainReaderError {
                 reason: format!("Failed to get current time: {}", e),
             })?
             .as_secs();
@@ -1177,7 +1178,7 @@ impl BridgeOrchestrator {
         let signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -1261,7 +1262,7 @@ impl BridgeOrchestrator {
             let aggregated_signature = self
                 .bls_signer
                 .aggregate_signatures(signatures)
-                .map_err(|e| BridgeError::BlsSigningError {
+                .map_err(|e| ConsensusError::BlsSigningError {
                     reason: e.to_string(),
                 })?;
 
@@ -1388,7 +1389,7 @@ impl BridgeOrchestrator {
                 U256::zero(),
             )
             .await
-            .map_err(|e| BridgeError::ChainWriterError {
+            .map_err(|e| ConsensusError::ChainWriterError {
                 reason: format!("L3 USDC approve for Index failed: {}", e),
             })?;
         debug!(
@@ -1436,7 +1437,7 @@ impl BridgeOrchestrator {
                 U256::zero(),
             )
             .await
-            .map_err(|e| BridgeError::ChainWriterError {
+            .map_err(|e| ConsensusError::ChainWriterError {
                 reason: format!("submitOrder failed: {}", e),
             })?;
 
@@ -1504,7 +1505,7 @@ impl BridgeOrchestrator {
         let leader_signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -1610,7 +1611,7 @@ impl BridgeOrchestrator {
         let signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -1694,7 +1695,7 @@ impl BridgeOrchestrator {
             let aggregated_signature = self
                 .bls_signer
                 .aggregate_signatures(signatures)
-                .map_err(|e| BridgeError::BlsSigningError {
+                .map_err(|e| ConsensusError::BlsSigningError {
                     reason: e.to_string(),
                 })?;
 
@@ -1776,7 +1777,7 @@ impl BridgeOrchestrator {
         let leader_signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -1893,7 +1894,7 @@ impl BridgeOrchestrator {
         let signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -1977,7 +1978,7 @@ impl BridgeOrchestrator {
             let aggregated_signature = self
                 .bls_signer
                 .aggregate_signatures(signatures)
-                .map_err(|e| BridgeError::BlsSigningError {
+                .map_err(|e| ConsensusError::BlsSigningError {
                     reason: e.to_string(),
                 })?;
 
@@ -2163,7 +2164,7 @@ impl BridgeOrchestrator {
                 U256::zero(), // no ETH value
             )
             .await
-            .map_err(|e| BridgeError::ChainWriterError {
+            .map_err(|e| ConsensusError::ChainWriterError {
                 reason: e.to_string(),
             })?;
 
@@ -2238,7 +2239,7 @@ impl BridgeOrchestrator {
                 U256::zero(), // no ETH value
             )
             .await
-            .map_err(|e| BridgeError::ChainWriterError {
+            .map_err(|e| ConsensusError::ChainWriterError {
                 reason: e.to_string(),
             })?;
 
@@ -2461,7 +2462,7 @@ impl BridgeOrchestrator {
         let leader_signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -2517,7 +2518,7 @@ impl BridgeOrchestrator {
         let signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -2594,7 +2595,7 @@ impl BridgeOrchestrator {
         let leader_signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -2642,7 +2643,7 @@ impl BridgeOrchestrator {
         let leader_signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -2797,7 +2798,7 @@ impl BridgeOrchestrator {
         let signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -2881,7 +2882,7 @@ impl BridgeOrchestrator {
             let aggregated_signature = self
                 .bls_signer
                 .aggregate_signatures(signatures)
-                .map_err(|e| BridgeError::BlsSigningError {
+                .map_err(|e| ConsensusError::BlsSigningError {
                     reason: e.to_string(),
                 })?;
 
@@ -3129,7 +3130,7 @@ impl BridgeOrchestrator {
         let leader_signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -3312,7 +3313,7 @@ impl BridgeOrchestrator {
         let signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -3396,7 +3397,7 @@ impl BridgeOrchestrator {
             let aggregated_signature = self
                 .bls_signer
                 .aggregate_signatures(signatures)
-                .map_err(|e| BridgeError::BlsSigningError {
+                .map_err(|e| ConsensusError::BlsSigningError {
                     reason: e.to_string(),
                 })?;
 
@@ -3603,7 +3604,7 @@ impl BridgeOrchestrator {
         let leader_signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -3634,7 +3635,7 @@ impl BridgeOrchestrator {
         let signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -3697,7 +3698,7 @@ impl BridgeOrchestrator {
             let aggregated_signature = self
                 .bls_signer
                 .aggregate_signatures(signatures)
-                .map_err(|e| BridgeError::BlsSigningError {
+                .map_err(|e| ConsensusError::BlsSigningError {
                     reason: e.to_string(),
                 })?;
 
@@ -3778,9 +3779,10 @@ impl BridgeOrchestrator {
     ) -> Result<(H256, BLSSignature), BridgeError> {
         // Check for duplicate
         if self.confirmed_weight_updates.read().await.contains_key(&itp_id) {
-            return Err(BridgeError::ChainWriterError {
+            return Err(ConsensusError::ChainWriterError {
                 reason: format!("Weight update already processed for ITP {}", itp_id),
-            });
+            }
+            .into());
         }
 
         let message_hash = build_update_weights_hash(
@@ -3796,7 +3798,7 @@ impl BridgeOrchestrator {
         let leader_signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -3831,7 +3833,7 @@ impl BridgeOrchestrator {
         let signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -3868,7 +3870,7 @@ impl BridgeOrchestrator {
         let mut collectors = self.update_weights_signatures.write().await;
 
         let collector = collectors.get_mut(&itp_id).ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: format!("No signature collector found for ITP {}", itp_id),
             }
         })?;
@@ -3896,7 +3898,7 @@ impl BridgeOrchestrator {
             let aggregated_signature = self
                 .bls_signer
                 .aggregate_signatures(signatures)
-                .map_err(|e| BridgeError::BlsSigningError {
+                .map_err(|e| ConsensusError::BlsSigningError {
                     reason: e.to_string(),
                 })?;
 
@@ -3997,7 +3999,7 @@ impl BridgeOrchestrator {
                 U256::zero(),
             )
             .await
-            .map_err(|e| BridgeError::ChainWriterError {
+            .map_err(|e| ConsensusError::ChainWriterError {
                 reason: e.to_string(),
             })?;
 
@@ -4033,9 +4035,10 @@ impl BridgeOrchestrator {
                 existing_tx = ?existing_tx,
                 "Weights already updated for this ITP"
             );
-            return Err(BridgeError::ChainWriterError {
+            return Err(ConsensusError::ChainWriterError {
                 reason: format!("Weights already updated for ITP {}", itp_id),
-            });
+            }
+            .into());
         }
 
         let calldata = build_update_weights_calldata(
@@ -4056,7 +4059,7 @@ impl BridgeOrchestrator {
                 U256::zero(),
             )
             .await
-            .map_err(|e| BridgeError::ChainWriterError {
+            .map_err(|e| ConsensusError::ChainWriterError {
                 reason: e.to_string(),
             })?;
 
@@ -4106,7 +4109,7 @@ impl BridgeOrchestrator {
         let leader_signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -4185,7 +4188,7 @@ impl BridgeOrchestrator {
                     .bls_signer
                     .aggregate_signatures(signatures)
                     .ok()
-                    .ok_or_else(|| BridgeError::ChainWriterError {
+                    .ok_or_else(|| ConsensusError::ChainWriterError {
                         reason: "Failed to aggregate rebalance signatures".to_string(),
                     })?;
 
@@ -4197,9 +4200,10 @@ impl BridgeOrchestrator {
             }
             Ok(None)
         } else {
-            Err(BridgeError::ChainWriterError {
+            Err(ConsensusError::ChainWriterError {
                 reason: format!("No rebalance signature collection for ITP {}", itp_id),
-            })
+            }
+            .into())
         }
     }
 
@@ -4224,7 +4228,7 @@ impl BridgeOrchestrator {
         let leader_signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -4303,7 +4307,7 @@ impl BridgeOrchestrator {
                     .bls_signer
                     .aggregate_signatures(signatures)
                     .ok()
-                    .ok_or_else(|| BridgeError::ChainWriterError {
+                    .ok_or_else(|| ConsensusError::ChainWriterError {
                         reason: "Failed to aggregate setItpNav signatures".to_string(),
                     })?;
 
@@ -4315,9 +4319,10 @@ impl BridgeOrchestrator {
             }
             Ok(None)
         } else {
-            Err(BridgeError::ChainWriterError {
+            Err(ConsensusError::ChainWriterError {
                 reason: format!("No nav signature collection for ITP {}", itp_id),
-            })
+            }
+            .into())
         }
     }
 
@@ -4368,7 +4373,7 @@ impl BridgeOrchestrator {
                 U256::zero(),
             )
             .await
-            .map_err(|e| BridgeError::ChainWriterError {
+            .map_err(|e| ConsensusError::ChainWriterError {
                 reason: e.to_string(),
             })?;
 
@@ -4406,7 +4411,7 @@ impl BridgeOrchestrator {
         let leader_signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -4483,7 +4488,7 @@ impl BridgeOrchestrator {
         let signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -4555,7 +4560,7 @@ impl BridgeOrchestrator {
             let aggregated_signature = self
                 .bls_signer
                 .aggregate_signatures(signatures)
-                .map_err(|e| BridgeError::BlsSigningError {
+                .map_err(|e| ConsensusError::BlsSigningError {
                     reason: e.to_string(),
                 })?;
 
@@ -4613,7 +4618,7 @@ impl BridgeOrchestrator {
                 U256::zero(),
             )
             .await
-            .map_err(|e| BridgeError::ChainWriterError {
+            .map_err(|e| ConsensusError::ChainWriterError {
                 reason: e.to_string(),
             })?;
 
@@ -4732,9 +4737,10 @@ impl BridgeOrchestrator {
         // Check order status is SellPending
         let status = self.get_sell_order_status(&order_id).await;
         if status != Some(BridgeOrderStatus::SellPending) {
-            return Err(BridgeError::ChainWriterError {
+            return Err(ConsensusError::ChainWriterError {
                 reason: format!("Sell order {} not in SellPending status (got: {:?})", order_id, status),
-            });
+            }
+            .into());
         }
 
         // Build hash using sell bridge hash
@@ -4751,7 +4757,7 @@ impl BridgeOrchestrator {
         let leader_signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -4800,9 +4806,10 @@ impl BridgeOrchestrator {
         let hash_bytes: [u8; 32] = proposal.message_hash.into();
         self.bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })
+            .map_err(Into::into)
     }
 
     /// Start collecting signatures for submit sell order
@@ -4852,7 +4859,7 @@ impl BridgeOrchestrator {
             let aggregated_signature = self
                 .bls_signer
                 .aggregate_signatures(signatures)
-                .map_err(|e| BridgeError::BlsSigningError {
+                .map_err(|e| ConsensusError::BlsSigningError {
                     reason: e.to_string(),
                 })?;
 
@@ -4970,7 +4977,7 @@ impl BridgeOrchestrator {
                 U256::zero(),
             )
             .await
-            .map_err(|e| BridgeError::ChainWriterError {
+            .map_err(|e| ConsensusError::ChainWriterError {
                 reason: format!("submitOrderFor(SELL) failed: {}", e),
             })?;
 
@@ -5020,7 +5027,7 @@ impl BridgeOrchestrator {
         let leader_signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -5056,9 +5063,10 @@ impl BridgeOrchestrator {
         let hash_bytes: [u8; 32] = proposal.message_hash.into();
         self.bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })
+            .map_err(Into::into)
     }
 
     /// Start collecting signatures for complete sell order
@@ -5108,7 +5116,7 @@ impl BridgeOrchestrator {
             let aggregated_signature = self
                 .bls_signer
                 .aggregate_signatures(signatures)
-                .map_err(|e| BridgeError::BlsSigningError {
+                .map_err(|e| ConsensusError::BlsSigningError {
                     reason: e.to_string(),
                 })?;
 
@@ -5193,7 +5201,7 @@ impl BridgeOrchestrator {
         let leader_signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -5289,7 +5297,7 @@ impl BridgeOrchestrator {
         let signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -5349,7 +5357,7 @@ impl BridgeOrchestrator {
             let aggregated_signature = self
                 .bls_signer
                 .aggregate_signatures(signatures)
-                .map_err(|e| BridgeError::BlsSigningError {
+                .map_err(|e| ConsensusError::BlsSigningError {
                     reason: e.to_string(),
                 })?;
 
@@ -5434,7 +5442,7 @@ impl BridgeOrchestrator {
         let leader_signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -5535,7 +5543,7 @@ impl BridgeOrchestrator {
         let signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -5595,7 +5603,7 @@ impl BridgeOrchestrator {
             let aggregated_signature = self
                 .bls_signer
                 .aggregate_signatures(signatures)
-                .map_err(|e| BridgeError::BlsSigningError {
+                .map_err(|e| ConsensusError::BlsSigningError {
                     reason: e.to_string(),
                 })?;
 
@@ -5676,7 +5684,7 @@ impl BridgeOrchestrator {
         let leader_signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -5719,7 +5727,7 @@ impl BridgeOrchestrator {
         let signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| BridgeError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -5771,7 +5779,7 @@ impl BridgeOrchestrator {
             let aggregated_signature = self
                 .bls_signer
                 .aggregate_signatures(signatures)
-                .map_err(|e| BridgeError::BlsSigningError {
+                .map_err(|e| ConsensusError::BlsSigningError {
                     reason: e.to_string(),
                 })?;
 

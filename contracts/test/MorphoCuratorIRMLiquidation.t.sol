@@ -34,10 +34,29 @@ contract MorphoCuratorIRMLiquidationTest is MorphoTestHelper {
 
     // ============ SIGNING HELPER ============
 
+    uint256 private _nextCycle = 2; // cycle 1 used in _deployMorphoStackWithCuratorIRM
+
     /// @notice Sign and call oracle.updatePrice with real BLS signature
-    function _updateOraclePrice(uint256 newPrice, uint256 cycleNumber) internal {
-        bytes32 msgHash = keccak256(abi.encodePacked(address(itp), newPrice, block.timestamp, cycleNumber));
-        oracle.updatePrice(newPrice, block.timestamp, cycleNumber, signWithTestIssuers(msgHash), 0x07);
+    /// @dev Steps down in <=10% increments to satisfy MAX_DEVIATION_BPS
+    function _updateOraclePrice(uint256 targetPrice, uint256 /* cycleNumber - ignored, auto-managed */) internal {
+        uint256 current = oracle.currentPrice();
+        // Step in <=10% increments
+        while (current != targetPrice) {
+            uint256 next;
+            if (targetPrice < current) {
+                // Stepping down: max 10% drop per step
+                next = current * 9000 / 10000; // 90% of current
+                if (next < targetPrice) next = targetPrice;
+            } else {
+                // Stepping up: max 10% rise per step
+                next = current * 11000 / 10000; // 110% of current
+                if (next > targetPrice) next = targetPrice;
+            }
+            bytes32 msgHash = keccak256(abi.encode(block.chainid, address(oracle), address(itp), next, block.timestamp, _nextCycle));
+            oracle.updatePrice(next, block.timestamp, _nextCycle, signWithTestIssuers(msgHash), 1, 0x07);
+            _nextCycle++;
+            current = next;
+        }
     }
 
     // ============ BASIC LIQUIDATION ============

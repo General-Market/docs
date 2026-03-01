@@ -241,6 +241,7 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(blsCustodyProxy, true);
         IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(l3BridgeCustodyProxy, true);
         IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(bridgeProxyAddr, true);
+        IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(arbBridgeCustodyProxy, true);
         console.log("  IssuerRegistry: authorized BLS-verifying contracts for incrementMissedCounts");
     }
 

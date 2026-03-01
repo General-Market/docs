@@ -609,13 +609,8 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
             revert ErrorsLib.E004_SystemPaused();
         }
 
-        // Access control: only admin or authorized bridge can create ITPs
-        if (msg.sender != governance.admin() && msg.sender != authorizedBridge) {
-            revert ErrorsLib.E061_Unauthorized(msg.sender, governance.admin());
-        }
-
         // Idempotency check: if bridgeNonce was already used, return existing itpId
-        // type(uint256).max is the sentinel for non-bridge calls (governance/admin)
+        // type(uint256).max is the sentinel for non-bridge calls
         if (bridgeNonce != type(uint256).max) {
             bytes32 existingItpId = _bridgeNonceToItpId[bridgeNonce];
             if (existingItpId != bytes32(0)) {

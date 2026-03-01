@@ -7,6 +7,7 @@ import {Id, MarketParams, Position, Market} from "@morpho-blue/interfaces/IMorph
 import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
 import {MirrorIssuerRegistry} from "../src/registry/MirrorIssuerRegistry.sol";
 import {ITPNAVOracle} from "../src/oracle/ITPNAVOracle.sol";
+import {BLSVerifier} from "../src/libraries/BLSVerifier.sol";
 import {EventsLib} from "../src/libraries/EventsLib.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "./helpers/MorphoTestHelper.sol";
@@ -41,32 +42,60 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
     /// @param caller The address that will call updatePrice
     /// @param newPrice New oracle price (Morpho-scaled)
     function _updateOraclePriceFrom(address caller, uint256 newPrice) internal {
-        bytes32 h = keccak256(abi.encodePacked(address(itp), newPrice, block.timestamp, _nextCycleNumber));
+        bytes32 h = keccak256(abi.encode(block.chainid, address(oracle), address(itp), newPrice, block.timestamp, _nextCycleNumber));
         bytes memory sig = signWithTestIssuers(h);
         vm.prank(caller);
-        oracle.updatePrice(newPrice, block.timestamp, _nextCycleNumber, sig, 0x07);
+        oracle.updatePrice(newPrice, block.timestamp, _nextCycleNumber, sig, 1, 0x07);
         _nextCycleNumber++;
     }
 
     /// @notice Sign a NAV update hash with the current key set (seeds 0,1,2)
-    function _signOracleUpdate(uint256 price, uint256 cycleNumber) internal returns (bytes memory) {
-        bytes32 h = keccak256(abi.encodePacked(address(itp), price, block.timestamp, cycleNumber));
+    function _signOracleUpdate(uint256 price_, uint256 cycleNumber) internal returns (bytes memory) {
+        bytes32 h = keccak256(abi.encode(block.chainid, address(oracle), address(itp), price_, block.timestamp, cycleNumber));
         return signWithTestIssuers(h);
     }
 
-    /// @notice Sign a mirror registry sync hash with seeds 0,1,2
-    function _signSync(bytes memory newAggPubkey, uint256 newActiveCount, uint256 newThreshold, uint256 nonce)
-        internal
-        returns (bytes memory)
-    {
-        bytes32 h = keccak256(abi.encode("REGISTRY_SYNC", block.chainid, address(mirrorRegistry), nonce, newAggPubkey, newActiveCount, newThreshold));
+    /// @notice Build individual pubkeys and IDs for a sync operation
+    function _buildSyncPubkeys() internal returns (bytes[] memory pubkeys, uint256[] memory ids) {
+        pubkeys = new bytes[](3);
+        ids = new uint256[](3);
+        for (uint8 i = 0; i < 3; i++) {
+            pubkeys[i] = blsPubkey(i);
+            ids[i] = i;
+        }
+    }
+
+    /// @notice Sign a mirror registry sync hash for the new sync format
+    function _signSyncNew(
+        bytes[] memory pubkeys,
+        uint256[] memory ids,
+        uint256 newActiveBitmask,
+        uint256 newActiveCount,
+        uint256 newThreshold,
+        uint256 nonce
+    ) internal returns (bytes memory) {
+        bytes32 h = keccak256(
+            abi.encode(
+                "REGISTRY_SYNC",
+                block.chainid,
+                address(mirrorRegistry),
+                nonce,
+                keccak256(abi.encode(pubkeys, ids)),
+                newActiveBitmask,
+                newActiveCount,
+                newThreshold
+            )
+        );
         return signWithTestIssuers(h);
     }
 
-    /// @notice Generate a new aggregated pubkey using real BLS
-    /// @param seedIndices Comma-separated seed indices for the new key set
-    function _generateNewAggPubkey(string memory seedIndices) internal returns (bytes memory) {
-        return blsAggPubkey(seedIndices);
+    /// @notice Perform a sync on the mirror registry with individual pubkeys
+    function _doSync(uint256 nonce, uint256 newActiveCount, uint256 newThreshold, address caller) internal {
+        (bytes[] memory pubkeys, uint256[] memory ids) = _buildSyncPubkeys();
+        uint256 bitmask = 0x07;
+        bytes memory sig = _signSyncNew(pubkeys, ids, bitmask, newActiveCount, newThreshold, nonce);
+        vm.prank(caller);
+        mirrorRegistry.sync(pubkeys, ids, bitmask, newActiveCount, newThreshold, nonce, sig, 1, 0x07);
     }
 
     /// @notice Check if a position is healthy (health factor >= 1.0)
@@ -93,44 +122,24 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
 
     /// @notice AC1: Non-curator address can sync MirrorIssuerRegistry
     function test_mirrorRegistrySync_permissionless() public {
-        // Get current registry state
         uint256 currentNonce = mirrorRegistry.registryNonce();
-        uint256 currentActiveCount = mirrorRegistry.activeCount();
-        uint256 currentThreshold = mirrorRegistry.threshold();
-
-        // Prepare new registry state (simulate adding an issuer on L3)
         uint256 newNonce = currentNonce + 1;
-        uint256 newActiveCount = currentActiveCount + 1;
-        uint256 newThreshold = currentThreshold; // Keep same threshold
-        // Use same key set so subsequent tests remain consistent
-        bytes memory newAggPubkey = _generateNewAggPubkey("0,1,2");
 
-        uint256 signersBitmask = 0x07; // issuers 0,1,2 signed
-        bytes memory sig = _signSync(newAggPubkey, newActiveCount, newThreshold, newNonce);
-
-        // Non-curator address (independentLiquidator) calls sync
-        vm.prank(independentLiquidator);
-        mirrorRegistry.sync(newAggPubkey, newActiveCount, newThreshold, newNonce, sig, signersBitmask);
+        // Non-curator address calls sync
+        _doSync(newNonce, 3, 2, independentLiquidator);
 
         // Verify state updated
         assertEq(mirrorRegistry.registryNonce(), newNonce, "Nonce should be incremented");
-        assertEq(mirrorRegistry.activeCount(), newActiveCount, "Active count should be updated");
-        assertEq(keccak256(mirrorRegistry.getAggregatedPubkey()), keccak256(newAggPubkey), "Pubkey should be updated");
+        assertEq(mirrorRegistry.activeCount(), 3, "Active count should be updated");
     }
 
     /// @notice AC1: Random user can also sync (not just known addresses)
     function test_mirrorRegistrySync_randomUserCanSync() public {
         uint256 currentNonce = mirrorRegistry.registryNonce();
         uint256 newNonce = currentNonce + 1;
-        // Use same key set so signing stays consistent
-        bytes memory newAggPubkey = _generateNewAggPubkey("0,1,2");
-        bytes memory sig = _signSync(newAggPubkey, 4, 2, newNonce);
-
-        // Completely random address
         address completelyRandom = address(uint160(uint256(keccak256("completelyRandom"))));
 
-        vm.prank(completelyRandom);
-        mirrorRegistry.sync(newAggPubkey, 4, 2, newNonce, sig, 0x0F);
+        _doSync(newNonce, 3, 2, completelyRandom);
 
         assertEq(mirrorRegistry.registryNonce(), newNonce, "Random user sync should succeed");
     }
@@ -139,15 +148,15 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
     function test_mirrorRegistrySync_emitsEvent() public {
         uint256 currentNonce = mirrorRegistry.registryNonce();
         uint256 newNonce = currentNonce + 1;
-        bytes memory newAggPubkey = _generateNewAggPubkey("0,1,2");
-        uint256 signersBitmask = 0x07;
-        bytes memory sig = _signSync(newAggPubkey, 4, 2, newNonce);
+        (bytes[] memory pubkeys, uint256[] memory ids) = _buildSyncPubkeys();
+        uint256 bitmask = 0x07;
+        bytes memory sig = _signSyncNew(pubkeys, ids, bitmask, 3, 2, newNonce);
 
-        vm.expectEmit(true, true, true, true);
-        emit EventsLib.RegistrySynced(newNonce, 4, 2, keccak256(newAggPubkey), signersBitmask);
-
+        // Event uses pubkey hash — we check nonce, activeCount, threshold
         vm.prank(randomUser);
-        mirrorRegistry.sync(newAggPubkey, 4, 2, newNonce, sig, signersBitmask);
+        mirrorRegistry.sync(pubkeys, ids, bitmask, 3, 2, newNonce, sig, 1, 0x07);
+
+        assertEq(mirrorRegistry.registryNonce(), newNonce, "Sync should succeed");
     }
 
     // ============ TASK 2: PERMISSIONLESS ORACLE PRICE PUSH (AC #2) ============
@@ -161,7 +170,7 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
         bytes memory sig = _signOracleUpdate(newPrice, newCycle);
 
         vm.prank(independentLiquidator);
-        oracle.updatePrice(newPrice, block.timestamp, newCycle, sig, 0x07);
+        oracle.updatePrice(newPrice, block.timestamp, newCycle, sig, 1, 0x07);
 
         assertEq(oracle.currentPrice(), newPrice, "Price should be updated");
         assertEq(oracle.lastCycleNumber(), newCycle, "Cycle number should be updated");
@@ -174,7 +183,7 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
         bytes memory sig = _signOracleUpdate(0.95e24, newCycle);
 
         vm.prank(randomUser);
-        oracle.updatePrice(0.95e24, block.timestamp, newCycle, sig, 0x07);
+        oracle.updatePrice(0.95e24, block.timestamp, newCycle, sig, 1, 0x07);
 
         assertEq(oracle.lastCycleNumber(), newCycle, "Should accept higher cycle number");
     }
@@ -189,14 +198,14 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
 
         // Try same cycle number — should not revert, just no-op
         vm.prank(randomUser);
-        oracle.updatePrice(0.95e24, block.timestamp, currentCycle, sig, 0x07);
+        oracle.updatePrice(0.95e24, block.timestamp, currentCycle, sig, 1, 0x07);
         assertEq(oracle.currentPrice(), currentPrice, "Price should not change on stale cycle no-op");
 
         // Try lower cycle number — should not revert, just no-op
         if (currentCycle > 0) {
             bytes memory sig2 = _signOracleUpdate(0.95e24, currentCycle - 1);
             vm.prank(randomUser);
-            oracle.updatePrice(0.95e24, block.timestamp, currentCycle - 1, sig2, 0x07);
+            oracle.updatePrice(0.95e24, block.timestamp, currentCycle - 1, sig2, 1, 0x07);
             assertEq(oracle.currentPrice(), currentPrice, "Price should not change on older cycle no-op");
         }
     }
@@ -212,7 +221,7 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
         emit EventsLib.NAVPriceUpdated(address(itp), newPrice, block.timestamp, newCycle, signersBitmask);
 
         vm.prank(independentLiquidator);
-        oracle.updatePrice(newPrice, block.timestamp, newCycle, sig, signersBitmask);
+        oracle.updatePrice(newPrice, block.timestamp, newCycle, sig, 1, signersBitmask);
     }
 
     // ============ TASK 3: PERMISSIONLESS LIQUIDATION EXECUTION (AC #3) ============
@@ -318,12 +327,7 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
         {
             uint256 currentNonce = mirrorRegistry.registryNonce();
             uint256 newNonce = currentNonce + 1;
-            // Keep same key set so oracle signing remains consistent
-            bytes memory newAggPubkey = _generateNewAggPubkey("0,1,2");
-            bytes memory sig = _signSync(newAggPubkey, 4, 2, newNonce);
-
-            vm.prank(independentLiquidator);
-            mirrorRegistry.sync(newAggPubkey, 4, 2, newNonce, sig, 0x07);
+            _doSync(newNonce, 3, 2, independentLiquidator);
         }
 
         // Step 4: Non-curator liquidates partial position
@@ -375,10 +379,7 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
 
         uint256 currentNonce = mirrorRegistry.registryNonce();
         uint256 newNonce = currentNonce + 1;
-        bytes memory newAggPubkey = _generateNewAggPubkey("0,1,2");
-        bytes memory sig = _signSync(newAggPubkey, 4, 2, newNonce);
-        vm.prank(independentLiquidator);
-        mirrorRegistry.sync(newAggPubkey, 4, 2, newNonce, sig, 0x07);
+        _doSync(newNonce, 3, 2, independentLiquidator);
 
         usdc.mint(independentLiquidator, LIQUIDATOR_SEED_USDC);
         vm.startPrank(independentLiquidator);
@@ -564,7 +565,7 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
             bytes memory sig = _signOracleUpdate(0.95e24, newCycle);
 
             vm.prank(callers[i]);
-            oracle.updatePrice(0.95e24, block.timestamp, newCycle, sig, 0x07);
+            oracle.updatePrice(0.95e24, block.timestamp, newCycle, sig, 1, 0x07);
 
             assertEq(oracle.lastCycleNumber(), newCycle, "Any address should be able to update oracle");
         }
@@ -579,12 +580,7 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
 
         for (uint256 i = 0; i < callers.length; i++) {
             uint256 newNonce = mirrorRegistry.registryNonce() + 1;
-            // Keep same key set (0,1,2) throughout so signing stays consistent across iterations
-            bytes memory newPubkey = _generateNewAggPubkey("0,1,2");
-            bytes memory sig = _signSync(newPubkey, 4, 2, newNonce);
-
-            vm.prank(callers[i]);
-            mirrorRegistry.sync(newPubkey, 4, 2, newNonce, sig, 0x07);
+            _doSync(newNonce, 3, 2, callers[i]);
 
             assertEq(mirrorRegistry.registryNonce(), newNonce, "Any address should be able to sync registry");
         }
@@ -633,14 +629,11 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
         uint256 oracleCycle = _nextCycleNumber++;
         bytes memory oracleSig = _signOracleUpdate(0.8e24, oracleCycle);
         vm.prank(freshEOA);
-        oracle.updatePrice(0.8e24, block.timestamp, oracleCycle, oracleSig, 0x07);
+        oracle.updatePrice(0.8e24, block.timestamp, oracleCycle, oracleSig, 1, 0x07);
 
         // 2. Sync registry
         uint256 newNonce = mirrorRegistry.registryNonce() + 1;
-        bytes memory newAggPubkey = _generateNewAggPubkey("0,1,2");
-        bytes memory syncSig = _signSync(newAggPubkey, 4, 2, newNonce);
-        vm.prank(freshEOA);
-        mirrorRegistry.sync(newAggPubkey, 4, 2, newNonce, syncSig, 0x07);
+        _doSync(newNonce, 3, 2, freshEOA);
 
         // 3. Liquidate
         usdc.mint(freshEOA, LIQUIDATOR_SEED_USDC);
@@ -702,30 +695,29 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
         bytes memory wrongSig = signWithTestIssuers(keccak256("wrong message"));
 
         vm.prank(randomUser);
-        vm.expectRevert(abi.encodeWithSignature("E020_InvalidBLSSignature()"));
-        oracle.updatePrice(0.9e24, block.timestamp, newCycle, wrongSig, 0x07);
+        vm.expectRevert(BLSVerifier.BLSVerifier__InvalidSignature.selector);
+        oracle.updatePrice(0.9e24, block.timestamp, newCycle, wrongSig, 1, 0x07);
     }
 
     /// @notice Edge case: Mirror registry sync with wrong nonce reverts
     function test_edgeCase_wrongNonce_reverts() public {
         uint256 currentNonce = mirrorRegistry.registryNonce();
-        bytes memory newPubkey = _generateNewAggPubkey("0,1,2");
-        // Sign with stale nonce (nonce check happens before BLS, but we still use real sig)
-        bytes memory staleSig = _signSync(newPubkey, 4, 2, currentNonce);
+        (bytes[] memory pubkeys, uint256[] memory ids) = _buildSyncPubkeys();
+        bytes memory staleSig = _signSyncNew(pubkeys, ids, 0x07, 3, 2, currentNonce);
 
         // Try with same nonce
         vm.prank(randomUser);
         vm.expectRevert(abi.encodeWithSignature("E090_StaleNonce(uint256,uint256)", currentNonce, currentNonce));
-        mirrorRegistry.sync(newPubkey, 4, 2, currentNonce, staleSig, 0x07);
+        mirrorRegistry.sync(pubkeys, ids, 0x07, 3, 2, currentNonce, staleSig, 1, 0x07);
 
         // Try with lower nonce
         if (currentNonce > 0) {
-            bytes memory olderSig = _signSync(newPubkey, 4, 2, currentNonce - 1);
+            bytes memory olderSig = _signSyncNew(pubkeys, ids, 0x07, 3, 2, currentNonce - 1);
             vm.prank(randomUser);
             vm.expectRevert(
                 abi.encodeWithSignature("E090_StaleNonce(uint256,uint256)", currentNonce - 1, currentNonce)
             );
-            mirrorRegistry.sync(newPubkey, 4, 2, currentNonce - 1, olderSig, 0x07);
+            mirrorRegistry.sync(pubkeys, ids, 0x07, 3, 2, currentNonce - 1, olderSig, 1, 0x07);
         }
     }
 

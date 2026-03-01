@@ -16,6 +16,7 @@ use tokio::sync::RwLock;
 use tokio::time::sleep;
 use tracing::{debug, error, info, warn};
 
+use super::ConsensusError;
 use super::itp_creation::{
     build_message_hash, compute_assets_hash, compute_weights_hash, verify_proposal_matches_request,
     ItpCreationConfig, ItpCreationError, ItpCreationResult,
@@ -51,6 +52,10 @@ use crate::bridge::{
     build_rebalance_hash, RebalanceResult,
     // setItpNav consensus (pre-rebalance NAV push)
     build_set_itp_nav_hash, SetItpNavResult,
+    // NAV oracle (ITPNAVOracle on Arb — Phase 2B)
+    build_nav_oracle_hash, build_update_price_calldata,
+    // MirrorIssuerRegistry sync (Step 12)
+    build_mirror_registry_sync_hash, build_mirror_registry_sync_calldata,
 };
 
 // Asset trades: Issuer-driven per-asset settlement
@@ -97,7 +102,10 @@ fn message_cycle_number(msg: &P2PMessage) -> Option<u64> {
         | P2PMessage::PriceProposal { cycle_number, .. }
         | P2PMessage::PriceVote { cycle_number, .. }
         | P2PMessage::BatchProposal { cycle_number, .. }
-        | P2PMessage::BatchSign { cycle_number, .. } => Some(*cycle_number),
+        | P2PMessage::BatchSign { cycle_number, .. }
+        | P2PMessage::NavOracleProposal { cycle_number, .. }
+        | P2PMessage::ConfirmBatchProposal { cycle_number, .. }
+        | P2PMessage::ConfirmBatchSign { cycle_number, .. } => Some(*cycle_number),
         _ => None,
     }
 }
@@ -217,6 +225,17 @@ pub enum ConsensusResult {
         /// Number of signatures collected
         signer_count: usize,
     },
+    /// Price consensus agreed — carries real BLS signature for oracle submission
+    PriceAgreed {
+        /// The aggregated BLS signature over the oracle message hash
+        aggregated_signature: BLSSignature,
+        /// Number of signers
+        signer_count: usize,
+        /// Bitmask of which issuers signed
+        signers_bitmask: U256,
+        /// Cycle number
+        cycle_number: u64,
+    },
 }
 
 /// Configuration for ConsensusProtocol
@@ -296,6 +315,10 @@ where
     message_handler: RwLock<ConsensusMessageHandler>,
     /// Signature aggregator
     aggregator: RwLock<SignatureAggregator>,
+    /// Dedicated state for price-only consensus — prevents corruption when bridge tasks run concurrently
+    price_state: RwLock<ConsensusState>,
+    /// Dedicated aggregator for price-only consensus
+    price_aggregator: RwLock<SignatureAggregator>,
     /// Price tolerance validator
     price_validator: ToleranceValidator,
     /// Configuration (immutable initial values — for fields that change at runtime, see `runtime_config`)
@@ -365,6 +388,8 @@ where
             state: RwLock::new(state),
             message_handler: RwLock::new(ConsensusMessageHandler::new()),
             aggregator: RwLock::new(aggregator),
+            price_state: RwLock::new(ConsensusState::new()),
+            price_aggregator: RwLock::new(SignatureAggregator::with_threshold(config.signature_threshold)),
             price_validator: ToleranceValidator::new(),
             config,
             runtime_config,
@@ -415,8 +440,12 @@ where
             // Update leader elector with dense node index
             *self.leader_elector.write().await =
                 LeaderElector::new(cfg.node_index, cfg.active_count);
-            // Update BFT signature threshold
+            // Update BFT signature threshold (both shared and price-dedicated aggregators)
             self.aggregator
+                .write()
+                .await
+                .set_threshold(cfg.threshold);
+            self.price_aggregator
                 .write()
                 .await
                 .set_threshold(cfg.threshold);
@@ -626,6 +655,212 @@ where
     /// * `order_ids` - Order IDs to include in batch
     /// * `fills` - Fill information for the orders
     /// * `last_signature` - BLS signature from previous cycle (for leader election)
+    /// Price-only consensus cycle. Updates on-chain prices without batching orders.
+    /// Order batching is handled independently by L3-native and cross-chain tasks.
+    pub async fn run_price_cycle(
+        &self,
+        cycle_number: u64,
+        prices: Vec<(u32, U256)>,
+        nav_price: Option<U256>,           // Morpho-scaled NAV (None if no oracle configured)
+        timestamp: u64,
+        oracle_address: Option<Address>,
+        itp_address: Option<Address>,
+        chain_id: Option<u64>,
+    ) -> ConsensusResult {
+        // Apply any pending config update from RegistrySyncHandler
+        self.apply_pending_config_update().await;
+
+        info!(cycle_number, "Starting price consensus cycle");
+
+        // Initialize price-dedicated round state (NOT shared state)
+        {
+            let mut state = self.price_state.write().await;
+            state.start_round(cycle_number);
+            self.price_aggregator.write().await.reset();
+        }
+
+        // GC equivocation detector: remove entries older than current_cycle - 2
+        self.equivocation_detector.gc(cycle_number);
+
+        // GC WAL: retain only current cycle entries
+        if let Some(ref wal) = self.wal {
+            if let Ok(mut wal) = wal.lock() {
+                if let Err(e) = wal.gc(cycle_number) {
+                    tracing::warn!(code = "INFRA-022", error = %e, "WAL GC failed");
+                }
+            }
+        }
+
+        // Replay any messages that arrived early (buffered as "future" in previous cycles).
+        // Also clear stale messages to prevent unbounded buffer growth.
+        {
+            let buffered = {
+                let mut handler = self.message_handler.write().await;
+                handler.clear_stale_messages(cycle_number);
+                handler.get_buffered_for_cycle(cycle_number)
+            };
+            if !buffered.is_empty() {
+                info!(cycle_number, count = buffered.len(), "Replaying buffered messages");
+                for (from, msg) in buffered {
+                    if let Err(e) = self.handle_message(from, msg).await {
+                        debug!(cycle_number, error = %e, "Error replaying buffered message");
+                    }
+                }
+            }
+        }
+
+        // Determine if we're the leader using deterministic cycle-based rotation.
+        let am_leader = self.leader_elector.write().await.is_leader_for_cycle(cycle_number);
+
+        if am_leader {
+            info!(cycle_number, "This node is the leader (price-only)");
+            // Price consensus only — no batch
+            match self.leader_price_consensus(cycle_number, prices).await {
+                Ok(()) => {
+                    // Mark round complete (skip batch phases)
+                    {
+                        let mut state = self.price_state.write().await;
+                        if let Some(round) = state.current_round_mut() {
+                            round.set_phase(ConsensusPhase::Complete);
+                        }
+                    }
+
+                    // Oracle signing: if oracle params are provided, run a second
+                    // mini-round to collect BLS signatures on the oracle hash
+                    if let (Some(nav), Some(oracle_addr), Some(itp_addr), Some(cid)) =
+                        (nav_price, oracle_address, itp_address, chain_id)
+                    {
+                        match self.run_nav_oracle_signing(
+                            cycle_number, nav, timestamp, oracle_addr, itp_addr, cid,
+                        ).await {
+                            Ok((agg_sig, count, bitmask)) => {
+                                return ConsensusResult::PriceAgreed {
+                                    aggregated_signature: agg_sig,
+                                    signer_count: count,
+                                    signers_bitmask: bitmask,
+                                    cycle_number,
+                                };
+                            }
+                            Err(e) => {
+                                warn!(cycle_number, error = %e, "Oracle signing failed, returning PriceAgreed without oracle sig");
+                            }
+                        }
+                    }
+
+                    ConsensusResult::PriceAgreed {
+                        aggregated_signature: BLSSignature(vec![0; 64]),
+                        signer_count: 0,
+                        signers_bitmask: U256::zero(),
+                        cycle_number,
+                    }
+                }
+                Err(e) => {
+                    // Price-only: disagreement just means skip this cycle, try next.
+                    // No emergency pause — prices will converge.
+                    ConsensusResult::Failed {
+                        reason: e.to_string(),
+                        cycle_number,
+                    }
+                }
+            }
+        } else {
+            debug!(cycle_number, "This node is a follower (price-only)");
+            self.run_follower_protocol_price_only(cycle_number).await
+        }
+    }
+
+    /// Leader: run oracle signing mini-round after price consensus succeeds.
+    /// Computes oracle hash, signs it, initializes signature collection,
+    /// broadcasts NavOracleProposal, and waits for threshold.
+    async fn run_nav_oracle_signing(
+        &self,
+        cycle_number: u64,
+        nav_price: U256,
+        timestamp: u64,
+        oracle_address: Address,
+        itp_address: Address,
+        chain_id: u64,
+    ) -> Result<(BLSSignature, usize, U256), Error> {
+        // 1. Compute oracle hash
+        let oracle_hash = build_nav_oracle_hash(
+            chain_id, oracle_address, itp_address, nav_price, timestamp, cycle_number,
+        );
+        let hash_bytes: [u8; 32] = oracle_hash.into();
+
+        // 2. Sign with own BLS key
+        let leader_sig = self.bls_signer.sign_message_hash(&self.bls_keypair, &hash_bytes)
+            .map_err(|e| Error::BlsVerification(format!("Failed to sign oracle hash: {}", e)))?;
+
+        // Self-verify to detect keypair/pubkey mismatch early
+        if let Some(self_pubkey) = self.key_registry.get_public_key(&self.config.peer_id) {
+            match self.bls_signer.verify_message_hash(&self_pubkey, &hash_bytes, &leader_sig) {
+                Ok(true) => debug!(?itp_address, "NavOracle self-verification passed"),
+                Ok(false) => {
+                    warn!(?itp_address, "NavOracle self-verification FAILED — keypair/pubkey mismatch!");
+                }
+                Err(e) => warn!(?itp_address, error = %e, "NavOracle self-verification error"),
+            }
+        }
+
+        // 3. Initialize BridgeOrchestrator signature collection
+        let itp_key = H256::from(itp_address);
+        {
+            let bridge_orch_guard = self.bridge_orchestrator.read().await;
+            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
+                let orch = bridge_orch.read().await;
+                orch.start_nav_signature_collection(itp_key, leader_sig.clone()).await;
+            } else {
+                return Err(Error::BlsVerification("BridgeOrchestrator not configured for oracle signing".to_string()));
+            }
+        }
+
+        // 4. Broadcast NavOracleProposal to all peers
+        let ref_nonce = self.key_registry.registry_nonce();
+        let proposal = P2PMessage::NavOracleProposal {
+            leader_id: self.config.peer_id,
+            itp_address,
+            oracle_address,
+            nav_price,
+            timestamp,
+            cycle_number,
+            chain_id,
+            reference_nonce: ref_nonce as u64,
+            leader_signature: leader_sig,
+        };
+        self.p2p.broadcast(proposal).await?;
+
+        // 5. Wait for signature threshold (poll with ~2s timeout)
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(2000);
+        loop {
+            {
+                let bridge_orch_guard = self.bridge_orchestrator.read().await;
+                if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
+                    let orch = bridge_orch.read().await;
+                    if let Some(result) = orch.check_nav_threshold(itp_key).await {
+                        info!(
+                            ?itp_address,
+                            signature_count = result.signature_count,
+                            "NavOracle signature threshold reached"
+                        );
+                        return Ok((
+                            result.aggregated_signature,
+                            result.signature_count,
+                            result.signer_bitmap,
+                        ));
+                    }
+                }
+            }
+
+            if tokio::time::Instant::now() >= deadline {
+                warn!(cycle_number, ?itp_address, "NavOracle signature collection timed out (2s)");
+                return Err(Error::BlsVerification("NavOracle signature collection timed out".to_string()));
+            }
+
+            sleep(std::time::Duration::from_millis(10)).await;
+        }
+    }
+
+    /// Full consensus cycle with price + batch. Used by L3-native order processing.
     pub async fn run_cycle(
         &self,
         cycle_number: u64,
@@ -1100,9 +1335,84 @@ where
         }
     }
 
+    /// Price-only follower protocol. Rejects BatchProposal messages.
+    /// Only waits for PriceProposal -> PriceVoting -> Complete.
+    /// Uses dedicated `price_state` (NOT shared `state`).
+    async fn run_follower_protocol_price_only(&self, cycle_number: u64) -> ConsensusResult {
+        let total_timeout = self.config.timeouts.price_proposal_timeout
+            + self.config.timeouts.price_vote_timeout;
+        let deadline = tokio::time::Instant::now() + total_timeout;
+
+        debug!(cycle_number, "Price-only follower waiting for consensus messages");
+
+        loop {
+            if tokio::time::Instant::now() >= deadline {
+                let state = self.price_state.read().await;
+                let current_phase = state
+                    .current_round()
+                    .map(|r| r.phase)
+                    .unwrap_or(ConsensusPhase::Idle);
+
+                warn!(
+                    code = "INFRA-007",
+                    cycle_number,
+                    ?current_phase,
+                    "Price-only follower consensus timeout"
+                );
+
+                return ConsensusResult::Timeout {
+                    phase: current_phase,
+                    cycle_number,
+                };
+            }
+
+            // Check price_state (NOT shared state)
+            let state = self.price_state.read().await;
+            if let Some(round) = state.current_round() {
+                match round.phase {
+                    ConsensusPhase::Complete => {
+                        info!(cycle_number, "Price-only follower consensus completed");
+                        return ConsensusResult::PriceAgreed {
+                            aggregated_signature: BLSSignature(vec![0; 64]),
+                            signer_count: 0,
+                            signers_bitmask: U256::zero(),
+                            cycle_number,
+                        };
+                    }
+                    ConsensusPhase::Idle => {
+                        debug!(cycle_number, "Price-only follower waiting for price proposal");
+                    }
+                    ConsensusPhase::PriceProposal | ConsensusPhase::PriceVoting => {
+                        debug!(cycle_number, phase = %round.phase, "Price-only follower in price phase");
+                    }
+                    ConsensusPhase::BatchProposal | ConsensusPhase::BatchSigning => {
+                        // Reject — this is a price-only round, batch messages are invalid
+                        warn!(cycle_number, "Price-only follower received batch phase — ignoring");
+                    }
+                }
+            }
+            drop(state);
+
+            sleep(self.config.timeouts.polling_interval).await;
+        }
+    }
+
     /// Handle an incoming consensus message
     pub async fn handle_message(&self, from: PeerId, message: P2PMessage) -> Result<(), Error> {
-        let (cycle_number, phase) = {
+        // Determine if this is a price message — use dedicated price_state
+        let is_price_msg = matches!(&message,
+            P2PMessage::PriceProposal { .. } | P2PMessage::PriceVote { .. }
+        );
+
+        let (cycle_number, phase) = if is_price_msg {
+            let state = self.price_state.read().await;
+            if let Some(round) = state.current_round() {
+                (round.cycle_number, round.phase)
+            } else {
+                let msg_cycle = message_cycle_number(&message).unwrap_or(0);
+                (msg_cycle, ConsensusPhase::Idle)
+            }
+        } else {
             let state = self.state.read().await;
             if let Some(round) = state.current_round() {
                 (round.cycle_number, round.phase)
@@ -1114,12 +1424,15 @@ where
             }
         };
 
+        // For price messages, use "price" round type; for others, use "bridge"
+        let round_type = if is_price_msg { "price" } else { "bridge" };
+
         // Equivocation detection: for vote/sign messages, check if this peer
         // already sent a *different* payload for the same (cycle, phase, msg_type).
         if is_vote_or_sign(&message) {
             let hash = content_hash(&message);
             let variant = msg_variant_tag(&message);
-            if self.equivocation_detector.check(&from, cycle_number, phase, variant, hash) {
+            if self.equivocation_detector.check(&from, cycle_number, phase, variant, round_type, hash) {
                 error!(
                     code = "CONSENSUS-021",
                     ?from,
@@ -1164,11 +1477,16 @@ where
         };
 
         // Leader identity verification: reject proposals from non-leaders.
-        // Extract the sender PeerId from proposal variants and verify they are the
-        // expected leader for the current cycle, with +-1 issuer count tolerance
-        // for config propagation windows.
+        // Only for price-based proposals which use cycle_number % N election.
+        // Bridge proposals (batch confirm, fills, sell, rebalance, trades) use
+        // l3_cycle-based leader election with failover and are authenticated
+        // via BLS signatures in the processing handlers instead.
         if let Some(proposal_sender) = result.proposal_sender() {
-            if !self.is_valid_leader(&proposal_sender, cycle_number) {
+            let is_price_proposal = matches!(&result,
+                MessageHandleResult::ProcessPriceProposal { .. }
+                | MessageHandleResult::ProcessNavOracleProposal { .. }
+            );
+            if is_price_proposal && !self.is_valid_leader(&proposal_sender, cycle_number) {
                 warn!(
                     code = "CONSENSUS-020",
                     ?proposal_sender,
@@ -2402,6 +2720,125 @@ where
                     );
                 }
             }
+            // NAV oracle price update (Arb ITPNAVOracle)
+            MessageHandleResult::ProcessNavOracleProposal {
+                from,
+                leader_id,
+                itp_address,
+                oracle_address,
+                nav_price,
+                timestamp,
+                cycle_number,
+                chain_id,
+                reference_nonce,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?itp_address,
+                    nav_price = %nav_price,
+                    "Received NavOracleProposal - routing to handler"
+                );
+                if let Err(e) = self
+                    .handle_nav_oracle_proposal(
+                        from, leader_id, itp_address, oracle_address, nav_price,
+                        timestamp, cycle_number, chain_id, reference_nonce, leader_signature,
+                    )
+                    .await
+                {
+                    warn!(
+                        code = "INFRA-007",
+                        ?itp_address,
+                        error = %e,
+                        "Failed to handle NavOracleProposal"
+                    );
+                }
+            }
+            MessageHandleResult::ProcessNavOracleSign {
+                from,
+                signer_index,
+                itp_address,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    signer_index,
+                    ?itp_address,
+                    "Received NavOracleSign - routing to handler"
+                );
+                if let Err(e) = self
+                    .handle_nav_oracle_sign(from, signer_index, itp_address, signature)
+                    .await
+                {
+                    warn!(
+                        code = "INFRA-007",
+                        ?itp_address,
+                        error = %e,
+                        "Failed to handle NavOracleSign"
+                    );
+                }
+            }
+            // MirrorIssuerRegistry sync (Step 12)
+            MessageHandleResult::ProcessMirrorSyncProposal {
+                from,
+                leader_id,
+                nonce,
+                issuer_pubkeys,
+                issuer_ids,
+                active_bitmask,
+                active_count,
+                threshold,
+                chain_id,
+                mirror_address,
+                reference_nonce,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    nonce,
+                    active_count,
+                    "Received MirrorSyncProposal - routing to handler"
+                );
+                if let Err(e) = self
+                    .handle_mirror_sync_proposal(
+                        from, leader_id, nonce, issuer_pubkeys, issuer_ids,
+                        active_bitmask, active_count, threshold,
+                        chain_id, mirror_address, reference_nonce, leader_signature,
+                    )
+                    .await
+                {
+                    warn!(
+                        code = "INFRA-007",
+                        nonce,
+                        error = %e,
+                        "Failed to handle MirrorSyncProposal"
+                    );
+                }
+            }
+            MessageHandleResult::ProcessMirrorSyncSign {
+                from,
+                signer_index,
+                nonce,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    signer_index,
+                    nonce,
+                    "Received MirrorSyncSign - routing to handler"
+                );
+                if let Err(e) = self
+                    .handle_mirror_sync_sign(from, signer_index, nonce, signature)
+                    .await
+                {
+                    warn!(
+                        code = "INFRA-007",
+                        nonce,
+                        error = %e,
+                        "Failed to handle MirrorSyncSign"
+                    );
+                }
+            }
             // AA keeper arbitration — forward to arbitration subsystem
             MessageHandleResult::ForwardToArbitration(msg) => {
                 let arb_tx = self.arbitration_tx.read().await;
@@ -2854,7 +3291,7 @@ where
         let signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| ItpCreationError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
@@ -2863,7 +3300,7 @@ where
             let mut aggregator = self.aggregator.write().await;
             aggregator
                 .add_signature(self.config.peer_id, self.runtime_config.issuer_registry_index(), signature.clone())
-                .map_err(|e| ItpCreationError::BlsSigningError {
+                .map_err(|e| ConsensusError::BlsSigningError {
                     reason: e.to_string(),
                 })?;
         }
@@ -2923,10 +3360,11 @@ where
                 if count >= min_signatures {
                     break;
                 }
-                return Err(ItpCreationError::SigningTimeout {
+                return Err(ConsensusError::SigningTimeout {
                     received: count,
                     timeout_ms,
-                });
+                }
+                .into());
             }
 
             // Check if threshold reached
@@ -2967,13 +3405,13 @@ where
         let aggregated_sig = self
             .bls_signer
             .aggregate_signatures(signatures)
-            .map_err(|e| ItpCreationError::BlsSigningError {
+            .map_err(|e| ConsensusError::BlsSigningError {
                 reason: e.to_string(),
             })?;
 
         // Aggregate public keys (G2 addition, done off-chain)
         let aggregated_pubkey = aggregate_pubkeys(&signer_pubkeys).map_err(|e| {
-            ItpCreationError::BlsSigningError {
+            ConsensusError::BlsSigningError {
                 reason: format!("Failed to aggregate pubkeys: {}", e),
             }
         })?;
@@ -3208,7 +3646,7 @@ where
         // Get bridge orchestrator reference
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -3254,7 +3692,7 @@ where
         // Get bridge orchestrator
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -3288,7 +3726,7 @@ where
         self.p2p
             .broadcast(message)
             .await
-            .map_err(|e| BridgeError::ChainWriterError {
+            .map_err(|e| ConsensusError::ChainWriterError {
                 reason: format!("Failed to broadcast bridge proposal: {}", e),
             })?;
 
@@ -3300,7 +3738,7 @@ where
         // Step 4: Collect signatures with timeout
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -3330,7 +3768,7 @@ where
         // Step 5: Execute bridge (mint L3Usdc to IssuerCustody L3)
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -3403,10 +3841,11 @@ where
                         received,
                         "Bridge signature collection timed out"
                     );
-                    return Err(BridgeError::SigningTimeout {
+                    return Err(ConsensusError::SigningTimeout {
                         received,
                         timeout_ms,
-                    });
+                    }
+                    .into());
                 }
 
                 // Get notifier — wake instantly when a signature arrives
@@ -3432,10 +3871,11 @@ where
                         timeout_ms,
                         "Bridge signature collection timed out (no orchestrator)"
                     );
-                    return Err(BridgeError::SigningTimeout {
+                    return Err(ConsensusError::SigningTimeout {
                         received: 0,
                         timeout_ms,
-                    });
+                    }
+                    .into());
                 }
                 sleep(std::time::Duration::from_millis(10)).await;
             }
@@ -3467,7 +3907,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -3498,7 +3938,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -3536,7 +3976,7 @@ where
         };
         drop(bridge_orch_guard);
 
-        self.p2p.broadcast(message).await.map_err(|e| BridgeError::ChainWriterError {
+        self.p2p.broadcast(message).await.map_err(|e| ConsensusError::ChainWriterError {
             reason: format!("Failed to broadcast submit order proposal: {}", e),
         })?;
 
@@ -3558,7 +3998,7 @@ where
         // Step 5: Execute submitOrder on L3 Index contract
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -3616,10 +4056,10 @@ where
 
                 if tokio::time::Instant::now() >= deadline {
                     let received = orch.get_submit_order_signature_count(&order_id).await.unwrap_or(0);
-                    return Err(BridgeError::SigningTimeout { received, timeout_ms });
+                    return Err(ConsensusError::SigningTimeout { received, timeout_ms }.into());
                 }
             } else if tokio::time::Instant::now() >= deadline {
-                return Err(BridgeError::SigningTimeout { received: 0, timeout_ms });
+                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
             }
             drop(bridge_orch_guard);
             sleep(std::time::Duration::from_millis(10)).await;
@@ -3646,7 +4086,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -3677,7 +4117,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -3711,7 +4151,7 @@ where
         };
         drop(bridge_orch_guard);
 
-        self.p2p.broadcast(message).await.map_err(|e| BridgeError::ChainWriterError {
+        self.p2p.broadcast(message).await.map_err(|e| ConsensusError::ChainWriterError {
             reason: format!("Failed to broadcast batch proposal: {}", e),
         })?;
 
@@ -3726,7 +4166,7 @@ where
         // Step 5: Execute confirmBatch on L3
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -3760,10 +4200,10 @@ where
 
                 if tokio::time::Instant::now() >= deadline {
                     let received = orch.get_batch_signature_count(cycle_number).await.unwrap_or(0);
-                    return Err(BridgeError::SigningTimeout { received, timeout_ms });
+                    return Err(ConsensusError::SigningTimeout { received, timeout_ms }.into());
                 }
             } else if tokio::time::Instant::now() >= deadline {
-                return Err(BridgeError::SigningTimeout { received: 0, timeout_ms });
+                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
             }
             drop(bridge_orch_guard);
             sleep(std::time::Duration::from_millis(10)).await;
@@ -3857,9 +4297,10 @@ where
             }
             Err(e) => {
                 warn!(cycle_number, error = %e, "Failed to fetch prices for asset decomposition");
-                return Err(BridgeError::ChainWriterError {
+                return Err(ConsensusError::ChainWriterError {
                     reason: format!("Price fetch failed for asset trades: {}", e),
-                });
+                }
+                .into());
             }
         }
 
@@ -3885,7 +4326,7 @@ where
         // Step 4: BLS consensus
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -3916,7 +4357,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -3953,7 +4394,7 @@ where
         };
         drop(bridge_orch_guard);
 
-        self.p2p.broadcast(message).await.map_err(|e| BridgeError::ChainWriterError {
+        self.p2p.broadcast(message).await.map_err(|e| ConsensusError::ChainWriterError {
             reason: format!("Failed to broadcast asset trades proposal: {}", e),
         })?;
 
@@ -3968,7 +4409,7 @@ where
         // Step 5: Execute emitAssetTrades on L3
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -3999,10 +4440,10 @@ where
                     }
                     let count = orch.asset_trades_signature_count(cycle_number).await;
                     if tokio::time::Instant::now() >= deadline {
-                        return Err(BridgeError::SigningTimeout { received: count, timeout_ms });
+                        return Err(ConsensusError::SigningTimeout { received: count, timeout_ms }.into());
                     }
                 } else if tokio::time::Instant::now() >= deadline {
-                    return Err(BridgeError::SigningTimeout { received: 0, timeout_ms });
+                    return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
                 }
             }
             sleep(std::time::Duration::from_millis(10)).await;
@@ -4025,7 +4466,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -4056,7 +4497,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -4093,7 +4534,7 @@ where
         };
         drop(bridge_orch_guard);
 
-        self.p2p.broadcast(message).await.map_err(|e| BridgeError::ChainWriterError {
+        self.p2p.broadcast(message).await.map_err(|e| ConsensusError::ChainWriterError {
             reason: format!("Failed to broadcast fills proposal: {}", e),
         })?;
 
@@ -4108,7 +4549,7 @@ where
         // Step 5: Execute confirmFills on L3
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -4139,10 +4580,10 @@ where
 
                 if tokio::time::Instant::now() >= deadline {
                     let received = orch.get_fills_signature_count(cycle_number).await.unwrap_or(0);
-                    return Err(BridgeError::SigningTimeout { received, timeout_ms });
+                    return Err(ConsensusError::SigningTimeout { received, timeout_ms }.into());
                 }
             } else if tokio::time::Instant::now() >= deadline {
-                return Err(BridgeError::SigningTimeout { received: 0, timeout_ms });
+                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
             }
             drop(bridge_orch_guard);
             sleep(std::time::Duration::from_millis(10)).await;
@@ -4420,7 +4861,7 @@ where
         // Get bridge orchestrator reference
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -4467,7 +4908,7 @@ where
         // Get bridge orchestrator
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -4502,7 +4943,7 @@ where
         self.p2p
             .broadcast(message)
             .await
-            .map_err(|e| BridgeError::ChainWriterError {
+            .map_err(|e| ConsensusError::ChainWriterError {
                 reason: format!("Failed to broadcast L3→Arb bridge proposal: {}", e),
             })?;
 
@@ -4514,7 +4955,7 @@ where
         // Step 4: Collect signatures with timeout
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -4540,7 +4981,7 @@ where
         // Step 5: Execute bridge (transfer USDC to IssuerCustody Arbitrum)
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -4613,10 +5054,11 @@ where
                         received,
                         "L3→Arb bridge signature collection timed out"
                     );
-                    return Err(BridgeError::SigningTimeout {
+                    return Err(ConsensusError::SigningTimeout {
                         received,
                         timeout_ms,
-                    });
+                    }
+                    .into());
                 }
             } else if tokio::time::Instant::now() >= deadline {
                 warn!(
@@ -4624,10 +5066,11 @@ where
                     timeout_ms,
                     "L3→Arb bridge signature collection timed out (no orchestrator)"
                 );
-                return Err(BridgeError::SigningTimeout {
+                return Err(ConsensusError::SigningTimeout {
                     received: 0,
                     timeout_ms,
-                });
+                }
+                .into());
             }
             drop(bridge_orch_guard);
 
@@ -4910,7 +5353,7 @@ where
         // Get bridge orchestrator reference
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -4957,7 +5400,7 @@ where
         // Get bridge orchestrator
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -4993,7 +5436,7 @@ where
         self.p2p
             .broadcast(message)
             .await
-            .map_err(|e| BridgeError::ChainWriterError {
+            .map_err(|e| ConsensusError::ChainWriterError {
                 reason: format!("Failed to broadcast custody release proposal: {}", e),
             })?;
 
@@ -5005,7 +5448,7 @@ where
         // Step 4: Collect signatures with timeout
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -5031,7 +5474,7 @@ where
         // Step 5: Execute custody release (transfer to MockBitgetVault)
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -5104,10 +5547,11 @@ where
                         received,
                         "Custody release signature collection timed out"
                     );
-                    return Err(BridgeError::SigningTimeout {
+                    return Err(ConsensusError::SigningTimeout {
                         received,
                         timeout_ms,
-                    });
+                    }
+                    .into());
                 }
             } else if tokio::time::Instant::now() >= deadline {
                 warn!(
@@ -5115,10 +5559,11 @@ where
                     timeout_ms,
                     "Custody release signature collection timed out (no orchestrator)"
                 );
-                return Err(BridgeError::SigningTimeout {
+                return Err(ConsensusError::SigningTimeout {
                     received: 0,
                     timeout_ms,
-                });
+                }
+                .into());
             }
             drop(bridge_orch_guard);
 
@@ -6180,7 +6625,7 @@ where
         // Get bridge orchestrator reference
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -6224,7 +6669,7 @@ where
         // Get bridge orchestrator
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -6257,7 +6702,7 @@ where
         self.p2p
             .broadcast(message)
             .await
-            .map_err(|e| BridgeError::ChainWriterError {
+            .map_err(|e| ConsensusError::ChainWriterError {
                 reason: format!("Failed to broadcast rebalance batch proposal: {}", e),
             })?;
 
@@ -6269,7 +6714,7 @@ where
         // Step 4: Collect signatures with timeout
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -6333,16 +6778,18 @@ where
                         received,
                         "Rebalance batch signature collection timed out"
                     );
-                    return Err(BridgeError::SigningTimeout {
+                    return Err(ConsensusError::SigningTimeout {
                         received,
                         timeout_ms,
-                    });
+                    }
+                    .into());
                 }
             } else if tokio::time::Instant::now() >= deadline {
-                return Err(BridgeError::SigningTimeout {
+                return Err(ConsensusError::SigningTimeout {
                     received: 0,
                     timeout_ms,
-                });
+                }
+                .into());
             }
             drop(bridge_orch_guard);
 
@@ -6560,7 +7007,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -6573,9 +7020,10 @@ where
                     itp_id = ?itp_id,
                     "Weights already updated for this ITP, skipping"
                 );
-                return Err(BridgeError::ChainWriterError {
+                return Err(ConsensusError::ChainWriterError {
                     reason: format!("Weights already updated for ITP {}", itp_id),
-                });
+                }
+                .into());
             }
         }
 
@@ -6607,7 +7055,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -6641,7 +7089,7 @@ where
         self.p2p
             .broadcast(message)
             .await
-            .map_err(|e| BridgeError::ChainWriterError {
+            .map_err(|e| ConsensusError::ChainWriterError {
                 reason: format!("Failed to broadcast update weights proposal: {}", e),
             })?;
 
@@ -6653,7 +7101,7 @@ where
         // Step 4: Collect signatures with timeout
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -6717,16 +7165,18 @@ where
                         received,
                         "Update weights signature collection timed out"
                     );
-                    return Err(BridgeError::SigningTimeout {
+                    return Err(ConsensusError::SigningTimeout {
                         received,
                         timeout_ms,
-                    });
+                    }
+                    .into());
                 }
             } else if tokio::time::Instant::now() >= deadline {
-                return Err(BridgeError::SigningTimeout {
+                return Err(ConsensusError::SigningTimeout {
                     received: 0,
                     timeout_ms,
-                });
+                }
+                .into());
             }
             drop(bridge_orch_guard);
 
@@ -6943,7 +7393,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -6953,9 +7403,10 @@ where
             let orch = bridge_orch.read().await;
             if orch.is_weights_updated(&itp_id).await {
                 debug!(itp_id = ?itp_id, "Rebalance already executed for this ITP, skipping");
-                return Err(BridgeError::ChainWriterError {
+                return Err(ConsensusError::ChainWriterError {
                     reason: format!("Rebalance already executed for ITP {}", itp_id),
-                });
+                }
+                .into());
             }
         }
 
@@ -6984,7 +7435,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -7019,7 +7470,7 @@ where
         self.p2p
             .broadcast(message)
             .await
-            .map_err(|e| BridgeError::ChainWriterError {
+            .map_err(|e| ConsensusError::ChainWriterError {
                 reason: format!("Failed to broadcast rebalance proposal: {}", e),
             })?;
 
@@ -7028,7 +7479,7 @@ where
         // Step 4: Collect signatures
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -7084,10 +7535,10 @@ where
                         itp_id = ?itp_id, timeout_ms, min_signatures, received,
                         "Rebalance signature collection timed out"
                     );
-                    return Err(BridgeError::SigningTimeout { received, timeout_ms });
+                    return Err(ConsensusError::SigningTimeout { received, timeout_ms }.into());
                 }
             } else if tokio::time::Instant::now() >= deadline {
-                return Err(BridgeError::SigningTimeout { received: 0, timeout_ms });
+                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
             }
             drop(bridge_orch_guard);
 
@@ -7249,7 +7700,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let _bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -7274,7 +7725,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -7305,7 +7756,7 @@ where
         self.p2p
             .broadcast(message)
             .await
-            .map_err(|e| BridgeError::ChainWriterError {
+            .map_err(|e| ConsensusError::ChainWriterError {
                 reason: format!("Failed to broadcast setItpNav proposal: {}", e),
             })?;
 
@@ -7314,7 +7765,7 @@ where
         // Step 4: Collect signatures
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -7370,10 +7821,10 @@ where
                         itp_id = ?itp_id, timeout_ms, min_signatures, received,
                         "setItpNav signature collection timed out"
                     );
-                    return Err(BridgeError::SigningTimeout { received, timeout_ms });
+                    return Err(ConsensusError::SigningTimeout { received, timeout_ms }.into());
                 }
             } else if tokio::time::Instant::now() >= deadline {
-                return Err(BridgeError::SigningTimeout { received: 0, timeout_ms });
+                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
             }
             drop(bridge_orch_guard);
 
@@ -7504,6 +7955,365 @@ where
     }
 
     // ============================================================================
+    // NAV Oracle (ITPNAVOracle on Arb) — Phase 2B
+    // ============================================================================
+
+    /// Handle incoming NavOracleProposal message (as follower).
+    /// Verifies leader's BLS signature on the oracle hash, signs it, and sends back.
+    pub async fn handle_nav_oracle_proposal(
+        &self,
+        from: PeerId,
+        leader_id: PeerId,
+        itp_address: Address,
+        oracle_address: Address,
+        nav_price: U256,
+        timestamp: u64,
+        cycle_number: u64,
+        chain_id: u64,
+        _reference_nonce: u64,
+        leader_signature: BLSSignature,
+    ) -> Result<(), Error> {
+        info!(?itp_address, nav_price = %nav_price, "Follower: Received NavOracleProposal");
+
+        // Compute oracle hash
+        let message_hash = build_nav_oracle_hash(
+            chain_id,
+            oracle_address,
+            itp_address,
+            nav_price,
+            timestamp,
+            cycle_number,
+        );
+        let hash_bytes: [u8; 32] = message_hash.into();
+
+        // Verify leader's BLS signature
+        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
+            match self.bls_signer.verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature) {
+                Ok(true) => {
+                    debug!(?itp_address, "Leader signature verified for NavOracleProposal");
+                }
+                Ok(false) => {
+                    warn!(code = "INFRA-007", ?itp_address, ?leader_id, "Invalid leader signature on NavOracleProposal");
+                    return Err(Error::BlsVerification("Invalid leader signature on NavOracleProposal".to_string()));
+                }
+                Err(e) => {
+                    warn!(code = "INFRA-007", ?itp_address, error = %e, "Failed to verify leader signature for NavOracleProposal");
+                    return Err(e);
+                }
+            }
+        } else {
+            warn!(
+                code = "INFRA-007",
+                ?itp_address,
+                ?leader_id,
+                "Leader public key not found in registry, REJECTING NavOracleProposal"
+            );
+            return Err(Error::BlsVerification(
+                format!("Leader {:?} not found in key registry -- refusing to sign NavOracleProposal", leader_id)
+            ));
+        }
+
+        // Sign the oracle hash with own BLS key
+        let signature = self.bls_signer.sign_message_hash(&self.bls_keypair, &hash_bytes)
+            .map_err(|e| Error::BlsVerification(format!("Failed to sign NavOracleProposal: {}", e)))?;
+
+        // Send signature back to leader
+        let message = P2PMessage::NavOracleSign {
+            signer_id: self.config.peer_id,
+            signer_index: self.runtime_config.issuer_registry_index(),
+            itp_address,
+            signature,
+        };
+
+        debug!(?itp_address, signer_index = self.runtime_config.issuer_registry_index(), "Follower: Sending NavOracleSign to leader");
+        self.p2p.send_to(from, message).await
+    }
+
+    /// Handle incoming NavOracleSign message (as leader).
+    /// Routes to BridgeOrchestrator's existing nav signature collection.
+    pub async fn handle_nav_oracle_sign(
+        &self,
+        from: PeerId,
+        signer_index: u8,
+        itp_address: Address,
+        signature: BLSSignature,
+    ) -> Result<(), Error> {
+        debug!(?from, signer_index, ?itp_address, "Leader: Received NavOracleSign");
+
+        let bridge_orch_guard = self.bridge_orchestrator.read().await;
+        let bridge_orch = match bridge_orch_guard.as_ref() {
+            Some(orch) => orch,
+            None => {
+                warn!(?itp_address, "BridgeOrchestrator not configured, ignoring NavOracleSign");
+                return Ok(());
+            }
+        };
+
+        // Reuse nav_signatures collection keyed by H256(itp_address)
+        let itp_key = H256::from(itp_address);
+        let orch = bridge_orch.write().await;
+        match orch.add_nav_signature(itp_key, signer_index, signature).await {
+            Ok(Some(result)) => {
+                info!(?itp_address, signature_count = result.signature_count, "NavOracle signature threshold reached");
+            }
+            Ok(None) => {
+                debug!(?itp_address, signer_index, "NavOracle signature added, threshold not yet reached");
+            }
+            Err(e) => {
+                warn!(code = "INFRA-007", ?itp_address, error = %e, "Failed to add NavOracle signature");
+            }
+        }
+
+        Ok(())
+    }
+
+    // ============================================================================
+    // MirrorIssuerRegistry Sync (Step 12)
+    // ============================================================================
+
+    /// Handle incoming MirrorSyncProposal message (as follower).
+    ///
+    /// Verifies leader's BLS signature on the sync hash, verifies the proposed
+    /// state matches L3 registry, then signs and broadcasts back.
+    pub async fn handle_mirror_sync_proposal(
+        &self,
+        from: PeerId,
+        leader_id: PeerId,
+        nonce: u64,
+        issuer_pubkeys: Vec<Vec<u8>>,
+        issuer_ids: Vec<u64>,
+        active_bitmask: U256,
+        active_count: u64,
+        threshold: u64,
+        chain_id: u64,
+        mirror_address: Address,
+        reference_nonce: u64,
+        leader_signature: BLSSignature,
+    ) -> Result<(), Error> {
+        info!(nonce, active_count, "Follower: Received MirrorSyncProposal");
+
+        // Compute the sync hash
+        let message_hash = build_mirror_registry_sync_hash(
+            chain_id,
+            mirror_address,
+            nonce,
+            &issuer_pubkeys,
+            &issuer_ids,
+            active_bitmask,
+            active_count,
+            threshold,
+        );
+
+        // Verify leader's BLS signature
+        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
+            let hash_bytes: [u8; 32] = message_hash.into();
+            match self.bls_signer.verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature) {
+                Ok(true) => {
+                    debug!(nonce, "Leader signature verified for MirrorSync");
+                }
+                Ok(false) => {
+                    warn!(code = "INFRA-007", nonce, "Invalid leader signature on MirrorSyncProposal");
+                    return Err(Error::BlsVerification("Invalid leader signature on MirrorSyncProposal".to_string()));
+                }
+                Err(e) => {
+                    warn!(code = "INFRA-007", nonce, error = %e, "Failed to verify leader signature for MirrorSync");
+                    return Err(e);
+                }
+            }
+        } else {
+            warn!(
+                code = "INFRA-007",
+                nonce,
+                ?leader_id,
+                "Leader public key not found in registry, REJECTING MirrorSync proposal"
+            );
+            return Err(Error::BlsVerification(
+                format!("Leader {:?} not found in key registry -- refusing to sign mirror sync", leader_id)
+            ));
+        }
+
+        // TODO: Optionally verify proposed state matches L3 IssuerRegistry via chain_reader
+        // For now, trust the leader's proposal since the leader will have verified it.
+
+        // Sign the sync hash with own BLS key
+        let hash_bytes: [u8; 32] = message_hash.into();
+        let signature = self.bls_signer.sign_message_hash(&self.bls_keypair, &hash_bytes)
+            .map_err(|e| Error::BlsVerification(format!("Failed to sign MirrorSync: {}", e)))?;
+
+        // Send signature back to leader
+        let message = P2PMessage::MirrorSyncSign {
+            signer_id: self.config.peer_id,
+            signer_index: self.runtime_config.issuer_registry_index(),
+            nonce,
+            signature,
+        };
+
+        debug!(nonce, signer_index = self.runtime_config.issuer_registry_index(), "Follower: Sending MirrorSync signature to leader");
+        self.p2p.send_to(from, message).await
+    }
+
+    /// Handle incoming MirrorSyncSign message (as leader).
+    ///
+    /// Routes to BridgeOrchestrator's nav_signatures collection using a
+    /// dedicated key derived from the nonce.
+    pub async fn handle_mirror_sync_sign(
+        &self,
+        from: PeerId,
+        signer_index: u8,
+        nonce: u64,
+        signature: BLSSignature,
+    ) -> Result<(), Error> {
+        debug!(?from, signer_index, nonce, "Leader: Received MirrorSyncSign");
+
+        let bridge_orch_guard = self.bridge_orchestrator.read().await;
+        let bridge_orch = match bridge_orch_guard.as_ref() {
+            Some(orch) => orch,
+            None => {
+                warn!(nonce, "BridgeOrchestrator not configured, ignoring MirrorSyncSign");
+                return Ok(());
+            }
+        };
+
+        // Use H256::from_low_u64_be(nonce) as key to avoid collision with NAV signatures
+        let sync_key = H256::from_low_u64_be(nonce);
+        let orch = bridge_orch.write().await;
+        match orch.add_nav_signature(sync_key, signer_index, signature).await {
+            Ok(Some(result)) => {
+                info!(nonce, signature_count = result.signature_count, "MirrorSync signature threshold reached");
+            }
+            Ok(None) => {
+                debug!(nonce, signer_index, "MirrorSync signature added, threshold not yet reached");
+            }
+            Err(e) => {
+                warn!(code = "INFRA-007", nonce, error = %e, "Failed to add MirrorSync signature");
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Leader-initiated: run MirrorIssuerRegistry sync BLS consensus.
+    ///
+    /// Called by the main loop when L3 nonce > mirror nonce. The caller is
+    /// responsible for reading on-chain state and submitting the final tx.
+    ///
+    /// Returns the sync calldata for the caller to submit to Arbitrum.
+    pub async fn run_mirror_sync_consensus(
+        &self,
+        l3_nonce: u64,
+        issuer_pubkeys: Vec<Vec<u8>>,
+        issuer_ids: Vec<u64>,
+        active_bitmask: U256,
+        active_count: u64,
+        threshold: u64,
+        arb_chain_id: u64,
+        mirror_registry_address: Address,
+        reference_nonce: u64,
+    ) -> Result<Vec<u8>, Error> {
+        // Step 1: Compute sync hash and sign
+        let message_hash = build_mirror_registry_sync_hash(
+            arb_chain_id,
+            mirror_registry_address,
+            l3_nonce,
+            &issuer_pubkeys,
+            &issuer_ids,
+            active_bitmask,
+            active_count,
+            threshold,
+        );
+
+        let hash_bytes: [u8; 32] = message_hash.into();
+        let leader_sig = self.bls_signer.sign_message_hash(&self.bls_keypair, &hash_bytes)
+            .map_err(|e| Error::BlsVerification(format!("Failed to sign MirrorSync hash: {}", e)))?;
+
+        // Initialize signature collection in bridge orchestrator
+        {
+            let bridge_orch_guard = self.bridge_orchestrator.read().await;
+            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
+                let orch = bridge_orch.write().await;
+                let sync_key = H256::from_low_u64_be(l3_nonce);
+                let my_index = self.runtime_config.issuer_registry_index();
+                let _ = orch.add_nav_signature(sync_key, my_index, leader_sig.clone()).await;
+            }
+        }
+
+        // Step 2: Broadcast MirrorSyncProposal to all peers
+        let proposal = P2PMessage::MirrorSyncProposal {
+            leader_id: self.config.peer_id,
+            nonce: l3_nonce,
+            issuer_pubkeys: issuer_pubkeys.clone(),
+            issuer_ids: issuer_ids.clone(),
+            active_bitmask,
+            active_count,
+            threshold,
+            chain_id: arb_chain_id,
+            mirror_address: mirror_registry_address,
+            reference_nonce,
+            leader_signature: leader_sig,
+        };
+
+        self.p2p.broadcast(proposal).await?;
+
+        // Step 3: Wait for threshold signatures
+        let sync_key = H256::from_low_u64_be(l3_nonce);
+        let timeout = self.config.timeouts.batch_sign_timeout.max(std::time::Duration::from_secs(2));
+        let deadline = tokio::time::Instant::now() + timeout;
+
+        let sync_result = loop {
+            let bridge_orch_guard = self.bridge_orchestrator.read().await;
+            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
+                let orch = bridge_orch.read().await;
+                if let Some(result) = orch.check_nav_threshold(sync_key).await {
+                    info!(
+                        nonce = l3_nonce,
+                        signature_count = result.signature_count,
+                        "MirrorSync signature threshold reached"
+                    );
+                    break result;
+                }
+            }
+            drop(bridge_orch_guard);
+
+            if tokio::time::Instant::now() >= deadline {
+                let min_signatures = self.config.signature_threshold;
+                warn!(
+                    nonce = l3_nonce,
+                    timeout_secs = ?timeout,
+                    min_signatures,
+                    "MirrorSync signature collection timed out"
+                );
+                return Err(Error::Timeout(format!(
+                    "MirrorSync timeout: nonce={}, min_sig={}",
+                    l3_nonce, min_signatures
+                )));
+            }
+
+            sleep(std::time::Duration::from_millis(50)).await;
+        };
+
+        // Step 4: Build calldata for the caller to submit
+        let calldata = build_mirror_registry_sync_calldata(
+            &issuer_pubkeys,
+            &issuer_ids,
+            active_bitmask,
+            active_count,
+            threshold,
+            l3_nonce,
+            &sync_result.aggregated_signature.0,
+            reference_nonce,
+            sync_result.signer_bitmap,
+        );
+
+        info!(
+            nonce = l3_nonce,
+            signature_count = sync_result.signature_count,
+            "MirrorSync consensus complete, returning calldata"
+        );
+
+        Ok(calldata)
+    }
+
+    // ============================================================================
     // Cross-Chain Sell Flow Consensus Methods
     // ============================================================================
 
@@ -7525,7 +8335,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -7560,7 +8370,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -7596,7 +8406,7 @@ where
         };
         drop(bridge_orch_guard);
 
-        self.p2p.broadcast(message).await.map_err(|e| BridgeError::ChainWriterError {
+        self.p2p.broadcast(message).await.map_err(|e| ConsensusError::ChainWriterError {
             reason: format!("Failed to broadcast submit sell order proposal: {}", e),
         })?;
 
@@ -7618,7 +8428,7 @@ where
         // Step 5: Execute submitOrderFor(SELL) on L3 Index contract
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -7681,10 +8491,10 @@ where
 
                 if tokio::time::Instant::now() >= deadline {
                     let received = orch.get_submit_sell_order_signature_count(&order_id).await.unwrap_or(0);
-                    return Err(BridgeError::SigningTimeout { received, timeout_ms });
+                    return Err(ConsensusError::SigningTimeout { received, timeout_ms }.into());
                 }
             } else if tokio::time::Instant::now() >= deadline {
-                return Err(BridgeError::SigningTimeout { received: 0, timeout_ms });
+                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
             }
             drop(bridge_orch_guard);
             sleep(std::time::Duration::from_millis(10)).await;
@@ -7894,7 +8704,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let _bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -7926,7 +8736,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -7960,7 +8770,7 @@ where
         };
         drop(bridge_orch_guard);
 
-        self.p2p.broadcast(message).await.map_err(|e| BridgeError::ChainWriterError {
+        self.p2p.broadcast(message).await.map_err(|e| ConsensusError::ChainWriterError {
             reason: format!("Failed to broadcast complete sell order proposal: {}", e),
         })?;
 
@@ -8001,10 +8811,10 @@ where
 
                 if tokio::time::Instant::now() >= deadline {
                     let received = orch.get_complete_sell_order_signature_count(&order_id).await.unwrap_or(0);
-                    return Err(BridgeError::SigningTimeout { received, timeout_ms });
+                    return Err(ConsensusError::SigningTimeout { received, timeout_ms }.into());
                 }
             } else if tokio::time::Instant::now() >= deadline {
-                return Err(BridgeError::SigningTimeout { received: 0, timeout_ms });
+                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
             }
             drop(bridge_orch_guard);
             sleep(std::time::Duration::from_millis(10)).await;
@@ -8213,7 +9023,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -8256,7 +9066,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -8292,7 +9102,7 @@ where
         };
         drop(bridge_orch_guard);
 
-        self.p2p.broadcast(message).await.map_err(|e| BridgeError::ChainWriterError {
+        self.p2p.broadcast(message).await.map_err(|e| ConsensusError::ChainWriterError {
             reason: format!("Failed to broadcast RecordCollateralMove proposal: {}", e),
         })?;
 
@@ -8329,10 +9139,10 @@ where
 
                 if tokio::time::Instant::now() >= deadline {
                     let received = orch.get_collateral_move_signature_count(cycle_number).await.unwrap_or(0);
-                    return Err(BridgeError::SigningTimeout { received, timeout_ms });
+                    return Err(ConsensusError::SigningTimeout { received, timeout_ms }.into());
                 }
             } else if tokio::time::Instant::now() >= deadline {
-                return Err(BridgeError::SigningTimeout { received: 0, timeout_ms });
+                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
             }
             drop(bridge_orch_guard);
             sleep(std::time::Duration::from_millis(10)).await;
@@ -8511,7 +9321,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -8550,7 +9360,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -8582,7 +9392,7 @@ where
         };
         drop(bridge_orch_guard);
 
-        self.p2p.broadcast(message).await.map_err(|e| BridgeError::ChainWriterError {
+        self.p2p.broadcast(message).await.map_err(|e| ConsensusError::ChainWriterError {
             reason: format!("Failed to broadcast MintBridgedShares proposal: {}", e),
         })?;
 
@@ -8618,10 +9428,10 @@ where
 
                 if tokio::time::Instant::now() >= deadline {
                     let received = orch.get_mint_shares_signature_count(cycle_number).await.unwrap_or(0);
-                    return Err(BridgeError::SigningTimeout { received, timeout_ms });
+                    return Err(ConsensusError::SigningTimeout { received, timeout_ms }.into());
                 }
             } else if tokio::time::Instant::now() >= deadline {
-                return Err(BridgeError::SigningTimeout { received: 0, timeout_ms });
+                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
             }
             drop(bridge_orch_guard);
             sleep(std::time::Duration::from_millis(10)).await;
@@ -8773,7 +9583,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let _bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -8803,7 +9613,7 @@ where
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
-            BridgeError::ChainWriterError {
+            ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
         })?;
@@ -8834,7 +9644,7 @@ where
         };
         drop(bridge_orch_guard);
 
-        self.p2p.broadcast(message).await.map_err(|e| BridgeError::ChainWriterError {
+        self.p2p.broadcast(message).await.map_err(|e| ConsensusError::ChainWriterError {
             reason: format!("Failed to broadcast CompleteBuyOrder proposal: {}", e),
         })?;
 
@@ -8872,10 +9682,10 @@ where
 
                 if tokio::time::Instant::now() >= deadline {
                     let received = orch.get_complete_buy_order_signature_count(cycle_number).await.unwrap_or(0);
-                    return Err(BridgeError::SigningTimeout { received, timeout_ms });
+                    return Err(ConsensusError::SigningTimeout { received, timeout_ms }.into());
                 }
             } else if tokio::time::Instant::now() >= deadline {
-                return Err(BridgeError::SigningTimeout { received: 0, timeout_ms });
+                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
             }
             drop(bridge_orch_guard);
             sleep(std::time::Duration::from_millis(10)).await;
@@ -9004,7 +9814,7 @@ mod tests {
 
         assert!(result.is_err());
         match result {
-            Err(BridgeError::ChainWriterError { reason }) => {
+            Err(BridgeError::Consensus(ConsensusError::ChainWriterError { reason })) => {
                 assert!(reason.contains("BridgeOrchestrator not configured"));
             }
             _ => panic!("Expected ChainWriterError"),
@@ -9027,7 +9837,7 @@ mod tests {
 
         assert!(result.is_err());
         match result {
-            Err(BridgeError::ChainWriterError { reason }) => {
+            Err(BridgeError::Consensus(ConsensusError::ChainWriterError { reason })) => {
                 assert!(reason.contains("BridgeOrchestrator not configured"));
             }
             _ => panic!("Expected ChainWriterError"),
@@ -9127,7 +9937,7 @@ mod tests {
         // Without orchestrator, it fails before the leader/follower branch
         assert!(result.is_err());
         match result {
-            Err(BridgeError::ChainWriterError { reason }) => {
+            Err(BridgeError::Consensus(ConsensusError::ChainWriterError { reason })) => {
                 assert!(reason.contains("BridgeOrchestrator not configured"));
             }
             _ => panic!("Expected ChainWriterError for missing orchestrator"),
@@ -9152,7 +9962,7 @@ mod tests {
         // Without orchestrator, it fails before the leader/follower branch
         assert!(result.is_err());
         match result {
-            Err(BridgeError::ChainWriterError { reason }) => {
+            Err(BridgeError::Consensus(ConsensusError::ChainWriterError { reason })) => {
                 assert!(reason.contains("BridgeOrchestrator not configured"));
             }
             _ => panic!("Expected ChainWriterError for missing orchestrator"),

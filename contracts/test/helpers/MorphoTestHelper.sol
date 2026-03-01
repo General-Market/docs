@@ -74,11 +74,16 @@ abstract contract MorphoTestHelper is TestHelper {
         );
         mirrorRegistry = MirrorIssuerRegistry(address(mirrorProxy));
 
+        // 2b. Sync mirror registry with individual pubkeys + snapshot (TOFU bootstrap)
+        _syncMirrorRegistry(mirrorRegistry);
+
         // 3. Deploy ITPNAVOracle with initial price, then push BLS-signed update
         oracle = new ITPNAVOracle(address(mirrorRegistry), address(itp), ORACLE_PRICE);
-        bytes32 navHash1 = keccak256(abi.encodePacked(address(itp), ORACLE_PRICE, block.timestamp, uint256(1)));
+        vm.prank(mirrorAdmin);
+        mirrorRegistry.setAuthorizedMissedCountCaller(address(oracle), true);
+        bytes32 navHash1 = keccak256(abi.encode(block.chainid, address(oracle), address(itp), ORACLE_PRICE, block.timestamp, uint256(1)));
         bytes memory sig1 = signWithTestIssuers(navHash1);
-        oracle.updatePrice(ORACLE_PRICE, block.timestamp, 1, sig1, 0x07);
+        oracle.updatePrice(ORACLE_PRICE, block.timestamp, 1, sig1, 1, 0x07);
 
         // 4. Deploy Morpho Blue core
         morpho = new Morpho(morphoOwner);
@@ -180,11 +185,16 @@ abstract contract MorphoTestHelper is TestHelper {
         );
         mirrorRegistry = MirrorIssuerRegistry(address(mirrorProxy));
 
+        // 2b. Sync mirror registry with individual pubkeys + snapshot (TOFU bootstrap)
+        _syncMirrorRegistry(mirrorRegistry);
+
         // 3. Deploy ITPNAVOracle with initial price, then push BLS-signed update
         oracle = new ITPNAVOracle(address(mirrorRegistry), address(itp), ORACLE_PRICE);
-        bytes32 navHash1 = keccak256(abi.encodePacked(address(itp), ORACLE_PRICE, block.timestamp, uint256(1)));
+        vm.prank(mirrorAdmin);
+        mirrorRegistry.setAuthorizedMissedCountCaller(address(oracle), true);
+        bytes32 navHash1 = keccak256(abi.encode(block.chainid, address(oracle), address(itp), ORACLE_PRICE, block.timestamp, uint256(1)));
         bytes memory sig1 = signWithTestIssuers(navHash1);
-        oracle.updatePrice(ORACLE_PRICE, block.timestamp, 1, sig1, 0x07);
+        oracle.updatePrice(ORACLE_PRICE, block.timestamp, 1, sig1, 1, 0x07);
 
         // 4. Deploy Morpho Blue core
         morpho = new Morpho(morphoOwner);
@@ -222,5 +232,33 @@ abstract contract MorphoTestHelper is TestHelper {
 
     function getCuratorIrm() public view returns (address) {
         return address(curatorIrm);
+    }
+
+    // ============ MIRROR REGISTRY SYNC HELPER ============
+
+    /// @notice Sync a MirrorIssuerRegistry with individual pubkeys and create a snapshot (TOFU bootstrap)
+    /// @dev Uses seeds 0,1,2 for individual keys. First sync verifies against aggregated pubkey.
+    function _syncMirrorRegistry(MirrorIssuerRegistry registry) internal {
+        bytes[] memory pubkeys = new bytes[](3);
+        uint256[] memory ids = new uint256[](3);
+        for (uint8 i = 0; i < 3; i++) {
+            pubkeys[i] = blsPubkey(i);
+            ids[i] = i;
+        }
+        uint256 bitmask = 0x07; // bits 0,1,2
+        bytes32 syncHash = keccak256(
+            abi.encode(
+                "REGISTRY_SYNC",
+                block.chainid,
+                address(registry),
+                uint256(1), // nonce
+                keccak256(abi.encode(pubkeys, ids)),
+                bitmask,
+                uint256(3), // activeCount
+                uint256(2)  // threshold
+            )
+        );
+        bytes memory syncSig = signWithTestIssuers(syncHash);
+        registry.sync(pubkeys, ids, bitmask, 3, 2, 1, syncSig, 0, 0);
     }
 }

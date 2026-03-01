@@ -7,7 +7,7 @@ use issuer::bootstrap::{BootstrapParams, IssuerBootstrap, IssuerComponents, Issu
 use issuer::bridge::Fill;
 use issuer::p2p::TcpP2PTransport;
 use issuer::{
-    handle_nav_sign_request, BackendNavCalculator, ConfigBuilder, ConsensusResult,
+    handle_nav_sign_request, BackendNavCalculator, ConfigBuilder,
     NavCalculator, NavSignHandler, PriceFetcher,
     RegistrySyncCache, RegistrySyncConfig, RegistrySyncHandler, StubItpRegistryReader,
     MIN_CYCLE_DURATION_MS,
@@ -300,6 +300,14 @@ struct Args {
     #[arg(long, env = "DATA_NODE_TOKEN")]
     data_node_token: Option<String>,
 
+    /// ITPNAVOracle contract address on Arbitrum.
+    #[arg(long)]
+    nav_oracle: Option<String>,
+
+    /// ITP token address for the NAV oracle.
+    #[arg(long)]
+    itp_token: Option<String>,
+
     /// Path to the consensus Write-Ahead Log file.
     /// Default: ./consensus-{node_id}.wal
     #[arg(long)]
@@ -313,6 +321,11 @@ struct Args {
     /// Skip WAL replay on startup.
     #[arg(long)]
     skip_wal_replay: bool,
+
+    /// MirrorIssuerRegistry contract address on Arbitrum (Step 12).
+    /// When set, the issuer actively syncs L3 registry state to the mirror on Arb.
+    #[arg(long)]
+    mirror_registry: Option<String>,
 }
 
 fn setup_logging(config: &issuer::IssuerConfig) -> Result<(), Box<dyn std::error::Error>> {
@@ -574,7 +587,7 @@ fn issuer_api_routes(state: Arc<IssuerApiState>) -> axum::Router {
         .with_state(state)
 }
 
-async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data_node_url: Option<String>, itp_id: String, mock_usdt_addr: Option<ethers::types::Address>, vision_router: Option<axum::Router>) -> Result<(), Box<dyn std::error::Error>> {
+async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data_node_url: Option<String>, itp_id: String, mock_usdt_addr: Option<ethers::types::Address>, vision_router: Option<axum::Router>, nav_oracle_address: Option<ethers::types::Address>, itp_token_address: Option<ethers::types::Address>, arb_chain_id: Option<u64>, mirror_registry_address: Option<ethers::types::Address>, issuer_registry_address_for_sync: Option<ethers::types::Address>) -> Result<(), Box<dyn std::error::Error>> {
     let node_id = components.node_id;
     let shutdown = components.shutdown.clone();
 
@@ -649,6 +662,11 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     let symbol_map_for_task = components.price.symbol_map.clone();
     let data_node_url_for_task = data_node_url.clone();
     let itp_id_for_task = itp_id.clone();
+    let nav_oracle_address_for_task = nav_oracle_address;
+    let itp_token_address_for_task = itp_token_address;
+    let arb_chain_id_for_task = arb_chain_id;
+    let mirror_registry_for_task = mirror_registry_address;
+    let issuer_registry_for_sync_task = issuer_registry_address_for_sync;
     let work_tx_for_task = work_tx;
 
     // Build quote_tokens map: asset address → quote token address (USDC or USDT)
@@ -676,19 +694,35 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         }
     };
 
+    /// Drop guard that resets an AtomicBool flag when the task completes or panics.
+    /// Prevents permanent task starvation if a spawned task panics.
+    struct FlagGuard(Arc<AtomicBool>);
+    impl Drop for FlagGuard {
+        fn drop(&mut self) {
+            self.0.store(false, Ordering::Release);
+        }
+    }
+
+    // Channel for price task result reporting (success/failure tracking)
+    let (price_result_tx, mut price_result_rx) = tokio::sync::mpsc::channel::<bool>(4);
+
     let consensus_handle = tokio::spawn(async move {
         let mut state_rx = cycle_state_rx;
         let mut last_cycle: u64 = 0;
-        let mut last_signature = common::types::BLSSignature(vec![0u8; 64]);
         let first_seen_orders: Arc<tokio::sync::Mutex<HashMap<u64, std::time::Instant>>> = Arc::new(tokio::sync::Mutex::new(HashMap::new()));
         let itp_first_seen: Arc<tokio::sync::Mutex<std::collections::HashMap<ethers::types::U256, std::time::Instant>>> = Arc::new(tokio::sync::Mutex::new(std::collections::HashMap::new()));
 
         // In-flight guards: prevent duplicate spawns of the same processing phase
+        let price_active = Arc::new(AtomicBool::new(false));
         let buy_active = Arc::new(AtomicBool::new(false));
         let sell_active = Arc::new(AtomicBool::new(false));
         let l3_active = Arc::new(AtomicBool::new(false));
         let itp_active = Arc::new(AtomicBool::new(false));
         let rebalance_active = Arc::new(AtomicBool::new(false));
+        let mirror_sync_active = Arc::new(AtomicBool::new(false));
+
+        // Consecutive price failure counter (circuit breaker)
+        let mut consecutive_price_failures: u32 = 0;
 
         loop {
             if consensus_shutdown.load(Ordering::Relaxed) {
@@ -723,132 +757,14 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                     Ok(false) => {} // proceed normally
                 }
 
-                consensus_metrics.record_consensus_start();
                 let start_time = std::time::Instant::now();
 
                 if let Some(ref protocol) = consensus_protocol_for_task {
-                    // Real consensus
-                    // Fetch prices from price fetcher (backend or Bitget depending on config).
-                    // Falls back to on-chain prices if unavailable.
-                    let prices: Vec<(u32, ethers::types::U256)> = if !known_asset_addresses.is_empty() {
-                        match price_fetcher_for_task.fetch_prices(&known_asset_addresses).await {
-                            Ok(p) if !p.is_empty() => {
-                                if current_cycle % 100 == 1 {
-                                    debug!(
-                                        cycle = current_cycle,
-                                        count = p.len(),
-                                        "Using price fetcher prices for consensus"
-                                    );
-                                }
-                                p.iter().enumerate().map(|(i, price)| (i as u32, price.price)).collect()
-                            }
-                            Err(e) => {
-                                warn!(cycle = current_cycle, error = %e, "Price fetch failed, falling back to on-chain");
-                                match consensus_chain_reader.get_prices().await {
-                                    Ok(p) if !p.is_empty() => {
-                                        p.iter().enumerate().map(|(i, price)| (i as u32, price.price)).collect()
-                                    }
-                                    _ => vec![]
-                                }
-                            }
-                            _ => {
-                                // Fetcher returned empty — fall back to on-chain
-                                match consensus_chain_reader.get_prices().await {
-                                    Ok(p) if !p.is_empty() => {
-                                        p.iter().enumerate().map(|(i, price)| (i as u32, price.price)).collect()
-                                    }
-                                    _ => vec![]
-                                }
-                            }
-                        }
-                    } else {
-                        // No known assets in symbol map — use on-chain prices
-                        match consensus_chain_reader.get_prices().await {
-                            Ok(p) if !p.is_empty() => {
-                                p.iter().enumerate().map(|(i, price)| (i as u32, price.price)).collect()
-                            }
-                            _ => vec![]
-                        }
-                    };
-
-                    let orders_result = consensus_chain_reader.get_pending_orders().await;
-
-                    // Update last RPC success timestamp for /ready endpoint
-                    if orders_result.is_ok() {
-                        last_rpc_success_ms_for_task.store(
-                            chrono::Utc::now().timestamp_millis() as u64,
-                            Ordering::Relaxed,
-                        );
-                    }
-
-                    // Get L3 order IDs tracked by bridge pipeline to exclude from regular consensus
-                    let bridge_tracked_l3_ids: Vec<u64> = if let Some(ref orch) = bridge_orchestrator_for_task {
-                        orch.read().await.get_tracked_l3_order_ids().await
-                    } else {
-                        vec![]
-                    };
-
-                    let order_ids: Vec<u64> = match &orders_result {
-                        Ok(orders) => orders.iter()
-                            .map(|o| o.id.as_u64())
-                            .filter(|id| !bridge_tracked_l3_ids.contains(id))
-                            .collect(),
-                        Err(e) => { warn!(cycle = current_cycle, error = %e, "Failed to fetch orders"); vec![] }
-                    };
-
-                    let fills = vec![];
-                    let result = protocol.run_cycle(current_cycle, prices, order_ids, fills, &last_signature).await;
-                    let elapsed_ms = start_time.elapsed().as_millis() as u64;
-
-                    let consensus_succeeded = matches!(
-                        result,
-                        ConsensusResult::Success { .. } | ConsensusResult::ItpCreated { .. }
-                    );
-
-                    match result {
-                        ConsensusResult::Success { ref aggregated_signature, signer_count, cycle_number } => {
-                            info!(cycle = cycle_number, signer_count, elapsed_ms, "Consensus cycle completed");
-                            last_signature = aggregated_signature.clone();
-                            consensus_metrics.record_consensus_result(true, signer_count, elapsed_ms);
-                        }
-                        ConsensusResult::Failed { ref reason, cycle_number } => {
-                            warn!(cycle = cycle_number, reason, elapsed_ms, "Consensus cycle failed");
-                            consensus_metrics.record_consensus_result(false, 0, elapsed_ms);
-                        }
-                        ConsensusResult::Timeout { ref phase, cycle_number } => {
-                            warn!(cycle = cycle_number, phase = %phase, elapsed_ms, "Consensus cycle timed out");
-                            consensus_metrics.record_consensus_result(false, 0, elapsed_ms);
-                        }
-                        ConsensusResult::EmergencyPause { cycle_number } => {
-                            error!(cycle = cycle_number, elapsed_ms, "Emergency pause triggered");
-                            consensus_metrics.record_consensus_result(false, 0, elapsed_ms);
-                        }
-                        ConsensusResult::ItpCreated { nonce, ref aggregated_signature, signer_count } => {
-                            info!(nonce = %nonce, signer_count, elapsed_ms, "ITP creation consensus completed");
-                            last_signature = aggregated_signature.clone();
-                            consensus_metrics.record_consensus_result(true, signer_count, elapsed_ms);
-                        }
-                    }
-
-                    // Skip heavy post-consensus work (ITP creation, NAV computation,
-                    // cross-chain processing) when consensus failed or timed out.
-                    // These operations take 10-15 seconds of chain I/O and block
-                    // the consensus loop, preventing nodes from finding overlapping
-                    // cycles after a restart (where timing offsets exist).
-                    if !consensus_succeeded {
-                        // Still signal CycleManager for fast cycle detection
-                        let has_pending = if let Some(ref orch) = bridge_orchestrator_for_task {
-                            orch.read().await.has_in_flight_orders().await
-                        } else {
-                            false
-                        };
-                        let _ = work_tx_for_task.try_send(has_pending);
-                        continue;
-                    }
 
                     // Compute local NAV from on-chain inventory + Bitget prices.
                     // Used as fallback when data-node backend is unavailable (e.g. no PostgreSQL).
                     // Stays inline because it's fast and the result is needed by spawned tasks.
+                    // MUST be computed BEFORE price task spawn since run_price_update uses it.
                     let local_nav_fallback = {
                         let itp_bytes: [u8; 32] = {
                             let hex = itp_id_for_task.trim_start_matches("0x");
@@ -909,12 +825,36 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         }
                     };
 
+                    // Price update — spawn if not already running
+                    if !price_active.load(Ordering::Acquire) {
+                        price_active.store(true, Ordering::Release);
+                        let flag = price_active.clone();
+                        let p = protocol.clone();
+                        let pf = price_fetcher_for_task.clone();
+                        let cr = consensus_chain_reader.clone();
+                        let l3w: Option<Arc<dyn common::traits::ChainWriter>> = consensus_chain_writer_for_task.clone().map(|w| w as Arc<dyn common::traits::ChainWriter>);
+                        let oracle_addr = nav_oracle_address_for_task;
+                        let itp_addr = itp_token_address_for_task;
+                        let cid = arb_chain_id_for_task;
+                        let addrs = known_asset_addresses.clone();
+                        let cycle = current_cycle;
+                        let metrics = consensus_metrics.clone();
+                        let rpc_ts = last_rpc_success_ms_for_task.clone();
+                        let ptx = price_result_tx.clone();
+                        let nav = local_nav_fallback;
+                        tokio::spawn(async move {
+                            let _guard = FlagGuard(flag);
+                            let success = run_price_update(p, pf, cr, l3w, oracle_addr, itp_addr, cid, addrs, cycle, metrics, rpc_ts, nav).await;
+                            let _ = ptx.send(success).await;
+                        });
+                    }
+
                     // ITP creation — spawn if not already running
-                    if !itp_active.load(Ordering::Relaxed) {
+                    if !itp_active.load(Ordering::Acquire) {
                         if let (Some(ref arb_reader), Some(ref arb_writer), Some(ref itp_config)) =
                             (&arbitrum_reader_for_task, &arbitrum_writer_for_task, &itp_creation_config_for_task)
                         {
-                            itp_active.store(true, Ordering::Relaxed);
+                            itp_active.store(true, Ordering::Release);
                             let flag = itp_active.clone();
                             let p = protocol.clone();
                             let ar = Arc::clone(arb_reader);
@@ -926,18 +866,18 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let ni = node_index_for_task;
                             let nu = consensus_config.num_issuers;
                             tokio::spawn(async move {
+                                let _guard = FlagGuard(flag);
                                 run_itp_creation_phase(p, ar, aw, cw, ic, cycle, ni, nu, fs).await;
-                                flag.store(false, Ordering::Relaxed);
                             });
                         }
                     }
 
                     // Cross-chain BUY — spawn if not already running
-                    if !buy_active.load(Ordering::Relaxed) {
+                    if !buy_active.load(Ordering::Acquire) {
                         if let (Some(ref arb_reader), Some(ref orchestrator), Some(ref arb_writer)) =
                             (&arbitrum_reader_for_task, &bridge_orchestrator_for_task, &arbitrum_writer_for_task)
                         {
-                            buy_active.store(true, Ordering::Relaxed);
+                            buy_active.store(true, Ordering::Release);
                             let flag = buy_active.clone();
                             let p = protocol.clone();
                             let ar = Arc::clone(arb_reader);
@@ -952,20 +892,20 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let ni = node_index_for_task;
                             let nu = consensus_config.num_issuers;
                             tokio::spawn(async move {
+                                let _guard = FlagGuard(flag);
                                 run_cross_chain_processing(
                                     p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt,
                                 ).await;
-                                flag.store(false, Ordering::Relaxed);
                             });
                         }
                     }
 
                     // Cross-chain SELL — spawn if not already running
-                    if !sell_active.load(Ordering::Relaxed) {
+                    if !sell_active.load(Ordering::Acquire) {
                         if let (Some(ref arb_reader), Some(ref orchestrator), Some(ref arb_writer)) =
                             (&arbitrum_reader_for_task, &bridge_orchestrator_for_task, &arbitrum_writer_for_task)
                         {
-                            sell_active.store(true, Ordering::Relaxed);
+                            sell_active.store(true, Ordering::Release);
                             let flag = sell_active.clone();
                             let p = protocol.clone();
                             let ar = Arc::clone(arb_reader);
@@ -980,20 +920,20 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let ni = node_index_for_task;
                             let nu = consensus_config.num_issuers;
                             tokio::spawn(async move {
+                                let _guard = FlagGuard(flag);
                                 run_cross_chain_sell_processing(
                                     p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt,
                                 ).await;
-                                flag.store(false, Ordering::Relaxed);
                             });
                         }
                     }
 
                     // L3-native — spawn if not already running
-                    if !l3_active.load(Ordering::Relaxed) {
+                    if !l3_active.load(Ordering::Acquire) {
                         if let (Some(ref orchestrator), Some(ref protocol)) =
                             (&bridge_orchestrator_for_task, &consensus_protocol_for_task)
                         {
-                            l3_active.store(true, Ordering::Relaxed);
+                            l3_active.store(true, Ordering::Release);
                             let flag = l3_active.clone();
                             let p = Arc::clone(protocol);
                             let orch = Arc::clone(orchestrator);
@@ -1007,20 +947,20 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let ni = node_index_for_task;
                             let nu = consensus_config.num_issuers;
                             tokio::spawn(async move {
+                                let _guard = FlagGuard(flag);
                                 run_l3_native_order_processing(
                                     p, orch, cr, cycle, ni, nu, fso, dnu, iid, nav, qt,
                                 ).await;
-                                flag.store(false, Ordering::Relaxed);
                             });
                         }
                     }
 
                     // Rebalance — spawn on heartbeat if not already running
-                    if is_heartbeat && !rebalance_active.load(Ordering::Relaxed) {
+                    if is_heartbeat && !rebalance_active.load(Ordering::Acquire) {
                         if let (Some(ref orchestrator), Some(ref protocol)) =
                             (&bridge_orchestrator_for_task, &consensus_protocol_for_task)
                         {
-                            rebalance_active.store(true, Ordering::Relaxed);
+                            rebalance_active.store(true, Ordering::Release);
                             let flag = rebalance_active.clone();
                             let p = Arc::clone(protocol);
                             let orch = Arc::clone(orchestrator);
@@ -1032,62 +972,106 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let ni = node_index_for_task;
                             let nu = consensus_config.num_issuers;
                             tokio::spawn(async move {
+                                let _guard = FlagGuard(flag);
                                 run_rebalance_processing(
                                     p, orch, cr, cycle, ni, nu, pf, sm, qt,
                                 ).await;
-                                flag.store(false, Ordering::Relaxed);
                             });
+                        }
+                    }
+
+                    // Mirror registry sync — spawn every 10 cycles if not already running (Step 12)
+                    // Reads L3 nonce + Arb mirror nonce, runs BLS consensus if stale, submits sync tx.
+                    if current_cycle % 10 == 0 && !mirror_sync_active.load(Ordering::Acquire) {
+                        if let Some(ref protocol) = consensus_protocol_for_task {
+                            if let Some(ref arb_writer) = arbitrum_writer_for_task {
+                                if let (Some(mirror_addr), Some(_issuer_reg_addr)) = (mirror_registry_for_task, issuer_registry_for_sync_task) {
+                                    let arb_cid = arb_chain_id_for_task.unwrap_or(42161);
+                                    mirror_sync_active.store(true, Ordering::Release);
+                                    let flag = mirror_sync_active.clone();
+                                    let p = Arc::clone(protocol);
+                                    let aw = Arc::clone(arb_writer);
+                                    let cr = consensus_chain_reader.clone();
+                                    let cycle = current_cycle;
+                                    tokio::spawn(async move {
+                                        let _guard = FlagGuard(flag);
+                                        if let Err(e) = mirror_sync_task(&cr, &aw, &p, mirror_addr, arb_cid, cycle).await {
+                                            warn!(cycle, error = %e, "Mirror registry sync failed");
+                                        }
+                                    });
+                                }
+                            }
                         }
                     }
 
                     // Stale order watchdog: ONLY on heartbeat cycles, check every 50
                     if is_heartbeat && current_cycle % 50 == 0 {
-                        if let Some(ref orchestrator) = bridge_orchestrator_for_task {
-                            let orch = orchestrator.read().await;
-                            let stale_orders = orch.get_stale_orders().await;
-                            if !stale_orders.is_empty() {
-                                warn!(
-                                    cycle = current_cycle,
-                                    count = stale_orders.len(),
-                                    "Stale order watchdog: found stuck orders, resetting for retry"
-                                );
-                                drop(orch);
+                        // Skip watchdog if buy or sell tasks are actively processing
+                        let any_order_task_active = buy_active.load(Ordering::Acquire)
+                            || sell_active.load(Ordering::Acquire);
+                        if !any_order_task_active {
+                            if let Some(ref orchestrator) = bridge_orchestrator_for_task {
                                 let orch = orchestrator.read().await;
-                                for (order_id, status) in &stale_orders {
+                                let stale_orders = orch.get_stale_orders().await;
+                                if !stale_orders.is_empty() {
                                     warn!(
-                                        order_id = %order_id,
-                                        status = ?status,
-                                        "Resetting stale order"
+                                        cycle = current_cycle,
+                                        count = stale_orders.len(),
+                                        "Stale order watchdog: found stuck orders, resetting for retry"
                                     );
-                                    orch.reset_stale_order(order_id).await;
+                                    drop(orch);
+                                    let orch = orchestrator.read().await;
+                                    for (order_id, status) in &stale_orders {
+                                        warn!(
+                                            order_id = %order_id,
+                                            status = ?status,
+                                            "Resetting stale order"
+                                        );
+                                        orch.reset_stale_order(order_id).await;
 
-                                    // For cross-chain orders, also clear from ArbitrumReader dedup
-                                    if matches!(status,
-                                        issuer::bridge::BridgeOrderStatus::Pending |
-                                        issuer::bridge::BridgeOrderStatus::BridgedToL3
-                                    ) {
-                                        if let Some(ref arb_reader) = arbitrum_reader_for_task {
-                                            let chain_id = arb_reader.config().chain_id;
-                                            arb_reader.remove_seen_order(chain_id, *order_id).await;
+                                        // For cross-chain orders, also clear from ArbitrumReader dedup
+                                        if matches!(status,
+                                            issuer::bridge::BridgeOrderStatus::Pending |
+                                            issuer::bridge::BridgeOrderStatus::BridgedToL3
+                                        ) {
+                                            if let Some(ref arb_reader) = arbitrum_reader_for_task {
+                                                let chain_id = arb_reader.config().chain_id;
+                                                arb_reader.remove_seen_order(chain_id, *order_id).await;
+                                            }
                                         }
                                     }
                                 }
-                            }
 
-                            // Periodic watchdog cleanup
-                            if current_cycle % 500 == 0 {
-                                let orch = orchestrator.read().await;
-                                orch.cleanup_watchdog().await;
+                                // Periodic watchdog cleanup
+                                if current_cycle % 500 == 0 {
+                                    let orch = orchestrator.read().await;
+                                    orch.cleanup_watchdog().await;
+                                }
                             }
                         }
                     }
 
-                    // Signal CycleManager: check if any phase is still running or has pending work
-                    let has_spawned = buy_active.load(Ordering::Relaxed)
-                        || sell_active.load(Ordering::Relaxed)
-                        || l3_active.load(Ordering::Relaxed)
-                        || itp_active.load(Ordering::Relaxed)
-                        || rebalance_active.load(Ordering::Relaxed);
+                    // Check price results (non-blocking)
+                    while let Ok(success) = price_result_rx.try_recv() {
+                        if success {
+                            consecutive_price_failures = 0;
+                        } else {
+                            consecutive_price_failures += 1;
+                            if consecutive_price_failures >= 10 {
+                                error!(cycle = current_cycle, consecutive_failures = consecutive_price_failures,
+                                    "CRITICAL: Price consensus stalled for 10+ consecutive cycles");
+                            }
+                        }
+                    }
+
+                    // Signal CycleManager: check if any task is still running or has pending work
+                    let has_spawned = price_active.load(Ordering::Acquire)
+                        || buy_active.load(Ordering::Acquire)
+                        || sell_active.load(Ordering::Acquire)
+                        || l3_active.load(Ordering::Acquire)
+                        || itp_active.load(Ordering::Acquire)
+                        || rebalance_active.load(Ordering::Acquire)
+                        || mirror_sync_active.load(Ordering::Acquire);
                     let has_pending = has_spawned || if let Some(ref orch) = bridge_orchestrator_for_task {
                         orch.read().await.has_in_flight_orders().await
                     } else {
@@ -1253,6 +1237,129 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
 
     info!(node_id, "Issuer node shutting down gracefully");
     Ok(())
+}
+
+/// Price update task — fetches prices, runs price consensus, logs result.
+/// Same pattern as every other task: detect work, propose, settle.
+/// Returns `true` on consensus success, `false` on failure/timeout.
+async fn run_price_update<P, W, K, PF>(
+    protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
+    price_fetcher: Arc<dyn issuer::PriceFetcher>,
+    chain_reader: Arc<dyn common::traits::ChainReader>,
+    l3_writer: Option<Arc<dyn common::traits::ChainWriter>>,
+    oracle_address: Option<ethers::types::Address>,
+    itp_address: Option<ethers::types::Address>,
+    chain_id: Option<u64>,
+    known_assets: Vec<ethers::types::Address>,
+    current_cycle: u64,
+    metrics: Arc<issuer::bootstrap::IssuerMetrics>,
+    rpc_timestamp: Arc<std::sync::atomic::AtomicU64>,
+    nav_fallback: ethers::types::U256,
+) -> bool where
+    P: common::traits::P2PTransport + Send + Sync + 'static,
+    W: common::traits::ChainWriter + Send + Sync + 'static,
+    K: issuer::KeyRegistry + Send + Sync + 'static,
+    PF: issuer::PriceFetcher + Send + Sync + 'static,
+{
+    // 1. Fetch prices
+    let prices: Vec<(u32, ethers::types::U256)> = if !known_assets.is_empty() {
+        match price_fetcher.fetch_prices(&known_assets).await {
+            Ok(p) if !p.is_empty() => {
+                p.iter().enumerate().map(|(i, price)| (i as u32, price.price)).collect()
+            }
+            Ok(_) | Err(_) => {
+                // Fallback to on-chain
+                match chain_reader.get_prices().await {
+                    Ok(p) if !p.is_empty() => {
+                        p.iter().enumerate().map(|(i, price)| (i as u32, price.price)).collect()
+                    }
+                    _ => vec![]
+                }
+            }
+        }
+    } else {
+        match chain_reader.get_prices().await {
+            Ok(p) if !p.is_empty() => {
+                p.iter().enumerate().map(|(i, price)| (i as u32, price.price)).collect()
+            }
+            _ => vec![]
+        }
+    };
+
+    // Compute Morpho-scaled NAV: multiply by 1e18 (NAV is 18 dec, Morpho wants 36 dec for same-dec pair)
+    let morpho_nav = if oracle_address.is_some() {
+        Some(nav_fallback.saturating_mul(ethers::types::U256::exp10(18)))
+    } else {
+        None
+    };
+    let timestamp = chrono::Utc::now().timestamp() as u64;
+
+    // 2. Run price consensus (with optional oracle signing)
+    metrics.record_consensus_start();
+    let start = std::time::Instant::now();
+    let result = protocol.run_price_cycle(
+        current_cycle, prices,
+        morpho_nav, timestamp, oracle_address, itp_address, chain_id,
+    ).await;
+    let elapsed_ms = start.elapsed().as_millis() as u64;
+
+    // 3. Log result and return success/failure
+    match result {
+        issuer::ConsensusResult::Success { signer_count, cycle_number, .. } => {
+            info!(cycle = cycle_number, signer_count, elapsed_ms, "Price update completed");
+            metrics.record_consensus_result(true, signer_count, elapsed_ms);
+            rpc_timestamp.store(
+                chrono::Utc::now().timestamp_millis() as u64,
+                std::sync::atomic::Ordering::Relaxed,
+            );
+            true
+        }
+        issuer::ConsensusResult::Failed { ref reason, cycle_number } => {
+            warn!(cycle = cycle_number, reason, elapsed_ms, "Price update failed");
+            metrics.record_consensus_result(false, 0, elapsed_ms);
+            false
+        }
+        issuer::ConsensusResult::Timeout { ref phase, cycle_number } => {
+            warn!(cycle = cycle_number, phase = %phase, elapsed_ms, "Price update timed out");
+            metrics.record_consensus_result(false, 0, elapsed_ms);
+            false
+        }
+        issuer::ConsensusResult::EmergencyPause { cycle_number } => {
+            warn!(cycle = cycle_number, elapsed_ms, "Price update triggered pause (will retry next cycle)");
+            metrics.record_consensus_result(false, 0, elapsed_ms);
+            false
+        }
+        issuer::ConsensusResult::ItpCreated { .. } => { true } // won't happen for price cycle
+        issuer::ConsensusResult::PriceAgreed { ref aggregated_signature, signer_count, signers_bitmask, cycle_number } => {
+            info!(cycle = cycle_number, signer_count, elapsed_ms, "Price consensus agreed");
+            metrics.record_consensus_result(true, signer_count, elapsed_ms);
+            rpc_timestamp.store(
+                chrono::Utc::now().timestamp_millis() as u64,
+                std::sync::atomic::Ordering::Relaxed,
+            );
+
+            // Submit to oracle on L3 if configured and we have a real signature
+            if let (Some(ref writer), Some(oracle_addr), Some(morpho_price)) = (&l3_writer, oracle_address, morpho_nav) {
+                if signer_count > 0 {
+                    let ref_nonce = protocol.registry_nonce();
+                    let calldata = issuer::build_update_price_calldata(
+                        morpho_price,
+                        timestamp,
+                        cycle_number,
+                        &aggregated_signature.0,
+                        ref_nonce,
+                        signers_bitmask,
+                    );
+                    match writer.send_transaction(oracle_addr, calldata, ethers::types::U256::zero()).await {
+                        Ok(tx) => info!(cycle = cycle_number, tx = %tx, "Oracle price updated on L3"),
+                        Err(e) => warn!(cycle = cycle_number, error = %e, "Oracle price update on L3 failed"),
+                    }
+                }
+            }
+
+            true
+        }
+    }
 }
 
 async fn run_itp_creation_phase<P, W, K, PF>(
@@ -1910,8 +2017,8 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                             ar.mark_sell_order_processed(cid, sell_order.order_id).await;
                         }
                         Err(e) => {
-                            warn!(order_id = %sell_order.order_id, error = %e, am_leader, "Submit sell order consensus failed");
-                            ar.mark_sell_order_processed(cid, sell_order.order_id).await;
+                            warn!(order_id = %sell_order.order_id, error = %e, am_leader, "Submit sell order consensus failed — will retry");
+                            ar.increment_sell_retry_count(cid, sell_order.order_id).await;
                         }
                     }
                 }));
@@ -2961,6 +3068,116 @@ fn calculate_bridge_leader_with_failover(
     node_index == leader_idx
 }
 
+/// Mirror registry sync task (Step 12).
+///
+/// Reads L3 registry nonce and Arb mirror nonce, runs BLS consensus if stale,
+/// and submits the sync transaction to Arbitrum.
+async fn mirror_sync_task<P, W, K, PF>(
+    chain_reader: &Arc<dyn common::traits::ChainReader>,
+    arb_writer: &Arc<issuer::ArbitrumChainWriter>,
+    protocol: &Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
+    mirror_addr: ethers::types::Address,
+    arb_chain_id: u64,
+    cycle: u64,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>>
+where
+    P: common::traits::P2PTransport + Send + Sync + 'static,
+    W: common::traits::ChainWriter + Send + Sync + 'static,
+    K: issuer::KeyRegistry + Send + Sync + 'static,
+    PF: issuer::PriceFetcher + Send + Sync + 'static,
+{
+    use ethers::types::U256;
+
+    // Step 1: Read L3 registry nonce (lastSnapshotNonce)
+    let l3_nonce = chain_reader.get_registry_nonce().await
+        .map_err(|e| format!("Failed to read L3 registry nonce: {}", e))?;
+
+    // Step 2: Read Arb mirror registryNonce via static_call
+    // Selector for registryNonce() = keccak256("registryNonce()")[:4]
+    let selector = &ethers::utils::keccak256(b"registryNonce()")[..4];
+    let mirror_nonce_bytes = arb_writer.static_call(mirror_addr, selector.to_vec()).await
+        .map_err(|e| format!("Failed to read mirror registryNonce: {}", e))?;
+    let mirror_nonce = if mirror_nonce_bytes.len() >= 32 {
+        U256::from_big_endian(&mirror_nonce_bytes[..32]).as_u64()
+    } else {
+        0u64
+    };
+
+    // Step 3: Compare — only sync if L3 is ahead
+    if l3_nonce <= mirror_nonce {
+        debug!(
+            cycle,
+            l3_nonce,
+            mirror_nonce,
+            "Mirror registry in sync, skipping"
+        );
+        return Ok(());
+    }
+
+    info!(
+        cycle,
+        l3_nonce,
+        mirror_nonce,
+        "Mirror registry stale, initiating BLS consensus sync"
+    );
+
+    // Step 4: Read active issuers from L3
+    let issuers = chain_reader.get_issuer_registry().await
+        .map_err(|e| format!("Failed to fetch L3 issuer registry: {}", e))?;
+
+    let active_issuers: Vec<_> = issuers.iter().filter(|i| i.is_active()).collect();
+    if active_issuers.is_empty() {
+        return Err("No active issuers on L3".into());
+    }
+
+    // Compute active_bitmask (bit i set if issuer with on-chain id i is active)
+    let mut active_bitmask = U256::zero();
+    for issuer in &active_issuers {
+        active_bitmask = active_bitmask | (U256::one() << issuer.id as usize);
+    }
+
+    let active_count = active_issuers.len() as u64;
+    let threshold = issuer::registry_sync::compute_threshold(active_count);
+
+    // Extract pubkeys and IDs (sorted by ID for deterministic ordering)
+    let mut sorted_issuers: Vec<_> = active_issuers.iter().collect();
+    sorted_issuers.sort_by_key(|i| i.id);
+
+    let issuer_pubkeys: Vec<Vec<u8>> = sorted_issuers.iter().map(|i| i.bls_pubkey.to_vec()).collect();
+    let issuer_ids: Vec<u64> = sorted_issuers.iter().map(|i| i.id).collect();
+
+    // reference_nonce = the L3 lastSnapshotNonce (for BLS verification via historical snapshot)
+    let reference_nonce = protocol.registry_nonce();
+
+    // Step 5: Run BLS consensus — returns calldata if threshold reached
+    let calldata = protocol.run_mirror_sync_consensus(
+        l3_nonce,
+        issuer_pubkeys,
+        issuer_ids,
+        active_bitmask,
+        active_count,
+        threshold,
+        arb_chain_id,
+        mirror_addr,
+        reference_nonce,
+    ).await
+        .map_err(|e| format!("Mirror sync BLS consensus failed: {}", e))?;
+
+    // Step 6: Submit sync transaction to Arbitrum
+    let tx_hash = arb_writer.send_transaction(mirror_addr, calldata, U256::zero()).await
+        .map_err(|e| format!("Mirror sync tx submission failed: {}", e))?;
+
+    info!(
+        cycle,
+        l3_nonce,
+        mirror_nonce,
+        ?tx_hash,
+        "Mirror registry sync tx submitted"
+    );
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
@@ -2989,6 +3206,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             args.arbitration_data_node_url.clone(),
         )
         .with_data_node_token(args.data_node_token.clone())
+        .with_nav_oracle(args.nav_oracle.clone(), args.itp_token.clone())
+        .with_mirror_registry(args.mirror_registry.clone())
         .with_vision(if args.vision_enabled {
             let mut vision_cfg = issuer::vision::config::VisionConfig {
                 enabled: true,
@@ -3175,6 +3394,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Save Vision config before config is consumed
     let vision_config = config.vision.clone();
+
+    // Parse oracle + mirror configs before config is consumed by bootstrap
+    let nav_oracle_address: Option<ethers::types::Address> = config.nav_oracle_address.as_ref().and_then(|s| s.parse().ok());
+    let itp_token_address: Option<ethers::types::Address> = config.itp_token_address.as_ref().and_then(|s| s.parse().ok());
+    let arb_chain_id: Option<u64> = config.effective_arbitrum_chain_id().ok();
+    let mirror_registry_address: Option<ethers::types::Address> = config.mirror_registry_address.as_ref().and_then(|s| s.parse().ok());
+    let issuer_registry_for_sync: Option<ethers::types::Address> = config.issuer_registry_address.as_ref().and_then(|s| s.parse().ok());
 
     let bootstrap = IssuerBootstrap::new(config, params);
     let mut components = bootstrap.build(shutdown).await.map_err(|e| {
@@ -3543,7 +3769,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr, vision_api_router).await {
+    if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr, vision_api_router, nav_oracle_address, itp_token_address, arb_chain_id, mirror_registry_address, issuer_registry_for_sync).await {
         error!(code = "E008", error = %e, "Issuer node error");
         std::process::exit(1);
     }

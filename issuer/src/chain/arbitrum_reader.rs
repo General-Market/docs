@@ -24,6 +24,7 @@ use tokio::sync::RwLock;
 use tracing::{debug, warn, info};
 
 use crate::bridge::{BridgeError, CrossChainOrderReader};
+use crate::consensus::ConsensusError;
 use crate::chain::events::{
     CrossChainOrder, CrossChainOrderEvent, CrossChainOrderParseError,
     CrossChainSellOrderEvent, cross_chain_sell_order_topic,
@@ -1268,12 +1269,14 @@ impl<M: Middleware + Send + Sync + 'static> CrossChainOrderReader for ArbitrumCh
     async fn get_cross_chain_order(&self, order_id: U256) -> Result<CrossChainOrderData, BridgeError> {
         match self.get_cross_chain_order(order_id).await {
             Ok(Some(data)) => Ok(data),
-            Ok(None) => Err(BridgeError::ChainReaderError {
+            Ok(None) => Err(ConsensusError::ChainReaderError {
                 reason: format!("Order {} not found on-chain (user is zero address)", order_id),
-            }),
-            Err(e) => Err(BridgeError::ChainReaderError {
+            }
+            .into()),
+            Err(e) => Err(ConsensusError::ChainReaderError {
                 reason: format!("Failed to fetch order {}: {}", order_id, e),
-            }),
+            }
+            .into()),
         }
     }
 }

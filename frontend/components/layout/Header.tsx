@@ -41,7 +41,7 @@ export function Header() {
   const authenticated = isConnected
   const { connect, connectors } = useConnect()
   const { disconnect } = useDisconnect()
-  const injectedConnector = connectors.find(c => c.id === 'injected')
+  const injectedConnector = connectors.find(c => c.type === 'injected') || connectors[0]
   const chainId = useChainId()
   const { switchChain, isPending: isSwitching } = useSwitchChain()
   const isWrongNetwork = isConnected && chainId !== indexL3.id

@@ -2,36 +2,25 @@
 
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
-import { useAccount } from 'wagmi'
-import { formatUnits } from 'viem'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { useBatches, type BatchInfo } from '@/hooks/vision/useBatches'
-import { useVisionBalance } from '@/hooks/vision/useVisionBalance'
-import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 import { BatchCard } from './BatchCard'
 import { ExpandedBatch } from './ExpandedBatch'
 import { CreateBatchModal } from './CreateBatchModal'
-import { BalanceDepositModal } from './BalanceDepositModal'
-import { BalanceWithdrawModal } from './BalanceWithdrawModal'
+import { VisionBalanceBar } from './VisionBalanceBar'
 import { MyPositions } from './MyPositions'
 import { VisionLeaderboard } from './VisionLeaderboard'
 
 export function VisionPage() {
   const t = useTranslations('vision')
   const { capture } = usePostHogTracker()
-  const { isConnected } = useAccount()
   const { data: batches, isLoading } = useBatches()
-  const { realBalance, virtualBalance, total, isLoading: balanceLoading } = useVisionBalance()
   const [expandedBatchId, setExpandedBatchId] = useState<number | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [showDepositModal, setShowDepositModal] = useState(false)
-  const [showWithdrawModal, setShowWithdrawModal] = useState(false)
 
   useEffect(() => {
     capture('vision_page_viewed')
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const fmtBal = (v: bigint) => parseFloat(formatUnits(v, VISION_USDC_DECIMALS)).toFixed(2)
 
   return (
     <div className="flex-1">
@@ -39,33 +28,7 @@ export function VisionPage() {
       <section id="vision">
         <div className="px-6 lg:px-12">
           <div className="max-w-site mx-auto py-8">
-            {/* Balance bar (visible when wallet connected) */}
-            {isConnected && !balanceLoading && total > 0n && (
-              <div className="mb-6 flex items-center justify-between bg-card border border-border-light rounded-card px-5 py-3">
-                <div>
-                  <p className="text-sm font-bold text-text-primary">
-                    Balance: {fmtBal(total)} USDC
-                  </p>
-                  <p className="text-[10px] text-text-muted font-mono">
-                    L3: {fmtBal(realBalance)}  &middot;  Arb-backed: {fmtBal(virtualBalance)}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setShowDepositModal(true)}
-                    className="px-3 py-1.5 bg-color-up text-white text-xs font-bold rounded-card hover:opacity-90 transition-opacity"
-                  >
-                    DEPOSIT
-                  </button>
-                  <button
-                    onClick={() => setShowWithdrawModal(true)}
-                    className="px-3 py-1.5 bg-muted text-text-secondary text-xs font-bold rounded-card border border-border-light hover:bg-surface transition-colors"
-                  >
-                    WITHDRAW
-                  </button>
-                </div>
-              </div>
-            )}
+            <VisionBalanceBar />
 
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
@@ -146,16 +109,6 @@ export function VisionPage() {
       {/* Create Batch Modal */}
       {showCreateModal && (
         <CreateBatchModal onClose={() => setShowCreateModal(false)} />
-      )}
-
-      {/* Balance Deposit Modal */}
-      {showDepositModal && (
-        <BalanceDepositModal onClose={() => setShowDepositModal(false)} />
-      )}
-
-      {/* Balance Withdraw Modal */}
-      {showWithdrawModal && (
-        <BalanceWithdrawModal onClose={() => setShowWithdrawModal(false)} />
       )}
     </div>
   )

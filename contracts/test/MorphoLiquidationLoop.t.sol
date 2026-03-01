@@ -27,13 +27,27 @@ contract MorphoLiquidationLoopTest is MorphoTestHelper {
     // ============ HELPERS ============
 
     /// @notice Update oracle NAV price with real BLS signature
-    /// @param newPrice New oracle price (Morpho-scaled, e.g. 0.8e24 for 0.8 USDC per ITP)
-    function _updateOraclePrice(uint256 newPrice) internal {
-        bytes32 msgHash = keccak256(abi.encodePacked(address(itp), newPrice, block.timestamp, _nextCycleNumber));
-        bytes memory sig = signWithTestIssuers(msgHash);
-        // 0x07 = bitmap indicating signers 0,1,2 participated (binary 0b111 = 7)
-        oracle.updatePrice(newPrice, block.timestamp, _nextCycleNumber, sig, 0x07);
-        _nextCycleNumber++;
+    /// @dev Steps in <=10% increments to satisfy MAX_DEVIATION_BPS (1000 bps = 10%)
+    /// @param targetPrice Target oracle price (Morpho-scaled, e.g. 0.8e24 for 0.8 USDC per ITP)
+    function _updateOraclePrice(uint256 targetPrice) internal {
+        uint256 current = oracle.currentPrice();
+        // Step in <=10% increments
+        while (current != targetPrice) {
+            uint256 next;
+            if (targetPrice < current) {
+                next = current * 9000 / 10000; // 90% of current
+                if (next < targetPrice) next = targetPrice;
+            } else {
+                next = current * 11000 / 10000; // 110% of current
+                if (next > targetPrice) next = targetPrice;
+            }
+            bytes32 msgHash = keccak256(abi.encode(block.chainid, address(oracle), address(itp), next, block.timestamp, _nextCycleNumber));
+            bytes memory sig = signWithTestIssuers(msgHash);
+            // 0x07 = bitmap indicating signers 0,1,2 participated (binary 0b111 = 7)
+            oracle.updatePrice(next, block.timestamp, _nextCycleNumber, sig, 1, 0x07);
+            _nextCycleNumber++;
+            current = next;
+        }
     }
 
     /// @notice Check if a position is healthy (health factor >= 1.0)
@@ -510,7 +524,7 @@ contract MorphoLiquidationLoopTest is MorphoTestHelper {
     function test_priceDropToZero_prevented() public {
         vm.expectRevert(abi.encodeWithSignature("E095_InvalidOraclePrice()"));
         bytes memory mockSig = new bytes(64);
-        oracle.updatePrice(0, block.timestamp, _nextCycleNumber, mockSig, 0x07);
+        oracle.updatePrice(0, block.timestamp, _nextCycleNumber, mockSig, 1, 0x07);
     }
 
     // ============ TASK 7: SEED USDC APPROVAL AND TRACKING (AC #5) ============

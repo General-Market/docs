@@ -16,6 +16,9 @@
 use ethers::types::{Address, H256, U256};
 use tracing::debug;
 
+use super::ConsensusError;
+use crate::abi::AbiEncoder;
+
 /// Build the message hash for rebalance request BLS signing
 /// (must match BridgeProxy.completeRebalance exactly)
 ///
@@ -48,32 +51,7 @@ pub fn build_rebalance_request_hash(
     // - weights_hash: 32 bytes (bytes32)
     // Total: 168 bytes
 
-    let mut data = Vec::with_capacity(168);
-
-    // chain_id as uint256 (32 bytes, big endian)
-    let mut chain_id_bytes = [0u8; 32];
-    U256::from(chain_id).to_big_endian(&mut chain_id_bytes);
-    data.extend_from_slice(&chain_id_bytes);
-
-    // bridge_proxy as address (20 bytes, packed)
-    data.extend_from_slice(bridge_proxy.as_bytes());
-
-    // deployer as address (20 bytes, packed)
-    data.extend_from_slice(deployer.as_bytes());
-
-    // nonce as uint256 (32 bytes, big endian)
-    let mut nonce_bytes = [0u8; 32];
-    nonce.to_big_endian(&mut nonce_bytes);
-    data.extend_from_slice(&nonce_bytes);
-
-    // itp_id as bytes32 (32 bytes)
-    data.extend_from_slice(itp_id.as_bytes());
-
-    // weights_hash as bytes32 (32 bytes)
-    data.extend_from_slice(weights_hash.as_bytes());
-
     debug!(
-        data_len = data.len(),
         chain_id = chain_id,
         bridge_proxy = ?bridge_proxy,
         deployer = ?deployer,
@@ -83,19 +61,20 @@ pub fn build_rebalance_request_hash(
         "Building rebalance request message hash"
     );
 
-    H256::from_slice(&ethers::utils::keccak256(&data))
+    AbiEncoder::with_capacity(168)
+        .u256(U256::from(chain_id))
+        .address_packed(bridge_proxy)
+        .address_packed(deployer)
+        .u256(nonce)
+        .h256(itp_id)
+        .h256(weights_hash)
+        .keccak256()
 }
 
 /// Compute weights hash: keccak256(abi.encodePacked(weights))
-/// Reuses the same logic as ITP creation weights hash
+/// Delegates to the shared implementation in crate::abi.
 pub fn compute_rebalance_weights_hash(weights: &[U256]) -> H256 {
-    let mut data = Vec::with_capacity(weights.len() * 32);
-    for w in weights {
-        let mut bytes = [0u8; 32];
-        w.to_big_endian(&mut bytes);
-        data.extend_from_slice(&bytes);
-    }
-    H256::from_slice(&ethers::utils::keccak256(&data))
+    crate::abi::compute_weights_hash(weights)
 }
 
 /// Configuration for rebalance request handler
@@ -143,23 +122,8 @@ pub struct RebalanceRequestResult {
 /// Errors for rebalance request operations
 #[derive(Debug, thiserror::Error)]
 pub enum RebalanceRequestError {
-    #[error("insufficient signatures: got {got}, need {need}")]
-    InsufficientSignatures { got: usize, need: usize },
-
-    #[error("proposal timeout: no response within {timeout_ms}ms")]
-    ProposalTimeout { timeout_ms: u64 },
-
-    #[error("signing timeout: {received} signatures within {timeout_ms}ms")]
-    SigningTimeout { received: usize, timeout_ms: u64 },
-
-    #[error("chain reader error: {reason}")]
-    ChainReaderError { reason: String },
-
-    #[error("chain writer error: {reason}")]
-    ChainWriterError { reason: String },
-
-    #[error("BLS signing error: {reason}")]
-    BlsSigningError { reason: String },
+    #[error(transparent)]
+    Consensus(#[from] ConsensusError),
 }
 
 #[cfg(test)]

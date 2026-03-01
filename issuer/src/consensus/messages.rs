@@ -848,6 +848,115 @@ impl ConsensusMessageHandler {
                     signature,
                 }
             }
+            // NAV oracle price update (Arb ITPNAVOracle)
+            P2PMessage::NavOracleProposal {
+                leader_id,
+                itp_address,
+                oracle_address,
+                nav_price,
+                timestamp,
+                cycle_number,
+                chain_id,
+                reference_nonce,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    ?itp_address,
+                    nav_price = %nav_price,
+                    cycle_number,
+                    "Received NavOracleProposal"
+                );
+                MessageHandleResult::ProcessNavOracleProposal {
+                    from,
+                    leader_id,
+                    itp_address,
+                    oracle_address,
+                    nav_price,
+                    timestamp,
+                    cycle_number,
+                    chain_id,
+                    reference_nonce,
+                    leader_signature,
+                }
+            }
+            P2PMessage::NavOracleSign {
+                signer_id,
+                signer_index,
+                itp_address,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    ?itp_address,
+                    "Received NavOracleSign"
+                );
+                MessageHandleResult::ProcessNavOracleSign {
+                    from: signer_id,
+                    signer_index,
+                    itp_address,
+                    signature,
+                }
+            }
+            // MirrorIssuerRegistry sync (Step 12)
+            P2PMessage::MirrorSyncProposal {
+                leader_id,
+                nonce,
+                issuer_pubkeys,
+                issuer_ids,
+                active_bitmask,
+                active_count,
+                threshold,
+                chain_id,
+                mirror_address,
+                reference_nonce,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    nonce,
+                    active_count,
+                    "Received MirrorSyncProposal"
+                );
+                MessageHandleResult::ProcessMirrorSyncProposal {
+                    from,
+                    leader_id,
+                    nonce,
+                    issuer_pubkeys,
+                    issuer_ids,
+                    active_bitmask,
+                    active_count,
+                    threshold,
+                    chain_id,
+                    mirror_address,
+                    reference_nonce,
+                    leader_signature,
+                }
+            }
+            P2PMessage::MirrorSyncSign {
+                signer_id,
+                signer_index,
+                nonce,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    nonce,
+                    "Received MirrorSyncSign"
+                );
+                MessageHandleResult::ProcessMirrorSyncSign {
+                    from: signer_id,
+                    signer_index,
+                    nonce,
+                    signature,
+                }
+            }
             // AA keeper arbitration messages — forward to arbitration subsystem
             P2PMessage::ArbitrationPriceProposal { .. }
             | P2PMessage::ArbitrationPriceVote { .. }
@@ -1427,6 +1536,48 @@ pub enum MessageHandleResult {
         itp_id: H256,
         signature: P2PBLSSignature,
     },
+    /// Process a NAV oracle proposal from the leader (Arb ITPNAVOracle)
+    ProcessNavOracleProposal {
+        from: PeerId,
+        leader_id: PeerId,
+        itp_address: Address,
+        oracle_address: Address,
+        nav_price: U256,
+        timestamp: u64,
+        cycle_number: u64,
+        chain_id: u64,
+        reference_nonce: u64,
+        leader_signature: P2PBLSSignature,
+    },
+    /// Process a NAV oracle signature from a follower (Arb ITPNAVOracle)
+    ProcessNavOracleSign {
+        from: PeerId,
+        signer_index: u8,
+        itp_address: Address,
+        signature: P2PBLSSignature,
+    },
+    /// Process a MirrorIssuerRegistry sync proposal from the leader (Step 12)
+    ProcessMirrorSyncProposal {
+        from: PeerId,
+        leader_id: PeerId,
+        nonce: u64,
+        issuer_pubkeys: Vec<Vec<u8>>,
+        issuer_ids: Vec<u64>,
+        active_bitmask: U256,
+        active_count: u64,
+        threshold: u64,
+        chain_id: u64,
+        mirror_address: Address,
+        reference_nonce: u64,
+        leader_signature: P2PBLSSignature,
+    },
+    /// Process a MirrorIssuerRegistry sync signature from a follower (Step 12)
+    ProcessMirrorSyncSign {
+        from: PeerId,
+        signer_index: u8,
+        nonce: u64,
+        signature: P2PBLSSignature,
+    },
     /// Forward arbitration message to arbitration subsystem
     ForwardToArbitration(P2PMessage),
 }
@@ -1458,6 +1609,8 @@ impl MessageHandleResult {
             Self::ProcessMintBridgedSharesProposal { from, .. } => Some(*from),
             Self::ProcessCompleteBuyOrderProposal { from, .. } => Some(*from),
             Self::ProcessSetItpNavProposal { from, .. } => Some(*from),
+            Self::ProcessNavOracleProposal { from, .. } => Some(*from),
+            Self::ProcessMirrorSyncProposal { from, .. } => Some(*from),
             _ => None,
         }
     }

@@ -74,7 +74,7 @@
     "esc": "ESC"
   },
   "wallet": {
-    "login": "Login on Base",
+    "login": "Connect Wallet",
     "connecting": "Connecting...",
     "switching": "Switching...",
     "switch_network": "Switch to Index Arbitrum",

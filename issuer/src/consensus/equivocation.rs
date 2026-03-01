@@ -12,16 +12,18 @@ use common::types::{P2PMessage, PeerId};
 
 use super::state::ConsensusPhase;
 
-/// Key type for equivocation tracking: (peer_id, cycle_number, phase, msg_variant_tag).
+/// Key type for equivocation tracking: (peer_id, cycle_number, phase, msg_variant_tag, round_type).
 /// The variant tag ensures different message types within the same phase
 /// (e.g. BatchSign vs ConfirmBatchSign during BatchSigning) are tracked independently.
-type DetectorKey = (PeerId, u64, ConsensusPhase, &'static str);
+/// The round_type ("price" vs "bridge") ensures price-only and bridge consensus
+/// rounds don't false-positive on each other when running concurrently.
+type DetectorKey = (PeerId, u64, ConsensusPhase, &'static str, &'static str);
 
 /// Tracks the first message content hash seen from each peer per
-/// (cycle_number, phase, msg_variant). If a second, *different* hash arrives for
+/// (cycle_number, phase, msg_variant, round_type). If a second, *different* hash arrives for
 /// the same key, an equivocation is flagged.
 pub struct EquivocationDetector {
-    /// Key: (peer_id, cycle_number, phase, variant_tag)
+    /// Key: (peer_id, cycle_number, phase, variant_tag, round_type)
     /// Value: sha256 hash of first message content
     seen: DashMap<DetectorKey, [u8; 32]>,
 }
@@ -40,9 +42,10 @@ impl EquivocationDetector {
         cycle: u64,
         phase: ConsensusPhase,
         variant_tag: &'static str,
+        round_type: &'static str,
         content_hash: [u8; 32],
     ) -> bool {
-        let key = (*peer, cycle, phase, variant_tag);
+        let key = (*peer, cycle, phase, variant_tag, round_type);
         match self.seen.entry(key) {
             dashmap::mapref::entry::Entry::Vacant(e) => {
                 e.insert(content_hash);
@@ -56,7 +59,7 @@ impl EquivocationDetector {
     /// up to 2 prior cycles to handle in-flight messages.
     pub fn gc(&self, current_cycle: u64) {
         self.seen
-            .retain(|&(_, cycle, _, _), _| cycle >= current_cycle.saturating_sub(2));
+            .retain(|&(_, cycle, _, _, _), _| cycle >= current_cycle.saturating_sub(2));
     }
 
     /// Size-based GC: if entries exceed `max_entries`, drop the oldest
@@ -64,7 +67,7 @@ impl EquivocationDetector {
     pub fn gc_by_size(&self, max_entries: usize) {
         if self.seen.len() > max_entries {
             let min_cycle = self.seen.iter().map(|r| r.key().1).min().unwrap_or(0);
-            self.seen.retain(|&(_, cycle, _, _), _| cycle > min_cycle);
+            self.seen.retain(|&(_, cycle, _, _, _), _| cycle > min_cycle);
         }
     }
 
@@ -845,6 +848,41 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update(buf);
             h.update(outcome_hash.as_bytes());
         }
+        // ── NAV oracle (ITPNAVOracle on Arb) ──────────────────────
+        P2PMessage::NavOracleProposal {
+            leader_id,
+            itp_address,
+            oracle_address,
+            nav_price,
+            timestamp,
+            cycle_number,
+            chain_id,
+            reference_nonce: _, // exclude from equivocation hash
+            leader_signature: _, // exclude BLS sig
+        } => {
+            h.update(b"NavOracleProposal");
+            h.update(leader_id);
+            h.update(itp_address.as_bytes());
+            h.update(oracle_address.as_bytes());
+            let mut buf = [0u8; 32];
+            nav_price.to_little_endian(&mut buf);
+            h.update(buf);
+            h.update(timestamp.to_le_bytes());
+            h.update(cycle_number.to_le_bytes());
+            h.update(chain_id.to_le_bytes());
+        }
+        P2PMessage::NavOracleSign {
+            signer_id,
+            signer_index,
+            itp_address,
+            signature: _, // exclude BLS sig
+        } => {
+            h.update(b"NavOracleSign");
+            h.update(signer_id);
+            h.update([*signer_index]);
+            h.update(itp_address.as_bytes());
+        }
+
         // Batch config orchestrator (independent from settlement cycle)
         P2PMessage::BatchConfigProposal {
             round,
@@ -866,6 +904,49 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update(round.to_le_bytes());
             h.update(composite_hash.as_bytes());
             h.update([*accepted as u8]);
+        }
+
+        // ── MirrorIssuerRegistry sync (Step 12) ────────────────
+        P2PMessage::MirrorSyncProposal {
+            leader_id,
+            nonce,
+            issuer_pubkeys,
+            issuer_ids,
+            active_bitmask,
+            active_count,
+            threshold,
+            chain_id,
+            mirror_address,
+            reference_nonce: _, // exclude from equivocation hash
+            leader_signature: _, // exclude BLS sig
+        } => {
+            h.update(b"MirrorSyncProposal");
+            h.update(leader_id);
+            h.update(nonce.to_le_bytes());
+            for pk in issuer_pubkeys {
+                h.update(pk);
+            }
+            for id in issuer_ids {
+                h.update(id.to_le_bytes());
+            }
+            let mut buf = [0u8; 32];
+            active_bitmask.to_little_endian(&mut buf);
+            h.update(buf);
+            h.update(active_count.to_le_bytes());
+            h.update(threshold.to_le_bytes());
+            h.update(chain_id.to_le_bytes());
+            h.update(mirror_address.as_bytes());
+        }
+        P2PMessage::MirrorSyncSign {
+            signer_id,
+            signer_index,
+            nonce,
+            signature: _, // exclude BLS sig
+        } => {
+            h.update(b"MirrorSyncSign");
+            h.update(signer_id);
+            h.update([*signer_index]);
+            h.update(nonce.to_le_bytes());
         }
     }
 
@@ -918,6 +999,8 @@ pub fn msg_variant_tag(msg: &P2PMessage) -> &'static str {
         P2PMessage::CompleteBuyOrderSign { .. } => "CompleteBuyOrderSign",
         P2PMessage::SetItpNavProposal { .. } => "SetItpNavProposal",
         P2PMessage::SetItpNavSign { .. } => "SetItpNavSign",
+        P2PMessage::NavOracleProposal { .. } => "NavOracleProposal",
+        P2PMessage::NavOracleSign { .. } => "NavOracleSign",
         P2PMessage::Heartbeat { .. } => "Heartbeat",
         P2PMessage::KickVote { .. } => "KickVote",
         P2PMessage::ArbitrationPriceProposal { .. } => "ArbitrationPriceProposal",
@@ -925,6 +1008,8 @@ pub fn msg_variant_tag(msg: &P2PMessage) -> &'static str {
         P2PMessage::ArbitrationResolutionSign { .. } => "ArbitrationResolutionSign",
         P2PMessage::BatchConfigProposal { .. } => "BatchConfigProposal",
         P2PMessage::BatchConfigSign { .. } => "BatchConfigSign",
+        P2PMessage::MirrorSyncProposal { .. } => "MirrorSyncProposal",
+        P2PMessage::MirrorSyncSign { .. } => "MirrorSyncSign",
     }
 }
 
@@ -953,9 +1038,11 @@ pub fn is_vote_or_sign(msg: &P2PMessage) -> bool {
             | P2PMessage::MintBridgedSharesSign { .. }
             | P2PMessage::CompleteBuyOrderSign { .. }
             | P2PMessage::SetItpNavSign { .. }
+            | P2PMessage::NavOracleSign { .. }
             | P2PMessage::ArbitrationPriceVote { .. }
             | P2PMessage::ArbitrationResolutionSign { .. }
             | P2PMessage::BatchConfigSign { .. }
+            | P2PMessage::MirrorSyncSign { .. }
     )
 }
 
@@ -978,9 +1065,9 @@ mod tests {
         };
 
         let hash = content_hash(&msg);
-        assert!(!det.check(&peer, 10, ConsensusPhase::PriceVoting, "PriceVote", hash));
+        assert!(!det.check(&peer, 10, ConsensusPhase::PriceVoting, "PriceVote", "price", hash));
         // Same message again: not equivocation
-        assert!(!det.check(&peer, 10, ConsensusPhase::PriceVoting, "PriceVote", hash));
+        assert!(!det.check(&peer, 10, ConsensusPhase::PriceVoting, "PriceVote", "price", hash));
     }
 
     #[test]
@@ -1005,9 +1092,9 @@ mod tests {
         let h2 = content_hash(&msg2);
         assert_ne!(h1, h2);
 
-        assert!(!det.check(&peer, 10, ConsensusPhase::PriceVoting, "PriceVote", h1));
+        assert!(!det.check(&peer, 10, ConsensusPhase::PriceVoting, "PriceVote", "price", h1));
         // Second different hash → equivocation
-        assert!(det.check(&peer, 10, ConsensusPhase::PriceVoting, "PriceVote", h2));
+        assert!(det.check(&peer, 10, ConsensusPhase::PriceVoting, "PriceVote", "price", h2));
     }
 
     #[test]
@@ -1018,9 +1105,9 @@ mod tests {
         let hash_a = [0xAAu8; 32];
         let hash_b = [0xBBu8; 32];
 
-        assert!(!det.check(&peer, 10, ConsensusPhase::PriceVoting, "PriceVote", hash_a));
+        assert!(!det.check(&peer, 10, ConsensusPhase::PriceVoting, "PriceVote", "price", hash_a));
         // Different cycle → independent, not equivocation
-        assert!(!det.check(&peer, 11, ConsensusPhase::PriceVoting, "PriceVote", hash_b));
+        assert!(!det.check(&peer, 11, ConsensusPhase::PriceVoting, "PriceVote", "price", hash_b));
     }
 
     #[test]
@@ -1028,8 +1115,8 @@ mod tests {
         let det = EquivocationDetector::new();
         let peer = [4u8; 32];
 
-        det.check(&peer, 5, ConsensusPhase::PriceVoting, "PriceVote", [0xAA; 32]);
-        det.check(&peer, 10, ConsensusPhase::PriceVoting, "PriceVote", [0xBB; 32]);
+        det.check(&peer, 5, ConsensusPhase::PriceVoting, "PriceVote", "price", [0xAA; 32]);
+        det.check(&peer, 10, ConsensusPhase::PriceVoting, "PriceVote", "price", [0xBB; 32]);
         assert_eq!(det.len(), 2);
 
         det.gc(10);
@@ -1102,9 +1189,9 @@ mod tests {
         let peer = [7u8; 32];
 
         // Insert entries in 3 different cycles
-        det.check(&peer, 1, ConsensusPhase::PriceVoting, "PriceVote", [0x01; 32]);
-        det.check(&peer, 2, ConsensusPhase::PriceVoting, "PriceVote", [0x02; 32]);
-        det.check(&peer, 3, ConsensusPhase::PriceVoting, "PriceVote", [0x03; 32]);
+        det.check(&peer, 1, ConsensusPhase::PriceVoting, "PriceVote", "price", [0x01; 32]);
+        det.check(&peer, 2, ConsensusPhase::PriceVoting, "PriceVote", "price", [0x02; 32]);
+        det.check(&peer, 3, ConsensusPhase::PriceVoting, "PriceVote", "price", [0x03; 32]);
         assert_eq!(det.len(), 3);
 
         // gc_by_size with max_entries=2 should drop cycle 1

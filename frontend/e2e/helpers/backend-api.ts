@@ -647,8 +647,10 @@ export async function placeBuyOrderDirect(
     ]) as string;
     const orderId = Number(BigInt(nextIdResult));
 
-    // Deadline: 1 hour from now
-    const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
+    // Use chain block.timestamp (not Date.now) — Anvil's clock drifts from wall time
+    const latestBlock = await rpcCall('eth_getBlockByNumber', ['latest', false]) as { timestamp: string };
+    const chainTimestamp = Number(BigInt(latestBlock.timestamp));
+    const deadline = BigInt(chainTimestamp + 3600);
 
     // Place buy order
     const buyData = encodeFunctionData({
@@ -695,12 +697,23 @@ export async function placeSellOrderDirect(
       functionName: 'approve',
       args: [ARB_CUSTODY as `0x${string}`, amount],
     });
-    await rpcCall('eth_sendTransaction', [{
+    const approveTxHash = await rpcCall('eth_sendTransaction', [{
       from: user,
       to: BRIDGED_ITP,
       data: approveData,
       gas: '0x100000',
-    }]);
+    }]) as string;
+
+    // Verify approve tx succeeded (retry receipt in case of mining race)
+    let approveReceipt: { status: string } | null = null;
+    for (let i = 0; i < 5; i++) {
+      approveReceipt = await rpcCall('eth_getTransactionReceipt', [approveTxHash]) as { status: string } | null;
+      if (approveReceipt) break;
+      await new Promise(r => setTimeout(r, 500));
+    }
+    if (!approveReceipt || approveReceipt.status !== '0x1') {
+      throw new Error(`BridgedITP approve tx reverted (status=${approveReceipt?.status}): ${approveTxHash}`);
+    }
 
     // Read crossChainOrderId (next sell order ID)
     const nextIdData = encodeFunctionData({
@@ -714,7 +727,10 @@ export async function placeSellOrderDirect(
     ]) as string;
     const orderId = Number(BigInt(nextIdResult));
 
-    const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
+    // Use chain block.timestamp (not Date.now) — Anvil's clock drifts from wall time
+    const latestBlock = await rpcCall('eth_getBlockByNumber', ['latest', false]) as { timestamp: string };
+    const chainTimestamp = Number(BigInt(latestBlock.timestamp));
+    const deadline = BigInt(chainTimestamp + 3600);
 
     // Place sell order
     const sellData = encodeFunctionData({
@@ -728,12 +744,23 @@ export async function placeSellOrderDirect(
         deadline,
       ],
     });
-    await rpcCall('eth_sendTransaction', [{
+    const sellTxHash = await rpcCall('eth_sendTransaction', [{
       from: user,
       to: ARB_CUSTODY,
       data: sellData,
       gas: '0x200000',
-    }]);
+    }]) as string;
+
+    // Verify sell tx succeeded (retry receipt in case of mining race)
+    let sellReceipt: { status: string } | null = null;
+    for (let i = 0; i < 5; i++) {
+      sellReceipt = await rpcCall('eth_getTransactionReceipt', [sellTxHash]) as { status: string } | null;
+      if (sellReceipt) break;
+      await new Promise(r => setTimeout(r, 500));
+    }
+    if (!sellReceipt || sellReceipt.status !== '0x1') {
+      throw new Error(`sellITPFromArbitrum tx reverted (status=${sellReceipt?.status}): ${sellTxHash}`);
+    }
 
     return orderId;
   } finally {

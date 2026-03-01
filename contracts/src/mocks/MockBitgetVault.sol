@@ -414,13 +414,16 @@ contract MockBitgetVault is Initializable {
         tradeCount++;
 
         // 8. Convert stablecoin amounts to native decimals, then burn/mint
+        // Virtual tokens (no bytecode) skip mint/burn — tracked via netPosition only
         uint256 burnSellAmount = actualSellAmount;
         if (sellToken == stableUSDC) {
             burnSellAmount = actualSellAmount / (10 ** (18 - stableUSDCDecimals));
         } else if (sellToken == stableUSDT) {
             burnSellAmount = actualSellAmount / (10 ** (18 - stableUSDTDecimals));
         }
-        IMockERC20(sellToken).burn(address(this), burnSellAmount);
+        if (sellToken.code.length > 0) {
+            IMockERC20(sellToken).burn(address(this), burnSellAmount);
+        }
         emit VaultBurned(sellToken, burnSellAmount);
 
         uint256 mintBuyAmount = actualBuyAmount;
@@ -429,7 +432,9 @@ contract MockBitgetVault is Initializable {
         } else if (buyToken == stableUSDT) {
             mintBuyAmount = actualBuyAmount / (10 ** (18 - stableUSDTDecimals));
         }
-        IMockERC20(buyToken).mint(address(this), mintBuyAmount);
+        if (buyToken.code.length > 0) {
+            IMockERC20(buyToken).mint(address(this), mintBuyAmount);
+        }
         emit VaultMinted(buyToken, mintBuyAmount, msg.sender);
 
         netPosition[buyToken] += int256(mintBuyAmount);
@@ -536,6 +541,7 @@ contract MockBitgetVault is Initializable {
     /// @param token The token address to query
     /// @return balance The vault's balance of that token
     function getBalance(address token) external view returns (uint256 balance) {
+        if (token.code.length == 0) return 0;
         return IERC20(token).balanceOf(address(this));
     }
 

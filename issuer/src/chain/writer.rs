@@ -575,52 +575,12 @@ impl ChainWriter for EthersChainWriter {
         calldata: Vec<u8>,
         value: U256,
     ) -> Result<TxHash, Error> {
-        // Build transaction
         let tx: TypedTransaction = Eip1559TransactionRequest::new()
             .to(to)
-            .data(calldata)
+            .data(Bytes::from(calldata))
             .value(value)
             .into();
-
-        // Estimate gas
-        let gas = self
-            .client
-            .estimate_gas(&tx, None)
-            .await
-            .map_err(|e| Error::ChainWrite(format!("gas estimation failed: {}", e)))?;
-
-        // Apply 1.2x multiplier
-        let gas_with_buffer = gas * 12 / 10;
-
-        // Create final transaction with gas
-        let mut final_tx = tx.clone();
-        final_tx.set_gas(gas_with_buffer);
-
-        // Send transaction
-        let pending = self
-            .client
-            .send_transaction(final_tx, None)
-            .await
-            .map_err(|e| Error::ChainWrite(format!("send_transaction failed: {}", e)))?;
-
-        // Wait for confirmation
-        match pending.await {
-            Ok(Some(receipt)) => {
-                info!(
-                    tx_hash = ?receipt.transaction_hash,
-                    to = ?to,
-                    "send_transaction confirmed"
-                );
-                Ok(receipt.transaction_hash)
-            }
-            Ok(None) => Err(Error::TransactionFailed(
-                "send_transaction: no receipt".to_string(),
-            )),
-            Err(e) => Err(Error::TransactionFailed(format!(
-                "send_transaction receipt error: {}",
-                e
-            ))),
-        }
+        self.submit_tx(tx, "send_transaction").await
     }
 
     async fn static_call(

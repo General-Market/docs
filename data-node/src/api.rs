@@ -2764,70 +2764,49 @@ async fn user_state(
     Query(params): Query<UserStateQuery>,
 ) -> Result<Json<UserStateResponse>, (StatusCode, Json<ErrorResponse>)> {
     let user: Address = params.user.parse().map_err(|e| rpc_error(format!("Invalid user address: {}", e)))?;
-    let itp_id_bytes: [u8; 32] = {
-        let hex_str = params.itp_id.strip_prefix("0x").unwrap_or(&params.itp_id);
-        let bytes = hex::decode(hex_str).map_err(|e| rpc_error(format!("Invalid itp_id: {}", e)))?;
-        let mut arr = [0u8; 32];
-        let len = bytes.len().min(32);
-        arr[32 - len..].copy_from_slice(&bytes[..len]);
-        arr
-    };
 
-    let arb = &state.arb_provider;
+    let l3 = &state.l3_provider;
 
-    // Get addresses from deployment
-    let arb_usdc_addr = deployment_addr(&state.deployment, "ARB_USDC").map_err(|e| rpc_error(e))?;
-    let arb_custody_addr = deployment_addr(&state.deployment, "ArbBridgeCustody").map_err(|e| rpc_error(e))?;
-    let bridge_proxy_addr = deployment_addr(&state.deployment, "BridgeProxy").map_err(|e| rpc_error(e))?;
+    // Morpho is on L3 — read addresses from morpho deployment
     let morpho_addr = deployment_addr(&state.morpho_deployment, "MORPHO").map_err(|e| rpc_error(e))?;
 
-    // USDC balance + allowances
-    let usdc = ERC20Reader::new(arb_usdc_addr, Arc::clone(arb));
+    // Collateral token = vault ERC20 on L3 (from morpho market params)
+    let vault_addr_str = state.morpho_deployment["marketParams"]["collateralToken"]
+        .as_str()
+        .ok_or_else(|| rpc_error("Missing marketParams.collateralToken in morpho deployment".to_string()))?;
+    let vault_addr: Address = vault_addr_str.parse().map_err(|e| rpc_error(format!("Invalid collateralToken: {}", e)))?;
+
+    // Loan token = L3_WUSDC (from morpho market params)
+    let loan_addr_str = state.morpho_deployment["marketParams"]["loanToken"]
+        .as_str()
+        .ok_or_else(|| rpc_error("Missing marketParams.loanToken in morpho deployment".to_string()))?;
+    let loan_addr: Address = loan_addr_str.parse().map_err(|e| rpc_error(format!("Invalid loanToken: {}", e)))?;
+
+    // USDC balance + allowances (L3_WUSDC on L3)
+    let usdc = ERC20Reader::new(loan_addr, Arc::clone(l3));
     let usdc_balance = usdc.balance_of(user).call().await.map_err(|e| rpc_error(format!("USDC balanceOf: {}", e)))?;
-    let usdc_allowance_custody = usdc.allowance(user, arb_custody_addr).call().await.map_err(|e| rpc_error(format!("USDC allowance custody: {}", e)))?;
+    let usdc_allowance_custody = U256::zero(); // No custody on L3 for lending
     let usdc_allowance_morpho = usdc.allowance(user, morpho_addr).call().await.map_err(|e| rpc_error(format!("USDC allowance morpho: {}", e)))?;
 
-    // Get BridgedITP address
-    let bridge_proxy = BridgeProxyReader::new(bridge_proxy_addr, Arc::clone(arb));
-    let bridged_itp_addr = bridge_proxy.get_bridged_itp(itp_id_bytes).call().await
-        .map_err(|e| rpc_error(format!("getBridgedItp: {}", e)))?;
-
-    let zero_addr: Address = Address::zero();
-    if bridged_itp_addr == zero_addr {
-        return Ok(Json(UserStateResponse {
-            usdc_balance: usdc_balance.to_string(),
-            usdc_allowance_custody: usdc_allowance_custody.to_string(),
-            usdc_allowance_morpho: usdc_allowance_morpho.to_string(),
-            bridged_itp_address: format!("{:?}", bridged_itp_addr),
-            bridged_itp_balance: "0".to_string(),
-            bridged_itp_allowance_custody: "0".to_string(),
-            bridged_itp_allowance_morpho: "0".to_string(),
-            bridged_itp_name: "".to_string(),
-            bridged_itp_symbol: "".to_string(),
-            bridged_itp_total_supply: "0".to_string(),
-        }));
-    }
-
-    // BridgedITP reads
-    let bitp = ERC20Reader::new(bridged_itp_addr, Arc::clone(arb));
-    let bitp_balance = bitp.balance_of(user).call().await.unwrap_or_default();
-    let bitp_allowance_custody = bitp.allowance(user, arb_custody_addr).call().await.unwrap_or_default();
-    let bitp_allowance_morpho = bitp.allowance(user, morpho_addr).call().await.unwrap_or_default();
-    let bitp_name = bitp.name().call().await.unwrap_or_default();
-    let bitp_symbol = bitp.symbol().call().await.unwrap_or_default();
-    let bitp_total_supply = bitp.total_supply().call().await.unwrap_or_default();
+    // Vault ERC20 reads (collateral token on L3)
+    let vault = ERC20Reader::new(vault_addr, Arc::clone(l3));
+    let vault_balance = vault.balance_of(user).call().await.unwrap_or_default();
+    let vault_allowance_morpho = vault.allowance(user, morpho_addr).call().await.unwrap_or_default();
+    let vault_name = vault.name().call().await.unwrap_or_default();
+    let vault_symbol = vault.symbol().call().await.unwrap_or_default();
+    let vault_total_supply = vault.total_supply().call().await.unwrap_or_default();
 
     Ok(Json(UserStateResponse {
         usdc_balance: usdc_balance.to_string(),
         usdc_allowance_custody: usdc_allowance_custody.to_string(),
         usdc_allowance_morpho: usdc_allowance_morpho.to_string(),
-        bridged_itp_address: format!("{:?}", bridged_itp_addr),
-        bridged_itp_balance: bitp_balance.to_string(),
-        bridged_itp_allowance_custody: bitp_allowance_custody.to_string(),
-        bridged_itp_allowance_morpho: bitp_allowance_morpho.to_string(),
-        bridged_itp_name: bitp_name,
-        bridged_itp_symbol: bitp_symbol,
-        bridged_itp_total_supply: bitp_total_supply.to_string(),
+        bridged_itp_address: format!("{:?}", vault_addr),
+        bridged_itp_balance: vault_balance.to_string(),
+        bridged_itp_allowance_custody: "0".to_string(), // No custody for L3 lending
+        bridged_itp_allowance_morpho: vault_allowance_morpho.to_string(),
+        bridged_itp_name: vault_name,
+        bridged_itp_symbol: vault_symbol,
+        bridged_itp_total_supply: vault_total_supply.to_string(),
     }))
 }
 
@@ -2863,10 +2842,12 @@ async fn morpho_position(
     Query(params): Query<MorphoPositionQuery>,
 ) -> Result<Json<MorphoPositionResponse>, (StatusCode, Json<ErrorResponse>)> {
     let user: Address = params.user.parse().map_err(|e| rpc_error(format!("Invalid user address: {}", e)))?;
-    let arb = &state.arb_provider;
+    let l3 = &state.l3_provider;
 
     let morpho_addr = deployment_addr(&state.morpho_deployment, "MORPHO").map_err(|e| rpc_error(e))?;
-    let oracle_addr = deployment_addr(&state.morpho_deployment, "MOCK_ORACLE").map_err(|e| rpc_error(e))?;
+    let oracle_addr = deployment_addr(&state.morpho_deployment, "ITP_NAV_ORACLE")
+        .or_else(|_| deployment_addr(&state.morpho_deployment, "MOCK_ORACLE"))
+        .map_err(|e| rpc_error(e))?;
 
     let market_id_str = state.morpho_deployment["contracts"]["MARKET_ID"]
         .as_str()
@@ -2890,8 +2871,8 @@ async fn morpho_position(
         U256::from_dec_str(lltv_str).unwrap_or(U256::from(770000000000000000u64))
     };
 
-    let morpho = MorphoReader::new(morpho_addr, Arc::clone(arb));
-    let oracle = MockOracleReader::new(oracle_addr, Arc::clone(arb));
+    let morpho = MorphoReader::new(morpho_addr, Arc::clone(l3));
+    let oracle = MockOracleReader::new(oracle_addr, Arc::clone(l3));
 
     // Fetch position
     let (supply_shares, borrow_shares, collateral) = morpho.position(market_id_bytes, user).call().await
@@ -2997,8 +2978,8 @@ async fn morpho_history(
     let morpho_addr = deployment_addr(&state.morpho_deployment, "MORPHO")
         .map_err(|e| rpc_error(e))?;
 
-    // Scan last 10_000 blocks for Morpho events
-    let latest_block = state.arb_provider.get_block_number().await
+    // Scan last 10_000 blocks for Morpho events (on L3)
+    let latest_block = state.l3_provider.get_block_number().await
         .map_err(|e| rpc_error(format!("get_block_number: {}", e)))?
         .as_u64();
     let from_block = latest_block.saturating_sub(10_000);
@@ -3012,7 +2993,7 @@ async fn morpho_history(
         .to_block(latest_block)
         .topic3(user_h256);
 
-    let logs = state.arb_provider.get_logs(&filter).await
+    let logs = state.l3_provider.get_logs(&filter).await
         .map_err(|e| rpc_error(format!("get_logs: {}", e)))?;
 
     // Precompute event signature hashes

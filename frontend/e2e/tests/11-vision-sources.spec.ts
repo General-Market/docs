@@ -63,8 +63,12 @@ test.describe('Vision Sources — Browse', () => {
     const financePill = categoryPill(page, 'Finance')
     await financePill.click()
 
-    // Wait for re-render — card count should be smaller
-    await page.waitForTimeout(300)
+    // Wait for re-render — card count should be smaller.
+    // Use polling instead of fixed timeout for reliability.
+    await expect(async () => {
+      const count = await cards.count()
+      expect(count).toBeLessThan(allCount)
+    }).toPass({ timeout: 5_000 })
     const financeCount = await cards.count()
     expect(financeCount).toBeLessThan(allCount)
     expect(financeCount).toBeGreaterThan(0)

@@ -13,8 +13,11 @@ export function OrganizationJsonLd({ description }: { description?: string }) {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: "General Market",
-    url: "https://generalmarket.io",
-    logo: "https://generalmarket.io/logo.svg",
+    url: "https://www.generalmarket.io",
+    logo: {
+      "@type": "ImageObject",
+      url: "https://www.generalmarket.io/logo.svg",
+    },
     sameAs: [
       "https://x.com/otc_max",
     ],
@@ -35,7 +38,7 @@ export function WebsiteJsonLd({ description }: { description?: string }) {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "General Market",
-    url: "https://generalmarket.io",
+    url: "https://www.generalmarket.io",
     description:
       description ?? "The institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index products on-chain.",
   }
@@ -65,7 +68,7 @@ export function SoftwareApplicationJsonLd({ description }: { description?: strin
     author: {
       "@type": "Organization",
       name: "General Market",
-      url: "https://generalmarket.io",
+      url: "https://www.generalmarket.io",
     },
   }
 
@@ -92,11 +95,11 @@ export function FinancialProductJsonLd({ itps, descriptionTemplate }: { itps: It
     name: itp.name,
     tickerSymbol: itp.symbol,
     description: getDescription(itp),
-    url: `https://generalmarket.io/itp/${itp.itpId}`,
+    url: `https://www.generalmarket.io/itp/${itp.itpId}`,
     provider: {
       "@type": "Organization",
       name: "General Market",
-      url: "https://generalmarket.io",
+      url: "https://www.generalmarket.io",
     },
   }))
 
@@ -121,7 +124,7 @@ export function BreadcrumbJsonLd({ items }: { items: { name: string; url: string
       "@type": "ListItem",
       position: i + 1,
       name: item.name,
-      item: item.url,
+      ...(i < items.length - 1 ? { item: item.url } : {}),
     })),
   }
 

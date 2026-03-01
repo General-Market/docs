@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useRef } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import type { VisionSource } from '@/lib/vision/sources'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
@@ -79,10 +80,12 @@ export function SourceCard({ source, markets, bitmapEditor, metaAssetCount, meta
             className="absolute inset-0 flex items-center justify-center transition-transform duration-300 group-hover:-translate-y-full"
             style={brandStyle}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={source.logo}
               alt={source.name}
+              width={240}
+              height={60}
+              loading="lazy"
               className="max-h-[60px] max-w-[75%] object-contain"
             />
             <span className="absolute top-2.5 right-2.5 text-[10px] font-bold tracking-[0.06em] uppercase px-2 py-0.5 rounded bg-black/55 text-white/90 backdrop-blur-sm">
@@ -91,50 +94,65 @@ export function SourceCard({ source, markets, bitmapEditor, metaAssetCount, meta
           </div>
 
           {/* Bitmap overlay — rolls in from bottom on hover (only if markets exist) */}
-          <div
-            className="absolute inset-0 translate-y-full transition-transform duration-300 group-hover:translate-y-0 bg-[var(--surface)] flex flex-col"
-          >
-            {/* Bitmap header */}
-            <div className="px-3 py-2 border-b border-[var(--border)] flex items-center justify-between">
-              <h4 className="text-[11px] font-bold text-[var(--foreground)] truncate">{source.name}</h4>
-              <span className="text-[10px] font-bold text-[#999] bg-white px-1.5 py-0.5 rounded">{markets.length}</span>
-            </div>
-
-            {/* Bitmap cells — scrollable, drag-to-paint */}
-            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+          {markets.length > 0 ? (
             <div
-              className="flex-1 overflow-y-auto px-2 py-1.5"
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
+              className="absolute inset-0 translate-y-full transition-transform duration-300 group-hover:translate-y-0 bg-[var(--surface)] flex flex-col"
             >
-              <div className="bitmap-grid select-none">
-                {markets.map(m => {
-                  const cellState = getCellState(bitmapEditor.state, m.id)
-                  const cellClass =
-                    cellState === 'up' ? 'b-up' : cellState === 'down' ? 'b-dn' : 'b-empty'
-                  const label = m.symbol.length > 3 ? m.symbol.slice(0, 3) : m.symbol
-                  return (
-                    <div
-                      key={m.id}
-                      className={`bitmap-cell ${cellClass}`}
-                      title={m.name || m.symbol}
-                      onMouseDown={e => handleMouseDown(e, m.id)}
-                      onMouseEnter={e => handleMouseEnter(e, m.id)}
-                    >
-                      {label}
-                    </div>
-                  )
-                })}
+              {/* Bitmap header */}
+              <div className="px-3 py-2 border-b border-[var(--border)] flex items-center justify-between">
+                <h4 className="text-[11px] font-bold text-[var(--foreground)] truncate">{source.name}</h4>
+                <span className="text-[10px] font-bold text-[#999] bg-white px-1.5 py-0.5 rounded">{markets.length}</span>
+              </div>
+
+              {/* Bitmap cells — scrollable, drag-to-paint */}
+              {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+              <div
+                className="flex-1 overflow-y-auto px-2 py-1.5"
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+              >
+                <div className="bitmap-grid select-none">
+                  {markets.map(m => {
+                    const cellState = getCellState(bitmapEditor.state, m.id)
+                    const cellClass =
+                      cellState === 'up' ? 'b-up' : cellState === 'down' ? 'b-dn' : 'b-empty'
+                    const label = m.symbol.length > 3 ? m.symbol.slice(0, 3) : m.symbol
+                    return (
+                      <div
+                        key={m.id}
+                        className={`bitmap-cell ${cellClass}`}
+                        title={m.name || m.symbol}
+                        onMouseDown={e => handleMouseDown(e, m.id)}
+                        onMouseEnter={e => handleMouseEnter(e, m.id)}
+                      >
+                        {label}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Bitmap footer */}
+              <div className="px-3 py-1.5 border-t border-[var(--border)] flex items-center gap-3 text-[10px] font-semibold">
+                <span className="text-[var(--up)]">{upCount} UP</span>
+                <span className="text-[var(--down)]">{downCount} DN</span>
+                <span className="text-[#999]">{markets.length - totalSet} unset</span>
               </div>
             </div>
-
-            {/* Bitmap footer */}
-            <div className="px-3 py-1.5 border-t border-[var(--border)] flex items-center gap-3 text-[10px] font-semibold">
-              <span className="text-[var(--up)]">{upCount} UP</span>
-              <span className="text-[var(--down)]">{downCount} DN</span>
-              <span className="text-[#999]">{markets.length - totalSet} unset</span>
+          ) : (
+            <div
+              className="absolute inset-0 translate-y-full transition-transform duration-300 group-hover:translate-y-0 bg-[var(--surface)] flex flex-col items-center justify-center"
+            >
+              <div className="text-center px-4">
+                <div className="text-[11px] font-semibold text-text-muted mb-1">
+                  {displayMarketCount > 0 ? 'Loading markets...' : 'No markets yet'}
+                </div>
+                {displayMarketCount > 0 && (
+                  <div className="text-[10px] text-[#999]">{displayMarketCount} assets available</div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </Link>
 
@@ -165,7 +183,7 @@ export function SourceCard({ source, markets, bitmapEditor, metaAssetCount, meta
           </div>
           <div className="py-2.5 pl-3 border-l border-border-light">
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Bets Set</div>
-            <span className="text-[15px] font-bold text-black font-mono tabular-nums">{totalSet || '—'}</span>
+            <span className="text-[15px] font-bold text-black font-mono tabular-nums">{totalSet}/{markets.length || displayMarketCount || '—'}</span>
           </div>
         </div>
 

@@ -18,7 +18,7 @@ import { useUserItpShares } from '@/hooks/useUserItpShares'
 import { useItpMetadata } from '@/hooks/useItpMetadata'
 import { useDeployerName } from '@/hooks/useDeployerName'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
-import { useItpOrderbook } from '@/hooks/useItpOrderbook'
+import { useItpOrderbook, prefetchOrderbook } from '@/hooks/useItpOrderbook'
 import { hasLendingMarket } from '@/lib/contracts/morpho-markets-registry'
 import blacklistedItps from '@/lib/config/blacklisted-itps.json'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
@@ -402,6 +402,11 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
   const effectiveArbAddress = itp.arbAddress ?? undefined
 
   const isActive = itp.source === 'index' || itp.completed
+
+  // Prefetch orderbook on mount so data is cached before hover
+  useEffect(() => {
+    if (isActive && itp.itpId) prefetchOrderbook(itp.itpId)
+  }, [isActive, itp.itpId])
 
   const {
     data: orderbookData,

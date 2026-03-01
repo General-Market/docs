@@ -13,8 +13,22 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tokio::sync::Notify;
 
+use crate::abi::AbiEncoder;
+use crate::consensus::ConsensusError;
 use common::decimals;
 use common::types::{BLSSignature, PeerId};
+
+/// Canonical result type for any BLS consensus round that produces
+/// an aggregated signature, a signer bitmap, and a count.
+#[derive(Debug, Clone)]
+pub struct SignedConsensusResult {
+    /// Aggregated BLS signature
+    pub aggregated_signature: BLSSignature,
+    /// Bitmap of signers (bit i = issuer i signed)
+    pub signer_bitmap: U256,
+    /// Number of signatures collected
+    pub signature_count: usize,
+}
 
 /// Bridge orchestrator configuration
 #[derive(Debug, Clone)]
@@ -160,15 +174,7 @@ pub struct SellSubmitOrderResult {
 }
 
 /// Result of successful completeSellOrder consensus
-#[derive(Debug, Clone)]
-pub struct CompleteSellOrderResult {
-    /// Aggregated BLS signature
-    pub aggregated_signature: BLSSignature,
-    /// Bitmap of signers (bit i = issuer i signed)
-    pub signer_bitmap: U256,
-    /// Number of signatures collected
-    pub signature_count: usize,
-}
+pub type CompleteSellOrderResult = SignedConsensusResult;
 
 /// Complete sell order proposal for BLS consensus on Arbitrum
 #[derive(Debug, Clone)]
@@ -186,15 +192,7 @@ pub struct CompleteSellProposal {
 }
 
 /// Result of successful bridge execution
-#[derive(Debug, Clone)]
-pub struct BridgeResult {
-    /// Aggregated BLS signature
-    pub aggregated_signature: BLSSignature,
-    /// Bitmap of signers (bit i = issuer i signed)
-    pub signer_bitmap: U256,
-    /// Number of signatures collected
-    pub signature_count: usize,
-}
+pub type BridgeResult = SignedConsensusResult;
 
 // ============================================================================
 // Story 7.3: Submit Order for User Types
@@ -338,14 +336,8 @@ impl SignatureCollector {
 /// Errors that can occur during bridge orchestration
 #[derive(Debug, Clone, Error)]
 pub enum BridgeError {
-    #[error("insufficient signatures: got {got}, need {need}")]
-    InsufficientSignatures { got: usize, need: usize },
-
-    #[error("proposal timeout: no response within {timeout_ms}ms")]
-    ProposalTimeout { timeout_ms: u64 },
-
-    #[error("signing timeout: {received} signatures within {timeout_ms}ms")]
-    SigningTimeout { received: usize, timeout_ms: u64 },
+    #[error(transparent)]
+    Consensus(#[from] ConsensusError),
 
     #[error("order expired: deadline {deadline} < now {now}")]
     OrderExpired { deadline: u64, now: u64 },
@@ -355,15 +347,6 @@ pub enum BridgeError {
 
     #[error("proposal mismatch: {field} differs from on-chain")]
     ProposalMismatch { field: String },
-
-    #[error("chain reader error: {reason}")]
-    ChainReaderError { reason: String },
-
-    #[error("chain writer error: {reason}")]
-    ChainWriterError { reason: String },
-
-    #[error("BLS signing error: {reason}")]
-    BlsSigningError { reason: String },
 
     #[error("already processed: order {order_id} already bridged")]
     AlreadyProcessed { order_id: U256 },
@@ -493,35 +476,14 @@ pub fn build_bridge_arb_to_l3_hash(
     amount: U256,
     deadline: U256,
 ) -> H256 {
-    let mut data = Vec::with_capacity(180);
-
-    // chain_id as uint256 (32 bytes, big endian)
-    let mut chain_id_bytes = [0u8; 32];
-    U256::from(chain_id).to_big_endian(&mut chain_id_bytes);
-    data.extend_from_slice(&chain_id_bytes);
-
-    // order_id as uint256 (32 bytes, big endian)
-    let mut order_id_bytes = [0u8; 32];
-    order_id.to_big_endian(&mut order_id_bytes);
-    data.extend_from_slice(&order_id_bytes);
-
-    // itp_id as bytes32 (32 bytes)
-    data.extend_from_slice(itp_id.as_bytes());
-
-    // user as address (20 bytes, packed - no zero padding)
-    data.extend_from_slice(user.as_bytes());
-
-    // amount as uint256 (32 bytes, big endian)
-    let mut amount_bytes = [0u8; 32];
-    amount.to_big_endian(&mut amount_bytes);
-    data.extend_from_slice(&amount_bytes);
-
-    // deadline as uint256 (32 bytes, big endian)
-    let mut deadline_bytes = [0u8; 32];
-    deadline.to_big_endian(&mut deadline_bytes);
-    data.extend_from_slice(&deadline_bytes);
-
-    H256::from_slice(&ethers::utils::keccak256(&data))
+    AbiEncoder::with_capacity(180)
+        .u256(U256::from(chain_id))
+        .u256(order_id)
+        .h256(itp_id)
+        .address_packed(user)
+        .u256(amount)
+        .u256(deadline)
+        .keccak256()
 }
 
 // ============================================================================
@@ -547,33 +509,14 @@ pub fn build_sell_bridge_hash(
     bridged_itp_address: Address,
     amount: U256,
 ) -> H256 {
-    let mut data = Vec::with_capacity(168);
-
-    // chain_id as uint256 (32 bytes, big endian)
-    let mut chain_id_bytes = [0u8; 32];
-    U256::from(chain_id).to_big_endian(&mut chain_id_bytes);
-    data.extend_from_slice(&chain_id_bytes);
-
-    // order_id as uint256 (32 bytes, big endian)
-    let mut order_id_bytes = [0u8; 32];
-    order_id.to_big_endian(&mut order_id_bytes);
-    data.extend_from_slice(&order_id_bytes);
-
-    // itp_id as bytes32 (32 bytes)
-    data.extend_from_slice(itp_id.as_bytes());
-
-    // user as address (20 bytes, packed - no zero padding)
-    data.extend_from_slice(user.as_bytes());
-
-    // bridged_itp_address as address (20 bytes, packed - no zero padding)
-    data.extend_from_slice(bridged_itp_address.as_bytes());
-
-    // amount as uint256 (32 bytes, big endian)
-    let mut amount_bytes = [0u8; 32];
-    amount.to_big_endian(&mut amount_bytes);
-    data.extend_from_slice(&amount_bytes);
-
-    H256::from_slice(&ethers::utils::keccak256(&data))
+    AbiEncoder::with_capacity(168)
+        .u256(U256::from(chain_id))
+        .u256(order_id)
+        .h256(itp_id)
+        .address_packed(user)
+        .address_packed(bridged_itp_address)
+        .u256(amount)
+        .keccak256()
 }
 
 /// Build the consensus hash for completeSellOrder
@@ -592,50 +535,15 @@ pub fn build_complete_sell_order_consensus_hash(
     // abi.encode(uint256, address, string, uint256, uint256, address)
     // Head: 6 slots (chain_id, address, string_offset, order_id, usdc_proceeds, vault)
     // Tail: string length + padded data for "completeSellOrder"
-    let mut data = Vec::with_capacity(288);
-
-    // chain_id as uint256 (32 bytes)
-    let mut chain_id_bytes = [0u8; 32];
-    U256::from(chain_id).to_big_endian(&mut chain_id_bytes);
-    data.extend_from_slice(&chain_id_bytes);
-
-    // custody_address as address (32 bytes, left-padded)
-    let mut addr_bytes = [0u8; 32];
-    addr_bytes[12..32].copy_from_slice(custody_address.as_bytes());
-    data.extend_from_slice(&addr_bytes);
-
-    // string offset (points to dynamic data area: 6 * 32 = 192)
-    let mut offset_bytes = [0u8; 32];
-    U256::from(192).to_big_endian(&mut offset_bytes);
-    data.extend_from_slice(&offset_bytes);
-
-    // order_id as uint256 (32 bytes)
-    let mut order_id_bytes = [0u8; 32];
-    order_id.to_big_endian(&mut order_id_bytes);
-    data.extend_from_slice(&order_id_bytes);
-
-    // usdc_proceeds as uint256 (32 bytes)
-    let mut proceeds_bytes = [0u8; 32];
-    usdc_proceeds.to_big_endian(&mut proceeds_bytes);
-    data.extend_from_slice(&proceeds_bytes);
-
-    // vault as address (32 bytes, left-padded)
-    let mut vault_bytes = [0u8; 32];
-    vault_bytes[12..32].copy_from_slice(vault.as_bytes());
-    data.extend_from_slice(&vault_bytes);
-
-    // Dynamic string "completeSellOrder" (17 bytes)
-    let s = b"completeSellOrder";
-    // string length (32 bytes)
-    let mut len_bytes = [0u8; 32];
-    U256::from(s.len()).to_big_endian(&mut len_bytes);
-    data.extend_from_slice(&len_bytes);
-    // string data padded to 32 bytes
-    let mut padded = [0u8; 32];
-    padded[..s.len()].copy_from_slice(s);
-    data.extend_from_slice(&padded);
-
-    H256::from_slice(&ethers::utils::keccak256(&data))
+    AbiEncoder::with_capacity(288)
+        .u256(U256::from(chain_id))
+        .address_padded(custody_address)
+        .u256(U256::from(192)) // string offset (6 * 32)
+        .u256(order_id)
+        .u256(usdc_proceeds)
+        .address_padded(vault)
+        .string_with_length(b"completeSellOrder")
+        .keccak256()
 }
 
 /// Build calldata for ArbBridgeCustody.completeSellOrder()
@@ -656,45 +564,16 @@ pub fn build_complete_sell_order_calldata(
     )[..4];
 
     let mut calldata = selector.to_vec();
-
-    // orderId (32 bytes)
-    let mut order_id_bytes = [0u8; 32];
-    order_id.to_big_endian(&mut order_id_bytes);
-    calldata.extend_from_slice(&order_id_bytes);
-
-    // usdcProceeds (32 bytes)
-    let mut proceeds_bytes = [0u8; 32];
-    usdc_proceeds.to_big_endian(&mut proceeds_bytes);
-    calldata.extend_from_slice(&proceeds_bytes);
-
-    // vault as address (32 bytes, left-padded)
-    let mut vault_bytes = [0u8; 32];
-    vault_bytes[12..32].copy_from_slice(vault.as_bytes());
-    calldata.extend_from_slice(&vault_bytes);
-
-    // Dynamic offset for blsSignature (6 head words * 32 = 192 = 0xc0)
-    let mut offset_bytes = [0u8; 32];
-    U256::from(192).to_big_endian(&mut offset_bytes);
-    calldata.extend_from_slice(&offset_bytes);
-
-    // referenceNonce (32 bytes)
-    let mut nonce_bytes = [0u8; 32];
-    U256::from(reference_nonce).to_big_endian(&mut nonce_bytes);
-    calldata.extend_from_slice(&nonce_bytes);
-
-    // signersBitmask (32 bytes)
-    let mut bitmask_bytes = [0u8; 32];
-    signers_bitmask.to_big_endian(&mut bitmask_bytes);
-    calldata.extend_from_slice(&bitmask_bytes);
-
-    // blsSignature bytes: length + data (padded to 32)
-    let mut sig_len_bytes = [0u8; 32];
-    U256::from(bls_signature.len()).to_big_endian(&mut sig_len_bytes);
-    calldata.extend_from_slice(&sig_len_bytes);
-    calldata.extend_from_slice(bls_signature);
-    let padding = (32 - (bls_signature.len() % 32)) % 32;
-    calldata.extend(vec![0u8; padding]);
-
+    let tail = AbiEncoder::new()
+        .u256(order_id)
+        .u256(usdc_proceeds)
+        .address_padded(vault)
+        .u256(U256::from(192)) // blsSignature offset (6 * 32)
+        .u256(U256::from(reference_nonce))
+        .u256(signers_bitmask)
+        .bytes_with_length(bls_signature)
+        .finish();
+    calldata.extend_from_slice(&tail);
     calldata
 }
 
@@ -725,45 +604,16 @@ pub fn build_submit_order_hash(
     slippage_tier: U256,
     deadline: U256,
 ) -> H256 {
-    let mut data = Vec::with_capacity(244);
-
-    // chain_id as uint256 (32 bytes, big endian)
-    let mut chain_id_bytes = [0u8; 32];
-    U256::from(chain_id).to_big_endian(&mut chain_id_bytes);
-    data.extend_from_slice(&chain_id_bytes);
-
-    // arb_order_id as uint256 (32 bytes, big endian)
-    let mut arb_order_id_bytes = [0u8; 32];
-    arb_order_id.to_big_endian(&mut arb_order_id_bytes);
-    data.extend_from_slice(&arb_order_id_bytes);
-
-    // itp_id as bytes32 (32 bytes)
-    data.extend_from_slice(itp_id.as_bytes());
-
-    // user as address (20 bytes, packed - no zero padding)
-    data.extend_from_slice(user.as_bytes());
-
-    // amount as uint256 (32 bytes, big endian)
-    let mut amount_bytes = [0u8; 32];
-    amount.to_big_endian(&mut amount_bytes);
-    data.extend_from_slice(&amount_bytes);
-
-    // limit_price as uint256 (32 bytes, big endian)
-    let mut limit_price_bytes = [0u8; 32];
-    limit_price.to_big_endian(&mut limit_price_bytes);
-    data.extend_from_slice(&limit_price_bytes);
-
-    // slippage_tier as uint256 (32 bytes, big endian)
-    let mut slippage_tier_bytes = [0u8; 32];
-    slippage_tier.to_big_endian(&mut slippage_tier_bytes);
-    data.extend_from_slice(&slippage_tier_bytes);
-
-    // deadline as uint256 (32 bytes, big endian)
-    let mut deadline_bytes = [0u8; 32];
-    deadline.to_big_endian(&mut deadline_bytes);
-    data.extend_from_slice(&deadline_bytes);
-
-    H256::from_slice(&ethers::utils::keccak256(&data))
+    AbiEncoder::with_capacity(244)
+        .u256(U256::from(chain_id))
+        .u256(arb_order_id)
+        .h256(itp_id)
+        .address_packed(user)
+        .u256(amount)
+        .u256(limit_price)
+        .u256(slippage_tier)
+        .u256(deadline)
+        .keccak256()
 }
 
 /// Build calldata for ERC20.approve(spender, amount)
@@ -775,17 +625,11 @@ pub fn build_erc20_approve_calldata(spender: Address, amount: U256) -> Vec<u8> {
     let selector = &ethers::utils::keccak256("approve(address,uint256)")[..4];
 
     let mut calldata = selector.to_vec();
-
-    // spender address (32 bytes, left-padded)
-    let mut spender_bytes = [0u8; 32];
-    spender_bytes[12..32].copy_from_slice(spender.as_bytes());
-    calldata.extend_from_slice(&spender_bytes);
-
-    // amount (32 bytes)
-    let mut amount_bytes = [0u8; 32];
-    amount.to_big_endian(&mut amount_bytes);
-    calldata.extend_from_slice(&amount_bytes);
-
+    let tail = AbiEncoder::new()
+        .address_padded(spender)
+        .u256(amount)
+        .finish();
+    calldata.extend_from_slice(&tail);
     calldata
 }
 
@@ -807,35 +651,15 @@ pub fn build_submit_order_calldata(
     )[..4];
 
     let mut calldata = selector.to_vec();
-
-    // itpId (32 bytes)
-    calldata.extend_from_slice(itp_id.as_bytes());
-
-    // side (32 bytes, uint8 padded)
-    let mut side_bytes = [0u8; 32];
-    side_bytes[31] = side;
-    calldata.extend_from_slice(&side_bytes);
-
-    // amount (32 bytes)
-    let mut amount_bytes = [0u8; 32];
-    amount.to_big_endian(&mut amount_bytes);
-    calldata.extend_from_slice(&amount_bytes);
-
-    // limitPrice (32 bytes)
-    let mut limit_price_bytes = [0u8; 32];
-    limit_price.to_big_endian(&mut limit_price_bytes);
-    calldata.extend_from_slice(&limit_price_bytes);
-
-    // slippageTier (32 bytes)
-    let mut slippage_tier_bytes = [0u8; 32];
-    slippage_tier.to_big_endian(&mut slippage_tier_bytes);
-    calldata.extend_from_slice(&slippage_tier_bytes);
-
-    // deadline (32 bytes)
-    let mut deadline_bytes = [0u8; 32];
-    deadline.to_big_endian(&mut deadline_bytes);
-    calldata.extend_from_slice(&deadline_bytes);
-
+    let tail = AbiEncoder::new()
+        .h256(itp_id)
+        .u8_padded(side)
+        .u256(amount)
+        .u256(limit_price)
+        .u256(slippage_tier)
+        .u256(deadline)
+        .finish();
+    calldata.extend_from_slice(&tail);
     calldata
 }
 
@@ -858,40 +682,16 @@ pub fn build_submit_order_for_calldata(
     )[..4];
 
     let mut calldata = selector.to_vec();
-
-    // beneficiary (32 bytes, address left-padded)
-    let mut beneficiary_bytes = [0u8; 32];
-    beneficiary_bytes[12..32].copy_from_slice(beneficiary.as_bytes());
-    calldata.extend_from_slice(&beneficiary_bytes);
-
-    // itpId (32 bytes)
-    calldata.extend_from_slice(itp_id.as_bytes());
-
-    // side (32 bytes, uint8 padded)
-    let mut side_bytes = [0u8; 32];
-    side_bytes[31] = side;
-    calldata.extend_from_slice(&side_bytes);
-
-    // amount (32 bytes)
-    let mut amount_bytes = [0u8; 32];
-    amount.to_big_endian(&mut amount_bytes);
-    calldata.extend_from_slice(&amount_bytes);
-
-    // limitPrice (32 bytes)
-    let mut limit_price_bytes = [0u8; 32];
-    limit_price.to_big_endian(&mut limit_price_bytes);
-    calldata.extend_from_slice(&limit_price_bytes);
-
-    // slippageTier (32 bytes)
-    let mut slippage_tier_bytes = [0u8; 32];
-    slippage_tier.to_big_endian(&mut slippage_tier_bytes);
-    calldata.extend_from_slice(&slippage_tier_bytes);
-
-    // deadline (32 bytes)
-    let mut deadline_bytes = [0u8; 32];
-    deadline.to_big_endian(&mut deadline_bytes);
-    calldata.extend_from_slice(&deadline_bytes);
-
+    let tail = AbiEncoder::new()
+        .address_padded(beneficiary)
+        .h256(itp_id)
+        .u8_padded(side)
+        .u256(amount)
+        .u256(limit_price)
+        .u256(slippage_tier)
+        .u256(deadline)
+        .finish();
+    calldata.extend_from_slice(&tail);
     calldata
 }
 
@@ -919,15 +719,7 @@ pub struct BatchProposal {
 
 /// Result of successful batch confirmation
 /// Story 7.4: Batch and Fill Orchestration
-#[derive(Debug, Clone)]
-pub struct BatchResult {
-    /// Aggregated BLS signature
-    pub aggregated_signature: BLSSignature,
-    /// Bitmap of signers (bit i = issuer i signed)
-    pub signer_bitmap: U256,
-    /// Number of signatures collected
-    pub signature_count: usize,
-}
+pub type BatchResult = SignedConsensusResult;
 
 /// Single order fill for consensus
 /// Story 7.4: Batch and Fill Orchestration
@@ -959,15 +751,7 @@ pub struct FillsProposal {
 
 /// Result of successful fills confirmation
 /// Story 7.4: Batch and Fill Orchestration
-#[derive(Debug, Clone)]
-pub struct FillsResult {
-    /// Aggregated BLS signature
-    pub aggregated_signature: BLSSignature,
-    /// Bitmap of signers (bit i = issuer i signed)
-    pub signer_bitmap: U256,
-    /// Number of signatures collected
-    pub signature_count: usize,
-}
+pub type FillsResult = SignedConsensusResult;
 
 // ============================================================================
 // Story 7.5: Bridge L3→Arb Types
@@ -995,15 +779,7 @@ pub struct BridgeL3ToArbProposal {
 
 /// Result of successful bridge L3→Arb execution
 /// Story 7.5: Bridge USDC L3 to Arbitrum
-#[derive(Debug, Clone)]
-pub struct BridgeL3ToArbResult {
-    /// Aggregated BLS signature
-    pub aggregated_signature: BLSSignature,
-    /// Bitmap of signers (bit i = issuer i signed)
-    pub signer_bitmap: U256,
-    /// Number of signatures collected
-    pub signature_count: usize,
-}
+pub type BridgeL3ToArbResult = SignedConsensusResult;
 
 // ============================================================================
 // Story 7.6: Custody Release to Vault Types
@@ -1031,15 +807,7 @@ pub struct ReleaseToVaultProposal {
 
 /// Result of successful custody release to vault
 /// Story 7.6: Custody Release to MockBitgetVault
-#[derive(Debug, Clone)]
-pub struct ReleaseToVaultResult {
-    /// Aggregated BLS signature
-    pub aggregated_signature: BLSSignature,
-    /// Bitmap of signers (bit i = issuer i signed)
-    pub signer_bitmap: U256,
-    /// Number of signatures collected
-    pub signature_count: usize,
-}
+pub type ReleaseToVaultResult = SignedConsensusResult;
 
 // ============================================================================
 // 8-step bridge: RecordCollateralMove Types
@@ -1070,15 +838,7 @@ pub struct RecordCollateralMoveProposal {
 }
 
 /// Result of successful RecordCollateralMove consensus
-#[derive(Debug, Clone)]
-pub struct RecordCollateralMoveResult {
-    /// Aggregated BLS signature
-    pub aggregated_signature: BLSSignature,
-    /// Bitmap of signers (bit i = issuer i signed)
-    pub signer_bitmap: U256,
-    /// Number of signatures collected
-    pub signature_count: usize,
-}
+pub type RecordCollateralMoveResult = SignedConsensusResult;
 
 // ============================================================================
 // 8-step bridge: MintBridgedShares Types
@@ -1105,15 +865,7 @@ pub struct MintBridgedSharesProposal {
 }
 
 /// Result of successful MintBridgedShares consensus
-#[derive(Debug, Clone)]
-pub struct MintBridgedSharesResult {
-    /// Aggregated BLS signature
-    pub aggregated_signature: BLSSignature,
-    /// Bitmap of signers (bit i = issuer i signed)
-    pub signer_bitmap: U256,
-    /// Number of signatures collected
-    pub signature_count: usize,
-}
+pub type MintBridgedSharesResult = SignedConsensusResult;
 
 /// Proposal for completeBuyOrder BLS consensus
 #[derive(Debug, Clone)]
@@ -1127,12 +879,7 @@ pub struct CompleteBuyOrderProposal {
 }
 
 /// Result of completeBuyOrder BLS consensus
-#[derive(Debug, Clone)]
-pub struct CompleteBuyOrderResult {
-    pub aggregated_signature: BLSSignature,
-    pub signer_bitmap: U256,
-    pub signature_count: usize,
-}
+pub type CompleteBuyOrderResult = SignedConsensusResult;
 
 // ============================================================================
 // 8-step bridge: Hash Builders
@@ -1151,42 +898,15 @@ pub fn build_record_collateral_move_hash(
     amount: U256,
     tx_type: u8,
 ) -> H256 {
-    let mut data = Vec::with_capacity(256);
-
-    // chain_id as uint256 (32 bytes)
-    let mut chain_id_bytes = [0u8; 32];
-    U256::from(chain_id).to_big_endian(&mut chain_id_bytes);
-    data.extend_from_slice(&chain_id_bytes);
-
-    // collateral_registry as address (32 bytes, left-padded)
-    let mut addr_bytes = [0u8; 32];
-    addr_bytes[12..32].copy_from_slice(collateral_registry.as_bytes());
-    data.extend_from_slice(&addr_bytes);
-
-    // itp_id as bytes32 (32 bytes)
-    data.extend_from_slice(itp_id.as_bytes());
-
-    // from_chain as uint256 (32 bytes)
-    let mut from_chain_bytes = [0u8; 32];
-    from_chain.to_big_endian(&mut from_chain_bytes);
-    data.extend_from_slice(&from_chain_bytes);
-
-    // to_chain as uint256 (32 bytes)
-    let mut to_chain_bytes = [0u8; 32];
-    to_chain.to_big_endian(&mut to_chain_bytes);
-    data.extend_from_slice(&to_chain_bytes);
-
-    // amount as uint256 (32 bytes)
-    let mut amount_bytes = [0u8; 32];
-    amount.to_big_endian(&mut amount_bytes);
-    data.extend_from_slice(&amount_bytes);
-
-    // tx_type as uint8, padded to 32 bytes
-    let mut tx_type_bytes = [0u8; 32];
-    tx_type_bytes[31] = tx_type;
-    data.extend_from_slice(&tx_type_bytes);
-
-    H256::from_slice(&ethers::utils::keccak256(&data))
+    AbiEncoder::with_capacity(256)
+        .u256(U256::from(chain_id))
+        .address_padded(collateral_registry)
+        .h256(itp_id)
+        .u256(from_chain)
+        .u256(to_chain)
+        .u256(amount)
+        .u8_padded(tx_type)
+        .keccak256()
 }
 
 /// Build message hash for MintBridgedShares consensus
@@ -1203,47 +923,15 @@ pub fn build_mint_bridged_shares_hash(
     // abi.encode(uint256, address, string, bytes32, address, uint256)
     // Head: 6 slots (chain_id, address, string_offset, itp_id, user, amount)
     // Tail: string length + padded data for "mintBridgedShares"
-    let mut data = Vec::with_capacity(320);
-
-    // chain_id as uint256 (32 bytes)
-    let mut chain_id_bytes = [0u8; 32];
-    U256::from(chain_id).to_big_endian(&mut chain_id_bytes);
-    data.extend_from_slice(&chain_id_bytes);
-
-    // bridge_proxy as address (32 bytes, left-padded)
-    let mut proxy_bytes = [0u8; 32];
-    proxy_bytes[12..32].copy_from_slice(bridge_proxy.as_bytes());
-    data.extend_from_slice(&proxy_bytes);
-
-    // string offset (192 = 6 * 32, points past the 6 head slots)
-    let mut offset_bytes = [0u8; 32];
-    U256::from(192).to_big_endian(&mut offset_bytes);
-    data.extend_from_slice(&offset_bytes);
-
-    // itp_id as bytes32 (32 bytes)
-    data.extend_from_slice(itp_id.as_bytes());
-
-    // user as address (32 bytes, left-padded)
-    let mut user_bytes = [0u8; 32];
-    user_bytes[12..32].copy_from_slice(user.as_bytes());
-    data.extend_from_slice(&user_bytes);
-
-    // amount as uint256 (32 bytes)
-    let mut amount_bytes = [0u8; 32];
-    amount.to_big_endian(&mut amount_bytes);
-    data.extend_from_slice(&amount_bytes);
-
-    // Dynamic string "mintBridgedShares" (17 bytes)
-    let s = b"mintBridgedShares";
-    let mut len_bytes = [0u8; 32];
-    U256::from(s.len()).to_big_endian(&mut len_bytes);
-    data.extend_from_slice(&len_bytes);
-
-    let mut padded = [0u8; 32];
-    padded[..s.len()].copy_from_slice(s);
-    data.extend_from_slice(&padded);
-
-    let hash = H256::from_slice(&ethers::utils::keccak256(&data));
+    let hash = AbiEncoder::with_capacity(320)
+        .u256(U256::from(chain_id))
+        .address_padded(bridge_proxy)
+        .u256(U256::from(192)) // string offset (6 * 32)
+        .h256(itp_id)
+        .address_padded(user)
+        .u256(amount)
+        .string_with_length(b"mintBridgedShares")
+        .keccak256();
     tracing::debug!(
         %chain_id,
         bridge_proxy = ?bridge_proxy,
@@ -1269,44 +957,14 @@ pub fn build_complete_buy_order_hash(
     // abi.encode(uint256, address, string, uint256, address)
     // Head: 5 slots (chain_id, address, string_offset, orderId, vault)
     // Tail: string length + padded data for "completeBuyOrder"
-    let mut data = Vec::with_capacity(224);
-
-    // chain_id as uint256 (32 bytes)
-    let mut chain_id_bytes = [0u8; 32];
-    U256::from(chain_id).to_big_endian(&mut chain_id_bytes);
-    data.extend_from_slice(&chain_id_bytes);
-
-    // arb_custody as address (32 bytes, left-padded)
-    let mut custody_bytes = [0u8; 32];
-    custody_bytes[12..32].copy_from_slice(arb_custody.as_bytes());
-    data.extend_from_slice(&custody_bytes);
-
-    // string offset (160 = 5 * 32, points past the 5 head slots)
-    let mut offset_bytes = [0u8; 32];
-    U256::from(160).to_big_endian(&mut offset_bytes);
-    data.extend_from_slice(&offset_bytes);
-
-    // orderId as uint256 (32 bytes)
-    let mut order_id_bytes = [0u8; 32];
-    order_id.to_big_endian(&mut order_id_bytes);
-    data.extend_from_slice(&order_id_bytes);
-
-    // vault as address (32 bytes, left-padded)
-    let mut vault_bytes = [0u8; 32];
-    vault_bytes[12..32].copy_from_slice(vault.as_bytes());
-    data.extend_from_slice(&vault_bytes);
-
-    // Dynamic string "completeBuyOrder" (16 bytes)
-    let s = b"completeBuyOrder";
-    let mut len_bytes = [0u8; 32];
-    U256::from(s.len()).to_big_endian(&mut len_bytes);
-    data.extend_from_slice(&len_bytes);
-
-    let mut padded = [0u8; 32];
-    padded[..s.len()].copy_from_slice(s);
-    data.extend_from_slice(&padded);
-
-    H256::from_slice(&ethers::utils::keccak256(&data))
+    AbiEncoder::with_capacity(224)
+        .u256(U256::from(chain_id))
+        .address_padded(arb_custody)
+        .u256(U256::from(160)) // string offset (5 * 32)
+        .u256(order_id)
+        .address_padded(vault)
+        .string_with_length(b"completeBuyOrder")
+        .keccak256()
 }
 
 /// Build calldata for CollateralRegistry.recordCollateralMove(itpId, fromChain, toChain, amount, txType, blsSig, referenceNonce, signersBitmask)
@@ -1323,55 +981,18 @@ pub fn build_record_collateral_move_calldata(
     // recordCollateralMove(bytes32,uint256,uint256,uint256,uint8,bytes,uint256,uint256)
     let selector = &ethers::utils::keccak256("recordCollateralMove(bytes32,uint256,uint256,uint256,uint8,bytes,uint256,uint256)")[..4];
     let mut data = selector.to_vec();
-
-    // itp_id (32 bytes)
-    data.extend_from_slice(itp_id.as_bytes());
-
-    // from_chain (32 bytes)
-    let mut from_bytes = [0u8; 32];
-    from_chain.to_big_endian(&mut from_bytes);
-    data.extend_from_slice(&from_bytes);
-
-    // to_chain (32 bytes)
-    let mut to_bytes = [0u8; 32];
-    to_chain.to_big_endian(&mut to_bytes);
-    data.extend_from_slice(&to_bytes);
-
-    // amount (32 bytes)
-    let mut amount_bytes = [0u8; 32];
-    amount.to_big_endian(&mut amount_bytes);
-    data.extend_from_slice(&amount_bytes);
-
-    // tx_type as uint8, padded to 32 bytes
-    let mut tx_type_bytes = [0u8; 32];
-    tx_type_bytes[31] = tx_type;
-    data.extend_from_slice(&tx_type_bytes);
-
-    // bls_signature offset (256 = 8 * 32)
-    let mut offset = [0u8; 32];
-    U256::from(256).to_big_endian(&mut offset);
-    data.extend_from_slice(&offset);
-
-    // referenceNonce (32 bytes)
-    let mut nonce_bytes = [0u8; 32];
-    U256::from(reference_nonce).to_big_endian(&mut nonce_bytes);
-    data.extend_from_slice(&nonce_bytes);
-
-    // signersBitmask (32 bytes)
-    let mut bitmask_bytes = [0u8; 32];
-    signers_bitmask.to_big_endian(&mut bitmask_bytes);
-    data.extend_from_slice(&bitmask_bytes);
-
-    // bls_signature length
-    let mut len_bytes = [0u8; 32];
-    U256::from(bls_signature.len()).to_big_endian(&mut len_bytes);
-    data.extend_from_slice(&len_bytes);
-
-    // bls_signature data (padded to 32 bytes)
-    data.extend_from_slice(bls_signature);
-    let pad_len = (32 - (bls_signature.len() % 32)) % 32;
-    data.extend(std::iter::repeat(0u8).take(pad_len));
-
+    let tail = AbiEncoder::new()
+        .h256(itp_id)
+        .u256(from_chain)
+        .u256(to_chain)
+        .u256(amount)
+        .u8_padded(tx_type)
+        .u256(U256::from(256)) // bls_signature offset (8 * 32)
+        .u256(U256::from(reference_nonce))
+        .u256(signers_bitmask)
+        .bytes_with_length(bls_signature)
+        .finish();
+    data.extend_from_slice(&tail);
     data
 }
 
@@ -1387,45 +1008,16 @@ pub fn build_mint_bridged_shares_calldata(
     // mintBridgedShares(bytes32,address,uint256,bytes,uint256,uint256)
     let selector = &ethers::utils::keccak256("mintBridgedShares(bytes32,address,uint256,bytes,uint256,uint256)")[..4];
     let mut data = selector.to_vec();
-
-    // itp_id (32 bytes)
-    data.extend_from_slice(itp_id.as_bytes());
-
-    // user as address (32 bytes, left-padded)
-    let mut user_bytes = [0u8; 32];
-    user_bytes[12..32].copy_from_slice(user.as_bytes());
-    data.extend_from_slice(&user_bytes);
-
-    // amount (32 bytes)
-    let mut amount_bytes = [0u8; 32];
-    amount.to_big_endian(&mut amount_bytes);
-    data.extend_from_slice(&amount_bytes);
-
-    // blsSignature offset (dynamic: 6 * 32 = 192)
-    let mut sig_offset = [0u8; 32];
-    U256::from(192).to_big_endian(&mut sig_offset);
-    data.extend_from_slice(&sig_offset);
-
-    // referenceNonce (32 bytes)
-    let mut nonce_bytes = [0u8; 32];
-    U256::from(reference_nonce).to_big_endian(&mut nonce_bytes);
-    data.extend_from_slice(&nonce_bytes);
-
-    // signersBitmask (32 bytes)
-    let mut bitmask_bytes = [0u8; 32];
-    signers_bitmask.to_big_endian(&mut bitmask_bytes);
-    data.extend_from_slice(&bitmask_bytes);
-
-    // blsSignature length
-    let mut sig_len = [0u8; 32];
-    U256::from(bls_signature.len()).to_big_endian(&mut sig_len);
-    data.extend_from_slice(&sig_len);
-
-    // blsSignature data (padded to 32 bytes)
-    data.extend_from_slice(bls_signature);
-    let sig_pad = (32 - (bls_signature.len() % 32)) % 32;
-    data.extend(std::iter::repeat(0u8).take(sig_pad));
-
+    let tail = AbiEncoder::new()
+        .h256(itp_id)
+        .address_padded(user)
+        .u256(amount)
+        .u256(U256::from(192)) // blsSignature offset (6 * 32)
+        .u256(U256::from(reference_nonce))
+        .u256(signers_bitmask)
+        .bytes_with_length(bls_signature)
+        .finish();
+    data.extend_from_slice(&tail);
     data
 }
 
@@ -1453,46 +1045,17 @@ pub fn build_release_to_vault_hash(
     total_amount: U256,
     vault_address: Address,
 ) -> H256 {
-    let mut data = Vec::with_capacity(192 + order_ids.len() * 32);
-
-    // chain_id as uint256
-    let mut chain_bytes = [0u8; 32];
-    U256::from(chain_id).to_big_endian(&mut chain_bytes);
-    data.extend_from_slice(&chain_bytes);
-
-    // custody_address (padded to 32 bytes)
-    let mut custody_bytes = [0u8; 32];
-    custody_bytes[12..32].copy_from_slice(custody_address.as_bytes());
-    data.extend_from_slice(&custody_bytes);
-
-    // cycle_number as uint256
-    let mut cycle_bytes = [0u8; 32];
-    U256::from(cycle_number).to_big_endian(&mut cycle_bytes);
-    data.extend_from_slice(&cycle_bytes);
-
-    // order_count as uint256
-    let mut count_bytes = [0u8; 32];
-    U256::from(order_ids.len()).to_big_endian(&mut count_bytes);
-    data.extend_from_slice(&count_bytes);
-
-    // order_ids
+    let mut enc = AbiEncoder::with_capacity(192 + order_ids.len() * 32)
+        .u256(U256::from(chain_id))
+        .address_padded(custody_address)
+        .u256(U256::from(cycle_number))
+        .u256(U256::from(order_ids.len()));
     for order_id in order_ids {
-        let mut order_bytes = [0u8; 32];
-        order_id.to_big_endian(&mut order_bytes);
-        data.extend_from_slice(&order_bytes);
+        enc = enc.u256(*order_id);
     }
-
-    // total_amount as uint256
-    let mut amount_bytes = [0u8; 32];
-    total_amount.to_big_endian(&mut amount_bytes);
-    data.extend_from_slice(&amount_bytes);
-
-    // vault_address (padded to 32 bytes)
-    let mut vault_bytes = [0u8; 32];
-    vault_bytes[12..32].copy_from_slice(vault_address.as_bytes());
-    data.extend_from_slice(&vault_bytes);
-
-    H256::from_slice(&ethers::utils::keccak256(&data))
+    enc.u256(total_amount)
+        .address_padded(vault_address)
+        .keccak256()
 }
 
 /// Build calldata for ERC20.transfer(address,uint256)
@@ -1504,17 +1067,11 @@ pub fn build_erc20_transfer_calldata(recipient: Address, amount: U256) -> Vec<u8
     let selector = &ethers::utils::keccak256("transfer(address,uint256)")[..4];
 
     let mut calldata = selector.to_vec();
-
-    // Recipient address (padded to 32 bytes)
-    let mut recipient_bytes = [0u8; 32];
-    recipient_bytes[12..32].copy_from_slice(recipient.as_bytes());
-    calldata.extend_from_slice(&recipient_bytes);
-
-    // Amount as uint256
-    let mut amount_bytes = [0u8; 32];
-    amount.to_big_endian(&mut amount_bytes);
-    calldata.extend_from_slice(&amount_bytes);
-
+    let tail = AbiEncoder::new()
+        .address_padded(recipient)
+        .u256(amount)
+        .finish();
+    calldata.extend_from_slice(&tail);
     calldata
 }
 
@@ -1567,41 +1124,16 @@ pub fn build_bridge_l3_to_arb_hash(
     total_amount: U256,
     destination: Address,
 ) -> H256 {
-    let mut data = Vec::with_capacity(160 + order_ids.len() * 32);
-
-    // l3_chain_id as uint256
-    let mut chain_id_bytes = [0u8; 32];
-    U256::from(l3_chain_id).to_big_endian(&mut chain_id_bytes);
-    data.extend_from_slice(&chain_id_bytes);
-
-    // cycle_number as uint256
-    let mut cycle_bytes = [0u8; 32];
-    U256::from(cycle_number).to_big_endian(&mut cycle_bytes);
-    data.extend_from_slice(&cycle_bytes);
-
-    // order_count as uint256
-    let mut count_bytes = [0u8; 32];
-    U256::from(order_ids.len()).to_big_endian(&mut count_bytes);
-    data.extend_from_slice(&count_bytes);
-
-    // order_ids
+    let mut enc = AbiEncoder::with_capacity(160 + order_ids.len() * 32)
+        .u256(U256::from(l3_chain_id))
+        .u256(U256::from(cycle_number))
+        .u256(U256::from(order_ids.len()));
     for order_id in order_ids {
-        let mut order_bytes = [0u8; 32];
-        order_id.to_big_endian(&mut order_bytes);
-        data.extend_from_slice(&order_bytes);
+        enc = enc.u256(*order_id);
     }
-
-    // total_amount as uint256
-    let mut amount_bytes = [0u8; 32];
-    total_amount.to_big_endian(&mut amount_bytes);
-    data.extend_from_slice(&amount_bytes);
-
-    // destination as address (padded to 32 bytes)
-    let mut dest_bytes = [0u8; 32];
-    dest_bytes[12..32].copy_from_slice(destination.as_bytes());
-    data.extend_from_slice(&dest_bytes);
-
-    H256::from_slice(&ethers::utils::keccak256(&data))
+    enc.u256(total_amount)
+        .address_padded(destination)
+        .keccak256()
 }
 
 /// Build the message hash for batch confirmation consensus
@@ -1728,45 +1260,14 @@ pub fn build_custody_execute_hash(
     nonce: U256,
 ) -> H256 {
     // Use ABI encoding (abi.encode) as per Solidity contract
-    let mut encoded = Vec::new();
-
-    // chain_id as uint256 (32 bytes)
-    let mut chain_id_bytes = [0u8; 32];
-    U256::from(chain_id).to_big_endian(&mut chain_id_bytes);
-    encoded.extend_from_slice(&chain_id_bytes);
-
-    // custody_address as address (32 bytes, left-padded)
-    let mut custody_bytes = [0u8; 32];
-    custody_bytes[12..32].copy_from_slice(custody_address.as_bytes());
-    encoded.extend_from_slice(&custody_bytes);
-
-    // target as address (32 bytes, left-padded)
-    let mut target_bytes = [0u8; 32];
-    target_bytes[12..32].copy_from_slice(target.as_bytes());
-    encoded.extend_from_slice(&target_bytes);
-
-    // data as bytes (ABI encoded: offset, then length + padded data)
-    // offset points to position 160 (5 * 32 bytes: chainid, custody, target, data_offset, nonce)
-    let mut offset_bytes = [0u8; 32];
-    U256::from(160).to_big_endian(&mut offset_bytes);
-    encoded.extend_from_slice(&offset_bytes);
-
-    // nonce as uint256 (32 bytes)
-    let mut nonce_bytes = [0u8; 32];
-    nonce.to_big_endian(&mut nonce_bytes);
-    encoded.extend_from_slice(&nonce_bytes);
-
-    // data length (32 bytes)
-    let mut data_len_bytes = [0u8; 32];
-    U256::from(data.len()).to_big_endian(&mut data_len_bytes);
-    encoded.extend_from_slice(&data_len_bytes);
-
-    // data content (padded to 32-byte boundary)
-    encoded.extend_from_slice(data);
-    let padding = (32 - (data.len() % 32)) % 32;
-    encoded.extend(vec![0u8; padding]);
-
-    H256::from_slice(&ethers::utils::keccak256(&encoded))
+    AbiEncoder::new()
+        .u256(U256::from(chain_id))
+        .address_padded(custody_address)
+        .address_padded(target)
+        .u256(U256::from(160)) // data offset (5 * 32)
+        .u256(nonce)
+        .bytes_with_length(data)
+        .keccak256()
 }
 
 /// Build calldata for BLSCustody.execute()
@@ -1879,26 +1380,10 @@ pub fn build_confirm_fills_calldata(
 // ============================================================================
 
 /// Result of rebalance batch consensus
-#[derive(Debug, Clone)]
-pub struct RebalanceBatchResult {
-    /// Aggregated BLS signature
-    pub aggregated_signature: BLSSignature,
-    /// Bitmap of signers
-    pub signer_bitmap: U256,
-    /// Number of signatures collected
-    pub signature_count: usize,
-}
+pub type RebalanceBatchResult = SignedConsensusResult;
 
 /// Result of update weights consensus
-#[derive(Debug, Clone)]
-pub struct UpdateWeightsResult {
-    /// Aggregated BLS signature
-    pub aggregated_signature: BLSSignature,
-    /// Bitmap of signers
-    pub signer_bitmap: U256,
-    /// Number of signatures collected
-    pub signature_count: usize,
-}
+pub type UpdateWeightsResult = SignedConsensusResult;
 
 /// Build message hash for confirmRebalanceBatch consensus
 ///
@@ -1911,32 +1396,16 @@ pub fn build_rebalance_batch_hash(
     cycle_number: u64,
     itp_ids: &[H256],
 ) -> H256 {
-    let mut data = Vec::with_capacity(128 + itp_ids.len() * 32);
-
-    // chain_id as uint256
-    let mut buf = [0u8; 32];
-    U256::from(chain_id).to_big_endian(&mut buf);
-    data.extend_from_slice(&buf);
-
-    // index_address (padded to 32 bytes)
-    let mut addr_bytes = [0u8; 32];
-    addr_bytes[12..32].copy_from_slice(index_address.as_bytes());
-    data.extend_from_slice(&addr_bytes);
-
-    // "rebalance" as bytes32 (left-padded with keccak256)
     let rebalance_hash = ethers::utils::keccak256(b"rebalance");
-    data.extend_from_slice(&rebalance_hash);
-
-    // cycleNumber as uint256
-    U256::from(cycle_number).to_big_endian(&mut buf);
-    data.extend_from_slice(&buf);
-
-    // itpIds
+    let mut enc = AbiEncoder::with_capacity(128 + itp_ids.len() * 32)
+        .u256(U256::from(chain_id))
+        .address_padded(index_address)
+        .bytes(&rebalance_hash)
+        .u256(U256::from(cycle_number));
     for itp_id in itp_ids {
-        data.extend_from_slice(itp_id.as_bytes());
+        enc = enc.h256(*itp_id);
     }
-
-    H256::from_slice(&ethers::utils::keccak256(&data))
+    enc.keccak256()
 }
 
 /// Build calldata for confirmRebalanceBatch(uint256,bytes32[],bytes,uint256,uint256)
@@ -1961,43 +1430,22 @@ pub fn build_confirm_rebalance_batch_calldata(
     //   [2] offset to blsSignature bytes
     //   [3] referenceNonce (static uint256)
     //   [4] signersBitmask (static uint256)
-
-    // cycleNumber as uint256
-    let mut buf = [0u8; 32];
-    U256::from(cycle_number).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-
-    // Offset to itpIds array (5 * 32 = 160 from start of params)
-    U256::from(160).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-
-    // Offset to blsSignature bytes (160 + 32 + itpIds.len() * 32)
     let sig_offset = 160 + 32 + itp_ids.len() * 32;
-    U256::from(sig_offset).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-
-    // referenceNonce as uint256
-    U256::from(reference_nonce).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-
-    // signersBitmask as uint256
-    signers_bitmask.to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-
-    // itpIds array: length + elements
-    U256::from(itp_ids.len()).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
+    let mut enc = AbiEncoder::new()
+        .u256(U256::from(cycle_number))
+        .u256(U256::from(160)) // offset to itpIds array (5 * 32)
+        .u256(U256::from(sig_offset))
+        .u256(U256::from(reference_nonce))
+        .u256(signers_bitmask)
+        // itpIds array: length + elements
+        .u256(U256::from(itp_ids.len()));
     for itp_id in itp_ids {
-        calldata.extend_from_slice(itp_id.as_bytes());
+        enc = enc.h256(*itp_id);
     }
-
-    // blsSignature bytes: length + data (padded to 32)
-    U256::from(bls_signature.len()).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-    calldata.extend_from_slice(bls_signature);
-    let padding = (32 - (bls_signature.len() % 32)) % 32;
-    calldata.extend(vec![0u8; padding]);
-
+    let tail = enc
+        .bytes_with_length(bls_signature)
+        .finish();
+    calldata.extend_from_slice(&tail);
     calldata
 }
 
@@ -2014,42 +1462,19 @@ pub fn build_update_weights_hash(
     new_inventory: &[U256],
     nav: U256,
 ) -> H256 {
-    let mut data = Vec::with_capacity(128 + (new_weights.len() + new_inventory.len()) * 32);
-
-    // chain_id as uint256
-    let mut buf = [0u8; 32];
-    U256::from(chain_id).to_big_endian(&mut buf);
-    data.extend_from_slice(&buf);
-
-    // index_address (padded to 32 bytes)
-    let mut addr_bytes = [0u8; 32];
-    addr_bytes[12..32].copy_from_slice(index_address.as_bytes());
-    data.extend_from_slice(&addr_bytes);
-
-    // "updateWeights" as bytes32 (left-padded with keccak256)
     let update_weights_hash = ethers::utils::keccak256(b"updateWeights");
-    data.extend_from_slice(&update_weights_hash);
-
-    // itpId
-    data.extend_from_slice(itp_id.as_bytes());
-
-    // newWeights
+    let mut enc = AbiEncoder::with_capacity(128 + (new_weights.len() + new_inventory.len()) * 32)
+        .u256(U256::from(chain_id))
+        .address_padded(index_address)
+        .bytes(&update_weights_hash)
+        .h256(itp_id);
     for w in new_weights {
-        w.to_big_endian(&mut buf);
-        data.extend_from_slice(&buf);
+        enc = enc.u256(*w);
     }
-
-    // newInventory
     for q in new_inventory {
-        q.to_big_endian(&mut buf);
-        data.extend_from_slice(&buf);
+        enc = enc.u256(*q);
     }
-
-    // nav
-    nav.to_big_endian(&mut buf);
-    data.extend_from_slice(&buf);
-
-    H256::from_slice(&ethers::utils::keccak256(&data))
+    enc.u256(nav).keccak256()
 }
 
 /// Build calldata for updateWeights(bytes32,uint256[],uint256[],uint256,bytes,uint256,uint256)
@@ -2078,86 +1503,39 @@ pub fn build_update_weights_calldata(
     //   [4] offset to blsSignature bytes
     //   [5] referenceNonce (uint256, static)
     //   [6] signersBitmask (uint256, static)
-
-    // itpId (bytes32) — static param at offset 0
-    calldata.extend_from_slice(itp_id.as_bytes());
-
-    let mut buf = [0u8; 32];
-
-    // Offset to newWeights array (7 * 32 = 224 from start of params)
-    // Params: itpId(0), newWeightsOffset(1), newInventoryOffset(2), nav(3), blsSigOffset(4), refNonce(5), bitmask(6)
-    U256::from(224).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-
-    // Offset to newInventory array (224 + 32 + newWeights.len() * 32)
     let inv_offset = 224 + 32 + new_weights.len() * 32;
-    U256::from(inv_offset).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-
-    // nav (uint256) — static param
-    nav.to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-
-    // Offset to blsSignature bytes (inv_offset + 32 + newInventory.len() * 32)
     let sig_offset = inv_offset + 32 + new_inventory.len() * 32;
-    U256::from(sig_offset).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
 
-    // referenceNonce as uint256
-    U256::from(reference_nonce).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-
-    // signersBitmask as uint256
-    signers_bitmask.to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-
-    // newWeights array: length + elements
-    U256::from(new_weights.len()).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
+    let mut enc = AbiEncoder::new()
+        .h256(itp_id)
+        .u256(U256::from(224)) // offset to newWeights (7 * 32)
+        .u256(U256::from(inv_offset))
+        .u256(nav)
+        .u256(U256::from(sig_offset))
+        .u256(U256::from(reference_nonce))
+        .u256(signers_bitmask)
+        // newWeights array: length + elements
+        .u256(U256::from(new_weights.len()));
     for w in new_weights {
-        w.to_big_endian(&mut buf);
-        calldata.extend_from_slice(&buf);
+        enc = enc.u256(*w);
     }
-
     // newInventory array: length + elements
-    U256::from(new_inventory.len()).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
+    enc = enc.u256(U256::from(new_inventory.len()));
     for q in new_inventory {
-        q.to_big_endian(&mut buf);
-        calldata.extend_from_slice(&buf);
+        enc = enc.u256(*q);
     }
-
-    // blsSignature bytes: length + data (padded to 32)
-    U256::from(bls_signature.len()).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-    calldata.extend_from_slice(bls_signature);
-    let padding = (32 - (bls_signature.len() % 32)) % 32;
-    calldata.extend(vec![0u8; padding]);
-
+    let tail = enc
+        .bytes_with_length(bls_signature)
+        .finish();
+    calldata.extend_from_slice(&tail);
     calldata
 }
 
 /// Result of successful single-phase rebalance execution
-#[derive(Debug, Clone)]
-pub struct RebalanceResult {
-    /// Aggregated BLS signature
-    pub aggregated_signature: BLSSignature,
-    /// Bitmap of signers
-    pub signer_bitmap: U256,
-    /// Number of signatures collected
-    pub signature_count: usize,
-}
+pub type RebalanceResult = SignedConsensusResult;
 
 /// Result of successful setItpNav BLS consensus
-#[derive(Debug, Clone)]
-pub struct SetItpNavResult {
-    /// Aggregated BLS signature
-    pub aggregated_signature: BLSSignature,
-    /// Bitmap of signers
-    pub signer_bitmap: U256,
-    /// Number of signatures collected
-    pub signature_count: usize,
-}
+pub type SetItpNavResult = SignedConsensusResult;
 
 /// Build message hash for single-phase rebalance() consensus
 ///
@@ -2277,36 +1655,161 @@ pub fn build_set_itp_nav_calldata(
     )[..4];
 
     let mut calldata = selector.to_vec();
-
-    // itpId (bytes32)
-    calldata.extend_from_slice(itp_id.as_bytes());
-
-    let mut buf = [0u8; 32];
-
-    // nav (uint256)
-    nav.to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-
-    // Offset to blsSignature bytes (5 * 32 = 160 from start of params)
-    U256::from(160).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-
-    // referenceNonce (uint256)
-    U256::from(reference_nonce).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-
-    // signersBitmask (uint256)
-    signers_bitmask.to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-
-    // blsSignature bytes: length + data (padded to 32)
-    U256::from(bls_signature.len()).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-    calldata.extend_from_slice(bls_signature);
-    let padding = (32 - (bls_signature.len() % 32)) % 32;
-    calldata.extend(vec![0u8; padding]);
-
+    let tail = AbiEncoder::new()
+        .h256(itp_id)
+        .u256(nav)
+        .u256(U256::from(160)) // offset to blsSignature (5 * 32)
+        .u256(U256::from(reference_nonce))
+        .u256(signers_bitmask)
+        .bytes_with_length(bls_signature)
+        .finish();
+    calldata.extend_from_slice(&tail);
     calldata
+}
+
+// ============================================================================
+// NAV Oracle (Phase 2B) — ITPNAVOracle.updatePrice() on Arb
+// ============================================================================
+
+/// Build the message hash for ITPNAVOracle.updatePrice() on Arb.
+/// Must match: keccak256(abi.encode(block.chainid, address(this), itpAddress, newPrice, timestamp, cycleNumber))
+pub fn build_nav_oracle_hash(
+    chain_id: u64,
+    oracle_address: Address,
+    itp_address: Address,
+    price: U256,
+    timestamp: u64,
+    cycle_number: u64,
+) -> H256 {
+    let tokens = vec![
+        ethers::abi::Token::Uint(U256::from(chain_id)),
+        ethers::abi::Token::Address(oracle_address),
+        ethers::abi::Token::Address(itp_address),
+        ethers::abi::Token::Uint(price),
+        ethers::abi::Token::Uint(U256::from(timestamp)),
+        ethers::abi::Token::Uint(U256::from(cycle_number)),
+    ];
+    let encoded = ethers::abi::encode(&tokens);
+    H256::from_slice(&ethers::utils::keccak256(&encoded))
+}
+
+/// Build calldata for ITPNAVOracle.updatePrice(uint256,uint256,uint256,bytes,uint256,uint256)
+pub fn build_update_price_calldata(
+    new_price: U256,
+    timestamp: u64,
+    cycle_number: u64,
+    bls_signature: &[u8],
+    reference_nonce: u64,
+    signers_bitmask: U256,
+) -> Vec<u8> {
+    let selector = &ethers::utils::keccak256(
+        b"updatePrice(uint256,uint256,uint256,bytes,uint256,uint256)"
+    )[..4];
+    let encoded = ethers::abi::encode(&[
+        ethers::abi::Token::Uint(new_price),
+        ethers::abi::Token::Uint(U256::from(timestamp)),
+        ethers::abi::Token::Uint(U256::from(cycle_number)),
+        ethers::abi::Token::Bytes(bls_signature.to_vec()),
+        ethers::abi::Token::Uint(U256::from(reference_nonce)),
+        ethers::abi::Token::Uint(signers_bitmask),
+    ]);
+    [selector, &encoded].concat()
+}
+
+// ============================================================================
+// MirrorIssuerRegistry Sync (Step 12)
+// ============================================================================
+
+/// Build the message hash for MirrorIssuerRegistry.sync() BLS consensus.
+///
+/// Must match Solidity:
+/// ```solidity
+/// keccak256(abi.encode(
+///     "REGISTRY_SYNC",
+///     block.chainid,
+///     address(this),
+///     nonce,
+///     keccak256(abi.encode(issuerPubkeys, issuerIds)),
+///     newActiveBitmask,
+///     newActiveCount,
+///     newThreshold
+/// ))
+/// ```
+pub fn build_mirror_registry_sync_hash(
+    chain_id: u64,
+    mirror_registry_address: Address,
+    nonce: u64,
+    issuer_pubkeys: &[Vec<u8>],
+    issuer_ids: &[u64],
+    active_bitmask: U256,
+    active_count: u64,
+    threshold: u64,
+) -> H256 {
+    use ethers::abi::Token;
+
+    // Inner hash: keccak256(abi.encode(issuerPubkeys, issuerIds))
+    let pubkeys_token = Token::Array(
+        issuer_pubkeys.iter().map(|pk| Token::Bytes(pk.clone())).collect()
+    );
+    let ids_token = Token::Array(
+        issuer_ids.iter().map(|id| Token::Uint(U256::from(*id))).collect()
+    );
+    let inner_encoded = ethers::abi::encode(&[pubkeys_token, ids_token]);
+    let inner_hash = ethers::utils::keccak256(&inner_encoded);
+
+    // Outer hash
+    let tokens = vec![
+        Token::String("REGISTRY_SYNC".to_string()),
+        Token::Uint(U256::from(chain_id)),
+        Token::Address(mirror_registry_address),
+        Token::Uint(U256::from(nonce)),
+        Token::FixedBytes(inner_hash.to_vec()),
+        Token::Uint(active_bitmask),
+        Token::Uint(U256::from(active_count)),
+        Token::Uint(U256::from(threshold)),
+    ];
+    let encoded = ethers::abi::encode(&tokens);
+    H256::from_slice(&ethers::utils::keccak256(&encoded))
+}
+
+/// Build calldata for MirrorIssuerRegistry.sync().
+///
+/// Function signature:
+/// `sync(bytes[],uint256[],uint256,uint256,uint256,uint256,bytes,uint256,uint256)`
+pub fn build_mirror_registry_sync_calldata(
+    issuer_pubkeys: &[Vec<u8>],
+    issuer_ids: &[u64],
+    active_bitmask: U256,
+    active_count: u64,
+    threshold: u64,
+    nonce: u64,
+    bls_signature: &[u8],
+    reference_nonce: u64,
+    signers_bitmask: U256,
+) -> Vec<u8> {
+    use ethers::abi::Token;
+
+    let selector = &ethers::utils::keccak256(
+        b"sync(bytes[],uint256[],uint256,uint256,uint256,uint256,bytes,uint256,uint256)"
+    )[..4];
+    let pubkeys_token = Token::Array(
+        issuer_pubkeys.iter().map(|pk| Token::Bytes(pk.clone())).collect()
+    );
+    let ids_token = Token::Array(
+        issuer_ids.iter().map(|id| Token::Uint(U256::from(*id))).collect()
+    );
+    let encoded = ethers::abi::encode(&[
+        pubkeys_token,
+        ids_token,
+        Token::Uint(active_bitmask),
+        Token::Uint(U256::from(active_count)),
+        Token::Uint(U256::from(threshold)),
+        Token::Uint(U256::from(nonce)),
+        Token::Bytes(bls_signature.to_vec()),
+        Token::Uint(U256::from(reference_nonce)),
+        Token::Uint(signers_bitmask),
+    ]);
+    [selector, &encoded].concat()
 }
 
 // ============================================================================
@@ -2344,15 +1847,7 @@ pub struct AssetTradesProposal {
 }
 
 /// Result of asset trades signature collection
-#[derive(Debug, Clone)]
-pub struct AssetTradesResult {
-    /// Aggregated BLS signature
-    pub aggregated_signature: BLSSignature,
-    /// Bitmap of signers
-    pub signer_bitmap: U256,
-    /// Total signatures collected
-    pub signature_count: usize,
-}
+pub type AssetTradesResult = SignedConsensusResult;
 
 /// Build message hash for emitAssetTrades (must match Solidity)
 ///
@@ -2402,7 +1897,6 @@ pub fn build_emit_asset_trades_calldata(
     )[..4];
 
     let mut calldata = selector.to_vec();
-    let mut buf = [0u8; 32];
 
     // Head layout (5 words):
     //   [0] cycleNumber (static uint256)
@@ -2410,67 +1904,27 @@ pub fn build_emit_asset_trades_calldata(
     //   [2] offset to blsSignature bytes
     //   [3] referenceNonce (static uint256)
     //   [4] signersBitmask (static uint256)
-
-    // cycleNumber (uint256)
-    U256::from(cycle_number).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-
-    // offset to trades[] (5 * 32 = 160 from start of params)
-    U256::from(160).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-
-    // offset to blsSignature — calculated after encoding trades
-    // trades start at offset 160, length: 32 (array_len) + trades.len() * 5 * 32
     let trades_encoding_len = 32 + trades.len() * 5 * 32;
-    U256::from(160 + trades_encoding_len).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-
-    // referenceNonce as uint256
-    U256::from(reference_nonce).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-
-    // signersBitmask as uint256
-    signers_bitmask.to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-
-    // Encode trades array
-    // Array length
-    U256::from(trades.len()).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-
-    // Each trade: (address, uint8, uint256, uint256, address)
+    let mut enc = AbiEncoder::new()
+        .u256(U256::from(cycle_number))
+        .u256(U256::from(160)) // offset to trades[] (5 * 32)
+        .u256(U256::from(160 + trades_encoding_len)) // offset to blsSignature
+        .u256(U256::from(reference_nonce))
+        .u256(signers_bitmask)
+        // Encode trades array: length + elements
+        .u256(U256::from(trades.len()));
     for trade in trades {
-        // asset (address, left-padded to 32 bytes)
-        let mut asset_buf = [0u8; 32];
-        asset_buf[12..32].copy_from_slice(trade.asset.as_bytes());
-        calldata.extend_from_slice(&asset_buf);
-
-        // side (uint8, padded to 32 bytes)
-        let mut side_buf = [0u8; 32];
-        side_buf[31] = trade.side;
-        calldata.extend_from_slice(&side_buf);
-
-        // usdcAmount (uint256)
-        trade.usdc_amount.to_big_endian(&mut buf);
-        calldata.extend_from_slice(&buf);
-
-        // price (uint256)
-        trade.price.to_big_endian(&mut buf);
-        calldata.extend_from_slice(&buf);
-
-        // quoteToken (address, left-padded to 32 bytes)
-        let mut qt_buf = [0u8; 32];
-        qt_buf[12..32].copy_from_slice(trade.quote_token.as_bytes());
-        calldata.extend_from_slice(&qt_buf);
+        enc = enc
+            .address_padded(trade.asset)
+            .u8_padded(trade.side)
+            .u256(trade.usdc_amount)
+            .u256(trade.price)
+            .address_padded(trade.quote_token);
     }
-
-    // Encode blsSignature bytes
-    U256::from(bls_signature.len()).to_big_endian(&mut buf);
-    calldata.extend_from_slice(&buf);
-    calldata.extend_from_slice(bls_signature);
-    let padding = (32 - (bls_signature.len() % 32)) % 32;
-    calldata.extend(vec![0u8; padding]);
-
+    let tail = enc
+        .bytes_with_length(bls_signature)
+        .finish();
+    calldata.extend_from_slice(&tail);
     calldata
 }
 

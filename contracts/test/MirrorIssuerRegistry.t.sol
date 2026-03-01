@@ -9,12 +9,13 @@ import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
 import {ErrorsLib} from "../src/libraries/ErrorsLib.sol";
 import {EventsLib} from "../src/libraries/EventsLib.sol";
 import {BLSLib} from "../src/libraries/BLSLib.sol";
+import {TypesLib} from "../src/libraries/TypesLib.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Governance} from "../src/Governance.sol";
 import "./helpers/TestHelper.sol";
 
-/// @title MirrorIssuerRegistry.t.sol - Tests for Story 8.2
-/// @notice Tests for MirrorIssuerRegistry synced via BLS proofs
+/// @title MirrorIssuerRegistry.t.sol - Tests for Story 8.2 (Phase 2B updated)
+/// @notice Tests for MirrorIssuerRegistry synced via BLS proofs with individual pubkeys
 contract MirrorIssuerRegistryTest is TestHelper {
     MirrorIssuerRegistry public mirror;
     address public admin = address(this);
@@ -26,7 +27,7 @@ contract MirrorIssuerRegistryTest is TestHelper {
     bytes public validPubkey2;
     bytes public invalidPubkey; // Wrong length
 
-    // Test BLS signature (64 bytes G1) - for mock/happy path
+    // Test BLS signature (64 bytes G1) - for mock/error path tests
     bytes public mockSignature;
 
     function setUp() public {
@@ -48,6 +49,30 @@ contract MirrorIssuerRegistryTest is TestHelper {
             abi.encodeCall(MirrorIssuerRegistry.initialize, (validPubkey1, 2, 3, admin))
         );
         mirror = MirrorIssuerRegistry(address(proxy));
+    }
+
+    // ============ HELPERS ============
+
+    /// @notice Build valid pubkeys/ids arrays for sync (3 valid pubkeys)
+    function _buildValidPubkeysAndIds() internal returns (bytes[] memory pubkeys, uint256[] memory ids) {
+        pubkeys = new bytes[](3);
+        ids = new uint256[](3);
+        for (uint8 i = 0; i < 3; i++) {
+            pubkeys[i] = generateTestPubkey(i + 10); // Use seeds 10,11,12 to avoid collision
+            ids[i] = i;
+        }
+    }
+
+    /// @notice Build pubkeys array containing one invalid-length pubkey
+    function _buildPubkeysWithInvalid() internal returns (bytes[] memory pubkeys, uint256[] memory ids) {
+        pubkeys = new bytes[](3);
+        ids = new uint256[](3);
+        pubkeys[0] = generateTestPubkey(10);
+        pubkeys[1] = invalidPubkey; // 64 bytes (wrong)
+        pubkeys[2] = generateTestPubkey(12);
+        ids[0] = 0;
+        ids[1] = 1;
+        ids[2] = 2;
     }
 
     // ============ TASK 11.2: INITIALIZE TESTS ============
@@ -140,74 +165,91 @@ contract MirrorIssuerRegistryTest is TestHelper {
     }
 
     function test_sync_revertsOnZeroThreshold() public {
-        // Threshold validation happens before BLS, so no mock needed
+        // Threshold validation happens before BLS, so no real sig needed
+        (bytes[] memory pubkeys, uint256[] memory ids) = _buildValidPubkeysAndIds();
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E093_InvalidThreshold.selector, 0, 4));
-        mirror.sync(validPubkey2, 4, 0, 1, mockSignature, 0x7);
+        mirror.sync(pubkeys, ids, 0x07, 4, 0, 1, mockSignature, 0, 0);
     }
 
     function test_sync_revertsOnThresholdGreaterThanActiveCount() public {
-        // Threshold validation happens before BLS, so no mock needed
+        (bytes[] memory pubkeys, uint256[] memory ids) = _buildValidPubkeysAndIds();
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E093_InvalidThreshold.selector, 5, 3));
-        mirror.sync(validPubkey2, 3, 5, 1, mockSignature, 0x7);
+        mirror.sync(pubkeys, ids, 0x07, 3, 5, 1, mockSignature, 0, 0);
     }
 
     // ============ TASK 11.5: SYNC REVERTS ON STALE NONCE ============
 
     function test_sync_revertsOnStaleNonce_equal() public {
         // nonce = 0 (equal to current registryNonce = 0)
+        (bytes[] memory pubkeys, uint256[] memory ids) = _buildValidPubkeysAndIds();
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E090_StaleNonce.selector, 0, 0));
-        mirror.sync(validPubkey2, 4, 3, 0, mockSignature, 0x7);
+        mirror.sync(pubkeys, ids, 0x07, 4, 3, 0, mockSignature, 0, 0);
     }
 
     function test_sync_revertsOnStaleNonce_lessThan() public {
-        // First, we need to do a successful sync to increment nonce
-        // Since BLS verification will fail with mock data, we'll test the nonce check order
         // The nonce check happens BEFORE BLS verification
-
-        // For this test, nonce = 0 should fail (equal to current)
+        (bytes[] memory pubkeys, uint256[] memory ids) = _buildValidPubkeysAndIds();
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E090_StaleNonce.selector, 0, 0));
-        mirror.sync(validPubkey2, 4, 3, 0, mockSignature, 0x7);
+        mirror.sync(pubkeys, ids, 0x07, 4, 3, 0, mockSignature, 0, 0);
     }
 
     // ============ TASK 11.6: SYNC REVERTS ON INVALID BLS SIGNATURE ============
 
     function test_sync_revertsOnInvalidBLSSignature() public {
         // Use nonce > 0 to pass nonce check, but BLS verification should fail
-        // with our mock signature against the stored pubkey
+        // with our mock signature against the stored pubkey (TOFU first sync)
+        (bytes[] memory pubkeys, uint256[] memory ids) = _buildValidPubkeysAndIds();
         vm.expectRevert(ErrorsLib.E020_InvalidBLSSignature.selector);
-        mirror.sync(validPubkey2, 4, 3, 1, mockSignature, 0x7);
+        mirror.sync(pubkeys, ids, 0x07, 4, 3, 1, mockSignature, 0, 0);
     }
 
     function test_sync_revertsOnEmptySignature() public {
         bytes memory emptySignature = new bytes(0);
-        // Empty signature should fail BLS verification (wrong length)
+        (bytes[] memory pubkeys, uint256[] memory ids) = _buildValidPubkeysAndIds();
         vm.expectRevert(ErrorsLib.E020_InvalidBLSSignature.selector);
-        mirror.sync(validPubkey2, 4, 3, 1, emptySignature, 0x7);
+        mirror.sync(pubkeys, ids, 0x07, 4, 3, 1, emptySignature, 0, 0);
     }
 
     function test_sync_revertsOnWrongLengthSignature() public {
         bytes memory wrongLengthSig = new bytes(32);
+        (bytes[] memory pubkeys, uint256[] memory ids) = _buildValidPubkeysAndIds();
         vm.expectRevert(ErrorsLib.E020_InvalidBLSSignature.selector);
-        mirror.sync(validPubkey2, 4, 3, 1, wrongLengthSig, 0x7);
+        mirror.sync(pubkeys, ids, 0x07, 4, 3, 1, wrongLengthSig, 0, 0);
     }
 
     // ============ TASK 11.7: SYNC REVERTS ON INVALID PUBKEY LENGTH ============
 
     function test_sync_revertsOnInvalidPubkeyLength() public {
         // Nonce check passes (1 > 0), but pubkey length check fails
+        (bytes[] memory pubkeys, uint256[] memory ids) = _buildPubkeysWithInvalid();
         vm.expectRevert(ErrorsLib.E091_InvalidAggPubkey.selector);
-        mirror.sync(invalidPubkey, 4, 3, 1, mockSignature, 0x7);
+        mirror.sync(pubkeys, ids, 0x07, 4, 3, 1, mockSignature, 0, 0);
     }
 
     function test_sync_revertsOnEmptyNewPubkey() public {
-        bytes memory emptyPubkey = new bytes(0);
+        // Build array with an empty pubkey
+        bytes[] memory pubkeys = new bytes[](1);
+        pubkeys[0] = new bytes(0);
+        uint256[] memory ids = new uint256[](1);
+        ids[0] = 0;
         vm.expectRevert(ErrorsLib.E091_InvalidAggPubkey.selector);
-        mirror.sync(emptyPubkey, 4, 3, 1, mockSignature, 0x7);
+        mirror.sync(pubkeys, ids, 0x01, 1, 1, 1, mockSignature, 0, 0);
+    }
+
+    // ============ TASK 11.7b: SYNC REVERTS ON MISMATCHED PUBKEYS/IDS LENGTH ============
+
+    function test_sync_revertsOnMismatchedPubkeysIdsLength() public {
+        bytes[] memory pubkeys = new bytes[](2);
+        pubkeys[0] = generateTestPubkey(10);
+        pubkeys[1] = generateTestPubkey(11);
+        uint256[] memory ids = new uint256[](3);
+        ids[0] = 0; ids[1] = 1; ids[2] = 2;
+        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E137_PubkeysIdsLengthMismatch.selector, 2, 3));
+        mirror.sync(pubkeys, ids, 0x07, 3, 2, 1, mockSignature, 0, 0);
     }
 
     // ============ TASK 11.4 & AC8: SYNC HAPPY PATH ============
     // Note: Happy-path sync tests with BLS mocking are in MirrorIssuerRegistryIntegrationTest
-    // (test_integration_fullSyncFlow_L3ToMirror, test_integration_multipleSyncsTrackL3Changes)
     // Unit tests here focus on validation error paths that don't require BLS verification
 
     // ============ TASK 11.8: VIEW FUNCTION TESTS ============
@@ -289,25 +331,24 @@ contract MirrorIssuerRegistryTest is TestHelper {
     }
 
     function test_sync_orderOfValidation_nonceBeforeBLS() public {
-        // This test verifies that nonce is checked before BLS verification
-        // (which is the expected order for gas efficiency)
-
         // With nonce = 0 (stale), we should get StaleNonce error, not InvalidBLSSignature
+        (bytes[] memory pubkeys, uint256[] memory ids) = _buildValidPubkeysAndIds();
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E090_StaleNonce.selector, 0, 0));
-        mirror.sync(validPubkey2, 4, 3, 0, mockSignature, 0x7);
+        mirror.sync(pubkeys, ids, 0x07, 4, 3, 0, mockSignature, 0, 0);
     }
 
     function test_sync_orderOfValidation_pubkeyBeforeBLS() public {
         // With valid nonce but invalid pubkey length, we should get InvalidAggPubkey
-        // This verifies pubkey length is checked before BLS verification
+        (bytes[] memory pubkeys, uint256[] memory ids) = _buildPubkeysWithInvalid();
         vm.expectRevert(ErrorsLib.E091_InvalidAggPubkey.selector);
-        mirror.sync(invalidPubkey, 4, 3, 1, mockSignature, 0x7);
+        mirror.sync(pubkeys, ids, 0x07, 4, 3, 1, mockSignature, 0, 0);
     }
 
     function test_sync_orderOfValidation_thresholdBeforeBLS() public {
         // With valid nonce and pubkey but invalid threshold, we should get InvalidThreshold
+        (bytes[] memory pubkeys, uint256[] memory ids) = _buildValidPubkeysAndIds();
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E093_InvalidThreshold.selector, 0, 4));
-        mirror.sync(validPubkey2, 4, 0, 1, mockSignature, 0x7);
+        mirror.sync(pubkeys, ids, 0x07, 4, 0, 1, mockSignature, 0, 0);
     }
 
     function test_constructor_disablesInitializers() public {
@@ -340,12 +381,34 @@ contract MirrorIssuerRegistryTest is TestHelper {
         assertEq(m.threshold(), 3);
         assertEq(m.activeCount(), 3);
     }
+
+    // ============ AUTHORIZED MISSED COUNT CALLER TESTS ============
+
+    function test_setAuthorizedMissedCountCaller_succeeds() public {
+        mirror.setAuthorizedMissedCountCaller(user1, true);
+        assertTrue(mirror.authorizedMissedCountCallers(user1));
+
+        mirror.setAuthorizedMissedCountCaller(user1, false);
+        assertFalse(mirror.authorizedMissedCountCallers(user1));
+    }
+
+    function test_setAuthorizedMissedCountCaller_revertsForNonAdmin() public {
+        vm.prank(user1);
+        vm.expectRevert(MirrorIssuerRegistry.Unauthorized.selector);
+        mirror.setAuthorizedMissedCountCaller(user2, true);
+    }
+
+    function test_incrementMissedCounts_revertsForUnauthorized() public {
+        vm.prank(user1);
+        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E136_NotAuthorizedMissedCountCaller.selector, user1));
+        mirror.incrementMissedCounts(0x01);
+    }
 }
 
 /// @title MirrorIssuerRegistryIntegrationTest - Integration with L3 IssuerRegistry (Task 12)
 /// @notice Tests the full sync flow from L3 IssuerRegistry to MirrorIssuerRegistry
-/// @dev Note: Real BLS signature verification requires matching private keys
-///      These tests verify the contract logic and event emission patterns
+/// @dev Uses new sync() signature with individual pubkeys. First sync is TOFU (aggregated key).
+///      Subsequent syncs use multi-pairing with 2/3 threshold.
 contract MirrorIssuerRegistryIntegrationTest is TestHelper {
     MirrorIssuerRegistry public mirror;
     IssuerRegistry public l3Registry;
@@ -376,13 +439,45 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
         registerIssuer(l3Registry, admin, issuer3, bytes32("ip3"), 3);
 
         // Deploy MirrorIssuerRegistry initialized with the aggregated pubkey of test issuers 0,1,2
-        // This allows sync() to be signed with signWithTestIssuers()
+        // This allows sync() TOFU bootstrap to be signed with signWithTestIssuers()
         MirrorIssuerRegistry impl = new MirrorIssuerRegistry();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(impl),
             abi.encodeCall(MirrorIssuerRegistry.initialize, (blsAggPubkey("0,1,2"), 2, 3, admin))
         );
         mirror = MirrorIssuerRegistry(address(proxy));
+    }
+
+    // ============ HELPERS ============
+
+    /// @notice Build pubkeys/ids arrays for seeds 0,1,2
+    function _buildSyncPubkeys() internal returns (bytes[] memory pubkeys, uint256[] memory ids) {
+        pubkeys = new bytes[](3);
+        ids = new uint256[](3);
+        for (uint8 i = 0; i < 3; i++) {
+            pubkeys[i] = blsPubkey(i);
+            ids[i] = i;
+        }
+    }
+
+    /// @notice Perform TOFU bootstrap sync (first sync, uses aggregated key verification)
+    function _doTofuSync() internal {
+        (bytes[] memory pubkeys, uint256[] memory ids) = _buildSyncPubkeys();
+        uint256 bitmask = 0x07; // bits 0,1,2
+        bytes32 syncHash = keccak256(
+            abi.encode(
+                "REGISTRY_SYNC",
+                block.chainid,
+                address(mirror),
+                uint256(1), // nonce
+                keccak256(abi.encode(pubkeys, ids)),
+                bitmask,
+                uint256(3), // activeCount
+                uint256(2)  // threshold
+            )
+        );
+        bytes memory syncSig = signWithTestIssuers(syncHash);
+        mirror.sync(pubkeys, ids, bitmask, 3, 2, 1, syncSig, 0, 0);
     }
 
     function test_integration_l3RegistryHasIssuers() public view {
@@ -421,12 +516,15 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
     }
 
     function test_integration_syncRequiresValidBLSSignature() public {
-        // Attempt to sync with mock signature should fail BLS verification
+        // Attempt to sync with mock signature should fail BLS verification (TOFU path)
         bytes memory mockSig = new bytes(64);
-        bytes memory newPubkey = generateTestPubkey(10);
+        bytes[] memory pubkeys = new bytes[](1);
+        pubkeys[0] = generateTestPubkey(10);
+        uint256[] memory ids = new uint256[](1);
+        ids[0] = 0;
 
         vm.expectRevert(ErrorsLib.E020_InvalidBLSSignature.selector);
-        mirror.sync(newPubkey, 4, 3, 1, mockSig, 0x7);
+        mirror.sync(pubkeys, ids, 0x01, 1, 1, 1, mockSig, 0, 0);
     }
 
     function test_integration_syncNonceMatchesL3() public view {
@@ -444,74 +542,51 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
         assertTrue(stateHash != bytes32(0));
     }
 
-    // ============ AC8: FULL SYNC FLOW TEST (HIGH-2 FIX) ============
+    // ============ AC8: FULL SYNC FLOW TEST (TOFU BOOTSTRAP) ============
 
     function test_integration_fullSyncFlow_L3ToMirror() public {
-        // This test simulates the full AC8 flow:
-        // 1. Add issuer on L3 → RegistryStateChanged emitted
-        // 2. Compute new aggregated pubkey
-        // 3. Generate real BLS sync proof via signWithTestIssuers
-        // 4. Call sync() on mirror (verified against current agg pubkey = blsAggPubkey("0,1,2"))
-        // 5. Verify mirror state matches expected
+        // TOFU bootstrap sync: individual pubkeys for issuers 0,1,2
+        // Signed with signWithTestIssuers (verified against aggregated pubkey)
+        (bytes[] memory pubkeys, uint256[] memory ids) = _buildSyncPubkeys();
+        uint256 syncNonce = 1;
+        uint256 newActiveCount = 3;
+        uint256 newThreshold = 2;
+        uint256 newBitmask = 0x07;
 
-        // Step 1: Add 4th issuer on L3
-        bytes memory pubkey4 = generateTestPubkey(4);
-        address issuer4 = address(0x1004);
-        uint256 l3NonceBefore = l3Registry.registryNonce();
-
-        // Generate Proof of Possession for issuer4
-        bytes32 popMsg4 = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(l3Registry), issuer4, pubkey4));
-        bytes memory popSig4 = blsSign(vm.toString(uint256(4)), popMsg4);
-
-        vm.prank(admin);
-        l3Registry.addIssuer(issuer4, bytes32("ip4"), pubkey4, popSig4);
-
-        uint256 l3NonceAfter = l3Registry.registryNonce();
-        assertEq(l3NonceAfter, l3NonceBefore + 1);
-        assertEq(l3Registry.activeIssuerCount(), 4);
-
-        // Step 2: New aggregated pubkey after adding issuer 4 (for test, use seed 4's pubkey)
-        bytes memory newAggPubkey = generateTestPubkey(4);
-
-        // Step 3: Generate real BLS signature (signed by test issuers 0,1,2)
-        uint256 syncNonce = l3NonceAfter;
-        uint256 newActiveCount = 4;
-        uint256 newThreshold = 3;
-        bytes32 messageHash = keccak256(abi.encode("REGISTRY_SYNC", block.chainid, address(mirror), syncNonce, newAggPubkey, newActiveCount, newThreshold));
-        bytes memory blsSignature = signWithTestIssuers(messageHash);
-        uint256 signersBitmask = 0x7; // First 3 issuers signed
-
-        // Step 4: Call sync on mirror
-        vm.expectEmit(true, false, false, true);
-        emit EventsLib.RegistrySynced(
-            syncNonce,
-            newActiveCount,
-            newThreshold,
-            keccak256(newAggPubkey),
-            signersBitmask
+        bytes32 messageHash = keccak256(
+            abi.encode(
+                "REGISTRY_SYNC",
+                block.chainid,
+                address(mirror),
+                syncNonce,
+                keccak256(abi.encode(pubkeys, ids)),
+                newBitmask,
+                newActiveCount,
+                newThreshold
+            )
         );
+        bytes memory blsSignature = signWithTestIssuers(messageHash);
 
-        mirror.sync(newAggPubkey, newActiveCount, newThreshold, syncNonce, blsSignature, signersBitmask);
+        mirror.sync(pubkeys, ids, newBitmask, newActiveCount, newThreshold, syncNonce, blsSignature, 0, 0);
 
-        // Step 5: Verify mirror state matches expected
+        // Verify mirror state
         assertEq(mirror.registryNonce(), syncNonce);
         assertEq(mirror.activeCount(), newActiveCount);
         assertEq(mirror.threshold(), newThreshold);
-        assertEq(keccak256(mirror.getAggregatedPubkey()), keccak256(newAggPubkey));
+        assertEq(mirror.lastSnapshotNonce(), syncNonce);
+
+        // Verify snapshot was created
+        TypesLib.RegistrySnapshot memory snap = mirror.getSnapshotAtNonce(syncNonce);
+        assertEq(snap.activeCount, newActiveCount);
+        assertEq(snap.activeBitmask, newBitmask);
+        assertEq(snap.blockNumber, block.number);
     }
 
     function test_integration_multipleSyncsTrackL3Changes() public {
-        // Initial state: mirror has nonce 0, L3 has nonce 3 (from 3 issuer registrations)
-        // Mirror is initialized with blsAggPubkey("0,1,2"), so all syncs use signWithTestIssuers.
-        assertEq(mirror.registryNonce(), 0);
-        assertTrue(l3Registry.registryNonce() >= 3);
-
-        // Sync 1: Catch up to L3's current state.
-        // Use blsAggPubkey("0,1,2") as the new pubkey so the mirror stays signable.
-        bytes memory aggPubkey1 = blsAggPubkey("0,1,2");
-        bytes32 msg1 = keccak256(abi.encode("REGISTRY_SYNC", block.chainid, address(mirror), uint256(1), aggPubkey1, uint256(3), uint256(2)));
-        mirror.sync(aggPubkey1, 3, 2, 1, signWithTestIssuers(msg1), 0x7);
+        // Sync 1: TOFU bootstrap
+        _doTofuSync();
         assertEq(mirror.registryNonce(), 1);
+        assertEq(mirror.lastSnapshotNonce(), 1);
 
         // Add issuer on L3
         bytes memory pubkey4_ = generateTestPubkey(4);
@@ -520,13 +595,70 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
         vm.prank(admin);
         l3Registry.addIssuer(address(0x1004), bytes32("ip4"), pubkey4_, popSig4_);
 
-        // Sync 2: Update mirror with new issuer count.
-        // Mirror still holds blsAggPubkey("0,1,2") as current pubkey → still signable.
-        bytes memory aggPubkey2 = blsAggPubkey("0,1,2");
-        bytes32 msg2 = keccak256(abi.encode("REGISTRY_SYNC", block.chainid, address(mirror), uint256(2), aggPubkey2, uint256(4), uint256(3)));
-        mirror.sync(aggPubkey2, 4, 3, 2, signWithTestIssuers(msg2), 0xF);
+        // Sync 2: multi-pairing (uses individual pubkeys stored from sync 1)
+        (bytes[] memory pubkeys2, uint256[] memory ids2) = _buildSyncPubkeys();
+        uint256 newBitmask2 = 0x07;
+        uint256 newActiveCount2 = 4;
+        uint256 newThreshold2 = 3;
+
+        bytes32 msg2 = keccak256(
+            abi.encode(
+                "REGISTRY_SYNC",
+                block.chainid,
+                address(mirror),
+                uint256(2), // nonce
+                keccak256(abi.encode(pubkeys2, ids2)),
+                newBitmask2,
+                newActiveCount2,
+                newThreshold2
+            )
+        );
+        // referenceNonce=1 (snapshot from sync 1), signersBitmask=0x07 (issuers 0,1,2)
+        mirror.sync(pubkeys2, ids2, newBitmask2, newActiveCount2, newThreshold2, 2, signWithTestIssuers(msg2), 1, 0x07);
+
         assertEq(mirror.registryNonce(), 2);
         assertEq(mirror.activeCount(), 4);
         assertEq(mirror.threshold(), 3);
+        assertEq(mirror.lastSnapshotNonce(), 2);
+    }
+
+    // ============ SNAPSHOT AND IISSUERREGISTRY TESTS ============
+
+    function test_integration_snapshotStoredCorrectly() public {
+        _doTofuSync();
+
+        TypesLib.RegistrySnapshot memory snap = mirror.getSnapshotAtNonce(1);
+        assertEq(snap.activeCount, 3);
+        assertEq(snap.activeBitmask, 0x07);
+        assertGt(snap.blockNumber, 0);
+        assertTrue(snap.stateHash != bytes32(0));
+    }
+
+    function test_integration_verifyBLSMultiPairing() public {
+        _doTofuSync();
+
+        // Build a message and sign it, then verify via verifyBLSMultiPairing
+        bytes32 testMsg = keccak256("test message");
+        bytes memory sig = signWithTestIssuers(testMsg);
+
+        bool valid = mirror.verifyBLSMultiPairing(0x07, testMsg, sig);
+        assertTrue(valid, "verifyBLSMultiPairing should succeed for valid sig");
+    }
+
+    function test_integration_incrementMissedCounts() public {
+        _doTofuSync();
+
+        // Authorize a caller
+        mirror.setAuthorizedMissedCountCaller(admin, true);
+
+        // Increment missed counts for issuer 1 (bitmask = 0x02)
+        mirror.incrementMissedCounts(0x02);
+        assertEq(mirror.getMissedCount(1), 1, "Issuer 1 should have 1 missed count");
+
+        // Increment again for issuers 0 and 2 (bitmask = 0x05)
+        mirror.incrementMissedCounts(0x05);
+        assertEq(mirror.getMissedCount(0), 1, "Issuer 0 should have 1 missed count");
+        assertEq(mirror.getMissedCount(2), 1, "Issuer 2 should have 1 missed count");
+        assertEq(mirror.getMissedCount(1), 1, "Issuer 1 should still have 1 missed count");
     }
 }

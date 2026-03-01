@@ -3,7 +3,8 @@ pragma solidity ^0.8.24;
 
 /// @title IITPNAVOracle
 /// @notice Interface for ITP NAV Oracle with BLS-verified pricing
-/// @dev Used by Morpho Blue markets to price ITP collateral
+/// @dev Used by Morpho Blue markets to price ITP collateral.
+///      Uses BLSVerifier (multi-pairing, 2/3 threshold, snapshot-based) — same as all other contracts.
 interface IITPNAVOracle {
     /// @notice Get the current ITP price for Morpho Blue
     /// @dev Reverts with E096_StaleOraclePrice if price is older than MAX_STALENESS
@@ -11,17 +12,20 @@ interface IITPNAVOracle {
     function price() external view returns (uint256);
 
     /// @notice Update the ITP NAV price with a BLS-verified signature
-    /// @dev Permissionless — anyone can call with a valid BLS signature from the issuer network
+    /// @dev Permissionless — anyone can call with a valid BLS signature from the issuer network.
+    ///      Uses BLSVerifier._verifyBLS() internally (multi-pairing, 2/3 threshold, snapshot-based).
     /// @param newPrice The new NAV price (36 decimals)
     /// @param timestamp The timestamp associated with the price (from issuer cycle)
     /// @param cycleNumber The issuer cycle number (must be > lastCycleNumber)
     /// @param blsSignature Aggregated BLS signature (G1, 64 bytes)
-    /// @param signersBitmask Bitmask of which issuers signed (off-chain tracking only)
+    /// @param referenceNonce Registry snapshot nonce for BLS verification
+    /// @param signersBitmask Bitmask of which issuers signed
     function updatePrice(
         uint256 newPrice,
         uint256 timestamp,
         uint256 cycleNumber,
         bytes calldata blsSignature,
+        uint256 referenceNonce,
         uint256 signersBitmask
     ) external;
 
@@ -48,4 +52,12 @@ interface IITPNAVOracle {
     /// @notice Get the maximum staleness duration
     /// @return The maximum staleness in seconds (24 hours)
     function MAX_STALENESS() external view returns (uint256);
+
+    /// @notice Get the maximum price deviation in basis points
+    /// @return The maximum deviation (1000 = 10%)
+    function MAX_DEVIATION_BPS() external view returns (uint256);
+
+    /// @notice Get the maximum cycle gap allowed
+    /// @return The maximum cycle gap (10000)
+    function MAX_CYCLE_GAP() external view returns (uint256);
 }

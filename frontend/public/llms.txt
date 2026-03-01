@@ -4,8 +4,8 @@
 > and Vision (sealed parimutuel prediction market on Arbitrum).
 
 ## Documentation
-- [Full docs index](https://generalmarket.io/docs/llms.txt)
-- [Full API reference](https://generalmarket.io/docs/llms-full.txt)
+- [Full docs index](https://www.generalmarket.io/docs/llms.txt)
+- [Full API reference](https://www.generalmarket.io/docs/llms-full.txt)
 
 ## Skills (for AI agents)
 - [Vision Bot SKILL](https://github.com/General-Market/index/tree/main/docs/skills/SKILL.md)
@@ -14,10 +14,10 @@
 - Chain: Arbitrum Orbit L3, Chain ID 111222333
 - RPC: http://142.132.164.24/
 - Collateral: USDC (18 decimals)
-- API: https://generalmarket.io/api
+- API: https://www.generalmarket.io/api
 
 ## Vision (Prediction Market)
 - Chain: Arbitrum, Chain ID 421611337
 - Contract: 0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20
 - Collateral: USDC (6 decimals)
-- API: https://generalmarket.io/api/vision
+- API: https://www.generalmarket.io/api/vision

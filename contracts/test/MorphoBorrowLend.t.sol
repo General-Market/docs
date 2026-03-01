@@ -60,14 +60,26 @@ contract MorphoBorrowLendTest is TestHelper {
         );
         mirror = MirrorIssuerRegistry(address(proxy));
 
+        // Sync mirror registry with individual pubkeys and create snapshot (TOFU bootstrap)
+        {
+            bytes[] memory pubkeys = new bytes[](3);
+            uint256[] memory ids = new uint256[](3);
+            for (uint8 i = 0; i < 3; i++) { pubkeys[i] = blsPubkey(i); ids[i] = i; }
+            uint256 bitmask = 0x07;
+            bytes32 syncHash = keccak256(abi.encode("REGISTRY_SYNC", block.chainid, address(mirror), uint256(1), keccak256(abi.encode(pubkeys, ids)), bitmask, uint256(3), uint256(2)));
+            bytes memory syncSig = signWithTestIssuers(syncHash);
+            mirror.sync(pubkeys, ids, bitmask, 3, 2, 1, syncSig, 0, 0);
+        }
+
         // Deploy ITPNAVOracle with real BLS oracle
         oracle = new ITPNAVOracle(address(mirror), address(itpToken), ORACLE_PRICE);
+        mirror.setAuthorizedMissedCountCaller(address(oracle), true);
 
         // Push initial BLS-signed price via updatePrice (cycle 1)
         {
-            bytes32 h = keccak256(abi.encodePacked(address(itpToken), ORACLE_PRICE, block.timestamp, uint256(1)));
+            bytes32 h = keccak256(abi.encode(block.chainid, address(oracle), address(itpToken), ORACLE_PRICE, block.timestamp, uint256(1)));
             bytes memory sig = signWithTestIssuers(h);
-            oracle.updatePrice(ORACLE_PRICE, block.timestamp, 1, sig, 0x07);
+            oracle.updatePrice(ORACLE_PRICE, block.timestamp, 1, sig, 1, 0x07);
         }
 
         // Deploy Morpho core
@@ -112,9 +124,9 @@ contract MorphoBorrowLendTest is TestHelper {
 
         // Refresh oracle price after warp (otherwise price() reverts with E096_StaleOraclePrice)
         {
-            bytes32 h2 = keccak256(abi.encodePacked(address(itpToken), ORACLE_PRICE, block.timestamp, uint256(2)));
+            bytes32 h2 = keccak256(abi.encode(block.chainid, address(oracle), address(itpToken), ORACLE_PRICE, block.timestamp, uint256(2)));
             bytes memory sig2 = signWithTestIssuers(h2);
-            oracle.updatePrice(ORACLE_PRICE, block.timestamp, 2, sig2, 0x07);
+            oracle.updatePrice(ORACLE_PRICE, block.timestamp, 2, sig2, 1, 0x07);
         }
 
         // Set supply queue
@@ -182,9 +194,10 @@ contract MorphoBorrowLendTest is TestHelper {
         // Deploy a second market to test cap submission flow
         MockERC20 itpToken2 = new MockERC20("ITP2", "ITP2", 18);
         ITPNAVOracle oracle2 = new ITPNAVOracle(address(mirror), address(itpToken2), ORACLE_PRICE);
+        mirror.setAuthorizedMissedCountCaller(address(oracle2), true);
         {
-            bytes32 h = keccak256(abi.encodePacked(address(itpToken2), ORACLE_PRICE, block.timestamp, uint256(1)));
-            oracle2.updatePrice(ORACLE_PRICE, block.timestamp, 1, signWithTestIssuers(h), 0x07);
+            bytes32 h = keccak256(abi.encode(block.chainid, address(oracle2), address(itpToken2), ORACLE_PRICE, block.timestamp, uint256(1)));
+            oracle2.updatePrice(ORACLE_PRICE, block.timestamp, 1, signWithTestIssuers(h), 1, 0x07);
         }
 
         MarketParams memory mp2 = MarketParams({
@@ -216,9 +229,10 @@ contract MorphoBorrowLendTest is TestHelper {
         // AC4: Accepting cap before timelock should revert
         MockERC20 itpToken3 = new MockERC20("ITP3", "ITP3", 18);
         ITPNAVOracle oracle3 = new ITPNAVOracle(address(mirror), address(itpToken3), ORACLE_PRICE);
+        mirror.setAuthorizedMissedCountCaller(address(oracle3), true);
         {
-            bytes32 h = keccak256(abi.encodePacked(address(itpToken3), ORACLE_PRICE, block.timestamp, uint256(1)));
-            oracle3.updatePrice(ORACLE_PRICE, block.timestamp, 1, signWithTestIssuers(h), 0x07);
+            bytes32 h = keccak256(abi.encode(block.chainid, address(oracle3), address(itpToken3), ORACLE_PRICE, block.timestamp, uint256(1)));
+            oracle3.updatePrice(ORACLE_PRICE, block.timestamp, 1, signWithTestIssuers(h), 1, 0x07);
         }
 
         MarketParams memory mp3 = MarketParams({
@@ -339,18 +353,19 @@ contract MorphoBorrowLendTest is TestHelper {
         vm.stopPrank();
 
         // At 100 USDC/ITP: collateral = 10,000 USDC, max borrow = 7,700 USDC
-        // Borrow 5000 should work
+        // Borrow 7500 should work (close to max)
         vm.prank(borrower);
-        morpho.borrow(marketParams, 5000 * 1e6, 0, borrower, borrower);
+        morpho.borrow(marketParams, 7500 * 1e6, 0, borrower, borrower);
 
-        // Drop price to 50 USDC/ITP via oracle update
+        // Drop price by 10% to 90 USDC/ITP via oracle update (within MAX_DEVIATION_BPS)
+        uint256 newPrice = 90e24;
         {
-            bytes32 h = keccak256(abi.encodePacked(address(itpToken), uint256(50e24), block.timestamp, uint256(3)));
-            oracle.updatePrice(50e24, block.timestamp, 3, signWithTestIssuers(h), 0x07);
+            bytes32 h = keccak256(abi.encode(block.chainid, address(oracle), address(itpToken), newPrice, block.timestamp, uint256(3)));
+            oracle.updatePrice(newPrice, block.timestamp, 3, signWithTestIssuers(h), 1, 0x07);
         }
 
-        // At 50 USDC/ITP: collateral = 5,000 USDC, max borrow = 3,850 USDC
-        // Already borrowed 5000, so trying to borrow more should fail
+        // At 90 USDC/ITP: collateral = 9,000 USDC, max borrow = 6,930 USDC
+        // Already borrowed 7500, so trying to borrow more should fail
         vm.prank(borrower);
         vm.expectRevert();
         morpho.borrow(marketParams, 1 * 1e6, 0, borrower, borrower);

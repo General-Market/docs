@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use ethers::prelude::*;
 use ethers::types::transaction::eip2718::TypedTransaction;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 use super::gas::{GasConfig, GasEstimator};
 use super::nonce::NonceManager;
@@ -118,9 +118,73 @@ impl ArbitrumChainWriter {
         self.client.address()
     }
 
+    /// Perform a read-only static call to a contract on Arbitrum.
+    pub async fn static_call(
+        &self,
+        to: Address,
+        calldata: Vec<u8>,
+    ) -> Result<Vec<u8>, ArbitrumWriterError> {
+        use ethers::providers::Middleware;
+        let tx = ethers::types::TransactionRequest::new()
+            .to(to)
+            .data(calldata);
+        let result = self.client.call(&tx.into(), None).await
+            .map_err(|e| ArbitrumWriterError::ProviderError(format!("static_call: {}", e)))?;
+        Ok(result.to_vec())
+    }
+
     /// Get the configuration
     pub fn config(&self) -> &ArbitrumChainWriterConfig {
         &self.config
+    }
+
+    /// Send a generic transaction with calldata to an arbitrary address on Arbitrum.
+    /// Used by oracle price submission and other generic contract calls.
+    pub async fn send_transaction(
+        &self,
+        to: Address,
+        calldata: Vec<u8>,
+        value: U256,
+    ) -> Result<ethers::types::TxHash, ArbitrumWriterError> {
+        // Resync nonce from chain
+        if let Err(e) = self.nonce_manager.resync().await {
+            debug!(error = %e, "Nonce resync failed, using cached value");
+        }
+        let tx_nonce = U256::from(self.nonce_manager.current_nonce());
+        let _ = self.nonce_manager.get_next_nonce().await;
+
+        let mut tx: TypedTransaction = ethers::types::Eip1559TransactionRequest::new()
+            .to(to)
+            .data(calldata)
+            .value(value)
+            .nonce(tx_nonce)
+            .chain_id(self.config.chain_id)
+            .into();
+
+        // Estimate gas
+        let gas = self.gas_estimator.estimate_gas(&tx).await
+            .map_err(|e| ArbitrumWriterError::GasEstimationError(format!("send_transaction gas: {}", e)))?;
+        tx.set_gas(gas);
+
+        // Get gas price
+        let gas_price = self.gas_estimator.get_gas_price().await
+            .map_err(|e| ArbitrumWriterError::GasEstimationError(format!("send_transaction gas price: {}", e)))?;
+        if let TypedTransaction::Eip1559(ref mut eip1559_tx) = tx {
+            gas_price.apply_to_tx(eip1559_tx);
+        }
+
+        match self.client.send_transaction(tx, None).await {
+            Ok(pending_tx) => {
+                let tx_hash = pending_tx.tx_hash();
+                info!(tx = ?tx_hash, "Generic Arb transaction submitted");
+                self.nonce_manager.track_pending(tx_nonce, tx_hash);
+                Ok(tx_hash)
+            }
+            Err(e) => {
+                warn!(error = %e, "Generic Arb transaction failed");
+                Err(ArbitrumWriterError::TransactionError(format!("send_transaction: {}", e)))
+            }
+        }
     }
 
     /// Build a completeCreateItp transaction

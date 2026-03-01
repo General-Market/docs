@@ -11,14 +11,38 @@ export interface ArticleFrontmatter {
   slug: string;
   category: string;
   readingTime: string;
+  tldr?: string[];
+}
+
+export interface ArticleHeading {
+  text: string;
+  id: string;
 }
 
 export interface Article {
   frontmatter: ArticleFrontmatter;
   content: string;
+  headings: ArticleHeading[];
 }
 
 const CONTENT_DIR = path.join(process.cwd(), "content", "learn");
+
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .trim();
+}
+
+export function extractHeadings(content: string): ArticleHeading[] {
+  const matches = content.matchAll(/^## (.+)$/gm);
+  return Array.from(matches, (m) => ({
+    text: m[1],
+    id: slugify(m[1]),
+  }));
+}
 
 export function getArticleSlugs(): string[] {
   if (!fs.existsSync(CONTENT_DIR)) return [];
@@ -36,6 +60,7 @@ export function getArticle(slug: string): Article | null {
   return {
     frontmatter: data as ArticleFrontmatter,
     content,
+    headings: extractHeadings(content),
   };
 }
 

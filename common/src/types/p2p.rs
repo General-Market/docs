@@ -701,6 +701,27 @@ pub enum P2PMessage {
         signature: BLSSignature,
     },
 
+    /// Leader proposes NAV oracle price update (Arb ITPNAVOracle)
+    NavOracleProposal {
+        leader_id: PeerId,
+        itp_address: Address,
+        oracle_address: Address,
+        nav_price: U256,           // Morpho-scaled price (36 decimals)
+        timestamp: u64,
+        cycle_number: u64,
+        chain_id: u64,             // Arb chain ID
+        reference_nonce: u64,      // Registry snapshot nonce
+        leader_signature: BLSSignature,
+    },
+
+    /// Follower signs NAV oracle price update
+    NavOracleSign {
+        signer_id: PeerId,
+        signer_index: u8,
+        itp_address: Address,
+        signature: BLSSignature,
+    },
+
     /// Leader proposes batch configs for all sources (composite hash).
     /// Carries round number for leader rotation, NOT cycle_number.
     /// Part of the batch config bridge orchestrator (independent from settlement cycle).
@@ -721,6 +742,31 @@ pub enum P2PMessage {
         bls_signature: Vec<u8>,
         accepted: bool,
         reject_reason: Option<String>,
+    },
+
+    // ==================== MirrorIssuerRegistry Sync (Step 12) ====================
+
+    /// Leader proposes MirrorIssuerRegistry sync
+    MirrorSyncProposal {
+        leader_id: PeerId,
+        nonce: u64,
+        issuer_pubkeys: Vec<Vec<u8>>,
+        issuer_ids: Vec<u64>,
+        active_bitmask: U256,
+        active_count: u64,
+        threshold: u64,
+        chain_id: u64,
+        mirror_address: Address,
+        reference_nonce: u64,
+        leader_signature: BLSSignature,
+    },
+
+    /// Follower signs MirrorIssuerRegistry sync
+    MirrorSyncSign {
+        signer_id: PeerId,
+        signer_index: u8,
+        nonce: u64,
+        signature: BLSSignature,
     },
 }
 

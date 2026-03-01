@@ -246,6 +246,16 @@ pub struct IssuerConfig {
     /// Controls which Bitget client implementation is used for price fetching.
     /// Can also be set via EXCHANGE_MODE env var.
     pub exchange_mode: Option<String>,
+
+    /// ITPNAVOracle contract address on Arbitrum for Morpho price oracle.
+    pub nav_oracle_address: Option<String>,
+
+    /// ITP token address that the NAV oracle prices.
+    pub itp_token_address: Option<String>,
+
+    /// MirrorIssuerRegistry contract address on Arbitrum (Step 12).
+    /// When set, the issuer actively syncs L3 registry state to the mirror on Arb.
+    pub mirror_registry_address: Option<String>,
 }
 
 impl IssuerConfig {
@@ -358,6 +368,9 @@ impl IssuerConfig {
             arbitration_data_node_url: std::env::var("ISSUER_ARBITRATION_DATA_NODE_URL").ok(),
             data_node_token: std::env::var("DATA_NODE_TOKEN").ok(),
             exchange_mode: std::env::var("EXCHANGE_MODE").ok(),
+            nav_oracle_address: std::env::var("ISSUER_NAV_ORACLE_ADDRESS").ok(),
+            itp_token_address: std::env::var("ISSUER_ITP_TOKEN_ADDRESS").ok(),
+            mirror_registry_address: std::env::var("ISSUER_MIRROR_REGISTRY_ADDRESS").ok(),
             vision: {
                 let enabled: Option<bool> = parse_env_var("ISSUER_VISION_ENABLED");
                 if enabled == Some(true) {
@@ -544,6 +557,12 @@ impl IssuerConfig {
         }
         if other.exchange_mode.is_some() {
             self.exchange_mode = other.exchange_mode.clone();
+        }
+        if other.nav_oracle_address.is_some() {
+            self.nav_oracle_address = other.nav_oracle_address.clone();
+        }
+        if other.itp_token_address.is_some() {
+            self.itp_token_address = other.itp_token_address.clone();
         }
     }
 
@@ -1208,6 +1227,24 @@ impl ConfigBuilder {
     pub fn with_data_node_token(mut self, token: Option<String>) -> Self {
         if token.is_some() {
             self.cli_config.data_node_token = token;
+        }
+        self
+    }
+
+    pub fn with_nav_oracle(mut self, oracle_address: Option<String>, itp_token: Option<String>) -> Self {
+        if oracle_address.is_some() {
+            self.cli_config.nav_oracle_address = oracle_address;
+        }
+        if itp_token.is_some() {
+            self.cli_config.itp_token_address = itp_token;
+        }
+        self
+    }
+
+    /// Set MirrorIssuerRegistry contract address on Arbitrum (Step 12).
+    pub fn with_mirror_registry(mut self, address: Option<String>) -> Self {
+        if address.is_some() {
+            self.cli_config.mirror_registry_address = address;
         }
         self
     }

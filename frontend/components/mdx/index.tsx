@@ -1,8 +1,31 @@
 import type { MDXComponents } from "mdx/types";
+import { ReactNode } from "react";
 import { Link } from "@/i18n/routing";
 import { Callout } from "./Callout";
 import { ComparisonTable } from "./ComparisonTable";
 import { CodeBlock } from "./CodeBlock";
+import { FadeInSection } from "@/components/learn/FadeInSection";
+
+function extractTextFromReactNode(node: ReactNode): string {
+  if (typeof node === "string") return node;
+  if (typeof node === "number") return String(node);
+  if (!node) return "";
+  if (Array.isArray(node)) return node.map(extractTextFromReactNode).join("");
+  if (typeof node === "object" && "props" in node) {
+    const el = node as { props: { children?: ReactNode } };
+    return extractTextFromReactNode(el.props.children);
+  }
+  return "";
+}
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .trim();
+}
 
 export const mdxComponents: MDXComponents = {
   // Headings
@@ -11,11 +34,20 @@ export const mdxComponents: MDXComponents = {
       {children}
     </h1>
   ),
-  h2: ({ children }) => (
-    <h2 className="border-t-[3px] border-black pt-8 mt-16 mb-6 text-[24px] md:text-[28px] font-black tracking-[-0.02em] text-black leading-[1.1]">
-      {children}
-    </h2>
-  ),
+  h2: ({ children }) => {
+    const text = extractTextFromReactNode(children);
+    const id = slugify(text);
+    return (
+      <FadeInSection>
+        <h2
+          id={id}
+          className="scroll-mt-24 border-t-[3px] border-black pt-8 mt-16 mb-6 text-[24px] md:text-[28px] font-black tracking-[-0.02em] text-black leading-[1.1]"
+        >
+          {children}
+        </h2>
+      </FadeInSection>
+    );
+  },
   h3: ({ children }) => (
     <h3 className="text-[18px] font-bold tracking-[-0.01em] text-black mt-8 mb-3">
       {children}

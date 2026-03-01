@@ -7,6 +7,9 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { mdxComponents } from "@/components/mdx";
 import { getArticle, getArticleSlugs } from "@/lib/learn/articles";
+import { ArticleHeader } from "@/components/learn/ArticleHeader";
+import { ArticleSidebar } from "@/components/learn/ArticleSidebar";
+import { MobileArticleNav } from "@/components/learn/MobileArticleNav";
 
 interface Props {
   params: Promise<{ locale: string; slug: string }>;
@@ -59,7 +62,7 @@ export default async function LearnArticlePage({ params }: Props) {
     notFound();
   }
 
-  const { frontmatter, content } = article;
+  const { frontmatter, content, headings } = article;
 
   const articleJsonLd = {
     "@context": "https://schema.org",
@@ -125,34 +128,26 @@ export default async function LearnArticlePage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
 
-      {/* Hero-band article header */}
-      <div className="hero-band">
-        <div className="hero-band-inner">
-          <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-3">
-            {frontmatter.category}
-          </div>
-          <h1 className="text-[28px] md:text-[42px] font-black tracking-[-0.03em] text-black leading-[1.1] mb-3">
-            {frontmatter.title}
-          </h1>
-          <div className="text-[14px] text-text-secondary">
-            {frontmatter.readingTime} &middot; {frontmatter.date}
-          </div>
-        </div>
-      </div>
+      <ArticleHeader frontmatter={frontmatter} />
 
-      <article className="max-w-3xl mx-auto px-6 py-12 md:py-16 w-full">
-        {/* MDX Content */}
-        <MDXRemote
-          source={content}
-          components={mdxComponents}
-          options={{
-            mdxOptions: {
-              remarkPlugins: [remarkGfm],
-              rehypePlugins: [rehypeHighlight],
-            },
-          }}
-        />
-      </article>
+      <MobileArticleNav headings={headings} />
+
+      <div className="max-w-5xl mx-auto flex gap-12 px-6 py-12 md:py-16 w-full">
+        <ArticleSidebar headings={headings} category={frontmatter.category} />
+
+        <article className="max-w-3xl flex-1 min-w-0">
+          <MDXRemote
+            source={content}
+            components={mdxComponents}
+            options={{
+              mdxOptions: {
+                remarkPlugins: [remarkGfm],
+                rehypePlugins: [rehypeHighlight],
+              },
+            }}
+          />
+        </article>
+      </div>
 
       <Footer />
     </main>

@@ -551,12 +551,12 @@ json.dump(deploy, open('deployments/active-deployment.json', 'w'), indent=2)
 
     cp deployments/active-deployment.json frontend/lib/contracts/deployment.json
 
-    # ============ STEP 4: All Bitget tokens ============
-    echo -e "${BLUE}[4/$TOTAL_STEPS] Deploying Bitget pair tokens (fetching live pairs from API)...${NC}"
+    # ============ STEP 4: Virtual Bitget tokens ============
+    echo -e "${BLUE}[4/$TOTAL_STEPS] Generating virtual Bitget token addresses...${NC}"
 
-    if ! python3 scripts/deploy-all-bitget-tokens.py --rpc-url $ARB_RPC_URL > logs/deploy-bitget-tokens.log 2>&1; then
-        echo -e "${RED}Error: Bitget token deployment failed${NC}"
-        tail -20 logs/deploy-bitget-tokens.log
+    if ! python3 scripts/generate-virtual-tokens.py > logs/generate-virtual-tokens.log 2>&1; then
+        echo -e "${RED}Error: Virtual token generation failed${NC}"
+        tail -20 logs/generate-virtual-tokens.log
         exit 1
     fi
 
@@ -691,42 +691,53 @@ print(f'  Regenerated frontend/public/deployed-assets.json with {len(assets)} un
     # Morpho is optional - don't let failures kill the whole script
     set +e
 
-    # Read real BridgedITP address from active-deployment.json (created in Step 3)
-    BRIDGED_ITP=$(python3 -c "import json; print(json.load(open('../deployments/active-deployment.json'))['contracts']['BridgedITP'])" 2>/dev/null || echo "")
+    # Read vault ERC20 token address from active-deployment.json (created in Step 3)
+    # Morpho uses the L3 vault ERC20 as collateral (not BridgedITP on Arb)
+    VAULT_TOKEN=$(python3 -c "import json; print(json.load(open('../deployments/active-deployment.json'))['contracts']['ITP_Vault'])" 2>/dev/null || echo "")
+    L3_WUSDC_ADDR=$(python3 -c "import json; print(json.load(open('../deployments/active-deployment.json'))['contracts']['L3_WUSDC'])" 2>/dev/null || echo "")
 
-    if [ -z "$BRIDGED_ITP" ] || [ "$BRIDGED_ITP" = "None" ]; then
-        echo -e "${YELLOW}  Warning: BridgedITP not found in deployment, skipping Morpho${NC}"
+    if [ -z "$VAULT_TOKEN" ] || [ "$VAULT_TOKEN" = "None" ]; then
+        echo -e "${YELLOW}  Warning: ITP_Vault not found in deployment, skipping Morpho${NC}"
     else
-        # Phase 1: Deploy Morpho core (Morpho Blue + IRM + Oracle + MetaMorpho vault)
-        ITP_VAULT=$BRIDGED_ITP \
-        ARB_USDC=$ARB_USDC \
+        # Phase 1: Deploy Morpho core on L3 (Morpho Blue + IRM + Oracle + MetaMorpho vault)
+        ITP_VAULT=$VAULT_TOKEN \
+        ARB_USDC=$L3_WUSDC_ADDR \
         forge script script/DeployMorphoE2E.s.sol:DeployMorphoE2E \
-            --broadcast --slow --rpc-url $ARB_RPC_URL > ../logs/deploy-morpho-phase1.log 2>&1
+            --broadcast --slow --rpc-url $RPC_URL > ../logs/deploy-morpho-phase1.log 2>&1
 
         if [ $? -eq 0 ]; then
             # Extract Phase 1 addresses from morpho-e2e.json
             METAMORPHO_VAULT=$(python3 -c "import json; print(json.load(open('../deployments/morpho-e2e.json'))['contracts']['METAMORPHO_VAULT'])" 2>/dev/null || echo "")
-            MOCK_ORACLE=$(python3 -c "import json; print(json.load(open('../deployments/morpho-e2e.json'))['contracts']['MOCK_ORACLE'])" 2>/dev/null || echo "")
+            ITP_NAV_ORACLE=$(python3 -c "import json; print(json.load(open('../deployments/morpho-e2e.json'))['contracts']['ITP_NAV_ORACLE'])" 2>/dev/null || echo "")
             ADAPTIVE_IRM=$(python3 -c "import json; print(json.load(open('../deployments/morpho-e2e.json'))['contracts']['ADAPTIVE_IRM'])" 2>/dev/null || echo "")
 
             # Advance time for MetaMorpho timelock (1 day + 1 second)
-            # MUST advance BOTH chains to keep timestamps in sync — otherwise cross-chain
-            # deadline validation fails (deadline from Arb is >24h ahead of L3's time)
-            cast rpc evm_increaseTime 86401 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
-            cast rpc evm_mine --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+            # Advance BOTH chains to keep timestamps in sync
             cast rpc evm_increaseTime 86401 --rpc-url $RPC_URL > /dev/null 2>&1
             cast rpc evm_mine --rpc-url $RPC_URL > /dev/null 2>&1
+            cast rpc evm_increaseTime 86401 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+            cast rpc evm_mine --rpc-url $ARB_RPC_URL > /dev/null 2>&1
 
-            # Phase 2: Configure vault + seed liquidity
-            ITP_VAULT=$BRIDGED_ITP \
-            ARB_USDC=$ARB_USDC \
+            # Phase 2: Configure vault + seed liquidity (on L3)
+            ITP_VAULT=$VAULT_TOKEN \
+            ARB_USDC=$L3_WUSDC_ADDR \
             METAMORPHO_VAULT=$METAMORPHO_VAULT \
-            MOCK_ORACLE=$MOCK_ORACLE \
+            ITP_NAV_ORACLE=$ITP_NAV_ORACLE \
             ADAPTIVE_IRM=$ADAPTIVE_IRM \
             forge script script/DeployMorphoE2E.s.sol:ConfigureMorphoE2E \
-                --broadcast --slow --rpc-url $ARB_RPC_URL > ../logs/deploy-morpho-phase2.log 2>&1
+                --broadcast --slow --rpc-url $RPC_URL > ../logs/deploy-morpho-phase2.log 2>&1
 
             if [ $? -eq 0 ]; then
+                # Refresh oracle lastUpdated (slot 2) — the evm_increaseTime above pushes
+                # the oracle past MAX_STALENESS (24h), making price() revert.
+                # Set lastUpdated to current block.timestamp so oracle reads stay fresh.
+                if [ -n "$ITP_NAV_ORACLE" ]; then
+                    CURRENT_TS=$(cast block latest --rpc-url $RPC_URL --json 2>/dev/null | python3 -c "import sys,json; print(hex(int(json.load(sys.stdin)['timestamp'],16)))" 2>/dev/null || echo "")
+                    if [ -n "$CURRENT_TS" ]; then
+                        PADDED_TS=$(python3 -c "print('0x' + hex(int('$CURRENT_TS', 16))[2:].zfill(64))")
+                        cast rpc anvil_setStorageAt $ITP_NAV_ORACLE "0x0000000000000000000000000000000000000000000000000000000000000002" $PADDED_TS --rpc-url $RPC_URL > /dev/null 2>&1
+                    fi
+                fi
                 echo -e "  ${GREEN}Morpho Blue deployed and configured${NC}"
             else
                 echo -e "${YELLOW}  Warning: Morpho Phase 2 failed (check logs/deploy-morpho-phase2.log)${NC}"
@@ -857,6 +868,10 @@ MOCK_BITGET_VAULT=$(python3 -c "import json; print(json.load(open('deployments/a
 ARB_CUSTODY=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['ArbBridgeCustody'])" 2>/dev/null || echo "")
 BLS_CUSTODY=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['BLSCustody'])" 2>/dev/null || echo "")
 MOCK_USDT=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts'].get('MOCK_USDT',''))" 2>/dev/null || echo "")
+# Morpho oracle + mirror registry addresses (from morpho-e2e.json if it exists)
+NAV_ORACLE_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['ITP_NAV_ORACLE'])" 2>/dev/null || echo "")
+MIRROR_REGISTRY_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MIRROR_REGISTRY'])" 2>/dev/null || echo "")
+ITP_TOKEN_ADDR=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['ITP_Vault'])" 2>/dev/null || echo "")
 
 # Anvil account private keys for issuers (accounts 1-20)
 # Account 0 is the deployer, accounts 1+ are issuer nodes
@@ -890,6 +905,9 @@ for i in $(seq 1 $ISSUER_COUNT); do
     [ -n "$ARB_CUSTODY" ] && ISSUER_ARGS="$ISSUER_ARGS --arb-custody $ARB_CUSTODY"
     [ -n "$BLS_CUSTODY" ] && ISSUER_ARGS="$ISSUER_ARGS --issuer-custody-arb $BLS_CUSTODY"
     [ -n "$MOCK_USDT" ] && [ "$MOCK_USDT" != "0x0000000000000000000000000000000000000000" ] && ISSUER_ARGS="$ISSUER_ARGS --mock-usdt $MOCK_USDT"
+    [ -n "$NAV_ORACLE_ADDR" ] && ISSUER_ARGS="$ISSUER_ARGS --nav-oracle $NAV_ORACLE_ADDR"
+    [ -n "$ITP_TOKEN_ADDR" ] && ISSUER_ARGS="$ISSUER_ARGS --itp-token $ITP_TOKEN_ADDR"
+    [ -n "$MIRROR_REGISTRY_ADDR" ] && ISSUER_ARGS="$ISSUER_ARGS --mirror-registry $MIRROR_REGISTRY_ADDR"
     ISSUER_ARGS="$ISSUER_ARGS --deployment-file deployments/active-deployment.json"
     ISSUER_ARGS="$ISSUER_ARGS --wal-path logs/consensus-$i.wal"
     [ -f "$SCRIPT_DIR/data/symbol-map.json" ] && ISSUER_ARGS="$ISSUER_ARGS --symbol-map-file $SCRIPT_DIR/data/symbol-map.json"
@@ -1144,6 +1162,9 @@ VISION_ADDR=$(python3 -c "import json; print(json.load(open('../deployments/acti
 cat > .env.local <<ENVEOF
 NEXT_PUBLIC_CHAIN_ID=421611337
 NEXT_PUBLIC_RPC_URL=http://localhost:8546
+NEXT_PUBLIC_L3_CHAIN_ID=111222333
+NEXT_PUBLIC_L3_RPC_URL=http://localhost:8545
+NEXT_PUBLIC_ARB_CHAIN_ID=421611337
 NEXT_PUBLIC_AP_URL=http://localhost:9100
 NEXT_PUBLIC_DATA_NODE_URL=http://localhost:8200
 NEXT_PUBLIC_VISION_ADDRESS=${VISION_ADDR}

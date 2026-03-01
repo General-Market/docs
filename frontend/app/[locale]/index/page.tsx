@@ -1,7 +1,24 @@
+import { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import { getItpSummaries } from '@/lib/api/server-data'
 import { FinancialProductJsonLd, BreadcrumbJsonLd } from '@/components/seo/JsonLd'
 import { HomeClient } from '@/components/domain/HomeClient'
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'seo.sr_only' })
+  return {
+    title: t('h1'),
+    description: t('markets.description'),
+    alternates: {
+      canonical: '/index',
+    },
+    openGraph: {
+      type: 'website',
+      siteName: 'General Market',
+    },
+  }
+}
 
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
@@ -14,9 +31,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
 
   return (
     <main className="min-h-screen bg-page flex flex-col">
-      {/* SEO shell — visible to crawlers, sr-only for users */}
-      <h1 className="sr-only">{t('h1')}</h1>
-
+      {/* SEO-visible content */}
       <div className="sr-only">
         <section aria-label={t('markets.title')}>
           <h2>{t('markets.title')}</h2>
@@ -56,9 +71,8 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       {/* JSON-LD structured data */}
       <FinancialProductJsonLd itps={itps} />
       <BreadcrumbJsonLd items={[
-        { name: tBreadcrumbs('home'), url: 'https://generalmarket.io' },
-        { name: tBreadcrumbs('markets'), url: 'https://generalmarket.io/index#markets' },
-        { name: tBreadcrumbs('documentation'), url: 'https://generalmarket.io/docs' },
+        { name: tBreadcrumbs('home'), url: 'https://www.generalmarket.io' },
+        { name: tBreadcrumbs('markets'), url: 'https://www.generalmarket.io/index' },
       ]} />
 
       {/* Interactive client app */}

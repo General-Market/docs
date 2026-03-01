@@ -3,6 +3,7 @@
 //! This crate provides the issuer node implementation for the Index L3 network.
 //! The issuer node participates in order batching, BLS consensus, and trade execution.
 
+pub mod abi;
 pub mod api;
 pub mod arbitration;
 pub mod batcher;
@@ -75,7 +76,8 @@ pub use heartbeat::{
     PeerHealthTracker, HEARTBEAT_INTERVAL, KICK_VOTE_THRESHOLD, UNHEALTHY_THRESHOLD,
 };
 pub use bridge::{
-    build_bridge_arb_to_l3_hash, BridgeConfig, BridgeError, BridgeOrderStatus, BridgeOrchestrator,
+    build_bridge_arb_to_l3_hash, build_nav_oracle_hash, build_update_price_calldata,
+    BridgeConfig, BridgeError, BridgeOrderStatus, BridgeOrchestrator,
     BridgeProposal, BridgeResult, CrossChainOrderReader, SignatureCollector,
 };
 pub use api::{

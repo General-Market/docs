@@ -18,6 +18,8 @@ pub mod watchdog;
 
 pub use orchestrator::{BridgeOrchestrator, CrossChainOrderReader};
 pub use types::{
+    // Shared consensus result type
+    SignedConsensusResult,
     // Story 7.2: Bridge Arb→L3
     build_bridge_arb_to_l3_hash, BridgeConfig, BridgeError, BridgeOrderStatus, BridgeProposal,
     BridgeResult, SignatureCollector,
@@ -44,8 +46,12 @@ pub use types::{
     RebalanceBatchResult, UpdateWeightsResult,
     // Single-phase rebalance (replaces 2-phase for on-chain call)
     build_rebalance_hash, build_rebalance_calldata, RebalanceResult,
-    // NAV push
+    // NAV push (L3 Investment.setItpNav)
     build_set_itp_nav_calldata, build_set_itp_nav_hash, SetItpNavResult,
+    // NAV oracle (ITPNAVOracle on Arb — Phase 2B)
+    build_nav_oracle_hash, build_update_price_calldata,
+    // MirrorIssuerRegistry sync (Step 12)
+    build_mirror_registry_sync_hash, build_mirror_registry_sync_calldata,
     // Issuer-driven per-asset settlement
     AssetTrade, AssetTradesProposal, AssetTradesResult,
     build_emit_asset_trades_hash, build_emit_asset_trades_calldata,

@@ -20,6 +20,31 @@
 //! 4. Leader submits aggregated signature on-chain
 //! ```
 
+use thiserror::Error;
+
+/// Shared error variants common to all consensus-based operations
+/// (bridge orchestration, ITP creation, rebalance requests).
+#[derive(Debug, Clone, Error)]
+pub enum ConsensusError {
+    #[error("insufficient signatures: got {got}, need {need}")]
+    InsufficientSignatures { got: usize, need: usize },
+
+    #[error("proposal timeout: no response within {timeout_ms}ms")]
+    ProposalTimeout { timeout_ms: u64 },
+
+    #[error("signing timeout: {received} signatures within {timeout_ms}ms")]
+    SigningTimeout { received: usize, timeout_ms: u64 },
+
+    #[error("chain reader error: {reason}")]
+    ChainReaderError { reason: String },
+
+    #[error("chain writer error: {reason}")]
+    ChainWriterError { reason: String },
+
+    #[error("BLS signing error: {reason}")]
+    BlsSigningError { reason: String },
+}
+
 pub mod aggregator;
 pub mod equivocation;
 pub mod itp_creation;

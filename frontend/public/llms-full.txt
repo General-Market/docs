@@ -4,7 +4,7 @@
 
 General Market enables users to create, trade, and manage tokenized Index Tracking Products (ITPs) and trade on Vision, a sealed parimutuel prediction market. The protocol runs on an Arbitrum Orbit L3 chain (Chain ID: 111222333). ITPs work like ETFs — each ITP holds a fixed basket of crypto assets whose NAV floats with underlying prices. Vision lets traders bet on binary price outcomes (UP/DOWN) across batches of assets with configurable tick durations.
 
-Website: https://generalmarket.io
+Website: https://www.generalmarket.io
 Discord: https://discord.gg/xsfgzwR6
 
 ---
@@ -291,7 +291,7 @@ Backend service providing market data and analytics:
 
 ## Data Node API Reference
 
-Base URL: `https://generalmarket.io/api` (proxied to data node)
+Base URL: `https://www.generalmarket.io/api` (proxied to data node)
 
 ### Price Endpoints
 - `GET /price?asset=BTC` — single asset latest price

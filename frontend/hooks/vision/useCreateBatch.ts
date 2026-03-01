@@ -110,12 +110,13 @@ export function useCreateBatch(): UseCreateBatchReturn {
       address: VISION_ADDRESS,
       abi: VISION_ABI,
       functionName: 'createBatch',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       args: [
         encodedMarketIds,
         params.resolutionTypes,
         BigInt(params.tickDuration),
         params.customThresholds.map((t) => BigInt(t)),
-      ],
+      ] as any,
     })
   }, [writeContract])
 

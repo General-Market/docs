@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { SourcesGrid } from '@/components/domain/vision/sources/SourcesGrid'
+import { VisionBalanceBar } from '@/components/domain/vision/VisionBalanceBar'
 import { Link } from '@/i18n/routing'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -30,6 +31,9 @@ export default async function VisionPage() {
           <Link href="/about" className="text-black font-semibold hover:underline">learn how the protocol works</Link>.
         </p>
       </section>
+      <div className="max-w-site mx-auto px-6 lg:px-12">
+        <VisionBalanceBar />
+      </div>
       <div className="flex-1 overflow-x-clip">
         <SourcesGrid />
       </div>

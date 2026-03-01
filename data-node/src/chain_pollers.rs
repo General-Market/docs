@@ -118,7 +118,8 @@ pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::E
 }
 
 pub async fn poll_oracle_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let oracle_addr = crate::api::deployment_addr(&state.morpho_deployment, "MOCK_ORACLE")?;
+    let oracle_addr = crate::api::deployment_addr(&state.morpho_deployment, "ITP_NAV_ORACLE")
+        .or_else(|_| crate::api::deployment_addr(&state.morpho_deployment, "MOCK_ORACLE"))?;
     let reader = OracleReader::new(oracle_addr, Arc::clone(&state.l3_provider));
 
     let price = reader.current_price().call().await?;

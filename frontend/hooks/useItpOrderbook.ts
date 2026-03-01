@@ -35,16 +35,34 @@ interface CacheEntry {
   timestamp: number
 }
 
-// Aggressive poll until depth arrives, then slow refresh
-const FAST_POLL_MS = 800
-const SLOW_POLL_MS = 5_000
-const CACHE_TTL_MS = 4_000
+// Fast poll for Binance-style live ticking
+const POLL_MS = 300
+const CACHE_TTL_MS = 1_500
 
 // Module-level cache shared across hook instances
 const cache = new Map<string, CacheEntry>()
 
-function hasDepth(d: OrderbookData | null): boolean {
-  return !!d && d.bids.length > 0 && d.asks.length > 0
+/** Fire-and-forget prefetch that warms the module-level cache.
+ *  Call once per ITP on page load so data is ready before hover. */
+export function prefetchOrderbook(itpId: string, levels: number = 15) {
+  const cacheKey = `${itpId}:${levels}:0`
+  const cached = cache.get(cacheKey)
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) return
+
+  const params = new URLSearchParams({
+    itp_id: itpId,
+    levels: String(levels),
+    aggregation_bps: '0',
+  })
+
+  fetch(`${DATA_NODE_URL}/itp-orderbook?${params}`)
+    .then(res => res.ok ? res.json() : null)
+    .then((result: OrderbookData | null) => {
+      if (result) {
+        cache.set(cacheKey, { data: result, timestamp: Date.now() })
+      }
+    })
+    .catch(() => {})
 }
 
 export function useItpOrderbook(
@@ -66,7 +84,6 @@ export function useItpOrderbook(
   const [aggregationBps, setAggregationBps] = useState(0)
 
   const abortRef = useRef<AbortController | null>(null)
-  const hasDepthRef = useRef(false)
 
   const cancel = useCallback(() => {
     if (abortRef.current) {
@@ -82,7 +99,6 @@ export function useItpOrderbook(
     const cached = cache.get(cacheKey)
     if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
       setData(cached.data)
-      hasDepthRef.current = hasDepth(cached.data)
       setIsLoading(false)
       setError(null)
       return
@@ -116,7 +132,6 @@ export function useItpOrderbook(
         const now = Date.now()
         cache.forEach((v, k) => { if (now - v.timestamp > CACHE_TTL_MS * 3) cache.delete(k) })
         setData(result)
-        hasDepthRef.current = hasDepth(result)
         setError(null)
       })
       .catch(err => {
@@ -130,52 +145,35 @@ export function useItpOrderbook(
       })
   }, [itpId, levels, aggregationBps])
 
-  // Fetch immediately on enable, then poll: fast until depth arrives, slow after
+  // Poll every 300ms for Binance-style live ticking.
+  // Client cache (1.5s) means most polls are instant no-ops;
+  // every ~1.5s a real fetch fires to get fresh depth from backend.
   useEffect(() => {
     if (!enabled || !itpId) {
       cancel()
       setData(null)
       setIsLoading(false)
       setError(null)
-      hasDepthRef.current = false
       return
     }
 
-    // Check cache immediately — show whatever we have
+    // Show cached data immediately if available
     const cacheKey = `${itpId}:${levels}:${aggregationBps}`
     const cached = cache.get(cacheKey)
     if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
       setData(cached.data)
-      hasDepthRef.current = hasDepth(cached.data)
       setIsLoading(false)
       setError(null)
     } else {
       setIsLoading(true)
     }
 
-    // Fire first fetch immediately (no debounce)
     doFetch()
 
-    // Adaptive polling via setTimeout chain:
-    // 800ms until real depth arrives, then 5s for live refresh
-    let timer: ReturnType<typeof setTimeout> | null = null
-    let stopped = false
-
-    function tick() {
-      if (stopped) return
-      const delay = hasDepthRef.current ? SLOW_POLL_MS : FAST_POLL_MS
-      timer = setTimeout(() => {
-        if (stopped) return
-        cache.delete(cacheKey)
-        doFetch()
-        tick()
-      }, delay)
-    }
-    tick()
+    const interval = setInterval(doFetch, POLL_MS)
 
     return () => {
-      stopped = true
-      if (timer) clearTimeout(timer)
+      clearInterval(interval)
       cancel()
     }
   }, [enabled, itpId, levels, aggregationBps, doFetch, cancel])

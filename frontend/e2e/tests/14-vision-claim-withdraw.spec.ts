@@ -43,6 +43,9 @@ test.describe('Vision Claim + Withdraw', () => {
     if (await connectBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
       await connectBtn.click()
       await page.mouse.move(0, 0)
+      // Wait for wallet connection to complete (truncated address replaces Connect button)
+      const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4)
+      await expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 15_000 })
     }
 
     // Wait for balance bar
@@ -116,6 +119,8 @@ test.describe('Vision Claim + Withdraw', () => {
     if (await page.getByRole('button', { name: /Connect Wallet|Log\s?In/ }).isVisible({ timeout: 5_000 }).catch(() => false)) {
       await page.getByRole('button', { name: /Connect Wallet|Log\s?In/ }).click()
       await page.mouse.move(0, 0)
+      const truncated2 = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4)
+      await expect(page.getByRole('button', { name: truncated2 })).toBeVisible({ timeout: 15_000 })
     }
     await expect(page.getByText(/Balance:.*USDC/)).toBeVisible({ timeout: 30_000 })
 

@@ -82,10 +82,13 @@ test.describe('Create ITP', () => {
       const newState = await getItpStateL3(newItpId);
       expect(newState.assets.length).toBeGreaterThan(0);
 
-      // 14. Verify BridgedITP was deployed on Arb
-      const bridgedAddr = await getBridgedItpAddress(newItpId);
-      const isZero = bridgedAddr === '0x' + '0'.repeat(40);
-      expect(isZero, 'BridgedITP should be deployed on Arb').toBe(false);
+      // 14. Verify BridgedITP was deployed on Arb (poll — completeCreateItp may still be mining)
+      const bridgedAddr = await pollUntil(
+        () => getBridgedItpAddress(newItpId),
+        (addr) => addr !== '0x' + '0'.repeat(40),
+        60_000,
+        3_000,
+      );
       console.log(`ITP created via bridge: itpId=${newItpId}, bridgedItp=${bridgedAddr}`);
     } finally {
       stopMiner();

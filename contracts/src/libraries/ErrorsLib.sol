@@ -775,4 +775,27 @@ library ErrorsLib {
     /// @notice E132: Vision withdrawal already processed (replay protection)
     /// @param withdrawId The withdraw ID that was already processed
     error E132_VisionWithdrawAlreadyProcessed(uint256 withdrawId);
+
+    // ============ NAV ORACLE PHASE 2B ERRORS ============
+
+    /// @notice E133: Cycle gap too large (cycleNumber > lastCycleNumber + MAX_CYCLE_GAP)
+    error E133_CycleGapTooLarge();
+
+    /// @notice E134: Price deviation too high (exceeds MAX_DEVIATION_BPS from current price)
+    error E134_PriceDeviationTooHigh();
+
+    // ============ MIRROR REGISTRY PHASE 2B ERRORS ============
+
+    /// @notice E135: Missing individual issuer pubkey (expected 128 bytes, got 0)
+    /// @param issuerId The issuer ID with missing pubkey
+    error E135_MissingIssuerPubkey(uint256 issuerId);
+
+    /// @notice E136: Caller not authorized for incrementMissedCounts
+    /// @param caller The unauthorized caller address
+    error E136_NotAuthorizedMissedCountCaller(address caller);
+
+    /// @notice E137: Issuer pubkeys and IDs array length mismatch
+    /// @param pubkeysLen Length of pubkeys array
+    /// @param idsLen Length of IDs array
+    error E137_PubkeysIdsLengthMismatch(uint256 pubkeysLen, uint256 idsLen);
 }

@@ -33,6 +33,9 @@ contract CuratorRateIRMTest is TestHelper {
     uint256 public constant LLTV = 0.77e18;
     uint256 public constant ORACLE_PRICE = 1e24;
 
+    uint256 constant SYNC_NONCE = 1;
+    uint256 constant SIGNERS_BITMASK_3 = 0x07;
+
     // ============ SETUP ============
 
     function setUp() public {
@@ -51,9 +54,37 @@ contract CuratorRateIRMTest is TestHelper {
         );
         mirrorRegistry = MirrorIssuerRegistry(address(mirrorProxy));
 
+        // Sync mirror registry with individual pubkeys and create a snapshot (TOFU bootstrap)
+        bytes[] memory issuerPubkeys = new bytes[](3);
+        uint256[] memory issuerIdList = new uint256[](3);
+        for (uint8 i = 0; i < 3; i++) {
+            issuerPubkeys[i] = blsPubkey(i);
+            issuerIdList[i] = i;
+        }
+        uint256 newActiveBitmask = 0x07;
+        bytes32 syncHash = keccak256(
+            abi.encode(
+                "REGISTRY_SYNC",
+                block.chainid,
+                address(mirrorRegistry),
+                SYNC_NONCE,
+                keccak256(abi.encode(issuerPubkeys, issuerIdList)),
+                newActiveBitmask,
+                uint256(3),
+                uint256(2)
+            )
+        );
+        bytes memory syncSig = signWithTestIssuers(syncHash);
+        mirrorRegistry.sync(issuerPubkeys, issuerIdList, newActiveBitmask, 3, 2, SYNC_NONCE, syncSig, 0, 0);
+
         // Deploy oracle
         oracle = new ITPNAVOracle(address(mirrorRegistry), address(itp), ORACLE_PRICE);
-        oracle.updatePrice(ORACLE_PRICE, block.timestamp, 1, _signUpdatePrice(ORACLE_PRICE, block.timestamp, 1), 0x07);
+
+        // Authorize oracle for incrementMissedCounts
+        mirrorRegistry.setAuthorizedMissedCountCaller(address(oracle), true);
+
+        // Initial price update
+        oracle.updatePrice(ORACLE_PRICE, block.timestamp, 1, _signUpdatePrice(ORACLE_PRICE, block.timestamp, 1), SYNC_NONCE, SIGNERS_BITMASK_3);
 
         // Deploy Morpho
         morpho = new Morpho(morphoOwner);
@@ -92,13 +123,13 @@ contract CuratorRateIRMTest is TestHelper {
     // ============ SIGNING HELPERS ============
 
     /// @notice Sign an ITPNAVOracle.updatePrice call with real BLS signature
-    /// @dev Message hash: keccak256(abi.encodePacked(itpAddress, newPrice, timestamp, cycleNumber))
+    /// @dev Message hash: keccak256(abi.encode(chainid, oracle, itpAddress, newPrice, timestamp, cycleNumber))
     function _signUpdatePrice(
         uint256 newPrice,
         uint256 timestamp,
         uint256 cycleNumber
     ) internal returns (bytes memory) {
-        bytes32 message = keccak256(abi.encodePacked(address(itp), newPrice, timestamp, cycleNumber));
+        bytes32 message = keccak256(abi.encode(block.chainid, address(oracle), address(itp), newPrice, timestamp, cycleNumber));
         return signWithTestIssuers(message);
     }
 
@@ -414,7 +445,7 @@ contract CuratorRateIRMTest is TestHelper {
         // Crash oracle price to make position liquidatable
         // New price: 0.5 USDC per ITP (halved)
         uint256 crashPrice = ORACLE_PRICE / 2;
-        oracle.updatePrice(crashPrice, block.timestamp, 2, _signUpdatePrice(crashPrice, block.timestamp, 2), 0x07);
+        oracle.updatePrice(crashPrice, block.timestamp, 2, _signUpdatePrice(crashPrice, block.timestamp, 2), SYNC_NONCE, SIGNERS_BITMASK_3);
 
         // Liquidator repays debt and seizes collateral
         address liquidator = address(0xFF);

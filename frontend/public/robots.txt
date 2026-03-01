@@ -5,4 +5,4 @@ Allow: /llms.txt
 Allow: /llms-full.txt
 
 # Sitemap
-Sitemap: https://generalmarket.io/sitemap.xml
+Sitemap: https://www.generalmarket.io/sitemap.xml

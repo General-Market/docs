@@ -5,32 +5,52 @@ import {Script, console} from "forge-std/Script.sol";
 import {IMorpho, MarketParams, Id} from "@morpho-blue/interfaces/IMorpho.sol";
 import {MetaMorpho, IMetaMorphoBase} from "@metamorpho/MetaMorpho.sol";
 import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
-import {MockMorphoOracle} from "../src/mocks/MockMorphoOracle.sol";
+import {MirrorIssuerRegistry} from "../src/registry/MirrorIssuerRegistry.sol";
+import {ITPNAVOracle} from "../src/oracle/ITPNAVOracle.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
 import {Morpho} from "@morpho-blue/Morpho.sol";
 import {AdaptiveCurveIrm} from "@morpho-blue-irm/adaptive-curve-irm/AdaptiveCurveIrm.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "./helpers/DeployBLSHelper.sol";
 
 /// @title DeployMorphoE2E - Deploy Morpho Blue + MetaMorpho for E2E testing (Phase 1)
-/// @notice Deploys Morpho core, AdaptiveCurveIRM, MockMorphoOracle, creates a market,
-///         deploys MetaMorpho vault, and submits supply cap.
+/// @notice Deploys Morpho core, AdaptiveCurveIRM, MirrorIssuerRegistry + ITPNAVOracle,
+///         creates a market, deploys MetaMorpho vault, and submits supply cap.
 /// @dev Story 8.5: After this script, the deploy bash script must:
 ///      1. cast rpc evm_increaseTime 86401
 ///      2. cast rpc evm_mine
 ///      3. Run ConfigureMorphoE2E to accept cap, set queue, and seed liquidity
-contract DeployMorphoE2E is Script {
+///
+///      BLS keys are generated deterministically via FFI (bls-tool) using seed indices 0,1,2.
+///      This is the same approach as DeployFullSystemE2E — no env vars needed for BLS keys.
+///
+/// TODO: After this change, update these consumers that still reference MOCK_ORACLE:
+///   - data-node/src/chain_pollers.rs (deployment_addr "MOCK_ORACLE")
+///   - data-node/src/api.rs (deployment_addr "MOCK_ORACLE")
+///   - frontend/lib/contracts/morpho-addresses.ts (c.MOCK_ORACLE)
+///   - frontend/e2e/helpers/api-interceptor.ts (MOCK_ORACLE)
+///   - frontend/e2e/tests/10-morpho-oracle-health.spec.ts (MOCK_ORACLE)
+///   - scripts/stress-test/config.ts (MOCK_ORACLE)
+///   - contracts/script/DeployMorphoMarket.s.sol (MOCK_ORACLE)
+contract DeployMorphoE2E is DeployBLSHelper {
     using MarketParamsLib for MarketParams;
 
     // LLTV: 77% (Tier A per architecture)
     uint256 constant LLTV = 0.77e18;
 
-    // Oracle price: 1 ITP = 100 USDC (example price for testing)
-    // Precision = 36 + loanDecimals - collateralDecimals = 36 + 6 - 18 = 24
-    // So 100 USDC = 100e24
-    uint256 constant INITIAL_ORACLE_PRICE = 100e24;
+    // Oracle price: 1 ITP vault token = 1 USDC (NAV starts at $1)
+    // Both L3_WUSDC (loan) and vault ERC20 (collateral) are 18 decimals
+    // Precision = 36 + loanDecimals - collateralDecimals = 36 + 18 - 18 = 36
+    // So 1 USDC = 1e36
+    uint256 constant INITIAL_ORACLE_PRICE = 1e36;
 
     // MetaMorpho vault supply cap per market
     uint256 constant SUPPLY_CAP = type(uint184).max;
+
+    // BLS constants (3 issuers, 2/3 threshold)
+    uint256 constant ISSUER_COUNT = 3;
+    uint256 constant BLS_THRESHOLD = 2;
 
     function run() external {
         uint256 anvilKey = vm.envOr(
@@ -46,6 +66,15 @@ contract DeployMorphoE2E is Script {
         console.log("ArbUSDC:", arbUSDC);
         console.log("ITP Vault (collateral):", itpVault);
 
+        // Generate BLS keys via FFI (deterministic seeds 0,1,2 — same as DeployFullSystemE2E)
+        bytes memory aggPubkey = blsAggPubkey("0,1,2");
+        bytes[] memory issuerPubkeys = new bytes[](ISSUER_COUNT);
+        uint256[] memory issuerIds = new uint256[](ISSUER_COUNT);
+        for (uint8 i = 0; i < ISSUER_COUNT; i++) {
+            issuerPubkeys[i] = blsPubkey(i);
+            issuerIds[i] = i;
+        }
+
         vm.startBroadcast(anvilKey);
 
         // 1. Deploy Morpho Blue core
@@ -56,10 +85,58 @@ contract DeployMorphoE2E is Script {
         AdaptiveCurveIrm irm = new AdaptiveCurveIrm(address(morpho));
         console.log("AdaptiveCurveIRM deployed:", address(irm));
 
-        // 3. Deploy MockMorphoOracle
-        MockMorphoOracle oracle = new MockMorphoOracle(INITIAL_ORACLE_PRICE);
-        console.log("MockMorphoOracle deployed:", address(oracle));
-        console.log("  Initial price:", INITIAL_ORACLE_PRICE, "(100 USDC per ITP, 24 decimal precision)");
+        // 3a. Deploy MirrorIssuerRegistry (UUPS proxy)
+        // initialize(aggPubkey, threshold, activeCount, admin)
+        MirrorIssuerRegistry registryImpl = new MirrorIssuerRegistry();
+        bytes memory initData = abi.encodeCall(
+            MirrorIssuerRegistry.initialize,
+            (aggPubkey, BLS_THRESHOLD, ISSUER_COUNT, deployer)
+        );
+        ERC1967Proxy registryProxy = new ERC1967Proxy(address(registryImpl), initData);
+        address mirrorRegistry = address(registryProxy);
+        console.log("MirrorIssuerRegistry impl:", address(registryImpl));
+        console.log("MirrorIssuerRegistry proxy:", mirrorRegistry);
+
+        // 3b. Sync MirrorIssuerRegistry with individual pubkeys (TOFU bootstrap)
+        // First sync verifies against aggregated pubkey, then stores individual keys + snapshot
+        uint256 syncNonce = 1;
+        uint256 activeBitmask = (1 << ISSUER_COUNT) - 1; // 0x07 for 3 issuers
+        bytes32 syncHash = keccak256(
+            abi.encode(
+                "REGISTRY_SYNC",
+                block.chainid,
+                mirrorRegistry,
+                syncNonce,
+                keccak256(abi.encode(issuerPubkeys, issuerIds)),
+                activeBitmask,
+                ISSUER_COUNT,
+                BLS_THRESHOLD
+            )
+        );
+        bytes memory syncSig = blsSign("0,1,2", syncHash);
+        MirrorIssuerRegistry(mirrorRegistry).sync(
+            issuerPubkeys, issuerIds, activeBitmask, ISSUER_COUNT, BLS_THRESHOLD,
+            syncNonce, syncSig, 0, 0
+        );
+        console.log("MirrorIssuerRegistry synced with individual pubkeys (TOFU bootstrap)");
+
+        // 3c. Deploy ITPNAVOracle
+        // constructor(issuerRegistry, itpAddress, initialPrice)
+        ITPNAVOracle oracle = new ITPNAVOracle(mirrorRegistry, itpVault, INITIAL_ORACLE_PRICE);
+        console.log("ITPNAVOracle deployed:", address(oracle));
+        console.log("  Initial price:", INITIAL_ORACLE_PRICE, "(1:1 ITP/USDC, 36 decimal precision)");
+
+        // 3d. Authorize ITPNAVOracle for incrementMissedCounts on MirrorIssuerRegistry
+        MirrorIssuerRegistry(mirrorRegistry).setAuthorizedMissedCountCaller(address(oracle), true);
+        console.log("  ITPNAVOracle authorized for incrementMissedCounts");
+
+        // 3e. Push initial BLS-signed price update so oracle is not stale
+        bytes32 navHash = keccak256(
+            abi.encode(block.chainid, address(oracle), itpVault, INITIAL_ORACLE_PRICE, block.timestamp, uint256(1))
+        );
+        bytes memory navSig = blsSign("0,1,2", navHash);
+        oracle.updatePrice(INITIAL_ORACLE_PRICE, block.timestamp, 1, navSig, syncNonce, activeBitmask);
+        console.log("  Initial BLS-signed price pushed to oracle");
 
         // 4. Enable IRM and LLTV on Morpho
         morpho.enableIrm(address(irm));
@@ -109,7 +186,8 @@ contract DeployMorphoE2E is Script {
         string memory p2 = string.concat(
             '    "MORPHO": "', vm.toString(address(morpho)),
             '",\n    "ADAPTIVE_IRM": "', vm.toString(address(irm)),
-            '",\n    "MOCK_ORACLE": "', vm.toString(address(oracle)),
+            '",\n    "MIRROR_REGISTRY": "', vm.toString(mirrorRegistry),
+            '",\n    "ITP_NAV_ORACLE": "', vm.toString(address(oracle)),
             '",\n    "METAMORPHO_VAULT": "', vm.toString(vaultAddr),
             '",\n    "MARKET_ID": "', vm.toString(Id.unwrap(marketId)),
             '"\n  },\n'
@@ -135,7 +213,7 @@ contract ConfigureMorphoE2E is Script {
     using MarketParamsLib for MarketParams;
 
     uint256 constant LLTV = 0.77e18;
-    uint256 constant INITIAL_VAULT_LIQUIDITY = 100_000 * 1e6;
+    uint256 constant INITIAL_VAULT_LIQUIDITY = 100_000 * 1e18;
 
     function run() external {
         uint256 anvilKey = vm.envOr(
@@ -146,7 +224,7 @@ contract ConfigureMorphoE2E is Script {
         address vaultAddr = vm.envAddress("METAMORPHO_VAULT");
         address arbUSDC = vm.envAddress("ARB_USDC");
         address itpVault = vm.envAddress("ITP_VAULT");
-        address oracleAddr = vm.envAddress("MOCK_ORACLE");
+        address oracleAddr = vm.envAddress("ITP_NAV_ORACLE");
         address irmAddr = vm.envAddress("ADAPTIVE_IRM");
 
         MarketParams memory marketParams = MarketParams({
