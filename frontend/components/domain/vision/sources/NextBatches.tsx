@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { getAllBatches, getBatchTickState, getMultiplier, formatTickDuration, type StaticBatch } from '@/lib/vision/tick'
+import { useBatches } from '@/hooks/vision/useBatches'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -110,7 +111,8 @@ function BatchCard({ batch }: { batch: BatchWithTick }) {
 }
 
 export function NextBatches() {
-  const allBatches = useMemo(() => getAllBatches(), [])
+  const staticBatches = useMemo(() => getAllBatches(), [])
+  const { data: apiBatches } = useBatches()
 
   const [now, setNow] = useState(() => Date.now())
 
@@ -121,13 +123,24 @@ export function NextBatches() {
 
   // Compute per-batch tick state and sort by remaining time (soonest first)
   const sortedBatches = useMemo((): BatchWithTick[] => {
-    return allBatches
+    // Create a map of batch ID -> API tick duration for quick lookup
+    const apiTickDurationMap = new Map(
+      apiBatches?.map(b => [b.id, b.tickDuration]) ?? []
+    )
+
+    return staticBatches
       .map(batch => {
-        const tick = getBatchTickState(batch.batchId, batch.category, now)
+        const apiTickDuration = apiTickDurationMap.get(batch.batchId)
+        const tick = getBatchTickState(
+          batch.batchId,
+          batch.category,
+          now,
+          apiTickDuration // Pass the real tick duration from API, falls back to category default if not available
+        )
         return { ...batch, ...tick }
       })
       .sort((a, b) => a.remaining - b.remaining)
-  }, [allBatches, now])
+  }, [staticBatches, apiBatches, now])
 
   // Count how many are locked right now
   const lockedCount = sortedBatches.filter(b => b.isLocked).length

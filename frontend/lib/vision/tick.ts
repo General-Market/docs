@@ -31,9 +31,9 @@ const CATEGORY_TICK_DURATION: Record<SourceCategory, number> = {
   space:         300,   // 5 min — ISS, solar wind
 }
 
-/** Lock offset = 15% of tick, min 5s */
+/** Lock offset = 25% of tick, min 5s */
 function lockOffsetForDuration(tickDuration: number): number {
-  return Math.max(5, Math.floor(tickDuration * 0.15))
+  return Math.max(5, Math.floor(tickDuration * 0.25))
 }
 
 /** Get the tick duration for a source category */
@@ -63,8 +63,9 @@ export function getBatchTickState(
   batchId: number,
   category: SourceCategory,
   now: number = Date.now(),
+  tickDurationOverride?: number,
 ) {
-  const tickDuration = CATEGORY_TICK_DURATION[category] ?? 600
+  const tickDuration = tickDurationOverride ?? CATEGORY_TICK_DURATION[category] ?? 600
   const lock = lockOffsetForDuration(tickDuration)
   const offset = getBatchOffset(batchId, tickDuration)
   const epochSec = Math.floor(now / 1000)
