@@ -43,6 +43,16 @@ import {
   GasReservoir3D,
   ProverConsensus3D,
 } from "@/components/learn/diagrams/scaling";
+import {
+  NormalVsFrame3D,
+  FrameOverview3D,
+  MultisigAuth3D,
+  AccountDeploy3D,
+  PaymasterFlow3D as PaymasterFlow3DNew,
+  ZKPrivacy3D,
+  FOCILGuard3D,
+  AtomicBatch3D,
+} from "@/components/learn/diagrams/eip8141";
 
 function extractTextFromReactNode(node: ReactNode): string {
   if (typeof node === "string") return node;
@@ -216,4 +226,13 @@ export const mdxComponents: MDXComponents = {
   ErasureCoding3D,
   GasReservoir3D,
   ProverConsensus3D,
+  // EIP-8141 article (new 3D scenes)
+  NormalVsFrame3D,
+  FrameOverview3D,
+  MultisigAuth3D,
+  AccountDeploy3D,
+  PaymasterFlow3D: PaymasterFlow3DNew,
+  ZKPrivacy3D,
+  FOCILGuard3D,
+  AtomicBatch3D,
 };
