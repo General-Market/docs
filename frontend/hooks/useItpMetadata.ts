@@ -3,6 +3,7 @@
 import { useReadContract } from 'wagmi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
+import { arbChainId } from '@/lib/wagmi'
 
 interface ItpMetadata {
   description: string
@@ -25,6 +26,7 @@ export function useItpMetadata(
     abi: BRIDGE_PROXY_ABI,
     functionName: 'getItpMetadata',
     args: itpId ? [itpId] : undefined,
+    chainId: arbChainId,
     query: {
       enabled: !!itpId,
       refetchInterval: 30000,

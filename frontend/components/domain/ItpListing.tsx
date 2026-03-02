@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useAccount, useConnect, useDisconnect, usePublicClient, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount, useConnect, useDisconnect, usePublicClient, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { formatUnits } from 'viem'
@@ -17,7 +17,6 @@ import { useItpNav } from '@/hooks/useItpNav'
 import { useUserItpShares } from '@/hooks/useUserItpShares'
 import { useItpMetadata } from '@/hooks/useItpMetadata'
 import { useDeployerName } from '@/hooks/useDeployerName'
-import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { useItpOrderbook, prefetchOrderbook } from '@/hooks/useItpOrderbook'
 import { hasLendingMarket } from '@/lib/contracts/morpho-markets-registry'
@@ -359,7 +358,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
 
   const { metadata, refetch: refetchMetadata } = useItpMetadata(itp.itpId as `0x${string}` | undefined)
   const { name: deployerName } = useDeployerName(itp.admin as `0x${string}` | undefined)
-  const { writeContractAsync, data: txHash, isPending: isWriting, error: writeError } = useChainWriteContract()
+  const { writeContractAsync, data: txHash, isPending: isWriting, error: writeError } = useWriteContract()
   const { isLoading: isTxConfirming, isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({ hash: txHash, chainId: arbChainId })
 
   // Toast notifications for metadata edit

@@ -3,7 +3,6 @@ import { connectWalletButton, itpCard } from '../helpers/selectors';
 import {
   getItpStateL3,
   getItpCountL3,
-  requestCreateItpDirect,
   getBridgedItpAddress,
   pollUntil,
   startArbBlockMiner,
@@ -59,14 +58,10 @@ test.describe('Create ITP', () => {
       await expect(submitBtn).toBeEnabled({ timeout: 30_000 });
       await submitBtn.click();
 
-      // 10. Wait for success banner (frontend tx confirmed on L3 BridgeProxy)
+      // 10. Wait for success banner (frontend tx confirmed on Arb BridgeProxy)
       await expect(page.getByText('ITP Request Created!').first()).toBeVisible({ timeout: 60_000 });
 
-      // 11. Send requestCreateItp to Arb BridgeProxy (the one issuers watch)
-      //     The frontend sends to L3 BridgeProxy, but issuers only watch Arb (port 8546).
-      await requestCreateItpDirect(TEST_ADDRESS);
-
-      // 12. Wait for issuers to relay → ITP count increases on L3
+      // 11. Wait for issuers to relay → ITP count increases on L3
       await pollUntil(
         () => getItpCountL3(),
         (count) => count > itpCountBefore,
@@ -74,7 +69,7 @@ test.describe('Create ITP', () => {
         3_000,
       );
 
-      // 13. Verify ITP exists on L3 with assets
+      // 12. Verify ITP exists on L3 with assets
       const newCount = await getItpCountL3();
       expect(newCount).toBeGreaterThan(itpCountBefore);
 
@@ -82,7 +77,7 @@ test.describe('Create ITP', () => {
       const newState = await getItpStateL3(newItpId);
       expect(newState.assets.length).toBeGreaterThan(0);
 
-      // 14. Verify BridgedITP was deployed on Arb (poll — completeCreateItp may still be mining)
+      // 13. Verify BridgedITP was deployed on Arb (poll — completeCreateItp may still be mining)
       const bridgedAddr = await pollUntil(
         () => getBridgedItpAddress(newItpId),
         (addr) => addr !== '0x' + '0'.repeat(40),

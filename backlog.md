@@ -1,5 +1,12 @@
 # Design Decision Backlog
 
+## Session: 20260302-1800-x7k1 (Fix ITP creation sending to wrong chain)
+
+- [DECISION] Replaced `useChainWriteContract` with wagmi's native `useWriteContract` + explicit `chainId: arbChainId` in all BridgeProxy-interacting components (CreateItpSection, RebalanceModal, ItpListing). The `useChainWriteContract` hook forcefully injects `chainId: activeChainId` (L3 = 111222333) on every transaction, overriding any `chainId` passed by the caller. BridgeProxy lives on Arb (chain 421611337) and issuers only poll the Arb instance, so requests sent to L3's BridgeProxy were silently ignored.
+- [DECISION] Also fixed read hooks (`useDeployerName`, `useItpMetadata`) to explicitly use `chainId: arbChainId` when reading from BridgeProxy, since the data lives on Arb.
+- [DECISION] Removed `requestCreateItpDirect(TEST_ADDRESS)` workaround from e2e test `05-create-itp.spec.ts` — this bypassed the frontend and sent directly to Arb RPC, masking the bug.
+- [FAILED] Previous session's edits to CreateItpSection.tsx and RebalanceModal.tsx were partially reverted by the linter, which re-added `useChainWriteContract` imports. Fixed by consolidating wagmi imports into a single line and removing the separate `useChainWriteContract` import.
+
 ## Session: 20260302-1400-p9f3 (Portfolio: multi-ITP balances + historical NAV chart)
 
 - [DECISION] Changed `UserBalances.itp_shares` from `String` to `HashMap<String, String>` to support multi-ITP balance tracking. The chain poller now iterates over all ITPs from the nav cache instead of hardcoding ITP #1.

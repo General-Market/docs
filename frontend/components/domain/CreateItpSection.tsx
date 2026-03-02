@@ -1,13 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useAccount, useWaitForTransactionReceipt, useSwitchChain } from 'wagmi'
+import { useAccount, useWaitForTransactionReceipt, useSwitchChain, useWriteContract } from 'wagmi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { useNonceCheck } from '@/hooks/useNonceCheck'
-import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
-import { activeChainId, arbChainId } from '@/lib/wagmi'
+import { arbChainId } from '@/lib/wagmi'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getCoinGeckoUrl } from '@/lib/coingecko'
 import { DATA_NODE_URL } from '@/lib/config'
@@ -84,7 +83,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   const needsIssuerName = isConnected && !existingDeployerName
 
   const { switchChainAsync } = useSwitchChain()
-  const { writeContract, data: hash, isPending, error: writeError, reset: resetWrite } = useChainWriteContract()
+  const { writeContract, data: hash, isPending, error: writeError, reset: resetWrite } = useWriteContract()
   const { isLoading: isConfirming, isSuccess, error: confirmError } = useWaitForTransactionReceipt({ hash, chainId: arbChainId })
 
   // Toast notifications for ITP creation

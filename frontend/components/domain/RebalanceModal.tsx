@@ -1,12 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useAccount, useSwitchChain } from 'wagmi'
+import { useAccount, useSwitchChain, useWriteContract } from 'wagmi'
 import { encodeFunctionData, decodeFunctionResult } from 'viem'
 import { INDEX_ABI, BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { arbChainId } from '@/lib/wagmi'
-import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { useToast } from '@/lib/contexts/ToastContext'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getCoinGeckoUrl } from '@/lib/coingecko'
@@ -149,7 +148,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
     isPending: isWalletPending,
     error: writeError,
     reset: resetWrite,
-  } = useChainWriteContract()
+  } = useWriteContract()
 
   // Track rebalance params for Step 2
   const rebalanceParamsRef = useRef<{
