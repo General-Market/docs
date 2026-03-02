@@ -665,6 +665,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     let nav_oracle_address_for_task = nav_oracle_address;
     let itp_token_address_for_task = itp_token_address;
     let arb_chain_id_for_task = arb_chain_id;
+    let l3_chain_id_for_task = components.target_chain_id;
     let mirror_registry_for_task = mirror_registry_address;
     let issuer_registry_for_sync_task = issuer_registry_address_for_sync;
     let work_tx_for_task = work_tx;
@@ -835,7 +836,8 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         let l3w: Option<Arc<dyn common::traits::ChainWriter>> = consensus_chain_writer_for_task.clone().map(|w| w as Arc<dyn common::traits::ChainWriter>);
                         let oracle_addr = nav_oracle_address_for_task;
                         let itp_addr = itp_token_address_for_task;
-                        let cid = arb_chain_id_for_task;
+                        // NavOracle is on L3 — use L3 chain ID for hash (block.chainid in Solidity)
+                        let cid = if oracle_addr.is_some() { Some(l3_chain_id_for_task) } else { arb_chain_id_for_task };
                         let addrs = known_asset_addresses.clone();
                         let cycle = current_cycle;
                         let metrics = consensus_metrics.clone();
@@ -3672,7 +3674,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             });
 
             // Initialize Postgres pool, chain listener, and API routes
-            match sqlx::PgPool::connect(&vision_cfg.database_url).await {
+            match sqlx::postgres::PgPoolOptions::new()
+                .max_connections(3)
+                .idle_timeout(std::time::Duration::from_secs(300))
+                .connect(&vision_cfg.database_url).await {
                 Ok(pool) => {
                     // Restore scheduler state from DB (crash recovery)
                     if let Err(e) = scheduler.load_from_db(&pool).await {

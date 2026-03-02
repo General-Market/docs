@@ -185,8 +185,11 @@ async fn fetch_snapshot_data_inner_with_secret(
 
     let response = client.get(&url).send().await?;
 
-    // Verify HMAC signature if secret is configured (IS-7)
+    // Verify HMAC-SHA256 signature if secret is configured (IS-7)
     if let Some(secret) = hmac_secret {
+        use hmac::{Hmac, Mac};
+        use sha2::Sha256;
+
         let hmac_header = response
             .headers()
             .get("x-snapshot-hmac")
@@ -196,27 +199,21 @@ async fn fetch_snapshot_data_inner_with_secret(
         let body_text = response.text().await?;
 
         if let Some(received_hmac) = hmac_header {
-            // TODO: Add `hmac` and `sha2` crates to issuer/Cargo.toml and implement actual verification:
-            // use hmac::{Hmac, Mac};
-            // use sha2::Sha256;
-            // let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes()).unwrap();
-            // mac.update(body_text.as_bytes());
-            // let expected = hex::encode(mac.finalize().into_bytes());
-            // if received_hmac != expected {
-            //     tracing::error!(
-            //         "Snapshot HMAC mismatch — possible tampering. received={} expected={}",
-            //         received_hmac,
-            //         expected
-            //     );
-            //     return Err("HMAC verification failed — snapshot may have been tampered with".into());
-            // }
-            // tracing::debug!("Snapshot HMAC verification successful");
-
-            // For now, log that we received the header but verification is not yet implemented
-            tracing::info!("Snapshot response has X-Snapshot-HMAC header (verification pending crate dependencies)");
+            let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes())
+                .expect("HMAC can take key of any size");
+            mac.update(body_text.as_bytes());
+            let expected = hex::encode(mac.finalize().into_bytes());
+            if received_hmac != expected {
+                tracing::error!(
+                    "Snapshot HMAC mismatch — possible tampering. received={} expected={}",
+                    received_hmac,
+                    expected
+                );
+                return Err("HMAC verification failed — snapshot may have been tampered with".into());
+            }
+            tracing::debug!("Snapshot HMAC-SHA256 verification successful");
         } else {
             tracing::warn!("Snapshot response missing X-Snapshot-HMAC header — HMAC verification cannot be performed");
-            // Note: We could fail here if strict verification is desired, but for now we warn
         }
 
         let json: serde_json::Value = serde_json::from_str(&body_text)?;
@@ -534,7 +531,10 @@ pub async fn run(
     let admin_token = config.data_node_token.clone().unwrap_or_default();
 
     // Connect to Postgres for persisting balance updates and resolved ticks
-    let db_pool = match sqlx::PgPool::connect(&config.database_url).await {
+    let db_pool = match sqlx::postgres::PgPoolOptions::new()
+        .max_connections(2)
+        .idle_timeout(std::time::Duration::from_secs(300))
+        .connect(&config.database_url).await {
         Ok(pool) => {
             tracing::info!("Vision engine connected to Postgres for balance persistence");
             Some(pool)
