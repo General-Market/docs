@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount, useWaitForTransactionReceipt, useSwitchChain } from 'wagmi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { useNonceCheck } from '@/hooks/useNonceCheck'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
-import { activeChainId } from '@/lib/wagmi'
+import { useTransactionNotification } from '@/hooks/useTransactionNotification'
+import { activeChainId, arbChainId } from '@/lib/wagmi'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getCoinGeckoUrl } from '@/lib/coingecko'
 import { DATA_NODE_URL } from '@/lib/config'
@@ -66,7 +67,7 @@ interface CreateItpSectionProps {
 export function CreateItpSection({ expanded, onToggle, initialHoldings }: CreateItpSectionProps) {
   const t = useTranslations('create-itp')
   const tc = useTranslations('common')
-  const { address, isConnected } = useAccount()
+  const { address, isConnected, chainId: currentChainId } = useAccount()
   const { capture } = usePostHogTracker()
   const [name, setName] = useState('')
   const [symbol, setSymbol] = useState('')
@@ -82,8 +83,20 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   const { name: existingDeployerName, refetch: refetchDeployerName } = useDeployerName(address as `0x${string}` | undefined)
   const needsIssuerName = isConnected && !existingDeployerName
 
+  const { switchChainAsync } = useSwitchChain()
   const { writeContract, data: hash, isPending, error: writeError, reset: resetWrite } = useChainWriteContract()
-  const { isLoading: isConfirming, isSuccess, error: confirmError } = useWaitForTransactionReceipt({ hash, chainId: activeChainId })
+  const { isLoading: isConfirming, isSuccess, error: confirmError } = useWaitForTransactionReceipt({ hash, chainId: arbChainId })
+
+  // Toast notifications for ITP creation
+  useTransactionNotification({
+    hash,
+    isPending,
+    isConfirming,
+    isSuccess,
+    error: (writeError || confirmError) as Error | null,
+    label: 'Create ITP',
+  })
+
   const { hasNonceGap, pendingCount, refresh: refreshNonce } = useNonceCheck()
   const [stuckWarning, setStuckWarning] = useState(false)
   const [showFinalizeModal, setShowFinalizeModal] = useState(false)
@@ -293,6 +306,17 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     setIsFetchingPrices(false)
 
     try {
+      // BridgeProxy lives on Arbitrum — ensure wallet is on Arb chain before submitting
+      if (currentChainId !== arbChainId) {
+        console.log('[CreateITP] Switching to Arb chain:', arbChainId)
+        try {
+          await switchChainAsync({ chainId: arbChainId })
+        } catch {
+          setTxError('Please switch to the Arbitrum chain to create an ITP')
+          return
+        }
+      }
+
       // If deployer hasn't set their name yet, set it first
       if (needsIssuerName && issuerName.trim()) {
         console.log('[CreateITP] Setting deployer name:', issuerName.trim())
@@ -301,6 +325,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
           abi: BRIDGE_PROXY_ABI,
           functionName: 'setDeployerName',
           args: [issuerName.trim()],
+          chainId: arbChainId,
         })
         // Note: the deployer name tx will be confirmed separately.
         // For simplicity, we proceed with the create call — user can retry if name tx fails.
@@ -325,6 +350,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
         abi: BRIDGE_PROXY_ABI,
         functionName: 'requestCreateItp',
         args: [name, symbol, weights, assets, prices, { description, websiteUrl, videoUrl }],
+        chainId: arbChainId,
       })
     } catch (e: any) {
       console.error('[CreateITP] writeContract threw:', e)

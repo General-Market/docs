@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react'
 import { useWaitForTransactionReceipt } from 'wagmi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 
 const VISION_ADDRESS = (
@@ -33,6 +34,16 @@ export function useSetBatchMetadata() {
     isLoading: isConfirming,
     isSuccess,
   } = useWaitForTransactionReceipt({ hash: txHash })
+
+  // Toast notifications
+  useTransactionNotification({
+    hash: txHash,
+    isPending,
+    isConfirming,
+    isSuccess,
+    error: writeError,
+    label: 'Set batch metadata',
+  })
 
   if (writeError && !error) {
     const msg = writeError.message || 'Transaction failed'

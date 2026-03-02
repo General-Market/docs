@@ -2,6 +2,7 @@
 
 import { useAccount, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { useEffect, useRef } from 'react'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import { METAMORPHO_VAULT_ABI } from '@/lib/contracts/morpho-abi'
@@ -71,6 +72,19 @@ export function useVaultDeposit(): UseVaultDepositReturn {
     isSuccess,
   } = useWaitForTransactionReceipt({ hash: txHash })
 
+  // Track which action is in-flight for toast label
+  const actionLabel = useRef('Vault operation')
+
+  // Toast notifications
+  useTransactionNotification({
+    hash: txHash,
+    isPending,
+    isConfirming,
+    isSuccess,
+    error: writeError as Error | null,
+    label: actionLabel.current,
+  })
+
   // Track previous confirmation state
   const prevIsSuccess = useRef(false)
 
@@ -88,6 +102,7 @@ export function useVaultDeposit(): UseVaultDepositReturn {
   }
 
   const approve = (amount: bigint) => {
+    actionLabel.current = 'Approve USDC'
     reset()
     writeContract({
       address: MORPHO_ADDRESSES.loanToken,
@@ -99,6 +114,7 @@ export function useVaultDeposit(): UseVaultDepositReturn {
 
   const deposit = (amount: bigint) => {
     if (!address) return
+    actionLabel.current = 'Vault deposit'
     reset()
     writeContract({
       address: MORPHO_ADDRESSES.metaMorphoVault,
@@ -110,6 +126,7 @@ export function useVaultDeposit(): UseVaultDepositReturn {
 
   const withdraw = (amount: bigint) => {
     if (!address) return
+    actionLabel.current = 'Vault withdraw'
     reset()
     writeContract({
       address: MORPHO_ADDRESSES.metaMorphoVault,
@@ -121,6 +138,7 @@ export function useVaultDeposit(): UseVaultDepositReturn {
 
   const redeem = (shares: bigint) => {
     if (!address) return
+    actionLabel.current = 'Vault redeem'
     reset()
     writeContract({
       address: MORPHO_ADDRESSES.metaMorphoVault,

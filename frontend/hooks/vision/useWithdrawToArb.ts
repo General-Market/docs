@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
 import { decodeEventLog } from 'viem'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { VISION_ADDRESS } from '@/lib/vision/constants'
 import { VISION_ISSUER_URLS } from '@/lib/config'
@@ -51,6 +52,16 @@ export function useWithdrawToArb(): UseWithdrawToArbReturn {
     isSuccess: isWithdrawSuccess,
     data: withdrawReceipt,
   } = useWaitForTransactionReceipt({ hash: txHash })
+
+  // Toast notifications for the L3 withdraw tx
+  useTransactionNotification({
+    hash: txHash,
+    isPending: isWithdrawPending,
+    isConfirming: false, // isWithdrawConfirming not directly available here
+    isSuccess: isWithdrawSuccess,
+    error: withdrawError,
+    label: 'Withdraw to Arbitrum',
+  })
 
   const withdraw = useCallback((amount: bigint) => {
     if (!address) return

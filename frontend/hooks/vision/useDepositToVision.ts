@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { useAccount, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
 import { useWriteContract } from 'wagmi'
 import { decodeEventLog } from 'viem'
+import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { ERC20_ABI } from '@/lib/contracts/index-protocol-abi'
 import { ARB_BRIDGE_CUSTODY_ABI } from '@/lib/contracts/arb-bridge-custody-abi'
 import {
@@ -109,6 +110,17 @@ export function useDepositToVision(): UseDepositToVisionReturn {
     args: address ? [address] : undefined,
     chainId: indexL3.id,
     query: { enabled: !!address && step === 'polling' },
+  })
+
+  // Toast notifications for the deposit tx (on Arb)
+  useTransactionNotification({
+    hash: depositHash,
+    isPending: isDepositPending,
+    isConfirming: false,
+    isSuccess: isDepositSuccess,
+    error: depositError,
+    label: 'Deposit to Vision (Arb)',
+    chain: 'arb',
   })
 
   const deposit = useCallback((usdcAmount: bigint) => {

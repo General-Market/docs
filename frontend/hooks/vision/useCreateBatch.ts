@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react'
 import { useWaitForTransactionReceipt } from 'wagmi'
 import { keccak256, toHex, decodeEventLog } from 'viem'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 
 /**
@@ -66,6 +67,16 @@ export function useCreateBatch(): UseCreateBatchReturn {
     isSuccess,
     data: receipt,
   } = useWaitForTransactionReceipt({ hash: txHash })
+
+  // Toast notifications for batch creation
+  useTransactionNotification({
+    hash: txHash,
+    isPending,
+    isConfirming,
+    isSuccess,
+    error: writeError,
+    label: 'Create batch',
+  })
 
   // Extract batchId from receipt logs when tx succeeds
   if (isSuccess && receipt && batchId === null) {

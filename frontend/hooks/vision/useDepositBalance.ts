@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useAccount, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { ERC20_ABI } from '@/lib/contracts/index-protocol-abi'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { VISION_ADDRESS } from '@/lib/vision/constants'
@@ -79,6 +80,16 @@ export function useDepositBalance(): UseDepositBalanceReturn {
     functionName: 'allowance',
     args: address && usdcAddress ? [address, VISION_ADDRESS] : undefined,
     query: { enabled: !!address && !!usdcAddress },
+  })
+
+  // Toast notifications for the deposit step (not approval)
+  useTransactionNotification({
+    hash: depositHash,
+    isPending: isDepositPending,
+    isConfirming: isDepositConfirming,
+    isSuccess: isDepositSuccess,
+    error: depositError,
+    label: 'Deposit to Vision',
   })
 
   const deposit = useCallback((amount: bigint) => {

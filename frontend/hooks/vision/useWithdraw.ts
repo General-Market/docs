@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 
 const VISION_ADDRESS = (
@@ -98,6 +99,16 @@ export function useWithdraw(): UseWithdrawReturn {
     isLoading: isWithdrawConfirming,
     isSuccess: isWithdrawSuccess,
   } = useWaitForTransactionReceipt({ hash: withdrawHash })
+
+  // Toast notifications for withdraw
+  useTransactionNotification({
+    hash: withdrawHash,
+    isPending: isWithdrawPending,
+    isConfirming: isWithdrawConfirming,
+    isSuccess: isWithdrawSuccess,
+    error: withdrawError,
+    label: 'Batch withdraw',
+  })
 
   const withdraw = useCallback(async (batchId: bigint) => {
     if (!address) return

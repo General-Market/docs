@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
 import { useChainSendTransaction } from '@/hooks/useChainWrite'
+import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import type { QuoteResponse } from '@/lib/types/lending-quote'
 
@@ -46,6 +47,16 @@ export function useBundlerExec(): UseBundlerExecReturn {
     isSuccess,
     error: confirmError,
   } = useWaitForTransactionReceipt({ hash: txHash })
+
+  // Toast notifications
+  useTransactionNotification({
+    hash: txHash,
+    isPending,
+    isConfirming,
+    isSuccess,
+    error: (sendError || confirmError) as Error | null,
+    label: 'Lending operation',
+  })
 
   const execute = useCallback((quote: QuoteResponse) => {
     if (!address) return

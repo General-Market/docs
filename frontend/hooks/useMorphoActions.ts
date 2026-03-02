@@ -1,9 +1,11 @@
 'use client'
 
+import { useRef } from 'react'
 import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
 import { MORPHO_ADDRESSES, getDefaultMarketParams, marketParamsToTuple } from '@/lib/contracts/morpho-addresses'
 import { MORPHO_ABI } from '@/lib/contracts/morpho-abi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
 
 interface UseMorphoActionsReturn {
@@ -59,9 +61,22 @@ export function useMorphoActions(market?: MorphoMarketEntry): UseMorphoActionsRe
     isSuccess,
   } = useWaitForTransactionReceipt({ hash: txHash })
 
+  // Track which action is in-flight for toast label
+  const actionLabel = useRef('Morpho operation')
+
+  // Toast notifications
+  useTransactionNotification({
+    hash: txHash,
+    isPending,
+    isConfirming,
+    isSuccess,
+    error: writeError as Error | null,
+    label: actionLabel.current,
+  })
+
   const supplyCollateral = (amount: bigint) => {
     if (!address) return
-
+    actionLabel.current = 'Supply collateral'
     writeContract({
       address: morphoAddress,
       abi: MORPHO_ABI,
@@ -84,7 +99,7 @@ export function useMorphoActions(market?: MorphoMarketEntry): UseMorphoActionsRe
 
   const withdrawCollateral = (amount: bigint) => {
     if (!address) return
-
+    actionLabel.current = 'Withdraw collateral'
     writeContract({
       address: morphoAddress,
       abi: MORPHO_ABI,
@@ -107,7 +122,7 @@ export function useMorphoActions(market?: MorphoMarketEntry): UseMorphoActionsRe
 
   const borrow = (amount: bigint) => {
     if (!address) return
-
+    actionLabel.current = 'Borrow USDC'
     writeContract({
       address: morphoAddress,
       abi: MORPHO_ABI,
@@ -131,7 +146,7 @@ export function useMorphoActions(market?: MorphoMarketEntry): UseMorphoActionsRe
 
   const repay = (amount: bigint) => {
     if (!address) return
-
+    actionLabel.current = 'Repay debt'
     writeContract({
       address: morphoAddress,
       abi: MORPHO_ABI,
@@ -155,7 +170,7 @@ export function useMorphoActions(market?: MorphoMarketEntry): UseMorphoActionsRe
 
   const repayAll = (shares: bigint) => {
     if (!address) return
-
+    actionLabel.current = 'Repay all debt'
     writeContract({
       address: morphoAddress,
       abi: MORPHO_ABI,

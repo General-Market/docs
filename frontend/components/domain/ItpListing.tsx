@@ -18,6 +18,7 @@ import { useUserItpShares } from '@/hooks/useUserItpShares'
 import { useItpMetadata } from '@/hooks/useItpMetadata'
 import { useDeployerName } from '@/hooks/useDeployerName'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { useItpOrderbook, prefetchOrderbook } from '@/hooks/useItpOrderbook'
 import { hasLendingMarket } from '@/lib/contracts/morpho-markets-registry'
 import blacklistedItps from '@/lib/config/blacklisted-itps.json'
@@ -358,8 +359,18 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
 
   const { metadata, refetch: refetchMetadata } = useItpMetadata(itp.itpId as `0x${string}` | undefined)
   const { name: deployerName } = useDeployerName(itp.admin as `0x${string}` | undefined)
-  const { writeContractAsync, data: txHash, isPending: isWriting } = useChainWriteContract()
-  const { isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({ hash: txHash })
+  const { writeContractAsync, data: txHash, isPending: isWriting, error: writeError } = useChainWriteContract()
+  const { isLoading: isTxConfirming, isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({ hash: txHash })
+
+  // Toast notifications for metadata edit
+  useTransactionNotification({
+    hash: txHash,
+    isPending: isWriting,
+    isConfirming: isTxConfirming,
+    isSuccess: isTxConfirmed,
+    error: writeError as Error | null,
+    label: 'Update ITP metadata',
+  })
 
   // Refetch metadata after tx confirms
   useEffect(() => {

@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { useAccount, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
 import { formatUnits } from 'viem'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { VISION_ADDRESS } from '@/lib/vision/constants'
 import { encodeBitmap, hashBitmap, type BetDirection } from '@/lib/vision/bitmap'
@@ -82,6 +83,16 @@ export function useJoinBatch(): UseJoinBatchReturn {
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
     query: { enabled: !!address && VISION_ADDRESS !== '0x0000000000000000000000000000000000000000' },
+  })
+
+  // Toast notifications for join
+  useTransactionNotification({
+    hash: joinHash,
+    isPending: isJoinPending,
+    isConfirming: isJoinConfirming,
+    isSuccess: isJoinSuccess,
+    error: joinError,
+    label: 'Join batch',
   })
 
   const join = useCallback((params: UseJoinBatchParams) => {

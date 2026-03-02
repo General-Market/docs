@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 
 const VISION_ADDRESS = (
@@ -106,6 +107,16 @@ export function useClaim(): UseClaimReturn {
     isLoading: isClaimConfirming,
     isSuccess: isClaimSuccess,
   } = useWaitForTransactionReceipt({ hash: claimHash })
+
+  // Toast notifications for claim
+  useTransactionNotification({
+    hash: claimHash,
+    isPending: isClaimPending,
+    isConfirming: isClaimConfirming,
+    isSuccess: isClaimSuccess,
+    error: claimError,
+    label: 'Claim rewards',
+  })
 
   const claim = useCallback(async (batchId: bigint, fromTick: bigint, toTick: bigint) => {
     if (!address) return

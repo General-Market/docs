@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useAccount, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { VISION_ADDRESS } from '@/lib/vision/constants'
 import { indexL3 } from '@/lib/wagmi'
@@ -70,6 +71,16 @@ export function useDeposit(): UseDepositReturn {
     isLoading: isDepositConfirming,
     isSuccess: isDepositSuccess,
   } = useWaitForTransactionReceipt({ hash: depositHash })
+
+  // Toast notifications for deposit
+  useTransactionNotification({
+    hash: depositHash,
+    isPending: isDepositPending,
+    isConfirming: isDepositConfirming,
+    isSuccess: isDepositSuccess,
+    error: depositError,
+    label: 'Batch deposit',
+  })
 
   const deposit = useCallback((batchId: bigint, amount: bigint) => {
     if (!address) return

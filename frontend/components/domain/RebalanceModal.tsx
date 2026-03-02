@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount, useSwitchChain } from 'wagmi'
 import { encodeFunctionData, decodeFunctionResult } from 'viem'
 import { INDEX_ABI, BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
-import { activeChainId } from '@/lib/wagmi'
+import { arbChainId } from '@/lib/wagmi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { useToast } from '@/lib/contexts/ToastContext'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getCoinGeckoUrl } from '@/lib/coingecko'
 import { useTranslations } from 'next-intl'
@@ -115,7 +116,7 @@ async function waitForArbReceipt(hash: string, timeoutMs = 20_000): Promise<any>
   }
   throw new Error(
     `Transaction receipt not found after ${timeoutMs / 1000}s. ` +
-    `Ensure MetaMask chain ${activeChainId} points to ${ARB_RPC}. Tx hash: ${hash}`
+    `Ensure MetaMask chain ${arbChainId} points to ${ARB_RPC}. Tx hash: ${hash}`
   )
 }
 
@@ -123,6 +124,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
   const t = useTranslations('markets')
   const { address } = useAccount()
   const { capture } = usePostHogTracker()
+  const { showSuccess, showError } = useToast()
   const [assets, setAssets] = useState<AssetRow[]>([])
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState<Status>('idle')
@@ -140,6 +142,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
   const [coinMap, setCoinMap] = useState<Record<string, CoinEntry>>({})
 
   // wagmi hooks for Step 1: requestRebalance on BridgeProxy (through MetaMask)
+  const { switchChainAsync } = useSwitchChain()
   const {
     writeContract,
     data: requestHash,
@@ -313,6 +316,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
           setTxHash(hash)
           setStatus('success')
           capture('rebalance_completed', { itp_id: itpId, tx_hash: hash })
+          showSuccess('Rebalance confirmed')
         }
       } catch (e: any) {
         if (!cancelled) {
@@ -372,11 +376,19 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
     setAssets(prev => prev.map((a, i) => i === index ? { ...a, newWeight: value } : a))
   }
 
-  function handleRebalance() {
+  async function handleRebalance() {
     if (!address || !isValid) return
 
     resetWrite()
     setErrorMsg('')
+
+    // BridgeProxy lives on Arbitrum — ensure wallet is on Arb chain
+    try {
+      await switchChainAsync({ chainId: arbChainId })
+    } catch {
+      setErrorMsg('Please switch to the Arbitrum chain to rebalance')
+      return
+    }
 
     const assetsChangedCount = assets.filter(a => {
       const currentPct = Number(a.currentWeight) / 1e16
@@ -403,7 +415,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
     // Set status to requesting (wallet pending), will advance to confirming when hash arrives
     setStatus('requesting')
 
-    // Step 1: Submit requestRebalance through MetaMask
+    // Step 1: Submit requestRebalance through MetaMask (on Arb chain)
     writeContract({
       address: INDEX_PROTOCOL.bridgeProxy,
       abi: BRIDGE_PROXY_ABI,
@@ -415,6 +427,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
         newWeights,
         'Frontend rebalance request',
       ],
+      chainId: arbChainId,
     })
   }
 
