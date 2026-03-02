@@ -2,9 +2,12 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useReadContract } from 'wagmi'
+import { formatUnits } from 'viem'
 import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useJoinBatch } from '@/hooks/vision/useJoinBatch'
+import { useDeposit } from '@/hooks/vision/useDeposit'
+import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
 import { useSubmitBitmap } from '@/hooks/vision/useSubmitBitmap'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import type { BetDirection } from '@/lib/vision/bitmap'
@@ -63,6 +66,9 @@ export default function BatchEntryPanel({
   })
   const configHash = (onChainBatch as any)?.configHash as `0x${string}` | undefined
 
+  // -- Player position: detect if user already joined this batch --
+  const { isJoined, position, refetch: refetchPosition } = usePlayerPosition(activeBatch?.id)
+
   // -- Join + submit hooks --
   const {
     join,
@@ -74,6 +80,16 @@ export default function BatchEntryPanel({
     error: joinError,
     reset: resetJoin,
   } = useJoinBatch()
+
+  // -- Deposit hook (for adding funds when already joined) --
+  const {
+    deposit: depositMore,
+    step: depositStep,
+    isPending: isDepositPending,
+    isConfirming: isDepositConfirming,
+    error: depositError,
+    reset: resetDeposit,
+  } = useDeposit()
 
   const {
     submitBitmap,
@@ -97,7 +113,8 @@ export default function BatchEntryPanel({
   const stakeValue = parseFloat(stakeInput) || 0
   const hasStake = stakeValue > 0
   const hasPredictions = bitmapEditor.setCount > 0
-  const canSubmit = hasStake && hasPredictions && joinStep === 'idle' && !tickState.isLocked && !!configHash
+  const activeStep = isJoined ? depositStep : joinStep
+  const canSubmit = hasStake && (isJoined || hasPredictions) && activeStep === 'idle' && !tickState.isLocked && (isJoined || !!configHash)
 
   // -- After on-chain join succeeds, submit bitmap to issuers --
   useEffect(() => {
@@ -108,33 +125,49 @@ export default function BatchEntryPanel({
       bitmapHash,
     }).finally(() => {
       resetJoin()
+      refetchPosition()
     })
-  }, [joinStep, encodedBitmap, bitmapHash, activeBatch, submitBitmap, resetJoin])
+  }, [joinStep, encodedBitmap, bitmapHash, activeBatch, submitBitmap, resetJoin, refetchPosition])
+
+  // -- After deposit succeeds, refetch position to update balance --
+  useEffect(() => {
+    if (depositStep !== 'done') return
+    refetchPosition()
+    resetDeposit()
+  }, [depositStep, refetchPosition, resetDeposit])
 
   // -- Enter batch handler --
   const handleEnterBatch = useCallback(() => {
-    if (!activeBatch || !canSubmit || !configHash) return
+    if (!activeBatch || !canSubmit) return
 
     // Convert USDC amount to 18-decimal bigint (L3 USDC = 18 decimals)
     const depositAmount = BigInt(Math.round(stakeValue * 1e18))
 
-    // Build bets array from bitmap state in market order
-    const bets: BetDirection[] = marketIds.map((id) => {
-      const cell = bitmapEditor.state[id]
-      if (cell === 'up') return 'UP'
-      if (cell === 'down') return 'DOWN'
-      return 'DOWN' // default unset to DOWN
-    })
+    if (isJoined) {
+      // Already in the batch — deposit additional funds instead of joinBatch
+      depositMore(BigInt(activeBatch.id), depositAmount)
+    } else {
+      // First time joining — need configHash and bets
+      if (!configHash) return
 
-    join({
-      batchId: BigInt(activeBatch.id),
-      configHash,
-      depositAmount,
-      stakePerTick: depositAmount, // stake entire deposit per tick for now
-      bets,
-      marketCount: marketIds.length,
-    })
-  }, [activeBatch, canSubmit, configHash, stakeValue, marketIds, bitmapEditor.state, join])
+      // Build bets array from bitmap state in market order
+      const bets: BetDirection[] = marketIds.map((id) => {
+        const cell = bitmapEditor.state[id]
+        if (cell === 'up') return 'UP'
+        if (cell === 'down') return 'DOWN'
+        return 'DOWN' // default unset to DOWN
+      })
+
+      join({
+        batchId: BigInt(activeBatch.id),
+        configHash,
+        depositAmount,
+        stakePerTick: depositAmount, // stake entire deposit per tick for now
+        bets,
+        marketCount: marketIds.length,
+      })
+    }
+  }, [activeBatch, canSubmit, configHash, stakeValue, marketIds, bitmapEditor.state, join, isJoined, depositMore])
 
   // -- Quick-stake buttons --
   const quickAmounts = [1, 5, 10, 50, 100]
@@ -142,15 +175,23 @@ export default function BatchEntryPanel({
   // -- Button label --
   const buttonLabel = useMemo(() => {
     if (isSubmitting) return 'Submitting...'
-    if (isJoinConfirming) return 'Confirming...'
-    if (isJoinPending) return 'Waiting for wallet...'
+    if (isJoinConfirming || isDepositConfirming) return 'Confirming...'
+    if (isJoinPending || isDepositPending) return 'Waiting for wallet...'
     if (joinStep === 'checking-balance') return 'Checking balance...'
     if (joinStep === 'joining') return 'Joining batch...'
+    if (depositStep === 'depositing') return 'Depositing...'
+    if (isJoined) {
+      if (stakeValue > 0) return `Deposit ${stakeValue} USDC`
+      return 'Deposit More'
+    }
     if (stakeValue > 0) return `Enter Batch \u2014 ${stakeValue} USDC`
     return 'Enter Batch'
-  }, [joinStep, isJoinPending, isJoinConfirming, isSubmitting, stakeValue])
+  }, [joinStep, depositStep, isJoinPending, isJoinConfirming, isDepositPending, isDepositConfirming, isSubmitting, stakeValue, isJoined])
 
-  const isProcessing = joinStep !== 'idle' && joinStep !== 'error' && joinStep !== 'done'
+  const isProcessing = (joinStep !== 'idle' && joinStep !== 'error' && joinStep !== 'done')
+    || (depositStep !== 'idle' && depositStep !== 'error' && depositStep !== 'done')
+
+  const displayError = joinError || depositError || submitError
 
   return (
     <div>
@@ -159,7 +200,7 @@ export default function BatchEntryPanel({
         <div className="flex items-center justify-between mb-2">
           <div>
             <div className="flex items-baseline gap-2">
-              <h2 className="text-sm font-semibold text-neutral-900">Enter Batch</h2>
+              <h2 className="text-sm font-semibold text-neutral-900">{isJoined ? 'Add Funds' : 'Enter Batch'}</h2>
               {activeBatch && (
                 <span className="text-[10px] text-neutral-400 font-mono">#{activeBatch.id}</span>
               )}
@@ -230,10 +271,22 @@ export default function BatchEntryPanel({
           </div>
         </div>
 
+        {/* Active position indicator */}
+        {isJoined && position && (
+          <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-medium text-emerald-700">Active position</span>
+              <span className="text-[11px] font-mono text-emerald-700">
+                {parseFloat(formatUnits(position.balance, VISION_USDC_DECIMALS)).toFixed(2)} USDC
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Error display */}
-        {(joinError || submitError) && (
+        {displayError && (
           <p className="text-[11px] text-red-600 mb-2 line-clamp-2">
-            {joinError || submitError}
+            {displayError}
           </p>
         )}
 
