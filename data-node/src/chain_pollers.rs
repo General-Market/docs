@@ -187,9 +187,37 @@ pub async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std
     // Resolve contract addresses
     let arb_usdc_addr = crate::api::deployment_addr(&state.deployment, "ARB_USDC")?;
     let index_addr = crate::api::deployment_addr(&state.deployment, "Index")?;
-    let bridge_proxy_addr = crate::api::deployment_addr(&state.deployment, "BridgeProxy")?;
+    let l3_usdc_addr = crate::api::deployment_addr(&state.deployment, "L3_WUSDC")?;
 
-    let itp_id = itp_id_bytes(1);
+    // Read all ITP IDs from the nav cache (already iterated during poll_nav_once)
+    let nav_snapshots = state.chain_cache.nav.read().await;
+    let itp_ids: Vec<[u8; 32]> = nav_snapshots.iter().filter_map(|snap| {
+        let hex = snap.itp_id.strip_prefix("0x").unwrap_or(&snap.itp_id);
+        hex::decode(hex).ok().and_then(|bytes| {
+            if bytes.len() == 32 {
+                let mut arr = [0u8; 32];
+                arr.copy_from_slice(&bytes);
+                Some(arr)
+            } else {
+                None
+            }
+        })
+    }).collect();
+    // Also collect itp_id hex strings for the map keys
+    let itp_id_hexes: Vec<String> = nav_snapshots.iter().map(|s| s.itp_id.clone()).collect();
+    drop(nav_snapshots);
+
+    // Fallback: if no nav snapshots yet, poll at least ITP #1
+    let itp_ids = if itp_ids.is_empty() {
+        vec![itp_id_bytes(1)]
+    } else {
+        itp_ids
+    };
+    let itp_id_hexes = if itp_id_hexes.is_empty() {
+        vec![format!("0x{}", hex::encode(itp_id_bytes(1)))]
+    } else {
+        itp_id_hexes
+    };
 
     // Resolve vault ERC20 address from deployment (L3 vault token)
     let vault_addr = crate::api::deployment_addr(&state.deployment, "ITP_Vault").unwrap_or_default();
@@ -200,9 +228,21 @@ pub async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std
         let usdc = BalanceReader::new(arb_usdc_addr, Arc::clone(&state.arb_provider));
         let usdc_bal = usdc.balance_of(*user).call().await.unwrap_or_default();
 
-        // L3 ITP shares
+        // L3 USDC (WUSDC) balance
+        let l3_usdc = BalanceReader::new(l3_usdc_addr, Arc::clone(&state.l3_provider));
+        let l3_usdc_bal = l3_usdc.balance_of(*user).call().await.unwrap_or_default();
+
+        // L3 ITP shares — read for ALL ITPs
         let shares_reader = UserSharesReader::new(index_addr, Arc::clone(&state.l3_provider));
-        let itp_shares = shares_reader.get_user_shares(itp_id, *user).call().await.unwrap_or_default();
+        let mut shares_map = std::collections::HashMap::new();
+        for (idx, itp_id) in itp_ids.iter().enumerate() {
+            let shares = shares_reader.get_user_shares(*itp_id, *user).call().await.unwrap_or_default();
+            if !shares.is_zero() {
+                if let Some(hex_key) = itp_id_hexes.get(idx) {
+                    shares_map.insert(hex_key.clone(), shares.to_string());
+                }
+            }
+        }
 
         // L3 vault ERC20 balance (used as Morpho collateral)
         let bridged_bal = if has_vault {
@@ -214,9 +254,9 @@ pub async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std
 
         let mut uc = user_cache.write().await;
         uc.balances = UserBalances {
-            usdc_l3: String::new(), // L3 USDC not polled here (no L3 USDC token deployed)
+            usdc_l3: l3_usdc_bal.to_string(),
             usdc_arb: usdc_bal.to_string(),
-            itp_shares: itp_shares.to_string(),
+            itp_shares: shares_map,
             bridged_itp: bridged_bal.to_string(),
             itp_nonce: 0,
         };

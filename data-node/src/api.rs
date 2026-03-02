@@ -1696,62 +1696,16 @@ async fn portfolio_history(
     itp_ids.sort();
     itp_ids.dedup();
 
-    // For each ITP, fetch daily NAV series
+    // For each ITP, fetch daily NAV series from stored snapshots (correct even across rebalances)
     let mut itp_nav_series: HashMap<String, Vec<(i64, f64)>> = HashMap::new();
 
     for itp_id in &itp_ids {
-        let snapshot = db::query_itp_snapshot_at(&state.pool, itp_id, now)
+        let nav_points = db::query_itp_nav_series(&state.pool, itp_id, start, now)
             .await
             .map_err(|e| db_error(e))?;
 
-        if let Some(snap) = snapshot {
-            let mut symbols: Vec<String> = Vec::new();
-            let mut inv_vals: Vec<f64> = Vec::new();
-
-            for (i, asset_addr) in snap.assets.iter().enumerate() {
-                let inv_val: f64 = snap.inventory.get(i).and_then(|s| s.parse().ok()).unwrap_or(0.0);
-                if let Some(pair) = state.symbol_map.get(&asset_addr.to_lowercase()) {
-                    if let Some(existing) = symbols.iter().position(|s| s == pair) {
-                        inv_vals[existing] += inv_val;
-                    } else {
-                        symbols.push(pair.clone());
-                        inv_vals.push(inv_val);
-                    }
-                }
-            }
-
-            if !symbols.is_empty() {
-                let symbol_refs: Vec<&str> = symbols.iter().map(|s| s.as_str()).collect();
-                let rows = db::query_price_series(&state.pool, &symbol_refs, start, now, Some("1d"), 10_000)
-                    .await
-                    .map_err(|e| db_error(e))?;
-
-                // Group by day, compute NAV per day using last known prices
-                let mut day_prices: std::collections::BTreeMap<i64, HashMap<String, f64>> = std::collections::BTreeMap::new();
-                for row in &rows {
-                    let day_ts = (row.fetched_at.timestamp() / 86400) * 86400;
-                    let price: f64 = row.price.parse().unwrap_or(0.0);
-                    day_prices.entry(day_ts).or_default().insert(row.symbol.clone(), price);
-                }
-
-                let mut last_prices: HashMap<String, f64> = HashMap::new();
-                let mut nav_points: Vec<(i64, f64)> = Vec::new();
-
-                for (day_ts, prices) in &day_prices {
-                    for (sym, price) in prices {
-                        last_prices.insert(sym.clone(), *price);
-                    }
-                    let mut nav_sum: f64 = 0.0;
-                    for (i, sym) in symbols.iter().enumerate() {
-                        if let Some(&price) = last_prices.get(sym) {
-                            nav_sum += inv_vals[i] * price;
-                        }
-                    }
-                    nav_points.push((*day_ts, nav_sum / 1e18));
-                }
-
-                itp_nav_series.insert(itp_id.clone(), nav_points);
-            }
+        if !nav_points.is_empty() {
+            itp_nav_series.insert(itp_id.clone(), nav_points);
         }
     }
 

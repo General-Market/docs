@@ -77,7 +77,8 @@ export interface OracleSnapshot {
 export interface UserBalances {
   usdc_l3: string
   usdc_arb: string
-  itp_shares: string
+  /** Per-ITP shares: itp_id hex -> balance string (wei) */
+  itp_shares: Record<string, string>
   bridged_itp: string
   itp_nonce: number
 }

@@ -39,7 +39,8 @@ pub struct OracleSnapshot {
 pub struct UserBalances {
     pub usdc_l3: String,
     pub usdc_arb: String,
-    pub itp_shares: String,
+    /// Per-ITP shares: itp_id hex → balance string (wei)
+    pub itp_shares: HashMap<String, String>,
     pub bridged_itp: String,
     pub itp_nonce: u64,
 }

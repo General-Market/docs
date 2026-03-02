@@ -574,6 +574,36 @@ pub async fn delete_stale_snapshots(
     Ok(result.rows_affected())
 }
 
+/// Query daily NAV time series for an ITP from stored snapshots.
+/// Returns (timestamp, nav_f64) pairs sorted chronologically.
+pub async fn query_itp_nav_series(
+    pool: &PgPool,
+    itp_id: &str,
+    from: DateTime<Utc>,
+    to: DateTime<Utc>,
+) -> Result<Vec<(i64, f64)>, sqlx::Error> {
+    // Get one NAV per day by taking the last snapshot of each day
+    let rows = sqlx::query_as::<_, (DateTime<Utc>, String)>(
+        "SELECT DISTINCT ON (date_trunc('day', valid_from))
+                valid_from, nav
+         FROM itp_snapshots
+         WHERE itp_id = $1 AND valid_from >= $2 AND valid_from <= $3
+         ORDER BY date_trunc('day', valid_from), valid_from DESC"
+    )
+    .bind(itp_id)
+    .bind(from)
+    .bind(to)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows.into_iter().filter_map(|(ts, nav_str)| {
+        nav_str.parse::<f64>().ok().map(|nav| {
+            let day_ts = (ts.timestamp() / 86400) * 86400;
+            (day_ts, nav / 1e18)
+        })
+    }).collect())
+}
+
 // ---- Trade functions ----
 
 #[derive(Debug, Clone, serde::Serialize)]

@@ -1,5 +1,13 @@
 # Design Decision Backlog
 
+## Session: 20260302-1400-p9f3 (Portfolio: multi-ITP balances + historical NAV chart)
+
+- [DECISION] Changed `UserBalances.itp_shares` from `String` to `HashMap<String, String>` to support multi-ITP balance tracking. The chain poller now iterates over all ITPs from the nav cache instead of hardcoding ITP #1.
+- [DECISION] Portfolio history now uses stored NAV values from `itp_snapshots` table (via `query_itp_nav_series`) instead of recomputing NAV from current inventory + historical prices. This is correct across rebalances since the stored NAV was computed at snapshot time with the correct inventory.
+- [DECISION] Frontend merges trade-based positions (from data-node `/portfolio` REST) with on-chain SSE balances. SSE is the source of truth for current share counts; trade history provides cost basis. Positions discovered via SSE but not in trade history (e.g., transfers) get NAV as their cost basis (PnL = 0).
+- [DECISION] Added backward compatibility in `useUserItpShares` — if old data-node sends `itp_shares` as a plain string, it still works. New data-node sends a `Record<string, string>` map.
+- [DECISION] Chain poller now also reads L3 USDC (WUSDC) balance per user and populates `usdc_l3` field (was previously empty string).
+
 ## Session: 20260301-2200-t32b (T-32: Vision tick BLS consensus - Part 2: Engine wiring)
 
 - [DECISION] Added `bls_keypair: Option<Arc<BLSKeyPair>>` parameter to engine::run() rather than embedding it in VisionConfig — keeps config serializable and matches the pattern used elsewhere in the codebase (arbitration, deposit_watcher) where BLS keypair is passed separately from config.
@@ -4491,3 +4499,5 @@ The backtester currently supports one rebalance method: **periodic time-based re
 - [DECISION] T-22: Verified get_healthy_assets() already has all 3 required filters: is_active=true, fetched_at >= 2x sync interval, value > 0. Skipped filter #4 (recently added assets) — no first_seen_at column in market_assets table.
 - [DECISION] T-23: Lock-period config freeze added to generate_batch_config() in batch_engine.rs. Uses modular time check: if remaining time in tick <= lock_offset, return None. Prevents config churn during settlement window.
 - [DECISION] T-24: Lock-period guard added at 3 points in orchestrator: (1) run_leader_round() filters out locked sources from proposals, (2) publish_to_data_node() skips publishing during lock, (3) replicate_to_own_data_node() skips replication during lock. Belt-and-suspenders: even if proposal slips through, publish/replicate won't fire.
+
+[DECISION] 20260302-1010-bls1: NavOracle hash must use L3 chain_id (111222333), not Arb chain_id (421611337) - the oracle contract is on L3 and uses block.chainid. Root cause of persistent 0x10aa8d54 (BLSVerifier__InvalidSignature) errors.

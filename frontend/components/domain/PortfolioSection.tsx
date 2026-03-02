@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useAccount, useReadContract } from 'wagmi'
-import { useSSEOrders } from '@/hooks/useSSE'
+import { useSSEOrders, useSSEBalances, useSSENav } from '@/hooks/useSSE'
 import { USDC_ADDRESS, USDC_DECIMALS } from '@/lib/contracts/addresses'
 import { indexL3 } from '@/lib/wagmi'
 import {
@@ -17,7 +17,7 @@ import {
   TooltipProps,
 } from 'recharts'
 import { formatUnits, parseUnits } from 'viem'
-import { usePortfolio, PortfolioHistoryPoint } from '@/hooks/usePortfolio'
+import { usePortfolio, PortfolioHistoryPoint, PortfolioSummary, Position } from '@/hooks/usePortfolio'
 import { DeployedItpRef } from '@/components/domain/ItpListing'
 import { useTranslations } from 'next-intl'
 
@@ -94,6 +94,87 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
   const usdcFormatted = usdcNum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   const [activeTab, setActiveTab] = useState<Tab>('positions')
 
+  // --- SSE balances & nav for real-time on-chain positions ---
+  const sseBalances = useSSEBalances()
+  const sseNav = useSSENav()
+
+  // Build on-chain positions from SSE: merges with trade-based portfolio
+  const mergedSummary = useMemo(() => {
+    if (!summary && !sseBalances) return null
+
+    // Start with trade-based positions from data-node
+    const posMap = new Map<string, Position>()
+    if (summary) {
+      for (const pos of summary.positions) {
+        posMap.set(pos.itp_id.toLowerCase(), pos)
+      }
+    }
+
+    // Build NAV lookup from SSE
+    const navMap = new Map<string, number>()
+    for (const snap of sseNav) {
+      navMap.set(snap.itp_id.toLowerCase(), snap.nav_per_share)
+    }
+
+    // Add/update positions from on-chain SSE balances
+    if (sseBalances && sseBalances.itp_shares && typeof sseBalances.itp_shares === 'object') {
+      for (const [itpId, sharesWei] of Object.entries(sseBalances.itp_shares)) {
+        const key = itpId.toLowerCase()
+        const shares = parseFloat(sharesWei) / 1e18
+        if (shares <= 0) continue
+
+        const nav = navMap.get(key) || 0
+        const currentValue = shares * nav
+
+        if (posMap.has(key)) {
+          // Update existing position with on-chain shares (source of truth)
+          const existing = posMap.get(key)!
+          const avgCost = parseFloat(existing.avg_cost)
+          const pnl = currentValue - (shares * avgCost)
+          const pnlPct = avgCost > 0 ? ((nav / avgCost) - 1) * 100 : 0
+          posMap.set(key, {
+            ...existing,
+            shares_bought: shares.toFixed(4),
+            current_nav: nav.toFixed(6),
+            current_value: currentValue.toFixed(2),
+            pnl: pnl.toFixed(2),
+            pnl_pct: pnlPct.toFixed(1),
+          })
+        } else {
+          // New position not in trade history (e.g., received via transfer)
+          posMap.set(key, {
+            itp_id: itpId,
+            shares_bought: shares.toFixed(4),
+            shares_sold: '0.0000',
+            avg_cost: nav.toFixed(6), // unknown cost basis, use current nav
+            current_nav: nav.toFixed(6),
+            current_value: currentValue.toFixed(2),
+            pnl: '0.00',
+            pnl_pct: '0.0',
+          })
+        }
+      }
+    }
+
+    const positions = Array.from(posMap.values())
+    const totalValue = positions.reduce((sum, p) => sum + parseFloat(p.current_value), 0)
+    const totalInvested = positions.reduce((sum, p) => {
+      const shares = parseFloat(p.shares_bought) - parseFloat(p.shares_sold)
+      return sum + shares * parseFloat(p.avg_cost)
+    }, 0)
+    const totalPnl = totalValue - totalInvested
+    const totalPnlPct = totalInvested > 0 ? ((totalValue / totalInvested) - 1) * 100 : 0
+
+    return {
+      user: summary?.user || address?.toLowerCase() || '',
+      positions,
+      total_value: totalValue.toFixed(2),
+      total_invested: totalInvested.toFixed(2),
+      total_pnl: totalPnl.toFixed(2),
+      total_pnl_pct: totalPnlPct.toFixed(1),
+    } as PortfolioSummary
+  }, [summary, sseBalances, sseNav, address])
+
   // --- Orders from SSE (real-time, data-node polls L3 chain) ---
   const sseOrders = useSSEOrders()
   const ordersLoading = false
@@ -163,16 +244,16 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
   }
 
   const activeCount = orders.filter(o => o.status < 2).length
-  const totalPnl = summary ? parseFloat(summary.total_pnl) : 0
-  const positionsValue = summary ? parseFloat(summary.total_value) : 0
+  const totalPnl = mergedSummary ? parseFloat(mergedSummary.total_pnl) : 0
+  const positionsValue = mergedSummary ? parseFloat(mergedSummary.total_value) : 0
   // Include pending/batched order amounts in total value
   const pendingOrderValue = orders
     .filter(o => o.status < 2) // Pending or Batched
     .reduce((sum, o) => sum + parseFloat(formatUnits(o.amount, 18)), 0)
   const totalValue = positionsValue + usdcNum + pendingOrderValue
-  const hasAnyBalance = totalValue > 0.01 || (summary && summary.positions.length > 0)
-  const subtitle = summary
-    ? t('heading.subtitle_with_data', { count: summary.positions.length, plural: summary.positions.length !== 1 ? 's' : '', value: summary.total_value })
+  const hasAnyBalance = totalValue > 0.01 || (mergedSummary && mergedSummary.positions.length > 0)
+  const subtitle = mergedSummary
+    ? t('heading.subtitle_with_data', { count: mergedSummary.positions.length, plural: mergedSummary.positions.length !== 1 ? 's' : '', value: mergedSummary.total_value })
     : t('heading.subtitle_empty')
 
   // Collapsed state
@@ -248,20 +329,20 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
               <div className="py-3 px-4 md:px-6 md:border-l border-border-light">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('stats.total_invested')}</div>
                 <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">
-                  ${((summary ? parseFloat(summary.total_invested) : 0) + pendingOrderValue).toFixed(2)}
+                  ${((mergedSummary ? parseFloat(mergedSummary.total_invested) : 0) + pendingOrderValue).toFixed(2)}
                 </div>
               </div>
               <div className="py-3 px-4 md:px-6 md:border-l border-t md:border-t-0 border-border-light">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('stats.positions')}</div>
-                <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">{summary?.positions.length || 0}</div>
+                <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">{mergedSummary?.positions.length || 0}</div>
               </div>
               <div className="py-3 px-4 md:px-6 md:border-l border-t md:border-t-0 border-border-light">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('stats.pnl')}</div>
                 <div className={`text-[22px] font-extrabold font-mono tabular-nums ${totalPnl >= 0 ? 'text-color-up' : 'text-color-down'}`}>
-                  {totalPnl >= 0 ? '+' : ''}${summary?.total_pnl || '0.00'}
+                  {totalPnl >= 0 ? '+' : ''}${mergedSummary?.total_pnl || '0.00'}
                 </div>
                 <div className="text-[11px] text-text-muted mt-0.5">
-                  {totalPnl >= 0 ? '+' : ''}{summary?.total_pnl_pct || '0.0'}%
+                  {totalPnl >= 0 ? '+' : ''}{mergedSummary?.total_pnl_pct || '0.0'}%
                 </div>
               </div>
               <div className="py-3 px-4 md:px-6 md:border-l border-t md:border-t-0 border-border-light">
@@ -334,7 +415,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
             <>
               <ValueTab history={history} />
               <div className="mt-4" />
-              <PositionsTab summary={summary} itpNameMap={itpNameMap} />
+              <PositionsTab summary={mergedSummary} itpNameMap={itpNameMap} />
             </>
           )}
           {activeTab === 'trades' && <TradesTab trades={trades} itpNameMap={itpNameMap} />}
