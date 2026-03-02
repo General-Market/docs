@@ -68,7 +68,6 @@ export function ValidatorFigure({
       geometry={geometry}
       position={position}
       scale={scaleVal}
-      castShadow
     >
       <meshStandardMaterial color={color} roughness={0.6} />
     </mesh>

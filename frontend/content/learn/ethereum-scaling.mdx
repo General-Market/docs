@@ -1,0 +1,84 @@
+---
+title: "How Ethereum Scales: The Complete Roadmap"
+description: "Ethereum is engineering a 100x throughput increase over the next three years without breaking solo staking. Parallel verification, ePBS, multidimensional gas, PeerDAS blobs, and ZK-EVM — visualized in 3D."
+keywords: ["Ethereum scaling", "Ethereum roadmap", "gas limits", "ePBS", "PeerDAS", "blobs", "ZK-EVM", "parallel verification", "multidimensional gas", "Ethereum throughput", "Glamsterdam", "access lists", "data availability sampling", "EOF", "EVM Object Format"]
+date: "2026-03-01"
+author: "General Market"
+slug: "ethereum-scaling"
+category: "Education"
+readingTime: "15 min read"
+tldr:
+  - "Five independent upgrades converge to <strong>100x Ethereum's throughput</strong> over 3 years"
+  - "Parallel verification and ePBS unlock <strong>10-30x higher gas limits</strong> per block"
+  - "Multidimensional gas <strong>decouples compute from state growth</strong> — each resource priced independently"
+  - "PeerDAS lets validators <strong>sample blobs instead of downloading them</strong> — 8 MB/sec data"
+  - "ZK-EVM replaces re-execution with <strong>proof verification</strong> — solo stakers survive the throughput increase"
+---
+
+Ethereum processes about 15 million gas per block today. The network's own researchers have laid out a path to 10-100x that number — not through a single breakthrough, but through five independent upgrades that compound on each other. Parallel block verification, proposer-builder separation, multidimensional gas, data availability sampling, and zero-knowledge proofs of execution. Each solves a different bottleneck. Together they transform what a 12-second block can carry.
+
+<ScalingStats />
+
+## The Roadmap
+
+The upgrades form three layers. The execution layer raises the gas ceiling by letting validators verify blocks faster. The data layer multiplies blob throughput so rollups can post more data cheaply. The proof layer replaces re-execution with cryptographic verification, ensuring solo stakers on consumer hardware can keep up with the higher throughput. Each layer depends on — and amplifies — the one below it.
+
+<RoadmapStaircase3D />
+
+## Parallel Block Verification
+
+Today, validators re-execute every transaction sequentially to verify a block. This is the fundamental bottleneck on gas limits: if verification takes too long, blocks arrive late, and the chain forks. Access lists (EIP-6800 and related proposals) declare which state slots a transaction reads and writes before execution begins. With that information, validators can verify non-conflicting transactions in parallel across multiple CPU cores. A machine with 8 cores can verify a block 5-8x faster. That headroom directly translates into higher safe gas limits.
+
+<ParallelVerification3D />
+
+## ePBS: Using the Whole Slot
+
+Enshrined Proposer-Builder Separation moves the proposer/builder split into the protocol itself. Today, the validator who proposes a block must also attest to its validity within the same 12-second slot, which constrains how much computation the block can contain. With ePBS, the proposer commits to a block header early in the slot, and the builder provides the full body later. Validators get the entire remaining time to verify. More verification time means blocks can safely contain more gas.
+
+<EPBSSlotClock3D />
+
+## Gas Evolution
+
+Ethereum currently prices all resources — computation, storage reads, calldata, state growth — with a single gas dimension. This creates a security mismatch: a block that maximizes cheap calldata looks nothing like a block that maximizes expensive computation, yet both pay the same total gas. Multidimensional gas (building on EIP-4844's blob gas) splits the fee market into independent dimensions. Computation, state access, calldata, and blob data each have their own limit and their own base fee. This lets the protocol raise safe limits for each resource independently, without one dimension subsidizing worst-case abuse of another.
+
+<GasEvolution3D />
+
+## Blobs and PeerDAS
+
+Blobs are Ethereum's data availability layer for rollups. Since Dencun (March 2024), each block carries up to 6 blobs (128 KB each). PeerDAS — Peer Data Availability Sampling — removes the requirement that every validator download every blob. Instead, each validator samples a random subset of blob columns and reconstructs the rest using erasure coding. This lets the network scale to 64, then 128 blobs per block without increasing bandwidth requirements per node. The result is roughly 8 MB/sec of data availability, enough for rollups to post full transaction data on-chain rather than relying on off-chain data committees.
+
+<BlobSampling3D />
+
+## ZK-EVM: Staged Rollout
+
+Higher gas limits create a verification problem: solo stakers on consumer hardware cannot re-execute a 300M-gas block in 4 seconds. The ZK-EVM solves this by generating a succinct proof that the block was executed correctly. Validators verify the proof instead of replaying every transaction. The rollout is staged: first, proofs run alongside re-execution as an optional check (optimistic verification). Then a consensus rule requires proofs within N slots (delayed proof requirement). Finally, proofs are required in the same slot, and re-execution is dropped entirely. At that point, a Raspberry Pi can validate Ethereum.
+
+<ZKEVMPopulation3D />
+
+## EOF: Structured Contracts
+
+The EVM Object Format (EOF) is a container format for smart contract bytecode, shipping in Glamsterdam. Today, EVM bytecode is an unstructured stream of opcodes — validators cannot distinguish code from data without executing it, and jump targets must be computed at runtime. EOF introduces explicit sections (code, data, types), static jump targets, and a validation pass at deploy time. This makes static analysis possible, which is a prerequisite for efficient parallel execution and ZK-EVM circuit generation. EOF contracts also remove the JUMPDEST analysis step from every call, reducing baseline gas costs.
+
+<EOFContainerization3D />
+
+## Full Stack Convergence
+
+No single upgrade delivers 100x. The multiplier comes from the stack. Parallel verification and ePBS let gas limits rise 10-30x. Multidimensional gas ensures that rise is safe by pricing each resource independently. PeerDAS scales data throughput for rollups by 20x. And the ZK-EVM guarantees that solo stakers can verify everything, no matter how high throughput climbs. The five layers are not alternatives — they are load-bearing walls in the same building.
+
+<FullStackLayers3D />
+
+<ScalingSummary />
+
+## Sources
+
+- [Vitalik Buterin, "Possible futures of the Ethereum protocol, part 1: The Surge"](https://vitalik.eth.limo/general/2024/10/17/futures1.html) — Long-term scaling roadmap.
+- [EIP-4844: Shard Blob Transactions](https://eips.ethereum.org/EIPS/eip-4844) — Proto-danksharding specification.
+- [PeerDAS specification](https://github.com/ethereum/consensus-specs/blob/dev/specs/_features/eip7594/das-core.md) — Data availability sampling protocol.
+- [EOF: EVM Object Format (EIP-3540, EIP-7692)](https://eips.ethereum.org/EIPS/eip-3540) — Structured bytecode container.
+- [Ethereum Roadmap](https://ethereum.org/en/roadmap/) — Official roadmap overview.
+
+## Further Reading
+
+- [What Are ITPs?](/learn/what-are-itps) — How on-chain index products work on General Market.
+- [AI Prediction Markets](/learn/ai-prediction-markets) — How AI agents trade prediction markets.
+- [EIP-8141: Account Abstraction, Finally](/learn/eip-8141-account-abstraction) — The omnibus account abstraction EIP.

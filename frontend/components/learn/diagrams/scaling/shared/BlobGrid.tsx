@@ -5,7 +5,7 @@ import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
 
-/* ── Types ── */
+/* -- Types -- */
 
 interface BlobGridProps {
   position: [number, number, number]
@@ -17,7 +17,7 @@ interface BlobGridProps {
   label?: string
 }
 
-/* ── Component ── */
+/* -- Component -- */
 
 /**
  * InstancedMesh grid of cubes with per-instance color highlighting.
@@ -34,28 +34,26 @@ export function BlobGrid({
   label,
 }: BlobGridProps) {
   const meshRef = useRef<THREE.InstancedMesh>(null!)
+  const dummyRef = useRef(new THREE.Object3D())
+  const elapsedRef = useRef(0)
 
   const gridSide = useMemo(() => Math.round(Math.sqrt(cellCount)), [cellCount])
   const gap = cellSize * 0.3
 
-  // Pre-compute transforms once
-  const matrices = useMemo(() => {
-    const dummy = new THREE.Object3D()
-    const mats: THREE.Matrix4[] = []
+  // Pre-compute base transforms once
+  const cellPositions = useMemo(() => {
     const totalWidth = gridSide * cellSize + (gridSide - 1) * gap
     const offset = totalWidth / 2 - cellSize / 2
+    const positions: [number, number][] = []
 
     for (let i = 0; i < cellCount; i++) {
       const row = Math.floor(i / gridSide)
       const col = i % gridSide
       const x = col * (cellSize + gap) - offset
       const z = row * (cellSize + gap) - offset
-      dummy.position.set(x, 0, z)
-      dummy.scale.setScalar(1)
-      dummy.updateMatrix()
-      mats.push(dummy.matrix.clone())
+      positions.push([x, z])
     }
-    return mats
+    return positions
   }, [cellCount, cellSize, gridSide, gap])
 
   // Build the per-instance color attribute
@@ -74,51 +72,58 @@ export function BlobGrid({
     return arr
   }, [cellCount, baseColor, highlightColor, highlightedIndices])
 
-  // Set instance matrices and colors on mount and when they change
+  // Set non-highlighted cell matrices once, and apply colors
+  const prevHighlightKeyRef = useRef('')
   useEffect(() => {
     const mesh = meshRef.current
     if (!mesh) return
 
+    const dummy = dummyRef.current
+    const highlightSet = new Set(highlightedIndices)
+
     for (let i = 0; i < cellCount; i++) {
-      mesh.setMatrixAt(i, matrices[i])
+      if (!highlightSet.has(i)) {
+        const [x, z] = cellPositions[i]
+        dummy.position.set(x, 0, z)
+        dummy.scale.setScalar(1)
+        dummy.updateMatrix()
+        mesh.setMatrixAt(i, dummy.matrix)
+      }
     }
     mesh.instanceMatrix.needsUpdate = true
 
     // Apply per-instance color
     const colorAttr = new THREE.InstancedBufferAttribute(colorArray, 3)
     mesh.instanceColor = colorAttr
-  }, [cellCount, matrices, colorArray])
 
-  // Subtle hover lift for highlighted cells
-  useFrame(({ clock }, delta) => {
+    prevHighlightKeyRef.current = highlightedIndices.join(',')
+  }, [cellCount, cellPositions, colorArray, highlightedIndices])
+
+  // Only animate highlighted cells with a gentle lift
+  useFrame((_, delta) => {
     const mesh = meshRef.current
     if (!mesh) return
 
-    const t = clock.getElapsedTime()
-    const dummy = new THREE.Object3D()
+    elapsedRef.current += delta
+    const t = elapsedRef.current
+    const dummy = dummyRef.current
     const highlightSet = new Set(highlightedIndices)
-    const totalWidth = gridSide * cellSize + (gridSide - 1) * gap
-    const offset = totalWidth / 2 - cellSize / 2
 
+    let needsUpdate = false
     for (let i = 0; i < cellCount; i++) {
-      const row = Math.floor(i / gridSide)
-      const col = i % gridSide
-      const x = col * (cellSize + gap) - offset
-      const z = row * (cellSize + gap) - offset
-
       if (highlightSet.has(i)) {
-        // Highlighted cells get a gentle lift animation
+        const [x, z] = cellPositions[i]
         const lift = Math.sin(t * 2 + i * 0.5) * 0.008 + 0.01
         dummy.position.set(x, lift, z)
-      } else {
-        dummy.position.set(x, 0, z)
+        dummy.scale.setScalar(1)
+        dummy.updateMatrix()
+        mesh.setMatrixAt(i, dummy.matrix)
+        needsUpdate = true
       }
-
-      dummy.scale.setScalar(1)
-      dummy.updateMatrix()
-      mesh.setMatrixAt(i, dummy.matrix)
     }
-    mesh.instanceMatrix.needsUpdate = true
+    if (needsUpdate) {
+      mesh.instanceMatrix.needsUpdate = true
+    }
   })
 
   return (
@@ -126,7 +131,6 @@ export function BlobGrid({
       <instancedMesh
         ref={meshRef}
         args={[undefined, undefined, cellCount]}
-        castShadow
       >
         <boxGeometry args={[cellSize, cellSize * 0.5, cellSize]} />
         <meshStandardMaterial

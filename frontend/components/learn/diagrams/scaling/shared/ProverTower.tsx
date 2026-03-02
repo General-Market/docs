@@ -5,7 +5,7 @@ import { useFrame } from '@react-three/fiber'
 import { Html, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 
-/* ── Types ── */
+/* -- Types -- */
 
 interface ProverTowerProps {
   position: [number, number, number]
@@ -16,12 +16,11 @@ interface ProverTowerProps {
   reducedMotion?: boolean
 }
 
-/* ── Checkmark shape ── */
+/* -- Checkmark shape -- */
 
 function CheckMark({ color }: { color: string }) {
   const shape = useMemo(() => {
     const s = new THREE.Shape()
-    // Checkmark path
     s.moveTo(-0.04, 0.0)
     s.lineTo(-0.015, -0.03)
     s.lineTo(0.05, 0.04)
@@ -40,17 +39,15 @@ function CheckMark({ color }: { color: string }) {
   )
 }
 
-/* ── X mark shape ── */
+/* -- X mark shape -- */
 
 function XMark({ color }: { color: string }) {
   return (
     <group>
-      {/* First stroke of the X */}
       <mesh rotation={[0, 0, Math.PI / 4]}>
         <planeGeometry args={[0.08, 0.015]} />
         <meshBasicMaterial color={color} side={THREE.DoubleSide} />
       </mesh>
-      {/* Second stroke of the X */}
       <mesh rotation={[0, 0, -Math.PI / 4]}>
         <planeGeometry args={[0.08, 0.015]} />
         <meshBasicMaterial color={color} side={THREE.DoubleSide} />
@@ -59,7 +56,7 @@ function XMark({ color }: { color: string }) {
   )
 }
 
-/* ── Main component ── */
+/* -- Main component -- */
 
 export function ProverTower({
   position,
@@ -71,24 +68,28 @@ export function ProverTower({
 }: ProverTowerProps) {
   const towerRef = useRef<THREE.Group>(null!)
   const materialRef = useRef<THREE.MeshStandardMaterial>(null!)
+  const elapsedRef = useRef(0)
 
   const towerWidth = 0.2
   const towerDepth = 0.2
 
-  // Emissive pulse for agreeing towers
-  useFrame(({ clock }, delta) => {
-    if (!materialRef.current || reducedMotion || !agrees) return
-    const t = clock.getElapsedTime()
-    const pulse = (Math.sin(t * 3) + 1) / 2 // 0 to 1
-    materialRef.current.emissiveIntensity = 0.1 + pulse * 0.3
-  })
+  // Combined: emissive pulse + hover lift in a single useFrame
+  useFrame((_, delta) => {
+    if (reducedMotion) return
+    elapsedRef.current += delta
+    const t = elapsedRef.current
 
-  // Hover lift
-  useFrame(({ clock }, delta) => {
-    if (!towerRef.current || reducedMotion) return
-    const t = clock.getElapsedTime()
-    towerRef.current.position.y =
-      position[1] + Math.sin(t * 1.2 + position[0] * 2) * 0.008
+    // Emissive pulse for agreeing towers
+    if (materialRef.current && agrees) {
+      const pulse = (Math.sin(t * 3) + 1) / 2
+      materialRef.current.emissiveIntensity = 0.1 + pulse * 0.3
+    }
+
+    // Hover lift
+    if (towerRef.current) {
+      towerRef.current.position.y =
+        position[1] + Math.sin(t * 1.2 + position[0] * 2) * 0.008
+    }
   })
 
   const emissiveColor = agrees ? '#22c55e' : '#000000'
@@ -102,7 +103,6 @@ export function ProverTower({
         args={[towerWidth, height, towerDepth]}
         radius={0.025}
         smoothness={4}
-        castShadow
         position={[0, height / 2, 0]}
       >
         <meshStandardMaterial

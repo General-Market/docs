@@ -48,8 +48,6 @@ export function PlatformStage({
           args={[width, height, depth]}
           radius={0.02}
           smoothness={4}
-          castShadow
-          receiveShadow
         >
           <meshStandardMaterial color={color} roughness={0.75} />
         </RoundedBox>
@@ -90,7 +88,6 @@ export function PlatformStage({
             args={[stairWidth, stairRiserHeight, stairDepth]}
             radius={0.01}
             smoothness={4}
-            castShadow
           >
             <meshStandardMaterial
               color={color}

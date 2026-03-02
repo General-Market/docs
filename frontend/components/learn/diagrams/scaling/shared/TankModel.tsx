@@ -5,7 +5,7 @@ import { useFrame } from '@react-three/fiber'
 import { Html, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 
-/* ── Types ── */
+/* -- Types -- */
 
 interface TankModelProps {
   position: [number, number, number]
@@ -26,7 +26,7 @@ interface TankModelProps {
   reducedMotion?: boolean
 }
 
-/* ── Drain particles ── */
+/* -- Drain particles -- */
 
 function DrainParticles({
   count,
@@ -46,33 +46,40 @@ function DrainParticles({
   const meshRef = useRef<THREE.InstancedMesh>(null!)
   const dummy = useMemo(() => new THREE.Object3D(), [])
 
-  // Per-particle state: offset and speed
-  const particles = useMemo(
+  // Immutable spatial/speed data from useMemo
+  const particleData = useMemo(
     () =>
-      Array.from({ length: count }, () => ({
-        xOff: (Math.random() - 0.5) * tankWidth * 0.6,
-        zOff: (Math.random() - 0.5) * tankDepth * 0.6,
-        speed: 0.3 + Math.random() * 0.4,
-        phase: Math.random(),
+      Array.from({ length: count }, (_, i) => ({
+        xOff: (Math.sin(i * 13 + 1) * 10000 % 1 - 0.5) * tankWidth * 0.6,
+        zOff: (Math.sin(i * 17 + 2) * 10000 % 1 - 0.5) * tankDepth * 0.6,
+        speed: 0.3 + (Math.sin(i * 23 + 3) * 10000 % 1) * 0.4,
+        initialPhase: Math.sin(i * 29 + 4) * 10000 % 1,
       })),
     [count, tankWidth, tankDepth]
   )
 
+  // Mutable phase values live in a ref so useMemo stays immutable
+  const phases = useRef<Float32Array | null>(null)
+  if (phases.current === null || phases.current.length !== count) {
+    const arr = new Float32Array(count)
+    for (let i = 0; i < count; i++) arr[i] = particleData[i].initialPhase
+    phases.current = arr
+  }
+
   useFrame((_, delta) => {
     if (!meshRef.current) return
-    const t = reducedMotion ? 0 : undefined
+    const phaseArr = phases.current!
+    const isReduced = reducedMotion
 
     for (let i = 0; i < count; i++) {
-      const p = particles[i]
-      if (t !== undefined) {
-        // Static placement for reduced motion
-        const y = -tankHeight * 0.3 + p.phase * tankHeight * 0.5
+      const p = particleData[i]
+      if (isReduced) {
+        const y = -tankHeight * 0.3 + phaseArr[i] * tankHeight * 0.5
         dummy.position.set(p.xOff, y, p.zOff)
       } else {
-        p.phase += delta * p.speed
-        if (p.phase > 1) p.phase -= 1
-        // Fall from top of tank interior to bottom
-        const y = (tankHeight / 2) * (1 - 2 * p.phase)
+        phaseArr[i] += delta * p.speed
+        if (phaseArr[i] > 1) phaseArr[i] -= 1
+        const y = (tankHeight / 2) * (1 - 2 * phaseArr[i])
         dummy.position.set(p.xOff, y, p.zOff)
       }
       dummy.scale.setScalar(0.015)
@@ -90,7 +97,7 @@ function DrainParticles({
   )
 }
 
-/* ── Growth chevrons ── */
+/* -- Growth chevrons -- */
 
 function GrowthChevrons({
   tankWidth,
@@ -108,10 +115,12 @@ function GrowthChevrons({
     useRef<THREE.Mesh>(null!),
     useRef<THREE.Mesh>(null!),
   ]
+  const elapsedRef = useRef(0)
 
-  useFrame(({ clock }) => {
+  useFrame((_, delta) => {
     if (reducedMotion) return
-    const t = clock.getElapsedTime()
+    elapsedRef.current += delta
+    const t = elapsedRef.current
     for (let i = 0; i < 3; i++) {
       const mesh = refs[i].current
       if (!mesh) continue
@@ -121,7 +130,6 @@ function GrowthChevrons({
     }
   })
 
-  // Chevron shape: a simple "V" rotated to point upward
   const chevronShape = useMemo(() => {
     const shape = new THREE.Shape()
     const w = tankWidth * 0.25
@@ -158,7 +166,7 @@ function GrowthChevrons({
   )
 }
 
-/* ── Main TankModel component ── */
+/* -- Main TankModel component -- */
 
 export function TankModel({
   position,
@@ -179,11 +187,12 @@ export function TankModel({
   reducedMotion = false,
 }: TankModelProps) {
   const fillRef = useRef<THREE.Group>(null!)
+  const elapsedRef = useRef(0)
 
-  // Animate the fill level oscillation
-  useFrame(({ clock }) => {
+  useFrame((_, delta) => {
     if (!fillRef.current || reducedMotion || fillOscillation === 0) return
-    const t = clock.getElapsedTime()
+    elapsedRef.current += delta
+    const t = elapsedRef.current
     const osc = Math.sin(t * 2) * fillOscillation
     const effectivePercent = Math.max(0, Math.min(1, fillPercent + osc))
     const fillHeight = height * effectivePercent
@@ -197,12 +206,11 @@ export function TankModel({
 
   return (
     <group position={position} scale={scaleVal}>
-      {/* Tank walls: slightly transparent outer shell */}
+      {/* Tank walls */}
       <RoundedBox
         args={[width, height, depth]}
         radius={0.03}
         smoothness={4}
-        castShadow
       >
         <meshStandardMaterial
           color={color}
@@ -233,7 +241,7 @@ export function TankModel({
         </RoundedBox>
       </group>
 
-      {/* Cap bar: red bar across top edge when capped */}
+      {/* Cap bar */}
       {capBar && (
         <RoundedBox
           args={[width + 0.02, 0.025, depth + 0.02]}

@@ -4,7 +4,7 @@ import { useRef, useState, useEffect, useCallback, ReactNode } from 'react'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { usePrefersReducedMotion } from '@/hooks/useMediaQueries'
 
-/* ── Types ── */
+/* -- Types -- */
 
 interface SceneContainerProps {
   children: (props: { reducedMotion: boolean }) => ReactNode
@@ -13,11 +13,9 @@ interface SceneContainerProps {
   srDescription: string
   legend: ReactNode
   fallbackText: string
-  rootMarginMount?: string
-  rootMarginUnmount?: string
 }
 
-/* ── WebGL detection ── */
+/* -- WebGL detection -- */
 
 function detectWebGL(): boolean {
   if (typeof window === 'undefined') return false
@@ -33,7 +31,7 @@ function detectWebGL(): boolean {
   }
 }
 
-/* ── No-WebGL fallback ── */
+/* -- No-WebGL fallback -- */
 
 function NoWebGLFallback({ text }: { text: string }) {
   return (
@@ -48,7 +46,7 @@ function NoWebGLFallback({ text }: { text: string }) {
   )
 }
 
-/* ── Context-loss recovery UI ── */
+/* -- Context-loss recovery UI -- */
 
 function ContextLostOverlay({ onRetry }: { onRetry: () => void }) {
   return (
@@ -68,7 +66,7 @@ function ContextLostOverlay({ onRetry }: { onRetry: () => void }) {
   )
 }
 
-/* ── Error fallback for ErrorBoundary ── */
+/* -- Error fallback for ErrorBoundary -- */
 
 function SceneErrorFallback({ text }: { text: string }) {
   return (
@@ -83,7 +81,7 @@ function SceneErrorFallback({ text }: { text: string }) {
   )
 }
 
-/* ── Main component ── */
+/* -- Main component -- */
 
 export function SceneContainer({
   children,
@@ -92,8 +90,6 @@ export function SceneContainer({
   srDescription,
   legend,
   fallbackText,
-  rootMarginMount = '200px',
-  rootMarginUnmount = '600px',
 }: SceneContainerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasWrapRef = useRef<HTMLDivElement>(null)
@@ -109,39 +105,39 @@ export function SceneContainer({
     setHasWebGL(detectWebGL())
   }, [])
 
-  // IntersectionObserver: mount when approaching viewport, unmount when far past
+  // Single IntersectionObserver: mount at 200px margin, unmount with getBoundingClientRect check
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
 
-    // Mount observer: trigger mount when element is within rootMarginMount
-    const mountObserver = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setMounted(true)
+        } else {
+          // Check if element is more than 200px outside viewport before unmounting
+          const rect = el.getBoundingClientRect()
+          const viewportHeight = window.innerHeight
+          const viewportWidth = window.innerWidth
+          const outsideTop = rect.bottom < -200
+          const outsideBottom = rect.top > viewportHeight + 200
+          const outsideLeft = rect.right < -200
+          const outsideRight = rect.left > viewportWidth + 200
+
+          if (outsideTop || outsideBottom || outsideLeft || outsideRight) {
+            setMounted(false)
+          }
         }
       },
-      { rootMargin: rootMarginMount }
+      { rootMargin: '200px' }
     )
 
-    // Unmount observer: trigger unmount when element leaves a larger margin
-    const unmountObserver = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) {
-          setMounted(false)
-        }
-      },
-      { rootMargin: rootMarginUnmount }
-    )
-
-    mountObserver.observe(el)
-    unmountObserver.observe(el)
+    observer.observe(el)
 
     return () => {
-      mountObserver.disconnect()
-      unmountObserver.disconnect()
+      observer.disconnect()
     }
-  }, [rootMarginMount, rootMarginUnmount])
+  }, [])
 
   // WebGL context loss listener
   useEffect(() => {
@@ -157,8 +153,6 @@ export function SceneContainer({
       setContextLost(false)
     }
 
-    // The canvas element is created by R3F inside our wrapper
-    // Listen on the wrapper and let events bubble
     wrap.addEventListener('webglcontextlost', handleContextLost, true)
     wrap.addEventListener('webglcontextrestored', handleContextRestored, true)
 
