@@ -23,7 +23,7 @@ import { useItpOrderbook, prefetchOrderbook } from '@/hooks/useItpOrderbook'
 import { hasLendingMarket } from '@/lib/contracts/morpho-markets-registry'
 import blacklistedItps from '@/lib/config/blacklisted-itps.json'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
-import { indexL3 } from '@/lib/wagmi'
+import { indexL3, arbChainId } from '@/lib/wagmi'
 import { useSSENav, type NavSnapshot } from '@/hooks/useSSE'
 import { useTranslations } from 'next-intl'
 
@@ -360,7 +360,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
   const { metadata, refetch: refetchMetadata } = useItpMetadata(itp.itpId as `0x${string}` | undefined)
   const { name: deployerName } = useDeployerName(itp.admin as `0x${string}` | undefined)
   const { writeContractAsync, data: txHash, isPending: isWriting, error: writeError } = useChainWriteContract()
-  const { isLoading: isTxConfirming, isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({ hash: txHash })
+  const { isLoading: isTxConfirming, isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({ hash: txHash, chainId: arbChainId })
 
   // Toast notifications for metadata edit
   useTransactionNotification({
@@ -397,6 +397,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
         abi: BRIDGE_PROXY_ABI,
         functionName: 'setItpMetadata',
         args: [itp.itpId as `0x${string}`, editDesc, editUrl, editVideo],
+        chainId: arbChainId,
       })
     } catch {
       // User rejected or tx failed
