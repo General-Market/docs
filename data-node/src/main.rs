@@ -284,6 +284,43 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("FNG collector disabled (interval = 0)");
     }
 
+    // ── Auto-reload sim cache daily ──────────────────────────────────────
+    // The sim cache is loaded once at startup and can go stale as new CoinGecko
+    // snapshots arrive. This background task reloads it every 24h so the
+    // backtester chart always has up-to-date prices.
+    {
+        let reload_pool = pool.clone();
+        let reload_sim_cache = sim_cache.clone();
+        tokio::spawn(async move {
+            // Wait 24h before the first auto-reload (startup already loaded it).
+            let mut interval = tokio::time::interval(Duration::from_secs(24 * 60 * 60));
+            interval.tick().await; // first tick fires immediately — skip it
+            loop {
+                interval.tick().await;
+                tracing::info!("Auto-reloading sim data cache...");
+                match simulation::SimDataCache::load(&reload_pool).await {
+                    Ok(new_cache) => {
+                        let date_count = new_cache.all_dates.len();
+                        let cat_count = new_cache.categories.len();
+                        let latest = new_cache.all_dates.last().copied();
+                        let mut cache = reload_sim_cache.write().await;
+                        *cache = new_cache;
+                        tracing::info!(
+                            dates = date_count,
+                            categories = cat_count,
+                            latest_date = ?latest,
+                            "Sim data cache auto-reloaded"
+                        );
+                    }
+                    Err(e) => {
+                        tracing::error!(%e, "Failed to auto-reload sim cache, will retry in 24h");
+                    }
+                }
+            }
+        });
+        info!("Sim cache auto-reload scheduled (every 24h)");
+    }
+
     // ── Market data providers (from AA) ──────────────────────────────────
     // Initialize global error tracker and sync registry before starting any sources
     market_data::error_tracker::init_global();

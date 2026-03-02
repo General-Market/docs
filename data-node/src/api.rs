@@ -3515,13 +3515,19 @@ async fn sim_reload_cache(
         Ok(new_cache) => {
             let cat_count = new_cache.categories.len();
             let dl_cats = new_cache.categories.iter().filter(|c| c.source == "defillama").count();
+            let date_count = new_cache.all_dates.len();
+            let first_date = new_cache.all_dates.first().map(|d| d.to_string());
+            let last_date = new_cache.all_dates.last().map(|d| d.to_string());
             let mut cache = state.sim_cache.write().await;
             *cache = new_cache;
-            tracing::info!(categories = cat_count, dl_categories = dl_cats, "Sim data cache reloaded");
+            tracing::info!(categories = cat_count, dl_categories = dl_cats, dates = date_count, "Sim data cache reloaded");
             Ok(Json(serde_json::json!({
                 "status": "ok",
                 "categories": cat_count,
                 "dl_categories": dl_cats,
+                "dates": date_count,
+                "first_date": first_date,
+                "last_date": last_date,
             })))
         }
         Err(e) => {
@@ -5406,29 +5412,41 @@ async fn store_signed_batch(
         return StatusCode::BAD_REQUEST;
     }
 
-    // DN-4: Atomic nonce check — reject stale replays
-    // (This must happen inside a lock to prevent TOCTOU)
-    {
-        let cache = state.batch_engine.signed_configs.read().await;
-        if let Some(existing) = cache.iter().find(|c| c.source_id == payload.source_id) {
-            if payload.reference_nonce <= existing.reference_nonce {
-                tracing::warn!(
-                    source = %payload.source_id,
-                    incoming = payload.reference_nonce,
-                    existing = existing.reference_nonce,
-                    "Rejecting stale nonce"
-                );
-                return StatusCode::CONFLICT;
-            }
-        }
-    }
-
-    // Persist to DB first (crash recovery)
+    // Prepare data outside the lock (no shared-state dependency)
     let hash_bytes =
         hex::decode(payload.config_hash.trim_start_matches("0x")).unwrap_or_default();
     let sig_bytes =
         hex::decode(payload.bls_signature.trim_start_matches("0x")).unwrap_or_default();
+    let markets: Vec<crate::batch_engine::BatchMarket> = serde_json::from_value(
+        payload.config.get("markets").cloned().unwrap_or_default(),
+    )
+    .unwrap_or_default();
+    let display_name = payload
+        .config
+        .get("display_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or(&payload.source_id)
+        .to_string();
 
+    // DN-4: Atomic nonce check + DB write + memory update under a SINGLE write lock.
+    // This eliminates the TOCTOU race where two concurrent requests could both pass
+    // a read-lock nonce check before either updates state.
+    let mut configs = state.batch_engine.signed_configs.write().await;
+
+    // Nonce check — reject stale replays
+    if let Some(existing) = configs.iter().find(|c| c.source_id == payload.source_id) {
+        if payload.reference_nonce <= existing.reference_nonce {
+            tracing::warn!(
+                source = %payload.source_id,
+                incoming = payload.reference_nonce,
+                existing = existing.reference_nonce,
+                "Rejecting stale nonce"
+            );
+            return StatusCode::CONFLICT;
+        }
+    }
+
+    // Persist to DB (crash recovery) — still under write lock to keep atomicity
     if let Err(e) = sqlx::query(
         r#"
         INSERT INTO signed_batch_configs
@@ -5456,18 +5474,7 @@ async fn store_signed_batch(
         tracing::error!(%e, source = %payload.source_id, "Failed to persist signed config to DB");
     }
 
-    // Update in-memory cache
-    let markets: Vec<crate::batch_engine::BatchMarket> = serde_json::from_value(
-        payload.config.get("markets").cloned().unwrap_or_default(),
-    )
-    .unwrap_or_default();
-    let display_name = payload
-        .config
-        .get("display_name")
-        .and_then(|v| v.as_str())
-        .unwrap_or(&payload.source_id)
-        .to_string();
-
+    // Update in-memory cache (still under the same write lock)
     let signed = crate::batch_engine::SignedBatchConfig {
         source_id: payload.source_id.clone(),
         display_name,
@@ -5481,7 +5488,6 @@ async fn store_signed_batch(
         signed_at: Utc::now(),
     };
 
-    let mut configs = state.batch_engine.signed_configs.write().await;
     // Replace existing entry for this source, or push new
     if let Some(existing) = configs.iter_mut().find(|c| c.source_id == signed.source_id) {
         *existing = signed;
