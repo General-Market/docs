@@ -6,7 +6,8 @@ import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { useNonceCheck } from '@/hooks/useNonceCheck'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
-import { arbChainId } from '@/lib/wagmi'
+import { ensureCorrectChain } from '@/hooks/useChainWrite'
+import { arbChainId, arbitrumChain } from '@/lib/wagmi'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getCoinGeckoUrl } from '@/lib/coingecko'
 import { DATA_NODE_URL } from '@/lib/config'
@@ -306,14 +307,11 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
 
     try {
       // BridgeProxy lives on Arbitrum — ensure wallet is on Arb chain before submitting
-      if (currentChainId !== arbChainId) {
-        console.log('[CreateITP] Switching to Arb chain:', arbChainId)
-        try {
-          await switchChainAsync({ chainId: arbChainId })
-        } catch {
-          setTxError('Please switch to the Arbitrum chain to create an ITP')
-          return
-        }
+      try {
+        await ensureCorrectChain(currentChainId, switchChainAsync, arbChainId, arbitrumChain)
+      } catch {
+        setTxError('Please switch to the Arbitrum chain to create an ITP')
+        return
       }
 
       // If deployer hasn't set their name yet, set it first

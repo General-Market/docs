@@ -18,14 +18,18 @@ import { activeChainId, indexL3 } from '@/lib/wagmi'
  * If already on the right chain, returns immediately.
  * Otherwise, attempts wagmi switchChainAsync, with raw RPC fallback.
  */
-async function ensureCorrectChain(
+export async function ensureCorrectChain(
   currentChainId: number | undefined,
   switchChainAsync: (args: { chainId: number }) => Promise<unknown>,
+  targetChainId: number = activeChainId,
+  targetChain?: { name: string; nativeCurrency: { name: string; symbol: string; decimals: number }; rpcUrls: { default: { http: readonly string[] } } },
 ) {
-  if (currentChainId === activeChainId) return
+  if (currentChainId === targetChainId) return
+
+  const chain = targetChain ?? indexL3
 
   try {
-    await switchChainAsync({ chainId: activeChainId })
+    await switchChainAsync({ chainId: targetChainId })
   } catch {
     // Fallback: raw wallet RPC
     const provider = (window as any).ethereum
@@ -34,7 +38,7 @@ async function ensureCorrectChain(
     try {
       await provider.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: `0x${activeChainId.toString(16)}` }],
+        params: [{ chainId: `0x${targetChainId.toString(16)}` }],
       })
     } catch (switchError: any) {
       // 4902 = chain not added
@@ -42,10 +46,10 @@ async function ensureCorrectChain(
         await provider.request({
           method: 'wallet_addEthereumChain',
           params: [{
-            chainId: `0x${activeChainId.toString(16)}`,
-            chainName: indexL3.name,
-            nativeCurrency: indexL3.nativeCurrency,
-            rpcUrls: [indexL3.rpcUrls.default.http[0]],
+            chainId: `0x${targetChainId.toString(16)}`,
+            chainName: chain.name,
+            nativeCurrency: chain.nativeCurrency,
+            rpcUrls: [chain.rpcUrls.default.http[0]],
           }],
         })
       } else {
