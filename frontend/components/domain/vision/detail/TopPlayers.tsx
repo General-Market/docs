@@ -40,9 +40,9 @@ export function TopPlayers() {
         <div className="grid grid-cols-[36px_1fr_60px_70px_80px_90px] items-center px-4 py-2 border-b border-border-light text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
           <div>#</div>
           <div>Player</div>
-          <div className="text-right">Bets</div>
+          <div className="text-right">Batches</div>
           <div className="text-right">Volume</div>
-          <div className="text-right">Win Rate</div>
+          <div className="text-right">Profitable</div>
           <div className="text-right">P&L</div>
         </div>
 
