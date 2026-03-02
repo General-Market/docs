@@ -41,6 +41,8 @@ pub struct VisionConfig {
     pub chain_id: u64,
     /// Number of active issuers in the network. Default: 1 (single-issuer, no consensus).
     pub num_issuers: usize,
+    /// This issuer's node index (0-based) for signer bitmap computation.
+    pub node_index: u8,
 
     // =========================================================================
     // Dual-balance / cross-chain deposit fields (Vision First Deposit)
@@ -82,6 +84,7 @@ impl Default for VisionConfig {
             // BLS tick consensus defaults
             chain_id: 111222333,
             num_issuers: 1,
+            node_index: 0,
             // Cross-chain deposit defaults
             arb_rpc_url: "https://arb1.arbitrum.io/rpc".into(),
             arb_bridge_custody_address: String::new(),

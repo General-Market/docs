@@ -97,6 +97,7 @@ pub struct BatchSummary {
     pub tvl: String,
     pub paused: bool,
     pub current_tick: u64,
+    pub market_count: usize,
 }
 
 /// Full batch state response.
@@ -156,17 +157,18 @@ pub struct SubmitBitmapResponse {
     pub player: String,
 }
 
-/// Balance proof response (placeholder until BLS signing is integrated).
+/// Balance proof response with BLS signature for on-chain verification.
 #[derive(Debug, Serialize)]
 pub struct BalanceResponse {
     pub batch_id: u64,
     pub player: String,
     pub balance: String,
     pub stake_per_tick: String,
-    // TODO: BLS signature fields
-    // pub bls_signature: String,
-    // pub issuer_id: u8,
-    // pub pubkey: String,
+    /// BLS signature (hex-encoded, 128 chars = 64 bytes G1 point).
+    /// Empty string if proof not yet generated (issuer just started, tick not resolved).
+    pub bls_sig: String,
+    /// Signer bitmap (decimal string, uint256). Bit at node_index is set.
+    pub signer_bitmap: String,
 }
 
 /// Revealed bitmap for a player after the reveal window has passed.
@@ -232,6 +234,9 @@ async fn list_batches(
 
     match rows {
         Ok(rows) => {
+            // Build config_hash → market_count map from data-node recommended batches
+            let market_counts = fetch_market_counts(&state.config.data_node_url).await;
+
             let mut summaries = Vec::with_capacity(rows.len());
             for row in rows {
                 let batch_id = row.id as u64;
@@ -251,16 +256,23 @@ async fn list_batches(
 
                 let current_tick = state.scheduler.next_tick_for_batch(batch_id).await;
 
+                let config_hash_str = row.config_hash.clone().unwrap_or_default();
+                let market_count = market_counts
+                    .get(&config_hash_str)
+                    .copied()
+                    .unwrap_or(0);
+
                 summaries.push(BatchSummary {
                     id: batch_id,
                     creator: row.creator,
                     source_id: bytes32_hex_to_string(&row.source_id.unwrap_or_default()),
-                    config_hash: row.config_hash.unwrap_or_default(),
+                    config_hash: config_hash_str,
                     tick_duration: row.tick_duration as u64,
                     player_count,
                     tvl: tvl.to_string(),
                     paused: row.paused,
                     current_tick,
+                    market_count,
                 });
             }
             (StatusCode::OK, Json(serde_json::json!({ "batches": summaries }))).into_response()
@@ -274,6 +286,23 @@ async fn list_batches(
                 .into_response()
         }
     }
+}
+
+/// Fetch market counts per config_hash from the data-node recommended batches endpoint.
+async fn fetch_market_counts(data_node_url: &str) -> std::collections::HashMap<String, usize> {
+    use super::batch_config_orchestrator;
+    let mut counts = std::collections::HashMap::new();
+    match batch_config_orchestrator::fetch_recommended(data_node_url).await {
+        Ok(batches) => {
+            for batch in batches {
+                counts.insert(batch.config_hash, batch.markets.len());
+            }
+        }
+        Err(e) => {
+            warn!("Failed to fetch recommended batches for market counts: {e}");
+        }
+    }
+    counts
 }
 
 /// Row type for batch queries from Postgres.
@@ -672,11 +701,10 @@ async fn submit_bitmap(
 // GET /vision/balance/:batch_id/:player
 // ---------------------------------------------------------------------------
 
-/// Get a player's current balance in a batch.
+/// Get a player's BLS-signed balance proof for on-chain withdrawal.
 ///
-/// In the full implementation, this will return a BLS-signed balance proof
-/// that the player can submit on-chain for withdrawals. For now, it returns
-/// the unsigned balance from the in-memory scheduler state.
+/// Reads pre-generated proof from Postgres (generated at tick end by the engine).
+/// Falls back to in-memory scheduler state with empty BLS sig if proof not yet stored.
 async fn get_balance(
     State(state): State<Arc<VisionState>>,
     Path((batch_id, player_str)): Path<(u64, String)>,
@@ -692,6 +720,43 @@ async fn get_balance(
         }
     };
 
+    let player_hex = format!("{:?}", player);
+
+    // Try stored proof from DB first (has BLS signature, generated at tick end)
+    if let Ok(Some(row)) = sqlx::query(
+        "SELECT balance, bls_sig, signer_bitmap
+         FROM vision_balance_proofs
+         WHERE batch_id = $1 AND LOWER(player) = LOWER($2)"
+    )
+    .bind(batch_id as i64)
+    .bind(&player_hex)
+    .fetch_optional(&state.pool)
+    .await
+    {
+        use sqlx::Row;
+        let balance: String = row.get("balance");
+        let bls_sig: Vec<u8> = row.get("bls_sig");
+        let signer_bitmap: String = row.get("signer_bitmap");
+
+        // Get stake_per_tick from in-memory state
+        let stake = state.scheduler.get_batch_state(batch_id).await
+            .and_then(|(_, players)| {
+                players.iter().find(|p| p.player == player).map(|p| p.stake_per_tick.to_string())
+            })
+            .unwrap_or_else(|| "0".to_string());
+
+        let response = BalanceResponse {
+            batch_id,
+            player: player_hex,
+            balance,
+            stake_per_tick: stake,
+            bls_sig: hex::encode(&bls_sig),
+            signer_bitmap,
+        };
+        return (StatusCode::OK, Json(response)).into_response();
+    }
+
+    // Fall back to in-memory state (no BLS sig — proof not yet generated)
     let batch_state = state.scheduler.get_batch_state(batch_id).await;
 
     match batch_state {
@@ -711,19 +776,13 @@ async fn get_balance(
                 )
                     .into_response(),
                 Some(pos) => {
-                    // TODO: Add BLS signature for balance proof
-                    // The balance proof must be signed by this issuer's BLS key
-                    // so players can aggregate signatures from 2/3+ issuers
-                    // and submit the proof on-chain for withdrawals.
-                    //
-                    // Message hash: keccak256(abi.encodePacked(
-                    //     batchId, player, balance, tickId
-                    // ))
                     let response = BalanceResponse {
                         batch_id,
-                        player: format!("{:?}", player),
+                        player: player_hex,
                         balance: pos.balance.to_string(),
                         stake_per_tick: pos.stake_per_tick.to_string(),
+                        bls_sig: String::new(),
+                        signer_bitmap: "0".to_string(),
                     };
                     (StatusCode::OK, Json(response)).into_response()
                 }
@@ -894,9 +953,9 @@ async fn vision_leaderboard(
         }
     }
 
-    // Also query Postgres for initial deposits (stake_per_tick as proxy)
+    // Query Postgres for persisted total_deposited values
     if let Ok(rows) = sqlx::query_as::<_, DepositRow>(
-        "SELECT vp.player, SUM(vp.stake_per_tick::bigint * 10) as total_deposited
+        "SELECT vp.player, SUM(vp.total_deposited::numeric) as total_deposited
          FROM vision_positions vp
          JOIN vision_batches vb ON vp.batch_id = vb.id
          WHERE vb.paused = false

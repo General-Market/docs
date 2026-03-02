@@ -3339,6 +3339,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(chain_id) = args.vision_arb_chain_id {
                 vision_cfg.arb_chain_id = chain_id;
             }
+            // BLS proof generation config
+            vision_cfg.num_issuers = args.num_issuers as usize;
+            // node_id is 1-indexed (u32), node_index is 0-indexed (u8)
+            vision_cfg.node_index = args.node_id.map(|id| (id.saturating_sub(1)) as u8).unwrap_or(0);
             Some(vision_cfg)
         } else {
             None

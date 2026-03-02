@@ -783,6 +783,8 @@ json.dump(deploy, open('../deployments/active-deployment.json', 'w'), indent=2)
         # Run Vision database migrations (issuer chain listener needs these tables)
         if $PG_ISREADY -q 2>/dev/null; then
             $PSQL -d index_prices -f ../issuer/migrations/001_create_vision_tables.sql > /dev/null 2>&1 || true
+            $PSQL -d index_prices -f ../issuer/migrations/002_create_vision_deposit_tables.sql > /dev/null 2>&1 || true
+            $PSQL -d index_prices -f ../issuer/migrations/003_create_vision_balance_proofs.sql > /dev/null 2>&1 || true
             # Reset chain listener bookmark (Anvil restarts from block 0 each session)
             $PSQL -d index_prices -c "UPDATE vision_kv_store SET value = '0' WHERE key = 'chain_listener_last_block';" > /dev/null 2>&1 || true
             $PSQL -d index_prices -c "TRUNCATE vision_batches, vision_positions, vision_tick_results;" > /dev/null 2>&1 || true
@@ -896,7 +898,7 @@ for i in $(seq 1 $ISSUER_COUNT); do
     BLS_IDX=$((i - 1))
 
     ISSUER_ARGS="--node-id $i --port $PORT --rpc $RPC_URL"
-    ISSUER_ARGS="$ISSUER_ARGS --cycle-duration-ms 200 --min-cycle-gap-ms 20 --consensus-timeout-ms 150 --no-tls"
+    ISSUER_ARGS="$ISSUER_ARGS --cycle-duration-ms 1000 --min-cycle-gap-ms 50 --consensus-timeout-ms 800 --no-tls"
     ISSUER_ARGS="$ISSUER_ARGS --test-key-seeds --bls-key-seed-index $BLS_IDX"
     ISSUER_ARGS="$ISSUER_ARGS --num-issuers $ISSUER_COUNT"
     ISSUER_ARGS="$ISSUER_ARGS --registry-sync"

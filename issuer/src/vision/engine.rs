@@ -8,8 +8,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use common::bls::BLSKeyPair;
-use ethers::types::{Address, H256};
+use common::bls::{BLSKeyPair, Bn254BLSSigner};
+use ethers::abi::{encode, Token};
+use ethers::types::{Address, H256, U256};
 use ethers::utils::keccak256;
 use tokio::sync::RwLock;
 
@@ -502,6 +503,102 @@ pub async fn apply_balances(
     }
 }
 
+/// Generate BLS-signed WITHDRAW balance proofs for all players after tick resolution.
+///
+/// For each player in the resolved batch, computes the message hash matching
+/// Vision.sol's `withdraw()` verification:
+///   keccak256(abi.encode(chainId, visionAddress, "WITHDRAW", batchId, player, balance))
+///
+/// Signs with this issuer's BLS keypair and stores in `vision_balance_proofs`.
+/// Proofs survive issuer restarts and can be served immediately from the DB.
+async fn generate_and_store_balance_proofs(
+    db_pool: &Option<sqlx::PgPool>,
+    bls_keypair: &Option<Arc<BLSKeyPair>>,
+    config: &VisionConfig,
+    batch_id: u64,
+    tick_id: u64,
+    player_balances: &[super::types::PlayerBalance],
+) {
+    let Some(pool) = db_pool else { return };
+    let Some(keypair) = bls_keypair else {
+        tracing::debug!(batch_id, tick_id, "No BLS keypair — skipping proof generation");
+        return;
+    };
+    if player_balances.is_empty() {
+        return;
+    }
+
+    let vision_address: Address = match config.vision_address.parse() {
+        Ok(addr) => addr,
+        Err(_) => {
+            tracing::warn!("Invalid vision_address for proof generation — skipping");
+            return;
+        }
+    };
+
+    let signer = Bn254BLSSigner::new();
+    let signer_bitmap = U256::one() << config.node_index;
+    let signer_bitmap_str = signer_bitmap.to_string();
+
+    for pb in player_balances {
+        // Compute WITHDRAW message hash (matches Vision.sol)
+        let message_hash = keccak256(&encode(&[
+            Token::Uint(U256::from(config.chain_id)),
+            Token::Address(vision_address),
+            Token::String("WITHDRAW".to_string()),
+            Token::Uint(U256::from(batch_id)),
+            Token::Address(pb.player),
+            Token::Uint(pb.new_balance),
+        ]));
+
+        // Sign with BLS
+        let sig = match signer.sign_message_hash(keypair, &message_hash) {
+            Ok(s) => s,
+            Err(e) => {
+                tracing::warn!(
+                    batch_id, tick_id, player = %pb.player,
+                    error = %e, "BLS signing failed for balance proof"
+                );
+                continue;
+            }
+        };
+
+        // Upsert to DB (batch_id, player is the PK — latest proof wins)
+        let player_str = format!("{:?}", pb.player);
+        let balance_str = pb.new_balance.to_string();
+        if let Err(e) = sqlx::query(
+            "INSERT INTO vision_balance_proofs (batch_id, player, tick_id, balance, bls_sig, signer_bitmap)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (batch_id, player) DO UPDATE SET
+                tick_id = EXCLUDED.tick_id,
+                balance = EXCLUDED.balance,
+                bls_sig = EXCLUDED.bls_sig,
+                signer_bitmap = EXCLUDED.signer_bitmap,
+                updated_at = NOW()"
+        )
+        .bind(batch_id as i64)
+        .bind(&player_str)
+        .bind(tick_id as i64)
+        .bind(&balance_str)
+        .bind(&sig.0[..])
+        .bind(&signer_bitmap_str)
+        .execute(pool)
+        .await
+        {
+            tracing::warn!(
+                batch_id, tick_id, player = %pb.player,
+                error = %e, "Failed to store balance proof in DB"
+            );
+        }
+    }
+
+    tracing::info!(
+        batch_id, tick_id,
+        players = player_balances.len(),
+        "Generated and stored BLS balance proofs"
+    );
+}
+
 /// Main tick engine loop.
 ///
 /// Polls the scheduler at `config.tick_poll_interval_ms` intervals for batches
@@ -982,6 +1079,18 @@ pub async fn run(
                                     } else {
                                         scheduler.mark_resolved(batch_id, tick_id).await;
                                     }
+
+                                    // Generate and store BLS-signed balance proofs
+                                    // Must happen AFTER apply_balances so new_balance is final.
+                                    generate_and_store_balance_proofs(
+                                        &db_pool,
+                                        &bls_keypair,
+                                        &config,
+                                        batch_id,
+                                        tick_id,
+                                        &result.player_balances,
+                                    )
+                                    .await;
                                 }
                                 Err(e) => {
                                     tracing::warn!(

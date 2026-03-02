@@ -1,13 +1,19 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount, useReadContract, useWaitForTransactionReceipt } from 'wagmi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
+import { ISSUER_REGISTRY_ABI } from '@/lib/contracts/index-protocol-abi'
+import { indexL3 } from '@/lib/wagmi'
 
 const VISION_ADDRESS = (
   process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000'
+) as `0x${string}`
+
+const ISSUER_REGISTRY_ADDRESS = (
+  process.env.NEXT_PUBLIC_ISSUER_REGISTRY_ADDRESS || '0x0000000000000000000000000000000000000000'
 ) as `0x${string}`
 
 import { VISION_ISSUER_URLS } from '@/lib/config'
@@ -17,6 +23,7 @@ export type ClaimStep = 'idle' | 'fetching-proof' | 'claiming' | 'done' | 'error
 export interface ClaimProof {
   balance: string
   blsSig: string
+  signerBitmap: string
   fromTick: number
   toTick: number
 }
@@ -61,7 +68,8 @@ async function fetchClaimProof(
         const data = await res.json()
         return {
           balance: data.balance,
-          blsSig: data.blsSig || data.bls_sig,
+          blsSig: data.blsSig || data.bls_sig || '',
+          signerBitmap: data.signerBitmap || data.signer_bitmap || '0',
           fromTick: Number(fromTick),
           toTick: Number(toTick),
         }
@@ -81,7 +89,8 @@ async function fetchClaimProof(
  *
  * Flow:
  * 1. Fetch BLS-signed balance proof from issuer node (with tick range)
- * 2. Call Vision.claimRewards(batchId, fromTick, toTick, newBalance, blsSignature)
+ * 2. Read referenceNonce from IssuerRegistry on-chain
+ * 3. Call Vision.claimRewards(batchId, fromTick, toTick, newBalance, blsSignature, referenceNonce, signersBitmask)
  *
  * Tick range: from lastClaimedTick+1 to current resolved tick.
  * The contract verifies the BLS signature and updates the player's balance.
@@ -94,6 +103,15 @@ export function useClaim(): UseClaimReturn {
   const [proof, setProof] = useState<ClaimProof | null>(null)
 
   const claimHandled = useRef(false)
+
+  // Read latest snapshot nonce from IssuerRegistry (for BLS verification)
+  const { data: lastSnapshotNonce } = useReadContract({
+    address: ISSUER_REGISTRY_ADDRESS,
+    abi: ISSUER_REGISTRY_ABI,
+    functionName: 'lastSnapshotNonce',
+    chainId: indexL3.id,
+    query: { enabled: ISSUER_REGISTRY_ADDRESS !== '0x0000000000000000000000000000000000000000' },
+  })
 
   // --- Claim tx ---
   const {
@@ -137,8 +155,11 @@ export function useClaim(): UseClaimReturn {
       return
     }
 
-    // Step 2: Submit claimRewards tx
+    // Step 2: Submit claimRewards tx with BLS proof + referenceNonce + signersBitmask
     setStep('claiming')
+    const refNonce = lastSnapshotNonce ? BigInt(lastSnapshotNonce.toString()) : 0n
+    const signersBitmask = BigInt(fetchedProof.signerBitmap || '0')
+
     writeClaim({
       address: VISION_ADDRESS,
       abi: VISION_ABI,
@@ -148,10 +169,12 @@ export function useClaim(): UseClaimReturn {
         fromTick,
         toTick,
         BigInt(fetchedProof.balance),
-        fetchedProof.blsSig as `0x${string}`,
+        (fetchedProof.blsSig ? `0x${fetchedProof.blsSig}` : '0x') as `0x${string}`,
+        refNonce,
+        signersBitmask,
       ],
     })
-  }, [address, writeClaim])
+  }, [address, writeClaim, lastSnapshotNonce])
 
   // Claim success -> done
   useEffect(() => {

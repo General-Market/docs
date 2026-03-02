@@ -1,13 +1,19 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount, useReadContract, useWaitForTransactionReceipt } from 'wagmi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
+import { ISSUER_REGISTRY_ABI } from '@/lib/contracts/index-protocol-abi'
+import { indexL3 } from '@/lib/wagmi'
 
 const VISION_ADDRESS = (
   process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000'
+) as `0x${string}`
+
+const ISSUER_REGISTRY_ADDRESS = (
+  process.env.NEXT_PUBLIC_ISSUER_REGISTRY_ADDRESS || '0x0000000000000000000000000000000000000000'
 ) as `0x${string}`
 
 import { VISION_ISSUER_URLS } from '@/lib/config'
@@ -17,6 +23,7 @@ export type WithdrawStep = 'idle' | 'fetching-proof' | 'withdrawing' | 'done' | 
 export interface BalanceProof {
   balance: string
   blsSig: string
+  signerBitmap: string
 }
 
 export interface UseWithdrawReturn {
@@ -55,7 +62,8 @@ async function fetchBalanceProof(
         const data = await res.json()
         return {
           balance: data.balance,
-          blsSig: data.blsSig || data.bls_sig,
+          blsSig: data.blsSig || data.bls_sig || '',
+          signerBitmap: data.signerBitmap || data.signer_bitmap || '0',
         }
       }
       const errBody = await res.text().catch(() => 'Unknown error')
@@ -72,8 +80,9 @@ async function fetchBalanceProof(
  * Hook to withdraw from a Vision batch.
  *
  * Flow:
- * 1. Fetch BLS-signed balance proof from issuer node
- * 2. Call Vision.withdraw(batchId, finalBalance, blsSignature)
+ * 1. Fetch BLS-signed balance proof from issuer node (pre-generated at tick end)
+ * 2. Read referenceNonce from IssuerRegistry on-chain
+ * 3. Call Vision.withdraw(batchId, finalBalance, blsSignature, referenceNonce, signersBitmask)
  *
  * The contract verifies the BLS signature, deducts 0.3% fee on profit,
  * and transfers remaining USDC back to the player.
@@ -86,6 +95,15 @@ export function useWithdraw(): UseWithdrawReturn {
   const [proof, setProof] = useState<BalanceProof | null>(null)
 
   const withdrawHandled = useRef(false)
+
+  // Read latest snapshot nonce from IssuerRegistry (for BLS verification)
+  const { data: lastSnapshotNonce } = useReadContract({
+    address: ISSUER_REGISTRY_ADDRESS,
+    abi: ISSUER_REGISTRY_ABI,
+    functionName: 'lastSnapshotNonce',
+    chainId: indexL3.id,
+    query: { enabled: ISSUER_REGISTRY_ADDRESS !== '0x0000000000000000000000000000000000000000' },
+  })
 
   // --- Withdraw tx ---
   const {
@@ -117,7 +135,7 @@ export function useWithdraw(): UseWithdrawReturn {
     setProof(null)
     withdrawHandled.current = false
 
-    // Step 1: Fetch BLS-signed balance proof
+    // Step 1: Fetch BLS-signed balance proof (pre-generated at tick end)
     setStep('fetching-proof')
     let fetchedProof: BalanceProof
     try {
@@ -129,8 +147,11 @@ export function useWithdraw(): UseWithdrawReturn {
       return
     }
 
-    // Step 2: Submit withdraw tx
+    // Step 2: Submit withdraw tx with BLS proof + referenceNonce + signersBitmask
     setStep('withdrawing')
+    const refNonce = lastSnapshotNonce ? BigInt(lastSnapshotNonce.toString()) : 0n
+    const signersBitmask = BigInt(fetchedProof.signerBitmap || '0')
+
     writeWithdraw({
       address: VISION_ADDRESS,
       abi: VISION_ABI,
@@ -138,10 +159,12 @@ export function useWithdraw(): UseWithdrawReturn {
       args: [
         batchId,
         BigInt(fetchedProof.balance),
-        fetchedProof.blsSig as `0x${string}`,
+        (fetchedProof.blsSig ? `0x${fetchedProof.blsSig}` : '0x') as `0x${string}`,
+        refNonce,
+        signersBitmask,
       ],
     })
-  }, [address, writeWithdraw])
+  }, [address, writeWithdraw, lastSnapshotNonce])
 
   // Withdraw success -> done
   useEffect(() => {

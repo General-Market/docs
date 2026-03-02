@@ -393,6 +393,7 @@ impl IssuerConfig {
                         // BLS tick consensus fields (T-32)
                         chain_id: parse_env_var("ISSUER_VISION_CHAIN_ID").unwrap_or(111222333),
                         num_issuers: parse_env_var("ISSUER_VISION_NUM_ISSUERS").unwrap_or(1),
+                        node_index: parse_env_var::<u8>("ISSUER_VISION_NODE_INDEX").unwrap_or(0),
                         // Cross-chain deposit fields (Vision First Deposit)
                         arb_rpc_url: std::env::var("ISSUER_VISION_ARB_RPC_URL")
                             .unwrap_or_else(|_| "https://arb1.arbitrum.io/rpc".into()),

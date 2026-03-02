@@ -565,3 +565,14 @@ export const BRIDGED_ITP_ABI = [
     type: 'function',
   },
 ] as const
+
+// IssuerRegistry ABI - for BLS verification nonce
+export const ISSUER_REGISTRY_ABI = [
+  {
+    inputs: [],
+    name: 'lastSnapshotNonce',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+] as const
