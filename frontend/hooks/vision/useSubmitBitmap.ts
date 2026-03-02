@@ -67,27 +67,38 @@ export function useSubmitBitmap(): UseSubmitBitmapReturn {
       expected_hash: params.bitmapHash,
     })
 
-    // Submit to all issuers in parallel
-    const results = await Promise.all(
-      VISION_ISSUER_URLS.map(async (url) => {
-        try {
-          const res = await fetch(`${url}/vision/bitmap`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body,
-          })
-          if (res.ok) {
-            return { url, accepted: true }
+    const trySubmit = async () => {
+      return Promise.all(
+        VISION_ISSUER_URLS.map(async (url) => {
+          try {
+            const res = await fetch(`${url}/vision/bitmap`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body,
+            })
+            if (res.ok) {
+              return { url, accepted: true }
+            }
+            const errBody = await res.text().catch(() => 'Unknown error')
+            return { url, accepted: false, error: `HTTP ${res.status}: ${errBody.slice(0, 200)}` }
+          } catch (e) {
+            return { url, accepted: false, error: (e as Error).message }
           }
-          const errBody = await res.text().catch(() => 'Unknown error')
-          return { url, accepted: false, error: `HTTP ${res.status}: ${errBody.slice(0, 200)}` }
-        } catch (e) {
-          return { url, accepted: false, error: (e as Error).message }
-        }
-      })
-    )
+        })
+      )
+    }
 
-    const acceptedCount = results.filter(r => r.accepted).length
+    // Retry up to 5 times with 2s delay — chain listener polls every 2s
+    // so the PlayerJoined event may not be indexed yet on first attempt
+    let results = await trySubmit()
+    let acceptedCount = results.filter(r => r.accepted).length
+
+    for (let attempt = 1; attempt < 5 && acceptedCount === 0; attempt++) {
+      await new Promise(r => setTimeout(r, 2000))
+      results = await trySubmit()
+      acceptedCount = results.filter(r => r.accepted).length
+    }
+
     const result: SubmitBitmapResult = {
       acceptedCount,
       totalCount: results.length,

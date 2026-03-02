@@ -11,7 +11,6 @@ import { SimSweepStatsTable } from './SimSweepStatsTable'
 import { useSimulation } from '@/hooks/useSimulation'
 import { useSimSweep } from '@/hooks/useSimSweep'
 import { useSimQuota } from '@/hooks/useSimQuota'
-import TweetGateModal from './TweetGateModal'
 import { DATA_NODE_URL } from '@/lib/config'
 
 interface DeployedItpRef {
@@ -25,7 +24,7 @@ interface BacktestSectionProps {
   onToggle: () => void
   onDeployIndex?: (holdings: { symbol: string; weight: number }[]) => void
   deployedItps?: DeployedItpRef[]
-  onRebalanceItp?: (itpId: string) => void
+  onRebalanceItp?: (itpId: string, holdings: { symbol: string; weight: number }[]) => void
 }
 
 export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItps, onRebalanceItp }: BacktestSectionProps) {
@@ -53,7 +52,6 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
     vc_round_types: 'series_a, seed, series_b',
   })
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [showGateModal, setShowGateModal] = useState(false)
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const quota = useSimQuota()
 
@@ -148,10 +146,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
       return
     }
 
-    if (!quota.canRun) {
-      setShowGateModal(true)
-      return
-    }
+    if (!quota.canRun) return
 
     quota.consume()
     if (isSweep) sweep.run()
@@ -180,6 +175,29 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
       console.error('[BacktestSection] Failed to fetch holdings for deploy:', e)
     }
   }, [onDeployIndex])
+
+  // Fetch holdings for a run_id and call onRebalanceItp with itpId + holdings
+  const handleRebalanceItp = useCallback(async (itpId: string, runId: number) => {
+    if (!onRebalanceItp) return
+    try {
+      const res = await fetch(`${DATA_NODE_URL}/sim/holdings?run_id=${runId}`, {
+        signal: AbortSignal.timeout(10_000),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      const holdings: { symbol: string; weight: number }[] = (data.holdings || []).map(
+        (h: { symbol: string; weight: number }) => ({
+          symbol: h.symbol.toUpperCase(),
+          weight: Math.round(h.weight * 100 * 100) / 100,
+        }),
+      )
+      if (holdings.length > 0) {
+        onRebalanceItp(itpId, holdings)
+      }
+    } catch (e) {
+      console.error('[BacktestSection] Failed to fetch holdings for rebalance:', e)
+    }
+  }, [onRebalanceItp])
 
   const hasResults = isSweep
     ? sweep.completedVariants.length > 0 || sweep.status === 'loading'
@@ -210,7 +228,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
               runId={sim.result.run_id}
               onDeployIndex={handleDeployIndex}
               deployedItps={deployedItps}
-              onRebalanceItp={onRebalanceItp}
+              onRebalanceItp={handleRebalanceItp}
               chartContainerRef={chartContainerRef}
             />
           )}
@@ -253,7 +271,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
               }))}
               onDeployIndex={handleDeployIndex}
               deployedItps={deployedItps}
-              onRebalanceItp={onRebalanceItp}
+              onRebalanceItp={handleRebalanceItp}
               chartContainerRef={chartContainerRef}
             />
           )}
@@ -301,16 +319,10 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
             isLoading={isLoading}
           />
         </div>
-        {!quota.isUnlimited ? (
+        {!quota.canRun && (
           <p className="text-xs text-text-muted mt-2 text-right">
-            {quota.remaining === 0
-              ? t('quota.pay_with_tweet')
-              : quota.remaining === 1
-                ? t('quota.last_free')
-                : t('quota.sims_left', { remaining: quota.remaining })}
+            Wait {Math.ceil(quota.cooldownRemaining / 1000)}s before next simulation
           </p>
-        ) : (
-          <p className="text-xs text-text-muted mt-2 text-right">{t('quota.unlimited')}</p>
         )}
 
         {/* Fullscreen toggle */}
@@ -333,37 +345,6 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
         )}
       </div>
 
-      {showGateModal && (
-        <TweetGateModal
-          onClose={() => setShowGateModal(false)}
-          onUnlock={async () => {
-            const success = await quota.unlock()
-            if (success) {
-              quota.consume()
-              if (isSweep) sweep.run()
-              else sim.run()
-            }
-            return success
-          }}
-          tier={quota.tier}
-          chartRef={chartContainerRef}
-          stats={{
-            topN: filters.top_n,
-            category: filters.category_id,
-            totalReturn: sim.result?.stats
-              ? sim.result.stats.total_return_pct.toFixed(1)
-              : '0',
-            sharpe: sim.result?.stats
-              ? sim.result.stats.sharpe_ratio.toFixed(2)
-              : '0',
-            totalSimsRun: quota.used,
-            bestStrategy: filters.weighting,
-            bestReturn: sim.result?.stats
-              ? sim.result.stats.total_return_pct.toFixed(1)
-              : undefined,
-          }}
-        />
-      )}
     </>
   )
 }

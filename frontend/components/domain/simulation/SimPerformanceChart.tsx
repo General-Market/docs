@@ -55,7 +55,7 @@ interface SingleChartProps {
   runId?: number
   onDeployIndex?: (runId: number, label: string) => void
   deployedItps?: DeployedItpRef[]
-  onRebalanceItp?: (itpId: string) => void
+  onRebalanceItp?: (itpId: string, runId: number) => void
   chartContainerRef?: React.RefObject<HTMLDivElement | null>
 }
 
@@ -64,7 +64,7 @@ interface SweepChartProps {
   variants: { label: string; navSeries: SimNavPoint[]; runId: number; stats: SimStats }[]
   onDeployIndex?: (runId: number, label: string) => void
   deployedItps?: DeployedItpRef[]
-  onRebalanceItp?: (itpId: string) => void
+  onRebalanceItp?: (itpId: string, runId: number) => void
   chartContainerRef?: React.RefObject<HTMLDivElement | null>
 }
 
@@ -208,8 +208,8 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
                 Deploy Index
               </button>
             )}
-            {deployedItps && deployedItps.length > 0 && onRebalanceItp && (
-              <RebalanceItpPicker itps={deployedItps} onSelect={onRebalanceItp} />
+            {deployedItps && deployedItps.length > 0 && onRebalanceItp && runId && (
+              <RebalanceItpPicker itps={deployedItps} onSelect={(itpId) => onRebalanceItp(itpId, runId)} />
             )}
           </div>
         </div>

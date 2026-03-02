@@ -8,10 +8,12 @@ import { useBatches } from '@/hooks/vision/useBatches'
 import { useJoinBatch } from '@/hooks/vision/useJoinBatch'
 import { useDeposit } from '@/hooks/vision/useDeposit'
 import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
+import { useBalanceChangeNotification } from '@/hooks/vision/useBalanceChangeNotification'
 import { useSubmitBitmap } from '@/hooks/vision/useSubmitBitmap'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import type { BetDirection } from '@/lib/vision/bitmap'
-import { getTickState, getMultiplier } from '@/lib/vision/tick'
+import { getBatchTickState, getMultiplier } from '@/lib/vision/tick'
+import { getSource } from '@/lib/vision/sources'
 import { VISION_USDC_DECIMALS, VISION_ADDRESS } from '@/lib/vision/constants'
 import batchConfig from '@/lib/contracts/vision-batches.json'
 import StrategyList from './StrategyList'
@@ -69,6 +71,9 @@ export default function BatchEntryPanel({
   // -- Player position: detect if user already joined this batch --
   const { isJoined, position, refetch: refetchPosition } = usePlayerPosition(activeBatch?.id)
 
+  // -- Toast notification on tick resolution (balance change) --
+  useBalanceChangeNotification(position?.balance, isJoined)
+
   // -- Join + submit hooks --
   const {
     join,
@@ -100,13 +105,19 @@ export default function BatchEntryPanel({
   // -- Local state --
   const [stakeInput, setStakeInput] = useState('')
 
-  // -- Epoch-based tick timer (synced, survives reload) --
-  const [tickState, setTickState] = useState(() => getTickState())
+  // -- Per-batch tick timer using category-specific duration --
+  const sourceInfo = getSource(sourceId)
+  const category = sourceInfo?.category ?? 'finance'
+  const [tickState, setTickState] = useState(() =>
+    activeBatch ? getBatchTickState(activeBatch.id, category) : getBatchTickState(0, category)
+  )
   useEffect(() => {
-    const interval = setInterval(() => setTickState(getTickState()), 1000)
+    const interval = setInterval(() => {
+      setTickState(activeBatch ? getBatchTickState(activeBatch.id, category) : getBatchTickState(0, category))
+    }, 1000)
     return () => clearInterval(interval)
-  }, [])
-  const multiplier = getMultiplier(tickState.elapsed)
+  }, [activeBatch, category])
+  const multiplier = getMultiplier(tickState.elapsed, tickState.tickDuration, tickState.lockOffset)
 
   // -- Derived --
   const counts = bitmapEditor.getCounts(sourceId, marketIds)
@@ -207,7 +218,7 @@ export default function BatchEntryPanel({
             </div>
             <p className="text-[10px] text-text-muted">
               {tickState.isLocked
-                ? 'Bets locked — resolving...'
+                ? `Bets locked — opens in ${tickState.remaining}s`
                 : activeBatch
                   ? `Tick ${activeBatch.currentTick} · ${multiplier.label}`
                   : `Multiplier ${multiplier.label}`}

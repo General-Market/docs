@@ -142,7 +142,8 @@ export function useSimulation(params: UseSimulationParams | null): UseSimulation
             total_dates: data.total_dates,
             pct: data.pct,
           })
-        } else if (data.type === 'result') {
+        } else if (data.type === 'result' || (!data.type && data.nav_series)) {
+          // Handle both explicit type:'result' and cached responses (no type field)
           setResult(data as SimRunResult)
           setStatus('done')
           cleanup()

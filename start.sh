@@ -134,7 +134,7 @@ if ! [[ "$ISSUER_COUNT" =~ ^[0-9]+$ ]] || [ "$ISSUER_COUNT" -lt 1 ] || [ "$ISSUE
     echo -e "${RED}Error: --issuers must be 1-20${NC}"; exit 1
 fi
 
-VISION_ENABLED=${VISION_ENABLED:-false}
+VISION_ENABLED=${VISION_ENABLED:-true}
 
 print_banner
 

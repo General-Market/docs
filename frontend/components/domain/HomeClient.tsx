@@ -31,6 +31,11 @@ const BacktestSection = dynamic(
   { ssr: false, loading: SectionSkeleton }
 )
 
+const RebalanceModal = dynamic(
+  () => import('@/components/domain/RebalanceModal').then(mod => ({ default: mod.RebalanceModal })),
+  { ssr: false }
+)
+
 const SystemStatusSection = dynamic(
   () => import('@/components/domain/SystemStatusSection').then(mod => ({ default: mod.SystemStatusSection })),
   { ssr: false, loading: SectionSkeleton }
@@ -41,6 +46,9 @@ const SECTION_IDS = ['markets', 'portfolio', 'create', 'lend', 'backtest', 'syst
 export function HomeClient() {
   const [deployHoldings, setDeployHoldings] = useState<{ symbol: string; weight: number }[] | null>(null)
   const [deployedItps, setDeployedItps] = useState<DeployedItpRef[]>([])
+  const [rebalanceModal, setRebalanceModal] = useState<{
+    itpId: string; name: string; holdings: { symbol: string; weight: number }[]
+  } | null>(null)
 
   useSectionTimeTracker(SECTION_IDS)
 
@@ -53,16 +61,14 @@ export function HomeClient() {
     setDeployedItps(itps)
   }, [])
 
-  const handleRebalanceItp = useCallback((itpId: string) => {
-    const el = document.getElementById(`itp-card-${itpId}`)
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      el.classList.add('ring-2', 'ring-zinc-900')
-      setTimeout(() => el.classList.remove('ring-2', 'ring-zinc-900'), 2000)
-    } else {
-      document.getElementById('markets')?.scrollIntoView({ behavior: 'smooth' })
-    }
-  }, [])
+  const handleRebalanceItp = useCallback((itpId: string, holdings: { symbol: string; weight: number }[]) => {
+    const itp = deployedItps.find(i => i.itpId === itpId)
+    setRebalanceModal({
+      itpId,
+      name: itp?.name || itp?.symbol || itpId.slice(0, 10),
+      holdings,
+    })
+  }, [deployedItps])
 
   return (
     <>
@@ -128,6 +134,15 @@ export function HomeClient() {
           </div>
         </section>
       </div>
+
+      {rebalanceModal && (
+        <RebalanceModal
+          itpId={rebalanceModal.itpId}
+          itpName={rebalanceModal.name}
+          initialHoldings={rebalanceModal.holdings}
+          onClose={() => setRebalanceModal(null)}
+        />
+      )}
 
       <Footer />
     </>

@@ -53,6 +53,7 @@ interface RebalanceModalProps {
   itpId: string
   itpName: string
   onClose: () => void
+  initialHoldings?: { symbol: string; weight: number }[]
 }
 
 interface AssetRow {
@@ -119,7 +120,7 @@ async function waitForArbReceipt(hash: string, timeoutMs = 20_000): Promise<any>
   )
 }
 
-export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps) {
+export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: RebalanceModalProps) {
   const t = useTranslations('markets')
   const { address } = useAccount()
   const { capture } = usePostHogTracker()
@@ -142,6 +143,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
 
   // wagmi hooks for Step 1: requestRebalance on BridgeProxy (through MetaMask)
   const { switchChainAsync } = useSwitchChain()
+  const { chain: currentChain } = useAccount()
   const {
     writeContract,
     data: requestHash,
@@ -214,6 +216,38 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
           newWeight: (Number(state.weights[i]) / 1e16).toFixed(2),
         }))
 
+        // If initialHoldings provided (from simulation), override weights
+        if (initialHoldings && initialHoldings.length > 0) {
+          const holdingsMap = new Map(
+            initialHoldings.map(h => [h.symbol.toUpperCase(), h.weight])
+          )
+
+          // Override existing asset weights, zero out assets not in sim
+          for (const row of rows) {
+            const simWeight = holdingsMap.get(row.symbol.toUpperCase())
+            if (simWeight !== undefined) {
+              row.newWeight = simWeight.toFixed(2)
+              holdingsMap.delete(row.symbol.toUpperCase())
+            } else {
+              row.newWeight = '0'
+            }
+          }
+
+          // Add sim assets not in current ITP as new rows
+          for (const [symbol, weight] of holdingsMap) {
+            const deployed = availableAssets.find(
+              a => a.symbol.toUpperCase() === symbol
+            )
+            rows.push({
+              address: deployed?.address || '',
+              symbol,
+              currentWeight: 0n,
+              newWeight: weight.toFixed(2),
+              isNew: true,
+            })
+          }
+        }
+
         setAssets(rows)
       } catch (e: any) {
         setErrorMsg(e.message || 'Failed to load ITP state')
@@ -225,7 +259,7 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
 
     load()
     return () => { cancelled = true }
-  }, [itpId, availableAssets])
+  }, [itpId, availableAssets, initialHoldings])
 
   // Handle writeError from wagmi
   useEffect(() => {
@@ -382,11 +416,15 @@ export function RebalanceModal({ itpId, itpName, onClose }: RebalanceModalProps)
     setErrorMsg('')
 
     // BridgeProxy lives on Arbitrum — ensure wallet is on Arb chain
-    try {
-      await switchChainAsync({ chainId: arbChainId })
-    } catch {
-      setErrorMsg('Please switch to the Arbitrum chain to rebalance')
-      return
+    if (currentChain?.id !== arbChainId) {
+      try {
+        await switchChainAsync({ chainId: arbChainId })
+      } catch {
+        setErrorMsg('Please switch to the Arbitrum chain to rebalance')
+        return
+      }
+      // Give wallet time to complete the chain switch
+      await new Promise(r => setTimeout(r, 500))
     }
 
     const assetsChangedCount = assets.filter(a => {

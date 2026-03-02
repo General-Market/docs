@@ -97,8 +97,8 @@ function BatchCard({ batch }: { batch: BatchWithTick }) {
           </span>
         </div>
         {batch.isLocked ? (
-          <span className="text-[9px] font-bold uppercase text-red-600">
-            Locked
+          <span className="text-[9px] font-bold text-red-600">
+            Opens in {batch.remaining}s
           </span>
         ) : (
           <span className="text-[9px] font-bold text-green-600">
