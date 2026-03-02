@@ -201,7 +201,7 @@ export function SceneContainer({
         <div className="px-6 pb-3 pt-1 flex items-center justify-between border-t border-zinc-200">
           {legend}
           <span className="text-[10px] text-text-muted font-mono">
-            drag to orbit
+            drag to orbit · scroll to zoom
           </span>
         </div>
       </div>

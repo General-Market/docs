@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useMemo, useState, useEffect, useCallback } from 'react'
+import { useRef, useMemo } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
@@ -172,78 +172,6 @@ function ProgressionArrows({ reducedMotion }: { reducedMotion: boolean }) {
   )
 }
 
-/* ── Seeded deterministic PRNG (same pattern as ZKEVMPopulation3D) ── */
-
-function seededRandom(seed: number): number {
-  const x = Math.sin(seed + 1) * 10000
-  return x - Math.floor(x)
-}
-
-/* ── Price ticker board ── */
-
-function PriceTicker({
-  position,
-  color,
-  reducedMotion,
-  seed,
-}: {
-  position: [number, number, number]
-  color: string
-  reducedMotion: boolean
-  seed: number
-}) {
-  const [price, setPrice] = useState(() => Math.floor(5 + seededRandom(seed) * 15))
-  const counterRef = useRef(0)
-
-  const nextPrice = useCallback(() => {
-    counterRef.current += 1
-    return Math.floor(5 + seededRandom(seed * 100 + counterRef.current) * 15)
-  }, [seed])
-
-  useEffect(() => {
-    if (reducedMotion) return
-    const intervalMs = 3000 + seededRandom(seed + 0.5) * 2000
-    const interval = setInterval(
-      () => {
-        setPrice(nextPrice())
-      },
-      intervalMs
-    )
-    return () => clearInterval(interval)
-  }, [reducedMotion, seed, nextPrice])
-
-  // Map tank color to tailwind border class
-  const borderClass =
-    color === '#3b82f6'
-      ? 'border-blue-500'
-      : color === '#6366f1'
-        ? 'border-indigo-500'
-        : color === '#f59e0b'
-          ? 'border-amber-500'
-          : 'border-green-500'
-
-  return (
-    <group position={position}>
-      {/* Ticker board */}
-      <RoundedBox args={[0.28, 0.18, 0.015]} radius={0.005} smoothness={4}>
-        <meshStandardMaterial color="#1e1e1e" roughness={0.3} />
-      </RoundedBox>
-      {/* Price label with colored top border via Html */}
-      <Html
-        center
-        position={[0, 0, 0.02]}
-        style={{ pointerEvents: 'none', userSelect: 'none' }}
-      >
-        <div className={`border-t-2 ${borderClass} pt-0.5 px-1`}>
-          <p className="text-[10px] font-mono text-green-400 font-bold whitespace-nowrap">
-            {price}gw
-          </p>
-        </div>
-      </Html>
-    </group>
-  )
-}
-
 /* ── State access tank with green outline effect ── */
 
 function StateAccessTank({
@@ -276,8 +204,6 @@ function StateAccessTank({
         fillOscillation={0.08}
         showDrain
         drainCount={6}
-        label="SA"
-        labelSub="Future"
         reducedMotion={reducedMotion}
       />
     </group>
@@ -352,10 +278,20 @@ function Stage1({ reducedMotion }: { reducedMotion: boolean }) {
         fillOscillation={0.15}
         showDrain
         drainCount={12}
-        label="Gas"
-        labelSub="30M limit"
         reducedMotion={reducedMotion}
       />
+
+      {/* Throughput label */}
+      <Html
+        position={[STAGE1_X, STAGE1_Y + 1.65, 0]}
+        center
+        distanceFactor={8}
+        style={{ pointerEvents: 'none' }}
+      >
+        <span className="text-[16px] font-bold font-mono" style={{ color: '#a1a1aa' }}>
+          30M gas
+        </span>
+      </Html>
     </group>
   )
 }
@@ -404,8 +340,6 @@ function Stage2({ reducedMotion }: { reducedMotion: boolean }) {
         growthChevrons
         showDrain
         drainCount={12}
-        label="Exec"
-        labelSub="Can grow"
         reducedMotion={reducedMotion}
       />
 
@@ -422,8 +356,6 @@ function Stage2({ reducedMotion }: { reducedMotion: boolean }) {
           fillOscillation={0.06}
           showDrain
           drainCount={8}
-          label="State"
-          labelSub="Capped"
           reducedMotion={reducedMotion}
         />
         {/* Pulsing cap bar */}
@@ -459,19 +391,29 @@ function Stage2({ reducedMotion }: { reducedMotion: boolean }) {
         fillColor="#71717a"
         fillPercent={0.4}
         fillOscillation={0.05}
-        label="Reservoir"
         reducedMotion={reducedMotion}
       />
+
+      {/* Throughput label */}
+      <Html
+        position={[STAGE2_X, STAGE2_Y + 1.65, 0]}
+        center
+        distanceFactor={8}
+        style={{ pointerEvents: 'none' }}
+      >
+        <span className="text-[16px] font-bold font-mono" style={{ color: '#22c55e' }}>
+          60M gas
+        </span>
+      </Html>
     </group>
   )
 }
 
-/* ── Stage 3: Four tanks + shared reservoir + overflow pipes + price tickers ── */
+/* ── Stage 3: Four tanks + shared reservoir + overflow pipes ── */
 
 function Stage3({ reducedMotion }: { reducedMotion: boolean }) {
   const tankBaseY = STAGE3_Y + 0.04
 
-  // Tank configs: [xOffset, width, height, color, fillColor, fillPercent, label, labelSub]
   const tanks = useMemo(
     () => [
       {
@@ -482,8 +424,6 @@ function Stage3({ reducedMotion }: { reducedMotion: boolean }) {
         fill: '#3b82f6',
         fp: 0.55,
         osc: 0.12,
-        label: 'Exec',
-        sub: '70%',
         drain: 10,
       },
       {
@@ -494,8 +434,6 @@ function Stage3({ reducedMotion }: { reducedMotion: boolean }) {
         fill: '#6366f1',
         fp: 0.45,
         osc: 0.1,
-        label: 'Calldata',
-        sub: '20%',
         drain: 8,
       },
       {
@@ -506,8 +444,6 @@ function Stage3({ reducedMotion }: { reducedMotion: boolean }) {
         fill: '#f59e0b',
         fp: 0.7,
         osc: 0.08,
-        label: 'State',
-        sub: '5%',
         drain: 6,
       },
       // State Access handled separately for green outline
@@ -567,8 +503,6 @@ function Stage3({ reducedMotion }: { reducedMotion: boolean }) {
           fillOscillation={t.osc}
           showDrain
           drainCount={t.drain}
-          label={t.label}
-          labelSub={t.sub}
           reducedMotion={reducedMotion}
         />
       ))}
@@ -589,7 +523,6 @@ function Stage3({ reducedMotion }: { reducedMotion: boolean }) {
         fillColor="#71717a"
         fillPercent={0.4}
         fillOscillation={0.04}
-        label="Shared Reservoir"
         reducedMotion={reducedMotion}
       />
 
@@ -612,32 +545,115 @@ function Stage3({ reducedMotion }: { reducedMotion: boolean }) {
         </group>
       ))}
 
-      {/* Price ticker boards */}
-      <PriceTicker
-        position={[STAGE3_X - 0.65, tankBaseY + 0.9 + 0.2, 0.25]}
-        color="#3b82f6"
-        reducedMotion={reducedMotion}
-        seed={1}
-      />
-      <PriceTicker
-        position={[STAGE3_X - 0.1, tankBaseY + 0.8 + 0.2, 0.25]}
-        color="#6366f1"
-        reducedMotion={reducedMotion}
-        seed={2}
-      />
-      <PriceTicker
-        position={[STAGE3_X + 0.25, tankBaseY + 0.6 + 0.2, 0.25]}
-        color="#f59e0b"
-        reducedMotion={reducedMotion}
-        seed={3}
-      />
-      <PriceTicker
-        position={[STAGE3_X + 0.55, tankBaseY + 0.7 + 0.2, 0.25]}
-        color="#22c55e"
-        reducedMotion={reducedMotion}
-        seed={4}
-      />
+      {/* Throughput label */}
+      <Html
+        position={[STAGE3_X, STAGE3_Y + 1.65, 0]}
+        center
+        distanceFactor={8}
+        style={{ pointerEvents: 'none' }}
+      >
+        <span className="text-[16px] font-bold font-mono" style={{ color: '#3b82f6' }}>
+          120M gas
+        </span>
+      </Html>
     </group>
+  )
+}
+
+/* ── Worst-case block cube (cycles through all 3 stages) ── */
+
+function WorstCaseBlock({ reducedMotion }: { reducedMotion: boolean }) {
+  const meshRef = useRef<THREE.Mesh>(null!)
+  const matRef = useRef<THREE.MeshStandardMaterial>(null!)
+  const elapsedRef = useRef(0)
+
+  const CYCLE = 8 // seconds per full cycle
+  const STAGE_DUR = CYCLE / 3
+
+  // Tank top Y positions for each stage
+  const stage1TankTop = STAGE1_Y + 0.04 + 1.0 // tank height 1.0
+  const stage2ExecTop = STAGE2_Y + 0.04 + 1.0  // exec tank height 1.0
+  const stage3ExecTop = STAGE3_Y + 0.04 + 0.9  // tallest tank height 0.9
+
+  useFrame((_, delta) => {
+    if (!meshRef.current || !matRef.current) return
+    if (reducedMotion) {
+      // Static: park at stage 1 overflow position
+      meshRef.current.position.set(STAGE1_X, stage1TankTop + 0.25, 0)
+      meshRef.current.scale.setScalar(0.22)
+      return
+    }
+
+    elapsedRef.current += delta
+    const t = elapsedRef.current % CYCLE
+    const stageIdx = Math.floor(t / STAGE_DUR)
+    const stageT = (t % STAGE_DUR) / STAGE_DUR // 0..1 within stage
+
+    let x: number, y: number, scale: number, blink: boolean
+
+    if (stageIdx === 0) {
+      // Stage 1: overflow — cube rises above tank and blinks
+      x = STAGE1_X
+      const baseY = stage1TankTop - 0.3
+      const peakY = stage1TankTop + 0.35
+      // Rise up then hover
+      y = baseY + (peakY - baseY) * Math.min(stageT * 1.8, 1.0)
+      scale = 0.22
+      blink = true
+    } else if (stageIdx === 1) {
+      // Stage 2: barely fits — cube sits at exec tank top
+      x = STAGE2_X - 0.4
+      const baseY = stage2ExecTop - 0.15
+      // Settle into top position
+      y = baseY + Math.sin(stageT * Math.PI) * 0.06
+      scale = 0.20
+      blink = false
+    } else {
+      // Stage 3: fits easily — cube sits inside largest tank, smaller
+      x = STAGE3_X - 0.65
+      y = stage3ExecTop - 0.35
+      scale = 0.14
+      blink = false
+    }
+
+    // Smooth position transitions
+    meshRef.current.position.lerp(
+      new THREE.Vector3(x, y, 0.35),
+      0.08
+    )
+    meshRef.current.scale.lerp(
+      new THREE.Vector3(scale, scale, scale),
+      0.08
+    )
+
+    // Rotation
+    meshRef.current.rotation.y += delta * 1.2
+    meshRef.current.rotation.x += delta * 0.6
+
+    // Blink effect for overflow
+    if (blink) {
+      const blinkVal = Math.sin(elapsedRef.current * 8) > 0 ? 1.2 : 0.3
+      matRef.current.emissiveIntensity = blinkVal
+      matRef.current.opacity = 0.7 + Math.sin(elapsedRef.current * 8) * 0.3
+    } else {
+      matRef.current.emissiveIntensity = 0.2
+      matRef.current.opacity = 0.85
+    }
+  })
+
+  return (
+    <mesh ref={meshRef} position={[STAGE1_X, stage1TankTop + 0.25, 0.35]}>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial
+        ref={matRef}
+        color="#ef4444"
+        emissive="#ef4444"
+        emissiveIntensity={0.3}
+        transparent
+        opacity={0.85}
+        roughness={0.2}
+      />
+    </mesh>
   )
 }
 
@@ -659,6 +675,9 @@ function Scene({ reducedMotion }: { reducedMotion: boolean }) {
 
       {/* Progression arrows on floor between stages */}
       <ProgressionArrows reducedMotion={reducedMotion} />
+
+      {/* Worst-case block cube cycling through stages */}
+      <WorstCaseBlock reducedMotion={reducedMotion} />
     </>
   )
 }
@@ -692,6 +711,12 @@ function Legend() {
           Calldata
         </span>
       </div>
+      <div className="flex items-center gap-1.5">
+        <div className="w-3 h-2 rounded-sm bg-red-400 border border-red-500" />
+        <span className="text-[10px] text-text-muted tracking-wide">
+          Spike block
+        </span>
+      </div>
     </div>
   )
 }
@@ -723,7 +748,7 @@ export function GasEvolution3D() {
           <Scene reducedMotion={reducedMotion} />
 
           <OrbitControls
-            enableZoom={false}
+            enableZoom minDistance={3} maxDistance={18}
             enablePan={false}
             minPolarAngle={Math.PI / 4}
             maxPolarAngle={Math.PI / 3}

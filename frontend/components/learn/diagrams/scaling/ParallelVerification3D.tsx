@@ -43,6 +43,14 @@ function SequentialPlatform() {
       <Html center position={[0, 1.2, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <p className="text-[10px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: '#ef4444' }}>Sequential</p>
       </Html>
+      {/* TPS counter */}
+      <Html center position={[0, 0.95, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[16px] font-bold font-mono whitespace-nowrap" style={{ color: '#ef4444' }}>15 TPS</p>
+      </Html>
+      {/* Timing label */}
+      <Html center position={[0, -0.05, 1.3]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[11px] font-mono whitespace-nowrap" style={{ color: '#ef4444' }}>12s per block</p>
+      </Html>
     </group>
   )
 }
@@ -65,6 +73,14 @@ function ParallelPlatform() {
       {/* Label */}
       <Html center position={[0, 1.2, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <p className="text-[10px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: '#22c55e' }}>Parallel</p>
+      </Html>
+      {/* TPS counter */}
+      <Html center position={[0, 0.95, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[16px] font-bold font-mono whitespace-nowrap" style={{ color: '#22c55e' }}>120 TPS</p>
+      </Html>
+      {/* Timing label */}
+      <Html center position={[0, -0.05, 2.0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[11px] font-mono whitespace-nowrap" style={{ color: '#22c55e' }}>1.5s per block</p>
       </Html>
     </group>
   )
@@ -319,7 +335,7 @@ function TimeRulers() {
           <meshStandardMaterial color="#ef4444" roughness={0.4} />
         </RoundedBox>
         <Html center position={[0, -0.08, 0.15]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-          <p className="text-[9px] font-mono whitespace-nowrap" style={{ color: '#ef4444' }}>Slow</p>
+          <p className="text-[9px] font-mono whitespace-nowrap" style={{ color: '#ef4444' }}>12s</p>
         </Html>
       </group>
 
@@ -329,7 +345,7 @@ function TimeRulers() {
           <meshStandardMaterial color="#22c55e" roughness={0.4} />
         </RoundedBox>
         <Html center position={[0, -0.08, 0.15]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-          <p className="text-[9px] font-mono whitespace-nowrap" style={{ color: '#22c55e' }}>Fast</p>
+          <p className="text-[9px] font-mono whitespace-nowrap" style={{ color: '#22c55e' }}>1.5s</p>
         </Html>
       </group>
     </group>
@@ -673,7 +689,7 @@ export function ParallelVerification3D() {
           <SlotBadges count={16} reducedMotion={reducedMotion} />
 
           <OrbitControls
-            enableZoom={false}
+            enableZoom minDistance={3} maxDistance={18}
             enablePan={false}
             minPolarAngle={Math.PI / 4}
             maxPolarAngle={Math.PI / 3}

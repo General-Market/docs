@@ -21,10 +21,19 @@ const BLUE = '#3b82f6'
 const INDIGO = '#6366f1'
 const VIOLET = '#8b5cf6'
 const GREEN = '#22c55e'
-const AMBER = '#f59e0b'
 const ZINC = '#a1a1aa'
 
-/* ── Helper: create a vertical tube path ── */
+/** Full cycle duration in seconds */
+const CYCLE = 8
+
+/* ── Deterministic random ── */
+
+function seededRandom(seed: number) {
+  const x = Math.sin(seed) * 10000
+  return x - Math.floor(x)
+}
+
+/* ── Helper: vertical tube path ── */
 
 function makeVerticalPath(x: number, z: number, yBottom: number, yTop: number) {
   return new THREE.LineCurve3(
@@ -33,24 +42,28 @@ function makeVerticalPath(x: number, z: number, yBottom: number, yTop: number) {
   )
 }
 
-/* ── Helper: create an arc path between two points on a layer ── */
+/* ── Phase boundaries (fractions of CYCLE) ── */
+// 0.00–0.10  Entry: cube rises from below to Execution floor
+// 0.10–0.30  Execution: split into 4 lanes, travel across, merge
+// 0.30–0.40  Rise: Execution → Data floor
+// 0.40–0.60  Data: fragments spread outward, consolidate
+// 0.60–0.70  Rise: Data → Proof floor
+// 0.70–0.90  Proof: cube compresses, proof token emits checkmarks
+// 0.90–1.00  Output: proof rises, VALID label, burst, reset
 
-function makeArcPath(
-  from: THREE.Vector3,
-  to: THREE.Vector3,
-  liftY: number,
-) {
-  const mid = from.clone().lerp(to, 0.5)
-  mid.y += liftY
-  return new THREE.QuadraticBezierCurve3(from, mid, to)
-}
+const P_ENTRY_END = 0.10
+const P_EXEC_END = 0.30
+const P_RISE1_END = 0.40
+const P_DATA_END = 0.60
+const P_RISE2_END = 0.70
+const P_PROOF_END = 0.90
+// P_OUTPUT_END = 1.0
 
 /* ── Layer 1: Execution Floor ── */
 
 function ExecutionLayer() {
   return (
     <group position={[0, L1_Y, 0]}>
-      {/* Floor slab */}
       <RoundedBox
         args={[FLOOR_W, FLOOR_H, FLOOR_D]}
         radius={0.02}
@@ -59,53 +72,32 @@ function ExecutionLayer() {
         <meshStandardMaterial color="#dbeafe" roughness={0.75} />
       </RoundedBox>
 
-      {/* Funnel (parallel verification) — inverted cone */}
-      <group position={[-1.2, 0.2, 0]}>
-        <mesh rotation={[Math.PI, 0, 0]}>
-          <coneGeometry args={[0.25, 0.35, 16, 1, false]} />
-          <meshStandardMaterial color={BLUE} roughness={0.5} side={THREE.DoubleSide} />
-        </mesh>
-        {/* Bottom cap */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.175, 0]}>
-          <circleGeometry args={[0.12, 16]} />
-          <meshStandardMaterial color={BLUE} roughness={0.5} />
-        </mesh>
-      </group>
-
-      {/* Clock ring (ePBS) — torus */}
-      <group position={[0, 0.12, 0]}>
-        <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.2, 0.015, 12, 32]} />
-          <meshStandardMaterial color={BLUE} roughness={0.4} />
-        </mesh>
-        {/* Clock hand */}
-        <mesh>
-          <cylinderGeometry args={[0.006, 0.006, 0.18, 6]} />
-          <meshStandardMaterial color={BLUE} />
-        </mesh>
-      </group>
-
-      {/* Gas tank */}
-      <RoundedBox
-        args={[0.25, 0.35, 0.25]}
-        radius={0.025}
-        smoothness={4}
-        position={[1.2, 0.2, 0]}
-      >
-        <meshStandardMaterial color={AMBER} roughness={0.5} />
-      </RoundedBox>
-
-      {/* Layer label plaque */}
+      {/* Layer label */}
       <Html
         center
+        transform
+        distanceFactor={5}
         position={[0, FLOOR_H / 2 + 0.02, -FLOOR_D / 2 + 0.15]}
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
         <p
-          className="text-[10px] font-bold uppercase tracking-wider"
+          className="text-[18px] font-bold uppercase tracking-wider"
           style={{ color: BLUE }}
         >
           Execution
+        </p>
+      </Html>
+
+      {/* Throughput label */}
+      <Html
+        center
+        transform
+        distanceFactor={5}
+        position={[1.4, FLOOR_H / 2 + 0.02, -FLOOR_D / 2 + 0.15]}
+        style={{ pointerEvents: 'none', userSelect: 'none' }}
+      >
+        <p className="text-[11px] font-mono whitespace-nowrap" style={{ color: BLUE, opacity: 0.7 }}>
+          15M gas →
         </p>
       </Html>
     </group>
@@ -117,7 +109,6 @@ function ExecutionLayer() {
 function DataLayer() {
   return (
     <group position={[0, L2_Y, 0]}>
-      {/* Floor slab */}
       <RoundedBox
         args={[FLOOR_W, FLOOR_H, FLOOR_D]}
         radius={0.02}
@@ -126,106 +117,35 @@ function DataLayer() {
         <meshStandardMaterial color="#e0e7ff" roughness={0.75} />
       </RoundedBox>
 
-      {/* 3 blob wireframe grids */}
-      {[-1.0, 0, 1.0].map((xOff, idx) => (
-        <group key={`blob-${idx}`} position={[xOff, 0.06, 0]}>
-          {/* Wireframe outer shell */}
-          <RoundedBox args={[0.45, 0.08, 0.45]} radius={0.015} smoothness={4}>
-            <meshStandardMaterial
-              color={INDIGO}
-              transparent
-              opacity={0.3}
-              roughness={0.6}
-            />
-          </RoundedBox>
-        </group>
-      ))}
-
-      {/* Layer label plaque */}
+      {/* Layer label */}
       <Html
         center
+        transform
+        distanceFactor={5}
         position={[0, FLOOR_H / 2 + 0.02, -FLOOR_D / 2 + 0.15]}
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
         <p
-          className="text-[10px] font-bold uppercase tracking-wider"
+          className="text-[18px] font-bold uppercase tracking-wider"
           style={{ color: INDIGO }}
         >
           Data
         </p>
       </Html>
+
+      {/* Throughput label */}
+      <Html
+        center
+        transform
+        distanceFactor={5}
+        position={[1.4, FLOOR_H / 2 + 0.02, -FLOOR_D / 2 + 0.15]}
+        style={{ pointerEvents: 'none', userSelect: 'none' }}
+      >
+        <p className="text-[11px] font-mono whitespace-nowrap" style={{ color: INDIGO, opacity: 0.7 }}>
+          8 MB/sec
+        </p>
+      </Html>
     </group>
-  )
-}
-
-/* ── Blob grid cells — 3 blobs x 16 cells = 48 instanced cubes ── */
-
-function BlobGridCells() {
-  const meshRef = useRef<THREE.InstancedMesh>(null!)
-
-  // 3 blob positions and 4x4 grid per blob
-  const { matrices, colors } = useMemo(() => {
-    const dummy = new THREE.Object3D()
-    const mats: THREE.Matrix4[] = []
-    const cols = new Float32Array(48 * 3)
-    const baseColor = new THREE.Color(INDIGO)
-    const highlightColor = new THREE.Color(GREEN)
-
-    const blobXPositions = [-1.0, 0, 1.0]
-    const cellSize = 0.03
-    const gap = cellSize * 1.8
-    const gridSide = 4
-    const totalW = gridSide * cellSize + (gridSide - 1) * gap
-    const offset = totalW / 2 - cellSize / 2
-
-    let idx = 0
-    for (let b = 0; b < 3; b++) {
-      const bx = blobXPositions[b]
-      for (let i = 0; i < 16; i++) {
-        const row = Math.floor(i / gridSide)
-        const col = i % gridSide
-        const x = bx + col * (cellSize + gap) - offset
-        const y = L2_Y + 0.06
-        const z = row * (cellSize + gap) - offset
-
-        dummy.position.set(x, y, z)
-        dummy.scale.setScalar(1)
-        dummy.updateMatrix()
-        mats.push(dummy.matrix.clone())
-
-        // Highlight a few cells on the second blob (index 1) to show sampling
-        const isHighlighted = b === 1 && (i === 2 || i === 7 || i === 10 || i === 13)
-        const c = isHighlighted ? highlightColor : baseColor
-        cols[idx * 3] = c.r
-        cols[idx * 3 + 1] = c.g
-        cols[idx * 3 + 2] = c.b
-        idx++
-      }
-    }
-
-    return { matrices: mats, colors: cols }
-  }, [])
-
-  // Set matrices and colors once
-  useFrame(() => {
-    const mesh = meshRef.current
-    if (!mesh || mesh.userData.initialized) return
-
-    for (let i = 0; i < 48; i++) {
-      mesh.setMatrixAt(i, matrices[i])
-    }
-    mesh.instanceMatrix.needsUpdate = true
-
-    const colorAttr = new THREE.InstancedBufferAttribute(colors, 3)
-    mesh.instanceColor = colorAttr
-    mesh.userData.initialized = true
-  })
-
-  return (
-    <instancedMesh ref={meshRef} args={[undefined, undefined, 48]}>
-      <boxGeometry args={[0.03, 0.03, 0.03]} />
-      <meshStandardMaterial vertexColors roughness={0.5} />
-    </instancedMesh>
   )
 }
 
@@ -234,7 +154,6 @@ function BlobGridCells() {
 function ProofsLayer() {
   return (
     <group position={[0, L3_Y, 0]}>
-      {/* Floor slab */}
       <RoundedBox
         args={[FLOOR_W, FLOOR_H, FLOOR_D]}
         radius={0.02}
@@ -243,131 +162,45 @@ function ProofsLayer() {
         <meshStandardMaterial color="#f5f3ff" roughness={0.75} />
       </RoundedBox>
 
-      {/* 3 prover towers */}
-      {[-1.0, 0, 1.0].map((xOff, idx) => (
-        <RoundedBox
-          key={`prover-${idx}`}
-          args={[0.25, 0.4, 0.25]}
-          radius={0.025}
-          smoothness={4}
-          position={[xOff, 0.22, 0]}
-        >
-          <meshStandardMaterial color={VIOLET} roughness={0.5} />
-        </RoundedBox>
-      ))}
-
-      {/* Layer label plaque */}
+      {/* Layer label */}
       <Html
         center
+        transform
+        distanceFactor={5}
         position={[0, FLOOR_H / 2 + 0.02, -FLOOR_D / 2 + 0.15]}
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
         <p
-          className="text-[10px] font-bold uppercase tracking-wider"
+          className="text-[18px] font-bold uppercase tracking-wider"
           style={{ color: VIOLET }}
         >
           Proofs
+        </p>
+      </Html>
+
+      {/* Throughput label */}
+      <Html
+        center
+        transform
+        distanceFactor={5}
+        position={[1.4, FLOOR_H / 2 + 0.02, -FLOOR_D / 2 + 0.15]}
+        style={{ pointerEvents: 'none', userSelect: 'none' }}
+      >
+        <p className="text-[11px] font-mono whitespace-nowrap" style={{ color: VIOLET, opacity: 0.7 }}>
+          1 proof per block
         </p>
       </Html>
     </group>
   )
 }
 
-/* ── Consensus Arcs (connecting 3 provers on L3) ── */
-
-function ConsensusArcs() {
-  const proverPositions = useMemo(() => [
-    new THREE.Vector3(-1.0, L3_Y + 0.42, 0),
-    new THREE.Vector3(0, L3_Y + 0.42, 0),
-    new THREE.Vector3(1.0, L3_Y + 0.42, 0),
-  ], [])
-
-  const arcs = useMemo(() => [
-    // Arc from prover 0 to prover 1
-    {
-      curve: makeArcPath(proverPositions[0], proverPositions[1], 0.2),
-      geo: new THREE.TubeGeometry(
-        makeArcPath(proverPositions[0], proverPositions[1], 0.2),
-        24, 0.006, 6, false,
-      ),
-    },
-    // Arc from prover 1 to prover 2
-    {
-      curve: makeArcPath(proverPositions[1], proverPositions[2], 0.2),
-      geo: new THREE.TubeGeometry(
-        makeArcPath(proverPositions[1], proverPositions[2], 0.2),
-        24, 0.006, 6, false,
-      ),
-    },
-  ], [proverPositions])
-
-  return (
-    <>
-      {arcs.map((arc, i) => (
-        <mesh key={`arc-${i}`} geometry={arc.geo}>
-          <meshStandardMaterial color={GREEN} roughness={0.3} />
-        </mesh>
-      ))}
-    </>
-  )
-}
-
-/* ── Consensus Particles (flowing along arcs on L3) ── */
-
-function ConsensusParticles({ reducedMotion }: { reducedMotion: boolean }) {
-  const meshRef = useRef<THREE.InstancedMesh>(null!)
-  const dummy = useMemo(() => new THREE.Object3D(), [])
-  const elapsedRef = useRef(0)
-
-  const proverPositions = useMemo(() => [
-    new THREE.Vector3(-1.0, L3_Y + 0.42, 0),
-    new THREE.Vector3(0, L3_Y + 0.42, 0),
-    new THREE.Vector3(1.0, L3_Y + 0.42, 0),
-  ], [])
-
-  const curves = useMemo(() => [
-    makeArcPath(proverPositions[0], proverPositions[1], 0.2),
-    makeArcPath(proverPositions[1], proverPositions[2], 0.2),
-  ], [proverPositions])
-
-  // 12 particles total: 6 per arc
-  useFrame((_, delta) => {
-    if (!meshRef.current) return
-    if (!reducedMotion) elapsedRef.current += delta
-    const t = elapsedRef.current
-
-    for (let i = 0; i < 12; i++) {
-      const curveIdx = i < 6 ? 0 : 1
-      const localIdx = i < 6 ? i : i - 6
-      const progress = ((t * 0.2 + localIdx / 6) % 1)
-
-      const point = curves[curveIdx].getPoint(progress)
-      dummy.position.copy(point)
-      const scale = 0.008 * Math.sin(progress * Math.PI)
-      dummy.scale.setScalar(Math.max(0.001, scale))
-      dummy.updateMatrix()
-      meshRef.current.setMatrixAt(i, dummy.matrix)
-    }
-    meshRef.current.instanceMatrix.needsUpdate = true
-  })
-
-  return (
-    <instancedMesh ref={meshRef} args={[undefined, undefined, 12]}>
-      <sphereGeometry args={[1, 8, 8]} />
-      <meshBasicMaterial color={GREEN} transparent opacity={0.7} />
-    </instancedMesh>
-  )
-}
-
-/* ── Elevator Shafts (4 vertical tubes: 2 per gap) ── */
+/* ── Elevator Shafts (4 vertical tubes) ── */
 
 function ElevatorShafts() {
   const shafts = useMemo(() => {
     const configs = [
-      // L1 -> L2 shafts (2)
       { x: -0.8, z: -0.6, yBottom: L1_Y + FLOOR_H / 2, yTop: L2_Y - FLOOR_H / 2 },
       { x: 0.8, z: 0.6, yBottom: L1_Y + FLOOR_H / 2, yTop: L2_Y - FLOOR_H / 2 },
-      // L2 -> L3 shafts (2)
       { x: -0.8, z: 0.6, yBottom: L2_Y + FLOOR_H / 2, yTop: L3_Y - FLOOR_H / 2 },
       { x: 0.8, z: -0.6, yBottom: L2_Y + FLOOR_H / 2, yTop: L3_Y - FLOOR_H / 2 },
     ]
@@ -392,87 +225,363 @@ function ElevatorShafts() {
   )
 }
 
-/* ── Elevator Particles (rising through shafts, color lerps between layers) ── */
+/* ── Transaction Cube — the main animated element ── */
 
-function ElevatorParticles({
-  fromY,
-  toY,
-  positions,
-  colorFrom,
-  colorTo,
-  reducedMotion,
-}: {
-  fromY: number
-  toY: number
-  positions: [number, number][] // [x, z] pairs
-  colorFrom: string
-  colorTo: string
-  reducedMotion: boolean
-}) {
+function TransactionCube({ reducedMotion }: { reducedMotion: boolean }) {
+  const groupRef = useRef<THREE.Group>(null!)
+  const matRef = useRef<THREE.MeshStandardMaterial>(null!)
+  const elapsedRef = useRef(0)
+
+  const cubeColor = useMemo(() => new THREE.Color(BLUE), [])
+  const indigoColor = useMemo(() => new THREE.Color(INDIGO), [])
+  const violetColor = useMemo(() => new THREE.Color(VIOLET), [])
+  const greenColor = useMemo(() => new THREE.Color(GREEN), [])
+
+  useFrame((_, delta) => {
+    if (!groupRef.current || !matRef.current) return
+    if (!reducedMotion) elapsedRef.current += delta
+    const t = elapsedRef.current
+    const phase = (t % CYCLE) / CYCLE
+
+    const group = groupRef.current
+    const mat = matRef.current
+
+    // Default state
+    group.visible = true
+    group.scale.set(1, 1, 1)
+    mat.emissiveIntensity = 0
+
+    if (phase < P_ENTRY_END) {
+      // Entry: rise from below to Execution floor
+      const p = phase / P_ENTRY_END
+      const startY = L1_Y - 0.4
+      const endY = L1_Y + FLOOR_H / 2 + 0.07
+      group.position.set(0, startY + (endY - startY) * easeOutCubic(p), 0)
+      mat.color.copy(cubeColor)
+      mat.emissiveIntensity = 0.1
+
+    } else if (phase < P_EXEC_END) {
+      // Execution: cube is on the execution floor, pulsing
+      const p = (phase - P_ENTRY_END) / (P_EXEC_END - P_ENTRY_END)
+      const yPos = L1_Y + FLOOR_H / 2 + 0.07
+      // Move across the floor left to right
+      const xPos = -1.4 + p * 2.8
+      group.position.set(xPos, yPos, 0)
+      mat.color.copy(cubeColor)
+      mat.emissiveIntensity = 0.15 + Math.sin(p * Math.PI * 4) * 0.1
+
+    } else if (phase < P_RISE1_END) {
+      // Rise from Execution to Data floor
+      const p = (phase - P_EXEC_END) / (P_RISE1_END - P_EXEC_END)
+      const startY = L1_Y + FLOOR_H / 2 + 0.07
+      const endY = L2_Y + FLOOR_H / 2 + 0.07
+      group.position.set(0, startY + (endY - startY) * easeInOutCubic(p), 0)
+      mat.color.copy(cubeColor).lerp(indigoColor, p)
+      mat.emissiveIntensity = 0.2
+
+    } else if (phase < P_DATA_END) {
+      // Data: cube is on the data floor
+      const p = (phase - P_RISE1_END) / (P_DATA_END - P_RISE1_END)
+      const yPos = L2_Y + FLOOR_H / 2 + 0.07
+      const xPos = -1.4 + p * 2.8
+      group.position.set(xPos, yPos, 0)
+      mat.color.copy(indigoColor)
+      mat.emissiveIntensity = 0.15 + Math.sin(p * Math.PI * 3) * 0.1
+
+    } else if (phase < P_RISE2_END) {
+      // Rise from Data to Proofs floor
+      const p = (phase - P_DATA_END) / (P_RISE2_END - P_DATA_END)
+      const startY = L2_Y + FLOOR_H / 2 + 0.07
+      const endY = L3_Y + FLOOR_H / 2 + 0.07
+      group.position.set(0, startY + (endY - startY) * easeInOutCubic(p), 0)
+      mat.color.copy(indigoColor).lerp(violetColor, p)
+      mat.emissiveIntensity = 0.2
+
+    } else if (phase < P_PROOF_END) {
+      // Proof: compression animation
+      const p = (phase - P_RISE2_END) / (P_PROOF_END - P_RISE2_END)
+      const yPos = L3_Y + FLOOR_H / 2 + 0.07
+      group.position.set(0, yPos, 0)
+      // Shrink the cube to simulate compression
+      const s = 1.0 - p * 0.6
+      group.scale.set(s, s, s)
+      mat.color.copy(violetColor).lerp(greenColor, p)
+      mat.emissiveIntensity = 0.15 + p * 0.5
+
+    } else {
+      // Output: proof rises above the top floor
+      const p = (phase - P_PROOF_END) / (1.0 - P_PROOF_END)
+      const startY = L3_Y + FLOOR_H / 2 + 0.07
+      const endY = L3_Y + 0.65
+      group.position.set(0, startY + (endY - startY) * easeOutCubic(p), 0)
+      group.scale.setScalar(0.4 + p * 0.2)
+      mat.color.copy(greenColor)
+      mat.emissiveIntensity = 0.4 + p * 0.3
+      // Fade out at the very end
+      if (p > 0.8) {
+        group.scale.setScalar((1 - (p - 0.8) / 0.2) * 0.6)
+      }
+    }
+  })
+
+  return (
+    <group ref={groupRef}>
+      <RoundedBox args={[0.12, 0.12, 0.12]} radius={0.015} smoothness={4}>
+        <meshStandardMaterial
+          ref={matRef}
+          color={BLUE}
+          roughness={0.3}
+          emissive={BLUE}
+          emissiveIntensity={0.1}
+        />
+      </RoundedBox>
+    </group>
+  )
+}
+
+/* ── Parallel Lanes (4 lane cubes on Execution floor) ── */
+
+function ParallelLanes({ reducedMotion }: { reducedMotion: boolean }) {
   const meshRef = useRef<THREE.InstancedMesh>(null!)
   const dummy = useMemo(() => new THREE.Object3D(), [])
-  const count = positions.length * 6 // 6 per shaft = 12 total
-
-  const colorA = useMemo(() => new THREE.Color(colorFrom), [colorFrom])
-  const colorB = useMemo(() => new THREE.Color(colorTo), [colorTo])
-  const tempColor = useMemo(() => new THREE.Color(), [])
   const elapsedRef = useRef(0)
+  const laneZPositions = useMemo(() => [-0.4, -0.13, 0.13, 0.4], [])
 
   useFrame((_, delta) => {
     if (!meshRef.current) return
     if (!reducedMotion) elapsedRef.current += delta
     const t = elapsedRef.current
-    const yRange = toY - fromY
+    const phase = (t % CYCLE) / CYCLE
 
-    for (let i = 0; i < count; i++) {
-      const shaftIdx = Math.floor(i / 6)
-      const localIdx = i % 6
-      const progress = ((t * 0.12 + localIdx / 6) % 1)
+    for (let i = 0; i < 4; i++) {
+      if (phase >= P_ENTRY_END && phase < P_EXEC_END) {
+        const p = (phase - P_ENTRY_END) / (P_EXEC_END - P_ENTRY_END)
+        const yPos = L1_Y + FLOOR_H / 2 + 0.07
 
-      const [sx, sz] = positions[shaftIdx]
-      const y = fromY + progress * yRange
+        // Spread: first 30% of exec phase, cubes separate from center
+        // Travel: 30%-70%, cubes move left to right in separate lanes
+        // Merge: 70%-100%, cubes converge back to center
 
-      dummy.position.set(sx, y, sz)
-      const scale = 0.01 * Math.sin(progress * Math.PI)
-      dummy.scale.setScalar(Math.max(0.001, scale))
-      dummy.updateMatrix()
-      meshRef.current.setMatrixAt(i, dummy.matrix)
+        let xPos: number
+        let zOff: number
 
-      // Lerp color based on progress
-      tempColor.copy(colorA).lerp(colorB, progress)
-      meshRef.current.setColorAt(i, tempColor)
+        if (p < 0.2) {
+          // Spread from center
+          const sp = p / 0.2
+          xPos = -1.4 + sp * 0.3
+          zOff = laneZPositions[i] * easeOutCubic(sp)
+        } else if (p < 0.8) {
+          // Travel across
+          const tp = (p - 0.2) / 0.6
+          xPos = -1.1 + tp * 2.2
+          zOff = laneZPositions[i]
+        } else {
+          // Merge back
+          const mp = (p - 0.8) / 0.2
+          xPos = 1.1 + mp * 0.3
+          zOff = laneZPositions[i] * (1 - easeInCubic(mp))
+        }
+
+        dummy.position.set(xPos, yPos, zOff)
+        dummy.scale.setScalar(0.6)
+        dummy.updateMatrix()
+        meshRef.current.setMatrixAt(i, dummy.matrix)
+      } else {
+        // Hide by scaling to zero
+        dummy.position.set(0, -10, 0)
+        dummy.scale.setScalar(0.001)
+        dummy.updateMatrix()
+        meshRef.current.setMatrixAt(i, dummy.matrix)
+      }
     }
     meshRef.current.instanceMatrix.needsUpdate = true
-    if (meshRef.current.instanceColor) {
-      meshRef.current.instanceColor.needsUpdate = true
-    }
   })
 
   return (
-    <instancedMesh ref={meshRef} args={[undefined, undefined, count]}>
-      <sphereGeometry args={[1, 8, 8]} />
-      <meshBasicMaterial vertexColors transparent opacity={0.7} />
+    <instancedMesh ref={meshRef} args={[undefined, undefined, 4]}>
+      <boxGeometry args={[0.08, 0.08, 0.08]} />
+      <meshStandardMaterial
+        color={BLUE}
+        roughness={0.3}
+        emissive={BLUE}
+        emissiveIntensity={0.15}
+        transparent
+        opacity={0.6}
+      />
     </instancedMesh>
   )
 }
 
-/* ── Valid Block (output, gentle Y rotation) ── */
+/* ── Data Fragments (spread on Data floor) ── */
+
+function DataFragments({ reducedMotion }: { reducedMotion: boolean }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null!)
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+  const elapsedRef = useRef(0)
+
+  const fragmentDirs = useMemo(() => {
+    return Array.from({ length: 8 }, (_, i) => {
+      const angle = (i / 8) * Math.PI * 2
+      return {
+        dx: Math.cos(angle) * 0.8,
+        dz: Math.sin(angle) * 0.5,
+      }
+    })
+  }, [])
+
+  useFrame((_, delta) => {
+    if (!meshRef.current) return
+    if (!reducedMotion) elapsedRef.current += delta
+    const t = elapsedRef.current
+    const phase = (t % CYCLE) / CYCLE
+
+    for (let i = 0; i < 8; i++) {
+      if (phase >= P_RISE1_END && phase < P_DATA_END) {
+        const p = (phase - P_RISE1_END) / (P_DATA_END - P_RISE1_END)
+        const yPos = L2_Y + FLOOR_H / 2 + 0.07
+
+        // Progress of main cube across the floor
+        const mainX = -1.4 + p * 2.8
+
+        let spread: number
+        if (p < 0.2) {
+          spread = easeOutCubic(p / 0.2)
+        } else if (p < 0.8) {
+          spread = 1.0
+        } else {
+          spread = 1.0 - easeInCubic((p - 0.8) / 0.2)
+        }
+
+        const d = fragmentDirs[i]
+        dummy.position.set(
+          mainX + d.dx * spread,
+          yPos,
+          d.dz * spread,
+        )
+        dummy.scale.setScalar(0.4 * spread)
+        dummy.updateMatrix()
+        meshRef.current.setMatrixAt(i, dummy.matrix)
+      } else {
+        dummy.position.set(0, -10, 0)
+        dummy.scale.setScalar(0.001)
+        dummy.updateMatrix()
+        meshRef.current.setMatrixAt(i, dummy.matrix)
+      }
+    }
+    meshRef.current.instanceMatrix.needsUpdate = true
+  })
+
+  return (
+    <instancedMesh ref={meshRef} args={[undefined, undefined, 8]}>
+      <boxGeometry args={[0.06, 0.06, 0.06]} />
+      <meshStandardMaterial
+        color={INDIGO}
+        roughness={0.3}
+        emissive={INDIGO}
+        emissiveIntensity={0.15}
+        transparent
+        opacity={0.5}
+      />
+    </instancedMesh>
+  )
+}
+
+/* ── Proof Checkmarks (emitted during proof phase) ── */
+
+function ProofCheckmarks({ reducedMotion }: { reducedMotion: boolean }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null!)
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+  const elapsedRef = useRef(0)
+
+  const checkDirs = useMemo(() => {
+    return Array.from({ length: 6 }, (_, i) => {
+      const angle = (i / 6) * Math.PI * 2
+      return {
+        dx: Math.cos(angle) * 0.5,
+        dy: 0.2 + seededRandom(i * 13 + 7) * 0.3,
+        dz: Math.sin(angle) * 0.5,
+      }
+    })
+  }, [])
+
+  useFrame((_, delta) => {
+    if (!meshRef.current) return
+    if (!reducedMotion) elapsedRef.current += delta
+    const t = elapsedRef.current
+    const phase = (t % CYCLE) / CYCLE
+
+    for (let i = 0; i < 6; i++) {
+      if (phase >= P_RISE2_END + 0.1 && phase < P_PROOF_END) {
+        const localP = (phase - (P_RISE2_END + 0.1)) / (P_PROOF_END - P_RISE2_END - 0.1)
+        const yPos = L3_Y + FLOOR_H / 2 + 0.07
+        const d = checkDirs[i]
+
+        const spread = easeOutCubic(localP)
+        dummy.position.set(
+          d.dx * spread,
+          yPos + d.dy * spread,
+          d.dz * spread,
+        )
+        const fadeIn = Math.min(1, localP * 4)
+        const fadeOut = localP > 0.7 ? 1 - (localP - 0.7) / 0.3 : 1
+        dummy.scale.setScalar(0.03 * fadeIn * fadeOut)
+        dummy.updateMatrix()
+        meshRef.current.setMatrixAt(i, dummy.matrix)
+      } else {
+        dummy.position.set(0, -10, 0)
+        dummy.scale.setScalar(0.001)
+        dummy.updateMatrix()
+        meshRef.current.setMatrixAt(i, dummy.matrix)
+      }
+    }
+    meshRef.current.instanceMatrix.needsUpdate = true
+  })
+
+  return (
+    <instancedMesh ref={meshRef} args={[undefined, undefined, 6]}>
+      <sphereGeometry args={[1, 8, 8]} />
+      <meshStandardMaterial
+        color={GREEN}
+        roughness={0.2}
+        emissive={GREEN}
+        emissiveIntensity={0.4}
+      />
+    </instancedMesh>
+  )
+}
+
+/* ── Valid Block (appears at output phase) ── */
 
 function ValidBlock({ reducedMotion }: { reducedMotion: boolean }) {
   const blockRef = useRef<THREE.Group>(null!)
+  const matRef = useRef<THREE.MeshStandardMaterial>(null!)
   const elapsedRef = useRef(0)
 
   useFrame((_, delta) => {
-    if (!blockRef.current || reducedMotion) return
-    elapsedRef.current += delta
-    blockRef.current.rotation.y = elapsedRef.current * 0.3
+    if (!blockRef.current || !matRef.current) return
+    if (!reducedMotion) elapsedRef.current += delta
+    const t = elapsedRef.current
+    const phase = (t % CYCLE) / CYCLE
+
+    if (phase >= P_PROOF_END) {
+      const p = (phase - P_PROOF_END) / (1.0 - P_PROOF_END)
+      blockRef.current.visible = true
+      blockRef.current.rotation.y = t * 0.5
+      // Scale in then out
+      const s = p < 0.3 ? easeOutCubic(p / 0.3) : (p > 0.8 ? 1 - (p - 0.8) / 0.2 : 1)
+      blockRef.current.scale.setScalar(Math.max(0.01, s))
+      matRef.current.emissiveIntensity = 0.2 + p * 0.3
+    } else {
+      blockRef.current.visible = false
+    }
   })
 
   return (
     <group position={[0, L3_Y + 0.55, 0]}>
       <group ref={blockRef}>
-        <RoundedBox args={[0.35, 0.2, 0.35]} radius={0.03} smoothness={4}>
+        <RoundedBox args={[0.3, 0.18, 0.3]} radius={0.03} smoothness={4}>
           <meshStandardMaterial
+            ref={matRef}
             color={GREEN}
             roughness={0.4}
             emissive={GREEN}
@@ -481,32 +590,57 @@ function ValidBlock({ reducedMotion }: { reducedMotion: boolean }) {
         </RoundedBox>
       </group>
 
-      {/* "VALID" label */}
-      <Html
-        center
-        position={[0, 0.22, 0]}
-        style={{ pointerEvents: 'none', userSelect: 'none' }}
-      >
-        <p className="text-[12px] font-bold" style={{ color: GREEN }}>
-          VALID
-        </p>
-      </Html>
+      {/* "VALID" label — shown via useFrame visibility */}
+      <ValidLabel reducedMotion={reducedMotion} />
     </group>
   )
 }
 
-/* ── Output Beam (cylinder, pulsing opacity) ── */
+/* ── VALID label (Html, shown only during output phase) ── */
+
+function ValidLabel({ reducedMotion }: { reducedMotion: boolean }) {
+  const ref = useRef<HTMLParagraphElement>(null!)
+  const elapsedRef = useRef(0)
+
+  useFrame((_, delta) => {
+    if (!ref.current) return
+    if (!reducedMotion) elapsedRef.current += delta
+    const phase = (elapsedRef.current % CYCLE) / CYCLE
+    ref.current.style.opacity = phase >= P_PROOF_END ? '1' : '0'
+  })
+
+  return (
+    <Html
+      center
+      transform
+      distanceFactor={5}
+      position={[0, 0.22, 0]}
+      style={{ pointerEvents: 'none', userSelect: 'none' }}
+    >
+      <p ref={ref} className="text-[22px] font-bold transition-none" style={{ color: GREEN, opacity: 0 }}>
+        VALID
+      </p>
+    </Html>
+  )
+}
+
+/* ── Output Beam (pulsing cylinder above top floor) ── */
 
 function OutputBeam({ reducedMotion }: { reducedMotion: boolean }) {
   const matRef = useRef<THREE.MeshBasicMaterial>(null!)
   const elapsedRef = useRef(0)
 
   useFrame((_, delta) => {
-    if (!matRef.current || reducedMotion) return
-    elapsedRef.current += delta
+    if (!matRef.current) return
+    if (!reducedMotion) elapsedRef.current += delta
     const t = elapsedRef.current
-    // Pulse between 0.08 and 0.25
-    matRef.current.opacity = 0.08 + (Math.sin(t * 1.5) + 1) / 2 * 0.17
+    const phase = (t % CYCLE) / CYCLE
+    if (phase >= P_PROOF_END) {
+      const p = (phase - P_PROOF_END) / (1.0 - P_PROOF_END)
+      matRef.current.opacity = 0.05 + p * 0.2
+    } else {
+      matRef.current.opacity = 0.03
+    }
   })
 
   return (
@@ -516,25 +650,19 @@ function OutputBeam({ reducedMotion }: { reducedMotion: boolean }) {
         ref={matRef}
         color={GREEN}
         transparent
-        opacity={0.15}
+        opacity={0.03}
       />
     </mesh>
   )
 }
 
-/* ── Output Burst Particles (16 spheres emitting upward radially) ── */
-
-function seededRandom(seed: number) {
-  const x = Math.sin(seed) * 10000
-  return x - Math.floor(x)
-}
+/* ── Output Burst Particles (16 spheres emitting at output phase) ── */
 
 function OutputBurst({ reducedMotion }: { reducedMotion: boolean }) {
   const meshRef = useRef<THREE.InstancedMesh>(null!)
   const dummy = useMemo(() => new THREE.Object3D(), [])
   const elapsedRef = useRef(0)
 
-  // Pre-compute radial directions for each particle (deterministic)
   const directions = useMemo(() => {
     return Array.from({ length: 16 }, (_, i) => {
       const angle = (i / 16) * Math.PI * 2
@@ -551,24 +679,32 @@ function OutputBurst({ reducedMotion }: { reducedMotion: boolean }) {
     if (!meshRef.current) return
     if (!reducedMotion) elapsedRef.current += delta
     const t = elapsedRef.current
+    const cyclePhase = (t % CYCLE) / CYCLE
 
     for (let i = 0; i < 16; i++) {
-      const d = directions[i]
-      const progress = ((t * 0.15 * d.speed + d.phase) % 1)
+      if (cyclePhase >= P_PROOF_END) {
+        const p = (cyclePhase - P_PROOF_END) / (1.0 - P_PROOF_END)
+        const d = directions[i]
+        const progress = Math.min(1, p * d.speed + d.phase * 0.3)
 
-      const x = d.dx * progress
-      const y = L3_Y + 0.55 + progress * 0.6
-      const z = d.dz * progress
+        const x = d.dx * progress
+        const y = L3_Y + 0.55 + progress * 0.5
+        const z = d.dz * progress
 
-      // Fade out as they rise: peak at 30%, fade by 100%
-      const alpha = progress < 0.3
-        ? progress / 0.3
-        : Math.max(0, 1 - (progress - 0.3) / 0.7)
+        const alpha = progress < 0.3
+          ? progress / 0.3
+          : Math.max(0, 1 - (progress - 0.3) / 0.7)
 
-      dummy.position.set(x, y, z)
-      dummy.scale.setScalar(0.01 * alpha)
-      dummy.updateMatrix()
-      meshRef.current.setMatrixAt(i, dummy.matrix)
+        dummy.position.set(x, y, z)
+        dummy.scale.setScalar(0.01 * alpha)
+        dummy.updateMatrix()
+        meshRef.current.setMatrixAt(i, dummy.matrix)
+      } else {
+        dummy.position.set(0, -10, 0)
+        dummy.scale.setScalar(0.001)
+        dummy.updateMatrix()
+        meshRef.current.setMatrixAt(i, dummy.matrix)
+      }
     }
     meshRef.current.instanceMatrix.needsUpdate = true
   })
@@ -581,43 +717,38 @@ function OutputBurst({ reducedMotion }: { reducedMotion: boolean }) {
   )
 }
 
+/* ── Easing functions ── */
+
+function easeOutCubic(t: number) {
+  return 1 - Math.pow(1 - t, 3)
+}
+
+function easeInCubic(t: number) {
+  return t * t * t
+}
+
+function easeInOutCubic(t: number) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+}
+
 /* ── Main Scene ── */
 
 function Scene({ reducedMotion }: { reducedMotion: boolean }) {
   return (
     <>
-      {/* Layer floors with miniature hero objects */}
+      {/* Layer floors */}
       <ExecutionLayer />
       <DataLayer />
-      <BlobGridCells />
       <ProofsLayer />
-
-      {/* Consensus arcs and particles on L3 */}
-      <ConsensusArcs />
-      <ConsensusParticles reducedMotion={reducedMotion} />
 
       {/* Elevator shafts */}
       <ElevatorShafts />
 
-      {/* Elevator particles: L1 -> L2 */}
-      <ElevatorParticles
-        fromY={L1_Y + FLOOR_H / 2}
-        toY={L2_Y - FLOOR_H / 2}
-        positions={[[-0.8, -0.6], [0.8, 0.6]]}
-        colorFrom={BLUE}
-        colorTo={INDIGO}
-        reducedMotion={reducedMotion}
-      />
-
-      {/* Elevator particles: L2 -> L3 */}
-      <ElevatorParticles
-        fromY={L2_Y + FLOOR_H / 2}
-        toY={L3_Y - FLOOR_H / 2}
-        positions={[[-0.8, 0.6], [0.8, -0.6]]}
-        colorFrom={INDIGO}
-        colorTo={VIOLET}
-        reducedMotion={reducedMotion}
-      />
+      {/* Transaction flow animation */}
+      <TransactionCube reducedMotion={reducedMotion} />
+      <ParallelLanes reducedMotion={reducedMotion} />
+      <DataFragments reducedMotion={reducedMotion} />
+      <ProofCheckmarks reducedMotion={reducedMotion} />
 
       {/* Output: valid block + beam + burst */}
       <ValidBlock reducedMotion={reducedMotion} />
@@ -658,10 +789,10 @@ export function FullStackLayers3D() {
   return (
     <SceneContainer
       height="h-[360px] md:h-[420px]"
-      ariaLabel="Three-layer vertical stack showing Ethereum's full scaling architecture. Bottom blue floor has execution components, middle indigo floor has data blobs, top violet floor has proof validators connected by consensus arcs. A green validated block rises from the top."
-      srDescription="A 3D diorama showing all three Ethereum scaling layers stacked vertically. The bottom blue floor contains a funnel for parallel verification, a clock ring for ePBS, and an amber gas tank. The middle indigo floor contains three blob grids with data availability cells, one highlighted to show sampling. The top violet floor contains three prover towers connected by green consensus arcs. Elevator shafts with rising particles connect the floors. A green VALID block rotates above the top floor on a pulsing beam, with particles bursting outward."
+      ariaLabel="Three-layer vertical stack showing a transaction flowing through Ethereum's full scaling architecture. A glowing cube enters at the bottom, splits into parallel lanes on the Execution floor, fragments across the Data floor, gets compressed into a proof on the Proofs floor, then emits a VALID block at the top."
+      srDescription="A 3D animation showing a transaction flowing through all three Ethereum scaling layers. The glowing blue cube enters at the bottom and rises to the Execution floor (blue), where it splits into 4 parallel lanes representing parallel verification, then merges back. It rises to the Data floor (indigo), where copies fragment outward representing blob data spreading, then consolidate. It rises to the Proofs floor (violet), where it shrinks with a glow representing compression into a proof, emitting green checkmark particles. Finally a green VALID block appears at the top with a beam and burst particles. The cycle repeats every 8 seconds."
       legend={<Legend />}
-      fallbackText="Full-stack Ethereum scaling — three layers (execution, data, proofs) producing a validated block"
+      fallbackText="Full-stack Ethereum scaling — transaction flows through execution, data, and proof layers"
     >
       {({ reducedMotion }) => (
         <Canvas
@@ -679,7 +810,7 @@ export function FullStackLayers3D() {
           <Scene reducedMotion={reducedMotion} />
 
           <OrbitControls
-            enableZoom={false}
+            enableZoom minDistance={3} maxDistance={18}
             enablePan={false}
             autoRotate={!reducedMotion}
             autoRotateSpeed={0.4}

@@ -167,6 +167,94 @@ function EntropyParticles({ reducedMotion }: { reducedMotion: boolean }) {
   )
 }
 
+/* -- Failed Analysis Beam (left side -- bounces off mixed bytecode) -- */
+
+const FAIL_CYCLE = 2.5 // total cycle length
+const FAIL_SWEEP_DOWN = 0.6 // time to move down ~30%
+const FAIL_BOUNCE_UP = 0.4 // time to bounce back up
+const FAIL_BEAM_TOP_Y = 0.55
+const FAIL_BEAM_STOP_Y = 0.15 // only gets ~30% down
+const FAIL_X_COUNT = 4
+
+function FailedAnalysisBeam({ reducedMotion }: { reducedMotion: boolean }) {
+  const beamRef = useRef<THREE.Mesh>(null!)
+  const xRef = useRef<THREE.InstancedMesh>(null!)
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+  const elapsedRef = useRef(0)
+
+  // Pre-compute X indicator positions (spread across the container face)
+  const xPositions = useMemo(() => [
+    [-0.3, FAIL_BEAM_STOP_Y - 0.05, 0.2],
+    [0.25, FAIL_BEAM_STOP_Y + 0.05, -0.15],
+    [-0.1, FAIL_BEAM_STOP_Y - 0.12, 0.0],
+    [0.35, FAIL_BEAM_STOP_Y + 0.02, 0.25],
+  ] as [number, number, number][], [])
+
+  useFrame((_, delta) => {
+    if (!beamRef.current || !xRef.current) return
+    elapsedRef.current += delta
+    const t = reducedMotion ? 0 : elapsedRef.current
+    const phase = t % FAIL_CYCLE
+
+    let beamY = FAIL_BEAM_TOP_Y
+    let showX = false
+
+    if (phase < FAIL_SWEEP_DOWN) {
+      // Sweep down to ~30%
+      const p = phase / FAIL_SWEEP_DOWN
+      const eased = p * p // ease in
+      beamY = FAIL_BEAM_TOP_Y + (FAIL_BEAM_STOP_Y - FAIL_BEAM_TOP_Y) * eased
+      beamRef.current.visible = true
+    } else if (phase < FAIL_SWEEP_DOWN + FAIL_BOUNCE_UP) {
+      // Bounce back up quickly
+      const p = (phase - FAIL_SWEEP_DOWN) / FAIL_BOUNCE_UP
+      const eased = 1 - (1 - p) * (1 - p) // ease out
+      beamY = FAIL_BEAM_STOP_Y + (FAIL_BEAM_TOP_Y - FAIL_BEAM_STOP_Y) * eased
+      beamRef.current.visible = true
+      // Show X indicators during bounce-back
+      showX = p < 0.7
+    } else {
+      // Pause at top
+      beamRef.current.visible = false
+    }
+
+    beamRef.current.position.y = beamY
+
+    // Update X indicators
+    for (let i = 0; i < FAIL_X_COUNT; i++) {
+      const [px, py, pz] = xPositions[i]
+      if (showX) {
+        dummy.position.set(px, py, pz)
+        dummy.scale.setScalar(1)
+      } else {
+        dummy.position.set(px, py, pz)
+        dummy.scale.setScalar(0.001) // hide
+      }
+      dummy.updateMatrix()
+      xRef.current.setMatrixAt(i, dummy.matrix)
+    }
+    xRef.current.instanceMatrix.needsUpdate = true
+  })
+
+  return (
+    <>
+      <RoundedBox
+        ref={beamRef}
+        args={[1.4, 0.015, 0.9]}
+        radius={0.005}
+        smoothness={4}
+        position={[0, FAIL_BEAM_TOP_Y, 0]}
+      >
+        <meshBasicMaterial color="#ef4444" transparent opacity={0.4} />
+      </RoundedBox>
+      <instancedMesh ref={xRef} args={[undefined, undefined, FAIL_X_COUNT]}>
+        <sphereGeometry args={[0.04, 6, 6]} />
+        <meshBasicMaterial color="#ef4444" transparent opacity={0.85} />
+      </instancedMesh>
+    </>
+  )
+}
+
 /* -- Organized Code Cubes (right side -- static grid in code sections) -- */
 
 const CODE_CUBE_COUNT = 35
@@ -472,12 +560,97 @@ function GasMeter({ reducedMotion }: { reducedMotion: boolean }) {
       >
         <meshStandardMaterial color="#f59e0b" roughness={0.4} />
       </RoundedBox>
-      <Html center position={[0, 0.42, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[8px] tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: '#f59e0b' }}>
+      <Html center transform distanceFactor={5} position={[0, 0.42, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[14px] tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: '#f59e0b' }}>
           Metering
         </p>
       </Html>
     </group>
+  )
+}
+
+/* -- Metadata Output Labels (right side -- float up when beam passes) -- */
+
+const META_LABELS = [
+  { text: 'fn table', triggerY: HEADER_Y, color: '#22c55e' },
+  { text: 'types', triggerY: (CODE1_Y + CODE2_Y) / 2, color: '#3b82f6' },
+  { text: 'valid \u2713', triggerY: DATA_Y, color: '#6366f1' },
+] as const
+
+function MetadataLabel({
+  text,
+  triggerY,
+  color,
+  xOffset,
+  reducedMotion,
+}: {
+  text: string
+  triggerY: number
+  color: string
+  xOffset: number
+  reducedMotion: boolean
+}) {
+  const groupRef = useRef<THREE.Group>(null!)
+  const elapsedRef = useRef(0)
+
+  useFrame((_, delta) => {
+    if (!groupRef.current) return
+    elapsedRef.current += delta
+    const t = reducedMotion ? 0 : elapsedRef.current
+    const cycle = SWEEP_DURATION + PAUSE_DURATION
+    const phase = t % cycle
+
+    if (phase < SWEEP_DURATION) {
+      const progress = phase / SWEEP_DURATION
+      const eased = progress < 0.5
+        ? 2 * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2
+      const beamY = BEAM_TOP_Y + (BEAM_BOT_Y - BEAM_TOP_Y) * eased
+
+      // Trigger when beam passes this section
+      if (beamY < triggerY + 0.05 && beamY > triggerY - 0.3) {
+        // How far past the trigger the beam is
+        const passed = (triggerY + 0.05 - beamY) / 0.35
+        const floatUp = Math.min(1, passed) * 0.35
+        groupRef.current.position.y = triggerY + floatUp
+        groupRef.current.position.x = xOffset
+        // Fade: appear quickly, fade out near end
+        const opacity = passed < 0.2 ? passed / 0.2 : passed > 0.8 ? (1 - passed) / 0.2 : 1
+        groupRef.current.visible = opacity > 0.05
+        groupRef.current.userData.opacity = Math.max(0, Math.min(1, opacity))
+      } else {
+        groupRef.current.visible = false
+      }
+    } else {
+      groupRef.current.visible = false
+    }
+  })
+
+  return (
+    <group ref={groupRef} visible={false}>
+      <Html center transform distanceFactor={5} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[12px] font-mono font-bold whitespace-nowrap" style={{ color }}>
+          {text}
+        </p>
+      </Html>
+    </group>
+  )
+}
+
+function MetadataOutput({ reducedMotion }: { reducedMotion: boolean }) {
+  return (
+    <>
+      {META_LABELS.map((label, i) => (
+        <MetadataLabel
+          key={i}
+          text={label.text}
+          triggerY={label.triggerY}
+          color={label.color}
+          xOffset={-0.85}
+          reducedMotion={reducedMotion}
+        />
+      ))}
+    </>
   )
 }
 
@@ -501,8 +674,14 @@ function TodaySide({ reducedMotion }: { reducedMotion: boolean }) {
       </RoundedBox>
       <MixedCubes reducedMotion={reducedMotion} />
       <EntropyParticles reducedMotion={reducedMotion} />
-      <Html center position={[0, 0.85, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[10px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: '#ef4444' }}>
+      <FailedAnalysisBeam reducedMotion={reducedMotion} />
+      <Html center transform distanceFactor={5} position={[0, -0.78, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[13px] font-bold whitespace-nowrap" style={{ color: '#ef4444' }}>
+          ~2100 gas/call
+        </p>
+      </Html>
+      <Html center transform distanceFactor={5} position={[0, 0.85, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[18px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: '#ef4444' }}>
           Today: Mixed Bytecode
         </p>
       </Html>
@@ -562,20 +741,26 @@ function EOFSide({ reducedMotion }: { reducedMotion: boolean }) {
         />
       ))}
       <GasMeter reducedMotion={reducedMotion} />
-      <Html center position={[0.85, HEADER_Y, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[9px] font-bold whitespace-nowrap" style={{ color: '#22c55e' }}>Header</p>
+      <MetadataOutput reducedMotion={reducedMotion} />
+      <Html center transform distanceFactor={5} position={[0.85, HEADER_Y, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[16px] font-bold whitespace-nowrap" style={{ color: '#22c55e' }}>Header</p>
       </Html>
-      <Html center position={[0.85, CODE1_Y, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[9px] font-bold whitespace-nowrap" style={{ color: '#3b82f6' }}>Code 1</p>
+      <Html center transform distanceFactor={5} position={[0.85, CODE1_Y, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[16px] font-bold whitespace-nowrap" style={{ color: '#3b82f6' }}>Code 1</p>
       </Html>
-      <Html center position={[0.85, CODE2_Y, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[9px] font-bold whitespace-nowrap" style={{ color: '#3b82f6' }}>Code 2</p>
+      <Html center transform distanceFactor={5} position={[0.85, CODE2_Y, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[16px] font-bold whitespace-nowrap" style={{ color: '#3b82f6' }}>Code 2</p>
       </Html>
-      <Html center position={[0.85, DATA_Y, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[9px] font-bold whitespace-nowrap" style={{ color: '#6366f1' }}>Data</p>
+      <Html center transform distanceFactor={5} position={[0.85, DATA_Y, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[16px] font-bold whitespace-nowrap" style={{ color: '#6366f1' }}>Data</p>
       </Html>
-      <Html center position={[0, 1.15, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[10px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: '#22c55e' }}>
+      <Html center transform distanceFactor={5} position={[0, -1.08, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[13px] font-bold whitespace-nowrap" style={{ color: '#22c55e' }}>
+          ~100 gas/call
+        </p>
+      </Html>
+      <Html center transform distanceFactor={5} position={[0, 1.15, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[18px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: '#22c55e' }}>
           With EOF: Structured
         </p>
       </Html>
@@ -661,7 +846,7 @@ export function EOFContainerization3D() {
           <Scene reducedMotion={reducedMotion} />
 
           <OrbitControls
-            enableZoom={false}
+            enableZoom minDistance={3} maxDistance={18}
             enablePan={false}
             minPolarAngle={Math.PI / 4}
             maxPolarAngle={Math.PI / 3}

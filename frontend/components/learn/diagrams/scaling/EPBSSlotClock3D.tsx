@@ -281,6 +281,222 @@ function TodayClock({ reducedMotion }: { reducedMotion: boolean }) {
       <Html center position={[LEFT_X, 0, CLOCK_Y + 1.7]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <p className="text-[12px] font-bold font-mono whitespace-nowrap" style={{ color: '#ef4444' }}>2.5%</p>
       </Html>
+
+      {/* Gas limit label */}
+      <Html center position={[LEFT_X, 0, CLOCK_Y + 2.05]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[9px] font-mono whitespace-nowrap" style={{ color: '#fca5a5' }}>~15M gas/block</p>
+      </Html>
+    </group>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Block Flow Elements (animated cubes, commit, checkmarks)           */
+/* ------------------------------------------------------------------ */
+
+const CUBE_COUNT = 6
+const CHECK_COUNT = 4
+
+function BlockFlowElements({ reducedMotion }: { reducedMotion: boolean }) {
+  const assemblyRef = useRef<THREE.InstancedMesh>(null!)
+  const commitRef = useRef<THREE.Mesh>(null!)
+  const ringRef = useRef<THREE.Mesh>(null!)
+  const checksRef = useRef<THREE.InstancedMesh>(null!)
+  const elapsedRef = useRef(0)
+  const assemblyInitRef = useRef(false)
+  const checksInitRef = useRef(false)
+
+  // Pre-create colors
+  const blueColor = useMemo(() => new THREE.Color('#3b82f6'), [])
+  const amberColor = useMemo(() => new THREE.Color('#f59e0b'), [])
+  const greenColor = useMemo(() => new THREE.Color('#22c55e'), [])
+
+  // Starting positions for assembly cubes (spread around the Build arc area)
+  const cubeOrigins = useMemo(() => {
+    const origins: [number, number, number][] = []
+    for (let i = 0; i < CUBE_COUNT; i++) {
+      // Spread cubes across the Build arc (90-190 degrees in standard math coords)
+      const angle = (90 + (i / (CUBE_COUNT - 1)) * 100) * DEG
+      const r = 0.6 + (i % 2) * 0.25
+      origins.push([
+        Math.cos(angle) * r,
+        0.08,
+        -Math.sin(angle) * r,
+      ])
+    }
+    return origins
+  }, [])
+
+  // Checkmark positions around the verify arc
+  const checkPositions = useMemo(() => {
+    const positions: [number, number, number][] = []
+    for (let i = 0; i < CHECK_COUNT; i++) {
+      const angle = (240 + (i / (CHECK_COUNT - 1)) * 150) * DEG
+      const r = 0.72
+      positions.push([
+        Math.cos(angle) * r,
+        0.1,
+        -Math.sin(angle) * r,
+      ])
+    }
+    return positions
+  }, [])
+
+  useFrame((_, delta) => {
+    if (reducedMotion) return
+    elapsedRef.current += delta
+    const t = elapsedRef.current
+    const handAngle = ((t / SWEEP_PERIOD) * 360) % 360
+
+    const dummy = new THREE.Object3D()
+
+    // --- Build phase (90-190 deg): cubes converge toward center ---
+    const inBuild = handAngle >= 90 && handAngle < 190
+    if (assemblyRef.current) {
+      if (!assemblyInitRef.current) {
+        // Initialize all cubes to zero scale
+        for (let i = 0; i < CUBE_COUNT; i++) {
+          dummy.position.set(cubeOrigins[i][0], cubeOrigins[i][1], cubeOrigins[i][2])
+          dummy.scale.set(0.001, 0.001, 0.001)
+          dummy.updateMatrix()
+          assemblyRef.current.setMatrixAt(i, dummy.matrix)
+        }
+        assemblyRef.current.instanceMatrix.needsUpdate = true
+        assemblyInitRef.current = true
+      }
+
+      for (let i = 0; i < CUBE_COUNT; i++) {
+        if (inBuild) {
+          // Progress through the build phase (0 to 1)
+          const buildProgress = Math.min(1, (handAngle - 90) / 100)
+          // Each cube activates sequentially
+          const cubeActivation = (i / CUBE_COUNT)
+          const cubeProgress = Math.max(0, Math.min(1, (buildProgress - cubeActivation) * CUBE_COUNT / (CUBE_COUNT - 1)))
+          // Lerp from origin to center
+          const lx = cubeOrigins[i][0] * (1 - cubeProgress)
+          const lz = cubeOrigins[i][2] * (1 - cubeProgress)
+          const scale = cubeProgress > 0 ? 0.5 + cubeProgress * 0.5 : 0.001
+          dummy.position.set(lx, 0.08, lz)
+          dummy.scale.set(scale, scale, scale)
+          dummy.rotation.set(0, buildProgress * Math.PI, 0)
+        } else {
+          dummy.position.set(cubeOrigins[i][0], cubeOrigins[i][1], cubeOrigins[i][2])
+          dummy.scale.set(0.001, 0.001, 0.001)
+          dummy.rotation.set(0, 0, 0)
+        }
+        dummy.updateMatrix()
+        assemblyRef.current.setMatrixAt(i, dummy.matrix)
+      }
+      assemblyRef.current.instanceMatrix.needsUpdate = true
+    }
+
+    // --- Propose phase (190-240 deg): block moves outward + pulse ring ---
+    const inPropose = handAngle >= 190 && handAngle < 240
+    if (commitRef.current) {
+      if (inPropose) {
+        const proposeProgress = (handAngle - 190) / 50
+        const outR = proposeProgress * 1.0
+        // Move along the propose arc midpoint direction (~215 degrees)
+        const midAngle = 215 * DEG
+        commitRef.current.position.set(
+          Math.cos(midAngle) * outR,
+          0.08,
+          -Math.sin(midAngle) * outR,
+        )
+        const s = 1 - proposeProgress * 0.3
+        commitRef.current.scale.set(s, s, s)
+        commitRef.current.visible = true
+        commitRef.current.rotation.y += delta * 2
+      } else {
+        commitRef.current.visible = false
+      }
+    }
+
+    if (ringRef.current) {
+      if (inPropose) {
+        const proposeProgress = (handAngle - 190) / 50
+        const ringScale = 0.3 + proposeProgress * 1.2
+        ringRef.current.scale.set(ringScale, ringScale, ringScale)
+        const ringMat = ringRef.current.material as THREE.MeshStandardMaterial
+        ringMat.opacity = 1 - proposeProgress
+        ringRef.current.visible = true
+      } else {
+        ringRef.current.visible = false
+      }
+    }
+
+    // --- Verify phase (240-390 deg): checkmarks pop in ---
+    const inVerify = handAngle >= 240 || handAngle < 30 // 390 % 360 = 30
+    if (checksRef.current) {
+      if (!checksInitRef.current) {
+        for (let i = 0; i < CHECK_COUNT; i++) {
+          dummy.position.set(checkPositions[i][0], checkPositions[i][1], checkPositions[i][2])
+          dummy.scale.set(0.001, 0.001, 0.001)
+          dummy.updateMatrix()
+          checksRef.current.setMatrixAt(i, dummy.matrix)
+        }
+        checksRef.current.instanceMatrix.needsUpdate = true
+        checksInitRef.current = true
+      }
+
+      for (let i = 0; i < CHECK_COUNT; i++) {
+        if (inVerify) {
+          // Normalize verify progress (spans 150 degrees, possibly wrapping)
+          let verifyAngle: number
+          if (handAngle >= 240) {
+            verifyAngle = handAngle - 240
+          } else {
+            verifyAngle = handAngle + 120 // (360 - 240 = 120)
+          }
+          const verifyProgress = Math.min(1, verifyAngle / 150)
+          const checkActivation = i / CHECK_COUNT
+          const checkProgress = Math.max(0, Math.min(1, (verifyProgress - checkActivation) * CHECK_COUNT / (CHECK_COUNT - 1)))
+          // Pop-in with overshoot
+          let scale: number
+          if (checkProgress < 0.5) {
+            scale = checkProgress * 2 * 1.3
+          } else {
+            scale = 1.3 - (checkProgress - 0.5) * 2 * 0.3
+          }
+          scale = Math.max(0.001, scale)
+          dummy.position.set(checkPositions[i][0], checkPositions[i][1], checkPositions[i][2])
+          dummy.scale.set(scale, scale, scale)
+        } else {
+          dummy.position.set(checkPositions[i][0], checkPositions[i][1], checkPositions[i][2])
+          dummy.scale.set(0.001, 0.001, 0.001)
+        }
+        dummy.updateMatrix()
+        checksRef.current.setMatrixAt(i, dummy.matrix)
+      }
+      checksRef.current.instanceMatrix.needsUpdate = true
+    }
+  })
+
+  return (
+    <group position={[RIGHT_X, 0, CLOCK_Y]}>
+      {/* Assembly cubes (Build phase) */}
+      <instancedMesh ref={assemblyRef} args={[undefined, undefined, CUBE_COUNT]}>
+        <boxGeometry args={[0.08, 0.08, 0.08]} />
+        <meshStandardMaterial color={blueColor} roughness={0.4} />
+      </instancedMesh>
+
+      {/* Commit block (Propose phase) */}
+      <mesh ref={commitRef} visible={false}>
+        <boxGeometry args={[0.12, 0.12, 0.12]} />
+        <meshStandardMaterial color={amberColor} roughness={0.3} emissive={amberColor} emissiveIntensity={0.3} />
+      </mesh>
+
+      {/* Pulse ring (Propose phase) */}
+      <mesh ref={ringRef} position={[0, 0.06, 0]} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
+        <ringGeometry args={[0.18, 0.22, 32]} />
+        <meshStandardMaterial color={amberColor} transparent opacity={0.8} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* Verify checkmarks (green spheres) */}
+      <instancedMesh ref={checksRef} args={[undefined, undefined, CHECK_COUNT]}>
+        <sphereGeometry args={[0.05, 12, 12]} />
+        <meshStandardMaterial color={greenColor} roughness={0.3} emissive={greenColor} emissiveIntensity={0.3} />
+      </instancedMesh>
     </group>
   )
 }
@@ -337,12 +553,6 @@ function EPBSClock({ reducedMotion }: { reducedMotion: boolean }) {
     }
   })
 
-  // Midpoint angles for label positioning
-  const labelR = 0.7
-  const buildMid = (EPBS_BUILD_START + EPBS_BUILD_END) / 2
-  const proposeMid = (EPBS_PROPOSE_START + EPBS_PROPOSE_END) / 2
-  const verifyMid = (EPBS_VERIFY_START + EPBS_VERIFY_END) / 2
-
   return (
     <group>
       {/* Step riser */}
@@ -393,17 +603,6 @@ function EPBSClock({ reducedMotion }: { reducedMotion: boolean }) {
       {/* Sweep hand */}
       <SweepHand center={[RIGHT_X, 0, CLOCK_Y]} color="#22c55e" reducedMotion={reducedMotion} />
 
-      {/* Segment labels inside arcs */}
-      <Html center position={[RIGHT_X + Math.cos(buildMid) * labelR, 0.12, CLOCK_Y + Math.sin(buildMid) * labelR]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[9px] font-semibold whitespace-nowrap" style={{ color: '#3b82f6' }}>Build</p>
-      </Html>
-      <Html center position={[RIGHT_X + Math.cos(proposeMid) * labelR, 0.12, CLOCK_Y + Math.sin(proposeMid) * labelR]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[9px] font-semibold whitespace-nowrap" style={{ color: '#f59e0b' }}>Propose</p>
-      </Html>
-      <Html center position={[RIGHT_X + Math.cos(verifyMid) * labelR, 0.12, CLOCK_Y + Math.sin(verifyMid) * labelR]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[9px] font-semibold whitespace-nowrap" style={{ color: '#22c55e' }}>Verify</p>
-      </Html>
-
       {/* Label: "With ePBS" */}
       <Html center position={[RIGHT_X, 0.8, CLOCK_Y - 1.6]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <p className="text-[10px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: '#22c55e' }}>With ePBS</p>
@@ -413,6 +612,14 @@ function EPBSClock({ reducedMotion }: { reducedMotion: boolean }) {
       <Html center position={[RIGHT_X, 0, CLOCK_Y + 1.7]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <p className="text-[12px] font-bold font-mono whitespace-nowrap" style={{ color: '#22c55e' }}>~83%</p>
       </Html>
+
+      {/* Gas limit label */}
+      <Html center position={[RIGHT_X, 0, CLOCK_Y + 2.05]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[9px] font-mono whitespace-nowrap" style={{ color: '#86efac' }}>~150M gas/block</p>
+      </Html>
+
+      {/* Animated block flow elements */}
+      <BlockFlowElements reducedMotion={reducedMotion} />
     </group>
   )
 }
@@ -486,7 +693,7 @@ export function EPBSSlotClock3D() {
           <HourTicks count={24} />
 
           <OrbitControls
-            enableZoom={false}
+            enableZoom minDistance={3} maxDistance={18}
             enablePan={false}
             minPolarAngle={Math.PI / 4}
             maxPolarAngle={Math.PI / 3}

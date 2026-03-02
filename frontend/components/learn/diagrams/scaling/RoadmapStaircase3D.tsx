@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useMemo, useState } from 'react'
+import { useRef, useMemo } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
@@ -18,295 +18,100 @@ const EXEC_X = -3.5
 const DATA_X = 0.0
 const PROOF_X = 3.5
 
-/* ── Initiative object: Access Lists funnel ── */
+/* ── Throughput counter (large animated label on each platform) ── */
 
-function ALFunnel({ position }: { position: [number, number, number] }) {
-  const [hovered, setHovered] = useState(false)
-
-  return (
-    <group
-      position={position}
-      onPointerOver={() => setHovered(true)}
-      onPointerOut={() => setHovered(false)}
-    >
-      {/* Step riser */}
-      <RoundedBox args={[0.7, 0.02, 0.7]} radius={0.008} smoothness={4} position={[0, -0.25, 0]}>
-        <meshBasicMaterial color="#ffffff" />
-      </RoundedBox>
-      {/* Inverted cone (funnel) */}
-      <mesh
-        rotation={[Math.PI, 0, 0]}
-        position={[0, hovered ? 0.04 : 0, 0]}
-      >
-        <coneGeometry args={[0.35, 0.5, 16, 1, true]} />
-        <meshStandardMaterial
-          color={hovered ? '#ffffff' : '#3b82f6'}
-          roughness={0.5}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-      {/* Bottom cap */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, (hovered ? 0.04 : 0) + 0.25, 0]}
-      >
-        <circleGeometry args={[0.35, 16]} />
-        <meshStandardMaterial color={hovered ? '#ffffff' : '#3b82f6'} roughness={0.5} />
-      </mesh>
-      <Html
-        center
-        position={[0, 0.55, 0]}
-        style={{ pointerEvents: 'none', userSelect: 'none' }}
-      >
-        <div className="text-center">
-          <p className="text-[12px] font-bold text-black tracking-tight whitespace-nowrap">Access Lists</p>
-          <p className="text-[9px] text-zinc-500 mt-0.5 whitespace-nowrap">Parallel lanes</p>
-        </div>
-      </Html>
-    </group>
-  )
-}
-
-/* ── Initiative object: ePBS clock ── */
-
-function EPBSClock({ position }: { position: [number, number, number] }) {
-  const [hovered, setHovered] = useState(false)
-
-  return (
-    <group
-      position={position}
-      onPointerOver={() => setHovered(true)}
-      onPointerOut={() => setHovered(false)}
-    >
-      <RoundedBox args={[0.7, 0.02, 0.7]} radius={0.008} smoothness={4} position={[0, -0.18, 0]}>
-        <meshBasicMaterial color="#ffffff" />
-      </RoundedBox>
-      <mesh
-        rotation={[Math.PI / 2, 0, 0]}
-        position={[0, hovered ? 0.04 : 0, 0]}
-      >
-        <torusGeometry args={[0.25, 0.02, 12, 32]} />
-        <meshStandardMaterial color={hovered ? '#ffffff' : '#3b82f6'} roughness={0.4} />
-      </mesh>
-      {/* Clock hand */}
-      <mesh position={[0, hovered ? 0.04 : 0, 0]}>
-        <cylinderGeometry args={[0.008, 0.008, 0.2, 6]} />
-        <meshStandardMaterial color="#3b82f6" />
-      </mesh>
-      <Html
-        center
-        position={[0, 0.45, 0]}
-        style={{ pointerEvents: 'none', userSelect: 'none' }}
-      >
-        <div className="text-center">
-          <p className="text-[12px] font-bold text-black tracking-tight whitespace-nowrap">ePBS</p>
-          <p className="text-[9px] text-zinc-500 mt-0.5 whitespace-nowrap">Full slot usage</p>
-        </div>
-      </Html>
-    </group>
-  )
-}
-
-/* ── Initiative object: Gas tank ── */
-
-function GasTank({ position }: { position: [number, number, number] }) {
-  const [hovered, setHovered] = useState(false)
-
-  return (
-    <group
-      position={position}
-      onPointerOver={() => setHovered(true)}
-      onPointerOut={() => setHovered(false)}
-    >
-      <RoundedBox args={[0.7, 0.02, 0.7]} radius={0.008} smoothness={4} position={[0, -0.3, 0]}>
-        <meshBasicMaterial color="#ffffff" />
-      </RoundedBox>
-      <RoundedBox
-        args={[0.35, 0.6, 0.35]}
-        radius={0.03}
-        smoothness={4}
-        position={[0, hovered ? 0.04 : 0, 0]}
-      >
-        <meshStandardMaterial color={hovered ? '#ffffff' : '#f59e0b'} roughness={0.5} />
-      </RoundedBox>
-      {/* Top accent */}
-      <mesh position={[0, (hovered ? 0.04 : 0) + 0.301, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[0.33, 0.33]} />
-        <meshBasicMaterial color="#f59e0b" transparent opacity={0.15} />
-      </mesh>
-      <Html
-        center
-        position={[0, 0.6, 0]}
-        style={{ pointerEvents: 'none', userSelect: 'none' }}
-      >
-        <div className="text-center">
-          <p className="text-[12px] font-bold text-black tracking-tight whitespace-nowrap">Gas Split</p>
-          <p className="text-[9px] text-zinc-500 mt-0.5 whitespace-nowrap">Multi-dim metering</p>
-        </div>
-      </Html>
-    </group>
-  )
-}
-
-/* ── Initiative object: Blob grid slab ── */
-
-function BlobGrid({
+function ThroughputCounter({
   position,
   label,
-  sub,
+  color,
 }: {
   position: [number, number, number]
   label: string
-  sub: string
+  color: string
 }) {
-  const [hovered, setHovered] = useState(false)
-
   return (
-    <group
+    <Html
+      center
       position={position}
-      onPointerOver={() => setHovered(true)}
-      onPointerOut={() => setHovered(false)}
+      style={{ pointerEvents: 'none', userSelect: 'none' }}
     >
-      <RoundedBox args={[0.7, 0.02, 0.7]} radius={0.008} smoothness={4} position={[0, -0.06, 0]}>
-        <meshBasicMaterial color="#ffffff" />
-      </RoundedBox>
-      <RoundedBox
-        args={[0.7, 0.08, 0.7]}
-        radius={0.02}
-        smoothness={4}
-        position={[0, hovered ? 0.04 : 0, 0]}
+      <p
+        className="text-[22px] font-bold font-mono whitespace-nowrap"
+        style={{ color }}
       >
-        <meshStandardMaterial color={hovered ? '#ffffff' : '#6366f1'} roughness={0.6} />
-      </RoundedBox>
-      {/* Grid cell lines (4x4) */}
-      {[0, 1, 2].map((i) => (
-        <mesh
-          key={`h-${i}`}
-          position={[0, (hovered ? 0.04 : 0) + 0.041, -0.175 + (i + 1) * 0.117]}
-          rotation={[-Math.PI / 2, 0, 0]}
-        >
-          <planeGeometry args={[0.66, 0.005]} />
-          <meshBasicMaterial color="#ffffff" transparent opacity={0.5} />
-        </mesh>
-      ))}
-      {[0, 1, 2].map((i) => (
-        <mesh
-          key={`v-${i}`}
-          position={[-0.175 + (i + 1) * 0.117, (hovered ? 0.04 : 0) + 0.041, 0]}
-          rotation={[-Math.PI / 2, 0, Math.PI / 2]}
-        >
-          <planeGeometry args={[0.66, 0.005]} />
-          <meshBasicMaterial color="#ffffff" transparent opacity={0.5} />
-        </mesh>
-      ))}
-      <Html
-        center
-        position={[0, 0.35, 0]}
-        style={{ pointerEvents: 'none', userSelect: 'none' }}
-      >
-        <div className="text-center">
-          <p className="text-[12px] font-bold text-black tracking-tight whitespace-nowrap">{label}</p>
-          <p className="text-[9px] text-zinc-500 mt-0.5 whitespace-nowrap">{sub}</p>
-        </div>
-      </Html>
-    </group>
+        {label}
+      </p>
+    </Html>
   )
 }
 
-/* ── Initiative object: Prover tower ── */
+/* ── Multiplier label between platforms ── */
 
-function ProverTower({
+function MultiplierLabel({
   position,
-  label,
-  sub,
-  greenAccent = false,
 }: {
   position: [number, number, number]
-  label: string
-  sub: string
-  greenAccent?: boolean
 }) {
-  const [hovered, setHovered] = useState(false)
-
   return (
-    <group
+    <Html
+      center
       position={position}
-      onPointerOver={() => setHovered(true)}
-      onPointerOut={() => setHovered(false)}
+      style={{ pointerEvents: 'none', userSelect: 'none' }}
     >
-      <RoundedBox args={[0.7, 0.02, 0.7]} radius={0.008} smoothness={4} position={[0, -0.35, 0]}>
-        <meshBasicMaterial color="#ffffff" />
-      </RoundedBox>
-      <RoundedBox
-        args={[0.3, 0.7, 0.3]}
-        radius={0.03}
-        smoothness={4}
-        position={[0, hovered ? 0.04 : 0, 0]}
-      >
-        <meshStandardMaterial color={hovered ? '#ffffff' : '#8b5cf6'} roughness={0.5} />
-      </RoundedBox>
-      {greenAccent && (
-        <mesh position={[0, (hovered ? 0.04 : 0) + 0.351, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[0.28, 0.28]} />
-          <meshBasicMaterial color="#22c55e" transparent opacity={0.3} />
-        </mesh>
-      )}
-      <Html
-        center
-        position={[0, 0.65, 0]}
-        style={{ pointerEvents: 'none', userSelect: 'none' }}
-      >
-        <div className="text-center">
-          <p className="text-[12px] font-bold text-black tracking-tight whitespace-nowrap">{label}</p>
-          <p className="text-[9px] text-zinc-500 mt-0.5 whitespace-nowrap">{sub}</p>
-        </div>
-      </Html>
-    </group>
+      <p className="text-[18px] font-bold font-mono whitespace-nowrap text-green-500">
+        ×10
+      </p>
+    </Html>
   )
 }
 
-/* ── Initiative object: Full Stack pillar ── */
+/* ── Capacity bar gauge on each platform floor ── */
 
-function FullStackPillar({ position }: { position: [number, number, number] }) {
-  const [hovered, setHovered] = useState(false)
+function CapacityBar({
+  position,
+  fillRatio,
+  color,
+  reducedMotion,
+}: {
+  position: [number, number, number]
+  fillRatio: number
+  color: string
+  reducedMotion: boolean
+}) {
+  const fillRef = useRef<THREE.Group>(null!)
+  const elapsedRef = useRef(0)
+  const barWidth = 2.0
+  const barHeight = 0.06
+  const barDepth = 0.3
+
+  useFrame((_, delta) => {
+    if (!reducedMotion) elapsedRef.current += delta
+    if (fillRef.current) {
+      const pulse = 1 + Math.sin(elapsedRef.current * 1.2) * 0.03
+      fillRef.current.scale.x = reducedMotion ? 1 : pulse
+    }
+  })
+
+  const fillWidth = barWidth * fillRatio
 
   return (
-    <group
-      position={position}
-      onPointerOver={() => setHovered(true)}
-      onPointerOut={() => setHovered(false)}
-    >
-      <RoundedBox args={[0.7, 0.02, 0.7]} radius={0.008} smoothness={4} position={[0, -0.6, 0]}>
-        <meshBasicMaterial color="#ffffff" />
+    <group position={position}>
+      {/* Background bar */}
+      <RoundedBox args={[barWidth, barHeight, barDepth]} radius={0.02} smoothness={4}>
+        <meshStandardMaterial color="#e4e4e7" roughness={0.8} />
       </RoundedBox>
-      <RoundedBox
-        args={[0.7, 1.2, 0.7]}
-        radius={0.04}
-        smoothness={4}
-        position={[0, hovered ? 0.04 : 0, 0]}
-      >
-        <meshStandardMaterial
-          color={hovered ? '#ffffff' : '#22c55e'}
-          roughness={0.4}
-          emissive="#22c55e"
-          emissiveIntensity={0.15}
-        />
-      </RoundedBox>
-      {/* Top accent */}
-      <mesh position={[0, (hovered ? 0.04 : 0) + 0.601, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[0.68, 0.68]} />
-        <meshBasicMaterial color="#22c55e" transparent opacity={0.15} />
-      </mesh>
-      <Html
-        center
-        position={[0, 1.0, 0]}
-        style={{ pointerEvents: 'none', userSelect: 'none' }}
-      >
-        <div className="text-center">
-          <p className="text-[12px] font-bold text-black tracking-tight whitespace-nowrap">Full Stack</p>
-          <p className="text-[9px] text-zinc-500 mt-0.5 whitespace-nowrap">100x throughput</p>
-        </div>
-      </Html>
+
+      {/* Fill bar */}
+      <group ref={fillRef}>
+        <RoundedBox
+          args={[fillWidth, barHeight + 0.005, barDepth - 0.02]}
+          radius={0.02}
+          smoothness={4}
+          position={[-(barWidth - fillWidth) / 2, 0.002, 0]}
+        >
+          <meshStandardMaterial color={color} roughness={0.5} />
+        </RoundedBox>
+      </group>
     </group>
   )
 }
@@ -341,12 +146,9 @@ function ThroughputCubes({
     const halfW = platformWidth / 2
     const halfD = platformDepth / 2
     for (let i = 0; i < count; i++) {
-      // Each cube gets a unique phase from its index
       const phase = i / count
-      // Stagger rows across depth
       const row = i % 3
       const zOff = (row - 1) * (halfD * 0.5)
-      // Progress along platform L-to-R, wrapping
       const progress = ((t * 0.15 + phase) % 1)
       const x = platformX - halfW + progress * platformWidth
       const y = platformY + 0.08
@@ -509,6 +311,22 @@ function Scene({ reducedMotion }: { reducedMotion: boolean }) {
     { start: new THREE.Vector3(DATA_X + 1.5, DATA_Y + 0.1, 0), end: new THREE.Vector3(PROOF_X - 1.5, PROOF_Y + 0.1, 0) },
   ], [])
 
+  /* ── Multiplier label positions (midpoints of dep arrows) ── */
+  const multiplierPositions = useMemo(() => [
+    // Between Execution -> Data arrow midpoint
+    [
+      (EXEC_X + 1.75 + DATA_X - 1.5) / 2,
+      ((EXEC_Y + 0.1 + DATA_Y + 0.1) / 2) + 0.35,
+      0,
+    ] as [number, number, number],
+    // Between Data -> Proofs arrow midpoint
+    [
+      (DATA_X + 1.5 + PROOF_X - 1.5) / 2,
+      ((DATA_Y + 0.1 + PROOF_Y + 0.1) / 2) + 0.35,
+      0,
+    ] as [number, number, number],
+  ], [])
+
   /* ── Cross-platform arrows ── */
   const crossArrows = useMemo(() => [
     // ePBS influences blobs (execution -> data cross)
@@ -560,23 +378,50 @@ function Scene({ reducedMotion }: { reducedMotion: boolean }) {
         labelSub="Verify, don't re-execute"
       />
 
-      {/* ── Initiative objects: Execution platform ── */}
-      <ALFunnel position={[EXEC_X - 0.9, EXEC_Y + 0.3, 0]} />
-      <EPBSClock position={[EXEC_X + 0.1, EXEC_Y + 0.22, 0]} />
-      <GasTank position={[EXEC_X + 1.0, EXEC_Y + 0.35, 0]} />
+      {/* ── Throughput counters (large animated labels) ── */}
+      <ThroughputCounter
+        position={[EXEC_X, EXEC_Y + 0.45, 0]}
+        label="15M gas"
+        color="#3b82f6"
+      />
+      <ThroughputCounter
+        position={[DATA_X, DATA_Y + 0.45, 0]}
+        label="150M gas"
+        color="#6366f1"
+      />
+      <ThroughputCounter
+        position={[PROOF_X, PROOF_Y + 0.45, 0]}
+        label="1.5B gas"
+        color="#8b5cf6"
+      />
 
-      {/* ── Initiative objects: Data platform ── */}
-      <BlobGrid position={[DATA_X - 0.5, DATA_Y + 0.1, 0]} label="Blobs" sub="Data cells" />
-      <BlobGrid position={[DATA_X + 0.5, DATA_Y + 0.1, 0]} label="PeerDAS" sub="Sample & verify" />
+      {/* ── Multiplier labels between platforms ── */}
+      <MultiplierLabel position={multiplierPositions[0]} />
+      <MultiplierLabel position={multiplierPositions[1]} />
 
-      {/* ── Initiative objects: Proofs platform ── */}
-      <ProverTower position={[PROOF_X - 0.9, PROOF_Y + 0.4, 0]} label="ZK-EVM" sub="Prove execution" />
-      <ProverTower position={[PROOF_X - 0.2, PROOF_Y + 0.4, 0]} label="Formal Verif" sub="Prover correctness" greenAccent />
-      <FullStackPillar position={[PROOF_X + 0.8, PROOF_Y + 0.65, 0]} />
+      {/* ── Capacity bar gauges on each platform floor ── */}
+      <CapacityBar
+        position={[EXEC_X, EXEC_Y + 0.06, 0.6]}
+        fillRatio={0.15}
+        color="#3b82f6"
+        reducedMotion={reducedMotion}
+      />
+      <CapacityBar
+        position={[DATA_X, DATA_Y + 0.06, 0.6]}
+        fillRatio={0.50}
+        color="#6366f1"
+        reducedMotion={reducedMotion}
+      />
+      <CapacityBar
+        position={[PROOF_X, PROOF_Y + 0.06, 0.6]}
+        fillRatio={1.0}
+        color="#8b5cf6"
+        reducedMotion={reducedMotion}
+      />
 
-      {/* ── Throughput cubes (12, 24, 48 = 2x multiplier per layer) ── */}
+      {/* ── Throughput cubes (6, 12, 24 flowing L-to-R) ── */}
       <ThroughputCubes
-        count={12}
+        count={6}
         color="#3b82f6"
         platformX={EXEC_X}
         platformY={EXEC_Y}
@@ -585,7 +430,7 @@ function Scene({ reducedMotion }: { reducedMotion: boolean }) {
         reducedMotion={reducedMotion}
       />
       <ThroughputCubes
-        count={24}
+        count={12}
         color="#6366f1"
         platformX={DATA_X}
         platformY={DATA_Y}
@@ -594,8 +439,8 @@ function Scene({ reducedMotion }: { reducedMotion: boolean }) {
         reducedMotion={reducedMotion}
       />
       <ThroughputCubes
-        count={48}
-        color="#22c55e"
+        count={24}
+        color="#8b5cf6"
         platformX={PROOF_X}
         platformY={PROOF_Y}
         platformWidth={3.0}
@@ -644,7 +489,7 @@ function Legend() {
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm bg-green-500 border border-green-600" />
-        <span className="text-[10px] text-text-muted tracking-wide">Full Stack</span>
+        <span className="text-[10px] text-text-muted tracking-wide">×10 multiplier</span>
       </div>
     </div>
   )
@@ -656,8 +501,8 @@ export function RoadmapStaircase3D() {
   return (
     <SceneContainer
       height="h-[360px] md:h-[420px]"
-      ariaLabel="Three ascending platforms representing Ethereum's execution, data, and proof scaling layers, with arrows showing dependencies between them"
-      srDescription="A 3D diorama showing Ethereum's scaling roadmap as three ascending platforms. The execution platform contains access lists, ePBS, and gas split. The data platform contains blobs and PeerDAS. The proofs platform contains ZK-EVM, formal verification, and a tall green Full Stack pillar. Throughput cubes double at each layer (12, 24, 48) to show the compounding effect."
+      ariaLabel="Three ascending platforms representing Ethereum's execution, data, and proof scaling layers, with throughput counters and capacity bars showing 10x gains at each layer"
+      srDescription="A 3D diorama showing Ethereum's scaling roadmap as three ascending platforms. The execution platform shows 15M gas capacity (15% filled), the data platform shows 150M gas (50% filled), and the proofs platform shows 1.5B gas (100% filled). Each layer gains a 10x throughput multiplier, shown by green labels between platforms. Throughput cubes flow left-to-right across each platform."
       legend={<Legend />}
       fallbackText="Ethereum scaling roadmap — three ascending platforms for execution, data, and proofs"
     >
@@ -677,7 +522,7 @@ export function RoadmapStaircase3D() {
           <Scene reducedMotion={reducedMotion} />
 
           <OrbitControls
-            enableZoom={false}
+            enableZoom minDistance={3} maxDistance={18}
             enablePan={false}
             minPolarAngle={Math.PI / 4}
             maxPolarAngle={Math.PI / 3}

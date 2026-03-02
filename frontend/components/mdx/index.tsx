@@ -37,6 +37,11 @@ import {
   FullStackLayers3D,
   ScalingStats,
   ScalingSummary,
+  AccessListConflict3D,
+  SlotBudget3D,
+  ErasureCoding3D,
+  GasReservoir3D,
+  ProverConsensus3D,
 } from "@/components/learn/diagrams/scaling";
 
 function extractTextFromReactNode(node: ReactNode): string {
@@ -206,4 +211,9 @@ export const mdxComponents: MDXComponents = {
   FullStackLayers3D,
   ScalingStats,
   ScalingSummary,
+  AccessListConflict3D,
+  SlotBudget3D,
+  ErasureCoding3D,
+  GasReservoir3D,
+  ProverConsensus3D,
 };

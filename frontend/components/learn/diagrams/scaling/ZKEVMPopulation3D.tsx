@@ -8,630 +8,880 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { SceneContainer } from './SceneContainer'
 import { ContextDisposer } from './shared/ContextDisposer'
 
-/* -- Seeded PRNG -- */
+/* ------------------------------------------------------------------ */
+/*  Constants                                                          */
+/* ------------------------------------------------------------------ */
 
-function seededRandom(seed: number) {
-  const x = Math.sin(seed) * 10000
-  return x - Math.floor(x)
-}
+const LEFT_X = -3.2           // center of re-execution side
+const RIGHT_X = 3.2           // center of proof verification side
+const VALIDATOR_COUNT = 8
+const CYCLE = 6.0             // full animation cycle in seconds
+const BLOCK_SIZE = 0.4
+const VALIDATOR_SIZE = 0.22
+const PROVER_SIZE = [0.5, 0.4, 0.4] as const
+const PROOF_SIZE = 0.15
 
-/* -- Constants -- */
-
-const STAGES = [
-  { label: '5%', y: 0.0, x: -3.6, zkCount: 1, tradCount: 9, zkScale: 0.4, tradScale: 0.18 },
-  { label: '20%', y: 0.12, x: -1.2, zkCount: 4, tradCount: 6, zkScale: 0.4, tradScale: 0.18 },
-  { label: '3-of-5', y: 0.24, x: 1.2, zkCount: 6, tradCount: 4, zkScale: 0.35, tradScale: 0.18, voting: true },
-  { label: 'Verified', y: 0.36, x: 3.6, zkCount: 10, tradCount: 0, zkScale: 0.35, tradScale: 0 },
-] as const
-
-const PLATFORM_SIZE = 2.5
-const PLATFORM_HEIGHT = 0.06
-
-const VIOLET = '#8b5cf6'
-const GREY = '#d4d4d8'
+const RED = '#ef4444'
 const GREEN = '#22c55e'
-const ZINC_DARK = '#71717a'
+const GREY = '#a1a1aa'
+const VIOLET = '#8b5cf6'
+const LIGHT_RED = '#fef2f2'
+const LIGHT_GREEN = '#f0fdf4'
 
-const YEAR_LABELS = ['2026', '2027', '2028', '2030+']
+/* ------------------------------------------------------------------ */
+/*  Validator cube geometry (merged box + small antenna)               */
+/* ------------------------------------------------------------------ */
 
-/* -- Geometry factories (cached via useMemo) -- */
-
-function createValidatorGeometry(): THREE.BufferGeometry {
-  const headGeo = new THREE.SphereGeometry(0.045, 10, 8)
-  headGeo.translate(0, 0.14, 0)
-
-  const bodyGeo = new THREE.CylinderGeometry(0.025, 0.04, 0.14, 8)
-  bodyGeo.translate(0, 0.04, 0)
-
-  const baseGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.015, 10)
-  baseGeo.translate(0, -0.035, 0)
-
-  const merged = mergeGeometries([headGeo, bodyGeo, baseGeo], false)
-  headGeo.dispose()
-  bodyGeo.dispose()
-  baseGeo.dispose()
-
-  return merged || new THREE.BoxGeometry(0.08, 0.22, 0.08)
+function createValidatorGeo(): THREE.BufferGeometry {
+  const body = new THREE.BoxGeometry(1, 1, 1)
+  const antenna = new THREE.CylinderGeometry(0.06, 0.06, 0.35, 6)
+  antenna.translate(0, 0.65, 0)
+  const tip = new THREE.SphereGeometry(0.09, 8, 8)
+  tip.translate(0, 0.85, 0)
+  const merged = mergeGeometries([body, antenna, tip], false)
+  body.dispose()
+  antenna.dispose()
+  tip.dispose()
+  return merged || new THREE.BoxGeometry(1, 1, 1)
 }
 
-function createRaisedArmGeometry(): THREE.BufferGeometry {
-  const headGeo = new THREE.SphereGeometry(0.045, 10, 8)
-  headGeo.translate(0, 0.14, 0)
+/* ------------------------------------------------------------------ */
+/*  Grid positions for 8 validators (2 rows x 4 cols)                  */
+/* ------------------------------------------------------------------ */
 
-  const bodyGeo = new THREE.CylinderGeometry(0.025, 0.04, 0.14, 8)
-  bodyGeo.translate(0, 0.04, 0)
-
-  const baseGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.015, 10)
-  baseGeo.translate(0, -0.035, 0)
-
-  const armGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.1, 6)
-  armGeo.rotateZ(-Math.PI / 6)
-  armGeo.translate(0.035, 0.19, 0)
-
-  const handGeo = new THREE.SphereGeometry(0.018, 6, 6)
-  handGeo.translate(0.06, 0.235, 0)
-
-  const merged = mergeGeometries([headGeo, bodyGeo, baseGeo, armGeo, handGeo], false)
-  headGeo.dispose()
-  bodyGeo.dispose()
-  baseGeo.dispose()
-  armGeo.dispose()
-  handGeo.dispose()
-
-  return merged || new THREE.BoxGeometry(0.08, 0.22, 0.08)
-}
-
-/* -- Figure grid layout helper -- */
-
-function getFigurePositions(count: number, platformHalfSize: number): [number, number][] {
+function getValidatorPositions(): [number, number][] {
   const positions: [number, number][] = []
-  const cols = Math.ceil(Math.sqrt(count))
-  const rows = Math.ceil(count / cols)
-  const spacing = (platformHalfSize * 1.4) / Math.max(cols, 1)
-
-  for (let i = 0; i < count; i++) {
-    const col = i % cols
-    const row = Math.floor(i / cols)
-    const x = (col - (cols - 1) / 2) * spacing
-    const z = (row - (rows - 1) / 2) * spacing
-    positions.push([x, z])
+  for (let row = 0; row < 2; row++) {
+    for (let col = 0; col < 4; col++) {
+      const x = (col - 1.5) * 0.5
+      const z = (row - 0.5) * 0.55
+      positions.push([x, z])
+    }
   }
   return positions
 }
 
-/* -- Instanced validator population per stage -- */
+/* ------------------------------------------------------------------ */
+/*  Left Platform: "Re-execution" (Today)                              */
+/* ------------------------------------------------------------------ */
 
-function StagePopulation({
-  stageX,
-  stageY,
-  zkCount,
-  tradCount,
-  zkScale,
-  tradScale,
-  voting,
-}: {
-  stageX: number
-  stageY: number
-  zkCount: number
-  tradCount: number
-  zkScale: number
-  tradScale: number
-  voting?: boolean
-}) {
-  const zkRef = useRef<THREE.InstancedMesh>(null!)
-  const tradRef = useRef<THREE.InstancedMesh>(null!)
+function ReExecutionPlatform() {
+  return (
+    <group position={[LEFT_X, 0, 0]}>
+      <RoundedBox args={[5.4, 0.02, 3.4]} radius={0.008} smoothness={4} position={[0, 0.01, 0]}>
+        <meshBasicMaterial color="#ffffff" />
+      </RoundedBox>
+      <RoundedBox args={[5.0, 0.06, 3.0]} radius={0.02} smoothness={4} position={[0, 0.05, 0]}>
+        <meshStandardMaterial color={LIGHT_RED} roughness={0.7} />
+      </RoundedBox>
+      <Html center position={[0, 1.5, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[10px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: RED }}>Re-execution</p>
+      </Html>
+      <Html center position={[0, 1.22, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[9px] tracking-wide whitespace-nowrap" style={{ color: '#71717a' }}>Today</p>
+      </Html>
+    </group>
+  )
+}
 
-  const zkGeometry = useMemo(() => voting ? createRaisedArmGeometry() : createValidatorGeometry(), [voting])
-  const tradGeometry = useMemo(() => createValidatorGeometry(), [])
+/* ------------------------------------------------------------------ */
+/*  Right Platform: "Proof Verification" (ZK-EVM)                      */
+/* ------------------------------------------------------------------ */
 
-  const zkPositions = useMemo(() => {
-    const allPositions = getFigurePositions(zkCount + tradCount, PLATFORM_SIZE / 2)
-    return allPositions.slice(0, zkCount)
-  }, [zkCount, tradCount])
+function ProofVerificationPlatform() {
+  return (
+    <group position={[RIGHT_X, 0, 0]}>
+      <RoundedBox args={[5.4, 0.02, 3.4]} radius={0.008} smoothness={4} position={[0, 0.01, 0]}>
+        <meshBasicMaterial color="#ffffff" />
+      </RoundedBox>
+      <RoundedBox args={[5.0, 0.06, 3.0]} radius={0.02} smoothness={4} position={[0, 0.05, 0]}>
+        <meshStandardMaterial color={LIGHT_GREEN} roughness={0.7} />
+      </RoundedBox>
+      <Html center position={[0, 1.5, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[10px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: GREEN }}>Proof Verification</p>
+      </Html>
+      <Html center position={[0, 1.22, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[9px] tracking-wide whitespace-nowrap" style={{ color: '#71717a' }}>ZK-EVM</p>
+      </Html>
+    </group>
+  )
+}
 
-  const tradPositions = useMemo(() => {
-    const allPositions = getFigurePositions(zkCount + tradCount, PLATFORM_SIZE / 2)
-    return allPositions.slice(zkCount, zkCount + tradCount)
-  }, [zkCount, tradCount])
+/* ------------------------------------------------------------------ */
+/*  Divider                                                            */
+/* ------------------------------------------------------------------ */
 
-  const dummy = useMemo(() => new THREE.Object3D(), [])
+function Divider() {
+  return (
+    <RoundedBox args={[0.01, 0.3, 3.4]} radius={0.004} smoothness={4} position={[0, 0.15, 0]}>
+      <meshStandardMaterial color="#e5e7eb" roughness={0.5} />
+    </RoundedBox>
+  )
+}
 
-  // useFrame to set matrices on first frame (refs may not be ready in useMemo)
-  const initialized = useRef(false)
-  useFrame(() => {
-    if (initialized.current) return
-    if (!zkRef.current) return
-    if (tradCount > 0 && !tradRef.current) return
+/* ------------------------------------------------------------------ */
+/*  Left: Block cube that enters from the left                         */
+/* ------------------------------------------------------------------ */
 
-    for (let i = 0; i < zkCount; i++) {
-      const [px, pz] = zkPositions[i]
-      dummy.position.set(stageX + px, stageY + PLATFORM_HEIGHT / 2, pz)
-      dummy.scale.setScalar(zkScale)
-      dummy.updateMatrix()
-      zkRef.current.setMatrixAt(i, dummy.matrix)
+function LeftBlock({ reducedMotion }: { reducedMotion: boolean }) {
+  const ref = useRef<THREE.Mesh>(null!)
+  const elapsedRef = useRef(0)
+
+  useFrame((_, delta) => {
+    if (!ref.current) return
+    if (reducedMotion) {
+      ref.current.position.set(LEFT_X - 1.2, 0.35, -0.9)
+      return
     }
-    zkRef.current.instanceMatrix.needsUpdate = true
+    elapsedRef.current += delta
+    const t = elapsedRef.current % CYCLE
+    const enterPhase = Math.min(1, t / 0.8) // enter in 0.8s
+    const x = LEFT_X - 2.8 + enterPhase * 1.6
+    ref.current.position.set(x, 0.35, -0.9)
+    // Fade out after cycle
+    const mat = ref.current.material as THREE.MeshStandardMaterial
+    mat.opacity = t > 5.5 ? Math.max(0.2, 1 - (t - 5.5) / 0.5) : 1
+  })
 
-    if (tradCount > 0 && tradRef.current) {
-      for (let i = 0; i < tradCount; i++) {
-        const [px, pz] = tradPositions[i]
-        dummy.position.set(stageX + px, stageY + PLATFORM_HEIGHT / 2, pz)
-        dummy.scale.setScalar(tradScale)
-        dummy.updateMatrix()
-        tradRef.current.setMatrixAt(i, dummy.matrix)
+  return (
+    <mesh ref={ref} position={[LEFT_X - 2.8, 0.35, -0.9]}>
+      <boxGeometry args={[BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE]} />
+      <meshStandardMaterial color="#3b82f6" roughness={0.4} transparent />
+    </mesh>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Left: 8 Validator cubes processing sequentially                    */
+/* ------------------------------------------------------------------ */
+
+function LeftValidators({ reducedMotion }: { reducedMotion: boolean }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null!)
+  const elapsedRef = useRef(0)
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+  const geo = useMemo(() => createValidatorGeo(), [])
+  const positions = useMemo(() => getValidatorPositions(), [])
+
+  const colorArray = useMemo(() => {
+    const arr = new Float32Array(VALIDATOR_COUNT * 3)
+    const c = new THREE.Color(GREY)
+    for (let i = 0; i < VALIDATOR_COUNT; i++) {
+      arr[i * 3] = c.r
+      arr[i * 3 + 1] = c.g
+      arr[i * 3 + 2] = c.b
+    }
+    return arr
+  }, [])
+
+  const colorsSet = useRef(false)
+
+  useFrame((_, delta) => {
+    if (!meshRef.current) return
+
+    if (!colorsSet.current) {
+      meshRef.current.geometry.setAttribute(
+        'color',
+        new THREE.InstancedBufferAttribute(colorArray, 3),
+      )
+      colorsSet.current = true
+    }
+
+    elapsedRef.current += delta
+    const t = reducedMotion ? 0 : elapsedRef.current % CYCLE
+
+    // Sequential processing: each validator gets ~0.5s window
+    // Block enters in 0.8s, processing starts at 1.0s, each takes 0.55s
+    const processStart = 1.0
+    const perValidator = 0.55
+    const activeIdx = Math.floor((t - processStart) / perValidator)
+
+    const greyC = new THREE.Color(GREY)
+    const redC = new THREE.Color(RED)
+    const greenC = new THREE.Color('#4ade80')
+
+    for (let i = 0; i < VALIDATOR_COUNT; i++) {
+      const [px, pz] = positions[i]
+      dummy.position.set(LEFT_X + px, 0.08 + VALIDATOR_SIZE / 2, pz)
+      dummy.scale.setScalar(VALIDATOR_SIZE)
+
+      // Bounce when active
+      let bounce = 0
+      if (!reducedMotion && i === activeIdx && t >= processStart) {
+        const localT = (t - processStart - i * perValidator) / perValidator
+        bounce = Math.sin(localT * Math.PI) * 0.08
       }
-      tradRef.current.instanceMatrix.needsUpdate = true
-    }
+      dummy.position.y += bounce
 
-    initialized.current = true
-  })
-
-  return (
-    <>
-      {/* ZK validators (purple) */}
-      <instancedMesh ref={zkRef} args={[zkGeometry, undefined, zkCount]}>
-        <meshStandardMaterial color={VIOLET} roughness={0.6} />
-      </instancedMesh>
-
-      {/* Traditional validators (grey) */}
-      {tradCount > 0 && (
-        <instancedMesh ref={tradRef} args={[tradGeometry, undefined, tradCount]}>
-          <meshStandardMaterial color={GREY} roughness={0.7} />
-        </instancedMesh>
-      )}
-    </>
-  )
-}
-
-/* -- ZK proof sparkle particles -- */
-
-function ZKSparkles({ reducedMotion }: { reducedMotion: boolean }) {
-  const ref = useRef<THREE.InstancedMesh>(null!)
-  const dummy = useMemo(() => new THREE.Object3D(), [])
-  const elapsedRef = useRef(0)
-  const count = 20
-
-  const sparkleData = useMemo(() => {
-    const data: { stageX: number; stageY: number; figX: number; figZ: number; phase: number; radius: number; yOff: number }[] = []
-    const stagesWithZK = STAGES.filter(s => s.zkCount > 0)
-    for (let i = 0; i < count; i++) {
-      const stage = stagesWithZK[i % stagesWithZK.length]
-      const allPositions = getFigurePositions(stage.zkCount + stage.tradCount, PLATFORM_SIZE / 2)
-      const figIdx = i % stage.zkCount
-      const [fx, fz] = allPositions[figIdx]
-      data.push({
-        stageX: stage.x,
-        stageY: stage.y,
-        figX: fx,
-        figZ: fz,
-        phase: (i / count) * Math.PI * 2,
-        radius: 0.06 + seededRandom(i * 17 + 3) * 0.08,
-        yOff: 0.08 + seededRandom(i * 31 + 7) * 0.12,
-      })
-    }
-    return data
-  }, [])
-
-  useFrame((_, delta) => {
-    if (reducedMotion || !ref.current) return
-    elapsedRef.current += delta
-    const t = elapsedRef.current
-    for (let i = 0; i < count; i++) {
-      const d = sparkleData[i]
-      const angle = t * 0.5 + d.phase
-      const x = d.stageX + d.figX + Math.cos(angle) * d.radius
-      const y = d.stageY + PLATFORM_HEIGHT / 2 + d.yOff + Math.sin(t * 1.2 + d.phase) * 0.02
-      const z = d.figZ + Math.sin(angle) * d.radius
-      dummy.position.set(x, y, z)
-      dummy.scale.setScalar(0.006)
+      dummy.rotation.set(0, 0, 0)
       dummy.updateMatrix()
-      ref.current.setMatrixAt(i, dummy.matrix)
+      meshRef.current.setMatrixAt(i, dummy.matrix)
+
+      // Color: grey by default, red when active, muted green when done
+      let color: THREE.Color
+      if (reducedMotion) {
+        color = greyC
+      } else if (t < processStart) {
+        color = greyC
+      } else if (i < activeIdx) {
+        color = greenC // processed
+      } else if (i === activeIdx) {
+        color = redC // active
+      } else {
+        color = greyC // waiting
+      }
+
+      colorArray[i * 3] = color.r
+      colorArray[i * 3 + 1] = color.g
+      colorArray[i * 3 + 2] = color.b
     }
-    ref.current.instanceMatrix.needsUpdate = true
+
+    meshRef.current.instanceMatrix.needsUpdate = true
+    const attr = meshRef.current.geometry.getAttribute('color')
+    if (attr) (attr as THREE.BufferAttribute).needsUpdate = true
   })
 
   return (
-    <instancedMesh ref={ref} args={[undefined, undefined, count]}>
-      <sphereGeometry args={[1, 6, 6]} />
-      <meshBasicMaterial color={VIOLET} transparent opacity={0.8} />
+    <instancedMesh ref={meshRef} args={[geo, undefined, VALIDATOR_COUNT]}>
+      <meshStandardMaterial vertexColors roughness={0.5} />
     </instancedMesh>
   )
 }
 
-/* -- Network pulse rings -- */
+/* ------------------------------------------------------------------ */
+/*  Left: Timer label (Html ref + useFrame DOM manipulation)            */
+/* ------------------------------------------------------------------ */
 
-function NetworkPulseRings({ reducedMotion }: { reducedMotion: boolean }) {
-  const ref = useRef<THREE.InstancedMesh>(null!)
-  const dummy = useMemo(() => new THREE.Object3D(), [])
-  const elapsedRef = useRef(0)
-  const count = 10
-
-  const ringData = useMemo(() => {
-    const data: { stageX: number; stageY: number; figX: number; figZ: number; phase: number }[] = []
-    const stagesWithZK = STAGES.filter(s => s.zkCount > 0)
-    for (let i = 0; i < count; i++) {
-      const stage = stagesWithZK[i % stagesWithZK.length]
-      const allPositions = getFigurePositions(stage.zkCount + stage.tradCount, PLATFORM_SIZE / 2)
-      const figIdx = i % stage.zkCount
-      const [fx, fz] = allPositions[figIdx]
-      data.push({
-        stageX: stage.x,
-        stageY: stage.y,
-        figX: fx,
-        figZ: fz,
-        phase: (i / count) * 2,
-      })
-    }
-    return data
-  }, [])
-
-  const torusGeo = useMemo(() => new THREE.TorusGeometry(1, 0.008, 6, 24), [])
-
-  useFrame((_, delta) => {
-    if (reducedMotion || !ref.current) return
-    elapsedRef.current += delta
-    const t = elapsedRef.current
-    for (let i = 0; i < count; i++) {
-      const d = ringData[i]
-      const progress = ((t * 0.5 + d.phase) % 2) / 2
-      const scale = 0.04 + progress * 0.12
-      const x = d.stageX + d.figX
-      const y = d.stageY + PLATFORM_HEIGHT / 2 + 0.01
-      const z = d.figZ
-      dummy.position.set(x, y, z)
-      dummy.rotation.set(-Math.PI / 2, 0, 0)
-      dummy.scale.setScalar(scale)
-      dummy.updateMatrix()
-      ref.current.setMatrixAt(i, dummy.matrix)
-    }
-    ref.current.instanceMatrix.needsUpdate = true
-  })
-
-  return (
-    <instancedMesh ref={ref} args={[torusGeo, undefined, count]}>
-      <meshBasicMaterial color={VIOLET} transparent opacity={0.25} />
-    </instancedMesh>
-  )
-}
-
-/* -- Consensus arcs (Stage 3) -- */
-
-function ConsensusArcs({ stageX, stageY }: { stageX: number; stageY: number }) {
-  const allPositions = useMemo(
-    () => getFigurePositions(10, PLATFORM_SIZE / 2),
-    []
-  )
-
-  const arcPairs: [number, number][] = [[0, 1], [1, 2], [2, 3]]
-
-  const arcGeometries = useMemo(() => {
-    return arcPairs.map(([a, b]) => {
-      const [ax, az] = allPositions[a]
-      const [bx, bz] = allPositions[b]
-      const start = new THREE.Vector3(stageX + ax, stageY + PLATFORM_HEIGHT / 2 + 0.07, az)
-      const end = new THREE.Vector3(stageX + bx, stageY + PLATFORM_HEIGHT / 2 + 0.07, bz)
-      const mid = start.clone().lerp(end, 0.5)
-      mid.y += 0.12
-      const curve = new THREE.QuadraticBezierCurve3(start, mid, end)
-      return new THREE.TubeGeometry(curve, 16, 0.008, 6, false)
-    })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stageX, stageY])
-
-  return (
-    <>
-      {arcGeometries.map((geo, i) => (
-        <mesh key={`arc-${i}`} geometry={geo}>
-          <meshStandardMaterial color={GREEN} roughness={0.3} />
-        </mesh>
-      ))}
-    </>
-  )
-}
-
-/* -- Consensus particles flowing along arcs -- */
-
-function ConsensusParticles({
-  stageX,
-  stageY,
-  reducedMotion,
-}: {
-  stageX: number
-  stageY: number
-  reducedMotion: boolean
-}) {
-  const ref = useRef<THREE.InstancedMesh>(null!)
-  const dummy = useMemo(() => new THREE.Object3D(), [])
-  const elapsedRef = useRef(0)
-  const count = 18
-
-  const allPositions = useMemo(
-    () => getFigurePositions(10, PLATFORM_SIZE / 2),
-    []
-  )
-
-  const arcPairs: [number, number][] = [[0, 1], [1, 2], [2, 3]]
-
-  const curves = useMemo(() => {
-    return arcPairs.map(([a, b]) => {
-      const [ax, az] = allPositions[a]
-      const [bx, bz] = allPositions[b]
-      const start = new THREE.Vector3(stageX + ax, stageY + PLATFORM_HEIGHT / 2 + 0.07, az)
-      const end = new THREE.Vector3(stageX + bx, stageY + PLATFORM_HEIGHT / 2 + 0.07, bz)
-      const mid = start.clone().lerp(end, 0.5)
-      mid.y += 0.12
-      return new THREE.QuadraticBezierCurve3(start, mid, end)
-    })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stageX, stageY])
-
-  useFrame((_, delta) => {
-    if (reducedMotion || !ref.current) return
-    elapsedRef.current += delta
-    const t = elapsedRef.current
-    const perArc = count / curves.length
-    for (let i = 0; i < count; i++) {
-      const arcIdx = Math.floor(i / perArc)
-      const localIdx = i % perArc
-      const curve = curves[Math.min(arcIdx, curves.length - 1)]
-      const progress = ((t * 0.25 + localIdx / perArc) % 1)
-      const point = curve.getPoint(progress)
-      dummy.position.copy(point)
-      dummy.scale.setScalar(0.008 * Math.sin(progress * Math.PI))
-      dummy.updateMatrix()
-      ref.current.setMatrixAt(i, dummy.matrix)
-    }
-    ref.current.instanceMatrix.needsUpdate = true
-  })
-
-  return (
-    <instancedMesh ref={ref} args={[undefined, undefined, count]}>
-      <sphereGeometry args={[1, 6, 6]} />
-      <meshBasicMaterial color={GREEN} transparent opacity={0.7} />
-    </instancedMesh>
-  )
-}
-
-/* -- Stage 4: Green glow disc -- */
-
-function GlowDisc({
-  position,
-  reducedMotion,
-}: {
-  position: [number, number, number]
-  reducedMotion: boolean
-}) {
-  const matRef = useRef<THREE.MeshBasicMaterial>(null!)
+function LeftTimer({ reducedMotion }: { reducedMotion: boolean }) {
+  const labelRef = useRef<HTMLParagraphElement>(null)
   const elapsedRef = useRef(0)
 
   useFrame((_, delta) => {
-    if (reducedMotion || !matRef.current) return
+    if (!labelRef.current) return
+    if (reducedMotion) {
+      labelRef.current.textContent = '12.0s'
+      labelRef.current.style.color = RED
+      return
+    }
     elapsedRef.current += delta
-    const t = elapsedRef.current
-    matRef.current.opacity = 0.1 + Math.sin(t * 0.8) * 0.05 + 0.05
+    const t = elapsedRef.current % CYCLE
+
+    // Timer ramps from 0 to 12 over the processing window (1.0s to 5.4s)
+    const processStart = 1.0
+    const processEnd = 5.4
+    const progress = Math.max(0, Math.min(1, (t - processStart) / (processEnd - processStart)))
+    const displayTime = (progress * 12).toFixed(1)
+    const text = `${displayTime}s`
+    const isFinished = progress >= 1
+
+    if (labelRef.current.textContent !== text) {
+      labelRef.current.textContent = text
+      labelRef.current.style.color = isFinished ? RED : '#71717a'
+    }
   })
 
   return (
-    <mesh position={position} rotation={[-Math.PI / 2, 0, 0]}>
-      <circleGeometry args={[1.0, 32]} />
-      <meshBasicMaterial
-        ref={matRef}
+    <Html
+      center
+      position={[LEFT_X, 0.08, 1.4]}
+      style={{ pointerEvents: 'none', userSelect: 'none' }}
+    >
+      <p
+        ref={labelRef}
+        className="text-[16px] font-bold font-mono tracking-tight whitespace-nowrap"
+        style={{ color: '#71717a' }}
+      >
+        0.0s
+      </p>
+    </Html>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Left: Hardware label                                               */
+/* ------------------------------------------------------------------ */
+
+function LeftHardwareLabel() {
+  return (
+    <Html
+      center
+      position={[LEFT_X, 0.08, 1.8]}
+      style={{ pointerEvents: 'none', userSelect: 'none' }}
+    >
+      <p className="text-[9px] font-mono whitespace-nowrap" style={{ color: '#71717a' }}>
+        32-core server
+      </p>
+    </Html>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Left: Slow label (red bar)                                         */
+/* ------------------------------------------------------------------ */
+
+function LeftSlowLabel() {
+  return (
+    <group position={[LEFT_X, 0, 1.1]}>
+      <RoundedBox args={[4.0, 0.01, 0.06]} radius={0.004} smoothness={4} position={[0, 0.01, 0]}>
+        <meshStandardMaterial color={RED} roughness={0.4} />
+      </RoundedBox>
+      <Html center position={[2.3, 0, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[9px] font-mono font-bold whitespace-nowrap" style={{ color: RED }}>Slow</p>
+      </Html>
+    </group>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Right: Block cube that enters, then shrinks into prover            */
+/* ------------------------------------------------------------------ */
+
+function RightBlock({ reducedMotion }: { reducedMotion: boolean }) {
+  const ref = useRef<THREE.Mesh>(null!)
+  const elapsedRef = useRef(0)
+
+  useFrame((_, delta) => {
+    if (!ref.current) return
+    if (reducedMotion) {
+      ref.current.position.set(RIGHT_X - 0.6, 0.35, -0.9)
+      ref.current.scale.setScalar(1)
+      return
+    }
+    elapsedRef.current += delta
+    const t = elapsedRef.current % CYCLE
+
+    // Enter from left: 0 to 0.8s
+    const enterPhase = Math.min(1, t / 0.8)
+    const x = RIGHT_X - 2.8 + enterPhase * 1.6
+    // Shrink into prover: 1.0s to 2.0s
+    const shrinkStart = 1.0
+    const shrinkEnd = 2.0
+    let scale = 1
+    if (t > shrinkStart) {
+      const shrinkProgress = Math.min(1, (t - shrinkStart) / (shrinkEnd - shrinkStart))
+      scale = 1 - shrinkProgress * 0.85
+      // Move toward prover
+      const moveToProver = shrinkProgress * 0.8
+      ref.current.position.set(x + moveToProver, 0.35, -0.9 + shrinkProgress * 0.5)
+    } else {
+      ref.current.position.set(x, 0.35, -0.9)
+    }
+
+    ref.current.scale.setScalar(scale)
+
+    // Hide after shrink
+    const mat = ref.current.material as THREE.MeshStandardMaterial
+    mat.opacity = t > shrinkEnd ? 0 : 1
+  })
+
+  return (
+    <mesh ref={ref} position={[RIGHT_X - 2.8, 0.35, -0.9]}>
+      <boxGeometry args={[BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE]} />
+      <meshStandardMaterial color="#3b82f6" roughness={0.4} transparent />
+    </mesh>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Right: Prover box (large violet)                                   */
+/* ------------------------------------------------------------------ */
+
+function ProverBox({ reducedMotion }: { reducedMotion: boolean }) {
+  const ref = useRef<THREE.Mesh>(null!)
+  const elapsedRef = useRef(0)
+
+  useFrame((_, delta) => {
+    if (!ref.current) return
+    if (reducedMotion) return
+    elapsedRef.current += delta
+    const t = elapsedRef.current % CYCLE
+
+    // Pulse when processing (1.0s to 2.5s)
+    const mat = ref.current.material as THREE.MeshStandardMaterial
+    if (t >= 1.0 && t <= 2.5) {
+      const pulse = Math.sin((t - 1.0) * Math.PI * 4) * 0.15
+      mat.emissiveIntensity = 0.3 + pulse
+      ref.current.scale.set(
+        1 + Math.sin((t - 1.0) * Math.PI * 2) * 0.04,
+        1 + Math.sin((t - 1.0) * Math.PI * 2) * 0.04,
+        1 + Math.sin((t - 1.0) * Math.PI * 2) * 0.04,
+      )
+    } else {
+      mat.emissiveIntensity = 0.1
+      ref.current.scale.set(1, 1, 1)
+    }
+  })
+
+  return (
+    <group position={[RIGHT_X - 0.4, 0.3, -0.4]}>
+      <mesh ref={ref}>
+        <boxGeometry args={[PROVER_SIZE[0], PROVER_SIZE[1], PROVER_SIZE[2]]} />
+        <meshStandardMaterial color={VIOLET} roughness={0.4} emissive={VIOLET} emissiveIntensity={0.1} />
+      </mesh>
+      <Html center position={[0, -0.35, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[8px] font-mono whitespace-nowrap" style={{ color: VIOLET }}>PROVER</p>
+      </Html>
+    </group>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Right: Proof token (small green cube emitted from prover)          */
+/* ------------------------------------------------------------------ */
+
+function ProofToken({ reducedMotion }: { reducedMotion: boolean }) {
+  const ref = useRef<THREE.Mesh>(null!)
+  const elapsedRef = useRef(0)
+
+  useFrame((_, delta) => {
+    if (!ref.current) return
+    const mat = ref.current.material as THREE.MeshStandardMaterial
+
+    if (reducedMotion) {
+      ref.current.position.set(RIGHT_X + 0.4, 0.3, 0)
+      ref.current.scale.setScalar(1)
+      mat.opacity = 1
+      return
+    }
+
+    elapsedRef.current += delta
+    const t = elapsedRef.current % CYCLE
+
+    // Proof appears at 2.5s, moves to center of validators by 3.2s
+    const emitStart = 2.3
+    const emitEnd = 3.2
+    const broadcastStart = 3.2
+    const broadcastEnd = 3.5
+
+    if (t < emitStart) {
+      mat.opacity = 0
+      ref.current.scale.setScalar(0.01)
+    } else if (t < emitEnd) {
+      const p = (t - emitStart) / (emitEnd - emitStart)
+      const eased = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2
+      mat.opacity = eased
+      ref.current.scale.setScalar(0.3 + eased * 0.7)
+      // Move from prover toward validators
+      const startX = RIGHT_X - 0.4
+      const endX = RIGHT_X + 0.5
+      ref.current.position.set(
+        startX + eased * (endX - startX),
+        0.3,
+        -0.4 + eased * 0.4,
+      )
+    } else if (t < broadcastEnd) {
+      mat.opacity = 1
+      ref.current.scale.setScalar(1)
+      ref.current.position.set(RIGHT_X + 0.5, 0.3, 0)
+      // Pulse during broadcast
+      const pulse = Math.sin((t - broadcastStart) * Math.PI * 6) * 0.15
+      ref.current.scale.setScalar(1 + pulse)
+    } else if (t < 5.5) {
+      mat.opacity = 1
+      ref.current.scale.setScalar(1)
+      ref.current.position.set(RIGHT_X + 0.5, 0.3, 0)
+    } else {
+      // Fade
+      mat.opacity = Math.max(0, 1 - (t - 5.5) / 0.5)
+    }
+  })
+
+  return (
+    <mesh ref={ref}>
+      <boxGeometry args={[PROOF_SIZE, PROOF_SIZE, PROOF_SIZE]} />
+      <meshStandardMaterial
         color={GREEN}
+        roughness={0.3}
+        emissive={GREEN}
+        emissiveIntensity={0.4}
         transparent
-        opacity={0.15}
-        depthWrite={false}
+        opacity={0}
       />
     </mesh>
   )
 }
 
-/* -- Timeline bar with animated progress fill -- */
+/* ------------------------------------------------------------------ */
+/*  Right: 8 Validator cubes (all flash green at once on verify)       */
+/* ------------------------------------------------------------------ */
 
-function TimelineBar({ reducedMotion }: { reducedMotion: boolean }) {
-  const barWidth = 10.0
-  const startX = -(barWidth / 2)
-  const fillRef = useRef<THREE.Mesh>(null!)
+function RightValidators({ reducedMotion }: { reducedMotion: boolean }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null!)
   const elapsedRef = useRef(0)
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+  const geo = useMemo(() => createValidatorGeo(), [])
+  const positions = useMemo(() => getValidatorPositions(), [])
+
+  const colorArray = useMemo(() => {
+    const arr = new Float32Array(VALIDATOR_COUNT * 3)
+    const c = new THREE.Color(GREY)
+    for (let i = 0; i < VALIDATOR_COUNT; i++) {
+      arr[i * 3] = c.r
+      arr[i * 3 + 1] = c.g
+      arr[i * 3 + 2] = c.b
+    }
+    return arr
+  }, [])
+
+  const colorsSet = useRef(false)
 
   useFrame((_, delta) => {
-    if (reducedMotion || !fillRef.current) return
+    if (!meshRef.current) return
+
+    if (!colorsSet.current) {
+      meshRef.current.geometry.setAttribute(
+        'color',
+        new THREE.InstancedBufferAttribute(colorArray, 3),
+      )
+      colorsSet.current = true
+    }
+
     elapsedRef.current += delta
-    const t = elapsedRef.current
-    const progress = (t % 10) / 10
-    const width = Math.max(0.01, progress * barWidth)
-    fillRef.current.scale.x = width
-    fillRef.current.position.x = startX + width / 2
+    const t = reducedMotion ? 0 : elapsedRef.current % CYCLE
+
+    // All validators verify simultaneously at 3.2s
+    const verifyTime = 3.2
+    const allVerified = t >= verifyTime && t < 5.8
+
+    const greyC = new THREE.Color(GREY)
+    const greenC = new THREE.Color(GREEN)
+
+    for (let i = 0; i < VALIDATOR_COUNT; i++) {
+      const [px, pz] = positions[i]
+      const baseX = RIGHT_X + 0.5 + px
+      dummy.position.set(baseX, 0.08 + VALIDATOR_SIZE / 2, pz)
+      dummy.scale.setScalar(VALIDATOR_SIZE)
+
+      // All bounce together when verifying
+      let bounce = 0
+      if (!reducedMotion && allVerified && t < verifyTime + 0.5) {
+        const localT = (t - verifyTime) / 0.5
+        bounce = Math.sin(localT * Math.PI) * 0.1
+      }
+      dummy.position.y += bounce
+
+      dummy.rotation.set(0, 0, 0)
+      dummy.updateMatrix()
+      meshRef.current.setMatrixAt(i, dummy.matrix)
+
+      const color = (reducedMotion || !allVerified) ? greyC : greenC
+      colorArray[i * 3] = color.r
+      colorArray[i * 3 + 1] = color.g
+      colorArray[i * 3 + 2] = color.b
+    }
+
+    meshRef.current.instanceMatrix.needsUpdate = true
+    const attr = meshRef.current.geometry.getAttribute('color')
+    if (attr) (attr as THREE.BufferAttribute).needsUpdate = true
   })
 
   return (
-    <group position={[0, -0.08, 2.0]}>
-      {/* Background bar */}
-      <RoundedBox args={[barWidth, 0.008, 0.08]} radius={0.004} smoothness={4}>
-        <meshStandardMaterial color={GREY} roughness={0.6} />
+    <instancedMesh ref={meshRef} args={[geo, undefined, VALIDATOR_COUNT]}>
+      <meshStandardMaterial vertexColors roughness={0.5} />
+    </instancedMesh>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Right: Timer label                                                 */
+/* ------------------------------------------------------------------ */
+
+function RightTimer({ reducedMotion }: { reducedMotion: boolean }) {
+  const labelRef = useRef<HTMLParagraphElement>(null)
+  const elapsedRef = useRef(0)
+
+  useFrame((_, delta) => {
+    if (!labelRef.current) return
+    if (reducedMotion) {
+      labelRef.current.textContent = '0.5s'
+      labelRef.current.style.color = GREEN
+      return
+    }
+    elapsedRef.current += delta
+    const t = elapsedRef.current % CYCLE
+
+    // Timer: prover works 1.0-2.5s = proof generation
+    // Verification instant at 3.2s
+    // Show total from block entry to verification done
+    const timerStart = 0.8  // block has arrived
+    const timerEnd = 3.5    // all verified
+    const progress = Math.max(0, Math.min(1, (t - timerStart) / (timerEnd - timerStart)))
+    const displayTime = (progress * 0.5).toFixed(1)
+    const text = `${displayTime}s`
+    const isFinished = progress >= 1
+
+    if (labelRef.current.textContent !== text) {
+      labelRef.current.textContent = text
+      labelRef.current.style.color = isFinished ? GREEN : '#71717a'
+    }
+  })
+
+  return (
+    <Html
+      center
+      position={[RIGHT_X + 0.5, 0.08, 1.4]}
+      style={{ pointerEvents: 'none', userSelect: 'none' }}
+    >
+      <p
+        ref={labelRef}
+        className="text-[16px] font-bold font-mono tracking-tight whitespace-nowrap"
+        style={{ color: '#71717a' }}
+      >
+        0.0s
+      </p>
+    </Html>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Right: Hardware label                                              */
+/* ------------------------------------------------------------------ */
+
+function RightHardwareLabel() {
+  return (
+    <Html
+      center
+      position={[RIGHT_X + 0.5, 0.08, 1.8]}
+      style={{ pointerEvents: 'none', userSelect: 'none' }}
+    >
+      <p className="text-[9px] font-mono whitespace-nowrap" style={{ color: GREEN }}>
+        Raspberry Pi
+      </p>
+    </Html>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Right: Fast label (green bar)                                      */
+/* ------------------------------------------------------------------ */
+
+function RightFastLabel() {
+  return (
+    <group position={[RIGHT_X + 0.5, 0, 1.1]}>
+      <RoundedBox args={[1.2, 0.01, 0.06]} radius={0.004} smoothness={4} position={[0, 0.01, 0]}>
+        <meshStandardMaterial color={GREEN} roughness={0.4} />
       </RoundedBox>
-
-      {/* Animated progress fill */}
-      <mesh ref={fillRef} position={[startX + 0.005, 0.002, 0]}>
-        <boxGeometry args={[1, 0.012, 0.1]} />
-        <meshStandardMaterial color={VIOLET} roughness={0.4} />
-      </mesh>
-
-      {/* Year labels and tick marks */}
-      {YEAR_LABELS.map((year, i) => {
-        const x = startX + (i / (YEAR_LABELS.length - 1)) * barWidth
-        return (
-          <group key={year} position={[x, 0, 0]}>
-            {/* Tick mark */}
-            <mesh position={[0, 0.03, 0]}>
-              <cylinderGeometry args={[0.006, 0.006, 0.08, 6]} />
-              <meshStandardMaterial color={ZINC_DARK} />
-            </mesh>
-            {/* Year label */}
-            <Html
-              center
-              position={[0, -0.1, 0]}
-              style={{ pointerEvents: 'none', userSelect: 'none' }}
-            >
-              <p className="text-[9px] text-zinc-400 font-mono whitespace-nowrap">{year}</p>
-            </Html>
-          </group>
-        )
-      })}
+      <Html center position={[0.9, 0, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+        <p className="text-[9px] font-mono font-bold whitespace-nowrap" style={{ color: GREEN }}>Fast</p>
+      </Html>
     </group>
   )
 }
 
-/* -- Stair riser between platforms -- */
+/* ------------------------------------------------------------------ */
+/*  Right: Broadcast ring pulse from proof to validators               */
+/* ------------------------------------------------------------------ */
 
-function StairRiser({
-  fromX,
-  fromY,
-  toX,
-  toY,
-}: {
-  fromX: number
-  fromY: number
-  toX: number
-  toY: number
-}) {
-  const midX = (fromX + toX) / 2
-  const midY = (fromY + toY) / 2
-  const height = toY - fromY
+function BroadcastRing({ reducedMotion }: { reducedMotion: boolean }) {
+  const ref = useRef<THREE.Mesh>(null!)
+  const matRef = useRef<THREE.MeshBasicMaterial>(null!)
+  const elapsedRef = useRef(0)
+
+  useFrame((_, delta) => {
+    if (!ref.current || !matRef.current || reducedMotion) return
+    elapsedRef.current += delta
+    const t = elapsedRef.current % CYCLE
+
+    const broadcastStart = 3.2
+    const broadcastDuration = 0.8
+    if (t >= broadcastStart && t < broadcastStart + broadcastDuration) {
+      const p = (t - broadcastStart) / broadcastDuration
+      const scale = 0.1 + p * 1.8
+      ref.current.scale.set(scale, scale, 1)
+      matRef.current.opacity = 0.4 * (1 - p)
+      ref.current.visible = true
+    } else {
+      ref.current.visible = false
+    }
+  })
 
   return (
-    <RoundedBox
-      args={[0.3, height, PLATFORM_SIZE]}
-      radius={0.01}
-      smoothness={4}
-      position={[midX, midY, 0]}
-    >
-      <meshStandardMaterial color="#e5e7eb" roughness={0.8} transparent opacity={0.5} />
-    </RoundedBox>
+    <mesh ref={ref} position={[RIGHT_X + 0.5, 0.15, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[0.8, 1.0, 32]} />
+      <meshBasicMaterial ref={matRef} color={GREEN} transparent opacity={0} depthWrite={false} />
+    </mesh>
   )
 }
 
-/* -- Main scene content -- */
+/* ------------------------------------------------------------------ */
+/*  Left: Processing beam (connects block to active validator)         */
+/* ------------------------------------------------------------------ */
 
-function Scene({ reducedMotion }: { reducedMotion: boolean }) {
-  const stage3 = STAGES[2]
-  const stage4 = STAGES[3]
+function ProcessingBeam({ reducedMotion }: { reducedMotion: boolean }) {
+  const ref = useRef<THREE.InstancedMesh>(null!)
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+  const elapsedRef = useRef(0)
+  const positions = useMemo(() => getValidatorPositions(), [])
+  const count = 8
+
+  useFrame((_, delta) => {
+    if (!ref.current || reducedMotion) return
+    elapsedRef.current += delta
+    const t = elapsedRef.current % CYCLE
+
+    const processStart = 1.0
+    const perValidator = 0.55
+    const activeIdx = Math.floor((t - processStart) / perValidator)
+
+    for (let i = 0; i < count; i++) {
+      if (i === 0 && t >= processStart && activeIdx >= 0 && activeIdx < VALIDATOR_COUNT) {
+        const [vx, vz] = positions[activeIdx]
+        const bx = LEFT_X - 1.2
+        const bz = -0.9
+        const tx = LEFT_X + vx
+        const tz = vz
+        // Position beam between block and active validator
+        dummy.position.set((bx + tx) / 2, 0.35, (bz + tz) / 2)
+        const dist = Math.sqrt((tx - bx) ** 2 + (tz - bz) ** 2)
+        dummy.scale.set(dist, 0.015, 0.015)
+        dummy.lookAt(tx, 0.35, tz)
+        dummy.updateMatrix()
+        ref.current.setMatrixAt(i, dummy.matrix)
+      } else {
+        dummy.position.set(0, -10, 0)
+        dummy.scale.setScalar(0.001)
+        dummy.updateMatrix()
+        ref.current.setMatrixAt(i, dummy.matrix)
+      }
+    }
+    ref.current.instanceMatrix.needsUpdate = true
+  })
 
   return (
+    <instancedMesh ref={ref} args={[undefined, undefined, count]}>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshBasicMaterial color={RED} transparent opacity={0.25} />
+    </instancedMesh>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Prover spark particles                                             */
+/* ------------------------------------------------------------------ */
+
+function ProverSparks({ reducedMotion }: { reducedMotion: boolean }) {
+  const ref = useRef<THREE.InstancedMesh>(null!)
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+  const elapsedRef = useRef(0)
+  const count = 12
+
+  useFrame((_, delta) => {
+    if (!ref.current || reducedMotion) return
+    elapsedRef.current += delta
+    const t = elapsedRef.current % CYCLE
+
+    for (let i = 0; i < count; i++) {
+      if (t >= 1.0 && t <= 2.5) {
+        const phase = (i / count) * Math.PI * 2
+        const localT = t - 1.0
+        const angle = localT * 3 + phase
+        const r = 0.35 + Math.sin(localT * 4 + phase) * 0.1
+        const x = RIGHT_X - 0.4 + Math.cos(angle) * r
+        const y = 0.3 + Math.sin(angle * 0.7) * 0.15
+        const z = -0.4 + Math.sin(angle) * r
+        dummy.position.set(x, y, z)
+        dummy.scale.setScalar(0.015)
+      } else {
+        dummy.position.set(0, -10, 0)
+        dummy.scale.setScalar(0.001)
+      }
+      dummy.updateMatrix()
+      ref.current.setMatrixAt(i, dummy.matrix)
+    }
+    ref.current.instanceMatrix.needsUpdate = true
+  })
+
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, count]}>
+      <sphereGeometry args={[1, 6, 6]} />
+      <meshBasicMaterial color={VIOLET} transparent opacity={0.7} />
+    </instancedMesh>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main Scene                                                         */
+/* ------------------------------------------------------------------ */
+
+function Scene({ reducedMotion }: { reducedMotion: boolean }) {
+  return (
     <>
-      {/* Solid white floor */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.12, 0]}>
+      {/* White floor */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
         <planeGeometry args={[20, 20]} />
         <meshBasicMaterial color="#ffffff" />
       </mesh>
 
-      {/* -- 4 Platforms -- */}
-      {STAGES.map((stage) => (
-        <group key={stage.label}>
-          <RoundedBox
-            args={[PLATFORM_SIZE, PLATFORM_HEIGHT, PLATFORM_SIZE]}
-            radius={0.02}
-            smoothness={4}
-            position={[stage.x, stage.y, 0]}
-          >
-            <meshStandardMaterial color="#faf5ff" roughness={0.75} />
-          </RoundedBox>
+      {/* Platforms and divider */}
+      <ReExecutionPlatform />
+      <ProofVerificationPlatform />
+      <Divider />
 
-          {/* Accent line along front edge */}
-          <mesh position={[stage.x, stage.y + PLATFORM_HEIGHT / 2 + 0.001, -PLATFORM_SIZE / 2 + 0.01]}>
-            <planeGeometry args={[PLATFORM_SIZE - 0.04, 0.018]} />
-            <meshBasicMaterial color={VIOLET} />
-          </mesh>
+      {/* Left side: Re-execution */}
+      <LeftBlock reducedMotion={reducedMotion} />
+      <LeftValidators reducedMotion={reducedMotion} />
+      <ProcessingBeam reducedMotion={reducedMotion} />
+      <LeftTimer reducedMotion={reducedMotion} />
+      <LeftHardwareLabel />
+      <LeftSlowLabel />
 
-          {/* Stage label above platform */}
-          <Html
-            center
-            position={[stage.x, stage.y + PLATFORM_HEIGHT / 2 + 0.5, 0]}
-            style={{ pointerEvents: 'none', userSelect: 'none' }}
-          >
-            <p className="text-[10px] font-bold text-black tracking-widest uppercase whitespace-nowrap">
-              {stage.label}
-            </p>
-          </Html>
-        </group>
-      ))}
-
-      {/* -- Stair risers -- */}
-      <StairRiser fromX={STAGES[0].x} fromY={STAGES[0].y} toX={STAGES[1].x} toY={STAGES[1].y} />
-      <StairRiser fromX={STAGES[1].x} fromY={STAGES[1].y} toX={STAGES[2].x} toY={STAGES[2].y} />
-      <StairRiser fromX={STAGES[2].x} fromY={STAGES[2].y} toX={STAGES[3].x} toY={STAGES[3].y} />
-
-      {/* -- Validator populations per stage -- */}
-      {STAGES.map((stage) => (
-        <StagePopulation
-          key={`pop-${stage.label}`}
-          stageX={stage.x}
-          stageY={stage.y}
-          zkCount={stage.zkCount}
-          tradCount={stage.tradCount}
-          zkScale={stage.zkScale}
-          tradScale={stage.tradScale}
-          voting={'voting' in stage ? stage.voting : undefined}
-        />
-      ))}
-
-      {/* -- Stage 3: Consensus arcs between raised-arm figures -- */}
-      <ConsensusArcs stageX={stage3.x} stageY={stage3.y} />
-      <ConsensusParticles stageX={stage3.x} stageY={stage3.y} reducedMotion={reducedMotion} />
-
-      {/* -- Stage 4: Green glow disc -- */}
-      <GlowDisc
-        position={[stage4.x, stage4.y + PLATFORM_HEIGHT / 2 + 0.003, 0]}
-        reducedMotion={reducedMotion}
-      />
-
-      {/* -- ZK proof sparkle particles -- */}
-      <ZKSparkles reducedMotion={reducedMotion} />
-
-      {/* -- Network pulse rings -- */}
-      <NetworkPulseRings reducedMotion={reducedMotion} />
-
-      {/* -- Timeline bar -- */}
-      <TimelineBar reducedMotion={reducedMotion} />
+      {/* Right side: Proof verification */}
+      <RightBlock reducedMotion={reducedMotion} />
+      <ProverBox reducedMotion={reducedMotion} />
+      <ProofToken reducedMotion={reducedMotion} />
+      <RightValidators reducedMotion={reducedMotion} />
+      <BroadcastRing reducedMotion={reducedMotion} />
+      <ProverSparks reducedMotion={reducedMotion} />
+      <RightTimer reducedMotion={reducedMotion} />
+      <RightHardwareLabel />
+      <RightFastLabel />
     </>
   )
 }
 
-/* -- Legend -- */
+/* ------------------------------------------------------------------ */
+/*  Legend                                                              */
+/* ------------------------------------------------------------------ */
 
 function Legend() {
   return (
     <div className="flex items-center gap-5">
       <div className="flex items-center gap-1.5">
-        <div className="w-3 h-2 rounded-sm bg-violet-500 border border-violet-600" />
-        <span className="text-[10px] text-text-muted tracking-wide">ZK validator</span>
+        <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: '#3b82f6' }} />
+        <span className="text-[10px] text-text-muted tracking-wide">Block</span>
       </div>
       <div className="flex items-center gap-1.5">
-        <div className="w-3 h-2 rounded-sm bg-zinc-300 border border-zinc-400" />
-        <span className="text-[10px] text-text-muted tracking-wide">Traditional</span>
+        <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: RED }} />
+        <span className="text-[10px] text-text-muted tracking-wide">Re-execute</span>
       </div>
       <div className="flex items-center gap-1.5">
-        <div className="w-3 h-2 rounded-sm bg-green-500 border border-green-600" />
-        <span className="text-[10px] text-text-muted tracking-wide">Consensus</span>
+        <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: VIOLET }} />
+        <span className="text-[10px] text-text-muted tracking-wide">Prover</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: GREEN }} />
+        <span className="text-[10px] text-text-muted tracking-wide">Verified</span>
       </div>
     </div>
   )
 }
 
-/* -- Exported component -- */
+/* ------------------------------------------------------------------ */
+/*  Exported Component                                                 */
+/* ------------------------------------------------------------------ */
 
 export function ZKEVMPopulation3D() {
   return (
     <SceneContainer
       height="h-[360px] md:h-[420px]"
-      ariaLabel="Four stages of ZK-EVM adoption shown as figure populations on ascending platforms: 5% adoption, 20% adoption, 3-of-5 consensus voting, and 100% formally verified validators"
-      srDescription="A 3D diorama showing ZK-EVM adoption through four ascending platforms. Stage 1 has 1 large purple validator among 9 small grey ones (5% adoption). Stage 2 has 4 large purple among 6 small grey (20%). Stage 3 has 6 purple figures with raised arms connected by green consensus arcs, and 4 grey figures (3-of-5 voting). Stage 4 has all 10 figures in purple with a green glow disc indicating full formal verification."
+      ariaLabel="Side-by-side comparison: re-execution verification where 8 validators process a block one at a time (12 seconds) versus ZK proof verification where a prover compresses the block into a proof that all 8 validators verify instantly (0.5 seconds)"
+      srDescription="A 3D scene split in two. Left side shows a block entering and 8 grey validator cubes lighting up red one at a time sequentially, with a timer counting to 12 seconds. Right side shows the same block entering a violet prover box that compresses it into a small green proof token, which then broadcasts to all 8 validators simultaneously turning them green, with a timer reaching only 0.5 seconds."
       legend={<Legend />}
-      fallbackText="ZK-EVM adoption stages -- from 5% to 100% validator coverage"
+      fallbackText="ZK-EVM verification -- proof verification (0.5s) vs re-execution (12s)"
     >
       {({ reducedMotion }) => (
         <Canvas
           flat
-          camera={{ position: [2, 5, 8], fov: 36 }}
+          camera={{ position: [0, 5, 7], fov: 36 }}
           dpr={[1, 2]}
           gl={{ antialias: true }}
         >
@@ -644,7 +894,7 @@ export function ZKEVMPopulation3D() {
           <Scene reducedMotion={reducedMotion} />
 
           <OrbitControls
-            enableZoom={false}
+            enableZoom minDistance={3} maxDistance={18}
             enablePan={false}
             minPolarAngle={Math.PI / 4}
             maxPolarAngle={Math.PI / 3}

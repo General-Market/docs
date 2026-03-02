@@ -56,6 +56,36 @@ export const FullStackLayers3D = dynamic(
   { ssr: false, loading: () => <Placeholder h="420px" /> }
 )
 
+// Scene 9: Access list conflict detection and lane assignment
+export const AccessListConflict3D = dynamic(
+  () => import('./AccessListConflict3D').then(m => m.AccessListConflict3D),
+  { ssr: false, loading: () => <Placeholder h="420px" /> }
+)
+
+// Scene 10: Slot budget — today vs ePBS time allocation
+export const SlotBudget3D = dynamic(
+  () => import('./SlotBudget3D').then(m => m.SlotBudget3D),
+  { ssr: false, loading: () => <Placeholder h="420px" /> }
+)
+
+// Scene 11: Reed-Solomon erasure coding for PeerDAS
+export const ErasureCoding3D = dynamic(
+  () => import('./ErasureCoding3D').then(m => m.ErasureCoding3D),
+  { ssr: false, loading: () => <Placeholder h="420px" /> }
+)
+
+// Scene 12: Glamsterdam gas reservoir overflow mechanism
+export const GasReservoir3D = dynamic(
+  () => import('./GasReservoir3D').then(m => m.GasReservoir3D),
+  { ssr: false, loading: () => <Placeholder h="420px" /> }
+)
+
+// Scene 13: 3-of-5 independent prover consensus
+export const ProverConsensus3D = dynamic(
+  () => import('./ProverConsensus3D').then(m => m.ProverConsensus3D),
+  { ssr: false, loading: () => <Placeholder h="420px" /> }
+)
+
 // CSS card components (SSR-safe)
 export const ScalingStats = dynamic(
   () => import('./ScalingCards').then(m => m.ScalingStats),

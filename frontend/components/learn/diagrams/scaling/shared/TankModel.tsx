@@ -2,7 +2,7 @@
 
 import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Html, RoundedBox } from '@react-three/drei'
+import { RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 
 /* -- Types -- */
@@ -20,8 +20,6 @@ interface TankModelProps {
   showDrain?: boolean
   drainCount?: number
   growthChevrons?: boolean
-  label?: string
-  labelSub?: string
   scale?: number
   reducedMotion?: boolean
 }
@@ -181,8 +179,6 @@ export function TankModel({
   showDrain = false,
   drainCount = 8,
   growthChevrons = false,
-  label,
-  labelSub,
   scale: scaleVal = 1,
   reducedMotion = false,
 }: TankModelProps) {
@@ -275,27 +271,6 @@ export function TankModel({
         />
       )}
 
-      {/* Label */}
-      {label && (
-        <Html
-          center
-          position={[0, height / 2 + (growthChevrons ? 0.35 : 0.15), 0]}
-          style={{
-            pointerEvents: 'none',
-            userSelect: 'none',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <div className="text-center">
-            <p className="text-[10px] font-bold text-black tracking-tight">
-              {label}
-            </p>
-            {labelSub && (
-              <p className="text-[9px] text-zinc-500 mt-0.5">{labelSub}</p>
-            )}
-          </div>
-        </Html>
-      )}
     </group>
   )
 }

@@ -211,15 +211,6 @@ function BlobContainers({ reducedMotion }: { reducedMotion: boolean }) {
               roughness={0.3}
             />
           </mesh>
-          <Html
-            center
-            position={[0, 0.22, 0]}
-            style={{ pointerEvents: 'none', userSelect: 'none' }}
-          >
-            <p className="text-[9px] font-mono text-black tracking-tight whitespace-nowrap">
-              Blob {i + 1}
-            </p>
-          </Html>
         </group>
       ))}
     </>
@@ -528,6 +519,131 @@ function CoverageDisc() {
   )
 }
 
+/* -- Blob Count Progression Label -- */
+
+function BlobCountLabel({ reducedMotion }: { reducedMotion: boolean }) {
+  const labelRef = useRef<HTMLParagraphElement>(null)
+  const elapsedRef = useRef(0)
+
+  const stages = useMemo(
+    () => [
+      { text: '6 blobs/block', color: '#6366f1' },
+      { text: '64 blobs/block', color: '#22c55e' },
+      { text: '128 blobs/block', color: '#16a34a' },
+    ],
+    []
+  )
+
+  useFrame((_, delta) => {
+    if (!labelRef.current) return
+    if (reducedMotion) {
+      labelRef.current.textContent = stages[2].text
+      labelRef.current.style.color = stages[2].color
+      return
+    }
+    elapsedRef.current += delta
+    const DURATION = 3.0
+    const total = stages.length * DURATION
+    const phase = elapsedRef.current % total
+    const idx = Math.min(Math.floor(phase / DURATION), stages.length - 1)
+    const stage = stages[idx]
+
+    if (labelRef.current.textContent !== stage.text) {
+      labelRef.current.textContent = stage.text
+      labelRef.current.style.color = stage.color
+    }
+  })
+
+  return (
+    <Html
+      center
+      position={[0, 1.8, 0]}
+      style={{ pointerEvents: 'none', userSelect: 'none' }}
+    >
+      <p
+        ref={labelRef}
+        className="text-[14px] font-bold font-mono whitespace-nowrap"
+        style={{ color: '#6366f1' }}
+      >
+        6 blobs/block
+      </p>
+    </Html>
+  )
+}
+
+/* -- Data Packets (flowing cubes from center to blobs) -- */
+
+function DataPackets({ reducedMotion }: { reducedMotion: boolean }) {
+  const PACKET_COUNT = 16
+  const meshRef = useRef<THREE.InstancedMesh>(null!)
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+  const elapsedRef = useRef(0)
+
+  const packetData = useMemo(() => {
+    return Array.from({ length: PACKET_COUNT }, (_, i) => {
+      const targetIdx = i % BLOB_COUNT
+      const [tx, , tz] = BLOB_POSITIONS[targetIdx]
+      const angle = Math.atan2(tz, tx)
+      const phaseOffset = (i / PACKET_COUNT) * 1.0 // stagger start times
+      return { angle, phaseOffset }
+    })
+  }, [])
+
+  const hiddenMatrix = useMemo(() => {
+    const m = new THREE.Matrix4()
+    m.makeScale(0, 0, 0)
+    m.setPosition(0, -100, 0)
+    return m
+  }, [])
+
+  useFrame((_, delta) => {
+    const mesh = meshRef.current
+    if (!mesh) return
+    if (reducedMotion) {
+      for (let i = 0; i < PACKET_COUNT; i++) {
+        mesh.setMatrixAt(i, hiddenMatrix)
+      }
+      mesh.instanceMatrix.needsUpdate = true
+      return
+    }
+
+    elapsedRef.current += delta
+    const t = elapsedRef.current
+
+    const SPEED = 0.15
+    const MAX_DIST = BLOB_RING_RADIUS + 0.2
+
+    for (let i = 0; i < PACKET_COUNT; i++) {
+      const { angle, phaseOffset } = packetData[i]
+      const progress = ((t * SPEED + phaseOffset) % 1.0)
+      const dist = progress * MAX_DIST
+
+      const x = Math.cos(angle) * dist
+      const z = Math.sin(angle) * dist
+      const y = 0.6 + Math.sin(progress * Math.PI) * 0.15 // slight arc
+
+      dummy.position.set(x, y, z)
+      dummy.rotation.set(t * 2 + i, t * 1.5 + i, 0)
+      dummy.scale.setScalar(1)
+      dummy.updateMatrix()
+      mesh.setMatrixAt(i, dummy.matrix)
+    }
+    mesh.instanceMatrix.needsUpdate = true
+  })
+
+  return (
+    <instancedMesh ref={meshRef} args={[undefined, undefined, PACKET_COUNT]}>
+      <boxGeometry args={[0.04, 0.04, 0.04]} />
+      <meshStandardMaterial
+        color={COL_INDIGO}
+        emissive={COL_INDIGO}
+        emissiveIntensity={0.5}
+        roughness={0.3}
+      />
+    </instancedMesh>
+  )
+}
+
 /* -- Coverage Label (reads ref directly via useFrame + DOM manipulation) -- */
 
 function CoverageLabel({
@@ -603,6 +719,8 @@ function Scene({ reducedMotion }: { reducedMotion: boolean }) {
       <CoverageDisc />
       <BlockProducer />
       <BroadcastRings reducedMotion={reducedMotion} />
+      <DataPackets reducedMotion={reducedMotion} />
+      <BlobCountLabel reducedMotion={reducedMotion} />
       <BlobContainers reducedMotion={reducedMotion} />
       <BlobCellGrids highlightedCellsRef={highlightedCellsRef} />
       <Validators />
@@ -671,7 +789,7 @@ export function BlobSampling3D() {
           <Scene reducedMotion={reducedMotion} />
 
           <OrbitControls
-            enableZoom={false}
+            enableZoom minDistance={3} maxDistance={18}
             enablePan={false}
             autoRotate={!reducedMotion}
             autoRotateSpeed={0.4}
