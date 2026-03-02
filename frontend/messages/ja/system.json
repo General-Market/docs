@@ -59,7 +59,12 @@
     "side_buy": "購入",
     "side_sell": "売却",
     "status_confirmed": "✓ 確認済み",
-    "status_pending": "⌛ 保留中"
+    "status_pending": "⌛ 保留中",
+    "pagination": {
+      "prev": "‹ 前へ",
+      "next": "次へ ›",
+      "page_of": "{current} / {total} ページ"
+    }
   },
   "connection": {
     "live": "ライブ",

@@ -59,7 +59,12 @@
     "side_buy": "Buy",
     "side_sell": "Sell",
     "status_confirmed": "\u2713 Confirmed",
-    "status_pending": "\u231b Pending"
+    "status_pending": "\u231b Pending",
+    "pagination": {
+      "prev": "\u2039 Prev",
+      "next": "Next \u203a",
+      "page_of": "Page {current} of {total}"
+    }
   },
   "connection": {
     "live": "Live",

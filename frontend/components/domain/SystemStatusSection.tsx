@@ -12,6 +12,7 @@ import type { DeployedItpRef } from '@/components/domain/ItpListing'
 const NODE_NAMES = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta']
 const VAULT_PAGE_SIZE = 6
 const VAULT_ROTATE_MS = 2000
+const ORDERS_PAGE_SIZE = 10
 
 /** Value that flashes green/red on change */
 function LiveValue({ value, format, className = '' }: { value: number; format: (v: number) => string; className?: string }) {
@@ -176,6 +177,21 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
     }, VAULT_ROTATE_MS)
     return () => clearInterval(timer)
   }, [vaultTotalPages])
+
+  // Orders pagination
+  const [ordersPage, setOrdersPage] = useState(0)
+  const ordersTotalPages = Math.max(1, Math.ceil(sys.recentOrders.length / ORDERS_PAGE_SIZE))
+  const ordersPageItems = useMemo(() => {
+    const start = ordersPage * ORDERS_PAGE_SIZE
+    return sys.recentOrders.slice(start, start + ORDERS_PAGE_SIZE)
+  }, [sys.recentOrders, ordersPage])
+
+  // Reset to page 0 if orders change and current page is out of range
+  useEffect(() => {
+    if (ordersPage >= ordersTotalPages && ordersTotalPages > 0) {
+      setOrdersPage(0)
+    }
+  }, [ordersPage, ordersTotalPages])
 
   const stats = [
     {
@@ -406,7 +422,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
                 <tr><td colSpan={8} className="px-4 py-8 text-center text-[13px] text-text-muted">{t('recent_activity.no_data')}</td></tr>
               )
             )}
-            {sys.recentOrders.map((order) => {
+            {ordersPageItems.map((order) => {
               const amountFormatted = `$${Number(formatUnits(order.amount, 18)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
               return (
                 <tr key={order.orderId.toString()} className="hover:bg-surface">
@@ -440,6 +456,29 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
           </tbody>
         </table>
         </div>
+
+        {/* Pagination controls */}
+        {ordersTotalPages > 1 && (
+          <div className="flex items-center justify-center gap-3 py-3 border-t border-border-light text-[12px]">
+            <button
+              onClick={() => setOrdersPage(p => Math.max(0, p - 1))}
+              disabled={ordersPage === 0}
+              className={`font-semibold px-2 py-1 ${ordersPage === 0 ? 'text-text-muted cursor-default' : 'text-black hover:text-text-secondary'}`}
+            >
+              {t('recent_activity.pagination.prev')}
+            </button>
+            <span className="text-text-secondary font-mono tabular-nums">
+              {t('recent_activity.pagination.page_of', { current: ordersPage + 1, total: ordersTotalPages })}
+            </span>
+            <button
+              onClick={() => setOrdersPage(p => Math.min(ordersTotalPages - 1, p + 1))}
+              disabled={ordersPage >= ordersTotalPages - 1}
+              className={`font-semibold px-2 py-1 ${ordersPage >= ordersTotalPages - 1 ? 'text-text-muted cursor-default' : 'text-black hover:text-text-secondary'}`}
+            >
+              {t('recent_activity.pagination.next')}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
