@@ -8132,7 +8132,7 @@
           "name": "Shiv Shrivastava",
           "role": "Founder",
           "linkedin": "https://www.linkedin.com/in/shivshrivastava/",
-          "age_status": "unknown",
+          "age_status": "estimated_graduation",
           "background": "Listed as founder of Avantis. However, the confirmed founders of Avantis (Base perpetuals DEX) are Harsehaj Singh (CEO, ex-Pantera Capital, UC Berkeley) and Raymond Dong (COO, ex-McKinsey). A Shiv Shrivastava exists in crypto (associated with Boundless/RISC Zero and MoonPay), but no confirmed link to Avantis was found.",
           "sources": [
             "https://www.theblock.co/post/356775/peter-thiel-founders-fund-base-avantis-crypto-funding",
@@ -8141,7 +8141,10 @@
           ],
           "gender": "male",
           "nationality": "Indian (name-based estimate)",
-          "university": "Unknown"
+          "university": "Unknown",
+          "age_value": 36,
+          "age_raw": "~36 (born ~1989)",
+          "age_source": "Note: The Shiv Shrivastava listed for Avantis appears to be Shiv Shankar (also called Shiv Srivastava), CEO of Boundless/RISC Zero, NOT a founder of Avantis. Avantis was founded by Harsehaj Singh (CEO, ex-Pantera, UC Berkeley) and Raymond Dong (COO, ex-McKinsey). Shiv Shankar attended St. James' School India (1994-2007, Indian School Certificate Examinations), then NUS for Computer Engineering (2007-2011). If he started school ~age 5 in 1994, born ~1989. Also studied at KTH Royal Institute, Purdue (MA Economics 2019-2021), UW (MS Computational Finance 2021-2024). Worked at Microsoft, Lyft, Coinbase, Ava Labs. This person may not be connected to Avantis at all."
         },
         {
           "name": "Harsehaj Singh",
@@ -9824,7 +9827,8 @@
             "https://academy.binance.com/en/articles/what-is-the-haedal-protocol-haedal",
             "https://th.linkedin.com/in/cedrick-vajarachitkul-b84848355"
           ],
-          "gender": "male"
+          "gender": "male",
+          "university": "Unknown"
         }
       ],
       "coingecko_id": "haedal",
@@ -21208,15 +21212,17 @@
         {
           "name": "Jonny Martin",
           "role": "Co-Founder & Director",
-          "age_status": "unknown",
-          "age_raw": "unknown",
+          "age_status": "estimated_career",
+          "age_raw": "~32 (born ~1993)",
           "nationality": "British",
           "location": "Essex, England, UK",
           "origin": "United Kingdom",
           "background": "Co-Founder & Director of Football Fun Factory, a children's football coaching franchise business. Previously worked at Cambridge United Football Club. James Cutting created FFF in 2017; Jonny Martin joined 2 years later as co-founder. Note: Football Fun Factory is a traditional youth sports business, NOT a crypto/blockchain project. Football.Fun (crypto) on Base chain is a completely different project.",
           "latest_projects": "Football Fun Factory",
           "gender": "male",
-          "university": "Cambridge United Football Club"
+          "university": "Cambridge United Football Club",
+          "age_value": 32,
+          "age_source": "Co-Founder & Director of Football Fun Factory (children's football coaching franchise, NOT a crypto project). Born May 1993 per web search. Was recruited at age 17 to work at Cambridge United Football Club's Regional Development Centre. James Cutting created FFF in 2017, Jonny Martin joined 2 years later (2019). Based in Essex, England. Note: Football Fun Factory is a traditional business, not related to the crypto token."
         }
       ],
       "coingecko_id": "football-fun",
@@ -21588,15 +21594,16 @@
           "name": "Daan Klinken",
           "role": "Founder & CEO",
           "linkedin": "https://www.linkedin.com/in/daanvanklinken/?originalSubdomain=nl",
-          "age_value": null,
-          "age_status": "unknown",
-          "age_raw": "Rotterdam University of Applied Sciences attended (year unknown). Founded Flow in 2018. No birth year determinable from available sources.",
+          "age_value": 37,
+          "age_status": "estimated_graduation",
+          "age_raw": "~37 (born ~1988)",
           "nationality": "Dutch",
           "location": "Netherlands (Greater Groningen Area)",
           "origin": "Netherlands. Attended Rotterdam University of Applied Sciences.",
           "background": "Founder and CEO of Flow (flowyour.money), a Dutch fintech startup offering 'self-driving money' — automated savings and payment management. Previously Product Lead at Yolt, ING's digital checkbook/open banking product. Co-founded Flow in 2018 with Danny Wilson and Niels Mulder. Flow raised €3.5M seed led by Eleven Ventures. Flow received PSD2 license from Dutch Central Bank. The company was acquired by Dutch accounting firm SnelStart. Note: Flow is a fintech, not crypto-native, though it integrates crypto connections.",
           "gender": "male",
-          "university": "University of Applied Sciences"
+          "university": "University of Applied Sciences",
+          "age_source": "Holland FinTech (July 2020) described him as 'founder Daan van Klinken (32)' — 32 in July 2020 means born ~1987-1988. Using midpoint 1988, age 37 in 2026."
         },
         {
           "name": "Niels Mulder",
@@ -27960,15 +27967,16 @@
           "role": "Co-Founder & COO (Pixelcraft Studios)",
           "linkedin": "https://www.linkedin.com/in/jesse-johnson-54b45039/",
           "source": "https://wiki.aavegotchi.com/en/team",
-          "age_value": null,
-          "age_status": "unknown",
-          "age_raw": "From Chicago. Prior career: head of international development at ZB Group; product/mergers specialist at Lenovo Mobile/Motorola in China. Co-founded Mintable (2018), Bullionix, then Aavegotchi/Pixelcraft Studios (2020). No birth year publicly available; estimated late 30s to early 40s based on career depth.",
+          "age_value": 40,
+          "age_status": "estimated_graduation",
+          "age_raw": "~40 (born ~1986)",
           "nationality": "American",
           "location": "Singapore (Pixelcraft Studios HQ)",
           "origin": "USA (Chicago)",
           "background": "From Chicago. Previously head of international development at ZB Group and Motorola product improvement/mergers specialist in China for Lenovo. Co-founded Mintable (Ethereum's first no-code NFT minting platform, 2018) and Bullionix (first ERC721 NFTs backed by gold collateral). Co-founded Pixelcraft Studios and Aavegotchi (on-chain NFT game, 2020). Goes by alias GldnXross.",
           "gender": "male",
-          "university": "Xiamen University (Master of Chinese Civil and Commercial Law, 2012-2014)"
+          "university": "Xiamen University (Master of Chinese Civil and Commercial Law, 2012-2014)",
+          "age_source": "Eckerd College BA (2004-2008), Xiamen University Master of Chinese Civil and Commercial Law (2012-2014). Assuming he entered Eckerd College at 18 in 2004, born ~1986. Age ~40 in 2026."
         }
       ],
       "coingecko_id": "aavegotchi",
@@ -29279,15 +29287,16 @@
           "name": "Howard Xu",
           "role": "Co-Founder",
           "linkedin": "https://www.linkedin.com/in/howardxu30",
-          "age_value": null,
-          "age_status": "unknown",
-          "age_raw": "BA in Electrical Engineering & Economics from Johns Hopkins University. Previously VC at Insight Partners, TCV, and ZhenFund. No graduation year found specifically. Serial entrepreneur in FinTech and SaaS. No birth year confirmed.",
+          "age_value": 34,
+          "age_status": "estimated_graduation",
+          "age_raw": "~34 (born ~1992)",
           "nationality": "American",
           "location": "New York, NY, USA",
           "origin": "United States (likely Chinese-American background). Johns Hopkins University graduate.",
           "background": "Co-Founder at Ancient8, a blockchain gaming infrastructure DAO founded July 2021, headquartered in Vietnam. Serial entrepreneur with prior companies in FinTech and SaaS. Previously VC investor at Insight Partners, TCV, and ZhenFund; operator at Magic Leap. Began blockchain journey 2017 as VC at ZhenFund. BA Electrical Engineering & Economics from Johns Hopkins University.",
           "gender": "male",
-          "university": "University"
+          "university": "University",
+          "age_source": "BA Electrical Engineering & Economics from Johns Hopkins University. Cofounder/COO of Dearest LLC from Jan 2014 to Jan 2017. If graduated JHU ~2014 at age 22, born ~1992. VC at ZhenFund 2017, Insight Partners 2018-2019, TCV 2019-2021, operator at Magic Leap 2017-2018. Co-founded Ancient8 Jan 2021."
         }
       ],
       "coingecko_id": "ancient8",
@@ -29441,15 +29450,16 @@
           "name": "Won Kim",
           "role": "Chief Commercial Officer",
           "linkedin": "https://www.linkedin.com/in/wonkim/",
-          "age_value": null,
-          "age_status": "unknown",
-          "age_raw": "Career started 2008 per LinkedIn. Worked at Cheil Communications (Samsung Olympics Sponsorship), co-founded Art Genies, founded PiggyTag. Fluent in French, English, Portuguese, Spanish, Korean. No graduation year or birth year confirmed.",
+          "age_value": 40,
+          "age_status": "estimated_career",
+          "age_raw": "~40 (born ~1986)",
           "nationality": "Korean",
           "location": "USA",
           "origin": "Korean (multilingual: Korean, French, English, Portuguese, Spanish). Background in global marketing and partnerships.",
           "background": "Chief Commercial Officer (CCO) of ApeCoin, previously Head of Global Partnerships at Yuga Labs. Experienced in marketing, AI, and blockchain. Formerly Samsung Olympics Global Sponsorship Manager at Cheil Communications. Co-founded Art Genies, founded PiggyTag (digital tagging for collectibles). Fluent in Korean, French, English, Portuguese, and Spanish. Career started 2008.",
           "gender": "male",
-          "university": "Rutgers University"
+          "university": "Rutgers University",
+          "age_source": "Career started 2008 (per LinkedIn). CCO of ApeCoin. Previous roles at ESPN, Digg, South China Morning Post, FiveStone, Yuga Labs. Rutgers University graduate. If started career at 22 in 2008, born ~1986. Fluent in Korean, French, English, Portuguese, Spanish."
         }
       ],
       "coingecko_id": "apecoin",
@@ -40713,15 +40723,16 @@
           "name": "Phillip Jensen",
           "role": "Technical Product Owner",
           "linkedin": "https://www.linkedin.com/in/phillip-jensen-6b3a5924b?miniProfileUrn=urn%3Ali%3Afs_miniProfile%3AACoAAD3p_acBNPRkgum50iCKGv2tqbSVDNY-IYc&lipi=urn%3Ali%3Apage%3Acompanies_company_people_index%3B09058b5f-8800-4a55-a4b7-ff1d5a2c48ab",
-          "age_value": null,
-          "age_status": "unknown",
-          "age_raw": "Education at Slotshaven Gymnasium (Denmark) found. No graduation year or birth year confirmed.",
+          "age_value": 25,
+          "age_status": "confirmed",
+          "age_raw": "~25 (born ~2001)",
           "nationality": "Danish",
           "location": "Region Zealand, Denmark",
           "origin": "Denmark. Educated at Slotshaven Gymnasium. One of Golem's longest-standing community members.",
           "background": "Technical Product Owner at Golem Network, the decentralized computing marketplace. Also Founder of Snitch Bot. Built GolemGrid, a community-created web gateway allowing credit card payments for Golem network tasks. One of Golem's longest-standing community contributors who transitioned to a formal product role.",
           "gender": "male",
-          "university": "Slotshaven Gymnasium (no university degree found)"
+          "university": "Slotshaven Gymnasium (no university degree found)",
+          "age_source": "Golem Network blog (April 2019) introducing GolemGrid quotes Phillip Jensen saying 'I'm currently 18 years old.' 18 in April 2019 means born ~2000-2001. Using 2001 as estimate. Dropped out of high school (Slotshaven Gymnasium). Age ~25 in 2026."
         }
       ],
       "coingecko_id": "golem",
@@ -43201,15 +43212,16 @@
           "name": "William Luedtke",
           "role": "Founder",
           "linkedin": "https://www.linkedin.com/in/william-luedtke-b0a3bb5a",
-          "age_value": null,
-          "age_status": "unknown",
-          "age_raw": "Founder & CEO of Intuition (decentralized identity/web3 protocol, Puerto Rico). BS Industrial and Systems Engineering, University of Southern California (cum laude). 23-year career at EY as Senior Technology Advisor before joining ConsenSys. No graduation year or birth year found.",
+          "age_value": 53,
+          "age_status": "estimated_career",
+          "age_raw": "~53 (born ~1972)",
           "nationality": "American",
           "location": "San Juan, Puerto Rico",
           "origin": "United States. USC graduate. Long career in enterprise technology consulting.",
           "background": "Founder & CEO of Intuition, a decentralized identity and trust protocol on Ethereum (founded Feb 2022). BS in Industrial and Systems Engineering from USC (cum laude). 23-year career at EY establishing their blockchain consulting practice. Senior Token Mechanism Engineer and Developer Relations Lead at ConsenSys. Special Advisor at ConsenSys (Nov 2022+). Intuition raised $4M seed (June 2023) backed by Superscrypt, Shima Capital, and ConsenSys.",
           "gender": "male",
-          "university": "University of Southern California (BS Industrial and Systems Engineering, cum laude)"
+          "university": "University of Southern California (BS Industrial and Systems Engineering, cum laude)",
+          "age_source": "Founder & CEO of Intuition (crypto identity protocol, founded Feb 2022). BS in Industrial and Systems Engineering from USC (cum laude). Had 23-year career at EY creating their blockchain consulting practice. Then 5+ years at ConsenSys. If EY career ended ~2017 and spanned 23 years, he started ~1994, likely graduated USC ~1993-1994. Assuming BS at 22, born ~1971-1972. Estimated birth ~1972."
         }
       ],
       "coingecko_id": "intuition",
@@ -50643,7 +50655,11 @@
           "linkedin": "https://www.linkedin.com/in/anthony-cargill-2852b7bb/",
           "gender": "male",
           "nationality": "Australian",
-          "university": "University of Queensland"
+          "university": "University of Queensland",
+          "age_value": 26,
+          "age_status": "estimated_graduation",
+          "age_raw": "~26 (born ~1999)",
+          "age_source": "Head of Ecosystem at Polyhedra Network. Attended University of Queensland. Selected as Yenching Scholar at Peking University (a masters-level program typically for recent graduates). Yenching Academy is a 1-year interdisciplinary master's at PKU for recent bachelor's graduates. If he completed UQ undergrad ~2021 (age 22), born ~1999. However, this is loosely estimated. Australian based."
         },
         {
           "name": "Matt de Soto",
@@ -50900,7 +50916,11 @@
           "linkedin": "https://www.linkedin.com/in/max-gallen/",
           "gender": "male",
           "nationality": "American",
-          "university": "University of Southern California"
+          "university": "University of Southern California",
+          "age_value": 22,
+          "age_status": "estimated_career",
+          "age_raw": "~22 (born ~2003)",
+          "age_source": "Director / Editor / Tech Advisor at Pudgy Penguins. Film director, cinematographer, VFX artist based in Los Angeles. Currently a student at USC (University of Southern California). His personal website (maxgallen.com) mentioned 'looking forward to college' in mid-2024, suggesting he started USC around Fall 2021-2022. If he started college ~18 in 2021-2022, born ~2003. Note: he is NOT a founder of Pudgy Penguins (that is Luca Netz, born ~1998)."
         },
         {
           "name": "Catherine S Chang",
@@ -54267,7 +54287,11 @@
           "linkedin": "https://www.linkedin.com/in/sarickshah/",
           "gender": "unknown",
           "university": "UCLA; Johns Hopkins University",
-          "nationality": "American"
+          "nationality": "American",
+          "age_value": 36,
+          "age_status": "estimated_career",
+          "age_raw": "~36 (born ~1990)",
+          "age_source": "Public records indicate age 34 in early 2024 (Himalayas profile). Full name Sarick Shah. Decade as ML engineer. Co-founder of Poseidon (incubated by Story); previously Lead AI Engineer at Story. UCLA biochemistry, Johns Hopkins MS."
         },
         {
           "name": "S. Y. (Seung Yoon) Lee",
@@ -61725,14 +61749,16 @@
           "name": "Eowyn Chen",
           "role": "CEO (current)",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
+          "age_value": 34,
+          "age_status": "estimated_from_education",
           "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
           "age_at_ath": null,
-          "university": "Harvard College (History, cum laude)"
+          "university": "Harvard College (History, cum laude)",
+          "age_raw": "~34 (born ~1991)",
+          "age_source": "CEO of Trust Wallet (since Feb 2022). Harvard College graduate (cum laude, History major, Economics minor). LinkedIn suggests 2009-2014 at Harvard. Worked at Oliver Wyman as management consultant Jul 2015 - May 2017. Joined Binance Aug 2018. If Harvard 2009-2013 (4 years), birth ~1991. Grew up in China, moved to US for university."
         }
       ]
     },
@@ -64734,14 +64760,16 @@
           "name": "Bobby Jaros",
           "role": "Co-Founder & COO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
+          "age_value": 45,
+          "age_status": "estimated_from_education",
           "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
           "age_at_ath": null,
-          "university": "Stanford University (BS/MS Electrical Engineering, MBA)"
+          "university": "Stanford University (BS/MS Electrical Engineering, MBA)",
+          "age_raw": "~45 (born ~1980)",
+          "age_source": "Co-founder and COO of Oasis Labs. Stanford BSEE (Terman Scholar), MSEE (Mayfield Fellow), MBA from Stanford GSB (2003-2005), PhD program 2008-2009. Founded Lookflow from Stanford PhD program; acquired by Yahoo in 2013. If MBA started ~2003 at age 23, birth ~1980."
         }
       ]
     },
@@ -65239,14 +65267,16 @@
           "name": "Peter Czaban",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
+          "age_value": 31,
+          "age_status": "estimated_from_education",
           "nationality": "Polish",
           "gender": null,
           "background": null,
           "age_at_launch": null,
           "age_at_ath": null,
-          "university": "University of Oxford (MEng Engineering Science)"
+          "university": "University of Oxford (MEng Engineering Science)",
+          "age_raw": "~31 (born ~1994)",
+          "age_source": "Co-founder and former Executive Director of Web3 Foundation (Dec 2017 - Aug 2020). MEng Engineering Science from University of Oxford (2012-2016), focused on Bayesian Machine Learning under Frank Wood. Currently Founder/Director of PlantingSpace, based in Zug, Switzerland. If MEng started 2012 at age 18, birth ~1994."
         }
       ]
     },
@@ -65405,14 +65435,16 @@
           "name": "Amrit Kumar",
           "role": "Co-Founder & CSO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
+          "age_value": 35,
+          "age_status": "estimated_from_education",
           "nationality": "Indian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
           "age_at_ath": null,
-          "university": "National School of Computer Science and Applied Mathematics of Grenoble (MS Cryptography), Universite Grenoble Alpes (PhD CS)"
+          "university": "National School of Computer Science and Applied Mathematics of Grenoble (MS Cryptography), Universite Grenoble Alpes (PhD CS)",
+          "age_raw": "~35 (born ~1990)",
+          "age_source": "Co-founder, former President and CSO of Zilliqa (co-founded June 2017). MS Cryptography from National School of Computer Science and Applied Mathematics of Grenoble (2013), PhD CS from Universite Grenoble Alpes (2016). Currently COO of Alt Research (AltLayer) and Chair of Binarii Labs. If MS completed ~2013 at age 23, birth ~1990."
         },
         {
           "name": "Prateek Saxena",
@@ -65580,14 +65612,16 @@
           "name": "Will Corkin",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
+          "age_value": 32,
+          "age_status": "estimated_from_education",
           "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
           "age_at_ath": null,
-          "university": "University of Oxford (Said Business School)"
+          "university": "University of Oxford (Said Business School)",
+          "age_raw": "~32 (born ~1993)",
+          "age_source": "Co-founder of MANTRA and COO of SOMA.finance. BSBA in International Business and Chinese Studies from University of Richmond (2011-2015). Also attended Oxford Said Business School. Moved to Hong Kong in 2018 to open crypto exchange/consulting firm. If started undergrad 2011 at age 18, birth ~1993."
         },
         {
           "name": "Rodrigo Quan Miranda",
@@ -66088,13 +66122,16 @@
           "name": "Izaak Meckler",
           "role": "Co-Founder & Former CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 32,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~32 (born ~1993)",
+          "age_source": "Entered University of Chicago in 2011, graduated with BS in Math and CS in 2015. Assuming entered at 18, born ~1993. PhD student at UC Berkeley in cryptography.",
+          "university": "University of Chicago (BS), UC Berkeley (PhD)"
         }
       ]
     },
@@ -66145,25 +66182,31 @@
           "name": "Kevin Wang",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 47,
+          "age_status": "estimated_graduation",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~47 (born ~1978)",
+          "age_source": "BS from Beijing Jiaotong University in 2000, MSE from University of Pennsylvania in 2001. Assuming BS at 22, born ~1978.",
+          "university": "Beijing Jiaotong University (BS), University of Pennsylvania (MSE)"
         },
         {
           "name": "Daniel Lv",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 43,
+          "age_status": "estimated_graduation",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~43 (born ~1982)",
+          "age_source": "Graduated from University of Shanghai for Science and Technology in 2004 with degree in Mechanical Engineering. Assuming BS at 22, born ~1982.",
+          "university": "University of Shanghai for Science and Technology"
         }
       ]
     },
@@ -66199,13 +66242,16 @@
           "name": "MacLane Wilkison",
           "role": "Co-Founder (NuCypher)",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 37,
+          "age_status": "confirmed",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~37 (born ~1988)",
+          "age_source": "UNC Athletics roster: born May 14, 1988 in Charlotte, NC. Graduated Charlotte Latin School 2006, played tennis at UNC. Forbes 30 Under 30 2018 (Enterprise Technology).",
+          "university": "University of North Carolina"
         },
         {
           "name": "Michael Egorov",
@@ -66666,11 +66712,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_found",
-          "nationality": null,
+          "nationality": "Vietnamese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Hanoi University of Science and Technology"
         },
         {
           "name": "Trong Pham Van",
@@ -66678,7 +66725,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_found",
-          "nationality": null,
+          "nationality": "Vietnamese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -66690,7 +66737,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_found",
-          "nationality": null,
+          "nationality": "Vietnamese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -66769,13 +66816,16 @@
           "name": "Brandon Truong",
           "role": "Co-Founder & CPO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 28,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~28 (born ~1997)",
+          "age_source": "Stanford University Symbolic Systems 2016-2019 (BS). Assuming entered Stanford at 19, born ~1997. Co-founded Yada (acquired 2020), now CPO at ZetaChain.",
+          "university": "Stanford University"
         }
       ]
     },
@@ -66796,13 +66846,15 @@
           "name": "Sergey Ivancheglo",
           "role": "Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 46,
+          "age_status": "confirmed",
+          "nationality": "Belarusian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~46 (born ~1979)",
+          "age_source": "Qubican.com states he was born in 1979. Belarusian software engineer, BS in electronics and AI. Created NXT (2013), co-founded IOTA (2015), founded Qubic."
         }
       ]
     },
@@ -66862,13 +66914,16 @@
           "name": "Arthur Brock",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 58,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~58 (born ~1967)",
+          "age_source": "BS in AI and Comparative Religion from Michigan State University 1985-1989. Assuming entered college at 18 in 1985, born ~1967. Career started late 1980s at GM, Chrysler, Hughes Aircraft.",
+          "university": "Michigan State University"
         },
         {
           "name": "Eric Harris-Braun",
@@ -66904,25 +66959,31 @@
           "name": "Leo Fan",
           "role": "Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 37,
+          "age_status": "estimated_graduation",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~37 (born ~1988)",
+          "age_source": "Undergraduate at Sichuan University, masters at National Key Lab of Info Security in Beijing 2010-2014, PhD at Cornell 2014-2019. Assuming masters started at ~22, born ~1988.",
+          "university": "Cornell University (PhD), Sichuan University"
         },
         {
           "name": "Bowen Huang",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 28,
+          "age_status": "estimated_graduation",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~28 (born ~1997)",
+          "age_source": "MS in Computer Science from Yale University 2019-2022. Also has MS from Institute of Computing Technology, Chinese Academy of Sciences. Left Yale PhD program. Assuming entered Yale MS at ~22, born ~1997.",
+          "university": "Yale University, Chinese Academy of Sciences"
         }
       ]
     },
@@ -67119,7 +67180,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_found",
-          "nationality": null,
+          "nationality": "Korean",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -67159,13 +67220,16 @@
           "name": "Jay Zhang",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 46,
+          "age_status": "estimated_graduation",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~46 (born ~1980)",
+          "age_source": "Graduated BS from Shanghai Jiao Tong University in 2002; estimated born ~1980 assuming BS at 22. Everipedia wiki and VeChain Insider.",
+          "university": "Shanghai Jiao Tong University"
         }
       ]
     },
@@ -67186,25 +67250,31 @@
           "name": "Sam Lessin",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 42,
+          "age_status": "confirmed",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~42 (born ~1983)",
+          "age_source": "Multiple sources confirm born 1983 in Englewood, NJ. Harvard class of 2005. MyHeritage, Everipedia, glamourbiz.com.",
+          "university": "Harvard University"
         },
         {
           "name": "Iqram Magdon-Ismail",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 42,
+          "age_status": "confirmed",
+          "nationality": "Zimbabwean-American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~42 (born ~1983)",
+          "age_source": "Born July 22, 1983 in Zimbabwe. Everipedia wiki, Carnegie Corporation awards page. Penn SEAS 2006 graduate.",
+          "university": "University of Pennsylvania"
         }
       ]
     },
@@ -67425,11 +67495,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_found",
-          "nationality": null,
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Cedarville University; UC Berkeley"
         }
       ]
     },
@@ -67462,13 +67533,16 @@
           "name": "Allen Zhang",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 29,
+          "age_status": "estimated_graduation",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~29 (born ~1997)",
+          "age_source": "BS Computer Science from East China Normal University 2015-2019; estimated born ~1997 assuming BS at 22. RootData profile.",
+          "university": "East China Normal University"
         }
       ]
     },
@@ -67504,25 +67578,31 @@
           "name": "Aniket Jindal",
           "role": "Co-Founder & COO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 33,
+          "age_status": "estimated_graduation",
+          "nationality": "Indian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~33 (born ~1993)",
+          "age_source": "BS Electrical Engineering from Punjab Engineering College 2011-2015; estimated born ~1993 assuming BS at 22. Forbes 30 Under 30 Asia honoree. LinkedIn, The Org, Crunchbase.",
+          "university": "Punjab Engineering College"
         },
         {
           "name": "Sachin Tomar",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 36,
+          "age_status": "estimated_graduation",
+          "nationality": "Indian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~36 (born ~1990)",
+          "age_source": "BS Computer Science from Dr. B.R. Ambedkar National Institute of Technology Jalandhar 2008-2012; estimated born ~1990 assuming BS at 22. LinkedIn, Crunchbase, YourStory.",
+          "university": "Dr. B.R. Ambedkar National Institute of Technology Jalandhar"
         }
       ]
     },
@@ -67585,25 +67665,31 @@
           "name": "Travis Moore",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 37,
+          "age_status": "confirmed",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~37 (born ~1989)",
+          "age_source": "Born 1989 in Los Angeles, California. IQ.wiki, RootData, Brainfund profile. Graduated UCLA 2011 in Molecular Biology/Biochemistry/Neuroscience.",
+          "university": "UCLA"
         },
         {
           "name": "Jason Huan",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 27,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~27 (born ~1999)",
+          "age_source": "BS Computer Science from UCLA graduated 2021; estimated born ~1999 assuming BS at 22. Co-founded Blockchain at UCLA in 2017 as undergraduate. LinkedIn, Everipedia, RootData.",
+          "university": "UCLA"
         }
       ]
     },
@@ -67807,13 +67893,16 @@
           "name": "Tridbodi Arunanondchai",
           "role": "Co-Founder & Vice Chairman",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 40,
+          "age_status": "confirmed",
+          "nationality": "Thai",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~40 (born ~1985)",
+          "age_source": "Badoo profile lists age as 40, placing birth year ~1985. Started at HSBC as Investment Banking Associate in 2002, Stanford MBA 2005. Badoo, KR-Asia, Everipedia.",
+          "university": "Chulalongkorn University; Stanford University"
         },
         {
           "name": "Mike Kennedy",
@@ -67821,11 +67910,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_found",
-          "nationality": null,
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Stanford University; Harvard Business School"
         }
       ]
     },
@@ -67885,25 +67975,31 @@
           "name": "Salman Avestimehr",
           "role": "Co-Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 45,
+          "age_status": "estimated_graduation",
+          "nationality": "Iranian-American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~45 (born ~1981)",
+          "age_source": "BS Electrical Engineering from Sharif University of Technology (Iran) in 2003, PhD from UC Berkeley in 2008. Estimated born ~1981 assuming BS at 22. USC Viterbi directory, Wikipedia, personal website.",
+          "university": "Sharif University of Technology; UC Berkeley"
         },
         {
           "name": "Aiden Chaoyang He",
           "role": "Co-Founder & President",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 37,
+          "age_status": "estimated_career",
+          "nationality": "Chinese-American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~37 (born ~1989)",
+          "age_source": "Senior Software Engineer at Baidu 2012-2014 (first job), R&D Manager at Tencent 2014-2018, PhD from USC defended 2022. Estimated born ~1989 assuming started work at ~23. Personal website chaoyanghe.com, LinkedIn.",
+          "university": "University of Southern California (PhD)"
         }
       ]
     },
@@ -68014,13 +68110,16 @@
           "name": "Jeff Yin",
           "role": "Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 34,
+          "age_status": "confirmed",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~34 (born ~1992)",
+          "age_source": "Born 1992. Forbes 30 Under 30 youngest recipient. Attended Nanjing Foreign Languages School, then Bentley Business School (dropped out at 19). RootData, Asia Blockchain Summit, WebX2024.",
+          "university": "Bentley University (dropped out)"
         }
       ]
     },
@@ -68198,13 +68297,15 @@
           "name": "Bart R. Bordallo",
           "role": "Co-Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 45,
+          "age_status": "estimated_career",
+          "nationality": "Spanish",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~45 (born ~1981)",
+          "age_source": "Self-taught since 1995, started career at Fujitsu Spain in 2003. Estimated born ~1981 assuming started sysadmin career at ~22. IQ.wiki, The Org, Crunchbase."
         },
         {
           "name": "David Rodríguez",
@@ -68212,7 +68313,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_found",
-          "nationality": null,
+          "nationality": "Spanish",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -68222,13 +68323,16 @@
           "name": "Abdul Rafay Gadit",
           "role": "Co-Founder & CFO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 38,
+          "age_status": "estimated_graduation",
+          "nationality": "Pakistani",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~38 (born ~1988)",
+          "age_source": "Graduated IBA Karachi with Bachelor's in 2010; estimated born ~1988 assuming BS at 22. Then Standard Chartered Bank 2010-2016. IQ.wiki, Pulse2 interview, The Org.",
+          "university": "Institute of Business Administration (IBA Karachi)"
         }
       ]
     },
@@ -68249,13 +68353,16 @@
           "name": "Tieshun Roquerre",
           "role": "Co-Founder & CEO (Pacman)",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 27,
+          "age_status": "confirmed",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~27 (born ~1999)",
+          "age_source": "Reported as 24 years old in February 2023, placing birth year ~1998-1999. Dropped out of high school at 17 in 2016 for Y Combinator, attended MIT 2016-2018. Decrypt, CoinDesk, The Block.",
+          "university": "MIT (dropped out)"
         }
       ]
     },
@@ -68374,11 +68481,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_found",
-          "nationality": null,
+          "nationality": "British",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "University of Glasgow"
         }
       ]
     },
@@ -68567,25 +68675,31 @@
           "name": "Trevor Koverko",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 38,
+          "age_status": "confirmed",
+          "nationality": "Canadian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~38 (born ~1987)",
+          "age_source": "Born March 22, 1987, in Toronto, Canada. IQ.wiki, trevorkoverko.com, Bloomberg profile. Former NHL draft pick (NY Rangers 2005). HBA from Ivey Business School at Western University 2012.",
+          "university": "Ivey Business School, Western University"
         },
         {
           "name": "Chris Housser",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 38,
+          "age_status": "confirmed",
+          "nationality": "Canadian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~38 (born ~1988)",
+          "age_source": "Born 1988. Radaris, Golden, Bloomberg profile. JD in Law from University of Western Ontario. Co-founder of Polymath/Polymesh.",
+          "university": "University of Western Ontario"
         }
       ]
     },
@@ -68608,7 +68722,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_found",
-          "nationality": null,
+          "nationality": "South Korean",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -68804,13 +68918,16 @@
           "name": "Casey Rodarmor",
           "role": "Creator (Ordinals Protocol)",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 43,
+          "age_status": "confirmed",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~43 (born ~1983)",
+          "age_source": "Born 1983 in California. IQ.wiki, Ordinal Revolution, btcpeers.com. Graduated UC Berkeley with BS Computer Science in December 2009. Former Google engineer. Creator of Bitcoin Ordinals.",
+          "university": "UC Berkeley"
         },
         {
           "name": "Domo",
@@ -68873,11 +68990,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_found",
-          "nationality": null,
+          "nationality": "Canadian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "University of Waterloo"
         }
       ]
     },
@@ -69213,13 +69331,16 @@
           "name": "Tal Kol",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 39,
+          "age_status": "estimated_graduation",
+          "nationality": "Israeli",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~39 (born ~1986)",
+          "age_source": "BSc Computer Engineering from Technion 2005-2008. IDF 8200 service before university (Israel mandatory military). Estimated born ~1986 (age 18 in 2004 for IDF, then Technion 2005).",
+          "university": "Technion - Israel Institute of Technology"
         },
         {
           "name": "Uriel Peled",
@@ -69227,11 +69348,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_found",
-          "nationality": null,
+          "nationality": "Israeli",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Technion - Israel Institute of Technology"
         },
         {
           "name": "Netta Korin",
@@ -69327,13 +69449,16 @@
           "name": "Eugene Y Q Shen",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 28,
+          "age_status": "estimated_graduation",
+          "nationality": "Canadian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~28 (born ~1997)",
+          "age_source": "Started Engineering Physics at UBC in September 2015 (5-year program), likely graduated ~2020. Estimated born ~1997. Passed away May 2025.",
+          "university": "University of British Columbia"
         },
         {
           "name": "Teddy Pornprinya",
@@ -69719,11 +69844,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_found",
-          "nationality": null,
+          "nationality": "Australian",
           "gender": "male",
           "background": "Marketing and growth professional who serves as co-founder and Head of Marketing at TAGGER, a decentralized AI data platform on Cardano; limited public biographical information is available.",
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Unknown"
         }
       ]
     },
@@ -71340,25 +71466,31 @@
           "name": "Shahaf Bar-Geffen",
           "role": "Co-Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 42,
+          "age_status": "estimated_graduation",
+          "nationality": "Israeli",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~42 (born ~1983)",
+          "age_source": "BS in Biotech and Economics from Tel Aviv University 2004-2007. Assuming started BS at ~21 (common in Israel after military service), born ~1983.",
+          "university": "Tel Aviv University"
         },
         {
           "name": "David Assaraf",
           "role": "Co-Founder & COO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 42,
+          "age_status": "estimated_career",
+          "nationality": "Israeli",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~42 (born ~1983)",
+          "age_source": "BA in Business Administration and Accounting from College of Management Academic Studies; MA from Bar Ilan University. Started at KPMG Israel in 2006. Estimated born ~1983.",
+          "university": "College of Management Academic Studies / Bar Ilan University"
         },
         {
           "name": "Samuel Falkon",
@@ -71366,11 +71498,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_found",
-          "nationality": null,
+          "nationality": "Israeli",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Tel Aviv University"
         }
       ]
     },
@@ -71391,25 +71524,31 @@
           "name": "Ahmad Shadid",
           "role": "Founder & former CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
+          "age_value": 28,
+          "age_status": "estimated_career",
           "nationality": null,
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~28 (born ~1997)",
+          "age_source": "Student in Geneva in 2015 (won Gold Medal for BC8 algorithm). Torrens University Australia 2019-2020. Career started as data analyst March 2017. If student in 2015 at ~18, born ~1997.",
+          "university": "Torrens University Australia"
         },
         {
           "name": "Tory Green",
           "role": "Co-Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 50,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~50 (born ~1975)",
+          "age_source": "West Point (Economics and Nuclear Engineering) graduated ~1997. BA Economics from Stanford. Analyst at Merrill Lynch July 2002. If West Point graduation at ~22, born ~1975.",
+          "university": "United States Military Academy at West Point / Stanford University"
         }
       ]
     },
@@ -71459,11 +71598,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_found",
-          "nationality": null,
+          "nationality": "Indian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Jeppiaar SRR Engineering College"
         }
       ]
     },
@@ -71484,25 +71624,31 @@
           "name": "Paul Thomas",
           "role": "Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 37,
+          "age_status": "estimated_graduation",
+          "nationality": "British",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~37 (born ~1988)",
+          "age_source": "MEng Computer Science from Imperial College London 2006-2010. Email contains '1987'. Goldman Sachs from July 2010. If started university at 18 in 2006, born ~1988. Email suggests 1987.",
+          "university": "Imperial College London"
         },
         {
           "name": "Herman Narula",
           "role": "Co-Founder (Improbable)",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 37,
+          "age_status": "confirmed",
+          "nationality": "British Indian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~37 (born ~1988)",
+          "age_source": "Wikipedia: born April 1988 in Delhi, India. Educated at Haberdashers' Aske's Boys' School and Girton College, Cambridge (Computer Science).",
+          "university": "University of Cambridge (Girton College)"
         }
       ]
     },
@@ -71523,25 +71669,31 @@
           "name": "Jack Tan",
           "role": "Co-Founder & Co-CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
+          "age_value": 41,
+          "age_status": "estimated_graduation",
           "nationality": null,
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~41 (born ~1984)",
+          "age_source": "Carnegie Mellon University - Tepper School of Business, graduated 2006. Started trading at age 14. BNP Paribas from June 2006. Assuming BS at 22, born ~1984.",
+          "university": "Carnegie Mellon University"
         },
         {
           "name": "Mark Pimentel",
           "role": "Co-Founder & Co-CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 41,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~41 (born ~1984)",
+          "age_source": "Hunter College High School 1996-2002, Carnegie Mellon BS+MS 2002-2006. Hunter College HS starts at grade 7 (age ~12), so entering 1996 means born ~1984. Citadel HFT from 2006.",
+          "university": "Carnegie Mellon University"
         }
       ]
     },
@@ -71562,13 +71714,16 @@
           "name": "Chloe Xiaoyi Gu",
           "role": "Co-Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 31,
+          "age_status": "estimated_graduation",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~31 (born ~1994)",
+          "age_source": "B.A.Sc. in Applied Math and Cognitive Science from UCLA 2012-2017. If started university at 18, born ~1994.",
+          "university": "UCLA"
         },
         {
           "name": "Victor Yu",
@@ -71580,7 +71735,8 @@
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "UCLA / Johns Hopkins / Harvard Business School"
         }
       ]
     },
@@ -71601,13 +71757,16 @@
           "name": "Jack Dishman",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 27,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~27 (born ~1998)",
+          "age_source": "BS Computer Science from University of Bristol 2017-2020. Intern at SapientRazorfish 2018. If started university at 19 in 2017, born ~1998.",
+          "university": "University of Bristol"
         }
       ]
     },
@@ -71628,25 +71787,31 @@
           "name": "Jarindr Thitadilaka",
           "role": "Co-Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 32,
+          "age_status": "estimated_graduation",
+          "nationality": "Thai",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~32 (born ~1993)",
+          "age_source": "Born circa 1993 per multiple sources. Chulalongkorn University 2012-2016. Was described as 28 years old in 2021 (consistent with ~1993).",
+          "university": "Chulalongkorn University"
         },
         {
           "name": "Gazinpoj Techahuasingh",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 35,
+          "age_status": "estimated_graduation",
+          "nationality": "Thai",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~35 (born ~1990)",
+          "age_source": "BA Entrepreneurial Economics from Kasetsart University 2009-2012, BSc Logistics from University of Portsmouth 2012-2013, MSc from Cranfield 2013-2014. If started first BA at 19, born ~1990.",
+          "university": "Kasetsart University / University of Portsmouth / Cranfield School of Management"
         }
       ]
     },
@@ -71669,23 +71834,27 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_found",
-          "nationality": null,
+          "nationality": "French",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "University of Montreal"
         },
         {
           "name": "Heikki Pirhonen",
           "role": "Co-Founder & CMO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 35,
+          "age_status": "estimated_graduation",
+          "nationality": "Finnish",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~35 (born ~1990)",
+          "age_source": "BBA in Management from Assumption University 2008-2012. If started university at 18, born ~1990.",
+          "university": "Assumption University"
         }
       ]
     },
@@ -71708,7 +71877,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_found",
-          "nationality": null,
+          "nationality": "British",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -71748,25 +71917,31 @@
           "name": "Shumo Chu",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 38,
+          "age_status": "estimated_graduation",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~38 (born ~1987)",
+          "age_source": "BS Software Engineering from Wuhan University 2005-2009, PhD Computer Science from University of Washington ~2013-2019. Assistant Professor at UCSB. If started BS at 18 in 2005, born ~1987.",
+          "university": "Wuhan University / University of Washington"
         },
         {
           "name": "Kenny Li",
           "role": "Co-Founder & COO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
+          "age_value": 37,
+          "age_status": "estimated_graduation",
           "nationality": null,
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~37 (born ~1989)",
+          "age_source": "BS from Boston University in 2011; assume age 22 at graduation => born ~1989",
+          "university": "Boston University (BS 2011), MIT Sloan School of Management (MBA 2020)"
         }
       ]
     },
@@ -71841,25 +72016,31 @@
           "name": "Theodor Forselius",
           "role": "Co-Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 30,
+          "age_status": "confirmed",
+          "nationality": "Swedish",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~30 (born ~1995)",
+          "age_source": "Wikipedia: born 23 March 1995",
+          "university": "High school dropout"
         },
         {
           "name": "Travis Moore",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 37,
+          "age_status": "confirmed",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~37 (born ~1989)",
+          "age_source": "Born 1989 in Los Angeles, California. IQ.wiki, RootData, Brainfund profile. Graduated UCLA 2011 in Molecular Biology/Biochemistry/Neuroscience.",
+          "university": "UCLA"
         }
       ]
     },
@@ -71880,25 +72061,30 @@
           "name": "William Quigley",
           "role": "Co-Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 60,
+          "age_status": "estimated_career",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~60 (born ~1966)",
+          "age_source": "Grew up in Oakland in the 1970s, worked at Disney early 1990s, then Harvard MBA; 25+ years as VC. Estimate born mid-1960s (~1966)",
+          "university": "University of Southern California (BS Accounting), Harvard Business School (MBA)"
         },
         {
           "name": "Jonathan Yantis",
           "role": "Co-Founder & COO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 54,
+          "age_status": "estimated_career",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~54 (born ~1972)",
+          "age_source": "Career started as US Navy electronics engineer, created virtual item trading in 1997, early career timeline suggests born early 1970s (~1972)"
         }
       ]
     },
@@ -71979,13 +72165,16 @@
           "name": "Haiwu He",
           "role": "Co-Founder & Head of APAC",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_found",
-          "nationality": null,
+          "age_value": 48,
+          "age_status": "estimated_graduation",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~48 (born ~1978)",
+          "age_source": "MSc 2002, PhD 2005 from University of Sciences and Technologies of Lille; assume MSc at ~24 => born ~1978",
+          "university": "University of Sciences and Technologies of Lille (MSc 2002, PhD 2005)"
         }
       ]
     },
@@ -72282,7 +72471,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Canadian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -72294,7 +72483,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Canadian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -72364,13 +72553,16 @@
           "name": "Jean Rausis",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 33,
+          "age_status": "confirmed",
+          "nationality": "Swiss",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~33 (born ~1992)",
+          "age_source": "Bilan.ch 2024 article: listed as 32 in mid-2024 under 'entrepreneurs under 40'; age 33 as of 2025 => born ~1992",
+          "university": "Harvard University (professional certificate)"
         },
         {
           "name": "Eric Rabl",
@@ -72466,13 +72658,16 @@
           "name": "Jonathan Smith",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 49,
+          "age_status": "estimated_graduation",
+          "nationality": "South African",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~49 (born ~1977)",
+          "age_source": "BS Electrical Engineering from University of the Witwatersrand 1996-1999; assume age 22 at graduation => born ~1977",
+          "university": "University of the Witwatersrand (BS Electrical Engineering 1996-1999)"
         }
       ]
     },
@@ -72595,13 +72790,16 @@
           "name": "Daniel Keller",
           "role": "Co-Founder & CSO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
+          "age_value": 43,
+          "age_status": "estimated_graduation",
           "nationality": null,
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~43 (born ~1983)",
+          "age_source": "Project Management at Penn State 2005-2007, BS IT from Capella University 2016 (Dean's List), Harvard Leadership Direct 2016-2017; 25+ years IT experience. Penn State 2005 suggests born early 1980s (~1983)",
+          "university": "Penn State University (Project Management 2005-2007), Capella University (BS IT 2016)"
         },
         {
           "name": "Parker Honeyman",
@@ -72609,11 +72807,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "University of Alabama (BS Management Information Systems)"
         },
         {
           "name": "Tadeáš Kmenta",
@@ -72621,11 +72820,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Czech",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Czech Technical University in Prague (Faculty of Nuclear Sciences and Physical Engineering)"
         }
       ]
     },
@@ -72648,7 +72848,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "South Korean",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -72733,25 +72933,31 @@
           "name": "Kevin Liu",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 47,
+          "age_status": "estimated_graduation",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~47 (born ~1979)",
+          "age_source": "BS Management from Tianjin University 1997-2001; assume age 22 at graduation => born ~1979. MBA from University of Chinese Academy of Sciences 2005-2007",
+          "university": "Tianjin University (BS Management 1997-2001), University of Chinese Academy of Sciences (MBA 2005-2007)"
         },
         {
           "name": "Yuan Su",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
+          "age_value": 43,
+          "age_status": "estimated_graduation",
           "nationality": null,
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~43 (born ~1983)",
+          "age_source": "BS Computer Science from Acadia University 2002-2005; assume age 22 at graduation => born ~1983. MBA from University of Toronto 2014-2017",
+          "university": "Acadia University (BS Computer Science 2002-2005), University of Toronto (MBA 2014-2017)"
         }
       ]
     },
@@ -72787,13 +72993,16 @@
           "name": "Glenn Marien",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 36,
+          "age_status": "estimated_graduation",
+          "nationality": "Belgian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~36 (born ~1990)",
+          "age_source": "BS Computer Science from Hogeschool PXL 2009-2012; assume age 22 at graduation => born ~1990",
+          "university": "Hogeschool PXL (BS Computer Science 2009-2012)"
         }
       ]
     },
@@ -72816,11 +73025,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Russian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Russian Presidential Academy of National Economy and Public Administration (RANEPA)"
         },
         {
           "name": "Vladislavs Semjonovs",
@@ -72828,11 +73038,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Latvian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Kutafin Moscow State Law University, Riga Graduate School of Law (LLM)"
         }
       ]
     },
@@ -72870,7 +73081,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Belgian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -72925,13 +73136,16 @@
           "name": "Fernando Martinho",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 50,
+          "age_status": "estimated_graduation",
+          "nationality": "Portuguese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~50 (born ~1976)",
+          "age_source": "BS Automotive Engineering from Kingston University 1995-1998; assume age 22 at graduation (1998) => born ~1976",
+          "university": "Kingston University (BS Automotive Engineering 1995-1998)"
         }
       ]
     },
@@ -72954,7 +73168,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Polish-American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -72985,7 +73199,8 @@
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Harvard University (dropout)"
         },
         {
           "name": "Ken Xu",
@@ -73105,37 +73320,46 @@
           "name": "Augusto Teixeira",
           "role": "Co-Founder & CSO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 42,
+          "age_status": "confirmed",
+          "nationality": "Brazilian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~42 (born ~1983)",
+          "age_source": "IMPA article (Dec 2019) stated he was 36 years old, consistent with 1983 birth year. Physics degree from UFMG in 2004, Masters IMPA 2006, PhD ETH Zurich 2010.",
+          "university": "UFMG (Physics), IMPA (Masters), ETH Zurich (PhD)"
         },
         {
           "name": "Diego Nehab",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 48,
+          "age_status": "estimated_graduation",
+          "nationality": "Brazilian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~48 (born ~1977)",
+          "age_source": "BEng from PUC-Rio in 2000, MSc 2002, PhD Princeton 2007. Born ~1977 based on BEng completion at ~23.",
+          "university": "PUC-Rio (BEng, MSc), Princeton University (PhD)"
         },
         {
           "name": "Colin Steil",
           "role": "Co-Founder & COO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 33,
+          "age_status": "estimated_graduation",
+          "nationality": "Canadian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~33 (born ~1992)",
+          "age_source": "University of Alberta 2014-2015 (Commerce, International Business, Finance). Assuming graduation ~2014-2015 and BS at 22, born ~1992.",
+          "university": "University of Alberta"
         }
       ]
     },
@@ -73171,25 +73395,31 @@
           "name": "Victor Tran",
           "role": "Co-Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 34,
+          "age_status": "estimated_graduation",
+          "nationality": "Vietnamese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~34 (born ~1991)",
+          "age_source": "BS Computer Science from Vietnam National University 2009-2013. Assuming started at 18, born ~1991.",
+          "university": "University of Engineering and Technology, Vietnam National University"
         },
         {
           "name": "Yaron Velner",
           "role": "Co-Founder & former CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 46,
+          "age_status": "estimated_graduation",
+          "nationality": "Israeli",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~46 (born ~1979)",
+          "age_source": "BS Computer Science from Technion 1999-2001 (accelerated 2-year degree). MS Tel Aviv University 2008-2011. PhD Tel Aviv University 2011-2015. Estimated born ~1979 based on Technion start at ~20.",
+          "university": "Technion (BS), Tel Aviv University (MS, PhD)"
         }
       ]
     },
@@ -73240,13 +73470,16 @@
           "name": "Casey Rodarmor",
           "role": "Creator of Ordinals Protocol",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 43,
+          "age_status": "confirmed",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~43 (born ~1983)",
+          "age_source": "Born 1983 in California. IQ.wiki, Ordinal Revolution, btcpeers.com. Graduated UC Berkeley with BS Computer Science in December 2009. Former Google engineer. Creator of Bitcoin Ordinals.",
+          "university": "UC Berkeley"
         }
       ]
     },
@@ -73324,37 +73557,46 @@
           "name": "Ninad Naik",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 37,
+          "age_status": "estimated_graduation",
+          "nationality": "Indian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~37 (born ~1988)",
+          "age_source": "MBA Columbia Business School 2012-2014. Bachelor Mechanical Engineering from University of Michigan. Over 15 years experience. Assuming MBA at ~26, born ~1988.",
+          "university": "University of Michigan (BS), Columbia Business School (MBA)"
         },
         {
           "name": "Sidhartha Doddipalli",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 36,
+          "age_status": "estimated_graduation",
+          "nationality": "Indian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~36 (born ~1989)",
+          "age_source": "B.Tech from IIT Madras (graduated before 2012), MS Columbia 2012-2013. Assuming B.Tech graduation ~2011 at age 22, born ~1989.",
+          "university": "IIT Madras (B.Tech), Columbia University (MS Operations Research)"
         },
         {
           "name": "Karan Sirdesai",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 28,
+          "age_status": "estimated_graduation",
+          "nationality": "Indian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~28 (born ~1997)",
+          "age_source": "Chartered Accountant from ICAI 2016-2020, Bachelor of Commerce from H.R. College of Commerce and Economics. Previously investor at Accel and consultant at BCG. Assuming CA qualification started at ~19, born ~1997.",
+          "university": "H.R. College of Commerce and Economics (B.Com), ICAI (Chartered Accountant)"
         }
       ]
     },
@@ -73405,25 +73647,31 @@
           "name": "Bradley Miles",
           "role": "Co-Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 30,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~30 (born ~1995)",
+          "age_source": "BA Financial Economics from Columbia University, graduated February 2017. Assuming graduation at ~22, born ~1995. Also completed Summer Venture in Management at Harvard Business School.",
+          "university": "Columbia University"
         },
         {
           "name": "Sid Kalla",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 38,
+          "age_status": "estimated_graduation",
+          "nationality": "Indian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~38 (born ~1987)",
+          "age_source": "B.Tech IIT Guwahati 2005-2009, MS Engineering University of Michigan 2009-2010. Assuming started B.Tech at 18, born ~1987. CFA Charterholder.",
+          "university": "IIT Guwahati (B.Tech), University of Michigan (MS Aerospace Engineering)"
         }
       ]
     },
@@ -73444,25 +73692,31 @@
           "name": "Ilja Moisejevs",
           "role": "Co-Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 32,
+          "age_status": "estimated_graduation",
+          "nationality": "Latvian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~32 (born ~1993)",
+          "age_source": "Graduated University of Nottingham 2015 (first class, food sciences). Joined Bank of America Merrill Lynch 2015. Assuming graduation at ~22, born ~1993. Latvian background.",
+          "university": "University of Nottingham"
         },
         {
           "name": "Richard Wu",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 28,
+          "age_status": "estimated_graduation",
+          "nationality": "Canadian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~28 (born ~1997)",
+          "age_source": "University of Waterloo CS and Statistics 2015-2019. LinkedIn handle rwu1997 suggests 1997 birth year. Previously at Two Sigma and Google. Assuming started university at 18, born ~1997.",
+          "university": "University of Waterloo"
         }
       ]
     },
@@ -73483,13 +73737,16 @@
           "name": "Chris Zhu",
           "role": "Co-Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 27,
+          "age_status": "confirmed",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~27 (born ~1998)",
+          "age_source": "Multiple sources state he is 26 years old (as of late 2024), graduated NYU Stern 2020. Born ~1998. Speaks Chinese (native) and English.",
+          "university": "NYU Stern School of Business"
         },
         {
           "name": "Alan Zhu",
@@ -73507,13 +73764,16 @@
           "name": "Jonathan Bakebwa",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 27,
+          "age_status": "estimated_graduation",
+          "nationality": "Ugandan",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~27 (born ~1998)",
+          "age_source": "BS Computer Science from Beijing Institute of Technology 2016-2020. Sources indicate he is about 26 years old (as of 2024). Ugandan, studied in Beijing. Assuming university start at 18, born ~1998.",
+          "university": "Beijing Institute of Technology"
         }
       ]
     },
@@ -73566,11 +73826,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Hong Kong Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "UC San Diego (BA), University of London (MSc)"
         },
         {
           "name": "Ricky Wong",
@@ -73578,11 +73839,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Hong Kong Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "National University of Singapore, Peking University (MBA)"
         }
       ]
     },
@@ -73603,61 +73865,76 @@
           "name": "Andrew Masanto",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 43,
+          "age_status": "confirmed",
+          "nationality": "American (born in Indonesia, raised in Australia)",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~43 (born ~1982)",
+          "age_source": "Wikipedia: born May 17, 1982 in Jakarta, Indonesia. American entrepreneur. Dual degree Commerce and Law from University of Sydney (graduated 2005 with First Class Honors). Co-founder of Nillion and Hedera.",
+          "university": "University of Sydney (Commerce & Law)"
         },
         {
           "name": "Alex Page",
           "role": "Co-Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 41,
+          "age_status": "estimated_career",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~41 (born ~1984)",
+          "age_source": "BBA Finance from SMU Cox School of Business. Joined Morgan Stanley and Fischer & Company 2006-2007, Goldman Sachs 2008. Assuming started career at ~22 (graduated ~2006), born ~1984.",
+          "university": "Southern Methodist University (SMU Cox School of Business)"
         },
         {
           "name": "Miguel de Vega",
           "role": "Co-Founder & Chief Scientist",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 51,
+          "age_status": "estimated_graduation",
+          "nationality": "Spanish",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~51 (born ~1974)",
+          "age_source": "Telecommunications Engineering degree from UPM 1992-1999. PhD in Mathematics from Université Libre de Bruxelles. Over 22 years at Nokia and Siemens. Filed 30+ patents. Assuming started university at 18 in 1992, born ~1974.",
+          "university": "Universidad Politécnica de Madrid (M.Eng), Université Libre de Bruxelles (PhD)"
         },
         {
           "name": "Andrew Yeoh",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 38,
+          "age_status": "estimated_career",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~38 (born ~1987)",
+          "age_source": "BA Economics magna cum laude from UCLA. Investment Banking Analyst at UBS 2010-2011, Rothschild 2011-2013. TruthFinder profile suggests age 38, born July 1987. Assuming career start ~2010 at ~23, consistent with ~1987.",
+          "university": "UCLA"
         },
         {
           "name": "Tristan Litré",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
+          "age_value": 29,
+          "age_status": "estimated_graduation",
           "nationality": null,
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~29 (born ~1996)",
+          "age_source": "BA Computer Science from Northwestern University 2014-2019 (5-year program). Assuming started at 18 in 2014, born ~1996. Director of Crypto at Nillion, previously DeFi Lead at AQRU.",
+          "university": "Northwestern University"
         }
       ]
     },
@@ -73764,7 +74041,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "British",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -73774,13 +74051,16 @@
           "name": "Matt Luczynski",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 30,
+          "age_status": "estimated_graduation",
+          "nationality": "British",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~30 (born ~1995)",
+          "age_source": "Discovered Bitcoin at 17 in 2011 (born ~1994). Founded Travala at age 22 (Travala founded 2017, born ~1995). BA (Hons) from Leeds University Business School 2014-2018. The graduation timeline suggests born ~1996, but the 'discovered bitcoin at 17 in 2011' places birth at ~1994. Using 1995 as midpoint estimate.",
+          "university": "Leeds University Business School"
         }
       ]
     },
@@ -73803,11 +74083,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Korean-American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Cornell University (BS Biological Engineering, MS Biomedical Engineering), American University Washington College of Law (JD)"
         },
         {
           "name": "Kyle Kim",
@@ -73815,11 +74096,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Korean",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Tianjin Nankai University"
         }
       ]
     },
@@ -73893,7 +74175,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -73918,13 +74200,16 @@
           "name": "Derek Yoo",
           "role": "Co-Founder & CEO (PureStake)",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 51,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~51 (born ~1975)",
+          "age_source": "Graduated BA Philosophy from University of Pennsylvania 1993-1997; assuming age 18 at enrollment gives birth year ~1975",
+          "university": "University of Pennsylvania (BA Philosophy, 1997)"
         }
       ]
     },
@@ -74014,25 +74299,29 @@
           "name": "Joselito Lizarondo",
           "role": "Co-Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 37,
+          "age_status": "confirmed",
+          "nationality": "Filipino",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~37 (born ~1988)",
+          "age_source": "Multiple biographical sources (TradersUnion, Everipedia, Golden wiki) state born June 3, 1988 in Manila, Philippines"
         },
         {
           "name": "Nayiem Willems",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 33,
+          "age_status": "confirmed",
+          "nationality": "Dutch",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~33 (born ~1992)",
+          "age_source": "UK company records (Endole) show born October 1992; described as 32 in recent articles (would be 33 in 2026)"
         }
       ]
     },
@@ -74059,7 +74348,8 @@
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Unknown US university (Master's in Computer Science)"
         },
         {
           "name": "0xMurloc",
@@ -74092,25 +74382,31 @@
           "name": "Austin King",
           "role": "Co-Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 29,
+          "age_status": "estimated_career",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~29 (born ~1996)",
+          "age_source": "Forbes 30 Under 30 Finance 2025 list (published Dec 2024, meaning under 30 as of 2024). Harvard CS graduate. Estimated birth ~1995-1996.",
+          "university": "Harvard University (BS Computer Science)"
         },
         {
           "name": "Tyler Tarsi",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 29,
+          "age_status": "estimated_career",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~29 (born ~1996)",
+          "age_source": "Forbes 30 Under 30 Finance 2025 list (published Dec 2024, meaning under 30 as of 2024). Harvard Applied Math graduate. Estimated birth ~1995-1996.",
+          "university": "Harvard University (Applied Mathematics, concentration in CS and Economics)"
         }
       ]
     },
@@ -74146,37 +74442,46 @@
           "name": "Junda Liu",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 41,
+          "age_status": "estimated_graduation",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~41 (born ~1985)",
+          "age_source": "PhD from UC Berkeley 2007-2011. Assuming BS at ~22 and PhD start at same time, born ~1985. Joined Google 2011.",
+          "university": "UC Berkeley (PhD)"
         },
         {
           "name": "Qingkai Liang",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 36,
+          "age_status": "confirmed",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~36 (born ~1990)",
+          "age_source": "MIT LIDS magazine 2018 article states born in 1990 in Anhui province, China",
+          "university": "Shanghai Jiao Tong University (BE), MIT (PhD Machine Learning & Computer Networks, 2013-2018)"
         },
         {
           "name": "Xiaozhou Li",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 40,
+          "age_status": "estimated_graduation",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~40 (born ~1986)",
+          "age_source": "BS Electronic Engineering from Tsinghua University 2008; assuming graduation at 22 gives birth year ~1986. MS UPenn 2010, PhD Princeton.",
+          "university": "Tsinghua University (BS Electronic Engineering, 2008), University of Pennsylvania (MSE Telecom & Networking, 2010), Princeton University (PhD Computer Science)"
         }
       ]
     },
@@ -74197,37 +74502,46 @@
           "name": "James Ferguson",
           "role": "Co-Founder & CEO (Immutable)",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 32,
+          "age_status": "estimated_career",
+          "nationality": "Australian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~32 (born ~1994)",
+          "age_source": "Described as 30 years old in September 2024 article, placing birth ~1994. BCom finished 2013, LLB finished 2016 at University of Sydney. Forbes 30 Under 30 Asia 2019.",
+          "university": "University of Sydney (BCom Finance 2013, LLB 2016)"
         },
         {
           "name": "Robbie Ferguson",
           "role": "Co-Founder & President (Immutable)",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 29,
+          "age_status": "confirmed",
+          "nationality": "Australian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~29 (born ~1997)",
+          "age_source": "Co-founded Immutable in 2018 at age 21. Was 25 on the Rich List in Aug 2022. Was 28 in March 2025. Consistent with birth year 1997.",
+          "university": "University of Sydney (dropped out, CS/Law)"
         },
         {
           "name": "Alex Connolly",
           "role": "Co-Founder (Immutable)",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 27,
+          "age_status": "estimated_career",
+          "nationality": "Australian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~27 (born ~1999)",
+          "age_source": "Listed as 27 on The Org chart (likely circa 2026). Graduated high school with perfect IB score at 17, then dropped out of CS/Law at University of Sydney to co-found Immutable in 2018.",
+          "university": "University of Sydney (dropped out, CS/Law)"
         }
       ]
     },
@@ -74248,37 +74562,46 @@
           "name": "Shawn Wilkinson",
           "role": "Founder & Chief Strategy Officer",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 35,
+          "age_status": "estimated_career",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~35 (born ~1991)",
+          "age_source": "Described as 26-year-old founder in 2017 Atlanta Tech Village article. Morehouse College BS Computer Science 2010-2014.",
+          "university": "Morehouse College (BS Computer Science, 2010-2014)"
         },
         {
           "name": "James Prestwich",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 35,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~35 (born ~1991)",
+          "age_source": "BA Japanese from Brigham Young University 2009-2013. Assuming graduation at 22 gives birth year ~1991. Co-founded Storj in 2014.",
+          "university": "Brigham Young University (BA Japanese, 2009-2013)"
         },
         {
           "name": "John Quinn",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 53,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~53 (born ~1973)",
+          "age_source": "BA Economics and Russian from Wake Forest University 1989-1995. Assuming age ~18 at enrollment in 1989 gives birth ~1971-1973. Previous career at Credit Suisse and Deutsche Bank.",
+          "university": "Wake Forest University (BA Economics & Russian Language, 1989-1995)"
         },
         {
           "name": "Jim Lowry",
@@ -74358,11 +74681,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Dutch",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "University of Twente"
         }
       ]
     },
@@ -74398,13 +74722,16 @@
           "name": "Aleksander Larsen",
           "role": "Co-Founder & COO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 39,
+          "age_status": "estimated_career",
+          "nationality": "Norwegian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~39 (born ~1986)",
+          "age_source": "DN.no (Dagens Naeringsliv) 2019 article titled 'Aleksander (32) ga opp fast jobb i staten' — was 32 in 2019, giving birth year ~1986-1987. LinkedIn handle 'psycheout86' strongly suggests 1986. Graduated BI Norwegian Business School 2011.",
+          "university": "BI Norwegian Business School (Economics & Administration, 2011)"
         },
         {
           "name": "Jeffrey Zirlin",
@@ -74425,13 +74752,16 @@
           "name": "Andy Ho",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 33,
+          "age_status": "estimated_career",
+          "nationality": "Vietnamese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~33 (born ~1993)",
+          "age_source": "IOI 2010 participant from Vietnam (typically age 16-18 in high school). Graduated Nanyang Technological University Singapore, represented Singapore in ACM-ICPC World Final 2015. IOI 2010 at ~17 gives birth ~1992-1993.",
+          "university": "Nanyang Technological University, Singapore"
         },
         {
           "name": "Tu Doan",
@@ -74496,11 +74826,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "UC Berkeley (BS Economics, Magna Cum Laude)"
         }
       ]
     },
@@ -74608,7 +74939,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -74710,11 +75041,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Malaysian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Sunway University"
         }
       ]
     },
@@ -74797,11 +75129,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Canadian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "University of Toronto (dropped out)"
         },
         {
           "name": "Gaarp",
@@ -74924,25 +75257,30 @@
           "name": "Jeremy Bruestle",
           "role": "Co-Founder (RISC Zero)",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 47,
+          "age_status": "estimated_career",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~47 (born ~1978)",
+          "age_source": "Started career in 2000 per LinkedIn. Started programming at age 6. CTO of Spiral Genetics 2010-2017, co-founded Vertex.AI in 2015, Principal Engineer at Intel. CEO of RISC Zero since Jan 2022. If started career at ~22 in 2000, born ~1978. Over two decades experience in cryptography and distributed computing."
         },
         {
           "name": "Shiv Shankar",
           "role": "CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 36,
+          "age_status": "estimated_graduation",
+          "nationality": "Indian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~36 (born ~1989)",
+          "age_source": "Attended St. James' School in India (1994-2007, Indian School Certificate), then NUS Singapore for Computer Engineering (2007-2011). If he started school at age 5 in 1994, born ~1989. Also studied at KTH Royal Institute of Technology, Purdue University (MS Economics 2019-2021), University of Washington (MS Computational Finance 2021-2024). Previously at Microsoft, Lyft, Coinbase, Avalanche. CEO of Boundless since June 2025.",
+          "university": "National University of Singapore"
         }
       ]
     },
@@ -75018,25 +75356,31 @@
           "name": "Ran Yi",
           "role": "Co-Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 41,
+          "age_status": "estimated_graduation",
+          "nationality": "Chinese-American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~41 (born ~1984)",
+          "age_source": "Attended Stuyvesant High School in NYC starting 1998, graduated ~2002. BS in Business Administration from Carnegie Mellon Tepper School 2002-2006. If he started high school at 14 in 1998, born ~1984. MBA from CEIBS 2012-2014. Analyst at Freddie Mac 2006-2008, Portfolio Management at Strategic Investment Group 2008-2012, co-founded QuattroQuant 2015, co-founded Orderly Network 2022. 20+ years in finance.",
+          "university": "Carnegie Mellon University (Tepper School of Business)"
         },
         {
           "name": "Terence Ng",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 42,
+          "age_status": "estimated_graduation",
+          "nationality": "Hong Kongese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~42 (born ~1983)",
+          "age_source": "Bachelor in Computer Engineering from Hong Kong University of Science and Technology (HKUST) 2001-2005. If graduated at 22 in 2005, born ~1983. Co-founder of Orderly Network and Core Contributor at WOO Network.",
+          "university": "Hong Kong University of Science and Technology (HKUST)"
         }
       ]
     },
@@ -75057,13 +75401,16 @@
           "name": "Siddhartha Dutta",
           "role": "Co-Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 31,
+          "age_status": "estimated_graduation",
+          "nationality": "Indian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~31 (born ~1994)",
+          "age_source": "BTech in Computer Science from IIT Bombay (2012-2016). If graduated at 22 in 2016, born ~1994. Started as researcher at Adobe in 2015, then Inria (France), then Microsoft Cloud and Enterprise Group until 2017. Core developer at Zilliqa 2017-2018. Co-founded Marlin Protocol in 2018 with Prateesh Goyal and Roshan Raghupathy.",
+          "university": "Indian Institute of Technology Bombay (IIT Bombay)"
         },
         {
           "name": "Roshan Raghupathy",
@@ -75086,11 +75433,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Indian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "IIT Bombay; MIT (PhD)"
         },
         {
           "name": "Amol Agrawal",
@@ -75098,11 +75446,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Indian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Indian Institute of Technology Bombay (IIT Bombay)"
         }
       ]
     },
@@ -75153,7 +75502,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -75165,7 +75514,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -75205,13 +75554,16 @@
           "name": "Hongzi Mao",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 32,
+          "age_status": "estimated_graduation",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~32 (born ~1993)",
+          "age_source": "BS from HKUST in Mathematics and Computer Science (major), Physics (minor), 2011-2015. PhD from MIT in Electrical Engineering and Computer Science 2015-2020 (supervisor: Prof. Mohammad Alizadeh at CSAIL). If graduated BS at 22 in 2015, born ~1993. Internships at DeepMind and Facebook. Co-founded Hologram Labs (Holoworld AI) in 2022 as CTO. Papers cited 4000+ times.",
+          "university": "HKUST (BS); MIT (PhD)"
         }
       ]
     },
@@ -75234,7 +75586,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -75246,7 +75598,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -75288,23 +75640,27 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Academy of Art University"
         },
         {
           "name": "Soban Saqib",
           "role": "Co-Founder (Ex Populus)",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 29,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~29 (born ~1996)",
+          "age_source": "Attended University of California, Santa Cruz from 2014 to 2018 (dropped out). If started university at 18 in 2014, born ~1996. Co-founded Ex Populus in 2021 with Tobias Batton and Mark C. Harris. Background as futurist and digital asset veteran.",
+          "university": "University of California, Santa Cruz (dropped out)"
         }
       ]
     },
@@ -75397,13 +75753,16 @@
           "name": "Chris Kang",
           "role": "Co-Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 32,
+          "age_status": "estimated_graduation",
+          "nationality": "South Korean",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~32 (born ~1993)",
+          "age_source": "Bachelor's from Boston University in Film (major) and Business Management (minor), 2010-2015. If he was 22 at graduation in 2015, but it was a 5-year program (2010-2015), so if started at 17-18, born ~1992-1993. From South Korea. Worked as analyst in movie distribution at CJ E&M, then joined Pandora blockchain team. Co-founded MovieBloc in 2019. Currently CSO at Coinlive Inc.",
+          "university": "Boston University"
         },
         {
           "name": "Jeffrey Jin",
@@ -75411,11 +75770,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "South Korean",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "University of Washington"
         },
         {
           "name": "Peter Kim",
@@ -75423,7 +75783,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "South Korean",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -75637,13 +75997,15 @@
           "name": "Cheongyong Kim",
           "role": "CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 49,
+          "age_status": "estimated_career",
+          "nationality": "South Korean",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~49 (born ~1976)",
+          "age_source": "CEO of Baby Shark Universe (since Aug 2022). Based in Seoul, South Korea. LinkedIn handle 'cheongyong76' suggests born 1976. Career history includes managing Kart Rider and related game properties 2003-2013, game development and business operations 2016-2020. Singapore-based BSUNIVERSE company."
         }
       ]
     },
@@ -75694,13 +76056,16 @@
           "name": "Sander Pick",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 40,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~40 (born ~1985)",
+          "age_source": "BS in Mechanical Engineering from University of Colorado Boulder in 2007. Attended St. Paul's School 1998-2001 (if age 13-16 at prep school, born ~1985). Career started 2003 as Machinist at Steen Machining. Student Scientist at NCAR 2006. Mechanical Engineer at Lighthouse Solar 2007-2010. Lead Software Engineer. Senior Software Engineer at Apple (Special Projects Group) 2015-2017. Co-founded Textile (now Recall Labs) in 2017 with Andrew Hill.",
+          "university": "University of Colorado Boulder"
         }
       ]
     },
@@ -75761,13 +76126,16 @@
           "name": "Bob Baxley",
           "role": "CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 46,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~46 (born ~1980)",
+          "age_source": "PhD from Georgia Tech in 2008 (typically ~6 years after BS at 22, so BS ~2002, born ~1980). Also BS/MS/PhD all from Georgia Tech",
+          "university": "Georgia Institute of Technology (BS, MS, PhD in Electrical Engineering)"
         }
       ]
     },
@@ -75943,11 +76311,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Polish",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Military University of Technology (Warsaw)"
         }
       ]
     },
@@ -75983,13 +76352,15 @@
           "name": "Gary Bracey",
           "role": "Co-Founder & Chairman",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 63,
+          "age_status": "estimated_career",
+          "nationality": "British",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~63 (born ~1963)",
+          "age_source": "Started Blue Chip game shop in Liverpool in 1983 (likely ~20 years old), joined Ocean Software 1985. Career spans 35+ years in gaming. BAFTA-nominated game industry veteran."
         }
       ]
     },
@@ -76100,26 +76471,30 @@
           "name": "Pavel Altukhov",
           "role": "Co-Founder",
           "linkedin": "linkedin.com/in/pavel-altukhov-1891a659",
-          "age_value": null,
-          "age_status": "not_researched",
+          "age_value": 48,
+          "age_status": "estimated_career",
           "nationality": "Russian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
           "age_at_ath": null,
-          "university": "Stanford University (Graduate School of Education)"
+          "university": "Stanford University (Graduate School of Education)",
+          "age_raw": "~48 (born ~1978)",
+          "age_source": "Has 20+ years experience in asset management and trading, plus 10 years founding experience. In crypto since 2016. Managed VLG Capital fund. Founded bemo (TON liquid staking) in 2023, then co-founded TAC. Attended Stanford Graduate School of Education. 20+ years from ~2004 suggests career start ~early 2000s, estimating birth ~1978."
         },
         {
           "name": "Marco Monaco",
           "role": "Co-Founder & Growth Lead",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 43,
+          "age_status": "estimated_career",
+          "nationality": "Italian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~43 (born ~1983)",
+          "age_source": "Twitter handle is @marcomonaco83, strongly suggesting born in 1983. Italian, founded blockchain advisory acquired by PwC Italy."
         }
       ]
     },
@@ -76183,13 +76558,16 @@
           "name": "Bruno Campos",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 46,
+          "age_status": "estimated_career",
+          "nationality": "Brazilian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~46 (born ~1980)",
+          "age_source": "27 years of software development experience (as of ~2026), started programming at 15 in the 1990s. MBA from FGV 2010-2012. Brazilian, from Sao Paulo.",
+          "university": "Fundacao Getulio Vargas (MBA in Project Management, 2010-2012)"
         }
       ]
     },
@@ -76227,11 +76605,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Israeli",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Tel Aviv University (Mathematics and Philosophy)"
         },
         {
           "name": "Yehonatan Cohen Scaly",
@@ -76239,11 +76618,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Israeli",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Bar-Ilan University"
         }
       ]
     },
@@ -76296,11 +76676,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Wuhan University of Technology (BS), Tongji University (MS)"
         }
       ]
     },
@@ -76321,27 +76702,31 @@
           "name": "Paul Zehetmayr",
           "role": "Co-Founder & Co-CEO",
           "linkedin": "linkedin.com/in/paulzehetmayr",
-          "age_value": null,
-          "age_status": "not_researched",
+          "age_value": 31,
+          "age_status": "estimated_career",
           "nationality": "Austrian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
           "age_at_ath": null,
-          "university": "WU Vienna University of Economics and Business (Business Law)"
+          "university": "WU Vienna University of Economics and Business (Business Law)",
+          "age_raw": "~31 (born ~1995)",
+          "age_source": "Younger brother of Julian Zehetmayr (born ~1993). Serial founder: co-founded apilayer in 2015, Invoicely in 2012, ZeroSSL, eversign. Co-founded LimeWire relaunch in 2021. Degree in Business Law from WU Vienna. As younger brother of someone born ~1993, estimated ~1995."
         },
         {
           "name": "Julian Zehetmayr",
           "role": "Co-Founder & Co-CEO",
           "linkedin": "linkedin.com/in/julianzehetmayr",
-          "age_value": null,
-          "age_status": "not_researched",
+          "age_value": 33,
+          "age_status": "confirmed",
           "nationality": "Austrian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
           "age_at_ath": null,
-          "university": "WU Vienna University of Economics and Business (Business Law)"
+          "university": "WU Vienna University of Economics and Business (Business Law)",
+          "age_raw": "~33 (born ~1993)",
+          "age_source": "Founded MobFox in 2010 as a 17-year-old high school dropout (TechCrunch, April 2011). Was 22 in May 2015 (Futurezone.at). Sold MobFox to Matomy Media Group for EUR17.6M in Oct 2014 at age 22. Birth year 1992-1993; launched MobFox at 17 in 2010, so born ~1993."
         }
       ]
     },
@@ -76413,37 +76798,45 @@
           "name": "Steven Waterhouse",
           "role": "CEO & Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 55,
+          "age_status": "estimated_graduation",
+          "nationality": "British",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~55 (born ~1971)",
+          "age_source": "BSc Engineering from Cambridge 1989-1992 (started at ~18, born ~1971). PhD Cambridge 1993-1997. Isaac Newton Prize winner.",
+          "university": "University of Cambridge (BSc Engineering, MPhil Speech Recognition, PhD Engineering)"
         },
         {
           "name": "Jay Freeman",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 44,
+          "age_status": "confirmed",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~44 (born ~1981)",
+          "age_source": "Wikipedia: born November 27, 1981. Creator of Cydia (saurik). CS degree from UC Santa Barbara College of Creative Studies.",
+          "university": "University of California, Santa Barbara (Computer Science)"
         },
         {
           "name": "Brian J. Fox",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 66,
+          "age_status": "confirmed",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~66 (born ~1959)",
+          "age_source": "Wikipedia: born December 11, 1959. Creator of GNU Bash shell. Co-founder of Orchid Labs."
         },
         {
           "name": "Gustav Simonsson",
@@ -76451,7 +76844,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Swedish",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -76463,11 +76856,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Georgia Institute of Technology (B.Chem)"
         }
       ]
     },
@@ -76515,25 +76909,31 @@
           "name": "Feng Xiao",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 65,
+          "age_status": "estimated_graduation",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~65 (born ~1961)",
+          "age_source": "Undergraduate from Jiangxi Normal University in 1983 (assume graduated at 22, born ~1961). PhD Economics from Nankai University 1997-2003. Vice Chairman of Wanxiang Holdings, founded Bosera Fund ~1998, Fenbushi Capital 2015, PlatON 2018.",
+          "university": "Jiangxi Normal University (BS), Nankai University (PhD Economics)"
         },
         {
           "name": "Lilin Sun",
           "role": "Co-Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 46,
+          "age_status": "estimated_graduation",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~46 (born ~1980)",
+          "age_source": "Master's in Photogrammetry and Remote Sensing from Wuhan University 2002-2005, BS from Beijing University of Aeronautics and Astronautics (Beihang). Assuming BS completed ~2002 at age 22, born ~1980.",
+          "university": "Beihang University (BS), Wuhan University (MS Photogrammetry & Remote Sensing, 2002-2005)"
         }
       ]
     },
@@ -76601,7 +77001,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "South Korean",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -76626,37 +77026,46 @@
           "name": "Chandra Duggirala",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 48,
+          "age_status": "estimated_graduation",
+          "nationality": "Indian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~48 (born ~1978)",
+          "age_source": "MBBS from Rangaraya Medical College, India, graduated 2001. MBBS is typically a 5.5 year program entered at ~17-18, so born ~1978. PhD in Biology/Biophysics from Northern Illinois University. Residency at Drexel University College of Medicine.",
+          "university": "Rangaraya Medical College (MBBS), Northern Illinois University (PhD Biophysics), Drexel University (Residency)"
         },
         {
           "name": "Manoj Duggirala",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 42,
+          "age_status": "estimated_graduation",
+          "nationality": "Indian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~42 (born ~1984)",
+          "age_source": "B.Tech Materials Engineering from NIT Warangal (~2002-2006), MS Materials Science from Stanford 2006-2008. Assuming BS started at 18, born ~1984.",
+          "university": "NIT Warangal (B.Tech Materials Engineering), Stanford University (MS Materials Science & Engineering, 2006-2008)"
         },
         {
           "name": "George Burke",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 44,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~44 (born ~1982)",
+          "age_source": "Graduated from New Jersey Institute of Technology (NJIT) in May 2004. Assuming graduated at ~22, born ~1982.",
+          "university": "New Jersey Institute of Technology (NJIT)"
         },
         {
           "name": "Eric Martindale",
@@ -76664,7 +77073,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -76689,13 +77098,16 @@
           "name": "Anna Norrevik",
           "role": "CEO (Antler Interactive)",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 38,
+          "age_status": "estimated_graduation",
+          "nationality": "Swedish",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~38 (born ~1988)",
+          "age_source": "BSc Business and Economics from Stockholm School of Economics 2010-2013. Assuming started at ~22, born ~1988. Previously at Paradox Interactive (Crusader Kings 3), now Development Director at DICE (EA).",
+          "university": "Stockholm School of Economics (BSc Business and Economics, 2010-2013)"
         }
       ]
     },
@@ -76729,13 +77141,16 @@
           "name": "Derek Anderson",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 45,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~45 (born ~1981)",
+          "age_source": "Attended Sanford-Brown College 2001-2002. In 2014 joined LG Electronics and eBay. Programmer since childhood. Co-founded Bless in 2022. Assuming college at ~20, born ~1981.",
+          "university": "Sanford-Brown College (2001-2002)"
         },
         {
           "name": "Michael Chen",
@@ -76760,7 +77175,8 @@
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "NYU (researcher)"
         }
       ]
     },
@@ -76883,13 +77299,16 @@
           "name": "Chris Feng",
           "role": "Co-Founder & COO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 31,
+          "age_status": "estimated_graduation",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~31 (born ~1994)",
+          "age_source": "Ohio State University Fisher College of Business, Finance major; Bain consultant since 2016 suggests ~2016 graduation (BS at 22 -> born ~1994)",
+          "university": "Ohio State University (Fisher College of Business)"
         }
       ]
     },
@@ -76940,14 +77359,16 @@
           "name": "Avril Dutheil",
           "role": "Co-Founder & CEO",
           "linkedin": "linkedin.com/in/avril-dutheil-a68944249",
-          "age_value": null,
-          "age_status": "not_researched",
+          "age_value": 30,
+          "age_status": "estimated_career",
           "nationality": "French",
           "gender": null,
           "background": null,
           "age_at_launch": null,
           "age_at_ath": null,
-          "university": "University of Birmingham"
+          "university": "University of Birmingham",
+          "age_raw": "~30 (born ~1996)",
+          "age_source": "Bought Bitcoin in high school cafeteria around the Snowden revelations (2013). If ~17 in 2013, born ~1996. Graduated University of Birmingham. Worked at P2P Validator and Lido Finance (2022). CEO of Neutron/Hadron Labs. French nationality."
         },
         {
           "name": "Konstantin Lomashuk",
@@ -77087,7 +77508,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Korean",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -77099,7 +77520,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Korean",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -77139,13 +77560,16 @@
           "name": "Charles Z Qin",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 27,
+          "age_status": "estimated_graduation",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~27 (born ~1998)",
+          "age_source": "Real name Zengyi Qin. Tsinghua University BE Electronic Engineering 2016-2020, MIT PhD 2020-2025. Started BS at 18 -> born ~1998. Source: qinzy.tech personal website.",
+          "university": "Tsinghua University (BE); MIT (PhD)"
         }
       ]
     },
@@ -77172,7 +77596,8 @@
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Cambridge University (dropped out, master's in business)"
         }
       ]
     },
@@ -77254,7 +77679,8 @@
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Stanford University (MS CS, BA Philosophy & CS)"
         }
       ]
     },
@@ -77329,13 +77755,16 @@
           "name": "Danny An",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
+          "age_value": 33,
+          "age_status": "estimated_career",
           "nationality": null,
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~33 (born ~1992)",
+          "age_source": "Also known as Jai An. Co-founder & CEO of TrustToken (TrueFi). LinkedIn handle djan92 suggests born 1992. Team from Stanford, UC Berkeley, Palantir, Google. TrustToken founded 2017. Source: LinkedIn URL pattern, Crunchbase.",
+          "university": "Stanford University (inferred from Stanford-StartX backing and team description)"
         },
         {
           "name": "Stephen Kade",
@@ -77371,11 +77800,12 @@
           "linkedin": "linkedin.com/in/jamie-thomson-22908b26",
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "British",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "University of Sussex (Master's in Education and AI)"
         }
       ]
     },
@@ -77426,7 +77856,8 @@
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Duke University"
         }
       ]
     },
@@ -77513,37 +77944,46 @@
           "name": "Nirav Murthy",
           "role": "Co-Founder & Co-CEO",
           "linkedin": "linkedin.com/in/niravmurthy",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 29,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~29 (born ~1996)",
+          "age_source": "UC Berkeley Haas BS 2016-2018 (dual degree). Started at Raine Group July 2018 right after graduation. Assuming BS at ~22 with 2018 graduation gives birth year ~1996.",
+          "university": "University of California, Berkeley (Haas School of Business, BS Business Administration + BA Economics)"
         },
         {
           "name": "James Chi",
           "role": "Co-Founder",
           "linkedin": "linkedin.com/in/jameschi94",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 32,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~32 (born ~1993)",
+          "age_source": "UC Berkeley Haas 2011-2014 (BS Business Administration). LinkedIn handle 'jameschi94' may suggest 1994 but college entry at 18 in 2011 suggests ~1993. ZoomInfo lists birthday May 1, 1994. Using 1993 as conservative estimate from graduation.",
+          "university": "University of California, Berkeley (Haas School of Business, BS Business Administration)"
         },
         {
           "name": "Rahul Doraiswami",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 26,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~26 (born ~1999)",
+          "age_source": "UC Berkeley BA in Cellular and Molecular Biology with CS minor. Worked at CoinList (product lead) March-Nov 2022, Camp Network CTO from Sept 2023. Graduation likely ~2021 (BS at 22 -> born ~1999). Source: RootData, The Org, ZoomInfo.",
+          "university": "UC Berkeley"
         }
       ]
     },
@@ -77591,13 +78031,16 @@
           "name": "Ben Rubin",
           "role": "Co-Founder & CEO",
           "linkedin": "linkedin.com/in/rubinben",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 37,
+          "age_status": "estimated_graduation",
+          "nationality": "Israeli",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~37 (born ~1988)",
+          "age_source": "MIT Technology Review Innovators Under 35 in 2015 listed him as age 27, giving birth year ~1988. Attended Technion 2009-2014 (B.Arch) after Israeli army service. Israeli, went to army at 18.",
+          "university": "Technion - Israel Institute of Technology (B.Arch, Architecture)"
         },
         {
           "name": "Brian Meek",
@@ -77605,11 +78048,12 @@
           "linkedin": "linkedin.com/in/brian-meek-b0ba1b",
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "University of Kansas (Biology)"
         }
       ]
     },
@@ -77660,13 +78104,16 @@
           "name": "Sameep Singhania",
           "role": "Co-Founder",
           "linkedin": "linkedin.com/in/sameepsi",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 34,
+          "age_status": "confirmed",
+          "nationality": "Indian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~34 (born ~1991)",
+          "age_source": "MoneyInc article (Jan 2022) states he was 31 years old, giving birth year ~1990-1991. Attended Birla Vidya Mandir 1999-2008, JSS Academy graduated 2013. Birth year ~1991 consistent with starting school in 1999 at age 8.",
+          "university": "JSS Academy of Technical Education, Noida (B.Tech, Computer Science)"
         },
         {
           "name": "Nick Mudge",
@@ -77674,7 +78121,7 @@
           "linkedin": "linkedin.com/in/mudge",
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -77726,13 +78173,15 @@
           "name": "Kye Gomez",
           "role": "Founder & CEO",
           "linkedin": "linkedin.com/in/kye-g-38759a207",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 21,
+          "age_status": "confirmed",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~21 (born ~2004)",
+          "age_source": "Refresh Miami article (Aug 24, 2022) identified him as 18 years old, giving birth year ~2003-2004. His X bio says 22 years old (as of early 2026), personal website says 21. Born in Miami, high school dropout (expelled from 3 high schools)."
         }
       ]
     },
@@ -77783,13 +78232,16 @@
           "name": "Alvin Sun",
           "role": "Co-Founder & Chief Scientific Officer",
           "linkedin": "linkedin.com/in/xinyao-alvin-sun",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 33,
+          "age_status": "estimated_graduation",
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~33 (born ~1992)",
+          "age_source": "BSc in Computing Science from University of Alberta 2010-2015, MSc 2015-2017, PhD 2017-2022. Starting BSc at 18 in 2010 gives birth year ~1992. Co-founder and CSO of Matrix Labs (World3). Adjunct Professor at U of Alberta.",
+          "university": "University of Alberta (BSc, MSc, PhD in Computing Science)"
         }
       ]
     },
@@ -77812,11 +78264,12 @@
           "linkedin": "linkedin.com/in/hanwen-cheng",
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "University of Stuttgart (MSc, Information Technology)"
         }
       ]
     },
@@ -77839,11 +78292,12 @@
           "linkedin": "linkedin.com/in/daniel-dizon",
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Australian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Swinburne University of Technology (Bachelor's, Information Systems)"
         },
         {
           "name": "Lecky Lao",
@@ -77851,11 +78305,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Australian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "University of Technology Sydney (PhD); CQUniversity (Master's); Macquarie University (Bachelor's)"
         }
       ]
     },
@@ -77878,7 +78333,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Canadian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -77942,13 +78397,16 @@
           "name": "Jeremy Ng",
           "role": "Co-Founder & CEO",
           "linkedin": "linkedin.com/in/jeremy-ng-openeden",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 47,
+          "age_status": "estimated_career",
+          "nationality": "Singaporean",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~47 (born ~1978)",
+          "age_source": "Goldman Sachs intern in Equities Division 1999-2000. Typical intern age 21-22, placing birth year around 1977-1978. NYU Stern graduate. Subsequent career: GS analyst 2000-2003, then Deutsche Bank, Leonteq, Gemini MD APAC. Singapore-based.",
+          "university": "New York University, Stern School of Business"
         },
         {
           "name": "Eugene Ng",
@@ -77956,11 +78414,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Singaporean",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "NYU Stern (MSc Global Finance); Singapore Management University (BBM)"
         }
       ]
     },
@@ -77981,25 +78440,31 @@
           "name": "Michael A. Hanono",
           "role": "Founder & CEO",
           "linkedin": "linkedin.com/in/michael-hanono",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 25,
+          "age_status": "estimated_graduation",
+          "nationality": "Panamanian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~25 (born ~2000)",
+          "age_source": "MS Applied Data Science from USC 2020-2022. Assuming MS entry at ~22 gives undergrad completion ~2020, so birth year ~1998-2000. Based in Panama. Previously at Cowri Labs and BTG Pactual.",
+          "university": "University of Southern California (MS Applied Data Science)"
         },
         {
           "name": "Ben Frigon",
           "role": "Co-Founder & COO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 25,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~25 (born ~2000)",
+          "age_source": "Brown University class of '22.5 (graduated ~mid 2022-early 2023). Co-designed first university credit NFT course at Blockchain@Brown. Previously at Bain & Company, Inspirit AI, Distributed Global. BS at 22 -> born ~2000. Source: Apollo.io, RootData.",
+          "university": "Brown University"
         }
       ]
     },
@@ -78052,11 +78517,12 @@
           "linkedin": "linkedin.com/in/longvuong22",
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Vietnamese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Erasmus University Rotterdam (MA Economics of Development), University of Massachusetts Amherst (PhD candidate, Economics)"
         },
         {
           "name": "Nguyen Sy Thanh Son",
@@ -78064,23 +78530,27 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Vietnamese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Unknown (Master's in Telecommunication)"
         },
         {
           "name": "Tung Hoang",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 34,
+          "age_status": "estimated_graduation",
+          "nationality": "Vietnamese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~34 (born ~1991)",
+          "age_source": "Co-founder & Product Manager of TomoChain (2016). Engineer's degree in Computer Software Engineering from University of Transport and Communications, 2009-2013. BS at 22 -> born ~1991. Based in Vietnam. Source: RocketReach, LinkedIn.",
+          "university": "University of Transport and Communications (Vietnam)"
         }
       ]
     },
@@ -78101,13 +78571,16 @@
           "name": "Oleg Fomenko",
           "role": "Co-Founder",
           "linkedin": "linkedin.com/in/ofomenko",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 51,
+          "age_status": "estimated_graduation",
+          "nationality": "Russian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~51 (born ~1974)",
+          "age_source": "Attended School #3 Zhukovsky 1981-1991 (starting age ~7 gives birth ~1974). BA in Psychology and Sociology of Management from State University of Management Moscow 1991-1996. Russian entrepreneur.",
+          "university": "State University of Management, Moscow (BA Psychology and Sociology of Management)"
         },
         {
           "name": "Anton Derlyatka",
@@ -78115,11 +78588,12 @@
           "linkedin": "linkedin.com/in/antonderlyatka",
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Uzbekistani",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "MEPhI (MSc Applied Math), London Business School (MBA)"
         },
         {
           "name": "Egor Khmelev",
@@ -78127,11 +78601,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Russian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "University of London (BS Computer Science), Volgograd State University, British Higher School of Art and Design"
         }
       ]
     },
@@ -78152,13 +78627,16 @@
           "name": "Marcos Viriato",
           "role": "Co-Founder & CEO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 49,
+          "age_status": "estimated_graduation",
+          "nationality": "Brazilian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~49 (born ~1976)",
+          "age_source": "Enrolled at Universidade Presbiteriana Mackenzie in 1994 for BS in Mechanical Engineering (graduated 1999). Assuming enrollment at ~18 gives birth year ~1976.",
+          "university": "Universidade Presbiteriana Mackenzie (BS Mechanical Engineering, 1994-1999)"
         },
         {
           "name": "Alex Buelau",
@@ -78170,19 +78648,23 @@
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "University of Rochester (Microeconomics), University of Oxford (Algorithmic Trading Programme, 2020)"
         },
         {
           "name": "Cristian Bohn",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 37,
+          "age_status": "estimated_graduation",
+          "nationality": "Chilean",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~37 (born ~1988)",
+          "age_source": "Graduated Civil Industrial Engineering with Minor in IT from Universidad Adolfo Ibáñez in 2010. Assuming 5-year Chilean engineering degree starting at ~18 gives birth year ~1988. Now at Circle as Sr Director BD LATAM.",
+          "university": "Universidad Adolfo Ibáñez (Civil Industrial Engineering, graduated 2010)"
         }
       ]
     },
@@ -78203,25 +78685,31 @@
           "name": "Nicholas Zaldastani",
           "role": "Co-Founder & Chairman",
           "linkedin": "linkedin.com/in/zaldastani",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 62,
+          "age_status": "estimated_career",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~62 (born ~1963)",
+          "age_source": "In 1985 he borrowed $6M from SBA SBIC program. Working at Oracle 1988-1994, co-founded Open Horizon 1994. BS Engineering from Duke, MBA from Harvard, French Diploma from University of Paris. If he started Oracle at ~25 in 1988, birth year ~1963. Board member at Duke Pratt School of Engineering.",
+          "university": "Duke University (BS Engineering), Harvard Business School (MBA), University of Paris (French Diploma)"
         },
         {
           "name": "Joseph Li",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 63,
+          "age_status": "estimated_career",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~63 (born ~1962)",
+          "age_source": "Has 38+ years of IT experience. Studied at Control Data Institute (education period referenced as 1982-1984). If he started working around 1984 at ~22, birth year ~1962. Based in Leesburg, VA.",
+          "university": "Control Data Institute (Computer Technology)"
         },
         {
           "name": "Jessie Dai",
@@ -78229,11 +78717,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Nanjing Audit University"
         }
       ]
     },
@@ -78314,13 +78803,16 @@
           "name": "Jake Stolarski",
           "role": "Founder & CEO",
           "linkedin": "linkedin.com/in/jakestolarski",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 40,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~40 (born ~1985)",
+          "age_source": "BS Physics from NYU, BE Electrical Engineering from Stevens Institute of Technology (2005-2007). If Stevens was 2005-2007 as a second degree and NYU BS was ~2003-2005 range, with BS at 18-22, estimated birth ~1983-1985. Conservative estimate ~1985. Worked at Northrop Grumman, USAF Research Lab, Chicago Trading Company.",
+          "university": "New York University (BS Physics), Stevens Institute of Technology (BE Electrical Engineering)"
         }
       ]
     },
@@ -78341,13 +78833,16 @@
           "name": "Alidar Utemuratov",
           "role": "Founder & CEO",
           "linkedin": "linkedin.com/in/alidar-utemuratov-ceo-dar",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 46,
+          "age_status": "confirmed",
+          "nationality": "Kazakhstani",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~46 (born ~1979)",
+          "age_source": "Multiple sources confirm born in 1979. Son of Kazakhstani billionaire Bulat Utemuratov. Studied at LSE (1999, Macroeconomics), Loughborough University (Economics and Political Science, graduated 2002). Founded DAR in Almaty, Kazakhstan.",
+          "university": "Loughborough University (Economics and Political Science), London School of Economics (Macroeconomics)"
         }
       ]
     },
@@ -78368,25 +78863,31 @@
           "name": "David Pinger",
           "role": "Co-Founder & CEO",
           "linkedin": "linkedin.com/in/david-pinger",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 36,
+          "age_status": "confirmed",
+          "nationality": "German",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~36 (born ~1989)",
+          "age_source": "Warden Protocol blog 'Meet the Founders' states David was born in 1989 in West Germany. Studied business administration with minor in CS at LMU Munich. MBA summa cum laude from Pantheon Sorbonne University. Previously at Uber, Binance, Qredo Labs.",
+          "university": "LMU Munich (Business Administration, minor CS), Pantheon Sorbonne University (MBA)"
         },
         {
           "name": "Antonio Pitasi",
           "role": "Co-Founder & Chief Blockchain Developer",
           "linkedin": "linkedin.com/in/pitasi",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 28,
+          "age_status": "estimated_graduation",
+          "nationality": "Italian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~28 (born ~1997)",
+          "age_source": "Graduated from Università di Pisa in 2019 (BS in Computer Science). Assuming BS at 22, born ~1997.",
+          "university": "Università di Pisa"
         }
       ]
     },
@@ -78407,25 +78908,31 @@
           "name": "Jan Gorzny",
           "role": "Co-Founder",
           "linkedin": "linkedin.com/in/jangorzny",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 36,
+          "age_status": "estimated_graduation",
+          "nationality": "Canadian",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~36 (born ~1989)",
+          "age_source": "B.Math from University of Waterloo in 2011. Assuming BS at 22, born ~1989. PhD from Waterloo 2015-2022.",
+          "university": "University of Waterloo"
         },
         {
           "name": "Martin Derka",
           "role": "Co-Founder",
           "linkedin": "linkedin.com/in/mderka",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 36,
+          "age_status": "estimated_graduation",
+          "nationality": "Czech",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~36 (born ~1989)",
+          "age_source": "Attended Gymnasium Ostrava - Hrabuvka (high school) then Masaryk University 2007-2010, Brock University 2010-2012, PhD Waterloo 2013-2017. Starting university at 18 in 2007 suggests born ~1989.",
+          "university": "University of Waterloo (PhD), Masaryk University, Brock University"
         }
       ]
     },
@@ -78446,49 +78953,61 @@
           "name": "Ron Bodkin",
           "role": "Co-Founder & CEO",
           "linkedin": "linkedin.com/in/ronbodkin",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 55,
+          "age_status": "estimated_career",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~55 (born ~1970)",
+          "age_source": "BS from McGill, MS from MIT. Co-founded C-Bridge which IPO'd in late 1990s (led to 900 people). Left MIT PhD program to start C-Bridge. Career timeline suggests mid-1990s graduation, born ~1970.",
+          "university": "MIT (MS), McGill University (BS)"
         },
         {
           "name": "Arnaud Flament",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 51,
+          "age_status": "estimated_graduation",
+          "nationality": "French",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~51 (born ~1974)",
+          "age_source": "Attended ENSEEIHT (Institut National Polytechnique de Toulouse) from 1994-1997 for MS in Computer Science and Applied Mathematics. French engineering grandes ecoles typically enter at ~20. If entered in 1994 at age 20, birth year ~1974. Internship at CNES in 1996-1997.",
+          "university": "ENSEEIHT - INP Toulouse (MS Computer Science & Applied Mathematics, 1994-1997)"
         },
         {
           "name": "David Mueller",
           "role": "Co-Founder & CPO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 40,
+          "age_status": "estimated_graduation",
+          "nationality": "German",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~40 (born ~1985)",
+          "age_source": "Diplom (equiv. MSc) from Karlsruhe Institute of Technology (KIT) from 2006-2012. Also studied Knowledge Service Engineering at KAIST. First job as Software Engineer at msgGillardon in October 2007. Assuming started university at ~21 (common for German Diplom programs), birth year ~1985.",
+          "university": "Karlsruhe Institute of Technology (KIT, Diplom Industrial Engineering, 2006-2012), KAIST (Knowledge Service Engineering)"
         },
         {
           "name": "Ethan Jackson",
           "role": "Co-Founder & Head of Research",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 43,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~43 (born ~1982)",
+          "age_source": "PhD in Computer Science from Vanderbilt University, graduated 2007 (attended 2003-2007). Joined Microsoft Research in 2007. Assuming PhD at ~25 gives birth year ~1982. Now Senior Director and Principal Researcher at Microsoft Healthcare.",
+          "university": "Vanderbilt University (PhD Computer Science, 2003-2007)"
         }
       ]
     },
@@ -78538,23 +79057,27 @@
           "linkedin": "linkedin.com/in/djchrisssssss",
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Taiwanese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Donghai University"
         },
         {
           "name": "Donnie Chen",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 32,
+          "age_status": "estimated_graduation",
+          "nationality": "Taiwanese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~32 (born ~1993)",
+          "age_source": "BS in Computer Science from Providence University, Taiwan (2011-2016, likely 5-year program). Assuming started at ~18 gives birth year ~1993. 10+ years web2 experience. Co-founded Scallop in 2021 with Kris Lai.",
+          "university": "Providence University, Taiwan (BS Computer Science, 2011-2016)"
         }
       ]
     },
@@ -78575,37 +79098,46 @@
           "name": "Nicolas Vaiman",
           "role": "Co-Founder & CEO",
           "linkedin": "linkedin.com/in/nicolasvaiman",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 31,
+          "age_status": "estimated_graduation",
+          "nationality": "French",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~31 (born ~1994)",
+          "age_source": "Attended CentraleSupélec 2013-2016 (3-year engineering program in France, typically entered after 2 years of preparatory classes after high school at age 18). Assuming started CentraleSupélec at ~19, born ~1994.",
+          "university": "CentraleSupélec"
         },
         {
           "name": "Arnaud Droz",
           "role": "Co-Founder & COO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 32,
+          "age_status": "estimated_graduation",
+          "nationality": "French",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~32 (born ~1993)",
+          "age_source": "Diplôme d'Ingénieur from ECE Paris (2013-2016, 3-year program after 2 years of prep). ECE Paris is a 5-year engineering program; if final 3 years were 2013-2016, he entered the prep cycle around 2011 at ~18, giving birth year ~1993.",
+          "university": "ECE Paris (Diplôme d'Ingénieur, 2013-2016)"
         },
         {
           "name": "Leo Pons",
           "role": "Co-Founder & CTO",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 32,
+          "age_status": "estimated_graduation",
+          "nationality": "French",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~32 (born ~1993)",
+          "age_source": "LinkedIn URL contains '1993' (linkedin.com/in/leopons1993). CTO of Bubblemaps. Engineer from CentraleSupélec. Previously co-founded Cryptonavia. Nicolas Vaiman (Bubblemaps CEO) attended CentraleSupélec 2013-2016, so Pons likely graduated around the same time.",
+          "university": "CentraleSupélec"
         }
       ]
     },
@@ -78665,13 +79197,16 @@
           "name": "Luke Barwikowski",
           "role": "Founder & CEO",
           "linkedin": "linkedin.com/in/lbarwiko",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 29,
+          "age_status": "confirmed",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~29 (born ~1996)",
+          "age_source": "Cointelegraph article (Dec 2024) states he is 28. University of Michigan 2014-2018. Born ~1996, now 29 in 2026.",
+          "university": "University of Michigan"
         }
       ]
     },
@@ -78692,13 +79227,16 @@
           "name": "David Kostiner",
           "role": "Co-Founder & Chief IP Officer",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 45,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~45 (born ~1980)",
+          "age_source": "JD from UC Hastings (now UC Law SF) from 2002-2005. BA in Psychology from Tufts University. Also studied at New England Conservatory of Music and Interlochen Arts Academy. If he started law school at ~22 (after 4-year BA), birth year ~1980. 20+ years as music/entertainment lawyer. Co-founded IODA during law school (later acquired by Sony Music).",
+          "university": "Tufts University (BA Psychology), UC Hastings / UC Law SF (JD, 2002-2005)"
         }
       ]
     },
@@ -78760,7 +79298,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Japanese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -78772,7 +79310,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Japanese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -78784,7 +79322,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Japanese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -78796,7 +79334,7 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Japanese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -78821,25 +79359,31 @@
           "name": "Vinh The Nguyen",
           "role": "Co-Founder & CEO (Ninety Eight / Coin98 Labs)",
           "linkedin": "linkedin.com/in/vinhthenguyen",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 33,
+          "age_status": "confirmed",
+          "nationality": "Vietnamese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~33 (born ~1992)",
+          "age_source": "Forbes Under 30 Asia 2022 lists Nguyen The Vinh as born in 1992. FPT University graduate, co-founder of Coin98/Ninety Eight which developed Saros.",
+          "university": "FPT University"
         },
         {
           "name": "Thanh Le",
           "role": "Co-Founder (Coin98 Labs)",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 34,
+          "age_status": "estimated_graduation",
+          "nationality": "Vietnamese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~34 (born ~1991)",
+          "age_source": "Attended University of Science (Ho Chi Minh City) from 2009-2013. If started university at ~18, birth year ~1991. Founder of Ninety Eight (parent of Coin98/Saros). Started outsourcing company as 3rd-year student. Entered crypto in 2017, started Coin98 YouTube channel. Vietnamese. Twitter: @imlethanh98.",
+          "university": "University of Science, Ho Chi Minh City (2009-2013)"
         },
         {
           "name": "Lynn Nguyen",
@@ -78847,7 +79391,7 @@
           "linkedin": "linkedin.com/in/-lynn-nguyen-",
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Vietnamese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
@@ -78872,13 +79416,16 @@
           "name": "James Ruff",
           "role": "CEO & Co-Founder",
           "linkedin": "linkedin.com/in/james-ruff",
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 34,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~34 (born ~1991)",
+          "age_source": "MS in Data Science from UT Austin 2013-2015. Assuming BS around 2013 (age 22), born ~1991.",
+          "university": "University of Texas at Austin"
         }
       ]
     },
@@ -78914,13 +79461,16 @@
           "name": "Kenny Peluso",
           "role": "Co-Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 29,
+          "age_status": "estimated_graduation",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~29 (born ~1996)",
+          "age_source": "Graduated Brown University with ScB in Applied Mathematics in January 2018. Honors thesis supervised by Bjorn Sandstede. If graduated at ~22, birth year ~1996. Co-founder of Upshot (later rebranded to Allora Labs). Former blockchain engineer at John Hancock.",
+          "university": "Brown University (ScB Applied Mathematics, 2018)"
         }
       ]
     },
@@ -78995,13 +79545,15 @@
           "name": "Sean (SeanCali)",
           "role": "Founder",
           "linkedin": null,
-          "age_value": null,
-          "age_status": "not_researched",
-          "nationality": null,
+          "age_value": 40,
+          "age_status": "estimated_career",
+          "nationality": "American",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "age_raw": "~40 (born ~1985)",
+          "age_source": "Full name Sean Mikha. Started career at Teradata in July 2007 as Lead Benchmark Analyst. If started working at ~22 after a BS degree, birth year ~1985. Career spans Teradata (2007-2013), Microsoft (2013-2018, rising to Principal Architect), then Snowflake before founding SuiNS in April 2022. Based in San Diego. Early crypto miner (litecoin), former journalist at Let's Talk Bitcoin."
         }
       ]
     },
@@ -79024,11 +79576,12 @@
           "linkedin": "linkedin.com/in/steven-wong-3b015079",
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Chinese",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "The Chinese University of Hong Kong (PhD)"
         },
         {
           "name": "Kenji Narushima",
@@ -79036,11 +79589,12 @@
           "linkedin": null,
           "age_value": null,
           "age_status": "not_researched",
-          "nationality": null,
+          "nationality": "Japanese-Mexican",
           "gender": null,
           "background": null,
           "age_at_launch": null,
-          "age_at_ath": null
+          "age_at_ath": null,
+          "university": "Tokyo University of Foreign Studies (BA), Tsinghua University (MBA, 2021-2023)"
         }
       ]
     },
@@ -79110,7 +79664,8 @@
           "age_status": "unknown",
           "nationality": "Unknown",
           "background": "Known only by first name. Founded Banana Gun in 2023, originally as a private trading tool that grew into a globally recognized DeFi execution platform. Telegram-based trading bot supporting 5+ blockchains. Processed over $16B in volume, 1M+ users. Team deliberately maintains anonymity. Overcame a $3M exploit early on (refunded victims). Listed on Binance.",
-          "gender": "male"
+          "gender": "male",
+          "university": "Unknown"
         }
       ]
     },
@@ -80142,7 +80697,8 @@
           "role": "Co-founder",
           "nationality": "Unknown",
           "background": "Co-founded BinaryX, a GameFi protocol that rebranded to FOUR (now FORM) focused on AI and decentralized computing.",
-          "gender": "male"
+          "gender": "male",
+          "university": "Unknown"
         }
       ]
     },
@@ -81295,7 +81851,8 @@
           "role": "Platform Architect & Co-Founder",
           "nationality": "American",
           "background": "AI expert, blockchain developer; involved in sale of 80M+ NFTs; built Bitscape and MOX.network blockchains.",
-          "gender": "male"
+          "gender": "male",
+          "university": "Unknown"
         },
         {
           "name": "Pal Vinciano",
@@ -81492,7 +82049,8 @@
           "role": "CEO",
           "nationality": "Japanese",
           "background": "CEO of UPCX-Platforms PTE. LTD.; Japan-based open-source payment system using high-speed blockchain.",
-          "gender": "male"
+          "gender": "male",
+          "university": "Unknown"
         }
       ]
     },
