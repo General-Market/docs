@@ -52,7 +52,11 @@ import {
   ZKPrivacy3D,
   FOCILGuard3D,
   AtomicBatch3D,
-} from "@/components/learn/diagrams/eip8141";
+  PromiseScene3D,
+  PayoffScene3D,
+  HistoryTimeline3D,
+  SocialProof3D,
+} from "@/components/learn/diagrams/eip8141-v2";
 
 function extractTextFromReactNode(node: ReactNode): string {
   if (typeof node === "string") return node;
@@ -235,4 +239,8 @@ export const mdxComponents: MDXComponents = {
   ZKPrivacy3D,
   FOCILGuard3D,
   AtomicBatch3D,
+  PromiseScene3D,
+  PayoffScene3D,
+  HistoryTimeline3D,
+  SocialProof3D,
 };

@@ -1,0 +1,150 @@
+---
+title: "EIP-8141: Frame Transactions"
+description: "EIP-8141 replaces Ethereum's single-call transaction with Frame Transactions — N ordered calls that authenticate, pay gas, and execute atomically. Explained in 3D."
+keywords: ["EIP-8141", "frame transactions", "account abstraction", "Ethereum", "smart wallets", "paymaster", "gas abstraction", "ACCEPT opcode", "CALLDATAREAD", "Hegota fork"]
+date: "2026-03-03"
+author: "General Market"
+slug: "eip-8141-frame-transactions"
+category: "Education"
+readingTime: "12 min read"
+tldr:
+  - "EIP-8141 introduces <strong>Frame Transactions</strong> — a single primitive that replaces every account abstraction proposal"
+  - "Authentication moves <strong>inside</strong> the transaction via the <strong>ACCEPT</strong> opcode"
+  - "Paymasters are <strong>on-chain contracts</strong> — pay gas in any token, no intermediaries"
+  - "Everything is <strong>atomic</strong> — no gap between approve and execute, no front-running"
+---
+
+You open your wallet. You want to swap tokens. Two steps: approve, then swap. Between those two transactions, someone can cut in line and extract value from you. Your wallet can only hold one key. Gas must be paid in ETH — even if you only hold stablecoins. If you want privacy, you need a middleman to broadcast your transaction for you.
+
+This is Ethereum's transaction model today. One call. One signer. Signature on the outside. Every workaround bolts on infrastructure — bundlers, relayers, intermediaries — that adds cost, complexity, and new trust assumptions.
+
+EIP-8141 redesigns the transaction itself. After this article, you will understand why one EIP replaces a decade of proposals, and why the padlock is about to move inside the envelope.
+
+<PromiseScene3D />
+
+## The Decade That Led Here
+
+Five proposals. Three failures. Two partial solutions. A decade of learning what the final answer must look like.
+
+<HistoryTimeline3D />
+
+Each attempt solved part of the puzzle. None solved the whole thing. The missing insight: you cannot bolt smart wallets onto a transaction format that only supports one call and one signer. You have to replace the transaction format itself.
+
+## The Core Insight: The Padlock Moves Inside
+
+Today, every Ethereum transaction is a sealed letter. One message inside. One signature on the envelope. The network checks the signature, then delivers the message. Simple, but rigid — the letter format cannot express "check two signatures," "let someone else pay postage," or "deploy the mailbox first, then deliver."
+
+EIP-8141 replaces the letter with a package. Multiple compartments — called **frames** — sit inside one container. The signature is not on the outside of the package. Instead, one of the compartments contains the authentication logic. The package decides for itself whether to accept delivery.
+
+<NormalVsFrame3D />
+
+The padlock moves from outside to inside. That is the entire idea. Everything else — paymasters, multisig, privacy, atomic operations — follows from this structural change.
+
+Technically, the authentication boundary is a new opcode called `ACCEPT`. When a frame calls `ACCEPT`, it tells the protocol: "I have verified this transaction. Proceed." Before `ACCEPT`, all execution is tentative — the protocol can revert everything at zero cost. After `ACCEPT`, the transaction is committed and the remaining frames execute with the sender's full authority.
+
+## How Frame Transactions Work
+
+Think of a Frame Transaction as walking through airport security. You enter the security zone (Frame 0) carrying your luggage. Everything you do here is tentative — the security officer can turn you back and it is as if you never entered. The officer inspects your boarding pass and checks which gate you are headed to. Only then does the officer wave you through the checkpoint.
+
+That checkpoint is `ACCEPT`. Before it, you are in the tentative zone. After it, you are in the terminal with full access.
+
+<FrameOverview3D />
+
+The security officer does something subtle before waving you through: she reads your boarding pass to see *where you are going*. In protocol terms, Frame 0 uses `CALLDATAREAD` to inspect Frame 1's calldata — the intended action — before deciding whether to authorize it. This is the look-ahead mechanism. The validator does not just check "who are you?" It checks "who are you, and what do you intend to do?"
+
+`CALLDATAREAD` fires before `ACCEPT`. The order matters. Frame 0 inspects, then decides. This means a smart wallet can reject transactions that target the wrong contract, spend too much, or violate any policy the wallet owner defines.
+
+## Multisig in One Transaction
+
+A multisig wallet requires multiple people to approve a transaction. Today, that means off-chain signature collection, a relayer to submit the bundle, and a separate smart contract to verify. Three layers of infrastructure for one operation.
+
+With Frame Transactions, a multisig is two frames. Frame 0 is the validator: it receives signatures from Alice and Bob, uses `CALLDATAREAD` to inspect what Frame 1 intends to do, checks both signatures against the intended action, then calls `ACCEPT`. Frame 1 is the execution: it transfers tokens, interacts with a protocol, or does whatever Alice and Bob authorized.
+
+<MultisigAuth3D />
+
+Two keys. One vault. One transaction. No bundler. No relayer. No off-chain infrastructure. The smart wallet validates natively because the transaction format supports it.
+
+## Gas in Any Token
+
+Here is a concrete problem. You hold RAI — a decentralized stablecoin — but no ETH. On Ethereum today, you cannot do anything. Every transaction requires ETH for gas. You are stuck until you acquire ETH through some other channel.
+
+A **paymaster** solves this. Think of it as a currency exchange booth at the airport. You have yen but need euros. The booth takes your yen, gives you euros, and charges a small commission. The booth is the paymaster. Yen is RAI. Euros is ETH. The commission is the paymaster's fee.
+
+With Frame Transactions, the paymaster is an on-chain contract — not an off-chain service. Frame 0 belongs to the paymaster. It uses `CALLDATAREAD` to inspect what your wallet intends to do in Frame 1. If the paymaster approves the action, it calls `ACCEPT` and covers gas in ETH. Then the paymaster pulls a fee in RAI from your wallet.
+
+<PaymasterFlow3D />
+
+Two token flows cross in opposite directions: ETH for gas going one way, RAI for the fee going the other. No bundler sits between you and the paymaster. No intermediary takes a cut. The exchange happens inside the transaction because the transaction format can express it.
+
+This means any token with a liquid market can become a gas token. The only requirement is a paymaster contract willing to make the exchange.
+
+## Wallet Deployment Without Chicken-and-Egg
+
+New users face a paradox today. To use a smart wallet, you need to deploy its contract. To deploy a contract, you need a funded account. To fund an account, you need... a wallet. Something has to come first.
+
+Frame Transactions break the cycle. The wallet address can be computed deterministically (via EIP-7997) before the wallet exists. Funds can arrive at that address before any contract is deployed. Then, in a single Frame Transaction: Frame 0 deploys the wallet contract at the predetermined address, Frame 1 validates the owner's key and calls `ACCEPT`, and Frame 2 executes the first action.
+
+<AccountDeploy3D />
+
+The lot has a street address before the house is built. Mail arrives at the address before construction begins. Then: build, install locks, move in — all in one atomic step. The pre-funded coins that were sitting on an empty plot are now inside a fully functional wallet.
+
+This eliminates the onboarding friction that plagues every smart wallet deployment today.
+
+## Privacy Without Relayers
+
+Today's privacy protocols — systems like Tornado Cash or Railgun — need centralized relayers. Here is why: when you withdraw from a privacy pool, your withdrawal transaction links your new address to the gas payment. A relayer broadcasts the withdrawal on your behalf so your new address never touches gas directly.
+
+Relayers work, but they are centralized infrastructure. They can censor, charge fees, or go offline.
+
+Frame Transactions remove the relayer entirely. A ZK-SNARK paymaster becomes Frame 0 inside the transaction. The paymaster verifies a zero-knowledge proof — a mathematical statement that says "I deposited into this pool" without revealing which deposit is yours. Once the proof checks out, the paymaster calls `ACCEPT` and covers gas. Frame 1 executes the withdrawal to a fresh address.
+
+<ZKPrivacy3D />
+
+There is no link between the deposit address and the withdrawal address. The paymaster pays gas, so the fresh address never needs prior funding. And the paymaster is a frame inside the transaction — not a server you must trust. The ZK math provides the anonymity. The Frame Transaction provides the architecture that makes it work without middlemen.
+
+## Censorship Resistance: FOCIL
+
+Frame Transactions introduce a new concern. Block builders — the entities that assemble blocks on Ethereum — have discretion over which transactions to include. A builder could silently exclude all Frame Transactions. They are more complex to process, and a builder might prefer simpler (more profitable) regular transactions.
+
+**FOCIL** (Fork-Choice Enforced Inclusion Lists) is the counterweight. A committee of validators publishes inclusion lists — transactions that the next block *must* contain. If a builder tries to censor a listed transaction, the block is invalid. Other validators reject it.
+
+<FOCILGuard3D />
+
+Without FOCIL, a biased builder can turn away anyone they dislike. With FOCIL, a committee of validators stands behind the builder with a guest list. If the builder tries to reject someone on the list, the committee overrules them. Every transaction type gets through.
+
+FOCIL is not part of EIP-8141 itself. It is a separate protocol upgrade (EIP-7547) that ensures the inclusion guarantees Frame Transactions need to be credibly neutral.
+
+## Atomic Operations: No Gap, No Attack
+
+Separate transactions create a gap. You send "approve" in one transaction and "swap" in the next. Between those two transactions — a window that might last seconds or minutes — an attacker can see your approval and front-run your swap. Sandwich attacks extract billions of dollars per year from Ethereum users through exactly this gap.
+
+Frame Transactions eliminate the gap. Approve and swap are frames inside one transaction. They execute atomically — all or nothing. No external transaction can interleave between them. No attacker can see the approval without also seeing the swap that immediately follows.
+
+<AtomicBatch3D />
+
+The wall has no gap. The attacker has no opening. This is not a clever mitigation — it is a structural impossibility. The vulnerability ceases to exist because the frames share a single atomic boundary.
+
+## Who Is Behind This
+
+Authored by Vitalik Buterin, targeting the Hegota hard fork. Wallet teams, L2 developers, and privacy researchers are already building on it.
+
+<SocialProof3D />
+
+<PayoffScene3D />
+
+That is Frame Transactions. The padlock moved inside. Authentication, gas payment, and execution are no longer bolted onto a rigid format. They are programmable steps inside a flexible container. One EIP. One transaction type. A decade of proposals, resolved.
+
+## Sources
+
+- [EIP-8141 Specification](https://eips.ethereum.org/EIPS/eip-8141) — The full EIP.
+- [Vitalik Buterin on X](https://x.com/VitalikButerin/status/2027774090627715377) — Original announcement.
+
+## Further Reading
+
+- [EIP-86 (2016)](https://github.com/ethereum/EIPs/issues/86) — Where it all started.
+- [ERC-4337: Account Abstraction Using Alt Mempool](https://eips.ethereum.org/EIPS/eip-4337) — The off-chain approach that shipped.
+- [EIP-7702: Set EOA Account Code](https://eips.ethereum.org/EIPS/eip-7702) — The Pectra bridge.
+- [EIP-7997: Deterministic Factory](https://ethereum-magicians.org/t/eip-7997-deterministic-factory-predeploy/24998) — Cross-chain address consistency.
+- [EIP-7547: FOCIL](https://eips.ethereum.org/EIPS/eip-7547) — Inclusion lists for censorship resistance.
+- [RIP-7712: 2D Nonces](https://docs.erc4337.io/core-standards/rip-7712.html) — Parallel nonce channels for privacy.
+- [How Ethereum Scales](/learn/ethereum-scaling) — The complete Ethereum scaling roadmap.
