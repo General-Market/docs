@@ -85,6 +85,9 @@ pub fn is_retryable_error(error_msg: &str) -> bool {
     let error_lower = error_msg.to_lowercase();
 
     // Check for non-retryable errors first (fail fast)
+    // "nonce too low" is non-retryable because submit_tx allocates a fixed nonce
+    // before entering with_retry — retrying with the same stale nonce always fails.
+    // The nonce manager resyncs on failure, so the NEXT operation gets a fresh nonce.
     let non_retryable_patterns = [
         "insufficient funds",
         "insufficient balance",
@@ -95,6 +98,8 @@ pub fn is_retryable_error(error_msg: &str) -> bool {
         "gas limit exceeded",
         "out of gas",
         "intrinsic gas too low",
+        "nonce too low",
+        "nonce has already been used",
     ];
 
     for pattern in non_retryable_patterns {
@@ -105,8 +110,6 @@ pub fn is_retryable_error(error_msg: &str) -> bool {
 
     // Check for retryable errors
     let retryable_patterns = [
-        "nonce too low",
-        "nonce has already been used",
         "replacement transaction underpriced",
         "transaction underpriced",
         "connection timeout",
@@ -238,10 +241,13 @@ mod tests {
     }
 
     #[test]
-    fn test_is_retryable_nonce_too_low() {
-        assert!(is_retryable_error("nonce too low"));
-        assert!(is_retryable_error("Error: nonce too low for address"));
-        assert!(is_retryable_error("NONCE TOO LOW"));
+    fn test_is_not_retryable_nonce_too_low() {
+        // nonce too low is non-retryable: submit_tx allocates a fixed nonce,
+        // retrying with the same stale nonce always fails.
+        assert!(!is_retryable_error("nonce too low"));
+        assert!(!is_retryable_error("Error: nonce too low for address"));
+        assert!(!is_retryable_error("NONCE TOO LOW"));
+        assert!(!is_retryable_error("nonce has already been used"));
     }
 
     #[test]

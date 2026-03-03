@@ -10,7 +10,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use ethers::prelude::*;
 use ethers::types::transaction::eip2718::TypedTransaction;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 use common::error::Error;
 use common::traits::ChainWriter;
@@ -420,74 +420,115 @@ impl EthersChainWriter {
             .into()
     }
 
-    /// Submit a transaction with nonce management, gas estimation, and retry logic
-    async fn submit_tx(&self, mut tx: TypedTransaction, operation: &str) -> Result<TxHash, Error> {
-        // Get nonce
-        let nonce = self.nonce_manager.get_next_nonce().await?;
-        tx.set_nonce(nonce);
+    /// Submit a transaction with nonce management, gas estimation, and retry logic.
+    ///
+    /// Includes nonce-level retry: when concurrent L3 operations cause "nonce too low",
+    /// resyncs the nonce manager and retries with a fresh nonce (up to 3 attempts).
+    /// This handles the case where bridge buy/sell/batch operations compete for nonces.
+    async fn submit_tx(&self, tx: TypedTransaction, operation: &str) -> Result<TxHash, Error> {
+        const MAX_NONCE_RETRIES: u32 = 3;
 
-        // Estimate gas
-        let gas = self.gas_estimator.estimate_gas(&tx).await?;
-        tx.set_gas(gas);
+        for nonce_attempt in 0..=MAX_NONCE_RETRIES {
+            // Get nonce (fresh on each attempt after resync)
+            let nonce = self.nonce_manager.get_next_nonce().await?;
+            let mut tx_with_nonce = tx.clone();
+            tx_with_nonce.set_nonce(nonce);
 
-        // Get gas price
-        let gas_price = self.gas_estimator.get_gas_price().await?;
-        if let TypedTransaction::Eip1559(ref mut eip1559_tx) = tx {
-            gas_price.apply_to_tx(eip1559_tx);
+            // Estimate gas
+            let gas = self.gas_estimator.estimate_gas(&tx_with_nonce).await?;
+            tx_with_nonce.set_gas(gas);
+
+            // Get gas price
+            let gas_price = self.gas_estimator.get_gas_price().await?;
+            if let TypedTransaction::Eip1559(ref mut eip1559_tx) = tx_with_nonce {
+                gas_price.apply_to_tx(eip1559_tx);
+            }
+
+            debug!(
+                operation = operation,
+                nonce = ?nonce,
+                gas = ?gas,
+                nonce_attempt = nonce_attempt,
+                to = ?tx_with_nonce.to(),
+                "Submitting transaction"
+            );
+
+            // Submit with retry (handles transient errors like timeouts, 5xx)
+            let client = self.client.clone();
+            let retry_config = self.config.retry_config.clone();
+
+            let result = with_retry(&retry_config, operation, || {
+                let tx_clone = tx_with_nonce.clone();
+                let client_clone = client.clone();
+                async move {
+                    let pending_tx = client_clone
+                        .send_transaction(tx_clone, None)
+                        .await
+                        .map_err(|e| e.to_string())?;
+
+                    let tx_hash = pending_tx.tx_hash();
+                    Ok::<_, String>(tx_hash)
+                }
+            })
+            .await;
+
+            match result {
+                Ok(tx_hash) => {
+                    // Track the pending transaction
+                    self.nonce_manager.track_pending(nonce, tx_hash);
+
+                    if nonce_attempt > 0 {
+                        info!(
+                            operation = operation,
+                            tx_hash = ?tx_hash,
+                            nonce = ?nonce,
+                            nonce_attempt = nonce_attempt,
+                            "Transaction submitted successfully after nonce retry"
+                        );
+                    } else {
+                        info!(
+                            operation = operation,
+                            tx_hash = ?tx_hash,
+                            nonce = ?nonce,
+                            "Transaction submitted successfully"
+                        );
+                    }
+
+                    return Ok(tx_hash);
+                }
+                Err(e) => {
+                    let error_msg = e.to_string();
+                    self.nonce_manager.handle_failure(nonce, &error_msg).await?;
+
+                    // Check if this is a nonce conflict from concurrent operations
+                    let is_nonce_error = {
+                        let lower = error_msg.to_lowercase();
+                        lower.contains("nonce too low") || lower.contains("nonce has already been used")
+                    };
+
+                    if is_nonce_error && nonce_attempt < MAX_NONCE_RETRIES {
+                        warn!(
+                            code = "INFRA-002",
+                            operation = operation,
+                            nonce = ?nonce,
+                            nonce_attempt = nonce_attempt,
+                            "Nonce conflict (concurrent operations), retrying with fresh nonce"
+                        );
+                        continue;
+                    }
+
+                    return Err(Error::TransactionFailed(format!(
+                        "{}: {}",
+                        operation, error_msg
+                    )));
+                }
+            }
         }
 
-        debug!(
-            operation = operation,
-            nonce = ?nonce,
-            gas = ?gas,
-            to = ?tx.to(),
-            "Submitting transaction"
-        );
-
-        // Submit with retry
-        let client = self.client.clone();
-        let retry_config = self.config.retry_config.clone();
-
-        let result = with_retry(&retry_config, operation, || {
-            let tx_clone = tx.clone();
-            let client_clone = client.clone();
-            async move {
-                let pending_tx = client_clone
-                    .send_transaction(tx_clone, None)
-                    .await
-                    .map_err(|e| e.to_string())?;
-
-                let tx_hash = pending_tx.tx_hash();
-                Ok::<_, String>(tx_hash)
-            }
-        })
-        .await;
-
-        match result {
-            Ok(tx_hash) => {
-                // Track the pending transaction
-                self.nonce_manager.track_pending(nonce, tx_hash);
-
-                info!(
-                    operation = operation,
-                    tx_hash = ?tx_hash,
-                    nonce = ?nonce,
-                    "Transaction submitted successfully"
-                );
-
-                Ok(tx_hash)
-            }
-            Err(e) => {
-                // Handle failure - update nonce manager
-                let error_msg = e.to_string();
-                self.nonce_manager.handle_failure(nonce, &error_msg).await?;
-
-                Err(Error::TransactionFailed(format!(
-                    "{}: {}",
-                    operation, error_msg
-                )))
-            }
-        }
+        Err(Error::TransactionFailed(format!(
+            "{}: max nonce retries exceeded",
+            operation
+        )))
     }
 }
 

@@ -57,6 +57,19 @@ export async function ensureCorrectChain(
       }
     }
   }
+
+  // Wait for the provider to confirm the chain switch.
+  // wagmi's writeContract checks connector.getChainId() which calls eth_chainId;
+  // if the switch hasn't propagated, it throws ConnectorChainMismatchError.
+  const provider = typeof window !== 'undefined' ? (window as any).ethereum : null
+  if (provider) {
+    const deadline = Date.now() + 3000
+    while (Date.now() < deadline) {
+      const hex = await provider.request({ method: 'eth_chainId' })
+      if (parseInt(hex, 16) === targetChainId) return
+      await new Promise(r => setTimeout(r, 100))
+    }
+  }
 }
 
 /**

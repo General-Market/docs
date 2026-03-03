@@ -11,11 +11,14 @@ import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
 import { useBalanceChangeNotification } from '@/hooks/vision/useBalanceChangeNotification'
 import { useSubmitBitmap } from '@/hooks/vision/useSubmitBitmap'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
+import { indexL3 } from '@/lib/wagmi'
 import type { BetDirection } from '@/lib/vision/bitmap'
 import { getBatchTickState, getMultiplier } from '@/lib/vision/tick'
 import { getSource } from '@/lib/vision/sources'
 import { VISION_USDC_DECIMALS, VISION_ADDRESS } from '@/lib/vision/constants'
 import batchConfig from '@/lib/contracts/vision-batches.json'
+import { BalanceDepositModal } from '../BalanceDepositModal'
+import { WithdrawModal } from '../WithdrawModal'
 import StrategyList from './StrategyList'
 
 interface BatchEntryPanelProps {
@@ -64,6 +67,7 @@ export default function BatchEntryPanel({
     abi: VISION_ABI,
     functionName: 'getBatch',
     args: activeBatch ? [BigInt(activeBatch.id)] : undefined,
+    chainId: indexL3.id,
     query: { enabled: !!activeBatch && VISION_ADDRESS !== '0x0000000000000000000000000000000000000000' },
   })
   const configHash = (onChainBatch as any)?.configHash as `0x${string}` | undefined
@@ -104,6 +108,8 @@ export default function BatchEntryPanel({
 
   // -- Local state --
   const [stakeInput, setStakeInput] = useState('')
+  const [showDepositModal, setShowDepositModal] = useState(false)
+  const [showClaimModal, setShowClaimModal] = useState(false)
 
   // -- Per-batch tick timer using category-specific duration --
   const sourceInfo = getSource(sourceId)
@@ -282,23 +288,41 @@ export default function BatchEntryPanel({
           </div>
         </div>
 
-        {/* Active position indicator */}
+        {/* Active position indicator + claim/withdraw */}
         {isJoined && position && (
           <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium text-emerald-700">Active position</span>
-              <span className="text-[11px] font-mono text-emerald-700">
-                {parseFloat(formatUnits(position.balance, VISION_USDC_DECIMALS)).toFixed(2)} USDC
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono text-emerald-700">
+                  {parseFloat(formatUnits(position.balance, VISION_USDC_DECIMALS)).toFixed(2)} USDC
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowClaimModal(true)}
+                  className="px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-300 rounded hover:bg-emerald-100 transition-colors"
+                >
+                  Claim / Withdraw
+                </button>
+              </div>
             </div>
           </div>
         )}
 
         {/* Error display */}
         {displayError && (
-          <p className="text-[11px] text-red-600 mb-2 line-clamp-2">
-            {displayError}
-          </p>
+          <div className="text-[11px] text-red-600 mb-2">
+            <p className="line-clamp-2">{displayError}</p>
+            {displayError.includes('Insufficient Vision balance') && (
+              <button
+                type="button"
+                onClick={() => setShowDepositModal(true)}
+                className="mt-1 px-3 py-1 text-[11px] font-semibold text-white bg-color-up rounded hover:opacity-90 transition-opacity"
+              >
+                Deposit USDC
+              </button>
+            )}
+          </div>
         )}
 
         {/* Enter batch button */}
@@ -326,6 +350,10 @@ export default function BatchEntryPanel({
           marketIds={marketIds}
         />
       </div>
+      {showDepositModal && <BalanceDepositModal onClose={() => setShowDepositModal(false)} />}
+      {showClaimModal && activeBatch && (
+        <WithdrawModal batchId={activeBatch.id} onClose={() => setShowClaimModal(false)} />
+      )}
     </div>
   )
 }

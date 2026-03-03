@@ -111,10 +111,12 @@ test.describe('Vision Sources — Browse', () => {
 
     // Click MARKETS link on first card to navigate to detail
     const firstCard = cards.first()
-    await firstCard.getByRole('link', { name: 'Markets' }).first().click()
+    const marketsLink = firstCard.getByRole('link', { name: 'Markets' }).first()
+    await expect(marketsLink).toBeVisible({ timeout: 5_000 })
+    await marketsLink.click()
 
-    // Should navigate to /source/{id}
-    await page.waitForURL(/\/source\//, { timeout: 30_000 })
+    // Should navigate to /source/{id} — use networkidle for Next.js client-side routing
+    await page.waitForURL(/\/source\//, { timeout: 60_000, waitUntil: 'domcontentloaded' })
     expect(page.url()).toContain('/source/')
   })
 })

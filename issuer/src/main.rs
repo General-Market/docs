@@ -1772,12 +1772,15 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                                 match arb_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
                                                     Ok(tx_hash) => {
                                                         info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted on Arb");
-                                                        let orch = orchestrator.write().await;
-                                                        orch.mark_orders_shares_bridged(&[arb_id]).await;
                                                     }
                                                     Err(e) => warn!(error = %e, user = ?mapping.original_user, "mintBridgedShares tx failed"),
                                                 }
                                             }
+                                            // All nodes mark order as SharesBridged after consensus completes
+                                            // (not just leader — otherwise followers keep orders in Batched
+                                            // status forever, permanently blocking L3-native PENDING processing)
+                                            let orch = orchestrator.write().await;
+                                            orch.mark_orders_shares_bridged(&[arb_id]).await;
                                         }
                                         Err(e) => warn!(cycle = current_cycle, error = %e, order_id = %fill.order_id, "MintBridgedShares consensus failed"),
                                     }
@@ -1868,12 +1871,13 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                                     match arb_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
                                                         Ok(tx_hash) => {
                                                             info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted (E021 path)");
-                                                            let orch = orchestrator.write().await;
-                                                            orch.mark_orders_shares_bridged(&[arb_id]).await;
                                                         }
                                                         Err(e) => warn!(error = %e, "mintBridgedShares tx failed (E021 path)"),
                                                     }
                                                 }
+                                                // All nodes mark order as SharesBridged
+                                                let orch = orchestrator.write().await;
+                                                orch.mark_orders_shares_bridged(&[arb_id]).await;
                                             }
                                             Err(e) => warn!(cycle = current_cycle, error = %e, "MintBridgedShares failed (E021 path)"),
                                         }
@@ -1916,12 +1920,13 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                                         match arb_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
                                                             Ok(tx_hash) => {
                                                                 info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted (already-filled path)");
-                                                                let orch = orchestrator.write().await;
-                                                                orch.mark_orders_shares_bridged(&[arb_id]).await;
                                                             }
                                                             Err(e) => warn!(error = %e, "mintBridgedShares tx failed (already-filled path)"),
                                                         }
                                                     }
+                                                    // All nodes mark order as SharesBridged
+                                                    let orch = orchestrator.write().await;
+                                                    orch.mark_orders_shares_bridged(&[arb_id]).await;
                                                 }
                                                 Err(e) => warn!(cycle = current_cycle, error = %e, "MintBridgedShares failed (already-filled path)"),
                                             }
@@ -2711,21 +2716,25 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     K: issuer::KeyRegistry + Send + Sync + 'static,
     PF: issuer::PriceFetcher + Send + Sync + 'static,
 {
-    // Guard: Skip L3-native processing when ANY cross-chain order is active.
-    // Must check ALL non-terminal statuses (Pending, BridgedToL3, SubmittedOnL3, Batched),
-    // not just SubmittedOnL3. Otherwise, during the bridge/submit phase the guard passes
-    // and L3-native picks up the same physical order under the L3 order ID, causing
-    // split-brain leader election (different nodes see different order IDs).
-    {
+    // Guard: Skip L3-native PENDING processing when bridge orders are in pre-submission
+    // states (Pending/BridgedToL3 for buys, SellPending for sells). These orders don't
+    // have L3 order IDs mapped yet, so the step 2 filter can't catch them.
+    // Once orders reach SubmittedOnL3 or later, they have L3 IDs in order_mappings and
+    // get filtered by get_all_tracked_l3_order_ids() at step 2.
+    // NOTE: This guard only blocks PENDING order processing, NOT BATCHED fills.
+    // BATCHED fills are safe to process regardless of bridge activity because the orders
+    // are already submitted on-chain and confirmFills is idempotent.
+    let skip_pending = {
         let orch = orchestrator.read().await;
-        if orch.has_any_active_bridge_orders().await {
-            debug!(
-                cycle = current_cycle,
-                "Skipping L3-native: cross-chain orders in-flight (processed by bridge pipeline)"
-            );
-            return;
-        }
-    }
+        orch.has_unmapped_bridge_orders().await
+    };
+
+    if skip_pending {
+        debug!(
+            cycle = current_cycle,
+            "Skipping L3-native PENDING processing: unmapped bridge orders in-flight"
+        );
+    } else {
 
     // 1. Fetch all pending orders from L3
     let pending_orders = match chain_reader.get_pending_orders().await {
@@ -2737,11 +2746,16 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     };
 
     // 2. Filter out bridge-tracked orders (already managed by cross-chain pipeline)
+    // Uses get_all_tracked_l3_order_ids() which checks order_mappings (keyed by arb_id
+    // but contains l3_order_id). The old get_order_status(l3_id) didn't work because
+    // order_status is keyed by arb_id, not l3_id.
     let l3_native_orders: Vec<_> = if !pending_orders.is_empty() {
         let orch = orchestrator.read().await;
+        let tracked_l3_ids = orch.get_all_tracked_l3_order_ids().await;
         let mut native = Vec::new();
         for order in &pending_orders {
-            if orch.get_order_status(&order.id).await.is_none() {
+            let l3_id = order.id.as_u64();
+            if !tracked_l3_ids.contains(&l3_id) {
                 native.push(order.clone());
             }
         }
@@ -2852,20 +2866,25 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
 
             match protocol.run_fills_confirm_phase(l3_cycle, fills, am_leader).await {
                 Ok(fills_result) => {
-                    info!(
-                        cycle = current_cycle, l3_cycle,
-                        signer_count = fills_result.signature_count,
-                        order_count = order_ids.len(),
-                        "L3-native fills confirmed"
-                    );
+                    if fills_result.signature_count > 0 {
+                        info!(
+                            cycle = current_cycle, l3_cycle,
+                            signer_count = fills_result.signature_count,
+                            order_count = order_ids.len(),
+                            "L3-native fills confirmed"
+                        );
 
-                    // Clean up orchestrator tracking
-                    let orch = orchestrator.write().await;
-                    for oid in &order_ids {
-                        orch.set_order_status(*oid, issuer::BridgeOrderStatus::Filled).await;
+                        // Clean up orchestrator tracking
+                        let orch = orchestrator.write().await;
+                        for oid in &order_ids {
+                            orch.set_order_status(*oid, issuer::BridgeOrderStatus::Filled).await;
+                        }
+                        drop(orch);
+                        first_seen_orders.lock().await.remove(&l3_cycle);
+                    } else {
+                        warn!(cycle = current_cycle, l3_cycle, attempt,
+                            "L3-native fills got 0 signatures, waiting for leader failover");
                     }
-                    drop(orch);
-                    first_seen_orders.lock().await.remove(&l3_cycle);
                 }
                 Err(e) => {
                     warn!(cycle = current_cycle, l3_cycle, error = %e, "L3-native fills confirmation failed");
@@ -2894,13 +2913,18 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
 
                 match protocol.run_fills_confirm_phase(l3_cycle, fills, am_leader).await {
                     Ok(fills_result) => {
-                        info!(cycle = current_cycle, signer_count = fills_result.signature_count, "L3-native fills confirmed (after batch skip)");
-                        let orch = orchestrator.write().await;
-                        for oid in &order_ids {
-                            orch.set_order_status(*oid, issuer::BridgeOrderStatus::Filled).await;
+                        if fills_result.signature_count > 0 {
+                            info!(cycle = current_cycle, signer_count = fills_result.signature_count, "L3-native fills confirmed (after batch skip)");
+                            let orch = orchestrator.write().await;
+                            for oid in &order_ids {
+                                orch.set_order_status(*oid, issuer::BridgeOrderStatus::Filled).await;
+                            }
+                            drop(orch);
+                            first_seen_orders.lock().await.remove(&l3_cycle);
+                        } else {
+                            warn!(cycle = current_cycle, l3_cycle, attempt,
+                                "L3-native fills (E021 retry) got 0 signatures, waiting for leader failover");
                         }
-                        drop(orch);
-                        first_seen_orders.lock().await.remove(&l3_cycle);
                     }
                     Err(e) => {
                         warn!(cycle = current_cycle, error = %e, "L3-native fills also failed");
@@ -2915,6 +2939,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
         }
     }
     } // end if !l3_native_orders.is_empty()
+    } // end if !skip_pending
 
     // Also process orders that are already BATCHED but not yet FILLED
     // (e.g., batched by regular consensus which doesn't handle fills)
@@ -3007,18 +3032,27 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
 
     match protocol.run_fills_confirm_phase(fills_cycle, fills, fills_am_leader).await {
         Ok(fills_result) => {
-            info!(
-                cycle = current_cycle, fills_cycle,
-                signer_count = fills_result.signature_count,
-                order_count = batched_order_ids.len(),
-                "BATCHED L3-native fills confirmed"
-            );
-            let orch = orchestrator.write().await;
-            for oid in &batched_order_ids {
-                orch.set_order_status(*oid, issuer::BridgeOrderStatus::Filled).await;
+            if fills_result.signature_count > 0 {
+                info!(
+                    cycle = current_cycle, fills_cycle,
+                    signer_count = fills_result.signature_count,
+                    order_count = batched_order_ids.len(),
+                    "BATCHED L3-native fills confirmed"
+                );
+                let orch = orchestrator.write().await;
+                for oid in &batched_order_ids {
+                    orch.set_order_status(*oid, issuer::BridgeOrderStatus::Filled).await;
+                }
+                drop(orch);
+                first_seen_orders.lock().await.remove(&fills_cycle);
+            } else {
+                // No signatures — leader didn't propose (may not be running this code path).
+                // Keep first_seen_orders entry so `attempt` advances and leader rotates via failover.
+                warn!(
+                    cycle = current_cycle, fills_cycle, attempt,
+                    "BATCHED fills got 0 signatures, waiting for leader failover"
+                );
             }
-            drop(orch);
-            first_seen_orders.lock().await.remove(&fills_cycle);
         }
         Err(e) => {
             warn!(cycle = current_cycle, fills_cycle, error = %e, "BATCHED L3-native fills confirmation failed");

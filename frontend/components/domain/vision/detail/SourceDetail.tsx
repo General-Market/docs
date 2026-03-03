@@ -6,7 +6,7 @@ import { getSource, getAssetCountForSource, getSourceStatusFromMeta, getDataNode
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
-import { getTickState, getMultiplier, getSourceKeyForBatch } from '@/lib/vision/tick'
+import { getBatchTickState, getMultiplier, getSourceKeyForBatch } from '@/lib/vision/tick'
 import batchConfig from '@/lib/contracts/vision-batches.json'
 import { Link } from '@/i18n/routing'
 import { SourceHero } from './SourceHero'
@@ -65,13 +65,17 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
     ) ?? null
   }, [batches, sourceId, dataNodeId])
 
-  // Epoch-based tick timer (synced, survives reload)
-  const [tickState, setTickState] = useState(() => getTickState())
+  // Per-batch tick timer using category-specific duration
+  const [tickState, setTickState] = useState(() =>
+    activeBatch ? getBatchTickState(activeBatch.id, source?.category ?? 'finance') : getBatchTickState(0, source?.category ?? 'finance')
+  )
   useEffect(() => {
-    const interval = setInterval(() => setTickState(getTickState()), 1000)
+    const interval = setInterval(() => {
+      setTickState(activeBatch ? getBatchTickState(activeBatch.id, source?.category ?? 'finance') : getBatchTickState(0, source?.category ?? 'finance'))
+    }, 1000)
     return () => clearInterval(interval)
-  }, [])
-  const multiplier = getMultiplier(tickState.elapsed)
+  }, [activeBatch, source?.category])
+  const multiplier = getMultiplier(tickState.elapsed, tickState.tickDuration, tickState.lockOffset)
 
   if (!source) {
     return (
@@ -140,7 +144,7 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
             <div className="h-1.5 bg-border-light overflow-hidden">
               <div
                 className={`h-full transition-all duration-1000 ${tickState.isLocked ? 'bg-red-500' : 'bg-black'}`}
-                style={{ width: `${(tickState.elapsed / 30) * 100}%` }}
+                style={{ width: `${(tickState.elapsed / tickState.tickDuration) * 100}%` }}
               />
             </div>
           </div>

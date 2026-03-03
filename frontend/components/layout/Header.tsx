@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, usePathname } from '@/i18n/routing'
 import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain, useReadContract } from 'wagmi'
@@ -58,10 +58,17 @@ export function Header() {
 
   useEffect(() => { setMounted(true) }, [])
 
+  // Auto-switch to L3 only on initial wallet connect — not on every chain change.
+  // CreateITP temporarily switches to Arb for BridgeProxy tx; aggressive auto-switch kills that flow.
+  const hasAutoSwitched = useRef(false)
   useEffect(() => {
-    if (isConnected && isWrongNetwork && !isSwitching) {
-      switchChain({ chainId: indexL3.id })
+    if (isConnected && !hasAutoSwitched.current) {
+      hasAutoSwitched.current = true
+      if (isWrongNetwork && !isSwitching) {
+        switchChain({ chainId: indexL3.id })
+      }
     }
+    if (!isConnected) hasAutoSwitched.current = false
   }, [isConnected, isWrongNetwork, isSwitching, switchChain])
 
   useEffect(() => {
@@ -185,8 +192,6 @@ export function Header() {
                 {t('nav.vision')}
               </Link>
               <div className="ml-4 flex items-center gap-3">
-                <Link href="/points" className="text-[12px] text-text-secondary hover:text-black transition-colors">Points</Link>
-                <Link href="/learn/what-are-itps" className="text-[12px] text-text-secondary hover:text-black transition-colors">Learn</Link>
                 <Link href="/about" className="text-[12px] text-text-secondary hover:text-black transition-colors">About</Link>
               </div>
             </nav>
@@ -281,8 +286,6 @@ export function Header() {
                       </Link>
                     </div>
 
-                    <Link href="/points" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors font-semibold">Points</Link>
-                    <Link href="/learn/what-are-itps" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">Learn</Link>
                     <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">About</Link>
                     <a href="/docs" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.docs')}</a>
                     <a href="https://discord.gg/xsfgzwR6" target="_blank" rel="noopener noreferrer" className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.discord')}</a>

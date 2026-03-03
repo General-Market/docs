@@ -466,6 +466,37 @@ impl BridgeOrchestrator {
         ))
     }
 
+    /// Check if any bridge order is in a pre-submission state (no L3 order ID mapped yet).
+    ///
+    /// Returns true only for orders in `Pending`/`BridgedToL3` (buys) or `SellPending` (sells).
+    /// Once an order is `SubmittedOnL3` or later, it has an L3 order ID mapped in
+    /// `order_mappings` and can be filtered by `get_all_tracked_l3_order_ids()`.
+    /// This narrower check replaces `has_any_active_bridge_orders()` in the L3-native
+    /// PENDING guard so that L3-native orders (like sells placed on L3) aren't blocked
+    /// for the entire 10-minute bridge buy pipeline.
+    pub async fn has_unmapped_bridge_orders(&self) -> bool {
+        let buy_pre = self.order_status.read().await.values().any(|status| matches!(status,
+            BridgeOrderStatus::Pending |
+            BridgeOrderStatus::BridgedToL3
+        ));
+        if buy_pre {
+            return true;
+        }
+        self.sell_order_status.read().await.values().any(|status| matches!(status,
+            BridgeOrderStatus::SellPending
+        ))
+    }
+
+    /// Get all L3 order IDs tracked by both buy and sell bridge pipelines.
+    /// Used to exclude bridge-tracked orders from L3-native processing.
+    pub async fn get_all_tracked_l3_order_ids(&self) -> Vec<u64> {
+        let buy_ids: Vec<u64> = self.order_mappings.read().await
+            .values().map(|m| m.l3_order_id.as_u64()).collect();
+        let sell_ids: Vec<u64> = self.sell_order_mappings.read().await
+            .values().map(|m| m.l3_order_id.as_u64()).collect();
+        buy_ids.into_iter().chain(sell_ids).collect()
+    }
+
     /// Get all L3 order IDs tracked by the bridge pipeline.
     /// Used to exclude these from the regular consensus batch (avoid E019 conflicts).
     pub async fn get_tracked_l3_order_ids(&self) -> Vec<u64> {

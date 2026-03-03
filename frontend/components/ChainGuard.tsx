@@ -18,8 +18,9 @@ export function ChainGuard({ children }: { children: React.ReactNode }) {
   const { switchChain, isPending: isSwitching } = useSwitchChain()
   const pathname = usePathname()
 
-  const isVisionPage = pathname?.includes('/vision')
-  const allowedChainIds = isVisionPage ? [indexL3.id, arbitrumChain.id] : [indexL3.id]
+  // Both Vision deposits and ITP creation (via Arb BridgeProxy) require Arbitrum.
+  // Allow Arb on all pages to avoid ChainGuard racing against legitimate cross-chain txs.
+  const allowedChainIds = [indexL3.id, arbitrumChain.id]
   const isWrongChain = isConnected && !allowedChainIds.includes(chainId)
 
   const forceSwitch = useCallback(async () => {

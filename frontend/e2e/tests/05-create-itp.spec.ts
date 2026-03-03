@@ -10,7 +10,7 @@ import {
 
 test.describe('Create ITP', () => {
   test('create ITP via frontend + Arb bridge relay', async ({ walletPage: page }) => {
-    test.setTimeout(180_000);
+    test.setTimeout(360_000); // 6 min — bridge relay with prod-like cycle (1000ms) needs more time
 
     const stopMiner = startArbBlockMiner(1000);
 
@@ -59,13 +59,14 @@ test.describe('Create ITP', () => {
       await submitBtn.click();
 
       // 10. Wait for success banner (frontend tx confirmed on Arb BridgeProxy)
-      await expect(page.getByText('ITP Request Created!').first()).toBeVisible({ timeout: 60_000 });
+      // Chain switch + approval + confirmation can take a while on Anvil
+      await expect(page.getByText('ITP Request Created!').first()).toBeVisible({ timeout: 90_000 });
 
       // 11. Wait for issuers to relay → ITP count increases on L3
       await pollUntil(
         () => getItpCountL3(),
         (count) => count > itpCountBefore,
-        120_000,
+        240_000,
         3_000,
       );
 

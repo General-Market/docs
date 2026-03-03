@@ -642,13 +642,14 @@ impl ChainListener {
 
         // 2. Write to Postgres (position)
         if let Err(e) = sqlx::query(
-            "INSERT INTO vision_positions (batch_id, player, stake_per_tick, bitmap_hash, start_tick, balance, join_timestamp)
-             VALUES ($1, $2, $3::numeric, $4, $5, $6::numeric, $7)
+            "INSERT INTO vision_positions (batch_id, player, stake_per_tick, bitmap_hash, start_tick, balance, join_timestamp, total_deposited)
+             VALUES ($1, $2, $3::numeric, $4, $5, $6::numeric, $7, $8::numeric)
              ON CONFLICT (batch_id, player) DO UPDATE SET
                 stake_per_tick = EXCLUDED.stake_per_tick,
                 bitmap_hash = EXCLUDED.bitmap_hash,
                 start_tick = EXCLUDED.start_tick,
-                balance = EXCLUDED.balance"
+                balance = EXCLUDED.balance,
+                total_deposited = EXCLUDED.total_deposited"
         )
         .bind(batch_id as i64)
         .bind(format!("{:?}", player))
@@ -657,6 +658,7 @@ impl ChainListener {
         .bind(start_tick as i64)
         .bind(balance.to_string())
         .bind(join_timestamp as i64)
+        .bind(balance.to_string()) // total_deposited = initial balance at join time
         .execute(&self.pool)
         .await
         {
@@ -709,13 +711,33 @@ impl ChainListener {
             warn!(batch_id, player = %player, error = %e, "Scheduler on_player_deposited failed");
         }
 
-        // 2. Update Postgres
+        // 2. Update Postgres (balance + accumulate total_deposited)
+        // The deposit amount is new_balance - old_balance, but we don't track old_balance here.
+        // Instead, we read the current balance from Postgres and compute the delta.
+        let deposit_delta = {
+            let row = sqlx::query_scalar::<_, String>(
+                "SELECT balance FROM vision_positions WHERE batch_id = $1 AND player = $2",
+            )
+            .bind(batch_id as i64)
+            .bind(format!("{:?}", player))
+            .fetch_optional(&self.pool)
+            .await;
+            match row {
+                Ok(Some(old_bal_str)) => {
+                    let old_bal = U256::from_dec_str(&old_bal_str).unwrap_or(U256::zero());
+                    if new_balance > old_bal { new_balance - old_bal } else { U256::zero() }
+                }
+                _ => U256::zero(),
+            }
+        };
+
         if let Err(e) = sqlx::query(
-            "UPDATE vision_positions SET balance = $1::numeric WHERE batch_id = $2 AND player = $3",
+            "UPDATE vision_positions SET balance = $1::numeric, total_deposited = total_deposited + $4::numeric WHERE batch_id = $2 AND player = $3",
         )
         .bind(new_balance.to_string())
         .bind(batch_id as i64)
         .bind(format!("{:?}", player))
+        .bind(deposit_delta.to_string())
         .execute(&self.pool)
         .await
         {

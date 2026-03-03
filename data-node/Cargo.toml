@@ -53,6 +53,10 @@ hex = "0.4"
 base64 = "0.22"
 md5 = "0.7"
 
+# HMAC signing for snapshot responses
+hmac = "0.12"
+sha2 = "0.10"
+
 # Protobuf (GTFS-RT)
 prost = "0.13"
 

@@ -1,5 +1,11 @@
 # Design Decision Backlog
 
+## Session: 20260303-1600-q4m8 (Fix BATCHED fills leader failover + receipt polling)
+
+- [DECISION] Fixed BATCHED fills leader failover: `first_seen_orders` was removed on `Ok(signer_count=0)`, resetting `attempt=0` every cycle. Fills leader was permanently locked to node_index=2 (issuer 3) with no failover when issuer 3 didn't enter the fills code path. Fix: only clean up first_seen_orders and mark orders Filled when signer_count > 0.
+- [DECISION] Applied same fix to L3-native PENDING fills and E021 retry path — all three fills confirmation sites now guard cleanup on signer_count > 0.
+- [DECISION] Fixed morpho oracle test: Anvil background block miner runs on 1s interval, `eth_sendTransaction` returns before block is mined. Added receipt polling (10 attempts, 500ms delay) in l3SendTx helper.
+
 ## Session: 20260302-1800-x7k1 (Fix ITP creation sending to wrong chain)
 
 - [DECISION] Replaced `useChainWriteContract` with wagmi's native `useWriteContract` + explicit `chainId: arbChainId` in all BridgeProxy-interacting components (CreateItpSection, RebalanceModal, ItpListing). The `useChainWriteContract` hook forcefully injects `chainId: activeChainId` (L3 = 111222333) on every transaction, overriding any `chainId` passed by the caller. BridgeProxy lives on Arb (chain 421611337) and issuers only poll the Arb instance, so requests sent to L3's BridgeProxy were silently ignored.
@@ -4508,3 +4514,5 @@ The backtester currently supports one rebalance method: **periodic time-based re
 - [DECISION] T-24: Lock-period guard added at 3 points in orchestrator: (1) run_leader_round() filters out locked sources from proposals, (2) publish_to_data_node() skips publishing during lock, (3) replicate_to_own_data_node() skips replication during lock. Belt-and-suspenders: even if proposal slips through, publish/replicate won't fire.
 
 [DECISION] 20260302-1010-bls1: NavOracle hash must use L3 chain_id (111222333), not Arb chain_id (421611337) - the oracle contract is on L3 and uses block.chainid. Root cause of persistent 0x10aa8d54 (BLSVerifier__InvalidSignature) errors.
+
+[DECISION] 20260302-e2e-prod-cycles: Changed e2e issuer cycle params from fast-mode (200ms/150ms/20ms) to production values (1000ms/800ms/50ms) to match vps-deploy.sh. Tests now reflect real fill times.

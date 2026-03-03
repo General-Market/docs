@@ -200,10 +200,12 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
       const stored: any[] = JSON.parse(localStorage.getItem('index-pending-orders') || '[]')
       const oneHourAgo = Date.now() - 3_600_000
       // Filter: not expired, not already visible in SSE
+      // Match on itpId (case-insensitive) + side + similar amount (handles hex casing differences)
       const pending = stored
         .filter(o => o.timestamp > oneHourAgo)
         .filter(o => !sseActiveOrders.some(
-          s => s.itpId === o.itpId && s.side === o.side && Math.abs(s.timestamp * 1000 - o.timestamp) < 300_000
+          s => s.itpId.toLowerCase() === (o.itpId || '').toLowerCase()
+            && s.side === o.side
         ))
         .map(o => ({
           orderId: 0,

@@ -70,30 +70,25 @@ fn internal_error(e: impl std::fmt::Display) -> (StatusCode, Json<ErrorResponse>
 
 /// Compute HMAC-SHA256 signature of JSON body if secret is configured.
 /// Returns (status, headers_with_signature, body) for snapshot responses.
-/// TODO: Add `hmac` and `sha2` crates to data-node/Cargo.toml once dependencies are available.
 fn add_snapshot_hmac(
     body_json: serde_json::Value,
     secret: &Option<String>,
 ) -> (StatusCode, Vec<(String, String)>, String) {
+    use hmac::{Hmac, Mac};
+    use sha2::Sha256;
+
     let body_str = body_json.to_string();
 
     let mut headers = vec![];
 
     if let Some(secret) = secret {
-        // TODO: Use actual HMAC computation once crates are added:
-        // use hmac::{Hmac, Mac};
-        // use sha2::Sha256;
-        // let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes())
-        //     .expect("HMAC can take key of any size");
-        // mac.update(body_str.as_bytes());
-        // let signature = hex::encode(mac.finalize().into_bytes());
-        // headers.push(("X-Snapshot-HMAC".to_string(), signature));
+        let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes())
+            .expect("HMAC can take key of any size");
+        mac.update(body_str.as_bytes());
+        let signature = hex::encode(mac.finalize().into_bytes());
+        headers.push(("X-Snapshot-HMAC".to_string(), signature));
 
-        // For now, use md5 (already in Cargo.toml) as placeholder
-        let digest = md5::compute(format!("{}:{}", secret, body_str).as_bytes());
-        headers.push(("X-Snapshot-HMAC".to_string(), format!("{:x}", digest)));
-
-        tracing::debug!("Added HMAC signature to snapshot response");
+        tracing::debug!("Added HMAC-SHA256 signature to snapshot response");
     }
 
     (StatusCode::OK, headers, body_str)

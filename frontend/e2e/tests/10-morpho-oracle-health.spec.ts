@@ -50,6 +50,25 @@ async function l3RpcCall(method: string, params: unknown[]): Promise<unknown> {
   return json.result;
 }
 
+/** Send a transaction and verify it succeeded (status=0x1). Polls for receipt since blocks mine on 1s interval. */
+async function l3SendTx(txParams: Record<string, string>, label: string): Promise<string> {
+  const txHash = await l3RpcCall('eth_sendTransaction', [txParams]) as string;
+  // Poll for receipt — block miner runs on 1s interval, tx may not be mined immediately
+  let receipt: { status: string; gasUsed: string } | null = null;
+  for (let i = 0; i < 10; i++) {
+    receipt = await l3RpcCall('eth_getTransactionReceipt', [txHash]) as typeof receipt;
+    if (receipt) break;
+    await new Promise(r => setTimeout(r, 500));
+  }
+  if (!receipt) {
+    throw new Error(`${label}: tx not mined after 5s: ${txHash}`);
+  }
+  if (receipt.status !== '0x1') {
+    throw new Error(`${label}: tx reverted (status=${receipt.status}, gas=${receipt.gasUsed}): ${txHash}`);
+  }
+  return txHash;
+}
+
 // ── Oracle helpers ────────────────────────────────────────
 // ITPNAVOracle storage layout (BLSVerifier has 1 slot, then ITPNAVOracle state):
 //   slot 0: _blsIssuerRegistry (address)
@@ -107,20 +126,20 @@ async function supplyCollateral(user: string, amount: bigint): Promise<void> {
   await l3RpcCall('anvil_setBalance', [user, '0x56BC75E2D63100000']);
   await l3RpcCall('anvil_impersonateAccount', [user]);
   try {
-    // Approve collateral token to Morpho
+    // Approve max to Morpho (use max uint256 to avoid partial approval issues)
     const approvePadded = MORPHO.replace('0x', '').toLowerCase().padStart(64, '0');
-    const amountHex = amount.toString(16).padStart(64, '0');
-    const approveData = `0x095ea7b3${approvePadded}${amountHex}`;
-    await l3RpcCall('eth_sendTransaction', [{
+    const maxApproval = 'f'.repeat(64); // type(uint256).max
+    const approveData = `0x095ea7b3${approvePadded}${maxApproval}`;
+    await l3SendTx({
       from: user,
       to: COLLATERAL_TOKEN,
       data: approveData,
       gas: '0x100000',
-    }]);
+    }, 'approve collateral to Morpho');
 
     // supplyCollateral(MarketParams,uint256,address,bytes)
-    // We use the low-level Morpho.supplyCollateral call
     // MarketParams = (address,address,address,address,uint256) = 5 words
+    const amountHex = amount.toString(16).padStart(64, '0');
     const loanPad = LOAN_TOKEN.replace('0x', '').toLowerCase().padStart(64, '0');
     const collPad = COLLATERAL_TOKEN.replace('0x', '').toLowerCase().padStart(64, '0');
     const oraclePad = ORACLE.replace('0x', '').toLowerCase().padStart(64, '0');
@@ -133,12 +152,12 @@ async function supplyCollateral(user: string, amount: bigint): Promise<void> {
 
     // supplyCollateral selector = 0x238d6579
     const calldata = `0x238d6579${loanPad}${collPad}${oraclePad}${irmPad}${lltvPad}${amountHex}${userPad}${bytesOffset}${bytesLen}`;
-    await l3RpcCall('eth_sendTransaction', [{
+    await l3SendTx({
       from: user,
       to: MORPHO,
       data: calldata,
       gas: '0x300000',
-    }]);
+    }, 'supplyCollateral to Morpho');
   } finally {
     await l3RpcCall('anvil_stopImpersonatingAccount', [user]);
   }
@@ -159,12 +178,12 @@ async function borrow(user: string, amount: bigint): Promise<void> {
 
     // borrow(MarketParams,uint256,uint256,address,address) selector = 0x50d8cd4b
     const calldata = `0x50d8cd4b${loanPad}${collPad}${oraclePad}${irmPad}${lltvPad}${amountHex}${sharesHex}${userPad}${userPad}`;
-    await l3RpcCall('eth_sendTransaction', [{
+    await l3SendTx({
       from: user,
       to: MORPHO,
       data: calldata,
       gas: '0x300000',
-    }]);
+    }, `borrow ${amount} from Morpho`);
   } finally {
     await l3RpcCall('anvil_stopImpersonatingAccount', [user]);
   }
@@ -181,8 +200,11 @@ test.describe('Morpho Oracle & Health Factor', () => {
     const price = await getOraclePrice();
     expect(price).toBeGreaterThan(0n);
 
-    // Initial deployment price = 1e36 (1 ITP = 1 USDC at 36-decimal Morpho scaling)
-    expect(price).toBe(10n ** 36n);
+    // Oracle price at 36-decimal Morpho scaling.
+    // NAV drifts with underlying asset prices, so allow ±10% from 1e36.
+    const target = 10n ** 36n;
+    expect(price).toBeGreaterThan(target * 90n / 100n);
+    expect(price).toBeLessThan(target * 110n / 100n);
   });
 
   test('oracle price change affects max borrow', async ({ walletPage: page }) => {
@@ -204,15 +226,25 @@ test.describe('Morpho Oracle & Health Factor', () => {
       const userPad = USER2.replace('0x', '').toLowerCase().padStart(64, '0');
       const amtHex = collateralAmount.toString(16).padStart(64, '0');
       const mintData = `0x40c10f19${userPad}${amtHex}`;
-      await l3RpcCall('eth_sendTransaction', [{
+      await l3SendTx({
         from: INDEX,
         to: COLLATERAL_TOKEN,
         data: mintData,
         gas: '0x100000',
-      }]);
+      }, 'Index.mint(USER2, collateralAmount)');
     } finally {
       await l3RpcCall('anvil_stopImpersonatingAccount', [INDEX]);
     }
+
+    // Verify USER2 has ITP tokens after mint
+    const balOf = USER2.replace('0x', '').toLowerCase().padStart(64, '0');
+    const balResult = await l3RpcCall('eth_call', [
+      { to: COLLATERAL_TOKEN, data: `0x70a08231${balOf}` },
+      'latest',
+    ]) as string;
+    const itpBalance = BigInt(balResult);
+    console.log(`USER2 ITP balance after mint: ${itpBalance}`);
+    expect(itpBalance).toBeGreaterThanOrEqual(collateralAmount);
 
     // Supply collateral to Morpho
     await supplyCollateral(USER2, collateralAmount);
@@ -268,12 +300,12 @@ test.describe('Morpho Oracle & Health Factor', () => {
     try {
       const userPad = USER3.replace('0x', '').toLowerCase().padStart(64, '0');
       const amtHex = collateral.toString(16).padStart(64, '0');
-      await l3RpcCall('eth_sendTransaction', [{
+      await l3SendTx({
         from: INDEX,
         to: COLLATERAL_TOKEN,
         data: `0x40c10f19${userPad}${amtHex}`,
         gas: '0x100000',
-      }]);
+      }, 'Index.mint(USER3, collateral)');
     } finally {
       await l3RpcCall('anvil_stopImpersonatingAccount', [INDEX]);
     }

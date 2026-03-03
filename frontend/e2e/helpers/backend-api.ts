@@ -526,7 +526,7 @@ async function restoreL3AggPubkey(encodedPubkey: string): Promise<void> {
  * execute it via BLS consensus.
  * Shifts 0.5% weight from asset[0] to asset[1].
  */
-export async function rebalanceItp(itpId: string): Promise<void> {
+export async function rebalanceItp(itpId: string, timeoutMs = 180_000): Promise<void> {
   const state = await getItpStateL3(itpId);
   const weightsBefore = state.weights[0];
 
@@ -569,11 +569,12 @@ export async function rebalanceItp(itpId: string): Promise<void> {
   }]);
 
   // Wait for issuers to execute the rebalance on L3 (weights change)
+  // Rebalance consensus can take 2+ cycles
   await pollUntil(
     () => getItpStateL3(itpId),
     (s) => s.weights[0] !== weightsBefore,
-    90_000,
-    2_000,
+    timeoutMs,
+    3_000,
   );
 }
 
@@ -684,7 +685,7 @@ export async function placeBuyOrderDirect(
 
     return orderId;
   } finally {
-    await rpcCall('anvil_stopImpersonatingAccount', [user]);
+    // Keep user impersonated — other tests (create-itp) need Arb impersonation
   }
 }
 
@@ -777,7 +778,7 @@ export async function placeSellOrderDirect(
 
     return orderId;
   } finally {
-    await rpcCall('anvil_stopImpersonatingAccount', [user]);
+    // Keep user impersonated — other tests need Arb impersonation
   }
 }
 
@@ -856,7 +857,7 @@ export async function requestCreateItpDirect(
 
     return nonce;
   } finally {
-    await rpcCall('anvil_stopImpersonatingAccount', [user]);
+    // Keep user impersonated — other tests need Arb impersonation
   }
 }
 

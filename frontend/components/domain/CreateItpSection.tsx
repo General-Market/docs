@@ -84,7 +84,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   const needsIssuerName = isConnected && !existingDeployerName
 
   const { switchChainAsync } = useSwitchChain()
-  const { writeContract, data: hash, isPending, error: writeError, reset: resetWrite } = useWriteContract()
+  const { writeContract, writeContractAsync, data: hash, isPending, error: writeError, reset: resetWrite } = useWriteContract()
   const { isLoading: isConfirming, isSuccess, error: confirmError } = useWaitForTransactionReceipt({ hash, chainId: arbChainId })
 
   // Toast notifications for ITP creation
@@ -306,7 +306,9 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     setIsFetchingPrices(false)
 
     try {
-      // BridgeProxy lives on Arbitrum — ensure wallet is on Arb chain before submitting
+      // BridgeProxy lives on Arbitrum — ensure wallet is on Arb chain before submitting.
+      // Use writeContractAsync (not writeContract) so the chain switch and tx submit
+      // happen in the same async execution context without React re-renders in between.
       try {
         await ensureCorrectChain(currentChainId, switchChainAsync, arbChainId, arbitrumChain)
       } catch {
@@ -317,15 +319,13 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       // If deployer hasn't set their name yet, set it first
       if (needsIssuerName && issuerName.trim()) {
         console.log('[CreateITP] Setting deployer name:', issuerName.trim())
-        writeContract({
+        await writeContractAsync({
           address: INDEX_PROTOCOL.bridgeProxy,
           abi: BRIDGE_PROXY_ABI,
           functionName: 'setDeployerName',
           args: [issuerName.trim()],
           chainId: arbChainId,
         })
-        // Note: the deployer name tx will be confirmed separately.
-        // For simplicity, we proceed with the create call — user can retry if name tx fails.
         refetchDeployerName()
       }
 
@@ -342,7 +342,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
         prices: prices.map(p => p.toString()),
         metadata: { description, websiteUrl, videoUrl },
       })
-      writeContract({
+      await writeContractAsync({
         address: INDEX_PROTOCOL.bridgeProxy,
         abi: BRIDGE_PROXY_ABI,
         functionName: 'requestCreateItp',
@@ -350,9 +350,9 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
         chainId: arbChainId,
       })
     } catch (e: any) {
-      console.error('[CreateITP] writeContract threw:', e)
+      console.error('[CreateITP] writeContractAsync threw:', e)
       setTxError(e.message || 'Failed to submit transaction')
-      capture('create_itp_failed', { error_message: e.message || 'writeContract threw', step: 'submit' })
+      capture('create_itp_failed', { error_message: e.message || 'writeContractAsync threw', step: 'submit' })
     }
   }
 

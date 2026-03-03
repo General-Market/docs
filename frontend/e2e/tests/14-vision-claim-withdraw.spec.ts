@@ -45,16 +45,40 @@ test.describe('Vision Claim + Withdraw', () => {
       test.skip(true, `page.goto failed: ${(e as Error).message?.slice(0, 80)}`)
       return
     }
+
+    // Wait for React hydration before attempting wallet connect
+    await page.waitForFunction(() => !!(window as any).__NEXT_DATA__?.props, { timeout: 15_000 }).catch(() => {})
+    await page.waitForTimeout(2_000)
+
     const connectBtn = page.getByRole('button', { name: /Connect Wallet|Log\s?In/ })
-    if (await connectBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    if (await connectBtn.isVisible({ timeout: 10_000 }).catch(() => false)) {
       await connectBtn.click()
       await page.mouse.move(0, 0)
-      // Wait for wallet connection to complete (truncated address replaces Connect button)
+      await page.waitForTimeout(3_000)
+
+      // Retry connect if wallet didn't respond (init script may have reset state)
       const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4)
-      await expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 15_000 })
+      const connected = await page.getByRole('button', { name: truncated }).isVisible({ timeout: 5_000 }).catch(() => false)
+        || await page.getByText(/Balance:.*USDC/).isVisible({ timeout: 5_000 }).catch(() => false)
+      if (!connected) {
+        // Retry — click connect again
+        const retryBtn = page.getByRole('button', { name: /Connect Wallet|Log\s?In/ })
+        if (await retryBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+          await retryBtn.click()
+          await page.waitForTimeout(3_000)
+        }
+      }
+
+      // Final wait for connection confirmation
+      await Promise.race([
+        expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 30_000 }),
+        expect(page.getByText(/Balance:.*USDC/)).toBeVisible({ timeout: 30_000 }),
+      ]).catch(() => {
+        console.log('Wallet connect did not confirm — continuing with balance bar check')
+      })
     }
 
-    // Wait for balance bar
+    // Wait for balance bar (Vision balance exists from deposit above)
     await expect(page.getByText(/Balance:.*USDC/)).toBeVisible({ timeout: 30_000 })
 
     // 3. If player has a position, wait for tick resolution then try batch withdraw

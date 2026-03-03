@@ -26,7 +26,9 @@ export function VisionBalanceBar() {
 
   const fmtBal = (v: bigint) => parseFloat(formatUnits(v, VISION_USDC_DECIMALS)).toFixed(2)
 
-  if (!isConnected || isLoading || total <= 0n) return null
+  if (!isConnected || isLoading) return null
+
+  const hasBalance = total > 0n
 
   return (
     <>
@@ -36,11 +38,13 @@ export function VisionBalanceBar() {
             <p className="text-sm font-bold text-text-primary">
               Balance: {fmtBal(total)} USDC
             </p>
-            <p className="text-[10px] text-text-muted font-mono">
-              L3: {fmtBal(realBalance)}  &middot;  Arb-backed: {fmtBal(virtualBalance)}
-            </p>
+            {hasBalance && (
+              <p className="text-[10px] text-text-muted font-mono">
+                L3: {fmtBal(realBalance)}  &middot;  Arb-backed: {fmtBal(virtualBalance)}
+              </p>
+            )}
           </div>
-          {!ptsLoading && activeBatches > 0 && (
+          {hasBalance && !ptsLoading && activeBatches > 0 && (
             <Link href="/points" className="flex items-center gap-3 pl-6 border-l border-border-light hover:opacity-80 transition-opacity">
               <div>
                 <p className="text-sm font-bold text-text-primary font-mono tabular-nums">
@@ -60,12 +64,14 @@ export function VisionBalanceBar() {
           >
             DEPOSIT
           </button>
-          <button
-            onClick={() => setShowWithdrawModal(true)}
-            className="px-3 py-1.5 bg-muted text-text-secondary text-xs font-bold rounded-card border border-border-light hover:bg-surface transition-colors"
-          >
-            WITHDRAW
-          </button>
+          {hasBalance && (
+            <button
+              onClick={() => setShowWithdrawModal(true)}
+              className="px-3 py-1.5 bg-muted text-text-secondary text-xs font-bold rounded-card border border-border-light hover:bg-surface transition-colors"
+            >
+              WITHDRAW
+            </button>
+          )}
         </div>
       </div>
       {showDepositModal && <BalanceDepositModal onClose={() => setShowDepositModal(false)} />}
