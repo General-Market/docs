@@ -504,6 +504,26 @@ export const INDEX_ABI = [
     name: 'AuthorizedBridgeUpdated',
     type: 'event',
   },
+  // Cancel a pending order (user-initiated)
+  {
+    inputs: [{ name: 'orderId', type: 'uint256' }],
+    name: 'cancelOrder',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  // OrderCancelled event
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'orderId', type: 'uint256' },
+      { indexed: true, name: 'user', type: 'address' },
+      { indexed: false, name: 'amount', type: 'uint256' },
+      { indexed: false, name: 'side', type: 'uint8' },
+    ],
+    name: 'OrderCancelled',
+    type: 'event',
+  },
   // getItpCount — number of ITPs created
   {
     inputs: [],

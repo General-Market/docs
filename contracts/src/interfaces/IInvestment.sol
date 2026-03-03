@@ -87,6 +87,10 @@ interface IInvestment {
         uint256 signersBitmask
     ) external;
 
+    /// @notice Cancel a pending order (user-initiated, no BLS required)
+    /// @param orderId The order to cancel
+    function cancelOrder(uint256 orderId) external;
+
     // ============ ITP FUNCTIONS ============
 
     /// @notice Create a new Index Token Product

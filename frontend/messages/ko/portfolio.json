@@ -52,7 +52,9 @@
     "amount": "금액",
     "limit_price": "지정가",
     "status": "상태",
-    "time": "시간"
+    "time": "시간",
+    "cancel": "Cancel",
+    "cancelling": "Cancelling..."
   },
   "empty": {
     "no_positions_title": "아직 포지션이 없습니다",

@@ -52,7 +52,9 @@
     "amount": "Amount",
     "limit_price": "Limit Price",
     "status": "Status",
-    "time": "Time"
+    "time": "Time",
+    "cancel": "Cancel",
+    "cancelling": "Cancelling..."
   },
   "empty": {
     "no_positions_title": "No positions yet",

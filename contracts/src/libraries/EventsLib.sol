@@ -210,6 +210,18 @@ library EventsLib {
         uint256 cancelledCount
     );
 
+    /// @notice Emitted when a user cancels their own pending order
+    /// @param orderId The cancelled order ID
+    /// @param user The user who cancelled
+    /// @param amount The refunded amount
+    /// @param side 0=BUY, 1=SELL
+    event OrderCancelled(
+        uint256 indexed orderId,
+        address indexed user,
+        uint256 amount,
+        uint8 side
+    );
+
     // ============ REGISTRY ADMIN EVENTS ============
 
     /// @notice Emitted when admin is changed in a registry contract

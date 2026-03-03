@@ -544,6 +544,48 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         emit EventsLib.EscrowClaimed(orderId, order.user, amount);
     }
 
+    // ============ USER CANCEL ORDER ============
+
+    /// @notice Cancel a pending order and refund locked collateral
+    /// @dev Only the order owner can cancel. Only PENDING orders can be cancelled.
+    ///      No BLS consensus required — this is a user-initiated action.
+    /// @param orderId The order to cancel
+    function cancelOrder(uint256 orderId) external nonReentrant {
+        TypesLib.LimitOrder storage order = orders[orderId];
+
+        if (order.id == 0) {
+            revert ErrorsLib.E022_OrderNotFound(orderId);
+        }
+
+        if (order.user != msg.sender) {
+            revert ErrorsLib.E129_NotOrderOwner(msg.sender, order.user);
+        }
+
+        if (order.status != TypesLib.OrderStatus.PENDING) {
+            revert ErrorsLib.E138_OrderNotCancellable(orderId, uint256(order.status));
+        }
+
+        // Set status to CANCELLED
+        order.status = TypesLib.OrderStatus.CANCELLED;
+
+        // Decrement pending order count
+        if (pendingOrderCount > 0) {
+            unchecked {
+                --pendingOrderCount;
+            }
+        }
+
+        // Refund based on order side
+        if (order.side == TypesLib.Side.BUY) {
+            usdc.safeTransfer(order.user, order.amount);
+        } else {
+            _userShares[order.itpId][order.user] += order.amount;
+            _itps[order.itpId].totalSupply += order.amount;
+        }
+
+        emit EventsLib.OrderCancelled(orderId, order.user, order.amount, uint8(order.side));
+    }
+
     /// @inheritdoc IInvestment
     function refundExpiredOrder(uint256 orderId, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         TypesLib.LimitOrder storage order = orders[orderId];

@@ -20,6 +20,9 @@ import { formatUnits, parseUnits } from 'viem'
 import { usePortfolio, PortfolioHistoryPoint, PortfolioSummary, Position } from '@/hooks/usePortfolio'
 import { DeployedItpRef } from '@/components/domain/ItpListing'
 import { useTranslations } from 'next-intl'
+import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
+import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 
 type Tab = 'value' | 'positions' | 'trades' | 'orders'
 
@@ -664,6 +667,24 @@ function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfo
 function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoading: boolean; error: string | null }) {
   const t = useTranslations('portfolio')
   const tc = useTranslations('common')
+  const [cancellingId, setCancellingId] = useState<number | null>(null)
+  const { writeContractAsync } = useChainWriteContract()
+
+  const handleCancel = useCallback(async (orderId: number) => {
+    setCancellingId(orderId)
+    try {
+      await writeContractAsync({
+        address: INDEX_PROTOCOL.index,
+        abi: INDEX_ABI,
+        functionName: 'cancelOrder',
+        args: [BigInt(orderId)],
+      })
+    } catch (err) {
+      console.error('Cancel order failed:', err)
+    } finally {
+      setCancellingId(null)
+    }
+  }, [writeContractAsync])
 
   // Only show open orders: Pending (0), Batched (1), Relaying (-1)
   const openOrders = orders.filter(o => o.status < 2)
@@ -714,6 +735,7 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
               <th className="text-right px-4 py-3">{t('orders_table.limit_price')}</th>
               <th className="text-right px-4 py-3">{t('orders_table.status')}</th>
               <th className="text-right px-4 py-3">{t('orders_table.time')}</th>
+              <th className="text-right px-4 py-3"></th>
             </tr>
           </thead>
           <tbody>
@@ -738,6 +760,17 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
                 </td>
                 <td className="px-4 py-3 text-right text-text-muted text-xs tabular-nums font-mono">
                   {getTimeAgo(new Date(order.timestamp * 1000))}
+                </td>
+                <td className="px-4 py-3 text-right">
+                  {order.status === 0 && order.orderId > 0 && (
+                    <button
+                      onClick={() => handleCancel(order.orderId)}
+                      disabled={cancellingId === order.orderId}
+                      className="text-xs px-3 py-1 rounded-md font-medium text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {cancellingId === order.orderId ? t('orders_table.cancelling') : t('orders_table.cancel')}
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

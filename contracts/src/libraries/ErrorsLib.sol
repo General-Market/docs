@@ -798,4 +798,9 @@ library ErrorsLib {
     /// @param pubkeysLen Length of pubkeys array
     /// @param idsLen Length of IDs array
     error E137_PubkeysIdsLengthMismatch(uint256 pubkeysLen, uint256 idsLen);
+
+    /// @notice E138: Order cannot be cancelled (not in PENDING status)
+    /// @param orderId The order ID
+    /// @param currentStatus The current order status
+    error E138_OrderNotCancellable(uint256 orderId, uint256 currentStatus);
 }
