@@ -664,6 +664,10 @@ function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfo
 function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoading: boolean; error: string | null }) {
   const t = useTranslations('portfolio')
   const tc = useTranslations('common')
+
+  // Only show open orders: Pending (0), Batched (1), Relaying (-1)
+  const openOrders = orders.filter(o => o.status < 2)
+
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-600 text-sm">
@@ -680,7 +684,7 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
     )
   }
 
-  if (orders.length === 0) {
+  if (openOrders.length === 0) {
     return (
       <div className="bg-card rounded-xl border border-border-light p-10 text-center">
         <div className="max-w-sm mx-auto">
@@ -713,7 +717,7 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
             </tr>
           </thead>
           <tbody>
-            {orders.map((order, i) => (
+            {openOrders.map((order, i) => (
               <tr key={`${order.orderId}-${order.timestamp}-${i}`} className="border-b border-border-light last:border-0 hover:bg-surface transition-colors">
                 <td className="px-4 py-3 text-text-primary font-mono text-sm tabular-nums">{order.orderId > 0 ? `#${order.orderId}` : '—'}</td>
                 <td className="px-4 py-3">
@@ -745,9 +749,8 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
 }
 
 function getTimeAgo(date: Date): string {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
-  if (seconds < 0) return 'just now'
-  if (seconds < 60) return `${seconds}s ago`
+  const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000))
+  if (seconds < 60) return seconds === 0 ? 'just now' : `${seconds}s ago`
   const minutes = Math.floor(seconds / 60)
   if (minutes < 60) return `${minutes}m ago`
   const hours = Math.floor(minutes / 60)
