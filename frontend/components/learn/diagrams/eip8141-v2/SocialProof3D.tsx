@@ -5,6 +5,8 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
+import { SceneLegend } from '../scaling/shared/SceneLegend'
+import { AutoFitCamera } from '../scaling/shared/AutoFitCamera'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
 
 /* ------------------------------------------------------------------ */
@@ -503,29 +505,6 @@ function FinalGlow({ reducedMotion }: { reducedMotion: boolean }) {
 /*  Legend                                                             */
 /* ------------------------------------------------------------------ */
 
-function Legend() {
-  return (
-    <div className="flex items-center gap-5 flex-wrap">
-      <div className="flex items-center gap-1.5">
-        <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: PURPLE }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Authority</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: GREEN }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Adoption</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: BLUE }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Ethereum</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: AMBER }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Scale</span>
-      </div>
-    </div>
-  )
-}
-
 /* ------------------------------------------------------------------ */
 /*  Main Scene Content (inside Canvas)                                 */
 /* ------------------------------------------------------------------ */
@@ -546,6 +525,8 @@ function SceneContent({ reducedMotion }: { reducedMotion: boolean }) {
       <ScaleBars reducedMotion={reducedMotion} />
       <ConnectionTubes reducedMotion={reducedMotion} />
       <FinalGlow reducedMotion={reducedMotion} />
+
+      <AutoFitCamera points={[[-4, 3, 2], [6, 3, 2], [-4, -0.5, -2], [6, -0.5, -2]]} />
 
       <OrbitControls
         enableZoom
@@ -572,7 +553,7 @@ export function SocialProof3D() {
       height="h-[280px] md:h-[340px]"
       ariaLabel="Social proof for EIP-8141: authority, adoption, and ecosystem scale"
       srDescription="A 3D scene showing social proof for EIP-8141. A central blue Ethereum octahedron is orbited by three purple authority spheres (Vitalik, EF Core, 10 years of development) and five green adoption spheres (Safe, ZeroDev, Biconomy, Ambire, L2s). Scale bars on the right grow to show 500M+ wallets affected, ~$200B TVL, and every dApp. Connection lines converge on the center, visualizing how authority, adoption, and scale all point to EIP-8141."
-      legend={<Legend />}
+      legend={<SceneLegend items={[{ color: PURPLE, label: 'Authority' }, { color: GREEN, label: 'Adoption' }, { color: BLUE, label: 'Ethereum' }, { color: AMBER, label: 'Scale' }]} />}
       fallbackText="EIP-8141 authored by Vitalik Buterin, backed by EF Core, adopted by Safe, ZeroDev, Biconomy, Ambire. Affects 500M+ wallets, ~$200B TVL, every dApp."
     >
       {({ reducedMotion }) => (

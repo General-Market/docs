@@ -5,6 +5,8 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
+import { SceneLegend } from '../scaling/shared/SceneLegend'
+import { AutoFitCamera } from '../scaling/shared/AutoFitCamera'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
 
 /* ------------------------------------------------------------------ */
@@ -423,29 +425,6 @@ function SingleKey({ reducedMotion }: { reducedMotion: boolean }) {
 /*  Legend                                                             */
 /* ------------------------------------------------------------------ */
 
-function Legend() {
-  return (
-    <div className="flex items-center gap-5 flex-wrap">
-      <div className="flex items-center gap-1.5">
-        <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: RED }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Attack surface</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: BLUE }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Separate TXs</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: PURPLE }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Auth (outside)</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: AMBER }} />
-        <span className="text-[10px] text-text-muted tracking-wide">ETH gas</span>
-      </div>
-    </div>
-  )
-}
-
 /* ------------------------------------------------------------------ */
 /*  Main Scene Content (inside Canvas)                                 */
 /* ------------------------------------------------------------------ */
@@ -499,6 +478,9 @@ function SceneContent({ reducedMotion }: { reducedMotion: boolean }) {
       {/* Single key */}
       <SingleKey reducedMotion={reducedMotion} />
 
+      {/* Camera */}
+      <AutoFitCamera points={[[-3, 2.5, 1.5], [3, 2.5, 1.5], [-3, -0.5, -1.5], [3, -0.5, -1.5]]} />
+
       {/* Controls */}
       <OrbitControls
         enableZoom
@@ -525,7 +507,7 @@ export function PromiseScene3D() {
       height="h-[280px] md:h-[320px]"
       ariaLabel="Before EIP-8141: chaotic Ethereum transactions"
       srDescription="A 3D scene showing the chaotic state of Ethereum UX before EIP-8141. Three separate transaction envelopes (approve, swap, deploy) each have their own purple padlock sitting on top, meaning authentication is outside the transaction. A pulsing red zone between TX 1 and TX 2 represents the attack surface where front-running can occur. An amber ETH diamond shows that only ETH can pay for gas. An indigo relayer hexagon floats above, representing the middleman needed for privacy. A single purple key sphere shows that one key can only make one call."
-      legend={<Legend />}
+      legend={<SceneLegend items={[{ color: RED, label: 'Attack surface' }, { color: BLUE, label: 'Separate TXs' }, { color: PURPLE, label: 'Auth (outside)' }, { color: AMBER, label: 'ETH gas' }]} />}
       fallbackText="Before EIP-8141: three separate transactions (approve, swap, deploy) each with their own padlock on top, a red attack gap between them, ETH-only gas, a relayer middleman, and a single key limited to one call."
     >
       {({ reducedMotion }) => (

@@ -198,9 +198,9 @@ export function SceneContainer({
             </ErrorBoundary>
           )}
         </div>
-        <div className="px-6 pb-3 pt-1 flex items-center justify-between border-t border-zinc-200">
+        <div className="px-6 pb-4 pt-3 flex items-center justify-between border-t border-zinc-200">
           {legend}
-          <span className="text-[10px] text-text-muted font-mono">
+          <span className="text-[12px] text-text-muted font-mono shrink-0 ml-4">
             drag to orbit · scroll to zoom
           </span>
         </div>

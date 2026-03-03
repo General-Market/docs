@@ -5,6 +5,8 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
+import { SceneLegend } from '../scaling/shared/SceneLegend'
+import { AutoFitCamera } from '../scaling/shared/AutoFitCamera'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
 
 /* ------------------------------------------------------------------ */
@@ -581,33 +583,6 @@ function FramePayloads({ reducedMotion }: { reducedMotion: boolean }) {
 /*  Legend                                                             */
 /* ------------------------------------------------------------------ */
 
-function Legend() {
-  return (
-    <div className="flex items-center gap-5 flex-wrap">
-      <div className="flex items-center gap-1.5">
-        <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: GREEN }} />
-        <span className="text-[10px] text-text-muted tracking-wide">ACCEPT / Execution</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: BLUE }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Frame TX</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: PURPLE }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Auth (inside)</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <div className="flex gap-0.5">
-          <div className="w-1.5 h-2 rounded-sm" style={{ backgroundColor: AMBER }} />
-          <div className="w-1.5 h-2 rounded-sm" style={{ backgroundColor: INDIGO }} />
-          <div className="w-1.5 h-2 rounded-sm" style={{ backgroundColor: BLUE }} />
-        </div>
-        <span className="text-[10px] text-text-muted tracking-wide">Any token gas</span>
-      </div>
-    </div>
-  )
-}
-
 /* ------------------------------------------------------------------ */
 /*  Main Scene Content (inside Canvas)                                 */
 /* ------------------------------------------------------------------ */
@@ -674,6 +649,9 @@ function SceneContent({ reducedMotion }: { reducedMotion: boolean }) {
       {/* Execution glow */}
       <ExecutionGlow reducedMotion={reducedMotion} />
 
+      {/* Camera */}
+      <AutoFitCamera points={[[-3, 2.5, 1.5], [3.5, 2.5, 1.5], [-3, -0.5, -1.5], [3.5, -0.5, -1.5]]} />
+
       {/* Controls */}
       <OrbitControls
         enableZoom
@@ -700,7 +678,7 @@ export function PayoffScene3D() {
       height="h-[280px] md:h-[320px]"
       ariaLabel="After EIP-8141: unified Frame Transaction"
       srDescription="A 3D scene showing the unified state of Ethereum UX after EIP-8141. One large Frame TX container holds three contiguous compartments: F0 (purple, for authentication), F1 (blue, execution), and F2 (blue, execution). The purple padlock appears inside F0 rather than on top. An ACCEPT gate with green pillars and an arch sits between F0 and F1, flashing green to signal validation passed. Three colored token spheres (amber, indigo, blue) orbit gently near the container, showing any token can pay for gas. A faded ghost outline replaces the relayer, showing it is no longer needed. Three purple key spheres converge toward F0, representing N programmable signers. A green execution glow washes over the entire container."
-      legend={<Legend />}
+      legend={<SceneLegend items={[{ color: GREEN, label: 'ACCEPT / Execution' }, { color: BLUE, label: 'Frame TX' }, { color: PURPLE, label: 'Auth (inside)' }, { color: AMBER, label: 'Any token gas' }]} />}
       fallbackText="After EIP-8141: one unified Frame TX with three compartments (F0=auth inside, F1, F2). ACCEPT gate between F0 and F1. Any token for gas. No relayer needed. N programmable signers."
     >
       {({ reducedMotion }) => (

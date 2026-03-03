@@ -5,6 +5,8 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
+import { SceneLegend } from '../scaling/shared/SceneLegend'
+import { AutoFitCamera } from '../scaling/shared/AutoFitCamera'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
 
 /* ------------------------------------------------------------------ */
@@ -448,25 +450,6 @@ function GroundPlane() {
 /*  Legend                                                             */
 /* ------------------------------------------------------------------ */
 
-function Legend() {
-  return (
-    <div className="flex items-center gap-5">
-      <div className="flex items-center gap-1.5">
-        <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: RED }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Failed</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: AMBER }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Partial</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: GREEN }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Success</span>
-      </div>
-    </div>
-  )
-}
-
 /* ------------------------------------------------------------------ */
 /*  Main Scene Content (inside Canvas)                                 */
 /* ------------------------------------------------------------------ */
@@ -511,6 +494,9 @@ function SceneContent({ reducedMotion }: { reducedMotion: boolean }) {
       {/* Traveling pulse along the path */}
       <TravelingPulse reducedMotion={reducedMotion} />
 
+      {/* Camera */}
+      <AutoFitCamera points={[[-5.5, 1.5, 1], [5.5, 1.5, 1], [-5.5, -0.5, -1], [5.5, -0.5, -1]]} />
+
       {/* Controls */}
       <OrbitControls
         enableZoom
@@ -537,7 +523,7 @@ export function HistoryTimeline3D() {
       height="h-[280px] md:h-[340px]"
       ariaLabel="Timeline of Ethereum account abstraction proposals from 2016 to 2026"
       srDescription="A 3D timeline showing the decade-long journey of Ethereum account abstraction. Six milestones are positioned along a horizontal path: EIP-86 (2016, failed, red), EIP-2938 (2020, failed, red), ERC-4337 (2021, shipped bundlers, amber), EIP-3074 (2023, revoked, red), EIP-7702 (2024, stopgap, amber), and EIP-8141 (2026, the answer, green). A traveling pulse moves along the path, lighting up each milestone sequentially. The final milestone glows green with an ACCEPT ring, representing the successful resolution."
-      legend={<Legend />}
+      legend={<SceneLegend items={[{ color: RED, label: 'Failed' }, { color: AMBER, label: 'Partial' }, { color: GREEN, label: 'Success' }]} />}
       fallbackText="Timeline: EIP-86 (2016, failed) → EIP-2938 (2020, failed) → ERC-4337 (2021, partial) → EIP-3074 (2023, revoked) → EIP-7702 (2024, stopgap) → EIP-8141 (2026, success)"
     >
       {({ reducedMotion }) => (
