@@ -78,7 +78,7 @@ contract DeployAllVisionBatches is DeployBLSHelper {
         console.log("");
 
         // Build source list (only sources with active batch engine configs)
-        string[51] memory sourceNames = _getSourceNames();
+        string[54] memory sourceNames = _getSourceNames();
         uint256 count = sourceNames.length;
 
         // Pre-compute sourceIds, configHashes, and BLS signatures
@@ -171,7 +171,7 @@ contract DeployAllVisionBatches is DeployBLSHelper {
         _exportBatchMapping(sourceNames, batchIds, configHashes, visionAddr);
     }
 
-    function _getSourceNames() internal pure returns (string[51] memory names) {
+    function _getSourceNames() internal pure returns (string[54] memory names) {
         // Only sources with active batch engine configs (verified 2026-02-26).
         // Removed: coingecko (rate-limited), nasdaq, twse, bls, courtlistener,
         //          github, npm, pypi, crates_io, stackexchange, openalex,
@@ -240,10 +240,15 @@ contract DeployAllVisionBatches is DeployBLSHelper {
         names[48] = "spaceweather";
         names[49] = "iss";
         names[50] = "mil_aircraft";
+        // ── Rail (1) ──
+        names[51] = "db_trains";
+        // ── Viral/Meme (2) ──
+        names[52] = "mcbroken";
+        names[53] = "nyc311";
     }
 
     function _exportBatchMapping(
-        string[51] memory sourceNames,
+        string[54] memory sourceNames,
         uint256[] memory batchIds,
         bytes32[] memory configHashes,
         address visionAddr

@@ -32,47 +32,30 @@ export function VisionBalanceBar() {
 
   return (
     <>
-      <div className="mb-6 flex items-center justify-between bg-card border border-border-light rounded-card px-5 py-3">
-        <div className="flex items-center gap-6">
-          <div>
-            <p className="text-sm font-bold text-text-primary">
-              Balance: {fmtBal(total)} USDC
-            </p>
-            {hasBalance && (
-              <p className="text-[10px] text-text-muted font-mono">
-                L3: {fmtBal(realBalance)}  &middot;  Arb-backed: {fmtBal(virtualBalance)}
-              </p>
-            )}
-          </div>
-          {hasBalance && !ptsLoading && activeBatches > 0 && (
-            <Link href="/points" className="flex items-center gap-3 pl-6 border-l border-border-light hover:opacity-80 transition-opacity">
-              <div>
-                <p className="text-sm font-bold text-text-primary font-mono tabular-nums">
-                  {formatPts(estimatedTotalPoints)} pts
-                </p>
-                <p className="text-[10px] text-color-up font-bold font-mono">
-                  +{formatPts(totalPointsPerHour)}/hr &middot; {activeBatches} batch{activeBatches !== 1 ? 'es' : ''}
-                </p>
-              </div>
-            </Link>
-          )}
-        </div>
-        <div className="flex gap-2">
+      <div className="flex items-center gap-2">
+        <span className="text-[13px] font-bold font-mono tabular-nums text-black">
+          {fmtBal(total)}
+          <span className="text-text-muted font-medium ml-1">USDC</span>
+        </span>
+        {hasBalance && !ptsLoading && activeBatches > 0 && (
+          <Link href="/points" className="text-[11px] font-bold font-mono text-color-up hover:opacity-80 transition-opacity">
+            {formatPts(estimatedTotalPoints)} pts
+          </Link>
+        )}
+        <button
+          onClick={() => setShowDepositModal(true)}
+          className="px-2.5 py-1 bg-color-up text-white text-[11px] font-bold rounded hover:opacity-90 transition-opacity"
+        >
+          DEPOSIT
+        </button>
+        {hasBalance && (
           <button
-            onClick={() => setShowDepositModal(true)}
-            className="px-3 py-1.5 bg-color-up text-white text-xs font-bold rounded-card hover:opacity-90 transition-opacity"
+            onClick={() => setShowWithdrawModal(true)}
+            className="px-2.5 py-1 bg-muted text-text-secondary text-[11px] font-bold rounded border border-border-light hover:bg-surface transition-colors"
           >
-            DEPOSIT
+            WITHDRAW
           </button>
-          {hasBalance && (
-            <button
-              onClick={() => setShowWithdrawModal(true)}
-              className="px-3 py-1.5 bg-muted text-text-secondary text-xs font-bold rounded-card border border-border-light hover:bg-surface transition-colors"
-            >
-              WITHDRAW
-            </button>
-          )}
-        </div>
+        )}
       </div>
       {showDepositModal && <BalanceDepositModal onClose={() => setShowDepositModal(false)} />}
       {showWithdrawModal && <BalanceWithdrawModal onClose={() => setShowWithdrawModal(false)} />}

@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import type { SnapshotPrice } from '@/hooks/vision/useMarketSnapshot'
-import { getSource, getAssetCountForSource, getDataNodeSourceId } from '@/lib/vision/sources'
+import { getSource, getAssetCountForSource, getDataNodeSourceId, getSourceValueLabel, isSourcePriceType, getSourceUnit } from '@/lib/vision/sources'
 import type { BitmapEditor, CellState } from '@/hooks/vision/useBitmapEditor'
 import { ConsensusPopup } from './ConsensusPopup'
 import { DATA_NODE_URL } from '@/lib/config'
@@ -26,14 +26,15 @@ interface PriceHistoryPoint {
   value: number
 }
 
-function formatPrice(value: string): string {
+function formatPrice(value: string, asCurrency: boolean): string {
   const num = parseFloat(value)
   if (isNaN(num)) return '--'
-  if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(2)}M`
-  if (num >= 1_000) return `$${(num / 1_000).toFixed(2)}K`
-  if (num >= 1) return `$${num.toFixed(2)}`
-  if (num >= 0.01) return `$${num.toFixed(4)}`
-  return `$${num.toFixed(6)}`
+  const prefix = asCurrency ? '$' : ''
+  if (num >= 1_000_000) return `${prefix}${(num / 1_000_000).toFixed(2)}M`
+  if (num >= 1_000) return `${prefix}${(num / 1_000).toFixed(2)}K`
+  if (num >= 1) return `${prefix}${num.toFixed(2)}`
+  if (num >= 0.01) return `${prefix}${num.toFixed(4)}`
+  return `${prefix}${num.toFixed(6)}`
 }
 
 function formatValue(v: number): string {
@@ -215,6 +216,9 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
   const dataNodeId = source ? getDataNodeSourceId(sourceId) : undefined
   const { data, isLoading } = useSourceSnapshot(dataNodeId)
   const { data: meta } = useMarketSnapshotMeta()
+  const valueLabel = getSourceValueLabel(sourceId)
+  const isPriceSource = isSourcePriceType(sourceId)
+  const unit = getSourceUnit(sourceId)
   const [search, setSearch] = useState('')
   const [consensusOpen, setConsensusOpen] = useState<string | null>(null)
   const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null)
@@ -284,7 +288,7 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
         {/* Column headers */}
         <div className="grid grid-cols-[1fr_100px_80px_80px_80px_100px] items-center px-4 py-2.5 border-b-[3px] border-black text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
           <div>Name</div>
-          <div className="text-right">Price</div>
+          <div className="text-right">{valueLabel}{unit ? ` (${unit})` : ''}</div>
           <div className="text-right">1d</div>
           <div className="text-right">7d</div>
           <div className="text-center">Consensus</div>
@@ -341,9 +345,9 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
                     </div>
                   </div>
 
-                  {/* Price */}
+                  {/* Value */}
                   <div className="text-right font-mono tabular-nums text-black font-semibold">
-                    {formatPrice(market.value)}
+                    {formatPrice(market.value, isPriceSource)}
                   </div>
 
                   {/* 1d change */}

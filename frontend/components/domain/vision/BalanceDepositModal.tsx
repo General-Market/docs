@@ -1,15 +1,22 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { useAccount, useChainId } from 'wagmi'
+import { useAccount, useChainId, useReadContract } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
 import { useDepositBalance } from '@/hooks/vision/useDepositBalance'
 import { useDepositToVision } from '@/hooks/vision/useDepositToVision'
 import { useVisionBalance } from '@/hooks/vision/useVisionBalance'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { usePostHogTracker } from '@/hooks/usePostHog'
-import { VISION_USDC_DECIMALS, ARB_USDC_DECIMALS } from '@/lib/vision/constants'
+import { VISION_USDC_DECIMALS, ARB_USDC_DECIMALS, ARB_USDC_ADDRESS } from '@/lib/vision/constants'
+import { USDC_ADDRESS } from '@/lib/contracts/addresses'
 import { indexL3, arbitrumChain } from '@/lib/wagmi'
+
+const ERC20_BALANCE_ABI = [{
+  name: 'balanceOf', type: 'function', stateMutability: 'view',
+  inputs: [{ name: 'account', type: 'address' }],
+  outputs: [{ name: '', type: 'uint256' }],
+}] as const
 
 type Mode = 'choose' | 'l3' | 'arb'
 
@@ -25,7 +32,7 @@ interface BalanceDepositModalProps {
  * - "From Arbitrum": uses useDepositToVision (approve Arb USDC -> ArbBridgeCustody.depositToVision)
  */
 export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
-  const { isConnected } = useAccount()
+  const { isConnected, address } = useAccount()
   const chainId = useChainId()
   const { capture } = usePostHogTracker()
   const { refetch: refetchBalance } = useVisionBalance()
@@ -85,6 +92,32 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
 
   const isOnArb = chainId === arbitrumChain.id
   const isOnL3 = chainId === indexL3.id
+
+  // Read wallet USDC balance on L3
+  const { data: l3UsdcRaw } = useReadContract({
+    address: USDC_ADDRESS,
+    abi: ERC20_BALANCE_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address && isOnL3 },
+  })
+
+  // Read wallet USDC balance on Arb
+  const { data: arbUsdcRaw } = useReadContract({
+    address: ARB_USDC_ADDRESS,
+    abi: ERC20_BALANCE_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    chainId: arbitrumChain.id,
+    query: { enabled: !!address },
+  })
+
+  const l3WalletBalance = l3UsdcRaw !== undefined
+    ? parseFloat(formatUnits(l3UsdcRaw, VISION_USDC_DECIMALS)).toFixed(2)
+    : null
+  const arbWalletBalance = arbUsdcRaw !== undefined
+    ? parseFloat(formatUnits(arbUsdcRaw, ARB_USDC_DECIMALS)).toFixed(2)
+    : null
 
   const stepLabel = (() => {
     if (mode === 'l3') {
@@ -157,7 +190,12 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                     : 'border-border-light bg-muted hover:bg-surface'
                 }`}
               >
-                <p className="text-sm font-bold text-text-primary">From L3 Wallet</p>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-bold text-text-primary">From L3 Wallet</p>
+                  {l3WalletBalance !== null && (
+                    <span className="text-xs font-mono tabular-nums text-text-secondary">{l3WalletBalance} USDC</span>
+                  )}
+                </div>
                 <p className="text-xs text-text-muted mt-1">
                   Deposit L3 USDC directly into your Vision balance
                 </p>
@@ -175,7 +213,12 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                     : 'border-border-light bg-muted hover:bg-surface'
                 }`}
               >
-                <p className="text-sm font-bold text-text-primary">From Arbitrum</p>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-bold text-text-primary">From Arbitrum</p>
+                  {arbWalletBalance !== null && (
+                    <span className="text-xs font-mono tabular-nums text-text-secondary">{arbWalletBalance} USDC</span>
+                  )}
+                </div>
                 <p className="text-xs text-text-muted mt-1">
                   Lock USDC on Arbitrum. Issuers credit your virtual balance on L3.
                 </p>
@@ -217,8 +260,24 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
               <div className="bg-muted border border-border-light rounded-xl p-4">
                 <div className="flex justify-between items-center mb-2">
                   <label className="text-xs font-medium uppercase tracking-wider text-text-muted">
-                    Amount ({mode === 'arb' ? 'Arb USDC, 6 dec' : 'L3 USDC, 18 dec'})
+                    Amount
                   </label>
+                  {mode === 'l3' && l3WalletBalance !== null && (
+                    <button
+                      onClick={() => setAmount(l3WalletBalance)}
+                      className="text-xs font-mono text-text-secondary hover:text-text-primary transition-colors"
+                    >
+                      Wallet: {l3WalletBalance} USDC
+                    </button>
+                  )}
+                  {mode === 'arb' && arbWalletBalance !== null && (
+                    <button
+                      onClick={() => setAmount(arbWalletBalance)}
+                      className="text-xs font-mono text-text-secondary hover:text-text-primary transition-colors"
+                    >
+                      Wallet: {arbWalletBalance} USDC
+                    </button>
+                  )}
                 </div>
                 <input
                   type="number"

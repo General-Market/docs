@@ -7,7 +7,6 @@ import { useBatches, type BatchInfo } from '@/hooks/vision/useBatches'
 import { BatchCard } from './BatchCard'
 import { ExpandedBatch } from './ExpandedBatch'
 import { CreateBatchModal } from './CreateBatchModal'
-import { VisionBalanceBar } from './VisionBalanceBar'
 import { MyPositions } from './MyPositions'
 import { VisionLeaderboard } from './VisionLeaderboard'
 
@@ -28,8 +27,6 @@ export function VisionPage() {
       <section id="vision">
         <div className="px-6 lg:px-12">
           <div className="max-w-site mx-auto py-8">
-            <VisionBalanceBar />
-
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
               <div>

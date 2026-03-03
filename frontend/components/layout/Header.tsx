@@ -9,6 +9,7 @@ import { indexL3 } from '@/lib/wagmi'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { USDC_ADDRESS, USDC_DECIMALS } from '@/lib/contracts/addresses'
 import { LanguageSwitcher } from './LanguageSwitcher'
+import { VisionBalanceBar } from '@/components/domain/vision/VisionBalanceBar'
 
 export function Header() {
   const t = useTranslations('common')
@@ -196,26 +197,29 @@ export function Header() {
               </div>
             </nav>
 
-            {/* Right side — Wallet + Hamburger */}
+            {/* Right side — Balance + Wallet + Hamburger */}
             <div className="flex items-center gap-3 shrink-0">
+              {isVision && <VisionBalanceBar />}
               {mounted && authenticated && address ? (
                 <div className="flex items-center gap-2">
-                  {/* USDC balance or Deposit button */}
-                  {usdcBalance !== null && usdcBalance > 0 ? (
-                    <span className="text-[13px] font-bold font-mono tabular-nums text-black">
-                      {usdcBalance < 0.01 ? '<0.01' : usdcBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      <span className="text-text-muted font-medium ml-1">USDC</span>
-                    </span>
-                  ) : usdcBalance !== null ? (
-                    <a
-                      href={`https://onramp.money/main/buy/?appId=1&coinCode=usdc&network=arbitrum&walletAddress=${address}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-[12px] font-bold rounded hover:bg-green-700 transition-colors"
-                    >
-                      Deposit
-                    </a>
-                  ) : null}
+                  {/* USDC balance or Deposit button — hidden on Vision (VisionBalanceBar handles it) */}
+                  {!isVision && (
+                    usdcBalance !== null && usdcBalance > 0 ? (
+                      <span className="text-[13px] font-bold font-mono tabular-nums text-black">
+                        {usdcBalance < 0.01 ? '<0.01' : usdcBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        <span className="text-text-muted font-medium ml-1">USDC</span>
+                      </span>
+                    ) : usdcBalance !== null ? (
+                      <a
+                        href={`https://onramp.money/main/buy/?appId=1&coinCode=usdc&network=arbitrum&walletAddress=${address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-[12px] font-bold rounded hover:bg-green-700 transition-colors"
+                      >
+                        Deposit
+                      </a>
+                    ) : null
+                  )}
                   {/* Wallet address */}
                   <button
                     onClick={handleLogout}
