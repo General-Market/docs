@@ -1672,6 +1672,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("Yahoo Drink Markets started");
     }
 
+    // Deutsche Bahn Train Delays — no key needed (free public API)
+    {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        tokio::spawn(async move {
+            match market_data::sources::db_trains::DbTrainsMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Deutsche Bahn Train Delays init failed: {e}"),
+            }
+        });
+        info!("Deutsche Bahn Train Delays started");
+    }
+
     // Record not_started for any source that was gated off (missing keys, disabled flags)
     {
         let tracker = market_data::error_tracker::global();

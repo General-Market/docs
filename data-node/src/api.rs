@@ -4808,6 +4808,8 @@ const SOURCE_META: &[(&str, &str, u64)] = &[
     ("faa_delays", "FAA Airport Delays", 600),
     // ── Drink Sources ───────────────────────────────────────────────────────
     ("yahoo_drinks", "Yahoo Drink Markets", 600),
+    // ── European Transport ────────────────────────────────────────────────
+    ("db_trains", "Deutsche Bahn Train Delays", 300),
 ];
 
 /// Per-source explanation of why assets may be stale.

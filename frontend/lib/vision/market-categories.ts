@@ -53,6 +53,7 @@ const PREFIX_MAP: [string, string, string][] = [
   ['queue_times_', 'queue_times', 'Theme Parks'],
   ['cbp_border_', 'cbp_border', 'Border Wait Times'],
   ['faa_delays_', 'faa_delays', 'Airport Delays'],
+  ['db_trains_', 'db_trains', 'Deutsche Bahn'],
 ]
 
 // Common bare crypto tickers (no prefix)
@@ -72,7 +73,7 @@ const CATEGORY_ORDER = [
   'parking', 'tomtom_traffic', 'tomtom_evcharge',
   'bgg', 'bestbuy',
   'adzuna',
-  'queue_times', 'cbp_border', 'faa_delays',
+  'queue_times', 'cbp_border', 'faa_delays', 'db_trains',
   'other',
 ]
 

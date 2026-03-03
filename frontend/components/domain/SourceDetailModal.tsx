@@ -401,6 +401,7 @@ const SOURCE_META: Record<string, SourceMeta> = {
   queue_times: { valueLabel: 'Avg Wait', unit: 'min' },
   cbp_border: { valueLabel: 'Wait Time', unit: 'min' },
   faa_delays: { valueLabel: 'Delay', unit: '0/1' },
+  db_trains: { valueLabel: 'Avg Delay', unit: 'min' },
 
   // ── Drink Sources ──
   yahoo_drinks: {
