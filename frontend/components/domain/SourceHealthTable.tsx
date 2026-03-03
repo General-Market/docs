@@ -168,6 +168,8 @@ const API_KEY_LINKS: Record<string, { url: string; label: string }> = {
   cbp_border: { url: 'https://bwt.cbp.gov/', label: 'CBP Border Wait Times' },
   faa_delays: { url: 'https://soa.smext.faa.gov/asws/api/airport/status/', label: 'FAA ASWS' },
   db_trains: { url: 'https://v6.db.transport.rest/', label: 'DB Transport REST' },
+  mcbroken: { url: 'https://mcbroken.com/', label: 'McBroken' },
+  nyc311: { url: 'https://data.cityofnewyork.us/', label: 'NYC Open Data' },
 }
 
 // ── Skeleton ──

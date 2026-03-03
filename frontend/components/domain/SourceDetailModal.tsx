@@ -403,6 +403,12 @@ const SOURCE_META: Record<string, SourceMeta> = {
   faa_delays: { valueLabel: 'Delay', unit: '0/1' },
   db_trains: { valueLabel: 'Avg Delay', unit: 'min' },
 
+  // ── Government / City ──
+  nyc311: { valueLabel: 'Complaints', unit: '/24h' },
+
+  // ── Food ──
+  mcbroken: { valueLabel: '% Broken', unit: '%' },
+
   // ── Drink Sources ──
   yahoo_drinks: {
     valueLabel: 'Price', unit: '',

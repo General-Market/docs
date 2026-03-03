@@ -64,6 +64,7 @@ export const VISION_SOURCES: VisionSource[] = [
   { id: 'sec', name: 'SEC Filings', description: 'Institutional investment disclosures — 13F holdings, EDGAR filings, and insider transactions.', category: 'regulatory', logo: '/source-imgs/new-sec.svg', brandBg: '#0a3055', prefixes: ['sec_edgar_', 'sec_efts_', 'sec_insider_'] },
   { id: 'congress', name: 'Congress Votes', description: 'US legislative data — bill introductions, votes, committee actions, congressional metrics.', category: 'regulatory', logo: '/source-imgs/congress.png', brandBg: 'linear-gradient(135deg,#1a2744,#2d4a7a)', prefixes: ['congress_'] },
   { id: 'courtlistener', name: 'Federal Courts', description: 'Daily federal court filing counts — opinions, docket entries, and new cases across 34 courts.', category: 'regulatory', logo: '/source-imgs/new-courtlistener.png', brandBg: '#f5f5f5', prefixes: ['court_'] },
+  { id: 'nyc311', name: 'NYC 311 Complaints', description: 'Real-time New York City 311 complaint counts across 30 categories — noise, rodents, parking, and more.', category: 'regulatory', logo: '/source-imgs/new-nyc311.svg', brandBg: '#002D72', prefixes: ['nyc311_'] },
 
   // ── Tech & Dev ──
   { id: 'github', name: 'GitHub Repositories', description: 'Open source activity — stars, forks, issues, commits, and contributor metrics.', category: 'tech', logo: '/source-imgs/new-github.png', brandBg: '#24292e', prefixes: ['github_'] },
@@ -93,6 +94,7 @@ export const VISION_SOURCES: VisionSource[] = [
   { id: 'sports', name: 'Sports Stats', description: 'Live sports data — scores, standings, schedules, stats across NFL, NBA, MLB, NHL.', category: 'entertainment', logo: '/source-imgs/new-espn.svg', brandBg: '#1b1b1b', prefixes: ['sport_'] },
   { id: 'pandascore', name: 'Esports', description: 'Esports match tracking — live scores across CS2, LoL, Dota 2, Valorant, and more.', category: 'entertainment', logo: '/source-imgs/new-pandascore.png', brandBg: '#f5f5f5', prefixes: ['esport_'] },
   { id: 'queue_times', name: 'Theme Park Waits', description: 'Average ride wait times across 30+ major theme parks worldwide — Disney, Universal, and more.', category: 'entertainment', logo: '/source-imgs/new-queuetimes.png', brandBg: '#1a1a2e', prefixes: ['queue_times_'] },
+  { id: 'mcbroken', name: 'McBroken Ice Cream', description: 'McDonald\'s ice cream machine broken percentage across 30 US cities — real-time status tracking.', category: 'entertainment', logo: '/source-imgs/new-mcbroken.svg', brandBg: '#FFC72C', prefixes: ['mcbroken_'] },
 
   // ── Geophysical ──
   { id: 'earthquake', name: 'USGS Earthquakes', description: 'Seismic event data — real-time magnitudes, depths, and locations from the seismic network.', category: 'geophysical', logo: '/source-imgs/new-usgs.svg', brandBg: '#f5f5f5', prefixes: ['earthquake_'] },
@@ -119,7 +121,7 @@ export const VISION_SOURCES: VisionSource[] = [
   { id: 'tomtom_evcharge', name: 'EV Charging', description: 'Available EV charging connectors at 25+ major charging hubs worldwide — real-time availability.', category: 'transport', logo: '/source-imgs/new-tomtomev.png', brandBg: '#f5f5f5', prefixes: ['tomtom_evcharge_'] },
   { id: 'cbp_border', name: 'Border Wait Times', description: 'US Customs and Border Protection — real-time passenger and commercial wait times at all ports of entry.', category: 'transport', logo: '/source-imgs/new-cbpborder.png', brandBg: '#1a2744', prefixes: ['cbp_border_'] },
   { id: 'faa_delays', name: 'Airport Delays', description: 'Real-time delay status for 30 major US airports from the FAA Airport Status Web Service.', category: 'transport', logo: '/source-imgs/new-faadelays.png', brandBg: '#f5f5f5', prefixes: ['faa_delays_'] },
-  { id: 'db_trains', name: 'Deutsche Bahn', description: 'Average train delay in minutes at 20 major German stations — real-time departure data from Deutsche Bahn.', category: 'transport', logo: '/source-imgs/new-dbtrains.svg', brandBg: '#ec0016', prefixes: ['db_trains_'] },
+  { id: 'db_trains', name: 'Deutsche Bahn', description: 'Average train delay in minutes at 58 major German stations — real-time departure data from Deutsche Bahn.', category: 'transport', logo: '/source-imgs/new-dbtrains.svg', brandBg: '#ec0016', prefixes: ['db_trains_'] },
   { id: 'aisstream', name: 'Ship Tracking', description: 'Real-time AIS stream — live vessel positions, speeds, and routes from AIS receivers.', category: 'transport', logo: '/source-imgs/new-aisstream.png', brandBg: '#1b1b1b', prefixes: ['aisstream_'] },
   { id: 'maritime', name: 'Port Data', description: 'Ship tracking — vessel positions, port traffic, shipping lane activity, cargo movements.', category: 'transport', logo: '/source-imgs/new-marinetraffic.png', brandBg: '#1b1b1b', prefixes: ['maritime_'] },
 
@@ -134,6 +136,103 @@ export const VISION_SOURCES: VisionSource[] = [
   { id: 'iss', name: 'ISS Tracker', description: 'International Space Station — real-time orbital position, crew count, pass predictions.', category: 'space', logo: '/source-imgs/new-iss.png', brandBg: '#0c0a1a', prefixes: ['iss_'] },
   { id: 'mil_aircraft', name: 'Military Aircraft', description: 'Defense aviation — military flights, tanker ops, surveillance movements via ADS-B.', category: 'space', logo: '/source-imgs/new-milaircraft.png', brandBg: '#1a2332', prefixes: ['mil_aircraft_'] },
 ]
+
+/**
+ * Per-source value labels and units for the markets table.
+ * Used by MarketsTable to show "Delay" instead of "Price", etc.
+ */
+export const SOURCE_VALUE_META: Record<string, { label: string; unit: string; isPrice?: boolean }> = {
+  // Finance (show $ prefix)
+  coingecko: { label: 'Price', unit: 'USD', isPrice: true },
+  pumpfun: { label: 'Price', unit: 'USD', isPrice: true },
+  defillama: { label: 'TVL', unit: 'USD', isPrice: true },
+  finnhub: { label: 'Price', unit: 'USD', isPrice: true },
+  nasdaq: { label: 'Price', unit: 'USD', isPrice: true },
+  zillow: { label: 'Price', unit: 'USD', isPrice: true },
+  bestbuy: { label: 'Sale Price', unit: 'USD', isPrice: true },
+  twse: { label: 'Price', unit: 'TWD', isPrice: true },
+  futures: { label: 'Price', unit: 'USD', isPrice: true },
+  bchain: { label: 'Value', unit: '', isPrice: true },
+  yahoo_drinks: { label: 'Price', unit: 'USD', isPrice: true },
+  backpacktf: { label: 'Price', unit: 'USD', isPrice: true },
+  finra: { label: 'Short Volume', unit: 'shares' },
+  finra_short_vol: { label: 'Short Volume', unit: 'shares' },
+  polymarket: { label: 'Probability', unit: '%' },
+  opec: { label: 'Basket Price', unit: 'USD/bbl', isPrice: true },
+  // Economic
+  fred: { label: 'Rate', unit: '%' },
+  eia: { label: 'Value', unit: '' },
+  treasury: { label: 'Yield', unit: '%' },
+  ecb: { label: 'Value', unit: '' },
+  worldbank: { label: 'Value', unit: '' },
+  adzuna: { label: 'Avg Salary', unit: '' },
+  cftc: { label: 'Contracts', unit: 'lots' },
+  // Government
+  usa_spending: { label: 'Amount', unit: 'USD', isPrice: true },
+  sec: { label: 'Filings', unit: '' },
+  congress: { label: 'Count', unit: '' },
+  nyc311: { label: 'Complaints', unit: '/24h' },
+  // Tech
+  hackernews: { label: 'Score', unit: 'pts' },
+  cloudflare: { label: 'Value', unit: '' },
+  // Academic
+  crossref: { label: 'DOIs', unit: '' },
+  pubmed: { label: 'Articles', unit: '' },
+  // Entertainment
+  tmdb: { label: 'Popularity', unit: 'score' },
+  lastfm: { label: 'Listeners', unit: '' },
+  steam: { label: 'Players', unit: 'online' },
+  anilist: { label: 'Popularity', unit: 'score' },
+  chaturbate: { label: 'Viewers', unit: 'live' },
+  backpacktf_items: { label: 'Price', unit: 'USD', isPrice: true },
+  fourchan: { label: 'Activity', unit: '' },
+  sports: { label: 'Score', unit: 'pts' },
+  pandascore: { label: 'Score', unit: '' },
+  queue_times: { label: 'Avg Wait', unit: 'min' },
+  mcbroken: { label: '% Broken', unit: '%' },
+  bgg: { label: 'Hotness', unit: '#' },
+  // Geophysical
+  earthquake: { label: 'Magnitude', unit: 'M' },
+  weather_alerts: { label: 'Count', unit: 'alerts' },
+  airnow: { label: 'AQI', unit: '0-500' },
+  usgs_water: { label: 'Discharge', unit: 'ft³/s' },
+  noaa_met: { label: 'Value', unit: '' },
+  noaa_tides: { label: 'Water Level', unit: 'ft' },
+  ndbc: { label: 'Wave Height', unit: 'm' },
+  nwps: { label: 'Stage Height', unit: 'ft' },
+  nrc_nuclear: { label: 'Power', unit: '%' },
+  wildfire: { label: 'Hotspots', unit: 'fires' },
+  epidemic: { label: 'Cases', unit: '' },
+  // Transport
+  gtfs_rt: { label: 'Delay', unit: 'min' },
+  citybikes: { label: 'Available', unit: 'bikes' },
+  parking: { label: 'Free Spaces', unit: '' },
+  cbp_border: { label: 'Wait Time', unit: 'min' },
+  faa_delays: { label: 'Delay', unit: '0/1' },
+  db_trains: { label: 'Avg Delay', unit: 'min' },
+  // Nature
+  animals: { label: 'Observations', unit: '/24h' },
+  shelter: { label: 'Count', unit: 'animals' },
+  // Space
+  spaceweather: { label: 'Value', unit: '' },
+  iss: { label: 'Position', unit: '' },
+  mil_aircraft: { label: 'Count', unit: '' },
+}
+
+/** Get value label for a source (e.g. "Price", "Avg Delay", "Magnitude") */
+export function getSourceValueLabel(sourceId: string): string {
+  return SOURCE_VALUE_META[sourceId]?.label ?? 'Value'
+}
+
+/** Whether this source's values should be formatted as currency with $ prefix */
+export function isSourcePriceType(sourceId: string): boolean {
+  return SOURCE_VALUE_META[sourceId]?.isPrice ?? false
+}
+
+/** Get the unit suffix for a source (e.g. "USD", "min", "%") */
+export function getSourceUnit(sourceId: string): string {
+  return SOURCE_VALUE_META[sourceId]?.unit ?? ''
+}
 
 /** Lookup a source by id */
 export function getSource(id: string): VisionSource | undefined {

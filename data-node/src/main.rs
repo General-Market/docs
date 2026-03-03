@@ -1688,6 +1688,38 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("Deutsche Bahn Train Delays started");
     }
 
+    // NYC 311 Complaints — no key needed (free Socrata Open Data API)
+    {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        tokio::spawn(async move {
+            match market_data::sources::nyc311::Nyc311MarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("NYC 311 Complaints init failed: {e}"),
+            }
+        });
+        info!("NYC 311 Complaints started");
+    }
+
+    // McBroken Ice Cream — no key needed (public API)
+    {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        tokio::spawn(async move {
+            match market_data::sources::mcbroken::McBrokenMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("McBroken Ice Cream init failed: {e}"),
+            }
+        });
+        info!("McBroken Ice Cream started");
+    }
+
     // Record not_started for any source that was gated off (missing keys, disabled flags)
     {
         let tracker = market_data::error_tracker::global();

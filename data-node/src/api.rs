@@ -4810,6 +4810,10 @@ const SOURCE_META: &[(&str, &str, u64)] = &[
     ("yahoo_drinks", "Yahoo Drink Markets", 600),
     // ── European Transport ────────────────────────────────────────────────
     ("db_trains", "Deutsche Bahn Train Delays", 300),
+    // ── Government / City ──────────────────────────────────────────────
+    ("nyc311", "NYC 311 Complaints", 600),
+    // ── Food / Entertainment ────────────────────────────────────────────
+    ("mcbroken", "McBroken Ice Cream", 600),
 ];
 
 /// Per-source explanation of why assets may be stale.

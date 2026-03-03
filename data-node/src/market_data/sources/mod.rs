@@ -86,6 +86,8 @@ pub mod bestbuy;
 pub mod adzuna;
 pub mod yahoo_drinks;
 pub mod db_trains;
+pub mod mcbroken;
+pub mod nyc311;
 
 // Index-only sources (3) + shared ticker list
 pub mod tracked_tickers;
@@ -174,6 +176,8 @@ pub use bestbuy::BestBuyMarketSource;
 pub use adzuna::AdzunaMarketSource;
 pub use yahoo_drinks::YahooDrinksMarketSource;
 pub use db_trains::DbTrainsMarketSource;
+pub use mcbroken::McBrokenMarketSource;
+pub use nyc311::Nyc311MarketSource;
 
 // Re-exports — Index-only sources
 pub use finra_short_vol::FinraShortVolMarketSource;

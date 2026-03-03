@@ -54,6 +54,8 @@ const PREFIX_MAP: [string, string, string][] = [
   ['cbp_border_', 'cbp_border', 'Border Wait Times'],
   ['faa_delays_', 'faa_delays', 'Airport Delays'],
   ['db_trains_', 'db_trains', 'Deutsche Bahn'],
+  ['mcbroken_', 'mcbroken', 'McBroken'],
+  ['nyc311_', 'nyc311', 'NYC 311'],
 ]
 
 // Common bare crypto tickers (no prefix)
@@ -66,7 +68,7 @@ const CATEGORY_ORDER = [
   'crypto', 'stocks', 'futures', 'defi', 'polymarket',
   'weather', 'esports', 'sports', 'twitch', 'reddit', 'chaturbate',
   'usgs_water', 'noaa_tides', 'nrc_nuclear', 'citybikes',
-  'ndbc', 'noaa_met', 'nwps', 'airnow', 'courtlistener',
+  'ndbc', 'noaa_met', 'nwps', 'airnow', 'courtlistener', 'nyc311',
   'hackernews', 'steam', 'github', 'tmdb', 'lastfm', 'zillow',
   'openalex', 'crossref', 'pubmed', 'stackexchange',
   'shelter',
@@ -74,6 +76,7 @@ const CATEGORY_ORDER = [
   'bgg', 'bestbuy',
   'adzuna',
   'queue_times', 'cbp_border', 'faa_delays', 'db_trains',
+  'mcbroken',
   'other',
 ]
 
