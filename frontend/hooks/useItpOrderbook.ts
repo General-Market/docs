@@ -35,9 +35,9 @@ interface CacheEntry {
   timestamp: number
 }
 
-// Fast poll for Binance-style live ticking
-const POLL_MS = 300
-const CACHE_TTL_MS = 1_500
+// Poll interval and cache TTL — fetch fires once per TTL window
+const POLL_MS = 500
+const CACHE_TTL_MS = 1_000
 
 // Module-level cache shared across hook instances
 const cache = new Map<string, CacheEntry>()
