@@ -75,6 +75,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const [amount, setAmount] = useState('')
   const [limitPrice, setLimitPrice] = useState('0')
   const [slippageTier, setSlippageTier] = useState(2)
+  const [showSlippage, setShowSlippage] = useState(false)
   const [deadlineHours, setDeadlineHours] = useState(1)
   const [micro, setMicro] = useState<number>(-1) // -1 = INPUT mode
   const [orderId, setOrderId] = useState<bigint | null>(null)
@@ -590,24 +591,40 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                     />
                   </div>
 
-                  <div className="bg-muted border border-border-light rounded-xl p-4">
-                    <label className="block text-xs font-medium uppercase tracking-wider text-text-muted mb-3">{t('slippage_label')}</label>
-                    <div className="flex gap-2">
-                      {SLIPPAGE_TIERS.map(tier => (
-                        <button
-                          key={tier.value}
-                          onClick={() => setSlippageTier(tier.value)}
-                          className={`flex-1 py-2 rounded-lg border text-sm font-mono transition-colors ${
-                            slippageTier === tier.value
-                              ? 'border-zinc-900 text-white bg-zinc-900'
-                              : 'border-border-medium text-text-muted hover:border-zinc-500'
-                          }`}
-                        >
-                          {tier.label}
-                        </button>
-                      ))}
-                    </div>
+                  <div className="flex items-center justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setShowSlippage(s => !s)}
+                      className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-primary transition-colors"
+                      title={t('slippage_label')}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826-3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span className="font-mono">{SLIPPAGE_TIERS[slippageTier].label}</span>
+                    </button>
                   </div>
+                  {showSlippage && (
+                    <div className="bg-muted border border-border-light rounded-xl p-4">
+                      <label className="block text-xs font-medium uppercase tracking-wider text-text-muted mb-3">{t('slippage_label')}</label>
+                      <div className="flex gap-2">
+                        {SLIPPAGE_TIERS.map(tier => (
+                          <button
+                            key={tier.value}
+                            onClick={() => setSlippageTier(tier.value)}
+                            className={`flex-1 py-2 rounded-lg border text-sm font-mono transition-colors ${
+                              slippageTier === tier.value
+                                ? 'border-zinc-900 text-white bg-zinc-900'
+                                : 'border-border-medium text-text-muted hover:border-zinc-500'
+                            }`}
+                          >
+                            {tier.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* P&L Preview */}
                   {parsedAmount > 0n && costBasis && costBasis.avgCostPerShare > 0n && (

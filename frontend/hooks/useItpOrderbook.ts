@@ -44,15 +44,17 @@ const cache = new Map<string, CacheEntry>()
 
 /** Fire-and-forget prefetch that warms the module-level cache.
  *  Call once per ITP on page load so data is ready before hover. */
+const DEFAULT_AGGREGATION_BPS = 50
+
 export function prefetchOrderbook(itpId: string, levels: number = 15) {
-  const cacheKey = `${itpId}:${levels}:0`
+  const cacheKey = `${itpId}:${levels}:${DEFAULT_AGGREGATION_BPS}`
   const cached = cache.get(cacheKey)
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) return
 
   const params = new URLSearchParams({
     itp_id: itpId,
     levels: String(levels),
-    aggregation_bps: '0',
+    aggregation_bps: String(DEFAULT_AGGREGATION_BPS),
   })
 
   fetch(`${DATA_NODE_URL}/itp-orderbook?${params}`)
@@ -81,7 +83,7 @@ export function useItpOrderbook(
   const [data, setData] = useState<OrderbookData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [aggregationBps, setAggregationBps] = useState(0)
+  const [aggregationBps, setAggregationBps] = useState(DEFAULT_AGGREGATION_BPS)
 
   const abortRef = useRef<AbortController | null>(null)
 

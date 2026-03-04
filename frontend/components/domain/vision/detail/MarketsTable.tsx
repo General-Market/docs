@@ -5,6 +5,8 @@ import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMark
 import type { SnapshotPrice } from '@/hooks/vision/useMarketSnapshot'
 import { getSource, getAssetCountForSource, getDataNodeSourceId, getSourceValueLabel, isSourcePriceType, getSourceUnit } from '@/lib/vision/sources'
 import type { BitmapEditor, CellState } from '@/hooks/vision/useBitmapEditor'
+import { useBatches } from '@/hooks/vision/useBatches'
+import batchConfig from '@/lib/contracts/vision-batches.json'
 import { ConsensusPopup } from './ConsensusPopup'
 import { DATA_NODE_URL } from '@/lib/config'
 import {
@@ -55,6 +57,8 @@ function formatChangePct(pct: string | null): { text: string; color: string } {
   const color = num > 0 ? 'text-green-600' : num < 0 ? 'text-red-600' : 'text-text-muted'
   return { text: `${sign}${num.toFixed(2)}%`, color }
 }
+
+const RESOLUTION_NAMES = ['UP_0', 'UP_30', 'UP_X', 'DOWN_0', 'DOWN_30', 'DOWN_X', 'FLAT_0', 'FLAT_X'] as const
 
 function formatVolume(vol: string | null): string {
   if (!vol) return ''
@@ -216,6 +220,23 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
   const dataNodeId = source ? getDataNodeSourceId(sourceId) : undefined
   const { data, isLoading } = useSourceSnapshot(dataNodeId)
   const { data: meta } = useMarketSnapshotMeta()
+  const { data: batches } = useBatches()
+
+  // Build resolution type map: marketId -> label (e.g. "UP_0", "FLAT_X")
+  const resolutionMap = useMemo(() => {
+    const map = new Map<string, string>()
+    if (!batches) return map
+    const entry = (batchConfig.batches as Record<string, { batchId: number }>)[sourceId]
+    const batch = entry ? batches.find(b => b.id === entry.batchId) : batches[0]
+    if (!batch) return map
+    batch.marketIds.forEach((mid, i) => {
+      const rt = batch.resolutionTypes[i]
+      if (rt !== undefined && rt < RESOLUTION_NAMES.length) {
+        map.set(mid, RESOLUTION_NAMES[rt])
+      }
+    })
+    return map
+  }, [batches, sourceId])
   const valueLabel = getSourceValueLabel(sourceId)
   const isPriceSource = isSourcePriceType(sourceId)
   const unit = getSourceUnit(sourceId)
@@ -317,6 +338,7 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
             const vol = formatVolume(market.volume24h)
             const betState = getBetState(market.assetId)
             const isExpanded = expandedAssetId === market.assetId
+            const resType = resolutionMap.get(market.assetId)
 
             return (
               <div key={market.assetId}>
@@ -340,7 +362,7 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
                         {market.name || market.symbol}
                       </div>
                       <div className="text-[10px] font-mono text-text-muted mt-0.5">
-                        {market.symbol}{vol ? ` · Vol ${vol}` : ''}
+                        {market.symbol}{resType ? ` · ${resType}` : ''}{vol ? ` · Vol ${vol}` : ''}
                       </div>
                     </div>
                   </div>

@@ -129,14 +129,14 @@ export default function BatchEntryPanel({
   const counts = bitmapEditor.getCounts(sourceId, marketIds)
   const stakeValue = parseFloat(stakeInput) || 0
   const hasStake = stakeValue > 0
-  // Must have predictions for THIS source's markets, not just globally
-  const hasPredictions = marketIds.length > 0 && marketIds.some(id => {
+  // ALL markets must have predictions — no unset markets allowed
+  const allMarketsSet = marketIds.length > 0 && marketIds.every(id => {
     const cell = bitmapEditor.state[id]
     return cell === 'up' || cell === 'down'
   })
   const activeStep = isJoined ? depositStep : joinStep
   // Lock only blocks new joins (prediction required), not deposits by existing players
-  const canSubmit = hasStake && (isJoined || hasPredictions) && activeStep === 'idle' && (isJoined || !tickState.isLocked) && (isJoined || !!configHash)
+  const canSubmit = hasStake && (isJoined || allMarketsSet) && activeStep === 'idle' && (isJoined || !tickState.isLocked) && (isJoined || !!configHash)
 
   // -- After on-chain join succeeds, submit bitmap to issuers --
   useEffect(() => {
@@ -302,31 +302,44 @@ export default function BatchEntryPanel({
                 <span className="text-[11px] font-mono text-emerald-700">
                   {parseFloat(formatUnits(position.balance, VISION_USDC_DECIMALS)).toFixed(2)} USDC
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setShowClaimModal(true)}
-                  className="px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-300 rounded hover:bg-emerald-100 transition-colors"
-                >
-                  Claim / Withdraw
-                </button>
+                {/* Only show withdraw after at least one tick has resolved since joining */}
+                {activeBatch && BigInt(activeBatch.currentTick) > position.startTick && (
+                  <button
+                    type="button"
+                    onClick={() => setShowClaimModal(true)}
+                    className="px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-300 rounded hover:bg-emerald-100 transition-colors"
+                  >
+                    Withdraw
+                  </button>
+                )}
               </div>
             </div>
           </div>
         )}
 
-        {/* Error display */}
+        {/* Error display — with dismiss to reset state for retry */}
         {displayError && (
-          <div className="text-[11px] text-red-600 mb-2">
-            <p className="line-clamp-2">{displayError}</p>
-            {displayError.includes('Insufficient Vision balance') && (
-              <button
-                type="button"
-                onClick={() => setShowDepositModal(true)}
-                className="mt-1 px-3 py-1 text-[11px] font-semibold text-white bg-color-up rounded hover:opacity-90 transition-opacity"
-              >
-                Deposit USDC
-              </button>
-            )}
+          <div className="text-[11px] text-red-600 mb-2 flex items-start justify-between gap-2">
+            <div>
+              <p className="line-clamp-2">{displayError}</p>
+              {displayError.includes('Insufficient Vision balance') && (
+                <button
+                  type="button"
+                  onClick={() => setShowDepositModal(true)}
+                  className="mt-1 px-3 py-1 text-[11px] font-semibold text-white bg-color-up rounded hover:opacity-90 transition-opacity"
+                >
+                  Deposit USDC
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => { resetJoin(); resetDeposit() }}
+              className="text-neutral-400 hover:text-neutral-600 text-xs flex-shrink-0"
+              title="Dismiss"
+            >
+              &times;
+            </button>
           </div>
         )}
 
@@ -344,7 +357,7 @@ export default function BatchEntryPanel({
         {activeBatch && (
           <div className="mt-2 flex items-center justify-between text-[10px] text-neutral-400">
             <span>{activeBatch.playerCount} players</span>
-            <span>{activeBatch.marketCount} markets</span>
+            <span>{activeBatch.marketCount || marketIds.length} markets</span>
           </div>
         )}
 

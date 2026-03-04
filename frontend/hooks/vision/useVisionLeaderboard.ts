@@ -7,13 +7,15 @@ import type { AgentRanking, LeaderboardResponse } from '@/hooks/useLeaderboard'
 /**
  * Fetches Vision leaderboard from the issuer API.
  * Returns data in the same AgentRanking format as the ITP leaderboard.
+ * Optionally filters by batchId for per-source leaderboards.
  */
-async function fetchVisionLeaderboard(): Promise<LeaderboardResponse> {
+async function fetchVisionLeaderboard(batchId?: number): Promise<LeaderboardResponse> {
   if (!VISION_API_URL) {
     return { leaderboard: [], updatedAt: new Date().toISOString() }
   }
 
-  const response = await fetch(`${VISION_API_URL}/vision/leaderboard`)
+  const params = batchId !== undefined ? `?batch_id=${batchId}` : ''
+  const response = await fetch(`${VISION_API_URL}/vision/leaderboard${params}`)
 
   if (!response.ok) {
     throw new Error(`Failed to fetch Vision leaderboard: ${response.status}`)
@@ -52,10 +54,10 @@ async function fetchVisionLeaderboard(): Promise<LeaderboardResponse> {
   }
 }
 
-export function useVisionLeaderboard() {
+export function useVisionLeaderboard(batchId?: number) {
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['vision-leaderboard'],
-    queryFn: fetchVisionLeaderboard,
+    queryKey: ['vision-leaderboard', batchId],
+    queryFn: () => fetchVisionLeaderboard(batchId),
     refetchInterval: 5000,
     staleTime: 3000,
   })

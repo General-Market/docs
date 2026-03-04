@@ -21,7 +21,7 @@
 
 use std::sync::Arc;
 
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
@@ -916,15 +916,27 @@ struct LeaderboardEntry {
     largest_portfolio: usize,
 }
 
-/// Vision leaderboard — aggregates player balances across all batches.
+/// Query params for leaderboard filtering.
+#[derive(Debug, Deserialize)]
+struct LeaderboardQuery {
+    batch_id: Option<u64>,
+}
+
+/// Vision leaderboard — aggregates player balances across batches.
 ///
 /// Ranks players by current PnL (current_balance - initial_deposit).
-/// Returns data in the same format as the ITP leaderboard for frontend reuse.
+/// Optionally filters to a single batch via `?batch_id=N`.
 async fn vision_leaderboard(
     State(state): State<Arc<VisionState>>,
+    Query(query): Query<LeaderboardQuery>,
 ) -> impl IntoResponse {
-    // Aggregate player data across all batches
-    let batch_ids = state.scheduler.get_all_batch_ids().await;
+    // Aggregate player data — optionally filtered to a single batch
+    let all_ids = state.scheduler.get_all_batch_ids().await;
+    let batch_ids: Vec<u64> = if let Some(bid) = query.batch_id {
+        all_ids.into_iter().filter(|id| *id == bid).collect()
+    } else {
+        all_ids
+    };
 
     // player -> (total_balance, total_deposited, batches_joined, largest_batch_markets, batch_wins)
     let mut player_data: std::collections::HashMap<
