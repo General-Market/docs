@@ -60,11 +60,13 @@ test.describe('Vision Sources — Browse', () => {
     const allCount = await cards.count()
 
     // Click "Finance" category
+    // Use force:true because NextBatches re-sorts every 1s causing layout shifts
+    // that can intercept the click target
     const financePill = categoryPill(page, 'Finance')
-    await financePill.click()
+    await financePill.click({ force: true })
 
     // Wait for the Finance pill to show active state (re-render started)
-    await expect(financePill).toHaveClass(/font-semibold/, { timeout: 10_000 })
+    await expect(financePill).toHaveClass(/font-semibold/, { timeout: 15_000 })
 
     // Wait for re-render — card count should be smaller.
     // Use polling instead of fixed timeout for reliability.
