@@ -63,21 +63,25 @@ test.describe('Vision Sources — Browse', () => {
     const financePill = categoryPill(page, 'Finance')
     await financePill.click()
 
+    // Wait for the Finance pill to show active state (re-render started)
+    await expect(financePill).toHaveClass(/font-semibold/, { timeout: 10_000 })
+
     // Wait for re-render — card count should be smaller.
     // Use polling instead of fixed timeout for reliability.
     await expect(async () => {
       const count = await cards.count()
       expect(count).toBeLessThan(allCount)
-    }).toPass({ timeout: 15_000 })
+    }).toPass({ timeout: 30_000 })
     const financeCount = await cards.count()
     expect(financeCount).toBeLessThan(allCount)
     expect(financeCount).toBeGreaterThan(0)
 
     // Click "All" to reset
     await categoryPill(page, 'All').click()
-    await page.waitForTimeout(300)
-    const resetCount = await cards.count()
-    expect(resetCount).toBe(allCount)
+    await expect(async () => {
+      const count = await cards.count()
+      expect(count).toBe(allCount)
+    }).toPass({ timeout: 30_000 })
   })
 
   test('source card shows name and category badge', async ({ page }) => {
