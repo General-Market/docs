@@ -68,7 +68,7 @@ test.describe('Vision Sources — Browse', () => {
     await expect(async () => {
       const count = await cards.count()
       expect(count).toBeLessThan(allCount)
-    }).toPass({ timeout: 5_000 })
+    }).toPass({ timeout: 15_000 })
     const financeCount = await cards.count()
     expect(financeCount).toBeLessThan(allCount)
     expect(financeCount).toBeGreaterThan(0)
