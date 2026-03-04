@@ -1,8 +1,8 @@
 {
-  "vision": "0xCa1D199b6F53Af7387ac543Af8e8a34455BBe5E0",
+  "vision": "0xCd7c00Ac6dc51e8dCc773971Ac9221cC582F3b1b",
   "tickDuration": 30,
   "lockOffset": 5,
-  "batchCount": 51,
+  "batchCount": 54,
   "batches": {
     "pumpfun": { "batchId": 0, "configHash": "0x1ba2674c5353c6bcb7e3b8a48a5f85afcc46170162ac25a95cf365e958b8c25a" },
     "defillama": { "batchId": 1, "configHash": "0xc088abfefd63a6f0c47ea31ae179aa997f304eab48f68f38f4604723bd26a61c" },
@@ -54,6 +54,9 @@
     "shelter": { "batchId": 47, "configHash": "0xcb528d7fba327f08026927d3eb496333a81061cbe42e4334bca662bc581d7e8d" },
     "spaceweather": { "batchId": 48, "configHash": "0x9a0f746be30a1ce0f77602f7201d79e38e5a33b467219ecd584cd1b88e452a45" },
     "iss": { "batchId": 49, "configHash": "0x6bc5104fc20e8dc87b8dc1a712b0c1faa918fa767298c2dfe2edc389cc4ca303" },
-    "mil_aircraft": { "batchId": 50, "configHash": "0xd0ec52b36bf144c84132b110ced046a64a1d85a00bb528488dd69391f732e728" }
+    "mil_aircraft": { "batchId": 50, "configHash": "0xd0ec52b36bf144c84132b110ced046a64a1d85a00bb528488dd69391f732e728" },
+    "db_trains": { "batchId": 51, "configHash": "0x27fcabafc55829231f8cb3e743c8e06dac9416977d4cbac5186bac8da5278ab2" },
+    "mcbroken": { "batchId": 52, "configHash": "0x7d745d17b82e747387af328a1cb5c350d688f67db12aa1ef65e0d34cf88b9662" },
+    "nyc311": { "batchId": 53, "configHash": "0x860f7ae5f0ccbc585b1aed393e556286b87ab8921aaa2a4d930b6402f6e5ed4e" }
   }
 }

@@ -1,0 +1,117 @@
+---
+title: "What Are Index Tracking Products (ITPs)?"
+description: "ITPs are on-chain tokenized index products — the crypto equivalent of ETFs. One token, a basket of crypto assets, real-time NAV. Learn how they work."
+keywords: ["ITP", "index tracking product", "crypto ETF", "on-chain ETF", "DeFi index fund", "tokenized index"]
+date: "2026-02-27"
+author: "General Market"
+slug: "what-are-itps"
+category: "Education"
+readingTime: "8 min read"
+tldr:
+  - "ITPs are <strong>on-chain ETFs</strong> — one token holds a basket of crypto assets with fixed weights"
+  - "Settlement in <strong>~30 seconds</strong> on Arbitrum — no T+1 waiting, no custodian delays"
+  - "Baskets can hold <strong>100+ tokens</strong> with NAV verifiable on-chain by anyone"
+  - "Buy, sell, or rebalance through smart contracts — <strong>no KYC, no minimum investment</strong>"
+---
+
+The on-chain equivalent of ETFs. A single token that holds a basket of crypto assets with fixed weights.
+
+## The 30-Second Version
+
+You want exposure to "DeFi" but don't want to buy 10 tokens separately. An ITP lets you buy one token that holds all 10. The price floats with the basket. Like buying an S&P 500 ETF instead of 500 individual stocks.
+
+Someone picks the assets, assigns weights, and deploys the ITP on-chain. You buy shares at the current price. When the underlying tokens go up, your share price goes up. When they go down, so does yours. One token, many assets.
+
+<Callout type="info">
+
+**Example: "DeFi Blue Chips" ITP**
+
+| Token | Weight |
+|-------|--------|
+| AAVE  | 20%    |
+| UNI   | 20%    |
+| MKR   | 15%    |
+| COMP  | 15%    |
+| SNX   | 10%    |
+| CRV   | 10%    |
+| SUSHI | 5%     |
+| YFI   | 5%     |
+
+**NAV:** $1.24 | **AUM:** $47,000
+
+You buy 100 shares → $124 exposure to all 8 tokens in one transaction.
+
+</Callout>
+
+## How ITPs Work
+
+### Creation
+
+Anyone can create an ITP. Pick assets from 100+ supported tokens, assign weights (e.g. 30% ETH, 20% BTC, 50% stablecoins), and deploy in a single transaction. Your ITP starts at $1 NAV. Each share holds a fixed quantity of each underlying asset, calculated from the weights and prices at the time of creation.
+
+### NAV (Net Asset Value)
+
+The price of one ITP share. Calculated as: sum of (quantity x price) for each asset in the basket. Updates every cycle, roughly every 30 seconds.
+
+If ETH goes up 10% and your ITP is 50% ETH, your NAV goes up roughly 5%. If everything drops 20%, your NAV drops 20%. The math is transparent and verifiable on-chain at all times.
+
+### Buying and Selling
+
+To buy: deposit USDC and receive ITP shares at the current NAV. If the NAV is $1.24 and you deposit $124, you get 100 shares. To sell: return your shares and receive USDC at the current NAV. Settlement happens on-chain in one cycle — no waiting days for your funds.
+
+### Rebalancing
+
+Weights can be updated by the ITP creator. When this happens, the underlying quantities are recalculated to preserve the current NAV. Your share count stays the same — only what each share holds changes. Think of it like an ETF manager adjusting the portfolio allocation without affecting your account balance.
+
+## ITPs vs Traditional ETFs
+
+| Feature | ETF | ITP |
+|---------|-----|-----|
+| Settlement | T+1 days | ~30 seconds |
+| Minimum Investment | $100+ | $1 |
+| Trading Hours | Market hours | 24/7 |
+| Custody | Broker | Your wallet |
+| Creation | SEC filing | 1 transaction |
+| Fees | 0.03 - 1% | ~0.3% |
+| Transparency | Quarterly | Real-time |
+
+Not better or worse — different tradeoffs. ITPs trade speed and permissionlessness for regulatory clarity and deposit insurance. ETFs are battle-tested over decades with clear legal frameworks. ITPs are new, operate 24/7, and anyone can create one without filing paperwork. Pick what matters to you.
+
+## ITPs vs Buying Tokens Directly
+
+Why not just buy the 10 tokens yourself? You can. But there are practical reasons people don't:
+
+1. **Gas.** 10 separate swaps cost 10x the gas. An ITP purchase is one transaction.
+2. **Rebalancing.** If you want to maintain 20% ETH / 20% BTC, you need to manually rebalance when prices shift. An ITP handles this automatically.
+3. **Tracking.** One NAV number vs tracking 10 different prices across 10 different positions.
+4. **Sharing.** You can share one token link that represents a thesis. "I'm bullish on DeFi" becomes a single tradeable asset, not a spreadsheet.
+
+The same reason people buy SPY instead of 500 individual stocks.
+
+## How to Get Started
+
+Three steps. No jargon required.
+
+1. **Connect your wallet** on Index L3. MetaMask, WalletConnect, or any EVM-compatible wallet.
+2. **Browse ITPs** on the Markets page. Each one shows its holdings, NAV, and AUM.
+3. **Buy shares with USDC.** Enter the amount, confirm the transaction. Done.
+
+Or create your own ITP from 100+ supported assets. Pick the tokens, set the weights, deploy in one transaction.
+
+## Risks
+
+ITPs are an emerging financial primitive. Here are the real risks:
+
+- **Smart contract risk.** ITPs are governed by smart contracts. Code can have bugs. Contracts are audited but not guaranteed to be bug-free. Funds held in a contract are only as safe as the contract itself.
+- **Oracle risk.** NAV depends on price feeds from external oracles. If an oracle reports an incorrect price, your NAV calculation will be wrong. This can cause you to buy too high or sell too low.
+- **Liquidity risk.** Low-AUM ITPs may have wider effective spreads. If you hold a large position relative to the ITP's total AUM, exiting may take multiple cycles.
+- **Regulatory risk.** Rules around tokenized index products are still evolving. What is permissible today may face restrictions tomorrow. This space does not yet have the regulatory clarity of traditional ETFs.
+
+None of this is meant to discourage you. It's meant to make sure you go in with open eyes. Do your own research and never invest more than you can afford to lose.
+
+## Further Reading
+
+- [About General Market](/about) — The team and technology behind the protocol.
+- [Browse Markets](/index) — Explore all available ITPs and start trading.
+- [AI Prediction Markets](/learn/ai-prediction-markets) — How AI agents trade prediction markets on General Market.
+- [Build a Prediction Market Bot](/learn/build-prediction-market-bot) — Step-by-step guide to building your own trading bot.

@@ -424,6 +424,10 @@
     "symbol": "BROCCOLI"
   },
   {
+    "address": "0xa1fd7ebc3d0c86d103579101ba971a6b5d733d4a",
+    "symbol": "BSB"
+  },
+  {
     "address": "0x3a50539b4576349ba1463740bdbcea1a6addac13",
     "symbol": "BSU"
   },
@@ -442,6 +446,10 @@
   {
     "address": "0xf97ad9d6e97d65e9c27974c53d899625973c7649",
     "symbol": "BTT"
+  },
+  {
+    "address": "0x5c058caebc47a362a1e9b68b968375ac7e81fd71",
+    "symbol": "BTW"
   },
   {
     "address": "0x7e08ecf85d863e5135d4f973281d4586ed8a4b6d",
@@ -1496,10 +1504,6 @@
     "symbol": "OGN"
   },
   {
-    "address": "0x79bb1505949dd9dad707da0920a581dc70f55e79",
-    "symbol": "OM"
-  },
-  {
     "address": "0xa4899d35897033b927acfcf422bc745916139776",
     "symbol": "ONDO"
   },
@@ -2230,6 +2234,10 @@
   {
     "address": "0xc8a7ac797a5d738b4a4960b4f5eab544728e2f58",
     "symbol": "USDE"
+  },
+  {
+    "address": "0x97df9ecee6d9ce2b009371275e1a8f2525303810",
+    "symbol": "USDGO"
   },
   {
     "address": "0x5212ea88184fa892646ee795cbe2f076b4ccacfb",

@@ -168,8 +168,14 @@ const API_KEY_LINKS: Record<string, { url: string; label: string }> = {
   cbp_border: { url: 'https://bwt.cbp.gov/', label: 'CBP Border Wait Times' },
   faa_delays: { url: 'https://soa.smext.faa.gov/asws/api/airport/status/', label: 'FAA ASWS' },
   db_trains: { url: 'https://v6.db.transport.rest/', label: 'DB Transport REST' },
+  mta_subway: { url: 'http://web.mta.info/status/serviceStatus.txt', label: 'MTA Service Status' },
+  paris_metro: { url: 'https://prim.iledefrance-mobilites.fr/', label: 'PRIM IDFM' },
   mcbroken: { url: 'https://mcbroken.com/', label: 'McBroken' },
   nyc311: { url: 'https://data.cityofnewyork.us/', label: 'NYC Open Data' },
+  ryanair: { url: 'https://www.ryanair.com/api/farfnd/v4/', label: 'Ryanair Schedule + OpenSky ADS-B' },
+  tfl_tube: { url: 'https://api.tfl.gov.uk/', label: 'TfL Unified API' },
+  ioda: { url: 'https://api.ioda.inetintel.cc.gatech.edu/v2/', label: 'IODA API' },
+  power_outages: { url: 'https://openenergyhub.ornl.gov/', label: 'ORNL ODIN' },
 }
 
 // ── Skeleton ──

@@ -51,16 +51,24 @@
   },
   "pages": {
     "privacy": {
-      "title": "Privacy Policy",
-      "description": "General Market privacy policy."
+      "title": "Privacy Policy — General Market",
+      "description": "Privacy policy for General Market Index and Vision products. Data collection, blockchain transparency, and third-party data usage. IM Standards LLC."
     },
     "terms": {
-      "title": "Terms of Service",
-      "description": "General Market terms of service."
+      "title": "Terms of Service — General Market",
+      "description": "Terms of service for General Market Index and Vision products. Risk warnings, limitation of liability, and user responsibilities. IM Standards LLC."
     },
     "about": {
       "title": "About — General Market",
       "description": "The team and technology behind General Market. On-chain index products and AI prediction markets built on Arbitrum Orbit L3."
+    },
+    "legal_vision": {
+      "title": "Vision Legal Disclaimer — General Market",
+      "description": "Legal disclaimer for Vision prediction markets. P2P market structure, data source usage, intellectual property notice, and risk disclosures. IM Standards LLC."
+    },
+    "legal_index": {
+      "title": "Index Products Legal Disclaimer — General Market",
+      "description": "Legal disclaimer for General Market Index tracking products (ITPs). Protocol architecture, risk disclosures, and limitation of liability. IM Standards LLC."
     },
     "vision": {
       "title": "Vision — AI Prediction Markets Powered by AI Agents",

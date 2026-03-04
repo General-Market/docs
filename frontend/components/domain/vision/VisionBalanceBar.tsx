@@ -34,7 +34,7 @@ export function VisionBalanceBar() {
     <>
       <div className="flex items-center gap-2">
         <span className="text-[13px] font-bold font-mono tabular-nums text-black">
-          {fmtBal(total)}
+          Balance: {fmtBal(total)}
           <span className="text-text-muted font-medium ml-1">USDC</span>
         </span>
         {hasBalance && !ptsLoading && activeBatches > 0 && (

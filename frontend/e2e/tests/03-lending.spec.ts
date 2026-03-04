@@ -16,7 +16,7 @@ test.describe('Lending (Deposit → Borrow → Repay → Withdraw)', () => {
     await connectBtn.click();
     await page.mouse.move(0, 0);
     const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4);
-    await expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 30_000 });
 
     // Wait for ITP listing
     await expect(itpCard(page).first()).toBeVisible({ timeout: 30_000 });

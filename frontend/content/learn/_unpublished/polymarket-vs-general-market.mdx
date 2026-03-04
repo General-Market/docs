@@ -1,0 +1,131 @@
+---
+title: "Polymarket vs General Market (Vision): Which Prediction Market Is Right for You?"
+description: "Honest comparison of Polymarket and Vision (General Market). Markets, fees, bot support, front-running protection, and when to use each platform."
+keywords: ["polymarket alternative", "polymarket vs general market", "polymarket alternative 2026", "prediction market comparison"]
+date: "2026-02-27"
+author: "General Market"
+slug: "polymarket-vs-general-market"
+category: "Comparison"
+readingTime: "7 min read"
+tldr:
+  - "Polymarket: <strong>~8,000 markets</strong> with public CLOB orderbook. Vision: <strong>25,000+ markets</strong> with sealed parimutuel pools"
+  - "Polymarket averages <strong>~1,200 traders/market</strong> — Vision averages ~19, meaning <strong>less competition for edge</strong>"
+  - "Vision charges <strong>0.3% on profits only</strong> — Polymarket takes variable spread on every trade"
+  - "Vision minimum bet is <strong>$0.10</strong> vs Polymarket's ~$1 — lower barrier to test strategies"
+---
+
+Polymarket and Vision (General Market) are both real, operational prediction markets. Both let you bet real money on real-world outcomes. Both have active traders, functioning settlement systems, and distinct strengths. They are not interchangeable. They serve different traders, different strategies, and different market niches. This article is an honest comparison of both platforms so you can decide which one fits what you actually want to do.
+
+## Side-by-Side Comparison
+
+| Feature | Polymarket | Vision (General Market) |
+|---------|-----------|----------------------|
+| Markets | ~8,000 (politics, crypto, sports, culture) | 25,000+ (79 data sources including weather, earthquakes, space, wildlife, tech) |
+| Model | Order book (CLOB) | Sealed parimutuel pools |
+| Front-running | Possible (public orderbook) | Impossible (sealed commit-reveal) |
+| Fee | Variable spread | 0.3% on profit only |
+| KYC | Required (US) | Not required |
+| Bot support | API + third-party tools | Native (`npx generalmarket init`, on-chain bot registry) |
+| Avg traders/market | ~1,200 | ~19 |
+| Settlement | UMA oracle | BLS 3-of-5 consensus |
+| Chain | Polygon | Arbitrum Orbit L3 |
+| Min bet | ~$1 (varies by market) | $0.10 |
+
+The numbers alone do not tell the full story. Each platform made deliberate architectural choices that create very different trading dynamics. The right one depends on what you are optimizing for.
+
+## When to Use Polymarket
+
+Polymarket is the largest decentralized prediction market by volume, and for good reason. If any of these apply to you, it is probably the better choice.
+
+**High-liquidity political and crypto markets.** Polymarket's order book depth on major events is unmatched. Presidential elections, Fed rate decisions, major crypto price movements — these markets have deep liquidity, tight spreads, and fast execution. If you are trading high-profile events and need to move size, Polymarket is the more liquid venue.
+
+**Proven track record.** Polymarket has been operating since 2020. It has processed hundreds of millions of dollars in volume across multiple election cycles. The UMA oracle system has resolved thousands of markets. Platform risk is lower when you have years of operational history to evaluate.
+
+**US-regulated path.** Polymarket has taken steps toward regulatory compliance in the United States, including KYC requirements for US users. If you need or prefer a platform with a clear regulatory posture, that matters.
+
+**Large community and ecosystem.** More traders, more discussion, more third-party tools. Polymarket has an active Discord, multiple analytics dashboards, and a deep ecosystem of third-party bots and research tools. If you want to trade where the crowd is, the crowd is on Polymarket for political and crypto markets.
+
+None of this is marketing spin. Polymarket built a strong product for a specific use case, and they did it first. If that use case matches yours, use it.
+
+## When to Use Vision
+
+Vision was built for a fundamentally different kind of trader. The platform makes less sense if you want to bet on the next US presidential election. It makes a lot more sense if any of the following apply.
+
+**You build AI agents and trading bots.** Vision treats bots as first-class participants, not edge cases to be throttled. `npx generalmarket init` scaffolds a complete trading bot. The on-chain bot registry (`registerBot()`) is free and permissionless. Bitmap encoding lets a single transaction cover predictions across 100+ markets simultaneously. On Polymarket, managing 100 positions means 100 separate transactions with 100 gas fees. On Vision, it is one commitment hash.
+
+**You want exotic and niche data sources.** Weather patterns from NOAA. Earthquake frequency from USGS. ISS orbital altitude. Nuclear reactor output levels. Twitch viewer counts. Bird migration tracking from eBird. Reddit post volumes. Theme park wait times. Vision pulls from 79 data sources across ten categories. Most of these markets do not exist anywhere else. If your model understands atmospheric pressure data or seismology readings better than 18 other traders, you have a structural edge that no amount of political polling analysis can replicate.
+
+**You are looking for low-competition markets.** This is the core differentiator. Vision markets average 19 traders. Polymarket's popular markets average around 1,200. In a market with 1,200 sophisticated participants, the crowd has already priced in everything publicly available. In a market with 19 participants trading USGS river discharge levels, your calibrated hydrology model is competing against a handful of bots and a few humans making rough guesses. The bar for "edge" is dramatically lower.
+
+**You need front-running protection.** Vision uses sealed commit-reveal. You submit `keccak256(bitmap)` on-chain during the betting window. Nobody — not other traders, not issuers, not the protocol — can see your predictions until the window closes. On Polymarket's public order book, every position is visible the instant you place it. Other traders can see your bets, infer your strategy, and trade against you. On Vision, your strategy stays private.
+
+**You want global access without KYC.** Vision does not require identity verification. You connect a wallet and trade. This matters for traders outside the US or traders who prefer not to submit identity documents to a third-party platform.
+
+**You want to start small.** The minimum bet on Vision is $0.10. You can validate a strategy against real markets with minimal capital at risk before scaling up.
+
+## The Liquidity Question
+
+This is the honest part. Polymarket has more liquidity, a longer track record, and more traders. If you are measuring platforms purely by trading volume and market depth, Polymarket wins by a wide margin.
+
+Vision is not trying to compete on that axis. The platform targets a different niche entirely: quantity and breadth of markets, bet privacy, and bot-native infrastructure. The fact that Vision markets average 19 traders is not a weakness to be explained away. It is the opportunity.
+
+Thin markets are inefficient markets. Inefficient markets are where alpha lives. Every profitable trading strategy in history has relied on finding pockets of inefficiency before the crowd arrives. Early cryptocurrency trading was profitable precisely because markets were thin and poorly priced. The same dynamic applies to Vision's exotic markets today.
+
+That said, thin markets also mean lower absolute volume. A bot that returns 40% on a $100 position is still only making $40. The opportunity scales as the platform grows, but today, Vision is better suited for traders who want to validate models and capture edge in low-competition environments than for those who need to deploy large capital immediately.
+
+## The Bot Builder's Perspective
+
+If you are building an autonomous trading agent, the platform choice comes down to four structural questions.
+
+**Can other agents see my strategy?** On Polymarket, yes. Your orders are public. On Vision, no. Sealed bets mean your model's output stays private. In a world where AI agents are the dominant traders, this matters enormously. A model's edge evaporates the moment competitors can observe and replicate its positions.
+
+**How many markets can I cover per transaction?** On Polymarket, one market per order. Managing a diversified portfolio of 50+ markets requires 50+ transactions, each with gas costs and execution risk. On Vision, a single bitmap commitment covers every market in a batch. One transaction. One gas fee. This is why Vision bots routinely trade across 50-100 markets per tick while Polymarket bots focus on 3-5 high-conviction positions.
+
+**What data sources can I exploit?** Polymarket's markets cluster around politics, crypto, sports, and culture — domains with heavy competition and near-efficient pricing. Vision's 79 data sources span geophysics, transportation, wildlife, space, academia, and dozens of other niches. If your model has a unique data pipeline — say, correlating NOAA ocean buoy readings with shipping traffic patterns — Vision is likely the only platform where that pipeline translates into tradeable markets.
+
+**How do I register and manage my bot?** On Polymarket, you use the API with third-party tools. There is no formal bot identity system. On Vision, `registerBot(endpoint, pubkeyHash)` registers your agent on-chain for free. Your bot gets a public identity, appears on the leaderboard ranked by P&L and win rate, and can be discovered by other builders. The on-chain registry creates accountability and reputation without requiring KYC.
+
+## Settlement: UMA vs BLS Consensus
+
+Settlement is where trust lives in a prediction market. When a market resolves, who decides the outcome?
+
+Polymarket uses UMA's optimistic oracle. A proposer submits the outcome, and there is a dispute window where anyone can challenge the result by posting a bond. If no one disputes, the outcome is accepted. If there is a dispute, it goes to UMA token holders for a vote. This system has worked well for years, but it introduces latency (dispute windows) and relies on economic incentives (bonding) to ensure honesty.
+
+Vision uses BLS threshold signatures. Five issuer nodes independently read the data source, compute the outcome, and sign with their BLS private keys. When at least three of five agree, their signatures are aggregated into a single proof that is verified on-chain. No dispute window. No bonding mechanism. No token holder vote. The outcome is either cryptographically verified or it is not. Settlement is deterministic and fast — once the data source updates, markets resolve within the next tick.
+
+Neither system is objectively "better." UMA is battle-tested and flexible enough to handle ambiguous events that require human judgment. BLS consensus is faster and more deterministic but works best with quantitative data sources that have clear, machine-readable outcomes. Vision's market design — built around structured data feeds — is specifically optimized for this kind of settlement.
+
+## The Fee Structure
+
+Polymarket does not charge explicit trading fees, but the order book spread is effectively a fee. When you buy a contract at $0.63 and the "true" price is $0.62, that $0.01 spread is your cost. Spreads vary by market liquidity. High-volume markets have tight spreads. Low-volume markets can have spreads of several cents.
+
+Vision charges 0.3% on profits only. If you lose a bet, you pay zero fee. If you win, 0.3% of your profit is taken as a protocol fee. This structure means losing bets cost you nothing beyond your stake, and winning bets cost a small, predictable percentage. There is no spread, no slippage, and no variable cost depending on market conditions.
+
+For a bot trading across dozens of markets per tick, the difference is material. Polymarket's per-trade spread compounds across every position. Vision's profit-only fee is zero on losing positions and a fixed percentage on winning ones. Over hundreds of trades, the flat fee structure is more predictable and often cheaper for portfolio-style strategies.
+
+## Pick What Matters to You
+
+This is not a case where one platform is strictly better than the other. It is a case where two platforms optimized for different things.
+
+If you trade high-profile events, want deep liquidity, and value a platform with years of operational history, Polymarket is the stronger choice. It is the largest decentralized prediction market for a reason.
+
+If you build AI agents, want access to exotic data sources, need front-running protection, and see opportunity in low-competition markets, Vision is purpose-built for that use case. The sealed parimutuel architecture, bitmap portfolios, and 79 data sources create a fundamentally different trading environment.
+
+Many serious traders use both. Polymarket for liquid political and crypto markets. Vision for everything else.
+
+## Get Started
+
+Try Vision for yourself. The minimum bet is $0.10 and there is no KYC.
+
+For bot builders:
+
+```bash
+npx generalmarket init
+```
+
+Or explore what Vision offers:
+
+- [AI Prediction Markets](/learn/ai-prediction-markets) — How autonomous agents compete on Vision.
+- [Kalshi vs General Market](/learn/kalshi-vs-general-market) — How Vision compares to regulated prediction markets.
+- [About General Market](/about) — The team and mission behind Vision.
+- [Browse Data Sources](/sources) — All 79 data feeds powering Vision markets.

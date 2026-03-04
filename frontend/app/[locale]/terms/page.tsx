@@ -29,6 +29,7 @@ export default async function TermsPage({ params }: { params: Promise<{ locale: 
           <a href="/" className="text-text-inverse-muted text-sm hover:text-text-inverse">{t('back')}</a>
           <h1 className="text-3xl font-bold text-text-inverse mt-4">{t('title')}</h1>
           <p className="text-text-inverse-muted mt-2">{t('last_updated')}</p>
+          <p className="text-text-inverse-muted text-xs mt-1">{t('entity')}</p>
         </div>
 
         <div className="bg-card rounded-xl shadow-card border border-border-light p-8">
@@ -41,6 +42,10 @@ export default async function TermsPage({ params }: { params: Promise<{ locale: 
             <section>
               <h2 className="text-lg font-semibold text-text-primary mb-3">{t('what_is_title')}</h2>
               <p>{t('what_is_text')}</p>
+              <ul className="space-y-2 ml-4 list-disc mt-3">
+                <li>{t('what_is_index')}</li>
+                <li>{t('what_is_vision')}</li>
+              </ul>
             </section>
 
             <section>
@@ -57,12 +62,18 @@ export default async function TermsPage({ params }: { params: Promise<{ locale: 
             </section>
 
             <section>
+              <h2 className="text-lg font-semibold text-text-primary mb-3">{t('non_custodial_title')}</h2>
+              <p>{t('non_custodial_text')}</p>
+            </section>
+
+            <section>
               <h2 className="text-lg font-semibold text-text-primary mb-3">{t('responsibilities_title')}</h2>
               <ul className="space-y-2 ml-4 list-disc">
                 <li>{t('responsibilities_keys')}</li>
                 <li>{t('responsibilities_decisions')}</li>
                 <li>{t('responsibilities_laws')}</li>
                 <li>{t('responsibilities_tax')}</li>
+                <li>{t('responsibilities_research')}</li>
               </ul>
             </section>
 
@@ -87,6 +98,16 @@ export default async function TermsPage({ params }: { params: Promise<{ locale: 
             </section>
 
             <section>
+              <h2 className="text-lg font-semibold text-text-primary mb-3">{t('indemnification_title')}</h2>
+              <p>{t('indemnification_text')}</p>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-semibold text-text-primary mb-3">{t('governing_title')}</h2>
+              <p>{t('governing_text')}</p>
+            </section>
+
+            <section>
               <h2 className="text-lg font-semibold text-text-primary mb-3">{t('changes_title')}</h2>
               <p>{t('changes_text')}</p>
             </section>
@@ -104,6 +125,8 @@ export default async function TermsPage({ params }: { params: Promise<{ locale: 
         <section className="pt-8 mt-12 border-t border-border-dark">
           <div className="flex items-center gap-6 text-sm">
             <a href="/privacy" className="text-text-inverse-muted hover:text-text-inverse">Privacy</a>
+            <a href="/legal-vision" className="text-text-inverse-muted hover:text-text-inverse">Vision Legal</a>
+            <a href="/legal-index" className="text-text-inverse-muted hover:text-text-inverse">Index Legal</a>
             <a href="https://x.com/otc_max" target="_blank" rel="noopener noreferrer" className="text-text-inverse-muted hover:text-text-inverse">@otc_max</a>
           </div>
         </section>

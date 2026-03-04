@@ -5,7 +5,7 @@ import {
   sellModal,
   itpCard,
 } from '../helpers/selectors';
-import { mintL3Shares, getL3UsdcBalance, getL3UserShares } from '../helpers/backend-api';
+import { mintL3Shares, mintL3Usdc, getL3UsdcBalance, getL3UserShares } from '../helpers/backend-api';
 
 test.describe('Sell ITP', () => {
   test('sell ITP shares', async ({ walletPage: page }) => {
@@ -27,6 +27,12 @@ test.describe('Sell ITP', () => {
     // No BridgedITP needed — direct L3 path uses _userShares.
     const mintAmount = 100n * 10n ** 18n;
     await mintL3Shares(TEST_ADDRESS, ITP_ID, mintAmount);
+
+    // Fund Index contract with USDC so it can pay sell proceeds.
+    // Without this, confirmFills SELL transfer fails (insufficient balance)
+    // and proceeds go to failedFillEscrow instead of the user.
+    const INDEX_CONTRACT = '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
+    await mintL3Usdc(INDEX_CONTRACT, 200n * 10n ** 18n);
 
     // Record initial L3 USDC balance and shares to verify proceeds later
     const usdcBefore = await getL3UsdcBalance(TEST_ADDRESS);

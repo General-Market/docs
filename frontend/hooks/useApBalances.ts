@@ -125,7 +125,10 @@ export function useApBalances(): UseApBalancesReturn {
     }
   }, [refresh, refreshPrices])
 
-  const totalUsdValue = assets.reduce((sum, a) => sum + a.usdValue, 0)
+  // AUM = only real collateral (USDC), not mock liquidity tokens
+  const totalUsdValue = assets
+    .filter(a => a.symbol === 'USDC')
+    .reduce((sum, a) => sum + a.usdValue, 0)
 
   return { assets, totalUsdValue, totalTokenCount, isLoading, error, refresh }
 }

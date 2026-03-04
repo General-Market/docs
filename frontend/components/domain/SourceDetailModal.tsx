@@ -402,6 +402,12 @@ const SOURCE_META: Record<string, SourceMeta> = {
   cbp_border: { valueLabel: 'Wait Time', unit: 'min' },
   faa_delays: { valueLabel: 'Delay', unit: '0/1' },
   db_trains: { valueLabel: 'Avg Delay', unit: 'min' },
+  mta_subway: { valueLabel: 'Disruption', unit: '0-5' },
+  paris_metro: { valueLabel: 'Disruption', unit: '0-4' },
+  ryanair: { valueLabel: 'Avg Delay', unit: 'min' },
+  tfl_tube: { valueLabel: 'Disruption', unit: '0-8' },
+  ioda: { valueLabel: 'Connectivity', unit: '%' },
+  power_outages: { valueLabel: 'Affected', unit: 'customers' },
 
   // ── Government / City ──
   nyc311: { valueLabel: 'Complaints', unit: '/24h' },

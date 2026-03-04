@@ -54,8 +54,14 @@ const PREFIX_MAP: [string, string, string][] = [
   ['cbp_border_', 'cbp_border', 'Border Wait Times'],
   ['faa_delays_', 'faa_delays', 'Airport Delays'],
   ['db_trains_', 'db_trains', 'Deutsche Bahn'],
+  ['mta_subway_', 'mta_subway', 'NYC Subway'],
+  ['paris_metro_', 'paris_metro', 'Paris Metro'],
   ['mcbroken_', 'mcbroken', 'McBroken'],
   ['nyc311_', 'nyc311', 'NYC 311'],
+  ['ryanair_', 'ryanair', 'Ryanair'],
+  ['tfl_tube_', 'tfl_tube', 'London Underground'],
+  ['ioda_', 'ioda', 'Internet Outages'],
+  ['power_outages_', 'power_outages', 'Power Outages'],
 ]
 
 // Common bare crypto tickers (no prefix)
@@ -75,7 +81,8 @@ const CATEGORY_ORDER = [
   'parking', 'tomtom_traffic', 'tomtom_evcharge',
   'bgg', 'bestbuy',
   'adzuna',
-  'queue_times', 'cbp_border', 'faa_delays', 'db_trains',
+  'queue_times', 'cbp_border', 'faa_delays', 'db_trains', 'mta_subway', 'paris_metro',
+  'ryanair', 'tfl_tube', 'ioda', 'power_outages',
   'mcbroken',
   'other',
 ]

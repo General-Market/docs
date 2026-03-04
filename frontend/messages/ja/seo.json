@@ -61,12 +61,12 @@
   },
   "pages": {
     "privacy": {
-      "title": "プライバシーポリシー",
-      "description": "General Marketのプライバシーポリシー。"
+      "title": "Privacy Policy — General Market",
+      "description": "Privacy policy for General Market Index and Vision products. Data collection, blockchain transparency, and third-party data usage. IM Standards LLC."
     },
     "terms": {
-      "title": "利用規約",
-      "description": "General Marketの利用規約。"
+      "title": "Terms of Service — General Market",
+      "description": "Terms of service for General Market Index and Vision products. Risk warnings, limitation of liability, and user responsibilities. IM Standards LLC."
     },
     "about": {
       "title": "About — General Market",
@@ -99,6 +99,14 @@
       "price_col": "価格",
       "trade_this": "このITPを取引する",
       "learn_about": "ITPについて学ぶ"
+    },
+    "legal_vision": {
+      "title": "Vision Legal Disclaimer — General Market",
+      "description": "Legal disclaimer for Vision prediction markets. P2P market structure, data source usage, intellectual property notice, and risk disclosures. IM Standards LLC."
+    },
+    "legal_index": {
+      "title": "Index Products Legal Disclaimer — General Market",
+      "description": "Legal disclaimer for General Market Index tracking products (ITPs). Protocol architecture, risk disclosures, and limitation of liability. IM Standards LLC."
     }
   },
   "breadcrumbs": {

@@ -65,6 +65,8 @@ export function Footer() {
               <li><Link href="/points" className="hover:text-white transition-colors">Points — Season 1</Link></li>
               <li><Link href="/privacy" className="hover:text-white transition-colors">{t('footer.privacy_policy')}</Link></li>
               <li><Link href="/terms" className="hover:text-white transition-colors">{t('footer.terms_of_service')}</Link></li>
+              <li><Link href="/legal-vision" className="hover:text-white transition-colors">Vision Legal</Link></li>
+              <li><Link href="/legal-index" className="hover:text-white transition-colors">Index Legal</Link></li>
               <li><Link href="/learn" className="hover:text-white transition-colors">Learn</Link></li>
             </ul>
           </div>

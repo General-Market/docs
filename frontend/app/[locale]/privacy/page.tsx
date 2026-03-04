@@ -29,6 +29,7 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
           <a href="/" className="text-text-inverse-muted text-sm hover:text-text-inverse">{t('back')}</a>
           <h1 className="text-3xl font-bold text-text-inverse mt-4">{t('title')}</h1>
           <p className="text-text-inverse-muted mt-2">{t('last_updated')}</p>
+          <p className="text-text-inverse-muted text-xs mt-1">{t('entity')}</p>
         </div>
 
         <div className="bg-card rounded-xl shadow-card border border-border-light p-8">
@@ -43,6 +44,7 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
               <ul className="space-y-2 ml-4 list-disc">
                 <li><span className="text-text-primary">{t('collect_wallets')}</span> — {t('collect_wallets_desc')}</li>
                 <li><span className="text-text-primary">{t('collect_txs')}</span> — {t('collect_txs_desc')}</li>
+                <li><span className="text-text-primary">{t('collect_analytics')}</span> — {t('collect_analytics_desc')}</li>
               </ul>
             </section>
 
@@ -52,6 +54,7 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
                 <li>{t('no_collect_keys')}</li>
                 <li>{t('no_collect_identity')}</li>
                 <li>{t('no_collect_browsing')}</li>
+                <li>{t('no_collect_positions')}</li>
               </ul>
             </section>
 
@@ -62,12 +65,19 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
 
             <section>
               <h2 className="text-lg font-semibold text-text-primary mb-3">{t('storage_title')}</h2>
-              <p>{t('storage_text')}</p>
+              <ul className="space-y-2 ml-4 list-disc">
+                <li>{t('storage_index')}</li>
+                <li>{t('storage_vision')}</li>
+              </ul>
             </section>
 
             <section>
               <h2 className="text-lg font-semibold text-text-primary mb-3">{t('third_party_title')}</h2>
-              <p>{t('third_party_text')}</p>
+              <ul className="space-y-2 ml-4 list-disc">
+                <li>{t('third_party_index')}</li>
+                <li>{t('third_party_vision')}</li>
+              </ul>
+              <p className="mt-3">{t('third_party_no_sell')}</p>
             </section>
 
             <section>
@@ -83,6 +93,8 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
         <section className="pt-8 mt-12 border-t border-border-dark">
           <div className="flex items-center gap-6 text-sm">
             <a href="/terms" className="text-text-inverse-muted hover:text-text-inverse">Terms</a>
+            <a href="/legal-vision" className="text-text-inverse-muted hover:text-text-inverse">Vision Legal</a>
+            <a href="/legal-index" className="text-text-inverse-muted hover:text-text-inverse">Index Legal</a>
             <a href="https://x.com/otc_max" target="_blank" rel="noopener noreferrer" className="text-text-inverse-muted hover:text-text-inverse">@otc_max</a>
           </div>
         </section>
