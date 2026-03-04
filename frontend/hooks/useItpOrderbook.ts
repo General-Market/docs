@@ -104,10 +104,8 @@ export function useItpOrderbook(
       return
     }
 
-    // Cancel any in-flight request
-    if (abortRef.current) {
-      abortRef.current.abort()
-    }
+    // Skip if a request is already in-flight (don't abort it — let it complete)
+    if (abortRef.current) return
 
     const controller = new AbortController()
     abortRef.current = controller
@@ -139,6 +137,7 @@ export function useItpOrderbook(
         setError(err.message || 'Failed to fetch orderbook')
       })
       .finally(() => {
+        abortRef.current = null // Mark request as completed
         if (!controller.signal.aborted) {
           setIsLoading(false)
         }

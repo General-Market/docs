@@ -136,6 +136,8 @@ export function useWithdraw(): UseWithdrawReturn {
   const {
     isLoading: isWithdrawConfirming,
     isSuccess: isWithdrawSuccess,
+    isError: isWithdrawReceiptError,
+    error: withdrawReceiptError,
   } = useWaitForTransactionReceipt({ hash: withdrawHash })
 
   // Toast notifications for withdraw
@@ -167,6 +169,13 @@ export function useWithdraw(): UseWithdrawReturn {
       return
     }
 
+    // Validate BLS proof before submitting
+    if (!fetchedProof.blsSig || fetchedProof.blsSig === '' || fetchedProof.blsSig === '0x') {
+      setErrorMsg('Balance proof has empty BLS signature. The issuers may not have signed yet — try again in a few seconds.')
+      setStep('error')
+      return
+    }
+
     // Step 2: Submit withdraw tx with BLS proof + referenceNonce + signersBitmask
     setStep('withdrawing')
     const refNonce = lastSnapshotNonce ? BigInt(lastSnapshotNonce.toString()) : 0n
@@ -179,7 +188,7 @@ export function useWithdraw(): UseWithdrawReturn {
       args: [
         batchId,
         BigInt(fetchedProof.balance),
-        (fetchedProof.blsSig ? `0x${fetchedProof.blsSig}` : '0x') as `0x${string}`,
+        `0x${fetchedProof.blsSig}` as `0x${string}`,
         refNonce,
         signersBitmask,
       ],
@@ -194,7 +203,7 @@ export function useWithdraw(): UseWithdrawReturn {
     resetWithdraw()
   }, [isWithdrawSuccess, resetWithdraw])
 
-  // Error handling
+  // Error handling — writeContract simulation/submission error
   useEffect(() => {
     if (withdrawError) {
       const msg = withdrawError.message || 'Withdraw failed'
@@ -203,6 +212,16 @@ export function useWithdraw(): UseWithdrawReturn {
       resetWithdraw()
     }
   }, [withdrawError, resetWithdraw])
+
+  // Error handling — on-chain revert (TX submitted but reverted)
+  useEffect(() => {
+    if (isWithdrawReceiptError && withdrawReceiptError) {
+      const msg = withdrawReceiptError.message || 'Transaction reverted on-chain'
+      setErrorMsg(msg.slice(0, 300))
+      setStep('error')
+      resetWithdraw()
+    }
+  }, [isWithdrawReceiptError, withdrawReceiptError, resetWithdraw])
 
   const reset = useCallback(() => {
     setStep('idle')

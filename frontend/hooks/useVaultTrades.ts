@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { usePublicClient } from 'wagmi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
+import { indexL3 } from '@/lib/wagmi'
 import { MOCK_BITGET_VAULT_ABI } from '@/lib/contracts/mockbitget-vault-abi'
 
 const POLL_MS = 5_000
@@ -79,7 +80,7 @@ function isUsdc(address: string): boolean {
 // ── Hook ──
 
 export function useVaultTrades(): UseVaultTradesReturn {
-  const publicClient = usePublicClient()
+  const publicClient = usePublicClient({ chainId: indexL3.id })
   const [rawTrades, setRawTrades] = useState<VaultTrade[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [feeBps, setFeeBps] = useState(0)

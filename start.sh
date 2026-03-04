@@ -999,7 +999,7 @@ for i in $(seq 1 $ISSUER_COUNT); do
         ISSUER_ARGS="$ISSUER_ARGS --vision-rpc-ws-url $RPC_URL"
         ISSUER_ARGS="$ISSUER_ARGS --vision-arb-rpc-url $ARB_RPC_URL"
         ISSUER_ARGS="$ISSUER_ARGS --vision-arb-bridge-custody $ARB_CUSTODY"
-        ISSUER_ARGS="$ISSUER_ARGS --vision-reveal-window-secs 0"
+        ISSUER_ARGS="$ISSUER_ARGS --vision-reveal-window-secs 60"
         ISSUER_ARGS="$ISSUER_ARGS --vision-tick-poll-interval-ms 500"
     fi
     nohup ./target/release/issuer $ISSUER_ARGS > logs/issuer-$i.log 2>&1 &

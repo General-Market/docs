@@ -152,6 +152,10 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
     reset: resetWrite,
   } = useWriteContract()
 
+  // Track status via ref to avoid useEffect re-triggering on status change
+  const statusRef = useRef<Status>('idle')
+  statusRef.current = status
+
   // Track rebalance params for Step 2
   const rebalanceParamsRef = useRef<{
     newWeights: bigint[]
@@ -280,7 +284,7 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
   // When MetaMask returns a hash, manually poll for receipt then proceed to Step 2.
   // This is more reliable than useWaitForTransactionReceipt on local Anvil.
   useEffect(() => {
-    if (!requestHash || status !== 'confirming') return
+    if (!requestHash || statusRef.current !== 'confirming') return
     const arbTxHash = requestHash // capture for closure (non-null)
 
     let cancelled = false
@@ -363,7 +367,9 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
 
     confirmAndExecute()
     return () => { cancelled = true }
-  }, [requestHash, status, assets, itpId])
+  }, [requestHash, assets, itpId]) // eslint-disable-line react-hooks/exhaustive-deps
+  // NOTE: `status` intentionally excluded — setStatus('executing') inside the effect
+  // would re-trigger it, setting cancelled=true and silently aborting the execution.
 
   // Filter available assets: match search, exclude already-selected
   const assetAddresses = new Set(assets.map(a => a.address.toLowerCase()))

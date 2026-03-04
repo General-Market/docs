@@ -129,7 +129,11 @@ export default function BatchEntryPanel({
   const counts = bitmapEditor.getCounts(sourceId, marketIds)
   const stakeValue = parseFloat(stakeInput) || 0
   const hasStake = stakeValue > 0
-  const hasPredictions = bitmapEditor.setCount > 0
+  // Must have predictions for THIS source's markets, not just globally
+  const hasPredictions = marketIds.length > 0 && marketIds.some(id => {
+    const cell = bitmapEditor.state[id]
+    return cell === 'up' || cell === 'down'
+  })
   const activeStep = isJoined ? depositStep : joinStep
   // Lock only blocks new joins (prediction required), not deposits by existing players
   const canSubmit = hasStake && (isJoined || hasPredictions) && activeStep === 'idle' && (isJoined || !tickState.isLocked) && (isJoined || !!configHash)

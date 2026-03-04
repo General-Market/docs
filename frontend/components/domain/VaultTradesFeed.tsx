@@ -1,12 +1,47 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { formatUnits } from 'viem'
 import { useVaultTrades, type VaultTrade } from '@/hooks/useVaultTrades'
 import { useSystemStatus, type RecentOrder } from '@/hooks/useSystemStatus'
 import type { DeployedItpRef } from '@/components/domain/ItpListing'
 
 const PAGE_SIZE = 15
+
+// ── Coin logo ──
+
+interface CoinEntry { id: string; image: string }
+
+function CoinLogo({ symbol, coinMap, size = 16 }: { symbol: string; coinMap: Record<string, CoinEntry>; size?: number }) {
+  const entry = coinMap[symbol.toUpperCase()]
+  if (!entry?.image) {
+    return (
+      <span
+        className="inline-flex items-center justify-center rounded-full bg-muted text-text-muted font-mono text-[8px] flex-shrink-0"
+        style={{ width: size, height: size }}
+      >
+        {symbol.slice(0, 2)}
+      </span>
+    )
+  }
+  return (
+    <img
+      src={entry.image}
+      alt={symbol}
+      width={size}
+      height={size}
+      className="rounded-full flex-shrink-0 object-cover"
+      onError={(e) => {
+        const span = document.createElement('span')
+        span.className = 'inline-flex items-center justify-center rounded-full bg-muted text-text-muted font-mono text-[8px]'
+        span.style.width = `${size}px`
+        span.style.height = `${size}px`
+        span.textContent = symbol.slice(0, 2)
+        ;(e.target as HTMLElement).replaceWith(span)
+      }}
+    />
+  )
+}
 
 // ── Helpers ──
 
@@ -124,6 +159,15 @@ export function VaultTradesFeed({ deployedItps }: VaultTradesFeedProps) {
   const { trades, totalCount, feeBps, isLoading, error } = useVaultTrades()
   const sys = useSystemStatus()
   const [page, setPage] = useState(0)
+  const [coinMap, setCoinMap] = useState<Record<string, CoinEntry>>({})
+
+  // Load coin logos
+  useEffect(() => {
+    fetch('/coin-map.json')
+      .then(r => r.ok ? r.json() : {})
+      .then(data => setCoinMap(data))
+      .catch(() => {})
+  }, [])
 
   // Tick relative times every 15s
   const [, setTick] = useState(0)
@@ -225,7 +269,10 @@ export function VaultTradesFeed({ deployedItps }: VaultTradesFeedProps) {
 
                   {/* Token */}
                   <td className="px-4 py-3 border-b border-border-light font-bold text-black">
-                    {trade.tokenSymbol}
+                    <div className="flex items-center gap-1.5">
+                      <CoinLogo symbol={trade.tokenSymbol} coinMap={coinMap} />
+                      {trade.tokenSymbol}
+                    </div>
                   </td>
 
                   {/* Side */}
@@ -258,7 +305,15 @@ export function VaultTradesFeed({ deployedItps }: VaultTradesFeedProps) {
 
                   {/* ITP(s) */}
                   <td className="px-4 py-3 border-b border-border-light text-[12px] text-text-secondary">
-                    {itpLabels}
+                    {itpIds ? itpIds.map((id, idx) => {
+                      const label = itpNameMap.get(id.toLowerCase()) || truncateAddr(id)
+                      return (
+                        <span key={id}>
+                          {idx > 0 && ', '}
+                          <a href={`#markets`} className="hover:text-black transition-colors">{label}</a>
+                        </span>
+                      )
+                    }) : '\u2014'}
                   </td>
 
                   {/* Trade ID */}

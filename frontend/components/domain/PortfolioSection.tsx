@@ -393,6 +393,9 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
             <div className="flex gap-6">
               {(['positions', 'trades', 'orders'] as Tab[]).map(tab => {
                 const label = t(`tabs.${tab}`)
+                const count = tab === 'positions' ? (mergedSummary?.positions.length || 0)
+                  : tab === 'trades' ? trades.length
+                  : activeCount
                 return (
                   <button
                     key={tab}
@@ -404,9 +407,11 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
                     }`}
                   >
                     {label}
-                    {tab === 'orders' && activeCount > 0 && (
-                      <span className="ml-1.5 text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full">
-                        {activeCount}
+                    {count > 0 && (
+                      <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                        tab === 'orders' ? 'bg-yellow-100 text-yellow-700' : 'bg-zinc-100 text-zinc-600'
+                      }`}>
+                        {count}
                       </span>
                     )}
                   </button>
