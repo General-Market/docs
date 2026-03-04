@@ -1532,12 +1532,13 @@ where
             }
             MessageHandleResult::ProcessPriceProposal {
                 from,
+                cycle_number: proposal_cycle,
                 prices,
                 proposer_signature,
             } => {
                 // Follower: validate and vote on prices
                 debug!(?from, "Processing PriceProposal as follower");
-                self.handle_price_proposal_as_follower(from, prices, proposer_signature)
+                self.handle_price_proposal_as_follower(from, proposal_cycle, prices, proposer_signature)
                     .await?;
             }
             MessageHandleResult::ProcessBatchProposal {
@@ -2877,16 +2878,10 @@ where
     async fn handle_price_proposal_as_follower(
         &self,
         leader_id: PeerId,
+        cycle_number: u64,
         prices: Vec<(u32, U256)>,
         proposer_signature: BLSSignature,
     ) -> Result<(), Error> {
-        let cycle_number = {
-            let state = self.state.read().await;
-            state
-                .current_round()
-                .map(|r| r.cycle_number)
-                .unwrap_or(0)
-        };
 
         // Verify proposer signature using key registry
         if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {

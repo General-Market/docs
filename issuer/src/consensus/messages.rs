@@ -1004,6 +1004,7 @@ impl ConsensusMessageHandler {
 
         // Message is for current cycle
         if let P2PMessage::PriceProposal {
+            cycle_number,
             prices,
             proposer_signature,
             ..
@@ -1011,6 +1012,7 @@ impl ConsensusMessageHandler {
         {
             MessageHandleResult::ProcessPriceProposal {
                 from,
+                cycle_number,
                 prices,
                 proposer_signature,
             }
@@ -1216,6 +1218,7 @@ pub enum MessageHandleResult {
     /// Process a price proposal from the leader
     ProcessPriceProposal {
         from: PeerId,
+        cycle_number: u64,
         prices: Vec<(u32, ethers::types::U256)>,
         proposer_signature: P2PBLSSignature,
     },
