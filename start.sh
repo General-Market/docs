@@ -191,12 +191,30 @@ mkdir -p logs deployments data
 # ============ Cleanup ============
 if [ -f .pids ]; then
     echo -e "${YELLOW}Cleaning up previous processes...${NC}"
-    ./stop.sh 2>/dev/null || true
+    if [ "$SKIP_DEPLOY" = true ]; then
+        # When skip-deploy, only stop non-Anvil processes (keep deployed chains alive)
+        while read -r PID; do
+            if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
+                NAME=$(grep ":$PID$" .pids.info 2>/dev/null | cut -d: -f1 || echo "unknown")
+                case "$NAME" in
+                    anvil-l3|anvil-arb|data-node|frontend) echo -e "  ${GREEN}Keeping $NAME (PID: $PID)${NC}" ;;
+                    *) kill "$PID" 2>/dev/null || true ;;
+                esac
+            fi
+        done < .pids
+    else
+        ./stop.sh 2>/dev/null || true
+    fi
 fi
 rm -f .pids .pids.info
 
 # Kill any leftover processes on our ports and wait for ports to be free
+# When --skip-deploy is used, keep Anvils alive (they have deployed contracts)
+SKIP_ANVIL_KILL=${SKIP_DEPLOY}
 for port in 3000 8545 8546 8200 9001 9002 9003 9100; do
+    if [ "$SKIP_ANVIL_KILL" = true ] && { [ "$port" = "8545" ] || [ "$port" = "8546" ]; }; then
+        continue
+    fi
     lsof -ti:$port 2>/dev/null | xargs kill -9 2>/dev/null || true
 done
 # Wait for ports to actually be released by the OS
@@ -204,6 +222,9 @@ for attempt in $(seq 1 20); do
     BUSY=false
     for port in 8545 8546; do
         if lsof -ti:$port > /dev/null 2>&1; then
+            if [ "$SKIP_ANVIL_KILL" = true ]; then
+                continue
+            fi
             BUSY=true
             lsof -ti:$port 2>/dev/null | xargs kill -9 2>/dev/null || true
             break
@@ -229,15 +250,28 @@ fi
 
 # ============ STEP 1: Anvil (L3 + Arbitrum) ============
 echo -e "${BLUE}[1/$TOTAL_STEPS] Starting Anvil chains (L3: $CHAIN_ID, Arbitrum: $ARB_CHAIN_ID)...${NC}"
-nohup anvil --chain-id $CHAIN_ID --host 0.0.0.0 --port 8545 --accounts 100 -q > /dev/null 2>&1 &
-ANVIL_L3_PID=$!
-echo $ANVIL_L3_PID >> .pids
-echo "anvil-l3:$ANVIL_L3_PID" >> .pids.info
 
-nohup anvil --chain-id $ARB_CHAIN_ID --host 0.0.0.0 --port 8546 --accounts 100 -q > /dev/null 2>&1 &
-ANVIL_ARB_PID=$!
-echo $ANVIL_ARB_PID >> .pids
-echo "anvil-arb:$ANVIL_ARB_PID" >> .pids.info
+# When --skip-deploy is used and Anvils are already running, reuse them
+if [ "$SKIP_DEPLOY" = true ] && lsof -ti:8545 > /dev/null 2>&1 && lsof -ti:8546 > /dev/null 2>&1; then
+    ANVIL_L3_PID=$(lsof -ti:8545 | head -1)
+    ANVIL_ARB_PID=$(lsof -ti:8546 | head -1)
+    echo $ANVIL_L3_PID >> .pids
+    echo "anvil-l3:$ANVIL_L3_PID" >> .pids.info
+    echo $ANVIL_ARB_PID >> .pids
+    echo "anvil-arb:$ANVIL_ARB_PID" >> .pids.info
+    echo -e "  L3 Anvil: ${GREEN}reused (PID: $ANVIL_L3_PID)${NC}"
+    echo -e "  Arb Anvil: ${GREEN}reused (PID: $ANVIL_ARB_PID)${NC}"
+else
+    nohup anvil --chain-id $CHAIN_ID --host 0.0.0.0 --port 8545 --accounts 100 -q > /dev/null 2>&1 &
+    ANVIL_L3_PID=$!
+    echo $ANVIL_L3_PID >> .pids
+    echo "anvil-l3:$ANVIL_L3_PID" >> .pids.info
+
+    nohup anvil --chain-id $ARB_CHAIN_ID --host 0.0.0.0 --port 8546 --accounts 100 -q > /dev/null 2>&1 &
+    ANVIL_ARB_PID=$!
+    echo $ANVIL_ARB_PID >> .pids
+    echo "anvil-arb:$ANVIL_ARB_PID" >> .pids.info
+fi
 
 # Poll both Anvils in parallel
 wait_for_rpc() {
@@ -1021,6 +1055,7 @@ else
         ${BESTBUY_API_KEY:+--bestbuy-api-key "$BESTBUY_API_KEY"} \
         ${ADZUNA_APP_ID:+--adzuna-app-id "$ADZUNA_APP_ID"} \
         ${ADZUNA_APP_KEY:+--adzuna-app-key "$ADZUNA_APP_KEY"} \
+        ${PRIM_API_KEY:+--prim-api-key "$PRIM_API_KEY"} \
         --ecb-enabled \
         --openmeteo-sync-interval 300 \
         $RESET_SESSION_FLAG \
