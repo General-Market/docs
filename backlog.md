@@ -1,5 +1,24 @@
 # Design Decision Backlog
 
+## Session: 20260304-0830-e2e1 (E2E full test run — 116 tests, fix flaky failures)
+
+- [DECISION] E2E test 08 (arb bridge buy) intermittently fails when the designated leader has `buy_active` locked from processing a previous order. Detection and processing are under the same AtomicBool flag in main.rs. Proper fix: split detection (cheap Arb RPC scan) from processing (bridge+submit consensus). Detection should always run. Test now retries with a second order (different orderId = different leader assignment) as a workaround.
+- [DECISION] Next.js dev server timeouts under parallel test load — root cause: global-setup warmed `/portfolio` which 404s and triggers `_not-found` recompilation (5315 modules) 5x during test run, blocking all concurrent requests. Fix: removed `/portfolio` from warmup, increased navigationTimeout to 90s.
+- [DECISION] Vision category pill click miss — root cause: `NextBatches` component re-sorts batch cards every 1s via `setInterval`, causing layout shifts that intercept Playwright clicks. Fix: `{ force: true }` click in test. Future: debounce or requestAnimationFrame the timer updates.
+- [DECISION] All `test.setTimeout(60_000)` in display formatting tests increased to 120_000 to match global default — 60s is insufficient under parallel test load with 2 workers sharing one Next.js dev server.
+
+## Session: 20260303-2030-b9c4 (Cycle manager WorkDriven burst stall + AUM fix)
+
+- [DECISION] Root cause of cross-chain detection failure (tests 08/09/18): CycleManager WorkDriven burst pushes cycle numbers ~44 minutes ahead of real time (simple `cycle_number += 1` at 50ms intervals). When Heartbeat resumes at wall-clock time, main loop's `current_cycle > last_cycle` check fails for ~41 minutes — ALL consensus work stops.
+- [DECISION] Fix 1: Changed main loop check from `current_cycle > last_cycle` to `current_cycle != last_cycle`. Handles cycle number drops after WorkDriven bursts.
+- [DECISION] Fix 2: CycleManager now uses `max(wall_clock_cycle, last + 1)` for both WorkDriven and Heartbeat triggers. Prevents bursts from racing ahead while still ensuring unique cycle numbers within the same wall-clock second.
+- [FAILED] Previous hypothesis (buy_active flag blocking detection) was only partially correct. The function split was a good refactor but the real issue was the cycle manager stall.
+- [DECISION] AUM fix: AP Vault showed $852.7B because `vault_balances` API summed USD values of all 624 mock liquidity tokens. Fix: `total_usd` and frontend `totalUsdValue` now only count USDC (real collateral), not mock tokens.
+- [FAILED] Fix 2 (Heartbeat ALWAYS wall-clock, WorkDriven max(wall_clock, last+1)) still allowed WorkDriven burst to race hundreds of cycles ahead. Main loop stopped processing after cycle 1772571626 despite `!=` fix — likely blocked on `orch.read().await` at line 1110 because spawned tasks hold the orchestrator write lock (Tokio RwLock is write-preferring).
+- [DECISION] Fix 3: Cap WorkDriven cycle advance to `min(cycle+1, wall_clock+2)` — prevents runaway cycle numbers, limits Heartbeat drop to at most 2 cycles.
+- [DECISION] Fix 4: Replace all `orchestrator.read().await` in main loop with `try_read()` — non-blocking, falls back to `true` if lock unavailable. Prevents write-lock contention from blocking the main loop.
+- [DECISION] Fix 5: Added 5s timeout on `is_consensus_paused()` RPC call — prevents hung RPC from blocking main loop indefinitely.
+
 ## Session: 20260303-1600-q4m8 (Fix BATCHED fills leader failover + receipt polling)
 
 - [DECISION] Fixed BATCHED fills leader failover: `first_seen_orders` was removed on `Ok(signer_count=0)`, resetting `attempt=0` every cycle. Fills leader was permanently locked to node_index=2 (issuer 3) with no failover when issuer 3 didn't enter the fills code path. Fix: only clean up first_seen_orders and mark orders Filled when signer_count > 0.
@@ -4516,3 +4535,13 @@ The backtester currently supports one rebalance method: **periodic time-based re
 [DECISION] 20260302-1010-bls1: NavOracle hash must use L3 chain_id (111222333), not Arb chain_id (421611337) - the oracle contract is on L3 and uses block.chainid. Root cause of persistent 0x10aa8d54 (BLSVerifier__InvalidSignature) errors.
 
 [DECISION] 20260302-e2e-prod-cycles: Changed e2e issuer cycle params from fast-mode (200ms/150ms/20ms) to production values (1000ms/800ms/50ms) to match vps-deploy.sh. Tests now reflect real fill times.
+
+[DECISION] 20260303-INFRA007 - Follower price proposal verification must use cycle_number from incoming P2P message, not from local state (unwrap_or(0) caused BLS mismatch after hours of running)
+
+## Session: 20260304-e2e-fixes (Fix 4 skipped E2E tests + NAV production issue)
+
+- [DECISION] NAV test was silently skipping (`continue`) when navValue count was 0 (NAV not loaded yet). Changed to `expect(...).toBeVisible({ timeout: 45_000 })` to properly wait for data-node NAV to load.
+- [DECISION] ITP2 BridgedITP: Added `deployBridgedItpDirect` helper that impersonates BridgeProxy to call BridgedItpFactory.deployBridgedItp(), then sets BridgeProxy.orbitToArbitrum storage slot 5 via anvil_setStorageAt. BridgeProxy storage layout: slot 0=BLSVerifier._blsIssuerRegistry, slot 1=issuerRegistry, slot 2=bridgedItpFactory, slot 3=nextCreationNonce, slot 4=_pendingCreations, slot 5=orbitToArbitrum.
+- [DECISION] `placeSellOrderDirect` had a bug: hard-coded BRIDGED_ITP (ITP1's address) for the ERC20 approve, regardless of which ITP was being sold. Fixed to dynamically resolve BridgedITP address per itpId.
+- [DECISION] Production NAV: useItpNav.ts was fetching directly from `DATA_NODE_URL` (defaults to localhost:8200) which doesn't work from browser in production. Added `/api/itp-price` Next.js API route as server-side proxy. Hook now fetches from `/api/itp-price` instead.
+- [DECISION] Source detail pool TVL test: changed from /source/coingecko to /source/pumpfun (where test 13 deposits) and added ensureBatchExists + depositToVisionBalance setup to guarantee pool has data.

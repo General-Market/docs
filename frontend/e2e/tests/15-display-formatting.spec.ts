@@ -17,6 +17,12 @@ import {
   itpCard,
 } from '../helpers/selectors'
 import { checkRpc } from '../helpers/backend-api'
+import {
+  PLAYER1,
+  depositToVisionBalance,
+  ensureBatchExists,
+  getVisionPlayerBalance,
+} from '../helpers/vision-api'
 
 /** Parse a dollar string like "$4,110.50" or "$1.2K" into a number */
 function parseDollar(text: string): number {
@@ -104,8 +110,17 @@ test.describe('Display Formatting — Leaderboard', () => {
 
 test.describe('Display Formatting — Source Detail', () => {
   test('source detail pool TVL is not raw wei', async ({ walletPage: page }) => {
-    test.setTimeout(120_000)
-    await page.goto('/source/coingecko', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    test.setTimeout(180_000)
+
+    // Ensure Vision batches exist and player has balance (so pool has deposits)
+    await ensureBatchExists()
+    const balance = await getVisionPlayerBalance(PLAYER1)
+    if (balance < BigInt(10) * BigInt(10 ** 18)) {
+      await depositToVisionBalance(PLAYER1, BigInt(100) * BigInt(10 ** 18))
+    }
+
+    // Use pumpfun — test 13 enters batches here, so it should have deposits
+    await page.goto('/source/pumpfun', { waitUntil: 'domcontentloaded', timeout: 60_000 })
 
     const bodyText = await page.locator('body').textContent({ timeout: 5_000 }).catch(() => '')
     if (bodyText?.includes('missing required error components') || bodyText?.includes('Application error')) {
@@ -115,21 +130,12 @@ test.describe('Display Formatting — Source Detail', () => {
 
     // Wait for batch bar Pool label
     const poolLabel = page.getByText('Pool', { exact: true })
-    const hasPool = await poolLabel.isVisible({ timeout: 30_000 }).catch(() => false)
-    if (!hasPool) {
-      test.skip()
-      return
-    }
+    await expect(poolLabel).toBeVisible({ timeout: 45_000 })
 
     // Pool value is styled text-color-up and contains a $ amount.
-    // Wait for pool data to populate (may show "—" initially while SSE connects).
+    // Wait for pool data to populate (SSE delivers batch data).
     const poolValues = page.locator('.text-color-up').filter({ hasText: /\$/ })
-    const hasValues = await poolValues.first().isVisible({ timeout: 60_000 }).catch(() => false)
-    if (!hasValues) {
-      // Pool exists but no dollar value populated — batch may not have deposits yet
-      test.skip(true, 'Pool label visible but no dollar values — no active batch deposits')
-      return
-    }
+    await expect(poolValues.first()).toBeVisible({ timeout: 60_000 })
     const count = await poolValues.count()
 
     for (let i = 0; i < Math.min(count, 3); i++) {
@@ -160,17 +166,21 @@ test.describe('Display Formatting — ITP Cards', () => {
     // The label contains "NAV" text, and the value is a sibling .tabular-nums span.
     // This avoids matching TVL or other dollar amounts on the card.
     const cardCount = await cards.count()
+    let checkedAtLeastOne = false
     for (let i = 0; i < Math.min(cardCount, 5); i++) {
       const card = cards.nth(i)
       // Find the div that contains the NAV label (case-insensitive "nav" in uppercase label)
       const navContainer = card.locator('div').filter({ hasText: /NAV/i }).first()
       const navValue = navContainer.locator('.tabular-nums').filter({ hasText: /^\$/ })
-      if (await navValue.count() === 0) continue
+      // Wait for NAV to load from data-node (replaces "..." spinner with $X.XXXX)
+      await expect(navValue.first()).toBeVisible({ timeout: 45_000 })
       const text = await navValue.first().textContent() || ''
       const num = parseDollar(text)
       expect(num).toBeGreaterThan(0.01)
       expect(num).toBeLessThan(1000)
+      checkedAtLeastOne = true
     }
+    expect(checkedAtLeastOne).toBe(true)
   })
 
   test('orderbook loads on ITP hover (not stuck loading)', async ({ walletPage: page }) => {

@@ -21,15 +21,19 @@ import {
   getItpStateL3,
   getL3UserShares,
   mintL3Shares,
+  mintL3Usdc,
   mintBridgedItp,
   placeBuyOrderDirect,
   placeSellOrderDirect,
   pollUntil,
   startArbBlockMiner,
   getBridgedItpAddress,
+  deployBridgedItpDirect,
   erc20BalanceOf,
   ARB_USDC,
 } from '../helpers/backend-api';
+
+const INDEX_CONTRACT = '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
 
 /** Build the bytes32 ITP ID from a number (1-indexed) */
 function itpIdFromNumber(n: number): string {
@@ -105,24 +109,27 @@ test.describe('Multi-ITP Order Processing', () => {
       await mintL3Shares(TEST_ADDRESS, itp2Id, 100n * 10n ** 18n);
     }
 
-    // 3. Ensure user has BridgedITP on Arb for ITP2
-    const bridgedAddr = await getBridgedItpAddress(itp2Id);
+    // 3. Deploy BridgedITP for ITP2 if not yet deployed (test 05 may not have run)
+    let bridgedAddr = await getBridgedItpAddress(itp2Id);
     if (bridgedAddr === '0x' + '0'.repeat(40)) {
-      console.log('No BridgedITP for ITP2, testing L3-native sell path only');
-      test.skip(true, 'No BridgedITP deployed for ITP2');
-      return;
+      console.log('No BridgedITP for ITP2, deploying directly...');
+      bridgedAddr = await deployBridgedItpDirect(itp2Id, 'E2E ITP2', 'E2ET');
+      console.log(`Deployed BridgedITP for ITP2: ${bridgedAddr}`);
     }
 
     await mintBridgedItp(TEST_ADDRESS, itp2Id, 50n * 10n ** 18n);
 
-    // 4. Record Arb USDC balance before sell (cross-chain sell returns Arb USDC)
+    // 4. Fund L3 Index with USDC so sell payouts don't fail
+    await mintL3Usdc(INDEX_CONTRACT, 200n * 10n ** 18n);
+
+    // 5. Record Arb USDC balance before sell (cross-chain sell returns Arb USDC)
     const arbUsdcBefore = BigInt(await erc20BalanceOf(ARB_USDC, TEST_ADDRESS));
 
-    // 5. Start Arb block miner
+    // 6. Start Arb block miner
     const stopMiner = startArbBlockMiner(1000);
 
     try {
-      // 6. Place sell order for ITP2 (50 shares at low limit to ensure fill)
+      // 7. Place sell order for ITP2 (50 shares at low limit to ensure fill)
       const sellAmount = 50n * 10n ** 18n;
       const limitPrice = 1n; // Very low limit price to guarantee fill
       let orderId: number;
@@ -136,7 +143,7 @@ test.describe('Multi-ITP Order Processing', () => {
       }
       console.log(`Placed ITP2 sell order #${orderId}`);
 
-      // 7. Wait for Arb USDC to increase (balance-based verification)
+      // 8. Wait for Arb USDC to increase (balance-based verification)
       try {
         const arbUsdcAfter = await pollUntil(
           async () => BigInt(await erc20BalanceOf(ARB_USDC, TEST_ADDRESS)),
@@ -167,6 +174,9 @@ test.describe('Multi-ITP Order Processing', () => {
 
     // Mint BridgedITP on Arb
     await mintBridgedItp(TEST_ADDRESS, itp1Id, 50n * 10n ** 18n);
+
+    // Fund L3 Index with USDC so sell payouts don't fail
+    await mintL3Usdc(INDEX_CONTRACT, 200n * 10n ** 18n);
 
     // Cross-chain sell returns Arb USDC (6 decimals), not L3 USDC
     const arbUsdcBefore = BigInt(await erc20BalanceOf(ARB_USDC, TEST_ADDRESS));

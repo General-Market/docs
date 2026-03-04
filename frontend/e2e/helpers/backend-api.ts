@@ -170,6 +170,7 @@ const BRIDGED_ITP = _deployment?.BridgedITP ?? '0x2Eab31C830BB4B1fD8FB8738F6F4A5
 const ARB_USDC = _deployment?.ARB_USDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
 const BRIDGE_PROXY = _deployment?.BridgeProxy ?? '0x0B306BF915C4d645ff596e518fAf3F9669b97016';
 const ARB_CUSTODY = _deployment?.ArbBridgeCustody ?? '0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1';
+const BRIDGED_ITP_FACTORY = _deployment?.BridgedItpFactory ?? '0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1';
 /** Anvil deployer account (auto-accepted for eth_sendTransaction) */
 const DEPLOYER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 
@@ -699,6 +700,16 @@ export async function placeSellOrderDirect(
   amount: bigint,
   limitPrice: bigint,
 ): Promise<number> {
+  // Resolve BridgedITP address for this ITP (ITP1 uses constant, ITP2+ use dynamic lookup)
+  let bridgedToken = BRIDGED_ITP;
+  if (itpId !== '0x0000000000000000000000000000000000000000000000000000000000000001') {
+    const addr = await getBridgedItpAddress(itpId);
+    if (addr === '0x' + '0'.repeat(40)) {
+      throw new Error(`No BridgedITP deployed for itpId ${itpId}`);
+    }
+    bridgedToken = addr;
+  }
+
   // Fund user with ETH for gas
   await rpcCall('anvil_setBalance', [user, '0x56BC75E2D63100000']); // 100 ETH
   await rpcCall('anvil_impersonateAccount', [user]);
@@ -711,7 +722,7 @@ export async function placeSellOrderDirect(
     });
     const approveTxHash = await rpcCall('eth_sendTransaction', [{
       from: user,
-      to: BRIDGED_ITP,
+      to: bridgedToken,
       data: approveData,
       gas: '0x100000',
     }]) as string;
@@ -1054,6 +1065,103 @@ export async function getBridgedItpAddress(itpId: string): Promise<string> {
     'latest',
   ]) as string;
   return '0x' + result.slice(26);
+}
+
+/**
+ * Deploy a BridgedITP for an ITP on Arb Anvil (when test 05 didn't create it).
+ * Impersonates BridgeProxy to call BridgedItpFactory.deployBridgedItp(),
+ * then sets BridgeProxy storage mappings via anvil_setStorageAt.
+ *
+ * BridgeProxy storage layout (OZ v5 ERC-7201 + BLSVerifier):
+ *   slot 0: BLSVerifier._blsIssuerRegistry
+ *   slot 1: issuerRegistry
+ *   slot 2: bridgedItpFactory
+ *   slot 3: nextCreationNonce
+ *   slot 4: _pendingCreations (mapping)
+ *   slot 5: orbitToArbitrum (mapping(bytes32 => address))
+ *   slot 6: arbitrumToOrbit (mapping(address => bytes32))
+ */
+export async function deployBridgedItpDirect(
+  itpId: string,
+  name: string,
+  symbol: string,
+): Promise<string> {
+  // Check if already deployed
+  const existing = await getBridgedItpAddress(itpId);
+  if (existing !== '0x' + '0'.repeat(40)) {
+    return existing;
+  }
+
+  // Fund BridgeProxy with ETH for gas
+  await rpcCall('anvil_setBalance', [BRIDGE_PROXY, '0x56BC75E2D63100000']); // 100 ETH
+
+  // Impersonate BridgeProxy to call factory
+  await rpcCall('anvil_impersonateAccount', [BRIDGE_PROXY]);
+  try {
+    const deployData = encodeFunctionData({
+      abi: [{
+        name: 'deployBridgedItp',
+        type: 'function',
+        stateMutability: 'nonpayable',
+        inputs: [
+          { name: 'name', type: 'string' },
+          { name: 'symbol', type: 'string' },
+          { name: 'orbitItpId', type: 'bytes32' },
+        ],
+        outputs: [{ name: 'bridgedItp', type: 'address' }],
+      }],
+      functionName: 'deployBridgedItp',
+      args: [name, symbol, itpId as `0x${string}`],
+    });
+
+    await rpcCall('eth_sendTransaction', [{
+      from: BRIDGE_PROXY,
+      to: BRIDGED_ITP_FACTORY,
+      data: deployData,
+      gas: '0x500000',
+    }]);
+    await rpcCall('anvil_mine', ['0x1']);
+  } finally {
+    await rpcCall('anvil_stopImpersonatingAccount', [BRIDGE_PROXY]);
+  }
+
+  // Read deployed address from factory.deployedItps(itpId)
+  const itpIdPadded = itpId.replace('0x', '').padStart(64, '0');
+  const factoryCalldata = '0x8f57752e' + itpIdPadded; // deployedItps(bytes32)
+  const factoryResult = await rpcCall('eth_call', [
+    { to: BRIDGED_ITP_FACTORY, data: factoryCalldata },
+    'latest',
+  ]) as string;
+  const deployedAddr = '0x' + factoryResult.slice(26);
+
+  if (deployedAddr === '0x' + '0'.repeat(40)) {
+    throw new Error('BridgedITP deployment failed — factory returned zero address');
+  }
+
+  // Helper: compute keccak256 via Arb Anvil's web3_sha3
+  const sha3 = async (data: string) => await rpcCall('web3_sha3', [data]) as string;
+
+  // Set BridgeProxy.orbitToArbitrum[itpId] = deployedAddr (slot 5)
+  const slot5Hex = '0x' + BigInt(5).toString(16).padStart(64, '0');
+  const mappingInput = '0x' + itpIdPadded + slot5Hex.replace('0x', '');
+  const storageSlot = await sha3(mappingInput);
+  const addrPadded = '0x' + deployedAddr.replace('0x', '').toLowerCase().padStart(64, '0');
+  await rpcCall('anvil_setStorageAt', [BRIDGE_PROXY, storageSlot, addrPadded]);
+
+  // Set BridgeProxy.arbitrumToOrbit[deployedAddr] = itpId (slot 6)
+  const slot6Hex = '0x' + BigInt(6).toString(16).padStart(64, '0');
+  const addrForMapping = deployedAddr.replace('0x', '').toLowerCase().padStart(64, '0');
+  const reverseInput = '0x' + addrForMapping + slot6Hex.replace('0x', '');
+  const reverseSlot = await sha3(reverseInput);
+  await rpcCall('anvil_setStorageAt', [BRIDGE_PROXY, reverseSlot, itpId]);
+
+  // Verify by reading back
+  const verifyAddr = await getBridgedItpAddress(itpId);
+  if (verifyAddr.toLowerCase() !== deployedAddr.toLowerCase()) {
+    throw new Error(`BridgeProxy.orbitToArbitrum verification failed: expected ${deployedAddr}, got ${verifyAddr} — storage slot may be wrong`);
+  }
+
+  return deployedAddr;
 }
 
 /** Expose erc20BalanceOf and contract addresses for direct use in tests */

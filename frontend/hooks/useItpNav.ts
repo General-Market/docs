@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 
-const DATA_NODE_URL = process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200'
-
 interface ItpNavResult {
   /** NAV per share in USD (float) */
   navPerShare: number
@@ -51,7 +49,7 @@ export function useItpNav(itpId: string | undefined): ItpNavResult {
 
     try {
       const navResponse = await fetch(
-        `${DATA_NODE_URL}/itp-price?itp_id=${id}`,
+        `/api/itp-price?itp_id=${id}`,
         { signal: AbortSignal.timeout(5000) }
       ).then(r => r.ok ? r.json() : null).catch(() => null)
 
