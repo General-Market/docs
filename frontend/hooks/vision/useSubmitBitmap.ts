@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useAccount } from 'wagmi'
-import { VISION_ISSUER_URLS } from '@/lib/config'
+import { VISION_API_URL, VISION_ISSUER_URLS } from '@/lib/config'
 import { bitmapToHex, hashBitmap, encodeBitmap, type BetDirection } from '@/lib/vision/bitmap'
 
 export interface SubmitBitmapParams {
@@ -67,9 +67,27 @@ export function useSubmitBitmap(): UseSubmitBitmapReturn {
       expected_hash: params.bitmapHash,
     })
 
-    const trySubmit = async () => {
+    type IssuerResult = { url: string; accepted: boolean; error?: string }
+
+    const trySubmit = async (): Promise<IssuerResult[]> => {
+      // Use server-side fan-out API route (avoids CORS, reaches all issuers)
+      try {
+        const res = await fetch(`${VISION_API_URL}/vision/bitmap`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+        })
+        if (res.ok) {
+          const data = await res.json()
+          if (data.results) return data.results as IssuerResult[]
+        }
+      } catch {
+        // Proxy failed, fall through to direct
+      }
+
+      // Fallback: direct issuer URLs (works in non-browser contexts)
       return Promise.all(
-        VISION_ISSUER_URLS.map(async (url) => {
+        VISION_ISSUER_URLS.map(async (url): Promise<IssuerResult> => {
           try {
             const res = await fetch(`${url}/vision/bitmap`, {
               method: 'POST',

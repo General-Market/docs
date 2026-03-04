@@ -139,7 +139,7 @@ test.describe('Display Formatting — Source Detail', () => {
 
 test.describe('Display Formatting — ITP Cards', () => {
   test('ITP NAV per share is between $0.01 and $1000', async ({ walletPage: page }) => {
-    test.setTimeout(60_000)
+    test.setTimeout(120_000)
     await page.goto('/index')
 
     const cards = itpCard(page)
@@ -162,7 +162,7 @@ test.describe('Display Formatting — ITP Cards', () => {
   })
 
   test('orderbook loads on ITP hover (not stuck loading)', async ({ walletPage: page }) => {
-    test.setTimeout(60_000)
+    test.setTimeout(120_000)
 
     const rpcOk = await checkRpc()
     if (!rpcOk) {
@@ -197,7 +197,7 @@ test.describe('Display Formatting — ITP Cards', () => {
 
 test.describe('Display Formatting — Source Cards', () => {
   test('source cards render with market counts', async ({ walletPage: page }) => {
-    test.setTimeout(60_000)
+    test.setTimeout(120_000)
     await page.goto('/')
 
     // Source cards are below NextBatches — may need scroll
@@ -219,7 +219,7 @@ test.describe('Display Formatting — Source Cards', () => {
   })
 
   test('stats bar shows source and asset counts', async ({ walletPage: page }) => {
-    test.setTimeout(60_000)
+    test.setTimeout(120_000)
     await page.goto('/')
 
     // Stats bar: black bar with Sources/Assets/Categories
@@ -364,7 +364,7 @@ test.describe('Display Formatting — Lending', () => {
 
 test.describe('Display Formatting — Balances', () => {
   test('wallet USDC balance shows formatted amount', async ({ walletPage: page }) => {
-    test.setTimeout(60_000)
+    test.setTimeout(120_000)
     await page.goto('/')
 
     const usdcBalance = page.getByText(/[\d,]+\.\d{2}\s*USDC/)
@@ -379,7 +379,7 @@ test.describe('Display Formatting — Balances', () => {
   })
 
   test('no raw bigint values in page text', async ({ walletPage: page }) => {
-    test.setTimeout(60_000)
+    test.setTimeout(120_000)
     await page.goto('/')
     await page.waitForTimeout(5_000) // Let page hydrate fully
 

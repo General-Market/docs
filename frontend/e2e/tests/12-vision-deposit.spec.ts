@@ -38,8 +38,8 @@ test.describe('Vision Deposit + Bridge', () => {
       await page.mouse.move(0, 0)
     }
 
-    // 4. Wait for balance bar to appear (shows when total > 0)
-    await expect(page.getByText(/Balance:.*USDC/)).toBeVisible({ timeout: 30_000 })
+    // 4. Wait for balance bar to appear (VisionBalanceBar renders after wallet connects + useVisionBalance loads)
+    await expect(page.getByText(/Balance:.*USDC/)).toBeVisible({ timeout: 60_000 })
 
     // 5. Click DEPOSIT button on balance bar
     const depositBtn = page.getByRole('button', { name: 'DEPOSIT' })

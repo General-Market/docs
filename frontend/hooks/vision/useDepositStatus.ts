@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { VISION_ISSUER_URLS } from '@/lib/config'
+import { VISION_API_URL, VISION_ISSUER_URLS } from '@/lib/config'
 
 export type DepositStatus = 'pending' | 'credited' | 'refunded' | 'unknown'
 
@@ -29,32 +29,49 @@ export function useDepositStatus(orderId: string | null): UseDepositStatusReturn
 
     setIsLoading(true)
 
+    const handleResponse = (data: { status: string }): boolean => {
+      const s = data.status
+      if (s === 'credited' || s === 'completed') {
+        setStatus('credited')
+        setIsLoading(false)
+        if (pollRef.current) {
+          clearInterval(pollRef.current)
+          pollRef.current = null
+        }
+        return true
+      } else if (s === 'refunded') {
+        setStatus('refunded')
+        setIsLoading(false)
+        if (pollRef.current) {
+          clearInterval(pollRef.current)
+          pollRef.current = null
+        }
+        return true
+      }
+      setStatus('pending')
+      return false
+    }
+
     const poll = async () => {
+      // Try proxied path first (same-origin, no CORS)
+      try {
+        const res = await fetch(`${VISION_API_URL}/vision/deposit/${orderId}/status`)
+        if (res.ok) {
+          const data = await res.json()
+          if (handleResponse(data)) return
+          return
+        }
+      } catch {
+        // Proxy failed, try direct
+      }
+
+      // Fallback: direct issuer URLs
       for (const url of VISION_ISSUER_URLS) {
         try {
           const res = await fetch(`${url}/vision/deposit/${orderId}/status`)
           if (res.ok) {
             const data = await res.json()
-            const s = data.status as string
-            if (s === 'credited' || s === 'completed') {
-              setStatus('credited')
-              setIsLoading(false)
-              if (pollRef.current) {
-                clearInterval(pollRef.current)
-                pollRef.current = null
-              }
-              return
-            } else if (s === 'refunded') {
-              setStatus('refunded')
-              setIsLoading(false)
-              if (pollRef.current) {
-                clearInterval(pollRef.current)
-                pollRef.current = null
-              }
-              return
-            } else {
-              setStatus('pending')
-            }
+            if (handleResponse(data)) return
             return
           }
         } catch {

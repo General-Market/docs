@@ -44,8 +44,8 @@ test.describe('Connect Wallet', () => {
     const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4);
     await expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 15_000 });
 
-    // Reload
-    await page.reload();
+    // Reload — retry once if frame detaches (flaky with parallel workers)
+    await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => page.reload({ waitUntil: 'domcontentloaded' }));
 
     // Wagmi may auto-reconnect from stored state, or we may need to re-connect.
     // Either we see the address button or the Login button.

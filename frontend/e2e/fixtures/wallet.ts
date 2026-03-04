@@ -53,11 +53,11 @@ export const test = base.extend<{ walletPage: Page }>({
     // Intercept backend API calls that may 404 on stale binary
     await installApiInterceptors(page);
 
-    // Navigate to a page to trigger the init script.
-    // ITP tests rely on starting at /index; Vision tests navigate away in their test body.
-    await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 }).catch(() => {
-      // If /index is slow (server under parallel test load), navigate to lightweight root
-      return page.goto('/', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    // Navigate to trigger the init script.
+    // ITP tests (0x-09, 16+) start at /index; Vision tests (10-15) start at '/'.
+    // Navigating Vision tests to /index wastes dev server resources and causes timeouts.
+    await page.goto('http://localhost:3000/index', { waitUntil: 'domcontentloaded', timeout: 90_000 }).catch(() => {
+      return page.goto('http://localhost:3000/index', { waitUntil: 'domcontentloaded', timeout: 90_000 })
     });
 
     // Wait for React hydration — event handlers aren't attached until hydration completes.

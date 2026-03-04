@@ -16,7 +16,7 @@ const ISSUER_REGISTRY_ADDRESS = (
   process.env.NEXT_PUBLIC_ISSUER_REGISTRY_ADDRESS || '0x0000000000000000000000000000000000000000'
 ) as `0x${string}`
 
-import { VISION_ISSUER_URLS } from '@/lib/config'
+import { VISION_API_URL, VISION_ISSUER_URLS } from '@/lib/config'
 
 export type WithdrawStep = 'idle' | 'fetching-proof' | 'withdrawing' | 'done' | 'error'
 
@@ -47,17 +47,37 @@ export interface UseWithdrawReturn {
 
 /**
  * Fetch a BLS-signed balance proof from issuer nodes.
- * Tries each issuer URL until one succeeds.
+ * Uses the Next.js proxy first (avoids CORS), then falls back to direct issuer URLs.
  */
 async function fetchBalanceProof(
   batchId: bigint,
   player: string,
 ): Promise<BalanceProof> {
   const errors: string[] = []
+  const path = `/vision/balance/${batchId}/${player}`
 
+  // Try proxied path first (same-origin, no CORS issues)
+  const proxyUrl = `${VISION_API_URL}${path}`
+  try {
+    const res = await fetch(proxyUrl)
+    if (res.ok) {
+      const data = await res.json()
+      return {
+        balance: data.balance,
+        blsSig: data.blsSig || data.bls_sig || '',
+        signerBitmap: data.signerBitmap || data.signer_bitmap || '0',
+      }
+    }
+    const errBody = await res.text().catch(() => 'Unknown error')
+    errors.push(`proxy: HTTP ${res.status} ${errBody.slice(0, 100)}`)
+  } catch (e) {
+    errors.push(`proxy: ${(e as Error).message}`)
+  }
+
+  // Fallback: try direct issuer URLs (works in non-browser contexts like E2E tests)
   for (const url of VISION_ISSUER_URLS) {
     try {
-      const res = await fetch(`${url}/vision/balance/${batchId}/${player}`)
+      const res = await fetch(`${url}${path}`)
       if (res.ok) {
         const data = await res.json()
         return {

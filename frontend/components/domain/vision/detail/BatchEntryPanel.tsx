@@ -131,7 +131,8 @@ export default function BatchEntryPanel({
   const hasStake = stakeValue > 0
   const hasPredictions = bitmapEditor.setCount > 0
   const activeStep = isJoined ? depositStep : joinStep
-  const canSubmit = hasStake && (isJoined || hasPredictions) && activeStep === 'idle' && !tickState.isLocked && (isJoined || !!configHash)
+  // Lock only blocks new joins (prediction required), not deposits by existing players
+  const canSubmit = hasStake && (isJoined || hasPredictions) && activeStep === 'idle' && (isJoined || !tickState.isLocked) && (isJoined || !!configHash)
 
   // -- After on-chain join succeeds, submit bitmap to issuers --
   useEffect(() => {

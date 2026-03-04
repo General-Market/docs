@@ -7,7 +7,7 @@ import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { VISION_ADDRESS } from '@/lib/vision/constants'
-import { VISION_ISSUER_URLS } from '@/lib/config'
+import { VISION_API_URL, VISION_ISSUER_URLS } from '@/lib/config'
 
 export type WithdrawToArbStep = 'idle' | 'withdrawing' | 'polling' | 'done' | 'error'
 
@@ -110,6 +110,27 @@ export function useWithdrawToArb(): UseWithdrawToArbReturn {
     if (step !== 'polling' || !withdrawId) return
 
     const poll = async () => {
+      // Try proxied path first (same-origin, no CORS)
+      const proxyUrl = `${VISION_API_URL}/vision/withdraw/${withdrawId}/status`
+      try {
+        const res = await fetch(proxyUrl)
+        if (res.ok) {
+          const data = await res.json()
+          if (data.status === 'completed') {
+            if (pollRef.current) {
+              clearInterval(pollRef.current)
+              pollRef.current = null
+            }
+            setStep('done')
+            return
+          }
+          return
+        }
+      } catch {
+        // Proxy failed, try direct
+      }
+
+      // Fallback: direct issuer URLs
       for (const url of VISION_ISSUER_URLS) {
         try {
           const res = await fetch(`${url}/vision/withdraw/${withdrawId}/status`)
@@ -123,7 +144,7 @@ export function useWithdrawToArb(): UseWithdrawToArbReturn {
               setStep('done')
               return
             }
-            return // got a response, don't try other issuers
+            return
           }
         } catch {
           // Try next issuer

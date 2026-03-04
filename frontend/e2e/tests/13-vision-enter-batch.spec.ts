@@ -47,8 +47,10 @@ test.describe('Vision Enter Batch (UI)', () => {
     }
 
     // 3. Wait for markets to load (UP/DN buttons should appear)
+    // Pumpfun has ~1200 markets — first snapshot fetch can take 60-90s on cold start
+    // Note: locator.isVisible() returns immediately; use waitFor() to actually poll
     const upButton = page.getByRole('button', { name: 'UP' }).first()
-    const hasMarkets = await upButton.isVisible({ timeout: 45_000 }).catch(() => false)
+    const hasMarkets = await upButton.waitFor({ state: 'visible', timeout: 90_000 }).then(() => true).catch(() => false)
     if (!hasMarkets) {
       test.skip(true, 'Markets not loaded — UP buttons not visible within timeout')
       return
@@ -80,8 +82,9 @@ test.describe('Vision Enter Batch (UI)', () => {
     await stakeBtn.click()
 
     // 7. Click "Enter Batch" button
-    const enterBatchBtn = page.getByRole('button', { name: /Enter Batch/ })
-    await expect(enterBatchBtn).toBeEnabled({ timeout: 15_000 })
+    // Batch may be locked (resolving phase) — wait up to 2 full cycles for it to open
+    const enterBatchBtn = page.getByRole('button', { name: /Enter Batch|Deposit/ })
+    await expect(enterBatchBtn).toBeEnabled({ timeout: 120_000 })
     await enterBatchBtn.click()
 
     // 8. Wait for the join process to complete

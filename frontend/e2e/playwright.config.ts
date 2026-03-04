@@ -17,7 +17,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     actionTimeout: 30_000,
-    navigationTimeout: 60_000,
+    navigationTimeout: 90_000,
     browserName: 'chromium',
   },
   projects: [

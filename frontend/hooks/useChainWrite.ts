@@ -87,8 +87,9 @@ export function useChainWriteContract(
     async (...args: Parameters<typeof result.writeContract>) => {
       try {
         await ensureCorrectChain(currentChainId, switchChainAsync)
-      } catch {
-        return // User rejected chain switch
+      } catch (e) {
+        console.warn('[useChainWriteContract] chain switch failed:', e)
+        return // User rejected chain switch or chain unreachable
       }
       const [variables, ...rest] = args
       result.writeContract({ ...variables, chainId: activeChainId } as any, ...rest)
@@ -127,8 +128,9 @@ export function useChainSendTransaction(
     async (...args: Parameters<typeof result.sendTransaction>) => {
       try {
         await ensureCorrectChain(currentChainId, switchChainAsync)
-      } catch {
-        return // User rejected chain switch
+      } catch (e) {
+        console.warn('[useChainSendTransaction] chain switch failed:', e)
+        return // User rejected chain switch or chain unreachable
       }
       const [variables, ...rest] = args
       result.sendTransaction({ ...variables, chainId: activeChainId } as any, ...rest)

@@ -1,22 +1,24 @@
 /**
  * Sell ITP via Arb bridge relay (backend-only, no browser).
  *
+ * IMPORTANT: This test MUST run after 08-arb-bridge-buy.spec.ts.
+ * It sells the BridgedITP acquired from the buy test — no pre-minting.
+ * This ensures the full flow works: AP has real inventory from the buy,
+ * and the bridge custody holds real L3 shares to burn during sell.
+ *
  * Flow: placeSellOrderDirect on Arb ArbBridgeCustody
  *   → issuers detect CrossChainSellOrderCreated on Arb
  *   → relay to L3 Index (submit + batch + fill)
  *   → send USDC to user on Arb
  *
- * Verifies: Arb USDC increases, BridgedITP burned.
- * Note: User's L3 shares are NOT affected — cross-chain sell burns
- * the bridge custody's L3 shares, not the user's directly-minted ones.
+ * Verifies: Arb USDC increases by at least a minimum expected amount.
  */
 
 import { test, expect } from '@playwright/test';
 import {
   placeSellOrderDirect,
-  mintBridgedItp,
-  mintL3Shares,
   getL3UserShares,
+  getItpStateL3,
   erc20BalanceOf,
   pollUntil,
   startArbBlockMiner,
@@ -29,46 +31,61 @@ const ITP_ID = '0x00000000000000000000000000000000000000000000000000000000000000
 
 test.describe('Arb Bridge Sell', () => {
   test('sell ITP via Arb bridge — issuers relay to L3, USDC returned on Arb', async () => {
-    test.setTimeout(180_000);
+    test.setTimeout(360_000); // 6 min — bridge relay with prod-like cycle (1000ms) needs more time
 
     const stopMiner = startArbBlockMiner(1000);
 
     try {
-      const sellAmount = 10n * 10n ** 18n; // 10 shares
+      // 1. Check user has BridgedITP from previous buy test (no pre-minting!)
+      const bridgedItpBalance = BigInt(await erc20BalanceOf(BRIDGED_ITP, TEST_ADDRESS));
+      console.log(`BridgedITP balance before sell: ${bridgedItpBalance}`);
 
-      // 1. Mint BridgedITP to user on Arb (needed for sell approval)
-      await mintBridgedItp(TEST_ADDRESS, ITP_ID, sellAmount);
+      if (bridgedItpBalance === 0n) {
+        test.skip(true, 'No BridgedITP balance — buy test must run first (test 08)');
+        return;
+      }
 
-      // 2. Mint L3 shares to user on L3 (needed for L3 fill to burn)
-      await mintL3Shares(TEST_ADDRESS, ITP_ID, sellAmount);
+      // Sell half of what we have (keep some for other tests if needed)
+      const sellAmount = bridgedItpBalance / 2n;
+      expect(sellAmount).toBeGreaterThan(0n);
+      console.log(`Will sell ${sellAmount} BridgedITP (half of ${bridgedItpBalance})`);
 
-      // 3. Record balances before
+      // 2. Get NAV to compute expected USDC return
+      const state = await getItpStateL3(ITP_ID);
+      // Expected USDC = sellAmount * NAV / 1e18, converted to 6 decimals (Arb USDC)
+      // Use 50% of expected as minimum threshold (accounts for slippage, fees)
+      const expectedUsdc6 = (sellAmount * state.nav) / (10n ** 18n) / (10n ** 12n); // 18 dec → 6 dec
+      const minUsdcIncrease = expectedUsdc6 / 2n; // 50% threshold
+      console.log(`NAV: ${state.nav}, expected USDC (6 dec): ~${expectedUsdc6}, min threshold: ${minUsdcIncrease}`);
+
+      // 3. Record balances IMMEDIATELY before placing sell order
       const usdcBefore = BigInt(await erc20BalanceOf(ARB_USDC, TEST_ADDRESS));
       const bridgedItpBefore = BigInt(await erc20BalanceOf(BRIDGED_ITP, TEST_ADDRESS));
-      const l3SharesBefore = await getL3UserShares(TEST_ADDRESS, ITP_ID);
 
       // 4. Place sell order on Arb ArbBridgeCustody (limit price = 0 for market sell)
       const orderId = await placeSellOrderDirect(TEST_ADDRESS, ITP_ID, sellAmount, 0n);
       console.log(`Arb bridge sell order placed: orderId=${orderId}`);
 
-      // 5. Wait for Arb USDC balance to increase (issuers relayed, filled, sent USDC)
+      // 5. Wait for Arb USDC balance to increase by at least minUsdcIncrease
+      //    This prevents false positives from other tests' balance changes
       const usdcAfter = await pollUntil(
         async () => BigInt(await erc20BalanceOf(ARB_USDC, TEST_ADDRESS)),
-        (balance) => balance > usdcBefore,
-        120_000,
+        (balance) => balance - usdcBefore >= minUsdcIncrease,
+        240_000,
         3_000,
       );
-      console.log(`Arb USDC received: ${usdcBefore} → ${usdcAfter}`);
-      expect(usdcAfter).toBeGreaterThan(usdcBefore);
+      const usdcGain = usdcAfter - usdcBefore;
+      console.log(`Arb USDC received: ${usdcBefore} → ${usdcAfter} (gain: ${usdcGain})`);
+      expect(usdcGain).toBeGreaterThanOrEqual(minUsdcIncrease);
 
-      // 6. Log BridgedITP balance change (informational — parallel tests may inflate balance)
-      // The USDC increase above is the definitive proof the sell executed.
+      // 6. Verify BridgedITP was burned (decreased by sellAmount)
       const bridgedItpAfter = BigInt(await erc20BalanceOf(BRIDGED_ITP, TEST_ADDRESS));
-      console.log(`BridgedITP balance: ${bridgedItpBefore} → ${bridgedItpAfter}`);
+      console.log(`BridgedITP: ${bridgedItpBefore} → ${bridgedItpAfter}`);
+      expect(bridgedItpAfter).toBeLessThan(bridgedItpBefore);
 
       // 7. L3 shares: cross-chain sell burns bridge custody's shares, not user's
       const l3SharesAfter = await getL3UserShares(TEST_ADDRESS, ITP_ID);
-      console.log(`L3 shares: ${l3SharesBefore} → ${l3SharesAfter}`);
+      console.log(`L3 shares after sell: ${l3SharesAfter}`);
     } finally {
       stopMiner();
     }

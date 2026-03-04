@@ -114,15 +114,30 @@ export function NextBatches() {
   const staticBatches = useMemo(() => getAllBatches(), [])
   const { data: apiBatches } = useBatches()
 
-  const [now, setNow] = useState(() => Date.now())
+  // Initialize with 0 to avoid hydration mismatch (Date.now() differs server vs client,
+  // causing React to discard server DOM and re-render — detaching all event handlers temporarily)
+  const [now, setNow] = useState(0)
 
   useEffect(() => {
+    setNow(Date.now())
     const interval = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(interval)
   }, [])
 
   // Compute per-batch tick state and sort by remaining time (soonest first)
+  // When now === 0 (SSR / before mount), use placeholder values for hydration safety
   const sortedBatches = useMemo((): BatchWithTick[] => {
+    if (now === 0) {
+      // SSR / hydration: return stable order without timer computation
+      return staticBatches.map(batch => ({
+        ...batch,
+        remaining: batch.tickDuration ?? 60,
+        elapsed: 0,
+        isLocked: false,
+        lockOffset: 0,
+      }))
+    }
+
     // Create a map of batch ID -> API tick duration for quick lookup
     const apiTickDurationMap = new Map(
       apiBatches?.map(b => [b.id, b.tickDuration]) ?? []

@@ -738,3 +738,118 @@ export async function getVisionRealBalance(player: string): Promise<bigint> {
   const result = await l3EthCall(getVisionAddress(), data)
   return BigInt(result)
 }
+
+const VISION_VIRTUAL_BALANCE_ABI = [{
+  name: 'virtualBalance',
+  type: 'function',
+  stateMutability: 'view',
+  inputs: [{ name: '', type: 'address' }],
+  outputs: [{ name: '', type: 'uint256' }],
+}] as const
+
+/**
+ * Read a player's virtual balance on Vision (credited by issuers from Arb deposits).
+ */
+export async function getVisionVirtualBalance(player: string): Promise<bigint> {
+  const data = encodeFunctionData({
+    abi: VISION_VIRTUAL_BALANCE_ABI,
+    functionName: 'virtualBalance',
+    args: [player as `0x${string}`],
+  })
+  const result = await l3EthCall(getVisionAddress(), data)
+  return BigInt(result)
+}
+
+// ── Arb-side helpers for bridge deposit/withdraw E2E ──────
+
+const ARB_RPC = 'http://localhost:8546'
+
+async function arbRpcCall(method: string, params: unknown[]): Promise<unknown> {
+  const res = await fetch(ARB_RPC, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params }),
+    signal: AbortSignal.timeout(15_000),
+  })
+  const json = await res.json()
+  if (json.error) throw new Error(`Arb RPC ${method}: ${json.error.message}`)
+  return json.result
+}
+
+function getArbCustodyAddress(): string {
+  return getDeployment().contracts.ArbBridgeCustody
+}
+
+function getArbUsdcAddress(): string {
+  return getDeployment().contracts.ARB_USDC
+}
+
+/**
+ * Mint Arb USDC (6 decimals) to a player on Arb Anvil.
+ */
+export async function mintArbUsdc(player: string, amount: bigint): Promise<void> {
+  const DEPLOYER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+  const userPadded = player.replace('0x', '').toLowerCase().padStart(64, '0')
+  const amountHex = amount.toString(16).padStart(64, '0')
+  const data = `0x40c10f19${userPadded}${amountHex}`
+  await arbRpcCall('eth_sendTransaction', [{
+    from: DEPLOYER,
+    to: getArbUsdcAddress(),
+    data,
+    gas: '0x100000',
+  }])
+}
+
+/**
+ * Read Arb USDC balance (6 decimals).
+ */
+export async function getArbUsdcBalance(player: string): Promise<bigint> {
+  const paddedAddr = player.replace('0x', '').toLowerCase().padStart(64, '0')
+  const data = `0x70a08231${paddedAddr}`
+  const result = await arbRpcCall('eth_call', [{ to: getArbUsdcAddress(), data }, 'latest']) as string
+  return BigInt(result)
+}
+
+/**
+ * Deposit Arb USDC to Vision via ArbBridgeCustody.depositToVision(amount).
+ * This is the on-chain Arb side of the bridge deposit.
+ */
+export async function depositToVisionViaArb(player: string, arbUsdcAmount: bigint): Promise<void> {
+  await arbRpcCall('anvil_setBalance', [player, '0x56BC75E2D63100000']) // 100 ETH
+  await arbRpcCall('anvil_impersonateAccount', [player])
+
+  // Approve ARB_USDC to ArbBridgeCustody
+  const custody = getArbCustodyAddress()
+  const usdcAddr = getArbUsdcAddress()
+  const approvePadded = custody.replace('0x', '').toLowerCase().padStart(64, '0')
+  const amtHex = arbUsdcAmount.toString(16).padStart(64, '0')
+  const approveData = `0x095ea7b3${approvePadded}${amtHex}`
+  await arbRpcCall('eth_sendTransaction', [{
+    from: player,
+    to: usdcAddr,
+    data: approveData,
+    gas: '0x100000',
+  }])
+
+  // depositToVision(uint256 usdcAmount)
+  const depositData = encodeFunctionData({
+    abi: [{
+      name: 'depositToVision',
+      type: 'function',
+      stateMutability: 'nonpayable',
+      inputs: [{ name: 'usdcAmount', type: 'uint256' }],
+      outputs: [{ name: '', type: 'bytes32' }],
+    }] as const,
+    functionName: 'depositToVision',
+    args: [arbUsdcAmount],
+  })
+  await arbRpcCall('eth_sendTransaction', [{
+    from: player,
+    to: custody,
+    data: depositData,
+    gas: '0x200000',
+  }])
+
+  // Mine Arb blocks so issuers see the event
+  await arbRpcCall('anvil_mine', ['0x5'])
+}

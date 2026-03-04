@@ -5,7 +5,9 @@
  */
 async function globalSetup() {
   const baseURL = 'http://localhost:3000';
-  const pages = ['/', '/index', '/portfolio'];
+  // Only warm pages that actually exist — /portfolio 404s and triggers
+  // _not-found recompilation storms (5315 modules each time, blocks all requests)
+  const pages = ['/', '/index'];
 
   for (const path of pages) {
     try {
