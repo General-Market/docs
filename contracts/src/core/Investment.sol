@@ -411,9 +411,6 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
                 }
             }
 
-            // Track if we're filling a PENDING order (need to decrement pendingOrderCount)
-            bool wasPending = (order.status == TypesLib.OrderStatus.PENDING);
-
             // Mark order as filled
             order.status = TypesLib.OrderStatus.FILLED;
 
