@@ -30,29 +30,46 @@ import {
 const TEST_ADDRESS = '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4';
 const ITP_ID = '0x0000000000000000000000000000000000000000000000000000000000000001';
 
+// Skip unless RUN_RESILIENCE=1 — this test kills/restarts issuers and takes 5+ minutes
+const RESILIENCE_ENABLED = process.env.RUN_RESILIENCE === '1';
+
 test.describe.serial('Issuer Resilience', () => {
   // Always restore all 3 issuers so subsequent tests (Vision, etc.) aren't broken
   test.afterAll(async () => {
+    if (!RESILIENCE_ENABLED) return;
     console.log('Restoring all 3 issuers after resilience tests...');
+    // Kill all first to ensure clean state (they may be running with wrong config)
+    for (const id of [1, 2, 3]) {
+      await killIssuer(id).catch(() => {});
+    }
+    await new Promise(r => setTimeout(r, 2_000));
+
+    // Restart all 3
     for (const id of [1, 2, 3]) {
       try {
-        const health = await getIssuerHealth(id);
-        if (!health) {
-          console.log(`Issuer-${id} dead, restarting...`);
-          await restartIssuer(id);
-        }
-      } catch {
-        await restartIssuer(id).catch(() => {});
+        console.log(`Restarting issuer-${id}...`);
+        await restartIssuer(id);
+      } catch (e) {
+        console.warn(`Failed to restart issuer-${id}: ${e}`);
       }
     }
-    // Give issuers time to start and connect
+
+    // Wait for all to be healthy (connected to peers)
     for (const id of [1, 2, 3]) {
       try {
-        await waitForIssuerHealthy(id, 30_000);
-        console.log(`Issuer-${id} restored.`);
+        await waitForIssuerHealthy(id, 60_000);
+        console.log(`Issuer-${id} healthy.`);
       } catch {
         console.warn(`Issuer-${id} didn't become healthy in afterAll — subsequent tests may fail`);
       }
+    }
+
+    // Wait for consensus warmup — ensures issuers are actually working
+    try {
+      await waitForConsensusWarmup([1, 2, 3], 120_000);
+      console.log('All 3 issuers achieving consensus after restoration.');
+    } catch (e) {
+      console.warn(`Consensus warmup failed in afterAll: ${e}`);
     }
   });
 
@@ -60,6 +77,7 @@ test.describe.serial('Issuer Resilience', () => {
   // start.sh uses threshold=3 by default, which requires all 3 nodes. We need threshold=2
   // so that killing 1 node still allows consensus with the remaining 2.
   test.beforeAll(async () => {
+    if (!RESILIENCE_ENABLED) return;
     // Kill all issuers regardless of health — ensures consistent config
     for (const id of [1, 2, 3]) {
       console.log(`Killing issuer-${id} for clean restart...`);
@@ -89,6 +107,7 @@ test.describe.serial('Issuer Resilience', () => {
   // ── Test A: Kill 1/3 — system continues ────
 
   test('kill 1/3 issuers — system continues, killed node recovers', async () => {
+    test.skip(!RESILIENCE_ENABLED, 'Use RUN_RESILIENCE=1 to enable');
     test.setTimeout(300_000);
 
     // 1. Verify all 3 issuers healthy
@@ -162,6 +181,7 @@ test.describe.serial('Issuer Resilience', () => {
   // ── Test B: Kill 2/3 — system halts, then recovers ──
 
   test('kill 2/3 issuers — system halts, recovers after quorum restored', async () => {
+    test.skip(!RESILIENCE_ENABLED, 'Use RUN_RESILIENCE=1 to enable');
     test.setTimeout(300_000);
 
     // 1. Verify issuers 1 and 2 are healthy (3 may still be warming up)

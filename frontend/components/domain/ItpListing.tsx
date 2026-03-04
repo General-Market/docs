@@ -123,8 +123,8 @@ function navSnapshotsToItpInfos(navList: NavSnapshot[]): ItpInfo[] {
         id: nav.itp_id,
         itpId: nav.itp_id,
         admin: '', // Not available from SSE — shown per-card via useItpMetadata
-        name: `ITP #${num}`, // Default name — overridden by per-card metadata
-        symbol: `ITP${num}`,
+        name: nav.name || `ITP #${num}`,
+        symbol: nav.symbol || `ITP${num}`,
         createdAt: 0, // Not available from SSE
         source: 'index' as const,
         completed: true,
@@ -539,6 +539,14 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
           <h3 className="text-[16px] font-extrabold text-black tracking-[-0.01em]">{itp.name || `ITP #${itp.nonce ?? itp.id}`}</h3>
           {deployerName && <p className="text-[11px] text-text-muted">{t('itp_card.by', { name: deployerName })}</p>}
           <p className="text-[12px] text-text-muted font-mono font-medium">${itp.symbol || 'N/A'}</p>
+          {metadata?.description && (
+            <p className="text-[11px] text-text-secondary mt-1 line-clamp-2">{metadata.description}</p>
+          )}
+          {metadata?.websiteUrl && (
+            <a href={metadata.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-zinc-500 hover:text-zinc-700 block truncate mt-0.5">
+              {metadata.websiteUrl.replace(/^https?:\/\//, '')}
+            </a>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <span className={`w-[6px] h-[6px] rounded-full ${isActive ? 'bg-color-up' : 'bg-text-muted'}`} />

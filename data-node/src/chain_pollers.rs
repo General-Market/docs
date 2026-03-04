@@ -10,6 +10,7 @@ abigen!(
     r#"[
         function getItpCount() external view returns (uint256)
         function getITPState(bytes32 itpId) external view returns (address creator, uint256 totalSupply, uint256 nav, address[] assets, uint256[] weights, uint256[] inventory)
+        function getItpNameSymbol(bytes32 itpId) external view returns (string name, string symbol)
     ]"#
 );
 
@@ -91,6 +92,12 @@ pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::E
                 let supply_f64 = total_supply.as_u128() as f64 / 1e18;
                 let aum = nav_f64 * supply_f64;
 
+                // Read name/symbol
+                let (name, symbol) = match reader.get_itp_name_symbol(id_bytes.into()).call().await {
+                    Ok((n, s)) => (n, s),
+                    Err(_) => (String::new(), String::new()),
+                };
+
                 // Resolve bridged ERC20 address on Arbitrum
                 let arb_address = match bridge_proxy.get_bridged_itp(id_bytes.into()).call().await {
                     Ok(addr) if addr != Address::zero() => Some(format!("{:?}", addr)),
@@ -99,6 +106,8 @@ pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::E
 
                 snapshots.push(NavSnapshot {
                     itp_id: format!("0x{}", hex::encode(id_bytes)),
+                    name,
+                    symbol,
                     nav_per_share: nav_f64,
                     total_supply: total_supply.to_string(),
                     aum_usd: aum,

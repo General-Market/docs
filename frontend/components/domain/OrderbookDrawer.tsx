@@ -116,18 +116,23 @@ export function OrderbookDrawer({
           {error}
         </div>
       )}
-      {!error && (!data || (data.bids.length === 0 && data.asks.length === 0)) && (
+      {!error && !data && (
         <div className="flex-1 flex flex-col items-center justify-center text-text-muted text-[11px] gap-3">
-          {data && data.mid_price > 0 && (
+          <div className="flex items-center gap-2">
+            <div className="w-3.5 h-3.5 border-2 border-gray-300 border-t-gray-500 rounded-full animate-spin" />
+            Loading depth...
+          </div>
+        </div>
+      )}
+      {!error && data && data.bids.length === 0 && data.asks.length === 0 && (
+        <div className="flex-1 flex flex-col items-center justify-center text-text-muted text-[11px] gap-3">
+          {data.mid_price > 0 && (
             <div className="text-center">
               <div className="text-[14px] font-bold text-black">{formatPrice(data.mid_price)}</div>
               <div className="text-[9px] text-text-muted mt-0.5">{data.assets_included} assets priced</div>
             </div>
           )}
-          <div className="flex items-center gap-2">
-            <div className="w-3.5 h-3.5 border-2 border-gray-300 border-t-gray-500 rounded-full animate-spin" />
-            Loading depth...
-          </div>
+          <div className="text-[10px] text-text-muted">No orders</div>
         </div>
       )}
 

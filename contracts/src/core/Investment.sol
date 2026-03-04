@@ -873,6 +873,13 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         return _itpCount;
     }
 
+    /// @notice Get ITP name and symbol by ID
+    function getItpNameSymbol(bytes32 itpId) external view returns (string memory name, string memory symbol) {
+        TypesLib.ITPCore storage itp = _itps[itpId];
+        name = _bytes32ToString(itp.name);
+        symbol = _bytes32ToString(itp.symbol);
+    }
+
     /// @notice Get ITP info for frontend (name, symbol, totalSupply, price)
     /// @param itpAddress The ITP vault address
     /// @return name Token name

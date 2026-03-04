@@ -11,6 +11,12 @@ import { keccak256, encodeFunctionData, toHex } from 'viem'
 const L3_RPC = 'http://localhost:8545'
 const VISION_API = 'http://localhost:10001'
 
+/** Safely parse a hex RPC result to BigInt. Returns 0n for empty/null results. */
+function safeBigInt(hex: unknown): bigint {
+  if (!hex || hex === '0x' || hex === '0x0') return 0n
+  return BigInt(hex as string)
+}
+
 /** Test user — funded + impersonated on both chains by start.sh */
 export const PLAYER1 = '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4'
 
@@ -267,7 +273,7 @@ export async function getL3UsdcBalance(address: string): Promise<bigint> {
     args: [address as `0x${string}`],
   })
   const result = await l3EthCall(getL3UsdcAddress(), data)
-  return BigInt(result)
+  return safeBigInt(result)
 }
 
 export async function approveVision(from: string, _amount: bigint): Promise<void> {
@@ -535,7 +541,7 @@ export async function getBatchesFromChain(): Promise<BatchInfo[]> {
     args: [],
   })
   const result = await l3EthCall(getVisionAddress(), data)
-  const count = Number(BigInt(result))
+  const count = Number(safeBigInt(result))
   if (count === 0) return []
 
   const batches: BatchInfo[] = []
@@ -723,7 +729,7 @@ export async function getVisionPlayerBalance(player: string): Promise<bigint> {
     args: [player as `0x${string}`],
   })
   const result = await l3EthCall(getVisionAddress(), data)
-  return BigInt(result)
+  return safeBigInt(result)
 }
 
 /**
@@ -736,7 +742,7 @@ export async function getVisionRealBalance(player: string): Promise<bigint> {
     args: [player as `0x${string}`],
   })
   const result = await l3EthCall(getVisionAddress(), data)
-  return BigInt(result)
+  return safeBigInt(result)
 }
 
 const VISION_VIRTUAL_BALANCE_ABI = [{
@@ -757,7 +763,7 @@ export async function getVisionVirtualBalance(player: string): Promise<bigint> {
     args: [player as `0x${string}`],
   })
   const result = await l3EthCall(getVisionAddress(), data)
-  return BigInt(result)
+  return safeBigInt(result)
 }
 
 // ── Arb-side helpers for bridge deposit/withdraw E2E ──────
@@ -807,7 +813,7 @@ export async function getArbUsdcBalance(player: string): Promise<bigint> {
   const paddedAddr = player.replace('0x', '').toLowerCase().padStart(64, '0')
   const data = `0x70a08231${paddedAddr}`
   const result = await arbRpcCall('eth_call', [{ to: getArbUsdcAddress(), data }, 'latest']) as string
-  return BigInt(result)
+  return safeBigInt(result)
 }
 
 /**

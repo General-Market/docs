@@ -19,6 +19,8 @@ impl Generation {
 #[derive(Clone, Serialize, Default)]
 pub struct NavSnapshot {
     pub itp_id: String,
+    pub name: String,
+    pub symbol: String,
     pub nav_per_share: f64,
     pub total_supply: String,
     pub aum_usd: f64,

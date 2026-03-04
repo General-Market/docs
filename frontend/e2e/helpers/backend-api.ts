@@ -9,6 +9,12 @@ import { INDEX_ABI, BRIDGE_PROXY_ABI, ARB_CUSTODY_ABI, ERC20_ABI } from '../../l
 
 const BACKEND_URL = 'http://localhost:8200';
 
+/** Safely parse a hex RPC result to BigInt. Returns 0n for empty/null results. */
+function safeBigInt(hex: unknown): bigint {
+  if (!hex || hex === '0x' || hex === '0x0') return 0n;
+  return BigInt(hex as string);
+}
+
 export interface UserState {
   usdc_balance: string;
   usdc_allowance_custody: string;
@@ -209,7 +215,7 @@ async function erc20BalanceOf(token: string, account: string): Promise<string> {
   const paddedAddr = account.toLowerCase().replace('0x', '').padStart(64, '0');
   const data = `0x70a08231${paddedAddr}`;
   const result = await rpcCall('eth_call', [{ to: token, data }, 'latest']) as string;
-  return BigInt(result).toString();
+  return (result && result !== '0x') ? BigInt(result).toString() : '0';
 }
 
 async function getUserStateViaRpc(user: string, _itpId: string): Promise<UserState> {
@@ -382,7 +388,7 @@ export async function getL3UserShares(user: string, itpId: string): Promise<bigi
     { to: L3_INDEX, data: calldata },
     'latest',
   ]) as string;
-  return BigInt(result);
+  return result && result !== '0x' ? BigInt(result) : 0n;
 }
 
 /**
@@ -395,7 +401,7 @@ export async function getL3UsdcBalance(user: string): Promise<bigint> {
     { to: L3_WUSDC, data },
     'latest',
   ]) as string;
-  return BigInt(result);
+  return safeBigInt(result);
 }
 
 /** Compute keccak256 of hex data using eth RPC (avoids JS crypto dependency) */
@@ -474,7 +480,7 @@ export async function getItpCountL3(): Promise<number> {
     { to: L3_INDEX, data },
     'latest',
   ]) as string;
-  return Number(BigInt(result));
+  return Number(safeBigInt(result));
 }
 
 /**
@@ -658,11 +664,11 @@ export async function placeBuyOrderDirect(
       { to: ARB_CUSTODY, data: nextIdData },
       'latest',
     ]) as string;
-    const orderId = Number(BigInt(nextIdResult));
+    const orderId = Number(safeBigInt(nextIdResult));
 
     // Use chain block.timestamp (not Date.now) — Anvil's clock drifts from wall time
     const latestBlock = await rpcCall('eth_getBlockByNumber', ['latest', false]) as { timestamp: string };
-    const chainTimestamp = Number(BigInt(latestBlock.timestamp));
+    const chainTimestamp = Number(safeBigInt(latestBlock.timestamp));
     const deadline = BigInt(chainTimestamp + 3600);
 
     // Place buy order
@@ -748,11 +754,11 @@ export async function placeSellOrderDirect(
       { to: ARB_CUSTODY, data: nextIdData },
       'latest',
     ]) as string;
-    const orderId = Number(BigInt(nextIdResult));
+    const orderId = Number(safeBigInt(nextIdResult));
 
     // Use chain block.timestamp (not Date.now) — Anvil's clock drifts from wall time
     const latestBlock = await rpcCall('eth_getBlockByNumber', ['latest', false]) as { timestamp: string };
-    const chainTimestamp = Number(BigInt(latestBlock.timestamp));
+    const chainTimestamp = Number(safeBigInt(latestBlock.timestamp));
     const deadline = BigInt(chainTimestamp + 3600);
 
     // Place sell order
@@ -811,7 +817,7 @@ export async function requestCreateItpDirect(
     { to: BRIDGE_PROXY, data: nonceData },
     'latest',
   ]) as string;
-  const nonce = Number(BigInt(nonceResult));
+  const nonce = Number(safeBigInt(nonceResult));
 
   // Get existing ITP-1 state for asset addresses
   const itpId = '0x0000000000000000000000000000000000000000000000000000000000000001';
@@ -906,7 +912,7 @@ export async function requestRebalanceDirect(
     { to: BRIDGE_PROXY, data: nonceSelector },
     'latest',
   ]) as string;
-  const nonce = Number(BigInt(nonceResult));
+  const nonce = Number(safeBigInt(nonceResult));
 
   const requestCalldata = encodeFunctionData({
     abi: BRIDGE_PROXY_ABI,

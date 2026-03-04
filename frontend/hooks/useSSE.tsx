@@ -61,6 +61,8 @@ export interface SystemSnapshot {
 
 export interface NavSnapshot {
   itp_id: string
+  name: string
+  symbol: string
   nav_per_share: number
   total_supply: string
   aum_usd: number

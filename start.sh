@@ -583,6 +583,19 @@ json.dump(deploy, open('deployments/active-deployment.json', 'w'), indent=2)
         echo -e "  ${YELLOW}Warning: BridgedITP creation failed (sell won't work)${NC}"
     fi
 
+    # 3d: Set ITP metadata (description + website) on BridgeProxy
+    DEPLOYER_KEY="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+    cast send $BRIDGE_PROXY \
+        "setItpMetadata(bytes32,string,string,string)" \
+        "$ITP_ID" \
+        "Top 100 crypto assets by market cap, equal-weighted. Rebalances weekly." \
+        "https://www.generalmarket.io" \
+        "" \
+        --private-key $DEPLOYER_KEY \
+        --rpc-url $ARB_RPC_URL > /dev/null 2>&1 && \
+        echo -e "  ${GREEN}ITP metadata set (description + website)${NC}" || \
+        echo -e "  ${YELLOW}Warning: Failed to set ITP metadata${NC}"
+
     cp deployments/active-deployment.json frontend/lib/contracts/deployment.json
 
     # ============ STEP 4: Virtual Bitget tokens ============
