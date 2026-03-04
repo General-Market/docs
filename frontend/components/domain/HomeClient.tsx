@@ -41,7 +41,12 @@ const SystemStatusSection = dynamic(
   { ssr: false, loading: SectionSkeleton }
 )
 
-const SECTION_IDS = ['markets', 'portfolio', 'create', 'lend', 'backtest', 'system']
+const VaultTradesFeed = dynamic(
+  () => import('@/components/domain/VaultTradesFeed').then(mod => ({ default: mod.VaultTradesFeed })),
+  { ssr: false, loading: SectionSkeleton }
+)
+
+const SECTION_IDS = ['markets', 'portfolio', 'create', 'lend', 'backtest', 'system', 'ap-feed']
 
 export function HomeClient() {
   const [deployHoldings, setDeployHoldings] = useState<{ symbol: string; weight: number }[] | null>(null)
@@ -130,6 +135,15 @@ export function HomeClient() {
           <div className="px-6 lg:px-12">
             <div className="max-w-site mx-auto">
               <SystemStatusSection deployedItps={deployedItps} />
+            </div>
+          </div>
+        </section>
+
+        <div className="section-divider" />
+        <section id="ap-feed">
+          <div className="px-6 lg:px-12">
+            <div className="max-w-site mx-auto">
+              <VaultTradesFeed deployedItps={deployedItps} />
             </div>
           </div>
         </section>
