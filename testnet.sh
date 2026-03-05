@@ -309,19 +309,33 @@ _start_data_node() {
         return
     fi
 
-    # Sync .env and config files
+    # Sync .env, config files, and credentials
     rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data-node/.env" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data-node/.env"
     rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/assets.json" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/assets.json" 2>/dev/null || true
+    rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data/symbol-map.json" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data/symbol-map.json" 2>/dev/null || true
+    [ -f "$SCRIPT_DIR/system.env" ] && rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/system.env" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/system.env" 2>/dev/null || true
+
+    # Read Index contract address from deployment file
+    local INDEX_ADDR
+    INDEX_ADDR=$(read_deployment_addr "Index")
+    local INDEX_FLAG=""
+    if [ -n "$INDEX_ADDR" ]; then
+        INDEX_FLAG="--index-address $INDEX_ADDR"
+    fi
 
     vps_be_ssh "cd $VPS_BE_DIR && \
         sed -i 's|DATABASE_URL=.*|DATABASE_URL=postgres:///$DB_NAME|' data-node/.env && \
         mkdir -p logs && \
         nohup ./target/release/data-node serve \
             --database-url postgres:///$DB_NAME \
+            --symbol-map data/symbol-map.json \
             --rpc-url $RPC_URL \
             --arb-rpc-url $RPC_URL \
+            --deployment-file $DEPLOYMENT_FILE \
+            --morpho-deployment-file deployments/morpho-e2e.json \
             --ecb-enabled \
             --openmeteo-sync-interval 300 \
+            $INDEX_FLAG \
             > logs/data-node.log 2>&1 &
         echo \$!"
     sleep 2
@@ -380,6 +394,8 @@ _start_issuers() {
             ISSUER_RPC_URL=$RPC_URL \
             ISSUER_ARBITRUM_RPC_URL=$RPC_URL \
             ISSUER_ARBITRUM_CHAIN_ID=$CHAIN_ID \
+            DATA_NODE_URL=http://localhost:$DATA_NODE_PORT \
+            EXCHANGE_MODE=mock \
             nohup ./target/release/issuer \
                 --node-id $i \
                 --port $PORT \
@@ -391,11 +407,15 @@ _start_issuers() {
                 --test-key-seeds \
                 --bls-key-seed-index $BLS_IDX \
                 --num-issuers $ISSUER_COUNT \
+                --signature-threshold 2 \
                 --registry-sync \
                 --ntp-server \"\" \
+                --data-node-url http://localhost:$DATA_NODE_PORT \
                 --deployment-file $DEPLOYMENT_FILE \
+                --symbol-map-file data/symbol-map.json \
                 --wal-path logs/consensus-$i.wal \
                 --log-level info \
+                --itp-id 0x0000000000000000000000000000000000000000000000000000000000000001 \
                 $([ -n \"$BRIDGE_PROXY\" ] && echo \"--bridge-proxy $BRIDGE_PROXY\") \
                 $VISION_ARGS \
                 > logs/issuer-$i.log 2>&1 &
@@ -515,9 +535,11 @@ cmd_update() {
     vps_chain_ssh "cd $VPS_CHAIN_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p ap 2>&1 | tail -5" | grep -v 'Unauthorized\|monitored'
     echo -e "  ${GREEN}VPS 2 build complete${NC}"
 
-    # Sync .env for data-node
+    # Sync config files and credentials to VPS 1
     rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data-node/.env" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data-node/.env"
     rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/assets.json" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/assets.json" 2>/dev/null || true
+    rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data/symbol-map.json" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data/symbol-map.json" 2>/dev/null || true
+    [ -f "$SCRIPT_DIR/system.env" ] && rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/system.env" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/system.env" 2>/dev/null || true
 
     # Restart
     cmd_start

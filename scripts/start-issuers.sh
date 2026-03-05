@@ -49,10 +49,10 @@ ARB_CUSTODY=$(jval "d['contracts'].get('ArbBridgeCustody','')")
 BLS_CUSTODY=$(jval "d['contracts'].get('BLSCustody','')")
 CHAIN_ID=$(jval "d['chainId']")
 
-# Issuer private keys
-ISSUER_1_KEY="${ISSUER_1_KEY:-0x355faf10c89b4aa1c96964b4d7b38ed5844eea436bd1ae8029cb073d3d3355ff}"
-ISSUER_2_KEY="${ISSUER_2_KEY:-0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537}"
-ISSUER_3_KEY="${ISSUER_3_KEY:-0xd518d48628681d00fe0b35ff9cca3f354e8197eab2ab4b010e1274eccc3e8775}"
+# Issuer private keys — Anvil accounts 1-3 (match DeployFullSystemE2E._registerIssuers)
+ISSUER_1_KEY="${ISSUER_1_KEY:-0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d}"
+ISSUER_2_KEY="${ISSUER_2_KEY:-0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a}"
+ISSUER_3_KEY="${ISSUER_3_KEY:-0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6}"
 
 echo "=== Starting 3 Issuer Nodes ==="
 echo "Config: $DEPLOYMENT_FILE"
@@ -72,6 +72,7 @@ mkdir -p logs
 
 # Common env vars
 export EXCHANGE_MODE="${EXCHANGE_MODE:-mock}"
+export DATA_NODE_URL="${DATA_NODE_URL:-http://localhost:8200}"
 export ISSUER_RPC_URL="$RPC"
 export ISSUER_INDEX_ADDRESS="$INDEX"
 export ISSUER_GOVERNANCE_ADDRESS="$GOVERNANCE"
