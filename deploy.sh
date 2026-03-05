@@ -35,7 +35,8 @@ cd "$SCRIPT_DIR"
 
 vps_data_node_running() {
     # Use pgrep -x with the exact binary name to avoid self-matching
-    ssh "$VPS_HOST" "pgrep -x data-node > /dev/null 2>&1" 2>/dev/null
+    # ConnectTimeout prevents hanging on SSH multiplexing issues
+    ssh -o ConnectTimeout=5 "$VPS_HOST" "pgrep -x data-node > /dev/null 2>&1" 2>/dev/null
     return $?
 }
 
@@ -182,6 +183,7 @@ rsync -az --delete -e "$RSYNC_SSH" \
     --exclude 'screenshots/' \
     --include 'Cargo.toml' \
     --include 'Cargo.lock' \
+    --include 'assets.json' \
     --include 'data-node/***' \
     --include 'issuer/***' \
     --include 'ap/***' \
@@ -205,10 +207,10 @@ echo -e "  ${GREEN}Source synced${NC}"
 
 # ── Patch VPS .env for remote Postgres ────────────────────────
 echo -e "${BLUE}[3/5] Patching .env for VPS PostgreSQL...${NC}"
-ssh "$VPS_HOST" "cd $VPS_DIR && sed -i 's|DATABASE_URL=.*|DATABASE_URL=postgres://localhost:5432/$DB_NAME|' data-node/.env" 2>/dev/null
+ssh "$VPS_HOST" "cd $VPS_DIR && sed -i 's|DATABASE_URL=.*|DATABASE_URL=postgres:///$DB_NAME|' data-node/.env" 2>/dev/null
 # Also update RPC URLs to point to VPS L3 (local nginx proxy)
 ssh "$VPS_HOST" "cd $VPS_DIR && sed -i 's|INDEX_RPC_URL=.*|INDEX_RPC_URL=http://localhost/|' data-node/.env && sed -i 's|ARB_RPC_URL=.*|ARB_RPC_URL=http://localhost/|' data-node/.env" 2>/dev/null
-echo -e "  ${GREEN}ENV patched (postgres://max@localhost/$DB_NAME)${NC}"
+echo -e "  ${GREEN}ENV patched (postgres:///$DB_NAME — peer auth via socket)${NC}"
 
 # ── Build on VPS ──────────────────────────────────────────────
 echo -e "${BLUE}[4/5] Building data-node on VPS (this may take a few minutes)...${NC}"
@@ -224,13 +226,13 @@ sleep 1
 
 # Start data-node (nohup, background)
 # The data-node reads .env from CWD automatically via dotenvy
-ssh "$VPS_HOST" "mkdir -p $VPS_DIR/logs && cd $VPS_DIR/data-node && nohup ../target/release/data-node serve \
-    --database-url postgres://localhost:5432/$DB_NAME \
+ssh "$VPS_HOST" "mkdir -p $VPS_DIR/logs && cd $VPS_DIR && nohup ./target/release/data-node serve \
+    --database-url postgres:///$DB_NAME \
     --rpc-url http://localhost/ \
     --arb-rpc-url http://localhost/ \
     --ecb-enabled \
     --openmeteo-sync-interval 300 \
-    > ../logs/data-node.log 2>&1 &
+    > logs/data-node.log 2>&1 &
     echo \$!" 2>/dev/null | grep -v 'Unauthorized\|monitored'
 
 sleep 2
