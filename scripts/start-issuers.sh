@@ -30,19 +30,22 @@ if [ ! -f "$DEPLOYMENT_FILE" ]; then
     exit 1
 fi
 
+# Helper: read JSON field (works with python3, no jq needed)
+jval() { python3 -c "import json,sys; d=json.load(open('$DEPLOYMENT_FILE')); v=$1; print(v if v else '')" 2>/dev/null; }
+
 # Load from deployment file (fall back to ISSUER_RPC_URL env or localhost)
-RPC=$(jq -r '.rpc // empty' "$DEPLOYMENT_FILE")
+RPC=$(jval "d.get('rpc','')")
 RPC="${RPC:-${ISSUER_RPC_URL:-http://localhost:8545}}"
-INDEX=$(jq -r '.contracts.Index' "$DEPLOYMENT_FILE")
-GOVERNANCE=$(jq -r '.contracts.Governance' "$DEPLOYMENT_FILE")
-ISSUER_REG=$(jq -r '.contracts.IssuerRegistry' "$DEPLOYMENT_FILE")
-BRIDGE_PROXY=$(jq -r '.contracts.BridgeProxy' "$DEPLOYMENT_FILE")
-BITGET_VAULT=$(jq -r '.contracts.MockBitgetVault' "$DEPLOYMENT_FILE")
-MOCK_USDT=$(jq -r '.contracts.MOCK_USDT // .contracts.MockUSDT // empty' "$DEPLOYMENT_FILE")
-VISION=$(jq -r '.contracts.Vision // empty' "$DEPLOYMENT_FILE")
-ARB_CUSTODY=$(jq -r '.contracts.ArbBridgeCustody // empty' "$DEPLOYMENT_FILE")
-BLS_CUSTODY=$(jq -r '.contracts.BLSCustody // empty' "$DEPLOYMENT_FILE")
-CHAIN_ID=$(jq -r '.chainId' "$DEPLOYMENT_FILE")
+INDEX=$(jval "d['contracts']['Index']")
+GOVERNANCE=$(jval "d['contracts']['Governance']")
+ISSUER_REG=$(jval "d['contracts']['IssuerRegistry']")
+BRIDGE_PROXY=$(jval "d['contracts']['BridgeProxy']")
+BITGET_VAULT=$(jval "d['contracts']['MockBitgetVault']")
+MOCK_USDT=$(jval "d['contracts'].get('MOCK_USDT', d['contracts'].get('MockUSDT',''))")
+VISION=$(jval "d['contracts'].get('Vision','')")
+ARB_CUSTODY=$(jval "d['contracts'].get('ArbBridgeCustody','')")
+BLS_CUSTODY=$(jval "d['contracts'].get('BLSCustody','')")
+CHAIN_ID=$(jval "d['chainId']")
 
 # Issuer private keys
 ISSUER_1_KEY="${ISSUER_1_KEY:-0x355faf10c89b4aa1c96964b4d7b38ed5844eea436bd1ae8029cb073d3d3355ff}"

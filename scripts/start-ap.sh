@@ -33,12 +33,15 @@ if [ ! -f "$DEPLOYMENT_FILE" ]; then
     exit 1
 fi
 
+# Helper: read JSON field (works with python3, no jq needed)
+jval() { python3 -c "import json,sys; d=json.load(open('$DEPLOYMENT_FILE')); v=$1; print(v if v else '')" 2>/dev/null; }
+
 # Load from deployment file (fall back to env or localhost)
-RPC=$(jq -r '.rpc // empty' "$DEPLOYMENT_FILE")
+RPC=$(jval "d.get('rpc','')")
 RPC="${RPC:-${AP_RPC_URL:-http://localhost:8545}}"
-INDEX=$(jq -r '.contracts.Index' "$DEPLOYMENT_FILE")
-BITGET_VAULT=$(jq -r '.contracts.MockBitgetVault' "$DEPLOYMENT_FILE")
-MOCK_USDT=$(jq -r '.contracts.MOCK_USDT // .contracts.MockUSDT // empty' "$DEPLOYMENT_FILE")
+INDEX=$(jval "d['contracts']['Index']")
+BITGET_VAULT=$(jval "d['contracts']['MockBitgetVault']")
+MOCK_USDT=$(jval "d['contracts'].get('MOCK_USDT', d['contracts'].get('MockUSDT',''))")
 
 # AP private key
 AP_KEY="${AP_PRIVATE_KEY:?ERROR: AP_PRIVATE_KEY env var required}"
