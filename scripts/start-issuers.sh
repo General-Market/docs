@@ -79,12 +79,12 @@ export ISSUER_ISSUER_REGISTRY_ADDRESS="$ISSUER_REG"
 export ISSUER_BRIDGE_PROXY_ADDRESS="$BRIDGE_PROXY"
 export ISSUER_BITGET_VAULT="$BITGET_VAULT"
 export ISSUER_MOCK_USDT="$MOCK_USDT"
-export ISSUER_P2POOL_VISION_ADDRESS="$VISION"
+# Vision CLI args (only when Vision contract is deployed)
+VISION_ARGS=""
 if [ -n "$VISION" ] && [ "$VISION" != "null" ]; then
-    export ISSUER_P2POOL_ENABLED=true
-    export ISSUER_P2POOL_DATABASE_URL="${ISSUER_P2POOL_DATABASE_URL:-postgres://localhost/index_prices}"
-    export ISSUER_P2POOL_DATA_NODE_URL="http://localhost:8200"
-    export ISSUER_P2POOL_RPC_WS_URL="$RPC"
+    VISION_DB="${VISION_DATABASE_URL:-postgres://localhost/index_prices}"
+    VISION_ARGS="--vision-enabled --vision-address $VISION --vision-database-url $VISION_DB --vision-data-node-url http://localhost:8200 --vision-rpc-ws-url $RPC"
+    echo "Vision: $VISION (DB: $VISION_DB)"
 fi
 export ISSUER_ARBITRUM_CHAIN_ID="$CHAIN_ID"
 export ISSUER_ARBITRUM_RPC_URL="$RPC"
@@ -120,6 +120,7 @@ $BINARY \
     ${BLS_CUSTODY:+--issuer-custody-arb "$BLS_CUSTODY"} \
     --symbol-map-file data/symbol-map.json \
     --wal-path logs/consensus-1.wal \
+    $VISION_ARGS \
     > logs/issuer-1.log 2>&1 &
 ISSUER_1_PID=$!
 
@@ -148,6 +149,7 @@ $BINARY \
     ${BLS_CUSTODY:+--issuer-custody-arb "$BLS_CUSTODY"} \
     --symbol-map-file data/symbol-map.json \
     --wal-path logs/consensus-2.wal \
+    $VISION_ARGS \
     > logs/issuer-2.log 2>&1 &
 ISSUER_2_PID=$!
 
@@ -176,6 +178,7 @@ $BINARY \
     ${BLS_CUSTODY:+--issuer-custody-arb "$BLS_CUSTODY"} \
     --symbol-map-file data/symbol-map.json \
     --wal-path logs/consensus-3.wal \
+    $VISION_ARGS \
     > logs/issuer-3.log 2>&1 &
 ISSUER_3_PID=$!
 
