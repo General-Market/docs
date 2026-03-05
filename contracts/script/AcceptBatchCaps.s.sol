@@ -8,9 +8,9 @@ import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-/// @title AcceptBatchCaps — Accept vault caps + set supply queue after timelock
-/// @notice Run this AFTER DeployBatchMarkets + waiting 1 day for MetaMorpho timelock.
-///         Accepts supply caps for all batch markets and sets the supply queue.
+/// @title AcceptBatchCaps — Accept vault caps + set supply queue (no timelock wait needed)
+/// @notice Accepts supply caps for all batch markets and sets the supply queue.
+///         With MIN_TIMELOCK=0, can run immediately after DeployBatchMarkets.
 ///         Optionally seeds the vault with initial USDC liquidity.
 ///
 ///      Environment variables (same as DeployBatchMarkets):

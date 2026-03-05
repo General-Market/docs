@@ -14,25 +14,13 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // ERC1967Proxy no longer needed — oracle uses the main IssuerRegistry
 import "./helpers/DeployBLSHelper.sol";
 
-/// @title DeployMorphoE2E - Deploy Morpho Blue + MetaMorpho for E2E testing (Phase 1)
-/// @notice Deploys Morpho core, AdaptiveCurveIRM, MirrorIssuerRegistry + ITPNAVOracle,
-///         creates a market, deploys MetaMorpho vault, and submits supply cap.
-/// @dev Story 8.5: After this script, the deploy bash script must:
-///      1. cast rpc evm_increaseTime 86401
-///      2. cast rpc evm_mine
-///      3. Run ConfigureMorphoE2E to accept cap, set queue, and seed liquidity
+/// @title DeployMorphoE2E - Deploy Morpho Blue + MetaMorpho (single-phase, no timelock wait)
+/// @notice Deploys Morpho core, AdaptiveCurveIRM, ITPNAVOracle, creates a market,
+///         deploys MetaMorpho vault (timelock=0), submits+accepts cap, sets queue, seeds liquidity.
+///         No evm_increaseTime needed — MIN_TIMELOCK is set to 0 for testnet.
 ///
 ///      BLS keys are generated deterministically via FFI (bls-tool) using seed indices 0,1,2.
 ///      This is the same approach as DeployFullSystemE2E — no env vars needed for BLS keys.
-///
-/// TODO: After this change, update these consumers that still reference MOCK_ORACLE:
-///   - data-node/src/chain_pollers.rs (deployment_addr "MOCK_ORACLE")
-///   - data-node/src/api.rs (deployment_addr "MOCK_ORACLE")
-///   - frontend/lib/contracts/morpho-addresses.ts (c.MOCK_ORACLE)
-///   - frontend/e2e/helpers/api-interceptor.ts (MOCK_ORACLE)
-///   - frontend/e2e/tests/10-morpho-oracle-health.spec.ts (MOCK_ORACLE)
-///   - scripts/stress-test/config.ts (MOCK_ORACLE)
-///   - contracts/script/DeployMorphoMarket.s.sol (MOCK_ORACLE)
 contract DeployMorphoE2E is DeployBLSHelper {
     using MarketParamsLib for MarketParams;
 
@@ -121,12 +109,11 @@ contract DeployMorphoE2E is DeployBLSHelper {
         console.log("Market created, ID:");
         console.logBytes32(Id.unwrap(marketId));
 
-        // 6. Deploy MetaMorpho vault (via_ir=true in foundry.toml, matches test deployment)
-        // MetaMorpho enforces MIN_TIMELOCK = 1 days
+        // 6. Deploy MetaMorpho vault (timelock=0 for testnet, no waiting)
         MetaMorpho vault = new MetaMorpho(
             deployer,
             address(morpho),
-            1 days,
+            0,
             arbUSDC,
             "Index ITP Lending Vault",
             "ilUSDC"
@@ -134,9 +121,23 @@ contract DeployMorphoE2E is DeployBLSHelper {
         address vaultAddr = address(vault);
         console.log("MetaMorpho vault deployed:", vaultAddr);
 
-        // 7. Submit supply cap (timelock starts now)
+        // 7. Submit + accept cap immediately (MIN_TIMELOCK=0, no waiting)
         vault.submitCap(marketParams, SUPPLY_CAP);
-        console.log("Supply cap submitted (timelock started)");
+        vault.acceptCap(marketParams);
+        console.log("Supply cap submitted and accepted");
+
+        // 8. Set supply queue
+        Id[] memory supplyQueue = new Id[](1);
+        supplyQueue[0] = marketId;
+        vault.setSupplyQueue(supplyQueue);
+        console.log("Supply queue set");
+
+        // 9. Seed vault with initial USDC liquidity
+        uint256 initialLiquidity = 100_000 * 1e18;
+        MockERC20(arbUSDC).mint(deployer, initialLiquidity);
+        IERC20(arbUSDC).approve(vaultAddr, initialLiquidity);
+        vault.deposit(initialLiquidity, deployer);
+        console.log("Vault seeded with 100k USDC");
 
         vm.stopBroadcast();
 
@@ -170,55 +171,4 @@ contract DeployMorphoE2E is DeployBLSHelper {
     }
 }
 
-/// @title ConfigureMorphoE2E - Configure MetaMorpho vault after timelock (Phase 2)
-/// @notice Accepts supply cap, sets supply queue, and seeds vault with USDC liquidity.
-/// @dev Must be run AFTER evm_increaseTime(86401) + evm_mine to pass the timelock.
-contract ConfigureMorphoE2E is Script {
-    using MarketParamsLib for MarketParams;
-
-    uint256 constant LLTV = 0.77e18;
-    uint256 constant INITIAL_VAULT_LIQUIDITY = 100_000 * 1e18;
-
-    function run() external {
-        uint256 anvilKey = vm.envOr(
-            "DEPLOYER_KEY", uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80)
-        );
-
-        // Read deployment addresses from morpho-e2e.json via env vars
-        address vaultAddr = vm.envAddress("METAMORPHO_VAULT");
-        address arbUSDC = vm.envAddress("ARB_USDC");
-        address itpVault = vm.envAddress("ITP_VAULT");
-        address oracleAddr = vm.envAddress("ITP_NAV_ORACLE");
-        address irmAddr = vm.envAddress("ADAPTIVE_IRM");
-
-        MarketParams memory marketParams = MarketParams({
-            loanToken: arbUSDC,
-            collateralToken: itpVault,
-            oracle: oracleAddr,
-            irm: irmAddr,
-            lltv: LLTV
-        });
-        Id marketId = marketParams.id();
-
-        MetaMorpho vault = MetaMorpho(vaultAddr);
-
-        vm.startBroadcast(anvilKey);
-
-        // Accept cap (timelock must have elapsed)
-        vault.acceptCap(marketParams);
-
-        // Set supply queue
-        Id[] memory supplyQueue = new Id[](1);
-        supplyQueue[0] = marketId;
-        vault.setSupplyQueue(supplyQueue);
-        console.log("Vault configured: supply cap accepted, supply queue set");
-
-        // Seed vault with initial USDC liquidity
-        MockERC20(arbUSDC).mint(vm.addr(anvilKey), INITIAL_VAULT_LIQUIDITY);
-        IERC20(arbUSDC).approve(vaultAddr, INITIAL_VAULT_LIQUIDITY);
-        vault.deposit(INITIAL_VAULT_LIQUIDITY, vm.addr(anvilKey));
-        console.log("Vault seeded with", INITIAL_VAULT_LIQUIDITY / 1e6, "USDC");
-
-        vm.stopBroadcast();
-    }
-}
+// ConfigureMorphoE2E removed — Phase 2 merged into DeployMorphoE2E (no timelock wait needed)

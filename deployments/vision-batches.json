@@ -1,8 +1,8 @@
 {
-  "vision": "0xCa1D199b6F53Af7387ac543Af8e8a34455BBe5E0",
+  "vision": "0x8Abd0FF6B0A71629656164C8371921bc3DD03457",
   "tickDuration": 30,
   "lockOffset": 5,
-  "batchCount": 51,
+  "batchCount": 60,
   "batches": {
     "pumpfun": { "batchId": 0, "configHash": "0x1ba2674c5353c6bcb7e3b8a48a5f85afcc46170162ac25a95cf365e958b8c25a" },
     "defillama": { "batchId": 1, "configHash": "0xc088abfefd63a6f0c47ea31ae179aa997f304eab48f68f38f4604723bd26a61c" },
@@ -54,6 +54,15 @@
     "shelter": { "batchId": 47, "configHash": "0xcb528d7fba327f08026927d3eb496333a81061cbe42e4334bca662bc581d7e8d" },
     "spaceweather": { "batchId": 48, "configHash": "0x9a0f746be30a1ce0f77602f7201d79e38e5a33b467219ecd584cd1b88e452a45" },
     "iss": { "batchId": 49, "configHash": "0x6bc5104fc20e8dc87b8dc1a712b0c1faa918fa767298c2dfe2edc389cc4ca303" },
-    "mil_aircraft": { "batchId": 50, "configHash": "0xd0ec52b36bf144c84132b110ced046a64a1d85a00bb528488dd69391f732e728" }
+    "mil_aircraft": { "batchId": 50, "configHash": "0xd0ec52b36bf144c84132b110ced046a64a1d85a00bb528488dd69391f732e728" },
+    "db_trains": { "batchId": 51, "configHash": "0x27fcabafc55829231f8cb3e743c8e06dac9416977d4cbac5186bac8da5278ab2" },
+    "mta_subway": { "batchId": 52, "configHash": "0x7bc856939ca933c0627cb2f4c08ee0747c46e24eec9f04cf4ac1eecb1cd72bbe" },
+    "paris_metro": { "batchId": 53, "configHash": "0x651a3afb5a856df8f6c07185901493618360251e0fcae3f1f538f08e53fc7945" },
+    "ryanair": { "batchId": 54, "configHash": "0xb26bebbeb13008c9bcd21ad34e46a5490c3f14cbc159a93d39418cd59ed08a37" },
+    "tfl_tube": { "batchId": 55, "configHash": "0x7e37aea2da465f81735013a7840368c2dbaa490cddfeb80b267a19cee5b3b466" },
+    "ioda": { "batchId": 56, "configHash": "0x46b41ff17b025caa613d122f3d903b6df244c68a5b8fe6d1c3551c4691c79395" },
+    "power_outages": { "batchId": 57, "configHash": "0x98b9cb9fc28430a874f43ca353c7829dc0f9490a6330c87ee4e2aa2a6d9074fb" },
+    "mcbroken": { "batchId": 58, "configHash": "0x7d745d17b82e747387af328a1cb5c350d688f67db12aa1ef65e0d34cf88b9662" },
+    "nyc311": { "batchId": 59, "configHash": "0x860f7ae5f0ccbc585b1aed393e556286b87ab8921aaa2a4d930b6402f6e5ed4e" }
   }
 }

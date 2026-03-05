@@ -76,7 +76,10 @@ abstract contract BLSVerifier {
 
         // Load historical snapshot
         TypesLib.RegistrySnapshot memory snap = _blsIssuerRegistry.getSnapshotAtNonce(referenceNonce);
-        if (block.number - snap.blockNumber > 86400) revert BLSVerifier__SnapshotTooOld();
+        // Underflow-safe: on Orbit L3, block.number returns parent chain block number
+        // which forge simulation may not replicate correctly
+        if (block.number > snap.blockNumber && block.number - snap.blockNumber > 86400)
+            revert BLSVerifier__SnapshotTooOld();
 
         // Validate signers bitmask is a subset of active bitmask (no stray bits)
         if ((signersBitmask & ~snap.activeBitmask) != 0) revert BLSVerifier__BitmaskInvalid();

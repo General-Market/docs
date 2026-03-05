@@ -10,8 +10,8 @@ import {CuratorRateIRM} from "../src/irm/CuratorRateIRM.sol";
 import {Morpho} from "@morpho-blue/Morpho.sol";
 
 /// @title DeployBatchMarkets — Batch deploy CuratorRateIRM markets for multiple ITPs
-/// @notice For each ITP: deploys ITPNAVOracle → creates Morpho market with CuratorRateIRM → submits vault supply cap.
-/// @dev After this script, wait for vault timelock (1 day), then run AcceptBatchCaps.
+/// @notice For each ITP: deploys ITPNAVOracle → creates Morpho market with CuratorRateIRM → submits+accepts vault supply cap.
+/// @dev No timelock wait needed — MIN_TIMELOCK is 0 for testnet. Caps are accepted inline.
 ///
 ///      Environment variables:
 ///        MORPHO                — Morpho Blue core address
@@ -102,9 +102,10 @@ contract DeployBatchMarkets is Script {
             console.log("  Market created, ID:");
             console.logBytes32(Id.unwrap(marketId));
 
-            // 3. Submit supply cap on vault (starts timelock)
+            // 3. Submit + accept supply cap immediately (MIN_TIMELOCK=0)
             vault.submitCap(params, SUPPLY_CAP);
-            console.log("  Supply cap submitted (timelock started)");
+            vault.acceptCap(params);
+            console.log("  Supply cap submitted and accepted");
 
             deployments[i] = MarketDeployment({
                 itpAddress: itpAddress,
@@ -113,6 +114,14 @@ contract DeployBatchMarkets is Script {
                 lltv: lltv
             });
         }
+
+        // Set supply queue with all batch markets
+        Id[] memory supplyQueue = new Id[](marketCount);
+        for (uint256 i = 0; i < marketCount; i++) {
+            supplyQueue[i] = deployments[i].marketId;
+        }
+        vault.setSupplyQueue(supplyQueue);
+        console.log("Supply queue set with", marketCount, "markets");
 
         vm.stopBroadcast();
 
@@ -171,6 +180,6 @@ contract DeployBatchMarkets is Script {
         console.log("---");
         console.log("Batch deployment written to deployments/batch-markets.json");
         console.log("Markets deployed:", deployments.length);
-        console.log("Next: wait 1 day for timelock, then run AcceptBatchCaps");
+        console.log("All caps accepted and supply queue set (no timelock wait)");
     }
 }
