@@ -7,7 +7,13 @@ import {
 } from '../helpers/selectors';
 import { getL3UserShares, mintL3Shares, mintBridgedItp, rebalanceItp } from '../helpers/backend-api';
 
+const IS_TESTNET = process.env.E2E_TESTNET === '1';
+
 test.describe('Lending (Deposit → Borrow → Repay → Withdraw)', () => {
+  test.beforeEach(() => {
+    test.skip(IS_TESTNET, 'Requires mintL3Shares (Anvil storage manipulation)');
+  });
+
   test('full lending cycle', async ({ walletPage: page }) => {
     test.setTimeout(240_000); // 4 min — Morpho txs + rebalance on Anvil can be slow
     // ── Setup: connect wallet ────────────────────────────────

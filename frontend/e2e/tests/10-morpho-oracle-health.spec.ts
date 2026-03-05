@@ -34,9 +34,10 @@ const COLLATERAL_TOKEN = morphoDeploy.marketParams?.collateralToken;
 const LOAN_TOKEN = morphoDeploy.marketParams?.loanToken;
 const LLTV = morphoDeploy.marketParams?.lltv; // "770000000000000000" = 77%
 
-const L3_RPC = 'http://localhost:8545';
-const ARB_RPC = 'http://localhost:8546';
-const DEPLOYER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
+const IS_TESTNET = process.env.E2E_TESTNET === '1';
+const L3_RPC = process.env.E2E_L3_RPC_URL || (IS_TESTNET ? 'http://142.132.164.24/' : 'http://localhost:8545');
+const ARB_RPC = process.env.E2E_ARB_RPC_URL || (IS_TESTNET ? 'http://142.132.164.24/' : 'http://localhost:8546');
+const DEPLOYER = '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4';
 
 async function l3RpcCall(method: string, params: unknown[]): Promise<unknown> {
   const res = await fetch(L3_RPC, {
@@ -193,6 +194,10 @@ async function borrow(user: string, amount: bigint): Promise<void> {
 const USER2 = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'; // Anvil account #1
 
 test.describe('Morpho Oracle & Health Factor', () => {
+  // Skip all Morpho tests on testnet — they require anvil_setStorageAt for oracle manipulation
+  test.beforeEach(() => {
+    test.skip(IS_TESTNET, 'Requires Anvil storage manipulation');
+  });
 
   test('oracle price is readable and matches deployment', async () => {
     test.setTimeout(30_000);

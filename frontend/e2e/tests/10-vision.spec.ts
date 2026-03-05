@@ -32,8 +32,9 @@ import {
   oppositeBets,
 } from '../helpers/vision-api'
 
-const L3_RPC = 'http://localhost:8545'
-const VISION_API = 'http://localhost:10001'
+const IS_TESTNET = process.env.E2E_TESTNET === '1'
+const L3_RPC = process.env.E2E_L3_RPC_URL || (IS_TESTNET ? 'http://142.132.164.24/' : 'http://localhost:8545')
+const VISION_API = process.env.E2E_VISION_API_URL || (IS_TESTNET ? 'http://116.203.156.98:10001' : 'http://localhost:10001')
 
 // ── Health checks ────────────────────────────────────────────
 

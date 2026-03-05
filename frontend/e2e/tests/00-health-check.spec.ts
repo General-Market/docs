@@ -21,12 +21,12 @@ test.describe('Health Check', () => {
     expect(healthy).toBe(true);
   });
 
-  test('Arbitrum Anvil (8546) is reachable', async () => {
+  test('Arbitrum RPC is reachable', async () => {
     const ok = await checkRpc(RPC_URL);
     expect(ok).toBe(true);
   });
 
-  test('L3 Anvil (8545) is reachable', async () => {
+  test('L3 RPC is reachable', async () => {
     const ok = await checkRpc(L3_RPC_URL);
     expect(ok).toBe(true);
   });

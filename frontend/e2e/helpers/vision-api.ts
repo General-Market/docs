@@ -4,12 +4,14 @@
  * Vision lives on L3 (port 8545) and uses L3_WUSDC (18 decimals).
  */
 
-import { keccak256, encodeFunctionData, toHex } from 'viem'
+import { keccak256, encodeFunctionData, toHex, createWalletClient, http, defineChain } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
 
 // ── Constants ────────────────────────────────────────────────
 
-const L3_RPC = 'http://localhost:8545'
-const VISION_API = 'http://localhost:10001'
+const IS_TESTNET = process.env.E2E_TESTNET === '1'
+const L3_RPC = process.env.E2E_L3_RPC_URL || (IS_TESTNET ? 'http://142.132.164.24/' : 'http://localhost:8545')
+const VISION_API = process.env.E2E_VISION_API_URL || (IS_TESTNET ? 'http://116.203.156.98:10001' : 'http://localhost:10001')
 
 /** Safely parse a hex RPC result to BigInt. Returns 0n for empty/null results. */
 function safeBigInt(hex: unknown): bigint {
@@ -17,11 +19,32 @@ function safeBigInt(hex: unknown): bigint {
   return BigInt(hex as string)
 }
 
+// ── Test accounts ────────────────────────────────────────────
+// On Anvil: PLAYER1 = deployer (0xC0d3...), PLAYER2 = vision bot (0x71bE...)
+// On testnet: same addresses but using real private keys for signing
+
+const DEPLOYER_KEY = (process.env.E2E_PRIVATE_KEY || '0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537') as `0x${string}`
+const PLAYER2_KEY = (process.env.E2E_PLAYER2_KEY || '0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6') as `0x${string}` // Anvil #9
+
 /** Test user — funded + impersonated on both chains by start.sh */
 export const PLAYER1 = '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4'
 
-/** Vision bot 1 — funded + impersonated on both chains by start.sh */
-export const PLAYER2 = '0x71bE63f3384f5fb98995898A86B02Fb2426c5788'
+/** Vision bot 1 — on testnet uses Anvil #9 key (funded by deployer) */
+export const PLAYER2 = IS_TESTNET
+  ? '0xa0Ee7A142d267C1f36714E4a8F75612F20a79720' // Anvil #9
+  : '0x71bE63f3384f5fb98995898A86B02Fb2426c5788'
+
+/** Map of address → private key for testnet signing */
+const TEST_KEYS: Record<string, `0x${string}`> = {
+  [PLAYER1.toLowerCase()]: DEPLOYER_KEY,
+  [PLAYER2.toLowerCase()]: PLAYER2_KEY,
+}
+
+function getKeyForAddress(addr: string): `0x${string}` {
+  const key = TEST_KEYS[addr.toLowerCase()]
+  if (!key) throw new Error(`No private key configured for address ${addr}`)
+  return key
+}
 
 // Read addresses from deployment.json (copied by start.sh step 7)
 let _deploymentCache: any = null
@@ -152,19 +175,38 @@ async function l3EthCall(to: string, data: string): Promise<string> {
 }
 
 async function l3SendTx(from: string, to: string, data: string): Promise<string> {
-  const txHash = await l3RpcCall('eth_sendTransaction', [{
-    from,
-    to,
-    data,
-    gas: '0x200000', // 2M gas
-  }]) as string
+  let txHash: string
 
-  // Poll for receipt (Anvil auto-mines but receipt may not be immediate)
-  for (let i = 0; i < 10; i++) {
+  if (IS_TESTNET) {
+    // Signed transaction using viem WalletClient
+    const key = getKeyForAddress(from)
+    const account = privateKeyToAccount(key)
+    const chain = defineChain({
+      id: Number(process.env.E2E_CHAIN_ID || 111222333),
+      name: 'Index L3',
+      nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
+      rpcUrls: { default: { http: [L3_RPC] } },
+    })
+    const client = createWalletClient({ account, chain, transport: http(L3_RPC) })
+    txHash = await client.sendTransaction({
+      to: to as `0x${string}`,
+      data: data as `0x${string}`,
+      gas: 2_000_000n,
+    })
+  } else {
+    txHash = await l3RpcCall('eth_sendTransaction', [{
+      from,
+      to,
+      data,
+      gas: '0x200000', // 2M gas
+    }]) as string
+  }
+
+  // Poll for receipt
+  for (let i = 0; i < 20; i++) {
     const receipt = await l3RpcCall('eth_getTransactionReceipt', [txHash]) as { status: string } | null
     if (receipt) {
       if (receipt.status === '0x0') {
-        // Try to get revert reason via eth_call simulation
         let revertReason = 'unknown'
         try {
           await l3RpcCall('eth_call', [{ from, to, data, gas: '0x200000' }, 'latest'])
@@ -175,22 +217,42 @@ async function l3SendTx(from: string, to: string, data: string): Promise<string>
       }
       return txHash
     }
-    await new Promise(r => setTimeout(r, 200))
+    await new Promise(r => setTimeout(r, IS_TESTNET ? 1000 : 200))
   }
 
   return txHash
 }
 
-// ── Anvil impersonation ──────────────────────────────────────
+// ── Anvil impersonation / testnet account setup ──────────────
 
 export async function impersonateAccount(address: string): Promise<void> {
+  if (IS_TESTNET) {
+    // On testnet, ensure the account has ETH for gas (funded by deployer)
+    const balance = await l3RpcCall('eth_getBalance', [address, 'latest']) as string
+    if (BigInt(balance) < 10n ** 18n) {
+      // Send 10 ETH from deployer
+      const account = privateKeyToAccount(DEPLOYER_KEY)
+      const chain = defineChain({
+        id: Number(process.env.E2E_CHAIN_ID || 111222333),
+        name: 'Index L3',
+        nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
+        rpcUrls: { default: { http: [L3_RPC] } },
+      })
+      const client = createWalletClient({ account, chain, transport: http(L3_RPC) })
+      await client.sendTransaction({
+        to: address as `0x${string}`,
+        value: 10n * 10n ** 18n,
+      })
+    }
+    return
+  }
   await l3RpcCall('anvil_impersonateAccount', [address])
 }
 
 // ── USDC minting (via deployer) ─────────────────────────────
 
-/** Anvil deployer — can call mint() on test ERC20 contracts */
-const DEPLOYER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+/** Deployer — can call mint() on test ERC20 contracts */
+const DEPLOYER = IS_TESTNET ? PLAYER1 : '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
 
 /**
  * Wait until the batch's tick lock window passes.
@@ -225,19 +287,17 @@ async function waitForUnlock(batchId: number): Promise<void> {
 
 /**
  * Clear a player's position on-chain via Anvil storage manipulation.
- * _positions is at storage slot 4.  For _positions[batchId][player]:
- *   baseSlot = keccak256(abi.encode(player, keccak256(abi.encode(batchId, 4))))
- * PlayerPosition has 9 fields = 9 consecutive storage slots.
+ * On testnet: no-op (fresh deployment, positions should be clean).
  */
 async function clearPosition(batchId: number, player: string): Promise<void> {
+  if (IS_TESTNET) return // Cannot manipulate storage on real chain
+
   const visionAddr = getVisionAddress()
-  // keccak256(abi.encode(batchId, 4))
   const innerSlot = keccak256(
     ('0x' +
       BigInt(batchId).toString(16).padStart(64, '0') +
       BigInt(4).toString(16).padStart(64, '0')) as `0x${string}`,
   )
-  // keccak256(abi.encode(player, innerSlot))
   const baseSlot = keccak256(
     ('0x' +
       player.replace('0x', '').toLowerCase().padStart(64, '0') +
@@ -251,7 +311,7 @@ async function clearPosition(batchId: number, player: string): Promise<void> {
   }
 }
 
-/** Mint ARB_USDC to an address via deployer. Ensures player has enough for deposits. */
+/** Mint L3_WUSDC to an address via deployer. Ensures player has enough for deposits. */
 export async function ensureUsdcBalance(address: string, minAmount: bigint): Promise<void> {
   const balance = await getL3UsdcBalance(address)
   if (balance >= minAmount) return
@@ -261,6 +321,7 @@ export async function ensureUsdcBalance(address: string, minAmount: bigint): Pro
   const amountHex = mintAmount.toString(16).padStart(64, '0')
   const data = `0x40c10f19${addrPadded}${amountHex}` // mint(address,uint256)
 
+  // On testnet, deployer = PLAYER1 which has a private key in TEST_KEYS
   await l3SendTx(DEPLOYER, getL3UsdcAddress(), data)
 }
 
@@ -430,11 +491,17 @@ export async function submitBitmapToIssuers(
   bitmapHex: string,
   expectedHash: string,
 ): Promise<{ accepted: number; total: number }> {
-  const issuerUrls = [
-    'http://localhost:10001',
-    'http://localhost:10002',
-    'http://localhost:10003',
-  ]
+  const issuerUrls = IS_TESTNET
+    ? [
+        'http://116.203.156.98:10001',
+        'http://116.203.156.98:10002',
+        'http://116.203.156.98:10003',
+      ]
+    : [
+        'http://localhost:10001',
+        'http://localhost:10002',
+        'http://localhost:10003',
+      ]
 
   const results = await Promise.allSettled(
     issuerUrls.map(async (url) => {
@@ -480,10 +547,10 @@ export async function fullJoinBatch(
   bets: BetDirection[],
   marketCount: number,
 ): Promise<JoinResult> {
-  // 0. Ensure player is impersonated on Anvil
+  // 0. Ensure player account is ready (impersonate on Anvil, fund on testnet)
   await impersonateAccount(player)
 
-  // 0.1. Clear any existing position (idempotent across test re-runs)
+  // 0.1. Clear any existing position (Anvil only — cannot clear on testnet)
   await clearPosition(batchId, player)
 
   // 0.5. Ensure player has enough USDC (mint via deployer if needed)
@@ -768,7 +835,7 @@ export async function getVisionVirtualBalance(player: string): Promise<bigint> {
 
 // ── Arb-side helpers for bridge deposit/withdraw E2E ──────
 
-const ARB_RPC = 'http://localhost:8546'
+const ARB_RPC = process.env.E2E_ARB_RPC_URL || (IS_TESTNET ? 'http://142.132.164.24/' : 'http://localhost:8546')
 
 async function arbRpcCall(method: string, params: unknown[]): Promise<unknown> {
   const res = await fetch(ARB_RPC, {
@@ -791,19 +858,37 @@ function getArbUsdcAddress(): string {
 }
 
 /**
- * Mint Arb USDC (6 decimals) to a player on Arb Anvil.
+ * Mint Arb USDC to a player.
+ * On testnet: L3 and Arb are the same chain, uses signed tx.
  */
 export async function mintArbUsdc(player: string, amount: bigint): Promise<void> {
-  const DEPLOYER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+  const deployer = IS_TESTNET ? PLAYER1 : '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
   const userPadded = player.replace('0x', '').toLowerCase().padStart(64, '0')
   const amountHex = amount.toString(16).padStart(64, '0')
   const data = `0x40c10f19${userPadded}${amountHex}`
-  await arbRpcCall('eth_sendTransaction', [{
-    from: DEPLOYER,
-    to: getArbUsdcAddress(),
-    data,
-    gas: '0x100000',
-  }])
+
+  if (IS_TESTNET) {
+    const account = privateKeyToAccount(DEPLOYER_KEY)
+    const chain = defineChain({
+      id: Number(process.env.E2E_CHAIN_ID || 111222333),
+      name: 'Index L3',
+      nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
+      rpcUrls: { default: { http: [ARB_RPC] } },
+    })
+    const client = createWalletClient({ account, chain, transport: http(ARB_RPC) })
+    await client.sendTransaction({
+      to: getArbUsdcAddress() as `0x${string}`,
+      data: data as `0x${string}`,
+      gas: 1_000_000n,
+    })
+  } else {
+    await arbRpcCall('eth_sendTransaction', [{
+      from: deployer,
+      to: getArbUsdcAddress(),
+      data,
+      gas: '0x100000',
+    }])
+  }
 }
 
 /**
@@ -818,26 +903,15 @@ export async function getArbUsdcBalance(player: string): Promise<bigint> {
 
 /**
  * Deposit Arb USDC to Vision via ArbBridgeCustody.depositToVision(amount).
- * This is the on-chain Arb side of the bridge deposit.
+ * On testnet: uses signed transactions, no block mining needed.
  */
 export async function depositToVisionViaArb(player: string, arbUsdcAmount: bigint): Promise<void> {
-  await arbRpcCall('anvil_setBalance', [player, '0x56BC75E2D63100000']) // 100 ETH
-  await arbRpcCall('anvil_impersonateAccount', [player])
-
-  // Approve ARB_USDC to ArbBridgeCustody
   const custody = getArbCustodyAddress()
   const usdcAddr = getArbUsdcAddress()
   const approvePadded = custody.replace('0x', '').toLowerCase().padStart(64, '0')
   const amtHex = arbUsdcAmount.toString(16).padStart(64, '0')
   const approveData = `0x095ea7b3${approvePadded}${amtHex}`
-  await arbRpcCall('eth_sendTransaction', [{
-    from: player,
-    to: usdcAddr,
-    data: approveData,
-    gas: '0x100000',
-  }])
 
-  // depositToVision(uint256 usdcAmount)
   const depositData = encodeFunctionData({
     abi: [{
       name: 'depositToVision',
@@ -849,13 +923,24 @@ export async function depositToVisionViaArb(player: string, arbUsdcAmount: bigin
     functionName: 'depositToVision',
     args: [arbUsdcAmount],
   })
-  await arbRpcCall('eth_sendTransaction', [{
-    from: player,
-    to: custody,
-    data: depositData,
-    gas: '0x200000',
-  }])
 
-  // Mine Arb blocks so issuers see the event
-  await arbRpcCall('anvil_mine', ['0x5'])
+  if (IS_TESTNET) {
+    const key = getKeyForAddress(player)
+    const account = privateKeyToAccount(key)
+    const chain = defineChain({
+      id: Number(process.env.E2E_CHAIN_ID || 111222333),
+      name: 'Index L3',
+      nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
+      rpcUrls: { default: { http: [ARB_RPC] } },
+    })
+    const client = createWalletClient({ account, chain, transport: http(ARB_RPC) })
+    await client.sendTransaction({ to: usdcAddr as `0x${string}`, data: approveData as `0x${string}`, gas: 1_000_000n })
+    await client.sendTransaction({ to: custody as `0x${string}`, data: depositData as `0x${string}`, gas: 2_000_000n })
+  } else {
+    await arbRpcCall('anvil_setBalance', [player, '0x56BC75E2D63100000'])
+    await arbRpcCall('anvil_impersonateAccount', [player])
+    await arbRpcCall('eth_sendTransaction', [{ from: player, to: usdcAddr, data: approveData, gas: '0x100000' }])
+    await arbRpcCall('eth_sendTransaction', [{ from: player, to: custody, data: depositData, gas: '0x200000' }])
+    await arbRpcCall('anvil_mine', ['0x5'])
+  }
 }

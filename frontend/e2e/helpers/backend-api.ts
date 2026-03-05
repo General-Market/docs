@@ -4,10 +4,13 @@
  * rather than relying on the UI's polling which may be stale.
  */
 
-import { encodeFunctionData, decodeFunctionResult } from 'viem';
+import { encodeFunctionData, decodeFunctionResult, createWalletClient, http, defineChain } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
 import { INDEX_ABI, BRIDGE_PROXY_ABI, ARB_CUSTODY_ABI, ERC20_ABI } from '../../lib/contracts/index-protocol-abi';
 
-const BACKEND_URL = 'http://localhost:8200';
+const IS_TESTNET = process.env.E2E_TESTNET === '1';
+const BACKEND_URL = process.env.E2E_BACKEND_URL || (IS_TESTNET ? 'http://116.203.156.98:8200' : 'http://localhost:8200');
+const TEST_PRIVATE_KEY = (process.env.E2E_PRIVATE_KEY || '0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537') as `0x${string}`;
 
 /** Safely parse a hex RPC result to BigInt. Returns 0n for empty/null results. */
 function safeBigInt(hex: unknown): bigint {
@@ -158,7 +161,7 @@ async function getOrderViaL3(orderId: number | string): Promise<OrderData> {
 
 // ── Direct RPC helpers (fallback when backend endpoints unavailable) ─────
 
-const ARB_RPC = 'http://localhost:8546';
+const ARB_RPC = process.env.E2E_ARB_RPC_URL || (IS_TESTNET ? 'http://142.132.164.24/' : 'http://localhost:8546');
 
 // Addresses read from deployments/active-deployment.json at import time
 const _deployment = (() => {
@@ -177,8 +180,8 @@ const ARB_USDC = _deployment?.ARB_USDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634f
 const BRIDGE_PROXY = _deployment?.BridgeProxy ?? '0x0B306BF915C4d645ff596e518fAf3F9669b97016';
 const ARB_CUSTODY = _deployment?.ArbBridgeCustody ?? '0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1';
 const BRIDGED_ITP_FACTORY = _deployment?.BridgedItpFactory ?? '0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1';
-/** Anvil deployer account (auto-accepted for eth_sendTransaction) */
-const DEPLOYER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
+/** Deployer account — Anvil #0 locally, real deployer on testnet */
+const DEPLOYER = IS_TESTNET ? '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4' : '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 
 /** Inline ABI for sellITPFromArbitrum (not in shared ABI file) */
 const SELL_ABI = [
@@ -238,18 +241,19 @@ async function getUserStateViaRpc(user: string, _itpId: string): Promise<UserSta
 }
 
 /**
- * Mint BridgedITP tokens to a user by impersonating the BridgeProxy on Anvil.
- * BridgedITP.mint() is onlyBridgeProxy, so we impersonate it to bypass BLS
- * verification entirely. This is the correct E2E approach since BLS is now
- * active (aggregated pubkey is set on-chain).
+ * Mint BridgedITP tokens to a user.
+ * - Anvil: impersonate BridgeProxy to call BridgedITP.mint() directly
+ * - Testnet: not available (BridgedITP.mint is onlyBridgeProxy, requires actual bridge flow)
  */
 export async function mintBridgedItp(
   user: string,
   itpId: string,
   amount: bigint,
 ): Promise<void> {
-  // Resolve BridgedITP address for this ITP — ITP1 uses the known constant,
-  // ITP2+ need dynamic lookup via BridgeProxy.orbitToArbitrum()
+  if (IS_TESTNET) {
+    throw new Error('mintBridgedItp not available on testnet — use actual bridge buy flow instead');
+  }
+
   let bridgedToken = BRIDGED_ITP;
   if (itpId !== '0x0000000000000000000000000000000000000000000000000000000000000001') {
     const addr = await getBridgedItpAddress(itpId);
@@ -259,21 +263,14 @@ export async function mintBridgedItp(
     bridgedToken = addr;
   }
 
-  // Fund BridgeProxy with ETH for gas (it's a contract with no balance)
-  await rpcCall('anvil_setBalance', [BRIDGE_PROXY, '0x56BC75E2D63100000']); // 100 ETH
-  // Impersonate BridgeProxy to call BridgedITP.mint(user, amount) directly
+  await rpcCall('anvil_setBalance', [BRIDGE_PROXY, '0x56BC75E2D63100000']);
   await rpcCall('anvil_impersonateAccount', [BRIDGE_PROXY]);
   try {
-    // mint(address,uint256) selector = 0x40c10f19
     const userPadded = user.replace('0x', '').toLowerCase().padStart(64, '0');
     const amountHex = amount.toString(16).padStart(64, '0');
     const data = `0x40c10f19${userPadded}${amountHex}`;
-
     await rpcCall('eth_sendTransaction', [{
-      from: BRIDGE_PROXY,
-      to: bridgedToken,
-      data,
-      gas: '0x100000', // 1M gas
+      from: BRIDGE_PROXY, to: bridgedToken, data, gas: '0x100000',
     }]);
   } finally {
     await rpcCall('anvil_stopImpersonatingAccount', [BRIDGE_PROXY]);
@@ -296,6 +293,9 @@ export async function mintL3Shares(
   itpId: string,
   amount: bigint,
 ): Promise<void> {
+  if (IS_TESTNET) {
+    throw new Error('mintL3Shares not available on testnet — use actual buy flow instead (requires anvil_setStorageAt)');
+  }
   // Compute _userShares[itpId][user] storage slot
   // inner = keccak256(abi.encode(itpId, 18))
   const slot18 = '0x' + BigInt(18).toString(16).padStart(64, '0');
@@ -355,24 +355,27 @@ export async function mintL3Shares(
 }
 
 /**
- * Mint L3_WUSDC (18 decimals) to a user on L3 Anvil.
+ * Mint L3_WUSDC (18 decimals) to a user.
  * Test L3_WUSDC allows the deployer to call mint(address,uint256) directly.
  */
 export async function mintL3Usdc(
   user: string,
   amount: bigint,
 ): Promise<void> {
-  // mint(address,uint256) selector = 0x40c10f19
   const userPadded = user.replace('0x', '').toLowerCase().padStart(64, '0');
   const amountHex = amount.toString(16).padStart(64, '0');
   const data = `0x40c10f19${userPadded}${amountHex}`;
 
-  await l3RpcCall('eth_sendTransaction', [{
-    from: DEPLOYER,
-    to: L3_WUSDC,
-    data,
-    gas: '0x100000',
-  }]);
+  if (IS_TESTNET) {
+    await l3SignedSend(L3_WUSDC, data);
+  } else {
+    await l3RpcCall('eth_sendTransaction', [{
+      from: DEPLOYER,
+      to: L3_WUSDC,
+      data,
+      gas: '0x100000',
+    }]);
+  }
 }
 
 /**
@@ -412,7 +415,7 @@ async function keccak256Hex(data: string): Promise<string> {
 
 // ── L3 RPC helpers (rebalance operates on L3 directly) ──────────────────
 
-const L3_RPC = 'http://localhost:8545';
+const L3_RPC = process.env.E2E_L3_RPC_URL || (IS_TESTNET ? 'http://142.132.164.24/' : 'http://localhost:8545');
 const L3_INDEX = _deployment?.Index ?? '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
 const L3_ISSUER_REGISTRY = _deployment?.IssuerRegistry ?? '0x610178dA211FEF7D417bC0e6FeD39F05609AD788';
 const L3_WUSDC = _deployment?.L3_WUSDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
@@ -427,6 +430,48 @@ async function l3RpcCall(method: string, params: unknown[]): Promise<unknown> {
   const json = await res.json();
   if (json.error) throw new Error(`${json.error.message} (data: ${json.error.data ?? 'none'})`);
   return json.result;
+}
+
+/**
+ * Send a signed transaction on L3 using the deployer private key.
+ * Used on testnet where anvil_impersonateAccount is not available.
+ */
+async function l3SignedSend(to: string, data: string, value?: bigint): Promise<string> {
+  const account = privateKeyToAccount(TEST_PRIVATE_KEY);
+  const chain = defineChain({
+    id: Number(process.env.E2E_CHAIN_ID || 111222333),
+    name: 'Index L3',
+    nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
+    rpcUrls: { default: { http: [L3_RPC] } },
+  });
+  const client = createWalletClient({ account, chain, transport: http(L3_RPC) });
+  return client.sendTransaction({
+    to: to as `0x${string}`,
+    data: data as `0x${string}`,
+    value,
+    gas: 1_000_000n,
+  });
+}
+
+/**
+ * Send a signed transaction on ARB using the deployer private key.
+ */
+async function arbSignedSend(to: string, data: string, value?: bigint): Promise<string> {
+  const account = privateKeyToAccount(TEST_PRIVATE_KEY);
+  const chainId = Number(process.env.E2E_ARB_CHAIN_ID || (IS_TESTNET ? process.env.E2E_CHAIN_ID || 111222333 : 421611337));
+  const chain = defineChain({
+    id: chainId,
+    name: 'Arb',
+    nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+    rpcUrls: { default: { http: [ARB_RPC] } },
+  });
+  const client = createWalletClient({ account, chain, transport: http(ARB_RPC) });
+  return client.sendTransaction({
+    to: to as `0x${string}`,
+    data: data as `0x${string}`,
+    value,
+    gas: 1_000_000n,
+  });
 }
 
 export interface ItpState {
@@ -489,42 +534,42 @@ export async function getItpCountL3(): Promise<number> {
  * Used to bypass BLS verification for direct E2E test operations.
  */
 async function clearL3AggPubkey(): Promise<string> {
-  // getAggregatedPubkey() selector = 0x7004e072
   const currentPubkey = await l3RpcCall('eth_call', [{
     to: L3_ISSUER_REGISTRY,
     data: '0x7004e072',
   }, 'latest']) as string;
 
-  // setAggregatedPubkey(bytes) selector = 0xb009fd60, with empty bytes
-  // ABI encoding: selector + offset(0x20) + length(0x00)
   const clearData = '0xb009fd60' +
-    '0'.repeat(62) + '20' + // offset to bytes data
-    '0'.repeat(64);         // bytes length = 0
-  await l3RpcCall('eth_sendTransaction', [{
-    from: DEPLOYER,
-    to: L3_ISSUER_REGISTRY,
-    data: clearData,
-    gas: '0x100000',
-  }]);
+    '0'.repeat(62) + '20' +
+    '0'.repeat(64);
+
+  if (IS_TESTNET) {
+    await l3SignedSend(L3_ISSUER_REGISTRY, clearData);
+  } else {
+    await l3RpcCall('eth_sendTransaction', [{
+      from: DEPLOYER,
+      to: L3_ISSUER_REGISTRY,
+      data: clearData,
+      gas: '0x100000',
+    }]);
+  }
 
   return currentPubkey;
 }
 
-/**
- * Restore the aggregated BLS pubkey on L3 IssuerRegistry.
- */
 async function restoreL3AggPubkey(encodedPubkey: string): Promise<void> {
-  // setAggregatedPubkey(bytes) with the original bytes
-  // The encodedPubkey from getAggregatedPubkey() is already ABI-encoded (offset+length+data)
-  // We need to re-encode it for setAggregatedPubkey(bytes)
-  // setAggregatedPubkey selector = 0xb009fd60
   const restoreData = '0xb009fd60' + encodedPubkey.replace('0x', '');
-  await l3RpcCall('eth_sendTransaction', [{
-    from: DEPLOYER,
-    to: L3_ISSUER_REGISTRY,
-    data: restoreData,
-    gas: '0x100000',
-  }]);
+
+  if (IS_TESTNET) {
+    await l3SignedSend(L3_ISSUER_REGISTRY, restoreData);
+  } else {
+    await l3RpcCall('eth_sendTransaction', [{
+      from: DEPLOYER,
+      to: L3_ISSUER_REGISTRY,
+      data: restoreData,
+      gas: '0x100000',
+    }]);
+  }
 }
 
 /**
@@ -568,12 +613,16 @@ export async function rebalanceItp(itpId: string, timeoutMs = 180_000): Promise<
     ],
   });
 
-  await l3RpcCall('eth_sendTransaction', [{
-    from: DEPLOYER,
-    to: L3_INDEX,
-    data: calldata,
-    gas: '0x200000',
-  }]);
+  if (IS_TESTNET) {
+    await l3SignedSend(L3_INDEX, calldata);
+  } else {
+    await l3RpcCall('eth_sendTransaction', [{
+      from: DEPLOYER,
+      to: L3_INDEX,
+      data: calldata,
+      gas: '0x200000',
+    }]);
+  }
 
   // Wait for issuers to execute the rebalance on L3 (weights change)
   // Rebalance consensus can take 2+ cycles
@@ -623,77 +672,62 @@ export async function placeBuyOrderDirect(
   usdcAmount: bigint,
   limitPrice: bigint,
 ): Promise<number> {
-  // Fund user with ETH for gas
-  await rpcCall('anvil_setBalance', [user, '0x56BC75E2D63100000']); // 100 ETH
-
   // Mint USDC to user (deployer can call mint on test USDC)
   const mintData = encodeFunctionData({
     abi: [{ inputs: [{ name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }], name: 'mint', outputs: [], stateMutability: 'nonpayable', type: 'function' }] as const,
     functionName: 'mint',
     args: [user as `0x${string}`, usdcAmount],
   });
-  await rpcCall('eth_sendTransaction', [{
-    from: DEPLOYER,
-    to: ARB_USDC,
-    data: mintData,
-    gas: '0x100000',
-  }]);
 
-  await rpcCall('anvil_impersonateAccount', [user]);
-  try {
-    // Approve USDC to ArbBridgeCustody
-    const approveData = encodeFunctionData({
-      abi: ERC20_ABI,
-      functionName: 'approve',
-      args: [ARB_CUSTODY as `0x${string}`, usdcAmount],
-    });
-    await rpcCall('eth_sendTransaction', [{
-      from: user,
-      to: ARB_USDC,
-      data: approveData,
-      gas: '0x100000',
-    }]);
+  // Approve USDC to ArbBridgeCustody
+  const approveData = encodeFunctionData({
+    abi: ERC20_ABI,
+    functionName: 'approve',
+    args: [ARB_CUSTODY as `0x${string}`, usdcAmount],
+  });
 
-    // Read crossChainOrderId before placing (this is the next order ID counter)
-    const nextIdData = encodeFunctionData({
-      abi: ARB_CUSTODY_ABI,
-      functionName: 'crossChainOrderId',
-      args: [],
-    });
-    const nextIdResult = await rpcCall('eth_call', [
-      { to: ARB_CUSTODY, data: nextIdData },
-      'latest',
-    ]) as string;
-    const orderId = Number(safeBigInt(nextIdResult));
+  // Read crossChainOrderId before placing
+  const nextIdData = encodeFunctionData({
+    abi: ARB_CUSTODY_ABI,
+    functionName: 'crossChainOrderId',
+    args: [],
+  });
+  const nextIdResult = await rpcCall('eth_call', [
+    { to: ARB_CUSTODY, data: nextIdData },
+    'latest',
+  ]) as string;
+  const orderId = Number(safeBigInt(nextIdResult));
 
-    // Use chain block.timestamp (not Date.now) — Anvil's clock drifts from wall time
-    const latestBlock = await rpcCall('eth_getBlockByNumber', ['latest', false]) as { timestamp: string };
-    const chainTimestamp = Number(safeBigInt(latestBlock.timestamp));
-    const deadline = BigInt(chainTimestamp + 3600);
+  const latestBlock = await rpcCall('eth_getBlockByNumber', ['latest', false]) as { timestamp: string };
+  const chainTimestamp = Number(safeBigInt(latestBlock.timestamp));
+  const deadline = BigInt(chainTimestamp + 3600);
 
-    // Place buy order
-    const buyData = encodeFunctionData({
-      abi: ARB_CUSTODY_ABI,
-      functionName: 'buyITPFromArbitrum',
-      args: [
-        itpId as `0x${string}`,
-        usdcAmount,
-        limitPrice,
-        1n, // slippageTier
-        deadline,
-      ],
-    });
-    await rpcCall('eth_sendTransaction', [{
-      from: user,
-      to: ARB_CUSTODY,
-      data: buyData,
-      gas: '0x200000',
-    }]);
+  const buyData = encodeFunctionData({
+    abi: ARB_CUSTODY_ABI,
+    functionName: 'buyITPFromArbitrum',
+    args: [
+      itpId as `0x${string}`,
+      usdcAmount,
+      limitPrice,
+      1n,
+      deadline,
+    ],
+  });
 
-    return orderId;
-  } finally {
-    // Keep user impersonated — other tests (create-itp) need Arb impersonation
+  if (IS_TESTNET) {
+    // On testnet: user = deployer, sign all txs
+    await arbSignedSend(ARB_USDC, mintData);
+    await arbSignedSend(ARB_USDC, approveData);
+    await arbSignedSend(ARB_CUSTODY, buyData);
+  } else {
+    await rpcCall('anvil_setBalance', [user, '0x56BC75E2D63100000']);
+    await rpcCall('eth_sendTransaction', [{ from: DEPLOYER, to: ARB_USDC, data: mintData, gas: '0x100000' }]);
+    await rpcCall('anvil_impersonateAccount', [user]);
+    await rpcCall('eth_sendTransaction', [{ from: user, to: ARB_USDC, data: approveData, gas: '0x100000' }]);
+    await rpcCall('eth_sendTransaction', [{ from: user, to: ARB_CUSTODY, data: buyData, gas: '0x200000' }]);
   }
+
+  return orderId;
 }
 
 /**
@@ -706,7 +740,6 @@ export async function placeSellOrderDirect(
   amount: bigint,
   limitPrice: bigint,
 ): Promise<number> {
-  // Resolve BridgedITP address for this ITP (ITP1 uses constant, ITP2+ use dynamic lookup)
   let bridgedToken = BRIDGED_ITP;
   if (itpId !== '0x0000000000000000000000000000000000000000000000000000000000000001') {
     const addr = await getBridgedItpAddress(itpId);
@@ -716,24 +749,46 @@ export async function placeSellOrderDirect(
     bridgedToken = addr;
   }
 
-  // Fund user with ETH for gas
-  await rpcCall('anvil_setBalance', [user, '0x56BC75E2D63100000']); // 100 ETH
-  await rpcCall('anvil_impersonateAccount', [user]);
-  try {
-    // Approve BridgedITP to ArbBridgeCustody
-    const approveData = encodeFunctionData({
-      abi: ERC20_ABI,
-      functionName: 'approve',
-      args: [ARB_CUSTODY as `0x${string}`, amount],
-    });
-    const approveTxHash = await rpcCall('eth_sendTransaction', [{
-      from: user,
-      to: bridgedToken,
-      data: approveData,
-      gas: '0x100000',
-    }]) as string;
+  const approveData = encodeFunctionData({
+    abi: ERC20_ABI,
+    functionName: 'approve',
+    args: [ARB_CUSTODY as `0x${string}`, amount],
+  });
 
-    // Verify approve tx succeeded (retry receipt in case of mining race)
+  const nextIdData = encodeFunctionData({
+    abi: ARB_CUSTODY_ABI,
+    functionName: 'crossChainOrderId',
+    args: [],
+  });
+  const nextIdResult = await rpcCall('eth_call', [
+    { to: ARB_CUSTODY, data: nextIdData },
+    'latest',
+  ]) as string;
+  const orderId = Number(safeBigInt(nextIdResult));
+
+  const latestBlock = await rpcCall('eth_getBlockByNumber', ['latest', false]) as { timestamp: string };
+  const chainTimestamp = Number(safeBigInt(latestBlock.timestamp));
+  const deadline = BigInt(chainTimestamp + 3600);
+
+  const sellData = encodeFunctionData({
+    abi: SELL_ABI,
+    functionName: 'sellITPFromArbitrum',
+    args: [
+      itpId as `0x${string}`,
+      amount,
+      limitPrice,
+      1n,
+      deadline,
+    ],
+  });
+
+  if (IS_TESTNET) {
+    await arbSignedSend(bridgedToken, approveData);
+    await arbSignedSend(ARB_CUSTODY, sellData);
+  } else {
+    await rpcCall('anvil_setBalance', [user, '0x56BC75E2D63100000']);
+    await rpcCall('anvil_impersonateAccount', [user]);
+    const approveTxHash = await rpcCall('eth_sendTransaction', [{ from: user, to: bridgedToken, data: approveData, gas: '0x100000' }]) as string;
     let approveReceipt: { status: string } | null = null;
     for (let i = 0; i < 5; i++) {
       approveReceipt = await rpcCall('eth_getTransactionReceipt', [approveTxHash]) as { status: string } | null;
@@ -743,46 +798,8 @@ export async function placeSellOrderDirect(
     if (!approveReceipt || approveReceipt.status !== '0x1') {
       throw new Error(`BridgedITP approve tx reverted (status=${approveReceipt?.status}): ${approveTxHash}`);
     }
-
-    // Read crossChainOrderId (next sell order ID)
-    const nextIdData = encodeFunctionData({
-      abi: ARB_CUSTODY_ABI,
-      functionName: 'crossChainOrderId',
-      args: [],
-    });
-    const nextIdResult = await rpcCall('eth_call', [
-      { to: ARB_CUSTODY, data: nextIdData },
-      'latest',
-    ]) as string;
-    const orderId = Number(safeBigInt(nextIdResult));
-
-    // Use chain block.timestamp (not Date.now) — Anvil's clock drifts from wall time
-    const latestBlock = await rpcCall('eth_getBlockByNumber', ['latest', false]) as { timestamp: string };
-    const chainTimestamp = Number(safeBigInt(latestBlock.timestamp));
-    const deadline = BigInt(chainTimestamp + 3600);
-
-    // Place sell order
-    // Re-impersonate in case parallel tests stopped impersonation (shared Anvil state)
     await rpcCall('anvil_impersonateAccount', [user]);
-    const sellData = encodeFunctionData({
-      abi: SELL_ABI,
-      functionName: 'sellITPFromArbitrum',
-      args: [
-        itpId as `0x${string}`,
-        amount,
-        limitPrice,
-        1n, // slippageTier
-        deadline,
-      ],
-    });
-    const sellTxHash = await rpcCall('eth_sendTransaction', [{
-      from: user,
-      to: ARB_CUSTODY,
-      data: sellData,
-      gas: '0x200000',
-    }]) as string;
-
-    // Verify sell tx succeeded (retry receipt in case of mining race)
+    const sellTxHash = await rpcCall('eth_sendTransaction', [{ from: user, to: ARB_CUSTODY, data: sellData, gas: '0x200000' }]) as string;
     let sellReceipt: { status: string } | null = null;
     for (let i = 0; i < 5; i++) {
       sellReceipt = await rpcCall('eth_getTransactionReceipt', [sellTxHash]) as { status: string } | null;
@@ -792,11 +809,9 @@ export async function placeSellOrderDirect(
     if (!sellReceipt || sellReceipt.status !== '0x1') {
       throw new Error(`sellITPFromArbitrum tx reverted (status=${sellReceipt?.status}): ${sellTxHash}`);
     }
-
-    return orderId;
-  } finally {
-    // Keep user impersonated — other tests need Arb impersonation
   }
+
+  return orderId;
 }
 
 /**
@@ -849,33 +864,33 @@ export async function requestCreateItpDirect(
     prices = assets.map(() => 1000000000000000000n);
   }
 
-  // Fund user with ETH for gas
-  await rpcCall('anvil_setBalance', [user, '0x56BC75E2D63100000']); // 100 ETH
-  await rpcCall('anvil_impersonateAccount', [user]);
-  try {
-    const createData = encodeFunctionData({
-      abi: BRIDGE_PROXY_ABI,
-      functionName: 'requestCreateItp',
-      args: [
-        'Resilience Test',
-        'RSLT',
-        weights,
-        assets as `0x${string}`[],
-        prices,
-        { description: '', websiteUrl: '', videoUrl: '' },
-      ],
-    });
+  const createData = encodeFunctionData({
+    abi: BRIDGE_PROXY_ABI,
+    functionName: 'requestCreateItp',
+    args: [
+      'Resilience Test',
+      'RSLT',
+      weights,
+      assets as `0x${string}`[],
+      prices,
+      { description: '', websiteUrl: '', videoUrl: '' },
+    ],
+  });
+
+  if (IS_TESTNET) {
+    await arbSignedSend(BRIDGE_PROXY, createData);
+  } else {
+    await rpcCall('anvil_setBalance', [user, '0x56BC75E2D63100000']);
+    await rpcCall('anvil_impersonateAccount', [user]);
     await rpcCall('eth_sendTransaction', [{
       from: user,
       to: BRIDGE_PROXY,
       data: createData,
       gas: '0x400000',
     }]);
-
-    return nonce;
-  } finally {
-    // Keep user impersonated — other tests need Arb impersonation
   }
+
+  return nonce;
 }
 
 /**
@@ -926,12 +941,16 @@ export async function requestRebalanceDirect(
     ],
   });
 
-  await rpcCall('eth_sendTransaction', [{
-    from: DEPLOYER,
-    to: BRIDGE_PROXY,
-    data: requestCalldata,
-    gas: '0x200000',
-  }]);
+  if (IS_TESTNET) {
+    await arbSignedSend(BRIDGE_PROXY, requestCalldata);
+  } else {
+    await rpcCall('eth_sendTransaction', [{
+      from: DEPLOYER,
+      to: BRIDGE_PROXY,
+      data: requestCalldata,
+      gas: '0x200000',
+    }]);
+  }
 
   return nonce;
 }
@@ -1020,17 +1039,20 @@ export async function mintUsdc(
   user: string,
   amount: bigint,
 ): Promise<void> {
-  // mint(address,uint256) selector = 0x40c10f19
   const userPadded = user.replace('0x', '').toLowerCase().padStart(64, '0');
   const amountHex = amount.toString(16).padStart(64, '0');
   const data = `0x40c10f19${userPadded}${amountHex}`;
 
-  await rpcCall('eth_sendTransaction', [{
-    from: DEPLOYER,
-    to: ARB_USDC,
-    data,
-    gas: '0x100000', // 1M gas
-  }]);
+  if (IS_TESTNET) {
+    await arbSignedSend(ARB_USDC, data);
+  } else {
+    await rpcCall('eth_sendTransaction', [{
+      from: DEPLOYER,
+      to: ARB_USDC,
+      data,
+      gas: '0x100000',
+    }]);
+  }
 }
 
 /**
@@ -1041,15 +1063,16 @@ export async function mintUsdc(
  * "confirmed" without this helper.
  */
 export async function mineArbBlocks(count: number): Promise<void> {
+  if (IS_TESTNET) return; // Blocks mine naturally on testnet
   await rpcCall('anvil_mine', [`0x${count.toString(16)}`]);
 }
 
 /**
- * Start a periodic Arb Anvil block miner.
- * Returns a cleanup function to stop mining.
- * Useful during sell/buy flows where issuers need blocks to advance.
+ * Start a periodic block miner.
+ * On testnet: no-op (blocks mine naturally).
  */
 export function startArbBlockMiner(intervalMs = 1000): () => void {
+  if (IS_TESTNET) return () => {};
   const timer = setInterval(() => {
     rpcCall('anvil_mine', ['0x1']).catch(() => {});
   }, intervalMs);
@@ -1096,6 +1119,10 @@ export async function deployBridgedItpDirect(
   const existing = await getBridgedItpAddress(itpId);
   if (existing !== '0x' + '0'.repeat(40)) {
     return existing;
+  }
+
+  if (IS_TESTNET) {
+    throw new Error('deployBridgedItpDirect not available on testnet — requires anvil_impersonateAccount + anvil_setStorageAt');
   }
 
   // Fund BridgeProxy with ETH for gas

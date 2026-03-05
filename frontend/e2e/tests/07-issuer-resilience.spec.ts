@@ -10,6 +10,9 @@
  */
 
 import { test, expect } from '@playwright/test';
+
+const IS_TESTNET = process.env.E2E_TESTNET === '1';
+
 import {
   getIssuerHealth,
   killIssuer,
@@ -34,6 +37,9 @@ const ITP_ID = '0x00000000000000000000000000000000000000000000000000000000000000
 const RESILIENCE_ENABLED = process.env.RUN_RESILIENCE === '1';
 
 test.describe.serial('Issuer Resilience', () => {
+  test.beforeEach(() => {
+    test.skip(IS_TESTNET, 'Requires local issuer process management');
+  });
   // Always restore all 3 issuers so subsequent tests (Vision, etc.) aren't broken
   test.afterAll(async () => {
     if (!RESILIENCE_ENABLED) return;

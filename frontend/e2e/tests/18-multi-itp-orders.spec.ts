@@ -40,7 +40,12 @@ function itpIdFromNumber(n: number): string {
   return '0x' + n.toString(16).padStart(64, '0');
 }
 
+const IS_TESTNET = process.env.E2E_TESTNET === '1';
+
 test.describe('Multi-ITP Order Processing', () => {
+  test.beforeEach(() => {
+    test.skip(IS_TESTNET, 'Requires mintL3Shares/deployBridgedItpDirect (Anvil)');
+  });
   test('buy ITP2 order fills via issuer consensus', async () => {
     test.setTimeout(240_000); // 4 min — issuer consensus can take 30-90s
 

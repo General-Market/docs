@@ -1,16 +1,23 @@
 /**
  * EIP-1193 mock wallet provider for E2E testing.
  * Injected via page.addInitScript() before any page JS runs.
- * Anvil auto-accepts eth_sendTransaction from known accounts — no signing needed.
  *
- * Supports multi-chain: Arb (8546) + L3 (8545) for Vision transactions.
+ * Supports two modes:
+ * - Anvil mode: eth_sendTransaction auto-accepted (local dev)
+ * - Testnet mode: uses exposed __e2eSignAndSend function for real signing
+ *
+ * Supports multi-chain: both chains use the same RPC on testnet.
  */
 
 export function getInjectWalletScript(
   rpcUrl: string,
   chainId: number,
   address: string,
+  arbRpcUrl?: string,
+  arbChainId?: number,
 ): string {
+  const _arbRpcUrl = arbRpcUrl || rpcUrl;
+  const _arbChainId = arbChainId || chainId;
   return `
 (function() {
   const RPC_URL = ${JSON.stringify(rpcUrl)};
@@ -19,10 +26,10 @@ export function getInjectWalletScript(
   const ADDRESS = ${JSON.stringify(address.toLowerCase())};
 
   // Multi-chain RPC routing: chain ID → RPC URL
-  const L3_CHAIN_ID = 111222333;
-  const L3_RPC_URL = 'http://localhost:8545';
-  const ARB_CHAIN_ID = 421611337;
-  const ARB_RPC_URL = 'http://localhost:8546';
+  const L3_CHAIN_ID = ${chainId};
+  const L3_RPC_URL = ${JSON.stringify(rpcUrl)};
+  const ARB_CHAIN_ID = ${_arbChainId};
+  const ARB_RPC_URL = ${JSON.stringify(_arbRpcUrl)};
 
   const CHAIN_RPCS = {
     [CHAIN_ID]: RPC_URL,
@@ -117,13 +124,26 @@ export function getInjectWalletScript(
         case 'wallet_requestPermissions':
           return [{ parentCapability: 'eth_accounts' }];
 
-        case 'personal_sign':
-          // Anvil doesn't need real signatures; return a dummy
+        case 'personal_sign': {
+          // Use exposed signing function if available (testnet mode)
+          if (window.__e2ePersonalSign) {
+            return window.__e2ePersonalSign(params[0], params[1]);
+          }
+          // Anvil fallback: dummy signature
           return '0x' + '00'.repeat(65);
+        }
 
         case 'eth_sendTransaction': {
-          // Ensure 'from' is set to our test address
           const tx = { ...params[0], from: ADDRESS };
+          // Use exposed signing function for real chains (testnet mode)
+          if (window.__e2eSignAndSend) {
+            return window.__e2eSignAndSend(JSON.stringify({
+              ...tx,
+              chainId: currentChainId,
+              rpcUrl: getCurrentRpcUrl(),
+            }));
+          }
+          // Anvil fallback: forward unsigned
           return rpcCall('eth_sendTransaction', [tx]);
         }
 
