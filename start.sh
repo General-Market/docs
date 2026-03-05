@@ -982,10 +982,12 @@ for i in $(seq 1 $ISSUER_COUNT); do
     export ISSUER_ARBITRUM_RPC_URL="$ARB_RPC_URL"
     export ISSUER_ARBITRUM_CHAIN_ID="$ARB_CHAIN_ID"
     export ISSUER_BRIDGE_PROXY_ADDRESS="$BRIDGE_PROXY"
-    # Only pass DATA_NODE_URL when PostgreSQL is available (data-node needs it).
+    # Only pass DATA_NODE_URL when data-node is available (local PG or VPS).
     # Without it, issuers use BitgetPriceFetcher for asset prices and compute NAV locally
     # from on-chain inventory + live Bitget prices (no $1 fallback).
-    if $PG_ISREADY -q 2>/dev/null; then
+    if [ -n "$DATA_NODE_URL" ]; then
+        true  # Already set (e.g. VPS data-node URL from mutual exclusion check)
+    elif $PG_ISREADY -q 2>/dev/null; then
         export DATA_NODE_URL="http://localhost:8200"
     fi
 
@@ -995,7 +997,7 @@ for i in $(seq 1 $ISSUER_COUNT); do
         ISSUER_ARGS="$ISSUER_ARGS --vision-enabled"
         ISSUER_ARGS="$ISSUER_ARGS --vision-address $VISION_ADDR_CHECK"
         ISSUER_ARGS="$ISSUER_ARGS --vision-database-url postgres://localhost/index_prices"
-        ISSUER_ARGS="$ISSUER_ARGS --vision-data-node-url http://localhost:8200"
+        ISSUER_ARGS="$ISSUER_ARGS --vision-data-node-url ${DATA_NODE_URL:-http://localhost:8200}"
         ISSUER_ARGS="$ISSUER_ARGS --vision-rpc-ws-url $RPC_URL"
         ISSUER_ARGS="$ISSUER_ARGS --vision-arb-rpc-url $ARB_RPC_URL"
         ISSUER_ARGS="$ISSUER_ARGS --vision-arb-bridge-custody $ARB_CUSTODY"
@@ -1017,7 +1019,19 @@ echo -e "${BLUE}[9/$TOTAL_STEPS] Starting data-node service...${NC}"
 INDEX_ADDRESS=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['Index'])" 2>/dev/null || echo "")
 DATA_NODE_RUNNING=false
 
-if ! $PG_ISREADY -q 2>/dev/null; then
+# Mutual exclusion: check if VPS data-node is already running (shared API keys)
+VPS_DN_RUNNING=false
+if ssh index-maker/prod/postgres "pgrep -x data-node > /dev/null 2>&1" 2>/dev/null; then
+    VPS_DN_RUNNING=true
+fi
+
+if [ "$VPS_DN_RUNNING" = true ]; then
+    echo -e "  ${YELLOW}VPS data-node is running — skipping local (shared API keys)${NC}"
+    echo -e "  ${YELLOW}Stop VPS first: ./deploy.sh --stop${NC}"
+    # Still set DATA_NODE_URL to VPS for issuers/AP to use
+    export DATA_NODE_URL="http://142.132.164.24:8200"
+    DATA_NODE_RUNNING=true
+elif ! $PG_ISREADY -q 2>/dev/null; then
     echo -e "  ${YELLOW}PostgreSQL not running — skipping data-node${NC}"
     echo -e "  ${YELLOW}Charts won't work. Start PostgreSQL and re-run.${NC}"
 else
@@ -1089,7 +1103,7 @@ echo -e "${BLUE}[10/$TOTAL_STEPS] Starting AP with real Bitget price proxy...${N
 AP_ARGS="--port 9100 --rpc $RPC_URL --exchange-mode $EXCHANGE_MODE"
 AP_ARGS="$AP_ARGS --arb-rpc $ARB_RPC_URL --arb-chain-id $ARB_CHAIN_ID"
 AP_ARGS="$AP_ARGS --deployment-file deployments/active-deployment.json"
-[ "$DATA_NODE_RUNNING" = true ] && AP_ARGS="$AP_ARGS --data-node-url http://localhost:8200"
+[ "$DATA_NODE_RUNNING" = true ] && AP_ARGS="$AP_ARGS --data-node-url ${DATA_NODE_URL:-http://localhost:8200}"
 AP_ARGS="$AP_ARGS --log-level ${LOG_LEVEL}"
 
 [ -n "$INDEX_ADDRESS" ] && AP_ARGS="$AP_ARGS --index-contract $INDEX_ADDRESS"
