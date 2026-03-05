@@ -82,7 +82,7 @@ export ISSUER_MOCK_USDT="$MOCK_USDT"
 # Vision CLI args (only when Vision contract is deployed)
 VISION_ARGS=""
 if [ -n "$VISION" ] && [ "$VISION" != "null" ]; then
-    VISION_DB="${VISION_DATABASE_URL:-postgres://localhost/index_prices}"
+    VISION_DB="${VISION_DATABASE_URL:-postgres://max:max@localhost/index_prices}"
     VISION_ARGS="--vision-enabled --vision-address $VISION --vision-database-url $VISION_DB --vision-data-node-url http://localhost:8200 --vision-rpc-ws-url $RPC"
     echo "Vision: $VISION (DB: $VISION_DB)"
 fi
