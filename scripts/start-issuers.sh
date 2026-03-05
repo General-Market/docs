@@ -33,8 +33,10 @@ fi
 # Helper: read JSON field (works with python3, no jq needed)
 jval() { python3 -c "import json,sys; d=json.load(open('$DEPLOYMENT_FILE')); v=$1; print(v if v else '')" 2>/dev/null; }
 
-# Load from deployment file (fall back to ISSUER_RPC_URL env or localhost)
-RPC=$(jval "d.get('rpc','')")
+# Load from env var → deployment file → localhost fallback
+if [ -z "$RPC" ]; then
+    RPC=$(jval "d.get('rpc','')")
+fi
 RPC="${RPC:-${ISSUER_RPC_URL:-http://localhost:8545}}"
 INDEX=$(jval "d['contracts']['Index']")
 GOVERNANCE=$(jval "d['contracts']['Governance']")
