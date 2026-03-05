@@ -6,7 +6,9 @@
 # synchronized regardless of boot time stagger.
 
 set -e
-cd /Users/maxguillabert/Downloads/index
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$REPO_ROOT"
 export PATH="$HOME/.foundry/bin:$PATH"
 
 # Source system config if available (BITGET_PUB, BITGET_PK, BITGET_PASS)
@@ -95,9 +97,9 @@ ISSUER_PEERS="127.0.0.1:9002,127.0.0.1:9003" \
 $BINARY \
     --node-id 1 \
     --port 9001 \
-    --cycle-duration-ms 200 \
-    --min-cycle-gap-ms 20 \
-    --consensus-timeout-ms 150 \
+    --cycle-duration-ms 1000 \
+    --min-cycle-gap-ms 50 \
+    --consensus-timeout-ms 800 \
     --no-tls \
     --bridge-proxy "$BRIDGE_PROXY" \
     --test-key-seeds \
@@ -123,9 +125,9 @@ ISSUER_PEERS="127.0.0.1:9001,127.0.0.1:9003" \
 $BINARY \
     --node-id 2 \
     --port 9002 \
-    --cycle-duration-ms 200 \
-    --min-cycle-gap-ms 20 \
-    --consensus-timeout-ms 150 \
+    --cycle-duration-ms 1000 \
+    --min-cycle-gap-ms 50 \
+    --consensus-timeout-ms 800 \
     --no-tls \
     --bridge-proxy "$BRIDGE_PROXY" \
     --test-key-seeds \
@@ -151,9 +153,9 @@ ISSUER_PEERS="127.0.0.1:9001,127.0.0.1:9002" \
 $BINARY \
     --node-id 3 \
     --port 9003 \
-    --cycle-duration-ms 200 \
-    --min-cycle-gap-ms 20 \
-    --consensus-timeout-ms 150 \
+    --cycle-duration-ms 1000 \
+    --min-cycle-gap-ms 50 \
+    --consensus-timeout-ms 800 \
     --no-tls \
     --bridge-proxy "$BRIDGE_PROXY" \
     --test-key-seeds \

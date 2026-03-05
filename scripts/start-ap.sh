@@ -3,7 +3,9 @@
 # Reads contract addresses from deployments/active-deployment.json
 
 set -e
-cd /Users/maxguillabert/Downloads/index
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$REPO_ROOT"
 export PATH="$HOME/.foundry/bin:$PATH"
 
 # Source system config if available (BITGET_PUB, BITGET_PK, BITGET_PASS)
@@ -48,7 +50,8 @@ echo "Index: $INDEX"
 echo "MockBitgetVault: $BITGET_VAULT"
 echo "MockUSDT: $MOCK_USDT"
 echo "Exchange Mode: $EXCHANGE_MODE"
-echo "Data Node: http://localhost:8200"
+DATA_NODE_URL="${DATA_NODE_URL:-http://localhost:8200}"
+echo "Data Node: $DATA_NODE_URL"
 echo ""
 
 mkdir -p logs
@@ -68,7 +71,7 @@ AP_PRIVATE_KEY="$AP_KEY" \
     --bitget-vault "$BITGET_VAULT" \
     --deployment-file "$DEPLOYMENT_FILE" \
     ${MOCK_USDT:+--mock-usdt "$MOCK_USDT"} \
-    --data-node-url http://localhost:8200 \
+    --data-node-url "$DATA_NODE_URL" \
     --log-level info \
     > logs/ap.log 2>&1 &
 
