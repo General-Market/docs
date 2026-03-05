@@ -26,7 +26,7 @@ import {
 } from '../helpers/vision-api'
 
 const IS_TESTNET = process.env.E2E_TESTNET === '1'
-const ISSUER_API = IS_TESTNET ? 'http://116.203.156.98:10001' : 'http://localhost:10001'
+const ISSUER_API = IS_TESTNET ? 'http://116.203.156.98/issuer1' : 'http://localhost:10001'
 
 test.describe('Vision Claim Rewards', () => {
   test('balance proof is fetchable via proxy after tick resolution', async () => {

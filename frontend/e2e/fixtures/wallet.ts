@@ -45,7 +45,7 @@ export const L3_RPC_URL = process.env.E2E_L3_RPC_URL || (IS_TESTNET ? 'http://14
 export const RPC_URL = process.env.E2E_ARB_RPC_URL || (IS_TESTNET ? L3_RPC_URL : 'http://localhost:8546');
 
 /** Data-node backend */
-export const BACKEND_URL = process.env.E2E_BACKEND_URL || (IS_TESTNET ? 'http://116.203.156.98:8200' : 'http://localhost:8200');
+export const BACKEND_URL = process.env.E2E_BACKEND_URL || (IS_TESTNET ? 'http://116.203.156.98/data-node' : 'http://localhost:8200');
 
 /** Frontend URL */
 export const FRONTEND_URL = process.env.E2E_FRONTEND_URL || 'http://localhost:3000';

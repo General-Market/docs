@@ -9,7 +9,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { INDEX_ABI, BRIDGE_PROXY_ABI, ARB_CUSTODY_ABI, ERC20_ABI } from '../../lib/contracts/index-protocol-abi';
 
 const IS_TESTNET = process.env.E2E_TESTNET === '1';
-const BACKEND_URL = process.env.E2E_BACKEND_URL || (IS_TESTNET ? 'http://116.203.156.98:8200' : 'http://localhost:8200');
+const BACKEND_URL = process.env.E2E_BACKEND_URL || (IS_TESTNET ? 'http://116.203.156.98/data-node' : 'http://localhost:8200');
 const TEST_PRIVATE_KEY = (process.env.E2E_PRIVATE_KEY || '0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537') as `0x${string}`;
 
 /** Safely parse a hex RPC result to BigInt. Returns 0n for empty/null results. */
