@@ -146,7 +146,7 @@ impl PeerScorer {
             .filter(|e| e.value().score.load(Ordering::Relaxed) < 0)
             .count();
 
-        if total >= 3 && unhealthy > total / 3 {
+        if total >= 2 && unhealthy > total / 3 {
             tracing::error!(
                 code = "INFRA-023",
                 unhealthy,

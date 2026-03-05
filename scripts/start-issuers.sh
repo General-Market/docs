@@ -93,9 +93,17 @@ export ISSUER_DEPLOYMENT_FILE="$DEPLOYMENT_FILE"
 
 BINARY="./target/release/issuer"
 
-# Start all 3 issuers simultaneously (no sleep between starts!)
+# Start issuers with staggered startup for reliable P2P connections.
 # Wall-clock aligned mode: cycles derived from unix_timestamp_ms / cycle_duration_ms
 # --num-issuers 3: must match actual number of running nodes
+# --min-cycle-gap-ms 950: prevent WorkDriven desync when Vision batches are due
+
+# Clean up stale WAL files from previous runs
+rm -f logs/consensus-*.wal 2>/dev/null
+
+# Reduce log noise (hyper, sqlx debug output)
+export RUST_LOG="${RUST_LOG:-info}"
+
 echo "Starting Issuer 1 on port 9001..."
 ISSUER_NODE_ID=1 \
 ISSUER_PRIVATE_KEY="$ISSUER_1_KEY" \
@@ -124,6 +132,7 @@ $BINARY \
     $VISION_ARGS \
     > logs/issuer-1.log 2>&1 &
 ISSUER_1_PID=$!
+sleep 1  # Stagger: let issuer-1 bind its port before issuer-2 connects
 
 echo "Starting Issuer 2 on port 9002..."
 ISSUER_NODE_ID=2 \
@@ -153,6 +162,7 @@ $BINARY \
     $VISION_ARGS \
     > logs/issuer-2.log 2>&1 &
 ISSUER_2_PID=$!
+sleep 1  # Stagger: let issuer-2 bind its port before issuer-3 connects
 
 echo "Starting Issuer 3 on port 9003..."
 ISSUER_NODE_ID=3 \

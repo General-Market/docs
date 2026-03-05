@@ -4,6 +4,7 @@ import createNextIntlPlugin from "next-intl/plugin";
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3001";
+const DATA_NODE_URL = process.env.DATA_NODE_URL || "http://localhost:8200";
 const VISION_API_URL = process.env.NEXT_PUBLIC_VISION_API_URL || "http://localhost:10001";
 const DOCS_URL = process.env.DOCS_URL || "https://generalmarket.mintlify.dev";
 const isDev = process.env.NODE_ENV !== "production";
@@ -57,7 +58,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://us-assets.i.posthog.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: https://*.walletconnect.com; connect-src 'self' https://cdn.jsdelivr.net http://142.132.164.24 wss://relay.walletconnect.com https://*.walletconnect.com https://*.reown.com https://rpc.walletconnect.org https://us.i.posthog.com https://us-assets.i.posthog.com${isDev ? " http://localhost:* ws://localhost:*" : ""}; frame-src https://www.youtube-nocookie.com https://www.youtube.com https://secure.walletconnect.com https://secure.walletconnect.org; frame-ancestors 'none'`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://us-assets.i.posthog.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: https://*.walletconnect.com; connect-src 'self' https://cdn.jsdelivr.net http://142.132.164.24 http://116.203.156.98 wss://relay.walletconnect.com https://*.walletconnect.com https://*.reown.com https://rpc.walletconnect.org https://us.i.posthog.com https://us-assets.i.posthog.com${isDev ? " http://localhost:* ws://localhost:*" : ""}; frame-src https://www.youtube-nocookie.com https://www.youtube.com https://secure.walletconnect.com https://secure.walletconnect.org; frame-ancestors 'none'`,
           },
         ],
       },
@@ -119,11 +120,11 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/api/vision/snapshot/meta",
-        destination: "http://localhost:8200/snapshot/meta",
+        destination: `${DATA_NODE_URL}/snapshot/meta`,
       },
       {
         source: "/api/vision/snapshot",
-        destination: "http://localhost:8200/snapshot",
+        destination: `${DATA_NODE_URL}/snapshot`,
       },
       {
         source: "/api/vision/:path*",
