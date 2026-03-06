@@ -24,11 +24,12 @@ use common::types::{BLSSignature, PeerId};
 use crate::chain::{CrossChainOrder, CrossChainOrderData};
 use crate::consensus::ConsensusError;
 
+use super::signature_manager::SignatureCollectionManager;
 use super::types::{
     build_bridge_arb_to_l3_hash, build_bridge_l3_to_arb_hash, build_confirm_batch_calldata,
     build_confirm_batch_hash, build_confirm_fills_calldata, build_confirm_fills_hash,
     build_custody_execute_calldata, build_custody_execute_hash, build_erc20_approve_calldata,
-    build_erc20_transfer_calldata, build_release_to_vault_hash, build_submit_order_calldata,
+    build_release_to_vault_hash,
     build_submit_order_for_calldata, build_submit_order_hash,
     build_usdc_transfer_calldata_with_amount, BatchProposal, BatchResult, BridgeConfig,
     BridgeError, BridgeL3ToArbProposal, BridgeL3ToArbResult, BridgeOrderStatus, BridgeProposal,
@@ -81,8 +82,8 @@ pub struct BridgeOrchestrator {
     peer_id: PeerId,
     /// This node's index in the issuer set
     node_index: u8,
-    /// Signature collectors for pending bridge proposals (Story 7.2)
-    pending_signatures: RwLock<HashMap<U256, SignatureCollector>>,
+    /// Generic signature manager for bridge Arb→L3 proposals (replaces pending_signatures)
+    bridge_sigs: SignatureCollectionManager<U256>,
     /// Signature collectors for pending submit order proposals (Story 7.3)
     submit_order_signatures: RwLock<HashMap<U256, SignatureCollector>>,
     /// Signature collectors for batch confirmation proposals (Story 7.4)
@@ -190,7 +191,7 @@ impl BridgeOrchestrator {
             bls_signer: Bn254BLSSigner::new(),
             peer_id,
             node_index,
-            pending_signatures: RwLock::new(HashMap::new()),
+            bridge_sigs: SignatureCollectionManager::new("bridge"),
             submit_order_signatures: RwLock::new(HashMap::new()),
             batch_signatures: RwLock::new(HashMap::new()),
             fills_signatures: RwLock::new(HashMap::new()),
@@ -764,20 +765,9 @@ impl BridgeOrchestrator {
 
     /// Start collecting signatures for a proposal (leader)
     pub async fn start_signature_collection(&self, order_id: U256, leader_signature: BLSSignature) {
-        let mut collectors = self.pending_signatures.write().await;
-
-        // Create new collector
-        let mut collector = SignatureCollector::new(order_id);
-
-        // Add leader's own signature (leader is always at index)
-        collector.add_signature(self.node_index, leader_signature);
-
-        collectors.insert(order_id, collector);
-
-        debug!(
-            order_id = %order_id,
-            "Started signature collection for bridge proposal"
-        );
+        self.bridge_sigs
+            .start_collection(order_id, self.node_index, leader_signature)
+            .await;
     }
 
     /// Add a follower signature to the collection (leader)
@@ -789,71 +779,22 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<BridgeResult>, BridgeError> {
-        let mut collectors = self.pending_signatures.write().await;
-
-        let collector = collectors.get_mut(&order_id).ok_or_else(|| {
-            BridgeError::OrderNotFound { order_id }
-        })?;
-
-        // Add the signature
-        if !collector.add_signature(signer_index, signature.clone()) {
-            debug!(
-                order_id = %order_id,
-                signer_index = signer_index,
-                "Duplicate signature rejected"
-            );
-            return Ok(None);
-        }
-
-        info!(
-            order_id = %order_id,
-            signer_index = signer_index,
-            collected = collector.signature_count(),
-            required = self.config.min_signatures,
-            "Added follower signature"
-        );
-
-        // Check if threshold reached
-        if collector.has_threshold(self.config.min_signatures) {
-            // Aggregate signatures
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .map_err(|e| ConsensusError::BlsSigningError {
-                    reason: e.to_string(),
-                })?;
-
-            info!(
-                order_id = %order_id,
-                signature_count = collector.signature_count(),
-                signer_bitmap = %collector.signer_bitmap(),
-                "Signature threshold reached, bridge ready for execution"
-            );
-
-            Ok(Some(BridgeResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            }))
-        } else {
-            Ok(None)
-        }
+        self.bridge_sigs
+            .add_follower_signature(
+                &order_id,
+                signer_index,
+                signature,
+                self.config.min_signatures,
+                &self.bls_signer,
+            )
+            .await
     }
 
     /// Check if signature collection has timed out
     pub async fn check_signature_timeout(&self, order_id: &U256) -> bool {
-        let collectors = self.pending_signatures.read().await;
-        if let Some(collector) = collectors.get(order_id) {
-            collector.is_timed_out(self.config.sign_timeout_ms)
-        } else {
-            false
-        }
+        self.bridge_sigs
+            .is_timed_out(order_id, self.config.sign_timeout_ms)
+            .await
     }
 
     /// Check if signature threshold has been reached for an order (Story 7.9 Task 4)
@@ -861,58 +802,21 @@ impl BridgeOrchestrator {
     /// Used by the polling loop in ConsensusProtocol to detect when enough signatures
     /// have been collected. Returns Some(BridgeResult) if threshold is reached, None otherwise.
     pub async fn check_threshold_reached(&self, order_id: &U256) -> Option<BridgeResult> {
-        let collectors = self.pending_signatures.read().await;
-        let collector = collectors.get(order_id)?;
-
-        if collector.has_threshold(self.config.min_signatures) {
-            // Aggregate signatures
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            match self.bls_signer.aggregate_signatures(signatures) {
-                Ok(aggregated_signature) => {
-                    debug!(
-                        order_id = %order_id,
-                        signature_count = collector.signature_count(),
-                        signer_bitmap = %collector.signer_bitmap(),
-                        "Threshold check: signatures collected"
-                    );
-
-                    Some(BridgeResult {
-                        aggregated_signature,
-                        signer_bitmap: collector.signer_bitmap(),
-                        signature_count: collector.signature_count(),
-                    })
-                }
-                Err(e) => {
-                    warn!(
-                        order_id = %order_id,
-                        error = %e,
-                        "Failed to aggregate signatures in threshold check"
-                    );
-                    None
-                }
-            }
-        } else {
-            None
-        }
+        self.bridge_sigs
+            .check_threshold(order_id, self.config.min_signatures, &self.bls_signer)
+            .await
     }
 
     /// Get the current signature count for an order (for timeout diagnostics)
     ///
     /// Returns Some(count) if the order has a pending signature collector, None otherwise.
     pub async fn get_signature_count(&self, order_id: &U256) -> Option<usize> {
-        let collectors = self.pending_signatures.read().await;
-        collectors.get(order_id).map(|c| c.signature_count())
+        self.bridge_sigs.get_signature_count(order_id).await
     }
 
     /// Get notifier for a signature collector (wakes on new signature arrival)
-    pub async fn get_notifier(&self, order_id: &U256) -> Option<std::sync::Arc<tokio::sync::Notify>> {
-        let collectors = self.pending_signatures.read().await;
-        collectors.get(order_id).map(|c| c.notifier())
+    pub async fn get_notifier(&self, order_id: &U256) -> Option<Arc<Notify>> {
+        self.bridge_sigs.get_notifier(order_id).await
     }
 
     // ========================================================================
@@ -986,20 +890,7 @@ impl BridgeOrchestrator {
 
     /// Clean up stale signature collectors
     pub async fn cleanup_stale_collectors(&self, max_age_ms: u64) {
-        let mut collectors = self.pending_signatures.write().await;
-        let stale_orders: Vec<U256> = collectors
-            .iter()
-            .filter(|(_, c)| c.elapsed_ms() > max_age_ms)
-            .map(|(id, _)| *id)
-            .collect();
-
-        for order_id in stale_orders {
-            debug!(
-                order_id = %order_id,
-                "Removing stale signature collector"
-            );
-            collectors.remove(&order_id);
-        }
+        self.bridge_sigs.cleanup_stale(max_age_ms).await;
 
         // Also clean up submit order collectors (Story 7.3)
         let mut submit_collectors = self.submit_order_signatures.write().await;
