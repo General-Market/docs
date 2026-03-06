@@ -6,7 +6,10 @@ export const REWRITES_BACKEND_URL = process.env.BACKEND_URL || 'http://localhost
 export const AA_DATA_NODE_URL = process.env.AA_DATA_NODE_URL || 'http://localhost:8200'
 
 // Client-side URLs (NEXT_PUBLIC_ prefix required for Next.js browser exposure)
-export const DATA_NODE_URL = process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200'
+// In production, use /dn proxy (Next.js rewrite) to avoid mixed content (HTTP data-node on HTTPS page)
+export const DATA_NODE_URL = typeof window !== 'undefined' && window.location.protocol === 'https:'
+  ? '/dn'
+  : (process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200')
 export const L3_RPC_URL = process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
 export const ARB_RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'
 export const AP_URL = process.env.NEXT_PUBLIC_AP_URL || 'http://localhost:9100'

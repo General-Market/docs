@@ -118,6 +118,11 @@ const nextConfig: NextConfig = {
         source: "/api/snapshots/:path*",
         destination: `${BACKEND_URL}/api/snapshots/:path*`,
       },
+      // Data-node proxy — all client-side data-node calls go through /dn/* to avoid mixed content
+      {
+        source: "/dn/:path*",
+        destination: `${DATA_NODE_URL}/:path*`,
+      },
       {
         source: "/api/vision/snapshot/meta",
         destination: `${DATA_NODE_URL}/snapshot/meta`,
