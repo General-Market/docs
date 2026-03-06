@@ -14,7 +14,7 @@ import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { indexL3 } from '@/lib/wagmi'
 import type { BetDirection } from '@/lib/vision/bitmap'
 import { getBatchTickState, getMultiplier } from '@/lib/vision/tick'
-import { getSource } from '@/lib/vision/sources'
+import { getSource, getBatchKey } from '@/lib/vision/sources'
 import { VISION_USDC_DECIMALS, VISION_ADDRESS } from '@/lib/vision/constants'
 import batchConfig from '@/lib/contracts/vision-batches.json'
 import { BalanceDepositModal } from '../BalanceDepositModal'
@@ -54,7 +54,9 @@ export default function BatchEntryPanel({
   const activeBatch = useMemo(() => {
     if (!batches || batches.length === 0) return null
     // Use vision-batches.json to find the batchId for this source
-    const entry = (batchConfig.batches as Record<string, { batchId: number }>)[sourceId]
+    // Batch keys are data-node source names (e.g. "stocks"), not frontend IDs (e.g. "finnhub")
+    const bk = getBatchKey(sourceId)
+    const entry = (batchConfig.batches as Record<string, { batchId: number }>)[bk]
     if (entry) {
       return batches.find(b => b.id === entry.batchId) ?? null
     }

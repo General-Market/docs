@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import type { SnapshotPrice } from '@/hooks/vision/useMarketSnapshot'
-import { getSource, getAssetCountForSource, getDataNodeSourceId, getSourceValueLabel, isSourcePriceType, getSourceUnit } from '@/lib/vision/sources'
+import { getSource, getAssetCountForSource, getDataNodeSourceId, getSourceValueLabel, isSourcePriceType, getSourceUnit, getBatchKey } from '@/lib/vision/sources'
 import type { BitmapEditor, CellState } from '@/hooks/vision/useBitmapEditor'
 import { useBatches } from '@/hooks/vision/useBatches'
 import batchConfig from '@/lib/contracts/vision-batches.json'
@@ -226,7 +226,7 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
   const resolutionMap = useMemo(() => {
     const map = new Map<string, string>()
     if (!batches) return map
-    const entry = (batchConfig.batches as Record<string, { batchId: number }>)[sourceId]
+    const entry = (batchConfig.batches as Record<string, { batchId: number }>)[getBatchKey(sourceId)]
     const batch = entry ? batches.find(b => b.id === entry.batchId) : batches[0]
     if (!batch) return map
     batch.marketIds.forEach((mid, i) => {

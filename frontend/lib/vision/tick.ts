@@ -8,7 +8,7 @@
  */
 
 import batchConfig from '@/lib/contracts/vision-batches.json'
-import { VISION_SOURCES, type SourceCategory } from '@/lib/vision/sources'
+import { VISION_SOURCES, type SourceCategory, getVisionSourceId } from '@/lib/vision/sources'
 
 // Legacy global values (kept for backward compat where needed)
 export const TICK_DURATION = batchConfig.tickDuration  // 30 seconds
@@ -104,7 +104,9 @@ export function getSourceKeyForBatch(batchId: number): string | undefined {
 export function getBatchDisplayName(batchId: number): string {
   const key = batchIdToSourceKey[batchId]
   if (!key) return `Batch #${batchId}`
-  const source = VISION_SOURCES.find(s => s.id === key)
+  // Batch keys are data-node names (e.g. "stocks"), map to frontend IDs (e.g. "finnhub")
+  const frontendId = getVisionSourceId(key)
+  const source = VISION_SOURCES.find(s => s.id === frontendId)
   return source?.name ?? key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ')
 }
 
@@ -112,7 +114,8 @@ export function getBatchDisplayName(batchId: number): string {
 export function getBatchLogo(batchId: number): string | undefined {
   const key = batchIdToSourceKey[batchId]
   if (!key) return undefined
-  const source = VISION_SOURCES.find(s => s.id === key)
+  const frontendId = getVisionSourceId(key)
+  const source = VISION_SOURCES.find(s => s.id === frontendId)
   return source?.logo
 }
 
@@ -130,7 +133,8 @@ export interface StaticBatch {
 export function getAllBatches(): StaticBatch[] {
   return Object.entries(batchConfig.batches).map(([key, entry]) => {
     const e = entry as { batchId: number; configHash: string }
-    const source = VISION_SOURCES.find(s => s.id === key)
+    const frontendId = getVisionSourceId(key)
+    const source = VISION_SOURCES.find(s => s.id === frontendId)
     const category: SourceCategory = source?.category ?? 'finance'
     return {
       batchId: e.batchId,

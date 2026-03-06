@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from '@/i18n/routing'
-import { getSource, getAssetCountForSource, getSourceStatusFromMeta, getDataNodeSourceId } from '@/lib/vision/sources'
+import { getSource, getAssetCountForSource, getSourceStatusFromMeta, getDataNodeSourceId, getBatchKey } from '@/lib/vision/sources'
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
@@ -55,7 +55,9 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
   const activeBatch = useMemo(() => {
     if (!batches || batches.length === 0) return null
     // Use vision-batches.json to find the batchId for this source
-    const entry = (batchConfig.batches as Record<string, { batchId: number }>)[sourceId]
+    // Batch keys are data-node source names (e.g. "stocks"), not frontend IDs (e.g. "finnhub")
+    const batchKey = getBatchKey(sourceId)
+    const entry = (batchConfig.batches as Record<string, { batchId: number }>)[batchKey]
     if (entry) {
       return batches.find(b => b.id === entry.batchId) ?? null
     }

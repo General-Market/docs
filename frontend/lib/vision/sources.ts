@@ -209,6 +209,24 @@ const VISION_TO_DATANODE: Record<string, string[]> = {
   weather: ['weather_stations'],
 }
 
+/** Reverse of VISION_TO_DATANODE: data-node ID → frontend source ID */
+const DATANODE_TO_VISION: Record<string, string> = {}
+for (const [visionId, dnIds] of Object.entries(VISION_TO_DATANODE)) {
+  for (const dnId of dnIds) {
+    DATANODE_TO_VISION[dnId] = visionId
+  }
+}
+
+/** Get frontend source ID from a batch/data-node key */
+export function getVisionSourceId(batchKey: string): string {
+  return DATANODE_TO_VISION[batchKey] ?? batchKey
+}
+
+/** Get batch config key from a frontend source ID (e.g. 'finnhub' → 'stocks') */
+export function getBatchKey(frontendSourceId: string): string {
+  return VISION_TO_DATANODE[frontendSourceId]?.[0] ?? frontendSourceId
+}
+
 /** Get the primary data-node source ID for a VISION_SOURCE */
 export function getDataNodeSourceId(visionSourceId: string): string {
   const mapped = VISION_TO_DATANODE[visionSourceId]
