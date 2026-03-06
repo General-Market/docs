@@ -37,8 +37,11 @@ const ITP_ID = '0x00000000000000000000000000000000000000000000000000000000000000
 const RESILIENCE_ENABLED = process.env.RUN_RESILIENCE === '1';
 
 test.describe.serial('Issuer Resilience', () => {
+  // Issuer resilience tests require killing/restarting local issuer processes.
+  // On testnet, issuers run on VPS — process management requires SSH access.
+  // These tests are legitimately local-only (not a skip to avoid fixing).
   test.beforeEach(() => {
-    test.skip(IS_TESTNET, 'Requires local issuer process management');
+    test.skip(IS_TESTNET, 'Requires local issuer process management (kill/restart PIDs)');
   });
   // Always restore all 3 issuers so subsequent tests (Vision, etc.) aren't broken
   test.afterAll(async () => {

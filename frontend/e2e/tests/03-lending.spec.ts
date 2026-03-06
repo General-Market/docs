@@ -5,17 +5,13 @@ import {
   itpCard,
   lendingModal,
 } from '../helpers/selectors';
-import { getL3UserShares, mintL3Shares, mintBridgedItp, rebalanceItp } from '../helpers/backend-api';
+import { getL3UserShares, mintL3Shares, mintBridgedItp, rebalanceItp, placeBuyOrderDirect, pollUntil } from '../helpers/backend-api';
 
 const IS_TESTNET = process.env.E2E_TESTNET === '1';
 
 test.describe('Lending (Deposit → Borrow → Repay → Withdraw)', () => {
-  test.beforeEach(() => {
-    test.skip(IS_TESTNET, 'Requires mintL3Shares (Anvil storage manipulation)');
-  });
-
   test('full lending cycle', async ({ walletPage: page }) => {
-    test.setTimeout(240_000); // 4 min — Morpho txs + rebalance on Anvil can be slow
+    test.setTimeout(300_000); // 5 min — includes potential buy flow on testnet
     // ── Setup: connect wallet ────────────────────────────────
     const connectBtn = connectWalletButton(page);
     await expect(connectBtn).toBeVisible({ timeout: 15_000 });
@@ -27,14 +23,30 @@ test.describe('Lending (Deposit → Borrow → Repay → Withdraw)', () => {
     // Wait for ITP listing
     await expect(itpCard(page).first()).toBeVisible({ timeout: 30_000 });
 
-    // Ensure user has L3 ITP shares (mint if needed)
-    const shares = await getL3UserShares(TEST_ADDRESS, ITP_ID);
+    // Ensure user has L3 ITP shares
+    let shares = await getL3UserShares(TEST_ADDRESS, ITP_ID);
     if (shares === 0n) {
-      await mintL3Shares(TEST_ADDRESS, ITP_ID, 100n * 10n ** 18n);
+      if (IS_TESTNET) {
+        // On testnet, place a real buy order to get shares
+        console.log('No L3 shares — placing buy order on testnet...');
+        await placeBuyOrderDirect(TEST_ADDRESS, ITP_ID, 100n * 10n ** 6n, 10n * 10n ** 18n);
+        shares = await pollUntil(
+          () => getL3UserShares(TEST_ADDRESS, ITP_ID),
+          (s) => s > 0n,
+          120_000,
+          3_000,
+        );
+        console.log(`Buy order filled — shares: ${shares}`);
+      } else {
+        await mintL3Shares(TEST_ADDRESS, ITP_ID, 100n * 10n ** 18n);
+      }
     }
 
     // Ensure user has BridgedITP on Arb (lending UI checks this balance)
-    await mintBridgedItp(TEST_ADDRESS, ITP_ID, 100n * 10n ** 18n);
+    if (!IS_TESTNET) {
+      await mintBridgedItp(TEST_ADDRESS, ITP_ID, 100n * 10n ** 18n);
+    }
+    // On testnet, BridgedITP should exist from prior bridge buy test (08)
 
     // ── Open Lending Modal ───────────────────────────────────
     const borrowBtn = borrowButtonOnCard(page);

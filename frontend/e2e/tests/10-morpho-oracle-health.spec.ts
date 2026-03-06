@@ -194,9 +194,18 @@ async function borrow(user: string, amount: bigint): Promise<void> {
 const USER2 = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'; // Anvil account #1
 
 test.describe('Morpho Oracle & Health Factor', () => {
-  // Skip all Morpho tests on testnet — they require anvil_setStorageAt for oracle manipulation
-  test.beforeEach(() => {
-    test.skip(IS_TESTNET, 'Requires Anvil storage manipulation');
+  // Skip entire suite if Morpho contracts are not deployed at the expected addresses
+  // (morpho-deployment.json contains local Anvil addresses — testnet may have different deployment)
+  test.beforeEach(async () => {
+    if (!MORPHO || !ORACLE || !MARKET_ID) {
+      test.skip(true, 'Morpho deployment file not found or incomplete');
+      return;
+    }
+    // Check if MORPHO contract has code at the expected address
+    const code = await l3RpcCall('eth_getCode', [MORPHO, 'latest']) as string;
+    if (!code || code === '0x' || code === '0x0') {
+      test.skip(true, 'Morpho contracts not deployed at expected addresses on this chain');
+    }
   });
 
   test('oracle price is readable and matches deployment', async () => {
@@ -213,6 +222,7 @@ test.describe('Morpho Oracle & Health Factor', () => {
   });
 
   test('oracle price change affects max borrow', async ({ walletPage: page }) => {
+    test.skip(IS_TESTNET, 'Requires anvil_setStorageAt for oracle price manipulation');
     test.setTimeout(120_000);
 
     // Setup: mint collateral tokens and supply to Morpho
@@ -293,6 +303,7 @@ test.describe('Morpho Oracle & Health Factor', () => {
   });
 
   test('LLTV boundary: cannot borrow beyond 77%', async () => {
+    test.skip(IS_TESTNET, 'Requires anvil_impersonateAccount for collateral supply');
     test.setTimeout(60_000);
 
     const USER3 = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'; // Anvil account #2
@@ -341,6 +352,7 @@ test.describe('Morpho Oracle & Health Factor', () => {
   });
 
   test('oracle price update emits correct values', async () => {
+    test.skip(IS_TESTNET, 'Requires anvil_setStorageAt for oracle price manipulation');
     test.setTimeout(30_000);
 
     // Set a specific price and verify

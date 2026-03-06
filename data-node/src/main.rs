@@ -238,21 +238,20 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         }
     };
 
-    // Start CoinGecko market-cap collector (if API key configured)
+    // Start CoinGecko market-cap collector (always — free tier fallback if no key)
     let logos_dir = std::path::PathBuf::from(&args.logos_dir);
-    if let Some(ref cg_api_key) = args.coingecko_api_key {
+    {
         let cg_pool = pool.clone();
         let cg_state = Arc::new(cg_collector::CgCollectorState::new());
-        let cg_key = cg_api_key.clone();
+        let cg_key = args.coingecko_api_key.clone().unwrap_or_default();
         let cg_poll = args.cg_poll_interval;
         let cg_logos_dir = logos_dir.clone();
         let cg_lim = cg_limiter.clone();
+        let tier_label = if cg_key.starts_with("CG-") { "demo" } else if cg_key.is_empty() { "free" } else { "pro" };
         tokio::spawn(async move {
             cg_collector::run(cg_pool, cg_state, cg_key, cg_poll, cg_logos_dir, cg_lim).await;
         });
-        info!("CoinGecko market-cap collector started");
-    } else {
-        info!("CoinGecko collector skipped (no COINGECKO_API_KEY configured)");
+        info!("CoinGecko market-cap collector started (tier: {tier_label})");
     }
 
     // Start daily listing sync in background

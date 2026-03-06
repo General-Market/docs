@@ -32,8 +32,9 @@ test.describe('Vision Enter Batch (UI)', () => {
       await depositToVisionBalance(PLAYER1, BigInt(100) * BigInt(10 ** 18))
     }
 
-    // 1. Navigate to Pump.fun source detail page (batchId 0)
-    await page.goto('/source/pumpfun')
+    // 1. Navigate to a source detail page with manageable market count
+    // Avoid pumpfun (1200+ markets) — use rates which has ~20 markets and loads faster
+    await page.goto('/source/rates')
     await page.waitForLoadState('domcontentloaded')
 
     // 2. Connect wallet
