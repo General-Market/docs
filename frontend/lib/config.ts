@@ -1,11 +1,15 @@
 // Centralized runtime URL configuration
 // All hooks/components import from here instead of redeclaring env vars locally.
 
-// Server-side URLs (only used in next.config.ts / API routes — no NEXT_PUBLIC_ prefix)
+// ── Server-side URLs (API routes, next.config.ts rewrites) ──
 export const REWRITES_BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001'
 export const AA_DATA_NODE_URL = process.env.AA_DATA_NODE_URL || 'http://localhost:8200'
+export const L3_RPC_SERVER = process.env.L3_RPC_URL || process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
+export const DATA_NODE_SERVER = process.env.DATA_NODE_URL || process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200'
+export const ISSUER_VISION_URL = process.env.ISSUER_VISION_URL || 'http://localhost:10001'
+export const CSP_CONNECT_EXTRA = process.env.CSP_CONNECT_EXTRA || ''
 
-// Client-side URLs (NEXT_PUBLIC_ prefix required for Next.js browser exposure)
+// ── Client-side URLs (NEXT_PUBLIC_ prefix for browser exposure) ──
 // In production, use /dn proxy (Next.js rewrite) to avoid mixed content (HTTP data-node on HTTPS page)
 export const DATA_NODE_URL = typeof window !== 'undefined' && window.location.protocol === 'https:'
   ? '/dn'

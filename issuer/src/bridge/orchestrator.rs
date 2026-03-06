@@ -85,11 +85,12 @@ pub struct BridgeOrchestrator {
     /// Generic signature manager for bridge Arb→L3 proposals (replaces pending_signatures)
     bridge_sigs: SignatureCollectionManager<U256>,
     /// Signature collectors for pending submit order proposals (Story 7.3)
+    /// SPECIAL CASE: SubmitOrderResult has extra l3_order_id field, kept hand-written
     submit_order_signatures: RwLock<HashMap<U256, SignatureCollector>>,
-    /// Signature collectors for batch confirmation proposals (Story 7.4)
-    batch_signatures: RwLock<HashMap<u64, SignatureCollector>>,
-    /// Signature collectors for fills confirmation proposals (Story 7.4)
-    fills_signatures: RwLock<HashMap<u64, SignatureCollector>>,
+    /// Generic signature manager for batch confirmation proposals (Story 7.4)
+    batch_sigs: SignatureCollectionManager<u64>,
+    /// Generic signature manager for fills confirmation proposals (Story 7.4)
+    fills_sigs: SignatureCollectionManager<u64>,
     /// Order status tracking
     order_status: RwLock<HashMap<U256, BridgeOrderStatus>>,
     /// Processed order IDs (for replay protection)
@@ -103,37 +104,33 @@ pub struct BridgeOrchestrator {
     /// Custody nonces (for BLSCustody.execute replay protection) - Story 7.4 Task 7.5
     /// Maps custody_address -> next_nonce to use
     custody_nonces: RwLock<HashMap<Address, U256>>,
-    /// Signature collectors for L3→Arb bridge proposals (Story 7.5)
-    /// Keyed by cycle_number
-    l3_to_arb_signatures: RwLock<HashMap<u64, SignatureCollector>>,
+    /// Generic signature manager for L3→Arb bridge proposals (Story 7.5)
+    l3_to_arb_sigs: SignatureCollectionManager<u64>,
     /// Confirmed L3→Arb bridge cycles (for deduplication) - Story 7.5
     confirmed_l3_to_arb: RwLock<HashMap<u64, H256>>, // cycle_number -> tx_hash
-    /// Signature collectors for custody release to vault proposals (Story 7.6)
-    /// Keyed by cycle_number
-    release_signatures: RwLock<HashMap<u64, SignatureCollector>>,
+    /// Generic signature manager for custody release to vault proposals (Story 7.6)
+    release_sigs: SignatureCollectionManager<u64>,
     /// Confirmed custody releases (for deduplication) - Story 7.6
     confirmed_releases: RwLock<HashMap<u64, H256>>, // cycle_number -> tx_hash
     /// Order amounts tracking: order_id → amount (for validation) - Story 7.6 code review fix
     order_amounts: RwLock<HashMap<U256, U256>>,
     /// Order limit prices: order_id → limit_price (for E126 fill price validation)
     order_limit_prices: RwLock<HashMap<U256, (U256, u8)>>, // (limit_price, side)
-    /// Signature collectors for rebalance batch proposals (Story 7-14)
-    /// Keyed by cycle_number
-    rebalance_batch_signatures: RwLock<HashMap<u64, SignatureCollector>>,
+    /// Generic signature manager for rebalance batch proposals (Story 7-14)
+    rebalance_batch_sigs: SignatureCollectionManager<u64>,
     /// Confirmed rebalance batches (for deduplication) - Story 7-14
     confirmed_rebalance_batches: RwLock<HashMap<u64, H256>>,
-    /// Signature collectors for update weights proposals (Story 7-14)
-    /// Keyed by itp_id
-    update_weights_signatures: RwLock<HashMap<H256, SignatureCollector>>,
+    /// Generic signature manager for update weights / rebalance proposals (Story 7-14)
+    /// Also used by single-phase rebalance (same key space: itp_id)
+    update_weights_sigs: SignatureCollectionManager<H256>,
     /// Confirmed weight updates (for deduplication) - Story 7-14
     confirmed_weight_updates: RwLock<HashMap<H256, H256>>,
     /// In-progress rebalances: itp_id → timestamp when started
     /// Prevents concurrent cycles from racing on the same rebalance.
     /// Entries auto-expire after 60s to handle leader crashes.
     processing_rebalances: RwLock<HashMap<H256, Instant>>,
-    /// Signature collectors for asset trades proposals (issuer-driven settlement)
-    /// Keyed by cycle_number
-    asset_trades_signatures: RwLock<HashMap<u64, SignatureCollector>>,
+    /// Generic signature manager for asset trades proposals (issuer-driven settlement)
+    asset_trades_sigs: SignatureCollectionManager<u64>,
     /// Confirmed asset trades (for deduplication)
     confirmed_asset_trades: RwLock<HashMap<u64, H256>>,
     /// Stale order watchdog for detecting stuck orders
@@ -142,10 +139,10 @@ pub struct BridgeOrchestrator {
     sell_order_status: RwLock<HashMap<U256, BridgeOrderStatus>>,
     /// Processed sell order IDs (for replay protection)
     processed_sell_orders: RwLock<HashMap<U256, H256>>, // order_id -> tx_hash
-    /// Signature collectors for submit sell order proposals
-    submit_sell_order_signatures: RwLock<HashMap<U256, SignatureCollector>>,
-    /// Signature collectors for complete sell order proposals
-    complete_sell_order_signatures: RwLock<HashMap<U256, SignatureCollector>>,
+    /// Generic signature manager for submit sell order proposals
+    sell_bridge_sigs: SignatureCollectionManager<U256>,
+    /// Generic signature manager for complete sell order proposals
+    complete_sell_sigs: SignatureCollectionManager<U256>,
     /// Order ID mappings for sell: arb_sell_order_id → OrderMapping
     sell_order_mappings: RwLock<HashMap<U256, OrderMapping>>,
     /// Sell order amounts: order_id → amount
@@ -154,23 +151,22 @@ pub struct BridgeOrchestrator {
     order_itp_ids: RwLock<HashMap<U256, H256>>,
     /// Sell order ITP IDs: order_id → itp_id (for multi-ITP support)
     sell_order_itp_ids: RwLock<HashMap<U256, H256>>,
-    /// Signature collectors for record collateral move proposals (8-step bridge)
-    collateral_move_signatures: RwLock<HashMap<u64, SignatureCollector>>,
+    /// Generic signature manager for record collateral move proposals (8-step bridge)
+    collateral_move_sigs: SignatureCollectionManager<u64>,
     /// Confirmed collateral moves (for deduplication)
     confirmed_collateral_moves: RwLock<HashMap<u64, H256>>,
-    /// Signature collectors for mint bridged shares proposals (8-step bridge)
-    mint_shares_signatures: RwLock<HashMap<u64, SignatureCollector>>,
+    /// Generic signature manager for mint bridged shares proposals (8-step bridge)
+    mint_shares_sigs: SignatureCollectionManager<u64>,
     /// Confirmed mint bridged shares (for deduplication)
     confirmed_mint_shares: RwLock<HashMap<u64, H256>>,
-    /// Signature collectors for completeBuyOrder proposals
-    complete_buy_signatures: RwLock<HashMap<u64, SignatureCollector>>,
+    /// Generic signature manager for completeBuyOrder proposals
+    complete_buy_sigs: SignatureCollectionManager<u64>,
     /// Confirmed completeBuyOrder (for deduplication)
     confirmed_complete_buy: RwLock<HashMap<u64, bool>>,
     /// Notify for completeBuyOrder signature collection
     pub complete_buy_notify: Arc<Notify>,
-    /// Signature collectors for setItpNav proposals (rebalance NAV consensus)
-    /// Keyed by itp_id
-    nav_signatures: RwLock<HashMap<H256, SignatureCollector>>,
+    /// Generic signature manager for setItpNav proposals (rebalance NAV consensus)
+    nav_sigs: SignatureCollectionManager<H256>,
 }
 
 impl BridgeOrchestrator {
@@ -193,46 +189,46 @@ impl BridgeOrchestrator {
             node_index,
             bridge_sigs: SignatureCollectionManager::new("bridge"),
             submit_order_signatures: RwLock::new(HashMap::new()),
-            batch_signatures: RwLock::new(HashMap::new()),
-            fills_signatures: RwLock::new(HashMap::new()),
+            batch_sigs: SignatureCollectionManager::new("batch"),
+            fills_sigs: SignatureCollectionManager::new("fills"),
             order_status: RwLock::new(HashMap::new()),
             processed_orders: RwLock::new(HashMap::new()),
             order_mappings: RwLock::new(HashMap::new()),
             confirmed_batches: RwLock::new(HashMap::new()),
             confirmed_fills: RwLock::new(HashMap::new()),
             custody_nonces: RwLock::new(HashMap::new()),
-            l3_to_arb_signatures: RwLock::new(HashMap::new()),
+            l3_to_arb_sigs: SignatureCollectionManager::new("l3_to_arb"),
             confirmed_l3_to_arb: RwLock::new(HashMap::new()),
-            release_signatures: RwLock::new(HashMap::new()),
+            release_sigs: SignatureCollectionManager::new("release"),
             confirmed_releases: RwLock::new(HashMap::new()),
             order_amounts: RwLock::new(HashMap::new()),
             order_limit_prices: RwLock::new(HashMap::new()),
-            rebalance_batch_signatures: RwLock::new(HashMap::new()),
+            rebalance_batch_sigs: SignatureCollectionManager::new("rebalance_batch"),
             confirmed_rebalance_batches: RwLock::new(HashMap::new()),
-            update_weights_signatures: RwLock::new(HashMap::new()),
+            update_weights_sigs: SignatureCollectionManager::new("update_weights"),
             confirmed_weight_updates: RwLock::new(HashMap::new()),
             processing_rebalances: RwLock::new(HashMap::new()),
-            asset_trades_signatures: RwLock::new(HashMap::new()),
+            asset_trades_sigs: SignatureCollectionManager::new("asset_trades"),
             confirmed_asset_trades: RwLock::new(HashMap::new()),
             watchdog: RwLock::new(super::watchdog::StaleOrderWatchdog::new(
                 Duration::from_secs(30),
             )),
             sell_order_status: RwLock::new(HashMap::new()),
             processed_sell_orders: RwLock::new(HashMap::new()),
-            submit_sell_order_signatures: RwLock::new(HashMap::new()),
-            complete_sell_order_signatures: RwLock::new(HashMap::new()),
+            sell_bridge_sigs: SignatureCollectionManager::new("sell_bridge"),
+            complete_sell_sigs: SignatureCollectionManager::new("complete_sell"),
             sell_order_mappings: RwLock::new(HashMap::new()),
             sell_order_amounts: RwLock::new(HashMap::new()),
             order_itp_ids: RwLock::new(HashMap::new()),
             sell_order_itp_ids: RwLock::new(HashMap::new()),
-            collateral_move_signatures: RwLock::new(HashMap::new()),
+            collateral_move_sigs: SignatureCollectionManager::new("collateral_move"),
             confirmed_collateral_moves: RwLock::new(HashMap::new()),
-            mint_shares_signatures: RwLock::new(HashMap::new()),
+            mint_shares_sigs: SignatureCollectionManager::new("mint_shares"),
             confirmed_mint_shares: RwLock::new(HashMap::new()),
-            complete_buy_signatures: RwLock::new(HashMap::new()),
+            complete_buy_sigs: SignatureCollectionManager::new("complete_buy"),
             confirmed_complete_buy: RwLock::new(HashMap::new()),
             complete_buy_notify: Arc::new(Notify::new()),
-            nav_signatures: RwLock::new(HashMap::new()),
+            nav_sigs: SignatureCollectionManager::new("nav"),
         }
     }
 
@@ -892,7 +888,7 @@ impl BridgeOrchestrator {
     pub async fn cleanup_stale_collectors(&self, max_age_ms: u64) {
         self.bridge_sigs.cleanup_stale(max_age_ms).await;
 
-        // Also clean up submit order collectors (Story 7.3)
+        // submit_order_signatures is the one remaining hand-written HashMap
         let mut submit_collectors = self.submit_order_signatures.write().await;
         let stale_submit_orders: Vec<U256> = submit_collectors
             .iter()
@@ -907,6 +903,22 @@ impl BridgeOrchestrator {
             );
             submit_collectors.remove(&arb_order_id);
         }
+        drop(submit_collectors);
+
+        // Clean up all migrated signature managers
+        self.batch_sigs.cleanup_stale(max_age_ms).await;
+        self.fills_sigs.cleanup_stale(max_age_ms).await;
+        self.l3_to_arb_sigs.cleanup_stale(max_age_ms).await;
+        self.release_sigs.cleanup_stale(max_age_ms).await;
+        self.rebalance_batch_sigs.cleanup_stale(max_age_ms).await;
+        self.update_weights_sigs.cleanup_stale(max_age_ms).await;
+        self.asset_trades_sigs.cleanup_stale(max_age_ms).await;
+        self.sell_bridge_sigs.cleanup_stale(max_age_ms).await;
+        self.complete_sell_sigs.cleanup_stale(max_age_ms).await;
+        self.collateral_move_sigs.cleanup_stale(max_age_ms).await;
+        self.mint_shares_sigs.cleanup_stale(max_age_ms).await;
+        self.complete_buy_sigs.cleanup_stale(max_age_ms).await;
+        self.nav_sigs.cleanup_stale(max_age_ms).await;
     }
 
     // ========================================================================
@@ -1601,20 +1613,9 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         leader_signature: BLSSignature,
     ) {
-        let mut collectors = self.batch_signatures.write().await;
-
-        // Create new collector (use cycle_number as U256 identifier)
-        let mut collector = SignatureCollector::new(U256::from(cycle_number));
-
-        // Add leader's own signature
-        collector.add_signature(self.node_index, leader_signature);
-
-        collectors.insert(cycle_number, collector);
-
-        debug!(
-            cycle_number = cycle_number,
-            "Started signature collection for batch confirmation"
-        );
+        self.batch_sigs
+            .start_collection(cycle_number, self.node_index, leader_signature)
+            .await;
     }
 
     /// Add a follower signature to the batch confirmation collection (leader)
@@ -1626,96 +1627,29 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<BatchResult>, BridgeError> {
-        let mut collectors = self.batch_signatures.write().await;
-
-        let collector = collectors.get_mut(&cycle_number).ok_or_else(|| {
-            BridgeError::CycleNotFound { cycle_number }
-        })?;
-
-        // Add the signature
-        if !collector.add_signature(signer_index, signature.clone()) {
-            debug!(
-                cycle_number = cycle_number,
-                signer_index = signer_index,
-                "Duplicate batch signature rejected"
-            );
-            return Ok(None);
-        }
-
-        info!(
-            cycle_number = cycle_number,
-            signer_index = signer_index,
-            collected = collector.signature_count(),
-            required = self.config.min_signatures,
-            "Added follower signature for batch confirmation"
-        );
-
-        // Check if threshold reached
-        if collector.has_threshold(self.config.min_signatures) {
-            // Aggregate signatures
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .map_err(|e| ConsensusError::BlsSigningError {
-                    reason: e.to_string(),
-                })?;
-
-            info!(
-                cycle_number = cycle_number,
-                signature_count = collector.signature_count(),
-                signer_bitmap = %collector.signer_bitmap(),
-                "Batch confirmation signature threshold reached, ready for execution"
-            );
-
-            Ok(Some(BatchResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            }))
-        } else {
-            Ok(None)
-        }
+        self.batch_sigs
+            .add_follower_signature(
+                &cycle_number,
+                signer_index,
+                signature,
+                self.config.min_signatures,
+                &self.bls_signer,
+            )
+            .await
     }
 
     /// Check if batch confirmation signature threshold is reached (Story 7.4 wiring)
     ///
     /// Returns Some(BatchResult) if threshold is reached, None otherwise.
     pub async fn check_batch_threshold_reached(&self, cycle_number: u64) -> Option<BatchResult> {
-        let collectors = self.batch_signatures.read().await;
-        let collector = collectors.get(&cycle_number)?;
-
-        if collector.has_threshold(self.config.min_signatures) {
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .ok()?;
-
-            Some(BatchResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            })
-        } else {
-            None
-        }
+        self.batch_sigs
+            .check_threshold(&cycle_number, self.config.min_signatures, &self.bls_signer)
+            .await
     }
 
     /// Get the current batch confirmation signature count (for timeout diagnostics)
     pub async fn get_batch_signature_count(&self, cycle_number: u64) -> Option<usize> {
-        let collectors = self.batch_signatures.read().await;
-        collectors.get(&cycle_number).map(|c| c.signature_count())
+        self.batch_sigs.get_signature_count(&cycle_number).await
     }
 
     // ========================================================================
@@ -1884,20 +1818,9 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         leader_signature: BLSSignature,
     ) {
-        let mut collectors = self.fills_signatures.write().await;
-
-        // Create new collector (use cycle_number as U256 identifier)
-        let mut collector = SignatureCollector::new(U256::from(cycle_number));
-
-        // Add leader's own signature
-        collector.add_signature(self.node_index, leader_signature);
-
-        collectors.insert(cycle_number, collector);
-
-        debug!(
-            cycle_number = cycle_number,
-            "Started signature collection for fills confirmation"
-        );
+        self.fills_sigs
+            .start_collection(cycle_number, self.node_index, leader_signature)
+            .await;
     }
 
     /// Add a follower signature to the fills confirmation collection (leader)
@@ -1909,96 +1832,29 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<FillsResult>, BridgeError> {
-        let mut collectors = self.fills_signatures.write().await;
-
-        let collector = collectors.get_mut(&cycle_number).ok_or_else(|| {
-            BridgeError::CycleNotFound { cycle_number }
-        })?;
-
-        // Add the signature
-        if !collector.add_signature(signer_index, signature.clone()) {
-            debug!(
-                cycle_number = cycle_number,
-                signer_index = signer_index,
-                "Duplicate fills signature rejected"
-            );
-            return Ok(None);
-        }
-
-        info!(
-            cycle_number = cycle_number,
-            signer_index = signer_index,
-            collected = collector.signature_count(),
-            required = self.config.min_signatures,
-            "Added follower signature for fills confirmation"
-        );
-
-        // Check if threshold reached
-        if collector.has_threshold(self.config.min_signatures) {
-            // Aggregate signatures
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .map_err(|e| ConsensusError::BlsSigningError {
-                    reason: e.to_string(),
-                })?;
-
-            info!(
-                cycle_number = cycle_number,
-                signature_count = collector.signature_count(),
-                signer_bitmap = %collector.signer_bitmap(),
-                "Fills confirmation signature threshold reached, ready for execution"
-            );
-
-            Ok(Some(FillsResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            }))
-        } else {
-            Ok(None)
-        }
+        self.fills_sigs
+            .add_follower_signature(
+                &cycle_number,
+                signer_index,
+                signature,
+                self.config.min_signatures,
+                &self.bls_signer,
+            )
+            .await
     }
 
     /// Check if fills confirmation signature threshold is reached (Story 7.4 wiring)
     ///
     /// Returns Some(FillsResult) if threshold is reached, None otherwise.
     pub async fn check_fills_threshold_reached(&self, cycle_number: u64) -> Option<FillsResult> {
-        let collectors = self.fills_signatures.read().await;
-        let collector = collectors.get(&cycle_number)?;
-
-        if collector.has_threshold(self.config.min_signatures) {
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .ok()?;
-
-            Some(FillsResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            })
-        } else {
-            None
-        }
+        self.fills_sigs
+            .check_threshold(&cycle_number, self.config.min_signatures, &self.bls_signer)
+            .await
     }
 
     /// Get the current fills confirmation signature count (for timeout diagnostics)
     pub async fn get_fills_signature_count(&self, cycle_number: u64) -> Option<usize> {
-        let collectors = self.fills_signatures.read().await;
-        collectors.get(&cycle_number).map(|c| c.signature_count())
+        self.fills_sigs.get_signature_count(&cycle_number).await
     }
 
     // ========================================================================
@@ -2048,37 +1904,8 @@ impl BridgeOrchestrator {
 
     /// Clean up stale batch/fills signature collectors (Story 7.4)
     pub async fn cleanup_stale_batch_fills_collectors(&self, max_age_ms: u64) {
-        // Clean up batch collectors
-        let mut batch_collectors = self.batch_signatures.write().await;
-        let stale_batches: Vec<u64> = batch_collectors
-            .iter()
-            .filter(|(_, c)| c.elapsed_ms() > max_age_ms)
-            .map(|(cycle, _)| *cycle)
-            .collect();
-
-        for cycle in stale_batches {
-            debug!(
-                cycle_number = cycle,
-                "Removing stale batch signature collector"
-            );
-            batch_collectors.remove(&cycle);
-        }
-
-        // Clean up fills collectors
-        let mut fills_collectors = self.fills_signatures.write().await;
-        let stale_fills: Vec<u64> = fills_collectors
-            .iter()
-            .filter(|(_, c)| c.elapsed_ms() > max_age_ms)
-            .map(|(cycle, _)| *cycle)
-            .collect();
-
-        for cycle in stale_fills {
-            debug!(
-                cycle_number = cycle,
-                "Removing stale fills signature collector"
-            );
-            fills_collectors.remove(&cycle);
-        }
+        self.batch_sigs.cleanup_stale(max_age_ms).await;
+        self.fills_sigs.cleanup_stale(max_age_ms).await;
     }
 
     // ========================================================================
@@ -2788,20 +2615,9 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         leader_signature: BLSSignature,
     ) {
-        let mut collectors = self.l3_to_arb_signatures.write().await;
-
-        // Create new collector (use cycle_number as U256 identifier)
-        let mut collector = SignatureCollector::new(U256::from(cycle_number));
-
-        // Add leader's own signature
-        collector.add_signature(self.node_index, leader_signature);
-
-        collectors.insert(cycle_number, collector);
-
-        debug!(
-            cycle_number = cycle_number,
-            "Started signature collection for bridge L3→Arb"
-        );
+        self.l3_to_arb_sigs
+            .start_collection(cycle_number, self.node_index, leader_signature)
+            .await;
     }
 
     /// Add a follower signature to the bridge L3→Arb collection (leader)
@@ -2813,61 +2629,15 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<BridgeL3ToArbResult>, BridgeError> {
-        let mut collectors = self.l3_to_arb_signatures.write().await;
-
-        let collector = collectors.get_mut(&cycle_number).ok_or_else(|| {
-            BridgeError::CycleNotFound { cycle_number }
-        })?;
-
-        // Add the signature
-        if !collector.add_signature(signer_index, signature.clone()) {
-            debug!(
-                cycle_number = cycle_number,
-                signer_index = signer_index,
-                "Duplicate L3→Arb bridge signature rejected"
-            );
-            return Ok(None);
-        }
-
-        info!(
-            cycle_number = cycle_number,
-            signer_index = signer_index,
-            collected = collector.signature_count(),
-            required = self.config.min_signatures,
-            "Added follower signature for bridge L3→Arb"
-        );
-
-        // Check if threshold reached
-        if collector.has_threshold(self.config.min_signatures) {
-            // Aggregate signatures
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .map_err(|e| ConsensusError::BlsSigningError {
-                    reason: e.to_string(),
-                })?;
-
-            info!(
-                cycle_number = cycle_number,
-                signature_count = collector.signature_count(),
-                signer_bitmap = %collector.signer_bitmap(),
-                "Bridge L3→Arb signature threshold reached, ready for execution"
-            );
-
-            Ok(Some(BridgeL3ToArbResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            }))
-        } else {
-            Ok(None)
-        }
+        self.l3_to_arb_sigs
+            .add_follower_signature(
+                &cycle_number,
+                signer_index,
+                signature,
+                self.config.min_signatures,
+                &self.bls_signer,
+            )
+            .await
     }
 
     // ========================================================================
@@ -2994,20 +2764,7 @@ impl BridgeOrchestrator {
 
     /// Clean up stale L3→Arb signature collectors
     pub async fn cleanup_stale_l3_to_arb_collectors(&self, max_age_ms: u64) {
-        let mut collectors = self.l3_to_arb_signatures.write().await;
-        let stale_cycles: Vec<u64> = collectors
-            .iter()
-            .filter(|(_, c)| c.elapsed_ms() > max_age_ms)
-            .map(|(cycle, _)| *cycle)
-            .collect();
-
-        for cycle in stale_cycles {
-            debug!(
-                cycle_number = cycle,
-                "Removing stale L3→Arb bridge signature collector"
-            );
-            collectors.remove(&cycle);
-        }
+        self.l3_to_arb_sigs.cleanup_stale(max_age_ms).await;
     }
 
     /// Check if L3→Arb signature threshold is reached (Story 7.10)
@@ -3017,35 +2774,14 @@ impl BridgeOrchestrator {
         &self,
         cycle_number: u64,
     ) -> Option<BridgeL3ToArbResult> {
-        let collectors = self.l3_to_arb_signatures.read().await;
-        let collector = collectors.get(&cycle_number)?;
-
-        if collector.has_threshold(self.config.min_signatures) {
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .ok()?;
-
-            Some(BridgeL3ToArbResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            })
-        } else {
-            None
-        }
+        self.l3_to_arb_sigs
+            .check_threshold(&cycle_number, self.config.min_signatures, &self.bls_signer)
+            .await
     }
 
     /// Get the current L3→Arb signature count for a cycle (Story 7.10)
     pub async fn get_l3_to_arb_signature_count(&self, cycle_number: u64) -> Option<usize> {
-        let collectors = self.l3_to_arb_signatures.read().await;
-        collectors.get(&cycle_number).map(|c| c.signature_count())
+        self.l3_to_arb_sigs.get_signature_count(&cycle_number).await
     }
 
     // ========================================================================
@@ -3303,20 +3039,9 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         leader_signature: BLSSignature,
     ) {
-        let mut collectors = self.release_signatures.write().await;
-
-        // Create new collector (use cycle_number as U256 identifier)
-        let mut collector = SignatureCollector::new(U256::from(cycle_number));
-
-        // Add leader's own signature
-        collector.add_signature(self.node_index, leader_signature);
-
-        collectors.insert(cycle_number, collector);
-
-        debug!(
-            cycle_number = cycle_number,
-            "Started signature collection for custody release to vault"
-        );
+        self.release_sigs
+            .start_collection(cycle_number, self.node_index, leader_signature)
+            .await;
     }
 
     /// Add a follower signature to the custody release collection (leader)
@@ -3328,61 +3053,15 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<ReleaseToVaultResult>, BridgeError> {
-        let mut collectors = self.release_signatures.write().await;
-
-        let collector = collectors.get_mut(&cycle_number).ok_or_else(|| {
-            BridgeError::CycleNotFound { cycle_number }
-        })?;
-
-        // Add the signature
-        if !collector.add_signature(signer_index, signature.clone()) {
-            debug!(
-                cycle_number = cycle_number,
-                signer_index = signer_index,
-                "Duplicate custody release signature rejected"
-            );
-            return Ok(None);
-        }
-
-        info!(
-            cycle_number = cycle_number,
-            signer_index = signer_index,
-            collected = collector.signature_count(),
-            required = self.config.min_signatures,
-            "Added follower signature for custody release to vault"
-        );
-
-        // Check if threshold reached
-        if collector.has_threshold(self.config.min_signatures) {
-            // Aggregate signatures
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .map_err(|e| ConsensusError::BlsSigningError {
-                    reason: e.to_string(),
-                })?;
-
-            info!(
-                cycle_number = cycle_number,
-                signature_count = collector.signature_count(),
-                signer_bitmap = %collector.signer_bitmap(),
-                "Custody release signature threshold reached, ready for execution"
-            );
-
-            Ok(Some(ReleaseToVaultResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            }))
-        } else {
-            Ok(None)
-        }
+        self.release_sigs
+            .add_follower_signature(
+                &cycle_number,
+                signer_index,
+                signature,
+                self.config.min_signatures,
+                &self.bls_signer,
+            )
+            .await
     }
 
     // ========================================================================
@@ -3491,20 +3170,7 @@ impl BridgeOrchestrator {
 
     /// Clean up stale custody release signature collectors
     pub async fn cleanup_stale_release_collectors(&self, max_age_ms: u64) {
-        let mut collectors = self.release_signatures.write().await;
-        let stale_cycles: Vec<u64> = collectors
-            .iter()
-            .filter(|(_, c)| c.elapsed_ms() > max_age_ms)
-            .map(|(cycle, _)| *cycle)
-            .collect();
-
-        for cycle in stale_cycles {
-            debug!(
-                cycle_number = cycle,
-                "Removing stale custody release signature collector"
-            );
-            collectors.remove(&cycle);
-        }
+        self.release_sigs.cleanup_stale(max_age_ms).await;
     }
 
     /// Check if custody release signature threshold is reached (Story 7.10)
@@ -3514,35 +3180,14 @@ impl BridgeOrchestrator {
         &self,
         cycle_number: u64,
     ) -> Option<ReleaseToVaultResult> {
-        let collectors = self.release_signatures.read().await;
-        let collector = collectors.get(&cycle_number)?;
-
-        if collector.has_threshold(self.config.min_signatures) {
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .ok()?;
-
-            Some(ReleaseToVaultResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            })
-        } else {
-            None
-        }
+        self.release_sigs
+            .check_threshold(&cycle_number, self.config.min_signatures, &self.bls_signer)
+            .await
     }
 
     /// Get the current custody release signature count for a cycle (Story 7.10)
     pub async fn get_release_signature_count(&self, cycle_number: u64) -> Option<usize> {
-        let collectors = self.release_signatures.read().await;
-        collectors.get(&cycle_number).map(|c| c.signature_count())
+        self.release_sigs.get_signature_count(&cycle_number).await
     }
 
     // ========================================================================
@@ -3621,12 +3266,9 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         leader_signature: BLSSignature,
     ) {
-        let mut collectors = self.rebalance_batch_signatures.write().await;
-        let mut collector = SignatureCollector::new(U256::from(cycle_number));
-        collector.add_signature(self.node_index, leader_signature);
-        collectors.insert(cycle_number, collector);
-
-        debug!(cycle_number, "Started signature collection for rebalance batch");
+        self.rebalance_batch_sigs
+            .start_collection(cycle_number, self.node_index, leader_signature)
+            .await;
     }
 
     /// Add a follower signature for rebalance batch (leader)
@@ -3636,54 +3278,15 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<RebalanceBatchResult>, BridgeError> {
-        let mut collectors = self.rebalance_batch_signatures.write().await;
-
-        let collector = collectors.get_mut(&cycle_number).ok_or_else(|| {
-            BridgeError::CycleNotFound { cycle_number }
-        })?;
-
-        if !collector.add_signature(signer_index, signature.clone()) {
-            debug!(cycle_number, signer_index, "Duplicate rebalance batch signature rejected");
-            return Ok(None);
-        }
-
-        info!(
-            cycle_number,
-            signer_index,
-            collected = collector.signature_count(),
-            required = self.config.min_signatures,
-            "Added follower signature for rebalance batch"
-        );
-
-        if collector.has_threshold(self.config.min_signatures) {
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .map_err(|e| ConsensusError::BlsSigningError {
-                    reason: e.to_string(),
-                })?;
-
-            info!(
-                cycle_number,
-                signature_count = collector.signature_count(),
-                signer_bitmap = %collector.signer_bitmap(),
-                "Rebalance batch signature threshold reached"
-            );
-
-            Ok(Some(RebalanceBatchResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            }))
-        } else {
-            Ok(None)
-        }
+        self.rebalance_batch_sigs
+            .add_follower_signature(
+                &cycle_number,
+                signer_index,
+                signature,
+                self.config.min_signatures,
+                &self.bls_signer,
+            )
+            .await
     }
 
     /// Check if rebalance batch signature threshold is reached
@@ -3691,35 +3294,14 @@ impl BridgeOrchestrator {
         &self,
         cycle_number: u64,
     ) -> Option<RebalanceBatchResult> {
-        let collectors = self.rebalance_batch_signatures.read().await;
-        let collector = collectors.get(&cycle_number)?;
-
-        if collector.has_threshold(self.config.min_signatures) {
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .ok()?;
-
-            Some(RebalanceBatchResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            })
-        } else {
-            None
-        }
+        self.rebalance_batch_sigs
+            .check_threshold(&cycle_number, self.config.min_signatures, &self.bls_signer)
+            .await
     }
 
     /// Get rebalance batch signature count
     pub async fn get_rebalance_batch_signature_count(&self, cycle_number: u64) -> Option<usize> {
-        let collectors = self.rebalance_batch_signatures.read().await;
-        collectors.get(&cycle_number).map(|c| c.signature_count())
+        self.rebalance_batch_sigs.get_signature_count(&cycle_number).await
     }
 
     /// Check if a rebalance batch has been confirmed
@@ -3819,12 +3401,9 @@ impl BridgeOrchestrator {
         itp_id: H256,
         leader_signature: BLSSignature,
     ) {
-        let mut collectors = self.update_weights_signatures.write().await;
-        let mut collector = SignatureCollector::new(U256::from_big_endian(itp_id.as_bytes()));
-        collector.add_signature(self.node_index, leader_signature);
-        collectors.insert(itp_id, collector);
-
-        debug!(itp_id = ?itp_id, "Started signature collection for update weights");
+        self.update_weights_sigs
+            .start_collection(itp_id, self.node_index, leader_signature)
+            .await;
     }
 
     /// Add a follower signature for update weights (leader)
@@ -3834,56 +3413,15 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<UpdateWeightsResult>, BridgeError> {
-        let mut collectors = self.update_weights_signatures.write().await;
-
-        let collector = collectors.get_mut(&itp_id).ok_or_else(|| {
-            ConsensusError::ChainWriterError {
-                reason: format!("No signature collector found for ITP {}", itp_id),
-            }
-        })?;
-
-        if !collector.add_signature(signer_index, signature.clone()) {
-            debug!(itp_id = ?itp_id, signer_index, "Duplicate update weights signature rejected");
-            return Ok(None);
-        }
-
-        info!(
-            itp_id = ?itp_id,
-            signer_index,
-            collected = collector.signature_count(),
-            required = self.config.min_signatures,
-            "Added follower signature for update weights"
-        );
-
-        if collector.has_threshold(self.config.min_signatures) {
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .map_err(|e| ConsensusError::BlsSigningError {
-                    reason: e.to_string(),
-                })?;
-
-            info!(
-                itp_id = ?itp_id,
-                signature_count = collector.signature_count(),
-                signer_bitmap = %collector.signer_bitmap(),
-                "Update weights signature threshold reached"
-            );
-
-            Ok(Some(UpdateWeightsResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            }))
-        } else {
-            Ok(None)
-        }
+        self.update_weights_sigs
+            .add_follower_signature(
+                &itp_id,
+                signer_index,
+                signature,
+                self.config.min_signatures,
+                &self.bls_signer,
+            )
+            .await
     }
 
     /// Check if update weights signature threshold is reached
@@ -3891,35 +3429,14 @@ impl BridgeOrchestrator {
         &self,
         itp_id: H256,
     ) -> Option<UpdateWeightsResult> {
-        let collectors = self.update_weights_signatures.read().await;
-        let collector = collectors.get(&itp_id)?;
-
-        if collector.has_threshold(self.config.min_signatures) {
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .ok()?;
-
-            Some(UpdateWeightsResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            })
-        } else {
-            None
-        }
+        self.update_weights_sigs
+            .check_threshold(&itp_id, self.config.min_signatures, &self.bls_signer)
+            .await
     }
 
     /// Get update weights signature count
     pub async fn get_update_weights_signature_count(&self, itp_id: &H256) -> Option<usize> {
-        let collectors = self.update_weights_signatures.read().await;
-        collectors.get(itp_id).map(|c| c.signature_count())
+        self.update_weights_sigs.get_signature_count(itp_id).await
     }
 
     /// Check if weights have been updated for an ITP
@@ -4096,42 +3613,22 @@ impl BridgeOrchestrator {
         itp_id: H256,
         leader_signature: BLSSignature,
     ) {
-        let mut map = self.update_weights_signatures.write().await;
-        let mut collector = SignatureCollector::new(U256::from_big_endian(itp_id.as_bytes()));
-        collector.add_signature(self.node_index, leader_signature);
-        map.insert(itp_id, collector);
+        // Reuses update_weights_sigs (same key space: itp_id)
+        self.update_weights_sigs
+            .start_collection(itp_id, self.node_index, leader_signature)
+            .await;
     }
 
     /// Check if rebalance signature threshold is reached
     pub async fn check_rebalance_threshold(&self, itp_id: H256) -> Option<RebalanceResult> {
-        let map = self.update_weights_signatures.read().await;
-        if let Some(collector) = map.get(&itp_id) {
-            if collector.has_threshold(self.config.min_signatures) {
-                let signatures: Vec<BLSSignature> = collector
-                    .signatures()
-                    .iter()
-                    .map(|(_, sig)| sig.clone())
-                    .collect();
-
-                let aggregated_signature = self
-                    .bls_signer
-                    .aggregate_signatures(signatures)
-                    .ok()?;
-
-                return Some(RebalanceResult {
-                    aggregated_signature,
-                    signer_bitmap: collector.signer_bitmap(),
-                    signature_count: collector.signature_count(),
-                });
-            }
-        }
-        None
+        self.update_weights_sigs
+            .check_threshold(&itp_id, self.config.min_signatures, &self.bls_signer)
+            .await
     }
 
     /// Get rebalance signature count
     pub async fn get_rebalance_signature_count(&self, itp_id: &H256) -> Option<usize> {
-        let map = self.update_weights_signatures.read().await;
-        map.get(itp_id).map(|c| c.signature_count())
+        self.update_weights_sigs.get_signature_count(itp_id).await
     }
 
     /// Add a follower signature for a rebalance proposal
@@ -4141,37 +3638,15 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<RebalanceResult>, BridgeError> {
-        let mut map = self.update_weights_signatures.write().await;
-        if let Some(collector) = map.get_mut(&itp_id) {
-            collector.add_signature(signer_index, signature);
-            if collector.has_threshold(self.config.min_signatures) {
-                let signatures: Vec<BLSSignature> = collector
-                    .signatures()
-                    .iter()
-                    .map(|(_, sig)| sig.clone())
-                    .collect();
-
-                let aggregated_signature = self
-                    .bls_signer
-                    .aggregate_signatures(signatures)
-                    .ok()
-                    .ok_or_else(|| ConsensusError::ChainWriterError {
-                        reason: "Failed to aggregate rebalance signatures".to_string(),
-                    })?;
-
-                return Ok(Some(RebalanceResult {
-                    aggregated_signature,
-                    signer_bitmap: collector.signer_bitmap(),
-                    signature_count: collector.signature_count(),
-                }));
-            }
-            Ok(None)
-        } else {
-            Err(ConsensusError::ChainWriterError {
-                reason: format!("No rebalance signature collection for ITP {}", itp_id),
-            }
-            .into())
-        }
+        self.update_weights_sigs
+            .add_follower_signature(
+                &itp_id,
+                signer_index,
+                signature,
+                self.config.min_signatures,
+                &self.bls_signer,
+            )
+            .await
     }
 
     // ========================================================================
@@ -4215,42 +3690,21 @@ impl BridgeOrchestrator {
         itp_id: H256,
         leader_signature: BLSSignature,
     ) {
-        let mut map = self.nav_signatures.write().await;
-        let mut collector = SignatureCollector::new(U256::from_big_endian(itp_id.as_bytes()));
-        collector.add_signature(self.node_index, leader_signature);
-        map.insert(itp_id, collector);
+        self.nav_sigs
+            .start_collection(itp_id, self.node_index, leader_signature)
+            .await;
     }
 
     /// Check if setItpNav signature threshold is reached
     pub async fn check_nav_threshold(&self, itp_id: H256) -> Option<SetItpNavResult> {
-        let map = self.nav_signatures.read().await;
-        if let Some(collector) = map.get(&itp_id) {
-            if collector.has_threshold(self.config.min_signatures) {
-                let signatures: Vec<BLSSignature> = collector
-                    .signatures()
-                    .iter()
-                    .map(|(_, sig)| sig.clone())
-                    .collect();
-
-                let aggregated_signature = self
-                    .bls_signer
-                    .aggregate_signatures(signatures)
-                    .ok()?;
-
-                return Some(SetItpNavResult {
-                    aggregated_signature,
-                    signer_bitmap: collector.signer_bitmap(),
-                    signature_count: collector.signature_count(),
-                });
-            }
-        }
-        None
+        self.nav_sigs
+            .check_threshold(&itp_id, self.config.min_signatures, &self.bls_signer)
+            .await
     }
 
     /// Get setItpNav signature count
     pub async fn get_nav_signature_count(&self, itp_id: &H256) -> Option<usize> {
-        let map = self.nav_signatures.read().await;
-        map.get(itp_id).map(|c| c.signature_count())
+        self.nav_sigs.get_signature_count(itp_id).await
     }
 
     /// Add a follower signature for a setItpNav proposal
@@ -4260,37 +3714,15 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<SetItpNavResult>, BridgeError> {
-        let mut map = self.nav_signatures.write().await;
-        if let Some(collector) = map.get_mut(&itp_id) {
-            collector.add_signature(signer_index, signature);
-            if collector.has_threshold(self.config.min_signatures) {
-                let signatures: Vec<BLSSignature> = collector
-                    .signatures()
-                    .iter()
-                    .map(|(_, sig)| sig.clone())
-                    .collect();
-
-                let aggregated_signature = self
-                    .bls_signer
-                    .aggregate_signatures(signatures)
-                    .ok()
-                    .ok_or_else(|| ConsensusError::ChainWriterError {
-                        reason: "Failed to aggregate setItpNav signatures".to_string(),
-                    })?;
-
-                return Ok(Some(SetItpNavResult {
-                    aggregated_signature,
-                    signer_bitmap: collector.signer_bitmap(),
-                    signature_count: collector.signature_count(),
-                }));
-            }
-            Ok(None)
-        } else {
-            Err(ConsensusError::ChainWriterError {
-                reason: format!("No nav signature collection for ITP {}", itp_id),
-            }
-            .into())
-        }
+        self.nav_sigs
+            .add_follower_signature(
+                &itp_id,
+                signer_index,
+                signature,
+                self.config.min_signatures,
+                &self.bls_signer,
+            )
+            .await
     }
 
     /// Execute rebalance() on-chain after BLS consensus (leader only)
@@ -4474,15 +3906,9 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         leader_signature: BLSSignature,
     ) {
-        let mut collectors = self.asset_trades_signatures.write().await;
-        let mut collector = SignatureCollector::new(U256::from(cycle_number));
-        collector.add_signature(self.node_index, leader_signature);
-        collectors.insert(cycle_number, collector);
-
-        debug!(
-            cycle_number = cycle_number,
-            "Started signature collection for asset trades"
-        );
+        self.asset_trades_sigs
+            .start_collection(cycle_number, self.node_index, leader_signature)
+            .await;
     }
 
     /// Add a follower signature to the asset trades collection (leader)
@@ -4494,58 +3920,15 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<AssetTradesResult>, BridgeError> {
-        let mut collectors = self.asset_trades_signatures.write().await;
-
-        let collector = collectors.get_mut(&cycle_number).ok_or_else(|| {
-            BridgeError::CycleNotFound { cycle_number }
-        })?;
-
-        if !collector.add_signature(signer_index, signature.clone()) {
-            debug!(
-                cycle_number = cycle_number,
-                signer_index = signer_index,
-                "Duplicate asset trades signature rejected"
-            );
-            return Ok(None);
-        }
-
-        info!(
-            cycle_number = cycle_number,
-            signer_index = signer_index,
-            collected = collector.signature_count(),
-            required = self.config.min_signatures,
-            "Added follower signature for asset trades"
-        );
-
-        if collector.has_threshold(self.config.min_signatures) {
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .map_err(|e| ConsensusError::BlsSigningError {
-                    reason: e.to_string(),
-                })?;
-
-            info!(
-                cycle_number = cycle_number,
-                signature_count = collector.signature_count(),
-                signer_bitmap = %collector.signer_bitmap(),
-                "Asset trades signature threshold reached"
-            );
-
-            Ok(Some(AssetTradesResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            }))
-        } else {
-            Ok(None)
-        }
+        self.asset_trades_sigs
+            .add_follower_signature(
+                &cycle_number,
+                signer_index,
+                signature,
+                self.config.min_signatures,
+                &self.bls_signer,
+            )
+            .await
     }
 
     /// Execute emitAssetTrades on Index contract
@@ -4607,35 +3990,14 @@ impl BridgeOrchestrator {
 
     /// Get the current asset trades signature count for a cycle
     pub async fn asset_trades_signature_count(&self, cycle_number: u64) -> usize {
-        let collectors = self.asset_trades_signatures.read().await;
-        collectors.get(&cycle_number).map(|c| c.signature_count()).unwrap_or(0)
+        self.asset_trades_sigs.get_signature_count(&cycle_number).await.unwrap_or(0)
     }
 
     /// Check if asset trades signature threshold is reached
     pub async fn check_asset_trades_threshold_reached(&self, cycle_number: u64) -> Option<AssetTradesResult> {
-        let collectors = self.asset_trades_signatures.read().await;
-        let collector = collectors.get(&cycle_number)?;
-
-        if collector.has_threshold(self.config.min_signatures) {
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .ok()?;
-
-            Some(AssetTradesResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            })
-        } else {
-            None
-        }
+        self.asset_trades_sigs
+            .check_threshold(&cycle_number, self.config.min_signatures, &self.bls_signer)
+            .await
     }
 
     // ============================================================================
@@ -4785,10 +4147,9 @@ impl BridgeOrchestrator {
         order_id: U256,
         leader_signature: BLSSignature,
     ) {
-        let mut collectors = self.submit_sell_order_signatures.write().await;
-        let mut collector = SignatureCollector::new(order_id);
-        collector.add_signature(self.node_index, leader_signature);
-        collectors.insert(order_id, collector);
+        self.sell_bridge_sigs
+            .start_collection(order_id, self.node_index, leader_signature)
+            .await;
     }
 
     /// Add follower signature for submit sell order
@@ -4798,47 +4159,21 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<SellSubmitOrderResult>, BridgeError> {
-        let mut collectors = self.submit_sell_order_signatures.write().await;
-        let collector = collectors.get_mut(&order_id).ok_or_else(|| {
-            BridgeError::OrderNotFound { order_id }
-        })?;
-
-        if !collector.add_signature(signer_index, signature.clone()) {
-            debug!(order_id = %order_id, signer_index, "Duplicate submit sell order signature");
-            return Ok(None);
-        }
-
-        info!(
-            order_id = %order_id,
-            signer_index,
-            collected = collector.signature_count(),
-            required = self.config.min_signatures,
-            "Submit sell order signature added"
-        );
-
-        if collector.has_threshold(self.config.min_signatures) {
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .map_err(|e| ConsensusError::BlsSigningError {
-                    reason: e.to_string(),
-                })?;
-
-            Ok(Some(SellSubmitOrderResult {
-                l3_order_id: None,
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            }))
-        } else {
-            Ok(None)
-        }
+        let result = self.sell_bridge_sigs
+            .add_follower_signature(
+                &order_id,
+                signer_index,
+                signature,
+                self.config.min_signatures,
+                &self.bls_signer,
+            )
+            .await?;
+        Ok(result.map(|r| SellSubmitOrderResult {
+            l3_order_id: None,
+            aggregated_signature: r.aggregated_signature,
+            signer_bitmap: r.signer_bitmap,
+            signature_count: r.signature_count,
+        }))
     }
 
     /// Check if submit sell order threshold reached
@@ -4846,30 +4181,15 @@ impl BridgeOrchestrator {
         &self,
         order_id: &U256,
     ) -> Option<SellSubmitOrderResult> {
-        let collectors = self.submit_sell_order_signatures.read().await;
-        let collector = collectors.get(order_id)?;
-
-        if collector.has_threshold(self.config.min_signatures) {
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .ok()?;
-
-            Some(SellSubmitOrderResult {
-                l3_order_id: None,
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            })
-        } else {
-            None
-        }
+        let result = self.sell_bridge_sigs
+            .check_threshold(order_id, self.config.min_signatures, &self.bls_signer)
+            .await?;
+        Some(SellSubmitOrderResult {
+            l3_order_id: None,
+            aggregated_signature: result.aggregated_signature,
+            signer_bitmap: result.signer_bitmap,
+            signature_count: result.signature_count,
+        })
     }
 
     /// Get signature count for submit sell order
@@ -4877,11 +4197,7 @@ impl BridgeOrchestrator {
         &self,
         order_id: &U256,
     ) -> Option<usize> {
-        self.submit_sell_order_signatures
-            .read()
-            .await
-            .get(order_id)
-            .map(|c| c.signature_count())
+        self.sell_bridge_sigs.get_signature_count(order_id).await
     }
 
     /// Execute submit sell order on L3 (no USDC approve needed for sell)
@@ -5042,10 +4358,9 @@ impl BridgeOrchestrator {
         order_id: U256,
         leader_signature: BLSSignature,
     ) {
-        let mut collectors = self.complete_sell_order_signatures.write().await;
-        let mut collector = SignatureCollector::new(order_id);
-        collector.add_signature(self.node_index, leader_signature);
-        collectors.insert(order_id, collector);
+        self.complete_sell_sigs
+            .start_collection(order_id, self.node_index, leader_signature)
+            .await;
     }
 
     /// Add follower signature for complete sell order
@@ -5055,46 +4370,15 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<CompleteSellOrderResult>, BridgeError> {
-        let mut collectors = self.complete_sell_order_signatures.write().await;
-        let collector = collectors.get_mut(&order_id).ok_or_else(|| {
-            BridgeError::OrderNotFound { order_id }
-        })?;
-
-        if !collector.add_signature(signer_index, signature.clone()) {
-            debug!(order_id = %order_id, signer_index, "Duplicate complete sell order signature");
-            return Ok(None);
-        }
-
-        info!(
-            order_id = %order_id,
-            signer_index,
-            collected = collector.signature_count(),
-            required = self.config.min_signatures,
-            "Complete sell order signature added"
-        );
-
-        if collector.has_threshold(self.config.min_signatures) {
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .map_err(|e| ConsensusError::BlsSigningError {
-                    reason: e.to_string(),
-                })?;
-
-            Ok(Some(CompleteSellOrderResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            }))
-        } else {
-            Ok(None)
-        }
+        self.complete_sell_sigs
+            .add_follower_signature(
+                &order_id,
+                signer_index,
+                signature,
+                self.config.min_signatures,
+                &self.bls_signer,
+            )
+            .await
     }
 
     /// Check if complete sell order threshold reached
@@ -5102,29 +4386,9 @@ impl BridgeOrchestrator {
         &self,
         order_id: &U256,
     ) -> Option<CompleteSellOrderResult> {
-        let collectors = self.complete_sell_order_signatures.read().await;
-        let collector = collectors.get(order_id)?;
-
-        if collector.has_threshold(self.config.min_signatures) {
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .ok()?;
-
-            Some(CompleteSellOrderResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            })
-        } else {
-            None
-        }
+        self.complete_sell_sigs
+            .check_threshold(order_id, self.config.min_signatures, &self.bls_signer)
+            .await
     }
 
     /// Get signature count for complete sell order
@@ -5132,11 +4396,7 @@ impl BridgeOrchestrator {
         &self,
         order_id: &U256,
     ) -> Option<usize> {
-        self.complete_sell_order_signatures
-            .read()
-            .await
-            .get(order_id)
-            .map(|c| c.signature_count())
+        self.complete_sell_sigs.get_signature_count(order_id).await
     }
 
     // ========================================================================
@@ -5283,11 +4543,9 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         leader_signature: BLSSignature,
     ) {
-        let mut collectors = self.collateral_move_signatures.write().await;
-        let mut collector = SignatureCollector::new(U256::from(cycle_number));
-        collector.add_signature(self.node_index, leader_signature);
-        collectors.insert(cycle_number, collector);
-        debug!(cycle_number = cycle_number, "Started signature collection for RecordCollateralMove");
+        self.collateral_move_sigs
+            .start_collection(cycle_number, self.node_index, leader_signature)
+            .await;
     }
 
     /// Add a follower signature to the RecordCollateralMove collection (leader)
@@ -5297,45 +4555,15 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<RecordCollateralMoveResult>, BridgeError> {
-        let mut collectors = self.collateral_move_signatures.write().await;
-        let collector = collectors.get_mut(&cycle_number).ok_or_else(|| {
-            BridgeError::CycleNotFound { cycle_number }
-        })?;
-
-        if !collector.add_signature(signer_index, signature) {
-            return Ok(None);
-        }
-
-        info!(
-            cycle_number = cycle_number,
-            signer_index = signer_index,
-            collected = collector.signature_count(),
-            required = self.config.min_signatures,
-            "Added follower signature for RecordCollateralMove"
-        );
-
-        if collector.has_threshold(self.config.min_signatures) {
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .map_err(|e| ConsensusError::BlsSigningError {
-                    reason: e.to_string(),
-                })?;
-
-            Ok(Some(RecordCollateralMoveResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            }))
-        } else {
-            Ok(None)
-        }
+        self.collateral_move_sigs
+            .add_follower_signature(
+                &cycle_number,
+                signer_index,
+                signature,
+                self.config.min_signatures,
+                &self.bls_signer,
+            )
+            .await
     }
 
     /// Check if RecordCollateralMove signature threshold is reached
@@ -5343,29 +4571,9 @@ impl BridgeOrchestrator {
         &self,
         cycle_number: u64,
     ) -> Option<RecordCollateralMoveResult> {
-        let collectors = self.collateral_move_signatures.read().await;
-        let collector = collectors.get(&cycle_number)?;
-
-        if collector.has_threshold(self.config.min_signatures) {
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .ok()?;
-
-            Some(RecordCollateralMoveResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            })
-        } else {
-            None
-        }
+        self.collateral_move_sigs
+            .check_threshold(&cycle_number, self.config.min_signatures, &self.bls_signer)
+            .await
     }
 
     /// Check if RecordCollateralMove is already confirmed for this cycle
@@ -5380,8 +4588,7 @@ impl BridgeOrchestrator {
 
     /// Get collateral move signature count for diagnostics
     pub async fn get_collateral_move_signature_count(&self, cycle_number: u64) -> Option<usize> {
-        let collectors = self.collateral_move_signatures.read().await;
-        collectors.get(&cycle_number).map(|c| c.signature_count())
+        self.collateral_move_sigs.get_signature_count(&cycle_number).await
     }
 
     // ========================================================================
@@ -5529,11 +4736,9 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         leader_signature: BLSSignature,
     ) {
-        let mut collectors = self.mint_shares_signatures.write().await;
-        let mut collector = SignatureCollector::new(U256::from(cycle_number));
-        collector.add_signature(self.node_index, leader_signature);
-        collectors.insert(cycle_number, collector);
-        debug!(cycle_number = cycle_number, "Started signature collection for MintBridgedShares");
+        self.mint_shares_sigs
+            .start_collection(cycle_number, self.node_index, leader_signature)
+            .await;
     }
 
     /// Add a follower signature to the MintBridgedShares collection (leader)
@@ -5543,45 +4748,15 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<MintBridgedSharesResult>, BridgeError> {
-        let mut collectors = self.mint_shares_signatures.write().await;
-        let collector = collectors.get_mut(&cycle_number).ok_or_else(|| {
-            BridgeError::CycleNotFound { cycle_number }
-        })?;
-
-        if !collector.add_signature(signer_index, signature) {
-            return Ok(None);
-        }
-
-        info!(
-            cycle_number = cycle_number,
-            signer_index = signer_index,
-            collected = collector.signature_count(),
-            required = self.config.min_signatures,
-            "Added follower signature for MintBridgedShares"
-        );
-
-        if collector.has_threshold(self.config.min_signatures) {
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .map_err(|e| ConsensusError::BlsSigningError {
-                    reason: e.to_string(),
-                })?;
-
-            Ok(Some(MintBridgedSharesResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            }))
-        } else {
-            Ok(None)
-        }
+        self.mint_shares_sigs
+            .add_follower_signature(
+                &cycle_number,
+                signer_index,
+                signature,
+                self.config.min_signatures,
+                &self.bls_signer,
+            )
+            .await
     }
 
     /// Check if MintBridgedShares signature threshold is reached
@@ -5589,29 +4764,9 @@ impl BridgeOrchestrator {
         &self,
         cycle_number: u64,
     ) -> Option<MintBridgedSharesResult> {
-        let collectors = self.mint_shares_signatures.read().await;
-        let collector = collectors.get(&cycle_number)?;
-
-        if collector.has_threshold(self.config.min_signatures) {
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .ok()?;
-
-            Some(MintBridgedSharesResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            })
-        } else {
-            None
-        }
+        self.mint_shares_sigs
+            .check_threshold(&cycle_number, self.config.min_signatures, &self.bls_signer)
+            .await
     }
 
     /// Check if MintBridgedShares is already confirmed for this cycle
@@ -5626,8 +4781,7 @@ impl BridgeOrchestrator {
 
     /// Get mint shares signature count for diagnostics
     pub async fn get_mint_shares_signature_count(&self, cycle_number: u64) -> Option<usize> {
-        let collectors = self.mint_shares_signatures.read().await;
-        collectors.get(&cycle_number).map(|c| c.signature_count())
+        self.mint_shares_sigs.get_signature_count(&cycle_number).await
     }
 
     // ========================================================================
@@ -5706,11 +4860,9 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         leader_signature: BLSSignature,
     ) {
-        let mut collectors = self.complete_buy_signatures.write().await;
-        let mut collector = SignatureCollector::new(U256::from(cycle_number));
-        collector.add_signature(self.node_index, leader_signature);
-        collectors.insert(cycle_number, collector);
-        debug!(cycle_number, "Started completeBuyOrder signature collection");
+        self.complete_buy_sigs
+            .start_collection(cycle_number, self.node_index, leader_signature)
+            .await;
     }
 
     pub async fn add_complete_buy_order_signature(
@@ -5719,76 +4871,30 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<CompleteBuyOrderResult>, BridgeError> {
-        let mut collectors = self.complete_buy_signatures.write().await;
-        let collector = collectors.get_mut(&cycle_number).ok_or_else(|| {
-            BridgeError::CycleNotFound { cycle_number }
-        })?;
+        let result = self.complete_buy_sigs
+            .add_follower_signature(
+                &cycle_number,
+                signer_index,
+                signature,
+                self.config.min_signatures,
+                &self.bls_signer,
+            )
+            .await?;
 
-        if !collector.add_signature(signer_index, signature) {
-            return Ok(None);
-        }
-
-        info!(
-            cycle_number,
-            signer_index,
-            collected = collector.signature_count(),
-            required = self.config.min_signatures,
-            "Added follower signature for completeBuyOrder"
-        );
-
-        if collector.has_threshold(self.config.min_signatures) {
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .map_err(|e| ConsensusError::BlsSigningError {
-                    reason: e.to_string(),
-                })?;
-
+        if result.is_some() {
             self.complete_buy_notify.notify_waiters();
-
-            Ok(Some(CompleteBuyOrderResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            }))
-        } else {
-            Ok(None)
         }
+
+        Ok(result)
     }
 
     pub async fn check_complete_buy_order_threshold(
         &self,
         cycle_number: u64,
     ) -> Option<CompleteBuyOrderResult> {
-        let collectors = self.complete_buy_signatures.read().await;
-        let collector = collectors.get(&cycle_number)?;
-
-        if collector.has_threshold(self.config.min_signatures) {
-            let signatures: Vec<BLSSignature> = collector
-                .signatures()
-                .iter()
-                .map(|(_, sig)| sig.clone())
-                .collect();
-
-            let aggregated_signature = self
-                .bls_signer
-                .aggregate_signatures(signatures)
-                .ok()?;
-
-            Some(CompleteBuyOrderResult {
-                aggregated_signature,
-                signer_bitmap: collector.signer_bitmap(),
-                signature_count: collector.signature_count(),
-            })
-        } else {
-            None
-        }
+        self.complete_buy_sigs
+            .check_threshold(&cycle_number, self.config.min_signatures, &self.bls_signer)
+            .await
     }
 
     pub async fn is_complete_buy_order_confirmed(&self, cycle_number: u64) -> bool {
@@ -5800,8 +4906,7 @@ impl BridgeOrchestrator {
     }
 
     pub async fn get_complete_buy_order_signature_count(&self, cycle_number: u64) -> Option<usize> {
-        let collectors = self.complete_buy_signatures.read().await;
-        collectors.get(&cycle_number).map(|c| c.signature_count())
+        self.complete_buy_sigs.get_signature_count(&cycle_number).await
     }
 
     /// Mark orders as SharesBridged (Step 8 complete)

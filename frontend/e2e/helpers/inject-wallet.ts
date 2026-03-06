@@ -57,7 +57,7 @@ export function getInjectWalletScript(
   async function rpcCall(method, params) {
     const res = await fetch(getCurrentRpcUrl(), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params: params || [] }),
     });
     const json = await res.json();

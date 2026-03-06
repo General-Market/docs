@@ -284,21 +284,9 @@ impl CoinGeckoClient {
         Ok(by_date.into_values().collect())
     }
 
-    /// Fetch the full coin list (id, symbol, name) — lightweight.
-    pub async fn fetch_coin_list(&self) -> Result<Vec<CoinListEntry>, CgError> {
-        let url = format!("{BASE_URL}/coins/list");
-        self.get_json(&url, &[]).await
-    }
-
     /// Fetch all categories with market data from /coins/categories.
     pub async fn fetch_categories(&self) -> Result<Vec<CategoryData>, CgError> {
         let url = format!("{BASE_URL}/coins/categories");
-        self.get_json(&url, &[]).await
-    }
-
-    /// Fetch the lightweight category list from /coins/categories/list.
-    pub async fn fetch_categories_list(&self) -> Result<Vec<CategoryListEntry>, CgError> {
-        let url = format!("{BASE_URL}/coins/categories/list");
         self.get_json(&url, &[]).await
     }
 

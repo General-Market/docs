@@ -1,0 +1,6 @@
+{
+  "_comment": "Placeholder — overwritten by start.sh after local Morpho deploy",
+  "chainId": 111222333,
+  "contracts": {},
+  "marketParams": {}
+}

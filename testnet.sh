@@ -263,9 +263,22 @@ cmd_deploy() {
         echo -e "  ${GREEN}Funded deployer with 1M L3 USDC${NC}"
     fi
 
+    # Sync deployment JSONs to envs/testnet/ so switch-env.sh testnet stays current
+    if [ -d "envs/testnet" ]; then
+        [ -f "$DEPLOYMENT_FILE" ] && cp "$DEPLOYMENT_FILE" envs/testnet/deployment.json
+        [ -f "deployments/morpho-e2e.json" ] && cp deployments/morpho-e2e.json envs/testnet/morpho-deployment.json
+        [ -f "deployments/vision-batches.json" ] && cp deployments/vision-batches.json envs/testnet/vision-batches.json
+        # Update Vision address in envs/testnet/.env
+        VISION_ADDR=$(read_deployment_addr "Vision")
+        if [ -n "$VISION_ADDR" ] && [ -f "envs/testnet/.env" ]; then
+            sed -i '' "s|^NEXT_PUBLIC_VISION_ADDRESS=.*|NEXT_PUBLIC_VISION_ADDRESS=${VISION_ADDR}|" envs/testnet/.env
+        fi
+        echo -e "  ${GREEN}Synced deployment JSONs + Vision address → envs/testnet/${NC}"
+    fi
+
     echo ""
     echo -e "${GREEN}All contracts deployed. Push deployment files to GitHub:${NC}"
-    echo -e "  ${CYAN}git add deployments/ && git commit -m 'chore: testnet deployment' && git push mono main${NC}"
+    echo -e "  ${CYAN}git add deployments/ envs/testnet/ && git commit -m 'chore: testnet deployment' && git push mono main${NC}"
     echo -e "  ${CYAN}Then run: ./testnet.sh update${NC}"
 }
 
@@ -356,6 +369,9 @@ _start_issuers() {
 
     ISSUER_KEYS=("$ISSUER_1_KEY" "$ISSUER_2_KEY" "$ISSUER_3_KEY")
 
+    # Clean up stale WAL files and set log level
+    vps_be_ssh "cd $VPS_BE_DIR && rm -f logs/consensus-*.wal"
+
     # Read contract addresses from deployment file
     VISION_ADDR=$(read_deployment_addr "Vision")
     BRIDGE_PROXY=$(read_deployment_addr "BridgeProxy")
@@ -421,6 +437,8 @@ _start_issuers() {
                 > logs/issuer-$i.log 2>&1 &
             echo \$!"
         echo -e "  Issuer $i started on port $PORT"
+        # Stagger: let this issuer bind its port before the next one connects
+        [ $i -lt $ISSUER_COUNT ] && sleep 1
     done
 
     echo -e "  ${GREEN}All $ISSUER_COUNT issuers started${NC}"

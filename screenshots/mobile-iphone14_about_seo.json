@@ -1,0 +1,63 @@
+{
+  "title": "404: This page could not be found.",
+  "metaDescription": null,
+  "metaKeywords": null,
+  "ogTags": {
+    "og:image:alt": "General Market \u2014 On-chain Index Products",
+    "og:image:type": "image/png",
+    "og:image": "https://generalmarket.io/opengraph-image?45285916e25ef85d",
+    "og:image:width": "1200",
+    "og:image:height": "630"
+  },
+  "twitterTags": {
+    "twitter:card": "summary_large_image",
+    "twitter:image:alt": "General Market \u2014 On-chain Index Products",
+    "twitter:image:type": "image/png",
+    "twitter:image": "https://generalmarket.io/twitter-image?a040fd6482c03184",
+    "twitter:image:width": "1200",
+    "twitter:image:height": "600"
+  },
+  "canonical": "https://generalmarket.io",
+  "h1Tags": [
+    {
+      "text": "404",
+      "visible": true,
+      "rect": {
+        "x": 54,
+        "y": 397.5,
+        "width": 69.3125,
+        "height": 49,
+        "top": 397.5,
+        "right": 123.3125,
+        "bottom": 446.5,
+        "left": 54
+      },
+      "fontSize": "24px",
+      "color": "rgb(26, 26, 26)"
+    }
+  ],
+  "h2Tags": [
+    {
+      "text": "This page could not be found.",
+      "visible": true
+    }
+  ],
+  "h3Tags": [],
+  "ctaElements": [],
+  "images": [],
+  "navLinks": [],
+  "viewport": "width=device-width, initial-scale=1",
+  "jsonLd": [],
+  "bodyFontSize": "16px",
+  "hasHorizontalOverflow": false,
+  "pageWidth": 390,
+  "pageHeight": 844,
+  "viewportWidth": 390,
+  "viewportHeight": 844,
+  "robots": "noindex",
+  "lang": "en",
+  "bodyTextPreview": "404\nThis page could not be found.",
+  "preconnectLinks": [],
+  "httpStatus": 404,
+  "url": "https://www.generalmarket.io/about"
+}

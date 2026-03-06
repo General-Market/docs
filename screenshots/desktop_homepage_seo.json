@@ -1,0 +1,1922 @@
+{
+  "title": "Vision",
+  "metaDescription": "Vision prediction markets powered by AI agents on General Market.",
+  "metaKeywords": "index funds,ETF,institutional,on-chain,crypto trading,DeFi,autonomous capital markets,Base L2",
+  "ogTags": {
+    "og:title": "Vision",
+    "og:description": "Vision prediction markets powered by AI agents on General Market.",
+    "og:locale": "en",
+    "og:image:alt": "General Market \u2014 On-chain Index Products",
+    "og:image:type": "image/png",
+    "og:image": "https://generalmarket.io/opengraph-image?45285916e25ef85d",
+    "og:image:width": "1200",
+    "og:image:height": "630"
+  },
+  "twitterTags": {
+    "twitter:card": "summary_large_image",
+    "twitter:title": "Vision",
+    "twitter:description": "Vision prediction markets powered by AI agents on General Market.",
+    "twitter:image:alt": "General Market \u2014 On-chain Index Products",
+    "twitter:image:type": "image/png",
+    "twitter:image": "https://generalmarket.io/twitter-image?a040fd6482c03184",
+    "twitter:image:width": "1200",
+    "twitter:image:height": "600"
+  },
+  "canonical": "https://generalmarket.io",
+  "h1Tags": [],
+  "h2Tags": [],
+  "h3Tags": [
+    {
+      "text": "CoinGecko Crypto"
+    },
+    {
+      "text": "Pump.fun Tokens"
+    },
+    {
+      "text": "DefiLlama DeFi"
+    },
+    {
+      "text": "Finnhub Stocks"
+    },
+    {
+      "text": "Nasdaq Listings"
+    },
+    {
+      "text": "Zillow Real Estate"
+    },
+    {
+      "text": "Polymarket Predictions"
+    },
+    {
+      "text": "FINRA Short Interest"
+    },
+    {
+      "text": "FINRA Short Volume"
+    },
+    {
+      "text": "Continuous Futures"
+    },
+    {
+      "text": "Bitcoin On-Chain"
+    },
+    {
+      "text": "Yahoo Drinks"
+    },
+    {
+      "text": "Taiwan Stock Exchange"
+    },
+    {
+      "text": "Best Buy Products"
+    },
+    {
+      "text": "FRED Interest Rates"
+    },
+    {
+      "text": "EIA Energy Data"
+    },
+    {
+      "text": "US Treasury Yields"
+    },
+    {
+      "text": "ECB Exchange Rates"
+    },
+    {
+      "text": "World Bank Indicators"
+    },
+    {
+      "text": "Bureau of Labor Stats"
+    },
+    {
+      "text": "Adzuna Jobs"
+    },
+    {
+      "text": "Federal Spending"
+    },
+    {
+      "text": "IMF Indicators"
+    },
+    {
+      "text": "OPEC Oil Data"
+    },
+    {
+      "text": "CFTC Commitments"
+    },
+    {
+      "text": "SEC Filings"
+    },
+    {
+      "text": "Congress Votes"
+    },
+    {
+      "text": "Federal Courts"
+    },
+    {
+      "text": "GitHub Repositories"
+    },
+    {
+      "text": "npm Packages"
+    },
+    {
+      "text": "PyPI Packages"
+    },
+    {
+      "text": "Crates.io Rust"
+    },
+    {
+      "text": "StackOverflow"
+    },
+    {
+      "text": "Hacker News"
+    },
+    {
+      "text": "Cloudflare DNS"
+    },
+    {
+      "text": "OpenAlex Papers"
+    },
+    {
+      "text": "Crossref Citations"
+    },
+    {
+      "text": "PubMed Medical"
+    },
+    {
+      "text": "Twitch Streaming"
+    },
+    {
+      "text": "Movies & TV"
+    },
+    {
+      "text": "Last.fm Music"
+    },
+    {
+      "text": "Steam Gaming"
+    },
+    {
+      "text": "AniList Anime"
+    },
+    {
+      "text": "Reddit Communities"
+    },
+    {
+      "text": "Chaturbate Live"
+    },
+    {
+      "text": "Board Games"
+    },
+    {
+      "text": "Backpack.tf Trading"
+    },
+    {
+      "text": "4chan Boards"
+    },
+    {
+      "text": "Sports Stats"
+    },
+    {
+      "text": "Esports"
+    },
+    {
+      "text": "Theme Park Waits"
+    },
+    {
+      "text": "USGS Earthquakes"
+    },
+    {
+      "text": "Volcano Activity"
+    },
+    {
+      "text": "NOAA Weather"
+    },
+    {
+      "text": "Weather Alerts"
+    },
+    {
+      "text": "Open-Meteo"
+    },
+    {
+      "text": "Air Quality"
+    },
+    {
+      "text": "USGS Water"
+    },
+    {
+      "text": "NOAA Ocean Met"
+    },
+    {
+      "text": "NOAA Tides"
+    },
+    {
+      "text": "NDBC Ocean Buoys"
+    },
+    {
+      "text": "River Gauges"
+    },
+    {
+      "text": "NRC Nuclear"
+    },
+    {
+      "text": "Wildfire Tracking"
+    },
+    {
+      "text": "Disease Tracking"
+    },
+    {
+      "text": "Global Flights"
+    },
+    {
+      "text": "Transit Realtime"
+    },
+    {
+      "text": "CityBikes"
+    },
+    {
+      "text": "Parking Availability"
+    },
+    {
+      "text": "TomTom Traffic"
+    },
+    {
+      "text": "EV Charging"
+    },
+    {
+      "text": "Border Wait Times"
+    },
+    {
+      "text": "Airport Delays"
+    },
+    {
+      "text": "Ship Tracking"
+    },
+    {
+      "text": "Port Data"
+    },
+    {
+      "text": "eBird Observations"
+    },
+    {
+      "text": "Wildlife Tracking"
+    },
+    {
+      "text": "Animal Migration"
+    },
+    {
+      "text": "Animal Shelters"
+    },
+    {
+      "text": "Space Weather"
+    },
+    {
+      "text": "ISS Tracker"
+    },
+    {
+      "text": "Military Aircraft"
+    }
+  ],
+  "ctaElements": [
+    {
+      "tag": "A",
+      "text": "Investment",
+      "href": "/index",
+      "rect": {
+        "top": 27.75,
+        "left": 810.75,
+        "width": 128.875,
+        "height": 65.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "15px",
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(85, 85, 85)"
+    },
+    {
+      "tag": "A",
+      "text": "Vision",
+      "href": "/",
+      "rect": {
+        "top": 27.75,
+        "left": 939.625,
+        "width": 93.328125,
+        "height": 65.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "15px",
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "Login on Base",
+      "href": null,
+      "rect": {
+        "top": 42.5,
+        "left": 1329.328125,
+        "width": 126.25,
+        "height": 36
+      },
+      "aboveTheFold": true,
+      "fontSize": "14px",
+      "bgColor": "rgb(24, 24, 27)",
+      "color": "rgb(255, 255, 255)"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "Sign Up",
+      "href": null,
+      "rect": {
+        "top": 42.5,
+        "left": 1467.578125,
+        "width": 84.421875,
+        "height": 36
+      },
+      "aboveTheFold": true,
+      "fontSize": "14px",
+      "bgColor": "rgb(24, 24, 27)",
+      "color": "rgb(255, 255, 255)"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "",
+      "href": null,
+      "rect": {
+        "top": 42.5,
+        "left": 1564,
+        "width": 36,
+        "height": 36
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(153, 153, 153)"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "All 82",
+      "href": null,
+      "rect": {
+        "top": 97.75,
+        "left": 320,
+        "width": 65.796875,
+        "height": 35.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "13px",
+      "bgColor": "rgb(245, 245, 245)",
+      "color": "rgb(0, 0, 0)"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "Finance 14",
+      "href": null,
+      "rect": {
+        "top": 97.75,
+        "left": 389.796875,
+        "width": 98.828125,
+        "height": 35.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "13px",
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(85, 85, 85)"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "Economic 11",
+      "href": null,
+      "rect": {
+        "top": 97.75,
+        "left": 492.625,
+        "width": 110.9375,
+        "height": 35.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "13px",
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(85, 85, 85)"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "Regulatory 3",
+      "href": null,
+      "rect": {
+        "top": 97.75,
+        "left": 607.5625,
+        "width": 109.890625,
+        "height": 35.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "13px",
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(85, 85, 85)"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "Tech & Dev 7",
+      "href": null,
+      "rect": {
+        "top": 97.75,
+        "left": 721.453125,
+        "width": 112.703125,
+        "height": 35.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "13px",
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(85, 85, 85)"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "Academic 3",
+      "href": null,
+      "rect": {
+        "top": 97.75,
+        "left": 838.15625,
+        "width": 104.734375,
+        "height": 35.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "13px",
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(85, 85, 85)"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "Entertainment 13",
+      "href": null,
+      "rect": {
+        "top": 97.75,
+        "left": 946.890625,
+        "width": 136.953125,
+        "height": 35.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "13px",
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(85, 85, 85)"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "Geophysical 14",
+      "href": null,
+      "rect": {
+        "top": 97.75,
+        "left": 1087.84375,
+        "width": 126.640625,
+        "height": 35.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "13px",
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(85, 85, 85)"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "Transport 10",
+      "href": null,
+      "rect": {
+        "top": 97.75,
+        "left": 1218.484375,
+        "width": 110.21875,
+        "height": 35.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "13px",
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(85, 85, 85)"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "Nature 4",
+      "href": null,
+      "rect": {
+        "top": 97.75,
+        "left": 1332.703125,
+        "width": 84.484375,
+        "height": 35.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "13px",
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(85, 85, 85)"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "Space 3",
+      "href": null,
+      "rect": {
+        "top": 97.75,
+        "left": 1421.1875,
+        "width": 81.703125,
+        "height": 35.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "13px",
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(85, 85, 85)"
+    },
+    {
+      "tag": "A",
+      "text": "AniList Anime0:02Entertainment2mLocked",
+      "href": "/source/anilist",
+      "rect": {
+        "top": 177.5,
+        "left": 320,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "USGS Earthquakes0:03Geophysical5mLocked",
+      "href": "/source/earthquake",
+      "rect": {
+        "top": 177.5,
+        "left": 528,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "Border Wait Times0:05Transport2mLocked",
+      "href": "/source/cbp_border",
+      "rect": {
+        "top": 177.5,
+        "left": 736,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "Space Weather0:14Space5mLocked",
+      "href": "/source/spaceweather",
+      "rect": {
+        "top": 177.5,
+        "left": 944,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "Steam Gaming0:19Entertainment2m1.01x",
+      "href": "/source/steam",
+      "rect": {
+        "top": 177.5,
+        "left": 1152,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "Theme Park Waits0:20Entertainment2m1.02x",
+      "href": "/source/queue_times",
+      "rect": {
+        "top": 177.5,
+        "left": 1360,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "Parking Availability0:22Transport2m1.04x",
+      "href": "/source/parking",
+      "rect": {
+        "top": 177.5,
+        "left": 1568,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "Last.fm Music0:36Entertainment2m1.18x",
+      "href": "/source/lastfm",
+      "rect": {
+        "top": 177.5,
+        "left": 1776,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "Esports0:37Entertainment2m1.19x",
+      "href": "/source/pandascore",
+      "rect": {
+        "top": 177.5,
+        "left": 1984,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "CityBikes0:39Transport2m1.21x",
+      "href": "/source/citybikes",
+      "rect": {
+        "top": 177.5,
+        "left": 2192,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "Movies & TV0:53Entertainment2m1.34x",
+      "href": "/source/tmdb",
+      "rect": {
+        "top": 177.5,
+        "left": 2400,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "Sports Stats0:54Entertainment2m1.35x",
+      "href": "/source/sports",
+      "rect": {
+        "top": 177.5,
+        "left": 2608,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "Transit Realtime0:56Transport2m1.37x",
+      "href": "/source/gtfs_rt",
+      "rect": {
+        "top": 177.5,
+        "left": 2816,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "4chan Boards1:11Entertainment2m1.52x",
+      "href": "/source/fourchan",
+      "rect": {
+        "top": 177.5,
+        "left": 3024,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "Backpack.tf Trading1:28Entertainment2m1.69x",
+      "href": "/source/backpacktf",
+      "rect": {
+        "top": 177.5,
+        "left": 3232,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "Chaturbate Live1:45Entertainment2m1.85x",
+      "href": "/source/chaturbate",
+      "rect": {
+        "top": 177.5,
+        "left": 3440,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "Disease Tracking2:13Geophysical5m1.35x",
+      "href": "/source/epidemic",
+      "rect": {
+        "top": 177.5,
+        "left": 3648,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "Wildfire Tracking2:30Geophysical5m1.41x",
+      "href": "/source/wildfire",
+      "rect": {
+        "top": 177.5,
+        "left": 3856,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "NRC Nuclear2:47Geophysical5m1.48x",
+      "href": "/source/nrc_nuclear",
+      "rect": {
+        "top": 177.5,
+        "left": 4064,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "River Gauges3:04Geophysical5m1.55x",
+      "href": "/source/nwps",
+      "rect": {
+        "top": 177.5,
+        "left": 4272,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "NDBC Ocean Buoys3:21Geophysical5m1.61x",
+      "href": "/source/ndbc",
+      "rect": {
+        "top": 177.5,
+        "left": 4480,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "NOAA Tides3:38Geophysical5m1.68x",
+      "href": "/source/noaa_tides",
+      "rect": {
+        "top": 177.5,
+        "left": 4688,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "Cloudflare DNS3:44Tech & Dev5m1.70x",
+      "href": "/source/cloudflare",
+      "rect": {
+        "top": 177.5,
+        "left": 4896,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    },
+    {
+      "tag": "A",
+      "text": "NOAA Ocean Met3:55Geophysical5m1.75x",
+      "href": "/source/noaa_met",
+      "rect": {
+        "top": 177.5,
+        "left": 5104,
+        "width": 200,
+        "height": 107.5
+      },
+      "aboveTheFold": true,
+      "fontSize": "16px",
+      "bgColor": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)"
+    }
+  ],
+  "images": [
+    {
+      "src": "/favicon-32x32.png",
+      "alt": "",
+      "hasAlt": false,
+      "width": 32,
+      "height": 32
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-anilist.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 16,
+      "height": 4
+    },
+    {
+      "src": "/source-imgs/new-usgs.svg",
+      "alt": "",
+      "hasAlt": false,
+      "width": 500,
+      "height": 200
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-cbpborder.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-noaa.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 16,
+      "height": 6
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-steam.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 16,
+      "height": 5
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-queuetimes.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 16,
+      "height": 3
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-parkapi.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-lastfm.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 16,
+      "height": 4
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-pandascore.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/source-imgs/new-citybikes.svg",
+      "alt": "",
+      "hasAlt": false,
+      "width": 1034,
+      "height": 1034
+    },
+    {
+      "src": "/source-imgs/new-tmdb.svg",
+      "alt": "",
+      "hasAlt": false,
+      "width": 300,
+      "height": 22
+    },
+    {
+      "src": "/source-imgs/new-espn.svg",
+      "alt": "",
+      "hasAlt": false,
+      "width": 554,
+      "height": 137
+    },
+    {
+      "src": "/source-imgs/new-transitland2.svg",
+      "alt": "",
+      "hasAlt": false,
+      "width": 390,
+      "height": 180
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Ffourchan.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-backpacktf.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-chaturbate.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-diseasesh.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-firms.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-nrcnuclear.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-nwps.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-ndbc.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-noaatides.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/source-imgs/new-cloudflare.svg",
+      "alt": "",
+      "hasAlt": false,
+      "width": 300,
+      "height": 137
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-noaamet.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/source-imgs/new-hackernews.svg",
+      "alt": "",
+      "hasAlt": false,
+      "width": 256,
+      "height": 256
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-usgswater.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-airnow.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-milaircraft.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/source-imgs/new-nws.svg",
+      "alt": "",
+      "hasAlt": false,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-iss.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 16,
+      "height": 5
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-shelter.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/source-imgs/new-inaturalist.svg",
+      "alt": "",
+      "hasAlt": false,
+      "width": 1153,
+      "height": 210
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-bestbuy.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-yahoodrinks.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/source-imgs/finra.svg",
+      "alt": "",
+      "hasAlt": false,
+      "width": 131,
+      "height": 34
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-polymarket.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/source-imgs/zillow.svg",
+      "alt": "",
+      "hasAlt": false,
+      "width": 300,
+      "height": 71
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-finnhub.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-defillama.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-pumpfun.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-pubmed.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-crossref.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fcongress.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/source-imgs/new-sec.svg",
+      "alt": "",
+      "hasAlt": false,
+      "width": 720,
+      "height": 720
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fusaspending.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-adzuna.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/source-imgs/new-worldbank.svg",
+      "alt": "",
+      "hasAlt": false,
+      "width": 172,
+      "height": 34
+    },
+    {
+      "src": "/source-imgs/new-ecb.svg",
+      "alt": "",
+      "hasAlt": false,
+      "width": 98,
+      "height": 85
+    },
+    {
+      "src": "/source-imgs/new-treasury.svg",
+      "alt": "",
+      "hasAlt": false,
+      "width": 177,
+      "height": 177
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-eia.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/_next/image?url=%2Fsource-imgs%2Fnew-fred.png&w=32&q=75",
+      "alt": "",
+      "hasAlt": false,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "src": "/source-imgs/new-coingecko.png",
+      "alt": "CoinGecko Crypto",
+      "hasAlt": true,
+      "width": 2000,
+      "height": 438
+    },
+    {
+      "src": "/source-imgs/new-pumpfun.png",
+      "alt": "Pump.fun Tokens",
+      "hasAlt": true,
+      "width": 800,
+      "height": 250
+    },
+    {
+      "src": "/source-imgs/new-defillama.png",
+      "alt": "DefiLlama DeFi",
+      "hasAlt": true,
+      "width": 1600,
+      "height": 544
+    },
+    {
+      "src": "/source-imgs/new-finnhub.png",
+      "alt": "Finnhub Stocks",
+      "hasAlt": true,
+      "width": 800,
+      "height": 195
+    },
+    {
+      "src": "/source-imgs/new-nasdaq.svg",
+      "alt": "Nasdaq Listings",
+      "hasAlt": true,
+      "width": 155,
+      "height": 44
+    },
+    {
+      "src": "/source-imgs/zillow.svg",
+      "alt": "Zillow Real Estate",
+      "hasAlt": true,
+      "width": 300,
+      "height": 71
+    },
+    {
+      "src": "/source-imgs/new-polymarket.png",
+      "alt": "Polymarket Predictions",
+      "hasAlt": true,
+      "width": 512,
+      "height": 116
+    },
+    {
+      "src": "/source-imgs/finra.svg",
+      "alt": "FINRA Short Interest",
+      "hasAlt": true,
+      "width": 131,
+      "height": 34
+    },
+    {
+      "src": "/source-imgs/finra.svg",
+      "alt": "FINRA Short Volume",
+      "hasAlt": true,
+      "width": 131,
+      "height": 34
+    },
+    {
+      "src": "/source-imgs/new-fred.png",
+      "alt": "Continuous Futures",
+      "hasAlt": true,
+      "width": 400,
+      "height": 128
+    },
+    {
+      "src": "/source-imgs/new-coingecko.png",
+      "alt": "Bitcoin On-Chain",
+      "hasAlt": true,
+      "width": 2000,
+      "height": 438
+    },
+    {
+      "src": "/source-imgs/new-yahoodrinks.png",
+      "alt": "Yahoo Drinks",
+      "hasAlt": true,
+      "width": 800,
+      "height": 301
+    },
+    {
+      "src": "/source-imgs/new-twse.svg",
+      "alt": "Taiwan Stock Exchange",
+      "hasAlt": true,
+      "width": 300,
+      "height": 86
+    },
+    {
+      "src": "/source-imgs/new-bestbuy.png",
+      "alt": "Best Buy Products",
+      "hasAlt": true,
+      "width": 400,
+      "height": 234
+    },
+    {
+      "src": "/source-imgs/new-fred.png",
+      "alt": "FRED Interest Rates",
+      "hasAlt": true,
+      "width": 400,
+      "height": 128
+    },
+    {
+      "src": "/source-imgs/new-eia.png",
+      "alt": "EIA Energy Data",
+      "hasAlt": true,
+      "width": 1141,
+      "height": 304
+    },
+    {
+      "src": "/source-imgs/new-treasury.svg",
+      "alt": "US Treasury Yields",
+      "hasAlt": true,
+      "width": 177,
+      "height": 177
+    },
+    {
+      "src": "/source-imgs/new-ecb.svg",
+      "alt": "ECB Exchange Rates",
+      "hasAlt": true,
+      "width": 98,
+      "height": 85
+    },
+    {
+      "src": "/source-imgs/new-worldbank.svg",
+      "alt": "World Bank Indicators",
+      "hasAlt": true,
+      "width": 172,
+      "height": 34
+    },
+    {
+      "src": "/source-imgs/new-bls.svg",
+      "alt": "Bureau of Labor Stats",
+      "hasAlt": true,
+      "width": 226,
+      "height": 198
+    },
+    {
+      "src": "/source-imgs/new-adzuna.png",
+      "alt": "Adzuna Jobs",
+      "hasAlt": true,
+      "width": 600,
+      "height": 154
+    },
+    {
+      "src": "/source-imgs/usaspending.png",
+      "alt": "Federal Spending",
+      "hasAlt": true,
+      "width": 668,
+      "height": 72
+    },
+    {
+      "src": "/source-imgs/new-worldbank.svg",
+      "alt": "IMF Indicators",
+      "hasAlt": true,
+      "width": 172,
+      "height": 34
+    },
+    {
+      "src": "/source-imgs/new-eia.png",
+      "alt": "OPEC Oil Data",
+      "hasAlt": true,
+      "width": 1141,
+      "height": 304
+    },
+    {
+      "src": "/source-imgs/new-fred.png",
+      "alt": "CFTC Commitments",
+      "hasAlt": true,
+      "width": 400,
+      "height": 128
+    },
+    {
+      "src": "/source-imgs/new-sec.svg",
+      "alt": "SEC Filings",
+      "hasAlt": true,
+      "width": 720,
+      "height": 720
+    },
+    {
+      "src": "/source-imgs/congress.png",
+      "alt": "Congress Votes",
+      "hasAlt": true,
+      "width": 114,
+      "height": 114
+    },
+    {
+      "src": "/source-imgs/new-courtlistener.png",
+      "alt": "Federal Courts",
+      "hasAlt": true,
+      "width": 1024,
+      "height": 463
+    },
+    {
+      "src": "/source-imgs/new-github.png",
+      "alt": "GitHub Repositories",
+      "hasAlt": true,
+      "width": 1248,
+      "height": 285
+    },
+    {
+      "src": "/source-imgs/new-npm.png",
+      "alt": "npm Packages",
+      "hasAlt": true,
+      "width": 1560,
+      "height": 500
+    },
+    {
+      "src": "/source-imgs/new-pypi.svg",
+      "alt": "PyPI Packages",
+      "hasAlt": true,
+      "width": 248,
+      "height": 186
+    },
+    {
+      "src": "/source-imgs/new-cratesio.png",
+      "alt": "Crates.io Rust",
+      "hasAlt": true,
+      "width": 600,
+      "height": 500
+    },
+    {
+      "src": "/source-imgs/new-stackoverflow.png",
+      "alt": "StackOverflow",
+      "hasAlt": true,
+      "width": 1866,
+      "height": 372
+    },
+    {
+      "src": "/source-imgs/new-hackernews.svg",
+      "alt": "Hacker News",
+      "hasAlt": true,
+      "width": 256,
+      "height": 256
+    },
+    {
+      "src": "/source-imgs/new-cloudflare.svg",
+      "alt": "Cloudflare DNS",
+      "hasAlt": true,
+      "width": 300,
+      "height": 137
+    },
+    {
+      "src": "/source-imgs/new-openalex.png",
+      "alt": "OpenAlex Papers",
+      "hasAlt": true,
+      "width": 731,
+      "height": 134
+    },
+    {
+      "src": "/source-imgs/new-crossref.png",
+      "alt": "Crossref Citations",
+      "hasAlt": true,
+      "width": 800,
+      "height": 271
+    },
+    {
+      "src": "/source-imgs/new-pubmed.png",
+      "alt": "PubMed Medical",
+      "hasAlt": true,
+      "width": 800,
+      "height": 284
+    },
+    {
+      "src": "/source-imgs/new-twitch.png",
+      "alt": "Twitch Streaming",
+      "hasAlt": true,
+      "width": 1538,
+      "height": 430
+    },
+    {
+      "src": "/source-imgs/new-tmdb.svg",
+      "alt": "Movies & TV",
+      "hasAlt": true,
+      "width": 300,
+      "height": 22
+    },
+    {
+      "src": "/source-imgs/new-lastfm.png",
+      "alt": "Last.fm Music",
+      "hasAlt": true,
+      "width": 800,
+      "height": 202
+    },
+    {
+      "src": "/source-imgs/new-steam.png",
+      "alt": "Steam Gaming",
+      "hasAlt": true,
+      "width": 1280,
+      "height": 389
+    },
+    {
+      "src": "/source-imgs/new-anilist.png",
+      "alt": "AniList Anime",
+      "hasAlt": true,
+      "width": 787,
+      "height": 201
+    },
+    {
+      "src": "/source-imgs/new-reddit.png",
+      "alt": "Reddit Communities",
+      "hasAlt": true,
+      "width": 900,
+      "height": 252
+    },
+    {
+      "src": "/source-imgs/new-chaturbate.png",
+      "alt": "Chaturbate Live",
+      "hasAlt": true,
+      "width": 1019,
+      "height": 304
+    },
+    {
+      "src": "/source-imgs/new-bgg.png",
+      "alt": "Board Games",
+      "hasAlt": true,
+      "width": 591,
+      "height": 305
+    },
+    {
+      "src": "/source-imgs/new-backpacktf.png",
+      "alt": "Backpack.tf Trading",
+      "hasAlt": true,
+      "width": 1440,
+      "height": 304
+    },
+    {
+      "src": "/source-imgs/fourchan.png",
+      "alt": "4chan Boards",
+      "hasAlt": true,
+      "width": 300,
+      "height": 120
+    },
+    {
+      "src": "/source-imgs/new-espn.svg",
+      "alt": "Sports Stats",
+      "hasAlt": true,
+      "width": 554,
+      "height": 137
+    },
+    {
+      "src": "/source-imgs/new-pandascore.png",
+      "alt": "Esports",
+      "hasAlt": true,
+      "width": 400,
+      "height": 56
+    },
+    {
+      "src": "/source-imgs/new-queuetimes.png",
+      "alt": "Theme Park Waits",
+      "hasAlt": true,
+      "width": 600,
+      "height": 120
+    },
+    {
+      "src": "/source-imgs/new-usgs.svg",
+      "alt": "USGS Earthquakes",
+      "hasAlt": true,
+      "width": 500,
+      "height": 200
+    },
+    {
+      "src": "/source-imgs/new-volcano.png",
+      "alt": "Volcano Activity",
+      "hasAlt": true,
+      "width": 400,
+      "height": 80
+    },
+    {
+      "src": "/source-imgs/new-noaa.png",
+      "alt": "NOAA Weather",
+      "hasAlt": true,
+      "width": 1200,
+      "height": 430
+    },
+    {
+      "src": "/source-imgs/new-nws.svg",
+      "alt": "Weather Alerts",
+      "hasAlt": true,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "src": "/source-imgs/new-openmeteo.png",
+      "alt": "Open-Meteo",
+      "hasAlt": true,
+      "width": 754,
+      "height": 208
+    },
+    {
+      "src": "/source-imgs/new-airnow.png",
+      "alt": "Air Quality",
+      "hasAlt": true,
+      "width": 400,
+      "height": 210
+    },
+    {
+      "src": "/source-imgs/new-usgswater.png",
+      "alt": "USGS Water",
+      "hasAlt": true,
+      "width": 1204,
+      "height": 445
+    },
+    {
+      "src": "/source-imgs/new-noaamet.png",
+      "alt": "NOAA Ocean Met",
+      "hasAlt": true,
+      "width": 1138,
+      "height": 372
+    },
+    {
+      "src": "/source-imgs/new-noaatides.png",
+      "alt": "NOAA Tides",
+      "hasAlt": true,
+      "width": 1138,
+      "height": 372
+    },
+    {
+      "src": "/source-imgs/new-ndbc.png",
+      "alt": "NDBC Ocean Buoys",
+      "hasAlt": true,
+      "width": 1138,
+      "height": 372
+    },
+    {
+      "src": "/source-imgs/new-nwps.png",
+      "alt": "River Gauges",
+      "hasAlt": true,
+      "width": 1221,
+      "height": 1192
+    },
+    {
+      "src": "/source-imgs/new-nrcnuclear.png",
+      "alt": "NRC Nuclear",
+      "hasAlt": true,
+      "width": 2048,
+      "height": 438
+    },
+    {
+      "src": "/source-imgs/new-firms.png",
+      "alt": "Wildfire Tracking",
+      "hasAlt": true,
+      "width": 340,
+      "height": 340
+    },
+    {
+      "src": "/source-imgs/new-diseasesh.png",
+      "alt": "Disease Tracking",
+      "hasAlt": true,
+      "width": 1876,
+      "height": 450
+    },
+    {
+      "src": "/source-imgs/new-flights.png",
+      "alt": "Global Flights",
+      "hasAlt": true,
+      "width": 3840,
+      "height": 2160
+    },
+    {
+      "src": "/source-imgs/new-transitland2.svg",
+      "alt": "Transit Realtime",
+      "hasAlt": true,
+      "width": 390,
+      "height": 180
+    },
+    {
+      "src": "/source-imgs/new-citybikes.svg",
+      "alt": "CityBikes",
+      "hasAlt": true,
+      "width": 1034,
+      "height": 1034
+    },
+    {
+      "src": "/source-imgs/new-parkapi.png",
+      "alt": "Parking Availability",
+      "hasAlt": true,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "src": "/source-imgs/new-tomtomtraffic.png",
+      "alt": "TomTom Traffic",
+      "hasAlt": true,
+      "width": 1525,
+      "height": 293
+    },
+    {
+      "src": "/source-imgs/new-tomtomev.png",
+      "alt": "EV Charging",
+      "hasAlt": true,
+      "width": 1525,
+      "height": 293
+    },
+    {
+      "src": "/source-imgs/new-cbpborder.png",
+      "alt": "Border Wait Times",
+      "hasAlt": true,
+      "width": 1021,
+      "height": 1022
+    },
+    {
+      "src": "/source-imgs/new-faadelays.png",
+      "alt": "Airport Delays",
+      "hasAlt": true,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "src": "/source-imgs/new-aisstream.png",
+      "alt": "Ship Tracking",
+      "hasAlt": true,
+      "width": 444,
+      "height": 43
+    },
+    {
+      "src": "/source-imgs/new-marinetraffic.png",
+      "alt": "Port Data",
+      "hasAlt": true,
+      "width": 552,
+      "height": 136
+    },
+    {
+      "src": "/source-imgs/new-ebird.svg",
+      "alt": "eBird Observations",
+      "hasAlt": true,
+      "width": 139,
+      "height": 48
+    },
+    {
+      "src": "/source-imgs/new-inaturalist.svg",
+      "alt": "Wildlife Tracking",
+      "hasAlt": true,
+      "width": 1153,
+      "height": 210
+    },
+    {
+      "src": "/source-imgs/movebank.png",
+      "alt": "Animal Migration",
+      "hasAlt": true,
+      "width": 460,
+      "height": 130
+    },
+    {
+      "src": "/source-imgs/new-shelter.png",
+      "alt": "Animal Shelters",
+      "hasAlt": true,
+      "width": 800,
+      "height": 210
+    },
+    {
+      "src": "/source-imgs/new-noaa.png",
+      "alt": "Space Weather",
+      "hasAlt": true,
+      "width": 1200,
+      "height": 430
+    },
+    {
+      "src": "/source-imgs/new-iss.png",
+      "alt": "ISS Tracker",
+      "hasAlt": true,
+      "width": 1951,
+      "height": 643
+    },
+    {
+      "src": "/source-imgs/new-milaircraft.png",
+      "alt": "Military Aircraft",
+      "hasAlt": true,
+      "width": 1344,
+      "height": 1128
+    }
+  ],
+  "navLinks": [
+    {
+      "text": "Investment",
+      "href": "/index"
+    },
+    {
+      "text": "Vision",
+      "href": "/"
+    }
+  ],
+  "viewport": "width=device-width, initial-scale=1",
+  "jsonLd": [
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "General Market",
+      "url": "https://generalmarket.io",
+      "logo": "https://generalmarket.io/logo.svg",
+      "sameAs": [
+        "https://x.com/otc_max"
+      ],
+      "description": "The institutional-grade protocol for on-chain index products."
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "General Market",
+      "url": "https://generalmarket.io",
+      "description": "The institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index products on-chain.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://generalmarket.io/?search={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "General Market",
+      "operatingSystem": "Web",
+      "applicationCategory": "FinanceApplication",
+      "description": "The institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index products.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "General Market",
+        "url": "https://generalmarket.io"
+      }
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is General Market?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "General Market is an institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index tracking products (ITPs) that track baskets of crypto assets, similar to how ETFs work in traditional finance."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What are Index Tracking Products (ITPs)?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "ITPs are tokenized index products that hold a fixed basket of crypto assets with defined weights. Their NAV (Net Asset Value) floats with the underlying asset prices, just like an ETF. You can create custom ITPs or trade existing ones."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does lending work on General Market?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "General Market integrates with Morpho lending markets. You can deposit USDC to earn yield, or use your ITP shares as collateral to borrow against your positions."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What do I need to get started?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "You need a Web3 wallet (like MetaMask) connected to the Index L3 network, and USDC tokens. You can then browse the Markets tab to buy existing ITPs or create your own custom index."
+          }
+        }
+      ]
+    }
+  ],
+  "bodyFontSize": "16px",
+  "hasHorizontalOverflow": false,
+  "pageWidth": 1920,
+  "pageHeight": 8892,
+  "viewportWidth": 1920,
+  "viewportHeight": 1080,
+  "robots": "index, follow",
+  "lang": "en",
+  "bodyTextPreview": "General Market \u2014 Decentralized Index Products\nGeneral Market\nInvestment\nVision\nLogin on Base\nSign Up\nAll 82\nFinance 14\nEconomic 11\nRegulatory 3\nTech & Dev 7\nAcademic 3\nEntertainment 13\nGeophysical 14\nTransport 10\nNature 4\nSpace 3\nLIVE BATCHES\n51 batches\n4 locked\nAniList Anime\n0:02\nENTERTAINMENT\n2m\nLOCKED\nUSGS Earthquakes\n0:03\nGEOPHYSICAL\n5m\nLOCKED\nBorder Wait Times\n0:05\nTRANSPORT\n2m\nLOCKED\nSpace Weather\n0:14\nSPACE\n5m\nLOCKED\nSteam Gaming\n0:19\nENTERTAINMENT\n2m\n1.01x\nTheme Park Waits\n0:20\nENTERTAINMENT\n2m\n1.02x\nParking Availability\n0:22\nTRANSPORT\n2m\n1.04x\nLast.fm Music\n0:36\nENTERTAINMENT\n2m\n1.18x\nEsports\n0:37\nENTERTAINMENT\n2m\n1.19x\nCityBikes\n0:39\nTRANSPORT\n2m\n1.21x\nMovies & TV\n0:53\nENTERTAINMENT\n2m\n1.34x\nSports Stats\n0:54\nENTERTAINMENT\n2m\n1.35x\nTransit Realtime\n0:56\nTRANSPORT\n2m\n1.37x\n4chan B",
+  "preconnectLinks": [],
+  "httpStatus": 200,
+  "url": "https://www.generalmarket.io/"
+}

@@ -11,14 +11,6 @@ export function connectWalletButton(page: Page): Locator {
   return page.getByRole('button', { name: /Connect Wallet|Log\s?In|Login on Base/ });
 }
 
-export function disconnectButton(page: Page): Locator {
-  return page.getByRole('button', { name: 'Disconnect' });
-}
-
-export function switchNetworkButton(page: Page): Locator {
-  return page.getByRole('button', { name: 'Switch to Index Arbitrum' });
-}
-
 // ── ITP Listing ─────────────────────────────────────────────
 
 export function itpCard(page: Page): Locator {
@@ -38,15 +30,7 @@ export function borrowButtonOnCard(page: Page): Locator {
   return itpCard(page).first().getByRole('button', { name: 'Borrow', exact: true });
 }
 
-export function rebalanceButton(page: Page): Locator {
-  return itpCard(page).first().getByRole('button', { name: 'Rebalance', exact: true });
-}
-
-// ── Modal backdrop ──────────────────────────────────────────
-
-export function modalBackdrop(page: Page): Locator {
-  return page.locator('.fixed.inset-0.bg-black\\/60');
-}
+// ── Modal ───────────────────────────────────────────────────
 
 export function modalContainer(page: Page): Locator {
   return page.locator('.bg-card.border.border-border-light.rounded-xl');

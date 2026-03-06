@@ -1,6 +1,6 @@
 //! Execution component builders (custody, swap, cross-chain orchestrators)
 
-use super::{BootstrapError, BootstrapParams, ExecutionComponents};
+use super::{BootstrapError, ExecutionComponents};
 use crate::execution::crosschain_orchestrator::{CrossChainOrchestrator, CrossChainOrchestratorConfig};
 use crate::execution::swap_orchestrator::{SwapOrchestrator, SwapOrchestratorConfig};
 use crate::{CustodyWriter, CustodyWriterConfig, IssuerConfig, RoutingConfig};
@@ -14,7 +14,6 @@ use tracing::{info, warn};
 /// Builder for execution-related components
 pub struct ExecutionBuilder<'a> {
     config: &'a IssuerConfig,
-    params: &'a BootstrapParams,
     node_id: u32,
     cached_client: &'a Option<Arc<CachedQuoteClient<OneInchQuoteClient>>>,
 }
@@ -22,13 +21,11 @@ pub struct ExecutionBuilder<'a> {
 impl<'a> ExecutionBuilder<'a> {
     pub fn new(
         config: &'a IssuerConfig,
-        params: &'a BootstrapParams,
         node_id: u32,
         cached_client: &'a Option<Arc<CachedQuoteClient<OneInchQuoteClient>>>,
     ) -> Self {
         Self {
             config,
-            params,
             node_id,
             cached_client,
         }

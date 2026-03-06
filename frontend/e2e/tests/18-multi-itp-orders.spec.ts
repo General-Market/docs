@@ -34,14 +34,24 @@ import {
   BRIDGED_ITP,
 } from '../helpers/backend-api';
 
-const INDEX_CONTRACT = '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
+// Read Index contract address from deployment.json
+const INDEX_CONTRACT = (() => {
+  try {
+    const { readFileSync } = require('fs');
+    const { join } = require('path');
+    const path = join(__dirname, '..', '..', '..', 'deployments', 'active-deployment.json');
+    return JSON.parse(readFileSync(path, 'utf-8')).contracts.Index;
+  } catch {
+    return '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
+  }
+})();
 
 /** Build the bytes32 ITP ID from a number (1-indexed) */
 function itpIdFromNumber(n: number): string {
   return '0x' + n.toString(16).padStart(64, '0');
 }
 
-const IS_TESTNET = process.env.E2E_TESTNET === '1';
+import { IS_ANVIL } from '../env';
 
 test.describe('Multi-ITP Order Processing', () => {
   test('buy ITP2 order fills via issuer consensus', async () => {
@@ -109,7 +119,7 @@ test.describe('Multi-ITP Order Processing', () => {
     // 2. Ensure user has L3 shares for ITP2
     const sharesBefore = await getL3UserShares(TEST_ADDRESS, itp2Id);
     if (sharesBefore < 50n * 10n ** 18n) {
-      if (IS_TESTNET) {
+      if (!IS_ANVIL) {
         // On testnet, place a real buy order instead of minting
         console.log('No ITP2 shares — placing buy order...');
         const usdcAmt = 200n * 10n ** 6n;
@@ -134,7 +144,7 @@ test.describe('Multi-ITP Order Processing', () => {
     // 3. Deploy BridgedITP for ITP2 if not yet deployed (test 05 may not have run)
     let bridgedAddr = await getBridgedItpAddress(itp2Id);
     if (bridgedAddr === '0x' + '0'.repeat(40)) {
-      if (IS_TESTNET) {
+      if (!IS_ANVIL) {
         test.skip(true, 'No BridgedITP for ITP2 on testnet — bridge deploy needed');
         return;
       }
@@ -143,7 +153,7 @@ test.describe('Multi-ITP Order Processing', () => {
       console.log(`Deployed BridgedITP for ITP2: ${bridgedAddr}`);
     }
 
-    if (!IS_TESTNET) {
+    if (IS_ANVIL) {
       await mintBridgedItp(TEST_ADDRESS, itp2Id, 50n * 10n ** 18n);
     }
 
@@ -197,7 +207,7 @@ test.describe('Multi-ITP Order Processing', () => {
     // Ensure user has L3 shares for ITP1
     const sharesBefore = await getL3UserShares(TEST_ADDRESS, itp1Id);
     if (sharesBefore < 50n * 10n ** 18n) {
-      if (IS_TESTNET) {
+      if (!IS_ANVIL) {
         console.log('No ITP1 shares — placing buy order...');
         await placeBuyOrderDirect(TEST_ADDRESS, itp1Id, 200n * 10n ** 6n, 10n * 10n ** 18n);
         try {
@@ -217,12 +227,12 @@ test.describe('Multi-ITP Order Processing', () => {
     }
 
     // Mint BridgedITP on Arb (only on Anvil — testnet uses existing bridge balance)
-    if (!IS_TESTNET) {
+    if (IS_ANVIL) {
       await mintBridgedItp(TEST_ADDRESS, itp1Id, 50n * 10n ** 18n);
     }
 
     // On testnet, verify user has BridgedITP from prior bridge buy (test 08)
-    if (IS_TESTNET) {
+    if (!IS_ANVIL) {
       const bridgedBal = BigInt(await erc20BalanceOf(BRIDGED_ITP, TEST_ADDRESS));
       if (bridgedBal === 0n) {
         test.skip(true, 'No BridgedITP balance on Arb — bridge buy test (08) must create BridgedITP first');

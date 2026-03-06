@@ -351,38 +351,6 @@ impl TwitchMarketSource {
         Ok(all_games)
     }
 
-    /// Fetch viewer counts for specific user IDs (batched by 100).
-    /// Returns a map of user_login -> viewer_count for currently live streamers.
-    async fn fetch_streams_by_user_ids(
-        &self,
-        user_ids: &[String],
-    ) -> Result<HashMap<String, u64>> {
-        let mut result = HashMap::new();
-
-        for chunk in user_ids.chunks(BATCH_SIZE) {
-            let id_params: String = chunk
-                .iter()
-                .map(|id| format!("user_id={}", id))
-                .collect::<Vec<_>>()
-                .join("&");
-
-            let url = format!("{}/streams?first={}&{}", HELIX_URL, BATCH_SIZE, id_params);
-
-            match self.helix_get::<TwitchStream>(&url).await {
-                Ok(resp) => {
-                    for stream in resp.data {
-                        result.insert(stream.user_id.clone(), stream.viewer_count);
-                    }
-                }
-                Err(e) => {
-                    warn!("Failed to fetch streams batch: {:?}", e);
-                }
-            }
-        }
-
-        Ok(result)
-    }
-
     /// Update the peak viewer cache with currently live streams.
     /// - If a streamer is new and has >= MIN_VIEWER_COUNT, add them.
     /// - If a streamer already exists, update max_viewers if current > stored max.

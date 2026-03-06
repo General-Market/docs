@@ -134,7 +134,7 @@ impl IssuerBootstrap {
             .await?;
 
         // Build execution components
-        let execution = ExecutionBuilder::new(&self.config, &self.params, node_id, &price.shared_cached_client)
+        let execution = ExecutionBuilder::new(&self.config, node_id, &price.shared_cached_client)
             .build()
             .await?;
 

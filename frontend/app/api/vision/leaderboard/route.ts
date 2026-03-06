@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
+import { ISSUER_VISION_URL } from '@/lib/config'
 
-const ISSUER_URL = process.env.ISSUER_VISION_URL || 'http://localhost:10001'
+const ISSUER_URL = ISSUER_VISION_URL
 
 export async function GET(request: Request) {
   try {

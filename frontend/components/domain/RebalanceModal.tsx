@@ -13,6 +13,8 @@ import { useTranslations } from 'next-intl'
 import { DATA_NODE_URL, ARB_RPC_URL as ARB_RPC, L3_RPC_URL as L3_RPC } from '@/lib/config'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 
+const L3_INDEX = INDEX_PROTOCOL.index
+
 interface CoinEntry { id: string; image: string }
 
 /** Tiny coin logo — loads CoinGecko image with graceful fallback */
@@ -46,7 +48,6 @@ function CoinLogo({ symbol, coinMap, size = 18 }: { symbol: string; coinMap: Rec
     />
   )
 }
-const L3_INDEX = '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6'
 const DEPLOYER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
 
 interface RebalanceModalProps {

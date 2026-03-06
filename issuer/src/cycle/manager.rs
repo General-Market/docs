@@ -362,18 +362,6 @@ impl CycleManager {
             .unwrap_or_default()
             .as_millis() as u64
     }
-
-    /// Computes cycle number and phase from wall-clock time.
-    fn wall_clock_cycle_and_phase(cycle_duration_ms: u64, phase_duration_ms: u64) -> (u64, CyclePhase) {
-        let now_ms = Self::unix_timestamp_ms();
-        let cycle = now_ms / cycle_duration_ms;
-        let offset_in_cycle = now_ms % cycle_duration_ms;
-        let phase_index = (offset_in_cycle / phase_duration_ms) as usize;
-        let phase = CyclePhase::from_index(phase_index.min(CyclePhase::count() - 1))
-            .unwrap_or_default();
-        (cycle, phase)
-    }
-
     /// Runs the cycle loop until shutdown signal is received.
     ///
     /// # Arguments
@@ -454,10 +442,22 @@ impl CycleManager {
             };
 
             // Advance cycle number
-            cycle_number += 1;
-            // For heartbeat, realign to wall-clock so nodes agree
-            if matches!(trigger, CycleTrigger::Heartbeat) {
-                cycle_number = Self::unix_timestamp_ms() / max_cycle_ms;
+            let wall_clock_cycle = Self::unix_timestamp_ms() / max_cycle_ms;
+            match trigger {
+                CycleTrigger::Heartbeat => {
+                    // Heartbeat: ALWAYS use wall-clock for cross-node agreement
+                    cycle_number = wall_clock_cycle;
+                }
+                CycleTrigger::WorkDriven => {
+                    // WorkDriven: prefer wall-clock, but cap at wall_clock + 2 to prevent
+                    // runaway cycle numbers during rapid bursts (which would cause Heartbeat
+                    // drops that stall the main loop).
+                    cycle_number = if wall_clock_cycle > cycle_number {
+                        wall_clock_cycle
+                    } else {
+                        std::cmp::min(cycle_number + 1, wall_clock_cycle + 2)
+                    };
+                }
             }
 
             self.state.set_cycle_and_phase(cycle_number, CyclePhase::SignSubmit);
@@ -599,9 +599,19 @@ impl CycleManager {
                 }
             };
 
-            cycle_number += 1;
-            if matches!(trigger, CycleTrigger::Heartbeat) {
-                cycle_number = Self::unix_timestamp_ms() / max_cycle_ms;
+            // Same cycle advancement logic as start_wall_clock
+            let wall_clock_cycle = Self::unix_timestamp_ms() / max_cycle_ms;
+            match trigger {
+                CycleTrigger::Heartbeat => {
+                    cycle_number = wall_clock_cycle;
+                }
+                CycleTrigger::WorkDriven => {
+                    cycle_number = if wall_clock_cycle > cycle_number {
+                        wall_clock_cycle
+                    } else {
+                        std::cmp::min(cycle_number + 1, wall_clock_cycle + 2)
+                    };
+                }
             }
 
             self.state.set_cycle_and_phase(cycle_number, CyclePhase::SignSubmit);

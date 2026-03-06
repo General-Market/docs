@@ -20,6 +20,9 @@ Cargo.lock
 .pids
 .pids.info
 
+# Environment sentinel
+.active-env
+
 # IDE
 .idea/
 .vscode/
@@ -40,6 +43,9 @@ Thumbs.db
 *.env.local
 !*.env.example
 !*.env.local.example
+# Allow versioned per-env configs in envs/
+!envs/
+!envs/**
 
 # Node modules
 node_modules/

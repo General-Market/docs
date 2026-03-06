@@ -8,11 +8,9 @@
 //!   Follower: receive proposal -> verify +-50% -> BLS co-sign -> replicate config to own DN
 
 use std::collections::HashMap;
-use std::sync::Arc;
 
-use ethers::types::H256;
 use serde::{Deserialize, Serialize};
-use tracing::{info, warn, error};
+use tracing::{info, warn};
 
 /// Tolerance for follower verification
 const THRESHOLD_TOLERANCE: f64 = 0.50;

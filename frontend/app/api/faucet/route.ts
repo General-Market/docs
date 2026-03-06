@@ -9,10 +9,14 @@ import { privateKeyToAccount } from 'viem/accounts'
  * POST /api/faucet { address: "0x...", amount?: "1000" }
  */
 
+import { L3_RPC_SERVER } from '@/lib/config'
+
 const DEPLOYER_KEY = '0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537' as const
-const L3_RPC = process.env.L3_RPC_URL || process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://142.132.164.24/'
-const L3_WUSDC = '0xcb6C040bd4E1742840AD5542C6fDDaF74dB73AF6' as `0x${string}`
-const CHAIN_ID = 111222333
+const L3_RPC = L3_RPC_SERVER
+
+import _deployment from '@/lib/contracts/deployment.json'
+const L3_WUSDC = (_deployment.contracts.L3_WUSDC || '0xcb6C040bd4E1742840AD5542C6fDDaF74dB73AF6') as `0x${string}`
+const CHAIN_ID = _deployment.chainId || 111222333
 const MAX_MINT = 10_000 // max 10k USDC per request
 
 const MINT_ABI = [{

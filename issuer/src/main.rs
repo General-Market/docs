@@ -716,6 +716,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         // In-flight guards: prevent duplicate spawns of the same processing phase
         let price_active = Arc::new(AtomicBool::new(false));
         let buy_active = Arc::new(AtomicBool::new(false));
+        let bridge_buy_post_active = Arc::new(AtomicBool::new(false));
         let sell_active = Arc::new(AtomicBool::new(false));
         let l3_active = Arc::new(AtomicBool::new(false));
         let itp_active = Arc::new(AtomicBool::new(false));
@@ -740,22 +741,30 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
             let is_heartbeat = state.is_heartbeat();
             let trigger = state.get_trigger();
 
-            if current_cycle > last_cycle {
+            if current_cycle != last_cycle {
                 last_cycle = current_cycle;
                 info!(cycle = current_cycle, trigger = ?trigger, "Entering consensus cycle");
 
                 // Phase -1a: On-chain consensus pause check (fail-safe: treat RPC errors as paused)
-                match consensus_chain_reader.is_consensus_paused().await {
-                    Ok(true) => {
+                // Use timeout to prevent main loop from blocking on hung RPC
+                match tokio::time::timeout(
+                    std::time::Duration::from_secs(5),
+                    consensus_chain_reader.is_consensus_paused()
+                ).await {
+                    Ok(Ok(true)) => {
                         warn!(cycle = current_cycle, "Consensus paused on-chain, skipping cycle");
                         continue;
                     }
-                    Err(e) => {
+                    Ok(Err(e)) => {
                         error!(cycle = current_cycle, error = %e,
                             "Failed to check consensusPaused, treating as paused (fail-safe)");
                         continue;
                     }
-                    Ok(false) => {} // proceed normally
+                    Err(_) => {
+                        warn!(cycle = current_cycle, "consensusPaused check timed out (5s), skipping cycle");
+                        continue;
+                    }
+                    Ok(Ok(false)) => {} // proceed normally
                 }
 
                 let start_time = std::time::Instant::now();
@@ -902,6 +911,35 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         }
                     }
 
+                    // Cross-chain BUY post-processing — batch/fills/mint for SubmittedOnL3 orders
+                    // Runs independently from detection+bridge+submit so buy_active isn't held during the slow 8-step flow
+                    if !bridge_buy_post_active.load(Ordering::Acquire) {
+                        if let (Some(ref arb_reader), Some(ref orchestrator), Some(ref arb_writer)) =
+                            (&arbitrum_reader_for_task, &bridge_orchestrator_for_task, &arbitrum_writer_for_task)
+                        {
+                            bridge_buy_post_active.store(true, Ordering::Release);
+                            let flag = bridge_buy_post_active.clone();
+                            let p = protocol.clone();
+                            let ar = Arc::clone(arb_reader);
+                            let orch = Arc::clone(orchestrator);
+                            let aw = Arc::clone(arb_writer);
+                            let cr = consensus_chain_reader.clone();
+                            let dnu = data_node_url_for_task.clone();
+                            let iid = itp_id_for_task.clone();
+                            let nav = local_nav_fallback;
+                            let qt = quote_tokens_for_task.clone();
+                            let cycle = current_cycle;
+                            let ni = node_index_for_task;
+                            let nu = consensus_config.num_issuers;
+                            tokio::spawn(async move {
+                                let _guard = FlagGuard(flag);
+                                run_cross_chain_buy_post_processing(
+                                    p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt,
+                                ).await;
+                            });
+                        }
+                    }
+
                     // Cross-chain SELL — spawn if not already running
                     if !sell_active.load(Ordering::Acquire) {
                         if let (Some(ref arb_reader), Some(ref orchestrator), Some(ref arb_writer)) =
@@ -1007,47 +1045,50 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                     }
 
                     // Stale order watchdog: ONLY on heartbeat cycles, check every 50
+                    // Non-blocking: skip if orchestrator lock is held by spawned tasks
                     if is_heartbeat && current_cycle % 50 == 0 {
-                        // Skip watchdog if buy or sell tasks are actively processing
                         let any_order_task_active = buy_active.load(Ordering::Acquire)
+                            || bridge_buy_post_active.load(Ordering::Acquire)
                             || sell_active.load(Ordering::Acquire);
                         if !any_order_task_active {
                             if let Some(ref orchestrator) = bridge_orchestrator_for_task {
-                                let orch = orchestrator.read().await;
-                                let stale_orders = orch.get_stale_orders().await;
-                                if !stale_orders.is_empty() {
-                                    warn!(
-                                        cycle = current_cycle,
-                                        count = stale_orders.len(),
-                                        "Stale order watchdog: found stuck orders, resetting for retry"
-                                    );
-                                    drop(orch);
-                                    let orch = orchestrator.read().await;
-                                    for (order_id, status) in &stale_orders {
+                                if let Ok(orch) = orchestrator.try_read() {
+                                    let stale_orders = orch.get_stale_orders().await;
+                                    if !stale_orders.is_empty() {
                                         warn!(
-                                            order_id = %order_id,
-                                            status = ?status,
-                                            "Resetting stale order"
+                                            cycle = current_cycle,
+                                            count = stale_orders.len(),
+                                            "Stale order watchdog: found stuck orders, resetting for retry"
                                         );
-                                        orch.reset_stale_order(order_id).await;
+                                        drop(orch);
+                                        if let Ok(orch) = orchestrator.try_read() {
+                                            for (order_id, status) in &stale_orders {
+                                                warn!(
+                                                    order_id = %order_id,
+                                                    status = ?status,
+                                                    "Resetting stale order"
+                                                );
+                                                orch.reset_stale_order(order_id).await;
 
-                                        // For cross-chain orders, also clear from ArbitrumReader dedup
-                                        if matches!(status,
-                                            issuer::bridge::BridgeOrderStatus::Pending |
-                                            issuer::bridge::BridgeOrderStatus::BridgedToL3
-                                        ) {
-                                            if let Some(ref arb_reader) = arbitrum_reader_for_task {
-                                                let chain_id = arb_reader.config().chain_id;
-                                                arb_reader.remove_seen_order(chain_id, *order_id).await;
+                                                if matches!(status,
+                                                    issuer::bridge::BridgeOrderStatus::Pending |
+                                                    issuer::bridge::BridgeOrderStatus::BridgedToL3
+                                                ) {
+                                                    if let Some(ref arb_reader) = arbitrum_reader_for_task {
+                                                        let chain_id = arb_reader.config().chain_id;
+                                                        arb_reader.remove_seen_order(chain_id, *order_id).await;
+                                                    }
+                                                }
                                             }
                                         }
                                     }
-                                }
 
-                                // Periodic watchdog cleanup
-                                if current_cycle % 500 == 0 {
-                                    let orch = orchestrator.read().await;
-                                    orch.cleanup_watchdog().await;
+                                    // Periodic watchdog cleanup
+                                    if current_cycle % 500 == 0 {
+                                        if let Ok(orch) = orchestrator.try_read() {
+                                            orch.cleanup_watchdog().await;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1069,13 +1110,19 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                     // Signal CycleManager: check if any task is still running or has pending work
                     let has_spawned = price_active.load(Ordering::Acquire)
                         || buy_active.load(Ordering::Acquire)
+                        || bridge_buy_post_active.load(Ordering::Acquire)
                         || sell_active.load(Ordering::Acquire)
                         || l3_active.load(Ordering::Acquire)
                         || itp_active.load(Ordering::Acquire)
                         || rebalance_active.load(Ordering::Acquire)
                         || mirror_sync_active.load(Ordering::Acquire);
+                    // Non-blocking: use try_read() to avoid deadlocking the main loop
+                    // if a spawned task holds the orchestrator write lock.
                     let has_pending = has_spawned || if let Some(ref orch) = bridge_orchestrator_for_task {
-                        orch.read().await.has_in_flight_orders().await
+                        match orch.try_read() {
+                            Ok(o) => o.has_in_flight_orders().await,
+                            Err(_) => true, // write lock held by spawned task → assume work pending
+                        }
                     } else {
                         false
                     };
@@ -1475,15 +1522,15 @@ async fn run_cross_chain_processing<P, W, K, PF>(
     protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
     arb_reader: Arc<issuer::ArbitrumChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
     orchestrator: Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
-    arb_writer: Arc<issuer::ArbitrumChainWriter>,
-    chain_reader: Arc<dyn common::traits::ChainReader>,
+    _arb_writer: Arc<issuer::ArbitrumChainWriter>,
+    _chain_reader: Arc<dyn common::traits::ChainReader>,
     current_cycle: u64,
     node_index: u8,
     num_issuers: u8,
-    data_node_url_for_task: Option<String>,
-    itp_id_for_task: String,
-    local_nav_fallback: ethers::types::U256,
-    quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
+    _data_node_url_for_task: Option<String>,
+    _itp_id_for_task: String,
+    _local_nav_fallback: ethers::types::U256,
+    _quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -1495,9 +1542,13 @@ async fn run_cross_chain_processing<P, W, K, PF>(
         Err(e) => { debug!(cycle = current_cycle, error = %e, "Failed to get confirmed block"); return; }
     };
 
-    if confirmed_block == 0 { return; }
+    if confirmed_block == 0 {
+        debug!(cycle = current_cycle, "Cross-chain detection: confirmed_block=0, skipping");
+        return;
+    }
 
     let from_block = confirmed_block.saturating_sub(10000);
+    debug!(cycle = current_cycle, confirmed_block, from_block, "Cross-chain detection: scanning Arb chain");
 
     match arb_reader.get_confirmed_cross_chain_orders(from_block, confirmed_block).await {
         Ok(orders) if !orders.is_empty() => {
@@ -1595,6 +1646,36 @@ async fn run_cross_chain_processing<P, W, K, PF>(
         Err(e) => { warn!(cycle = current_cycle, error = %e, "Failed to fetch cross-chain orders"); }
     }
 
+
+    if current_cycle % 1000 == 0 {
+        arb_reader.clear_old_seen_orders(100_000).await;
+    }
+
+}
+
+/// Cross-chain BUY post-processing — batch/fills/mint for SubmittedOnL3 orders
+///
+/// Split from run_cross_chain_processing so detection+bridge+submit (fast) doesn't
+/// hold buy_active during the slow batch/fills/mint pipeline.
+async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
+    protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
+    _arb_reader: Arc<issuer::ArbitrumChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
+    orchestrator: Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
+    arb_writer: Arc<issuer::ArbitrumChainWriter>,
+    chain_reader: Arc<dyn common::traits::ChainReader>,
+    current_cycle: u64,
+    node_index: u8,
+    num_issuers: u8,
+    data_node_url_for_task: Option<String>,
+    itp_id_for_task: String,
+    local_nav_fallback: ethers::types::U256,
+    quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
+) where
+    P: common::traits::P2PTransport + Send + Sync + 'static,
+    W: common::traits::ChainWriter + Send + Sync + 'static,
+    K: issuer::KeyRegistry + Send + Sync + 'static,
+    PF: issuer::PriceFetcher + Send + Sync + 'static,
+{
     // Process batch for SubmittedOnL3 orders
     let submitted_orders = {
         let o = orchestrator.read().await;
@@ -1946,11 +2027,6 @@ async fn run_cross_chain_processing<P, W, K, PF>(
             }
         }
     }
-
-    if current_cycle % 1000 == 0 {
-        arb_reader.clear_old_seen_orders(100_000).await;
-    }
-
 }
 
 /// Cross-chain SELL order processing from Arbitrum
@@ -3802,7 +3878,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             dw_l3_writer,
                             dw_arb_writer,
                             dw_node_index,
-                            None, // gas_drip_wallet_key: uses L3 chain writer for drips
                         );
 
                         let dw_shutdown = components.shutdown.clone();

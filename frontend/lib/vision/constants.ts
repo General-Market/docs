@@ -27,7 +27,7 @@ export const ARB_USDC_ADDRESS = (
 ) as `0x${string}`
 
 /** Arbitrum chain ID */
-export const ARB_CHAIN_ID = Number(process.env.NEXT_PUBLIC_ARB_CHAIN_ID) || 42161
+export const ARB_CHAIN_ID = Number(process.env.NEXT_PUBLIC_ARB_CHAIN_ID) || 421611337
 
 /** Low gas threshold for L3 (GM native token) — 0.001 GM */
 export const LOW_GAS_THRESHOLD = 1_000_000_000_000_000n // 0.001 ether in wei

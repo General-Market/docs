@@ -108,17 +108,6 @@ impl SourceErrorTracker {
         state.not_started_reason = Some(reason.to_string());
     }
 
-    /// Record that a source failed to initialize
-    pub fn record_init_failed(&self, source_id: &str, error: &str) {
-        let mut map = self.states.write().unwrap();
-        let state = map.entry(source_id.to_string()).or_default();
-        state.category = ErrorCategory::InitFailed;
-        state.last_error = Some(truncate(error, 500));
-        state.last_error_at = Some(Utc::now());
-        state.consecutive_errors += 1;
-        state.total_errors += 1;
-    }
-
     /// Record a sync error with automatic category detection from the error message
     pub fn record_error(&self, source_id: &str, error: &str) {
         let now = Utc::now();
@@ -160,11 +149,6 @@ impl SourceErrorTracker {
         map.get(source_id).cloned()
     }
 
-    /// Get all source error states
-    pub fn get_all_states(&self) -> HashMap<String, SourceErrorState> {
-        let map = self.states.read().unwrap();
-        map.clone()
-    }
 }
 
 /// Classify an error string into an ErrorCategory

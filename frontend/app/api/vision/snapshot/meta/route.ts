@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
+import { AA_DATA_NODE_URL } from '@/lib/config'
 
-const AA_DATA_NODE = process.env.AA_DATA_NODE_URL || 'http://localhost:8200'
+const AA_DATA_NODE = AA_DATA_NODE_URL
 
 export async function GET() {
   try {

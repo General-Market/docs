@@ -145,35 +145,6 @@ type SnapshotData = (HashMap<H256, f64>, HashMap<H256, f64>, HashMap<H256, i64>)
 /// Prevents both redundant fetches AND redundant timeout waits.
 type SnapshotCache = HashMap<String, Result<SnapshotData, String>>;
 
-/// Fetch and parse snapshot data for a source, using cache if available.
-async fn fetch_snapshot_data(
-    data_node_url: &str,
-    source_id: &str,
-    hmac_secret: &Option<String>,
-    cache: &mut SnapshotCache,
-) -> Result<SnapshotData, Box<dyn std::error::Error + Send + Sync>> {
-    if let Some(cached) = cache.get(source_id) {
-        return match cached {
-            Ok(data) => Ok(data.clone()),
-            Err(msg) => Err(msg.clone().into()),
-        };
-    }
-
-    let result = fetch_snapshot_data_inner_with_secret(data_node_url, source_id, hmac_secret).await;
-    match &result {
-        Ok(data) => { cache.insert(source_id.to_string(), Ok(data.clone())); }
-        Err(e) => { cache.insert(source_id.to_string(), Err(e.to_string())); }
-    }
-    result
-}
-
-async fn fetch_snapshot_data_inner(
-    data_node_url: &str,
-    source_id: &str,
-) -> Result<SnapshotData, Box<dyn std::error::Error + Send + Sync>> {
-    fetch_snapshot_data_inner_with_secret(data_node_url, source_id, &None).await
-}
-
 async fn fetch_snapshot_data_inner_with_secret(
     data_node_url: &str,
     source_id: &str,

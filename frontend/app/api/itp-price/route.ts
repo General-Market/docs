@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const DATA_NODE_URL = process.env.DATA_NODE_URL || process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200'
+import { DATA_NODE_SERVER, L3_RPC_SERVER } from '@/lib/config'
+import deployment from '@/lib/contracts/deployment.json'
+
+const DATA_NODE_URL = DATA_NODE_SERVER
 
 // L3 chain (Orbit) — for on-chain NAV fallback
-const L3_RPC = process.env.L3_RPC_URL || 'http://142.132.164.24/'
-const INDEX_CONTRACT = '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6'
+const L3_RPC = L3_RPC_SERVER
+const INDEX_CONTRACT = deployment.contracts.Index
 
 // getITPState(bytes32) selector
 const GET_ITP_STATE_SELECTOR = '0x7bfb3953'

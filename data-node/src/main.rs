@@ -1743,6 +1743,102 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("McBroken Ice Cream started");
     }
 
+    // TfL London Tube Status — no key needed (free public API)
+    {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        tokio::spawn(async move {
+            match market_data::sources::tfl_tube::TflTubeMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("TfL Tube Status init failed: {e}"),
+            }
+        });
+        info!("TfL Tube Status started");
+    }
+
+    // Paris Metro Status — no key needed (free PRIM API)
+    {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        tokio::spawn(async move {
+            match market_data::sources::paris_metro::ParisMetroMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Paris Metro Status init failed: {e}"),
+            }
+        });
+        info!("Paris Metro Status started");
+    }
+
+    // NYC MTA Subway Alerts — no key needed (free GTFS-RT feed)
+    {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        tokio::spawn(async move {
+            match market_data::sources::mta_subway::MtaSubwayMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("MTA Subway Alerts init failed: {e}"),
+            }
+        });
+        info!("MTA Subway Alerts started");
+    }
+
+    // Ryanair Flight Delays — no key needed (free OpenSky + Ryanair schedule APIs)
+    {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        tokio::spawn(async move {
+            match market_data::sources::ryanair::RyanairMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Ryanair Flight Delays init failed: {e}"),
+            }
+        });
+        info!("Ryanair Flight Delays started");
+    }
+
+    // IODA Internet Outage Detection — no key needed (free CAIDA API)
+    {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        tokio::spawn(async move {
+            match market_data::sources::ioda::IodaMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("IODA Internet Outages init failed: {e}"),
+            }
+        });
+        info!("IODA Internet Outages started");
+    }
+
+    // US Power Outages — no key needed (free PowerOutage.us/ODIN API)
+    {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        tokio::spawn(async move {
+            match market_data::sources::power_outages::PowerOutagesMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("US Power Outages init failed: {e}"),
+            }
+        });
+        info!("US Power Outages started");
+    }
+
     // Record not_started for any source that was gated off (missing keys, disabled flags)
     {
         let tracker = market_data::error_tracker::global();

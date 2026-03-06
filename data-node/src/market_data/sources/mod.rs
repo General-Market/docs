@@ -86,6 +86,12 @@ pub mod bestbuy;
 pub mod adzuna;
 pub mod yahoo_drinks;
 pub mod db_trains;
+pub mod mta_subway;
+pub mod paris_metro;
+pub mod ryanair;
+pub mod tfl_tube;
+pub mod ioda;
+pub mod power_outages;
 pub mod mcbroken;
 pub mod nyc311;
 
@@ -176,6 +182,12 @@ pub use bestbuy::BestBuyMarketSource;
 pub use adzuna::AdzunaMarketSource;
 pub use yahoo_drinks::YahooDrinksMarketSource;
 pub use db_trains::DbTrainsMarketSource;
+pub use mta_subway::MtaSubwayMarketSource;
+pub use paris_metro::ParisMetroMarketSource;
+pub use ryanair::RyanairMarketSource;
+pub use tfl_tube::TflTubeMarketSource;
+pub use ioda::IodaMarketSource;
+pub use power_outages::PowerOutagesMarketSource;
 pub use mcbroken::McBrokenMarketSource;
 pub use nyc311::Nyc311MarketSource;
 

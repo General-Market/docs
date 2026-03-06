@@ -21,7 +21,7 @@ import {
 
 test.describe('Vision Enter Batch (UI)', () => {
   test('enter batch via source detail page', async ({ walletPage: page }) => {
-    test.setTimeout(180_000)
+    test.setTimeout(300_000) // 5 min — must wait out any lock phase
 
     // 0. Ensure Vision is deployed and has batches
     await ensureBatchExists()
@@ -32,9 +32,9 @@ test.describe('Vision Enter Batch (UI)', () => {
       await depositToVisionBalance(PLAYER1, BigInt(100) * BigInt(10 ** 18))
     }
 
-    // 1. Navigate to a source detail page with manageable market count
-    // Avoid pumpfun (1200+ markets) — use rates which has ~20 markets and loads faster
-    await page.goto('/source/rates')
+    // 1. Navigate to a source with very few markets (ISS has ~3)
+    // ISS = space category, 600s tick, 150s lock — all markets fit in DOM without scroll
+    await page.goto('/source/iss')
     await page.waitForLoadState('domcontentloaded')
 
     // 2. Connect wallet
@@ -57,25 +57,26 @@ test.describe('Vision Enter Batch (UI)', () => {
       return
     }
 
-    // 4. Set predictions on first 3 markets — alternate UP/DN
+    // 4. Set predictions on ALL markets — component requires every market to have a bet
     const upButtons = page.getByRole('button', { name: 'UP' })
     const dnButtons = page.getByRole('button', { name: 'DN' })
 
-    const upCount = await upButtons.count()
-    const betsToSet = Math.min(upCount, 5) // Set at least 5 bets (or all if fewer)
+    const marketCount = await upButtons.count()
+    console.log(`Setting predictions on ${marketCount} markets`)
 
-    for (let i = 0; i < betsToSet; i++) {
+    for (let i = 0; i < marketCount; i++) {
       if (i % 2 === 0) {
         await upButtons.nth(i).click()
       } else {
         await dnButtons.nth(i).click()
       }
-      await page.waitForTimeout(200) // Small delay between clicks
+      // Small delay between clicks to avoid overwhelming the UI
+      if (i % 10 === 9) await page.waitForTimeout(100)
     }
 
-    // 5. Verify bets are set — bitmap summary should show counts
-    // The summary bar shows "N UP / N DN / N unset"
+    // 5. Verify all bets are set — bitmap summary should show no unset
     await expect(page.getByText(/\d+\s*UP/)).toBeVisible({ timeout: 5_000 })
+    console.log(`All ${marketCount} market predictions set`)
 
     // 6. Enter stake amount using quick stake button ($5)
     const stakeBtn = page.getByRole('button', { name: '$5', exact: true })
@@ -83,9 +84,9 @@ test.describe('Vision Enter Batch (UI)', () => {
     await stakeBtn.click()
 
     // 7. Click "Enter Batch" button
-    // Batch may be locked (resolving phase) — wait up to 2 full cycles for it to open
+    // Batch may be locked (resolving phase) — wait up to full tick cycle (600s for space/ISS)
     const enterBatchBtn = page.getByRole('button', { name: /Enter Batch|Deposit/ })
-    await expect(enterBatchBtn).toBeEnabled({ timeout: 120_000 })
+    await expect(enterBatchBtn).toBeEnabled({ timeout: 240_000 })
     await enterBatchBtn.click()
 
     // 8. Wait for the join process to complete
@@ -109,9 +110,9 @@ test.describe('Vision Enter Batch (UI)', () => {
       }
     })
 
-    // 9. Verify position exists on-chain (batch 0 = pumpfun)
+    // 9. Verify position exists on-chain (batch 25 = iss)
     try {
-      const pos = await getPosition(0, PLAYER1)
+      const pos = await getPosition(25, PLAYER1)
       expect(pos.stakePerTick).toBeGreaterThan(0n)
       expect(pos.totalDeposited).toBeGreaterThan(0n)
       expect(pos.bitmapHash).not.toBe('0x' + '0'.repeat(64))

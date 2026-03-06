@@ -10,8 +10,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-
-const IS_TESTNET = process.env.E2E_TESTNET === '1';
+import { IS_ANVIL } from '../env';
 
 import {
   getIssuerHealth,
@@ -41,7 +40,7 @@ test.describe.serial('Issuer Resilience', () => {
   // On testnet, issuers run on VPS — process management requires SSH access.
   // These tests are legitimately local-only (not a skip to avoid fixing).
   test.beforeEach(() => {
-    test.skip(IS_TESTNET, 'Requires local issuer process management (kill/restart PIDs)');
+    test.skip(!IS_ANVIL, 'Requires local issuer process management (kill/restart PIDs)');
   });
   // Always restore all 3 issuers so subsequent tests (Vision, etc.) aren't broken
   test.afterAll(async () => {

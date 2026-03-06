@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { VISION_ISSUER_URLS } from '@/lib/config'
 
-const ISSUER_URLS = (
-  process.env.NEXT_PUBLIC_ISSUER_URLS ||
-  'http://localhost:10001,http://localhost:10002,http://localhost:10003'
-).split(',').map(s => s.trim())
+const ISSUER_URLS = VISION_ISSUER_URLS
 
 /**
  * Fan-out bitmap submission to all issuer nodes.

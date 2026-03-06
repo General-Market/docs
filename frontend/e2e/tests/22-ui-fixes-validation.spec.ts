@@ -14,16 +14,8 @@ import { test, expect, TEST_ADDRESS } from '../fixtures/wallet';
 
 test.describe('Slippage Gear Icon', () => {
   test('buy modal: slippage is hidden behind gear icon by default', async ({ walletPage: page }) => {
-    await page.goto('/index', { waitUntil: 'domcontentloaded' });
-
-    // Connect wallet so Buy/Sell buttons appear
-    const connectBtn = page.getByRole('button', { name: /Connect Wallet|Log\s?In/ });
-    if (await connectBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await connectBtn.click();
-      await page.mouse.move(0, 0);
-      const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4);
-      await page.getByRole('button', { name: truncated }).waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
-    }
+    test.setTimeout(180_000); // walletPage fixture can take 90s+ to set up
+    // walletPage fixture already navigates to /index and connects wallet
 
     // Find the first ITP card Buy button
     const buyButton = page.getByRole('button', { name: 'Buy' }).first();
@@ -54,16 +46,8 @@ test.describe('Slippage Gear Icon', () => {
   });
 
   test('sell modal: slippage is hidden behind gear icon by default', async ({ walletPage: page }) => {
-    await page.goto('/index', { waitUntil: 'domcontentloaded' });
-
-    // Connect wallet so Buy/Sell buttons appear
-    const connectBtn = page.getByRole('button', { name: /Connect Wallet|Log\s?In/ });
-    if (await connectBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await connectBtn.click();
-      await page.mouse.move(0, 0);
-      const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4);
-      await page.getByRole('button', { name: truncated }).waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
-    }
+    test.setTimeout(180_000); // walletPage fixture can take 90s+ to set up
+    // walletPage fixture already navigates to /index and connects wallet
 
     // Find the first ITP card and click Sell
     const sellButton = page.getByRole('button', { name: 'Sell' }).first();
@@ -232,8 +216,9 @@ test.describe('Leaderboard Per-Source', () => {
       }
     });
 
-    // Go directly to a source known to have batches (coingecko has the most data)
-    await page.goto('/source/coingecko', { waitUntil: 'domcontentloaded' });
+    // Go directly to a source known to have a batch in vision-batches.json
+    // (coingecko → 'crypto' has no batch config; finnhub → 'stocks' does)
+    await page.goto('/source/finnhub', { waitUntil: 'domcontentloaded' });
 
     // Wait for TopPlayers section (proves batches loaded + batchId resolved)
     const topPlayers = page.locator('text=Top Players');

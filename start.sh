@@ -892,6 +892,19 @@ if [ -f "deployments/morpho-e2e.json" ]; then
     echo "  Copied morpho-e2e.json → frontend/lib/contracts/morpho-deployment.json"
 fi
 
+# Sync generated JSONs back to envs/local/ so switch-env.sh local stays current
+if [ -d "envs/local" ]; then
+    [ -f "deployments/active-deployment.json" ] && cp deployments/active-deployment.json envs/local/deployment.json
+    [ -f "deployments/morpho-e2e.json" ] && cp deployments/morpho-e2e.json envs/local/morpho-deployment.json
+    [ -f "deployments/vision-batches.json" ] && cp deployments/vision-batches.json envs/local/vision-batches.json
+    # Update VISION_ADDRESS in envs/local/.env from deployment JSON
+    VISION_ADDR=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts'].get('Vision',''))" 2>/dev/null || echo "")
+    if [ -n "$VISION_ADDR" ] && [ -f "envs/local/.env" ]; then
+        sed -i '' "s|^NEXT_PUBLIC_VISION_ADDRESS=.*|NEXT_PUBLIC_VISION_ADDRESS=${VISION_ADDR}|" envs/local/.env
+    fi
+    echo "  Synced deployment JSONs + Vision address → envs/local/"
+fi
+
 echo "  Address sync complete"
 
 # Impersonate test user on both Anvils so mock wallet can send eth_sendTransaction.
@@ -1224,20 +1237,15 @@ echo -e "  Installing Playwright chromium..."
 npx playwright install chromium > ../logs/playwright-install.log 2>&1
 echo -e "  ${GREEN}Dependencies ready${NC}"
 
-# Write local dev .env.local (overrides any prod SSH tunnel config)
+# Write local dev .env.local via switch-env.sh
+cd ..
+./switch-env.sh local
+cd frontend
+# Inject dynamic Vision address from deployment JSON
 VISION_ADDR=$(python3 -c "import json; print(json.load(open('../deployments/active-deployment.json'))['contracts'].get('Vision',''))" 2>/dev/null || echo "")
-cat > .env.local <<ENVEOF
-NEXT_PUBLIC_CHAIN_ID=421611337
-NEXT_PUBLIC_RPC_URL=http://localhost:8546
-NEXT_PUBLIC_L3_CHAIN_ID=111222333
-NEXT_PUBLIC_L3_RPC_URL=http://localhost:8545
-NEXT_PUBLIC_ARB_CHAIN_ID=421611337
-NEXT_PUBLIC_AP_URL=http://localhost:9100
-NEXT_PUBLIC_DATA_NODE_URL=http://localhost:8200
-NEXT_PUBLIC_VISION_ADDRESS=${VISION_ADDR}
-NEXT_PUBLIC_VISION_API_URL=http://localhost:10001
-NEXT_PUBLIC_ISSUER_URLS=http://localhost:10001,http://localhost:10002,http://localhost:10003
-ENVEOF
+if [ -n "$VISION_ADDR" ]; then
+    sed -i '' "s|^NEXT_PUBLIC_VISION_ADDRESS=.*|NEXT_PUBLIC_VISION_ADDRESS=${VISION_ADDR}|" .env.local
+fi
 
 # Start Next.js dev server
 echo -e "  Starting Next.js dev server on port 3000..."

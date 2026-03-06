@@ -33,7 +33,6 @@ use super::types::{ArbitrationConfig, ArbitrationPhase, ArbitrationRequest, Arbi
 
 /// Per-bet consensus state
 struct BetConsensusState {
-    request: ArbitrationRequest,
     phase: ArbitrationPhase,
     /// Phase 2: price votes from followers (voter_index -> accept)
     price_votes: HashMap<u8, bool>,
@@ -149,7 +148,6 @@ impl ArbitrationProcessor {
         self.active.insert(
             bet_id,
             BetConsensusState {
-                request,
                 phase: ArbitrationPhase::PriceProposal,
                 price_votes: HashMap::new(),
                 resolution_sigs: HashMap::new(),

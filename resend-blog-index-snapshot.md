@@ -1,0 +1,359 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - link "Logo" [ref=e5] [cursor=pointer]:
+      - /url: https://kalshi.beehiiv.com/
+      - img "Logo" [ref=e6]
+    - generic [ref=e7]:
+      - link "Sign Up" [ref=e9] [cursor=pointer]:
+        - /url: https://kalshi.com/sign-up
+        - generic [ref=e10]: Sign Up
+      - img [ref=e12] [cursor=pointer]
+  - generic [ref=e18]:
+    - link "News" [ref=e20] [cursor=pointer]:
+      - /url: /t/news
+      - generic [ref=e21]: News
+    - link "Sports" [ref=e23] [cursor=pointer]:
+      - /url: /t/sports
+      - generic [ref=e24]: Sports
+    - link "2026 Primaries" [ref=e26] [cursor=pointer]:
+      - /url: https://kalshi.com/category/politics/primaries
+      - generic [ref=e27]: 2026 Primaries
+    - link "Markets" [ref=e29] [cursor=pointer]:
+      - /url: https://kalshi.com
+      - generic [ref=e30]: Markets
+    - link "Features" [ref=e32] [cursor=pointer]:
+      - /url: /t/featured
+      - generic [ref=e33]: Features
+    - link "Interviews" [ref=e35] [cursor=pointer]:
+      - /url: /t/Interviews
+      - generic [ref=e36]: Interviews
+    - link "Announcements" [ref=e38] [cursor=pointer]:
+      - /url: /t/announcements
+      - generic [ref=e39]: Announcements
+    - link "Learn" [ref=e41] [cursor=pointer]:
+      - /url: /t/learn
+      - generic [ref=e42]: Learn
+    - link "Authors" [ref=e44] [cursor=pointer]:
+      - /url: /authors
+      - generic [ref=e45]: Authors
+  - generic [ref=e51]:
+    - generic [ref=e53]:
+      - heading "Featured" [level=1] [ref=e54]:
+        - generic [ref=e55]: Featured
+      - paragraph [ref=e56]
+    - generic [ref=e57]:
+      - generic [ref=e58]:
+        - link "The State of the Union sucks. But thanks to Kalshi, it doesn't have to! 12 min read The State of the Union sucks. But thanks to Kalshi, it doesn't have to! By Terry Oldreal" [ref=e60] [cursor=pointer]:
+          - /url: /p/trump-state-of-the-union-2026-kalshi-market-odds
+          - img "The State of the Union sucks. But thanks to Kalshi, it doesn't have to!" [ref=e63]
+          - paragraph [ref=e64]:
+            - generic [ref=e65]: 12 min read
+          - heading "The State of the Union sucks. But thanks to Kalshi, it doesn't have to!" [level=3] [ref=e66]:
+            - generic [ref=e67]: The State of the Union sucks. But thanks to Kalshi, it doesn't have to!
+          - generic [ref=e70]:
+            - generic [ref=e71]: By
+            - generic [ref=e72]: Terry Oldreal
+        - link "Kalshi's 2026 snowpocalypse survival guide 8 min read Kalshi's 2026 snowpocalypse survival guide By Terry Oldreal" [ref=e74] [cursor=pointer]:
+          - /url: /p/kalshis-2026-winter-weather-markets
+          - img "Kalshi's 2026 snowpocalypse survival guide" [ref=e77]
+          - paragraph [ref=e78]:
+            - generic [ref=e79]: 8 min read
+          - heading "Kalshi's 2026 snowpocalypse survival guide" [level=3] [ref=e80]:
+            - generic [ref=e81]: Kalshi's 2026 snowpocalypse survival guide
+          - generic [ref=e84]:
+            - generic [ref=e85]: By
+            - generic [ref=e86]: Terry Oldreal
+        - link "Kalshi’s 2026 Senate election guide 19 min read Kalshi’s 2026 Senate election guide By Jaron Zhou" [ref=e88] [cursor=pointer]:
+          - /url: /p/2026-senate-election-guide
+          - img "Kalshi’s 2026 Senate election guide" [ref=e91]
+          - paragraph [ref=e92]:
+            - generic [ref=e93]: 19 min read
+          - heading "Kalshi’s 2026 Senate election guide" [level=3] [ref=e94]:
+            - generic [ref=e95]: Kalshi’s 2026 Senate election guide
+          - generic [ref=e98]:
+            - generic [ref=e99]: By
+            - generic [ref=e100]: Jaron Zhou
+        - 'link "Election postmortem: sometimes a win is still a warning 10 min read Election postmortem: sometimes a win is still a warning By Terry Oldreal" [ref=e102] [cursor=pointer]':
+          - /url: /p/election-tn07-warning-signs-2026-midterms
+          - 'img "Election postmortem: sometimes a win is still a warning" [ref=e105]'
+          - paragraph [ref=e106]:
+            - generic [ref=e107]: 10 min read
+          - 'heading "Election postmortem: sometimes a win is still a warning" [level=3] [ref=e108]':
+            - generic [ref=e109]: "Election postmortem: sometimes a win is still a warning"
+          - generic [ref=e112]:
+            - generic [ref=e113]: By
+            - generic [ref=e114]: Terry Oldreal
+        - 'link "The week ahead: Trump talks turkey (pardons) 10 min read The week ahead: Trump talks turkey (pardons) By Terry Oldreal" [ref=e116] [cursor=pointer]':
+          - /url: /p/trump-turkey-pardons-mention-markets
+          - 'img "The week ahead: Trump talks turkey (pardons)" [ref=e119]'
+          - paragraph [ref=e120]:
+            - generic [ref=e121]: 10 min read
+          - 'heading "The week ahead: Trump talks turkey (pardons)" [level=3] [ref=e122]':
+            - generic [ref=e123]: "The week ahead: Trump talks turkey (pardons)"
+          - generic [ref=e126]:
+            - generic [ref=e127]: By
+            - generic [ref=e128]: Terry Oldreal
+        - link "Happy Epstein House Vote Day! 9 min read Happy Epstein House Vote Day! By Terry Oldreal" [ref=e130] [cursor=pointer]:
+          - /url: /p/happy-epstein-house-vote-day
+          - img "Happy Epstein House Vote Day!" [ref=e133]
+          - paragraph [ref=e134]:
+            - generic [ref=e135]: 9 min read
+          - heading "Happy Epstein House Vote Day!" [level=3] [ref=e136]:
+            - generic [ref=e137]: Happy Epstein House Vote Day!
+          - generic [ref=e140]:
+            - generic [ref=e141]: By
+            - generic [ref=e142]: Terry Oldreal
+        - 'link "Kalshi’s 2025 Election Hub: A real-time window into every race 20 min read Kalshi’s 2025 Election Hub: A real-time window into every race By Jaron Zhou, +1" [ref=e144] [cursor=pointer]':
+          - /url: /p/kalshi-2025-election-hub-real-time-results
+          - 'img "Kalshi’s 2025 Election Hub: A real-time window into every race" [ref=e147]'
+          - paragraph [ref=e148]:
+            - generic [ref=e149]: 20 min read
+          - 'heading "Kalshi’s 2025 Election Hub: A real-time window into every race" [level=3] [ref=e150]':
+            - generic [ref=e151]: "Kalshi’s 2025 Election Hub: A real-time window into every race"
+          - generic [ref=e154]:
+            - generic [ref=e155]: By
+            - generic [ref=e156]: Jaron Zhou, +1
+        - 'link "The week ahead: Mamdani''s Kalshi-call out 32 min read The week ahead: Mamdani''s Kalshi-call out By Terry Oldreal" [ref=e158] [cursor=pointer]':
+          - /url: /p/zohran-mamdani-cites-kalshi-election-odds
+          - 'img "The week ahead: Mamdani''s Kalshi-call out" [ref=e161]'
+          - paragraph [ref=e162]:
+            - generic [ref=e163]: 32 min read
+          - 'heading "The week ahead: Mamdani''s Kalshi-call out" [level=3] [ref=e164]':
+            - generic [ref=e165]: "The week ahead: Mamdani's Kalshi-call out"
+          - generic [ref=e168]:
+            - generic [ref=e169]: By
+            - generic [ref=e170]: Terry Oldreal
+        - link "Prediction markets hit the ice as Kalshi partners with the NHL 5 min read Prediction markets hit the ice as Kalshi partners with the NHL By Kalshi" [ref=e172] [cursor=pointer]:
+          - /url: /p/kalshi-partners-with-nhl-hockey
+          - img "Prediction markets hit the ice as Kalshi partners with the NHL" [ref=e175]
+          - paragraph [ref=e176]:
+            - generic [ref=e177]: 5 min read
+          - heading "Prediction markets hit the ice as Kalshi partners with the NHL" [level=3] [ref=e178]:
+            - generic [ref=e179]: Prediction markets hit the ice as Kalshi partners with the NHL
+          - generic [ref=e182]:
+            - generic [ref=e183]: By
+            - generic [ref=e184]: Kalshi
+        - 'link "The week ahead: will the shutdown saga cause a midterm meltdown? 11 min read The week ahead: will the shutdown saga cause a midterm meltdown? By Terry Oldreal" [ref=e186] [cursor=pointer]':
+          - /url: /p/the-week-ahead-will-the-shutdown-saga-cause-a-midterm-meltdown
+          - 'img "The week ahead: will the shutdown saga cause a midterm meltdown?" [ref=e189]'
+          - paragraph [ref=e190]:
+            - generic [ref=e191]: 11 min read
+          - 'heading "The week ahead: will the shutdown saga cause a midterm meltdown?" [level=3] [ref=e192]':
+            - generic [ref=e193]: "The week ahead: will the shutdown saga cause a midterm meltdown?"
+          - generic [ref=e196]:
+            - generic [ref=e197]: By
+            - generic [ref=e198]: Terry Oldreal
+        - link "Down Bad - How a Taylor Swift Market Can Teach You to Be a Better Loser 13 min read Down Bad - How a Taylor Swift Market Can Teach You to Be a Better Loser By Gaeten Dugas" [ref=e200] [cursor=pointer]:
+          - /url: /p/down-bad-how-a-taylor-swift-market-can-teach-you-to-be-a-better-loser
+          - img "Down Bad - How a Taylor Swift Market Can Teach You to Be a Better Loser" [ref=e203]
+          - paragraph [ref=e204]:
+            - generic [ref=e205]: 13 min read
+          - heading "Down Bad - How a Taylor Swift Market Can Teach You to Be a Better Loser" [level=3] [ref=e206]:
+            - generic [ref=e207]: Down Bad - How a Taylor Swift Market Can Teach You to Be a Better Loser
+          - generic [ref=e210]:
+            - generic [ref=e211]: By
+            - generic [ref=e212]: Gaeten Dugas
+        - link "Traders lift odds of Insurrection Act after Trump threats 5 min read Traders lift odds of Insurrection Act after Trump threats By Terry Oldreal" [ref=e214] [cursor=pointer]:
+          - /url: /p/traders-lift-odds-of-insurrection-act-after-trump-threats
+          - img "Traders lift odds of Insurrection Act after Trump threats" [ref=e217]
+          - paragraph [ref=e218]:
+            - generic [ref=e219]: 5 min read
+          - heading "Traders lift odds of Insurrection Act after Trump threats" [level=3] [ref=e220]:
+            - generic [ref=e221]: Traders lift odds of Insurrection Act after Trump threats
+          - generic [ref=e224]:
+            - generic [ref=e225]: By
+            - generic [ref=e226]: Terry Oldreal
+        - 'link "The week ahead: marathons and mention markets 10 min read The week ahead: marathons and mention markets By Terry Oldreal" [ref=e228] [cursor=pointer]':
+          - /url: /p/the-week-ahead-marathons-and-mention-markets
+          - 'img "The week ahead: marathons and mention markets" [ref=e231]'
+          - paragraph [ref=e232]:
+            - generic [ref=e233]: 10 min read
+          - 'heading "The week ahead: marathons and mention markets" [level=3] [ref=e234]':
+            - generic [ref=e235]: "The week ahead: marathons and mention markets"
+          - generic [ref=e238]:
+            - generic [ref=e239]: By
+            - generic [ref=e240]: Terry Oldreal
+        - 'link "The long & short of it: When will the shutdown end? 8 min read The long & short of it: When will the shutdown end? By Terry Oldreal" [ref=e242] [cursor=pointer]':
+          - /url: /p/the-long-short-of-it-when-will-the-shutdown-end
+          - 'img "The long & short of it: When will the shutdown end?" [ref=e245]'
+          - paragraph [ref=e246]:
+            - generic [ref=e247]: 8 min read
+          - 'heading "The long & short of it: When will the shutdown end?" [level=3] [ref=e248]':
+            - generic [ref=e249]: "The long & short of it: When will the shutdown end?"
+          - generic [ref=e252]:
+            - generic [ref=e253]: By
+            - generic [ref=e254]: Terry Oldreal
+        - 'link "The week ahead: Shutdowns, ''Showgirls,'' and ''South Park'' 12 min read The week ahead: Shutdowns, ''Showgirls,'' and ''South Park'' By Terry Oldreal" [ref=e256] [cursor=pointer]':
+          - /url: /p/week-ahead-shutdowns-showgirls-south-park
+          - 'img "The week ahead: Shutdowns, ''Showgirls,'' and ''South Park''" [ref=e259]'
+          - paragraph [ref=e260]:
+            - generic [ref=e261]: 12 min read
+          - 'heading "The week ahead: Shutdowns, ''Showgirls,'' and ''South Park''" [level=3] [ref=e262]':
+            - generic [ref=e263]: "The week ahead: Shutdowns, 'Showgirls,' and 'South Park'"
+          - generic [ref=e266]:
+            - generic [ref=e267]: By
+            - generic [ref=e268]: Terry Oldreal
+        - 'link "Moldova: the most important election you’ve never heard of 7 min read Moldova: the most important election you’ve never heard of By Jaron Zhou" [ref=e270] [cursor=pointer]':
+          - /url: /p/moldova-the-most-important-election-you-ve-never-heard-of
+          - 'img "Moldova: the most important election you’ve never heard of" [ref=e273]'
+          - paragraph [ref=e274]:
+            - generic [ref=e275]: 7 min read
+          - 'heading "Moldova: the most important election you’ve never heard of" [level=3] [ref=e276]':
+            - generic [ref=e277]: "Moldova: the most important election you’ve never heard of"
+          - generic [ref=e280]:
+            - generic [ref=e281]: By
+            - generic [ref=e282]: Jaron Zhou
+        - link "The Kalshi guide to potential halftime headliners 🏈 13 min read The Kalshi guide to potential halftime headliners 🏈 By Terry Oldreal" [ref=e284] [cursor=pointer]:
+          - /url: /p/kalshi-guide-potential-halftime-headliners
+          - img "The Kalshi guide to potential halftime headliners 🏈" [ref=e287]
+          - paragraph [ref=e288]:
+            - generic [ref=e289]: 13 min read
+          - heading "The Kalshi guide to potential halftime headliners 🏈" [level=3] [ref=e290]:
+            - generic [ref=e291]: The Kalshi guide to potential halftime headliners 🏈
+          - generic [ref=e294]:
+            - generic [ref=e295]: By
+            - generic [ref=e296]: Terry Oldreal
+        - 'link "The week ahead: Trump vs. Tylenol? 8 min read The week ahead: Trump vs. Tylenol? By Terry Oldreal" [ref=e298] [cursor=pointer]':
+          - /url: /p/the-week-ahead-trump-vs-tylenol
+          - 'img "The week ahead: Trump vs. Tylenol?" [ref=e301]'
+          - paragraph [ref=e302]:
+            - generic [ref=e303]: 8 min read
+          - 'heading "The week ahead: Trump vs. Tylenol?" [level=3] [ref=e304]':
+            - generic [ref=e305]: "The week ahead: Trump vs. Tylenol?"
+          - generic [ref=e308]:
+            - generic [ref=e309]: By
+            - generic [ref=e310]: Terry Oldreal
+        - link "Is 'Jimmy Kimmel Live!' dead? 8 min read Is 'Jimmy Kimmel Live!' dead? By Terry Oldreal" [ref=e312] [cursor=pointer]:
+          - /url: /p/is-jimmy-kimmel-live-dead
+          - img "Is 'Jimmy Kimmel Live!' dead?" [ref=e315]
+          - paragraph [ref=e316]:
+            - generic [ref=e317]: 8 min read
+          - heading "Is 'Jimmy Kimmel Live!' dead?" [level=3] [ref=e318]:
+            - generic [ref=e319]: Is 'Jimmy Kimmel Live!' dead?
+          - generic [ref=e322]:
+            - generic [ref=e323]: By
+            - generic [ref=e324]: Terry Oldreal
+        - link "How special elections could unlock the Epstein files 6 min read How special elections could unlock the Epstein files By Jaron Zhou" [ref=e326] [cursor=pointer]:
+          - /url: /p/special-elections-could-unlock-epstein-files
+          - img "How special elections could unlock the Epstein files" [ref=e329]
+          - paragraph [ref=e330]:
+            - generic [ref=e331]: 6 min read
+          - heading "How special elections could unlock the Epstein files" [level=3] [ref=e332]:
+            - generic [ref=e333]: How special elections could unlock the Epstein files
+          - generic [ref=e336]:
+            - generic [ref=e337]: By
+            - generic [ref=e338]: Jaron Zhou
+        - link "Kalshi's 2025 Emmy cheat sheet 9 min read Kalshi's 2025 Emmy cheat sheet By Terry Oldreal" [ref=e340] [cursor=pointer]:
+          - /url: /p/kalshis-2025-emmy-cheat-sheet
+          - img "Kalshi's 2025 Emmy cheat sheet" [ref=e343]
+          - paragraph [ref=e344]:
+            - generic [ref=e345]: 9 min read
+          - heading "Kalshi's 2025 Emmy cheat sheet" [level=3] [ref=e346]:
+            - generic [ref=e347]: Kalshi's 2025 Emmy cheat sheet
+          - generic [ref=e350]:
+            - generic [ref=e351]: By
+            - generic [ref=e352]: Terry Oldreal
+        - link "Trading this fall’s shutdown fight 8 min read Trading this fall’s shutdown fight By Gaeten Dugas" [ref=e354] [cursor=pointer]:
+          - /url: /p/trading-this-falls-shutdown-fight
+          - img "Trading this fall’s shutdown fight" [ref=e357]
+          - paragraph [ref=e358]:
+            - generic [ref=e359]: 8 min read
+          - heading "Trading this fall’s shutdown fight" [level=3] [ref=e360]:
+            - generic [ref=e361]: Trading this fall’s shutdown fight
+          - generic [ref=e364]:
+            - generic [ref=e365]: By
+            - generic [ref=e366]: Gaeten Dugas
+        - link "Kalshi's 2025 pro football preview 13 min read Kalshi's 2025 pro football preview By Terry Oldreal" [ref=e368] [cursor=pointer]:
+          - /url: /p/kalshi-s-2025-pro-football-preview
+          - img "Kalshi's 2025 pro football preview" [ref=e371]
+          - paragraph [ref=e372]:
+            - generic [ref=e373]: 13 min read
+          - heading "Kalshi's 2025 pro football preview" [level=3] [ref=e374]:
+            - generic [ref=e375]: Kalshi's 2025 pro football preview
+          - generic [ref=e378]:
+            - generic [ref=e379]: By
+            - generic [ref=e380]: Terry Oldreal
+        - 'link "The week ahead: Vaccines, Venice, and victory formation 11 min read The week ahead: Vaccines, Venice, and victory formation By Terry Oldreal" [ref=e382] [cursor=pointer]':
+          - /url: /p/the-week-ahead-vaccines-venice-and-victory-formation
+          - 'img "The week ahead: Vaccines, Venice, and victory formation" [ref=e385]'
+          - paragraph [ref=e386]:
+            - generic [ref=e387]: 11 min read
+          - 'heading "The week ahead: Vaccines, Venice, and victory formation" [level=3] [ref=e388]':
+            - generic [ref=e389]: "The week ahead: Vaccines, Venice, and victory formation"
+          - generic [ref=e392]:
+            - generic [ref=e393]: By
+            - generic [ref=e394]: Terry Oldreal
+        - link "Trump's Labor Day 'Cook out'? 5 min read Trump's Labor Day 'Cook out'? By Terry Oldreal" [ref=e396] [cursor=pointer]:
+          - /url: /p/trumps-labor-day-cook-out
+          - img "Trump's Labor Day 'Cook out'?" [ref=e399]
+          - paragraph [ref=e400]:
+            - generic [ref=e401]: 5 min read
+          - heading "Trump's Labor Day 'Cook out'?" [level=3] [ref=e402]:
+            - generic [ref=e403]: Trump's Labor Day 'Cook out'?
+          - generic [ref=e406]:
+            - generic [ref=e407]: By
+            - generic [ref=e408]: Terry Oldreal
+      - generic [ref=e411] [cursor=pointer]: Load more
+  - generic [ref=e415]:
+    - heading "Kalshi" [level=2] [ref=e416]:
+      - generic [ref=e417]: Kalshi
+    - generic [ref=e419]:
+      - paragraph [ref=e420]:
+        - generic [ref=e421]: Home
+      - paragraph [ref=e422]:
+        - button "Subscribe" [ref=e424] [cursor=pointer]
+      - paragraph [ref=e425]:
+        - generic [ref=e426]: Upgrade
+      - paragraph [ref=e427]:
+        - generic [ref=e428]: Archive
+      - paragraph [ref=e429]:
+        - generic [ref=e430]: Recommendations
+      - paragraph [ref=e431]:
+        - button "Authors" [ref=e433] [cursor=pointer]
+      - paragraph [ref=e434]:
+        - button "Tags" [ref=e436] [cursor=pointer]
+      - paragraph [ref=e437]:
+        - generic [ref=e438]: News
+      - paragraph [ref=e439]:
+        - generic [ref=e440]: Opinion
+      - paragraph [ref=e441]:
+        - generic [ref=e442]: Explainers
+      - paragraph [ref=e443]:
+        - generic [ref=e444]: Originals
+      - paragraph [ref=e445]:
+        - generic [ref=e446]: Finance
+      - paragraph [ref=e447]:
+        - generic [ref=e448]: Investing
+      - paragraph [ref=e449]:
+        - generic [ref=e450]: Politics
+    - generic [ref=e452]:
+      - paragraph [ref=e453]:
+        - link "Terms of Service" [ref=e455] [cursor=pointer]:
+          - /url: https://kalshi.com/docs/kalshi-member-agreement.pdf
+      - paragraph [ref=e456]:
+        - link "Privacy Policy" [ref=e458] [cursor=pointer]:
+          - /url: https://kalshi.com/privacy-policy
+      - paragraph [ref=e459]:
+        - link "Help" [ref=e461] [cursor=pointer]:
+          - /url: https://help.kalshi.com/
+      - paragraph [ref=e462]:
+        - link "Careers" [ref=e464] [cursor=pointer]:
+          - /url: https://kalshi.com/careers
+      - paragraph [ref=e465]:
+        - generic [ref=e466]: Advertise
+      - paragraph [ref=e467]:
+        - generic [ref=e468]: Made in NYC
+    - generic [ref=e469]:
+      - generic [ref=e470]: © 2026 Kalshi.
+      - generic [ref=e471]:
+        - generic [ref=e472]:
+          - link "Report abuse" [ref=e473] [cursor=pointer]:
+            - /url: https://www.beehiiv.com/report_abuse?utm_source=kalshi
+          - link "Privacy policy" [ref=e474] [cursor=pointer]:
+            - /url: https://beehiiv.com/privacy?utm_source=kalshi
+          - link "Terms of use" [ref=e475] [cursor=pointer]:
+            - /url: https://beehiiv.com/tou?utm_source=kalshi
+        - link "beehiiv Powered by beehiiv" [ref=e476] [cursor=pointer]:
+          - /url: https://www.beehiiv.com/?utm_source=kalshi&utm_medium=footer
+          - img "beehiiv" [ref=e477]
+          - generic [ref=e479]: Powered by beehiiv

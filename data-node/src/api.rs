@@ -3180,7 +3180,11 @@ async fn vault_balances(
     // Sort by USD value descending
     assets.sort_by(|a, b| b.usd_value.partial_cmp(&a.usd_value).unwrap_or(std::cmp::Ordering::Equal));
 
-    let total_usd: f64 = assets.iter().map(|a| a.usd_value).sum();
+    // AUM = only real collateral (USDC), not mock liquidity tokens
+    let total_usd: f64 = assets.iter()
+        .filter(|a| a.symbol == "USDC")
+        .map(|a| a.usd_value)
+        .sum();
     let token_count = assets.len();
 
     Ok(Json(VaultBalancesResponse {
@@ -4810,6 +4814,13 @@ const SOURCE_META: &[(&str, &str, u64)] = &[
     ("yahoo_drinks", "Yahoo Drink Markets", 600),
     // ── European Transport ────────────────────────────────────────────────
     ("db_trains", "Deutsche Bahn Train Delays", 300),
+    ("paris_metro", "Paris Métro Delays", 300),
+    ("tfl_tube", "TfL Tube Delays", 300),
+    ("ryanair", "Ryanair Flight Delays", 300),
+    ("mta_subway", "MTA Subway Delays", 300),
+    // ── Internet / Infrastructure ──────────────────────────────────────
+    ("ioda", "IODA Internet Outages", 600),
+    ("power_outages", "US Power Outages", 600),
     // ── Government / City ──────────────────────────────────────────────
     ("nyc311", "NYC 311 Complaints", 600),
     // ── Food / Entertainment ────────────────────────────────────────────

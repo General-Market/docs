@@ -190,33 +190,6 @@ pub async fn get_market_asset_price(
     ))
 }
 
-/// Get price closest to a specific timestamp for an asset from the unified tables.
-///
-/// Used by the scorer for deterministic resolution of stock positions.
-pub async fn get_market_price_at_time(
-    pool: &PgPool,
-    source: &str,
-    asset_id: &str,
-    timestamp: DateTime<Utc>,
-) -> Result<Option<Decimal>> {
-    let price: Option<(Decimal,)> = sqlx::query_as(
-        r#"
-        SELECT value
-        FROM market_prices
-        WHERE source = $1 AND asset_id = $2
-        ORDER BY ABS(EXTRACT(EPOCH FROM (fetched_at - $3)))
-        LIMIT 1
-        "#,
-    )
-    .bind(source)
-    .bind(asset_id)
-    .bind(timestamp)
-    .fetch_optional(pool)
-    .await?;
-
-    Ok(price.map(|(p,)| p))
-}
-
 /// Get price history for an asset within a time range
 pub async fn get_market_price_history(
     pool: &PgPool,

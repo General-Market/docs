@@ -277,16 +277,6 @@ pub fn is_eu_weekend(now: DateTime<Utc>) -> bool {
     matches!(berlin.weekday(), Weekday::Sat | Weekday::Sun)
 }
 
-/// Convert UTC datetime to US Eastern time.
-pub fn to_eastern(now: DateTime<Utc>) -> chrono::DateTime<chrono_tz::Tz> {
-    now.with_timezone(&Eastern)
-}
-
-/// Convert UTC datetime to Central European time.
-pub fn to_cet(now: DateTime<Utc>) -> chrono::DateTime<chrono_tz::Tz> {
-    now.with_timezone(&Berlin)
-}
-
 /// Create a datetime for today at a specific hour:minute in US Eastern.
 /// Returns UTC equivalent.
 pub fn today_at_eastern(now: DateTime<Utc>, hour: u32, minute: u32) -> DateTime<Utc> {

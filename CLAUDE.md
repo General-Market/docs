@@ -6,10 +6,30 @@ Commit after each completed task/feature to enable rollback. Use descriptive com
 
 Max 3 agents running at the same time.
 
+## Environment Switching
+
+One command to switch between local/testnet/mainnet:
+```bash
+./switch-env.sh local    # Local Anvil dev
+./switch-env.sh testnet  # VPS testnet
+./switch-env.sh mainnet  # Future
+```
+
+This copies `envs/{env}/.env` → `frontend/.env.local` and syncs 3 deployment JSONs to their destinations. The `.active-env` sentinel tracks current environment.
+
+**Config deduplication:**
+- Frontend: all server-side URLs in `frontend/lib/config.ts` — API routes import from there, never read `process.env` directly
+- E2E: all test config in `frontend/e2e/env.ts` — helpers/specs import from there
+- `IS_ANVIL` (not `IS_TESTNET`) — true when running against local Anvil
+
+After deploying contracts locally, `start.sh` syncs deployment JSONs back to `envs/local/`.
+After deploying on testnet, `testnet.sh` syncs back to `envs/testnet/`.
+
 ## Network
 | Network | Chain ID | RPC | Collateral |
 |---------|----------|-----|------------|
 | Index L3 (Orbit) | 111222333 | http://142.132.164.24/ | GM (18 dec) |
+| Local Arb (Anvil) | 421611337 | http://localhost:8546 | — |
 
 ## USDC Decimals by Chain
 

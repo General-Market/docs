@@ -702,15 +702,6 @@ impl Weighting {
         )
     }
 
-    /// Whether this strategy uses DeFi metrics (from DefiLlama).
-    pub fn needs_defi(&self) -> bool {
-        matches!(self,
-            Weighting::TvlWeight | Weighting::TvlCapped { .. } | Weighting::TvlSqrt |
-            Weighting::FeesWeight | Weighting::RevenueWeight | Weighting::VolumeWeight |
-            Weighting::TvlMomentum { .. } | Weighting::FeeEfficiency | Weighting::YieldWeight
-        )
-    }
-
     pub fn lookback_days(&self) -> Option<i32> {
         match self {
             Weighting::Momentum { lookback_days }

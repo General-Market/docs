@@ -25,8 +25,7 @@ import {
   oppositeBets,
 } from '../helpers/vision-api'
 
-const IS_TESTNET = process.env.E2E_TESTNET === '1'
-const ISSUER_API = IS_TESTNET ? 'http://116.203.156.98/issuer1' : 'http://localhost:10001'
+import { VISION_API as ISSUER_API, FRONTEND_URL as ENV_FRONTEND_URL } from '../env'
 
 test.describe('Vision Claim Rewards', () => {
   test('balance proof is fetchable via proxy after tick resolution', async () => {
@@ -94,7 +93,8 @@ test.describe('Vision Claim Rewards', () => {
 
     // Test that the /api/vision/bitmap fan-out endpoint responds
     // (This tests the new Next.js route handler we created)
-    const frontendUrl = IS_TESTNET ? 'https://www.generalmarket.io/api/vision/bitmap' : 'http://localhost:3000/api/vision/bitmap'
+    const baseUrl = ENV_FRONTEND_URL
+    const frontendUrl = `${baseUrl}/api/vision/bitmap`
     const testPayload = JSON.stringify({
       player: PLAYER1,
       batch_id: 0,

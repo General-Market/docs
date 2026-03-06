@@ -130,6 +130,13 @@ pub const BATCH_SOURCES: &[SourceMeta] = &[
     ("faa_delays", "FAA Airport Delays", 600),
     // ── Drink Sources ─────────────────────────────────────────────
     ("yahoo_drinks", "Yahoo Drink Markets", 600),
+    // ── Transport & Infrastructure (new) ────────────────────────
+    ("tfl_tube", "London TfL Tube Status", 300),
+    ("paris_metro", "Paris Metro Status", 300),
+    ("mta_subway", "NYC MTA Subway Alerts", 300),
+    ("ryanair", "Ryanair Flight Delays", 600),
+    ("ioda", "Internet Outage Detection (IODA)", 600),
+    ("power_outages", "US Power Outages", 600),
 ];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

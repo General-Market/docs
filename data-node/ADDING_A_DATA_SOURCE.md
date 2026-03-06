@@ -256,9 +256,10 @@ data-node/src/market_data/sources/{source}/client.rs   ← implements MarketData
 data-node/src/config/{source}.json                     ← static asset list (or empty [] for dynamic)
 data-node/src/market_data/sources/mod.rs               ← module + re-export
 data-node/src/main.rs                                  ← spawn sync engine
-data-node/src/api.rs                                   ← source schedule table
+data-node/src/api.rs                                   ← SOURCE_META table
 data-node/src/config.rs                                ← CLI args (only if API-key-gated)
 start.sh                                               ← pass env vars (only if API-key-gated)
+contracts/script/DeployAllVisionBatches.s.sol           ← register in _getSourceNames() + bump array sizes
 ```
 
 Frontend picks up the source automatically via the `/admin/sources/health` API, but you need to register prefixes and display metadata for proper categorization.
@@ -372,9 +373,9 @@ if let Some(ref api_key) = args.my_source_api_key {
 }
 ```
 
-#### 5. Add to source schedule in api.rs
+#### 5. Add to SOURCE_META in api.rs
 
-**File:** `data-node/src/api.rs` — find the `SOURCE_SCHEDULES` array
+**File:** `data-node/src/api.rs` — find the `SOURCE_META` array
 
 ```rust
 ("my_source", "My Source Display Name", 300),  // sync interval in seconds
@@ -401,13 +402,30 @@ if args.my_source_api_key.is_none() {
 ${MY_SOURCE_API_KEY:+--my-source-api-key "$MY_SOURCE_API_KEY"}
 ```
 
+#### 6b. Register in Vision batch deploy script
+
+**File:** `contracts/script/DeployAllVisionBatches.s.sol`
+
+1. Add the source name to `_getSourceNames()`:
+```solidity
+names[N] = "my_source";
+```
+
+2. **Bump the array size** in `_getSourceNames()` return type AND `_exportBatchMapping()` parameter:
+```solidity
+// Both must match: old count + 1
+function _getSourceNames() internal pure returns (string[N+1] memory names) {
+// ...
+function _exportBatchMapping(string[N+1] memory sourceNames, ...
+```
+
+This registers the source for on-chain Vision batch creation. Without this, the source won't get a batch pool.
+
 ### Frontend
 
 #### 7. Market category prefix mapping
 
-**Files** (update both — they are duplicated for vision/p2pool):
-- `frontend/lib/vision/market-categories.ts`
-- `frontend/lib/p2pool/market-categories.ts`
+**File:** `frontend/lib/vision/market-categories.ts`
 
 Add to `PREFIX_MAP`:
 ```typescript
@@ -421,18 +439,52 @@ const CATEGORY_ORDER = [
 ]
 ```
 
-#### 8. Market name formatting
+#### 8. Source registry entry
 
-**Files** (update all four):
-- `frontend/components/domain/vision/VisualTab.tsx`
-- `frontend/components/domain/vision/CompactVisualTab.tsx`
-- `frontend/components/domain/p2pool/VisualTab.tsx`
-- `frontend/components/domain/p2pool/CompactVisualTab.tsx`
+**File:** `frontend/lib/vision/sources.ts`
 
-Add to `formatMarketName()`:
+Add to the `VISION_SOURCES` array:
 ```typescript
-if (marketId.startsWith('mysource_')) return marketId.slice(9).replace(/_/g, ' ')
+{ id: 'my_source', name: 'My Source', description: 'Description here.', category: 'transport', logo: '/source-imgs/new-mysource.svg', brandBg: '#f5f5f5', prefixes: ['mysource_'] },
 ```
+
+Also add a logo to `frontend/public/source-imgs/`. See the **Logo Requirements** section below.
+
+> **Note:** `formatMarketName()` is centralized in `market-categories.ts` and auto-strips the prefix using `PREFIX_MAP`. No per-source formatting code needed.
+
+#### 8b. Source logo
+
+**File:** `frontend/public/source-imgs/new-{source}.svg` (or `.png`)
+
+**NEVER create logos yourself.** Find the company's real logo and brand assets:
+
+1. **Search for official brand/press kits** — most companies publish logo files:
+   - `{company} press kit logo`
+   - `{company} brand assets download`
+   - `{company} media kit SVG`
+   - Wikipedia article → Infobox → logo file (often SVG)
+2. **Download the real logo** — use the official mark, wordmark, or icon. SVG preferred (vector, small file). PNG okay if no SVG exists.
+3. **Check color contrast against `brandBg`.** The logo must be clearly visible on the `brandBg` color set in `sources.ts`. Common mistakes:
+   - White logo on `#f5f5f5` background → invisible. Use the colored version or set `brandBg` to a dark brand color.
+   - Dark logo on dark background → invisible. Use the white/light version or lighten `brandBg`.
+   - Test: squint at the card — if the logo disappears, fix the contrast.
+4. **Format:**
+   - SVG preferred (sharp at any size, small file). See `new-dbtrains.svg` for reference: brand icon + wordmark, `viewBox="0 0 300 80"`.
+   - PNG: minimum 256px wide, transparent background, under 50KB. See `new-coingecko.png` (2000×438).
+   - Avoid JPEGs (no transparency).
+5. **Naming:** `new-{source_id}.svg` or `new-{source_id}.png` — must match the `logo` path in the `VISION_SOURCES` entry.
+
+**Examples of good logos:**
+| Source | File | How obtained |
+|--------|------|-------------|
+| DB Trains | `new-dbtrains.svg` | DB red badge + "Deutsche Bahn" wordmark in official DB Red (#ec0016) |
+| CoinGecko | `new-coingecko.png` | Official gecko logo from CoinGecko press page |
+| Steam | `new-steam.png` | Official Steam logo from Valve brand resources |
+
+**Do NOT:**
+- Generate logos with AI or hand-draw SVG text that says "RYANAIR" in a rectangle
+- Use screenshots of websites as logos
+- Use favicon.ico files (too small, pixelated)
 
 #### 9. Vision markets grid category
 
@@ -534,20 +586,20 @@ BACKEND:
 [ ] data-node/src/config/{source}.json                    — asset list or []
 [ ] data-node/src/market_data/sources/mod.rs              — pub mod + pub use
 [ ] data-node/src/main.rs                                 — spawn SyncEngine in run_serve()
-[ ] data-node/src/api.rs                                  — add to SOURCE_SCHEDULES
+[ ] data-node/src/api.rs                                  — add to SOURCE_META
 
 IF API-KEY-GATED:
 [ ] data-node/src/config.rs                               — add CLI arg to ServeArgs
 [ ] data-node/src/main.rs                                 — add record_not_started()
 [ ] start.sh                                              — add conditional --flag
 
+CONTRACTS:
+[ ] contracts/script/DeployAllVisionBatches.s.sol          — add to _getSourceNames() + bump array sizes
+
 FRONTEND:
+[ ] frontend/public/source-imgs/new-{source}.svg          — REAL company logo (NOT hand-drawn, check contrast vs brandBg)
 [ ] frontend/lib/vision/market-categories.ts              — PREFIX_MAP + CATEGORY_ORDER
-[ ] frontend/lib/p2pool/market-categories.ts              — PREFIX_MAP + CATEGORY_ORDER
-[ ] frontend/components/domain/vision/VisualTab.tsx        — formatMarketName()
-[ ] frontend/components/domain/vision/CompactVisualTab.tsx — formatMarketName()
-[ ] frontend/components/domain/p2pool/VisualTab.tsx        — formatMarketName()
-[ ] frontend/components/domain/p2pool/CompactVisualTab.tsx — formatMarketName()
+[ ] frontend/lib/vision/sources.ts                        — VISION_SOURCES entry (logo path must match)
 [ ] frontend/components/domain/vision/VisionMarketsGrid.tsx — CATEGORY_GROUPS + COUNT_SOURCES
 [ ] frontend/components/domain/SourceDetailModal.tsx       — SOURCE_META
 [ ] frontend/components/domain/SourceHealthTable.tsx       — API link
@@ -556,6 +608,7 @@ VERIFY:
 [ ] cargo check                                           — backend compiles
 [ ] cargo test {source}                                   — unit tests pass
 [ ] npx tsc --noEmit (in frontend/)                       — frontend compiles
+[ ] test actual API endpoint                              — curl returns valid data
 ```
 
 ---

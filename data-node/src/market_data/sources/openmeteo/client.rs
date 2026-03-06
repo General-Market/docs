@@ -172,53 +172,10 @@ impl OpenMeteoMarketSource {
         info!("Forecast cache updated with {} cities", cache.len());
     }
 
-    /// Get forecast for a specific city and metric
-    pub async fn get_forecast(
-        &self,
-        city_id: &str,
-        metric: WeatherMetric,
-    ) -> Option<Vec<HourlyDataPoint>> {
-        let cache = self.forecast_cache.read().await;
-        cache
-            .get(city_id)
-            .and_then(|f| f.forecasts.get(&metric).cloned())
-    }
-
-    /// Get all forecasts for a city
-    pub async fn get_city_forecast(&self, city_id: &str) -> Option<CityForecast> {
-        let cache = self.forecast_cache.read().await;
-        cache.get(city_id).cloned()
-    }
-
     /// Get forecast cache size (number of cities)
     pub async fn forecast_cache_size(&self) -> usize {
         let cache = self.forecast_cache.read().await;
         cache.len()
-    }
-
-    /// Get forecast at a specific time for a city and metric
-    pub async fn get_forecast_at_time(
-        &self,
-        city_id: &str,
-        metric: WeatherMetric,
-        target_time: chrono::DateTime<Utc>,
-    ) -> Option<Decimal> {
-        let cache = self.forecast_cache.read().await;
-        cache.get(city_id).and_then(|f| {
-            f.forecasts.get(&metric).and_then(|data| {
-                // Find the closest hourly data point
-                data.iter()
-                    .min_by_key(|point| {
-                        let diff = (point.time - target_time).num_seconds().abs();
-                        diff
-                    })
-                    .filter(|point| {
-                        // Only return if within 30 minutes of target
-                        (point.time - target_time).num_minutes().abs() <= 30
-                    })
-                    .map(|point| point.value)
-            })
-        })
     }
 
     /// Parse asset_id into (city_id, metric)

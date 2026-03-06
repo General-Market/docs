@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
+import { ISSUER_VISION_URL } from '@/lib/config'
 import batchConfig from '@/lib/contracts/vision-batches.json'
 
-const ISSUER_URL = process.env.ISSUER_VISION_URL || 'http://localhost:10001'
+const ISSUER_URL = ISSUER_VISION_URL
 
 // Build reverse lookup: sourceId hash → source name from vision-batches.json
 const hashToSource: Record<string, string> = {}

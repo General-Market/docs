@@ -11,7 +11,7 @@ use tracing::{debug, info, warn};
 
 use super::gas::{GasConfig, GasEstimator};
 use super::nonce::NonceManager;
-use super::retry::{with_retry, RetryConfig};
+use super::retry::RetryConfig;
 
 /// Configuration for ArbitrumChainWriter
 #[derive(Debug, Clone)]

@@ -9,7 +9,7 @@ use common::adapters::BitgetVaultReader;
 use common::bls::{aggregate_pubkeys, BLSKeyPair, Bn254BLSSigner};
 use common::error::Error;
 use common::traits::{BLSSigner, ChainWriter, P2PTransport};
-use common::types::{BLSPublicKey, Fill, P2PMessage, PeerId, Price};
+use common::types::{Fill, P2PMessage, PeerId, Price};
 use common::BLSSignature;
 use ethers::types::{Address, H256, U256};
 use tokio::sync::RwLock;
@@ -53,7 +53,7 @@ use crate::bridge::{
     // setItpNav consensus (pre-rebalance NAV push)
     build_set_itp_nav_hash, SetItpNavResult,
     // NAV oracle (ITPNAVOracle on Arb — Phase 2B)
-    build_nav_oracle_hash, build_update_price_calldata,
+    build_nav_oracle_hash,
     // MirrorIssuerRegistry sync (Step 12)
     build_mirror_registry_sync_hash, build_mirror_registry_sync_calldata,
 };

@@ -76,12 +76,6 @@ impl NasdaqClient {
         Ok(data)
     }
 
-    /// Check if API key is configured (non-empty)
-    pub fn is_configured() -> bool {
-        std::env::var("NASDAQ_API_KEY")
-            .map(|k| !k.trim().is_empty())
-            .unwrap_or(false)
-    }
 }
 
 #[cfg(test)]

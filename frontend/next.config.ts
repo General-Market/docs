@@ -1,11 +1,12 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+import { REWRITES_BACKEND_URL, DATA_NODE_SERVER, L3_RPC_SERVER, CSP_CONNECT_EXTRA } from "./lib/config";
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3001";
-const DATA_NODE_URL = process.env.DATA_NODE_URL || "http://localhost:8200";
-const L3_RPC_URL = process.env.NEXT_PUBLIC_L3_RPC_URL || "http://localhost:8545";
+const BACKEND_URL = REWRITES_BACKEND_URL;
+const DATA_NODE_URL = DATA_NODE_SERVER;
+const L3_RPC_URL = L3_RPC_SERVER;
 const VISION_API_URL = process.env.NEXT_PUBLIC_VISION_API_URL || "http://localhost:10001";
 const DOCS_URL = process.env.DOCS_URL || "https://docs.generalmarket.io";
 const isDev = process.env.NODE_ENV !== "production";
@@ -59,7 +60,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://us-assets.i.posthog.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: https://*.walletconnect.com; connect-src 'self' https://cdn.jsdelivr.net http://142.132.164.24 http://116.203.156.98 wss://relay.walletconnect.com https://*.walletconnect.com https://*.reown.com https://rpc.walletconnect.org https://us.i.posthog.com https://us-assets.i.posthog.com${isDev ? " http://localhost:* ws://localhost:*" : ""}; frame-src https://www.youtube-nocookie.com https://www.youtube.com https://secure.walletconnect.com https://secure.walletconnect.org; frame-ancestors 'none'`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://us-assets.i.posthog.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: https://*.walletconnect.com; connect-src 'self' https://cdn.jsdelivr.net wss://relay.walletconnect.com https://*.walletconnect.com https://*.reown.com https://rpc.walletconnect.org https://us.i.posthog.com https://us-assets.i.posthog.com${CSP_CONNECT_EXTRA ? " " + CSP_CONNECT_EXTRA : ""}${isDev ? " http://localhost:* ws://localhost:*" : ""}; frame-src https://www.youtube-nocookie.com https://www.youtube.com https://secure.walletconnect.com https://secure.walletconnect.org; frame-ancestors 'none'`,
           },
         ],
       },

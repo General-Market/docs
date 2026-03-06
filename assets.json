@@ -4,7 +4,7 @@
     "bitget": "0GUSDT"
   },
   {
-    "address": "0xcace1b78160ae76398f486c8a18044da0d66d86d",
+    "address": "0x34b40ba116d5dec75548a9e9a8f15411461e8c70",
     "bitget": "1INCHUSDT"
   },
   {
@@ -20,7 +20,7 @@
     "bitget": "A8USDT"
   },
   {
-    "address": "0xbec49fa140acaa83533fb00a2bb19bddd0290f25",
+    "address": "0xc9a43158891282a2b1475592d5719c001986aaec",
     "bitget": "AAVEUSDC"
   },
   {
@@ -48,7 +48,7 @@
     "bitget": "ACXUSDT"
   },
   {
-    "address": "0x4c4a2f8c81640e47606d3fd77b353e87ba015584",
+    "address": "0x51a1ceb83b83f1985a81c295d1ff28afef186e02",
     "bitget": "ADAUSDC"
   },
   {
@@ -60,7 +60,7 @@
     "bitget": "AEROUSDT"
   },
   {
-    "address": "0xd5ac451b0c50b9476107823af206ed814a2e2580",
+    "address": "0xd0141e899a65c95a556fe2b27e5982a6de7fdd7a",
     "bitget": "AEVOUSDT"
   },
   {
@@ -68,7 +68,7 @@
     "bitget": "AFCUSDT"
   },
   {
-    "address": "0xf8e31cb472bc70500f08cd84917e5a1912ec8397",
+    "address": "0x07882ae1ecb7429a84f1d53048d35c4bb2056877",
     "bitget": "AGLDUSDT"
   },
   {
@@ -92,23 +92,23 @@
     "bitget": "AITECHUSDT"
   },
   {
-    "address": "0xc0f115a19107322cfbf1cdbc7ea011c19ebdb4f8",
+    "address": "0x22753e4264fddc6181dc7cce468904a80a363e44",
     "bitget": "AIUSDT"
   },
   {
-    "address": "0xc96304e3c037f81da488ed9dea1d8f2a48278a75",
+    "address": "0xa7c59f010700930003b33ab25a7a0679c860f29c",
     "bitget": "AIXBTUSDT"
   },
   {
-    "address": "0x01c1def3b91672704716159c9041aeca392ddffb",
+    "address": "0xa6e99a4ed7498b3cddcbb61a6a607a4925faa1b7",
     "bitget": "ALCHUSDT"
   },
   {
-    "address": "0xe8d2a1e88c91dcd5433208d4152cc4f399a7e91d",
+    "address": "0xd5ac451b0c50b9476107823af206ed814a2e2580",
     "bitget": "ALGOUSDT"
   },
   {
-    "address": "0x34b40ba116d5dec75548a9e9a8f15411461e8c70",
+    "address": "0xfaaddc93baf78e89dcf37ba67943e1be8f37bb8c",
     "bitget": "ALICEUSDT"
   },
   {
@@ -128,7 +128,7 @@
     "bitget": "ALPINEUSDT"
   },
   {
-    "address": "0x07882ae1ecb7429a84f1d53048d35c4bb2056877",
+    "address": "0x3347b4d90ebe72befb30444c9966b2b990ae9fcb",
     "bitget": "ALTUSDT"
   },
   {
@@ -140,19 +140,19 @@
     "bitget": "AMPUSDT"
   },
   {
-    "address": "0x22753e4264fddc6181dc7cce468904a80a363e44",
+    "address": "0x3155755b79aa083bd953911c92705b7aa82a18f9",
     "bitget": "ANIMEUSDT"
   },
   {
-    "address": "0xa7c59f010700930003b33ab25a7a0679c860f29c",
+    "address": "0x5bf5b11053e734690269c6b9d438f8c9d48f528a",
     "bitget": "ANKRUSDT"
   },
   {
-    "address": "0xfaaddc93baf78e89dcf37ba67943e1be8f37bb8c",
+    "address": "0xffa7ca1aeeebbc30c874d32c7e22f052bbea0429",
     "bitget": "APEUSDT"
   },
   {
-    "address": "0x276c216d241856199a83bf27b2286659e5b877d3",
+    "address": "0x3aade2dcd2df6a8cac689ee797591b2913658659",
     "bitget": "API3USDT"
   },
   {
@@ -160,7 +160,7 @@
     "bitget": "APRUSDT"
   },
   {
-    "address": "0x46b142dd1e924fab83ecc3c08e4d46e82f005e0e",
+    "address": "0x7a9ec1d04904907de0ed7b6839ccdd59c3716ac9",
     "bitget": "APTUSDC"
   },
   {
@@ -168,7 +168,7 @@
     "bitget": "AQTUSDT"
   },
   {
-    "address": "0xd84379ceae14aa33c123af12424a37803f885889",
+    "address": "0x1c85638e118b37167e9298c2268758e058ddfda0",
     "bitget": "ARBUSDC"
   },
   {
@@ -184,7 +184,7 @@
     "bitget": "ARIAUSDT"
   },
   {
-    "address": "0x3347b4d90ebe72befb30444c9966b2b990ae9fcb",
+    "address": "0xab16a69a5a8c12c732e0deff4be56a70bb64c926",
     "bitget": "ARKMUSDT"
   },
   {
@@ -192,7 +192,7 @@
     "bitget": "ARKUSDT"
   },
   {
-    "address": "0x3155755b79aa083bd953911c92705b7aa82a18f9",
+    "address": "0xe3011a37a904ab90c8881a99bd1f6e21401f1522",
     "bitget": "ARPAUSDT"
   },
   {
@@ -200,7 +200,7 @@
     "bitget": "ARTXUSDT"
   },
   {
-    "address": "0x7a9ec1d04904907de0ed7b6839ccdd59c3716ac9",
+    "address": "0xf953b3a269d80e3eb0f2947630da976b896a8c5b",
     "bitget": "ARUSDC"
   },
   {
@@ -216,7 +216,7 @@
     "bitget": "ASTRUSDT"
   },
   {
-    "address": "0x5bf5b11053e734690269c6b9d438f8c9d48f528a",
+    "address": "0x1f10f3ba7acb61b2f50b9d6ddcf91a6f787c0e82",
     "bitget": "ATHUSDT"
   },
   {
@@ -224,11 +224,11 @@
     "bitget": "ATMUSDT"
   },
   {
-    "address": "0x18e317a7d70d8fbf8e6e893616b52390ebbdb629",
+    "address": "0xc0f115a19107322cfbf1cdbc7ea011c19ebdb4f8",
     "bitget": "ATOMUSDT"
   },
   {
-    "address": "0xffa7ca1aeeebbc30c874d32c7e22f052bbea0429",
+    "address": "0x457ccf29090fe5a24c19c1bc95f492168c0eafdb",
     "bitget": "AUCTIONUSDT"
   },
   {
@@ -244,7 +244,7 @@
     "bitget": "AVAUSDT"
   },
   {
-    "address": "0xdc11f7e700a4c898ae5caddb1082cffa76512add",
+    "address": "0x202cce504e04bed6fc0521238ddf04bc9e8e15ab",
     "bitget": "AVAXUSDC"
   },
   {
@@ -256,15 +256,15 @@
     "bitget": "AWEUSDT"
   },
   {
-    "address": "0x3aade2dcd2df6a8cac689ee797591b2913658659",
+    "address": "0x525c7063e7c20997baae9bda922159152d0e8417",
     "bitget": "AXLUSDT"
   },
   {
-    "address": "0xab16a69a5a8c12c732e0deff4be56a70bb64c926",
+    "address": "0x38a024c0b412b9d1db8bc398140d00f5af3093d4",
     "bitget": "AXSUSDT"
   },
   {
-    "address": "0xfcdb4564c18a9134002b9771816092c9693622e3",
+    "address": "0x638a246f0ec8883ef68280293ffe8cfbabe61b44",
     "bitget": "B2USDT"
   },
   {
@@ -284,7 +284,7 @@
     "bitget": "BANANAUSDT"
   },
   {
-    "address": "0x1f10f3ba7acb61b2f50b9d6ddcf91a6f787c0e82",
+    "address": "0xb82008565fdc7e44609fa118a4a681e92581e680",
     "bitget": "BANDUSDT"
   },
   {
@@ -304,7 +304,7 @@
     "bitget": "BARUSDT"
   },
   {
-    "address": "0x457ccf29090fe5a24c19c1bc95f492168c0eafdb",
+    "address": "0x2a810409872afc346f9b5b26571fd6ec42ea4849",
     "bitget": "BATUSDT"
   },
   {
@@ -316,7 +316,7 @@
     "bitget": "BBUSDT"
   },
   {
-    "address": "0x49fd2be640db2910c2fab69bb8531ab6e76127ff",
+    "address": "0xaa292e8611adf267e563f334ee42320ac96d0463",
     "bitget": "BCHUSDC"
   },
   {
@@ -328,11 +328,11 @@
     "bitget": "BEAMUSDT"
   },
   {
-    "address": "0x525c7063e7c20997baae9bda922159152d0e8417",
+    "address": "0xb9beecd1a582768711de1ee7b0a1d582d9d72a6c",
     "bitget": "BERAUSDT"
   },
   {
-    "address": "0x720472c8ce72c2a2d711333e064abd3e6bbeadd3",
+    "address": "0xcace1b78160ae76398f486c8a18044da0d66d86d",
     "bitget": "BGBUSDC"
   },
   {
@@ -376,7 +376,7 @@
     "bitget": "BLUMUSDT"
   },
   {
-    "address": "0x5fc748f1feb28d7b76fa1c6b07d8ba2d5535177c",
+    "address": "0x40918ba7f132e0acba2ce4de4c4baf9bd2d7d849",
     "bitget": "BLURUSDT"
   },
   {
@@ -384,7 +384,7 @@
     "bitget": "BMTUSDT"
   },
   {
-    "address": "0xdbc43ba45381e02825b14322cddd15ec4b3164e6",
+    "address": "0xd8a5a9b31c3c0232e196d518e89fd8bf83acad43",
     "bitget": "BNBUSDC"
   },
   {
@@ -392,11 +392,11 @@
     "bitget": "BNTUSDT"
   },
   {
-    "address": "0x2a810409872afc346f9b5b26571fd6ec42ea4849",
+    "address": "0xd6e1afe5ca8d00a2efc01b89997abe2de47fdfaf",
     "bitget": "BOMEUSDT"
   },
   {
-    "address": "0xb9beecd1a582768711de1ee7b0a1d582d9d72a6c",
+    "address": "0x99dbe4aea58e518c50a1c04ae9b48c9f6354612f",
     "bitget": "BONKUSDT"
   },
   {
@@ -420,15 +420,19 @@
     "bitget": "BRUSDT"
   },
   {
+    "address": "0xa1fd7ebc3d0c86d103579101ba971a6b5d733d4a",
+    "bitget": "BSBUSDT"
+  },
+  {
     "address": "0x3a50539b4576349ba1463740bdbcea1a6addac13",
     "bitget": "BSUUSDT"
   },
   {
-    "address": "0x8a93d247134d91e0de6f96547cb0204e5be8e5d8",
+    "address": "0x6f6f570f45833e249e27022648a26f4076f48f78",
     "bitget": "BSVUSDT"
   },
   {
-    "address": "0x1429859428c0abc9c2c47c8ee9fbaf82cfa0f20f",
+    "address": "0x1fa02b2d6a771842690194cf62d91bdd92bfe28d",
     "bitget": "BTCUSDC"
   },
   {
@@ -438,6 +442,10 @@
   {
     "address": "0xf97ad9d6e97d65e9c27974c53d899625973c7649",
     "bitget": "BTTUSDT"
+  },
+  {
+    "address": "0x5c058caebc47a362a1e9b68b968375ac7e81fd71",
+    "bitget": "BTWUSDT"
   },
   {
     "address": "0x695f4a768679ff444f50ef104c671a8ae5aab0be",
@@ -452,7 +460,7 @@
     "bitget": "C98USDT"
   },
   {
-    "address": "0x40918ba7f132e0acba2ce4de4c4baf9bd2d7d849",
+    "address": "0xca8c8688914e0f7096c920146cd0ad85cd7ae8b9",
     "bitget": "CAKEUSDT"
   },
   {
@@ -472,7 +480,7 @@
     "bitget": "CBKUSDT"
   },
   {
-    "address": "0xf32d39ff9f6aa7a7a64d7a4f00a54826ef791a55",
+    "address": "0xb0f05d25e41fbc2b52013099ed9616f1206ae21b",
     "bitget": "CELOUSDT"
   },
   {
@@ -488,7 +496,7 @@
     "bitget": "CETUSUSDT"
   },
   {
-    "address": "0xd6e1afe5ca8d00a2efc01b89997abe2de47fdfaf",
+    "address": "0x5feaebfb4439f3516c74939a9d04e95afe82c4ae",
     "bitget": "CFXUSDT"
   },
   {
@@ -512,11 +520,11 @@
     "bitget": "CHRUSDT"
   },
   {
-    "address": "0x99dbe4aea58e518c50a1c04ae9b48c9f6354612f",
+    "address": "0x976fcd02f7c4773dd89c309fbf55d5923b4c98a1",
     "bitget": "CHZUSDT"
   },
   {
-    "address": "0x6f6f570f45833e249e27022648a26f4076f48f78",
+    "address": "0x19ceccd6942ad38562ee10bafd44776ceb67e923",
     "bitget": "CKBUSDT"
   },
   {
@@ -536,7 +544,7 @@
     "bitget": "COMMONUSDT"
   },
   {
-    "address": "0xca8c8688914e0f7096c920146cd0ad85cd7ae8b9",
+    "address": "0xd42912755319665397ff090fbb63b1a31ae87cee",
     "bitget": "COMPUSDT"
   },
   {
@@ -572,7 +580,7 @@
     "bitget": "CROUSDT"
   },
   {
-    "address": "0xb0f05d25e41fbc2b52013099ed9616f1206ae21b",
+    "address": "0xfcdb4564c18a9134002b9771816092c9693622e3",
     "bitget": "CRVUSDT"
   },
   {
@@ -604,7 +612,7 @@
     "bitget": "CVXUSDT"
   },
   {
-    "address": "0x5feaebfb4439f3516c74939a9d04e95afe82c4ae",
+    "address": "0x927b167526babb9be047421db732c663a0b77b11",
     "bitget": "CYBERUSDT"
   },
   {
@@ -612,7 +620,7 @@
     "bitget": "CYSUSDT"
   },
   {
-    "address": "0x5067457698fd6fa1c6964e416b3f42713513b3dd",
+    "address": "0xf8e31cb472bc70500f08cd84917e5a1912ec8397",
     "bitget": "DAIUSDC"
   },
   {
@@ -628,7 +636,7 @@
     "bitget": "DEGENUSDT"
   },
   {
-    "address": "0x19ceccd6942ad38562ee10bafd44776ceb67e923",
+    "address": "0x01c1def3b91672704716159c9041aeca392ddffb",
     "bitget": "DENTUSDT"
   },
   {
@@ -644,7 +652,7 @@
     "bitget": "DODOUSDT"
   },
   {
-    "address": "0x21df544947ba3e8b3c32561399e88b52dc8b2823",
+    "address": "0x36b58f5c1969b7b6591d752ea6f5486d069010ab",
     "bitget": "DOGEUSDC"
   },
   {
@@ -660,7 +668,7 @@
     "bitget": "DOODUSDT"
   },
   {
-    "address": "0x2e2ed0cfd3ad2f1d34481277b3204d807ca2f8c2",
+    "address": "0x8198f5d8f8cffe8f9c413d98a0a55aeb8ab9fbb7",
     "bitget": "DOTUSDT"
   },
   {
@@ -684,7 +692,7 @@
     "bitget": "DUSKUSDT"
   },
   {
-    "address": "0xd42912755319665397ff090fbb63b1a31ae87cee",
+    "address": "0x02b0b4efd909240fcb2eb5fae060dc60d112e3a4",
     "bitget": "DYDXUSDT"
   },
   {
@@ -716,7 +724,7 @@
     "bitget": "ELIZAOSUSDT"
   },
   {
-    "address": "0x927b167526babb9be047421db732c663a0b77b11",
+    "address": "0x6c2d83262ff84cbadb3e416d527403135d757892",
     "bitget": "ENAUSDT"
   },
   {
@@ -728,7 +736,7 @@
     "bitget": "ENSOUSDT"
   },
   {
-    "address": "0x32eece76c2c2e8758584a83ee2f522d4788fea0f",
+    "address": "0xfd6f7a6a5c21a3f503ebae7a473639974379c351",
     "bitget": "ENSUSDT"
   },
   {
@@ -752,15 +760,15 @@
     "bitget": "ESUSDT"
   },
   {
-    "address": "0x4b6ab5f819a515382b0deb6935d793817bb4af28",
+    "address": "0xc96304e3c037f81da488ed9dea1d8f2a48278a75",
     "bitget": "ETCUSDT"
   },
   {
-    "address": "0x02b0b4efd909240fcb2eb5fae060dc60d112e3a4",
+    "address": "0x5302e909d1e93e30f05b5d6eea766363d14f9892",
     "bitget": "ETHFIUSDT"
   },
   {
-    "address": "0xb0d4afd8879ed9f52b28595d31b441d079b2ca07",
+    "address": "0xdbc43ba45381e02825b14322cddd15ec4b3164e6",
     "bitget": "ETHUSDC"
   },
   {
@@ -772,7 +780,7 @@
     "bitget": "FARTCOINUSDT"
   },
   {
-    "address": "0x1c85638e118b37167e9298c2268758e058ddfda0",
+    "address": "0x4631bcabd6df18d94796344963cb60d44a4136b6",
     "bitget": "FETUSDC"
   },
   {
@@ -788,7 +796,7 @@
     "bitget": "FIDAUSDT"
   },
   {
-    "address": "0x4ee6ecad1c2dae9f525404de8555724e3c35d07b",
+    "address": "0x46b142dd1e924fab83ecc3c08e4d46e82f005e0e",
     "bitget": "FILUSDC"
   },
   {
@@ -800,11 +808,11 @@
     "bitget": "FLOCKUSDT"
   },
   {
-    "address": "0x638a246f0ec8883ef68280293ffe8cfbabe61b44",
+    "address": "0x0ed64d01d0b4b655e410ef1441dd677b695639e7",
     "bitget": "FLOKIUSDT"
   },
   {
-    "address": "0x6c2d83262ff84cbadb3e416d527403135d757892",
+    "address": "0x4bf010f1b9beda5450a8dd702ed602a104ff65ee",
     "bitget": "FLOWUSDT"
   },
   {
@@ -852,7 +860,7 @@
     "bitget": "GAIBUSDT"
   },
   {
-    "address": "0xa6e99a4ed7498b3cddcbb61a6a607a4925faa1b7",
+    "address": "0x96f3ce39ad2bfdcf92c0f6e2c2cabf83874660fc",
     "bitget": "GALAUSDT"
   },
   {
@@ -876,7 +884,7 @@
     "bitget": "GLMUSDT"
   },
   {
-    "address": "0x5302e909d1e93e30f05b5d6eea766363d14f9892",
+    "address": "0x986aaa537b8cc170761fdac6ac4fc7f9d8a20a8c",
     "bitget": "GMTUSDT"
   },
   {
@@ -912,7 +920,7 @@
     "bitget": "GRASSUSDT"
   },
   {
-    "address": "0x0ed64d01d0b4b655e410ef1441dd677b695639e7",
+    "address": "0xde2bd2ffea002b8e84adea96e5976af664115e2c",
     "bitget": "GRTUSDT"
   },
   {
@@ -932,7 +940,7 @@
     "bitget": "HAEDALUSDT"
   },
   {
-    "address": "0x4bf010f1b9beda5450a8dd702ed602a104ff65ee",
+    "address": "0xefc1ab2475acb7e60499efb171d173be19928a05",
     "bitget": "HBARUSDT"
   },
   {
@@ -980,7 +988,7 @@
     "bitget": "HOOKUSDT"
   },
   {
-    "address": "0x40a42baf86fc821f972ad2ac878729063ceef403",
+    "address": "0x870526b7973b56163a6997bb7c886f5e4ea53638",
     "bitget": "HOTUSDT"
   },
   {
@@ -1000,7 +1008,7 @@
     "bitget": "HYPERUSDT"
   },
   {
-    "address": "0xd0141e899a65c95a556fe2b27e5982a6de7fdd7a",
+    "address": "0x276c216d241856199a83bf27b2286659e5b877d3",
     "bitget": "HYPEUSDT"
   },
   {
@@ -1012,16 +1020,12 @@
     "bitget": "ICNTUSDT"
   },
   {
-    "address": "0x172076e0166d1f9cc711c77adf8488051744980c",
+    "address": "0xfbc22278a96299d91d41c453234d97b4f5eb9b2d",
     "bitget": "ICPUSDC"
   },
   {
     "address": "0x33ff28b5ac1d658412a8ae6d66ff2b6f5c8e5706",
     "bitget": "ICXUSDT"
-  },
-  {
-    "address": "0x0124eb7e01993d681bdf82cc9db66062883f08de",
-    "bitget": "IDEXUSDT"
   },
   {
     "address": "0xda83ad7b6631d0a4019eb86c7ebb1a655c1d4591",
@@ -1036,7 +1040,7 @@
     "bitget": "IKAUSDT"
   },
   {
-    "address": "0x96f3ce39ad2bfdcf92c0f6e2c2cabf83874660fc",
+    "address": "0xd49a0e9a4cd5979ae36840f542d2d7f02c4817be",
     "bitget": "ILVUSDT"
   },
   {
@@ -1044,7 +1048,7 @@
     "bitget": "IMUUSDT"
   },
   {
-    "address": "0x986aaa537b8cc170761fdac6ac4fc7f9d8a20a8c",
+    "address": "0xe1fd27f4390dcbe165f4d60dbf821e4b9bb02ded",
     "bitget": "IMXUSDT"
   },
   {
@@ -1052,7 +1056,7 @@
     "bitget": "INITUSDT"
   },
   {
-    "address": "0xc9a43158891282a2b1475592d5719c001986aaec",
+    "address": "0x49fd2be640db2910c2fab69bb8531ab6e76127ff",
     "bitget": "INJUSDC"
   },
   {
@@ -1072,7 +1076,7 @@
     "bitget": "IOTXUSDT"
   },
   {
-    "address": "0xde2bd2ffea002b8e84adea96e5976af664115e2c",
+    "address": "0xc582bc0317dbb0908203541971a358c44b1f3766",
     "bitget": "IOUSDT"
   },
   {
@@ -1092,7 +1096,7 @@
     "bitget": "IRYSUSDT"
   },
   {
-    "address": "0xfd6f7a6a5c21a3f503ebae7a473639974379c351",
+    "address": "0x40a42baf86fc821f972ad2ac878729063ceef403",
     "bitget": "JASMYUSDT"
   },
   {
@@ -1112,11 +1116,11 @@
     "bitget": "JSTUSDT"
   },
   {
-    "address": "0x870526b7973b56163a6997bb7c886f5e4ea53638",
+    "address": "0xb377a2eed7566ac9fcb0ba673604f9bf875e2bab",
     "bitget": "JTOUSDT"
   },
   {
-    "address": "0xd49a0e9a4cd5979ae36840f542d2d7f02c4817be",
+    "address": "0x66f625b8c4c635af8b74ece2d7ed0d58b4af3c3d",
     "bitget": "JUPUSDT"
   },
   {
@@ -1140,7 +1144,7 @@
     "bitget": "KASUSDT"
   },
   {
-    "address": "0xe1fd27f4390dcbe165f4d60dbf821e4b9bb02ded",
+    "address": "0x8bce54ff8ab45cb075b044ae117b8fd91f9351ab",
     "bitget": "KAVAUSDT"
   },
   {
@@ -1172,7 +1176,7 @@
     "bitget": "KOMAUSDT"
   },
   {
-    "address": "0xe3011a37a904ab90c8881a99bd1f6e21401f1522",
+    "address": "0x5fc748f1feb28d7b76fa1c6b07d8ba2d5535177c",
     "bitget": "KSMUSDT"
   },
   {
@@ -1192,7 +1196,7 @@
     "bitget": "LATUSDT"
   },
   {
-    "address": "0xc582bc0317dbb0908203541971a358c44b1f3766",
+    "address": "0x74cf9087ad26d541930bac724b7ab21ba8f00a27",
     "bitget": "LAUSDT"
   },
   {
@@ -1212,7 +1216,7 @@
     "bitget": "LINEAUSDT"
   },
   {
-    "address": "0xd8a5a9b31c3c0232e196d518e89fd8bf83acad43",
+    "address": "0x0355b7b8cb128fa5692729ab3aaa199c1753f726",
     "bitget": "LINKUSDC"
   },
   {
@@ -1248,7 +1252,7 @@
     "bitget": "LSKUSDT"
   },
   {
-    "address": "0x36b58f5c1969b7b6591d752ea6f5486d069010ab",
+    "address": "0x172076e0166d1f9cc711c77adf8488051744980c",
     "bitget": "LTCUSDC"
   },
   {
@@ -1262,10 +1266,6 @@
   {
     "address": "0x525bd6b33c16fb8a036098d3ca0ad8d02da78e59",
     "bitget": "LUNCUSDT"
-  },
-  {
-    "address": "0x593ed37f2ce4d39362f7020bd50ebc52333fad67",
-    "bitget": "MAGICUSDT"
   },
   {
     "address": "0xaf62bed6e5cd2924faee849cb366bff2f459043e",
@@ -1282,6 +1282,10 @@
   {
     "address": "0x9996af68f4e7653042e23e7e57c9488bbe07472b",
     "bitget": "MANTAUSDT"
+  },
+  {
+    "address": "0x99d1159067576f3d5b0aea35d984817fce696c3a",
+    "bitget": "MANTRAUSDT"
   },
   {
     "address": "0x5a5fae51affb94f120689f679e76996e145547dd",
@@ -1376,7 +1380,7 @@
     "bitget": "MOODENGUSDT"
   },
   {
-    "address": "0xb82008565fdc7e44609fa118a4a681e92581e680",
+    "address": "0xf32d39ff9f6aa7a7a64d7a4f00a54826ef791a55",
     "bitget": "MORPHOUSDT"
   },
   {
@@ -1412,7 +1416,7 @@
     "bitget": "NAORISUSDT"
   },
   {
-    "address": "0xf4b146fba71f41e0592668ffbf264f1d186b2ca8",
+    "address": "0x2b0d36facd61b71cc05ab8f3d2355ec3631c0dd5",
     "bitget": "NEARUSDC"
   },
   {
@@ -1496,20 +1500,12 @@
     "bitget": "OGUSDT"
   },
   {
-    "address": "0x79bb1505949dd9dad707da0920a581dc70f55e79",
-    "bitget": "OMUSDT"
-  },
-  {
-    "address": "0xa4899d35897033b927acfcf422bc745916139776",
+    "address": "0xe8d2a1e88c91dcd5433208d4152cc4f399a7e91d",
     "bitget": "ONDOUSDC"
   },
   {
     "address": "0xd15a3603c3838bae589e333ef035db2a331fb935",
     "bitget": "ONEUSDT"
-  },
-  {
-    "address": "0x30f8b8cdc78f110b685662c59e9fcd8fcc33db9e",
-    "bitget": "ONGUSDT"
   },
   {
     "address": "0xe0f854f744e7764e1bc8f362fcecc4ad62b52bd6",
@@ -1520,7 +1516,11 @@
     "bitget": "OPENUSDT"
   },
   {
-    "address": "0x2b0d36facd61b71cc05ab8f3d2355ec3631c0dd5",
+    "address": "0xf84fe2337c8d5b5abb9e4a510129c1a283a8c32b",
+    "bitget": "OPNUSDT"
+  },
+  {
+    "address": "0x367761085bf3c12e5da2df99ac6e1a824612b8fb",
     "bitget": "OPUSDC"
   },
   {
@@ -1580,7 +1580,7 @@
     "bitget": "PEOPLEUSDT"
   },
   {
-    "address": "0x4631bcabd6df18d94796344963cb60d44a4136b6",
+    "address": "0x5c74c94173f05da1720953407cbb920f3df9f887",
     "bitget": "PEPEUSDC"
   },
   {
@@ -1622,10 +1622,6 @@
   {
     "address": "0x0e0c4a2ea521eb291a58b62a55aefb8e5e17ae8e",
     "bitget": "POLYXUSDT"
-  },
-  {
-    "address": "0xffa68beba85f0b122eea0eeca8e8926e36dbddef",
-    "bitget": "PONDUSDT"
   },
   {
     "address": "0xe1aaa7dd767db3551a702e1397d5f69e3b6f6824",
@@ -1728,10 +1724,6 @@
     "bitget": "QUBICUSDT"
   },
   {
-    "address": "0x8e729bb3249f862045949f7faafb589a869dccd6",
-    "bitget": "QUICKUSDT"
-  },
-  {
     "address": "0x8346bb114e9dc6c30168e453b22f908e429e182b",
     "bitget": "QUSDT"
   },
@@ -1768,7 +1760,7 @@
     "bitget": "REDUSDT"
   },
   {
-    "address": "0x367761085bf3c12e5da2df99ac6e1a824612b8fb",
+    "address": "0x86a2ee8faf9a840f7a2c64ca3d51209f9a02081d",
     "bitget": "RENDERUSDC"
   },
   {
@@ -1788,7 +1780,7 @@
     "bitget": "RIFUSDT"
   },
   {
-    "address": "0x976fcd02f7c4773dd89c309fbf55d5923b4c98a1",
+    "address": "0x32eece76c2c2e8758584a83ee2f522d4788fea0f",
     "bitget": "RIVERUSDT"
   },
   {
@@ -1876,10 +1868,6 @@
     "bitget": "SAPIENUSDT"
   },
   {
-    "address": "0x8be20a25510a6c6f0cf7e90d94d7737a62e8f78a",
-    "bitget": "SAROSUSDT"
-  },
-  {
     "address": "0xbc51b4b2c3b1b8bff5fe2ac4622a37a32bb64593",
     "bitget": "SATSUSDT"
   },
@@ -1896,7 +1884,7 @@
     "bitget": "SDUSDT"
   },
   {
-    "address": "0xefc1ab2475acb7e60499efb171d173be19928a05",
+    "address": "0xb2b580ce436e6f77a5713d80887e14788ef49c9a",
     "bitget": "SEIUSDT"
   },
   {
@@ -1912,7 +1900,7 @@
     "bitget": "SHELLUSDT"
   },
   {
-    "address": "0x51a1ceb83b83f1985a81c295d1ff28afef186e02",
+    "address": "0xf4b146fba71f41e0592668ffbf264f1d186b2ca8",
     "bitget": "SHIBUSDT"
   },
   {
@@ -1952,7 +1940,7 @@
     "bitget": "SOLOUSDT"
   },
   {
-    "address": "0x162a433068f51e18b7d13932f27e66a3f99e6890",
+    "address": "0x04c89607413713ec9775e14b954286519d836fef",
     "bitget": "SOLUSDC"
   },
   {
@@ -1964,7 +1952,7 @@
     "bitget": "SOMIUSDT"
   },
   {
-    "address": "0x38a024c0b412b9d1db8bc398140d00f5af3093d4",
+    "address": "0x8a93d247134d91e0de6f96547cb0204e5be8e5d8",
     "bitget": "SONICUSDT"
   },
   {
@@ -2020,11 +2008,11 @@
     "bitget": "STRKUSDT"
   },
   {
-    "address": "0xf953b3a269d80e3eb0f2947630da976b896a8c5b",
+    "address": "0x5067457698fd6fa1c6964e416b3f42713513b3dd",
     "bitget": "STXUSDC"
   },
   {
-    "address": "0xfbc22278a96299d91d41c453234d97b4f5eb9b2d",
+    "address": "0x4c2f7092c2ae51d986befee378e50bd4db99c901",
     "bitget": "SUIUSDC"
   },
   {
@@ -2092,7 +2080,7 @@
     "bitget": "TAIKOUSDT"
   },
   {
-    "address": "0xaa292e8611adf267e563f334ee42320ac96d0463",
+    "address": "0x18e317a7d70d8fbf8e6e893616b52390ebbdb629",
     "bitget": "TAOUSDC"
   },
   {
@@ -2124,7 +2112,7 @@
     "bitget": "TNSRUSDT"
   },
   {
-    "address": "0x4c2f7092c2ae51d986befee378e50bd4db99c901",
+    "address": "0xa4899d35897033b927acfcf422bc745916139776",
     "bitget": "TONUSDC"
   },
   {
@@ -2156,7 +2144,7 @@
     "bitget": "TRIAUSDT"
   },
   {
-    "address": "0x5c74c94173f05da1720953407cbb920f3df9f887",
+    "address": "0x4b6ab5f819a515382b0deb6935d793817bb4af28",
     "bitget": "TRUMPUSDC"
   },
   {
@@ -2168,7 +2156,7 @@
     "bitget": "TRUUSDT"
   },
   {
-    "address": "0x202cce504e04bed6fc0521238ddf04bc9e8e15ab",
+    "address": "0xd84379ceae14aa33c123af12424a37803f885889",
     "bitget": "TRXUSDC"
   },
   {
@@ -2204,7 +2192,7 @@
     "bitget": "UMAUSDT"
   },
   {
-    "address": "0x8198f5d8f8cffe8f9c413d98a0a55aeb8ab9fbb7",
+    "address": "0x4ee6ecad1c2dae9f525404de8555724e3c35d07b",
     "bitget": "UNIUSDC"
   },
   {
@@ -2226,6 +2214,10 @@
   {
     "address": "0xc8a7ac797a5d738b4a4960b4f5eab544728e2f58",
     "bitget": "USDEUSDC"
+  },
+  {
+    "address": "0x97df9ecee6d9ce2b009371275e1a8f2525303810",
+    "bitget": "USDGOUSDC"
   },
   {
     "address": "0x5212ea88184fa892646ee795cbe2f076b4ccacfb",
@@ -2348,7 +2340,7 @@
     "bitget": "WINUSDT"
   },
   {
-    "address": "0x86a2ee8faf9a840f7a2c64ca3d51209f9a02081d",
+    "address": "0x720472c8ce72c2a2d711333e064abd3e6bbeadd3",
     "bitget": "WLDUSDC"
   },
   {
@@ -2388,7 +2380,7 @@
     "bitget": "XIONUSDT"
   },
   {
-    "address": "0x0355b7b8cb128fa5692729ab3aaa199c1753f726",
+    "address": "0xbec49fa140acaa83533fb00a2bb19bddd0290f25",
     "bitget": "XLMUSDC"
   },
   {
@@ -2396,7 +2388,7 @@
     "bitget": "XPLUSDT"
   },
   {
-    "address": "0x04c89607413713ec9775e14b954286519d836fef",
+    "address": "0xdc11f7e700a4c898ae5caddb1082cffa76512add",
     "bitget": "XRPUSDC"
   },
   {
@@ -2478,10 +2470,6 @@
   {
     "address": "0x04acd0c9091ba9f1df4f2fbef623a797685a20d8",
     "bitget": "ZORAUSDT"
-  },
-  {
-    "address": "0xaf7f1d2849dded7a7bbbeea4b01d0d3a2bcd24d8",
-    "bitget": "ZRCUSDT"
   },
   {
     "address": "0x37367063850bb2d3223e3ed28ceea68b74838dea",

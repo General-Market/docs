@@ -87,8 +87,6 @@ pub struct VisionDepositWatcher {
     arb_chain_writer: Option<Arc<dyn ChainWriter>>,
     /// Issuer node index (for signer bitmap).
     node_index: u8,
-    /// Optional gas drip wallet key (hex private key for native GM transfers).
-    gas_drip_wallet_key: Option<String>,
 }
 
 impl VisionDepositWatcher {
@@ -107,7 +105,6 @@ impl VisionDepositWatcher {
         l3_chain_writer: Option<Arc<dyn ChainWriter>>,
         arb_chain_writer: Option<Arc<dyn ChainWriter>>,
         node_index: u8,
-        gas_drip_wallet_key: Option<String>,
     ) -> Self {
         let deposit_created_topic = H256::from(ethers::utils::keccak256(
             b"VisionDepositCreated(uint256,address,uint256)",
@@ -144,7 +141,6 @@ impl VisionDepositWatcher {
             l3_chain_writer,
             arb_chain_writer,
             node_index,
-            gas_drip_wallet_key,
         }
     }
 
@@ -870,7 +866,6 @@ impl VisionDepositWatcher {
     /// Check user's native GM balance on L3 and send a gas drip if below threshold.
     ///
     /// This is a plain native transfer (like ETH transfer), not a contract call.
-    /// Uses the gas_drip_wallet_key to sign the transfer if configured.
     async fn drip_gas_if_needed(&self, user: Address) {
         // Parse threshold and amount from config
         let threshold = match U256::from_dec_str(&self.config.gas_drip_threshold_wei) {

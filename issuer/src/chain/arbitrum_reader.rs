@@ -29,7 +29,7 @@ use crate::chain::events::{
     CrossChainOrder, CrossChainOrderEvent, CrossChainOrderParseError,
     CrossChainSellOrderEvent, cross_chain_sell_order_topic,
     ItpCreatedEvent, ItpCreationRequest, ParseError, CREATE_ITP_REQUESTED_SIGNATURE,
-    CROSS_CHAIN_ORDER_CREATED_SIGNATURE, CROSS_CHAIN_SELL_ORDER_CREATED_SIGNATURE,
+    CROSS_CHAIN_ORDER_CREATED_SIGNATURE,
     ITP_CREATED_SIGNATURE,
 };
 

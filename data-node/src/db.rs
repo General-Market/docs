@@ -1077,51 +1077,6 @@ pub async fn cg_has_snapshot_for_date(
     Ok(count > 0)
 }
 
-/// Query market caps for a specific date (or closest earlier date).
-pub async fn cg_query_market_caps_at(
-    pool: &PgPool,
-    date: chrono::NaiveDate,
-    limit: i64,
-) -> Result<Vec<CgMarketCapRow>, sqlx::Error> {
-    let rows = sqlx::query_as::<_, (String, Option<String>, Option<String>, Option<f64>, Option<f64>, Option<f64>, Option<i32>, chrono::NaiveDate)>(
-        "SELECT coin_id, symbol, name, market_cap_usd, price_usd, total_volume_usd, market_cap_rank, snapshot_date
-         FROM coingecko_market_caps
-         WHERE snapshot_date = (
-             SELECT MAX(snapshot_date) FROM coingecko_market_caps WHERE snapshot_date <= $1
-         )
-         ORDER BY market_cap_rank ASC NULLS LAST
-         LIMIT $2"
-    )
-    .bind(date)
-    .bind(limit)
-    .fetch_all(pool)
-    .await?;
-
-    Ok(rows.into_iter().map(|(coin_id, symbol, name, market_cap_usd, price_usd, total_volume_usd, market_cap_rank, snapshot_date)| CgMarketCapRow {
-        coin_id, symbol, name, market_cap_usd, price_usd, total_volume_usd, market_cap_rank, snapshot_date,
-    }).collect())
-}
-
-/// Query historical market cap series for a single coin.
-pub async fn cg_query_coin_history(
-    pool: &PgPool,
-    coin_id: &str,
-) -> Result<Vec<CgMarketCapRow>, sqlx::Error> {
-    let rows = sqlx::query_as::<_, (String, Option<String>, Option<String>, Option<f64>, Option<f64>, Option<f64>, Option<i32>, chrono::NaiveDate)>(
-        "SELECT coin_id, symbol, name, market_cap_usd, price_usd, total_volume_usd, market_cap_rank, snapshot_date
-         FROM coingecko_market_caps
-         WHERE coin_id = $1
-         ORDER BY snapshot_date ASC"
-    )
-    .bind(coin_id)
-    .fetch_all(pool)
-    .await?;
-
-    Ok(rows.into_iter().map(|(coin_id, symbol, name, market_cap_usd, price_usd, total_volume_usd, market_cap_rank, snapshot_date)| CgMarketCapRow {
-        coin_id, symbol, name, market_cap_usd, price_usd, total_volume_usd, market_cap_rank, snapshot_date,
-    }).collect())
-}
-
 /// Get all distinct coin_ids in the table.
 pub async fn cg_all_coin_ids(pool: &PgPool) -> Result<Vec<String>, sqlx::Error> {
     sqlx::query_scalar::<_, String>("SELECT DISTINCT coin_id FROM coingecko_market_caps")
@@ -1268,32 +1223,6 @@ pub async fn cg_query_all_categories(pool: &PgPool) -> Result<Vec<CgCategoryRow>
     }).collect())
 }
 
-/// Get a single category by ID.
-pub async fn cg_query_category(pool: &PgPool, category_id: &str) -> Result<Option<CgCategoryRow>, sqlx::Error> {
-    let row = sqlx::query_as::<_, (String, String, Option<f64>, Option<f64>, Option<f64>, Option<Vec<String>>)>(
-        "SELECT id, name, market_cap, market_cap_change_24h, volume_24h, top_3_coins
-         FROM coingecko_categories
-         WHERE id = $1"
-    )
-    .bind(category_id)
-    .fetch_optional(pool)
-    .await?;
-
-    Ok(row.map(|(id, name, market_cap, market_cap_change_24h, volume_24h, top_3_coins)| CgCategoryRow {
-        id, name, market_cap, market_cap_change_24h, volume_24h, top_3_coins,
-    }))
-}
-
-/// Get all coin_ids belonging to a category.
-pub async fn cg_query_category_coin_ids(pool: &PgPool, category_id: &str) -> Result<Vec<String>, sqlx::Error> {
-    sqlx::query_scalar::<_, String>(
-        "SELECT coin_id FROM coingecko_category_coins WHERE category_id = $1"
-    )
-    .bind(category_id)
-    .fetch_all(pool)
-    .await
-}
-
 /// Load ALL category→coin_id mappings in one query (for global sim cache).
 pub async fn cg_query_all_category_coins(pool: &PgPool) -> Result<Vec<(String, String)>, sqlx::Error> {
     sqlx::query_as::<_, (String, String)>(
@@ -1386,78 +1315,6 @@ pub async fn cg_query_category_coins_with_data(
     Ok(rows.into_iter().map(|(coin_id, symbol, name, market_cap_usd, price_usd, total_volume_usd, market_cap_rank, snapshot_date)| CgMarketCapRow {
         coin_id, symbol, name, market_cap_usd, price_usd, total_volume_usd, market_cap_rank, snapshot_date,
     }).collect())
-}
-
-/// Check if categories table has any data.
-pub async fn cg_has_categories(pool: &PgPool) -> Result<bool, sqlx::Error> {
-    let count = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM coingecko_categories"
-    )
-    .fetch_one(pool)
-    .await?;
-    Ok(count > 0)
-}
-
-/// Batch fetch daily prices for a set of coins over a date range.
-/// Returns (coin_id, snapshot_date, price_usd) triples.
-pub async fn cg_query_price_history(
-    pool: &PgPool,
-    coin_ids: &[String],
-    from_date: chrono::NaiveDate,
-    to_date: chrono::NaiveDate,
-) -> Result<Vec<(String, chrono::NaiveDate, f64)>, sqlx::Error> {
-    if coin_ids.is_empty() {
-        return Ok(vec![]);
-    }
-
-    let cids: Vec<&str> = coin_ids.iter().map(|s| s.as_str()).collect();
-    let rows = sqlx::query_as::<_, (String, chrono::NaiveDate, f64)>(
-        "SELECT coin_id, snapshot_date, price_usd
-         FROM coingecko_market_caps
-         WHERE coin_id = ANY($1)
-           AND snapshot_date >= $2
-           AND snapshot_date <= $3
-           AND price_usd IS NOT NULL
-         ORDER BY coin_id, snapshot_date ASC"
-    )
-    .bind(&cids)
-    .bind(from_date)
-    .bind(to_date)
-    .fetch_all(pool)
-    .await?;
-
-    Ok(rows)
-}
-
-/// Bulk-load price + market cap data for all category coins over a date range.
-/// Returns (coin_id, snapshot_date, price_usd, market_cap_usd) — used to preload
-/// everything into memory so the simulation loop does zero per-day DB queries.
-pub async fn cg_query_bulk_market_data(
-    pool: &PgPool,
-    coin_ids: &[String],
-    from_date: chrono::NaiveDate,
-    to_date: chrono::NaiveDate,
-) -> Result<Vec<(String, chrono::NaiveDate, f64, Option<f64>)>, sqlx::Error> {
-    if coin_ids.is_empty() {
-        return Ok(vec![]);
-    }
-
-    let cids: Vec<&str> = coin_ids.iter().map(|s| s.as_str()).collect();
-    let rows = sqlx::query_as::<_, (String, chrono::NaiveDate, f64, Option<f64>)>(
-        "SELECT coin_id, snapshot_date, price_usd, market_cap_usd
-         FROM coingecko_market_caps
-         WHERE coin_id = ANY($1)
-           AND snapshot_date >= $2
-           AND snapshot_date <= $3
-           AND price_usd IS NOT NULL"
-    )
-    .bind(&cids)
-    .bind(from_date)
-    .bind(to_date)
-    .fetch_all(pool)
-    .await?;
-
-    Ok(rows)
 }
 
 /// Get all unique snapshot dates.
@@ -2010,94 +1867,6 @@ pub async fn sim_delete_run(pool: &PgPool, run_id: i64) -> Result<bool, sqlx::Er
         .execute(pool)
         .await?;
     Ok(result.rows_affected() > 0)
-}
-
-/// Get category coins with market cap at a specific date (for simulation).
-/// Returns coins in this category that have price data on the given date, sorted by market cap.
-pub async fn cg_query_category_market_caps_at(
-    pool: &PgPool,
-    category_id: &str,
-    date: chrono::NaiveDate,
-    limit: i64,
-) -> Result<Vec<CgMarketCapRow>, sqlx::Error> {
-    let rows = sqlx::query_as::<_, (String, Option<String>, Option<String>, Option<f64>, Option<f64>, Option<f64>, Option<i32>, chrono::NaiveDate)>(
-        "SELECT m.coin_id, m.symbol, m.name, m.market_cap_usd, m.price_usd,
-                m.total_volume_usd, m.market_cap_rank, m.snapshot_date
-         FROM coingecko_category_coins cc
-         JOIN LATERAL (
-             SELECT coin_id, symbol, name, market_cap_usd, price_usd,
-                    total_volume_usd, market_cap_rank, snapshot_date
-             FROM coingecko_market_caps
-             WHERE coin_id = cc.coin_id AND snapshot_date = $2
-             LIMIT 1
-         ) m ON true
-         WHERE cc.category_id = $1
-         ORDER BY m.market_cap_usd DESC NULLS LAST
-         LIMIT $3"
-    )
-    .bind(category_id)
-    .bind(date)
-    .bind(limit)
-    .fetch_all(pool)
-    .await?;
-
-    Ok(rows.into_iter().map(|(coin_id, symbol, name, market_cap_usd, price_usd, total_volume_usd, market_cap_rank, snapshot_date)| CgMarketCapRow {
-        coin_id, symbol, name, market_cap_usd, price_usd, total_volume_usd, market_cap_rank, snapshot_date,
-    }).collect())
-}
-
-/// Query average spread for a Bitget symbol from liquidity snapshots, closest to a date.
-pub async fn sim_query_spread_at(
-    pool: &PgPool,
-    symbol: &str,
-    date: chrono::NaiveDate,
-) -> Result<Option<f64>, sqlx::Error> {
-    // Get average spread within ±7 days of the target date
-    let spread = sqlx::query_scalar::<_, f64>(
-        "SELECT AVG(spread_bps)
-         FROM liquidity_snapshots
-         WHERE symbol = $1
-           AND fetched_at >= ($2::date - INTERVAL '7 days')::timestamptz
-           AND fetched_at <= ($2::date + INTERVAL '7 days')::timestamptz
-           AND spread_bps > 0"
-    )
-    .bind(symbol)
-    .bind(date)
-    .fetch_optional(pool)
-    .await?;
-
-    Ok(spread)
-}
-
-/// Efficient single-query: for each category, count coins that have CG data AND a matching
-/// Bitget USDT listing (by uppercase symbol). Returns categories with >= min_coins eligible.
-pub async fn sim_query_eligible_categories(
-    pool: &PgPool,
-    min_coins: i64,
-) -> Result<Vec<(String, String, i64, Option<f64>)>, sqlx::Error> {
-    // Join categories → category_coins → latest market cap → bitget listings
-    // Count eligible coins per category in one pass
-    let rows = sqlx::query_as::<_, (String, String, i64, Option<f64>)>(
-        "SELECT cat.id, cat.name, COUNT(*) AS eligible_count, cat.market_cap
-         FROM coingecko_categories cat
-         JOIN coingecko_category_coins cc ON cc.category_id = cat.id
-         JOIN LATERAL (
-             SELECT symbol FROM coingecko_market_caps
-             WHERE coin_id = cc.coin_id
-             ORDER BY snapshot_date DESC LIMIT 1
-         ) m ON true
-         JOIN bitget_listings bl ON bl.base_coin = UPPER(m.symbol)
-            AND bl.quote_coin = 'USDT'
-            AND bl.status != 'delisted_gone'
-         GROUP BY cat.id, cat.name, cat.market_cap
-         HAVING COUNT(*) >= $1
-         ORDER BY cat.market_cap DESC NULLS LAST"
-    )
-    .bind(min_coins)
-    .fetch_all(pool)
-    .await?;
-
-    Ok(rows)
 }
 
 // ---- DefiLlama functions ----

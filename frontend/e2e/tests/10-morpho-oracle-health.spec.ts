@@ -18,7 +18,16 @@ import {
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-// ── Morpho deployment addresses ───────────────────────────
+// ── Deployment addresses ───────────────────────────────────
+const _activeDeploy = (() => {
+  try {
+    return JSON.parse(readFileSync(join(__dirname, '../../../deployments/active-deployment.json'), 'utf-8'));
+  } catch {
+    return { contracts: {} };
+  }
+})();
+const INDEX_CONTRACT = _activeDeploy.contracts?.Index ?? '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
+
 const morphoDeploy = (() => {
   try {
     return JSON.parse(readFileSync(join(__dirname, '../../lib/contracts/morpho-deployment.json'), 'utf-8'));
@@ -34,15 +43,13 @@ const COLLATERAL_TOKEN = morphoDeploy.marketParams?.collateralToken;
 const LOAN_TOKEN = morphoDeploy.marketParams?.loanToken;
 const LLTV = morphoDeploy.marketParams?.lltv; // "770000000000000000" = 77%
 
-const IS_TESTNET = process.env.E2E_TESTNET === '1';
-const L3_RPC = process.env.E2E_L3_RPC_URL || (IS_TESTNET ? 'http://142.132.164.24/' : 'http://localhost:8545');
-const ARB_RPC = process.env.E2E_ARB_RPC_URL || (IS_TESTNET ? 'http://142.132.164.24/' : 'http://localhost:8546');
+import { IS_ANVIL, L3_RPC, ARB_RPC } from '../env';
 const DEPLOYER = '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4';
 
 async function l3RpcCall(method: string, params: unknown[]): Promise<unknown> {
   const res = await fetch(L3_RPC, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params }),
     signal: AbortSignal.timeout(10_000),
   });
@@ -222,7 +229,7 @@ test.describe('Morpho Oracle & Health Factor', () => {
   });
 
   test('oracle price change affects max borrow', async ({ walletPage: page }) => {
-    test.skip(IS_TESTNET, 'Requires anvil_setStorageAt for oracle price manipulation');
+    test.skip(!IS_ANVIL, 'Requires anvil_setStorageAt for oracle price manipulation');
     test.setTimeout(120_000);
 
     // Setup: mint collateral tokens and supply to Morpho
@@ -234,7 +241,7 @@ test.describe('Morpho Oracle & Health Factor', () => {
     await l3RpcCall('anvil_setBalance', [DEPLOYER, '0x56BC75E2D63100000']);
 
     // Mint collateral token to user (impersonate Index for vault mint)
-    const INDEX = '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
+    const INDEX = INDEX_CONTRACT;
     await l3RpcCall('anvil_setBalance', [INDEX, '0x56BC75E2D63100000']);
     await l3RpcCall('anvil_impersonateAccount', [INDEX]);
     try {
@@ -303,14 +310,14 @@ test.describe('Morpho Oracle & Health Factor', () => {
   });
 
   test('LLTV boundary: cannot borrow beyond 77%', async () => {
-    test.skip(IS_TESTNET, 'Requires anvil_impersonateAccount for collateral supply');
+    test.skip(!IS_ANVIL, 'Requires anvil_impersonateAccount for collateral supply');
     test.setTimeout(60_000);
 
     const USER3 = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'; // Anvil account #2
 
     // Mint collateral
     const collateral = 10n * 10n ** 18n;
-    const INDEX = '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
+    const INDEX = INDEX_CONTRACT;
     await l3RpcCall('anvil_setBalance', [INDEX, '0x56BC75E2D63100000']);
     await l3RpcCall('anvil_impersonateAccount', [INDEX]);
     try {
@@ -352,7 +359,7 @@ test.describe('Morpho Oracle & Health Factor', () => {
   });
 
   test('oracle price update emits correct values', async () => {
-    test.skip(IS_TESTNET, 'Requires anvil_setStorageAt for oracle price manipulation');
+    test.skip(!IS_ANVIL, 'Requires anvil_setStorageAt for oracle price manipulation');
     test.setTimeout(30_000);
 
     // Set a specific price and verify

@@ -13,7 +13,7 @@ const envL3RpcUrl = typeof window !== 'undefined' && window.location?.protocol =
 
 // Chain definition — L3 (Index Orbit chain where Vision.sol lives)
 export const indexL3: Chain = {
-  id: Number(process.env.NEXT_PUBLIC_L3_CHAIN_ID) || Number(process.env.NEXT_PUBLIC_CHAIN_ID) || 421611337,
+  id: Number(process.env.NEXT_PUBLIC_L3_CHAIN_ID) || Number(process.env.NEXT_PUBLIC_CHAIN_ID) || 111222333,
   name: 'Index L3',
   nativeCurrency: { name: 'General Market', symbol: 'GM', decimals: 18 },
   rpcUrls: {
@@ -25,7 +25,7 @@ export const indexL3: Chain = {
 
 // Chain definition — Arbitrum (for cross-chain deposits via ArbBridgeCustody)
 export const arbitrumChain: Chain = {
-  id: Number(process.env.NEXT_PUBLIC_ARB_CHAIN_ID) || 42161,
+  id: Number(process.env.NEXT_PUBLIC_ARB_CHAIN_ID) || 421611337,
   name: 'Index Arbitrum',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
   rpcUrls: {

@@ -7,7 +7,7 @@ import {
 } from '../helpers/selectors';
 import { getL3UserShares, mintL3Shares, mintBridgedItp, rebalanceItp, placeBuyOrderDirect, pollUntil } from '../helpers/backend-api';
 
-const IS_TESTNET = process.env.E2E_TESTNET === '1';
+import { IS_ANVIL } from '../env';
 
 test.describe('Lending (Deposit → Borrow → Repay → Withdraw)', () => {
   test('full lending cycle', async ({ walletPage: page }) => {
@@ -26,7 +26,7 @@ test.describe('Lending (Deposit → Borrow → Repay → Withdraw)', () => {
     // Ensure user has L3 ITP shares
     let shares = await getL3UserShares(TEST_ADDRESS, ITP_ID);
     if (shares === 0n) {
-      if (IS_TESTNET) {
+      if (!IS_ANVIL) {
         // On testnet, place a real buy order to get shares
         console.log('No L3 shares — placing buy order on testnet...');
         await placeBuyOrderDirect(TEST_ADDRESS, ITP_ID, 100n * 10n ** 6n, 10n * 10n ** 18n);
@@ -43,7 +43,7 @@ test.describe('Lending (Deposit → Borrow → Repay → Withdraw)', () => {
     }
 
     // Ensure user has BridgedITP on Arb (lending UI checks this balance)
-    if (!IS_TESTNET) {
+    if (IS_ANVIL) {
       await mintBridgedItp(TEST_ADDRESS, ITP_ID, 100n * 10n ** 18n);
     }
     // On testnet, BridgedITP should exist from prior bridge buy test (08)

@@ -208,14 +208,16 @@ export default async function AboutPage() {
             >
               View Docs &rarr;
             </a>
-            <a
-              href="http://142.132.164.24/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[12px] font-bold uppercase tracking-[0.04em] text-text-muted hover:text-black"
-            >
-              View Contract &rarr;
-            </a>
+            {process.env.NEXT_PUBLIC_L3_EXPLORER_URL && (
+              <a
+                href={process.env.NEXT_PUBLIC_L3_EXPLORER_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[12px] font-bold uppercase tracking-[0.04em] text-text-muted hover:text-black"
+              >
+                View Contract &rarr;
+              </a>
+            )}
           </div>
         </div>
 
