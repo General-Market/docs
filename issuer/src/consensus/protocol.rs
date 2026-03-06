@@ -71,7 +71,7 @@ use crate::bridge::{
 // 8-step bridge: RecordCollateralMove + MintBridgedShares consensus
 use crate::bridge::{
     build_record_collateral_move_hash, RecordCollateralMoveProposal, RecordCollateralMoveResult,
-    build_mint_bridged_shares_hash, MintBridgedSharesProposal, MintBridgedSharesResult,
+    build_mint_bridged_shares_hash, MintBridgedSharesResult,
 };
 
 // completeBuyOrder BLS consensus
@@ -350,6 +350,40 @@ where
     wal: Option<std::sync::Mutex<crate::p2p::wal::ConsensusWAL>>,
     /// When true, suppress P2P broadcasts (during WAL replay)
     replay_mode: std::sync::atomic::AtomicBool,
+}
+
+/// Macro for the common bridge-orchestrator signature collection polling loop.
+///
+/// All bridge-orchestrator-based `collect_*_signatures` functions share this
+/// exact pattern: poll check_threshold -> timeout check -> sleep 10ms -> repeat.
+/// Only the method names and key expressions differ.
+///
+/// Both `check` and `count` expressions receive the orchestrator read-guard as
+/// `$orch` and must include their own `.await` (and any `.unwrap_or(0)` etc.).
+macro_rules! collect_sigs_loop {
+    ($self:ident, $timeout_ms:expr, |$orch:ident| {
+        check: $check_expr:expr,
+        count: $count_expr:expr $(,)?
+    }) => {{
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis($timeout_ms);
+        loop {
+            let bridge_orch_guard = $self.bridge_orchestrator.read().await;
+            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
+                let $orch = bridge_orch.read().await;
+                if let Some(result) = $check_expr {
+                    return Ok(result);
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    let received = $count_expr;
+                    return Err(ConsensusError::SigningTimeout { received, timeout_ms: $timeout_ms }.into());
+                }
+            } else if tokio::time::Instant::now() >= deadline {
+                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms: $timeout_ms }.into());
+            }
+            drop(bridge_orch_guard);
+            sleep(std::time::Duration::from_millis(10)).await;
+        }
+    }};
 }
 
 impl<P, C, K, F> ConsensusProtocol<P, C, K, F>
@@ -3901,7 +3935,7 @@ where
         );
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
+        let _bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
             ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
@@ -4037,28 +4071,12 @@ where
         &self,
         order_id: U256,
         timeout_ms: u64,
-        min_signatures: usize,
+        _min_signatures: usize,
     ) -> Result<SubmitOrderResult, BridgeError> {
-        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms);
-
-        loop {
-            let bridge_orch_guard = self.bridge_orchestrator.read().await;
-            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
-                let orch = bridge_orch.read().await;
-                if let Some(result) = orch.check_submit_order_threshold_reached(&order_id).await {
-                    return Ok(result);
-                }
-
-                if tokio::time::Instant::now() >= deadline {
-                    let received = orch.get_submit_order_signature_count(&order_id).await.unwrap_or(0);
-                    return Err(ConsensusError::SigningTimeout { received, timeout_ms }.into());
-                }
-            } else if tokio::time::Instant::now() >= deadline {
-                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
-            }
-            drop(bridge_orch_guard);
-            sleep(std::time::Duration::from_millis(10)).await;
-        }
+        collect_sigs_loop!(self, timeout_ms, |orch| {
+            check: orch.check_submit_order_threshold_reached(&order_id).await,
+            count: orch.get_submit_order_signature_count(&order_id).await.unwrap_or(0),
+        })
     }
 
     /// Run batch confirmation phase - confirms batch of orders (Story 7.4)
@@ -4080,7 +4098,7 @@ where
         );
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
+        let _bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
             ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
@@ -4183,26 +4201,10 @@ where
         cycle_number: u64,
         timeout_ms: u64,
     ) -> Result<BatchResult, BridgeError> {
-        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms);
-
-        loop {
-            let bridge_orch_guard = self.bridge_orchestrator.read().await;
-            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
-                let orch = bridge_orch.read().await;
-                if let Some(result) = orch.check_batch_threshold_reached(cycle_number).await {
-                    return Ok(result);
-                }
-
-                if tokio::time::Instant::now() >= deadline {
-                    let received = orch.get_batch_signature_count(cycle_number).await.unwrap_or(0);
-                    return Err(ConsensusError::SigningTimeout { received, timeout_ms }.into());
-                }
-            } else if tokio::time::Instant::now() >= deadline {
-                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
-            }
-            drop(bridge_orch_guard);
-            sleep(std::time::Duration::from_millis(10)).await;
-        }
+        collect_sigs_loop!(self, timeout_ms, |orch| {
+            check: orch.check_batch_threshold_reached(cycle_number).await,
+            count: orch.get_batch_signature_count(cycle_number).await.unwrap_or(0),
+        })
     }
 
     // ========================================================================
@@ -4320,7 +4322,7 @@ where
 
         // Step 4: BLS consensus
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
+        let _bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
             ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
@@ -4423,26 +4425,10 @@ where
         cycle_number: u64,
         timeout_ms: u64,
     ) -> Result<AssetTradesResult, BridgeError> {
-        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms);
-
-        loop {
-            {
-                let bridge_orch_guard = self.bridge_orchestrator.read().await;
-                if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
-                    let orch = bridge_orch.read().await;
-                    if let Some(result) = orch.check_asset_trades_threshold_reached(cycle_number).await {
-                        return Ok(result);
-                    }
-                    let count = orch.asset_trades_signature_count(cycle_number).await;
-                    if tokio::time::Instant::now() >= deadline {
-                        return Err(ConsensusError::SigningTimeout { received: count, timeout_ms }.into());
-                    }
-                } else if tokio::time::Instant::now() >= deadline {
-                    return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
-                }
-            }
-            sleep(std::time::Duration::from_millis(10)).await;
-        }
+        collect_sigs_loop!(self, timeout_ms, |orch| {
+            check: orch.check_asset_trades_threshold_reached(cycle_number).await,
+            count: orch.asset_trades_signature_count(cycle_number).await,
+        })
     }
 
     /// Run fills confirmation phase - confirms fills for batched orders (Story 7.4)
@@ -4460,7 +4446,7 @@ where
         );
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
+        let _bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
             ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
@@ -4563,26 +4549,10 @@ where
         cycle_number: u64,
         timeout_ms: u64,
     ) -> Result<FillsResult, BridgeError> {
-        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms);
-
-        loop {
-            let bridge_orch_guard = self.bridge_orchestrator.read().await;
-            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
-                let orch = bridge_orch.read().await;
-                if let Some(result) = orch.check_fills_threshold_reached(cycle_number).await {
-                    return Ok(result);
-                }
-
-                if tokio::time::Instant::now() >= deadline {
-                    let received = orch.get_fills_signature_count(cycle_number).await.unwrap_or(0);
-                    return Err(ConsensusError::SigningTimeout { received, timeout_ms }.into());
-                }
-            } else if tokio::time::Instant::now() >= deadline {
-                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
-            }
-            drop(bridge_orch_guard);
-            sleep(std::time::Duration::from_millis(10)).await;
-        }
+        collect_sigs_loop!(self, timeout_ms, |orch| {
+            check: orch.check_fills_threshold_reached(cycle_number).await,
+            count: orch.get_fills_signature_count(cycle_number).await.unwrap_or(0),
+        })
     }
 
     /// Handle incoming BridgeArbToL3Proposal message (as follower) - Task 5
@@ -5021,57 +4991,12 @@ where
         &self,
         cycle_number: u64,
         timeout_ms: u64,
-        min_signatures: usize,
+        _min_signatures: usize,
     ) -> Result<BridgeL3ToArbResult, BridgeError> {
-        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms);
-
-        loop {
-            // Check if threshold reached via orchestrator
-            let bridge_orch_guard = self.bridge_orchestrator.read().await;
-            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
-                let orch = bridge_orch.read().await;
-                if let Some(result) = orch.check_l3_to_arb_threshold_reached(cycle_number).await {
-                    info!(
-                        cycle_number,
-                        signature_count = result.signature_count,
-                        "L3→Arb bridge signature threshold reached"
-                    );
-                    return Ok(result);
-                }
-
-                // Check for timeout - query actual count for better diagnostics
-                if tokio::time::Instant::now() >= deadline {
-                    let received = orch.get_l3_to_arb_signature_count(cycle_number).await.unwrap_or(0);
-                    warn!(
-                        cycle_number,
-                        timeout_ms,
-                        min_signatures,
-                        received,
-                        "L3→Arb bridge signature collection timed out"
-                    );
-                    return Err(ConsensusError::SigningTimeout {
-                        received,
-                        timeout_ms,
-                    }
-                    .into());
-                }
-            } else if tokio::time::Instant::now() >= deadline {
-                warn!(
-                    cycle_number,
-                    timeout_ms,
-                    "L3→Arb bridge signature collection timed out (no orchestrator)"
-                );
-                return Err(ConsensusError::SigningTimeout {
-                    received: 0,
-                    timeout_ms,
-                }
-                .into());
-            }
-            drop(bridge_orch_guard);
-
-            // Sleep between polls (same as ITP creation: 50ms)
-            sleep(std::time::Duration::from_millis(10)).await;
-        }
+        collect_sigs_loop!(self, timeout_ms, |orch| {
+            check: orch.check_l3_to_arb_threshold_reached(cycle_number).await,
+            count: orch.get_l3_to_arb_signature_count(cycle_number).await.unwrap_or(0),
+        })
     }
 
     /// Handle incoming BridgeL3ToArbProposal message (as follower) - Task 2
@@ -5514,57 +5439,12 @@ where
         &self,
         cycle_number: u64,
         timeout_ms: u64,
-        min_signatures: usize,
+        _min_signatures: usize,
     ) -> Result<ReleaseToVaultResult, BridgeError> {
-        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms);
-
-        loop {
-            // Check if threshold reached via orchestrator
-            let bridge_orch_guard = self.bridge_orchestrator.read().await;
-            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
-                let orch = bridge_orch.read().await;
-                if let Some(result) = orch.check_release_threshold_reached(cycle_number).await {
-                    info!(
-                        cycle_number,
-                        signature_count = result.signature_count,
-                        "Custody release signature threshold reached"
-                    );
-                    return Ok(result);
-                }
-
-                // Check for timeout - query actual count for better diagnostics
-                if tokio::time::Instant::now() >= deadline {
-                    let received = orch.get_release_signature_count(cycle_number).await.unwrap_or(0);
-                    warn!(
-                        cycle_number,
-                        timeout_ms,
-                        min_signatures,
-                        received,
-                        "Custody release signature collection timed out"
-                    );
-                    return Err(ConsensusError::SigningTimeout {
-                        received,
-                        timeout_ms,
-                    }
-                    .into());
-                }
-            } else if tokio::time::Instant::now() >= deadline {
-                warn!(
-                    cycle_number,
-                    timeout_ms,
-                    "Custody release signature collection timed out (no orchestrator)"
-                );
-                return Err(ConsensusError::SigningTimeout {
-                    received: 0,
-                    timeout_ms,
-                }
-                .into());
-            }
-            drop(bridge_orch_guard);
-
-            // Sleep between polls (same as ITP creation: 50ms)
-            sleep(std::time::Duration::from_millis(10)).await;
-        }
+        collect_sigs_loop!(self, timeout_ms, |orch| {
+            check: orch.check_release_threshold_reached(cycle_number).await,
+            count: orch.get_release_signature_count(cycle_number).await.unwrap_or(0),
+        })
     }
 
     /// Handle incoming ReleaseToVaultProposal message (as follower) - Task 5
@@ -6747,49 +6627,12 @@ where
         &self,
         cycle_number: u64,
         timeout_ms: u64,
-        min_signatures: usize,
+        _min_signatures: usize,
     ) -> Result<RebalanceBatchResult, BridgeError> {
-        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms);
-
-        loop {
-            let bridge_orch_guard = self.bridge_orchestrator.read().await;
-            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
-                let orch = bridge_orch.read().await;
-                if let Some(result) = orch.check_rebalance_batch_threshold(cycle_number).await {
-                    info!(
-                        cycle_number,
-                        signature_count = result.signature_count,
-                        "Rebalance batch signature threshold reached"
-                    );
-                    return Ok(result);
-                }
-
-                if tokio::time::Instant::now() >= deadline {
-                    let received = orch.get_rebalance_batch_signature_count(cycle_number).await.unwrap_or(0);
-                    warn!(
-                        cycle_number,
-                        timeout_ms,
-                        min_signatures,
-                        received,
-                        "Rebalance batch signature collection timed out"
-                    );
-                    return Err(ConsensusError::SigningTimeout {
-                        received,
-                        timeout_ms,
-                    }
-                    .into());
-                }
-            } else if tokio::time::Instant::now() >= deadline {
-                return Err(ConsensusError::SigningTimeout {
-                    received: 0,
-                    timeout_ms,
-                }
-                .into());
-            }
-            drop(bridge_orch_guard);
-
-            sleep(std::time::Duration::from_millis(10)).await;
-        }
+        collect_sigs_loop!(self, timeout_ms, |orch| {
+            check: orch.check_rebalance_batch_threshold(cycle_number).await,
+            count: orch.get_rebalance_batch_signature_count(cycle_number).await.unwrap_or(0),
+        })
     }
 
     /// Handle incoming RebalanceBatchProposal message (as follower)
@@ -7134,49 +6977,12 @@ where
         &self,
         itp_id: H256,
         timeout_ms: u64,
-        min_signatures: usize,
+        _min_signatures: usize,
     ) -> Result<UpdateWeightsResult, BridgeError> {
-        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms);
-
-        loop {
-            let bridge_orch_guard = self.bridge_orchestrator.read().await;
-            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
-                let orch = bridge_orch.read().await;
-                if let Some(result) = orch.check_update_weights_threshold(itp_id).await {
-                    info!(
-                        itp_id = ?itp_id,
-                        signature_count = result.signature_count,
-                        "Update weights signature threshold reached"
-                    );
-                    return Ok(result);
-                }
-
-                if tokio::time::Instant::now() >= deadline {
-                    let received = orch.get_update_weights_signature_count(&itp_id).await.unwrap_or(0);
-                    warn!(
-                        itp_id = ?itp_id,
-                        timeout_ms,
-                        min_signatures,
-                        received,
-                        "Update weights signature collection timed out"
-                    );
-                    return Err(ConsensusError::SigningTimeout {
-                        received,
-                        timeout_ms,
-                    }
-                    .into());
-                }
-            } else if tokio::time::Instant::now() >= deadline {
-                return Err(ConsensusError::SigningTimeout {
-                    received: 0,
-                    timeout_ms,
-                }
-                .into());
-            }
-            drop(bridge_orch_guard);
-
-            sleep(std::time::Duration::from_millis(10)).await;
-        }
+        collect_sigs_loop!(self, timeout_ms, |orch| {
+            check: orch.check_update_weights_threshold(itp_id).await,
+            count: orch.get_update_weights_signature_count(&itp_id).await.unwrap_or(0),
+        })
     }
 
     /// Handle incoming UpdateWeightsProposal message (as follower)
@@ -7507,38 +7313,12 @@ where
         &self,
         itp_id: H256,
         timeout_ms: u64,
-        min_signatures: usize,
+        _min_signatures: usize,
     ) -> Result<RebalanceResult, BridgeError> {
-        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms);
-
-        loop {
-            let bridge_orch_guard = self.bridge_orchestrator.read().await;
-            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
-                let orch = bridge_orch.read().await;
-                if let Some(result) = orch.check_rebalance_threshold(itp_id).await {
-                    info!(
-                        itp_id = ?itp_id,
-                        signature_count = result.signature_count,
-                        "Rebalance signature threshold reached"
-                    );
-                    return Ok(result);
-                }
-
-                if tokio::time::Instant::now() >= deadline {
-                    let received = orch.get_rebalance_signature_count(&itp_id).await.unwrap_or(0);
-                    warn!(
-                        itp_id = ?itp_id, timeout_ms, min_signatures, received,
-                        "Rebalance signature collection timed out"
-                    );
-                    return Err(ConsensusError::SigningTimeout { received, timeout_ms }.into());
-                }
-            } else if tokio::time::Instant::now() >= deadline {
-                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
-            }
-            drop(bridge_orch_guard);
-
-            sleep(std::time::Duration::from_millis(10)).await;
-        }
+        collect_sigs_loop!(self, timeout_ms, |orch| {
+            check: orch.check_rebalance_threshold(itp_id).await,
+            count: orch.get_rebalance_signature_count(&itp_id).await.unwrap_or(0),
+        })
     }
 
     /// Handle incoming RebalanceProposal message (as follower)
@@ -7793,38 +7573,12 @@ where
         &self,
         itp_id: H256,
         timeout_ms: u64,
-        min_signatures: usize,
+        _min_signatures: usize,
     ) -> Result<SetItpNavResult, BridgeError> {
-        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms);
-
-        loop {
-            let bridge_orch_guard = self.bridge_orchestrator.read().await;
-            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
-                let orch = bridge_orch.read().await;
-                if let Some(result) = orch.check_nav_threshold(itp_id).await {
-                    info!(
-                        itp_id = ?itp_id,
-                        signature_count = result.signature_count,
-                        "setItpNav signature threshold reached"
-                    );
-                    return Ok(result);
-                }
-
-                if tokio::time::Instant::now() >= deadline {
-                    let received = orch.get_nav_signature_count(&itp_id).await.unwrap_or(0);
-                    warn!(
-                        itp_id = ?itp_id, timeout_ms, min_signatures, received,
-                        "setItpNav signature collection timed out"
-                    );
-                    return Err(ConsensusError::SigningTimeout { received, timeout_ms }.into());
-                }
-            } else if tokio::time::Instant::now() >= deadline {
-                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
-            }
-            drop(bridge_orch_guard);
-
-            sleep(std::time::Duration::from_millis(10)).await;
-        }
+        collect_sigs_loop!(self, timeout_ms, |orch| {
+            check: orch.check_nav_threshold(itp_id).await,
+            count: orch.get_nav_signature_count(&itp_id).await.unwrap_or(0),
+        })
     }
 
     /// Handle incoming SetItpNavProposal message (as follower)
@@ -8329,7 +8083,7 @@ where
         );
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
+        let _bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
             ConsensusError::ChainWriterError {
                 reason: "BridgeOrchestrator not configured".to_string(),
             }
@@ -8472,28 +8226,12 @@ where
         &self,
         order_id: U256,
         timeout_ms: u64,
-        min_signatures: usize,
+        _min_signatures: usize,
     ) -> Result<SellSubmitOrderResult, BridgeError> {
-        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms);
-
-        loop {
-            let bridge_orch_guard = self.bridge_orchestrator.read().await;
-            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
-                let orch = bridge_orch.read().await;
-                if let Some(result) = orch.check_submit_sell_order_threshold_reached(&order_id).await {
-                    return Ok(result);
-                }
-
-                if tokio::time::Instant::now() >= deadline {
-                    let received = orch.get_submit_sell_order_signature_count(&order_id).await.unwrap_or(0);
-                    return Err(ConsensusError::SigningTimeout { received, timeout_ms }.into());
-                }
-            } else if tokio::time::Instant::now() >= deadline {
-                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
-            }
-            drop(bridge_orch_guard);
-            sleep(std::time::Duration::from_millis(10)).await;
-        }
+        collect_sigs_loop!(self, timeout_ms, |orch| {
+            check: orch.check_submit_sell_order_threshold_reached(&order_id).await,
+            count: orch.get_submit_sell_order_signature_count(&order_id).await.unwrap_or(0),
+        })
     }
 
     /// Follower: handle submit sell order proposal
@@ -8794,26 +8532,10 @@ where
         timeout_ms: u64,
         _min_signatures: usize,
     ) -> Result<CompleteSellOrderResult, BridgeError> {
-        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms);
-
-        loop {
-            let bridge_orch_guard = self.bridge_orchestrator.read().await;
-            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
-                let orch = bridge_orch.read().await;
-                if let Some(result) = orch.check_complete_sell_order_threshold_reached(&order_id).await {
-                    return Ok(result);
-                }
-
-                if tokio::time::Instant::now() >= deadline {
-                    let received = orch.get_complete_sell_order_signature_count(&order_id).await.unwrap_or(0);
-                    return Err(ConsensusError::SigningTimeout { received, timeout_ms }.into());
-                }
-            } else if tokio::time::Instant::now() >= deadline {
-                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
-            }
-            drop(bridge_orch_guard);
-            sleep(std::time::Duration::from_millis(10)).await;
-        }
+        collect_sigs_loop!(self, timeout_ms, |orch| {
+            check: orch.check_complete_sell_order_threshold_reached(&order_id).await,
+            count: orch.get_complete_sell_order_signature_count(&order_id).await.unwrap_or(0),
+        })
     }
 
     /// Follower: handle complete sell order proposal
@@ -9122,26 +8844,10 @@ where
         cycle_number: u64,
         timeout_ms: u64,
     ) -> Result<RecordCollateralMoveResult, BridgeError> {
-        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms);
-
-        loop {
-            let bridge_orch_guard = self.bridge_orchestrator.read().await;
-            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
-                let orch = bridge_orch.read().await;
-                if let Some(result) = orch.check_collateral_move_threshold_reached(cycle_number).await {
-                    return Ok(result);
-                }
-
-                if tokio::time::Instant::now() >= deadline {
-                    let received = orch.get_collateral_move_signature_count(cycle_number).await.unwrap_or(0);
-                    return Err(ConsensusError::SigningTimeout { received, timeout_ms }.into());
-                }
-            } else if tokio::time::Instant::now() >= deadline {
-                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
-            }
-            drop(bridge_orch_guard);
-            sleep(std::time::Duration::from_millis(10)).await;
-        }
+        collect_sigs_loop!(self, timeout_ms, |orch| {
+            check: orch.check_collateral_move_threshold_reached(cycle_number).await,
+            count: orch.get_collateral_move_signature_count(cycle_number).await.unwrap_or(0),
+        })
     }
 
     /// Handle incoming RecordCollateralMoveProposal message (as follower)
@@ -9411,26 +9117,10 @@ where
         cycle_number: u64,
         timeout_ms: u64,
     ) -> Result<MintBridgedSharesResult, BridgeError> {
-        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms);
-
-        loop {
-            let bridge_orch_guard = self.bridge_orchestrator.read().await;
-            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
-                let orch = bridge_orch.read().await;
-                if let Some(result) = orch.check_mint_shares_threshold_reached(cycle_number).await {
-                    return Ok(result);
-                }
-
-                if tokio::time::Instant::now() >= deadline {
-                    let received = orch.get_mint_shares_signature_count(cycle_number).await.unwrap_or(0);
-                    return Err(ConsensusError::SigningTimeout { received, timeout_ms }.into());
-                }
-            } else if tokio::time::Instant::now() >= deadline {
-                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
-            }
-            drop(bridge_orch_guard);
-            sleep(std::time::Duration::from_millis(10)).await;
-        }
+        collect_sigs_loop!(self, timeout_ms, |orch| {
+            check: orch.check_mint_shares_threshold_reached(cycle_number).await,
+            count: orch.get_mint_shares_signature_count(cycle_number).await.unwrap_or(0),
+        })
     }
 
     /// Handle incoming MintBridgedSharesProposal message (as follower)
@@ -9665,26 +9355,10 @@ where
         cycle_number: u64,
         timeout_ms: u64,
     ) -> Result<CompleteBuyOrderResult, BridgeError> {
-        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms);
-
-        loop {
-            let bridge_orch_guard = self.bridge_orchestrator.read().await;
-            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
-                let orch = bridge_orch.read().await;
-                if let Some(result) = orch.check_complete_buy_order_threshold(cycle_number).await {
-                    return Ok(result);
-                }
-
-                if tokio::time::Instant::now() >= deadline {
-                    let received = orch.get_complete_buy_order_signature_count(cycle_number).await.unwrap_or(0);
-                    return Err(ConsensusError::SigningTimeout { received, timeout_ms }.into());
-                }
-            } else if tokio::time::Instant::now() >= deadline {
-                return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms }.into());
-            }
-            drop(bridge_orch_guard);
-            sleep(std::time::Duration::from_millis(10)).await;
-        }
+        collect_sigs_loop!(self, timeout_ms, |orch| {
+            check: orch.check_complete_buy_order_threshold(cycle_number).await,
+            count: orch.get_complete_buy_order_signature_count(cycle_number).await.unwrap_or(0),
+        })
     }
 }
 
