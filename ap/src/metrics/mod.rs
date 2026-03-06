@@ -39,10 +39,6 @@ const DEFAULT_ROLLING_WINDOW_SIZE: usize = 100;
 /// Event window duration (24 hours in seconds)
 const EVENT_WINDOW_SECS: u64 = 24 * 60 * 60;
 
-/// Rolling window size for this metrics instance
-fn default_rolling_window_size() -> usize {
-    DEFAULT_ROLLING_WINDOW_SIZE
-}
 
 /// Thread-safe AP metrics collection
 ///

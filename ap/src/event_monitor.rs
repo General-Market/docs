@@ -73,7 +73,8 @@ pub struct EventMonitorMetrics {
 /// Block info for reorg detection
 #[derive(Debug, Clone)]
 struct BlockInfo {
-    /// Block number
+    /// Block number (retained for future reorg detection)
+    #[allow(dead_code)]
     pub number: u64,
     /// Block hash (if available from chain events)
     pub hash: Option<[u8; 32]>,

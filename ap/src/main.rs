@@ -16,7 +16,7 @@ use common::adapters::{DeploymentConfig, RpcChainReader, RpcChainWriter};
 use common::mocks::{MockBitgetBuilder, MockChainBuilder};
 use common::rate_limit::{BitgetRateLimiter, RateLimiterTier};
 use common::traits::{APClient, ChainWriter};
-use common::types::{ExchangeMode, LimitOrder, OrderStatus, Side};
+use common::types::{ExchangeMode, LimitOrder, OrderStatus};
 use ethers::prelude::*;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -40,6 +40,7 @@ struct OnChainSettlement {
     /// Quote token address (e.g., USDC) - the default quote token (USDC)
     quote_token: Address,
     /// MockUSDT token address (Story 7.18) - for USDT-denominated pair settlement
+    #[allow(dead_code)]
     mock_usdt: Option<Address>,
     /// Data-node backend URL for fetching prices
     data_node_url: Option<String>,
@@ -158,8 +159,8 @@ fn cors_headers() -> &'static str {
 async fn handle_http_request(
     mut socket: tokio::net::TcpStream,
     metrics: Arc<APMetrics>,
-    provider: Option<Arc<Provider<Http>>>,
-    index_contract: [u8; 20],
+    _provider: Option<Arc<Provider<Http>>>,
+    _index_contract: [u8; 20],
     data_node_url: Option<String>,
 ) {
     let mut buf = [0u8; 4096];
@@ -273,16 +274,6 @@ async fn handle_http_request(
                     }
                 } else {
                     "0x0000000000000000000000000000000000000000000000000000000000000001".to_string()
-                };
-
-                let itp_id_bytes: [u8; 32] = {
-                    let hex_str = itp_id_hex.trim_start_matches("0x");
-                    let mut bytes = [0u8; 32];
-                    if let Ok(decoded) = hex::decode(hex_str) {
-                        let start = 32usize.saturating_sub(decoded.len());
-                        bytes[start..start + decoded.len()].copy_from_slice(&decoded);
-                    }
-                    bytes
                 };
 
                 // Delegate NAV computation to data-node backend

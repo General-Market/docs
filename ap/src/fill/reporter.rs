@@ -72,6 +72,7 @@ impl Default for FillReporterConfig {
 
 /// Handle for stopping a background batch timer
 pub struct BatchTimerHandle {
+    #[allow(dead_code)]
     stop_tx: mpsc::Sender<()>,
 }
 

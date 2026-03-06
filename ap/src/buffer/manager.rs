@@ -3,7 +3,7 @@
 //! Manages buffer balances per asset for instant fills of small orders.
 //! Buffer can go into debt and triggers replenishment when debt accumulates.
 
-use crate::buffer::config::{AssetBufferConfig, BufferConfig};
+use crate::buffer::config::BufferConfig;
 use crate::buffer::metrics::{BufferHealthCheck, BufferHealthStatus, BufferMetrics};
 use ethers::types::{Address, U256};
 use std::collections::HashMap;
@@ -294,6 +294,7 @@ impl BufferManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::buffer::config::AssetBufferConfig;
 
     fn test_config() -> BufferConfig {
         let usdc = Address::from_low_u64_be(1);
