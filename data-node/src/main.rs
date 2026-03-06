@@ -80,6 +80,30 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     db::run_migrations(&pool).await?;
     info!("Database connected and migrated");
 
+    // Backfill market_prices_latest from market_prices if cache table is empty
+    // (one-time seed after migration 025 creates the table)
+    let latest_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM market_prices_latest")
+        .fetch_one(&pool)
+        .await
+        .unwrap_or((0,));
+    if latest_count.0 == 0 {
+        info!("market_prices_latest is empty — backfilling from market_prices...");
+        let backfilled = sqlx::query(r#"
+            INSERT INTO market_prices_latest (source, asset_id, symbol, name, value, change_pct, volume_24h, market_cap, category, fetched_at)
+            SELECT DISTINCT ON (source, asset_id)
+                source, asset_id, symbol, '', value, change_pct, volume_24h, market_cap, NULL, fetched_at
+            FROM market_prices
+            ORDER BY source, asset_id, fetched_at DESC
+            ON CONFLICT (source, asset_id) DO NOTHING
+        "#)
+            .execute(&pool)
+            .await;
+        match backfilled {
+            Ok(r) => info!("Backfilled {} rows into market_prices_latest", r.rows_affected()),
+            Err(e) => tracing::warn!("market_prices_latest backfill failed (may be empty DB): {e}"),
+        }
+    }
+
     // Handle --reset-session: truncate session tables and reset cursors BEFORE collectors start
     if args.reset_session {
         info!("--reset-session: truncating session tables and resetting cursors");
@@ -1688,6 +1712,105 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("Deutsche Bahn Train Delays started");
     }
 
+    // MTA NYC Subway Status — no key needed (public XML feed)
+    {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        tokio::spawn(async move {
+            match market_data::sources::mta_subway::MtaSubwayMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("MTA Subway init failed: {e}"),
+            }
+        });
+        info!("MTA Subway started");
+    }
+
+    // Paris Metro Status — requires PRIM API key
+    if let Some(ref api_key) = args.prim_api_key {
+        std::env::set_var("PRIM_API_KEY", api_key);
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        tokio::spawn(async move {
+            match market_data::sources::paris_metro::ParisMetroMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Paris Metro init failed: {e}"),
+            }
+        });
+        info!("Paris Metro started");
+    } else {
+        info!("Paris Metro skipped (PRIM_API_KEY not configured)");
+    }
+
+    // Ryanair Flight Delays — no key needed (Ryanair schedule API + OpenSky)
+    {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        tokio::spawn(async move {
+            match market_data::sources::ryanair::RyanairMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Ryanair init failed: {e}"),
+            }
+        });
+        info!("Ryanair started");
+    }
+
+    // London Underground (TfL) — no key needed
+    {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        tokio::spawn(async move {
+            match market_data::sources::tfl_tube::TflTubeMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("TfL Tube init failed: {e}"),
+            }
+        });
+        info!("TfL Tube started");
+    }
+
+    // Internet Outages (IODA) — no key needed
+    {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        tokio::spawn(async move {
+            match market_data::sources::ioda::IodaMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("IODA init failed: {e}"),
+            }
+        });
+        info!("IODA started");
+    }
+
+    // US Power Outages (ODIN) — no key needed
+    {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        tokio::spawn(async move {
+            match market_data::sources::power_outages::PowerOutagesMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
+                    engine.run().await;
+                }
+                Err(e) => tracing::error!("Power Outages init failed: {e}"),
+            }
+        });
+        info!("Power Outages started");
+    }
+
     // NYC 311 Complaints — no key needed (free Socrata Open Data API)
     {
         let pool_c = pool.clone();
@@ -1829,6 +1952,10 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         // Adzuna
         if args.adzuna_app_id.is_none() || args.adzuna_app_key.is_none() {
             tracker.record_not_started("adzuna", "Missing --adzuna-app-id / --adzuna-app-key");
+        }
+        // Paris Metro
+        if args.prim_api_key.is_none() {
+            tracker.record_not_started("paris_metro", "Missing --prim-api-key");
         }
 
     }
