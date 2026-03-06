@@ -239,7 +239,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                 <div className="flex justify-between items-center">
                   <p className="text-sm font-bold text-text-primary">From L3 Wallet</p>
                   {l3WalletBalance !== null && (
-                    <span className="text-xs font-mono tabular-nums text-text-secondary">{l3WalletBalance} USDC</span>
+                    <span className="text-sm font-bold font-mono tabular-nums text-text-primary">{l3WalletBalance} USDC</span>
                   )}
                 </div>
                 <p className="text-xs text-text-muted mt-1">
@@ -262,7 +262,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                 <div className="flex justify-between items-center">
                   <p className="text-sm font-bold text-text-primary">From Arbitrum</p>
                   {arbWalletBalance !== null && (
-                    <span className="text-xs font-mono tabular-nums text-text-secondary">{arbWalletBalance} USDC</span>
+                    <span className="text-sm font-bold font-mono tabular-nums text-text-primary">{arbWalletBalance} USDC</span>
                   )}
                 </div>
                 <p className="text-xs text-text-muted mt-1">
@@ -285,11 +285,19 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                 </button>
               )}
 
-              {/* Mode label */}
+              {/* Mode label + wallet balance */}
               <div className="bg-muted border border-border-light rounded-xl p-3">
-                <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
-                  {mode === 'l3' ? 'Deposit from L3 Wallet' : 'Deposit from Arbitrum'}
-                </p>
+                <div className="flex justify-between items-center">
+                  <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
+                    {mode === 'l3' ? 'Deposit from L3 Wallet' : 'Deposit from Arbitrum'}
+                  </p>
+                  {mode === 'l3' && l3WalletBalance !== null && (
+                    <span className="text-sm font-bold font-mono tabular-nums text-text-primary">{l3WalletBalance} USDC</span>
+                  )}
+                  {mode === 'arb' && arbWalletBalance !== null && (
+                    <span className="text-sm font-bold font-mono tabular-nums text-text-primary">{arbWalletBalance} USDC</span>
+                  )}
+                </div>
                 {mode === 'arb' && !isOnArb && (
                   <p className="text-xs text-color-warning mt-1">
                     Switch your wallet to Arbitrum to proceed
@@ -311,17 +319,17 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                   {mode === 'l3' && l3WalletBalance !== null && (
                     <button
                       onClick={() => setAmount(l3WalletBalance)}
-                      className="text-xs font-mono text-text-secondary hover:text-text-primary transition-colors"
+                      className="text-xs font-mono font-bold text-text-secondary hover:text-text-primary transition-colors"
                     >
-                      Wallet: {l3WalletBalance} USDC
+                      MAX
                     </button>
                   )}
                   {mode === 'arb' && arbWalletBalance !== null && (
                     <button
                       onClick={() => setAmount(arbWalletBalance)}
-                      className="text-xs font-mono text-text-secondary hover:text-text-primary transition-colors"
+                      className="text-xs font-mono font-bold text-text-secondary hover:text-text-primary transition-colors"
                     >
-                      Wallet: {arbWalletBalance} USDC
+                      MAX
                     </button>
                   )}
                 </div>
