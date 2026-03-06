@@ -225,36 +225,26 @@ impl APMetrics {
 
     /// Get violations count in the last 24 hours
     pub async fn get_violations_24h(&self) -> u64 {
-        let mut violations = self.inner.violations.write().await;
-        let cutoff = Instant::now() - self.inner.event_window;
-
-        // Prune old entries
-        while let Some(front) = violations.front() {
-            if *front < cutoff {
-                violations.pop_front();
-            } else {
-                break;
-            }
-        }
-
-        violations.len() as u64
+        self.prune_and_count(&self.inner.violations).await
     }
 
     /// Get timeouts count in the last 24 hours
     pub async fn get_timeouts_24h(&self) -> u64 {
-        let mut timeouts = self.inner.timeouts.write().await;
-        let cutoff = Instant::now() - self.inner.event_window;
+        self.prune_and_count(&self.inner.timeouts).await
+    }
 
-        // Prune old entries
-        while let Some(front) = timeouts.front() {
+    /// Prune entries older than event_window and return remaining count
+    async fn prune_and_count(&self, window: &RwLock<VecDeque<Instant>>) -> u64 {
+        let mut entries = window.write().await;
+        let cutoff = Instant::now() - self.inner.event_window;
+        while let Some(front) = entries.front() {
             if *front < cutoff {
-                timeouts.pop_front();
+                entries.pop_front();
             } else {
                 break;
             }
         }
-
-        timeouts.len() as u64
+        entries.len() as u64
     }
 
     // ========== Health Status (AC: #3, #4, #5) ==========

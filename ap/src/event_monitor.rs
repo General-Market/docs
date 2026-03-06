@@ -164,6 +164,15 @@ impl<R: ChainReader + 'static> EventMonitor<R> {
         current_block.saturating_sub(self.config.confirmation_depth)
     }
 
+    /// Update block tracker and safe block metric after processing an event
+    async fn finalize_block(&mut self, block_number: u64) -> Result<(), APError> {
+        self.block_tracker.update(block_number)?;
+        let safe = self.calculate_safe_block(block_number);
+        let mut metrics = self.metrics.write().await;
+        metrics.safe_block = safe;
+        Ok(())
+    }
+
     /// Check if an event has already been processed
     async fn is_duplicate(&self, event_id: &str) -> bool {
         self.processed_events.read().await.contains(event_id)
@@ -626,14 +635,7 @@ impl<R: ChainReader + 'static> EventMonitor<R> {
                 )?;
 
                 self.process_trade_request(trade_event).await?;
-
-                // Update block tracker and safe block metric
-                self.block_tracker.update(block_number)?;
-                {
-                    let safe = self.calculate_safe_block(block_number);
-                    let mut metrics = self.metrics.write().await;
-                    metrics.safe_block = safe;
-                }
+                self.finalize_block(block_number).await?;
             }
             ChainEvent::AssetTradeRequest {
                 cycle_number,
@@ -654,13 +656,7 @@ impl<R: ChainReader + 'static> EventMonitor<R> {
                 );
 
                 self.process_asset_trade_request(asset_event).await?;
-
-                self.block_tracker.update(block_number)?;
-                {
-                    let safe = self.calculate_safe_block(block_number);
-                    let mut metrics = self.metrics.write().await;
-                    metrics.safe_block = safe;
-                }
+                self.finalize_block(block_number).await?;
             }
             ChainEvent::WithdrawalRequest {
                 itp_id,
@@ -678,14 +674,7 @@ impl<R: ChainReader + 'static> EventMonitor<R> {
                 );
 
                 self.process_withdrawal_request(withdrawal_event).await?;
-
-                // Update block tracker and safe block metric
-                self.block_tracker.update(block_number)?;
-                {
-                    let safe = self.calculate_safe_block(block_number);
-                    let mut metrics = self.metrics.write().await;
-                    metrics.safe_block = safe;
-                }
+                self.finalize_block(block_number).await?;
             }
             // Other chain events are not relevant to AP EventMonitor
             other => {
