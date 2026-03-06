@@ -7,7 +7,7 @@ const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3001";
 const DATA_NODE_URL = process.env.DATA_NODE_URL || "http://localhost:8200";
 const L3_RPC_URL = process.env.NEXT_PUBLIC_L3_RPC_URL || "http://localhost:8545";
 const VISION_API_URL = process.env.NEXT_PUBLIC_VISION_API_URL || "http://localhost:10001";
-const DOCS_URL = process.env.DOCS_URL || "https://generalmarket.mintlify.dev";
+const DOCS_URL = process.env.DOCS_URL || "https://docs.generalmarket.io";
 const isDev = process.env.NODE_ENV !== "production";
 
 const nextConfig: NextConfig = {
