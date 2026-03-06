@@ -138,7 +138,7 @@ export function useWithdraw(): UseWithdrawReturn {
     isSuccess: isWithdrawSuccess,
     isError: isWithdrawReceiptError,
     error: withdrawReceiptError,
-  } = useWaitForTransactionReceipt({ hash: withdrawHash })
+  } = useWaitForTransactionReceipt({ hash: withdrawHash, chainId: indexL3.id })
 
   // Toast notifications for withdraw
   useTransactionNotification({

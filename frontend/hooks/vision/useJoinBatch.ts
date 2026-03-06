@@ -8,6 +8,7 @@ import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { VISION_ADDRESS } from '@/lib/vision/constants'
 import { encodeBitmap, hashBitmap, type BetDirection } from '@/lib/vision/bitmap'
+import { indexL3 } from '@/lib/wagmi'
 
 export interface UseJoinBatchParams {
   batchId: bigint
@@ -74,7 +75,7 @@ export function useJoinBatch(): UseJoinBatchReturn {
     isSuccess: isJoinSuccess,
     isError: isJoinReceiptError,
     error: joinReceiptError,
-  } = useWaitForTransactionReceipt({ hash: joinHash })
+  } = useWaitForTransactionReceipt({ hash: joinHash, chainId: indexL3.id })
 
   // --- Read Vision balance (realBalance + virtualBalance) ---
   const { data: visionBalance } = useReadContract({

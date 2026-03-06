@@ -7,6 +7,7 @@ import { MORPHO_ABI } from '@/lib/contracts/morpho-abi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
+import { indexL3 } from '@/lib/wagmi'
 
 interface UseMorphoActionsReturn {
   /** Supply collateral to Morpho */
@@ -59,7 +60,7 @@ export function useMorphoActions(market?: MorphoMarketEntry): UseMorphoActionsRe
   const {
     isLoading: isConfirming,
     isSuccess,
-  } = useWaitForTransactionReceipt({ hash: txHash })
+  } = useWaitForTransactionReceipt({ hash: txHash, chainId: indexL3.id })
 
   // Track which action is in-flight for toast label
   const actionLabel = useRef('Morpho operation')

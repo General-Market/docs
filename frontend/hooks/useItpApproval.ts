@@ -5,6 +5,7 @@ import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import { ERC20_ABI } from '@/lib/contracts/index-protocol-abi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { useSSEAllowances } from './useSSE'
+import { indexL3 } from '@/lib/wagmi'
 
 type ApprovalState = 'idle' | 'checking' | 'approval-required' | 'approving' | 'approved' | 'error'
 
@@ -60,7 +61,7 @@ export function useItpApproval(params?: UseItpApprovalParams): UseItpApprovalRet
     isLoading: isConfirming,
     isSuccess: isConfirmed,
     error: confirmError,
-  } = useWaitForTransactionReceipt({ hash: txHash })
+  } = useWaitForTransactionReceipt({ hash: txHash, chainId: indexL3.id })
 
   // Determine current state
   const getState = (): ApprovalState => {

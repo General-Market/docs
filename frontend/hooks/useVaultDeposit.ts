@@ -7,6 +7,7 @@ import { useEffect, useRef } from 'react'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import { METAMORPHO_VAULT_ABI } from '@/lib/contracts/morpho-abi'
 import { ERC20_ABI } from '@/lib/contracts/index-protocol-abi'
+import { indexL3 } from '@/lib/wagmi'
 
 interface UseVaultDepositReturn {
   /** Deposit USDC into vault */
@@ -70,7 +71,7 @@ export function useVaultDeposit(): UseVaultDepositReturn {
   const {
     isLoading: isConfirming,
     isSuccess,
-  } = useWaitForTransactionReceipt({ hash: txHash })
+  } = useWaitForTransactionReceipt({ hash: txHash, chainId: indexL3.id })
 
   // Track which action is in-flight for toast label
   const actionLabel = useRef('Vault operation')

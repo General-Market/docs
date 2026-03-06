@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react'
 import { useWaitForTransactionReceipt } from 'wagmi'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { indexL3 } from '@/lib/wagmi'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 
@@ -33,7 +34,7 @@ export function useSetBatchMetadata() {
   const {
     isLoading: isConfirming,
     isSuccess,
-  } = useWaitForTransactionReceipt({ hash: txHash })
+  } = useWaitForTransactionReceipt({ hash: txHash, chainId: indexL3.id })
 
   // Toast notifications
   useTransactionNotification({

@@ -70,7 +70,7 @@ export function useDeposit(): UseDepositReturn {
   const {
     isLoading: isDepositConfirming,
     isSuccess: isDepositSuccess,
-  } = useWaitForTransactionReceipt({ hash: depositHash })
+  } = useWaitForTransactionReceipt({ hash: depositHash, chainId: indexL3.id })
 
   // Toast notifications for deposit
   useTransactionNotification({

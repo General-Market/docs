@@ -8,6 +8,7 @@ import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { VISION_ADDRESS } from '@/lib/vision/constants'
 import { VISION_API_URL, VISION_ISSUER_URLS } from '@/lib/config'
+import { indexL3 } from '@/lib/wagmi'
 
 export type WithdrawToArbStep = 'idle' | 'withdrawing' | 'polling' | 'done' | 'error'
 
@@ -51,7 +52,7 @@ export function useWithdrawToArb(): UseWithdrawToArbReturn {
   const {
     isSuccess: isWithdrawSuccess,
     data: withdrawReceipt,
-  } = useWaitForTransactionReceipt({ hash: txHash })
+  } = useWaitForTransactionReceipt({ hash: txHash, chainId: indexL3.id })
 
   // Toast notifications for the L3 withdraw tx
   useTransactionNotification({

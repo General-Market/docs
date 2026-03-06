@@ -6,6 +6,7 @@ import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { VISION_ADDRESS } from '@/lib/vision/constants'
+import { indexL3 } from '@/lib/wagmi'
 
 export type WithdrawBalanceStep = 'idle' | 'withdrawing' | 'done' | 'error'
 
@@ -45,7 +46,7 @@ export function useWithdrawBalance(): UseWithdrawBalanceReturn {
   const {
     isLoading: isWithdrawConfirming,
     isSuccess: isWithdrawSuccess,
-  } = useWaitForTransactionReceipt({ hash: txHash })
+  } = useWaitForTransactionReceipt({ hash: txHash, chainId: indexL3.id })
 
   // Toast notifications for withdraw
   useTransactionNotification({

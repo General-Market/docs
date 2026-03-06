@@ -144,7 +144,7 @@ export function useClaim(): UseClaimReturn {
   const {
     isLoading: isClaimConfirming,
     isSuccess: isClaimSuccess,
-  } = useWaitForTransactionReceipt({ hash: claimHash })
+  } = useWaitForTransactionReceipt({ hash: claimHash, chainId: indexL3.id })
 
   // Toast notifications for claim
   useTransactionNotification({

@@ -77,7 +77,7 @@ export function useDepositToVision(): UseDepositToVisionReturn {
   } = useWriteContract()
   const {
     isSuccess: isApproveSuccess,
-  } = useWaitForTransactionReceipt({ hash: approveHash })
+  } = useWaitForTransactionReceipt({ hash: approveHash, chainId: arbChainId })
 
   // --- DepositToVision on Arb ---
   const {
@@ -90,7 +90,7 @@ export function useDepositToVision(): UseDepositToVisionReturn {
   const {
     isSuccess: isDepositSuccess,
     data: depositReceipt,
-  } = useWaitForTransactionReceipt({ hash: depositHash })
+  } = useWaitForTransactionReceipt({ hash: depositHash, chainId: arbChainId })
 
   // --- Read allowance on Arb ---
   const { data: currentAllowance, refetch: refetchAllowance } = useReadContract({

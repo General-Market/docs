@@ -6,6 +6,7 @@ import { useChainSendTransaction } from '@/hooks/useChainWrite'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import type { QuoteResponse } from '@/lib/types/lending-quote'
+import { indexL3 } from '@/lib/wagmi'
 
 interface UseBundlerExecReturn {
   /** Execute the bundler calldata from a quote */
@@ -46,7 +47,7 @@ export function useBundlerExec(): UseBundlerExecReturn {
     isLoading: isConfirming,
     isSuccess,
     error: confirmError,
-  } = useWaitForTransactionReceipt({ hash: txHash })
+  } = useWaitForTransactionReceipt({ hash: txHash, chainId: indexL3.id })
 
   // Toast notifications
   useTransactionNotification({

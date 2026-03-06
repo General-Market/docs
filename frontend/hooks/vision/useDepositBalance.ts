@@ -7,6 +7,7 @@ import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { ERC20_ABI } from '@/lib/contracts/index-protocol-abi'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { VISION_ADDRESS } from '@/lib/vision/constants'
+import { indexL3 } from '@/lib/wagmi'
 
 export type DepositBalanceStep = 'idle' | 'approving' | 'depositing' | 'done' | 'error'
 
@@ -50,7 +51,7 @@ export function useDepositBalance(): UseDepositBalanceReturn {
   const {
     isLoading: isApproveConfirming,
     isSuccess: isApproveSuccess,
-  } = useWaitForTransactionReceipt({ hash: approveHash })
+  } = useWaitForTransactionReceipt({ hash: approveHash, chainId: indexL3.id })
 
   // --- DepositBalance ---
   const {
@@ -63,7 +64,7 @@ export function useDepositBalance(): UseDepositBalanceReturn {
   const {
     isLoading: isDepositConfirming,
     isSuccess: isDepositSuccess,
-  } = useWaitForTransactionReceipt({ hash: depositHash })
+  } = useWaitForTransactionReceipt({ hash: depositHash, chainId: indexL3.id })
 
   // --- Read USDC address from Vision contract ---
   const { data: usdcAddress } = useReadContract({
