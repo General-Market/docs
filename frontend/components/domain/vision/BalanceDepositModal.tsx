@@ -95,13 +95,14 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
   const isOnArb = chainId === arbitrumChain.id
   const isOnL3 = chainId === indexL3.id
 
-  // Read wallet USDC balance on L3
+  // Read wallet USDC balance on L3 (always read, regardless of connected chain)
   const { data: l3UsdcRaw } = useReadContract({
     address: USDC_ADDRESS,
     abi: ERC20_BALANCE_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
-    query: { enabled: !!address && isOnL3 },
+    chainId: indexL3.id,
+    query: { enabled: !!address },
   })
 
   // Read wallet USDC balance on Arb
