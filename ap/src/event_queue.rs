@@ -45,7 +45,6 @@ impl APEvent {
 pub struct EventQueue {
     sender: mpsc::Sender<APEvent>,
     receiver: Option<mpsc::Receiver<APEvent>>,
-    capacity: usize,
 }
 
 impl EventQueue {
@@ -60,7 +59,6 @@ impl EventQueue {
         Self {
             sender,
             receiver: Some(receiver),
-            capacity,
         }
     }
 
@@ -74,35 +72,11 @@ impl EventQueue {
             .map_err(|_| APError::QueueClosed)
     }
 
-    /// Try to send an event without blocking
-    ///
-    /// Returns error if the queue is full or closed.
-    pub fn try_send(&self, event: APEvent) -> Result<(), APError> {
-        self.sender
-            .try_send(event)
-            .map_err(|e| match e {
-                mpsc::error::TrySendError::Full(_) => {
-                    APError::QueueError("Event queue full".to_string())
-                }
-                mpsc::error::TrySendError::Closed(_) => APError::QueueClosed,
-            })
-    }
-
     /// Take the receiver for downstream consumption
     ///
     /// This can only be called once. Returns None on subsequent calls.
     pub fn take_receiver(&mut self) -> Option<mpsc::Receiver<APEvent>> {
         self.receiver.take()
-    }
-
-    /// Get the queue capacity
-    pub fn capacity(&self) -> usize {
-        self.capacity
-    }
-
-    /// Check if the queue is closed
-    pub fn is_closed(&self) -> bool {
-        self.sender.is_closed()
     }
 
     /// Get a clone of the sender for use in other tasks
@@ -192,21 +166,6 @@ mod tests {
             let received = receiver.recv().await.unwrap();
             assert_eq!(received.block_number(), 100 + i);
         }
-    }
-
-    #[tokio::test]
-    async fn test_try_send() {
-        let queue = EventQueue::with_capacity(2);
-
-        // First two should succeed
-        let event1 = APEvent::TradeRequest(create_test_trade_event(1, 0));
-        let event2 = APEvent::TradeRequest(create_test_trade_event(2, 0));
-        assert!(queue.try_send(event1).is_ok());
-        assert!(queue.try_send(event2).is_ok());
-
-        // Third should fail (queue full)
-        let event3 = APEvent::TradeRequest(create_test_trade_event(3, 0));
-        assert!(queue.try_send(event3).is_err());
     }
 
     #[tokio::test]

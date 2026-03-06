@@ -24,10 +24,6 @@ thiserror.workspace = true
 futures.workspace = true
 ethers.workspace = true
 hex = "0.4"
-dashmap = "5"
-
-# Alloy primitives (for source_failure module)
-alloy-primitives = "0.8"
 
 # Bitget API client dependencies (Story 5.1)
 reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
