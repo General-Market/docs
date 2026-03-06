@@ -7,14 +7,14 @@ import "../src/vision/Vision.sol";
 import "../src/interfaces/IIssuerRegistry.sol";
 import "./helpers/DeployBLSHelper.sol";
 
-/// @title VisionBulkCreate - Ephemeral helper to create all batches in 1 tx
+/// @title VisionBulkCreate - Ephemeral helper to create batches in bulk
 contract VisionBulkCreate {
     function createAll(
         address vision,
         bytes32[] calldata sourceIds,
         bytes32[] calldata configHashes,
-        uint256 tickDuration,
-        uint256 lockOffset,
+        uint256[] calldata tickDurations,
+        uint256[] calldata lockOffsets,
         bytes[] calldata blsSignatures,
         uint256 referenceNonce,
         uint256 signersBitmask
@@ -24,8 +24,8 @@ contract VisionBulkCreate {
             batchIds[i] = Vision(vision).createBatch(
                 sourceIds[i],
                 configHashes[i],
-                tickDuration,
-                lockOffset,
+                tickDurations[i],
+                lockOffsets[i],
                 blsSignatures[i],
                 referenceNonce,
                 signersBitmask
@@ -35,18 +35,26 @@ contract VisionBulkCreate {
 }
 
 /// @title DeployAllVisionBatches - Deploy only sources that have live data
-/// @notice Creates Vision batches for sources with active batch engine configs.
+/// @notice Creates Vision batches using config hashes from the data-node's
+///         recommended batch configs (deployments/vision-recommended-configs.json).
+///
+///         Each source gets its own tick duration and lock offset from the config.
+///
 ///         Requires:
 ///           - Vision contract deployed (reads from active-deployment.json or env VISION_ADDRESS)
 ///           - IssuerRegistry with BLS keys registered (from DeployFullSystemE2E)
 ///           - bls-tool built (target/release/bls-tool)
+///           - vision-recommended-configs.json generated from data-node API
 ///
 /// Usage:
+///   # 1. Generate config file from data-node:
+///   #    curl -s http://DATA_NODE_URL/batches/recommended | python3 -c "..."
+///   #    (see scripts/generate-vision-configs.sh)
+///   #
+///   # 2. Deploy:
 ///   forge script script/DeployAllVisionBatches.s.sol:DeployAllVisionBatches \
 ///     --broadcast --slow --rpc-url http://localhost:8546
 contract DeployAllVisionBatches is DeployBLSHelper {
-    uint256 constant TICK_DURATION = 30;   // 30 seconds per tick (local dev)
-    uint256 constant LOCK_OFFSET = 5;      // 5 second lock window
     uint256 constant SIGNERS_BITMASK = 7;  // 0b111 = 3 issuers
 
     function run() external {
@@ -67,35 +75,41 @@ contract DeployAllVisionBatches is DeployBLSHelper {
         address registryAddr = address(Vision(visionAddr).blsIssuerRegistry());
         uint256 refNonce = IIssuerRegistry(registryAddr).lastSnapshotNonce();
 
+        // Read recommended configs from data-node generated JSON
+        string memory configJson = vm.readFile("../deployments/vision-recommended-configs.json");
+        string[] memory sourceNames = vm.parseJsonKeys(configJson, "$.configs");
+        uint256 count = sourceNames.length;
+
         console.log("===========================================");
         console.log("VISION BULK BATCH DEPLOYMENT");
         console.log("===========================================");
         console.log("Vision:          ", visionAddr);
         console.log("IssuerRegistry:  ", registryAddr);
         console.log("Reference nonce: ", refNonce);
-        console.log("Tick duration:   ", TICK_DURATION);
-        console.log("Lock offset:     ", LOCK_OFFSET);
+        console.log("Sources from config:", count);
         console.log("");
 
-        // Build source list (only sources with active batch engine configs)
-        string[54] memory sourceNames = _getSourceNames();
-        uint256 count = sourceNames.length;
+        // Version suffix to create fresh batches (bump when redeploying)
+        string memory version = vm.envOr("BATCH_VERSION", string("v2"));
 
-        // Pre-compute sourceIds, configHashes, and BLS signatures
+        // Pre-compute sourceIds, configHashes, tickDurations, lockOffsets, and BLS signatures
         bytes32[] memory sourceIds = new bytes32[](count);
         bytes32[] memory configHashes = new bytes32[](count);
+        uint256[] memory tickDurations = new uint256[](count);
+        uint256[] memory lockOffsets = new uint256[](count);
         bytes[] memory blsSigs = new bytes[](count);
 
         console.log("Signing", count, "batch creation messages...");
 
-        // Version suffix to create fresh batches (bump when redeploying)
-        string memory version = vm.envOr("BATCH_VERSION", string("v1"));
-
         for (uint i = 0; i < count; i++) {
-            sourceIds[i] = keccak256(bytes(string.concat(sourceNames[i], "_", version)));
-            // configHash uses ORIGINAL source name so data-node can resolve it
-            bytes32 originalSourceId = keccak256(bytes(sourceNames[i]));
-            configHashes[i] = keccak256(abi.encode(originalSourceId, "default_config_v1"));
+            string memory name = sourceNames[i];
+            sourceIds[i] = keccak256(bytes(string.concat(name, "_", version)));
+
+            // Read config hash, tick duration, lock offset from JSON
+            string memory basePath = string.concat("$.configs.", name);
+            configHashes[i] = vm.parseJsonBytes32(configJson, string.concat(basePath, ".configHash"));
+            tickDurations[i] = vm.parseJsonUint(configJson, string.concat(basePath, ".tickDurationSecs"));
+            lockOffsets[i] = vm.parseJsonUint(configJson, string.concat(basePath, ".lockOffsetSecs"));
 
             // Compute BLS message hash (must match Vision._createBatch)
             bytes32 messageHash = keccak256(abi.encode(
@@ -104,8 +118,8 @@ contract DeployAllVisionBatches is DeployBLSHelper {
                 "CREATE_BATCH",
                 sourceIds[i],
                 configHashes[i],
-                TICK_DURATION,
-                LOCK_OFFSET
+                tickDurations[i],
+                lockOffsets[i]
             ));
 
             // Sign via FFI with test issuers (seeds 0,1,2)
@@ -114,7 +128,7 @@ contract DeployAllVisionBatches is DeployBLSHelper {
 
         console.log("All signatures computed. Deploying bulk helper...");
 
-        // Split into 2 halves to stay under Anvil's 30M block gas limit
+        // Split into 2 halves to stay under block gas limit
         uint256 half = count / 2;
 
         vm.startBroadcast(deployerKey);
@@ -123,141 +137,79 @@ contract DeployAllVisionBatches is DeployBLSHelper {
         VisionBulkCreate bulk = new VisionBulkCreate();
 
         // First half (tx 2)
-        bytes32[] memory ids1 = new bytes32[](half);
-        bytes32[] memory hashes1 = new bytes32[](half);
-        bytes[] memory sigs1 = new bytes[](half);
-        for (uint i = 0; i < half; i++) {
-            ids1[i] = sourceIds[i];
-            hashes1[i] = configHashes[i];
-            sigs1[i] = blsSigs[i];
+        {
+            bytes32[] memory ids1 = new bytes32[](half);
+            bytes32[] memory hashes1 = new bytes32[](half);
+            uint256[] memory tds1 = new uint256[](half);
+            uint256[] memory los1 = new uint256[](half);
+            bytes[] memory sigs1 = new bytes[](half);
+            for (uint i = 0; i < half; i++) {
+                ids1[i] = sourceIds[i];
+                hashes1[i] = configHashes[i];
+                tds1[i] = tickDurations[i];
+                los1[i] = lockOffsets[i];
+                sigs1[i] = blsSigs[i];
+            }
+            bulk.createAll(
+                visionAddr, ids1, hashes1, tds1, los1, sigs1, refNonce, SIGNERS_BITMASK
+            );
         }
-        uint256[] memory batchIds1 = bulk.createAll(
-            visionAddr, ids1, hashes1, TICK_DURATION, LOCK_OFFSET, sigs1, refNonce, SIGNERS_BITMASK
-        );
 
         // Second half (tx 3)
         uint256 remaining = count - half;
-        bytes32[] memory ids2 = new bytes32[](remaining);
-        bytes32[] memory hashes2 = new bytes32[](remaining);
-        bytes[] memory sigs2 = new bytes[](remaining);
-        for (uint i = 0; i < remaining; i++) {
-            ids2[i] = sourceIds[half + i];
-            hashes2[i] = configHashes[half + i];
-            sigs2[i] = blsSigs[half + i];
+        uint256[] memory batchIds;
+        {
+            bytes32[] memory ids2 = new bytes32[](remaining);
+            bytes32[] memory hashes2 = new bytes32[](remaining);
+            uint256[] memory tds2 = new uint256[](remaining);
+            uint256[] memory los2 = new uint256[](remaining);
+            bytes[] memory sigs2 = new bytes[](remaining);
+            for (uint i = 0; i < remaining; i++) {
+                ids2[i] = sourceIds[half + i];
+                hashes2[i] = configHashes[half + i];
+                tds2[i] = tickDurations[half + i];
+                los2[i] = lockOffsets[half + i];
+                sigs2[i] = blsSigs[half + i];
+            }
+            bulk.createAll(
+                visionAddr, ids2, hashes2, tds2, los2, sigs2, refNonce, SIGNERS_BITMASK
+            );
         }
-        uint256[] memory batchIds2 = bulk.createAll(
-            visionAddr, ids2, hashes2, TICK_DURATION, LOCK_OFFSET, sigs2, refNonce, SIGNERS_BITMASK
-        );
 
         vm.stopBroadcast();
 
-        // Merge results
-        uint256[] memory batchIds = new uint256[](count);
-        for (uint i = 0; i < half; i++) batchIds[i] = batchIds1[i];
-        for (uint i = 0; i < remaining; i++) batchIds[half + i] = batchIds2[i];
+        // Collect batch IDs by reading from Vision contract
+        batchIds = new uint256[](count);
+        for (uint i = 0; i < count; i++) {
+            batchIds[i] = Vision(visionAddr).sourceIdToBatchId(sourceIds[i]);
+        }
 
         // Report results
         console.log("");
         console.log("===========================================");
         console.log("BATCH DEPLOYMENT COMPLETE");
         console.log("===========================================");
-        console.log("Total batches created:", batchIds.length);
+        console.log("Total batches created:", count);
 
         for (uint i = 0; i < count; i++) {
             console.log("  Batch", batchIds[i], ":", sourceNames[i]);
         }
 
-        // Export batch mapping as JSON for downstream consumption
-        _exportBatchMapping(sourceNames, batchIds, configHashes, visionAddr);
-    }
-
-    function _getSourceNames() internal pure returns (string[54] memory names) {
-        // Only sources with active batch engine configs (verified 2026-02-26).
-        // Removed: coingecko (rate-limited), nasdaq, twse, bls, courtlistener,
-        //          github, npm, pypi, crates_io, stackexchange, openalex,
-        //          twitch, reddit, bgg, volcano, weather, openmeteo, flights,
-        //          tomtom_traffic, tomtom_evcharge, faa_delays, aisstream,
-        //          maritime, ebird, movebank, e2e_test_0-4
-        //
-        // ── Finance (8) ──
-        names[0]  = "pumpfun";
-        names[1]  = "defillama";
-        names[2]  = "finnhub";
-        names[3]  = "zillow";
-        names[4]  = "polymarket";
-        names[5]  = "finra";
-        names[6]  = "yahoo_drinks";
-        names[7]  = "bestbuy";
-        // ── Economic (6) ──
-        names[8]  = "fred";
-        names[9]  = "eia";
-        names[10] = "treasury";
-        names[11] = "ecb";
-        names[12] = "worldbank";
-        names[13] = "adzuna";
-        // ── Government (3) ──
-        names[14] = "usa_spending";
-        names[15] = "sec";
-        names[16] = "congress";
-        // ── Tech & Dev (2) ──
-        names[17] = "hackernews";
-        names[18] = "cloudflare";
-        // ── Academic (2) ──
-        names[19] = "crossref";
-        names[20] = "pubmed";
-        // ── Entertainment (10) ──
-        names[21] = "tmdb";
-        names[22] = "lastfm";
-        names[23] = "steam";
-        names[24] = "anilist";
-        names[25] = "chaturbate";
-        names[26] = "backpacktf";
-        names[27] = "fourchan";
-        names[28] = "sports";
-        names[29] = "pandascore";
-        names[30] = "queue_times";
-        // ── Geophysical (10) ──
-        names[31] = "earthquake";
-        names[32] = "weather_alerts";
-        names[33] = "airnow";
-        names[34] = "usgs_water";
-        names[35] = "noaa_met";
-        names[36] = "noaa_tides";
-        names[37] = "ndbc";
-        names[38] = "nwps";
-        names[39] = "nrc_nuclear";
-        names[40] = "wildfire";
-        names[41] = "epidemic";
-        // ── Transport (4) ──
-        names[42] = "gtfs_rt";
-        names[43] = "citybikes";
-        names[44] = "parking";
-        names[45] = "cbp_border";
-        // ── Nature (2) ──
-        names[46] = "animals";
-        names[47] = "shelter";
-        // ── Space (3) ──
-        names[48] = "spaceweather";
-        names[49] = "iss";
-        names[50] = "mil_aircraft";
-        // ── Rail (1) ──
-        names[51] = "db_trains";
-        // ── Viral/Meme (2) ──
-        names[52] = "mcbroken";
-        names[53] = "nyc311";
+        // Export batch mapping as JSON
+        _exportBatchMapping(sourceNames, batchIds, configHashes, tickDurations, lockOffsets, visionAddr);
     }
 
     function _exportBatchMapping(
-        string[54] memory sourceNames,
+        string[] memory sourceNames,
         uint256[] memory batchIds,
         bytes32[] memory configHashes,
+        uint256[] memory tickDurations,
+        uint256[] memory lockOffsets,
         address visionAddr
     ) internal {
         // Build JSON manually (Forge doesn't have great JSON building)
         string memory json = '{\n  "vision": "';
         json = string.concat(json, vm.toString(visionAddr), '",\n');
-        json = string.concat(json, '  "tickDuration": ', vm.toString(TICK_DURATION), ',\n');
-        json = string.concat(json, '  "lockOffset": ', vm.toString(LOCK_OFFSET), ',\n');
         json = string.concat(json, '  "batchCount": ', vm.toString(batchIds.length), ',\n');
         json = string.concat(json, '  "batches": {\n');
 
@@ -268,7 +220,11 @@ contract DeployAllVisionBatches is DeployBLSHelper {
                 vm.toString(batchIds[i]),
                 ', "configHash": "',
                 vm.toString(configHashes[i]),
-                '" }'
+                '", "tickDuration": ',
+                vm.toString(tickDurations[i]),
+                ', "lockOffset": ',
+                vm.toString(lockOffsets[i]),
+                ' }'
             );
             if (i < sourceNames.length - 1) {
                 json = string.concat(json, ',');

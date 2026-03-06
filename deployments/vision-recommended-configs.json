@@ -1,0 +1,265 @@
+{
+  "generatedAt": "2026-03-06T07:41:53.672018637Z",
+  "batchCount": 43,
+  "totalMarkets": 3602,
+  "configs": {
+    "stocks": {
+      "configHash": "0xfcabe1318c1c46f36de53c6e98ce9840266208d7ecba2e8ed14d2eb152e23dae",
+      "marketCount": 109,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "rates": {
+      "configHash": "0xadb2bad21269857967896328796514489f5b0fa8cace98181e245380b16084f3",
+      "marketCount": 19,
+      "tickDurationSecs": 86400,
+      "lockOffsetSecs": 3456
+    },
+    "bls": {
+      "configHash": "0x4bd46539c9f6db1c88fe51e2446005795feee6ce7a9005dfdbf7b1df4b438e93",
+      "marketCount": 9,
+      "tickDurationSecs": 86400,
+      "lockOffsetSecs": 3456
+    },
+    "eia": {
+      "configHash": "0xd552fa98b432995da17f848250bf26e80c74cb3a41529193b5e5107f6274ae77",
+      "marketCount": 9,
+      "tickDurationSecs": 86400,
+      "lockOffsetSecs": 3456
+    },
+    "ecb": {
+      "configHash": "0xbbdc1344e1faf0cfc54ce5df50c4049997077462c567b3466f3256f2db813229",
+      "marketCount": 6,
+      "tickDurationSecs": 86400,
+      "lockOffsetSecs": 3456
+    },
+    "finra_short_vol": {
+      "configHash": "0x59b2986b2465633975f6918fe6158d070be2b1a71860d1f3a008b269cf3c084b",
+      "marketCount": 5,
+      "tickDurationSecs": 86400,
+      "lockOffsetSecs": 3456
+    },
+    "congress": {
+      "configHash": "0x3bcb9059cf046f5475887fadf9d588617a54119222c503eb49134aae1697bb29",
+      "marketCount": 1,
+      "tickDurationSecs": 86400,
+      "lockOffsetSecs": 3456
+    },
+    "bchain": {
+      "configHash": "0x710ccd704c08c0fb50fcc345179c042588cd4f56d36d84cb4de958a171feb9e4",
+      "marketCount": 8,
+      "tickDurationSecs": 86400,
+      "lockOffsetSecs": 3456
+    },
+    "bonds": {
+      "configHash": "0xdfaed2cee121e84747224e1d9c3149f57c6716ab11923fb9c8ad6a0db8a3c4da",
+      "marketCount": 22,
+      "tickDurationSecs": 86400,
+      "lockOffsetSecs": 3456
+    },
+    "anilist": {
+      "configHash": "0xad36bdee2b96d94d6e1b5f5fd01d22ef75363668b6fb45ab9f98d63ea00265d5",
+      "marketCount": 256,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "backpacktf": {
+      "configHash": "0x9173e33d3e6ba0a6eecfbbfc4dc5b1fd678958c602fa9e697b4b1dad400c1e2d",
+      "marketCount": 256,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "cloudflare": {
+      "configHash": "0xe2d0605d024805c25a07b69d05386c5712bb3b3bc0d0a541f73382f4d1288851",
+      "marketCount": 193,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "crates_io": {
+      "configHash": "0xb8209b9de757c4f55e058bedeef82a87e0923e10b8e650d4ee5de49c8de9dc82",
+      "marketCount": 11,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "fourchan": {
+      "configHash": "0x5b8754fdeac3d000312d013c23edd399312938192d01afd3af0e7d0490466ade",
+      "marketCount": 68,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "polymarket": {
+      "configHash": "0xf8a449e614f38e9bce90a0ea73605e07944812d26012796cfa941e4085ebe854",
+      "marketCount": 256,
+      "tickDurationSecs": 300,
+      "lockOffsetSecs": 75
+    },
+    "steam": {
+      "configHash": "0x5a3352adb274a96ab198af7d9f86dfb10f42d96905798663c52da05ba5ca6d3e",
+      "marketCount": 256,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "tmdb": {
+      "configHash": "0x28103361224cd5f2a1d675608882a03517f3ab4e2a3ca9ecef646a3d2f1f1d29",
+      "marketCount": 256,
+      "tickDurationSecs": 300,
+      "lockOffsetSecs": 75
+    },
+    "lastfm": {
+      "configHash": "0xd0bdebe574b310c922b4b68f2fa5c9d82d83b1debb18ceb5697eb1430eeb792f",
+      "marketCount": 256,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "twitch": {
+      "configHash": "0x85c6699d051a6c9370850ced31ae1aa1056a7830aab6fa520063cf1b7e1f1bd4",
+      "marketCount": 256,
+      "tickDurationSecs": 60,
+      "lockOffsetSecs": 15
+    },
+    "twse": {
+      "configHash": "0xe76b6475c69ff094f961eb97604974f25eb22f1a20a05f87790753a26f1149e5",
+      "marketCount": 35,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "zillow": {
+      "configHash": "0x03c01d0da1f7d2434bb6a6003e3708ea012350f569ac67b6629108824b0b619f",
+      "marketCount": 10,
+      "tickDurationSecs": 86400,
+      "lockOffsetSecs": 3456
+    },
+    "earthquake": {
+      "configHash": "0x7a3233aaf06f65824d449b898ad9e0248fe13b78b2fcdcdf97dfbcd834139bdb",
+      "marketCount": 7,
+      "tickDurationSecs": 300,
+      "lockOffsetSecs": 75
+    },
+    "spaceweather": {
+      "configHash": "0x394f8ff18ca28e3f23a8d54710e5ea96e41d992a2f072084d571b70812b6c8d2",
+      "marketCount": 4,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "wildfire": {
+      "configHash": "0x2f37a793c5610a1a5f4320a4b95984a1c38509aaa5714b2790a82b7780130131",
+      "marketCount": 10,
+      "tickDurationSecs": 1800,
+      "lockOffsetSecs": 450
+    },
+    "mil_aircraft": {
+      "configHash": "0x90ffe46caf8d6b3c46654632666e474ef98b1cd881ac42215a7ced2f3a6afa61",
+      "marketCount": 88,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "iss": {
+      "configHash": "0xc9b76736632c9d0c1ad28745b26f3d32b95dba6c703c71b8602080cf250184b8",
+      "marketCount": 1,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "weather_alerts": {
+      "configHash": "0x62c3ae1f5e85c576332d3098e382136a4c62d4ca7719b8c74b9fa79c3784d29b",
+      "marketCount": 5,
+      "tickDurationSecs": 300,
+      "lockOffsetSecs": 75
+    },
+    "animals": {
+      "configHash": "0xac71a87e70571e31815044426657858941f58f204c58999d9b6079190f2daa3a",
+      "marketCount": 8,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "usa_spending": {
+      "configHash": "0x67ff39575fc09eda83648f8e63d42b69317945a1b3d9c4ed698504c3f87bf396",
+      "marketCount": 4,
+      "tickDurationSecs": 3600,
+      "lockOffsetSecs": 900
+    },
+    "pumpfun": {
+      "configHash": "0x6684ce7bedf0419a8413020d333a339cc52de3793d95ae149b50eebe58ed29d6",
+      "marketCount": 256,
+      "tickDurationSecs": 300,
+      "lockOffsetSecs": 75
+    },
+    "usgs_water": {
+      "configHash": "0x5230c2243d26dd3cba33efee08b2e407039929c402e19abbf252cb480dfd31bf",
+      "marketCount": 256,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "chaturbate": {
+      "configHash": "0x415f82238ebb60849d98ce5f112c3b6301c0813dbec87f46a4d09bbe09a10d64",
+      "marketCount": 256,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "citybikes": {
+      "configHash": "0x3cf026101d7c690b482e3d56a3fda3ad50288a12aa2a310a70bb6002b6ee71ab",
+      "marketCount": 17,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "ndbc": {
+      "configHash": "0x3704e837bb4f9385b9019b5aed07919b621ac2057f7dcf70965cb4158809a132",
+      "marketCount": 44,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "noaa_met": {
+      "configHash": "0x58d63814baade99564ffcacd448a55de1f188346be1c7e1644d9495586a40cf7",
+      "marketCount": 58,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "nwps": {
+      "configHash": "0xe221aca00ea0761d14b5c8cb62e9a00265267d281dd614d54b4d19a80a5c8c3a",
+      "marketCount": 7,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "airnow": {
+      "configHash": "0x0ef944659343b83d17455fc982729b2a62a18a712107a9b2b6cf5d9882336160",
+      "marketCount": 242,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "crossref": {
+      "configHash": "0x8cc78499e1fa5e89c0b10a0caa0631303215fa8b695f471050c44f09d3c66e47",
+      "marketCount": 7,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "parking": {
+      "configHash": "0x851e5295c7c3762b36e04ee80c184ac6a3576ca257a1a771b76766c6dc1c483d",
+      "marketCount": 4,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "bestbuy": {
+      "configHash": "0x48382b19351de1a892f29bfc12d83f5f878e01600db9e24c2befc2c44bc40b70",
+      "marketCount": 19,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "adzuna": {
+      "configHash": "0xd1e2fec5a595a99d003d928c1e73b7097b062ac25dc50d426ef2083757591e1c",
+      "marketCount": 8,
+      "tickDurationSecs": 1800,
+      "lockOffsetSecs": 450
+    },
+    "queue_times": {
+      "configHash": "0x5b30df3b53408b6c1479b2cc4890644da1c67325209bc5f9d62f8880dc7b725f",
+      "marketCount": 2,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    },
+    "yahoo_drinks": {
+      "configHash": "0x9df12eb3ca4bc13210cd4295d3653f7732213a199fea9063417c8cf841072658",
+      "marketCount": 2,
+      "tickDurationSecs": 600,
+      "lockOffsetSecs": 150
+    }
+  }
+}

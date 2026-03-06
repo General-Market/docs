@@ -196,12 +196,13 @@ ISSUER_3_PID=$!
 # Start chain keepalive — Orbit L3 stops producing blocks when idle,
 # which freezes the chain timestamp the Vision engine depends on.
 # Send a 0-value self-transfer every 25s to keep the chain alive.
-DEPLOYER_KEY="${DEPLOYER_KEY:-0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537}"
-DEPLOYER_ADDR="0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4"
+# Uses Anvil account #9 (not the deployer) to avoid nonce conflicts during deployments.
+KEEPALIVE_KEY="${KEEPALIVE_KEY:-0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97}"
+KEEPALIVE_ADDR="0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f"
 (
     while true; do
-        cast send --rpc-url "$RPC" --private-key "$DEPLOYER_KEY" --chain-id "$CHAIN_ID" \
-            "$DEPLOYER_ADDR" --value 0 > /dev/null 2>&1
+        cast send --rpc-url "$RPC" --private-key "$KEEPALIVE_KEY" --chain-id "$CHAIN_ID" \
+            "$KEEPALIVE_ADDR" --value 0 > /dev/null 2>&1
         sleep 25
     done
 ) > logs/chain-keepalive.log 2>&1 &
