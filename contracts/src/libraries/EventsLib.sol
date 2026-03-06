@@ -229,18 +229,10 @@ library EventsLib {
     /// @param newAdmin The new admin address
     event AdminChanged(address indexed previousAdmin, address indexed newAdmin);
 
-    /// @notice Emitted when aggregated BLS pubkey is updated
-    /// @param pubkey The new aggregated public key
-    event AggregatedPubkeyUpdated(bytes pubkey);
-
     /// @notice Emitted when an authorized caller is added or removed
     /// @param caller The caller address
     /// @param authorized Whether the caller is now authorized
     event AuthorizedCallerUpdated(address indexed caller, bool authorized);
-
-    /// @notice Emitted when BLS library address is updated
-    /// @param blsLibrary The new BLS library address
-    event BLSLibraryUpdated(address indexed blsLibrary);
 
     // ============ FEE REGISTRY EVENTS ============
 
@@ -281,49 +273,7 @@ library EventsLib {
         uint256 amount
     );
 
-    // ============ REBALANCE EVENTS (Story 6.11) ============
-
-    /// @notice Emitted when an asset manager proposes a rebalance for an ITP
-    /// @param itpId The ITP being rebalanced
-    /// @param oldWeights The current weights before rebalance
-    /// @param newWeights The proposed target weights
-    event RebalanceProposed(
-        bytes32 indexed itpId,
-        uint256[] oldWeights,
-        uint256[] newWeights
-    );
-
-    /// @notice Emitted when issuers confirm a rebalance batch via BLS consensus
-    /// @param cycleNumber The cycle in which the rebalance was confirmed
-    /// @param itpIds Array of ITP IDs included in the rebalance batch
-    /// @param blsSignature Aggregated BLS signature from issuers
-    event RebalanceBatchConfirmed(
-        uint256 indexed cycleNumber,
-        bytes32[] itpIds,
-        bytes blsSignature
-    );
-
-    /// @notice Emitted when ITP weights are updated after rebalance fills complete
-    /// @param itpId The ITP whose weights were updated
-    /// @param oldWeights The weights before update
-    /// @param newWeights The new weights after update
-    event WeightsUpdated(
-        bytes32 indexed itpId,
-        uint256[] oldWeights,
-        uint256[] newWeights
-    );
-
     // ============ PRODUCTION HARDENING EVENTS (Story 7.16) ============
-
-    /// @notice Emitted when an asset price is updated via BLS consensus
-    /// @param assetIdx The asset index
-    /// @param price The new price (18 decimals)
-    /// @param timestamp The price timestamp
-    event PriceUpdated(
-        uint256 indexed assetIdx,
-        uint256 price,
-        uint256 timestamp
-    );
 
     /// @notice Emitted when per-asset minimum buy amount is configured
     /// @param asset The asset address
@@ -341,11 +291,6 @@ library EventsLib {
     /// @param warningThreshold New warning threshold
     /// @param pauseThreshold New pause threshold
     event QueueThresholdsUpdated(uint256 warningThreshold, uint256 pauseThreshold);
-
-    /// @notice Emitted when an asset address is registered to a price index
-    /// @param asset The asset address
-    /// @param idx The price index
-    event AssetIndexRegistered(address indexed asset, uint256 idx);
 
     // ============ ARCHITECTURE GAP FIX EVENTS (Story 7.17) ============
 
@@ -369,11 +314,6 @@ library EventsLib {
     /// @param venueId The venue identifier
     /// @param amount The deficit amount (targetBalance - currentBalance)
     event PoolRebalanceNeeded(uint256 indexed venueId, uint256 amount);
-
-    /// @notice Emitted when a venue pool rebalance completes
-    /// @param venueId The venue identifier
-    /// @param amount The amount rebalanced
-    event PoolRebalanceComplete(uint256 indexed venueId, uint256 amount);
 
     // ============ REGISTRY SYNC EVENTS (Story 8.1) ============
 

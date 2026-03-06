@@ -9,10 +9,6 @@ pragma solidity ^0.8.24;
 ///      BLSVerifier (referenceNonce + signersBitmask). No second nonce mechanism.
 interface IVision {
 
-    // ============ ENUMS ============
-
-    enum ResolutionType { UP_0, UP_30, UP_X, DOWN_0, DOWN_30, DOWN_X, FLAT_0, FLAT_X }
-
     // ============ STRUCTS ============
 
     /// @notice On-chain batch — all market detail lives off-chain, only the config
