@@ -2,7 +2,7 @@
 
 import { useReadContract, useAccount } from 'wagmi'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
-import { activeChainId } from '@/lib/wagmi'
+import { indexL3 } from '@/lib/wagmi'
 
 const VISION_ADDRESS = (
   process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000'
@@ -27,7 +27,7 @@ export function usePlayerPosition(batchId: number | undefined) {
     abi: VISION_ABI,
     functionName: 'getPosition',
     args: batchId !== undefined && address ? [BigInt(batchId), address] : undefined,
-    chainId: activeChainId,
+    chainId: indexL3.id,
     query: {
       enabled: batchId !== undefined && !!address && VISION_ADDRESS !== '0x0000000000000000000000000000000000000000',
       refetchInterval: 10000,

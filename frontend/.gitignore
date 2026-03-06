@@ -35,3 +35,5 @@ next-env.d.ts
 
 # downloaded logos (too large for git, download with scripts/download-crypto-logos.ts)
 public/logos/
+.env.testnet
+test-results/

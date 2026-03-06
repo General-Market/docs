@@ -55,6 +55,7 @@ export function useVaultDeposit(): UseVaultDepositReturn {
     abi: ERC20_ABI,
     functionName: 'allowance',
     args: address ? [address, MORPHO_ADDRESSES.metaMorphoVault] : undefined,
+    chainId: indexL3.id,
     query: {
       enabled: !!address,
     },

@@ -66,95 +66,41 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
-    return [
-      {
-        source: "/api/leaderboard",
-        destination: `${BACKEND_URL}/api/leaderboard`,
-      },
-      {
-        source: "/api/leaderboard/:path*",
-        destination: `${BACKEND_URL}/api/leaderboard/:path*`,
-      },
-      {
-        source: "/api/bets/:path*",
-        destination: `${BACKEND_URL}/api/bets/:path*`,
-      },
-      {
-        source: "/api/agents/:path*",
-        destination: `${BACKEND_URL}/api/agents/:path*`,
-      },
-      {
-        source: "/api/resolutions/:path*",
-        destination: `${BACKEND_URL}/api/resolutions/:path*`,
-      },
-      {
-        source: "/api/telegram/:path*",
-        destination: `${BACKEND_URL}/api/telegram/:path*`,
-      },
-      {
-        source: "/api/sse/:path*",
-        destination: `${BACKEND_URL}/api/sse/:path*`,
-      },
-      {
-        source: "/api/keepers/:path*",
-        destination: `${BACKEND_URL}/api/keepers/:path*`,
-      },
-      {
-        source: "/api/markets/:path*",
-        destination: `${BACKEND_URL}/api/markets/:path*`,
-      },
-      {
-        source: "/api/market-prices",
-        destination: `${BACKEND_URL}/api/market-prices`,
-      },
-      {
-        source: "/api/market-stats/:path*",
-        destination: `${BACKEND_URL}/api/market-stats/:path*`,
-      },
-      {
-        source: "/api/categories",
-        destination: `${BACKEND_URL}/api/categories`,
-      },
-      {
-        source: "/api/snapshots/:path*",
-        destination: `${BACKEND_URL}/api/snapshots/:path*`,
-      },
-      // Data-node proxy — all client-side data-node calls go through /dn/* to avoid mixed content
-      {
-        source: "/dn/:path*",
-        destination: `${DATA_NODE_URL}/:path*`,
-      },
-      // L3 RPC proxy — browser can't call HTTP RPC from HTTPS page (mixed content)
-      {
-        source: "/rpc",
-        destination: L3_RPC_URL,
-      },
-      {
-        source: "/api/vision/snapshot/meta",
-        destination: `${DATA_NODE_URL}/snapshot/meta`,
-      },
-      {
-        source: "/api/vision/snapshot",
-        destination: `${DATA_NODE_URL}/snapshot`,
-      },
-      {
-        source: "/api/vision/:path*",
-        destination: `${VISION_API_URL}/vision/:path*`,
-      },
-      {
-        source: "/health",
-        destination: `${BACKEND_URL}/health`,
-      },
-      // Mintlify docs proxy
-      {
-        source: "/docs",
-        destination: `${DOCS_URL}/docs`,
-      },
-      {
-        source: "/docs/:path*",
-        destination: `${DOCS_URL}/docs/:path*`,
-      },
-    ];
+    return {
+      // beforeFiles: locale routing fallback — fires even if middleware doesn't execute on Vercel Edge
+      beforeFiles: [
+        { source: "/", destination: "/en" },
+        {
+          source: "/:path((?!en|ko|ja|zh|api|dn|rpc|_next|_vercel|docs|health)[^.]+)",
+          destination: "/en/:path",
+        },
+      ],
+      // afterFiles: proxy rewrites for backend, data-node, RPC
+      afterFiles: [
+        { source: "/api/leaderboard", destination: `${BACKEND_URL}/api/leaderboard` },
+        { source: "/api/leaderboard/:path*", destination: `${BACKEND_URL}/api/leaderboard/:path*` },
+        { source: "/api/bets/:path*", destination: `${BACKEND_URL}/api/bets/:path*` },
+        { source: "/api/agents/:path*", destination: `${BACKEND_URL}/api/agents/:path*` },
+        { source: "/api/resolutions/:path*", destination: `${BACKEND_URL}/api/resolutions/:path*` },
+        { source: "/api/telegram/:path*", destination: `${BACKEND_URL}/api/telegram/:path*` },
+        { source: "/api/sse/:path*", destination: `${BACKEND_URL}/api/sse/:path*` },
+        { source: "/api/keepers/:path*", destination: `${BACKEND_URL}/api/keepers/:path*` },
+        { source: "/api/markets/:path*", destination: `${BACKEND_URL}/api/markets/:path*` },
+        { source: "/api/market-prices", destination: `${BACKEND_URL}/api/market-prices` },
+        { source: "/api/market-stats/:path*", destination: `${BACKEND_URL}/api/market-stats/:path*` },
+        { source: "/api/categories", destination: `${BACKEND_URL}/api/categories` },
+        { source: "/api/snapshots/:path*", destination: `${BACKEND_URL}/api/snapshots/:path*` },
+        { source: "/dn/:path*", destination: `${DATA_NODE_URL}/:path*` },
+        { source: "/rpc", destination: L3_RPC_URL },
+        { source: "/api/vision/snapshot/meta", destination: `${DATA_NODE_URL}/snapshot/meta` },
+        { source: "/api/vision/snapshot", destination: `${DATA_NODE_URL}/snapshot` },
+        { source: "/api/vision/:path*", destination: `${VISION_API_URL}/vision/:path*` },
+        { source: "/health", destination: `${BACKEND_URL}/health` },
+        { source: "/docs", destination: `${DOCS_URL}/docs` },
+        { source: "/docs/:path*", destination: `${DOCS_URL}/docs/:path*` },
+      ],
+      fallback: [],
+    };
   },
 };
 

@@ -4,7 +4,7 @@ import { useAccount, useReadContracts } from 'wagmi'
 import { useMemo } from 'react'
 import { useBatches, type BatchInfo } from './useBatches'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
-import { activeChainId } from '@/lib/wagmi'
+import { indexL3 } from '@/lib/wagmi'
 
 const VISION_ADDRESS = (
   process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000'
@@ -40,7 +40,7 @@ export function usePlayerBatches() {
       abi: VISION_ABI,
       functionName: 'getPosition' as const,
       args: [BigInt(batch.id), address] as const,
-      chainId: activeChainId,
+      chainId: indexL3.id,
     }))
   }, [address, batches])
 

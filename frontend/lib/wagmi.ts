@@ -96,3 +96,32 @@ export const wagmiConfig = createConfig({
 export const activeChain = indexL3
 export const activeChainId = indexL3.id
 export const arbChainId = arbitrumChain.id
+
+// ---------------------------------------------------------------------------
+// L3-defaulting hook wrappers
+// Use these instead of raw wagmi hooks so chain reads always target L3
+// (or Arb when explicitly overridden). This prevents reads from defaulting
+// to whatever chain the wallet happens to be connected to.
+// ---------------------------------------------------------------------------
+import {
+  usePublicClient as _usePublicClient,
+  useReadContract as _useReadContract,
+  useReadContracts as _useReadContracts,
+  useBalance as _useBalance,
+} from 'wagmi'
+import type { UsePublicClientParameters, UseReadContractParameters, UseBalanceParameters } from 'wagmi'
+
+/** usePublicClient defaulting to L3 */
+export function useL3PublicClient(params?: UsePublicClientParameters) {
+  return _usePublicClient({ chainId: indexL3.id, ...params })
+}
+
+/** useReadContract defaulting to L3 */
+export function useL3ReadContract(params: UseReadContractParameters<any, any, any>) {
+  return _useReadContract({ chainId: indexL3.id, ...params } as any)
+}
+
+/** useBalance defaulting to L3 */
+export function useL3Balance(params: UseBalanceParameters) {
+  return _useBalance({ chainId: indexL3.id, ...params })
+}

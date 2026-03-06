@@ -1,7 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
-const FRONTEND_URL = process.env.E2E_FRONTEND_URL || 'http://localhost:3000';
 const IS_TESTNET = process.env.E2E_TESTNET === '1';
+const FRONTEND_URL = process.env.E2E_FRONTEND_URL || 'http://localhost:3000';
 
 export default defineConfig({
   globalSetup: IS_TESTNET ? undefined : require.resolve('./global-setup'),
@@ -23,4 +23,13 @@ export default defineConfig({
     navigationTimeout: 90_000,
     browserName: 'chromium',
   },
+  // Start local dev server if no E2E_FRONTEND_URL override
+  ...(!process.env.E2E_FRONTEND_URL ? {
+    webServer: {
+      command: 'npm run dev',
+      url: 'http://localhost:3000',
+      reuseExistingServer: true,
+      timeout: 120_000,
+    },
+  } : {}),
 });

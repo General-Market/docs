@@ -68,8 +68,8 @@ test.describe('Vision Withdraw to Arbitrum', () => {
     await expect(page.getByText('To L3 Wallet')).toBeVisible({ timeout: 5_000 })
     await expect(page.getByText('To Arbitrum')).toBeVisible({ timeout: 5_000 })
 
-    // Verify descriptions
-    await expect(page.getByText(/Release virtual balance/i).or(page.getByText(/To Arbitrum/i))).toBeVisible({ timeout: 5_000 })
+    // Verify descriptions — use first() to handle multiple matches
+    await expect(page.getByText(/Release virtual balance/i).first()).toBeVisible({ timeout: 5_000 })
   })
 
   test('virtual balance from Arb deposit can be withdrawn', async () => {

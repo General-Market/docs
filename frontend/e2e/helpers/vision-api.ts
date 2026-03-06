@@ -698,12 +698,24 @@ export async function findAvailableE2eBatch(): Promise<{ batchId: number; config
     // vision-batches.json not available, fall back to on-chain scan
   }
 
-  // Fallback: scan batches from chain, pick one with high ID (likely unused)
+  // Fallback: scan batches from chain backwards, find one PLAYER1 hasn't joined
   const allBatches = await getBatchesFromChain()
   if (allBatches.length === 0) throw new Error('No batches found on chain')
-  const batch = allBatches[allBatches.length - 1]
-  const configHash = await getBatchConfigHash(batch.id)
-  return { batchId: batch.id, configHash }
+  for (let i = allBatches.length - 1; i >= 0; i--) {
+    const batch = allBatches[i]
+    try {
+      const pos = await getPosition(batch.id, PLAYER1)
+      if (pos.stakePerTick === 0n) {
+        const configHash = await getBatchConfigHash(batch.id)
+        return { batchId: batch.id, configHash }
+      }
+    } catch {
+      // Position read failed = nobody joined
+      const configHash = await getBatchConfigHash(batch.id)
+      return { batchId: batch.id, configHash }
+    }
+  }
+  throw new Error('All batches already joined by PLAYER1 — redeploy Vision batches')
 }
 
 /**
