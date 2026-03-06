@@ -344,7 +344,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
   const t = useTranslations('markets')
   const tc = useTranslations('common')
   const { address } = useAccount()
-  const publicClient = usePublicClient()
+  const publicClient = usePublicClient({ chainId: indexL3.id })
   const [showDetails, setShowDetails] = useState(false)
   const [totalSupply, setTotalSupply] = useState<bigint>(0n)
   const [holders, setHolders] = useState<TokenHolder[]>([])

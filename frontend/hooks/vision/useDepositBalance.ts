@@ -71,6 +71,7 @@ export function useDepositBalance(): UseDepositBalanceReturn {
     address: VISION_ADDRESS,
     abi: VISION_ABI,
     functionName: 'USDC',
+    chainId: indexL3.id,
     query: { enabled: VISION_ADDRESS !== '0x0000000000000000000000000000000000000000' },
   })
 
@@ -80,6 +81,7 @@ export function useDepositBalance(): UseDepositBalanceReturn {
     abi: ERC20_ABI,
     functionName: 'allowance',
     args: address && usdcAddress ? [address, VISION_ADDRESS] : undefined,
+    chainId: indexL3.id,
     query: { enabled: !!address && !!usdcAddress },
   })
 

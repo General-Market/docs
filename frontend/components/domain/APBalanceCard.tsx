@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { useBalance } from 'wagmi'
+import { indexL3 } from '@/lib/wagmi'
 import { formatEther, formatUnits } from 'viem'
 import { INDEX_PROTOCOL, COLLATERAL_TOKEN_ADDRESS, COLLATERAL_SYMBOL, COLLATERAL_DECIMALS } from '@/lib/contracts/addresses'
 import { useApBalances } from '@/hooks/useApBalances'
@@ -36,6 +37,7 @@ export function APBalanceCard() {
   // TODO: Add AP native balance to SSE system-status to eliminate this chain read
   const { data: nativeBalance, refetch: refetchNative } = useBalance({
     address: AP_ADDRESS,
+    chainId: indexL3.id,
   })
 
   // Check AP health endpoint

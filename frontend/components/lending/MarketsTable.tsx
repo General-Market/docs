@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { usePublicClient } from 'wagmi'
+import { indexL3 } from '@/lib/wagmi'
 import { useMorphoMarkets } from '@/hooks/useMorphoMarkets'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import { BRIDGED_ITP_ABI } from '@/lib/contracts/index-protocol-abi'
@@ -22,7 +23,7 @@ interface MarketsTableProps {
 export function MarketsTable({ market }: MarketsTableProps) {
   const t = useTranslations('lending')
   const { markets, isLoading, error } = useMorphoMarkets(market)
-  const publicClient = usePublicClient()
+  const publicClient = usePublicClient({ chainId: indexL3.id })
   const [itpName, setItpName] = useState<string>('ITP')
   const [itpSymbol, setItpSymbol] = useState<string>('ITP')
   const publicClientRef = useRef(publicClient)

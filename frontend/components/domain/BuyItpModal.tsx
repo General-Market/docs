@@ -58,7 +58,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const t = useTranslations('buy-modal')
   const tc = useTranslations('common')
   const { address, isConnected } = useAccount()
-  const publicClient = usePublicClient()
+  const publicClient = usePublicClient({ chainId: indexL3.id })
   const { showSuccess } = useToast()
 
   const VISIBLE_STEPS: VisibleStep[] = [

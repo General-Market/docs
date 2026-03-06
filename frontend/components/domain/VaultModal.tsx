@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAccount, usePublicClient } from 'wagmi'
+import { indexL3 } from '@/lib/wagmi'
 import { formatUnits } from 'viem'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { useMetaMorphoVault } from '@/hooks/useMetaMorphoVault'
@@ -315,7 +316,7 @@ interface MarketsTableInlineProps {
 function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: MarketsTableInlineProps) {
   const t = useTranslations('lending')
   const { address } = useAccount()
-  const publicClient = usePublicClient()
+  const publicClient = usePublicClient({ chainId: indexL3.id })
   const [itpNames, setItpNames] = useState<Map<string, string>>(new Map())
   const [userBalances, setUserBalances] = useState<Map<string, bigint>>(new Map())
   const [onChainVaults, setOnChainVaults] = useState<string[]>([])

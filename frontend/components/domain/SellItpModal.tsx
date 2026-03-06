@@ -46,7 +46,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const t = useTranslations('sell-modal')
   const tc = useTranslations('common')
   const { address, isConnected } = useAccount()
-  const publicClient = usePublicClient()
+  const publicClient = usePublicClient({ chainId: indexL3.id })
   const { showSuccess } = useToast()
   const { capture } = usePostHogTracker()
   const sellStartTime = useRef<number>(0)

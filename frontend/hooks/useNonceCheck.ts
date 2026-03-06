@@ -13,6 +13,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useAccount, usePublicClient } from 'wagmi'
+import { indexL3 } from '@/lib/wagmi'
 
 interface NonceStatus {
   /** On-chain confirmed nonce (next expected) */
@@ -31,7 +32,7 @@ interface NonceStatus {
 
 export function useNonceCheck(): NonceStatus {
   const { address, isConnected } = useAccount()
-  const publicClient = usePublicClient()
+  const publicClient = usePublicClient({ chainId: indexL3.id })
 
   const [onChainNonce, setOnChainNonce] = useState<number | null>(null)
   const [pendingCount, setPendingCount] = useState(0)

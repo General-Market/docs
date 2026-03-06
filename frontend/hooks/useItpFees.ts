@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { usePublicClient } from 'wagmi'
+import { indexL3 } from '@/lib/wagmi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 
 const FEE_REGISTRY_ABI = [
@@ -50,7 +51,7 @@ interface UseItpFeesReturn {
  * eliminate the last direct RPC dependency.
  */
 export function useItpFees(itpId: string | null): UseItpFeesReturn {
-  const publicClient = usePublicClient()
+  const publicClient = usePublicClient({ chainId: indexL3.id })
   const [fees, setFees] = useState<ItpFees | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
