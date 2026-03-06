@@ -84,7 +84,7 @@ export ISSUER_MOCK_USDT="$MOCK_USDT"
 VISION_ARGS=""
 if [ -n "$VISION" ] && [ "$VISION" != "null" ]; then
     VISION_DB="${VISION_DATABASE_URL:-postgres://max:max@localhost/index_prices}"
-    VISION_ARGS="--vision-enabled --vision-address $VISION --vision-database-url $VISION_DB --vision-data-node-url http://localhost:8200 --vision-rpc-ws-url $RPC"
+    VISION_ARGS="--vision-enabled --vision-address $VISION --vision-database-url $VISION_DB --vision-data-node-url http://localhost:8200 --vision-rpc-ws-url $RPC --vision-reveal-window-secs 0"
     echo "Vision: $VISION (DB: $VISION_DB)"
 fi
 export ISSUER_ARBITRUM_CHAIN_ID="$CHAIN_ID"
@@ -193,8 +193,23 @@ $BINARY \
     > logs/issuer-3.log 2>&1 &
 ISSUER_3_PID=$!
 
+# Start chain keepalive — Orbit L3 stops producing blocks when idle,
+# which freezes the chain timestamp the Vision engine depends on.
+# Send a 0-value self-transfer every 25s to keep the chain alive.
+DEPLOYER_KEY="${DEPLOYER_KEY:-0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537}"
+DEPLOYER_ADDR="0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4"
+(
+    while true; do
+        cast send --rpc-url "$RPC" --private-key "$DEPLOYER_KEY" --chain-id "$CHAIN_ID" \
+            "$DEPLOYER_ADDR" --value 0 > /dev/null 2>&1
+        sleep 25
+    done
+) > logs/chain-keepalive.log 2>&1 &
+KEEPALIVE_PID=$!
+
 echo ""
-echo "All 3 issuers started simultaneously!"
-echo "PIDs: $ISSUER_1_PID $ISSUER_2_PID $ISSUER_3_PID"
+echo "All 3 issuers started + chain keepalive!"
+echo "Issuer PIDs: $ISSUER_1_PID $ISSUER_2_PID $ISSUER_3_PID"
+echo "Keepalive PID: $KEEPALIVE_PID"
 echo "Check logs: tail -f logs/issuer-*.log"
-echo "To stop: pkill -f 'target/release/issuer'"
+echo "To stop: pkill -f 'target/release/issuer'; kill $KEEPALIVE_PID 2>/dev/null"
