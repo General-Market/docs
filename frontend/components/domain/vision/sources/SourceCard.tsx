@@ -1,16 +1,19 @@
 'use client'
 
-import { useCallback, useRef } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { VisionSource } from '@/lib/vision/sources'
+import { getDataNodeSourceId } from '@/lib/vision/sources'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
 import type { BitmapEditor, CellState } from '@/hooks/vision/useBitmapEditor'
-import type { SourceMarket } from './SourcesGrid'
+import { useSourceSnapshot } from '@/hooks/vision/useMarketSnapshot'
+
+/** Max entries shown in the hover overlay */
+const HOVER_LIST_CAP = 100
 
 interface SourceCardProps {
   source: VisionSource
-  markets: SourceMarket[]
   bitmapEditor: BitmapEditor
   /** Accurate asset count from admin health (overrides markets.length for display) */
   metaAssetCount?: number
@@ -23,17 +26,43 @@ function getCellState(state: Record<string, CellState>, marketId: string): CellS
   return state[marketId] ?? 'up'
 }
 
-export function SourceCard({ source, markets, bitmapEditor, metaAssetCount, metaStatus }: SourceCardProps) {
-  // Use meta count for display (accurate), fall back to snapshot markets count
-  const displayMarketCount = metaAssetCount ?? markets.length
-  // Status from admin health, fall back to snapshot-based check
-  const isLive = metaStatus ? metaStatus === 'healthy' || metaStatus === 'stale' : markets.length > 0
-  const statusLabel = metaStatus === 'healthy' ? 'Live' : metaStatus === 'stale' ? 'Stale' : metaStatus === 'dead' ? 'Dead' : markets.length > 0 ? 'Live' : 'Pending'
-  const statusColor = metaStatus === 'healthy' || (!metaStatus && markets.length > 0) ? 'bg-color-up' : metaStatus === 'stale' ? 'bg-yellow-500' : 'bg-text-muted'
-  const statusTextColor = metaStatus === 'healthy' || (!metaStatus && markets.length > 0) ? 'text-color-up' : metaStatus === 'stale' ? 'text-yellow-600' : 'text-text-muted'
-  // Counts with default-up logic
-  const upCount = markets.filter(m => getCellState(bitmapEditor.state, m.id) === 'up').length
-  const downCount = markets.filter(m => getCellState(bitmapEditor.state, m.id) === 'down').length
+/** Format a numeric value for compact display */
+function formatValue(v: string): string {
+  const n = parseFloat(v)
+  if (isNaN(n)) return v
+  if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(1)}B`
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`
+  if (n >= 1) return `$${n.toFixed(2)}`
+  if (n > 0) return `$${n.toFixed(4)}`
+  return '$0'
+}
+
+export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }: SourceCardProps) {
+  // Lazy-fetch: only fetch per-source data when card has been hovered
+  const [hovered, setHovered] = useState(false)
+  const dataNodeId = getDataNodeSourceId(source.id)
+  const { data: sourceSnapshot, isLoading } = useSourceSnapshot(hovered ? dataNodeId : undefined)
+
+  // Derive sorted markets from lazy-loaded snapshot
+  const sortedMarkets = useMemo(() => {
+    if (!sourceSnapshot?.prices) return []
+    return [...sourceSnapshot.prices]
+      .sort((a, b) => parseFloat(b.value) - parseFloat(a.value))
+      .slice(0, HOVER_LIST_CAP)
+  }, [sourceSnapshot?.prices])
+
+  const totalMarkets = sourceSnapshot?.prices?.length ?? 0
+  const displayMarketCount = metaAssetCount ?? totalMarkets
+
+  // Status from admin health, fall back to meta-based check
+  const statusLabel = metaStatus === 'healthy' ? 'Live' : metaStatus === 'stale' ? 'Stale' : metaStatus === 'dead' ? 'Dead' : displayMarketCount > 0 ? 'Live' : 'Pending'
+  const statusColor = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0) ? 'bg-color-up' : metaStatus === 'stale' ? 'bg-yellow-500' : 'bg-text-muted'
+  const statusTextColor = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0) ? 'text-color-up' : metaStatus === 'stale' ? 'text-yellow-600' : 'text-text-muted'
+
+  // Bitmap editor counts (from lazy-loaded data)
+  const upCount = sortedMarkets.filter(m => getCellState(bitmapEditor.state, m.assetId) === 'up').length
+  const downCount = sortedMarkets.filter(m => getCellState(bitmapEditor.state, m.assetId) === 'down').length
   const totalSet = upCount + downCount
 
   // Drag-paint state
@@ -44,7 +73,6 @@ export function SourceCard({ source, markets, bitmapEditor, metaAssetCount, meta
       e.preventDefault()
       e.stopPropagation()
       const current = getCellState(bitmapEditor.state, marketId)
-      // Cycle: up → down → empty → up
       const next: CellState = current === 'up' ? 'down' : current === 'down' ? 'empty' : 'up'
       bitmapEditor.setCell(marketId, next)
       paintRef.current = { active: true, target: next }
@@ -71,8 +99,12 @@ export function SourceCard({ source, markets, bitmapEditor, metaAssetCount, meta
     : { backgroundColor: source.brandBg }
 
   return (
-    <div data-testid="source-card" className="bg-white border-r border-b border-border-light overflow-hidden">
-      {/* Brand image area — replaces YouTube thumbnail */}
+    <div
+      data-testid="source-card"
+      className="bg-white border-r border-b border-border-light overflow-hidden"
+      onMouseEnter={() => setHovered(true)}
+    >
+      {/* Brand image area */}
       <Link href={`/source/${source.id}`} className="block">
         <div className="relative aspect-video w-full group cursor-pointer overflow-hidden">
           {/* Brand logo face */}
@@ -93,66 +125,71 @@ export function SourceCard({ source, markets, bitmapEditor, metaAssetCount, meta
             </span>
           </div>
 
-          {/* Bitmap overlay — rolls in from bottom on hover (only if markets exist) */}
-          {markets.length > 0 ? (
-            <div
-              className="absolute inset-0 translate-y-full transition-transform duration-300 group-hover:translate-y-0 bg-[var(--surface)] flex flex-col"
-            >
-              {/* Bitmap header */}
-              <div className="px-3 py-2 border-b border-[var(--border)] flex items-center justify-between">
-                <h4 className="text-[11px] font-bold text-[var(--foreground)] truncate">{source.name}</h4>
-                <span className="text-[10px] font-bold text-[#999] bg-white px-1.5 py-0.5 rounded">{markets.length}</span>
-              </div>
+          {/* Market list overlay — rolls in from bottom on hover */}
+          <div
+            className="absolute inset-0 translate-y-full transition-transform duration-300 group-hover:translate-y-0 bg-[var(--surface)] flex flex-col"
+          >
+            {sortedMarkets.length > 0 ? (
+              <>
+                {/* Header */}
+                <div className="px-3 py-1.5 border-b border-[var(--border)] flex items-center justify-between shrink-0">
+                  <h4 className="text-[11px] font-bold text-[var(--foreground)] truncate">{source.name}</h4>
+                  <span className="text-[10px] font-bold text-[#999] bg-white px-1.5 py-0.5 rounded">{totalMarkets}</span>
+                </div>
 
-              {/* Bitmap cells — scrollable, drag-to-paint */}
-              {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
-              <div
-                className="flex-1 overflow-y-auto px-2 py-1.5"
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-              >
-                <div className="bitmap-grid select-none">
-                  {markets.map(m => {
-                    const cellState = getCellState(bitmapEditor.state, m.id)
-                    const cellClass =
-                      cellState === 'up' ? 'b-up' : cellState === 'down' ? 'b-dn' : 'b-empty'
-                    const label = m.symbol.length > 3 ? m.symbol.slice(0, 3) : m.symbol
+                {/* Scrollable market entries sorted by $ */}
+                {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+                <div className="flex-1 overflow-y-auto" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+                  {sortedMarkets.map((m, i) => {
+                    const cellState = getCellState(bitmapEditor.state, m.assetId)
+                    const borderColor = cellState === 'up' ? 'border-l-[var(--up)]' : cellState === 'down' ? 'border-l-[var(--down)]' : 'border-l-transparent'
                     return (
                       <div
-                        key={m.id}
-                        className={`bitmap-cell ${cellClass}`}
+                        key={m.assetId}
+                        className={`flex items-center justify-between px-2.5 py-[3px] border-l-2 ${borderColor} ${i % 2 === 0 ? 'bg-white/50' : ''} hover:bg-black/[0.03] cursor-pointer select-none`}
                         title={m.name || m.symbol}
-                        onMouseDown={e => handleMouseDown(e, m.id)}
-                        onMouseEnter={e => handleMouseEnter(e, m.id)}
+                        onMouseDown={e => handleMouseDown(e, m.assetId)}
+                        onMouseEnter={e => handleMouseEnter(e, m.assetId)}
                       >
-                        {label}
+                        <span className="text-[10px] text-[var(--foreground)] truncate mr-2 leading-tight">
+                          {m.name || m.symbol}
+                        </span>
+                        <span className="text-[10px] font-mono font-bold text-[var(--foreground)] shrink-0 tabular-nums">
+                          {formatValue(m.value)}
+                        </span>
                       </div>
                     )
                   })}
+                  {totalMarkets > HOVER_LIST_CAP && (
+                    <div className="px-2.5 py-1.5 text-center">
+                      <span className="text-[10px] font-semibold text-[var(--foreground)]/60">
+                        +{totalMarkets - HOVER_LIST_CAP} more
+                      </span>
+                    </div>
+                  )}
                 </div>
-              </div>
 
-              {/* Bitmap footer */}
-              <div className="px-3 py-1.5 border-t border-[var(--border)] flex items-center gap-3 text-[10px] font-semibold">
-                <span className="text-[var(--up)]">{upCount} UP</span>
-                <span className="text-[var(--down)]">{downCount} DN</span>
-                <span className="text-[#999]">{markets.length - totalSet} unset</span>
-              </div>
-            </div>
-          ) : (
-            <div
-              className="absolute inset-0 translate-y-full transition-transform duration-300 group-hover:translate-y-0 bg-[var(--surface)] flex flex-col items-center justify-center"
-            >
-              <div className="text-center px-4">
-                <div className="text-[11px] font-semibold text-text-muted mb-1">
-                  {displayMarketCount > 0 ? 'Loading markets...' : 'No markets yet'}
+                {/* Footer */}
+                <div className="px-3 py-1 border-t border-[var(--border)] flex items-center gap-3 text-[10px] font-semibold shrink-0">
+                  <span className="text-[var(--up)]">{upCount} UP</span>
+                  <span className="text-[var(--down)]">{downCount} DN</span>
+                  <span className="text-[#999]">{sortedMarkets.length - totalSet} —</span>
                 </div>
-                {displayMarketCount > 0 && (
-                  <div className="text-[10px] text-[#999]">{displayMarketCount} assets available</div>
+              </>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center">
+                {isLoading ? (
+                  <div className="text-[11px] font-semibold text-text-muted animate-pulse">Loading...</div>
+                ) : (
+                  <div className="text-center px-4">
+                    <div className="text-[11px] font-semibold text-text-muted">
+                      {displayMarketCount > 0 ? `${displayMarketCount} assets` : 'No markets yet'}
+                    </div>
+                  </div>
                 )}
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </Link>
 
@@ -171,7 +208,7 @@ export function SourceCard({ source, markets, bitmapEditor, metaAssetCount, meta
           </div>
         </div>
 
-        {/* Metrics row — matches ITP .fund-metrics */}
+        {/* Metrics row */}
         <div className="grid grid-cols-3 border-t border-b border-border-light -mx-5 px-5 mt-3">
           <div className="py-2.5 pr-3">
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Markets</div>
@@ -183,11 +220,11 @@ export function SourceCard({ source, markets, bitmapEditor, metaAssetCount, meta
           </div>
           <div className="py-2.5 pl-3 border-l border-border-light">
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Bets Set</div>
-            <span className="text-[15px] font-bold text-black font-mono tabular-nums">{totalSet}/{markets.length || displayMarketCount || '—'}</span>
+            <span className="text-[15px] font-bold text-black font-mono tabular-nums">{totalSet}/{displayMarketCount || '—'}</span>
           </div>
         </div>
 
-        {/* Action buttons — same grid as metrics, aligned columns */}
+        {/* Action buttons */}
         <div className="grid grid-cols-3 -mx-5 px-5">
           <Link href={`/source/${source.id}`} className="py-2.5 pr-3 bg-[rgba(22,163,74,0.06)] hover:bg-[rgba(22,163,74,0.12)] transition-colors">
             <span className="text-[12px] font-bold uppercase tracking-[0.04em] text-color-up">Markets</span>

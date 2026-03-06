@@ -67,7 +67,7 @@ batches = response.json()["batches"]
 | `id` | number | Unique batch identifier |
 | `creator` | string | Ethereum address of the batch creator |
 | `market_ids` | string[] | Asset identifiers for each market in the batch |
-| `resolution_types` | number[] | Resolution type per market (0=UP_0, 1=UP_30, ..., 7=FLAT_X) |
+| `resolution_types` | number[] | Resolution type per market (0=UP_0, 1=UP_30, 2=UP_X, 3=DOWN_0, 4=DOWN_30, 5=DOWN_X, 6=FLAT_0, 7=FLAT_X, 8=UP_300, 9=UP_3000, 10=DOWN_300, 11=DOWN_3000, 12=FLAT_300, 13=FLAT_3000) |
 | `tick_duration` | number | Seconds between tick resolutions |
 | `market_count` | number | Number of markets in the batch |
 | `player_count` | number | Number of active players |

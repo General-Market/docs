@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import type { SnapshotPrice } from '@/hooks/vision/useMarketSnapshot'
 import { getSource, getAssetCountForSource, getDataNodeSourceId, getSourceValueLabel, isSourcePriceType, getSourceUnit, getBatchKey } from '@/lib/vision/sources'
 import type { BitmapEditor, CellState } from '@/hooks/vision/useBitmapEditor'
-import { useBatches } from '@/hooks/vision/useBatches'
+import { DATA_NODE_URL } from '@/lib/config'
 import batchConfig from '@/lib/contracts/vision-batches.json'
 import { ConsensusPopup } from './ConsensusPopup'
 import {
@@ -57,7 +58,18 @@ function formatChangePct(pct: string | null): { text: string; color: string } {
   return { text: `${sign}${num.toFixed(2)}%`, color }
 }
 
-const RESOLUTION_NAMES = ['UP_0', 'UP_30', 'UP_X', 'DOWN_0', 'DOWN_30', 'DOWN_X', 'FLAT_0', 'FLAT_X'] as const
+
+function resolutionBadge(resType: string | undefined) {
+  if (!resType) return null
+  const isUp = resType.startsWith('UP')
+  const isDown = resType.startsWith('DOWN')
+  const bg = isUp ? 'bg-green-100 text-green-700 border-green-200' : isDown ? 'bg-red-100 text-red-700 border-red-200' : 'bg-gray-100 text-gray-600 border-gray-200'
+  return (
+    <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide border ${bg}`}>
+      {resType}
+    </span>
+  )
+}
 
 function formatVolume(vol: string | null): string {
   if (!vol) return ''
@@ -219,23 +231,35 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
   const dataNodeId = source ? getDataNodeSourceId(sourceId) : undefined
   const { data, isLoading } = useSourceSnapshot(dataNodeId)
   const { data: meta } = useMarketSnapshotMeta()
-  const { data: batches } = useBatches()
 
-  // Build resolution type map: marketId -> label (e.g. "UP_0", "FLAT_X")
+  // Fetch batch config from data-node to get per-market resolution types
+  const configHash = useMemo(() => {
+    const entry = (batchConfig.batches as Record<string, { configHash: string }>)[getBatchKey(sourceId)]
+    return entry?.configHash
+  }, [sourceId])
+
+  const { data: batchConfigData } = useQuery<{ markets: { assetId: string; resolutionType: string }[] }>({
+    queryKey: ['batch-config', configHash],
+    queryFn: async () => {
+      const res = await fetch(`${DATA_NODE_URL}/batches/config/${configHash}`)
+      if (!res.ok) throw new Error(`Config fetch ${res.status}`)
+      return res.json()
+    },
+    enabled: !!configHash,
+    staleTime: 60_000,
+  })
+
+  // Build resolution type map: assetId -> display label (e.g. "UP_0", "FLAT_X")
   const resolutionMap = useMemo(() => {
     const map = new Map<string, string>()
-    if (!batches) return map
-    const entry = (batchConfig.batches as Record<string, { batchId: number }>)[getBatchKey(sourceId)]
-    const batch = entry ? batches.find(b => b.id === entry.batchId) : batches[0]
-    if (!batch) return map
-    batch.marketIds.forEach((mid, i) => {
-      const rt = batch.resolutionTypes[i]
-      if (rt !== undefined && rt < RESOLUTION_NAMES.length) {
-        map.set(mid, RESOLUTION_NAMES[rt])
+    if (!batchConfigData?.markets) return map
+    for (const m of batchConfigData.markets) {
+      if (m.assetId && m.resolutionType) {
+        map.set(m.assetId, m.resolutionType.toUpperCase())
       }
-    })
+    }
     return map
-  }, [batches, sourceId])
+  }, [batchConfigData])
   const valueLabel = getSourceValueLabel(sourceId)
   const isPriceSource = isSourcePriceType(sourceId)
   const unit = getSourceUnit(sourceId)
@@ -306,8 +330,9 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
       {/* Table */}
       <div className="bg-white border border-t-0 border-border-light overflow-x-auto">
         {/* Column headers */}
-        <div className="grid grid-cols-[1fr_100px_80px_80px_80px_100px] items-center px-4 py-2.5 border-b-[3px] border-black text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
+        <div className="grid grid-cols-[1fr_80px_100px_80px_80px_80px_100px] items-center px-4 py-2.5 border-b-[3px] border-black text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
           <div>Name</div>
+          <div className="text-center">Type</div>
           <div className="text-right">{valueLabel}{unit ? ` (${unit})` : ''}</div>
           <div className="text-right">1d</div>
           <div className="text-right">7d</div>
@@ -342,7 +367,7 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
             return (
               <div key={market.assetId}>
                 <div
-                  className={`grid grid-cols-[1fr_100px_80px_80px_80px_100px] items-center px-4 py-2.5 border-b border-border-light hover:bg-surface/50 transition-colors text-[13px] cursor-pointer ${
+                  className={`grid grid-cols-[1fr_80px_100px_80px_80px_80px_100px] items-center px-4 py-2.5 border-b border-border-light hover:bg-surface/50 transition-colors text-[13px] cursor-pointer ${
                     isExpanded ? 'bg-surface/50 border-b-0' : ''
                   }`}
                   onClick={() => handleRowClick(market.assetId)}
@@ -361,9 +386,14 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
                         {market.name || market.symbol}
                       </div>
                       <div className="text-[10px] font-mono text-text-muted mt-0.5">
-                        {market.symbol}{resType ? ` · ${resType}` : ''}{vol ? ` · Vol ${vol}` : ''}
+                        {market.symbol}{vol ? ` · Vol ${vol}` : ''}
                       </div>
                     </div>
+                  </div>
+
+                  {/* Resolution type */}
+                  <div className="text-center">
+                    {resolutionBadge(resType)}
                   </div>
 
                   {/* Value */}

@@ -10,16 +10,22 @@ import { useSetBatchMetadata } from '@/hooks/vision/useSetBatchMetadata'
 import { useSetDeployerName } from '@/hooks/vision/useSetDeployerName'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 
-// Maps to IVision.ResolutionType enum
+// Maps to IVision.ResolutionType enum (see resolver.rs for full logic)
 const RESOLUTION_TYPES = [
-  { value: 0, label: 'UP_0', description: 'Up (0% threshold)' },
-  { value: 1, label: 'UP_30', description: 'Up (30 bps)' },
-  { value: 2, label: 'UP_X', description: 'Up (custom)' },
-  { value: 3, label: 'DOWN_0', description: 'Down (0% threshold)' },
-  { value: 4, label: 'DOWN_30', description: 'Down (30 bps)' },
-  { value: 5, label: 'DOWN_X', description: 'Down (custom)' },
-  { value: 6, label: 'FLAT_0', description: 'Flat (0% threshold)' },
-  { value: 7, label: 'FLAT_X', description: 'Flat (custom)' },
+  { value: 0, label: 'UP_0', description: 'Up (any positive)' },
+  { value: 1, label: 'UP_30', description: 'Up (> 0.3%)' },
+  { value: 2, label: 'UP_X', description: 'Up (custom threshold)' },
+  { value: 3, label: 'DOWN_0', description: 'Down (any negative)' },
+  { value: 4, label: 'DOWN_30', description: 'Down (> 0.3%)' },
+  { value: 5, label: 'DOWN_X', description: 'Down (custom threshold)' },
+  { value: 6, label: 'FLAT_0', description: 'Flat (exactly 0)' },
+  { value: 7, label: 'FLAT_X', description: 'Flat (custom threshold)' },
+  { value: 8, label: 'UP_300', description: 'Up (> 3%)' },
+  { value: 9, label: 'UP_3000', description: 'Up (> 30%)' },
+  { value: 10, label: 'DOWN_300', description: 'Down (> 3%)' },
+  { value: 11, label: 'DOWN_3000', description: 'Down (> 30%)' },
+  { value: 12, label: 'FLAT_300', description: 'Flat (< 3%)' },
+  { value: 13, label: 'FLAT_3000', description: 'Flat (< 30%)' },
 ] as const
 
 const TICK_DURATIONS = [
