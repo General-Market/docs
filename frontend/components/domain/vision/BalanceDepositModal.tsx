@@ -39,6 +39,8 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
 
   const [mode, setMode] = useState<Mode>('choose')
   const [amount, setAmount] = useState('')
+  const [minting, setMinting] = useState(false)
+  const [mintResult, setMintResult] = useState<string | null>(null)
 
   // --- L3 deposit hook ---
   const {
@@ -180,6 +182,49 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
               <p className="text-sm text-text-secondary mb-4">
                 Choose where to deposit USDC from:
               </p>
+
+              {/* Faucet: mint test USDC */}
+              <button
+                onClick={async () => {
+                  if (!address || minting) return
+                  setMinting(true)
+                  setMintResult(null)
+                  try {
+                    const res = await fetch('/api/faucet', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ address, amount: '1000' }),
+                    })
+                    const data = await res.json()
+                    if (data.success) {
+                      setMintResult('1,000 USDC minted to your wallet!')
+                    } else {
+                      setMintResult(`Error: ${data.error}`)
+                    }
+                  } catch (e: any) {
+                    setMintResult(`Error: ${e.message}`)
+                  } finally {
+                    setMinting(false)
+                  }
+                }}
+                disabled={minting || !address}
+                className="w-full text-left p-4 rounded-xl border border-dashed border-yellow-400 bg-yellow-50/50 hover:bg-yellow-50 transition-colors disabled:opacity-50"
+              >
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-bold text-yellow-700">
+                    {minting ? 'Minting...' : 'Mint Test USDC'}
+                  </p>
+                  <span className="text-xs font-mono text-yellow-600">Testnet faucet</span>
+                </div>
+                <p className="text-xs text-yellow-600/80 mt-1">
+                  Get 1,000 USDC on L3 for testing (free)
+                </p>
+                {mintResult && (
+                  <p className={`text-xs mt-2 font-medium ${mintResult.startsWith('Error') ? 'text-red-600' : 'text-green-600'}`}>
+                    {mintResult}
+                  </p>
+                )}
+              </button>
 
               {/* From L3 wallet */}
               <button

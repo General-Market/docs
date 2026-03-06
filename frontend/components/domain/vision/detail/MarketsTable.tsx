@@ -8,7 +8,6 @@ import type { BitmapEditor, CellState } from '@/hooks/vision/useBitmapEditor'
 import { useBatches } from '@/hooks/vision/useBatches'
 import batchConfig from '@/lib/contracts/vision-batches.json'
 import { ConsensusPopup } from './ConsensusPopup'
-import { DATA_NODE_URL } from '@/lib/config'
 import {
   LineChart,
   Line,
@@ -84,9 +83,9 @@ function AssetHistory({ dataNodeSourceId, assetId }: { dataNodeSourceId: string;
 
     const now = new Date()
     const from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    const url = `${DATA_NODE_URL}/market/prices/${dataNodeSourceId}/${encodeURIComponent(assetId)}/history?from=${from.toISOString()}&to=${now.toISOString()}`
+    const url = `/api/market/history?source=${encodeURIComponent(dataNodeSourceId)}&asset=${encodeURIComponent(assetId)}&from=${from.toISOString()}&to=${now.toISOString()}`
 
-    fetch(url, { signal: AbortSignal.timeout(10_000) })
+    fetch(url, { signal: AbortSignal.timeout(15_000) })
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         return res.json()

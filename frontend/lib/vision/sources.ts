@@ -176,9 +176,9 @@ export function getSourceUnit(sourceId: string): string {
   return SOURCE_BY_ID.get(sourceId)?.valueUnit ?? ''
 }
 
-/** Lookup a source by id */
+/** Lookup a source by id (also resolves data-node names like "stocks" → "finnhub") */
 export function getSource(id: string): VisionSource | undefined {
-  return SOURCE_BY_ID.get(id)
+  return SOURCE_BY_ID.get(id) ?? SOURCE_BY_ID.get(DATANODE_TO_VISION[id] ?? '')
 }
 
 /** Get all source IDs */
