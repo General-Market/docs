@@ -23,8 +23,8 @@ test.describe('Create ITP', () => {
       const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4);
       await expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 15_000 });
 
-      // 2. Wait for ITP listing to load (at least the deploy-script ITP)
-      await expect(itpCard(page).first()).toBeVisible({ timeout: 30_000 });
+      // 2. Wait for page to fully load (ITP listing may be empty on fresh testnet)
+      await expect(page.getByRole('heading', { name: 'Markets' })).toBeVisible({ timeout: 30_000 });
 
       // 3. Record current ITP count on L3 before creating
       const itpCountBefore = await getItpCountL3();
