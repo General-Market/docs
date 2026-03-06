@@ -6,7 +6,7 @@
 import type { Page, Route } from '@playwright/test';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { ARB_RPC as ENV_ARB_RPC, CONTRACTS } from '../env';
+import { ARB_RPC as ENV_ARB_RPC, CONTRACTS, RPC_TIMEOUT } from '../env';
 
 const ARB_RPC = ENV_ARB_RPC;
 const ARB_USDC = CONTRACTS.ARB_USDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
@@ -36,6 +36,7 @@ async function rpcCall(method: string, params: unknown[]): Promise<string> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params }),
+    signal: AbortSignal.timeout(RPC_TIMEOUT),
   });
   const json = await res.json();
   if (json.error) throw new Error(json.error.message);

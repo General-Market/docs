@@ -14,7 +14,34 @@ import {
   IS_ANVIL, L3_RPC as ENV_L3_RPC, VISION_API as ENV_VISION_API,
   CHAIN_ID as ENV_CHAIN_ID, ARB_CHAIN_ID as ENV_ARB_CHAIN_ID, ARB_RPC as ENV_ARB_RPC,
   DEPLOYER_KEY, PLAYER2_KEY, CONTRACTS, DEPLOYER_ADDRESS, ANVIL_DEPLOYER, ISSUER_URLS,
+  RPC_TIMEOUT,
 } from '../env'
+
+/** Retry wrapper for flaky network calls (testnet RPCs). */
+async function withRetry<T>(fn: () => Promise<T>, attempts = 3, delayMs = 2000): Promise<T> {
+  let lastError: unknown
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn()
+    } catch (err) {
+      lastError = err
+      if (i < attempts - 1) {
+        console.warn(`[vision withRetry] attempt ${i + 1}/${attempts} failed: ${(err as Error).message}`)
+        await new Promise(r => setTimeout(r, delayMs))
+      }
+    }
+  }
+  throw lastError
+}
+
+/** Simple async mutex to prevent parallel nonce conflicts on testnet L3 transactions. */
+let _l3NonceLock: Promise<void> = Promise.resolve()
+function withL3NonceLock<T>(fn: () => Promise<T>): Promise<T> {
+  const prev = _l3NonceLock
+  let resolve: () => void
+  _l3NonceLock = new Promise(r => { resolve = r })
+  return prev.then(fn).finally(() => resolve!())
+}
 
 // ── Constants ────────────────────────────────────────────────
 
@@ -164,15 +191,17 @@ const VISION_POSITION_ABI = [{
 // ── L3 RPC ───────────────────────────────────────────────────
 
 async function l3RpcCall(method: string, params: unknown[]): Promise<unknown> {
-  const res = await fetch(L3_RPC, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params }),
-    signal: AbortSignal.timeout(15_000),
+  return withRetry(async () => {
+    const res = await fetch(L3_RPC, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params }),
+      signal: AbortSignal.timeout(RPC_TIMEOUT),
+    })
+    const json = await res.json()
+    if (json.error) throw new Error(`L3 RPC ${method}: ${json.error.message} (data: ${json.error.data ?? 'none'})`)
+    return json.result
   })
-  const json = await res.json()
-  if (json.error) throw new Error(`L3 RPC ${method}: ${json.error.message} (data: ${json.error.data ?? 'none'})`)
-  return json.result
 }
 
 async function l3EthCall(to: string, data: string): Promise<string> {
@@ -180,34 +209,36 @@ async function l3EthCall(to: string, data: string): Promise<string> {
 }
 
 async function l3SendTx(from: string, to: string, data: string): Promise<string> {
-  let txHash: string
-
+  // On testnet, serialize signed transactions to prevent nonce conflicts
   if (!IS_ANVIL) {
-    // Signed transaction using viem WalletClient
-    const key = getKeyForAddress(from)
-    const account = privateKeyToAccount(key)
-    const chain = defineChain({
-      id: ENV_CHAIN_ID,
-      name: 'Index L3',
-      nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
-      rpcUrls: { default: { http: [L3_RPC] } },
+    return withL3NonceLock(async () => {
+      const key = getKeyForAddress(from)
+      const account = privateKeyToAccount(key)
+      const chain = defineChain({
+        id: ENV_CHAIN_ID,
+        name: 'Index L3',
+        nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
+        rpcUrls: { default: { http: [L3_RPC] } },
+      })
+      const client = createWalletClient({ account, chain, transport: rpcHttp(L3_RPC) })
+      const txHash = await client.sendTransaction({
+        to: to as `0x${string}`,
+        data: data as `0x${string}`,
+        gas: 2_000_000n,
+      })
+      return waitForReceipt(txHash, from, to, data)
     })
-    const client = createWalletClient({ account, chain, transport: rpcHttp(L3_RPC) })
-    txHash = await client.sendTransaction({
-      to: to as `0x${string}`,
-      data: data as `0x${string}`,
-      gas: 2_000_000n,
-    })
-  } else {
-    txHash = await l3RpcCall('eth_sendTransaction', [{
-      from,
-      to,
-      data,
-      gas: '0x200000', // 2M gas
-    }]) as string
   }
 
-  // Poll for receipt
+  // On Anvil, no nonce concerns — send directly
+  const txHash = await l3RpcCall('eth_sendTransaction', [{
+    from, to, data, gas: '0x200000',
+  }]) as string
+  return waitForReceipt(txHash, from, to, data)
+}
+
+/** Poll for transaction receipt and throw on revert. */
+async function waitForReceipt(txHash: string, from: string, to: string, data: string): Promise<string> {
   for (let i = 0; i < 20; i++) {
     const receipt = await l3RpcCall('eth_getTransactionReceipt', [txHash]) as { status: string } | null
     if (receipt) {
@@ -224,7 +255,6 @@ async function l3SendTx(from: string, to: string, data: string): Promise<string>
     }
     await new Promise(r => setTimeout(r, IS_ANVIL ? 200 : 1000))
   }
-
   return txHash
 }
 
@@ -462,7 +492,7 @@ export interface BatchInfo {
 
 export async function getBatches(): Promise<BatchInfo[]> {
   const res = await fetch(`${VISION_API}/vision/batches`, {
-    signal: AbortSignal.timeout(10_000),
+    signal: AbortSignal.timeout(RPC_TIMEOUT),
   })
   if (!res.ok) throw new Error(`getBatches: ${res.status} ${res.statusText}`)
   const data = await res.json()
@@ -484,7 +514,7 @@ export interface BatchState {
 
 export async function getBatchState(batchId: number): Promise<BatchState> {
   const res = await fetch(`${VISION_API}/vision/batch/${batchId}/state`, {
-    signal: AbortSignal.timeout(10_000),
+    signal: AbortSignal.timeout(RPC_TIMEOUT),
   })
   if (!res.ok) throw new Error(`getBatchState: ${res.status}`)
   return res.json()
@@ -509,7 +539,7 @@ async function submitBitmapToIssuers(
           bitmap_hex: bitmapHex,
           expected_hash: expectedHash,
         }),
-        signal: AbortSignal.timeout(10_000),
+        signal: AbortSignal.timeout(RPC_TIMEOUT),
       })
       return res.ok
     })
@@ -853,15 +883,17 @@ export async function getVisionVirtualBalance(player: string): Promise<bigint> {
 const ARB_RPC = ENV_ARB_RPC
 
 async function arbRpcCall(method: string, params: unknown[]): Promise<unknown> {
-  const res = await fetch(ARB_RPC, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params }),
-    signal: AbortSignal.timeout(15_000),
+  return withRetry(async () => {
+    const res = await fetch(ARB_RPC, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params }),
+      signal: AbortSignal.timeout(RPC_TIMEOUT),
+    })
+    const json = await res.json()
+    if (json.error) throw new Error(`Arb RPC ${method}: ${json.error.message}`)
+    return json.result
   })
-  const json = await res.json()
-  if (json.error) throw new Error(`Arb RPC ${method}: ${json.error.message}`)
-  return json.result
 }
 
 function getArbCustodyAddress(): string {
