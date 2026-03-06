@@ -233,11 +233,15 @@ impl MarketDataSource for SteamMarketSource {
         let now = Utc::now();
         let mut results = Vec::new();
 
-        // Load api_ref lookup from config
+        // Load api_ref and name lookup from config
         let entries = load_all_asset_entries(ASSET_JSON).unwrap_or_default();
         let ref_lookup: std::collections::HashMap<String, String> = entries
+            .iter()
+            .map(|e| (e.asset_id.clone(), e.api_ref.clone()))
+            .collect();
+        let name_lookup: std::collections::HashMap<String, String> = entries
             .into_iter()
-            .map(|e| (e.asset_id, e.api_ref))
+            .map(|e| (e.asset_id, e.name))
             .collect();
 
         for asset_id in asset_ids {
@@ -259,9 +263,12 @@ impl MarketDataSource for SteamMarketSource {
 
             match self.fetch_player_count(appid).await {
                 Ok(count) => {
+                    let sym = name_lookup.get(asset_id)
+                        .cloned()
+                        .unwrap_or_else(|| format!("STEAM#{}", appid));
                     results.push(PriceUpdate {
                         asset_id: asset_id.clone(),
-                        symbol: format!("STEAM#{}", appid),
+                        symbol: sym,
                         value: Decimal::from(count),
                         prev_close: None,
                         change_pct: None,

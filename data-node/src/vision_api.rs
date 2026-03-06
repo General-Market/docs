@@ -133,13 +133,17 @@ pub async fn snapshot(
         DateTime<Utc>,   // fetched_at
     )> = sqlx::query_as(
         r#"
-        SELECT asset_id, source, symbol, name,
-            value, change_pct, volume_24h, market_cap,
-            category, fetched_at
-        FROM market_prices_latest
-        WHERE ($1::TEXT IS NULL OR source = $1)
-          AND ($2::TEXT IS NULL OR category = $2)
-        ORDER BY source, asset_id
+        SELECT l.asset_id, l.source, l.symbol,
+            COALESCE(NULLIF(l.name, ''), a.name, l.symbol) AS name,
+            l.value, l.change_pct, l.volume_24h, l.market_cap,
+            COALESCE(l.category, a.category) AS category,
+            l.fetched_at
+        FROM market_prices_latest l
+        LEFT JOIN market_assets a ON a.source = l.source AND a.asset_id = l.asset_id
+        WHERE ($1::TEXT IS NULL OR l.source = $1)
+          AND ($2::TEXT IS NULL OR COALESCE(l.category, a.category) = $2)
+          AND (a.is_active IS NULL OR a.is_active = true)
+        ORDER BY l.source, l.asset_id
         LIMIT $3
         "#,
     )

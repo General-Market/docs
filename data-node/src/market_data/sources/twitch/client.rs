@@ -595,10 +595,13 @@ impl MarketDataSource for TwitchMarketSource {
 
             let cache = self.seen_streamers.lock().await;
 
-            // Registered streamers — emit current viewers (0 if offline)
+            // Registered streamers — only emit when live (skip offline/0-viewer streams)
             for login in &streamer_logins {
                 if cache.contains_key(login.as_str()) {
                     let viewers = live_viewers.get(login.as_str()).copied().unwrap_or(0);
+                    if viewers == 0 {
+                        continue; // Don't submit offline streamers to batch
+                    }
                     results.push(PriceUpdate {
                         asset_id: format!("twitch_stream_{}", login),
                         symbol: login.clone(),
@@ -612,7 +615,7 @@ impl MarketDataSource for TwitchMarketSource {
                 }
             }
 
-            // Discover new streamers not yet registered
+            // Discover new streamers not yet registered (only if live)
             let known_logins: std::collections::HashSet<&str> =
                 streamer_logins.iter().map(|s| s.as_str()).collect();
             let mut new_count = 0u32;
@@ -621,6 +624,9 @@ impl MarketDataSource for TwitchMarketSource {
                     continue;
                 }
                 let viewers = live_viewers.get(login.as_str()).copied().unwrap_or(0);
+                if viewers == 0 {
+                    continue; // Don't submit offline streamers to batch
+                }
                 results.push(PriceUpdate {
                     asset_id: format!("twitch_stream_{}", login),
                     symbol: login.clone(),

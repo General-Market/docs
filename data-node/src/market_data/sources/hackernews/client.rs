@@ -272,11 +272,12 @@ impl MarketDataSource for HackerNewsMarketSource {
                 Ok(Some(item)) => {
                     let score_id = format!("hn_{}_score", story_id);
                     let comments_id = format!("hn_{}_comments", story_id);
+                    let title = item.display_title();
 
                     if requested_metrics.contains(&score_id) {
                         results.push(PriceUpdate {
                             asset_id: score_id.clone(),
-                            symbol: format!("HN#{}", story_id),
+                            symbol: format!("{} (score)", title),
                             value: Decimal::from(item.score),
                             prev_close: None,
                             change_pct: None,
@@ -289,7 +290,7 @@ impl MarketDataSource for HackerNewsMarketSource {
                     if requested_metrics.contains(&comments_id) {
                         results.push(PriceUpdate {
                             asset_id: comments_id.clone(),
-                            symbol: format!("HN#{}", story_id),
+                            symbol: format!("{} (comments)", title),
                             value: Decimal::from(item.descendants),
                             prev_close: None,
                             change_pct: None,

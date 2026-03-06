@@ -226,12 +226,17 @@ impl ScheduledSyncEngine {
         }
     }
 
-    /// Sync asset metadata from the source
+    /// Sync asset metadata from the source.
+    /// Upserts returned assets as active and deactivates any assets from this
+    /// source that were NOT in the returned set (handles dynamic sources like
+    /// HN, Steam, Twitch where assets rotate).
     async fn sync_assets(&self) -> Result<usize> {
         let source_id = self.source.source_id();
         let assets = self.source.fetch_assets().await?;
         let now = Utc::now();
         let mut count = 0;
+
+        let active_ids: Vec<String> = assets.iter().map(|a| a.asset_id.clone()).collect();
 
         for asset in &assets {
             let result = sqlx::query(
@@ -260,6 +265,34 @@ impl ScheduledSyncEngine {
             match result {
                 Ok(_) => count += 1,
                 Err(e) => warn!("Failed to upsert asset {}: {:?}", asset.asset_id, e),
+            }
+        }
+
+        // Deactivate assets from this source that are no longer in the active set.
+        // This handles dynamic sources (HN, Steam, etc.) where assets rotate.
+        if !active_ids.is_empty() {
+            let deactivated = sqlx::query(
+                r#"
+                UPDATE market_assets
+                SET is_active = false, updated_at = $3
+                WHERE source = $1 AND is_active = true AND asset_id != ALL($2)
+                "#,
+            )
+            .bind(source_id)
+            .bind(&active_ids)
+            .bind(now)
+            .execute(&self.pool)
+            .await;
+
+            match deactivated {
+                Ok(result) if result.rows_affected() > 0 => {
+                    info!(
+                        "[{}] Deactivated {} stale assets no longer returned by source",
+                        self.source.display_name(),
+                        result.rows_affected()
+                    );
+                }
+                _ => {}
             }
         }
 
@@ -392,17 +425,24 @@ impl ScheduledSyncEngine {
                 Ok(_) => {
                     updated += 1;
                     // Update latest prices cache for fast vision snapshots
+                    // Pulls name + category from market_assets so snapshot API shows real names
                     let _ = sqlx::query(
                         r#"
                         INSERT INTO market_prices_latest (
                             source, asset_id, symbol, name, value,
                             change_pct, volume_24h, market_cap, category, fetched_at
-                        ) VALUES ($1, $2, $3, '', $4, $5, $6, $7, NULL, $8)
+                        )
+                        SELECT $1, $2, $3, COALESCE(a.name, ''), $4, $5, $6, $7, a.category, $8
+                        FROM (SELECT 1) x
+                        LEFT JOIN market_assets a ON a.source = $1 AND a.asset_id = $2
                         ON CONFLICT (source, asset_id) DO UPDATE SET
+                            symbol = EXCLUDED.symbol,
+                            name = CASE WHEN EXCLUDED.name != '' THEN EXCLUDED.name ELSE market_prices_latest.name END,
                             value = EXCLUDED.value,
                             change_pct = EXCLUDED.change_pct,
                             volume_24h = EXCLUDED.volume_24h,
                             market_cap = EXCLUDED.market_cap,
+                            category = COALESCE(EXCLUDED.category, market_prices_latest.category),
                             fetched_at = EXCLUDED.fetched_at
                         "#,
                     )

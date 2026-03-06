@@ -305,7 +305,7 @@ impl MarketDataSource for LastfmMarketSource {
 
                     results.push(PriceUpdate {
                         asset_id: format!("lastfm_{}_listeners", slug),
-                        symbol: format!("LFM#{}", slug),
+                        symbol: format!("{} (listeners)", name),
                         value: Decimal::from(listeners),
                         prev_close: None,
                         change_pct: None,
@@ -315,7 +315,7 @@ impl MarketDataSource for LastfmMarketSource {
                     });
                     results.push(PriceUpdate {
                         asset_id: format!("lastfm_{}_playcount", slug),
-                        symbol: format!("LFM#{}_plays", slug),
+                        symbol: format!("{} (plays)", name),
                         value: Decimal::from(playcount),
                         prev_close: None,
                         change_pct: None,

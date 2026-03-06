@@ -324,10 +324,13 @@ impl MarketDataSource for ChaturbateMarketSource {
 
         let cache = self.seen_models.lock().await;
 
-        // Registered models — emit current viewers (0 if offline)
+        // Registered models — only emit when live (skip offline/0-viewer)
         for username in &model_usernames {
             if cache.contains_key(username.as_str()) {
                 let viewers = live_viewers.get(username.as_str()).copied().unwrap_or(0);
+                if viewers == 0 {
+                    continue; // Don't submit offline models
+                }
                 results.push(PriceUpdate {
                     asset_id: format!("cb_model_{}", username),
                     symbol: format!("CB:{}", username),
@@ -341,7 +344,7 @@ impl MarketDataSource for ChaturbateMarketSource {
             }
         }
 
-        // Discover new models not yet registered
+        // Discover new models not yet registered (only if live)
         let known: std::collections::HashSet<&str> =
             model_usernames.iter().map(|s| s.as_str()).collect();
         let mut new_count = 0u32;
@@ -350,6 +353,9 @@ impl MarketDataSource for ChaturbateMarketSource {
                 continue;
             }
             let viewers = live_viewers.get(username.as_str()).copied().unwrap_or(0);
+            if viewers == 0 {
+                continue; // Don't submit offline models
+            }
             results.push(PriceUpdate {
                 asset_id: format!("cb_model_{}", username),
                 symbol: format!("CB:{}", username),

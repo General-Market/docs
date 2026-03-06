@@ -137,7 +137,13 @@ impl MarketDataSource for BestBuyMarketSource {
             match self.fetch_category(cat_id).await {
                 Ok(products) => {
                     for product in &products {
-                        if product.sale_price.is_some() {
+                        // Only track products with active discount (price changes daily)
+                        // Skip products where sale price == regular price (static MSRP)
+                        let has_discount = match (product.sale_price, product.regular_price) {
+                            (Some(sale), Some(reg)) => (reg - sale).abs() > 0.01,
+                            _ => false,
+                        };
+                        if product.sale_price.is_some() && has_discount {
                             // Truncate name to 120 chars for readability
                             let mut display_name = product.name.clone();
                             if display_name.len() > 120 {

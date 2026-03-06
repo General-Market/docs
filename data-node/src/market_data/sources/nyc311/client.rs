@@ -4,7 +4,7 @@
 //! Data comes from the Socrata Open Data API (SODA) endpoint for NYC 311
 //! service requests. Each asset represents a complaint type (e.g. "Noise -
 //! Residential", "Rodent", "Illegal Parking"); its value is the number of
-//! complaints filed in the last 24 hours.
+//! complaints filed in the last 48 hours (NYC 311 data has ~24-36h publishing delay).
 //!
 //! Assets are static -- defined in config/nyc311.json (30 complaint types).
 //!
@@ -64,9 +64,11 @@ impl Nyc311MarketSource {
         Ok(Self { http })
     }
 
-    /// Build the SODA query URL for grouped complaint counts in the last 24h.
+    /// Build the SODA query URL for grouped complaint counts in the last 48h.
+    /// NYC 311 data has a ~24-36h publishing delay, so 48h window ensures
+    /// we always capture the latest published data.
     fn build_query_url() -> String {
-        let yesterday = Utc::now() - chrono::Duration::hours(24);
+        let yesterday = Utc::now() - chrono::Duration::hours(48);
         let since = yesterday.format("%Y-%m-%dT%H:%M:%S").to_string();
 
         // URL-encode the query parameters

@@ -309,11 +309,11 @@ impl MarketDataSource for BackpackTfMarketSource {
                 }
             };
 
-            if let Some((_name, data)) = defindex_lookup.get(&defindex) {
+            if let Some((item_name, data)) = defindex_lookup.get(&defindex) {
                 if let Some(price) = Self::resolve_price(data, usd_per_metal, key_in_metal) {
                     results.push(PriceUpdate {
                         asset_id: asset_id.clone(),
-                        symbol: format!("TF2#{}", defindex),
+                        symbol: item_name.to_string(),
                         value: Decimal::from_f64_retain(price.value_usd)
                             .unwrap_or(Decimal::ZERO),
                         prev_close: None,

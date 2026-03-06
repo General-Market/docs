@@ -127,7 +127,7 @@ impl MarketDataSource for StackExchangeMarketSource {
                     )
                 };
 
-                let count = match self.http.get_json::<StackExchangeResponse>(&url).await {
+                match self.http.get_json::<StackExchangeResponse>(&url).await {
                     Ok(resp) => {
                         if let Some(remaining) = resp.quota_remaining {
                             debug!("StackExchange quota remaining: {}", remaining);
@@ -136,22 +136,24 @@ impl MarketDataSource for StackExchangeMarketSource {
                             warn!("StackExchange backoff requested: {}s", backoff);
                             tokio::time::sleep(Duration::from_secs(backoff)).await;
                         }
-                        resp.total
+                        debug!("StackExchange {} = {} (fromdate={})", api_ref, resp.total, fromdate);
+                        cache.insert(api_ref.clone(), resp.total);
                     }
                     Err(e) => {
-                        warn!("StackExchange API error for {}: {:?}", api_ref, e);
-                        0
+                        warn!("StackExchange API error for {}: {:?} — skipping", api_ref, e);
+                        // Don't insert 0 into cache on API error
                     }
                 };
-
-                debug!("StackExchange {} = {} (fromdate={})", api_ref, count, fromdate);
-                cache.insert(api_ref.clone(), count);
 
                 // 350ms delay between calls
                 tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
             }
 
-            let value = Decimal::from(cache.get(&api_ref).copied().unwrap_or(0));
+            let count = match cache.get(&api_ref).copied() {
+                Some(c) => c,
+                None => continue, // API error — don't submit false 0
+            };
+            let value = Decimal::from(count);
             let suffix = asset_id.strip_prefix("stackexchange_").unwrap_or(asset_id);
 
             results.push(PriceUpdate {

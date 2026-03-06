@@ -474,7 +474,7 @@ impl MarketDataSource for AniListMarketSource {
                     for item in items {
                         results.push(PriceUpdate {
                             asset_id: format!("anilist_anime_{}", item.id),
-                            symbol: format!("ANI#A{}", item.id),
+                            symbol: item.title.best(),
                             value: Decimal::from(item.popularity),
                             prev_close: None,
                             change_pct: None,
@@ -501,7 +501,7 @@ impl MarketDataSource for AniListMarketSource {
                     for item in items {
                         results.push(PriceUpdate {
                             asset_id: format!("anilist_manga_{}", item.id),
-                            symbol: format!("ANI#M{}", item.id),
+                            symbol: item.title.best(),
                             value: Decimal::from(item.popularity),
                             prev_close: None,
                             change_pct: None,

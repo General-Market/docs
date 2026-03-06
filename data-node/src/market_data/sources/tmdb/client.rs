@@ -356,10 +356,10 @@ impl MarketDataSource for TmdbMarketSource {
         // Fetch movies from popular pages
         match self.fetch_popular_movies(MOVIE_DISCOVERY_PAGES).await {
             Ok(movies) => {
-                for (id, _title, popularity, vote_count) in movies {
+                for (id, title, popularity, vote_count) in movies {
                     results.push(PriceUpdate {
                         asset_id: format!("tmdb_movie_{}", id),
-                        symbol: format!("TMDB#M{}", id),
+                        symbol: title,
                         value: Decimal::from_f64_retain(popularity)
                             .unwrap_or(Decimal::ZERO),
                         prev_close: None,
@@ -376,10 +376,10 @@ impl MarketDataSource for TmdbMarketSource {
         // Fetch TV shows from popular pages
         match self.fetch_popular_tv(TV_DISCOVERY_PAGES).await {
             Ok(shows) => {
-                for (id, _name, popularity, vote_count) in shows {
+                for (id, name, popularity, vote_count) in shows {
                     results.push(PriceUpdate {
                         asset_id: format!("tmdb_tv_{}", id),
-                        symbol: format!("TMDB#T{}", id),
+                        symbol: name,
                         value: Decimal::from_f64_retain(popularity)
                             .unwrap_or(Decimal::ZERO),
                         prev_close: None,
@@ -396,10 +396,10 @@ impl MarketDataSource for TmdbMarketSource {
         // Fetch trending + popular people
         match self.fetch_people().await {
             Ok(people) => {
-                for (id, _name, popularity, _dept) in people {
+                for (id, name, popularity, _dept) in people {
                     results.push(PriceUpdate {
                         asset_id: format!("tmdb_person_{}", id),
-                        symbol: format!("TMDB#P{}", id),
+                        symbol: name,
                         value: Decimal::from_f64_retain(popularity)
                             .unwrap_or(Decimal::ZERO),
                         prev_close: None,

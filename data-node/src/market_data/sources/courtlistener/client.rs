@@ -177,7 +177,7 @@ impl MarketDataSource for CourtListenerMarketSource {
             };
             let header_refs: Vec<(&str, &str)> = headers.iter().map(|(k, v)| (*k, v.as_str())).collect();
 
-            let count = match self
+            match self
                 .http
                 .get_json_with_headers::<PaginatedResponse>(
                     &url,
@@ -185,32 +185,35 @@ impl MarketDataSource for CourtListenerMarketSource {
                 )
                 .await
             {
-                Ok(resp) => Decimal::from(resp.count),
+                Ok(resp) => {
+                    let count = Decimal::from(resp.count);
+                    debug!(
+                        "CourtListener {}_{} = {} (date={})",
+                        court_id, metric, count, today_et
+                    );
+                    cache.insert(key, count);
+                }
                 Err(e) => {
                     warn!(
-                        "CourtListener API error for {}_{}: {:?}",
+                        "CourtListener API error for {}_{}: {:?} — skipping (won't submit 0)",
                         court_id, metric, e
                     );
-                    Decimal::ZERO
+                    // Don't insert 0 into cache on API error
                 }
             };
-
-            debug!(
-                "CourtListener {}_{} = {} (date={})",
-                court_id, metric, count, today_et
-            );
-
-            cache.insert(key, count);
 
             // 100ms delay between API calls to be respectful
             tokio::time::sleep(Duration::from_millis(100)).await;
         }
 
-        // Build results
+        // Build results — skip assets where API call failed (no cache entry)
         let mut results = Vec::with_capacity(asset_ids.len());
         for (asset_id, court_id, metric) in &lookups {
             let key = (court_id.clone(), metric.clone());
-            let value = cache.get(&key).copied().unwrap_or(Decimal::ZERO);
+            let value = match cache.get(&key).copied() {
+                Some(v) => v,
+                None => continue, // API error — don't submit false 0
+            };
 
             results.push(PriceUpdate {
                 asset_id: asset_id.to_string(),
