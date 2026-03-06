@@ -69,6 +69,10 @@ const nextConfig: NextConfig = {
     return {
       // beforeFiles: locale routing fallback — fires even if middleware doesn't execute on Vercel Edge
       beforeFiles: [
+        // Docs proxy — must be before locale rewrite (Mintlify)
+        { source: "/docs", destination: `${DOCS_URL}/docs` },
+        { source: "/docs/:path*", destination: `${DOCS_URL}/docs/:path*` },
+        // Locale routing fallback
         { source: "/", destination: "/en" },
         {
           source: "/:path((?!en|ko|ja|zh|api|dn|rpc|_next|_vercel|docs|health)[^.]+)",
@@ -96,8 +100,6 @@ const nextConfig: NextConfig = {
         { source: "/api/vision/snapshot", destination: `${DATA_NODE_URL}/snapshot` },
         { source: "/api/vision/:path*", destination: `${VISION_API_URL}/vision/:path*` },
         { source: "/health", destination: `${BACKEND_URL}/health` },
-        { source: "/docs", destination: `${DOCS_URL}/docs` },
-        { source: "/docs/:path*", destination: `${DOCS_URL}/docs/:path*` },
       ],
       fallback: [],
     };
