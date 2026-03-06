@@ -33,5 +33,6 @@ export default function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/((?!api|dn|rpc|_next|_vercel|.*\\..*).*)']
+  // Match all paths except internals, API, data-node proxy, RPC proxy, and static files
+  matcher: ['/((?!api|dn|rpc|_next|_vercel|.*\\..*).+)', '/(en|ko|ja|zh)/:path*', '/']
 }
