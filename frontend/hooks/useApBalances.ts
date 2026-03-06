@@ -104,9 +104,8 @@ export function useApBalances(): UseApBalancesReturn {
           changed = true
           const balanceF64 = Number(asset.balance)
           const priceF64 = Number(newPrice) / 1e18
-          const usdValue = asset.symbol === 'USDC'
-            ? balanceF64 / 1e6
-            : balanceF64 * priceF64 / 1e18
+          const decimals = asset.symbol === 'USDC' ? 1e6 : 1e18
+          const usdValue = (balanceF64 / decimals) * priceF64
           return { ...asset, price: newPrice, usdValue }
         }
         return asset

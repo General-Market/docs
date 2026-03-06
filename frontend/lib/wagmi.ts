@@ -3,8 +3,13 @@ import { type Chain } from 'wagmi/chains'
 import { injected } from 'wagmi/connectors'
 
 // RPC URLs from environment
+// On HTTPS pages, browser blocks HTTP RPC (mixed content).
+// Use /rpc proxy (Next.js rewrite → L3 RPC) when running in browser on HTTPS.
 const envRpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'
-const envL3RpcUrl = process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
+const rawL3RpcUrl = process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
+const envL3RpcUrl = typeof window !== 'undefined' && window.location?.protocol === 'https:'
+  ? '/rpc'
+  : rawL3RpcUrl
 
 // Chain definition — L3 (Index Orbit chain where Vision.sol lives)
 export const indexL3: Chain = {
@@ -31,7 +36,7 @@ export const arbitrumChain: Chain = {
 }
 
 // RPC configuration with fallback support — L3
-const l3RpcUrl = process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
+const l3RpcUrl = envL3RpcUrl
 const l3FallbackRpcUrl = process.env.NEXT_PUBLIC_L3_RPC_FALLBACK_URL
 
 const l3Transport = l3FallbackRpcUrl

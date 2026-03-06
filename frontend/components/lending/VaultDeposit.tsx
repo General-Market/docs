@@ -8,6 +8,7 @@ import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import { ERC20_ABI } from '@/lib/contracts/index-protocol-abi'
 import { useVaultDeposit } from '@/hooks/useVaultDeposit'
 import { useMetaMorphoVault } from '@/hooks/useMetaMorphoVault'
+import { indexL3 } from '@/lib/wagmi'
 
 export function VaultDeposit() {
   const t = useTranslations('lending')
@@ -23,6 +24,7 @@ export function VaultDeposit() {
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
+    chainId: indexL3.id,
     query: { enabled: !!address, refetchInterval: 10000 },
   })
 

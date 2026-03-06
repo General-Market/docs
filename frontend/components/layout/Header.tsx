@@ -53,7 +53,8 @@ export function Header() {
     abi: [{ name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ name: '', type: 'uint256' }] }] as const,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
-    query: { enabled: !!address && isConnected && !isWrongNetwork, refetchInterval: 15_000 },
+    chainId: indexL3.id,
+    query: { enabled: !!address, refetchInterval: 15_000 },
   })
   const usdcBalance = usdcRaw !== undefined ? Number(usdcRaw) / 10 ** USDC_DECIMALS : null
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useAccount, useReadContract } from 'wagmi'
+import { indexL3 } from '@/lib/wagmi'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import { METAMORPHO_VAULT_ABI, MORPHO_ABI } from '@/lib/contracts/morpho-abi'
 import { CURATOR_RATE_IRM_ABI } from '@/lib/contracts/curator-rate-irm-abi'
@@ -47,6 +48,7 @@ export function useMetaMorphoVault(): UseMetaMorphoVaultReturn {
     address: MORPHO_ADDRESSES.metaMorphoVault,
     abi: METAMORPHO_VAULT_ABI,
     functionName: 'totalAssets',
+    chainId: indexL3.id,
     query: {
       refetchInterval: 15000,
     },
@@ -61,6 +63,7 @@ export function useMetaMorphoVault(): UseMetaMorphoVaultReturn {
     address: MORPHO_ADDRESSES.metaMorphoVault,
     abi: METAMORPHO_VAULT_ABI,
     functionName: 'totalSupply',
+    chainId: indexL3.id,
     query: {
       refetchInterval: 15000,
     },
@@ -74,6 +77,7 @@ export function useMetaMorphoVault(): UseMetaMorphoVaultReturn {
     address: MORPHO_ADDRESSES.metaMorphoVault,
     abi: METAMORPHO_VAULT_ABI,
     functionName: 'name',
+    chainId: indexL3.id,
   })
 
   // Fetch vault symbol
@@ -84,6 +88,7 @@ export function useMetaMorphoVault(): UseMetaMorphoVaultReturn {
     address: MORPHO_ADDRESSES.metaMorphoVault,
     abi: METAMORPHO_VAULT_ABI,
     functionName: 'symbol',
+    chainId: indexL3.id,
   })
 
   // Fetch vault decimals (ERC4626 vaults may use different decimals)
@@ -94,6 +99,7 @@ export function useMetaMorphoVault(): UseMetaMorphoVaultReturn {
     address: MORPHO_ADDRESSES.metaMorphoVault,
     abi: METAMORPHO_VAULT_ABI,
     functionName: 'decimals',
+    chainId: indexL3.id,
   })
 
   // Fetch user's vault shares
@@ -106,6 +112,7 @@ export function useMetaMorphoVault(): UseMetaMorphoVaultReturn {
     abi: METAMORPHO_VAULT_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
+    chainId: indexL3.id,
     query: {
       enabled: !!address,
       refetchInterval: 15000,
@@ -125,6 +132,7 @@ export function useMetaMorphoVault(): UseMetaMorphoVaultReturn {
     abi: MORPHO_ABI,
     functionName: 'market',
     args: [MORPHO_ADDRESSES.marketId],
+    chainId: indexL3.id,
     query: {
       refetchInterval: 15000,
     },
@@ -138,6 +146,7 @@ export function useMetaMorphoVault(): UseMetaMorphoVaultReturn {
     abi: CURATOR_RATE_IRM_ABI,
     functionName: 'rates',
     args: [MORPHO_ADDRESSES.marketId],
+    chainId: indexL3.id,
     query: {
       refetchInterval: 15000,
     },

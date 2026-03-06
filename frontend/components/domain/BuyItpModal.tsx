@@ -18,6 +18,7 @@ import { useToast } from '@/lib/contexts/ToastContext'
 import { YouTubeLite, extractYouTubeId } from '@/components/ui/YouTubeLite'
 import { useTranslations } from 'next-intl'
 import { usePostHogTracker } from '@/hooks/usePostHog'
+import { indexL3 } from '@/lib/wagmi'
 
 /**
  * Buy flow micro-steps — Direct L3 path (4 steps + Done):
@@ -138,13 +139,14 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const itpName = userState.bridgedItpName || 'ITP'
   const itpSymbol = userState.bridgedItpSymbol || ''
 
-  // L3 USDC balance (18 decimals) — read directly from chain
+  // L3 USDC balance (18 decimals) — read directly from L3 chain
   const { data: l3UsdcRaw, refetch: refetchL3Usdc } = useReadContract({
     address: INDEX_PROTOCOL.l3Usdc,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
-    query: { enabled: !!address && isConnected, refetchInterval: 5_000 },
+    chainId: indexL3.id,
+    query: { enabled: !!address, refetchInterval: 5_000 },
   })
   const usdcBalance = (l3UsdcRaw as bigint) ?? 0n
 
@@ -154,7 +156,8 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     abi: ERC20_ABI,
     functionName: 'allowance',
     args: address ? [address, INDEX_PROTOCOL.index] : undefined,
-    query: { enabled: !!address && isConnected, refetchInterval: 5_000 },
+    chainId: indexL3.id,
+    query: { enabled: !!address, refetchInterval: 5_000 },
   })
   const usdcAllowance = (l3AllowanceRaw as bigint) ?? 0n
 
@@ -164,7 +167,8 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     abi: INDEX_ABI,
     functionName: 'getUserShares',
     args: address ? [itpId as `0x${string}`, address] : undefined,
-    query: { enabled: !!address && isConnected && !!itpId, refetchInterval: 5_000 },
+    chainId: indexL3.id,
+    query: { enabled: !!address && !!itpId, refetchInterval: 5_000 },
   })
   const userShares = (l3SharesRaw as bigint) ?? 0n
 

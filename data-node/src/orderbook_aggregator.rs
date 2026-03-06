@@ -318,12 +318,13 @@ pub async fn fetch_and_aggregate(
     let total_bid_depth_usd: f64 = bids.iter().map(|l| l.usd_value).sum();
     let total_ask_depth_usd: f64 = asks.iter().map(|l| l.usd_value).sum();
 
-    // Compute aggregated spread_bps from best bid/ask of the merged book
-    let agg_spread_bps = match (bids.first(), asks.first()) {
-        (Some(best_bid), Some(best_ask)) => {
-            let mid = (best_bid.price + best_ask.price) / 2.0;
+    // Compute spread_bps from raw best bid/ask (pre-aggregation) so it stays
+    // stable regardless of the aggregation level chosen by the user.
+    let agg_spread_bps = match (raw_bids.first(), raw_asks.first()) {
+        (Some(&(best_bid_price, _, _)), Some(&(best_ask_price, _, _))) => {
+            let mid = (best_bid_price + best_ask_price) / 2.0;
             if mid > 0.0 {
-                (best_ask.price - best_bid.price) / mid * 10000.0
+                (best_ask_price - best_bid_price) / mid * 10000.0
             } else {
                 0.0
             }

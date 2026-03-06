@@ -7,6 +7,7 @@ import { formatUnits } from 'viem'
 import { useWithdraw } from '@/hooks/vision/useWithdraw'
 import { useClaim } from '@/hooks/vision/useClaim'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
+import { indexL3 } from '@/lib/wagmi'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { VISION_ADDRESS, VISION_USDC_DECIMALS } from '@/lib/vision/constants'
@@ -40,6 +41,7 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
     abi: VISION_ABI,
     functionName: 'getPosition',
     args: address ? [BigInt(batchId), address] : undefined,
+    chainId: indexL3.id,
     query: { enabled: !!address && VISION_ADDRESS !== '0x0000000000000000000000000000000000000000' },
   })
 
@@ -94,6 +96,7 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
     abi: VISION_ABI,
     functionName: 'getBatch',
     args: [BigInt(batchId)],
+    chainId: indexL3.id,
     query: { enabled: VISION_ADDRESS !== '0x0000000000000000000000000000000000000000' },
   })
 

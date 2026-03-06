@@ -91,6 +91,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
     abi: [{ name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ name: '', type: 'uint256' }] }] as const,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
+    chainId: indexL3.id,
     query: { enabled: !!address, refetchInterval: 15_000 },
   })
   const usdcNum = usdcRaw !== undefined ? Number(usdcRaw) / 10 ** USDC_DECIMALS : 0
@@ -162,7 +163,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
     const positions = Array.from(posMap.values())
     const totalValue = positions.reduce((sum, p) => sum + parseFloat(p.current_value), 0)
     const totalInvested = positions.reduce((sum, p) => {
-      const shares = parseFloat(p.shares_bought) - parseFloat(p.shares_sold)
+      const shares = Math.max(0, parseFloat(p.shares_bought) - parseFloat(p.shares_sold))
       return sum + shares * parseFloat(p.avg_cost)
     }, 0)
     const totalPnl = totalValue - totalInvested

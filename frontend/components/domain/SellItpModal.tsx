@@ -18,6 +18,7 @@ import { useToast } from '@/lib/contexts/ToastContext'
 import { YouTubeLite, extractYouTubeId } from '@/components/ui/YouTubeLite'
 import { useTranslations } from 'next-intl'
 import { usePostHogTracker } from '@/hooks/usePostHog'
+import { indexL3 } from '@/lib/wagmi'
 
 /**
  * Sell flow micro-steps — Direct L3 path (3 steps + Done):
@@ -106,7 +107,8 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     abi: INDEX_ABI,
     functionName: 'getUserShares',
     args: address ? [itpId as `0x${string}`, address] : undefined,
-    query: { enabled: !!address && isConnected && !!itpId, refetchInterval: 5_000 },
+    chainId: indexL3.id,
+    query: { enabled: !!address && !!itpId, refetchInterval: 5_000 },
   })
   const userShares = (l3SharesRaw as bigint) ?? 0n
 
@@ -116,7 +118,8 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
-    query: { enabled: !!address && isConnected, refetchInterval: 5_000 },
+    chainId: indexL3.id,
+    query: { enabled: !!address, refetchInterval: 5_000 },
   })
   const l3UsdcBalance = (l3UsdcRaw as bigint) ?? 0n
 
