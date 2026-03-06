@@ -13,8 +13,11 @@
 //! Story 7.6: Custody Release to MockBitgetVault
 
 mod orchestrator;
+pub mod signature_manager;
 mod types;
 pub mod watchdog;
+
+pub use signature_manager::SignatureCollectionManager;
 
 pub use orchestrator::{BridgeOrchestrator, CrossChainOrderReader};
 pub use types::{

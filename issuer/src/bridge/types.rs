@@ -455,6 +455,9 @@ pub enum BridgeError {
 
     #[error("consensus timeout: {phase}")]
     ConsensusTimeout { phase: String },
+
+    #[error("signature collection not found: {label} key={key}")]
+    CollectionNotFound { label: String, key: String },
 }
 
 /// Build the message hash for bridge Arb→L3 consensus
