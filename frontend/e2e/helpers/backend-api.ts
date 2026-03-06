@@ -7,28 +7,39 @@
 import { encodeFunctionData, decodeFunctionResult, createWalletClient, http, defineChain } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { INDEX_ABI, BRIDGE_PROXY_ABI, ARB_CUSTODY_ABI, ERC20_ABI } from '../../lib/contracts/index-protocol-abi';
+import {
+  IS_ANVIL, L3_RPC as ENV_L3_RPC, ARB_RPC as ENV_ARB_RPC,
+  BACKEND_URL as ENV_BACKEND_URL, CHAIN_ID as ENV_CHAIN_ID, ARB_CHAIN_ID as ENV_ARB_CHAIN_ID,
+  DEPLOYER_KEY, CONTRACTS, DEPLOYER_ADDRESS, ANVIL_DEPLOYER,
+  RPC_TIMEOUT,
+} from '../env';
 
-const IS_TESTNET = process.env.E2E_TESTNET === '1';
-const BACKEND_URL = process.env.E2E_BACKEND_URL || (IS_TESTNET ? 'http://116.203.156.98/data-node' : 'http://localhost:8200');
-const TEST_PRIVATE_KEY = (process.env.E2E_PRIVATE_KEY || '0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537') as `0x${string}`;
+/** Retry wrapper for flaky network calls (testnet RPCs, backend). */
+async function withRetry<T>(fn: () => Promise<T>, attempts = 3, delayMs = 2000): Promise<T> {
+  let lastError: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (i < attempts - 1) {
+        console.warn(`[withRetry] attempt ${i + 1}/${attempts} failed: ${(err as Error).message}`);
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+    }
+  }
+  throw lastError;
+}
+
+/** Wrap viem http transport to include Accept header (nginx requires it) */
+const rpcHttp = (url: string) => http(url, { fetchOptions: { headers: { Accept: 'application/json' } } });
+const BACKEND_URL = ENV_BACKEND_URL;
+const TEST_PRIVATE_KEY = DEPLOYER_KEY;
 
 /** Safely parse a hex RPC result to BigInt. Returns 0n for empty/null results. */
 function safeBigInt(hex: unknown): bigint {
   if (!hex || hex === '0x' || hex === '0x0') return 0n;
   return BigInt(hex as string);
-}
-
-export interface UserState {
-  usdc_balance: string;
-  usdc_allowance_custody: string;
-  usdc_allowance_morpho: string;
-  bridged_itp_address: string;
-  bridged_itp_balance: string;
-  bridged_itp_allowance_custody: string;
-  bridged_itp_allowance_morpho: string;
-  bridged_itp_name: string;
-  bridged_itp_symbol: string;
-  bridged_itp_total_supply: string;
 }
 
 export interface MorphoPosition {
@@ -64,20 +75,39 @@ export interface OrderData {
 }
 
 async function fetchJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${BACKEND_URL}${path}`, {
-    signal: AbortSignal.timeout(10_000),
+  return withRetry(async () => {
+    const res = await fetch(`${BACKEND_URL}${path}`, {
+      signal: AbortSignal.timeout(RPC_TIMEOUT),
+    });
+    if (!res.ok) throw new Error(`Backend ${path}: ${res.status} ${res.statusText}`);
+    return res.json();
   });
-  if (!res.ok) throw new Error(`Backend ${path}: ${res.status} ${res.statusText}`);
-  return res.json();
 }
 
 export async function checkHealth(): Promise<boolean> {
   try {
     const res = await fetch(`${BACKEND_URL}/health`, {
       signal: AbortSignal.timeout(5_000),
+      headers: { 'Accept': 'application/json' },
     });
     return res.ok;
   } catch {
+    // On testnet, Node.js may not reach the data-node directly (firewall).
+    // Fall back to checking the L3 RPC as a proxy for backend health.
+    if (!IS_ANVIL) {
+      try {
+        const res = await fetch(ENV_L3_RPC, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_blockNumber', params: [] }),
+          signal: AbortSignal.timeout(5_000),
+        });
+        const json = await res.json();
+        return !!json.result;
+      } catch {
+        return false;
+      }
+    }
     // Some backends don't have /health — try user-state as fallback
     try {
       const res = await fetch(
@@ -95,7 +125,7 @@ export async function checkRpc(url: string): Promise<boolean> {
   try {
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_blockNumber', params: [] }),
       signal: AbortSignal.timeout(5_000),
     });
@@ -103,15 +133,6 @@ export async function checkRpc(url: string): Promise<boolean> {
     return !!json.result;
   } catch {
     return false;
-  }
-}
-
-export async function getUserState(user: string, itpId: string): Promise<UserState> {
-  try {
-    return await fetchJson<UserState>(`/user-state?user=${user}&itp_id=${itpId}`);
-  } catch {
-    // Backend endpoint not available — read balances via RPC
-    return getUserStateViaRpc(user, itpId);
   }
 }
 
@@ -161,27 +182,15 @@ async function getOrderViaL3(orderId: number | string): Promise<OrderData> {
 
 // ── Direct RPC helpers (fallback when backend endpoints unavailable) ─────
 
-const ARB_RPC = process.env.E2E_ARB_RPC_URL || (IS_TESTNET ? 'http://142.132.164.24/' : 'http://localhost:8546');
+const ARB_RPC = ENV_ARB_RPC;
 
-// Addresses read from deployments/active-deployment.json at import time
-const _deployment = (() => {
-  try {
-    const { readFileSync } = require('fs');
-    const { join } = require('path');
-    const path = join(__dirname, '..', '..', '..', 'deployments', 'active-deployment.json');
-    return JSON.parse(readFileSync(path, 'utf-8')).contracts;
-  } catch {
-    return null;
-  }
-})();
-
-const BRIDGED_ITP = _deployment?.BridgedITP ?? '0x2Eab31C830BB4B1fD8FB8738F6F4A52357737A11';
-const ARB_USDC = _deployment?.ARB_USDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
-const BRIDGE_PROXY = _deployment?.BridgeProxy ?? '0x0B306BF915C4d645ff596e518fAf3F9669b97016';
-const ARB_CUSTODY = _deployment?.ArbBridgeCustody ?? '0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1';
-const BRIDGED_ITP_FACTORY = _deployment?.BridgedItpFactory ?? '0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1';
+const BRIDGED_ITP = CONTRACTS.BridgedITP ?? '0x2Eab31C830BB4B1fD8FB8738F6F4A52357737A11';
+const ARB_USDC = CONTRACTS.ARB_USDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
+const BRIDGE_PROXY = CONTRACTS.BridgeProxy ?? '0x0B306BF915C4d645ff596e518fAf3F9669b97016';
+const ARB_CUSTODY = CONTRACTS.ArbBridgeCustody ?? '0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1';
+const BRIDGED_ITP_FACTORY = CONTRACTS.BridgedItpFactory ?? '0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1';
 /** Deployer account — Anvil #0 locally, real deployer on testnet */
-const DEPLOYER = IS_TESTNET ? '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4' : '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
+const DEPLOYER = IS_ANVIL ? ANVIL_DEPLOYER : DEPLOYER_ADDRESS;
 
 /** Inline ABI for sellITPFromArbitrum (not in shared ABI file) */
 const SELL_ABI = [
@@ -201,15 +210,17 @@ const SELL_ABI = [
 ] as const;
 
 async function rpcCall(method: string, params: unknown[]): Promise<unknown> {
-  const res = await fetch(ARB_RPC, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params }),
-    signal: AbortSignal.timeout(10_000),
+  return withRetry(async () => {
+    const res = await fetch(ARB_RPC, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params }),
+      signal: AbortSignal.timeout(RPC_TIMEOUT),
+    });
+    const json = await res.json();
+    if (json.error) throw new Error(json.error.message);
+    return json.result;
   });
-  const json = await res.json();
-  if (json.error) throw new Error(json.error.message);
-  return json.result;
 }
 
 /** ERC20 balanceOf via eth_call */
@@ -219,25 +230,6 @@ async function erc20BalanceOf(token: string, account: string): Promise<string> {
   const data = `0x70a08231${paddedAddr}`;
   const result = await rpcCall('eth_call', [{ to: token, data }, 'latest']) as string;
   return (result && result !== '0x') ? BigInt(result).toString() : '0';
-}
-
-async function getUserStateViaRpc(user: string, _itpId: string): Promise<UserState> {
-  const [usdcBalance, itpBalance] = await Promise.all([
-    erc20BalanceOf(ARB_USDC, user),
-    erc20BalanceOf(BRIDGED_ITP, user),
-  ]);
-  return {
-    usdc_balance: usdcBalance,
-    usdc_allowance_custody: '0',
-    usdc_allowance_morpho: '0',
-    bridged_itp_address: BRIDGED_ITP,
-    bridged_itp_balance: itpBalance,
-    bridged_itp_allowance_custody: '0',
-    bridged_itp_allowance_morpho: '0',
-    bridged_itp_name: '',
-    bridged_itp_symbol: '',
-    bridged_itp_total_supply: '0',
-  };
 }
 
 /**
@@ -250,7 +242,7 @@ export async function mintBridgedItp(
   itpId: string,
   amount: bigint,
 ): Promise<void> {
-  if (IS_TESTNET) {
+  if (!IS_ANVIL) {
     throw new Error('mintBridgedItp not available on testnet — use actual bridge buy flow instead');
   }
 
@@ -293,7 +285,7 @@ export async function mintL3Shares(
   itpId: string,
   amount: bigint,
 ): Promise<void> {
-  if (IS_TESTNET) {
+  if (!IS_ANVIL) {
     throw new Error('mintL3Shares not available on testnet — use actual buy flow instead (requires anvil_setStorageAt)');
   }
   // Compute _userShares[itpId][user] storage slot
@@ -366,7 +358,7 @@ export async function mintL3Usdc(
   const amountHex = amount.toString(16).padStart(64, '0');
   const data = `0x40c10f19${userPadded}${amountHex}`;
 
-  if (IS_TESTNET) {
+  if (!IS_ANVIL) {
     await l3SignedSend(L3_WUSDC, data);
   } else {
     await l3RpcCall('eth_sendTransaction', [{
@@ -415,21 +407,22 @@ async function keccak256Hex(data: string): Promise<string> {
 
 // ── L3 RPC helpers (rebalance operates on L3 directly) ──────────────────
 
-const L3_RPC = process.env.E2E_L3_RPC_URL || (IS_TESTNET ? 'http://142.132.164.24/' : 'http://localhost:8545');
-const L3_INDEX = _deployment?.Index ?? '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
-const L3_ISSUER_REGISTRY = _deployment?.IssuerRegistry ?? '0x610178dA211FEF7D417bC0e6FeD39F05609AD788';
-const L3_WUSDC = _deployment?.L3_WUSDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
+const L3_RPC = ENV_L3_RPC;
+const L3_INDEX = CONTRACTS.Index ?? '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
+const L3_WUSDC = CONTRACTS.L3_WUSDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
 
 async function l3RpcCall(method: string, params: unknown[]): Promise<unknown> {
-  const res = await fetch(L3_RPC, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params }),
-    signal: AbortSignal.timeout(10_000),
+  return withRetry(async () => {
+    const res = await fetch(L3_RPC, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params }),
+      signal: AbortSignal.timeout(RPC_TIMEOUT),
+    });
+    const json = await res.json();
+    if (json.error) throw new Error(`${json.error.message} (data: ${json.error.data ?? 'none'})`);
+    return json.result;
   });
-  const json = await res.json();
-  if (json.error) throw new Error(`${json.error.message} (data: ${json.error.data ?? 'none'})`);
-  return json.result;
 }
 
 /**
@@ -439,12 +432,12 @@ async function l3RpcCall(method: string, params: unknown[]): Promise<unknown> {
 async function l3SignedSend(to: string, data: string, value?: bigint): Promise<string> {
   const account = privateKeyToAccount(TEST_PRIVATE_KEY);
   const chain = defineChain({
-    id: Number(process.env.E2E_CHAIN_ID || 111222333),
+    id: ENV_CHAIN_ID,
     name: 'Index L3',
     nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
     rpcUrls: { default: { http: [L3_RPC] } },
   });
-  const client = createWalletClient({ account, chain, transport: http(L3_RPC) });
+  const client = createWalletClient({ account, chain, transport: rpcHttp(L3_RPC) });
   return client.sendTransaction({
     to: to as `0x${string}`,
     data: data as `0x${string}`,
@@ -453,24 +446,36 @@ async function l3SignedSend(to: string, data: string, value?: bigint): Promise<s
   });
 }
 
+/** Simple async mutex to prevent parallel nonce conflicts on testnet. */
+let _arbNonceLock: Promise<void> = Promise.resolve();
+function withArbNonceLock<T>(fn: () => Promise<T>): Promise<T> {
+  const prev = _arbNonceLock;
+  let resolve: () => void;
+  _arbNonceLock = new Promise(r => { resolve = r; });
+  return prev.then(fn).finally(() => resolve!());
+}
+
 /**
  * Send a signed transaction on ARB using the deployer private key.
+ * Uses a mutex to prevent parallel nonce conflicts on testnet.
  */
 async function arbSignedSend(to: string, data: string, value?: bigint): Promise<string> {
-  const account = privateKeyToAccount(TEST_PRIVATE_KEY);
-  const chainId = Number(process.env.E2E_ARB_CHAIN_ID || (IS_TESTNET ? process.env.E2E_CHAIN_ID || 111222333 : 421611337));
-  const chain = defineChain({
-    id: chainId,
-    name: 'Arb',
-    nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-    rpcUrls: { default: { http: [ARB_RPC] } },
-  });
-  const client = createWalletClient({ account, chain, transport: http(ARB_RPC) });
-  return client.sendTransaction({
-    to: to as `0x${string}`,
-    data: data as `0x${string}`,
-    value,
-    gas: 1_000_000n,
+  return withArbNonceLock(async () => {
+    const account = privateKeyToAccount(TEST_PRIVATE_KEY);
+    const chainId = ENV_ARB_CHAIN_ID;
+    const chain = defineChain({
+      id: chainId,
+      name: 'Arb',
+      nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+      rpcUrls: { default: { http: [ARB_RPC] } },
+    });
+    const client = createWalletClient({ account, chain, transport: rpcHttp(ARB_RPC) });
+    return client.sendTransaction({
+      to: to as `0x${string}`,
+      data: data as `0x${string}`,
+      value,
+      gas: 1_000_000n,
+    });
   });
 }
 
@@ -529,50 +534,6 @@ export async function getItpCountL3(): Promise<number> {
 }
 
 /**
- * Temporarily clear the aggregated BLS pubkey on L3 IssuerRegistry.
- * Returns the original pubkey bytes for restoration.
- * Used to bypass BLS verification for direct E2E test operations.
- */
-async function clearL3AggPubkey(): Promise<string> {
-  const currentPubkey = await l3RpcCall('eth_call', [{
-    to: L3_ISSUER_REGISTRY,
-    data: '0x7004e072',
-  }, 'latest']) as string;
-
-  const clearData = '0xb009fd60' +
-    '0'.repeat(62) + '20' +
-    '0'.repeat(64);
-
-  if (IS_TESTNET) {
-    await l3SignedSend(L3_ISSUER_REGISTRY, clearData);
-  } else {
-    await l3RpcCall('eth_sendTransaction', [{
-      from: DEPLOYER,
-      to: L3_ISSUER_REGISTRY,
-      data: clearData,
-      gas: '0x100000',
-    }]);
-  }
-
-  return currentPubkey;
-}
-
-async function restoreL3AggPubkey(encodedPubkey: string): Promise<void> {
-  const restoreData = '0xb009fd60' + encodedPubkey.replace('0x', '');
-
-  if (IS_TESTNET) {
-    await l3SignedSend(L3_ISSUER_REGISTRY, restoreData);
-  } else {
-    await l3RpcCall('eth_sendTransaction', [{
-      from: DEPLOYER,
-      to: L3_ISSUER_REGISTRY,
-      data: restoreData,
-      gas: '0x100000',
-    }]);
-  }
-}
-
-/**
  * Rebalance an ITP by calling requestRebalance on the L3 Index contract
  * (emits RebalanceRequested event on L3) and waiting for issuers to
  * execute it via BLS consensus.
@@ -613,7 +574,7 @@ export async function rebalanceItp(itpId: string, timeoutMs = 180_000): Promise<
     ],
   });
 
-  if (IS_TESTNET) {
+  if (!IS_ANVIL) {
     await l3SignedSend(L3_INDEX, calldata);
   } else {
     await l3RpcCall('eth_sendTransaction', [{
@@ -649,8 +610,8 @@ export async function pollUntil<T>(
     try {
       const result = await fn();
       if (predicate(result)) return result;
-    } catch {
-      // Retry on error
+    } catch (err) {
+      console.warn(`[pollUntil] ${(err as Error).message}`);
     }
     await new Promise(r => setTimeout(r, intervalMs));
   }
@@ -714,7 +675,7 @@ export async function placeBuyOrderDirect(
     ],
   });
 
-  if (IS_TESTNET) {
+  if (!IS_ANVIL) {
     // On testnet: user = deployer, sign all txs
     await arbSignedSend(ARB_USDC, mintData);
     await arbSignedSend(ARB_USDC, approveData);
@@ -782,7 +743,7 @@ export async function placeSellOrderDirect(
     ],
   });
 
-  if (IS_TESTNET) {
+  if (!IS_ANVIL) {
     await arbSignedSend(bridgedToken, approveData);
     await arbSignedSend(ARB_CUSTODY, sellData);
   } else {
@@ -812,85 +773,6 @@ export async function placeSellOrderDirect(
   }
 
   return orderId;
-}
-
-/**
- * Request ITP creation via BridgeProxy by impersonating the user.
- * Uses first 3 assets from ITP-1 with equal weights.
- * Returns the creation nonce.
- */
-export async function requestCreateItpDirect(
-  user: string,
-): Promise<number> {
-  // Read nextCreationNonce before placing
-  const nonceData = encodeFunctionData({
-    abi: BRIDGE_PROXY_ABI,
-    functionName: 'nextCreationNonce',
-    args: [],
-  });
-  const nonceResult = await rpcCall('eth_call', [
-    { to: BRIDGE_PROXY, data: nonceData },
-    'latest',
-  ]) as string;
-  const nonce = Number(safeBigInt(nonceResult));
-
-  // Get existing ITP-1 state for asset addresses
-  const itpId = '0x0000000000000000000000000000000000000000000000000000000000000001';
-  const state = await getItpStateL3(itpId);
-  const assets = state.assets.slice(0, 3);
-
-  // Equal weights summing to 1e18
-  const w = 1000000000000000000n / 3n; // ~333333333333333333
-  const weights = [w, w, 1000000000000000000n - w - w]; // last gets remainder
-
-  // Fetch prices from data-node, fallback to $1 for mock tokens
-  let prices: bigint[];
-  try {
-    const addresses = assets.join(',');
-    const priceRes = await fetch(
-      `${BACKEND_URL}/fast-prices-by-address?addresses=${addresses}`,
-      { signal: AbortSignal.timeout(5_000) },
-    );
-    if (!priceRes.ok) throw new Error(`${priceRes.status}`);
-    const priceJson = await priceRes.json() as {
-      prices: Record<string, { price: string; symbol: string }>;
-    };
-    prices = assets.map(addr => {
-      const entry = priceJson.prices[addr.toLowerCase()] ?? priceJson.prices[addr];
-      return entry ? BigInt(entry.price) : 1000000000000000000n;
-    });
-  } catch {
-    // Data-node unavailable — use $1 default (mock Bitget tokens on Anvil)
-    prices = assets.map(() => 1000000000000000000n);
-  }
-
-  const createData = encodeFunctionData({
-    abi: BRIDGE_PROXY_ABI,
-    functionName: 'requestCreateItp',
-    args: [
-      'Resilience Test',
-      'RSLT',
-      weights,
-      assets as `0x${string}`[],
-      prices,
-      { description: '', websiteUrl: '', videoUrl: '' },
-    ],
-  });
-
-  if (IS_TESTNET) {
-    await arbSignedSend(BRIDGE_PROXY, createData);
-  } else {
-    await rpcCall('anvil_setBalance', [user, '0x56BC75E2D63100000']);
-    await rpcCall('anvil_impersonateAccount', [user]);
-    await rpcCall('eth_sendTransaction', [{
-      from: user,
-      to: BRIDGE_PROXY,
-      data: createData,
-      gas: '0x400000',
-    }]);
-  }
-
-  return nonce;
 }
 
 /**
@@ -941,7 +823,7 @@ export async function requestRebalanceDirect(
     ],
   });
 
-  if (IS_TESTNET) {
+  if (!IS_ANVIL) {
     await arbSignedSend(BRIDGE_PROXY, requestCalldata);
   } else {
     await rpcCall('eth_sendTransaction', [{
@@ -956,106 +838,6 @@ export async function requestRebalanceDirect(
 }
 
 /**
- * Wait for an order to be filled (status !== 0).
- * Returns the filled order data.
- */
-export async function waitForOrderFill(
-  orderId: number,
-  timeoutMs = 90_000,
-): Promise<OrderData> {
-  return pollUntil(
-    () => getOrder(orderId),
-    (order) => order.status !== 0,
-    timeoutMs,
-    3_000,
-  );
-}
-
-/**
- * Assert that an order stays pending (status === 0) for the entire duration.
- * Throws if the order status ever changes.
- */
-export async function assertOrderNotFilled(
-  orderId: number,
-  waitMs: number,
-): Promise<void> {
-  const start = Date.now();
-  while (Date.now() - start < waitMs) {
-    try {
-      const order = await getOrder(orderId);
-      if (order.status !== 0) {
-        throw new Error(`Order ${orderId} unexpectedly changed to status ${order.status} after ${Date.now() - start}ms`);
-      }
-    } catch (e) {
-      if (e instanceof Error && e.message.includes('unexpectedly changed')) throw e;
-      // Network/parse errors during polling are fine — order might not be indexed yet
-    }
-    await new Promise(r => setTimeout(r, 2_000));
-  }
-}
-
-/**
- * Wait for an ERC20 balance to increase above a baseline on Arb Anvil.
- * Used to verify cross-chain order fills when data-node is unavailable.
- */
-export async function waitForBalanceIncrease(
-  token: string,
-  account: string,
-  baselineBalance: bigint,
-  timeoutMs = 90_000,
-): Promise<bigint> {
-  return pollUntil(
-    async () => BigInt(await erc20BalanceOf(token, account)),
-    (balance) => balance > baselineBalance,
-    timeoutMs,
-    3_000,
-  );
-}
-
-/**
- * Assert that a balance does NOT change for the entire duration.
- */
-export async function assertBalanceUnchanged(
-  token: string,
-  account: string,
-  expectedBalance: bigint,
-  waitMs: number,
-): Promise<void> {
-  const start = Date.now();
-  while (Date.now() - start < waitMs) {
-    const current = BigInt(await erc20BalanceOf(token, account));
-    if (current !== expectedBalance) {
-      throw new Error(`Balance changed unexpectedly: expected ${expectedBalance}, got ${current}`);
-    }
-    await new Promise(r => setTimeout(r, 2_000));
-  }
-}
-
-/**
- * Mint USDC to a user via Anvil deployer.
- * Test USDC allows the deployer to call mint(address,uint256) directly.
- */
-export async function mintUsdc(
-  user: string,
-  amount: bigint,
-): Promise<void> {
-  const userPadded = user.replace('0x', '').toLowerCase().padStart(64, '0');
-  const amountHex = amount.toString(16).padStart(64, '0');
-  const data = `0x40c10f19${userPadded}${amountHex}`;
-
-  if (IS_TESTNET) {
-    await arbSignedSend(ARB_USDC, data);
-  } else {
-    await rpcCall('eth_sendTransaction', [{
-      from: DEPLOYER,
-      to: ARB_USDC,
-      data,
-      gas: '0x100000',
-    }]);
-  }
-}
-
-/**
  * Mine empty blocks on Arb Anvil.
  * Issuers require `confirmations` (default: 2) blocks after an event
  * before they consider it confirmed. On Anvil with auto-mine, blocks
@@ -1063,7 +845,7 @@ export async function mintUsdc(
  * "confirmed" without this helper.
  */
 export async function mineArbBlocks(count: number): Promise<void> {
-  if (IS_TESTNET) return; // Blocks mine naturally on testnet
+  if (!IS_ANVIL) return; // Blocks mine naturally on testnet
   await rpcCall('anvil_mine', [`0x${count.toString(16)}`]);
 }
 
@@ -1072,7 +854,7 @@ export async function mineArbBlocks(count: number): Promise<void> {
  * On testnet: no-op (blocks mine naturally).
  */
 export function startArbBlockMiner(intervalMs = 1000): () => void {
-  if (IS_TESTNET) return () => {};
+  if (!IS_ANVIL) return () => {};
   const timer = setInterval(() => {
     rpcCall('anvil_mine', ['0x1']).catch(() => {});
   }, intervalMs);
@@ -1121,7 +903,7 @@ export async function deployBridgedItpDirect(
     return existing;
   }
 
-  if (IS_TESTNET) {
+  if (!IS_ANVIL) {
     throw new Error('deployBridgedItpDirect not available on testnet — requires anvil_impersonateAccount + anvil_setStorageAt');
   }
 

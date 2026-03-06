@@ -7,11 +7,19 @@
 import { keccak256, encodeFunctionData, toHex, createWalletClient, http, defineChain } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 
+/** Wrap viem http transport to include Accept header (nginx requires it) */
+const rpcHttp = (url: string) => http(url, { fetchOptions: { headers: { Accept: 'application/json' } } })
+
+import {
+  IS_ANVIL, L3_RPC as ENV_L3_RPC, VISION_API as ENV_VISION_API,
+  CHAIN_ID as ENV_CHAIN_ID, ARB_CHAIN_ID as ENV_ARB_CHAIN_ID, ARB_RPC as ENV_ARB_RPC,
+  DEPLOYER_KEY, PLAYER2_KEY, CONTRACTS, DEPLOYER_ADDRESS, ANVIL_DEPLOYER, ISSUER_URLS,
+} from '../env'
+
 // ── Constants ────────────────────────────────────────────────
 
-const IS_TESTNET = process.env.E2E_TESTNET === '1'
-const L3_RPC = process.env.E2E_L3_RPC_URL || (IS_TESTNET ? 'http://142.132.164.24/' : 'http://localhost:8545')
-const VISION_API = process.env.E2E_VISION_API_URL || (IS_TESTNET ? 'http://116.203.156.98/issuer1' : 'http://localhost:10001')
+const L3_RPC = ENV_L3_RPC
+const VISION_API = ENV_VISION_API
 
 /** Safely parse a hex RPC result to BigInt. Returns 0n for empty/null results. */
 function safeBigInt(hex: unknown): bigint {
@@ -23,16 +31,13 @@ function safeBigInt(hex: unknown): bigint {
 // On Anvil: PLAYER1 = deployer (0xC0d3...), PLAYER2 = vision bot (0x71bE...)
 // On testnet: same addresses but using real private keys for signing
 
-const DEPLOYER_KEY = (process.env.E2E_PRIVATE_KEY || '0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537') as `0x${string}`
-const PLAYER2_KEY = (process.env.E2E_PLAYER2_KEY || '0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6') as `0x${string}` // Anvil #9
-
 /** Test user — funded + impersonated on both chains by start.sh */
 export const PLAYER1 = '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4'
 
 /** Vision bot 1 — on testnet uses Anvil #9 key (funded by deployer) */
-export const PLAYER2 = IS_TESTNET
-  ? '0xa0Ee7A142d267C1f36714E4a8F75612F20a79720' // Anvil #9
-  : '0x71bE63f3384f5fb98995898A86B02Fb2426c5788'
+export const PLAYER2 = IS_ANVIL
+  ? '0x71bE63f3384f5fb98995898A86B02Fb2426c5788'
+  : '0xa0Ee7A142d267C1f36714E4a8F75612F20a79720' // Anvil #9
 
 /** Map of address → private key for testnet signing */
 const TEST_KEYS: Record<string, `0x${string}`> = {
@@ -61,7 +66,7 @@ export function getVisionAddress(): string {
 }
 
 /** Vision uses L3_WUSDC (18 decimals) on L3 */
-export function getL3UsdcAddress(): string {
+function getL3UsdcAddress(): string {
   return getDeployment().contracts.L3_WUSDC
 }
 
@@ -161,7 +166,7 @@ const VISION_POSITION_ABI = [{
 async function l3RpcCall(method: string, params: unknown[]): Promise<unknown> {
   const res = await fetch(L3_RPC, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params }),
     signal: AbortSignal.timeout(15_000),
   })
@@ -177,17 +182,17 @@ async function l3EthCall(to: string, data: string): Promise<string> {
 async function l3SendTx(from: string, to: string, data: string): Promise<string> {
   let txHash: string
 
-  if (IS_TESTNET) {
+  if (!IS_ANVIL) {
     // Signed transaction using viem WalletClient
     const key = getKeyForAddress(from)
     const account = privateKeyToAccount(key)
     const chain = defineChain({
-      id: Number(process.env.E2E_CHAIN_ID || 111222333),
+      id: ENV_CHAIN_ID,
       name: 'Index L3',
       nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
       rpcUrls: { default: { http: [L3_RPC] } },
     })
-    const client = createWalletClient({ account, chain, transport: http(L3_RPC) })
+    const client = createWalletClient({ account, chain, transport: rpcHttp(L3_RPC) })
     txHash = await client.sendTransaction({
       to: to as `0x${string}`,
       data: data as `0x${string}`,
@@ -217,7 +222,7 @@ async function l3SendTx(from: string, to: string, data: string): Promise<string>
       }
       return txHash
     }
-    await new Promise(r => setTimeout(r, IS_TESTNET ? 1000 : 200))
+    await new Promise(r => setTimeout(r, IS_ANVIL ? 200 : 1000))
   }
 
   return txHash
@@ -226,19 +231,19 @@ async function l3SendTx(from: string, to: string, data: string): Promise<string>
 // ── Anvil impersonation / testnet account setup ──────────────
 
 export async function impersonateAccount(address: string): Promise<void> {
-  if (IS_TESTNET) {
+  if (!IS_ANVIL) {
     // On testnet, ensure the account has ETH for gas (funded by deployer)
     const balance = await l3RpcCall('eth_getBalance', [address, 'latest']) as string
     if (BigInt(balance) < 10n ** 18n) {
       // Send 10 ETH from deployer
       const account = privateKeyToAccount(DEPLOYER_KEY)
       const chain = defineChain({
-        id: Number(process.env.E2E_CHAIN_ID || 111222333),
+        id: ENV_CHAIN_ID,
         name: 'Index L3',
         nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
         rpcUrls: { default: { http: [L3_RPC] } },
       })
-      const client = createWalletClient({ account, chain, transport: http(L3_RPC) })
+      const client = createWalletClient({ account, chain, transport: rpcHttp(L3_RPC) })
       await client.sendTransaction({
         to: address as `0x${string}`,
         value: 10n * 10n ** 18n,
@@ -252,7 +257,7 @@ export async function impersonateAccount(address: string): Promise<void> {
 // ── USDC minting (via deployer) ─────────────────────────────
 
 /** Deployer — can call mint() on test ERC20 contracts */
-const DEPLOYER = IS_TESTNET ? PLAYER1 : '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+const DEPLOYER = IS_ANVIL ? ANVIL_DEPLOYER : DEPLOYER_ADDRESS
 
 /**
  * Wait until the batch's tick lock window passes.
@@ -290,7 +295,7 @@ async function waitForUnlock(batchId: number): Promise<void> {
  * On testnet: no-op (fresh deployment, positions should be clean).
  */
 async function clearPosition(batchId: number, player: string): Promise<void> {
-  if (IS_TESTNET) return // Cannot manipulate storage on real chain
+  if (!IS_ANVIL) return // Cannot manipulate storage on real chain
 
   const visionAddr = getVisionAddress()
   const innerSlot = keccak256(
@@ -337,7 +342,7 @@ export async function getL3UsdcBalance(address: string): Promise<bigint> {
   return safeBigInt(result)
 }
 
-export async function approveVision(from: string, _amount: bigint): Promise<void> {
+async function approveVision(from: string, _amount: bigint): Promise<void> {
   // Approve max uint256 to avoid race conditions when parallel tests share the same player
   const MAX_UINT256 = (1n << 256n) - 1n
   const data = encodeFunctionData({
@@ -352,7 +357,7 @@ export async function approveVision(from: string, _amount: bigint): Promise<void
 
 export type BetDirection = 'UP' | 'DOWN'
 
-export function encodeBitmap(bets: BetDirection[], marketCount: number): Uint8Array {
+function encodeBitmap(bets: BetDirection[], marketCount: number): Uint8Array {
   const byteCount = Math.ceil(marketCount / 8)
   const bitmap = new Uint8Array(byteCount)
   for (let i = 0; i < marketCount; i++) {
@@ -365,11 +370,11 @@ export function encodeBitmap(bets: BetDirection[], marketCount: number): Uint8Ar
   return bitmap
 }
 
-export function hashBitmap(bitmap: Uint8Array): `0x${string}` {
+function hashBitmap(bitmap: Uint8Array): `0x${string}` {
   return keccak256(bitmap)
 }
 
-export function bitmapToHex(bitmap: Uint8Array): `0x${string}` {
+function bitmapToHex(bitmap: Uint8Array): `0x${string}` {
   return toHex(bitmap)
 }
 
@@ -387,7 +392,7 @@ export function oppositeBets(bets: BetDirection[]): BetDirection[] {
 
 // ── Vision contract interaction ──────────────────────────────
 
-export async function joinBatch(
+async function joinBatch(
   from: string,
   batchId: number,
   configHash: `0x${string}`,
@@ -459,7 +464,7 @@ export async function getBatches(): Promise<BatchInfo[]> {
   const res = await fetch(`${VISION_API}/vision/batches`, {
     signal: AbortSignal.timeout(10_000),
   })
-  if (!res.ok) return []
+  if (!res.ok) throw new Error(`getBatches: ${res.status} ${res.statusText}`)
   const data = await res.json()
   return data.batches || data || []
 }
@@ -485,23 +490,13 @@ export async function getBatchState(batchId: number): Promise<BatchState> {
   return res.json()
 }
 
-export async function submitBitmapToIssuers(
+async function submitBitmapToIssuers(
   player: string,
   batchId: number,
   bitmapHex: string,
   expectedHash: string,
 ): Promise<{ accepted: number; total: number }> {
-  const issuerUrls = IS_TESTNET
-    ? [
-        'http://116.203.156.98/issuer1',
-        'http://116.203.156.98/issuer2',
-        'http://116.203.156.98/issuer3',
-      ]
-    : [
-        'http://localhost:10001',
-        'http://localhost:10002',
-        'http://localhost:10003',
-      ]
+  const issuerUrls = ISSUER_URLS
 
   const results = await Promise.allSettled(
     issuerUrls.map(async (url) => {
@@ -725,11 +720,15 @@ export async function findAvailableE2eBatch(): Promise<{ batchId: number; config
  */
 export async function ensureBatchExists(): Promise<BatchInfo[]> {
   // Try API first
-  let batches = await getBatches()
-  if (batches.length > 0) return batches
+  try {
+    const batches = await getBatches()
+    if (batches.length > 0) return batches
+  } catch {
+    // API unavailable — fall through to on-chain check
+  }
 
   // Check on-chain — batches may exist but issuers aren't indexing them
-  batches = await getBatchesFromChain()
+  const batches = await getBatchesFromChain()
   if (batches.length > 0) return batches
 
   throw new Error('No batches found — run DeployAllVisionBatches.s.sol first')
@@ -741,8 +740,12 @@ export async function ensureBatchExists(): Promise<BatchInfo[]> {
 export async function waitForBatches(timeoutMs = 30_000): Promise<BatchInfo[]> {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
-    const batches = await getBatches()
-    if (batches.length > 0) return batches
+    try {
+      const batches = await getBatches()
+      if (batches.length > 0) return batches
+    } catch (err) {
+      console.warn(`[waitForBatches] ${(err as Error).message}`)
+    }
     await new Promise(r => setTimeout(r, 2_000))
   }
   throw new Error(`No batches found after ${timeoutMs}ms`)
@@ -847,12 +850,12 @@ export async function getVisionVirtualBalance(player: string): Promise<bigint> {
 
 // ── Arb-side helpers for bridge deposit/withdraw E2E ──────
 
-const ARB_RPC = process.env.E2E_ARB_RPC_URL || (IS_TESTNET ? 'http://142.132.164.24/' : 'http://localhost:8546')
+const ARB_RPC = ENV_ARB_RPC
 
 async function arbRpcCall(method: string, params: unknown[]): Promise<unknown> {
   const res = await fetch(ARB_RPC, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params }),
     signal: AbortSignal.timeout(15_000),
   })
@@ -874,20 +877,20 @@ function getArbUsdcAddress(): string {
  * On testnet: L3 and Arb are the same chain, uses signed tx.
  */
 export async function mintArbUsdc(player: string, amount: bigint): Promise<void> {
-  const deployer = IS_TESTNET ? PLAYER1 : '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+  const deployer = IS_ANVIL ? ANVIL_DEPLOYER : DEPLOYER_ADDRESS
   const userPadded = player.replace('0x', '').toLowerCase().padStart(64, '0')
   const amountHex = amount.toString(16).padStart(64, '0')
   const data = `0x40c10f19${userPadded}${amountHex}`
 
-  if (IS_TESTNET) {
+  if (!IS_ANVIL) {
     const account = privateKeyToAccount(DEPLOYER_KEY)
     const chain = defineChain({
-      id: Number(process.env.E2E_CHAIN_ID || 111222333),
+      id: ENV_ARB_CHAIN_ID,
       name: 'Index L3',
       nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
       rpcUrls: { default: { http: [ARB_RPC] } },
     })
-    const client = createWalletClient({ account, chain, transport: http(ARB_RPC) })
+    const client = createWalletClient({ account, chain, transport: rpcHttp(ARB_RPC) })
     await client.sendTransaction({
       to: getArbUsdcAddress() as `0x${string}`,
       data: data as `0x${string}`,
@@ -936,16 +939,16 @@ export async function depositToVisionViaArb(player: string, arbUsdcAmount: bigin
     args: [arbUsdcAmount],
   })
 
-  if (IS_TESTNET) {
+  if (!IS_ANVIL) {
     const key = getKeyForAddress(player)
     const account = privateKeyToAccount(key)
     const chain = defineChain({
-      id: Number(process.env.E2E_CHAIN_ID || 111222333),
+      id: ENV_ARB_CHAIN_ID,
       name: 'Index L3',
       nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
       rpcUrls: { default: { http: [ARB_RPC] } },
     })
-    const client = createWalletClient({ account, chain, transport: http(ARB_RPC) })
+    const client = createWalletClient({ account, chain, transport: rpcHttp(ARB_RPC) })
     await client.sendTransaction({ to: usdcAddr as `0x${string}`, data: approveData as `0x${string}`, gas: 1_000_000n })
     await client.sendTransaction({ to: custody as `0x${string}`, data: depositData as `0x${string}`, gas: 2_000_000n })
   } else {

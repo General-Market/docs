@@ -6,20 +6,13 @@
 import type { Page, Route } from '@playwright/test';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { ARB_RPC as ENV_ARB_RPC, CONTRACTS } from '../env';
 
-const IS_TESTNET = process.env.E2E_TESTNET === '1';
-const ARB_RPC = process.env.E2E_ARB_RPC_URL || (IS_TESTNET ? 'http://142.132.164.24/' : 'http://localhost:8546');
-
-// Contract addresses — read from deployment JSON
-const _dep = (() => {
-  try {
-    return JSON.parse(readFileSync(join(__dirname, '..', '..', '..', 'deployments', 'active-deployment.json'), 'utf-8')).contracts;
-  } catch { return null; }
-})();
-const ARB_USDC = _dep?.ARB_USDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
-const ARB_CUSTODY = _dep?.ArbBridgeCustody ?? '0x0B306BF915C4d645ff596e518fAf3F9669b97016';
-const BRIDGE_PROXY = _dep?.BridgeProxy ?? '0x59b670e9fA9D0A427751Af201D676719a970857b';
-const BRIDGED_ITP_FACTORY = _dep?.BridgedItpFactory ?? '0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1';
+const ARB_RPC = ENV_ARB_RPC;
+const ARB_USDC = CONTRACTS.ARB_USDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
+const ARB_CUSTODY = CONTRACTS.ArbBridgeCustody ?? '0x0B306BF915C4d645ff596e518fAf3F9669b97016';
+const BRIDGE_PROXY = CONTRACTS.BridgeProxy ?? '0x59b670e9fA9D0A427751Af201D676719a970857b';
+const BRIDGED_ITP_FACTORY = CONTRACTS.BridgedItpFactory ?? '0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1';
 
 // Read Morpho address from deployment JSON (changes when collateral token changes)
 function readMorphoDeployment() {
@@ -41,7 +34,7 @@ const MORPHO = MORPHO_DEPLOY.morpho;
 async function rpcCall(method: string, params: unknown[]): Promise<string> {
   const res = await fetch(ARB_RPC, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params }),
   });
   const json = await res.json();
