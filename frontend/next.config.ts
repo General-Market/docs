@@ -69,9 +69,9 @@ const nextConfig: NextConfig = {
     return {
       // beforeFiles: locale routing fallback — fires even if middleware doesn't execute on Vercel Edge
       beforeFiles: [
-        // Docs proxy — must be before locale rewrite (Mintlify)
-        { source: "/docs", destination: `${DOCS_URL}/docs` },
-        { source: "/docs/:path*", destination: `${DOCS_URL}/docs/:path*` },
+        // Docs proxy — must be before locale rewrite (Mintlify at docs.generalmarket.io)
+        { source: "/docs", destination: `${DOCS_URL}/` },
+        { source: "/docs/:path*", destination: `${DOCS_URL}/:path*` },
         // Locale routing fallback
         { source: "/", destination: "/en" },
         {
