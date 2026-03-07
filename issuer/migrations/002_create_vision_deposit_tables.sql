@@ -8,15 +8,15 @@ DROP TABLE IF EXISTS vision_user_balances CASCADE;
 DROP TABLE IF EXISTS vision_last_resolved CASCADE;
 DROP TABLE IF EXISTS vision_kv_store CASCADE;
 
--- Per-user dual balance: real (backed by L3 USDC) + virtual (backed by ArbBridgeCustody)
+-- Per-user dual balance: real (backed by L3 USDC) + virtual (backed by SettlementBridgeCustody)
 CREATE TABLE IF NOT EXISTS vision_user_balances (
     user_address TEXT PRIMARY KEY,
     real_balance TEXT NOT NULL DEFAULT '0',      -- uint256 as string, backed by L3 USDC
-    virtual_balance TEXT NOT NULL DEFAULT '0',   -- uint256 as string, backed by ArbBridgeCustody
+    virtual_balance TEXT NOT NULL DEFAULT '0',   -- uint256 as string, backed by SettlementBridgeCustody
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Cross-chain deposit orders (Arb → L3 Vision)
+-- Cross-chain deposit orders (Settlement → L3 Vision)
 -- State machine: pending → credited_on_l3 → completed | pending → refunded
 CREATE TABLE IF NOT EXISTS vision_deposit_orders (
     order_id BIGINT PRIMARY KEY,
@@ -33,7 +33,7 @@ CREATE INDEX IF NOT EXISTS idx_vision_deposit_orders_status
 CREATE INDEX IF NOT EXISTS idx_vision_deposit_orders_user
     ON vision_deposit_orders(user_address);
 
--- Cross-chain withdraw orders (L3 Vision → Arb)
+-- Cross-chain withdraw orders (L3 Vision → Settlement)
 -- State machine: pending → completed
 CREATE TABLE IF NOT EXISTS vision_withdraw_orders (
     withdraw_id BIGINT PRIMARY KEY,

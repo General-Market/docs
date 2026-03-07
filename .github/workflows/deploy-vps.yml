@@ -72,7 +72,7 @@ jobs:
             nohup ./target/release/data-node serve \
               --database-url postgres:///index_prices \
               --rpc-url http://142.132.164.24/ \
-              --arb-rpc-url http://142.132.164.24/ \
+              --settlement-rpc-url http://142.132.164.24/ \
               --ecb-enabled \
               --openmeteo-sync-interval 300 \
               > logs/data-node.log 2>&1 &
@@ -110,8 +110,8 @@ jobs:
               ISSUER_PRIVATE_KEY_PATH=/tmp/issuer-key-$i.txt \
               ISSUER_PEERS=$PEERS \
               ISSUER_RPC_URL=http://142.132.164.24/ \
-              ISSUER_ARBITRUM_RPC_URL=http://142.132.164.24/ \
-              ISSUER_ARBITRUM_CHAIN_ID=111222333 \
+              ISSUER_SETTLEMENT_RPC_URL=http://142.132.164.24/ \
+              ISSUER_SETTLEMENT_CHAIN_ID=111222333 \
               nohup ./target/release/issuer \
                 --node-id $i --port $PORT --rpc http://142.132.164.24/ \
                 --cycle-duration-ms 1000 --min-cycle-gap-ms 50 --consensus-timeout-ms 800 \
@@ -172,7 +172,7 @@ jobs:
             nohup ./target/release/ap \
               --port 9100 --rpc http://localhost/ \
               --exchange-mode mock \
-              --arb-rpc http://localhost/ --arb-chain-id 111222333 \
+              --settlement-rpc http://localhost/ --settlement-chain-id 111222333 \
               --deployment-file deployments/active-deployment.json \
               --data-node-url http://116.203.156.98:8200 \
               --log-level info \
