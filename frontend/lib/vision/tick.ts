@@ -10,9 +10,9 @@
 import batchConfig from '@/lib/contracts/vision-batches.json'
 import { VISION_SOURCES, type SourceCategory, getVisionSourceId } from '@/lib/vision/sources'
 
-// Legacy global values (kept for backward compat where needed)
-export const TICK_DURATION = batchConfig.tickDuration  // 30 seconds
-export const LOCK_OFFSET = batchConfig.lockOffset      // 5 seconds
+// Legacy global defaults (per-batch durations in JSON now)
+export const TICK_DURATION = 30
+export const LOCK_OFFSET = 5
 
 /**
  * Tick duration per source category (seconds).
