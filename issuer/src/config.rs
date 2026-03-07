@@ -150,6 +150,11 @@ pub struct IssuerConfig {
     /// For E2E testing with BridgeProxy on L3, set to 111222333.
     pub settlement_chain_id: Option<u64>,
 
+    /// Separate private key for settlement chain writes (e.g. completeCreateItp).
+    /// If not set, the issuer's own key is used. Needed when issuer keys are
+    /// incompatible with the settlement chain (e.g. EIP-7702 delegates on Sonic).
+    pub settlement_private_key: Option<String>,
+
     /// 1inch Fusion+ API key (may differ from quote key).
     pub oneinch_fusion_api_key: Option<String>,
 
@@ -344,6 +349,7 @@ impl IssuerConfig {
             settlement_chain_id: std::env::var("ISSUER_SETTLEMENT_CHAIN_ID")
                 .ok()
                 .and_then(|s| s.parse().ok()),
+            settlement_private_key: std::env::var("ISSUER_SETTLEMENT_PRIVATE_KEY").ok(),
             oneinch_fusion_api_key: std::env::var("ISSUER_ONEINCH_FUSION_API_KEY").ok(),
             bitget_vault: std::env::var("ISSUER_BITGET_VAULT").ok(),
             issuer_custody_l3: std::env::var("ISSUER_CUSTODY_L3").ok(),
@@ -487,6 +493,9 @@ impl IssuerConfig {
         }
         if other.settlement_chain_id.is_some() {
             self.settlement_chain_id = other.settlement_chain_id;
+        }
+        if other.settlement_private_key.is_some() {
+            self.settlement_private_key = other.settlement_private_key.clone();
         }
         if other.oneinch_fusion_api_key.is_some() {
             self.oneinch_fusion_api_key = other.oneinch_fusion_api_key.clone();

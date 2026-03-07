@@ -234,8 +234,12 @@ impl<'a> ChainBuilder<'a> {
         };
 
         // Build SettlementChainWriter
-        let settlement_writer = match self.config.effective_private_key() {
-            Ok(Some(ref private_key)) => {
+        // Use settlement_private_key if set (e.g. when issuer keys are EIP-7702 on settlement chain),
+        // otherwise fall back to the issuer's own key.
+        let settlement_key = self.config.settlement_private_key.clone()
+            .or_else(|| self.config.effective_private_key().ok().flatten());
+        let settlement_writer = match settlement_key {
+            Some(ref private_key) => {
                 let settlement_config = SettlementChainWriterConfig {
                     rpc_url: settlement_rpc.clone(),
                     bridge_proxy_address: bridge_proxy.parse().unwrap_or_default(),
