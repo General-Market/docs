@@ -486,6 +486,10 @@ _start_issuers() {
     # Clean up stale WAL files and set log level
     vps_be_ssh "cd $VPS_BE_DIR && rm -f logs/consensus-*.wal"
 
+    # Get current L3 block to skip stale events from old deployments
+    L3_FROM_BLOCK=$(cast block-number --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
+    echo -e "  L3 block: $L3_FROM_BLOCK (issuers will start from here)"
+
     # Read contract addresses from deployment file
     VISION_ADDR=$(read_deployment_addr "Vision")
     BRIDGE_PROXY=$(read_deployment_addr "SettlementBridgeProxy")
@@ -554,6 +558,7 @@ exec ./target/release/issuer \\
     --symbol-map-file data/symbol-map.json \\
     --wal-path logs/consensus-$i.wal \\
     --log-level info \\
+    --from-block $L3_FROM_BLOCK \\
     --itp-id 0x0000000000000000000000000000000000000000000000000000000000000001 \\
     $BRIDGE_ARG \\
     $VISION_ARGS" "$VPS_BE_DIR/logs/issuer-$i.log"
