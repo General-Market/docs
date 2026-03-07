@@ -82,13 +82,33 @@ RSYNC_SSH_BE="ssh -o ProxyJump=bastion -p 3189"
 
 # ── Helpers ──────────────────────────────────────────────────
 
-vps_be_ssh() { ssh -o ConnectTimeout=10 "$VPS_BE_HOST" "$@" 2>/dev/null; }
-vps_chain_ssh() { ssh -o ConnectTimeout=10 "$VPS_CHAIN_HOST" "$@" 2>/dev/null; }
+vps_be_ssh() { ssh -o ConnectTimeout=10 "$VPS_BE_HOST" "$@" < /dev/null 2>/dev/null; }
+vps_chain_ssh() { ssh -o ConnectTimeout=10 "$VPS_CHAIN_HOST" "$@" < /dev/null 2>/dev/null; }
+
+# Start a daemon on a remote VPS without SSH hanging.
+# Base64-encodes the script locally, decodes + runs on remote with setsid.
+# This avoids heredoc (broken by SSH stdin=/dev/null) and quoting issues.
+# Usage: _remote_start <ssh_func> <script_content> <log_file>
+_remote_start() {
+    local ssh_func="$1"
+    local script="$2"
+    local logfile="$3"
+    local script_path="/tmp/start-daemon-$RANDOM.sh"
+
+    # Base64-encode the script content (macOS base64 uses no flag for encode)
+    local b64
+    b64=$(printf '#!/bin/bash\n%s\n' "$script" | base64)
+
+    $ssh_func "echo '$b64' | base64 -d > $script_path && \
+chmod +x $script_path && \
+( setsid bash $script_path > $logfile 2>&1 < /dev/null & ) ; \
+sleep 0.3 ; rm -f $script_path"
+}
 
 check_service() {
     local host=$1 name=$2 pattern=$3
-    if ssh -o ConnectTimeout=5 "$host" "pgrep -f '$pattern' > /dev/null 2>&1" 2>/dev/null; then
-        local pid=$(ssh -o ConnectTimeout=5 "$host" "pgrep -f '$pattern' | head -1" 2>/dev/null)
+    if ssh -o ConnectTimeout=5 "$host" "pgrep -f '$pattern' > /dev/null 2>&1" < /dev/null 2>/dev/null; then
+        local pid=$(ssh -o ConnectTimeout=5 "$host" "pgrep -f '$pattern' | head -1" < /dev/null 2>/dev/null)
         echo -e "  ${GREEN}$name running (PID: $pid)${NC}"
         return 0
     else
@@ -413,7 +433,7 @@ cmd_start() {
 }
 
 _start_data_node() {
-    if ssh -o ConnectTimeout=5 "$VPS_BE_HOST" "pgrep -x data-node > /dev/null 2>&1" 2>/dev/null; then
+    if ssh -o ConnectTimeout=5 "$VPS_BE_HOST" "pgrep -x data-node > /dev/null 2>&1" < /dev/null 2>/dev/null; then
         echo -e "  ${GREEN}data-node already running${NC}"
         return
     fi
@@ -432,24 +452,22 @@ _start_data_node() {
         INDEX_FLAG="--index-address $INDEX_ADDR"
     fi
 
-    vps_be_ssh "cd $VPS_BE_DIR && \
-        sed -i 's|DATABASE_URL=.*|DATABASE_URL=postgres:///$DB_NAME|' data-node/.env && \
-        mkdir -p logs && \
-        nohup ./target/release/data-node serve \
-            --database-url postgres:///$DB_NAME \
-            --symbol-map data/symbol-map.json \
-            --rpc-url $RPC_URL \
-            --settlement-rpc-url $SETTLEMENT_RPC_URL \
-            --deployment-file $DEPLOYMENT_FILE \
-            --morpho-deployment-file deployments/morpho-e2e.json \
-            --ecb-enabled \
-            --openmeteo-sync-interval 300 \
-            $INDEX_FLAG \
-            > logs/data-node.log 2>&1 &
-        echo \$!"
+    _remote_start vps_be_ssh "cd $VPS_BE_DIR
+mkdir -p logs
+sed -i 's|DATABASE_URL=.*|DATABASE_URL=postgres:///$DB_NAME|' data-node/.env
+exec ./target/release/data-node serve \\
+    --database-url postgres:///$DB_NAME \\
+    --symbol-map data/symbol-map.json \\
+    --rpc-url $RPC_URL \\
+    --settlement-rpc-url $SETTLEMENT_RPC_URL \\
+    --deployment-file $DEPLOYMENT_FILE \\
+    --morpho-deployment-file deployments/morpho-e2e.json \\
+    --ecb-enabled \\
+    --openmeteo-sync-interval 300 \\
+    $INDEX_FLAG" "$VPS_BE_DIR/logs/data-node.log"
     sleep 2
 
-    if ssh -o ConnectTimeout=5 "$VPS_BE_HOST" "pgrep -x data-node > /dev/null 2>&1" 2>/dev/null; then
+    if ssh -o ConnectTimeout=5 "$VPS_BE_HOST" "pgrep -x data-node > /dev/null 2>&1" < /dev/null 2>/dev/null; then
         echo -e "  ${GREEN}data-node started${NC}"
     else
         echo -e "  ${RED}data-node failed to start — check: ssh $VPS_BE_HOST 'tail -50 $VPS_BE_DIR/logs/data-node.log'${NC}"
@@ -458,7 +476,7 @@ _start_data_node() {
 
 _start_issuers() {
     # Check if already running
-    if ssh -o ConnectTimeout=5 "$VPS_BE_HOST" "pgrep -f 'target/release/issuer' > /dev/null 2>&1" 2>/dev/null; then
+    if ssh -o ConnectTimeout=5 "$VPS_BE_HOST" "pgrep -x issuer > /dev/null 2>&1" < /dev/null 2>/dev/null; then
         echo -e "  ${GREEN}issuers already running${NC}"
         return
     fi
@@ -489,49 +507,56 @@ _start_issuers() {
         # Vision args
         VISION_ARGS=""
         if [ -n "$VISION_ADDR" ] && [ "$VISION_ADDR" != "" ]; then
-            VISION_ARGS="--vision-enabled \
-                --vision-address $VISION_ADDR \
-                --vision-database-url postgres:///$DB_NAME \
-                --vision-data-node-url http://localhost:$DATA_NODE_PORT \
-                --vision-rpc-ws-url $RPC_URL \
-                --vision-reveal-window-secs 60 \
-                --vision-tick-poll-interval-ms 500"
+            VISION_ARGS="--vision-enabled \\
+    --vision-address $VISION_ADDR \\
+    --vision-database-url postgres:///$DB_NAME \\
+    --vision-data-node-url http://localhost:$DATA_NODE_PORT \\
+    --vision-rpc-ws-url $RPC_URL \\
+    --vision-reveal-window-secs 60 \\
+    --vision-tick-poll-interval-ms 500"
         fi
 
-        vps_be_ssh "cd $VPS_BE_DIR && \
-            mkdir -p logs /tmp && \
-            echo '$KEY' > /tmp/issuer-key-$i.txt && \
-            ISSUER_PRIVATE_KEY_PATH=/tmp/issuer-key-$i.txt \
-            ISSUER_PEERS=$PEERS \
-            ISSUER_RPC_URL=$RPC_URL \
-            ISSUER_SETTLEMENT_RPC_URL=$SETTLEMENT_RPC_URL \
-            ISSUER_SETTLEMENT_CHAIN_ID=$SETTLEMENT_CHAIN_ID \
-            DATA_NODE_URL=http://localhost:$DATA_NODE_PORT \
-            EXCHANGE_MODE=mock \
-            nohup ./target/release/issuer \
-                --node-id $i \
-                --port $PORT \
-                --rpc $RPC_URL \
-                --cycle-duration-ms 1000 \
-                --min-cycle-gap-ms 50 \
-                --consensus-timeout-ms 800 \
-                --no-tls \
-                --test-key-seeds \
-                --bls-key-seed-index $BLS_IDX \
-                --num-issuers $ISSUER_COUNT \
-                --signature-threshold 2 \
-                --registry-sync \
-                --ntp-server \"\" \
-                --data-node-url http://localhost:$DATA_NODE_PORT \
-                --deployment-file $DEPLOYMENT_FILE \
-                --symbol-map-file data/symbol-map.json \
-                --wal-path logs/consensus-$i.wal \
-                --log-level info \
-                --itp-id 0x0000000000000000000000000000000000000000000000000000000000000001 \
-                $([ -n \"$BRIDGE_PROXY\" ] && echo \"--bridge-proxy $BRIDGE_PROXY\") \
-                $VISION_ARGS \
-                > logs/issuer-$i.log 2>&1 &
-            echo \$!"
+        # Bridge proxy arg
+        BRIDGE_ARG=""
+        if [ -n "$BRIDGE_PROXY" ]; then
+            BRIDGE_ARG="--bridge-proxy $BRIDGE_PROXY"
+        fi
+
+        # Write key file first (separate SSH call, always works)
+        vps_be_ssh "echo '$KEY' > /tmp/issuer-key-$i.txt"
+
+        _remote_start vps_be_ssh "cd $VPS_BE_DIR
+mkdir -p logs
+export ISSUER_PRIVATE_KEY_PATH=/tmp/issuer-key-$i.txt
+export ISSUER_PEERS=$PEERS
+export ISSUER_RPC_URL=$RPC_URL
+export ISSUER_SETTLEMENT_RPC_URL=$SETTLEMENT_RPC_URL
+export ISSUER_SETTLEMENT_CHAIN_ID=$SETTLEMENT_CHAIN_ID
+export DATA_NODE_URL=http://localhost:$DATA_NODE_PORT
+export EXCHANGE_MODE=mock
+exec ./target/release/issuer \\
+    --node-id $i \\
+    --port $PORT \\
+    --rpc $RPC_URL \\
+    --cycle-duration-ms 1000 \\
+    --min-cycle-gap-ms 50 \\
+    --consensus-timeout-ms 800 \\
+    --no-tls \\
+    --test-key-seeds \\
+    --bls-key-seed-index $BLS_IDX \\
+    --num-issuers $ISSUER_COUNT \\
+    --signature-threshold 2 \\
+    --registry-sync \\
+    --ntp-server '' \\
+    --data-node-url http://localhost:$DATA_NODE_PORT \\
+    --deployment-file $DEPLOYMENT_FILE \\
+    --symbol-map-file data/symbol-map.json \\
+    --wal-path logs/consensus-$i.wal \\
+    --log-level info \\
+    --itp-id 0x0000000000000000000000000000000000000000000000000000000000000001 \\
+    $BRIDGE_ARG \\
+    $VISION_ARGS" "$VPS_BE_DIR/logs/issuer-$i.log"
+
         echo -e "  Issuer $i started on port $PORT"
         # Stagger: let this issuer bind its port before the next one connects
         [ $i -lt $ISSUER_COUNT ] && sleep 1
@@ -541,7 +566,7 @@ _start_issuers() {
 }
 
 _start_ap() {
-    if ssh -o ConnectTimeout=5 "$VPS_CHAIN_HOST" "pgrep -f 'target/release/ap' > /dev/null 2>&1" 2>/dev/null; then
+    if ssh -o ConnectTimeout=5 "$VPS_CHAIN_HOST" "pgrep -x ap > /dev/null 2>&1" < /dev/null 2>/dev/null; then
         echo -e "  ${GREEN}AP already running${NC}"
         return
     fi
@@ -550,25 +575,28 @@ _start_ap() {
     MOCK_VAULT=$(read_deployment_addr "MockBitgetVault")
 
     # AP uses local RPC (nginx → Docker sequencer on same VPS)
-    vps_chain_ssh "cd $VPS_CHAIN_DIR && \
-        mkdir -p logs && \
-        AP_PRIVATE_KEY=$AP_KEY \
-        nohup ./target/release/ap \
-            --port 9100 \
-            --rpc http://localhost/ \
-            --exchange-mode mock \
-            --settlement-rpc $SETTLEMENT_RPC_URL \
-            --settlement-chain-id $SETTLEMENT_CHAIN_ID \
-            --deployment-file $DEPLOYMENT_FILE \
-            --data-node-url http://$VPS_BE_IP:$DATA_NODE_PORT \
-            --log-level info \
-            $([ -n \"$INDEX_ADDR\" ] && echo \"--index-contract $INDEX_ADDR\") \
-            $([ -n \"$MOCK_VAULT\" ] && echo \"--bitget-vault $MOCK_VAULT\") \
-            > logs/ap.log 2>&1 &
-        echo \$!"
+    INDEX_ARG=""
+    [ -n "$INDEX_ADDR" ] && INDEX_ARG="--index-contract $INDEX_ADDR"
+    VAULT_ARG=""
+    [ -n "$MOCK_VAULT" ] && VAULT_ARG="--bitget-vault $MOCK_VAULT"
+
+    _remote_start vps_chain_ssh "cd $VPS_CHAIN_DIR
+mkdir -p logs
+export AP_PRIVATE_KEY=$AP_KEY
+exec ./target/release/ap \\
+    --port 9100 \\
+    --rpc http://localhost/ \\
+    --exchange-mode mock \\
+    --settlement-rpc $SETTLEMENT_RPC_URL \\
+    --settlement-chain-id $SETTLEMENT_CHAIN_ID \\
+    --deployment-file $DEPLOYMENT_FILE \\
+    --data-node-url http://$VPS_BE_IP:$DATA_NODE_PORT \\
+    --log-level info \\
+    $INDEX_ARG \\
+    $VAULT_ARG" "$VPS_CHAIN_DIR/logs/ap.log"
     sleep 1
 
-    if ssh -o ConnectTimeout=5 "$VPS_CHAIN_HOST" "pgrep -f 'target/release/ap' > /dev/null 2>&1" 2>/dev/null; then
+    if ssh -o ConnectTimeout=5 "$VPS_CHAIN_HOST" "pgrep -x ap > /dev/null 2>&1" < /dev/null 2>/dev/null; then
         echo -e "  ${GREEN}AP started on port 9100${NC}"
     else
         echo -e "  ${RED}AP failed — check: ssh $VPS_CHAIN_HOST 'tail -50 $VPS_CHAIN_DIR/logs/ap.log'${NC}"
@@ -580,11 +608,11 @@ cmd_stop() {
     echo -e "${CYAN}Stopping all services...${NC}"
 
     echo -e "${BLUE}VPS 1 (issuers + data-node)...${NC}"
-    vps_be_ssh "pkill -x issuer 2>/dev/null; pkill -x data-node 2>/dev/null; true"
+    vps_be_ssh "pkill -x issuer 2>/dev/null; pkill -x data-node 2>/dev/null; sleep 1; pkill -9 -x issuer 2>/dev/null; pkill -9 -x data-node 2>/dev/null; true"
     echo -e "  ${GREEN}VPS 1 stopped${NC}"
 
     echo -e "${BLUE}VPS 2 (AP)...${NC}"
-    vps_chain_ssh "pkill -x ap 2>/dev/null; true"
+    vps_chain_ssh "pkill -x ap 2>/dev/null; sleep 1; pkill -9 -x ap 2>/dev/null; true"
     echo -e "  ${GREEN}VPS 2 stopped${NC}"
 
     echo -e "${GREEN}All services stopped${NC}"
