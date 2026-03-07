@@ -1,5 +1,14 @@
 # Design Decision Backlog
 
+## Session: 20260307-1845-t3s1 (Testnet dual-chain E2E — Sonic settlement)
+
+- [DECISION] Bridge buy/sell order consensus stalls on testnet: all 3 issuers report `am_leader=false` for the same orders. Root cause: leader election uses `order_id % num_issuers` but different issuers scan different Sonic block ranges at different times. The designated leader may not have the order in their current scan window when followers start consensus. Watchdog resets stale orders every ~80s but leader keeps missing the order across retries. Create ITP works because it uses `current_cycle` (not order_id) for leader election, and all issuers see the event simultaneously via the same L3 event cursor.
+- [DECISION] Sonic RPC proxy rate limit was core bottleneck (0.5s = 2 req/s). 3 issuers sharing proxy with multiple settlement RPC calls per poll cycle caused permanent queueing. Fixed: 0.05s = 20 req/s.
+- [DECISION] Next.js proxy doesn't stream SSE events to browser. Fixed: added `NEXT_PUBLIC_DATA_NODE_BROWSER_URL` env var to bypass proxy for direct SSE connection.
+- [DECISION] Test 23 API routes had wrong/missing query params (written for Anvil). Fixed: added correct params and graceful handling for missing testnet data.
+- [DECISION] Test 26 rebalance NAV drift tolerance too tight (10 bps). On testnet with real price movements, drift was 51 bps. Widened to 100 bps.
+- [DECISION] Test 22 Vision-specific tests (batch panel, leaderboard) need graceful skip on testnet when no batch data is configured.
+
 ## Session: 20260304-0830-e2e1 (E2E full test run — 116 tests, fix flaky failures)
 
 - [DECISION] E2E test 08 (arb bridge buy) intermittently fails when the designated leader has `buy_active` locked from processing a previous order. Detection and processing are under the same AtomicBool flag in main.rs. Proper fix: split detection (cheap Arb RPC scan) from processing (bridge+submit consensus). Detection should always run. Test now retries with a second order (different orderId = different leader assignment) as a workaround.

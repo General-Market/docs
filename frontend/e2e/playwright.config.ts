@@ -16,7 +16,7 @@ export default defineConfig({
     baseURL: FRONTEND_URL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video: 'off',
     actionTimeout: IS_ANVIL ? 30_000 : 60_000,
     navigationTimeout: 90_000,
     browserName: 'chromium',
