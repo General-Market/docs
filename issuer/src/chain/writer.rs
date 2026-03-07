@@ -808,6 +808,37 @@ impl EthersChainWriter {
             }
         }
 
+        // No ITPCreated event — the contract's idempotency check returned the existing
+        // ITP without emitting an event. Query _bridgeNonceToItpId(nonce) to get the ID.
+        let calldata = {
+            // _bridgeNonceToItpId(uint256) selector = keccak256("_bridgeNonceToItpId(uint256)")[..4]
+            let selector = &ethers::utils::keccak256(b"_bridgeNonceToItpId(uint256)")[..4];
+            let mut data = selector.to_vec();
+            let mut nonce_bytes = [0u8; 32];
+            bridge_nonce.to_big_endian(&mut nonce_bytes);
+            data.extend_from_slice(&nonce_bytes);
+            data
+        };
+
+        let call_tx = Eip1559TransactionRequest::new()
+            .to(self.config.contracts.index)
+            .data(calldata);
+        match self.client.call(&call_tx.into(), None).await {
+            Ok(result) if result.len() >= 32 => {
+                let itp_id = H256::from_slice(&result[..32]);
+                if itp_id != H256::zero() {
+                    info!(
+                        tx_hash = ?tx_hash,
+                        itp_id = ?itp_id,
+                        bridge_nonce = %bridge_nonce,
+                        "ITP already exists on L3 (idempotent)"
+                    );
+                    return Ok(itp_id);
+                }
+            }
+            _ => {}
+        }
+
         Err(Error::ChainWrite(
             "ItpCreated event not found in receipt".to_string(),
         ))
