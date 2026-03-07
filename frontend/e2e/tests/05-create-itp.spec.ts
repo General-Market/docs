@@ -10,7 +10,7 @@ import {
 
 test.describe('Create ITP', () => {
   test('create ITP via frontend + Settlement bridge relay', async ({ walletPage: page }) => {
-    test.setTimeout(360_000); // 6 min — bridge relay with prod-like cycle (1000ms) needs more time
+    test.setTimeout(600_000); // 10 min — bridge relay on real testnet (Sonic→L3→Sonic) needs more time
 
     const stopMiner = startSettlementBlockMiner(1000);
 
