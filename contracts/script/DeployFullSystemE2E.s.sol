@@ -311,15 +311,20 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         MockERC20(settlementUsdc).mint(TEST_USER, USER_INITIAL_BALANCE_6DEC);
         console.log("  Test user 0xC0D3..3850 funded (L3_WUSDC 18dec + SETTLEMENT_USDC 6dec)");
 
-        // Fund issuer and AP accounts with gas (GM/ETH) on L3
-        // These accounts need gas to submit transactions
+        // Fund issuer and AP accounts with gas (GM/ETH)
+        // Uses call instead of transfer (2300 gas stipend too low on some chains like Sonic)
         uint256 gasFunding = 10 ether;
-        payable(issuer1).transfer(gasFunding);
-        payable(issuer2).transfer(gasFunding);
-        payable(issuer3).transfer(gasFunding);
-        payable(ap).transfer(gasFunding);
-        payable(user).transfer(gasFunding);
-        console.log("  Issuers + AP + user funded with 10 ETH each for gas");
+        uint256 totalNeeded = gasFunding * 5;
+        if (address(admin).balance > totalNeeded + 1 ether) {
+            address[5] memory recipients = [issuer1, issuer2, issuer3, ap, user];
+            for (uint256 r = 0; r < recipients.length; r++) {
+                (bool ok,) = payable(recipients[r]).call{value: gasFunding}("");
+                require(ok, "gas funding transfer failed");
+            }
+            console.log("  Issuers + AP + user funded with 10 ETH each for gas");
+        } else {
+            console.log("  Skipping gas funding (deployer balance too low)");
+        }
     }
 
     function _fundVault(address token) internal {
