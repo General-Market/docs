@@ -590,6 +590,8 @@ export async function fullJoinBatch(
 
   // 2. Approve USDC and deposit to Vision balance (dual-balance architecture)
   await approveVision(player, depositAmount)
+  // On testnet, wait for approve state to propagate before deposit
+  if (!IS_ANVIL) await new Promise(r => setTimeout(r, 2000))
   const depositBalanceData = encodeFunctionData({
     abi: [{
       name: 'depositBalance',

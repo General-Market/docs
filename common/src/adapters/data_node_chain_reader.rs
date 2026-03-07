@@ -143,7 +143,11 @@ impl DataNodeChainReader {
 impl ChainReader for DataNodeChainReader {
     async fn get_pending_orders(&self) -> Result<Vec<LimitOrder>, Error> {
         let orders: Vec<CachedOrder> = self.get_json("/chain/l3/pending-orders").await?;
-        Ok(orders.into_iter().map(Self::convert_order).collect())
+        Ok(orders
+            .into_iter()
+            .filter(|o| !o.amount.is_empty() && o.amount != "0")
+            .map(Self::convert_order)
+            .collect())
     }
 
     async fn get_itp(&self, itp_id: [u8; 32]) -> Result<ITPCore, Error> {

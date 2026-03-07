@@ -354,6 +354,9 @@ pub enum BridgeError {
     #[error("not leader: cannot propose bridge")]
     NotLeader,
 
+    #[error("no valid fills after filtering zero-amount orders")]
+    NoPendingOrders,
+
     #[error("P2P error: {reason}")]
     P2PError { reason: String },
 

@@ -1664,6 +1664,14 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         fills: Vec<Fill>,
     ) -> Result<FillsProposal, BridgeError> {
+        // Filter out zero-amount fills (stale/empty orders from data-node cache)
+        let fills: Vec<Fill> = fills
+            .into_iter()
+            .filter(|f| !f.fill_amount.is_zero())
+            .collect();
+        if fills.is_empty() {
+            return Err(BridgeError::NoPendingOrders);
+        }
         // Build the message hash for BLS signing
         let message_hash = build_confirm_fills_hash(
             self.config.l3_chain_id,
