@@ -84,6 +84,9 @@ pub struct ChainReaderConfig {
     pub max_orders_per_batch: u64,
     /// Number of assets in the registry (for price fetching)
     pub asset_count: u64,
+    /// Starting block for event scanning (from --from-block CLI arg).
+    /// When set, cursors start here instead of block 0.
+    pub from_block: Option<u64>,
 }
 
 impl Default for ChainReaderConfig {
@@ -94,6 +97,7 @@ impl Default for ChainReaderConfig {
             chain_id: 111222333, // Index L3 Orbit
             max_orders_per_batch: 50,
             asset_count: 0,
+            from_block: None,
         }
     }
 }
@@ -133,11 +137,12 @@ impl EthersChainReader<Provider<Http>> {
         let provider = Provider::<Http>::try_from(&config.rpc_url)
             .map_err(|e| Error::ChainRead(format!("Failed to create provider: {}", e)))?;
 
+        let initial_cursor = config.from_block.unwrap_or(0);
         Ok(Self {
             provider: Arc::new(provider),
             config,
-            order_cursor: AtomicU64::new(0),
-            rebalance_cursor: AtomicU64::new(0),
+            order_cursor: AtomicU64::new(initial_cursor),
+            rebalance_cursor: AtomicU64::new(initial_cursor),
             known_order_ids: RwLock::new(Vec::new()),
             settled_order_ids: RwLock::new(HashSet::new()),
             known_rebalances: RwLock::new(std::collections::HashMap::new()),
@@ -150,11 +155,12 @@ impl<M: Middleware> EthersChainReader<M> {
     ///
     /// Useful for testing or when using custom middleware (e.g., signing middleware)
     pub fn with_provider(provider: Arc<M>, config: ChainReaderConfig) -> Self {
+        let initial_cursor = config.from_block.unwrap_or(0);
         Self {
             provider,
             config,
-            order_cursor: AtomicU64::new(0),
-            rebalance_cursor: AtomicU64::new(0),
+            order_cursor: AtomicU64::new(initial_cursor),
+            rebalance_cursor: AtomicU64::new(initial_cursor),
             known_order_ids: RwLock::new(Vec::new()),
             settled_order_ids: RwLock::new(HashSet::new()),
             known_rebalances: RwLock::new(std::collections::HashMap::new()),

@@ -99,6 +99,7 @@ impl<'a> ChainBuilder<'a> {
             chain_id: self.target_chain_id,
             max_orders_per_batch: 100,
             asset_count,
+            from_block: self.params.from_block,
         };
 
         let reader = EthersChainReader::new(reader_config)
