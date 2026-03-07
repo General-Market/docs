@@ -726,6 +726,9 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         // Consecutive price failure counter (circuit breaker)
         let mut consecutive_price_failures: u32 = 0;
 
+        // Throttle settlement RPC calls — only poll every 5 seconds to avoid 429s on public RPCs
+        let mut last_settlement_poll = std::time::Instant::now() - std::time::Duration::from_secs(10);
+
         loop {
             if consensus_shutdown.load(Ordering::Relaxed) {
                 info!("Consensus task shutting down");
@@ -860,8 +863,14 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         });
                     }
 
-                    // ITP creation — spawn if not already running
-                    if !itp_active.load(Ordering::Acquire) {
+                    // Settlement tasks — throttled to avoid 429s on public RPCs (e.g. Sonic testnet)
+                    let settlement_poll_due = last_settlement_poll.elapsed() >= std::time::Duration::from_secs(5);
+                    if settlement_poll_due {
+                        last_settlement_poll = std::time::Instant::now();
+                    }
+
+                    // ITP creation — spawn if not already running (throttled)
+                    if settlement_poll_due && !itp_active.load(Ordering::Acquire) {
                         if let (Some(ref settlement_reader), Some(ref settlement_writer), Some(ref itp_config)) =
                             (&settlement_reader_for_task, &settlement_writer_for_task, &itp_creation_config_for_task)
                         {
@@ -883,8 +892,8 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         }
                     }
 
-                    // Cross-chain BUY — spawn if not already running
-                    if !buy_active.load(Ordering::Acquire) {
+                    // Cross-chain BUY — spawn if not already running (throttled)
+                    if settlement_poll_due && !buy_active.load(Ordering::Acquire) {
                         if let (Some(ref settlement_reader), Some(ref orchestrator), Some(ref settlement_writer)) =
                             (&settlement_reader_for_task, &bridge_orchestrator_for_task, &settlement_writer_for_task)
                         {
@@ -912,8 +921,8 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                     }
 
                     // Cross-chain BUY post-processing — batch/fills/mint for SubmittedOnL3 orders
-                    // Runs independently from detection+bridge+submit so buy_active isn't held during the slow 8-step flow
-                    if !bridge_buy_post_active.load(Ordering::Acquire) {
+                    // Runs independently from detection+bridge+submit so buy_active isn't held during the slow 8-step flow (throttled)
+                    if settlement_poll_due && !bridge_buy_post_active.load(Ordering::Acquire) {
                         if let (Some(ref settlement_reader), Some(ref orchestrator), Some(ref settlement_writer)) =
                             (&settlement_reader_for_task, &bridge_orchestrator_for_task, &settlement_writer_for_task)
                         {
@@ -940,8 +949,8 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         }
                     }
 
-                    // Cross-chain SELL — spawn if not already running
-                    if !sell_active.load(Ordering::Acquire) {
+                    // Cross-chain SELL — spawn if not already running (throttled)
+                    if settlement_poll_due && !sell_active.load(Ordering::Acquire) {
                         if let (Some(ref settlement_reader), Some(ref orchestrator), Some(ref settlement_writer)) =
                             (&settlement_reader_for_task, &bridge_orchestrator_for_task, &settlement_writer_for_task)
                         {
