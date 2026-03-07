@@ -245,10 +245,12 @@ impl<'a> ChainBuilder<'a> {
                     bridge_proxy_address: bridge_proxy.parse().unwrap_or_default(),
                     settlement_custody_address: self.config.effective_settlement_custody().unwrap_or_default(),
                     chain_id: settlement_chain_id,
-                    gas_config: GasConfig::default().with_eip1559(
-                        ethers::types::U256::from(100_000_000u64),   // 0.1 gwei priority fee
-                        ethers::types::U256::from(1_500_000_000u64), // 1.5 gwei max fee
-                    ),
+                    gas_config: GasConfig::default()
+                        .with_multiplier(1.05)  // minimal 5% buffer
+                        .with_eip1559(
+                            ethers::types::U256::from(100_000_000u64),   // 0.1 gwei priority fee
+                            ethers::types::U256::from(1_100_000_000u64), // 1.1 gwei max fee (Sonic base=1 gwei)
+                        ),
                     ..Default::default()
                 };
 
