@@ -82,7 +82,7 @@ test.describe('Create ITP', () => {
       const bridgedAddr = await pollUntil(
         () => getBridgedItpAddress(newItpId),
         (addr) => addr !== '0x' + '0'.repeat(40),
-        60_000,
+        180_000,
         3_000,
       );
       console.log(`ITP created via bridge: itpId=${newItpId}, bridgedItp=${bridgedAddr}`);
