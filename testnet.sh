@@ -274,7 +274,8 @@ cmd_deploy() {
     echo -e "${BLUE}[3b/7] Deploying settlement contracts to Sonic (chain $SETTLEMENT_CHAIN_ID)...${NC}"
 
     # Save L3 deployment before Sonic overwrites it
-    cp "$DEPLOYMENT_FILE" deployments/e2e-full-system-l3.json 2>/dev/null || true
+    # The forge script writes to e2e-full-system.json (not active-deployment.json)
+    cp deployments/e2e-full-system.json deployments/e2e-full-system-l3.json 2>/dev/null || true
 
     SONIC_CHAIN_ID=$(cast chain-id --rpc-url "$SETTLEMENT_RPC_URL" 2>/dev/null || echo "0")
     if [ "$SONIC_CHAIN_ID" != "$SETTLEMENT_CHAIN_ID" ]; then
